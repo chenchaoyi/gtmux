@@ -209,6 +209,11 @@ to `gtmux focus`, and watches `~/.local/share/gtmux/` so a hook firing (an agent
 starting to wait, or finishing) updates the bar instantly. Chrome follows
 `GTMUX_LANG` (en/zh).
 
+The menu also has quick actions: **Overview** and **Live watch** (the full
+`gtmux overview` / `agents --watch` views, each in a fresh Ghostty window),
+**Restore detached** (`gtmux restore`), and **New session** (`gtmux new` — create
+a tmux session and open a tab for it). `gtmux new [name]` is a CLI command too.
+
 It's a separate app from the notification click target (`GtmuxFocus.app`,
 `com.gtmux.focus`); the two coexist. The app is cgo (Cocoa via `fyne.io/systray`),
 so it ships as a separate universal `Gtmux.app` — the CLI binary stays cgo-free.

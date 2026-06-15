@@ -17,6 +17,7 @@ import (
 
 	"fyne.io/systray"
 
+	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/menubar"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -66,6 +67,14 @@ func onReady() {
 	systray.AddSeparator()
 	waitingItem := systray.AddMenuItemCheckbox(i18n.Tr("Waiting only", "仅看等输入"), "", false)
 	refreshNow := systray.AddMenuItem(i18n.Tr("Refresh", "刷新"), "")
+
+	systray.AddSeparator()
+	overviewItem := systray.AddMenuItem(i18n.Tr("Overview", "概览"), i18n.Tr("Sessions/windows/panes in a window", "在新窗口看 session/window/pane"))
+	watchItem := systray.AddMenuItem(i18n.Tr("Live watch…", "实时面板…"), i18n.Tr("Open the full agents dashboard", "打开完整 agents 面板"))
+	restoreItem := systray.AddMenuItem(i18n.Tr("Restore detached", "接回 detached"), i18n.Tr("Open a tab per detached session", "为每个 detached session 开 tab"))
+	newItem := systray.AddMenuItem(i18n.Tr("New session", "新建 session"), i18n.Tr("Create a tmux session + tab", "新建 tmux session + tab"))
+
+	systray.AddSeparator()
 	quit := systray.AddMenuItem(i18n.Tr("Quit", "退出"), "")
 
 	// wake coalesces every "refresh now" trigger (toggle, manual, fs event).
@@ -98,6 +107,16 @@ func onReady() {
 			poke()
 		}
 	}()
+
+	// Menu actions — each shells out to the CLI / drives Ghostty (consumer only).
+	go menuExec(overviewItem, func() {
+		_, _ = ghostty.OpenWindow(ghostty.ShellQuote(gtmuxBin) + " overview --hold")
+	})
+	go menuExec(watchItem, func() {
+		_, _ = ghostty.OpenWindow(ghostty.ShellQuote(gtmuxBin) + " agents --watch")
+	})
+	go menuExec(restoreItem, func() { _ = exec.Command(gtmuxBin, "restore").Start() })
+	go menuExec(newItem, func() { _ = exec.Command(gtmuxBin, "new").Start() })
 
 	// Hybrid updates: fsnotify makes waiting/active changes instant; the timer
 	// still catches working/idle, which come from pane titles (not state files).
@@ -148,6 +167,13 @@ func refresh(header *systray.MenuItem, rows []*systray.MenuItem) {
 			panes[i] = ""
 			item.Hide()
 		}
+	}
+}
+
+// menuExec runs fn each time a menu item is clicked.
+func menuExec(item *systray.MenuItem, fn func()) {
+	for range item.ClickedCh {
+		fn()
 	}
 }
 

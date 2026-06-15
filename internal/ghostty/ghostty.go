@@ -85,6 +85,23 @@ return procName & "
 	return title == session || strings.HasPrefix(title, session+" — ")
 }
 
+// windowScript builds the AppleScript to open a new Ghostty window running a
+// shell command (the caller is responsible for shell-quoting within command).
+func windowScript(command string) string {
+	return `tell application "Ghostty"
+  activate
+  set cfg to new surface configuration
+  set command of cfg to "` + Quote(command) + `"
+  new window with configuration cfg
+end tell`
+}
+
+// OpenWindow opens a new Ghostty window running command (e.g. the gtmux overview
+// or the live agents watch). Returns osascript stdout and any error.
+func OpenWindow(command string) (string, error) {
+	return osascript(windowScript(command))
+}
+
 // SpawnTabs opens one Ghostty tab per session, each running
 // `tmux attach -t <session>`. Returns the generated AppleScript and any error.
 // dryRun returns the script without executing it.
