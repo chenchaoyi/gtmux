@@ -63,23 +63,148 @@ gtmux <command> [options]      # bare gtmux prints help
 
 | command | what it does |
 | --- | --- |
-| `overview [--popup]` | sessions / windows / panes summary (the prefix+g popup) |
-| `agents [--watch\|--json]` | coding agents across your panes: ⏸ waiting / ⠿ working / ✳ idle, where, and the pane id to jump to. `--watch` is a live bubbletea dashboard; `--json` is structured output for scripts |
-| `restore [--pick\|--one\|<name>\|--dry-run]` | one Ghostty tab per session, attach all (boots tmux + waits for continuum after a reboot) |
-| `focus <name\|pane-id>` | jump to a session's Ghostty tab; a tmux pane id (`%N`) lands on that exact window+pane |
+| `overview [--popup]` | sessions / windows / panes summary; `--popup` fits a tmux popup |
+| `agents [--watch\|--json]` | coding agents across your panes: ⏸ waiting / ⠿ working / ✳ idle, where, and the pane id to jump to. `--watch` is a live dashboard; `--json` is structured output |
+| `restore [--pick\|--one\|<name>\|--dry-run]` | one Ghostty tab per session, attach all |
+| `focus <name\|pane-id>` | jump to a session's Ghostty tab; a pane id (`%N`) lands on that exact pane |
 
-Output language follows `--lang=en|zh` (default `en`) or `$GTMUX_LANG`.
+Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
+follows `--lang=en|zh` (default `en`) or `$GTMUX_LANG`. It's invoked explicitly —
+no shell hooks, works with any shell.
 
-### agent status
+## `gtmux agents`
 
-- **⏸ waiting** — blocked on **you** for a permission/approval (sorts to the top)
-- **⠿ working** — busy (a spinner is animating in the pane)
-- **✳ idle** — finished its turn; your move
+```
+gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
 
-`waiting` needs the Claude Code notification hook to be installed (it
-distinguishes a permission prompt from an idle nudge by event timing, not
-keywords). Agents are detected by foreground command and pane-title signals;
-extend the profiles via `~/.config/gtmux/agents.json`.
+⏸ waiting  Claude Code  Pica:0.0          permission to run tests   %7
+⠿ working  Claude Code  ccy-workspace:0.0 Auto-attach tmux sessions %11
+✳ idle     Claude Code  Rodi:0.0          Rodi feature dev   %8  ✓ latest
+✳ idle     Claude Code  Diting:0.0        —                  %1
+
+jump: gtmux focus <pane>   (e.g. gtmux focus %11)
+```
+
+One place to see who's working, who's idle, and who just finished. Each row:
+**status**, the **agent**, location, the task, and the **pane id** — sorted by
+urgency (waiting → working → idle), with a breakdown in the header. The three
+states:
+
+- **⠿ working** — busy (don't bother it)
+- **⏸ waiting** — blocked on **you** for a permission/approval, mid-task; sorts to
+  the very top so you instantly see which agent needs a decision
+- **✳ idle** — finished its turn, your move when ready (not urgent)
+
+**`gtmux agents --watch`** is a live, auto-refreshing dashboard (built with
+[bubbletea](https://github.com/charmbracelet/bubbletea)): polls ~1.5s, **↑/↓**
+select, **Enter** jumps to the pane, **r** refresh, **q** quit. Agents that
+finish while you watch (working → idle) get flagged `✓ done`. **`--json`** emits
+the same data as a structured array for scripts/menu-bar apps.
+
+**Detection is not Claude-only:**
+- **Status** comes from the pane title the agent sets itself. A leading braille
+  spinner (`⠋⠙⠹…`, what most agent TUIs animate) = **working**; Claude Code's `✳`
+  = **idle**. This generalizes across agents that animate a spinner.
+- **Which agent** is matched by foreground command (`claude`, `codex`, `gemini`,
+  `aider`, `opencode`, …) or by a name in the title.
+- Extend/override via **`~/.config/gtmux/agents.json`** — a JSON array of
+  `{"name","commands","idleGlyph"}`; your entries win over the built-ins.
+- A pane is listed only if the agent **process is actually running** (foreground
+  command is the agent, or the title is animating a spinner). A leftover agent
+  title over a plain shell — e.g. a tmux-resurrect-restored session where the
+  agent was never relaunched — is **not** counted.
+
+> `⏸ waiting` and `✓ latest` come from state files under
+> `~/.local/share/gtmux/` (`waiting/<pane>`, `last-finished`) written by a
+> notification hook — the [reference producer](#notification-hook) is the
+> `claude-notify` hook, which tells a *permission* request from an idle nudge by
+> hook-event **timing**, not message keywords. Without that hook, agents never
+> show `⏸`; everything else still works.
+
+## `gtmux restore`
+
+Quitting Ghostty leaves the tmux server and all sessions alive — only the tabs
+are gone. After reopening Ghostty, run **once** in any tab:
+
+```sh
+gtmux restore            # one Ghostty tab per tmux session, all attached
+```
+
+It opens one tab per session (via Ghostty 1.3+ AppleScript) and attaches them
+all; the tab you ran it in takes the first session. The first run pops an
+Automation permission dialog ("wants to control Ghostty") — click Allow. Tabs
+are created in session-name order; the original tab↔session arrangement isn't
+recorded, so it can't be reproduced exactly. Per-tab control:
+
+```sh
+gtmux restore --pick     # list sessions (windows & status), choose: "1 3" / "1,3",
+                         # Enter = all detached, q = cancel
+gtmux restore --one      # attach the next unattached session here
+gtmux restore <name>     # attach a specific session by name here
+gtmux restore --dry-run  # print what would happen, change nothing
+```
+
+**After a reboot** the tmux server itself is gone. `gtmux restore` still works:
+it starts tmux and waits for [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum)
+to restore the last autosave — sessions, windows, per-pane directories, on-screen
+text. **Running programs are not restarted**; each pane comes back as a shell in
+its old directory (e.g. relaunch Claude Code with `claude --resume`). Requires
+tmux-resurrect/continuum installed.
+
+## `gtmux overview`
+
+```
+gtmux overview — 2 sessions · 3 windows · 5 panes
+
+▶ ccy-workspace        1 window · 1 pane
+    0: ccy-workspace *  (1 pane)
+● Pica                 2 windows · 4 panes
+    0: editor  (1 pane)
+    1: claude *  (3 panes)
+
+▶ current  ● attached  ○ detached   * active  Z zoomed  • new output
+```
+
+A sessions/windows/panes summary from any shell. **`gtmux overview --popup`** is
+size-fitted for a tmux `display-popup`, so you can bind it to a key and float it
+over a full-screen program without interrupting it (see [tmux integration](#tmux-integration)).
+
+## `gtmux focus`
+
+```sh
+gtmux focus Pica         # bring the Ghostty tab showing session "Pica" to front
+gtmux focus %11          # jump to that exact window+pane, then focus its tab
+```
+
+This is the read side of tmux's `set-titles`: because each tab title is
+`session — window`, `focus` finds the matching tab and runs Ghostty's AppleScript
+`select tab` + `activate`. A pane id (`%N`) additionally `select-window` +
+`select-pane`s inside the session first, so you land on the exact pane — which is
+how a notification click can drop you on the agent that just finished.
+
+> Needs `set-titles on` with `set-titles-string '#S — #W'` (so tab titles stay
+> in the format `focus` matches). If another tool also writes the tab title,
+> disable that so titles stay authoritative.
+
+## tmux integration
+
+gtmux is just a CLI — bind whatever keys you like in `tmux.conf`. Suggested:
+
+```tmux
+set -g set-titles on
+set -g set-titles-string '#S — #W'
+bind g run-shell -b "gtmux overview --popup"
+bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
+bind J run-shell "gtmux focus $(cat ~/.local/share/gtmux/last-finished)"
+```
+
+## notification hook
+
+`⏸ waiting`, `✓ latest`, and click-to-jump notifications rely on a hook writing
+state files under `~/.local/share/gtmux/`. The reference implementation is the
+`claude-notify` Claude Code hook (Stop / Notification / UserPromptSubmit). Any
+agent can produce the same files; folding the hook into a `gtmux hook` subcommand
+is planned.
 
 ## License
 

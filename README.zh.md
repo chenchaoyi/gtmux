@@ -60,22 +60,130 @@ gtmux <命令> [选项]            # 不带参数直接敲 gtmux 显示帮助
 
 | 命令 | 作用 |
 | --- | --- |
-| `overview [--popup]` | session / window / pane 汇总(prefix+g 的弹窗) |
-| `agents [--watch\|--json]` | 各 pane 里的 coding agent:⏸ 等输入 / ⠿ 运行中 / ✳ 空闲、在哪、可跳转的 pane id。`--watch` 是 bubbletea 实时面板;`--json` 是给脚本用的结构化输出 |
-| `restore [--pick\|--one\|<名字>\|--dry-run]` | 每个 session 一个 Ghostty tab,全部接回(重启后会启动 tmux 并等 continuum 恢复) |
-| `focus <名字\|pane-id>` | 跳到该 session 的 Ghostty tab;给 tmux pane id(`%N`)则精确落到那个 window+pane |
+| `overview [--popup]` | session / window / pane 汇总;`--popup` 适配 tmux 弹窗 |
+| `agents [--watch\|--json]` | 各 pane 里的 coding agent:⏸ 等输入 / ⠿ 运行中 / ✳ 空闲、在哪、可跳转的 pane id。`--watch` 是实时面板;`--json` 是结构化输出 |
+| `restore [--pick\|--one\|<名字>\|--dry-run]` | 每个 session 一个 Ghostty tab,全部接回 |
+| `focus <名字\|pane-id>` | 跳到该 session 的 Ghostty tab;pane id(`%N`)精确落到那个 pane |
 
-输出语言由 `--lang=en|zh`(默认 `en`)或 `$GTMUX_LANG` 控制。
+不带参数直接敲 `gtmux` 显示帮助;`gtmux --version` 看版本。输出语言由 `--lang=en|zh`
+(默认 `en`)或 `$GTMUX_LANG` 控制。显式调用、不挂任何 shell 钩子,换什么 shell 都能用。
 
-### agent 状态
+## `gtmux agents`
 
-- **⏸ 等输入** —— 卡在等**你**批准/授权(排最前)
-- **⠿ 运行中** —— 忙(pane 里有 spinner 在动)
-- **✳ 空闲** —— 完成一轮,轮到你
+```
+gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
 
-⏸ 需要安装 Claude Code 通知钩子(它靠事件**时机**而非关键词,区分权限请求与空闲
-提醒)。agent 通过前台命令和 pane 标题信号识别;可用 `~/.config/gtmux/agents.json`
-扩展 profile。
+⏸ waiting  Claude Code  Pica:0.0          等你批准跑测试            %7
+⠿ working  Claude Code  ccy-workspace:0.0 Auto-attach tmux sessions %11
+✳ idle     Claude Code  Rodi:0.0          Rodi feature dev   %8  ✓ latest
+✳ idle     Claude Code  Diting:0.0        —                  %1
+
+jump: gtmux focus <pane>   (例如 gtmux focus %11)
+```
+
+一处看清谁在跑、谁空闲、谁刚完成。每行:**状态**、**agent**、位置、任务、**pane id**
+—— 按紧急度排序(等输入 → 运行中 → 空闲),表头给出分类统计。三种状态:
+
+- **⠿ 运行中** —— 忙(别打扰)
+- **⏸ 等输入** —— 任务进行中,卡在等**你**批准/授权;排在最前,一眼看到谁需要你决策
+- **✳ 空闲** —— 完成一轮,你方便时再处理(不紧急)
+
+**`gtmux agents --watch`** 是实时自动刷新面板(基于
+[bubbletea](https://github.com/charmbracelet/bubbletea)):约 1.5s 轮询,**↑/↓**
+选择,**Enter** 跳到该 pane,**r** 刷新,**q** 退出。观察期间从运行中→空闲的 agent 会
+标 `✓ done`。**`--json`** 输出同样数据的结构化数组,给脚本/菜单栏 app 用。
+
+**识别不只针对 Claude:**
+- **状态**来自 agent 自己设置的 pane 标题。开头的盲文 spinner(`⠋⠙⠹…`,多数 agent TUI
+  都在动这个)= **运行中**;Claude Code 的 `✳` = **空闲**。对会动 spinner 的 agent 通用。
+- **哪个 agent**:按前台命令(`claude`、`codex`、`gemini`、`aider`、`opencode`…)或标题里
+  的名字匹配。
+- 用 **`~/.config/gtmux/agents.json`** 扩展/覆盖 —— 一个 `{"name","commands","idleGlyph"}`
+  数组,你的条目优先于内置。
+- 只有 agent **进程真的在跑**(前台命令是 agent,或标题在动 spinner)才会列出。普通 shell
+  上残留的 agent 标题(如 tmux-resurrect 恢复但没重启 agent 的 session)**不**计入。
+
+> `⏸ 等输入` 和 `✓ latest` 来自 `~/.local/share/gtmux/` 下的状态文件
+> (`waiting/<pane>`、`last-finished`),由通知钩子写入 —— [参考实现](#通知钩子)是
+> `claude-notify` 钩子,它靠 hook 事件**时机**(而非文案关键词)区分权限请求与空闲提醒。
+> 没有该钩子时不会显示 `⏸`,其余功能照常。
+
+## `gtmux restore`
+
+退出 Ghostty 后 tmux server 和所有 session 都还活着 —— 只是 tab 没了。重开 Ghostty 后,
+在任意 tab 里跑**一次**:
+
+```sh
+gtmux restore            # 每个 tmux session 一个 Ghostty tab,全部接回
+```
+
+它为每个 session 开一个 tab(经 Ghostty 1.3+ AppleScript)并全部接回;你运行命令的那个
+tab 接回第一个 session。首次运行会弹自动化授权(「想要控制 Ghostty」)—— 点允许。tab 按
+session 名顺序创建;原来的 tab↔session 对应关系没有记录,无法完全复现。按 tab 控制:
+
+```sh
+gtmux restore --pick     # 列出 session(含 window 和状态)再选:"1 3" / "1,3",
+                         # 回车=全部待接回,q=取消
+gtmux restore --one      # 把当前 tab 接回下一个无人连接的 session
+gtmux restore <名字>      # 按名字把当前 tab 接回指定 session
+gtmux restore --dry-run  # 只打印将要做什么,不实际执行
+```
+
+**电脑重启后** tmux server 本身也没了。`gtmux restore` 仍可用:它会启动 tmux 并等
+[tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) 恢复最近一次自动存档
+—— session、window、各 pane 的目录、屏幕文本。**正在运行的程序不会自动重启**;每个 pane
+回到原目录的 shell(如用 `claude --resume` 拉起 Claude Code)。需安装 tmux-resurrect/continuum。
+
+## `gtmux overview`
+
+```
+gtmux overview — 2 sessions · 3 windows · 5 panes
+
+▶ ccy-workspace        1 window · 1 pane
+    0: ccy-workspace *  (1 pane)
+● Pica                 2 windows · 4 panes
+    0: editor  (1 pane)
+    1: claude *  (3 panes)
+
+▶ current  ● attached  ○ detached   * active  Z zoomed  • new output
+```
+
+任意 shell 里看 session/window/pane 汇总。**`gtmux overview --popup`** 适配 tmux
+`display-popup` 的尺寸,可绑到一个键,在全屏程序之上浮出而不打断它(见
+[tmux 集成](#tmux-集成))。
+
+## `gtmux focus`
+
+```sh
+gtmux focus Pica         # 把显示 session "Pica" 的 Ghostty tab 切到前台
+gtmux focus %11          # 跳到那个确切的 window+pane,再聚焦它所在的 tab
+```
+
+这是 tmux `set-titles` 的读取侧:因为每个 tab 标题是 `session — window`,`focus` 找到
+匹配的 tab,跑 Ghostty 的 AppleScript `select tab` + `activate`。给 pane id(`%N`)时会
+先在 session 内 `select-window` + `select-pane`,于是精确落到那个 pane —— 这也是通知点击
+能把你带到刚完成的 agent 的原理。
+
+> 需要 `set-titles on` 且 `set-titles-string '#S — #W'`(让 tab 标题保持 `focus` 匹配的
+> 格式)。若有别的工具也写 tab 标题,请关掉它,让标题保持权威。
+
+## tmux 集成
+
+gtmux 只是个 CLI —— 在 `tmux.conf` 里绑你喜欢的键即可。推荐:
+
+```tmux
+set -g set-titles on
+set -g set-titles-string '#S — #W'
+bind g run-shell -b "gtmux overview --popup"
+bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
+bind J run-shell "gtmux focus $(cat ~/.local/share/gtmux/last-finished)"
+```
+
+## 通知钩子
+
+`⏸ 等输入`、`✓ latest` 以及点击跳转的通知,都依赖一个把状态写到 `~/.local/share/gtmux/`
+的钩子。参考实现是 `claude-notify` 这个 Claude Code 钩子(Stop / Notification /
+UserPromptSubmit)。任何 agent 都能产出同样的文件;把钩子收进 `gtmux hook` 子命令是计划中的。
 
 ## 许可
 
