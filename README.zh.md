@@ -186,6 +186,10 @@ gtmux uninstall-app          # 删除(连同登录项)
 1.5s)、调用 `gtmux focus`,并监听 `~/.local/share/gtmux/`,这样 hook 一触发(某个 agent
 开始等你或刚完成)菜单栏会立刻更新。界面语言跟随 `GTMUX_LANG`(en/zh)。
 
+菜单里还有快捷操作:**概览** 和 **实时面板**(在新 Ghostty 窗口里打开完整的 `gtmux overview`
+/ `agents --watch`)、**接回 detached**(`gtmux restore`)、**新建 session**(`gtmux new` ——
+新建 tmux session 并开一个 tab)。`gtmux new [name]` 也是一个 CLI 命令。
+
 它和通知点击目标(`GtmuxFocus.app`,`com.gtmux.focus`)是两个独立的 app,可共存。该 app 用
 cgo(经 `fyne.io/systray` 调 Cocoa),所以单独打包成 universal 的 `Gtmux.app`,CLI 二进制保持
 cgo-free。源码构建用 `make app`。

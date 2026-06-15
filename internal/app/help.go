@@ -25,6 +25,7 @@ Commands:
   focus <name|pane-id>    jump to that session's Ghostty tab; a tmux pane id
                           (%N) lands on that exact window+pane
     focus --last|-l       jump to the most-recently-finished agent pane
+  new [name]              create a tmux session and open a Ghostty tab for it
   install-hooks [--yes]   wire gtmux into Claude Code: GtmuxFocus.app +
                           ~/.claude/settings.json (Stop/Notification/UserPromptSubmit)
   uninstall-hooks         reverse install-hooks (de-register, remove the app)
@@ -69,6 +70,7 @@ const usageZH = `用法:
   focus <名字|pane-id>    跳到该 session 的 Ghostty tab;给 tmux pane id(%N)
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
+  new [name]              新建一个 tmux session 并为它开一个 Ghostty tab
   install-hooks [--yes]   把 gtmux 接入 Claude Code:GtmuxFocus.app +
                           ~/.claude/settings.json(Stop/Notification/UserPromptSubmit)
   uninstall-hooks         撤销 install-hooks(注销、删除 app)

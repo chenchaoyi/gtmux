@@ -64,6 +64,8 @@ func Run(argv []string) int {
 		return cmdFocus(args)
 	case "agents", "ag":
 		return cmdAgents(args)
+	case "new", "n":
+		return cmdNew(args)
 	case "hook":
 		return hook.Run(os.Stdin)
 	case "install-hooks":

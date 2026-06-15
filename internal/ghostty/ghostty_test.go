@@ -36,6 +36,24 @@ func TestShellQuote(t *testing.T) {
 	}
 }
 
+func TestWindowScript(t *testing.T) {
+	s := windowScript(`/Apps/Gtmux.app/Contents/MacOS/gtmux overview --hold`)
+	for _, w := range []string{
+		`tell application "Ghostty"`,
+		"new window with configuration cfg",
+		"gtmux overview --hold",
+		"end tell",
+	} {
+		if !strings.Contains(s, w) {
+			t.Errorf("windowScript missing %q\n--- script ---\n%s", w, s)
+		}
+	}
+	// A command with a quote must be escaped into the AppleScript literal.
+	if got := windowScript(`say "hi"`); !strings.Contains(got, `say \"hi\"`) {
+		t.Errorf("windowScript did not escape quotes: %s", got)
+	}
+}
+
 // SpawnTabs in dryRun must build a valid-looking AppleScript without executing
 // osascript, and must shell-quote each session name in its tmux attach command.
 func TestSpawnTabsDryRun(t *testing.T) {
