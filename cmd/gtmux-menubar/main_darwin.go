@@ -9,17 +9,22 @@
 package main
 
 import (
+	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/systray"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/menubar"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 const (
-	pollInterval = 1500 * time.Millisecond
+	pollInterval  = 1500 * time.Millisecond
+	watchDebounce = 200 * time.Millisecond
 	// systray can't add/remove items after start, so we pre-allocate a fixed
 	// pool of agent rows and show/hide them per refresh. 24 is comfortably more
 	// than anyone runs at once.
@@ -31,18 +36,22 @@ var (
 
 	mu    sync.Mutex
 	panes []string // row index → current pane id ("" when the row is unused)
+
+	filterWaiting atomic.Bool // "Waiting only" menu toggle
 )
 
 func main() {
+	i18n.SetLang(os.Getenv("GTMUX_LANG")) // chrome localization; default en
 	gtmuxBin = menubar.ResolveGtmux()
 	systray.Run(onReady, func() {})
 }
 
 func onReady() {
-	systray.SetTitle("✳")
-	systray.SetTooltip("gtmux — agents")
+	systray.SetIcon(menubar.IconFor(nil))
+	systray.SetTitle("")
+	systray.SetTooltip("gtmux")
 
-	header := systray.AddMenuItem("no agents", "")
+	header := systray.AddMenuItem("", "")
 	header.Disable()
 	systray.AddSeparator()
 
@@ -55,34 +64,78 @@ func onReady() {
 	}
 
 	systray.AddSeparator()
-	refreshNow := systray.AddMenuItem("Refresh", "Poll gtmux now")
-	quit := systray.AddMenuItem("Quit", "Quit the gtmux menu bar")
+	waitingItem := systray.AddMenuItemCheckbox(i18n.Tr("Waiting only", "仅看等输入"), "", false)
+	refreshNow := systray.AddMenuItem(i18n.Tr("Refresh", "刷新"), "")
+	quit := systray.AddMenuItem(i18n.Tr("Quit", "退出"), "")
+
+	// wake coalesces every "refresh now" trigger (toggle, manual, fs event).
+	wake := make(chan struct{}, 1)
+	poke := func() {
+		select {
+		case wake <- struct{}{}:
+		default:
+		}
+	}
+
 	go func() {
 		<-quit.ClickedCh
 		systray.Quit()
 	}()
+	go func() {
+		for range waitingItem.ClickedCh {
+			if waitingItem.Checked() {
+				waitingItem.Uncheck()
+				filterWaiting.Store(false)
+			} else {
+				waitingItem.Check()
+				filterWaiting.Store(true)
+			}
+			poke()
+		}
+	}()
+	go func() {
+		for range refreshNow.ClickedCh {
+			poke()
+		}
+	}()
 
-	// Poll loop: refresh on a timer, or immediately when "Refresh" is clicked.
+	// Hybrid updates: fsnotify makes waiting/active changes instant; the timer
+	// still catches working/idle, which come from pane titles (not state files).
+	if events, _, err := menubar.WatchState(state.Dir(), watchDebounce); err == nil {
+		go func() {
+			for range events {
+				poke()
+			}
+		}()
+	}
+
 	go func() {
 		for {
 			refresh(header, rows)
 			select {
 			case <-time.After(pollInterval):
-			case <-refreshNow.ClickedCh:
+			case <-wake:
 			}
 		}
 	}()
 }
 
-// refresh re-reads agents and updates the title, tooltip, header, and rows.
+// refresh re-reads agents and updates the icon, badge, tooltip, header, and rows.
 func refresh(header *systray.MenuItem, rows []*systray.MenuItem) {
 	agents := fetch()
-	systray.SetTitle(menubar.Title(agents))
+	systray.SetIcon(menubar.IconFor(agents))
+	systray.SetTitle(menubar.BadgeText(agents))
 	summary := menubar.Summary(agents)
 	systray.SetTooltip("gtmux — " + summary)
+
+	shown := agents
+	if filterWaiting.Load() {
+		shown = menubar.FilterWaiting(agents)
+		summary += i18n.Tr(" · waiting only", " · 仅看等输入")
+	}
 	header.SetTitle(summary)
 
-	rendered := menubar.Rows(agents)
+	rendered := menubar.Rows(shown)
 	mu.Lock()
 	defer mu.Unlock()
 	for i, item := range rows {

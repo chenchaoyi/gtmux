@@ -8,7 +8,10 @@ package menubar
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // Agent mirrors one element of `gtmux agents --json` (the stable contract from
@@ -61,8 +64,9 @@ func counts(agents []Agent) (waiting, working int) {
 	return
 }
 
-// Title is the compact status-bar text. It reflects the most-urgent state with a
-// count for the actionable ones; all-idle/empty shows a calm marker.
+// Title is the compact status-bar text (glyph + count). Paired with IconFor's
+// colored dot it's somewhat redundant, so the app uses BadgeText for the title;
+// Title remains a self-contained text representation (e.g. for tooltips).
 //
 //	⏸2  → 2 agents waiting on you (most urgent)
 //	⠿3  → nothing waiting, 3 working
@@ -79,20 +83,46 @@ func Title(agents []Agent) string {
 	}
 }
 
-// Summary mirrors the CLI's "N agents · X waiting · Y working · Z idle".
+// BadgeText is the menu-bar title shown next to the colored icon: the count of
+// the most-urgent actionable state, or "" when nothing needs attention.
+func BadgeText(agents []Agent) string {
+	w, wk := counts(agents)
+	switch {
+	case w > 0:
+		return strconv.Itoa(w)
+	case wk > 0:
+		return strconv.Itoa(wk)
+	default:
+		return ""
+	}
+}
+
+// Summary mirrors the CLI's "N agents · X waiting · Y working · Z idle"
+// (localized via GTMUX_LANG, like the CLI's agents summary).
 func Summary(agents []Agent) string {
 	n := len(agents)
 	if n == 0 {
-		return "no agents"
+		return i18n.Tr("no agents", "没有 agent")
 	}
 	w, wk := counts(agents)
 	parts := make([]string, 0, 3)
 	if w > 0 {
-		parts = append(parts, fmt.Sprintf("%d waiting", w))
+		parts = append(parts, fmt.Sprintf(i18n.Tr("%d waiting", "%d 等输入"), w))
 	}
-	parts = append(parts, fmt.Sprintf("%d working", wk))
-	parts = append(parts, fmt.Sprintf("%d idle", n-w-wk))
-	return fmt.Sprintf("%s · %s", plural(n, "agent"), strings.Join(parts, " · "))
+	parts = append(parts, fmt.Sprintf(i18n.Tr("%d working", "%d 运行中"), wk))
+	parts = append(parts, fmt.Sprintf(i18n.Tr("%d idle", "%d 空闲"), n-w-wk))
+	return i18n.Pl(n, "agent") + " · " + strings.Join(parts, " · ")
+}
+
+// FilterWaiting returns only the agents blocked on the user.
+func FilterWaiting(agents []Agent) []Agent {
+	out := make([]Agent, 0, len(agents))
+	for _, a := range agents {
+		if a.Status == "waiting" {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 // Rows renders one dropdown entry per agent, preserving the input order (the CLI
@@ -132,13 +162,6 @@ func StatusGlyph(status string) string {
 	default: // running
 		return "●"
 	}
-}
-
-func plural(n int, noun string) string {
-	if n == 1 {
-		return fmt.Sprintf("%d %s", n, noun)
-	}
-	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 // truncate shortens s to at most max display runes, appending an ellipsis.

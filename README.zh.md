@@ -179,10 +179,12 @@ gtmux install-app --login    # 顺便设为开机自启
 gtmux uninstall-app          # 删除(连同登录项)
 ```
 
-状态栏图标用最紧急的状态加计数显示(两个等你时 `⏸2`,三个运行中时 `⠿3`,全空闲时 `✳`)。
-下拉列出每个 agent `‹图标› session · task`,点某行就执行 `gtmux focus <pane>` 跳过去。它是
-CLI 的纯**消费者** —— 轮询 `gtmux agents --json`(约 1.5s)并调用 `gtmux focus` —— gtmux
-内核始终是数据源。
+状态栏图标是一个按最紧急状态着色的圆点 —— **红**等输入 · **青**运行中 · **绿**空闲 ·
+灰表示没有运行中的 agent —— 并带计数角标(如两个等你时显示 `2`)。下拉列出每个 agent
+`‹图标› session · task`,点某行就执行 `gtmux focus <pane>` 跳过去;还有 **仅看等输入**
+开关只显示卡住等你的那些。它是 CLI 的纯**消费者** —— 轮询 `gtmux agents --json`(约
+1.5s)、调用 `gtmux focus`,并监听 `~/.local/share/gtmux/`,这样 hook 一触发(某个 agent
+开始等你或刚完成)菜单栏会立刻更新。界面语言跟随 `GTMUX_LANG`(en/zh)。
 
 它和通知点击目标(`GtmuxFocus.app`,`com.gtmux.focus`)是两个独立的 app,可共存。该 app 用
 cgo(经 `fyne.io/systray` 调 Cocoa),所以单独打包成 universal 的 `Gtmux.app`,CLI 二进制保持
