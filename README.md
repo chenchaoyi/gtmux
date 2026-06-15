@@ -52,7 +52,7 @@ GTMUX_INSTALL_MIRROR=github curl -fsSL ... | bash
 ### From source
 
 ```sh
-go install github.com/chenchaoyi/gtmux@latest
+go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 ```
 
 ## Usage

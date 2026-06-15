@@ -1,6 +1,7 @@
 name: ci
 
-# Build + vet on every push / PR so a broken commit never reaches a tag.
+# Format, vet, lint, test (with the race detector), and cross-build on every
+# push / PR so a broken commit never reaches a tag.
 
 on:
   push:
@@ -8,8 +9,11 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +33,28 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      - name: staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+
+      - name: go test (race + coverage)
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: coverage summary
+        run: go tool cover -func=coverage.out | tail -1
+
+  cross-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      # macOS-only positioning (focus/restore drive Ghostty via AppleScript),
+      # but verify both arches compile so a release tag never fails to build.
       - name: build (darwin/arm64 + darwin/amd64)
         run: |
-          GOOS=darwin GOARCH=arm64 go build -o /dev/null .
-          GOOS=darwin GOARCH=amd64 go build -o /dev/null .
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/gtmux
+          GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/gtmux

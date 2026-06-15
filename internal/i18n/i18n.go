@@ -1,4 +1,6 @@
-package main
+// Package i18n holds gtmux's output language state and the localized-print,
+// pluralization, and display-width helpers shared by every command.
+package i18n
 
 import (
 	"fmt"
@@ -10,41 +12,51 @@ import (
 // Set from $GTMUX_LANG, then overridden by a global --lang=en|zh flag.
 var lang = "en"
 
-// tr picks the English or Chinese variant of a string.
-func tr(en, zh string) string {
+// SetLang sets the output language. Unknown values are ignored.
+func SetLang(l string) {
+	if l == "zh" || l == "en" {
+		lang = l
+	}
+}
+
+// Lang returns the current output language ("en" or "zh").
+func Lang() string { return lang }
+
+// Tr picks the English or Chinese variant of a string.
+func Tr(en, zh string) string {
 	if lang == "zh" {
 		return zh
 	}
 	return en
 }
 
-// say prints a localized line to stdout.
-func say(en, zh string) { fmt.Println(tr(en, zh)) }
+// Say prints a localized line to stdout.
+func Say(en, zh string) { fmt.Println(Tr(en, zh)) }
 
-// sae prints a localized line to stderr.
-func sae(en, zh string) { fmt.Fprintln(os.Stderr, tr(en, zh)) }
+// Sae prints a localized line to stderr.
+func Sae(en, zh string) { fmt.Fprintln(os.Stderr, Tr(en, zh)) }
 
 // ANSI styling (matches the bash version's palette).
 const (
-	cBold   = "\033[1m"
-	cDim    = "\033[2m"
-	cGreen  = "\033[32m"
-	cYellow = "\033[33m"
-	cCyan   = "\033[36m"
-	cReset  = "\033[0m"
+	Bold   = "\033[1m"
+	Dim    = "\033[2m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Cyan   = "\033[36m"
+	Reset  = "\033[0m"
 )
 
-// pl pluralizes a tmux-jargon noun: "1 window" / "3 windows" in en; no plural in zh.
-func pl(n int, noun string) string {
+// Pl pluralizes a tmux-jargon noun: "1 window" / "3 windows" in en; no plural in zh.
+func Pl(n int, noun string) string {
 	if lang == "zh" || n == 1 {
 		return fmt.Sprintf("%d %s", n, noun)
 	}
 	return fmt.Sprintf("%d %ss", n, noun)
 }
 
-// dispWidth is the terminal display width of s, counting CJK/wide runes as 2.
+// DispWidth is the terminal display width of s, counting CJK/wide runes as 2.
 // (Go's %-Ns pads by rune count and printf by bytes — both misalign wide chars.)
-func dispWidth(s string) int {
+func DispWidth(s string) int {
 	w := 0
 	for _, r := range s {
 		switch {
@@ -68,9 +80,9 @@ func dispWidth(s string) int {
 	return w
 }
 
-// padRight left-aligns s in a field of at least width display columns.
-func padRight(s string, width int) string {
-	if pad := width - dispWidth(s); pad > 0 {
+// PadRight left-aligns s in a field of at least width display columns.
+func PadRight(s string, width int) string {
+	if pad := width - DispWidth(s); pad > 0 {
 		return s + strings.Repeat(" ", pad)
 	}
 	return s

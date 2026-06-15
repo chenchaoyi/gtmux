@@ -1,6 +1,10 @@
-package main
+package app
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
+)
 
 const usageEN = `Usage:
   gtmux [--lang=en|zh] <command> [options]
@@ -72,8 +76,8 @@ const usageZH = `用法:
 `
 
 func usage() {
-	fmt.Printf("gtmux %s — %s\n\n", version, tagline())
-	if lang == "zh" {
+	fmt.Printf("gtmux %s — %s\n\n", Version, tagline())
+	if i18n.Lang() == "zh" {
 		fmt.Print(usageZH)
 	} else {
 		fmt.Print(usageEN)
