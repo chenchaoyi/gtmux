@@ -191,7 +191,7 @@ gtmux uninstall-app          # 删除(连同登录项)
 新建 tmux session 并开一个 tab)。`gtmux new [name]` 也是一个 CLI 命令。
 
 它和通知点击目标(`GtmuxFocus.app`,`com.gtmux.focus`)是两个独立的 app,可共存。该 app 用
-cgo(经 `fyne.io/systray` 调 Cocoa),所以单独打包成 universal 的 `Gtmux.app`,CLI 二进制保持
+cgo(经 `energye/systray` 调 Cocoa),所以单独打包成 universal 的 `Gtmux.app`,CLI 二进制保持
 cgo-free。源码构建用 `make app`。
 
 > 发布会附带 `Gtmux-<版本>-macos.zip`(ad-hoc 签名)。首次启动 macOS 可能提示未签名;安装时
