@@ -18,6 +18,22 @@ func isTTY() bool {
 
 // execTmuxAttach replaces this process with `tmux attach -t <name>` (like bash exec).
 func execTmuxAttach(name string) int {
+	// Set the tab title NOW, before attaching, to match tmux's set-titles-string
+	// ('#S — #W'). Why: when we reuse a tab that Ghostty RESTORED from a previous
+	// run (macOS "reopen windows"), that tab carries the OLD session's title.
+	// tmux does emit a fresh title on attach, but Ghostty re-applies the restored
+	// title slightly later, clobbering it — and tmux caches what it "sent" so it
+	// never re-emits (a plain `refresh-client` is a no-op). The tab ends up
+	// labelled with a DIFFERENT session than the one running in it. Emitting the
+	// OSC ourselves here — after restoration has settled, just before exec — wins
+	// the race; tmux then keeps the title current as the active window changes.
+	if isTTY() {
+		title := name
+		if t := display(name, "#S — #W"); t != "" {
+			title = t
+		}
+		fmt.Printf("\033]0;%s\007", title)
+	}
 	argv := []string{tmuxBin, "attach", "-t", name}
 	if err := syscall.Exec(tmuxBin, argv, os.Environ()); err != nil {
 		sae("failed to attach", "接回失败")
