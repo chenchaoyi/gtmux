@@ -199,11 +199,15 @@ gtmux install-app --login    # …and start it at login
 gtmux uninstall-app          # remove it (and the login item)
 ```
 
-The status item shows the most-urgent state with a count (`⏸2` when two agents
-need you, `⠿3` when three are working, `✳` when all idle). The dropdown lists each
-agent `‹glyph› session · task`; clicking a row runs `gtmux focus <pane>` to land
-you on it. It's a pure **consumer** of the CLI — it polls `gtmux agents --json`
-(~1.5s) and shells out to `gtmux focus` — so gtmux core stays the data source.
+The status item is a colored dot for the most-urgent state — **red** waiting ·
+**cyan** working · **green** idle · gray when nothing's running — with a count
+badge (e.g. `2` when two agents need you). The dropdown lists each agent
+`‹glyph› session · task`; clicking a row runs `gtmux focus <pane>` to land you on
+it, and a **Waiting only** toggle filters to just the ones blocking you. It's a
+pure **consumer** of the CLI — it polls `gtmux agents --json` (~1.5s), shells out
+to `gtmux focus`, and watches `~/.local/share/gtmux/` so a hook firing (an agent
+starting to wait, or finishing) updates the bar instantly. Chrome follows
+`GTMUX_LANG` (en/zh).
 
 It's a separate app from the notification click target (`GtmuxFocus.app`,
 `com.gtmux.focus`); the two coexist. The app is cgo (Cocoa via `fyne.io/systray`),
