@@ -66,6 +66,11 @@ jobs:
   # The menu-bar app is cgo (Cocoa), so it builds on a macOS runner — separate
   # from the cgo-free CLI that goreleaser cross-compiles on Linux. It produces a
   # universal, ad-hoc-signed Gtmux.app and attaches it to the same release.
+  #
+  # NOTE: this job only *builds* the app — it cannot see the menu bar. Status-item
+  # rendering regressions (e.g. fyne.io/systray went invisible on macOS 26) are
+  # invisible to CI. Smoke-test Gtmux.app on a real macOS machine before trusting
+  # a tag: launch it and confirm the colored dot + count appears in the bar.
   app:
     name: menu-bar app (macOS)
     needs: goreleaser

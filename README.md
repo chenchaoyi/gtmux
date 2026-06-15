@@ -215,7 +215,7 @@ The menu also has quick actions: **Overview** and **Live watch** (the full
 a tmux session and open a tab for it). `gtmux new [name]` is a CLI command too.
 
 It's a separate app from the notification click target (`GtmuxFocus.app`,
-`com.gtmux.focus`); the two coexist. The app is cgo (Cocoa via `fyne.io/systray`),
+`com.gtmux.focus`); the two coexist. The app is cgo (Cocoa via `energye/systray`),
 so it ships as a separate universal `Gtmux.app` — the CLI binary stays cgo-free.
 Build from source with `make app`.
 

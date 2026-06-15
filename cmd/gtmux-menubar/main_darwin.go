@@ -5,7 +5,12 @@
 // idle) with click-to-jump. It is a CONSUMER of the gtmux CLI — it shells out to
 // `gtmux agents --json` to read state and `gtmux focus <pane>` to jump — so the
 // CLI stays the single agent-agnostic data source. This binary needs cgo
-// (Cocoa via fyne.io/systray); the CLI binary stays cgo-free.
+// (Cocoa); the CLI binary stays cgo-free.
+//
+// Rendering uses github.com/energye/systray, a maintained fyne.io/systray fork
+// that creates a visible NSStatusItem on macOS 26 ("Tahoe"); upstream
+// fyne.io/systray v1.12.2 does not render on 26 (the process runs but the bar is
+// empty — see Phase-3.1). Only the rendering layer differs; the contracts hold.
 package main
 
 import (
@@ -15,7 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"fyne.io/systray"
+	"github.com/energye/systray"
 
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -61,7 +66,8 @@ func onReady() {
 	for i := range rows {
 		rows[i] = systray.AddMenuItem("", "")
 		rows[i].Hide()
-		go watchClick(i, rows[i])
+		idx := i
+		rows[i].Click(func() { jumpRow(idx) })
 	}
 
 	systray.AddSeparator()
@@ -86,37 +92,24 @@ func onReady() {
 		}
 	}
 
-	go func() {
-		<-quit.ClickedCh
-		systray.Quit()
-	}()
-	go func() {
-		for range waitingItem.ClickedCh {
-			if waitingItem.Checked() {
-				waitingItem.Uncheck()
-				filterWaiting.Store(false)
-			} else {
-				waitingItem.Check()
-				filterWaiting.Store(true)
-			}
-			poke()
+	quit.Click(func() { systray.Quit() })
+	refreshNow.Click(poke)
+	waitingItem.Click(func() {
+		if waitingItem.Checked() {
+			waitingItem.Uncheck()
+			filterWaiting.Store(false)
+		} else {
+			waitingItem.Check()
+			filterWaiting.Store(true)
 		}
-	}()
-	go func() {
-		for range refreshNow.ClickedCh {
-			poke()
-		}
-	}()
+		poke()
+	})
 
 	// Menu actions — each shells out to the CLI / drives Ghostty (consumer only).
-	go menuExec(overviewItem, func() {
-		_, _ = ghostty.OpenWindow(ghostty.ShellQuote(gtmuxBin) + " overview --hold")
-	})
-	go menuExec(watchItem, func() {
-		_, _ = ghostty.OpenWindow(ghostty.ShellQuote(gtmuxBin) + " agents --watch")
-	})
-	go menuExec(restoreItem, func() { _ = exec.Command(gtmuxBin, "restore").Start() })
-	go menuExec(newItem, func() { _ = exec.Command(gtmuxBin, "new").Start() })
+	overviewItem.Click(func() { _, _ = ghostty.OpenWindow(ghostty.ShellQuote(gtmuxBin) + " overview --hold") })
+	watchItem.Click(func() { _, _ = ghostty.OpenWindow(ghostty.ShellQuote(gtmuxBin) + " agents --watch") })
+	restoreItem.Click(func() { _ = exec.Command(gtmuxBin, "restore").Start() })
+	newItem.Click(func() { _ = exec.Command(gtmuxBin, "new").Start() })
 
 	// Hybrid updates: fsnotify makes waiting/active changes instant; the timer
 	// still catches working/idle, which come from pane titles (not state files).
@@ -170,22 +163,13 @@ func refresh(header *systray.MenuItem, rows []*systray.MenuItem) {
 	}
 }
 
-// menuExec runs fn each time a menu item is clicked.
-func menuExec(item *systray.MenuItem, fn func()) {
-	for range item.ClickedCh {
-		fn()
-	}
-}
-
-// watchClick jumps to the pane currently shown in row i when it's clicked.
-func watchClick(i int, item *systray.MenuItem) {
-	for range item.ClickedCh {
-		mu.Lock()
-		id := panes[i]
-		mu.Unlock()
-		if id != "" {
-			_ = exec.Command(gtmuxBin, "focus", id).Run()
-		}
+// jumpRow runs `gtmux focus` for the pane currently shown in row i.
+func jumpRow(i int) {
+	mu.Lock()
+	id := panes[i]
+	mu.Unlock()
+	if id != "" {
+		_ = exec.Command(gtmuxBin, "focus", id).Run()
 	}
 }
 
