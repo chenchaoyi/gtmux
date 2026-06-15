@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -39,9 +40,17 @@ func cmdFocus(args []string) int {
 		usage()
 		return 0
 	case "":
-		i18n.Sae("usage: gtmux focus <session|pane-id>   (jump to that tab / exact pane)",
-			"用法: gtmux focus <session|pane-id>   (跳到那个 tab / 确切 pane)")
+		i18n.Sae("usage: gtmux focus <session|pane-id|--last>   (jump to that tab / exact pane)",
+			"用法: gtmux focus <session|pane-id|--last>   (跳到那个 tab / 确切 pane)")
 		return 2
+	case "--last", "-l":
+		// Jump to the pane recorded in last-finished (GtmuxFocus.app's click target).
+		last := state.ReadLastFinished()
+		if last == "" {
+			i18n.Sae("No recently-finished pane recorded yet", "还没有记录最近完成的 pane")
+			return 1
+		}
+		target = last
 	}
 
 	if paneIDRe.MatchString(target) {

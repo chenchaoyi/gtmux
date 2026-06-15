@@ -24,6 +24,12 @@ Commands:
     restore --dry-run     print what would happen, change nothing
   focus <name|pane-id>    jump to that session's Ghostty tab; a tmux pane id
                           (%N) lands on that exact window+pane
+    focus --last|-l       jump to the most-recently-finished agent pane
+  install-hooks [--yes]   wire gtmux into Claude Code: GtmuxFocus.app +
+                          ~/.claude/settings.json (Stop/Notification/UserPromptSubmit)
+  uninstall-hooks         reverse install-hooks (de-register, remove the app)
+  hook                    internal: run BY Claude Code as a hook (reads stdin);
+                          writes pane state + fires the notification
   -h, --help              show this help
   -v, --version           print the version
 
@@ -59,6 +65,12 @@ const usageZH = `用法:
     restore --dry-run     只打印将要做什么,不实际执行
   focus <名字|pane-id>    跳到该 session 的 Ghostty tab;给 tmux pane id(%N)
                           则精确落到那个 window+pane
+    focus --last|-l       跳到最近完成的 agent pane
+  install-hooks [--yes]   把 gtmux 接入 Claude Code:GtmuxFocus.app +
+                          ~/.claude/settings.json(Stop/Notification/UserPromptSubmit)
+  uninstall-hooks         撤销 install-hooks(注销、删除 app)
+  hook                    内部命令:由 Claude Code 作为 hook 调用(读 stdin);
+                          写入 pane 状态并触发通知
   -h, --help              显示本帮助
   -v, --version           打印版本号
 

@@ -49,6 +49,42 @@ end tell`
 	return osascript(script)
 }
 
+// IsViewing reports whether you are already looking at this session's tab:
+// the frontmost macOS app is Ghostty AND its front-window title (which tmux's
+// set-titles-string keeps as '#S — #W') equals `session` or starts with
+// "session — ". Used to suppress a notification you don't need. Best-effort:
+// any AppleScript error returns false (don't suppress).
+//
+// System Events may report the process name lowercase ("ghostty"), so both are
+// accepted. The separator must match set-titles-string exactly: space, em-dash,
+// space.
+func IsViewing(session string) bool {
+	const script = `tell application "System Events"
+  set frontProc to first application process whose frontmost is true
+  set procName to name of frontProc
+  set winTitle to ""
+  try
+    set winTitle to name of front window of frontProc
+  end try
+end tell
+return procName & "
+" & winTitle`
+	out, err := osascript(script)
+	if err != nil {
+		return false
+	}
+	parts := strings.SplitN(out, "\n", 2)
+	if len(parts) != 2 {
+		return false
+	}
+	proc := strings.ToLower(strings.TrimSpace(parts[0]))
+	title := strings.TrimSpace(parts[1])
+	if proc != "ghostty" {
+		return false
+	}
+	return title == session || strings.HasPrefix(title, session+" — ")
+}
+
 // SpawnTabs opens one Ghostty tab per session, each running
 // `tmux attach -t <session>`. Returns the generated AppleScript and any error.
 // dryRun returns the script without executing it.

@@ -176,14 +176,34 @@ set -g set-titles on
 set -g set-titles-string '#S — #W'
 bind g run-shell -b "gtmux overview --popup"
 bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
-bind J run-shell "gtmux focus $(cat ~/.local/share/gtmux/last-finished)"
+bind J run-shell "gtmux focus --last"
 ```
 
 ## 通知钩子
 
 `⏸ 等输入`、`✓ latest` 以及点击跳转的通知,都依赖一个把状态写到 `~/.local/share/gtmux/`
-的钩子。参考实现是 `claude-notify` 这个 Claude Code 钩子(Stop / Notification /
-UserPromptSubmit)。任何 agent 都能产出同样的文件;把钩子收进 `gtmux hook` 子命令是计划中的。
+的钩子。gtmux 已经内置这个钩子,无需外部脚本:
+
+```sh
+gtmux install-hooks          # 一次性安装(macOS)
+gtmux uninstall-hooks        # 撤销
+```
+
+`install-hooks` 会在 `~/.claude/settings.json` 的 `Stop`、`Notification`、
+`UserPromptSubmit` 事件上注册 `gtmux hook`(幂等;保留其它 hook,并先备份),生成
+`~/Applications/GtmuxFocus.app`(bundle id `com.gtmux.focus`)作为通知的点击目标,
+并缓存 Claude 图标。装了 `terminal-notifier` 通知才可点击(`brew install
+terminal-notifier`);没装也会发通知,只是不可点。
+
+`gtmux hook` 是生产者 —— 由 Claude Code 调用,你不用手动跑。它纯靠事件**时机**写
+`active/<pane>`、`waiting/<pane>`、`last-finished`,并在你已经盯着该 session 的 tab
+时抑制通知。点击通知会打开 `GtmuxFocus.app`,它执行 `gtmux focus --last` 把你带到刚
+完成的那个 pane。设 `GTMUX_HOOK_DEBUG=1` 可把决策过程写到
+`~/.local/share/gtmux/hook.log`。
+
+> 在用 peon-ping?`install-hooks` 会询问是否把它的 `desktop_notifications` 和
+> `terminal_tab_title` 设为 `false`(后者是必须的 —— `focus` 需要 tmux 的
+> `set-titles` 独占 tab 标题)。加 `--yes` 可非交互式直接接受。
 
 ## 许可
 

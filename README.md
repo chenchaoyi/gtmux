@@ -195,16 +195,38 @@ set -g set-titles on
 set -g set-titles-string '#S — #W'
 bind g run-shell -b "gtmux overview --popup"
 bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
-bind J run-shell "gtmux focus $(cat ~/.local/share/gtmux/last-finished)"
+bind J run-shell "gtmux focus --last"
 ```
 
 ## notification hook
 
 `⏸ waiting`, `✓ latest`, and click-to-jump notifications rely on a hook writing
-state files under `~/.local/share/gtmux/`. The reference implementation is the
-`claude-notify` Claude Code hook (Stop / Notification / UserPromptSubmit). Any
-agent can produce the same files; folding the hook into a `gtmux hook` subcommand
-is planned.
+state files under `~/.local/share/gtmux/`. gtmux ships that hook built in — no
+external script needed:
+
+```sh
+gtmux install-hooks          # one-time setup (macOS)
+gtmux uninstall-hooks        # reverse it
+```
+
+`install-hooks` registers `gtmux hook` in `~/.claude/settings.json` on the
+`Stop`, `Notification`, and `UserPromptSubmit` events (idempotent; it preserves
+any other hooks and backs the file up first), generates `~/Applications/
+GtmuxFocus.app` (bundle id `com.gtmux.focus`) as the notification's click target,
+and caches the Claude icon. `terminal-notifier` makes the banner clickable
+(`brew install terminal-notifier`); without it, notifications still fire but
+aren't clickable.
+
+`gtmux hook` is the producer — Claude Code runs it; you don't. It writes
+`active/<pane>`, `waiting/<pane>`, and `last-finished` purely by event timing,
+and suppresses the banner when you're already looking at that session's tab. A
+click opens `GtmuxFocus.app`, which runs `gtmux focus --last` to land you on the
+pane that just finished. Set `GTMUX_HOOK_DEBUG=1` to trace decisions to
+`~/.local/share/gtmux/hook.log`.
+
+> Using peon-ping? `install-hooks` offers to set its `desktop_notifications` and
+> `terminal_tab_title` to `false` (the latter is required — `focus` needs tmux's
+> `set-titles` to own the tab title). Pass `--yes` to accept non-interactively.
 
 ## License
 
