@@ -1,0 +1,62 @@
+# GoReleaser config for gtmux.
+# Cross-compiles the pure-Go binary (no cgo — gtmux only execs tmux/osascript),
+# archives one tarball per macOS arch, and emits SHASUMS256.txt. The release
+# workflow (.github/workflows/release.yml) runs `goreleaser release` on tag push;
+# install.sh fetches these assets (GitHub-first, CN-mirror fallback).
+version: 2
+
+project_name: gtmux
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: gtmux
+    main: .
+    binary: gtmux
+    env:
+      - CGO_ENABLED=0
+    # macOS only for now: focus/restore drive Ghostty via AppleScript.
+    # agents/overview are cross-platform, but the positioning is Ghostty+macOS;
+    # add linux/windows here when there's demand.
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: gtmux
+    # gtmux-<version>-darwin-<arch>.tar.gz — install.sh builds this exact name.
+    name_template: "gtmux-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    formats: [tar.gz]
+    files:
+      - LICENSE
+      - README.md
+      - README.zh.md
+
+checksum:
+  # install.sh fetches SHASUMS256.txt and verifies the tarball against it.
+  name_template: "SHASUMS256.txt"
+  algorithm: sha256
+
+release:
+  github:
+    owner: chenchaoyi
+    name: gtmux
+  draft: false
+  prerelease: auto
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

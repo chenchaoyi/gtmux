@@ -1,0 +1,372 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+)
+
+// Claude Code's foreground process reports its command as its version (e.g.
+// "2.1.177"), which is how we identify a Claude pane that is actively working
+// (its title is "<spinner> <task>" then, with no "Claude Code" text).
+var claudeVersionRe = regexp.MustCompile(`^\d+\.\d+\.\d+`)
+
+// agentProfile identifies a coding agent and (optionally) its idle marker.
+// Working state is detected generically from a braille-spinner title glyph
+// (most agent TUIs animate one), so profiles mainly map command/name → label.
+type agentProfile struct {
+	Name      string   `json:"name"`                // display label, e.g. "Claude Code"
+	Commands  []string `json:"commands"`            // pane_current_command matches
+	IdleGlyph string   `json:"idleGlyph,omitempty"` // leading rune meaning idle (e.g. "✳")
+}
+
+// Built-in profiles. Extend or override via ~/.config/gtmux/agents.json
+// (a JSON array of {name, commands, idleGlyph}); user entries take precedence.
+var builtinProfiles = []agentProfile{
+	{Name: "Claude Code", Commands: []string{"claude"}, IdleGlyph: "✳"},
+	{Name: "Codex", Commands: []string{"codex"}},
+	{Name: "Gemini", Commands: []string{"gemini"}},
+	{Name: "Aider", Commands: []string{"aider"}},
+	{Name: "opencode", Commands: []string{"opencode"}},
+	{Name: "Crush", Commands: []string{"crush"}},
+	{Name: "Cursor", Commands: []string{"cursor-agent", "cursor"}},
+	{Name: "Amp", Commands: []string{"amp"}},
+}
+
+func loadProfiles() []agentProfile {
+	profiles := builtinProfiles
+	path := os.Getenv("HOME") + "/.config/gtmux/agents.json"
+	if b, err := os.ReadFile(path); err == nil {
+		var user []agentProfile
+		if json.Unmarshal(b, &user) == nil && len(user) > 0 {
+			profiles = append(user, profiles...) // user entries win
+		}
+	}
+	return profiles
+}
+
+type agentPane struct {
+	paneID   string
+	session  string
+	window   string // window index
+	pane     string // pane index
+	loc      string // session:window.pane
+	agent    string // display name, "" if unknown type
+	task     string // title with the status glyph stripped
+	status   string // "working" | "waiting" | "idle" | "running"
+	activity bool
+	latest   bool // the most-recently-finished pane (claude-notify last-finished)
+}
+
+// agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
+// and the future menu-bar app — structured, no screen-scraping).
+type agentJSON struct {
+	PaneID   string `json:"pane_id"` // %N — jump target: gtmux focus <pane_id>
+	Session  string `json:"session"`
+	Window   string `json:"window"`
+	Pane     string `json:"pane"`
+	Loc      string `json:"loc"`
+	Agent    string `json:"agent"`
+	Status   string `json:"status"` // working | waiting | idle | running
+	Task     string `json:"task"`
+	Latest   bool   `json:"latest"`
+	Activity bool   `json:"activity"`
+}
+
+// isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
+// the de-facto spinner glyph most agent TUIs animate while working.
+func isBrailleSpinner(r rune) bool { return r >= 0x2800 && r <= 0x28FF }
+
+// cmdIsLiveAgent reports whether the foreground command is a live agent process
+// and its display name. Claude Code's foreground command is its version string.
+func cmdIsLiveAgent(cmd string, profiles []agentProfile) (name string, live bool) {
+	for _, p := range profiles {
+		for _, c := range p.Commands {
+			if cmd == c {
+				return p.Name, true
+			}
+		}
+	}
+	if claudeVersionRe.MatchString(cmd) {
+		return "Claude Code", true
+	}
+	return "", false
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// classifyAgent decides whether a pane runs a LIVE coding agent, which one, and
+// its status. A pane counts ONLY if the agent process is actually running (its
+// foreground command is the agent) OR its title is animating a braille spinner
+// (active work, e.g. a tool subprocess). A leftover agent title on a pane that
+// has returned to a plain shell — e.g. resurrect-restored with the agent not
+// relaunched, or the agent simply exited — does NOT count. That stale-title case
+// was the false positive (a "✳ Claude Code" title over a bash prompt).
+func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, agent, status, task string) {
+	t := strings.TrimSpace(title)
+	rs := []rune(t)
+
+	spinner := len(rs) > 0 && isBrailleSpinner(rs[0])
+	idle := false
+	if len(rs) > 0 && !spinner {
+		if rs[0] == 0x2733 { // ✳ → idle/ready (Claude Code's marker)
+			idle = true
+		} else {
+			for _, p := range profiles {
+				if p.IdleGlyph != "" && strings.HasPrefix(t, p.IdleGlyph) {
+					idle = true
+					break
+				}
+			}
+		}
+	}
+
+	name, live := cmdIsLiveAgent(cmd, profiles)
+	titleName := ""
+	for i := range profiles {
+		if strings.Contains(t, profiles[i].Name) {
+			titleName = profiles[i].Name
+			break
+		}
+	}
+
+	switch {
+	case spinner: // actively working — count regardless of foreground command
+		status = "working"
+		agent = firstNonEmpty(name, titleName, tr("agent", "agent"))
+	case live: // agent process is alive (idle at its prompt, or just running)
+		if idle {
+			status = "idle"
+		} else {
+			status = "running"
+		}
+		agent = firstNonEmpty(name, titleName, tr("agent", "agent"))
+	default: // plain shell with a leftover agent title → not actually running
+		return false, "", "", ""
+	}
+
+	task = t
+	if (spinner || idle) && len(rs) > 1 {
+		task = strings.TrimSpace(string(rs[1:]))
+	}
+	if task == agent { // title is just the placeholder name, not a real task
+		task = ""
+	}
+	return true, agent, status, task
+}
+
+// gatherAgents polls every pane and returns the LIVE coding agents, sorted
+// waiting → working → idle, then by location. Shared by static + watch.
+// A pane is "waiting" (blocked on your input) when claude-notify recorded a
+// Notification for it (~/.local/share/gtmux/waiting/<pane>) and it isn't working.
+func gatherAgents() []agentPane {
+	profiles := loadProfiles()
+	dir := os.Getenv("HOME") + "/.local/share/gtmux"
+	lastFinished := readTrim(dir + "/last-finished")
+	waiting := waitingSet(dir + "/waiting")
+
+	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}"
+	var panes []agentPane
+	for _, line := range tmuxLines("list-panes", "-a", "-F", fields) {
+		f := strings.SplitN(line, "\t", 7)
+		if len(f) < 7 {
+			continue
+		}
+		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+		if !isAgent {
+			continue
+		}
+		id := f[0]
+		switch {
+		case status == "working":
+			if waiting[id] { // resumed working → clear the stale waiting mark
+				os.Remove(dir + "/waiting/" + id)
+				delete(waiting, id)
+			}
+		case waiting[id]:
+			status = "waiting" // blocked on the user
+		}
+		panes = append(panes, agentPane{
+			paneID:   id,
+			session:  f[1],
+			window:   f[2],
+			pane:     f[3],
+			loc:      fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]),
+			agent:    agent,
+			task:     task,
+			status:   status,
+			activity: f[6] == "1",
+			latest:   id == lastFinished && status != "working" && status != "waiting",
+		})
+	}
+	sort.SliceStable(panes, func(i, j int) bool {
+		if ri, rj := statusRank(panes[i].status), statusRank(panes[j].status); ri != rj {
+			return ri < rj
+		}
+		return panes[i].loc < panes[j].loc
+	})
+	return panes
+}
+
+func statusRank(s string) int {
+	switch s {
+	case "waiting":
+		return 0 // needs you now — most urgent
+	case "working":
+		return 1
+	default:
+		return 2
+	}
+}
+
+func readTrim(path string) string {
+	if b, err := os.ReadFile(path); err == nil {
+		return strings.TrimSpace(string(b))
+	}
+	return ""
+}
+
+// waitingSet reads the per-pane "waiting" marker files into a set of pane ids.
+func waitingSet(dir string) map[string]bool {
+	m := map[string]bool{}
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if !e.IsDir() {
+			m[e.Name()] = true
+		}
+	}
+	return m
+}
+
+// agentsSummary renders "N agents · [X waiting ·] Y working · Z idle".
+func agentsSummary(panes []agentPane) string {
+	s := pl(len(panes), "agent")
+	if len(panes) == 0 {
+		return s
+	}
+	var nWork, nWait int
+	for _, p := range panes {
+		switch p.status {
+		case "working":
+			nWork++
+		case "waiting":
+			nWait++
+		}
+	}
+	parts := []string{}
+	if nWait > 0 {
+		parts = append(parts, fmt.Sprintf(tr("%d waiting", "%d 等输入"), nWait))
+	}
+	parts = append(parts, fmt.Sprintf(tr("%d working", "%d 运行中"), nWork))
+	parts = append(parts, fmt.Sprintf(tr("%d idle", "%d 空闲"), len(panes)-nWork-nWait))
+	return s + " · " + strings.Join(parts, " · ")
+}
+
+// cmdAgents implements `gtmux agents [--watch] [--popup] [--json]`.
+func cmdAgents(args []string) int {
+	watch, popup, asJSON := false, false, false
+	for _, a := range args {
+		switch a {
+		case "-h", "--help":
+			usage()
+			return 0
+		case "--watch", "-w":
+			watch = true
+		case "--popup":
+			popup = true // close the TUI after a jump (used by the prefix+a popup)
+		case "--json":
+			asJSON = true
+		}
+	}
+	if !tmuxServerUp() {
+		if asJSON {
+			fmt.Println("[]")
+			return 0
+		}
+		say("No tmux server running", "没有运行中的 tmux server")
+		return 1
+	}
+	if asJSON {
+		return agentsJSON()
+	}
+	if watch {
+		return runWatch(popup)
+	}
+
+	panes := gatherAgents()
+	fmt.Printf("%sgtmux %s%s — %s\n\n", cBold, tr("agents", "agent"), cReset, agentsSummary(panes))
+	if len(panes) == 0 {
+		say("No coding-agent panes found.", "没有发现 coding-agent 的 pane。")
+		return 0
+	}
+	for _, p := range panes {
+		glyph, color, label := statusStyle(p.status)
+		task := p.task
+		if task == "" {
+			task = cDim + "—" + cReset
+		}
+		dot := ""
+		if p.activity {
+			dot = cYellow + " •" + cReset
+		}
+		done := ""
+		if p.latest {
+			done = cYellow + tr("  ✓ latest", "  ✓ 最近完成") + cReset
+		}
+		fmt.Printf("%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s%s\n",
+			color, glyph, cReset,
+			color, padRight(label, 8), cReset,
+			cBold, padRight(p.agent, 12), cReset,
+			cBold, padRight(p.loc, 22), cReset,
+			task, dot, cDim+" "+p.paneID+cReset, done)
+	}
+	fmt.Printf("\n%s%s%s\n", cDim,
+		tr("jump: gtmux focus <pane>   (e.g. gtmux focus "+panes[0].paneID+")",
+			"跳转: gtmux focus <pane>   (例如 gtmux focus "+panes[0].paneID+")"), cReset)
+	return 0
+}
+
+// agentsJSON prints the live agents as a JSON array (stable shape; no colors,
+// no screen-scraping — for scripts and the menu-bar app).
+func agentsJSON() int {
+	panes := gatherAgents()
+	out := make([]agentJSON, 0, len(panes))
+	for _, p := range panes {
+		out = append(out, agentJSON{
+			PaneID: p.paneID, Session: p.session, Window: p.window, Pane: p.pane,
+			Loc: p.loc, Agent: p.agent, Status: p.status, Task: p.task,
+			Latest: p.latest, Activity: p.activity,
+		})
+	}
+	b, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		sae("json error: "+err.Error(), "json 错误: "+err.Error())
+		return 1
+	}
+	fmt.Println(string(b))
+	return 0
+}
+
+func statusStyle(status string) (glyph, color, label string) {
+	switch status {
+	case "working":
+		return "⠿", cCyan, tr("working", "运行中")
+	case "waiting":
+		return "⏸", cYellow, tr("waiting", "等输入")
+	case "idle":
+		return "✳", cGreen, tr("idle", "空闲")
+	default:
+		return "●", cYellow, tr("running", "运行中")
+	}
+}
