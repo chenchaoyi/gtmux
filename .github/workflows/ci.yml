@@ -1,7 +1,8 @@
 name: ci
 
 # Format, vet, lint, test (with the race detector), and cross-build on every
-# push / PR so a broken commit never reaches a tag.
+# push / PR so a broken commit never reaches a tag. The cgo menu-bar app is
+# compiled on a macOS runner; the CLI stays cgo-free and builds everywhere.
 
 on:
   push:
@@ -52,9 +53,25 @@ jobs:
           go-version: '1.24'
           cache: true
 
-      # macOS-only positioning (focus/restore drive Ghostty via AppleScript),
-      # but verify both arches compile so a release tag never fails to build.
-      - name: build (darwin/arm64 + darwin/amd64)
+      # The CLI must stay cgo-free (only the menu-bar app uses cgo). Build both
+      # macOS arches with CGO off to enforce that and catch arch-specific breaks.
+      - name: build CLI cgo-free (darwin arm64 + amd64)
         run: |
-          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/gtmux
-          GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/gtmux
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/gtmux
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/gtmux
+
+  menubar:
+    name: menu-bar app build (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      # The cgo systray binary is excluded from the Linux build (build tags), so
+      # compile it here so a PR can't break it unnoticed.
+      - name: build menu-bar binary (cgo)
+        run: CGO_ENABLED=1 go build -o /dev/null ./cmd/gtmux-menubar

@@ -62,3 +62,62 @@ jobs:
             dist/*.tar.gz
             dist/SHASUMS256.txt
           retention-days: 14
+
+  # The menu-bar app is cgo (Cocoa), so it builds on a macOS runner — separate
+  # from the cgo-free CLI that goreleaser cross-compiles on Linux. It produces a
+  # universal, ad-hoc-signed Gtmux.app and attaches it to the same release.
+  app:
+    name: menu-bar app (macOS)
+    needs: goreleaser
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: build universal binaries (CLI cgo-free, menu-bar cgo)
+        run: |
+          set -euxo pipefail
+          mkdir -p build
+          for arch in arm64 amd64; do
+            CGO_ENABLED=1 GOOS=darwin GOARCH=$arch go build -o "build/menubar-$arch" ./cmd/gtmux-menubar
+            CGO_ENABLED=0 GOOS=darwin GOARCH=$arch \
+              go build -ldflags "-s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=${GITHUB_REF_NAME}" \
+              -o "build/gtmux-$arch" ./cmd/gtmux
+          done
+          lipo -create -output build/gtmux-menubar build/menubar-arm64 build/menubar-amd64
+          lipo -create -output build/gtmux build/gtmux-arm64 build/gtmux-amd64
+
+      - name: assemble + ad-hoc-sign Gtmux.app
+        run: |
+          set -euxo pipefail
+          APP=Gtmux.app
+          mkdir -p "$APP/Contents/MacOS"
+          cp internal/app/templates/Gtmux.Info.plist "$APP/Contents/Info.plist"
+          cp build/gtmux-menubar "$APP/Contents/MacOS/gtmux-menubar"
+          cp build/gtmux "$APP/Contents/MacOS/gtmux"
+          chmod +x "$APP/Contents/MacOS/"*
+          codesign --force --deep --sign - "$APP"
+          codesign -dv "$APP" || true
+          ZIP="Gtmux-${GITHUB_REF_NAME#v}-macos.zip"
+          ditto -c -k --keepParent "$APP" "$ZIP"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
+      - name: attach Gtmux.app to the release (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${GITHUB_REF_NAME}" "$ZIP" --clobber
+
+      - name: upload app artifact (dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gtmux-app
+          path: ${{ env.ZIP }}
+          retention-days: 14

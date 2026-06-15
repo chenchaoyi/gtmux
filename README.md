@@ -186,6 +186,33 @@ how a notification click can drop you on the agent that just finished.
 > in the format `focus` matches). If another tool also writes the tab title,
 > disable that so titles stay authoritative.
 
+## menu-bar app
+
+gtmux has two faces over one source of truth: the **CLI** (in the terminal) and a
+**menu-bar app** (always visible). The app is an `LSUIElement` status item — your
+ambient radar over coding agents — showing at a glance how many are **⏸ waiting on
+you / ⠿ working / ✳ idle**, with a dropdown to jump to any of them.
+
+```sh
+gtmux install-app            # build/register Gtmux.app and launch it
+gtmux install-app --login    # …and start it at login
+gtmux uninstall-app          # remove it (and the login item)
+```
+
+The status item shows the most-urgent state with a count (`⏸2` when two agents
+need you, `⠿3` when three are working, `✳` when all idle). The dropdown lists each
+agent `‹glyph› session · task`; clicking a row runs `gtmux focus <pane>` to land
+you on it. It's a pure **consumer** of the CLI — it polls `gtmux agents --json`
+(~1.5s) and shells out to `gtmux focus` — so gtmux core stays the data source.
+
+It's a separate app from the notification click target (`GtmuxFocus.app`,
+`com.gtmux.focus`); the two coexist. The app is cgo (Cocoa via `fyne.io/systray`),
+so it ships as a separate universal `Gtmux.app` — the CLI binary stays cgo-free.
+Build from source with `make app`.
+
+> Releases attach a `Gtmux-<version>-macos.zip` (ad-hoc signed). On first launch
+> macOS may warn about an unsigned app; the installer strips the quarantine flag.
+
 ## tmux integration
 
 gtmux is just a CLI — bind whatever keys you like in `tmux.conf`. Suggested:

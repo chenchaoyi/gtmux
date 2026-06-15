@@ -70,6 +70,10 @@ func Run(argv []string) int {
 		return cmdInstallHooks(args)
 	case "uninstall-hooks":
 		return cmdUninstallHooks(args)
+	case "install-app":
+		return cmdInstallApp(args)
+	case "uninstall-app":
+		return cmdUninstallApp(args)
 	default:
 		i18n.Sae("gtmux: unknown command '"+sub+"' (try: overview | agents | restore | focus | --help)",
 			"gtmux: 未知命令 '"+sub+"'(可用:overview | agents | restore | focus | --help)")
