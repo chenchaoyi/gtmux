@@ -57,6 +57,12 @@ func onReady() {
 	systray.SetTitle("")
 	systray.SetTooltip("gtmux")
 
+	// Attach a native NSMenu to the status item so a normal LEFT-click opens it.
+	// energye/systray otherwise leaves the menu detached and routes clicks to
+	// onClick/onRClick handlers (left-click would do nothing); CreateMenu wires
+	// the standard macOS behavior. Menu-item selection still fires Click().
+	systray.CreateMenu()
+
 	header := systray.AddMenuItem("", "")
 	header.Disable()
 	systray.AddSeparator()
