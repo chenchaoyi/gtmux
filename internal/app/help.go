@@ -28,6 +28,9 @@ Commands:
   install-hooks [--yes]   wire gtmux into Claude Code: GtmuxFocus.app +
                           ~/.claude/settings.json (Stop/Notification/UserPromptSubmit)
   uninstall-hooks         reverse install-hooks (de-register, remove the app)
+  install-app [--login]   install the menu-bar app (Gtmux.app): live agent
+                          status + click-to-jump. --login starts it at login
+  uninstall-app           remove the menu-bar app and its login item
   hook                    internal: run BY Claude Code as a hook (reads stdin);
                           writes pane state + fires the notification
   -h, --help              show this help
@@ -69,6 +72,9 @@ const usageZH = `用法:
   install-hooks [--yes]   把 gtmux 接入 Claude Code:GtmuxFocus.app +
                           ~/.claude/settings.json(Stop/Notification/UserPromptSubmit)
   uninstall-hooks         撤销 install-hooks(注销、删除 app)
+  install-app [--login]   安装菜单栏 app(Gtmux.app):实时 agent 状态 + 点击跳转。
+                          --login 设为开机自启
+  uninstall-app           删除菜单栏 app 及登录项
   hook                    内部命令:由 Claude Code 作为 hook 调用(读 stdin);
                           写入 pane 状态并触发通知
   -h, --help              显示本帮助
