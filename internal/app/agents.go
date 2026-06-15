@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -174,9 +175,8 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 // Notification for it (~/.local/share/gtmux/waiting/<pane>) and it isn't working.
 func gatherAgents() []agentPane {
 	profiles := loadProfiles()
-	dir := os.Getenv("HOME") + "/.local/share/gtmux"
-	lastFinished := readTrim(dir + "/last-finished")
-	waiting := waitingSet(dir + "/waiting")
+	lastFinished := state.ReadLastFinished()
+	waiting := state.WaitingSet()
 
 	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
 		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}"
@@ -194,7 +194,7 @@ func gatherAgents() []agentPane {
 		switch {
 		case status == "working":
 			if waiting[id] { // resumed working → clear the stale waiting mark
-				os.Remove(dir + "/waiting/" + id)
+				state.Remove(state.WaitingPath(id))
 				delete(waiting, id)
 			}
 		case waiting[id]:
@@ -231,25 +231,6 @@ func statusRank(s string) int {
 	default:
 		return 2
 	}
-}
-
-func readTrim(path string) string {
-	if b, err := os.ReadFile(path); err == nil {
-		return strings.TrimSpace(string(b))
-	}
-	return ""
-}
-
-// waitingSet reads the per-pane "waiting" marker files into a set of pane ids.
-func waitingSet(dir string) map[string]bool {
-	m := map[string]bool{}
-	entries, _ := os.ReadDir(dir)
-	for _, e := range entries {
-		if !e.IsDir() {
-			m[e.Name()] = true
-		}
-	}
-	return m
 }
 
 // agentsSummary renders "N agents · [X waiting ·] Y working · Z idle".

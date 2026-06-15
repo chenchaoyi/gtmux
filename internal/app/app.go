@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -63,6 +64,12 @@ func Run(argv []string) int {
 		return cmdFocus(args)
 	case "agents", "ag":
 		return cmdAgents(args)
+	case "hook":
+		return hook.Run(os.Stdin)
+	case "install-hooks":
+		return cmdInstallHooks(args)
+	case "uninstall-hooks":
+		return cmdUninstallHooks(args)
 	default:
 		i18n.Sae("gtmux: unknown command '"+sub+"' (try: overview | agents | restore | focus | --help)",
 			"gtmux: 未知命令 '"+sub+"'(可用:overview | agents | restore | focus | --help)")

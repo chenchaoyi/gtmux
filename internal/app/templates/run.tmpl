@@ -1,0 +1,5 @@
+#!/bin/sh
+# GtmuxFocus.app launcher — run when a Claude Code notification is clicked.
+# Jumps to the pane recorded in ~/.local/share/gtmux/last-finished. The bundle
+# hardcodes nothing: `gtmux focus --last` reads that file itself.
+exec "__GTMUX_BIN__" focus --last
