@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"encoding/json"
@@ -7,6 +7,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // Claude Code's foreground process reports its command as its version (e.g.
@@ -143,14 +146,14 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 	switch {
 	case spinner: // actively working — count regardless of foreground command
 		status = "working"
-		agent = firstNonEmpty(name, titleName, tr("agent", "agent"))
+		agent = firstNonEmpty(name, titleName, i18n.Tr("agent", "agent"))
 	case live: // agent process is alive (idle at its prompt, or just running)
 		if idle {
 			status = "idle"
 		} else {
 			status = "running"
 		}
-		agent = firstNonEmpty(name, titleName, tr("agent", "agent"))
+		agent = firstNonEmpty(name, titleName, i18n.Tr("agent", "agent"))
 	default: // plain shell with a leftover agent title → not actually running
 		return false, "", "", ""
 	}
@@ -178,7 +181,7 @@ func gatherAgents() []agentPane {
 	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
 		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}"
 	var panes []agentPane
-	for _, line := range tmuxLines("list-panes", "-a", "-F", fields) {
+	for _, line := range tmux.Lines("list-panes", "-a", "-F", fields) {
 		f := strings.SplitN(line, "\t", 7)
 		if len(f) < 7 {
 			continue
@@ -251,7 +254,7 @@ func waitingSet(dir string) map[string]bool {
 
 // agentsSummary renders "N agents · [X waiting ·] Y working · Z idle".
 func agentsSummary(panes []agentPane) string {
-	s := pl(len(panes), "agent")
+	s := i18n.Pl(len(panes), "agent")
 	if len(panes) == 0 {
 		return s
 	}
@@ -266,10 +269,10 @@ func agentsSummary(panes []agentPane) string {
 	}
 	parts := []string{}
 	if nWait > 0 {
-		parts = append(parts, fmt.Sprintf(tr("%d waiting", "%d 等输入"), nWait))
+		parts = append(parts, fmt.Sprintf(i18n.Tr("%d waiting", "%d 等输入"), nWait))
 	}
-	parts = append(parts, fmt.Sprintf(tr("%d working", "%d 运行中"), nWork))
-	parts = append(parts, fmt.Sprintf(tr("%d idle", "%d 空闲"), len(panes)-nWork-nWait))
+	parts = append(parts, fmt.Sprintf(i18n.Tr("%d working", "%d 运行中"), nWork))
+	parts = append(parts, fmt.Sprintf(i18n.Tr("%d idle", "%d 空闲"), len(panes)-nWork-nWait))
 	return s + " · " + strings.Join(parts, " · ")
 }
 
@@ -289,12 +292,12 @@ func cmdAgents(args []string) int {
 			asJSON = true
 		}
 	}
-	if !tmuxServerUp() {
+	if !tmux.ServerUp() {
 		if asJSON {
 			fmt.Println("[]")
 			return 0
 		}
-		say("No tmux server running", "没有运行中的 tmux server")
+		i18n.Say("No tmux server running", "没有运行中的 tmux server")
 		return 1
 	}
 	if asJSON {
@@ -305,35 +308,35 @@ func cmdAgents(args []string) int {
 	}
 
 	panes := gatherAgents()
-	fmt.Printf("%sgtmux %s%s — %s\n\n", cBold, tr("agents", "agent"), cReset, agentsSummary(panes))
+	fmt.Printf("%sgtmux %s%s — %s\n\n", i18n.Bold, i18n.Tr("agents", "agent"), i18n.Reset, agentsSummary(panes))
 	if len(panes) == 0 {
-		say("No coding-agent panes found.", "没有发现 coding-agent 的 pane。")
+		i18n.Say("No coding-agent panes found.", "没有发现 coding-agent 的 pane。")
 		return 0
 	}
 	for _, p := range panes {
 		glyph, color, label := statusStyle(p.status)
 		task := p.task
 		if task == "" {
-			task = cDim + "—" + cReset
+			task = i18n.Dim + "—" + i18n.Reset
 		}
 		dot := ""
 		if p.activity {
-			dot = cYellow + " •" + cReset
+			dot = i18n.Yellow + " •" + i18n.Reset
 		}
 		done := ""
 		if p.latest {
-			done = cYellow + tr("  ✓ latest", "  ✓ 最近完成") + cReset
+			done = i18n.Yellow + i18n.Tr("  ✓ latest", "  ✓ 最近完成") + i18n.Reset
 		}
 		fmt.Printf("%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s%s\n",
-			color, glyph, cReset,
-			color, padRight(label, 8), cReset,
-			cBold, padRight(p.agent, 12), cReset,
-			cBold, padRight(p.loc, 22), cReset,
-			task, dot, cDim+" "+p.paneID+cReset, done)
+			color, glyph, i18n.Reset,
+			color, i18n.PadRight(label, 8), i18n.Reset,
+			i18n.Bold, i18n.PadRight(p.agent, 12), i18n.Reset,
+			i18n.Bold, i18n.PadRight(p.loc, 22), i18n.Reset,
+			task, dot, i18n.Dim+" "+p.paneID+i18n.Reset, done)
 	}
-	fmt.Printf("\n%s%s%s\n", cDim,
-		tr("jump: gtmux focus <pane>   (e.g. gtmux focus "+panes[0].paneID+")",
-			"跳转: gtmux focus <pane>   (例如 gtmux focus "+panes[0].paneID+")"), cReset)
+	fmt.Printf("\n%s%s%s\n", i18n.Dim,
+		i18n.Tr("jump: gtmux focus <pane>   (e.g. gtmux focus "+panes[0].paneID+")",
+			"跳转: gtmux focus <pane>   (例如 gtmux focus "+panes[0].paneID+")"), i18n.Reset)
 	return 0
 }
 
@@ -351,7 +354,7 @@ func agentsJSON() int {
 	}
 	b, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
-		sae("json error: "+err.Error(), "json 错误: "+err.Error())
+		i18n.Sae("json error: "+err.Error(), "json 错误: "+err.Error())
 		return 1
 	}
 	fmt.Println(string(b))
@@ -361,12 +364,12 @@ func agentsJSON() int {
 func statusStyle(status string) (glyph, color, label string) {
 	switch status {
 	case "working":
-		return "⠿", cCyan, tr("working", "运行中")
+		return "⠿", i18n.Cyan, i18n.Tr("working", "运行中")
 	case "waiting":
-		return "⏸", cYellow, tr("waiting", "等输入")
+		return "⏸", i18n.Yellow, i18n.Tr("waiting", "等输入")
 	case "idle":
-		return "✳", cGreen, tr("idle", "空闲")
+		return "✳", i18n.Green, i18n.Tr("idle", "空闲")
 	default:
-		return "●", cYellow, tr("running", "运行中")
+		return "●", i18n.Yellow, i18n.Tr("running", "运行中")
 	}
 }

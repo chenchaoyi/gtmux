@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 const watchInterval = 1500 * time.Millisecond
@@ -34,7 +36,7 @@ func runWatch(quitOnJump bool) int {
 	p := gatherAgents()
 	m := watchModel{panes: p, prev: statusMap(p), finished: map[string]bool{}, quitOnJump: quitOnJump}
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
-		sae("watch failed: "+err.Error(), "watch 失败: "+err.Error())
+		i18n.Sae("watch failed: "+err.Error(), "watch 失败: "+err.Error())
 		return 1
 	}
 	return 0
@@ -112,24 +114,24 @@ func (m *watchModel) refresh() {
 
 func (m watchModel) View() string {
 	var b strings.Builder
-	b.WriteString(stBoldW.Render("gtmux "+tr("agents (live)", "agent(实时)")) +
+	b.WriteString(stBoldW.Render("gtmux "+i18n.Tr("agents (live)", "agent(实时)")) +
 		" — " + agentsSummary(m.panes) + "\n\n")
 
 	if len(m.panes) == 0 {
-		b.WriteString(stDimW.Render(tr("No coding-agent panes found.", "没有发现 coding-agent 的 pane。")) + "\n")
+		b.WriteString(stDimW.Render(i18n.Tr("No coding-agent panes found.", "没有发现 coding-agent 的 pane。")) + "\n")
 	}
 	for i, p := range m.panes {
 		var st lipgloss.Style
 		var glyph, label string
 		switch p.status {
 		case "working":
-			st, glyph, label = stWorking, "⠿", tr("working", "运行中")
+			st, glyph, label = stWorking, "⠿", i18n.Tr("working", "运行中")
 		case "waiting":
-			st, glyph, label = stRun, "⏸", tr("waiting", "等输入")
+			st, glyph, label = stRun, "⏸", i18n.Tr("waiting", "等输入")
 		case "idle":
-			st, glyph, label = stIdle, "✳", tr("idle", "空闲")
+			st, glyph, label = stIdle, "✳", i18n.Tr("idle", "空闲")
 		default:
-			st, glyph, label = stRun, "●", tr("running", "运行中")
+			st, glyph, label = stRun, "●", i18n.Tr("running", "运行中")
 		}
 		prefix := "  "
 		if i == m.sel {
@@ -141,19 +143,19 @@ func (m watchModel) View() string {
 		}
 		tag := ""
 		if p.latest || m.finished[p.paneID] {
-			tag = stRun.Render(tr("  ✓ done", "  ✓ 完成"))
+			tag = stRun.Render(i18n.Tr("  ✓ done", "  ✓ 完成"))
 		}
 		b.WriteString(fmt.Sprintf("%s%s %s %s %s%s%s\n",
 			prefix,
-			st.Render(glyph+" "+padRight(label, 8)),
-			stBoldW.Render(padRight(p.agent, 12)),
-			stBoldW.Render(padRight(p.loc, 22)),
+			st.Render(glyph+" "+i18n.PadRight(label, 8)),
+			stBoldW.Render(i18n.PadRight(p.agent, 12)),
+			stBoldW.Render(i18n.PadRight(p.loc, 22)),
 			task,
 			stDimW.Render(" "+p.paneID),
 			tag))
 	}
 
-	b.WriteString("\n" + stDimW.Render(tr(
+	b.WriteString("\n" + stDimW.Render(i18n.Tr(
 		"↑/↓ select · enter jump · r refresh · q quit",
 		"↑/↓ 选择 · enter 跳转 · r 刷新 · q 退出")))
 	return b.String()

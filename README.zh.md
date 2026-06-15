@@ -49,7 +49,7 @@ GTMUX_INSTALL_MIRROR=github curl -fsSL ... | bash
 ### 从源码安装
 
 ```sh
-go install github.com/chenchaoyi/gtmux@latest
+go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 ```
 
 ## 用法

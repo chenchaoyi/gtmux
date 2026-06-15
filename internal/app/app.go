@@ -1,9 +1,14 @@
-package main
+// Package app wires gtmux's commands together: it parses the global --lang flag,
+// dispatches to each subcommand, and holds the command implementations
+// (agents, overview, restore, focus, and the live watch TUI).
+package app
 
 import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // selfPath is the absolute path to this binary (for popup re-exec).
@@ -14,21 +19,23 @@ func selfPath() string {
 	return "gtmux"
 }
 
-func main() {
+// Run is the CLI entry point. It resolves the language, dispatches the
+// subcommand, and returns the process exit code.
+func Run(argv []string) int {
 	// Default language from env; a global --lang=en|zh flag overrides it.
 	if l := os.Getenv("GTMUX_LANG"); l == "zh" || l == "en" {
-		lang = l
+		i18n.SetLang(l)
 	}
 	var args []string
-	for _, a := range os.Args[1:] {
+	for _, a := range argv {
 		switch {
 		case a == "--lang=zh":
-			lang = "zh"
+			i18n.SetLang("zh")
 		case a == "--lang=en":
-			lang = "en"
+			i18n.SetLang("en")
 		case strings.HasPrefix(a, "--lang="):
-			sae("gtmux: unknown --lang value (use en|zh)", "gtmux: 无效的 --lang(可用 en|zh)")
-			os.Exit(2)
+			i18n.Sae("gtmux: unknown --lang value (use en|zh)", "gtmux: 无效的 --lang(可用 en|zh)")
+			return 2
 		default:
 			args = append(args, a)
 		}
@@ -41,24 +48,24 @@ func main() {
 		args = args[1:]
 	}
 
-	code := 0
 	switch sub {
 	case "", "-h", "--help", "help":
 		usage()
+		return 0
 	case "-v", "--version", "version":
-		fmt.Println("gtmux " + version)
+		fmt.Println("gtmux " + Version)
+		return 0
 	case "overview", "ov":
-		code = cmdOverview(args)
+		return cmdOverview(args)
 	case "restore", "re":
-		code = cmdRestore(args)
+		return cmdRestore(args)
 	case "focus", "fo":
-		code = cmdFocus(args)
+		return cmdFocus(args)
 	case "agents", "ag":
-		code = cmdAgents(args)
+		return cmdAgents(args)
 	default:
-		sae("gtmux: unknown command '"+sub+"' (try: overview | agents | restore | focus | --help)",
+		i18n.Sae("gtmux: unknown command '"+sub+"' (try: overview | agents | restore | focus | --help)",
 			"gtmux: 未知命令 '"+sub+"'(可用:overview | agents | restore | focus | --help)")
-		code = 2
+		return 2
 	}
-	os.Exit(code)
 }
