@@ -41,7 +41,8 @@ fi
 echo "==> assembling $BUNDLE"
 rm -rf "$BUNDLE"
 mkdir -p "$BUNDLE/Contents/MacOS"
-sed "s/__VERSION__/${VERSION}/g" Info.plist > "$BUNDLE/Contents/Info.plist"
+# `|` delimiter: VERSION may be a branch name with '/' (workflow_dispatch builds).
+sed "s|__VERSION__|${VERSION}|g" Info.plist > "$BUNDLE/Contents/Info.plist"
 cp "$SWIFT_BIN" "$BUNDLE/Contents/MacOS/${APP_BIN}"
 cp build/gtmux "$BUNDLE/Contents/MacOS/gtmux"
 chmod +x "$BUNDLE/Contents/MacOS/"*
