@@ -40,7 +40,11 @@ struct MenuView: View {
             footer(p)
         }
         .frame(width: Theme.Size.popoverWidth)
-        .background(VisualEffect().ignoresSafeArea())
+        .background {
+            // Vibrancy blur + the DESIGN §9 tint, so it's a proper frosted panel
+            // (not the bare blur that let the terminal bleed through as gray).
+            ZStack { VisualEffect(); p.bg }.ignoresSafeArea()
+        }
         .focusable()
         .focused($rootFocused)
         .onKeyPress(.upArrow) { move(-1); return .handled }
@@ -314,7 +318,7 @@ private struct AgentRowView: View {
 private struct VisualEffect: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let v = NSVisualEffectView()
-        v.material = .menu
+        v.material = .popover
         v.blendingMode = .behindWindow
         v.state = .active
         return v
