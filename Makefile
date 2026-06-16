@@ -11,7 +11,7 @@ build: ## Build the gtmux CLI (cgo-free) into ./$(BIN)
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN) $(PKG)
 
 menubar: ## Build the macOS menu-bar binary (needs cgo; darwin only)
-	CGO_ENABLED=1 go build -o gtmux-menubar $(MENUBAR)
+	CGO_ENABLED=1 go build -ldflags "-X main.version=$(VERSION)" -o gtmux-menubar $(MENUBAR)
 
 app: build menubar ## Build both, then assemble + install Gtmux.app (~/Applications)
 	GTMUX_MENUBAR_BIN=./gtmux-menubar ./$(BIN) install-app

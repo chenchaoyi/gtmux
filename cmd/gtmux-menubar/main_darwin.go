@@ -87,6 +87,8 @@ func onReady() {
 	newItem := systray.AddMenuItem(i18n.Tr("New session", "新建 session"), i18n.Tr("Create a tmux session + tab", "新建 tmux session + tab"))
 
 	systray.AddSeparator()
+	verItem := systray.AddMenuItem("gtmux "+version, "github.com/chenchaoyi/gtmux")
+	verItem.Disable()
 	quit := systray.AddMenuItem(i18n.Tr("Quit", "退出"), "")
 
 	// wake coalesces every "refresh now" trigger (toggle, manual, fs event).
