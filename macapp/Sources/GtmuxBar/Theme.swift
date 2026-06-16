@@ -29,7 +29,7 @@ enum Theme {
         static let rowHeightCompact: CGFloat = 28
         static let avatar: CGFloat = 30
         static let badge: CGFloat = 15
-        static let listMaxHeight: CGFloat = 360
+        static let listMaxHeight: CGFloat = 520
         static let pad: CGFloat = 7
         static let gap: CGFloat = 11
     }
