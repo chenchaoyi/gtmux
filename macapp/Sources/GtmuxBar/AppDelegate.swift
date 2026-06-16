@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var displayMode: DisplayMode { settings.displayMode }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        dbg("launched")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
@@ -48,9 +49,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }.store(in: &cancellables)
 
-        // Global hotkey ⌘⌥G opens the popover.
+        // Global hotkey ⌘⌥G opens the command palette (DESIGN §4 B); the menu-bar
+        // click opens the popover.
         hotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_G), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
-            DispatchQueue.main.async { self?.togglePopover() }
+            DispatchQueue.main.async { self?.toggleCommandPalette() }
+        }
+    }
+
+    private func toggleCommandPalette() {
+        dbg("hotkey fired → toggle command palette")
+        CommandPaletteController.shared.toggle(store: store, l10n: l10n) { agent in
+            GtmuxCLI.spawn(agent.jumpArgs())
         }
     }
 
