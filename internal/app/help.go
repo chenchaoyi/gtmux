@@ -26,9 +26,9 @@ Commands:
                           (%N) lands on that exact window+pane
     focus --last|-l       jump to the most-recently-finished agent pane
   new [name]              create a tmux session and open a Ghostty tab for it
-  install-hooks [--yes]   wire gtmux into Claude Code: GtmuxFocus.app +
-                          ~/.claude/settings.json (Stop/Notification/UserPromptSubmit)
-  uninstall-hooks         reverse install-hooks (de-register, remove the app)
+  install-hooks [--yes]   register 'gtmux hook' in ~/.claude/settings.json
+                          (Stop/Notification/UserPromptSubmit) + cache the icon
+  uninstall-hooks         reverse install-hooks (de-register the hook)
   uninstall-app           remove the menu-bar app (Gtmux.app) + its login item
                           (install it via the curl installer or macapp/build.sh)
   hook                    internal: run BY Claude Code as a hook (reads stdin);
@@ -70,9 +70,9 @@ const usageZH = `用法:
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
   new [name]              新建一个 tmux session 并为它开一个 Ghostty tab
-  install-hooks [--yes]   把 gtmux 接入 Claude Code:GtmuxFocus.app +
-                          ~/.claude/settings.json(Stop/Notification/UserPromptSubmit)
-  uninstall-hooks         撤销 install-hooks(注销、删除 app)
+  install-hooks [--yes]   在 ~/.claude/settings.json 注册 'gtmux hook'
+                          (Stop/Notification/UserPromptSubmit)并缓存图标
+  uninstall-hooks         撤销 install-hooks(注销 hook)
   uninstall-app           删除菜单栏 app(Gtmux.app)及登录项
                           (安装请用 curl 安装脚本或 macapp/build.sh)
   hook                    内部命令:由 Claude Code 作为 hook 调用(读 stdin);

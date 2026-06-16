@@ -118,7 +118,7 @@ func Run(stdin io.Reader) int {
 		Title:    "Claude Code",
 		Subtitle: session,
 		Message:  i18n.Tr("Agent finished — click to open", "Agent 结束 —— 点击打开"),
-		Activate: "com.gtmux.focus",
+		Activate: "com.gtmux.menubar", // the menu-bar app; reopen → focus --last
 		Group:    group,
 		IconPath: icon,
 	})

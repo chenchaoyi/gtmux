@@ -192,9 +192,9 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 gtmux 内核始终是数据源。CLI 保持 cgo-free,只有这个 app 是原生 Swift 构建。`gtmux new [name]`
 也是一个 CLI 命令。
 
-> 这个 app(`com.gtmux.menubar`)和通知点击目标(`GtmuxFocus.app`,`com.gtmux.focus`)是两个
-> 独立的 app,可共存。发布会附带 universal、ad-hoc 签名的 `Gtmux-<版本>-macos.zip`;安装时会
-> 去掉 quarantine 标记,首次启动不被拦。
+> 这个 app(`com.gtmux.menubar`)同时也是通知的点击目标:hook 通知 `-activate` 它,其 reopen
+> 处理会执行 `gtmux focus --last`。发布会附带 universal、ad-hoc 签名的 `Gtmux-<版本>-macos.zip`;
+> 安装时会去掉 quarantine 标记,首次启动不被拦。
 
 ## tmux 集成
 
@@ -219,16 +219,15 @@ gtmux uninstall-hooks        # 撤销
 ```
 
 `install-hooks` 会在 `~/.claude/settings.json` 的 `Stop`、`Notification`、
-`UserPromptSubmit` 事件上注册 `gtmux hook`(幂等;保留其它 hook,并先备份),生成
-`~/Applications/GtmuxFocus.app`(bundle id `com.gtmux.focus`)作为通知的点击目标,
-并缓存 Claude 图标。装了 `terminal-notifier` 通知才可点击(`brew install
+`UserPromptSubmit` 事件上注册 `gtmux hook`(幂等;保留其它 hook,并先备份),并缓存
+Claude 图标。装了 `terminal-notifier` 通知才可点击(`brew install
 terminal-notifier`);没装也会发通知,只是不可点。
 
 `gtmux hook` 是生产者 —— 由 Claude Code 调用,你不用手动跑。它纯靠事件**时机**写
 `active/<pane>`、`waiting/<pane>`、`last-finished`,并在你已经盯着该 session 的 tab
-时抑制通知。点击通知会打开 `GtmuxFocus.app`,它执行 `gtmux focus --last` 把你带到刚
-完成的那个 pane。设 `GTMUX_HOOK_DEBUG=1` 可把决策过程写到
-`~/.local/share/gtmux/hook.log`。
+时抑制通知。点击通知会 `-activate` 菜单栏 app(`com.gtmux.menubar`),它执行
+`gtmux focus --last` 把你带到刚完成的那个 pane —— 所以要保持 `Gtmux.app` 已安装才能点击跳转。
+设 `GTMUX_HOOK_DEBUG=1` 可把决策过程写到 `~/.local/share/gtmux/hook.log`。
 
 > 在用 peon-ping?`install-hooks` 会询问是否把它的 `desktop_notifications` 和
 > `terminal_tab_title` 设为 `false`(后者是必须的 —— `focus` 需要 tmux 的

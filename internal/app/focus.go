@@ -44,7 +44,7 @@ func cmdFocus(args []string) int {
 			"用法: gtmux focus <session|pane-id|--last>   (跳到那个 tab / 确切 pane)")
 		return 2
 	case "--last", "-l":
-		// Jump to the pane recorded in last-finished (GtmuxFocus.app's click target).
+		// Jump to the pane recorded in last-finished (the notification click target).
 		last := state.ReadLastFinished()
 		if last == "" {
 			i18n.Sae("No recently-finished pane recorded yet", "还没有记录最近完成的 pane")

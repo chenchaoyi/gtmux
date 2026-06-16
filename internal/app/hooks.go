@@ -2,7 +2,6 @@ package app
 
 import (
 	"bufio"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,24 +14,19 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-//go:embed templates/Info.plist
-var infoPlist string
-
-//go:embed templates/run.tmpl
-var runTmpl string
-
 // hookEvents are the Claude Code events gtmux registers for. Stop/Notification
 // fire notifications; UserPromptSubmit is state-only. (Contract — do not rename.)
 var hookEvents = []string{"Stop", "Notification", "UserPromptSubmit"}
-
-const focusBundleID = "com.gtmux.focus" // stable id; agents read last-finished
 
 const lsregister = "/System/Library/Frameworks/CoreServices.framework/" +
 	"Frameworks/LaunchServices.framework/Support/lsregister"
 
 func homeDir() string { return os.Getenv("HOME") }
 
-func focusAppPath() string { return filepath.Join(homeDir(), "Applications", "GtmuxFocus.app") }
+// legacyFocusAppPath is the retired one-shot click target (GtmuxFocus.app). The
+// menu-bar app (com.gtmux.menubar) is the notification target now; uninstall
+// still cleans this up for anyone migrating from an older install.
+func legacyFocusAppPath() string { return filepath.Join(homeDir(), "Applications", "GtmuxFocus.app") }
 
 func claudeSettingsPath() string { return filepath.Join(homeDir(), ".claude", "settings.json") }
 
@@ -40,9 +34,11 @@ func peonPingConfigPath() string {
 	return filepath.Join(homeDir(), ".claude", "hooks", "peon-ping", "config.json")
 }
 
-// cmdInstallHooks implements `gtmux install-hooks [--yes]`: generate
-// GtmuxFocus.app, cache the Claude icon, and register `gtmux hook` in
-// ~/.claude/settings.json. Idempotent and reversible (see cmdUninstallHooks).
+// cmdInstallHooks implements `gtmux install-hooks [--yes]`: cache the Claude
+// icon and register `gtmux hook` in ~/.claude/settings.json. Idempotent and
+// reversible (see cmdUninstallHooks). Notification clicks activate the menu-bar
+// app (com.gtmux.menubar), which jumps to last-finished — so it nudges you to
+// install Gtmux.app if it's missing.
 func cmdInstallHooks(args []string) int {
 	yes := false
 	for _, a := range args {
@@ -60,26 +56,24 @@ func cmdInstallHooks(args []string) int {
 	}
 	bin := selfPath()
 
-	// 1. GtmuxFocus.app — the clickable notification target.
-	if err := writeFocusApp(bin); err != nil {
-		i18n.Sae("failed to create GtmuxFocus.app: "+err.Error(), "创建 GtmuxFocus.app 失败: "+err.Error())
-		return 1
+	// Retire any legacy one-shot click target from an older install.
+	if _, err := os.Stat(legacyFocusAppPath()); err == nil {
+		runQuiet(lsregister, "-u", legacyFocusAppPath())
+		_ = os.RemoveAll(legacyFocusAppPath())
 	}
-	runQuiet(lsregister, "-f", focusAppPath()) // best-effort: resolve -activate by id
-	i18n.Say("✓ GtmuxFocus.app installed ("+focusBundleID+")", "✓ 已安装 GtmuxFocus.app ("+focusBundleID+")")
 
-	// 2. Cache the Claude icon (best-effort).
+	// 1. Cache the Claude icon (best-effort).
 	if cacheClaudeIcon() {
 		i18n.Say("✓ cached Claude icon for notifications", "✓ 已缓存 Claude 通知图标")
 	}
 
-	// 3. terminal-notifier makes the notification clickable.
+	// 2. terminal-notifier makes the notification clickable.
 	if _, err := exec.LookPath("terminal-notifier"); err != nil {
 		i18n.Say("• terminal-notifier not found — notifications won't be clickable. Install: brew install terminal-notifier",
 			"• 未找到 terminal-notifier —— 通知将不可点击。安装: brew install terminal-notifier")
 	}
 
-	// 4. Register the hook in ~/.claude/settings.json.
+	// 3. Register the hook in ~/.claude/settings.json.
 	if err := updateSettings(claudeSettingsPath(), bin, true); err != nil {
 		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败: "+err.Error())
 		return 1
@@ -87,8 +81,14 @@ func cmdInstallHooks(args []string) int {
 	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit)",
 		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit)")
 
-	// 5. peon-ping coexistence.
+	// 4. peon-ping coexistence.
 	handlePeonPing(yes)
+
+	// Notification clicks need the menu-bar app running to jump.
+	if _, err := os.Stat(gtmuxAppPath()); err != nil {
+		i18n.Say("• install the menu-bar app for click-to-jump notifications (curl installer, or 'make app')",
+			"• 安装菜单栏 app 才能点击通知跳转(用 curl 安装脚本,或 'make app')")
+	}
 
 	i18n.Say("Done. Restart your Claude Code sessions to load the hooks.",
 		"完成。重启 Claude Code 会话以加载 hook。")
@@ -96,7 +96,8 @@ func cmdInstallHooks(args []string) int {
 }
 
 // cmdUninstallHooks implements `gtmux uninstall-hooks`: de-register from
-// settings.json and remove GtmuxFocus.app. Leaves cached icon/state alone.
+// settings.json. Leaves cached icon/state and the menu-bar app alone (use
+// uninstall-app for that); cleans up any legacy GtmuxFocus.app.
 func cmdUninstallHooks(args []string) int {
 	for _, a := range args {
 		if a == "-h" || a == "--help" {
@@ -110,29 +111,13 @@ func cmdUninstallHooks(args []string) int {
 	}
 	i18n.Say("✓ de-registered 'gtmux hook' from ~/.claude/settings.json", "✓ 已从 ~/.claude/settings.json 注销 'gtmux hook'")
 
-	app := focusAppPath()
-	runQuiet(lsregister, "-u", app) // best-effort
-	if err := os.RemoveAll(app); err != nil {
-		i18n.Sae("failed to remove GtmuxFocus.app: "+err.Error(), "删除 GtmuxFocus.app 失败: "+err.Error())
-		return 1
+	// Remove the legacy one-shot click target if present (best-effort).
+	if _, err := os.Stat(legacyFocusAppPath()); err == nil {
+		runQuiet(lsregister, "-u", legacyFocusAppPath())
+		_ = os.RemoveAll(legacyFocusAppPath())
 	}
-	i18n.Say("✓ removed GtmuxFocus.app", "✓ 已删除 GtmuxFocus.app")
 	i18n.Say("Restart your Claude Code sessions to drop the hooks.", "重启 Claude Code 会话以移除 hook。")
 	return 0
-}
-
-// writeFocusApp materializes ~/Applications/GtmuxFocus.app from the embedded
-// templates, injecting the absolute gtmux path into the run script.
-func writeFocusApp(bin string) error {
-	macOS := filepath.Join(focusAppPath(), "Contents", "MacOS")
-	if err := os.MkdirAll(macOS, 0o755); err != nil {
-		return err
-	}
-	if err := os.WriteFile(filepath.Join(focusAppPath(), "Contents", "Info.plist"), []byte(infoPlist), 0o644); err != nil {
-		return err
-	}
-	run := strings.ReplaceAll(runTmpl, "__GTMUX_BIN__", bin)
-	return os.WriteFile(filepath.Join(macOS, "run"), []byte(run), 0o755)
 }
 
 // cacheClaudeIcon writes a 256px PNG of the Claude app icon to the state dir.
