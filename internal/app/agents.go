@@ -26,18 +26,26 @@ type agentProfile struct {
 	Name      string   `json:"name"`                // display label, e.g. "Claude Code"
 	Commands  []string `json:"commands"`            // pane_current_command matches
 	IdleGlyph string   `json:"idleGlyph,omitempty"` // leading rune meaning idle (e.g. "✳")
+	// Icon is an optional identity image the menu-bar app renders in the avatar
+	// (DESIGN §6). It's a hint the app resolves: a ".app" path → that app's real
+	// icon (no third-party logo is committed — it comes from the user's installed
+	// app), or an image file path. Empty → the app's neutral monogram.
+	Icon string `json:"icon,omitempty"`
 }
 
 // Built-in profiles. Extend or override via ~/.config/gtmux/agents.json
-// (a JSON array of {name, commands, idleGlyph}); user entries take precedence.
+// (a JSON array of {name, commands, idleGlyph, icon}); user entries take
+// precedence. Default icons point at the vendor's installed desktop app, so the
+// avatar shows the real official logo when that app is present — without
+// bundling any trademark.
 var builtinProfiles = []agentProfile{
-	{Name: "Claude Code", Commands: []string{"claude"}, IdleGlyph: "✳"},
-	{Name: "Codex", Commands: []string{"codex"}},
+	{Name: "Claude Code", Commands: []string{"claude"}, IdleGlyph: "✳", Icon: "/Applications/Claude.app"},
+	{Name: "Codex", Commands: []string{"codex"}, Icon: "/Applications/Codex.app"},
 	{Name: "Gemini", Commands: []string{"gemini"}},
 	{Name: "Aider", Commands: []string{"aider"}},
 	{Name: "opencode", Commands: []string{"opencode"}},
 	{Name: "Crush", Commands: []string{"crush"}},
-	{Name: "Cursor", Commands: []string{"cursor-agent", "cursor"}},
+	{Name: "Cursor", Commands: []string{"cursor-agent", "cursor"}, Icon: "/Applications/Cursor.app"},
 	{Name: "Amp", Commands: []string{"amp"}},
 }
 
@@ -51,6 +59,17 @@ func loadProfiles() []agentProfile {
 		}
 	}
 	return profiles
+}
+
+// iconFor returns the icon hint for the agent named name (first matching profile,
+// so user overrides win). "" when none is configured.
+func iconFor(name string, profiles []agentProfile) string {
+	for i := range profiles {
+		if profiles[i].Name == name {
+			return profiles[i].Icon
+		}
+	}
+	return ""
 }
 
 type agentPane struct {
@@ -69,7 +88,8 @@ type agentPane struct {
 	project    string
 	terminal   string
 	tab        string
-	activityAt int64 // epoch seconds of last activity (relative time)
+	activityAt int64  // epoch seconds of last activity (relative time)
+	icon       string // identity icon hint (.app path or image path); "" = monogram
 }
 
 // agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
@@ -92,6 +112,7 @@ type agentJSON struct {
 	Terminal   string `json:"terminal,omitempty"` // native: terminal app
 	Tab        string `json:"tab,omitempty"`      // native: terminal tab title (jump key)
 	ActivityAt int64  `json:"activity_at,omitempty"`
+	Icon       string `json:"icon,omitempty"` // identity icon hint (.app/image path)
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -230,6 +251,7 @@ func gatherAgents() []agentPane {
 			activity:   f[6] == "1",
 			latest:     id == lastFinished && status != "working" && status != "waiting",
 			source:     "tmux",
+			icon:       iconFor(agent, profiles),
 			activityAt: activityAt,
 		})
 	}
@@ -356,7 +378,7 @@ func agentsJSON() int {
 			Loc: p.loc, Agent: p.agent, Status: p.status, Task: p.task,
 			Latest: p.latest, Activity: p.activity,
 			Source: src, Project: p.project, Terminal: p.terminal, Tab: p.tab,
-			ActivityAt: p.activityAt,
+			ActivityAt: p.activityAt, Icon: p.icon,
 		})
 	}
 	b, err := json.MarshalIndent(out, "", "  ")

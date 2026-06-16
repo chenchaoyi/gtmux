@@ -73,4 +73,8 @@ over one Go core (gtmux-core is the single data source):
 | `internal/menubar/model.go`（`agents --json` 契约 / Agent shape） | 产出端 `internal/app/agents.go`（`agentJSON`）；消费端 `macapp/Sources/GtmuxBar/AgentStore.swift`（`Agent`）。 |
 | `cmd/gtmux-menubar/`（cgo systray 入口） | 已废弃；菜单栏 app 现为 `macapp/`（Swift）。systray 不再使用。 |
 
-`agents.json` 的 `icon` 字段（官方图标）尚未实现，属设计重构待办。
+`agents.json` 的 `icon` 字段（官方图标）**已实现**（v0.0.22+）：profile 的 `icon`
+经 `agents --json` 透传，菜单栏 app `AgentIcons` 解析为头像图标 —— `.app` 路径走
+`NSWorkspace` 取**用户已装应用的真实官方图标**（不在仓库内置/绘制第三方商标，符合
+§6），图片路径直接加载，亦支持 `~/.config/gtmux/icons/<agent-key>.png` 免配置投放；
+取不到时回退中性单字标。内置默认把 Claude/Codex/Cursor 指向 `/Applications/*.app`。
