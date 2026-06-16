@@ -17,8 +17,10 @@
 #   1. Confirms host is macOS arm64 / x86_64
 #   2. Resolves the release version (default: latest tag)
 #   3. Downloads the matching tarball + SHASUMS256.txt, verifies SHA256
-#   4. Installs the binary to ~/.local/bin/gtmux (atomic swap)
-#   5. Prints a PATH hint if ~/.local/bin isn't on PATH
+#   4. Installs the CLI binary to ~/.local/bin/gtmux (atomic swap)
+#   5. Installs/updates the menu-bar app (~/Applications/Gtmux.app) and launches
+#      it — skip with GTMUX_NO_APP=1
+#   6. Prints a PATH hint if ~/.local/bin isn't on PATH
 #
 # Trust: SHASUMS256.txt is always tried GitHub-direct first, so even when the
 # tarball comes from a mirror the checksum it's verified against is anchored on
@@ -40,7 +42,9 @@ fi
 
 die()  { echo "${RED}gtmux install: error:${RESET} $*" >&2; exit 1; }
 note() { echo "gtmux install: $*"; }
-step() { printf '%s[%s/4]%s %-9s %s %s✓%s\n' "$DIM" "$1" "$RESET" "$2" "$3" "$GREEN" "$RESET"; }
+step() { printf '%s[%s/%s]%s %-9s %s %s✓%s\n' "$DIM" "$1" "$STEPS" "$RESET" "$2" "$3" "$GREEN" "$RESET"; }
+# Numbered steps: 5 with the menu-bar app, 4 when GTMUX_NO_APP skips it.
+STEPS=5; [ -n "${GTMUX_NO_APP:-}" ] && STEPS=4
 
 cleanup() { [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ] && rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
@@ -105,6 +109,7 @@ validate_download() {
   case "$kind" in
     shasums) awk -v n="$TARBALL_NAME" '$2 ~ n && $1 ~ /^[0-9a-fA-F]{64}$/ {ok=1} END{exit ok?0:1}' "$file" ;;
     tarball) gzip -t "$file" 2>/dev/null ;;
+    zip)     unzip -tqq "$file" >/dev/null 2>&1 ;; # rejects an HTML landing page
     *) return 0 ;;
   esac
 }
@@ -218,8 +223,44 @@ mv -f "${BIN_DIR}/gtmux.new" "${BIN_DIR}/gtmux"
 xattr -d com.apple.quarantine "${BIN_DIR}/gtmux" 2>/dev/null || true
 step 4 "Install" "${BIN_DIR}/gtmux"
 
+# ---- menu-bar app (~/Applications/Gtmux.app) ----
+# Shipped as a separate universal, ad-hoc-signed bundle (cgo; the CLI is cgo-free).
+# It's NOT in SHASUMS256.txt (a separate CI job uploads it), so we validate the
+# zip structurally rather than by checksum. Opt out with GTMUX_NO_APP=1.
+APP_DIR="${HOME}/Applications"
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [ -z "${GTMUX_NO_APP:-}" ]; then
+  APP_ZIP="Gtmux-${NUM_VERSION}-macos.zip"
+  APP_URL="https://github.com/${REPO_SLUG}/releases/download/${VERSION}/${APP_ZIP}"
+  APP_MIRROR=""
+  if download_with_fallback "$APP_URL" "${TMP_DIR}/${APP_ZIP}" APP_MIRROR zip 0 \
+     && rm -rf "${TMP_DIR}/app" && mkdir -p "${TMP_DIR}/app" \
+     && ditto -x -k "${TMP_DIR}/${APP_ZIP}" "${TMP_DIR}/app" 2>/dev/null \
+     && [ -d "${TMP_DIR}/app/Gtmux.app" ]; then
+    mkdir -p "$APP_DIR"
+    rm -rf "${APP_DIR}/Gtmux.app.new"
+    mv "${TMP_DIR}/app/Gtmux.app" "${APP_DIR}/Gtmux.app.new"
+    # Stop a running (old) instance so the swap + relaunch picks up the new build.
+    pkill -f 'Gtmux.app/Contents/MacOS/gtmux-menubar' 2>/dev/null || true
+    rm -rf "${APP_DIR}/Gtmux.app"
+    mv "${APP_DIR}/Gtmux.app.new" "${APP_DIR}/Gtmux.app"   # same-fs rename (atomic)
+    xattr -dr com.apple.quarantine "${APP_DIR}/Gtmux.app" 2>/dev/null || true
+    "$LSREGISTER" -f "${APP_DIR}/Gtmux.app" 2>/dev/null || true
+    open "${APP_DIR}/Gtmux.app" 2>/dev/null || true
+    step 5 "Menu bar" "${APP_DIR}/Gtmux.app"
+  else
+    note "menu-bar app: download/unzip failed — CLI is installed; retry or skip with GTMUX_NO_APP=1"
+  fi
+fi
+
 # ---- PATH hint ----
 printf '\n  %sInstalled.%s  %sgtmux %s%s\n' "$BOLD" "$RESET" "$DIM" "$VERSION" "$RESET"
+if [ -z "${GTMUX_NO_APP:-}" ] && [ -d "${APP_DIR}/Gtmux.app" ]; then
+  case "$LOCALE" in
+    zh) printf '  菜单栏 app 已启动 — 看右上角的彩色圆点(左键点开)\n' ;;
+    *)  printf '  menu-bar app launched — look for the colored dot up top (left-click it)\n' ;;
+  esac
+fi
 case ":$PATH:" in
   *":${BIN_DIR}:"*)
     case "$LOCALE" in
