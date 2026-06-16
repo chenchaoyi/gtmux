@@ -7,15 +7,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     private let store = AgentStore()
+    private let l10n = L10n.shared
+    private let settings = AppSettings.shared
     private var timer: Timer?
     private var hotkey: GlobalHotkey?
     private var cancellables = Set<AnyCancellable>()
 
+    private var displayMode: DisplayMode { settings.displayMode }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.image = dotImage(AgentState.none.color)
-            button.imagePosition = .imageLeft
             button.target = self
             button.action = #selector(togglePopover)
         }
@@ -24,54 +26,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.animates = true
         popover.contentViewController = NSHostingController(
             rootView: MenuView(
-                store: store,
+                store: store, l10n: l10n,
                 onJump: { [weak self] in self?.jump($0) },
-                onAction: { [weak self] in self?.perform($0) }))
+                onAction: { [weak self] in self?.perform($0) },
+                onClose: { [weak self] in self?.popover.performClose(nil) }))
 
-        // Repaint the icon whenever the agent set changes (SwiftUI updates itself).
-        store.$agents
-            .receive(on: RunLoop.main)
+        // Repaint the status item whenever agents change.
+        store.$agents.receive(on: RunLoop.main)
             .sink { [weak self] in self?.renderIcon($0) }
             .store(in: &cancellables)
+        renderIcon([])
 
         store.refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
-            self?.store.refresh()
-        }
+        resetTimer()
 
-        // Global hotkey ⌘⌥G toggles the popover — the keyboard path we couldn't
-        // do on the old systray stack.
-        hotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_G), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
+        // Live-apply preference changes (refresh interval, status-bar display mode).
+        settings.objectWillChange.receive(on: RunLoop.main).sink { [weak self] in
+            DispatchQueue.main.async {
+                self?.resetTimer()
+                self?.renderIcon(self?.store.agents ?? [])
+            }
+        }.store(in: &cancellables)
+
+        // Global hotkey ⌥⇧G opens the popover (DESIGN §4).
+        hotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_G), modifiers: UInt32(optionKey | shiftKey)) { [weak self] in
             DispatchQueue.main.async { self?.togglePopover() }
+        }
+    }
+
+    private func resetTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: settings.refreshInterval, repeats: true) { [weak self] _ in
+            self?.store.refresh()
         }
     }
 
     private func renderIcon(_ agents: [Agent]) {
         guard let button = statusItem.button else { return }
-        button.image = dotImage(AgentState.of(agents).color)
-        let badge = store.badge
+        let empty = store.total == 0
+        let urgent = store.mostUrgent
+
+        // hide-when-idle: only show when something is waiting on you.
+        if displayMode == .hideWhenIdle {
+            statusItem.isVisible = store.waiting > 0
+            if store.waiting == 0 { return }
+        } else {
+            statusItem.isVisible = true
+        }
+
+        button.image = StatusItemGlyph.image(mostUrgent: urgent, empty: empty)
+        let badge = displayMode == .dot ? "" : store.badge
         button.title = badge.isEmpty ? "" : " \(badge)"
         button.imagePosition = badge.isEmpty ? .imageOnly : .imageLeft
     }
 
     @objc private func togglePopover() {
-        dbg("togglePopover: isShown=\(popover.isShown)")
         guard let button = statusItem.button else { return }
-        if popover.isShown {
-            popover.performClose(nil)
-            return
-        }
+        if popover.isShown { popover.performClose(nil); return }
         store.refresh()
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        dbg("popover.show called; isShown=\(popover.isShown)")
-        // LSUIElement apps must activate for the popover to take keyboard focus,
-        // which matters when it's summoned by the hotkey rather than a click.
         NSApp.activate(ignoringOtherApps: true)
+        popover.contentViewController?.view.window?.makeKey()
     }
 
     private func jump(_ agent: Agent) {
         popover.performClose(nil)
-        GtmuxCLI.spawn(["focus", agent.paneID])
+        GtmuxCLI.spawn(agent.jumpArgs())
     }
 
     private func perform(_ action: MenuAction) {
@@ -80,13 +100,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .watch:      openGhosttyWindow(running: GtmuxCLI.shellInvocation(["agents", "--watch"]))
         case .restore:    GtmuxCLI.spawn(["restore"])
         case .newSession: GtmuxCLI.spawn(["new"])
+        case .preferences: PreferencesController.shared.show(l10n: l10n)
         case .quit:       NSApp.terminate(nil)
         }
-        if action != .quit { popover.performClose(nil) }
+        if action != .quit && action != .preferences { popover.performClose(nil) }
     }
 
-    // A notification click activates this app (bundle id com.gtmux.menubar);
-    // jump to the agent that just finished — same contract as GtmuxFocus.app.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         dbg("reopen (notification click) → focus --last")
         GtmuxCLI.spawn(["focus", "--last"])

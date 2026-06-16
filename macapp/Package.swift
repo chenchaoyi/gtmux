@@ -5,7 +5,7 @@ import PackageDescription
 // gtmux CLI (`agents --json` + `focus`); gtmux-core stays the data source.
 let package = Package(
     name: "GtmuxBar",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(name: "GtmuxBar", path: "Sources/GtmuxBar")
     ]
