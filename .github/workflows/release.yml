@@ -90,7 +90,9 @@ jobs:
           set -euxo pipefail
           mkdir -p build
           for arch in arm64 amd64; do
-            CGO_ENABLED=1 GOOS=darwin GOARCH=$arch go build -o "build/menubar-$arch" ./cmd/gtmux-menubar
+            CGO_ENABLED=1 GOOS=darwin GOARCH=$arch \
+              go build -ldflags "-X main.version=${GITHUB_REF_NAME}" \
+              -o "build/menubar-$arch" ./cmd/gtmux-menubar
             CGO_ENABLED=0 GOOS=darwin GOARCH=$arch \
               go build -ldflags "-s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=${GITHUB_REF_NAME}" \
               -o "build/gtmux-$arch" ./cmd/gtmux
