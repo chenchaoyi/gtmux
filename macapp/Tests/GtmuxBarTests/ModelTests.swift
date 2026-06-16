@@ -62,7 +62,8 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(a.state, .waiting)
         XCTAssertEqual(a.source, "tmux") // default when absent
         XCTAssertFalse(a.isNative)
-        XCTAssertEqual(a.primary, "work")
+        XCTAssertEqual(a.primary, "do it")        // the agent's own session name (its title)
+        XCTAssertEqual(a.secondary, "work · %5")  // dim location: tmux session · pane
         XCTAssertEqual(a.jumpArgs(), ["focus", "%5"])
     }
 
@@ -77,6 +78,23 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(a.primary, "diting")      // project, not session (DESIGN §7)
         XCTAssertEqual(a.secondary, "Ghostty")   // terminal
         XCTAssertEqual(a.jumpArgs(), ["focus", "--terminal", "Ghostty", "--tab", "diting — zsh"])
+    }
+
+    /// Row identity: the agent's own session name (its pane title) leads; the tmux
+    /// session is the dim location. When the agent set no title, fall back to the
+    /// tmux session so the row is never blank.
+    func testAgentSessionNameLeadsRow() throws {
+        let withTitle = try JSONDecoder().decode([Agent].self, from: Data("""
+        [{"pane_id":"%22","session":"HSS Eval Framework","status":"idle",
+          "task":"评估智能化能力评测框架的整体方案"}]
+        """.utf8))[0]
+        XCTAssertEqual(withTitle.primary, "评估智能化能力评测框架的整体方案") // agent session name
+        XCTAssertEqual(withTitle.secondary, "HSS Eval Framework · %22")     // tmux location
+
+        let noTitle = try JSONDecoder().decode([Agent].self, from: Data("""
+        [{"pane_id":"%1","session":"Diting","status":"idle","task":""}]
+        """.utf8))[0]
+        XCTAssertEqual(noTitle.primary, "Diting") // falls back to the tmux session
     }
 
     // MARK: store — counts, badge, grouping, filter, search

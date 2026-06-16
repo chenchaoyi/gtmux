@@ -263,18 +263,16 @@ private struct AgentRowView: View {
             AgentAvatar(agent: agent)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 5) {
-                    Text(agent.primary).font(Theme.Font.session).foregroundStyle(p.fg).lineLimit(1)
-                    if !agent.secondary.isEmpty {
-                        Text("·").font(Theme.Font.window).foregroundStyle(p.fg3)
-                        Text(agent.secondary).font(Theme.Font.window).foregroundStyle(p.fg2).lineLimit(1)
-                    }
+                    // line 1: the agent's own session name (bold).
+                    Text(agent.primary).font(Theme.Font.session).foregroundStyle(p.fg)
+                        .lineLimit(1).truncationMode(.tail).help(agent.primary)
                     if agent.isNative { tag(l10n.tr("native", "native"), p) }
                     if agent.latest { latestPill(p) }
                     Spacer(minLength: 0)
                 }
-                Text(agent.task.isEmpty ? "—" : agent.task)
-                    .font(Theme.Font.task).foregroundStyle(p.fg2).lineLimit(1).truncationMode(.tail)
-                    .help(agent.task)
+                // line 2: where it lives — tmux session · pane (dim context).
+                Text(agent.secondary)
+                    .font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
             }
             VStack(alignment: .trailing, spacing: 3) {
                 Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()

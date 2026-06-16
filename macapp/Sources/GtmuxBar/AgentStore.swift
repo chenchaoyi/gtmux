@@ -61,13 +61,22 @@ struct Agent: Identifiable, Equatable {
     var state: Status { Status(rawValue: status) ?? .running }
     var isNative: Bool { source == "native" }
 
-    /// Primary identifier shown bold on row line 1 (DESIGN §7 table).
+    /// Row line 1 (bold): the coding agent's OWN session name — the title it sets
+    /// on its pane (what you see as the terminal title), NOT the tmux session or a
+    /// cwd-derived project. Falls back to the tmux session / native project when
+    /// the agent set no title yet.
     var primary: String {
+        if !task.isEmpty { return task }
         if isNative { return project.isEmpty ? terminal : project }
         return session.isEmpty ? loc : session
     }
-    /// Secondary identifier, dimmed on row line 1.
-    var secondary: String { isNative ? terminal : window }
+    /// Row line 2 (dim): where it lives — tmux "session · %pane", or the native
+    /// terminal. This is context for the bold agent session name above it.
+    var secondary: String {
+        if isNative { return terminal }
+        let base = session.isEmpty ? loc : session
+        return paneID.isEmpty ? base : "\(base) · \(paneID)"
+    }
 
     /// CLI args to jump to this agent (DESIGN §7): tmux by pane id, native by
     /// terminal app + tab title.
