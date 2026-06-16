@@ -28,12 +28,19 @@ final class GlobalHotkey {
                 return noErr
             },
             1, &eventType, selfPtr, &handlerRef)
-        guard installed == noErr else { return nil }
+        guard installed == noErr else {
+            dbg("hotkey: InstallEventHandler failed (\(installed))")
+            return nil
+        }
 
         let hotKeyID = EventHotKeyID(signature: OSType(0x47544D58), id: 1) // 'GTMX'
         let registered = RegisterEventHotKey(
             keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &ref)
-        guard registered == noErr else { return nil }
+        guard registered == noErr else {
+            dbg("hotkey: RegisterEventHotKey failed (\(registered))")
+            return nil
+        }
+        dbg("hotkey: registered keyCode=\(keyCode) modifiers=\(modifiers)")
     }
 
     deinit {

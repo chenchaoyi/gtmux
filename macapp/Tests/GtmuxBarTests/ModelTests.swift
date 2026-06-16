@@ -125,6 +125,17 @@ final class ModelTests: XCTestCase {
         XCTAssertFalse(AgentStore.fuzzy("zzz", in: "pica"))
     }
 
+    // MARK: command palette (DESIGN §4 B)
+
+    func testPaletteWrapNavigation() {
+        let m = PaletteModel(store: store([("a", "waiting"), ("b", "working"), ("c", "idle")]))
+        XCTAssertEqual(m.results.count, 3)
+        m.move(-1) // up from 0 wraps to last
+        XCTAssertEqual(m.selected, 2)
+        m.move(1)  // down from last wraps to first
+        XCTAssertEqual(m.selected, 0)
+    }
+
     // MARK: helpers
 
     private func hex(_ c: NSColor) -> String {
