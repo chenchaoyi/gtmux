@@ -18,8 +18,8 @@
 #   2. Resolves the release version (default: latest tag)
 #   3. Downloads the matching tarball + SHASUMS256.txt, verifies SHA256
 #   4. Installs the CLI binary to ~/.local/bin/gtmux (atomic swap)
-#   5. Installs/updates the menu-bar app (~/Applications/Gtmux.app) and launches
-#      it — skip with GTMUX_NO_APP=1
+#   5. Installs/updates the native menu-bar app (~/Applications/Gtmux.app) and
+#      launches it — skip with GTMUX_NO_APP=1, start-at-login with GTMUX_APP_LOGIN=1
 #   6. Prints a PATH hint if ~/.local/bin isn't on PATH
 #
 # Trust: SHASUMS256.txt is always tried GitHub-direct first, so even when the
@@ -224,9 +224,10 @@ xattr -d com.apple.quarantine "${BIN_DIR}/gtmux" 2>/dev/null || true
 step 4 "Install" "${BIN_DIR}/gtmux"
 
 # ---- menu-bar app (~/Applications/Gtmux.app) ----
-# Shipped as a separate universal, ad-hoc-signed bundle (cgo; the CLI is cgo-free).
-# It's NOT in SHASUMS256.txt (a separate CI job uploads it), so we validate the
-# zip structurally rather than by checksum. Opt out with GTMUX_NO_APP=1.
+# A native macOS app (Swift) shipped as a separate universal, ad-hoc-signed
+# bundle. It's NOT in SHASUMS256.txt (a separate CI job uploads it), so we
+# validate the zip structurally rather than by checksum. Opt out with
+# GTMUX_NO_APP=1; start it at login with GTMUX_APP_LOGIN=1.
 APP_DIR="${HOME}/Applications"
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 if [ -z "${GTMUX_NO_APP:-}" ]; then
@@ -240,12 +241,31 @@ if [ -z "${GTMUX_NO_APP:-}" ]; then
     mkdir -p "$APP_DIR"
     rm -rf "${APP_DIR}/Gtmux.app.new"
     mv "${TMP_DIR}/app/Gtmux.app" "${APP_DIR}/Gtmux.app.new"
-    # Stop a running (old) instance so the swap + relaunch picks up the new build.
+    # Stop a running instance (old gtmux-menubar or new GtmuxBar) so the swap +
+    # relaunch picks up the new build.
     pkill -f 'Gtmux.app/Contents/MacOS/gtmux-menubar' 2>/dev/null || true
+    pkill -f 'Gtmux.app/Contents/MacOS/GtmuxBar' 2>/dev/null || true
     rm -rf "${APP_DIR}/Gtmux.app"
     mv "${APP_DIR}/Gtmux.app.new" "${APP_DIR}/Gtmux.app"   # same-fs rename (atomic)
     xattr -dr com.apple.quarantine "${APP_DIR}/Gtmux.app" 2>/dev/null || true
     "$LSREGISTER" -f "${APP_DIR}/Gtmux.app" 2>/dev/null || true
+    # Opt-in login item (LaunchAgent) so it starts on every login.
+    if [ -n "${GTMUX_APP_LOGIN:-}" ]; then
+      LA_DIR="${HOME}/Library/LaunchAgents"; LA="${LA_DIR}/com.gtmux.menubar.plist"
+      mkdir -p "$LA_DIR"
+      cat > "$LA" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.gtmux.menubar</string>
+  <key>ProgramArguments</key><array><string>${APP_DIR}/Gtmux.app/Contents/MacOS/GtmuxBar</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><false/>
+</dict></plist>
+PLIST
+      launchctl unload "$LA" 2>/dev/null || true
+      launchctl load -w "$LA" 2>/dev/null || true
+    fi
     open "${APP_DIR}/Gtmux.app" 2>/dev/null || true
     step 5 "Menu bar" "${APP_DIR}/Gtmux.app"
   else

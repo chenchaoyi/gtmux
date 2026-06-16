@@ -6,17 +6,19 @@
 	<string>com.gtmux.menubar</string>
 	<key>CFBundleName</key>
 	<string>Gtmux</string>
+	<key>CFBundleDisplayName</key>
+	<string>Gtmux</string>
 	<key>CFBundleExecutable</key>
-	<string>gtmux-menubar</string>
+	<string>GtmuxBar</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>__VERSION__</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>LSMinimumSystemVersion</key>
-	<string>11.0</string>
+	<string>13.0</string>
 </dict>
 </plist>
