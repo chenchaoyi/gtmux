@@ -97,6 +97,24 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(noTitle.primary, "Diting") // falls back to the tmux session
     }
 
+    // MARK: agent identity icon (DESIGN §6)
+
+    func testDecodeIconField() throws {
+        let a = try JSONDecoder().decode([Agent].self, from: Data("""
+        [{"pane_id":"%1","agent":"Claude Code","status":"idle","icon":"/Applications/Claude.app"}]
+        """.utf8))[0]
+        XCTAssertEqual(a.icon, "/Applications/Claude.app")
+    }
+
+    /// No icon hint + no installed app + no drop-in file → nil, so the avatar
+    /// falls back to the neutral monogram.
+    func testAgentIconsNilWhenUnavailable() throws {
+        let a = try JSONDecoder().decode([Agent].self, from: Data("""
+        [{"pane_id":"%9","agent":"ZzzNoSuchAgent","status":"idle","icon":""}]
+        """.utf8))[0]
+        XCTAssertNil(AgentIcons.image(for: a))
+    }
+
     // MARK: store — counts, badge, grouping, filter, search
 
     private func store(_ statuses: [(String, String)]) -> AgentStore {

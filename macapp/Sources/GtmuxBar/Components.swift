@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Neutral single-char monogram for an agent (DESIGN §6). Identity is shown by a
@@ -62,26 +63,67 @@ struct StatusBadge: View {
     }
 }
 
-/// AgentAvatar — 30pt neutral tile with the agent monogram, the status badge
-/// overlaid bottom-right (DESIGN §3 row model).
+/// AgentIcons resolves an agent's identity icon (DESIGN §6). The `icon` hint from
+/// `agents --json` is either a ".app" path → that app's REAL icon (sourced from
+/// the user's installed app via NSWorkspace, so no third-party logo is committed
+/// to gtmux), or an image-file path. As a no-config convenience it also looks for
+/// ~/.config/gtmux/icons/<agent-key>.png. Returns nil → the neutral monogram.
+enum AgentIcons {
+    private static var cache: [String: NSImage] = [:]
+
+    static func image(for agent: Agent) -> NSImage? {
+        let key = agent.icon.isEmpty ? "name:\(agent.agent)" : agent.icon
+        if let hit = cache[key] { return hit }
+        guard let img = resolve(agent) else { return nil }
+        cache[key] = img
+        return img
+    }
+
+    private static func resolve(_ agent: Agent) -> NSImage? {
+        let fm = FileManager.default
+        let hint = agent.icon
+        if !hint.isEmpty, fm.fileExists(atPath: hint) {
+            if hint.hasSuffix(".app") { return NSWorkspace.shared.icon(forFile: hint) }
+            return NSImage(contentsOfFile: hint)
+        }
+        // no-config drop-in: ~/.config/gtmux/icons/<agent-key>.png
+        let slug = agent.agent.lowercased().replacingOccurrences(of: " ", with: "-")
+        let dropped = "\(NSHomeDirectory())/.config/gtmux/icons/\(slug).png"
+        if fm.fileExists(atPath: dropped) { return NSImage(contentsOfFile: dropped) }
+        return nil
+    }
+}
+
+/// AgentAvatar — 30pt tile showing the agent's real icon when available, else a
+/// neutral monogram, with the status badge overlaid bottom-right (DESIGN §3/§6).
 struct AgentAvatar: View {
     let agent: Agent
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        let p = Theme.Palette.of(scheme)
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(scheme == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.05))
+        avatar
             .frame(width: Theme.Size.avatar, height: Theme.Size.avatar)
-            .overlay(
-                Text(agentMonogram(agent.agent))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(p.fg2))
             .overlay(alignment: .bottomTrailing) {
                 StatusBadge(status: agent.state)
                     .overlay(badgeRing)
                     .offset(x: 4, y: 4)
             }
+    }
+
+    @ViewBuilder private var avatar: some View {
+        let p = Theme.Palette.of(scheme)
+        if let icon = AgentIcons.image(for: agent) {
+            Image(nsImage: icon)
+                .resizable().interpolation(.high).scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        } else {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(scheme == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.05))
+                .overlay(
+                    Text(agentMonogram(agent.agent))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(p.fg2))
+        }
     }
 
     private var badgeRing: some View {
