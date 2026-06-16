@@ -54,6 +54,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_G), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
             DispatchQueue.main.async { self?.toggleCommandPalette() }
         }
+
+        // Test seam: GTMUXBAR_SHOW_PALETTE auto-opens the palette so it can be
+        // exercised without a (flaky) synthetic global keystroke. No-op normally.
+        if ProcessInfo.processInfo.environment["GTMUXBAR_SHOW_PALETTE"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.toggleCommandPalette()
+            }
+        }
     }
 
     private func toggleCommandPalette() {
