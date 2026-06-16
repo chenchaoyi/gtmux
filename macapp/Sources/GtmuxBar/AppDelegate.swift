@@ -48,8 +48,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }.store(in: &cancellables)
 
-        // Global hotkey ⌥⇧G opens the popover (DESIGN §4).
-        hotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_G), modifiers: UInt32(optionKey | shiftKey)) { [weak self] in
+        // Global hotkey ⌘⌥G opens the popover.
+        hotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_G), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
             DispatchQueue.main.async { self?.togglePopover() }
         }
     }
@@ -84,8 +84,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem.button else { return }
         if popover.isShown { popover.performClose(nil); return }
         store.refresh()
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        // Activate FIRST: a hotkey press from another app must make gtmux active,
+        // else the transient popover dismisses immediately.
         NSApp.activate(ignoringOtherApps: true)
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }
 
