@@ -31,6 +31,40 @@ func jumpPane(paneID string) {
 // A tmux pane id (%N) first selects that window+pane inside its session (so the
 // session displays that exact pane), then its Ghostty tab is brought forward.
 func cmdFocus(args []string) int {
+	// Native-agent jump (DESIGN §7): gtmux focus --terminal <app> --tab <title>.
+	var termApp, tabTitle string
+	var rest []string
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--terminal":
+			if i+1 < len(args) {
+				termApp = args[i+1]
+				i++
+			}
+		case "--tab":
+			if i+1 < len(args) {
+				tabTitle = args[i+1]
+				i++
+			}
+		default:
+			rest = append(rest, args[i])
+		}
+	}
+	if termApp != "" && tabTitle != "" {
+		res, err := ghostty.FocusTerminalTab(termApp, tabTitle)
+		switch {
+		case res == "ok" || (err == nil && res == ""):
+			return 0
+		case res == "notfound":
+			i18n.Sae("No tab titled '"+tabTitle+"' in "+termApp, "在 "+termApp+" 里没有标题为 '"+tabTitle+"' 的 tab")
+			return 1
+		default:
+			i18n.Sae("AppleScript failed (needs Automation permission)", "AppleScript 执行失败(需要自动化权限)")
+			return 1
+		}
+	}
+	args = rest
+
 	target := ""
 	if len(args) > 0 {
 		target = args[0]

@@ -36,6 +36,24 @@ func TestShellQuote(t *testing.T) {
 	}
 }
 
+func TestGhosttyTabScript(t *testing.T) {
+	s := ghosttyTabScript("diting — zsh")
+	for _, w := range []string{
+		`tell application "Ghostty"`,
+		`if name of t is "diting — zsh" then`,
+		"select tab t",
+		"end tell",
+	} {
+		if !strings.Contains(s, w) {
+			t.Errorf("ghosttyTabScript missing %q\n--- script ---\n%s", w, s)
+		}
+	}
+	// quotes in a tab title are escaped into the AppleScript literal.
+	if got := ghosttyTabScript(`a"b`); !strings.Contains(got, `a\"b`) {
+		t.Errorf("ghosttyTabScript did not escape quotes: %s", got)
+	}
+}
+
 func TestWindowScript(t *testing.T) {
 	s := windowScript(`/Apps/Gtmux.app/Contents/MacOS/gtmux overview --hold`)
 	for _, w := range []string{
