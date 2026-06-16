@@ -49,6 +49,7 @@ enum Theme {
 
     // MARK: popover palette (DESIGN §9) — resolved per color scheme
     struct Palette {
+        let bg: Color // tint over the vibrancy blur (DESIGN §9)
         let fg: Color
         let fg2: Color
         let fg3: Color
@@ -59,6 +60,7 @@ enum Theme {
         static func of(_ scheme: ColorScheme) -> Palette {
             if scheme == .dark {
                 return Palette(
+                    bg: Color(hex: 0x1C1C1F, opacity: 0.60),
                     fg: Color(white: 1, opacity: 0.95),
                     fg2: Color(red: 235/255, green: 235/255, blue: 245/255, opacity: 0.62),
                     fg3: Color(red: 235/255, green: 235/255, blue: 245/255, opacity: 0.34),
@@ -67,6 +69,7 @@ enum Theme {
                     waitingRowTint: Color(hex: 0xEF4444, opacity: 0.08))
             }
             return Palette(
+                bg: Color(hex: 0xFCFCFD, opacity: 0.72),
                 fg: Color(hex: 0x1D1D1F),
                 fg2: Color(red: 60/255, green: 60/255, blue: 67/255, opacity: 0.62),
                 fg3: Color(red: 60/255, green: 60/255, blue: 67/255, opacity: 0.34),
