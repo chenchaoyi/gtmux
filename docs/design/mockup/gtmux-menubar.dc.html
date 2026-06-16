@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #E9E9EC;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .gt-mono { font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace; }
+  .gt-scroll::-webkit-scrollbar { width: 8px; }
+  .gt-scroll::-webkit-scrollbar-thumb { background: rgba(140,140,150,0.4); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  .gt-scroll::-webkit-scrollbar-track { background: transparent; }
+  @keyframes gtpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
+  @keyframes gtbreath { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes gtjump { 0% { opacity: 0; transform: translateY(4px) scale(0.96); } 12% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
+  .gtjump { animation: gtjump 1.6s ease forwards; }
+</style>
+</helmet>
+
+<div style="max-width: 1280px; margin: 0 auto; padding: 40px 36px 96px;">
+
+  <!-- ============ TITLE BLOCK ============ -->
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 10px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 14px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #EF4444;"></span>
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #06B6D4;"></span>
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #22C55E;"></span>
+        <span class="gt-mono" style="font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #8A8A8E; margin-left: 4px;">gtmux · menu-bar app</span>
+      </div>
+      <h1 style="margin: 0; font-size: 34px; line-height: 1.08; font-weight: 700; letter-spacing: -0.5px; color: #1d1d1f;">tmux 与 coding agent 的<br>菜单栏雷达</h1>
+      <p style="margin: 12px 0 0; max-width: 640px; font-size: 15px; line-height: 1.55; color: #6b6b70;">谁在等你、谁在跑、谁空闲，一眼看清；点一行直达对应的 tmux pane。NSStatusItem · NSPopover · SwiftUI；深浅色、中英、VoiceOver。</p>
+    </div>
+    <div class="gt-mono" style="text-align: right; font-size: 11px; line-height: 1.7; color: #9a9aa0;">
+      <div>annotated spec + live prototype</div>
+      <div>designed by {{ credit }}</div>
+    </div>
+  </div>
+
+  <!-- legend -->
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 4px;">
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:6px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:2px;"><span style="width:2.5px;height:9px;background:#fff;border-radius:1.5px;"></span><span style="width:2.5px;height:9px;background:#fff;border-radius:1.5px;"></span></span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">waiting · 等你输入</div><div style="font-size:11px;color:#9a9aa0;">双竖线 · 被你卡住，最紧急</div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;"><span style="width:11px;height:11px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;"></span></span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">working · 运行中</div><div style="font-size:11px;color:#9a9aa0;">加载环 · 忙着，别打扰</div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;line-height:1;">✓</span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">idle · 空闲</div><div style="font-size:11px;color:#9a9aa0;">对勾 · 这轮跑完，你的回合</div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:50%;background:#8E8E93;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#fff;"></span></span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">running · 待命</div><div style="font-size:11px;color:#9a9aa0;">小圆点 · 在 prompt 静默</div></div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 00: BRAND & AGENT IDENTITY (exploration) ============ -->
+  <div style="margin-top: 56px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">00</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">品牌与 agent 标识 — 探索</h2>
+      <span style="font-size:10.5px; color:#9a6b00; background:#FFF3D6; border-radius:5px; padding:2px 8px; font-weight:600;">待你拍板</span>
+    </div>
+    <p style="margin:0 0 22px; max-width:740px; font-size:13.5px; line-height:1.5; color:#7a7a80;">两个开放问题：(1) gtmux 该有怎样的标记？(2) 要不要区分 agent 类型？下面三个 logo 方向 + 三种 agent 标识方案，挑一个我就铺到所有表面。</p>
+
+    <!-- LOGO CONCEPTS -->
+    <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">app mark · 三个方向</div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+      <!-- Concept 1: Radar -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;"><span style="font-size:13px; font-weight:680;">A · Radar scope</span><span style="font-size:10px; color:#6b6b70; background:#F1F1F4; border-radius:4px; padding:1px 7px; font-weight:600;">雷达隐喻</span></div>
+        <div style="display:flex; align-items:center; gap:16px;">
+          <!-- app icon -->
+          <div style="position:relative; width:64px; height:64px; border-radius:15px; background:radial-gradient(120% 120% at 30% 20%, #20355f, #0c1626); box-shadow:0 6px 16px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(255,255,255,0.08); overflow:hidden;">
+            <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:46px; height:46px; border-radius:50%; border:1px solid rgba(6,182,212,0.35);"></div>
+            <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:28px; height:28px; border-radius:50%; border:1px solid rgba(6,182,212,0.3);"></div>
+            <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:11px; height:11px; border-radius:50%; border:1px solid rgba(6,182,212,0.4);"></div>
+            <div style="position:absolute; left:50%; top:50%; width:30px; height:1px; background:linear-gradient(90deg, rgba(6,182,212,0.7), transparent); transform-origin:left center; transform:rotate(-38deg);"></div>
+            <div style="position:absolute; left:74%; top:30%; width:8px; height:8px; border-radius:50%; background:#EF4444; box-shadow:0 0 8px rgba(239,68,68,0.8);"></div>
+          </div>
+          <!-- menu-bar + wordmark -->
+          <div style="flex:1;">
+            <div style="display:inline-flex; align-items:center; gap:5px; background:#26262A; border-radius:6px; padding:4px 8px; margin-bottom:10px;">
+              <span style="position:relative; width:15px; height:15px; display:inline-block;"><span style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,255,255,0.5);"></span><span style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:5px; height:5px; border-radius:50%; border:1px solid rgba(255,255,255,0.6);"></span><span style="position:absolute; right:0; top:1px; width:5px; height:5px; border-radius:50%; background:#EF4444;"></span></span>
+              <span style="font-size:11px; font-weight:680; color:#fff;">2</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:7px;"><span style="position:relative; width:18px; height:18px; display:inline-block;"><span style="position:absolute; inset:0; border-radius:50%; border:1.5px solid #06B6D4; opacity:0.5;"></span><span style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:7px; height:7px; border-radius:50%; border:1.5px solid #06B6D4; opacity:0.7;"></span><span style="position:absolute; right:0; top:1px; width:5px; height:5px; border-radius:50%; background:#EF4444;"></span></span><span style="font-size:17px; font-weight:700; letter-spacing:-0.3px; color:#1d1d1f;">gtmux</span></div>
+          </div>
+        </div>
+        <p style="margin:14px 0 0; font-size:11.5px; line-height:1.5; color:#7a7a80;">呼应产品自我定位「always-visible radar」。中心 blip 取最紧急状态色 → 活的标记。最独特、最不像红绿灯。</p>
+      </div>
+
+      <!-- Concept 2: Cluster -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;"><span style="font-size:13px; font-weight:680;">B · Blip cluster</span><span style="font-size:10px; color:#6b6b70; background:#F1F1F4; border-radius:4px; padding:1px 7px; font-weight:600;">最小改动</span></div>
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="position:relative; width:64px; height:64px; border-radius:15px; background:linear-gradient(160deg,#fafafa,#ededf0); box-shadow:0 6px 16px rgba(0,0,0,0.12), inset 0 0 0 0.5px rgba(0,0,0,0.05);">
+            <span style="position:absolute; left:20px; top:22px; width:13px; height:13px; border-radius:50%; background:#EF4444;"></span>
+            <span style="position:absolute; left:36px; top:32px; width:10px; height:10px; border-radius:50%; background:#06B6D4;"></span>
+            <span style="position:absolute; left:24px; top:40px; width:8px; height:8px; border-radius:50%; background:#22C55E;"></span>
+          </div>
+          <div style="flex:1;">
+            <div style="display:inline-flex; align-items:center; gap:5px; background:#26262A; border-radius:6px; padding:4px 8px; margin-bottom:10px;"><span style="display:inline-flex; gap:2px;"><span style="width:5px;height:5px;border-radius:50%;background:#EF4444;"></span><span style="width:5px;height:5px;border-radius:50%;background:#06B6D4;"></span><span style="width:5px;height:5px;border-radius:50%;background:#22C55E;"></span></span><span style="font-size:11px; font-weight:680; color:#fff;">2</span></div>
+            <div style="display:flex; align-items:center; gap:7px;"><span style="display:inline-flex; align-items:flex-end; gap:2px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF4444;"></span><span style="width:5px;height:5px;border-radius:50%;background:#06B6D4;"></span><span style="width:4px;height:4px;border-radius:50%;background:#22C55E;"></span></span><span style="font-size:17px; font-weight:700; letter-spacing:-0.3px; color:#1d1d1f;">gtmux</span></div>
+          </div>
+        </div>
+        <p style="margin:14px 0 0; font-size:11.5px; line-height:1.5; color:#7a7a80;">现有三点，但错落成「雷达上的光点」而非一排。保留调色板贯穿。比红绿灯好，但仍较通用。</p>
+      </div>
+
+      <!-- Concept 3: Pane grid -->
+      <div style="background:#fff; border:1.5px solid #06B6D4; border-radius:14px; padding:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;"><span style="font-size:13px; font-weight:680;">C · Pane grid</span><span style="font-size:10px; color:#fff; background:#06B6D4; border-radius:4px; padding:1px 7px; font-weight:700;">★ 已选定</span></div>
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:64px; height:64px; border-radius:15px; background:#0f1115; box-shadow:0 6px 16px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(255,255,255,0.08); padding:13px;">
+            <div style="width:100%; height:100%; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:3px;">
+              <div style="background:rgba(255,255,255,0.14); border-radius:3px;"></div>
+              <div style="background:#06B6D4; border-radius:3px; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:9px; color:#0f1115; font-weight:700;">▸</span></div>
+              <div style="background:rgba(255,255,255,0.14); border-radius:3px; grid-column:span 2;"></div>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <div style="display:inline-flex; align-items:center; gap:5px; background:#26262A; border-radius:6px; padding:4px 8px; margin-bottom:10px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:13px; height:13px;"><span style="background:rgba(255,255,255,0.4);border-radius:1px;"></span><span style="background:#EF4444;border-radius:1px;"></span><span style="background:rgba(255,255,255,0.4);border-radius:1px;grid-column:span 2;"></span></span><span style="font-size:11px; font-weight:680; color:#fff;">2</span></div>
+            <div style="display:flex; align-items:center; gap:7px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:16px; height:16px;"><span style="background:#d4d4d8;border-radius:1px;"></span><span style="background:#06B6D4;border-radius:1px;"></span><span style="background:#d4d4d8;border-radius:1px;grid-column:span 2;"></span></span><span style="font-size:17px; font-weight:700; letter-spacing:-0.3px; color:#1d1d1f;">gtmux</span></div>
+          </div>
+        </div>
+        <p style="margin:14px 0 0; font-size:11.5px; line-height:1.5; color:#7a7a80;">直接画 tmux 的 pane 网格，一个高亮 = 当前焦点。最贴近底层，但弹层里和「分区」概念略有重复。</p>
+      </div>
+    </div>
+
+    <!-- AGENT IDENTITY -->
+    <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin:26px 0 12px;">agent identity · 要不要区分 agent？</div>
+    <div style="display:grid; grid-template-columns:1.05fr 1.05fr 1fr; gap:14px;">
+      <!-- V1 current -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px;">
+        <div style="font-size:12.5px; font-weight:660; margin-bottom:3px;">现状 · 中性单字</div>
+        <div style="font-size:11px; color:#9a9aa0; margin-bottom:12px; line-height:1.4;">monogram，识别靠 tooltip。</div>
+        <div style="border-radius:10px; background:#1C1C1F; padding:5px 6px;">
+          <div style="display:flex; align-items:center; gap:9px; padding:6px 7px;"><div style="width:26px;height:26px;border-radius:50%;background:rgba(6,182,212,0.16);color:#27C7E6;display:flex;align-items:center;justify-content:center;font-size:12px;">⠿</div><span style="width:15px;height:15px;border-radius:4px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:8.5px;font-weight:680;display:flex;align-items:center;justify-content:center;">Cx</span><span style="font-weight:590;font-size:12.5px;color:#fff;">api-gateway</span></div>
+          <div style="display:flex; align-items:center; gap:9px; padding:6px 7px;"><div style="width:26px;height:26px;border-radius:50%;background:rgba(34,197,94,0.16);color:#34D26B;display:flex;align-items:center;justify-content:center;font-size:12px;">✳</div><span style="width:15px;height:15px;border-radius:4px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:8.5px;font-weight:680;display:flex;align-items:center;justify-content:center;">C</span><span style="font-weight:590;font-size:12.5px;color:#fff;">Rodi</span></div>
+        </div>
+      </div>
+      <!-- V2 name label (recommended) -->
+      <div style="background:#fff; border:1.5px solid #22C55E; border-radius:14px; padding:16px;">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:3px;"><span style="font-size:12.5px; font-weight:660;">+ agent 名标签</span><span style="font-size:10px; color:#fff; background:#22C55E; border-radius:4px; padding:1px 6px; font-weight:700;">★ 推荐</span></div>
+        <div style="font-size:11px; color:#9a9aa0; margin-bottom:12px; line-height:1.4;">第二行加暗色 agent 名，零额外颜色。</div>
+        <div style="border-radius:10px; background:#1C1C1F; padding:5px 6px;">
+          <div style="display:flex; align-items:center; gap:9px; padding:5px 7px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(6,182,212,0.16);color:#27C7E6;display:flex;align-items:center;justify-content:center;font-size:13px;">⠿</div><div style="min-width:0;"><div style="font-weight:590;font-size:12.5px;color:#fff;">api-gateway</div><div style="font-size:11px;color:rgba(235,235,245,0.55);"><span style="color:rgba(235,235,245,0.78);font-weight:560;">Codex</span> · Refactoring auth</div></div></div>
+          <div style="display:flex; align-items:center; gap:9px; padding:5px 7px;"><div style="width:28px;height:28px;border-radius:50%;background:rgba(34,197,94,0.16);color:#34D26B;display:flex;align-items:center;justify-content:center;font-size:13px;">✳</div><div style="min-width:0;"><div style="font-weight:590;font-size:12.5px;color:#fff;">Rodi</div><div style="font-size:11px;color:rgba(235,235,245,0.55);"><span style="color:rgba(235,235,245,0.78);font-weight:560;">Claude Code</span> · feature dev</div></div></div>
+        </div>
+        <div style="font-size:10.5px; color:#22A34E; margin-top:9px;">偏好设置里可开关「显示 agent 名」。</div>
+      </div>
+      <!-- V3 colored (not recommended) -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px;">
+        <div style="display:flex; align-items:center; gap:7px; margin-bottom:3px;"><span style="font-size:12.5px; font-weight:660;">给 agent 上色</span><span style="font-size:10px; color:#b42318; background:#FEE4E2; border-radius:4px; padding:1px 6px; font-weight:600;">不建议</span></div>
+        <div style="font-size:11px; color:#9a9aa0; margin-bottom:12px; line-height:1.4;">每个 agent 一个品牌色 → 和状态色打架。</div>
+        <div style="border-radius:10px; background:#1C1C1F; padding:5px 6px;">
+          <div style="display:flex; align-items:center; gap:9px; padding:6px 7px;"><div style="width:26px;height:26px;border-radius:7px;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">Cx</div><span style="font-weight:590;font-size:12.5px;color:#fff;">api-gateway</span><span style="margin-left:auto;width:8px;height:8px;border-radius:2px;background:#EF4444;"></span></div>
+          <div style="display:flex; align-items:center; gap:9px; padding:6px 7px;"><div style="width:26px;height:26px;border-radius:7px;background:#ea580c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">C</div><span style="font-weight:590;font-size:12.5px;color:#fff;">Rodi</span><span style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:#22C55E;"></span></div>
+        </div>
+        <div style="font-size:10.5px; color:#b42318; margin-top:9px;">紫/橙抢戏，红=等待的紧急感被稀释。</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; background:#F4F8FF; border:1px solid rgba(10,90,200,0.15); border-radius:12px; padding:14px 17px;">
+      <div style="font-size:12.5px; font-weight:660; color:#0a5ac8; margin-bottom:5px;">已定方向</div>
+      <div style="font-size:12.5px; line-height:1.6; color:#3a4a60;"><b>Logo = C（pane 网格）</b>——已铺到 popover 头部、首次运行、空状态、快切面板；高亮那一格用品牌青。三色调色板降为辅助母题。<br><b>Agent 身份</b>：行首是 <b>agent 头像</b>（中性）+ 右下角状态徽章（颜色+形状双编码），颜色仍只留给状态。头像里现为原创中性字标——<b>真实的 Claude / Codex / Gemini logo 是各家商标，不能直接绘制</b>；但系统预留接口：<span class="gt-mono" style="font-size:11px;">agents.json</span> 加一个 <span class="gt-mono" style="font-size:11px;">icon</span> 字段，app 运行时按各家品牌规范加载官方图标（仓库里已有缓存 Claude 图标的先例）。<br><b>原生终端</b>：行模型已泛化——tmux 是 <b>session</b>(主)·<b>window</b>(次)；非 tmux 的原生终端是 <b>项目/cwd</b>(主)·<b>终端名</b>(次)，带一个 <span style="font-size:10px; border:0.5px solid rgba(0,0,0,0.2); border-radius:3px; padding:0 3px;">native</span> 标记，跳转改为聚焦对应终端标签。可在 01 原型里看到真实的 native 行。</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION: INTERACTIVE POPOVER ============ -->
+  <div style="margin-top: 56px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">01</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Popover — 可交互原型</h2>
+    </div>
+    <p style="margin:0 0 18px; max-width:680px; font-size:13.5px; line-height:1.5; color:#7a7a80;">点击切换场景 / 深浅色 / 语言。把鼠标移到列表上，或点进卡片用 <span class="gt-mono" style="font-size:12px;">↑ ↓</span> 移动、<span class="gt-mono" style="font-size:12px;">⏎</span> 跳转、<span class="gt-mono" style="font-size:12px;">⎋</span> 退出搜索。分区顺序固定：需要你 → 运行中 → 空闲。</p>
+
+    <!-- control strip -->
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:22px;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:11px; color:#9a9aa0; text-transform:uppercase; letter-spacing:0.6px;">agents</span>
+        <div style="display:flex; gap:2px; background:#DCDCE0; padding:3px; border-radius:9px;">
+          <sc-for list="{{ segScenario }}" as="s" hint-placeholder-count="4">
+            <button onClick="{{ s.on }}" style="border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:5px 12px; border-radius:7px; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.sh }};">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:11px; color:#9a9aa0; text-transform:uppercase; letter-spacing:0.6px;">theme</span>
+        <div style="display:flex; gap:2px; background:#DCDCE0; padding:3px; border-radius:9px;">
+          <sc-for list="{{ segTheme }}" as="s" hint-placeholder-count="2">
+            <button onClick="{{ s.on }}" style="border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:5px 13px; border-radius:7px; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.sh }};">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:11px; color:#9a9aa0; text-transform:uppercase; letter-spacing:0.6px;">lang</span>
+        <div style="display:flex; gap:2px; background:#DCDCE0; padding:3px; border-radius:9px;">
+          <sc-for list="{{ segLang }}" as="s" hint-placeholder-count="2">
+            <button onClick="{{ s.on }}" style="border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:5px 13px; border-radius:7px; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.sh }};">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="gt-mono" style="font-size:11px; color:#a8a8ae; margin-left:auto;">↑↓ navigate · ⏎ jump · ⎋ close · ⌥⇧G hotkey</div>
+    </div>
+
+    <!-- wallpaper + popover -->
+    <div style="display:grid; grid-template-columns: minmax(0,1fr) 270px; gap:28px; align-items:start;">
+      <div style="position:relative; border-radius:18px; overflow:hidden; background:{{ T.wall }}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(0,0,0,0.18); min-height:600px;">
+        <!-- menu bar -->
+        <div style="position:relative; height:26px; display:flex; align-items:center; gap:18px; padding:0 14px; background:{{ T.barBg }}; -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); color:{{ T.barText }}; font-size:12.5px; z-index:2;">
+          <span style="font-weight:680;">Ghostty</span>
+          <span style="opacity:0.66;">Shell</span><span style="opacity:0.66;">Edit</span><span style="opacity:0.66;">View</span><span style="opacity:0.66;">Window</span>
+          <!-- notch -->
+          <div style="position:absolute; left:50%; top:0; transform:translateX(-50%); width:150px; height:26px; background:#000; border-radius:0 0 10px 10px;"></div>
+          <div style="flex:1;"></div>
+          <span class="gt-mono" style="opacity:0.85;">⌕</span>
+          <span class="gt-mono" style="opacity:0.85;">◫</span>
+          <!-- gtmux status item (selected) -->
+          <div style="display:flex; align-items:center; gap:4px; background:{{ T.barSel }}; padding:2px 7px; border-radius:5px;">
+            <span style="width:8px; height:8px; border-radius:2.5px; background:#EF4444; display:inline-block; box-shadow:0 0 0 2px {{ T.barBg }};"></span>
+            <span style="font-weight:680; font-size:11.5px;">1</span>
+          </div>
+          <span style="opacity:0.9; font-variant-numeric:tabular-nums;">Mon Jun 16  14:32</span>
+        </div>
+
+        <!-- popover -->
+        <div style="position:absolute; top:32px; right:16px; width:320px; z-index:3;">
+          <!-- arrow -->
+          <div style="position:absolute; top:-6px; right:46px; width:14px; height:14px; background:{{ T.bg }}; -webkit-backdrop-filter:blur(28px) saturate(180%); backdrop-filter:blur(28px) saturate(180%); transform:rotate(45deg); border-top:0.5px solid {{ T.border }}; border-left:0.5px solid {{ T.border }};"></div>
+          <div tabindex="0" ref="{{ setRef }}" onKeyDown="{{ onKey }}" style="position:relative; outline:none; border-radius:13px; background:{{ T.bg }}; -webkit-backdrop-filter:blur(28px) saturate(180%); backdrop-filter:blur(28px) saturate(180%); box-shadow:{{ T.shadow }}; border:0.5px solid {{ T.border }}; color:{{ T.fg }}; overflow:hidden;">
+
+            <!-- header -->
+            <div style="padding:11px 12px 9px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:15px; height:15px;">
+                  <span style="background:{{ T.fg3 }}; border-radius:2px;"></span>
+                  <span style="background:#06B6D4; border-radius:2px;"></span>
+                  <span style="background:{{ T.fg3 }}; border-radius:2px; grid-column:span 2;"></span>
+                </span>
+                <span style="font-weight:700; font-size:13px; letter-spacing:0.2px; color:{{ T.fg }};">gtmux</span>
+                <div style="flex:1;"></div>
+                <button onClick="{{ toggleWaitingOnly }}" title="{{ lblWaitingOnly }}" style="border:none; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:4px; font-size:11px; font-weight:560; padding:3px 8px; border-radius:6px; background:{{ woBg }}; color:{{ woFg }};">⏷ {{ lblWaitingOnly }}</button>
+                <button onClick="{{ toggleSearch }}" title="search" style="border:none; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:{{ searchBtnBg }}; color:{{ searchBtnFg }}; font-size:13px;">⌕</button>
+              </div>
+
+              <sc-if value="{{ searchMode }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:9px; display:flex; align-items:center; gap:7px; background:{{ T.searchBg }}; border-radius:8px; padding:6px 9px;">
+                  <span style="color:{{ T.fg3 }}; font-size:13px;">⌕</span>
+                  <input value="{{ search }}" onChange="{{ onSearchInput }}" placeholder="{{ lblSearchPlaceholder }}" style="flex:1; border:none; outline:none; background:transparent; color:{{ T.fg }}; font-family:inherit; font-size:13px; min-width:0;" />
+                  <span class="gt-mono" style="font-size:10px; color:{{ T.fg3 }}; border:0.5px solid {{ T.border }}; border-radius:4px; padding:1px 4px;">esc</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ notSearch }}" hint-placeholder-val="{{ true }}">
+                <div style="margin-top:7px; font-size:12px; color:{{ T.fg2 }};">{{ summary }}</div>
+              </sc-if>
+            </div>
+
+            <div style="height:0.5px; background:{{ T.divider }};"></div>
+
+            <!-- list -->
+            <div class="gt-scroll" style="max-height:360px; overflow-y:auto; padding:5px 7px 7px;">
+              <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:30px 18px 34px; text-align:center;">
+                  <div style="width:46px; height:46px; margin:0 auto 14px; border-radius:50%; border:2px dashed {{ T.fg3 }}; display:flex; align-items:center; justify-content:center; color:{{ T.fg3 }}; font-size:18px;">✳</div>
+                  <div style="font-size:13.5px; font-weight:600; color:{{ T.fg }};">{{ emTitle }}</div>
+                  <div style="font-size:12px; color:{{ T.fg2 }}; margin-top:5px; line-height:1.45;">{{ emSub }}</div>
+                  <div class="gt-mono" style="display:inline-block; margin-top:13px; font-size:11.5px; color:{{ T.fg }}; background:{{ T.searchBg }}; border-radius:7px; padding:7px 11px;">{{ emCmd }}</div>
+                </div>
+              </sc-if>
+
+              <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+                <div style="display:flex; align-items:center; gap:8px; padding:9px 8px 3px;">
+                  <span style="font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:{{ g.labelColor }};">{{ g.label }}</span>
+                  <span style="font-size:11px; color:{{ T.fg3 }};">{{ g.count }}</span>
+                  <div style="flex:1; height:0.5px; background:{{ T.divider }};"></div>
+                </div>
+                <sc-for list="{{ g.items }}" as="row" hint-placeholder-count="3">
+                  <div onMouseEnter="{{ row.onEnter }}" onClick="{{ row.onJump }}" title="{{ row.tip }}" style="display:flex; align-items:center; gap:11px; min-height:46px; padding:7px 9px; border-radius:8px; background:{{ row.rowBg }}; cursor:default;">
+                    <div style="position:relative; flex:none; width:30px; height:30px;">
+                      <div style="width:30px; height:30px; border-radius:8px; background:{{ row.avatarBg }}; color:{{ row.avatarFg }}; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ row.mark }}</div>
+                      <div class="{{ row.animClass }}" style="position:absolute; right:-4px; bottom:-4px; width:15px; height:15px; display:flex; align-items:center; justify-content:center; border-radius:{{ row.badgeShape }}; background:{{ row.badgeColor }}; box-shadow:0 0 0 2px {{ row.badgeRing }};"><sc-if value="{{ row.stWaiting }}" hint-placeholder-val="{{ false }}"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span></sc-if><sc-if value="{{ row.stWorking }}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></sc-if><sc-if value="{{ row.stIdle }}" hint-placeholder-val="{{ false }}"><span style="color:#fff;font-size:8px;font-weight:800;line-height:1;">✓</span></sc-if><sc-if value="{{ row.stRunning }}" hint-placeholder-val="{{ false }}"><span style="width:3px;height:3px;border-radius:50%;background:#fff;"></span></sc-if></div>
+                    </div>
+                    <div style="min-width:0; flex:1; display:flex; flex-direction:column; gap:2px;">
+                      <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                        <span style="font-weight:590; font-size:13px; color:{{ T.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 1 auto; min-width:0;">{{ row.primary }}</span>
+                        <span style="flex:none; font-size:11.5px; color:{{ T.fg3 }}; white-space:nowrap;">{{ row.secondarySep }} {{ row.secondary }}</span>
+                        <sc-if value="{{ row.isNative }}" hint-placeholder-val="{{ false }}">
+                          <span style="flex:none; white-space:nowrap; font-size:9px; font-weight:600; color:{{ T.fg3 }}; border:0.5px solid {{ T.divider }}; border-radius:4px; padding:0 4px; letter-spacing:0.3px;">{{ row.nativeLbl }}</span>
+                        </sc-if>
+                        <sc-if value="{{ row.latest }}" hint-placeholder-val="{{ false }}">
+                          <span style="flex:none; font-size:9.5px; font-weight:640; color:#22C55E; background:rgba(34,197,94,0.15); border-radius:4px; padding:1px 5px;">{{ row.latestLbl }}</span>
+                        </sc-if>
+                      </div>
+                      <div style="font-size:12px; color:{{ T.fg2 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.taskShown }}</div>
+                    </div>
+                    <div style="flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
+                      <span class="gt-mono" style="font-size:11px; color:{{ T.fg3 }}; font-variant-numeric:tabular-nums;">{{ row.time }}</span>
+                      <span style="font-size:13px; line-height:1; color:{{ row.chevColor }};">{{ row.chev }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </sc-for>
+            </div>
+
+            <!-- footer -->
+            <div style="background:{{ T.footer }}; border-top:0.5px solid {{ T.divider }}; padding:7px 8px 8px;">
+              <div style="display:flex; gap:3px;">
+                <sc-for list="{{ footerBtns }}" as="f" hint-placeholder-count="4">
+                  <button onClick="{{ f.on }}" title="{{ f.tip }}" style="flex:1; border:none; cursor:pointer; font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:3px; padding:7px 2px; border-radius:7px; background:transparent; color:{{ T.fg2 }};">
+                    <span style="font-size:14px; line-height:1;">{{ f.glyph }}</span>
+                    <span style="font-size:10px; font-weight:540;">{{ f.label }}</span>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="display:flex; align-items:center; margin-top:6px; padding-top:7px; border-top:0.5px solid {{ T.divider }};">
+                <button onClick="{{ openPrefs }}" style="border:none; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:5px; font-size:11.5px; color:{{ T.fg2 }}; background:transparent; padding:2px 4px; border-radius:5px;">⚙︎ {{ lblPrefs }}</button>
+                <div style="flex:1;"></div>
+                <span class="gt-mono" style="font-size:10px; color:{{ T.fg3 }};">gtmux 0.1.0 · by {{ credit }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- jump toast -->
+          <sc-if value="{{ hasJump }}" hint-placeholder-val="{{ false }}">
+            <div class="gtjump gt-mono" style="position:absolute; left:50%; bottom:-40px; transform:translateX(-50%); white-space:nowrap; background:#1d1d1f; color:#fff; font-size:11.5px; padding:7px 12px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.3);">→ {{ lastJump }}</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- annotations -->
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 15px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">measurements</div>
+          <sc-for list="{{ specRows }}" as="m" hint-placeholder-count="6">
+            <div style="display:flex; justify-content:space-between; gap:10px; padding:4px 0; border-bottom:1px dashed rgba(0,0,0,0.06); font-size:12px;">
+              <span style="color:#6b6b70;">{{ m.k }}</span>
+              <span class="gt-mono" style="color:#1d1d1f;">{{ m.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 15px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">hierarchy</div>
+          <div style="font-size:12px; line-height:1.5; color:#6b6b70;"><b style="color:#EF4444;">需要你</b> 区域：红色方形徽章（⏸ 双竖线）+ 淡红底 + 红色分区标题 + 脉冲提示，最响。<b style="color:#1d1d1f;">运行中（◌）/ 空闲（✓）</b>：圆形、低饱和、安静。「latest」标记最新结束的 agent。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 02: STATUS-ITEM ICON CONCEPTS ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">02</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">状态栏字形 — 概念探索</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">最重要的一个表面：一个 16pt 的字形要在余光里、在色盲条件下、在浅/深/带壁纸着色的菜单栏上都能秒读。<b>WAITING 必须靠形状+字形传达，不只靠颜色。</b>每个格子上半=深色菜单栏，下半=浅色菜单栏；彩色点是非模板图像（任何栏上都保色），计数数字是模板图像（自动黑/白）。</p>
+
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:6px 20px 14px;">
+      <!-- column header -->
+      <div style="display:flex; align-items:center; padding:12px 0 10px;">
+        <div style="width:166px; flex:none;"></div>
+        <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div style="text-align:center; font-size:11px; font-weight:600; color:#9a9aa0;">Calm · 0 / 全空闲</div>
+          <div style="text-align:center; font-size:11px; font-weight:600; color:#22C55E;">Idle · 空闲</div>
+          <div style="text-align:center; font-size:11px; font-weight:600; color:#06B6D4;">Working · 运行</div>
+          <div style="text-align:center; font-size:11px; font-weight:600; color:#EF4444;">Waiting · 等你</div>
+        </div>
+      </div>
+
+      <!-- A. Dot -->
+      <div style="display:flex; align-items:center; padding:13px 0; border-top:1px solid rgba(0,0,0,0.06);">
+        <div style="width:166px; flex:none; padding-right:16px;">
+          <div style="display:inline-block; font-size:9.5px; font-weight:600; color:#a8a8ae; background:#F1F1F4; border-radius:4px; padding:1px 6px; margin-bottom:5px;">baseline</div>
+          <div style="font-size:13.5px; font-weight:640;">Dot only</div>
+          <div style="font-size:11.5px; color:#9a9aa0; line-height:1.4; margin-top:2px;">纯圆点。最克制，但只靠颜色 → 色盲不友好。</div>
+        </div>
+        <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#8E8E93;"></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#8E8E93;"></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#22C55E;"></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#22C55E;"></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#06B6D4;"></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#06B6D4;"></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#EF4444;"></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#EF4444;"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. Dot + count -->
+      <div style="display:flex; align-items:center; padding:13px 0; border-top:1px solid rgba(0,0,0,0.06);">
+        <div style="width:166px; flex:none; padding-right:16px;">
+          <div style="display:inline-block; font-size:9.5px; font-weight:600; color:#a8a8ae; background:#F1F1F4; border-radius:4px; padding:1px 6px; margin-bottom:5px;">option</div>
+          <div style="font-size:13.5px; font-weight:640;">Dot + count</div>
+          <div style="font-size:11.5px; color:#9a9aa0; line-height:1.4; margin-top:2px;">点 + 最紧急状态的数量（模板色数字）。</div>
+        </div>
+        <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#8E8E93;"></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#8E8E93;"></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#22C55E;"></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#22C55E;"></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:#06B6D4;"></span><span style="font-size:12px;font-weight:680;color:#fff;">3</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:#06B6D4;"></span><span style="font-size:12px;font-weight:680;color:#1d1d1f;">3</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:#EF4444;"></span><span style="font-size:12px;font-weight:680;color:#fff;">2</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:#EF4444;"></span><span style="font-size:12px;font-weight:680;color:#1d1d1f;">2</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. Shape-shift (recommended) -->
+      <div style="display:flex; align-items:center; padding:14px 0; border-top:1px solid rgba(0,0,0,0.06); background:linear-gradient(90deg, rgba(6,182,212,0.05), transparent 40%); margin:0 -20px; padding-left:20px; padding-right:20px;">
+        <div style="width:166px; flex:none; padding-right:16px;">
+          <div style="display:inline-block; font-size:9.5px; font-weight:700; color:#fff; background:#06B6D4; border-radius:4px; padding:1px 6px; margin-bottom:5px;">★ recommended</div>
+          <div style="font-size:13.5px; font-weight:640;">Shape-shift glyph</div>
+          <div style="font-size:11.5px; color:#7a7a80; line-height:1.4; margin-top:2px;">字形<b>随状态换形</b>：环 → ✳ → ⠿ → 红方块。形状本身就是信号，余光/色盲都能读。</div>
+        </div>
+        <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid #9a9aa0;"></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid #8E8E93;"></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="font-size:14px; color:#22C55E; line-height:1;">✳</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="font-size:14px; color:#1FA653; line-height:1;">✳</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="font-size:14px; color:#06B6D4; line-height:1;">⠿</span><span style="font-size:12px;font-weight:680;color:#fff;">3</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="font-size:14px; color:#0596B0; line-height:1;">⠿</span><span style="font-size:12px;font-weight:680;color:#1d1d1f;">3</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:12px;height:12px;border-radius:3.5px;background:#EF4444;"></span><span style="font-size:12px;font-weight:680;color:#fff;">2</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:12px;height:12px;border-radius:3.5px;background:#EF4444;"></span><span style="font-size:12px;font-weight:680;color:#1d1d1f;">2</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D. Segmented meter -->
+      <div style="display:flex; align-items:center; padding:13px 0; border-top:1px solid rgba(0,0,0,0.06);">
+        <div style="width:166px; flex:none; padding-right:16px;">
+          <div style="display:inline-block; font-size:9.5px; font-weight:600; color:#a8a8ae; background:#F1F1F4; border-radius:4px; padding:1px 6px; margin-bottom:5px;">option</div>
+          <div style="font-size:13.5px; font-weight:640;">Segmented meter</div>
+          <div style="font-size:11.5px; color:#9a9aa0; line-height:1.4; margin-top:2px;">迷你负载条，按状态配比上色。15+ 时偏吵。</div>
+        </div>
+        <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#5a5a60;"></span></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#c2c2c8;"></span></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#22C55E;"></span><span style="width:5px;height:8px;border-radius:2px;background:#22C55E;"></span></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#22C55E;"></span><span style="width:5px;height:8px;border-radius:2px;background:#22C55E;"></span></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span></span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#EF4444;"></span><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span><span style="width:5px;height:8px;border-radius:2px;background:#22C55E;"></span></span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="display:flex; gap:2px;"><span style="width:5px;height:8px;border-radius:2px;background:#EF4444;"></span><span style="width:5px;height:8px;border-radius:2px;background:#06B6D4;"></span><span style="width:5px;height:8px;border-radius:2px;background:#22C55E;"></span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- E. Bracket-pip -->
+      <div style="display:flex; align-items:center; padding:13px 0; border-top:1px solid rgba(0,0,0,0.06);">
+        <div style="width:166px; flex:none; padding-right:16px;">
+          <div style="display:inline-block; font-size:9.5px; font-weight:600; color:#a8a8ae; background:#F1F1F4; border-radius:4px; padding:1px 6px; margin-bottom:5px;">option</div>
+          <div style="font-size:13.5px; font-weight:640;">Bracket-pip</div>
+          <div style="font-size:11.5px; color:#9a9aa0; line-height:1.4; margin-top:2px;">终端风 <span class="gt-mono">[2]</span>，与 tmux 调性呼应。</div>
+        </div>
+        <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#8E8E93;">[·]</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#8E8E93;">[·]</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#fff;">[<span style="color:#22C55E;">✳</span>]</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#1d1d1f;">[<span style="color:#1FA653;">✳</span>]</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#fff;">[<span style="color:#06B6D4;">3</span>]</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#1d1d1f;">[<span style="color:#0596B0;">3</span>]</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#fff;">[<span style="color:#EF4444;">2</span>]</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span class="gt-mono" style="font-size:13px; color:#1d1d1f;">[<span style="color:#EF4444;">2</span>]</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- F. Hide-when-idle -->
+      <div style="display:flex; align-items:center; padding:13px 0; border-top:1px solid rgba(0,0,0,0.06);">
+        <div style="width:166px; flex:none; padding-right:16px;">
+          <div style="display:inline-block; font-size:9.5px; font-weight:600; color:#a8a8ae; background:#F1F1F4; border-radius:4px; padding:1px 6px; margin-bottom:5px;">mode</div>
+          <div style="font-size:13.5px; font-weight:640;">Hide-when-idle</div>
+          <div style="font-size:11.5px; color:#9a9aa0; line-height:1.4; margin-top:2px;">只在有人等你时出现，绝不打扰。</div>
+        </div>
+        <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="font-size:10px; color:#5a5a60;">— hidden —</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="font-size:10px; color:#bcbcc2;">— hidden —</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="font-size:10px; color:#5a5a60;">— hidden —</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="font-size:10px; color:#bcbcc2;">— hidden —</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center;"><span style="font-size:10px; color:#5a5a60;">— hidden —</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center;"><span style="font-size:10px; color:#bcbcc2;">— hidden —</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="height:28px; border-radius:6px; background:#2A2A2F; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:12px;height:12px;border-radius:3.5px;background:#EF4444;"></span><span style="font-size:12px;font-weight:680;color:#fff;">2</span></div>
+            <div style="height:28px; border-radius:6px; background:#E7E7EB; display:flex; align-items:center; justify-content:center; gap:4px;"><span style="width:12px;height:12px;border-radius:3.5px;background:#EF4444;"></span><span style="font-size:12px;font-weight:680;color:#1d1d1f;">2</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- tinted proof + token table -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">tinted wallpaper · 着色壁纸</div>
+        <p style="margin:0 0 12px; font-size:12px; line-height:1.5; color:#6b6b70;">彩色点是非模板图像，在系统给菜单栏着色时仍保留红/青/绿；计数随栏自动反白。下面三种壁纸都验证了 ★ Shape-shift 的可读性。</p>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1; height:36px; border-radius:8px; background:linear-gradient(120deg,#7c3aed,#db2777); display:flex; align-items:center; justify-content:center; gap:5px;"><span style="width:12px;height:12px;border-radius:3.5px;background:#EF4444;box-shadow:0 0 0 1.5px rgba(255,255,255,0.5);"></span><span style="font-size:12px;font-weight:700;color:#fff;">2</span></div>
+          <div style="flex:1; height:36px; border-radius:8px; background:linear-gradient(120deg,#0ea5e9,#14b8a6); display:flex; align-items:center; justify-content:center; gap:5px;"><span style="width:12px;height:12px;border-radius:3.5px;background:#EF4444;box-shadow:0 0 0 1.5px rgba(255,255,255,0.5);"></span><span style="font-size:12px;font-weight:700;color:#fff;">2</span></div>
+          <div style="flex:1; height:36px; border-radius:8px; background:linear-gradient(120deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; gap:5px;"><span style="width:12px;height:12px;border-radius:3.5px;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,0.25);"></span><span style="font-size:12px;font-weight:700;color:#fff;">2</span></div>
+        </div>
+        <p style="margin:10px 0 0; font-size:11px; line-height:1.45; color:#9a9aa0;">在红/橙壁纸上，红方块对比不足 → 自动加 0.5pt 白描边（或翻白填充）。这是唯一需要为着色场景做的适配。</p>
+      </div>
+
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">SF Symbol + tint tokens</div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span style="color:#6b6b70;">waiting</span><span class="gt-mono" style="color:#1d1d1f;">square.fill · pause</span><span class="gt-mono" style="color:#EF4444;">#EF4444</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span style="color:#6b6b70;">working</span><span class="gt-mono" style="color:#1d1d1f;">circle.dotted</span><span class="gt-mono" style="color:#06B6D4;">#06B6D4</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span style="color:#6b6b70;">idle</span><span class="gt-mono" style="color:#1d1d1f;">sparkle</span><span class="gt-mono" style="color:#22C55E;">#22C55E</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span style="color:#6b6b70;">calm</span><span class="gt-mono" style="color:#1d1d1f;">circle</span><span class="gt-mono" style="color:#8E8E93;">#8E8E93</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; font-size:12px;"><span style="color:#6b6b70;">count badge</span><span class="gt-mono" style="color:#1d1d1f;">template image</span><span class="gt-mono" style="color:#9a9aa0;">auto B/W</span></div>
+        <p style="margin:11px 0 0; font-size:11px; line-height:1.45; color:#9a9aa0;">SF Symbol 渲染失败时回退到 @1x/@2x PNG（参见 icon.go 的 dotPNG，22×22 抗锯齿）。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 03: ROW DENSITY ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">03</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">行密度 — 两种备选</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">同一份数据、两种密度。<b>两行式</b>留白更足、task 不挤；<b>紧凑式</b>一行到底、扫描密度最高，适合 15+ agent。两者都用形状+颜色双编码，CJK 用省略号截断、绝不换行。</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+      <!-- two-line -->
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:11px;">
+          <span style="font-size:13px; font-weight:660;">两行式 · Two-line</span>
+          <span style="font-size:10.5px; color:#fff; background:#06B6D4; border-radius:4px; padding:1px 7px; font-weight:600;">默认</span>
+          <span class="gt-mono" style="font-size:11px; color:#a8a8ae;">46pt 行高</span>
+        </div>
+        <div style="border-radius:13px; background:#1C1C1F; border:0.5px solid rgba(255,255,255,0.1); box-shadow:0 14px 40px rgba(0,0,0,0.4); overflow:hidden; padding:5px 7px;">
+          <!-- waiting -->
+          <div style="display:flex; align-items:center; gap:11px; min-height:46px; padding:7px 9px; border-radius:8px; background:rgba(239,68,68,0.08);">
+            <div style="position:relative; flex:none; width:30px; height:30px;">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">C</div>
+              <div style="position:absolute; right:-4px; bottom:-4px; width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:#EF4444;box-shadow:0 0 0 2px #1C1C1F;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span></div>
+            </div>
+            <div style="min-width:0; flex:1;">
+              <div style="display:flex; align-items:center; gap:6px; min-width:0;"><span style="font-weight:590;font-size:13px;color:rgba(255,255,255,0.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0;">Pica</span><span style="flex:none;font-size:11.5px;color:rgba(235,235,245,0.34);white-space:nowrap;">· agent</span></div>
+              <div style="font-size:12px; color:rgba(235,235,245,0.62); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">permission to run tests</div>
+            </div>
+            <div style="flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:3px;"><span class="gt-mono" style="font-size:11px;color:rgba(235,235,245,0.34);">now</span><span style="font-size:13px;color:rgba(235,235,245,0.34);">›</span></div>
+          </div>
+          <!-- working · native -->
+          <div style="display:flex; align-items:center; gap:11px; min-height:46px; padding:7px 9px; border-radius:8px;">
+            <div style="position:relative; flex:none; width:30px; height:30px;">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">Cx</div>
+              <div style="position:absolute; right:-4px; bottom:-4px; width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#06B6D4;box-shadow:0 0 0 2px #1C1C1F;"><span style="width:8px;height:8px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></div>
+            </div>
+            <div style="min-width:0; flex:1;">
+              <div style="display:flex; align-items:center; gap:6px; min-width:0;"><span style="font-weight:590;font-size:13px;color:rgba(255,255,255,0.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0;">scratch-cli</span><span style="flex:none;font-size:11.5px;color:rgba(235,235,245,0.34);white-space:nowrap;">· Terminal</span><span style="flex:none;white-space:nowrap;font-size:9px;font-weight:600;color:rgba(235,235,245,0.34);border:0.5px solid rgba(255,255,255,0.09);border-radius:4px;padding:0 4px;letter-spacing:0.3px;">native</span></div>
+              <div style="font-size:12px; color:rgba(235,235,245,0.62); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Prototyping a CLI arg parser</div>
+            </div>
+            <div style="flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:3px;"><span class="gt-mono" style="font-size:11px;color:rgba(235,235,245,0.34);">3m</span><span style="font-size:13px;color:rgba(235,235,245,0.34);">›</span></div>
+          </div>
+          <!-- idle latest -->
+          <div style="display:flex; align-items:center; gap:11px; min-height:46px; padding:7px 9px; border-radius:8px;">
+            <div style="position:relative; flex:none; width:30px; height:30px;">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">C</div>
+              <div style="position:absolute; right:-4px; bottom:-4px; width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#22C55E;box-shadow:0 0 0 2px #1C1C1F;"><span style="color:#fff;font-size:8px;font-weight:800;line-height:1;">✓</span></div>
+            </div>
+            <div style="min-width:0; flex:1;">
+              <div style="display:flex; align-items:center; gap:6px; min-width:0;"><span style="font-weight:590;font-size:13px;color:rgba(255,255,255,0.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0;">Rodi</span><span style="flex:none;font-size:11.5px;color:rgba(235,235,245,0.34);white-space:nowrap;">· dev</span><span style="flex:none;font-size:9.5px;font-weight:640;color:#22C55E;background:rgba(34,197,94,0.15);border-radius:4px;padding:1px 5px;">✓ latest</span></div>
+              <div style="font-size:12px; color:rgba(235,235,245,0.62); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Rodi feature dev</div>
+            </div>
+            <div style="flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:3px;"><span class="gt-mono" style="font-size:11px;color:rgba(235,235,245,0.34);">6m</span><span style="font-size:13px;color:rgba(235,235,245,0.34);">›</span></div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; margin-top:9px; line-height:1.45;">＋ task 永远可见、留白舒适　－ 同屏行数更少</div>
+      </div>
+
+      <!-- tight -->
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:11px;">
+          <span style="font-size:13px; font-weight:660;">紧凑式 · Single-line</span>
+          <span style="font-size:10.5px; color:#6b6b70; background:#E4E4E8; border-radius:4px; padding:1px 7px; font-weight:600;">密集</span>
+          <span class="gt-mono" style="font-size:11px; color:#a8a8ae;">28pt 行高</span>
+        </div>
+        <div style="border-radius:13px; background:#1C1C1F; border:0.5px solid rgba(255,255,255,0.1); box-shadow:0 14px 40px rgba(0,0,0,0.4); overflow:hidden; padding:6px 8px;">
+          <div style="display:flex; align-items:center; gap:9px; height:28px; padding:0 8px; border-radius:6px; background:rgba(239,68,68,0.08);">
+            <span style="flex:none; width:9px; height:9px; border-radius:2.5px; background:#EF4444;"></span>
+            <span style="font-weight:590; font-size:12.5px; color:rgba(255,255,255,0.95); flex:none;">Pica</span>
+            <span style="font-size:12px; color:rgba(235,235,245,0.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;">permission to run tests</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.34); flex:none;">now</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.28); flex:none;">%7</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px; height:28px; padding:0 8px; border-radius:6px;">
+            <span style="flex:none; width:9px; height:9px; border-radius:50%; background:#06B6D4;"></span>
+            <span style="font-weight:590; font-size:12.5px; color:rgba(255,255,255,0.95); flex:none;">ccy-workspace</span>
+            <span style="font-size:12px; color:rgba(235,235,245,0.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;">Auto-attach tmux sessions</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.34); flex:none;">1m</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.28); flex:none;">%11</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px; height:28px; padding:0 8px; border-radius:6px;">
+            <span style="flex:none; width:9px; height:9px; border-radius:50%; background:#22C55E;"></span>
+            <span style="font-weight:590; font-size:12.5px; color:rgba(255,255,255,0.95); flex:none;">Rodi</span>
+            <span style="font-size:12px; color:rgba(235,235,245,0.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;">Rodi feature dev</span>
+            <span style="flex:none; font-size:9px; color:#22C55E;">✓</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.34); flex:none;">6m</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.28); flex:none;">%8</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px; height:28px; padding:0 8px; border-radius:6px;">
+            <span style="flex:none; width:9px; height:9px; border-radius:50%; background:#22C55E;"></span>
+            <span style="font-weight:590; font-size:12.5px; color:rgba(255,255,255,0.95); flex:none;">Diting</span>
+            <span style="font-size:12px; color:rgba(235,235,245,0.34); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;">—</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.34); flex:none;">22m</span>
+            <span class="gt-mono" style="font-size:10.5px; color:rgba(235,235,245,0.28); flex:none;">%1</span>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; margin-top:9px; line-height:1.45;">＋ 扫描密度高、露出 pane id　－ task 与 session 抢一行</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 04: QUICK-SWITCHER ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">04</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">快速切换器 — 两种形态</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">全局热键 <span class="gt-mono" style="font-size:12px;">⌥⇧G</span> 召唤。形态 A 是 popover 内的「搜索模式」（已在 01 实现，输入即过滤同一列表）；形态 B 是独立的居中命令面板，Raycast 式，离手最近、专注跳转。</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1.15fr; gap:20px; align-items:start;">
+      <!-- A: in-popover search -->
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:11px;">
+          <span style="font-size:13px; font-weight:660;">A · popover 搜索模式</span>
+          <span class="gt-mono" style="font-size:11px; color:#a8a8ae;">原地、零跳转</span>
+        </div>
+        <div style="border-radius:13px; background:rgba(28,28,31,0.92); border:0.5px solid rgba(255,255,255,0.1); box-shadow:0 16px 44px rgba(0,0,0,0.45); overflow:hidden;">
+          <div style="padding:11px 12px 10px;">
+            <div style="display:flex; align-items:center; gap:7px; background:rgba(255,255,255,0.1); border-radius:8px; padding:7px 10px;">
+              <span style="color:rgba(235,235,245,0.5); font-size:13px;">⌕</span>
+              <span style="flex:1; color:rgba(255,255,255,0.95); font-size:13px;">api<span style="display:inline-block; width:1px; height:14px; background:#06B6D4; vertical-align:middle; margin-left:1px;"></span></span>
+              <span class="gt-mono" style="font-size:10px; color:rgba(235,235,245,0.4); border:0.5px solid rgba(255,255,255,0.15); border-radius:4px; padding:1px 4px;">esc</span>
+            </div>
+          </div>
+          <div style="height:0.5px; background:rgba(255,255,255,0.09);"></div>
+          <div style="padding:5px 7px 7px;">
+            <div style="display:flex; align-items:center; gap:11px; min-height:44px; padding:7px 9px; border-radius:8px; background:rgba(255,255,255,0.12);">
+              <div style="position:relative; flex:none; width:28px; height:28px;">
+                <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">Cx</div>
+                <div style="position:absolute; right:-4px; bottom:-4px; width:14px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#06B6D4;box-shadow:0 0 0 2px #1c1c1f;"><span style="width:8px;height:8px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></div>
+              </div>
+              <div style="min-width:0; flex:1;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><span style="font-weight:590;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0;">api-gateway</span><span style="flex:none;font-size:11.5px;color:rgba(235,235,245,0.34);">· tests</span></div><div style="font-size:12px;color:rgba(235,235,245,0.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Refactoring the auth middleware</div></div>
+              <span style="font-size:12px;color:#fff;">⏎</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:11px; min-height:44px; padding:7px 9px; border-radius:8px;">
+              <div style="position:relative; flex:none; width:28px; height:28px;">
+                <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">C</div>
+                <div style="position:absolute; right:-4px; bottom:-4px; width:14px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#22C55E;box-shadow:0 0 0 2px #1c1c1f;"><span style="color:#fff;font-size:8px;font-weight:800;line-height:1;">✓</span></div>
+              </div>
+              <div style="min-width:0; flex:1;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><span style="font-weight:590;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0;">search-svc</span><span style="flex:none;font-size:11.5px;color:rgba(235,235,245,0.34);">· reindex</span></div><div style="font-size:12px;color:rgba(235,235,245,0.62);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Reindex job shipped</div></div>
+              <span style="font-size:12px;color:rgba(235,235,245,0.3);">›</span>
+            </div>
+            <div style="padding:8px 9px 4px; font-size:11px; color:rgba(235,235,245,0.4);">2 matches · 模糊匹配 session / task / pane</div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; margin-top:9px; line-height:1.45;">＋ 心智单一、复用所有状态　－ 受 popover 宽度约束</div>
+      </div>
+
+      <!-- B: standalone panel -->
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:11px;">
+          <span style="font-size:13px; font-weight:660;">B · 独立命令面板</span>
+          <span style="font-size:10.5px; color:#fff; background:#06B6D4; border-radius:4px; padding:1px 7px; font-weight:600;">推荐做热键入口</span>
+          <span class="gt-mono" style="font-size:11px; color:#a8a8ae;">屏幕居中</span>
+        </div>
+        <div style="border-radius:16px; background:rgba(24,24,27,0.86); border:0.5px solid rgba(255,255,255,0.12); box-shadow:0 30px 80px rgba(0,0,0,0.55); overflow:hidden;">
+          <div style="display:flex; align-items:center; gap:12px; padding:16px 18px;">
+            <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:18px; height:18px;"><span style="background:rgba(255,255,255,0.32); border-radius:2.5px;"></span><span style="background:#06B6D4; border-radius:2.5px;"></span><span style="background:rgba(255,255,255,0.32); border-radius:2.5px; grid-column:span 2;"></span></span>
+            <span style="flex:1; font-size:18px; color:rgba(255,255,255,0.95); font-weight:400;">Jump to agent<span style="display:inline-block; width:2px; height:20px; background:#06B6D4; vertical-align:middle; margin-left:2px;"></span></span>
+            <span class="gt-mono" style="font-size:11px; color:rgba(235,235,245,0.4); border:0.5px solid rgba(255,255,255,0.15); border-radius:5px; padding:2px 6px;">⌥⇧G</span>
+          </div>
+          <div style="height:0.5px; background:rgba(255,255,255,0.1);"></div>
+          <div style="padding:8px 10px 10px;">
+            <div style="font-size:10.5px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:#EF4444; padding:8px 10px 5px;">Needs you</div>
+            <div style="display:flex; align-items:center; gap:13px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.12);">
+              <div style="flex:none; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:15px; background:#EF4444; color:#fff; border-radius:9px;">⏸</div>
+              <div style="min-width:0; flex:1;"><div style="font-weight:600;font-size:15px;color:#fff;">Pica</div><div style="font-size:12.5px;color:rgba(235,235,245,0.6);">permission to run tests</div></div>
+              <span class="gt-mono" style="font-size:11px; color:rgba(235,235,245,0.45);">Claude Code · %7</span>
+              <span style="font-size:12px; color:#fff; background:rgba(255,255,255,0.14); border-radius:6px; padding:4px 9px;">⏎ jump</span>
+            </div>
+            <div style="font-size:10.5px; font-weight:700; letter-spacing:0.6px; text-transform:uppercase; color:rgba(235,235,245,0.5); padding:12px 10px 5px;">Working</div>
+            <div style="display:flex; align-items:center; gap:13px; padding:10px 12px; border-radius:10px;">
+              <div style="flex:none; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:15px; background:rgba(6,182,212,0.16); color:#27C7E6; border-radius:50%;">⠿</div>
+              <div style="min-width:0; flex:1;"><div style="font-weight:600;font-size:15px;color:#fff;">api-gateway</div><div style="font-size:12.5px;color:rgba(235,235,245,0.6);">Refactoring the auth middleware</div></div>
+              <span class="gt-mono" style="font-size:11px; color:rgba(235,235,245,0.45);">Codex · %14</span>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px; padding:9px 16px; background:rgba(255,255,255,0.04); border-top:0.5px solid rgba(255,255,255,0.08); font-size:11px; color:rgba(235,235,245,0.45);">
+            <span class="gt-mono">↑↓ 选择</span><span class="gt-mono">⏎ 跳转</span><span class="gt-mono">⌘1–9 直达</span><div style="flex:1;"></div><span class="gt-mono">gtmux focus</span>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; margin-top:9px; line-height:1.45;">＋ 大命中区、可放更多元信息、离手最近　－ 多一个表面要维护</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 05: EMPTY + FIRST-RUN ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">05</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">空状态 & 首次运行</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">没有 agent 时不报错、不留白尴尬，给一条可复制的启动命令（任意 coding agent，不限 Claude）。首次运行的解释卡<b>先讲核心价值——一键跳到对应的 tmux pane</b>，再说明为此需要一次性的「自动化」权限（通过 AppleScript 把对应终端标签页带到最前），把「为什么、给谁、怎么撤销」说清楚，而不是把系统弹窗直接糊用户脸上。</p>
+
+    <div style="display:grid; grid-template-columns:320px 1fr; gap:24px; align-items:start;">
+      <!-- empty -->
+      <div>
+        <div style="font-size:13px; font-weight:660; margin-bottom:11px;">空状态 · Empty</div>
+        <div style="border-radius:13px; background:rgba(28,28,31,0.94); border:0.5px solid rgba(255,255,255,0.1); box-shadow:0 16px 44px rgba(0,0,0,0.45); overflow:hidden;">
+          <div style="padding:11px 12px 9px;">
+            <div style="display:flex; align-items:center; gap:8px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:14px; height:14px;"><span style="background:rgba(235,235,245,0.34); border-radius:2px;"></span><span style="background:#06B6D4; border-radius:2px;"></span><span style="background:rgba(235,235,245,0.34); border-radius:2px; grid-column:span 2;"></span></span><span style="font-weight:700;font-size:13px;color:rgba(255,255,255,0.95);">gtmux</span></div>
+            <div style="margin-top:7px; font-size:12px; color:rgba(235,235,245,0.62);">no agents · 没有 agent</div>
+          </div>
+          <div style="height:0.5px; background:rgba(255,255,255,0.09);"></div>
+          <div style="padding:30px 20px 30px; text-align:center;">
+            <div style="width:46px; height:46px; margin:0 auto 14px; border-radius:50%; border:2px dashed rgba(235,235,245,0.34); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.4); font-size:18px;">✳</div>
+            <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,0.95);">没有运行中的 agent</div>
+            <div style="font-size:12px; color:rgba(235,235,245,0.62); margin-top:5px; line-height:1.45;">在 tmux pane 里启动任意 coding agent<br>（Claude Code · Codex · Gemini · aider…）</div>
+            <div class="gt-mono" style="display:inline-block; margin-top:14px; font-size:11.5px; color:rgba(255,255,255,0.92); background:rgba(255,255,255,0.1); border-radius:7px; padding:8px 12px;">tmux new -s work \; claude</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); border-top:0.5px solid rgba(255,255,255,0.09); padding:8px; display:flex; gap:8px; justify-content:center;">
+            <button style="border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:560;color:#fff;background:rgba(255,255,255,0.12);border-radius:7px;padding:7px 14px;">＋ New session</button>
+            <button style="border:none;cursor:pointer;font-family:inherit;font-size:12px;color:rgba(235,235,245,0.62);background:transparent;border-radius:7px;padding:7px 12px;">⚙︎ 偏好设置</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- first-run -->
+      <div>
+        <div style="font-size:13px; font-weight:660; margin-bottom:11px;">首次运行 · 自动化权限</div>
+        <div style="border-radius:14px; background:#fff; border:0.5px solid rgba(0,0,0,0.1); box-shadow:0 22px 60px rgba(0,0,0,0.22); overflow:hidden; max-width:460px;">
+          <div style="padding:26px 26px 6px; text-align:center;">
+            <div style="width:60px; height:60px; margin:0 auto 16px; border-radius:15px; background:#0f1115; padding:13px; box-shadow:0 8px 20px rgba(0,0,0,0.28), inset 0 0 0 0.5px rgba(255,255,255,0.08);">
+              <div style="width:100%; height:100%; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:3px;">
+                <div style="background:rgba(255,255,255,0.16); border-radius:3px;"></div>
+                <div style="background:#06B6D4; border-radius:3px;"></div>
+                <div style="background:rgba(255,255,255,0.16); border-radius:3px; grid-column:span 2;"></div>
+              </div>
+            </div>
+            <h3 style="margin:0; font-size:19px; font-weight:680; letter-spacing:-0.2px; color:#1d1d1f;">跳转需要「自动化」权限</h3>
+            <p style="margin:9px auto 0; max-width:350px; font-size:13px; line-height:1.6; color:#6b6b70;">点击某个 agent 时，gtmux 用 AppleScript 把它所在的终端标签页和 tmux pane 切到最前。这需要一次「自动化」授权，<b style="color:#1d1d1f;">只切换窗口，不读取终端内容</b>。</p>
+          </div>
+          <div style="margin:18px 22px 0; background:#F6F6F8; border-radius:11px; padding:13px 15px;">
+            <div style="display:flex; align-items:flex-start; gap:10px; padding:6px 0;"><span style="flex:none; width:22px; height:22px; border-radius:50%; background:#E4E4E8; color:#6b6b70; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">1</span><div style="font-size:12.5px; line-height:1.5; color:#3a3a40;">点下方 <b>允许并继续</b>，会弹出 macOS 系统对话框</div></div>
+            <div style="display:flex; align-items:flex-start; gap:10px; padding:6px 0;"><span style="flex:none; width:22px; height:22px; border-radius:50%; background:#E4E4E8; color:#6b6b70; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">2</span><div style="font-size:12.5px; line-height:1.5; color:#3a3a40;">在「<b>“gtmux” 想要控制 “Ghostty”</b>」中点 <b>好</b></div></div>
+            <div style="display:flex; align-items:flex-start; gap:10px; padding:6px 0;"><span style="flex:none; width:22px; height:22px; border-radius:50%; background:#E4E4E8; color:#6b6b70; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">3</span><div style="font-size:12.5px; line-height:1.5; color:#3a3a40;">随时可在 系统设置 › 隐私与安全性 › 自动化 撤销（原生终端下的 agent 同理，授权对应终端即可）</div></div>
+          </div>
+          <div style="display:flex; gap:9px; padding:18px 22px 22px;">
+            <button style="flex:1; border:none; cursor:pointer; font-family:inherit; font-size:13.5px; font-weight:600; color:#fff; background:#06B6D4; border-radius:9px; padding:11px;">允许并继续</button>
+            <button style="border:none; cursor:pointer; font-family:inherit; font-size:13.5px; font-weight:540; color:#6b6b70; background:#EFEFF2; border-radius:9px; padding:11px 18px;">稍后</button>
+          </div>
+          <div style="text-align:center; padding:0 22px 18px;"><span style="font-size:11px; color:#a8a8ae;">不授权也能用：<span class="gt-mono">agents</span>、<span class="gt-mono">overview</span> 照常工作，只是不能点击跳转。</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 06: PREFERENCES ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">06</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">偏好设置</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">标准 macOS 设置窗口栅格（标签右对齐、控件左对齐）。<b>语言</b>默认「跟随系统」，也可手动锁定 English / 中文 —— 切换即时生效，状态栏、popover、通知全部跟随。</p>
+
+    <div style="max-width:560px; border-radius:14px; background:#ECECEE; border:0.5px solid rgba(0,0,0,0.12); box-shadow:0 22px 60px rgba(0,0,0,0.2); overflow:hidden;">
+      <!-- titlebar -->
+      <div style="display:flex; align-items:center; gap:8px; height:40px; padding:0 14px; background:#E2E2E5; border-bottom:0.5px solid rgba(0,0,0,0.08);">
+        <span style="width:12px;height:12px;border-radius:50%;background:#FF5F57;"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#FEBC2E;"></span>
+        <span style="width:12px;height:12px;border-radius:50%;background:#28C840;"></span>
+        <span style="flex:1; text-align:center; font-size:13px; font-weight:600; color:#3a3a40; margin-left:-52px;">gtmux 偏好设置</span>
+      </div>
+      <!-- tab bar -->
+      <div style="display:flex; gap:4px; padding:10px 14px 0; background:#ECECEE;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 14px 7px; border-radius:8px; background:rgba(0,0,0,0.06);"><span style="font-size:15px;">⚙︎</span><span style="font-size:11px; font-weight:560; color:#1d1d1f;">通用</span></div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 14px 7px; border-radius:8px;"><span style="font-size:15px; opacity:0.55;">◔</span><span style="font-size:11px; color:#8a8a8e;">状态栏</span></div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 14px 7px; border-radius:8px;"><span style="font-size:15px; opacity:0.55;">⌨︎</span><span style="font-size:11px; color:#8a8a8e;">快捷键</span></div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 14px 7px; border-radius:8px;"><span style="font-size:15px; opacity:0.55;">◑</span><span style="font-size:11px; color:#8a8a8e;">通知</span></div>
+      </div>
+      <!-- body -->
+      <div style="background:#F5F5F7; padding:20px 22px 22px; display:flex; flex-direction:column; gap:15px;">
+        <!-- language (highlighted) -->
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:130px; flex:none; text-align:right; font-size:13px; color:#3a3a40;">语言 Language</div>
+          <div style="flex:1; display:flex; align-items:center; gap:3px; background:#E4E4E8; padding:3px; border-radius:8px; max-width:300px;">
+            <button style="flex:1; border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:6px; border-radius:6px; background:#fff; color:#1d1d1f; box-shadow:0 1px 2px rgba(0,0,0,0.12);">跟随系统</button>
+            <button style="flex:1; border:none; cursor:pointer; font-family:inherit; font-size:12.5px; padding:6px; border-radius:6px; background:transparent; color:#6b6b70;">English</button>
+            <button style="flex:1; border:none; cursor:pointer; font-family:inherit; font-size:12.5px; padding:6px; border-radius:6px; background:transparent; color:#6b6b70;">中文</button>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:16px;"><div style="width:130px; flex:none;"></div><div style="font-size:11.5px; color:#9a9aa0; line-height:1.4;">读取 <span class="gt-mono">GTMUX_LANG</span>；锁定后写入偏好并覆盖系统语言。CJK 字串更宽，行布局已按双语压力测试。</div></div>
+
+        <div style="height:0.5px; background:rgba(0,0,0,0.08); margin:2px 0;"></div>
+
+        <!-- refresh interval -->
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:130px; flex:none; text-align:right; font-size:13px; color:#3a3a40;">刷新间隔</div>
+          <div style="flex:1; display:flex; align-items:center; gap:12px;">
+            <div style="flex:1; max-width:200px; height:4px; border-radius:2px; background:#D4D4D8; position:relative;"><div style="position:absolute; left:0; top:0; bottom:0; width:36%; background:#06B6D4; border-radius:2px;"></div><div style="position:absolute; left:36%; top:50%; transform:translate(-50%,-50%); width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div></div>
+            <span class="gt-mono" style="font-size:12px; color:#1d1d1f;">1.5s</span>
+          </div>
+        </div>
+        <!-- launch at login -->
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:130px; flex:none; text-align:right; font-size:13px; color:#3a3a40;">开机自启</div>
+          <div style="flex:1; display:flex; align-items:center; gap:10px;"><div style="width:38px; height:23px; border-radius:12px; background:#28C840; position:relative;"><div style="position:absolute; right:2px; top:2px; width:19px; height:19px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.25);"></div></div><span style="font-size:12px; color:#6b6b70;">登录时启动 gtmux</span></div>
+        </div>
+        <!-- bar shows -->
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:130px; flex:none; text-align:right; font-size:13px; color:#3a3a40;">状态栏显示</div>
+          <div style="flex:1; display:flex; align-items:center; gap:3px; background:#E4E4E8; padding:3px; border-radius:8px; max-width:320px;">
+            <button style="flex:1; border:none; cursor:pointer; font-family:inherit; font-size:12px; font-weight:560; padding:6px; border-radius:6px; background:#fff; color:#1d1d1f; box-shadow:0 1px 2px rgba(0,0,0,0.12);">点 + 数字</button>
+            <button style="flex:1; border:none; cursor:pointer; font-family:inherit; font-size:12px; padding:6px; border-radius:6px; background:transparent; color:#6b6b70;">仅圆点</button>
+            <button style="flex:1; border:none; cursor:pointer; font-family:inherit; font-size:12px; padding:6px; border-radius:6px; background:transparent; color:#6b6b70;">空闲时隐藏</button>
+          </div>
+        </div>
+        <!-- hotkey -->
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:130px; flex:none; text-align:right; font-size:13px; color:#3a3a40;">全局热键</div>
+          <div style="flex:1;"><span class="gt-mono" style="display:inline-block; font-size:12px; color:#1d1d1f; background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:7px; padding:6px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.06);">⌥ ⇧ G</span><span style="font-size:11.5px; color:#9a9aa0; margin-left:10px;">点击录制新组合</span></div>
+        </div>
+        <!-- notifications -->
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="width:130px; flex:none; text-align:right; font-size:13px; color:#3a3a40;">通知</div>
+          <div style="flex:1; display:flex; align-items:center; gap:10px;"><div style="width:38px; height:23px; border-radius:12px; background:#28C840; position:relative;"><div style="position:absolute; right:2px; top:2px; width:19px; height:19px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.25);"></div></div><span style="font-size:12px; color:#6b6b70;">有 agent 开始等你 / 完成时提醒</span></div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; padding:11px 16px; background:#ECECEE; border-top:0.5px solid rgba(0,0,0,0.08);"><span class="gt-mono" style="font-size:11px; color:#a8a8ae;">gtmux 0.1.0 · designed by {{ credit }}</span><div style="flex:1;"></div><span class="gt-mono" style="font-size:11px; color:#a8a8ae;">install-hooks ✓</span></div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 07: SPEC ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">07</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">规范 — type · color · spacing</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">系统原生底子上一套克制的 gtmux 标记。SF Pro 走 UI、SF Mono 走代码（pane id / loc / 命令），状态色取自仓库里的 icon.go，权威唯一。</p>
+
+    <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:16px;">
+      <!-- type -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:18px 20px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:14px;">type scale</div>
+        <div style="display:flex; align-items:baseline; gap:14px; padding:8px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="font-size:18px; font-weight:680; color:#1d1d1f; flex:1;">命令面板标题</span><span class="gt-mono" style="font-size:11px; color:#9a9aa0;">18 / 680</span></div>
+        <div style="display:flex; align-items:baseline; gap:14px; padding:8px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="font-size:13px; font-weight:590; color:#1d1d1f; flex:1;">session 名 (emphasis)</span><span class="gt-mono" style="font-size:11px; color:#9a9aa0;">13 / 590</span></div>
+        <div style="display:flex; align-items:baseline; gap:14px; padding:8px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="font-size:12px; color:#6b6b70; flex:1;">task / 摘要 (secondary)</span><span class="gt-mono" style="font-size:11px; color:#9a9aa0;">12 / 400</span></div>
+        <div style="display:flex; align-items:baseline; gap:14px; padding:8px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="font-size:11px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:#9a9aa0; flex:1;">SECTION 分区标题</span><span class="gt-mono" style="font-size:11px; color:#9a9aa0;">11 / 700 · +0.5</span></div>
+        <div style="display:flex; align-items:baseline; gap:14px; padding:8px 0;"><span class="gt-mono" style="font-size:11px; color:#6b6b70; flex:1;">%14 · Pica:0.0 · 命令</span><span class="gt-mono" style="font-size:11px; color:#9a9aa0;">SF Mono 11</span></div>
+      </div>
+
+      <!-- color -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:18px 20px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:14px;">status palette · icon.go</div>
+        <div style="display:flex; align-items:center; gap:12px; padding:7px 0;"><span style="width:30px;height:30px;border-radius:8px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:3px;"><span style="width:3px;height:12px;background:#fff;border-radius:1.5px;"></span><span style="width:3px;height:12px;background:#fff;border-radius:1.5px;"></span></span><div style="flex:1;"><div style="font-size:12.5px;font-weight:600;color:#1d1d1f;">waiting</div><div style="font-size:11px;color:#9a9aa0;">red — needs you</div></div><span class="gt-mono" style="font-size:12px;color:#6b6b70;">#EF4444</span></div>
+        <div style="display:flex; align-items:center; gap:12px; padding:7px 0;"><span style="width:30px;height:30px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;"><span style="width:15px;height:15px;border:2.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></span><div style="flex:1;"><div style="font-size:12.5px;font-weight:600;color:#1d1d1f;">working</div><div style="font-size:11px;color:#9a9aa0;">cyan — busy</div></div><span class="gt-mono" style="font-size:12px;color:#6b6b70;">#06B6D4</span></div>
+        <div style="display:flex; align-items:center; gap:12px; padding:7px 0;"><span style="width:30px;height:30px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;line-height:1;">✓</span><div style="flex:1;"><div style="font-size:12.5px;font-weight:600;color:#1d1d1f;">idle</div><div style="font-size:11px;color:#9a9aa0;">green — your move</div></div><span class="gt-mono" style="font-size:12px;color:#6b6b70;">#22C55E</span></div>
+        <div style="display:flex; align-items:center; gap:12px; padding:7px 0;"><span style="width:30px;height:30px;border-radius:50%;background:#8E8E93;display:flex;align-items:center;justify-content:center;"><span style="width:7px;height:7px;border-radius:50%;background:#fff;"></span></span><div style="flex:1;"><div style="font-size:12.5px;font-weight:600;color:#1d1d1f;">none</div><div style="font-size:11px;color:#9a9aa0;">gray — nothing running</div></div><span class="gt-mono" style="font-size:12px;color:#6b6b70;">#8E8E93</span></div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1.4fr; gap:16px; margin-top:16px;">
+      <!-- spacing -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:18px 20px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:14px;">spacing · radius (8pt grid)</div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#6b6b70;">popover 宽</span><span class="gt-mono" style="color:#1d1d1f;">320 pt</span></div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#6b6b70;">圆角 popover / row / chip</span><span class="gt-mono" style="color:#1d1d1f;">13 / 8 / 5</span></div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#6b6b70;">行高 两行 / 紧凑</span><span class="gt-mono" style="color:#1d1d1f;">46 / 28</span></div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#6b6b70;">内边距 / 行内 gap</span><span class="gt-mono" style="color:#1d1d1f;">7 / 11</span></div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:12.5px;"><span style="color:#6b6b70;">列表 max-height</span><span class="gt-mono" style="color:#1d1d1f;">360 pt</span></div>
+      </div>
+
+      <!-- anatomy -->
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:18px 20px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:14px;">row anatomy · 行解剖</div>
+        <div style="position:relative; display:flex; align-items:center; gap:11px; min-height:46px; padding:7px 9px; border-radius:8px; background:rgba(239,68,68,0.07);">
+          <div style="position:relative; flex:none; width:30px; height:30px;">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(0,0,0,0.07);color:#6b6b70;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">C</div>
+            <div style="position:absolute; right:-4px; bottom:-4px; width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:#EF4444;box-shadow:0 0 0 2px #fbeaea;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span></div>
+          </div>
+          <div style="min-width:0; flex:1;"><div style="display:flex; align-items:center; gap:6px;"><span style="font-weight:590;font-size:13px;color:#1d1d1f;">Pica</span><span style="font-size:11.5px;color:#9a9aa0;">· agent</span></div><div style="font-size:12px; color:#6b6b70;">permission to run tests</div></div>
+          <div style="flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:3px;"><span class="gt-mono" style="font-size:11px;color:#9a9aa0;">now</span><span style="font-size:13px;color:#9a9aa0;">›</span></div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:14px;">
+          <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#6b6b70;"><span style="width:14px;height:14px;border-radius:4px;background:rgba(0,0,0,0.12);"></span> agent 头像·中性字标（可换官方图标）</div>
+          <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#6b6b70;"><span style="width:13px;height:13px;border-radius:3.5px;background:#EF4444;"></span> 右下角状态徽章：⏸双竖线=等待 / ◌加载环=运行 / ✓=完成 / ·=待命（色+形+字形）</div>
+          <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#6b6b70;"><span style="width:14px;height:3px;border-radius:2px;background:#1d1d1f;"></span> session / 项目 加粗主体 · window / 终端 次要</div>
+          <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#6b6b70;"><span style="width:14px;height:3px;border-radius:2px;background:#9a9aa0;"></span> task 灰字截断 + 相对时间 + jump ›</div>
+        </div>
+        <p style="margin:13px 0 0; font-size:11.5px; line-height:1.5; color:#9a9aa0;">VoiceOver：整行一个按钮，label = 「Pica，Claude Code，等待你，permission to run tests，刚刚」，hint =「跳转到该 pane」。颜色绝不单独承载含义。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 08: STATES & EDGE CASES MATRIX ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">08</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">状态与边界矩阵</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">每个场景的预期行为，一页看清。可在 01 的原型里逐一切换验证。</p>
+
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; overflow:hidden;">
+      <div style="display:grid; grid-template-columns: 150px 1fr 1.4fr; gap:0; background:#F5F5F7; border-bottom:1px solid rgba(0,0,0,0.06); padding:11px 18px; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:#9a9aa0;">
+        <div>场景 case</div><div>状态栏 status item</div><div>popover 行为</div>
+      </div>
+      <div style="display:grid; grid-template-columns:150px 1fr 1.4fr; padding:13px 18px; border-bottom:1px solid rgba(0,0,0,0.05); align-items:center; gap:10px;">
+        <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">0 agent</div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#6b6b70;"><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid #8E8E93;"></span>灰环 / 可设为隐藏</div>
+        <div style="font-size:12px; color:#6b6b70;">空状态卡 + 启动命令；不报错、不打扰。</div>
+      </div>
+      <div style="display:grid; grid-template-columns:150px 1fr 1.4fr; padding:13px 18px; border-bottom:1px solid rgba(0,0,0,0.05); align-items:center; gap:10px;">
+        <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">1 agent · waiting</div>
+        <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:#6b6b70;"><span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:3px;background:#EF4444;"></span><b style="color:#1d1d1f;">1</b></span>红方块 + 计数 + 脉冲一次</div>
+        <div style="font-size:12px; color:#6b6b70;">单行直接落在「需要你」，已选中，⏎ 即跳。</div>
+      </div>
+      <div style="display:grid; grid-template-columns:150px 1fr 1.4fr; padding:13px 18px; border-bottom:1px solid rgba(0,0,0,0.05); align-items:center; gap:10px;">
+        <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">~5 mixed</div>
+        <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:#6b6b70;"><span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:3px;background:#EF4444;"></span><b style="color:#1d1d1f;">1</b></span>取最紧急（红优先）</div>
+        <div style="font-size:12px; color:#6b6b70;">三分区；需要你高亮、空闲安静；标「✓ 最近完成」。</div>
+      </div>
+      <div style="display:grid; grid-template-columns:150px 1fr 1.4fr; padding:13px 18px; border-bottom:1px solid rgba(0,0,0,0.05); align-items:center; gap:10px;">
+        <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">15+ agent</div>
+        <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:#6b6b70;"><span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:3px;background:#EF4444;"></span><b style="color:#1d1d1f;">2</b></span>仅显示待办计数，不爆栏宽</div>
+        <div style="font-size:12px; color:#6b6b70;">列表 360pt 后滚动；分区头随滚动可吸顶；可「仅等待」收窄。</div>
+      </div>
+      <div style="display:grid; grid-template-columns:150px 1fr 1.4fr; padding:13px 18px; border-bottom:1px solid rgba(0,0,0,0.05); align-items:center; gap:10px;">
+        <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">超长 task</div>
+        <div style="font-size:12px; color:#6b6b70;">不受影响</div>
+        <div style="font-size:12px; color:#6b6b70;">单行省略号截断，悬停 tooltip 给全文；session 永不被挤断。</div>
+      </div>
+      <div style="display:grid; grid-template-columns:150px 1fr 1.4fr; padding:13px 18px; border-bottom:1px solid rgba(0,0,0,0.05); align-items:center; gap:10px;">
+        <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">CJK 中文</div>
+        <div style="font-size:12px; color:#6b6b70;">计数为数字，宽度稳定</div>
+        <div style="font-size:12px; color:#6b6b70;">中文更宽：固定行高 + 弹性中列 + 省略号，绝不换行或溢出。</div>
+      </div>
+      <div style="display:grid; grid-template-columns:150px 1fr 1.4fr; padding:13px 18px; align-items:center; gap:10px;">
+        <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">idle→waiting 跃迁</div>
+        <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:#6b6b70;">绿圆 → 红方块 + <b style="color:#EF4444;">单次脉冲</b></div>
+        <div style="font-size:12px; color:#6b6b70;">唯一的动效时刻；其余状态零动画，保持安静。</div>
+      </div>
+    </div>
+
+    <!-- references -->
+    <div style="margin-top:24px;">
+      <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">借鉴 · what each does well</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:11px; padding:13px 15px;"><div style="font-size:12.5px; font-weight:660; color:#1d1d1f; margin-bottom:3px;">Tailscale</div><div style="font-size:11.5px; color:#7a7a80; line-height:1.45;">状态项克制、连接态一眼可读；菜单即操作。</div></div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:11px; padding:13px 15px;"><div style="font-size:12.5px; font-weight:660; color:#1d1d1f; margin-bottom:3px;">OrbStack</div><div style="font-size:11.5px; color:#7a7a80; line-height:1.45;">两行列表、温和材质、密度与留白的平衡。</div></div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:11px; padding:13px 15px;"><div style="font-size:12.5px; font-weight:660; color:#1d1d1f; margin-bottom:3px;">Stats / exelban</div><div style="font-size:11.5px; color:#7a7a80; line-height:1.45;">栏内信息密度、紧凑行、可配置「显示什么」。</div></div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:11px; padding:13px 15px;"><div style="font-size:12.5px; font-weight:660; color:#1d1d1f; margin-bottom:3px;">Raycast</div><div style="font-size:11.5px; color:#7a7a80; line-height:1.45;">命令面板、模糊搜索、键盘优先与底部快捷键条。</div></div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:11px; padding:13px 15px;"><div style="font-size:12.5px; font-weight:660; color:#1d1d1f; margin-bottom:3px;">Dato / itsycal</div><div style="font-size:11.5px; color:#7a7a80; line-height:1.45;">栏内字形与弹层的轻量、原生贴合感。</div></div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:11px; padding:13px 15px;"><div style="font-size:12.5px; font-weight:660; color:#1d1d1f; margin-bottom:3px;">CCMenu</div><div style="font-size:11.5px; color:#7a7a80; line-height:1.45;">状态 + 列表 + 跳转的成熟范式（CI 构建态）。</div></div>
+      </div>
+    </div>
+
+    <!-- footer credit -->
+    <div style="margin-top:40px; padding-top:20px; border-top:1px solid rgba(0,0,0,0.08); display:flex; align-items:center; gap:10px;">
+      <span style="display:inline-flex; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF4444;"></span><span style="width:6px;height:6px;border-radius:50%;background:#06B6D4;"></span><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span></span>
+      <span class="gt-mono" style="font-size:11.5px; color:#8a8a8e;">gtmux menu-bar app · NSStatusItem + NSPopover + SwiftUI</span>
+      <div style="flex:1;"></div>
+      <span class="gt-mono" style="font-size:11.5px; color:#8a8a8e;">designed by {{ credit }}</span>
+    </div>
+  </div>
+
+  <div data-end></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1280 },
+  &quot;defaultTheme&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;dark&quot;, &quot;light&quot;], &quot;default&quot;: &quot;dark&quot;, &quot;tsType&quot;: &quot;\&quot;dark\&quot;|\&quot;light\&quot;&quot; },
+  &quot;defaultLang&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;en&quot;, &quot;zh&quot;], &quot;default&quot;: &quot;en&quot;, &quot;tsType&quot;: &quot;\&quot;en\&quot;|\&quot;zh\&quot;&quot; },
+  &quot;defaultScenario&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;empty&quot;, &quot;one&quot;, &quot;five&quot;, &quot;many&quot;], &quot;default&quot;: &quot;five&quot;, &quot;tsType&quot;: &quot;string&quot; },
+  &quot;creditName&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;ccy&quot;, &quot;tsType&quot;: &quot;string&quot; }
+}">
+class Component extends DCLogic {
+  state = { scenario: null, theme: null, lang: null, waitingOnly: false, search: '', searchMode: false, sel: 0, lastJump: null };
+
+  cur(k) {
+    const s = this.state, p = this.props || {};
+    if (k === 'scenario') return s.scenario ?? p.defaultScenario ?? 'five';
+    if (k === 'theme') return s.theme ?? p.defaultTheme ?? 'dark';
+    if (k === 'lang') return s.lang ?? p.defaultLang ?? 'en';
+  }
+  t(en, zh) { return this.cur('lang') === 'zh' ? zh : en; }
+
+  ST() {
+    return {
+      waiting: { glyph: '⏸', shape: '8px', color: '#EF4444', label: { en: 'Needs you', zh: '需要你处理' }, slabel: { en: 'waiting', zh: '等输入' } },
+      working: { glyph: '⠿', shape: '50%', color: '#06B6D4', label: { en: 'Working', zh: '运行中' }, slabel: { en: 'working', zh: '运行中' } },
+      idle: { glyph: '✳', shape: '50%', color: '#22C55E', label: { en: 'Idle', zh: '空闲' }, slabel: { en: 'idle', zh: '空闲' } },
+      running: { glyph: '●', shape: '50%', color: '#8E8E93', label: { en: 'At prompt', zh: '待命' }, slabel: { en: 'running', zh: '运行中' } },
+    };
+  }
+  leadBg(s) { return { waiting: '#EF4444', working: 'rgba(6,182,212,0.16)', idle: 'rgba(34,197,94,0.16)', running: 'rgba(142,142,147,0.18)' }[s]; }
+  leadFg(s) { return { waiting: '#ffffff', working: '#27C7E6', idle: '#34D26B', running: '#9aa0a6' }[s]; }
+  animClass(s) { return s === 'waiting' ? 'gtpulse' : (s === 'working' ? 'gtbreath' : ''); }
+  badge(s) { return { waiting: { c: '#EF4444', r: '3.5px' }, working: { c: '#06B6D4', r: '50%' }, idle: { c: '#22C55E', r: '50%' }, running: { c: '#8E8E93', r: '50%' } }[s]; }
+  agentMark(name) { return { 'Claude Code': 'C', 'Codex': 'Cx', 'Gemini': 'G', 'Aider': 'A', 'opencode': 'oc', 'Crush': 'Cr', 'Cursor': 'Cu', 'Amp': 'Am' }[name] || (name || '?').slice(0, 1); }
+
+  themeTokens(theme) {
+    if (theme === 'light') return {
+      bg: 'rgba(252,252,253,0.72)', border: 'rgba(0,0,0,0.10)', fg: '#1d1d1f', fg2: 'rgba(60,60,67,0.62)', fg3: 'rgba(60,60,67,0.34)',
+      section: 'rgba(60,60,67,0.5)', rowSel: 'rgba(0,0,0,0.07)', divider: 'rgba(0,0,0,0.08)', footer: 'rgba(0,0,0,0.02)', searchBg: 'rgba(0,0,0,0.06)',
+      monoBg: 'rgba(0,0,0,0.07)', monoFg: 'rgba(60,60,67,0.8)', shadow: '0 16px 44px rgba(0,0,0,0.20)', badgeRing: '#f3f3f5',
+      wall: 'linear-gradient(165deg, #e7e9ec 0%, #d6d9dd 100%)', barText: '#1d1d1f', barBg: 'rgba(255,255,255,0.5)', barSel: 'rgba(0,0,0,0.10)',
+    };
+    return {
+      bg: 'rgba(28,28,31,0.6)', border: 'rgba(255,255,255,0.12)', fg: 'rgba(255,255,255,0.95)', fg2: 'rgba(235,235,245,0.62)', fg3: 'rgba(235,235,245,0.34)',
+      section: 'rgba(235,235,245,0.5)', rowSel: 'rgba(255,255,255,0.12)', divider: 'rgba(255,255,255,0.09)', footer: 'rgba(255,255,255,0.04)', searchBg: 'rgba(255,255,255,0.10)',
+      monoBg: 'rgba(255,255,255,0.11)', monoFg: 'rgba(235,235,245,0.78)', shadow: '0 18px 50px rgba(0,0,0,0.55)', badgeRing: '#202023',
+      wall: 'linear-gradient(165deg, #303338 0%, #1b1d21 100%)', barText: '#ffffff', barBg: 'rgba(36,36,40,0.42)', barSel: 'rgba(255,255,255,0.16)',
+    };
+  }
+
+  data() {
+    return {
+      empty: [],
+      one: [
+        { agent: 'Claude Code', session: 'Pica', window: 'agent', loc: 'Pica:0.0', pane: '%7', source: 'tmux', status: 'waiting', mins: 0, task: { en: 'permission to run tests', zh: '请求运行测试的权限' } },
+      ],
+      five: [
+        { agent: 'Claude Code', session: 'Pica', window: 'agent', loc: 'Pica:0.0', pane: '%7', source: 'tmux', status: 'waiting', mins: 0, task: { en: 'permission to run tests', zh: '请求运行测试的权限' } },
+        { agent: 'Claude Code', session: 'ccy-workspace', window: 'main', loc: 'ccy-workspace:0.0', pane: '%11', source: 'tmux', status: 'working', mins: 1, task: { en: 'Auto-attach tmux sessions', zh: '自动挂载 tmux 会话' } },
+        { agent: 'Codex', project: 'scratch-cli', terminal: 'Terminal', source: 'native', status: 'working', mins: 3, task: { en: 'Prototyping a CLI arg parser', zh: '写 CLI 参数解析原型' } },
+        { agent: 'Claude Code', session: 'Rodi', window: 'dev', loc: 'Rodi:0.0', pane: '%8', source: 'tmux', status: 'idle', mins: 6, latest: true, task: { en: 'Rodi feature dev', zh: 'Rodi 功能开发' } },
+        { agent: 'Gemini', session: 'Diting', window: 'main', loc: 'Diting:0.0', pane: '%1', source: 'tmux', status: 'idle', mins: 22, task: { en: '', zh: '' } },
+      ],
+      many: [
+        { agent: 'Claude Code', session: 'Pica', window: 'agent', loc: 'Pica:0.0', pane: '%7', source: 'tmux', status: 'waiting', mins: 0, task: { en: 'permission to run tests', zh: '请求运行测试的权限' } },
+        { agent: 'Codex', session: 'billing-svc', window: 'migrations', loc: 'billing-svc:2.1', pane: '%23', source: 'tmux', status: 'waiting', mins: 2, task: { en: 'approve: delete migration 0014_drop_orders', zh: '确认删除迁移 0014_drop_orders' } },
+        { agent: 'Claude Code', session: 'ccy-workspace', window: 'main', loc: 'ccy-workspace:0.0', pane: '%11', source: 'tmux', status: 'working', mins: 0, task: { en: 'Auto-attach tmux sessions', zh: '自动挂载 tmux 会话' } },
+        { agent: 'Codex', session: 'api-gateway', window: 'tests', loc: 'api-gateway:1.2', pane: '%14', source: 'tmux', status: 'working', mins: 1, task: { en: 'Refactoring the auth middleware and adding tests', zh: '重构鉴权中间件并补充测试用例' } },
+        { agent: 'Aider', session: 'etl-pipeline', window: 'backfill', loc: 'etl-pipeline:0.3', pane: '%31', source: 'tmux', status: 'working', mins: 4, task: { en: 'Backfilling the analytics warehouse', zh: '回填分析数仓数据' } },
+        { agent: 'opencode', project: 'docs-site', terminal: 'iTerm2', source: 'native', status: 'working', mins: 8, task: { en: 'Migrating MDX components', zh: '迁移 MDX 组件' } },
+        { agent: 'Gemini', session: 'mobile-app', window: 'onboarding', loc: 'mobile-app:1.0', pane: '%18', source: 'tmux', status: 'working', mins: 5, task: { en: 'Wiring the onboarding flow', zh: '打通新用户引导流程' } },
+        { agent: 'Claude Code', session: 'Rodi', window: 'dev', loc: 'Rodi:0.0', pane: '%8', source: 'tmux', status: 'idle', mins: 6, latest: true, task: { en: 'Rodi feature dev', zh: 'Rodi 功能开发' } },
+        { agent: 'Cursor', session: 'design-system', window: 'tokens', loc: 'design-system:0.1', pane: '%5', source: 'tmux', status: 'idle', mins: 12, task: { en: 'Token audit complete', zh: '设计令牌审计完成' } },
+        { agent: 'Crush', session: 'infra-tf', window: 'plan', loc: 'infra-tf:3.0', pane: '%27', source: 'tmux', status: 'idle', mins: 18, task: { en: 'terraform plan reviewed', zh: '已审阅 terraform plan' } },
+        { agent: 'Amp', project: 'payments-api', terminal: 'Ghostty', source: 'native', status: 'idle', mins: 25, task: { en: 'Stripe webhook retries', zh: 'Stripe webhook 重试逻辑' } },
+        { agent: 'Gemini', session: 'Diting', window: 'main', loc: 'Diting:0.0', pane: '%1', source: 'tmux', status: 'idle', mins: 34, task: { en: '', zh: '' } },
+        { agent: 'Claude Code', session: 'search-svc', window: 'reindex', loc: 'search-svc:1.1', pane: '%20', source: 'tmux', status: 'idle', mins: 47, task: { en: 'Reindex job shipped', zh: '重建索引任务已上线' } },
+        { agent: 'Codex', session: 'ml-train', window: 'eval', loc: 'ml-train:0.0', pane: '%33', source: 'tmux', status: 'idle', mins: 62, task: { en: 'Eval run finished', zh: '评测任务完成' } },
+        { agent: 'Aider', session: 'legacy-php', window: 'deps', loc: 'legacy-php:0.0', pane: '%41', source: 'tmux', status: 'idle', mins: 95, task: { en: 'Dependency bump merged', zh: '依赖升级已合并' } },
+        { agent: 'Claude Code', session: 'sandbox', window: 'main', loc: 'sandbox:0.0', pane: '%2', source: 'tmux', status: 'running', mins: 3, task: { en: '', zh: '' } },
+      ],
+    };
+  }
+
+  fmtTime(m, lang) {
+    if (m === 0) return lang === 'zh' ? '刚刚' : 'now';
+    if (m < 60) return lang === 'zh' ? (m + '分') : (m + 'm');
+    const h = Math.round(m / 60);
+    return lang === 'zh' ? (h + '小时') : (h + 'h');
+  }
+  summaryText(arr, lang) {
+    const n = arr.length;
+    if (n === 0) return lang === 'zh' ? '没有 agent' : 'no agents';
+    let w = 0, wk = 0;
+    arr.forEach(a => { if (a.status === 'waiting') w++; else if (a.status === 'working') wk++; });
+    const idle = n - w - wk;
+    if (lang === 'zh') { const p = []; if (w) p.push(w + ' 等输入'); p.push(wk + ' 运行中'); p.push(idle + ' 空闲'); return n + ' agent · ' + p.join(' · '); }
+    const p = []; if (w) p.push(w + ' waiting'); p.push(wk + ' working'); p.push(idle + ' idle');
+    return n + (n === 1 ? ' agent' : ' agents') + ' · ' + p.join(' · ');
+  }
+
+  seg(items) {
+    return items.map(it => ({
+      label: it.label, on: it.on,
+      bg: it.active ? '#ffffff' : 'transparent',
+      fg: it.active ? '#1d1d1f' : 'rgba(60,60,67,0.62)',
+      sh: it.active ? '0 1px 2px rgba(0,0,0,0.14)' : 'none',
+    }));
+  }
+
+  jump(a, idx) {
+    const tgt = a.source === 'native' ? (a.terminal + ':' + a.project) : a.pane;
+    this.setState({ lastJump: 'gtmux focus ' + tgt, sel: idx });
+    clearTimeout(this._jt);
+    this._jt = setTimeout(() => this.setState({ lastJump: null }), 1600);
+  }
+  onKey = (e) => {
+    const n = (this._flat || []).length;
+    if (e.key === 'ArrowDown') { e.preventDefault(); this.setState(s => ({ sel: Math.min((s.sel || 0) + 1, Math.max(0, n - 1)) })); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState(s => ({ sel: Math.max((s.sel || 0) - 1, 0) })); }
+    else if (e.key === 'Enter') { e.preventDefault(); const a = (this._flat || [])[this.state.sel]; if (a) this.jump(a, this.state.sel); }
+    else if (e.key === 'Escape') { if (this.state.searchMode || this.state.search) this.setState({ searchMode: false, search: '' }); }
+  };
+  setRef = (el) => { this._pop = el; };
+  componentDidMount() { if (this._pop) { try { this._pop.focus({ preventScroll: true }); } catch (e) {} } }
+  componentWillUnmount() { clearTimeout(this._jt); }
+
+  renderVals() {
+    const theme = this.cur('theme'), lang = this.cur('lang'), scen = this.cur('scenario');
+    const T = this.themeTokens(theme);
+    const ST = this.ST();
+    const full = this.data()[scen] || [];
+    let agents = full.slice();
+    if (this.state.waitingOnly) agents = agents.filter(a => a.status === 'waiting');
+    const q = (this.state.search || '').trim().toLowerCase();
+    if (q) agents = agents.filter(a => (a.session + ' ' + a.agent + ' ' + a.loc + ' ' + a.pane + ' ' + a.task.en + ' ' + a.task.zh).toLowerCase().includes(q));
+
+    const order = ['waiting', 'working', 'idle', 'running'];
+    const flat = [];
+    const groups = [];
+    order.forEach(key => {
+      const items = agents.filter(a => a.status === key);
+      if (!items.length) return;
+      const meta = ST[key];
+      const rows = items.map(a => {
+        const idx = flat.length; flat.push(a);
+        const isSel = idx === this.state.sel;
+        const isWait = a.status === 'waiting';
+        const task = a.task[lang] || a.task.en;
+        const isNative = a.source === 'native';
+        const primary = isNative ? a.project : a.session;
+        const secondary = isNative ? a.terminal : a.window;
+        const bdg = this.badge(a.status);
+        return {
+          flatIndex: idx, isSel,
+          mark: this.agentMark(a.agent), agent: a.agent,
+          primary, secondary, secondarySep: secondary ? '·' : '',
+          isNative, nativeLbl: lang === 'zh' ? '原生' : 'native',
+          taskShown: task || '—',
+          time: this.fmtTime(a.mins, lang),
+          badgeColor: bdg.c, badgeShape: bdg.r,
+          stWaiting: a.status === 'waiting', stWorking: a.status === 'working', stIdle: a.status === 'idle', stRunning: a.status === 'running',
+          avatarBg: T.monoBg, avatarFg: T.monoFg, badgeRing: T.badgeRing,
+          animClass: this.animClass(a.status),
+          rowBg: isSel ? T.rowSel : (isWait ? 'rgba(239,68,68,0.08)' : 'transparent'),
+          latest: !!a.latest, latestLbl: lang === 'zh' ? '最近完成' : 'latest',
+          chev: isSel ? '⏎' : '›', chevColor: isSel ? T.fg : T.fg3,
+          tip: (isNative ? a.terminal + ' · ' + a.project : a.loc) + ' · ' + a.agent + ' · ' + meta.slabel[lang === 'zh' ? 'zh' : 'en'],
+          onEnter: () => this.setState({ sel: idx }),
+          onJump: () => this.jump(a, idx),
+        };
+      });
+      groups.push({ key, label: meta.label[lang === 'zh' ? 'zh' : 'en'], count: items.length, color: meta.color, labelColor: key === 'waiting' ? '#EF4444' : T.section, items: rows });
+    });
+    this._flat = flat;
+
+    const segScenario = this.seg([
+      { label: '0', active: scen === 'empty', on: () => this.setState({ scenario: 'empty', sel: 0 }) },
+      { label: '1', active: scen === 'one', on: () => this.setState({ scenario: 'one', sel: 0 }) },
+      { label: '5', active: scen === 'five', on: () => this.setState({ scenario: 'five', sel: 0 }) },
+      { label: '15+', active: scen === 'many', on: () => this.setState({ scenario: 'many', sel: 0 }) },
+    ]);
+    const segTheme = this.seg([
+      { label: 'Dark', active: theme === 'dark', on: () => this.setState({ theme: 'dark' }) },
+      { label: 'Light', active: theme === 'light', on: () => this.setState({ theme: 'light' }) },
+    ]);
+    const segLang = this.seg([
+      { label: 'EN', active: lang === 'en', on: () => this.setState({ lang: 'en' }) },
+      { label: '中文', active: lang === 'zh', on: () => this.setState({ lang: 'zh' }) },
+    ]);
+
+    const footerBtns = [
+      { glyph: '⊞', label: this.t('Overview', '概览'), tip: 'gtmux overview', on: () => {} },
+      { glyph: '◉', label: this.t('Watch', '实时'), tip: 'gtmux agents --watch', on: () => {} },
+      { glyph: '⟳', label: this.t('Restore', '恢复'), tip: 'gtmux restore', on: () => {} },
+      { glyph: '＋', label: this.t('New', '新建'), tip: 'gtmux new', on: () => {} },
+    ];
+
+    const specRows = [
+      { k: 'popover width', v: '320 pt' },
+      { k: 'corner radius', v: '13 pt' },
+      { k: 'row height', v: '46 pt' },
+      { k: 'lead icon', v: '30 pt' },
+      { k: 'list max-h', v: '360 pt' },
+      { k: 'list scroll', v: '> 7 rows' },
+    ];
+
+    return {
+      T, groups, isEmpty: groups.length === 0,
+      searchMode: this.state.searchMode, notSearch: !this.state.searchMode,
+      summary: this.summaryText(full, lang),
+      credit: (this.props && this.props.creditName) || 'ccy',
+      segScenario, segTheme, segLang, footerBtns, specRows,
+      search: this.state.search,
+      lblWaitingOnly: this.t('Waiting only', '仅等待'),
+      lblSearchPlaceholder: this.t('Filter agents…', '筛选 agent…'),
+      lblPrefs: this.t('Preferences', '偏好设置'),
+      woBg: this.state.waitingOnly ? 'rgba(239,68,68,0.18)' : 'transparent',
+      woFg: this.state.waitingOnly ? '#EF4444' : T.fg3,
+      searchBtnBg: this.state.searchMode ? T.searchBg : 'transparent',
+      searchBtnFg: this.state.searchMode ? T.fg : T.fg2,
+      emTitle: this.t('No agents running', '没有运行中的 agent'),
+      emSub: this.t('Start any coding agent in a tmux pane to see it here.', '在 tmux pane 里启动任意 coding agent，就会出现在这里。'),
+      emCmd: 'tmux new -s work \\; claude',
+      lastJump: this.state.lastJump, hasJump: !!this.state.lastJump,
+      onKey: this.onKey, setRef: this.setRef,
+      onSearchInput: (e) => this.setState({ search: e.target.value, sel: 0 }),
+      toggleSearch: () => this.setState(s => ({ searchMode: !s.searchMode, search: '', sel: 0 })),
+      toggleWaitingOnly: () => this.setState(s => ({ waitingOnly: !s.waitingOnly, sel: 0 })),
+      openPrefs: () => {},
+    };
+  }
+}
+</script>
+</body>
+</html>
