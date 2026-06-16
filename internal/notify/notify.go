@@ -1,72 +1,83 @@
-// Package notify posts a desktop notification, preferring terminal-notifier
-// (clickable — it can -activate the menu-bar app, which jumps to last-finished)
-// and falling back to osascript (not clickable). The notifier is spawned
-// DETACHED so it outlives the short-lived hook process that triggered it.
+// Package notify enqueues a desktop-notification request for the menu-bar app to
+// deliver. gtmux no longer shells out to terminal-notifier or osascript: the
+// native Gtmux.app drains this queue and posts a real UNUserNotificationCenter
+// banner — sent as "Gtmux", clickable, with a Jump action and the agent icon.
+//
+// The hook process is short-lived, so this just drops a small JSON file and
+// returns; the (long-running) app does the posting. Writing is atomic
+// (temp file + rename) so the app never reads a half-written request.
 package notify
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
-	"os/exec"
+	"path/filepath"
 	"strings"
-	"syscall"
+	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// Options describes one notification.
+// Options describes one notification request.
 type Options struct {
-	Title    string // e.g. "Claude Code"
-	Subtitle string // e.g. the tmux session name
-	Message  string
-	Activate string // bundle id to launch on click, e.g. "com.gtmux.menubar"
-	Group    string // coalescing key, e.g. "gtmux-<session>"
-	IconPath string // -contentImage; omitted when "" (terminal-notifier ignores -appIcon)
+	Kind     string // "done" (finished) or "input" (needs you) — picks copy/sound
+	Title    string // bold line, e.g. the session name
+	Subtitle string // dimmer line, e.g. the agent name
+	Message  string // body
+	Pane     string // tmux pane id (%N) to jump to on click; "" → focus --last
+	Session  string // session name (for the app's coalescing/threading)
+	IconPath string // thumbnail image path; "" to omit
 }
 
-// Send posts the notification and returns immediately. It never blocks on the
-// notifier: the child is detached (its own session, stdio to /dev/null) and not
-// waited on, mirroring the bash hook's `nohup … </dev/null &`.
+// request is the on-disk schema the menu-bar app decodes. Keep field names in
+// sync with macapp NotificationManager.NotifyRequest.
+type request struct {
+	Kind     string `json:"kind"`
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle,omitempty"`
+	Body     string `json:"body"`
+	Pane     string `json:"pane,omitempty"`
+	Session  string `json:"session,omitempty"`
+	Icon     string `json:"icon,omitempty"`
+	TS       int64  `json:"ts"` // unix seconds; the app drops stale requests
+}
+
+// Send enqueues o for the menu-bar app to deliver. Best-effort and non-blocking:
+// any error (no HOME, unwritable dir) is swallowed — a hook must never fail a turn.
 func Send(o Options) {
-	if path, err := exec.LookPath("terminal-notifier"); err == nil {
-		args := []string{"-title", o.Title, "-sound", "default"}
-		if o.Activate != "" {
-			args = append(args, "-activate", o.Activate)
-		}
-		if o.IconPath != "" {
-			args = append(args, "-contentImage", o.IconPath)
-		}
-		if o.Subtitle != "" {
-			args = append(args, "-subtitle", o.Subtitle)
-		}
-		args = append(args, "-message", o.Message)
-		if o.Group != "" {
-			args = append(args, "-group", o.Group)
-		}
-		spawnDetached(path, args)
+	dir := state.NotifyDir()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return
 	}
-
-	// Fallback: a non-clickable banner via osascript.
-	script := "display notification " + osaStr(o.Message) + " with title " + osaStr(o.Title)
-	if o.Subtitle != "" {
-		script += " subtitle " + osaStr(o.Subtitle)
+	data, err := json.Marshal(request{
+		Kind:     o.Kind,
+		Title:    o.Title,
+		Subtitle: o.Subtitle,
+		Body:     o.Message,
+		Pane:     o.Pane,
+		Session:  o.Session,
+		Icon:     o.IconPath,
+		TS:       time.Now().Unix(),
+	})
+	if err != nil {
+		return
 	}
-	spawnDetached("/usr/bin/osascript", []string{"-e", script})
+	name := fmt.Sprintf("%d-%s.json", time.Now().UnixNano(), sanitize(o.Pane))
+	final := filepath.Join(dir, name)
+	tmp := filepath.Join(dir, "."+name+".tmp")
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		return
+	}
+	if err := os.Rename(tmp, final); err != nil { // atomic publish into the watched dir
+		_ = os.Remove(tmp)
+	}
 }
 
-// spawnDetached starts bin in its own session with stdio routed to /dev/null and
-// does NOT wait, so it survives the parent exiting.
-func spawnDetached(bin string, args []string) {
-	cmd := exec.Command(bin, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	if devnull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0); err == nil {
-		cmd.Stdin, cmd.Stdout, cmd.Stderr = devnull, devnull, devnull
-		defer devnull.Close()
+// sanitize makes a pane id (e.g. "%12") safe for a filename.
+func sanitize(s string) string {
+	if s == "" {
+		return "x"
 	}
-	_ = cmd.Start() // intentionally not Wait()ed — let it outlive us
-}
-
-// osaStr quotes s as an AppleScript string literal.
-func osaStr(s string) string {
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, `"`, `\"`)
-	return `"` + s + `"`
+	return strings.NewReplacer("%", "p", "/", "_", ".", "_").Replace(s)
 }

@@ -67,13 +67,7 @@ func cmdInstallHooks(args []string) int {
 		i18n.Say("✓ cached Claude icon for notifications", "✓ 已缓存 Claude 通知图标")
 	}
 
-	// 2. terminal-notifier makes the notification clickable.
-	if _, err := exec.LookPath("terminal-notifier"); err != nil {
-		i18n.Say("• terminal-notifier not found — notifications won't be clickable. Install: brew install terminal-notifier",
-			"• 未找到 terminal-notifier —— 通知将不可点击。安装: brew install terminal-notifier")
-	}
-
-	// 3. Register the hook in ~/.claude/settings.json.
+	// 2. Register the hook in ~/.claude/settings.json.
 	if err := updateSettings(claudeSettingsPath(), bin, true); err != nil {
 		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败: "+err.Error())
 		return 1
@@ -81,13 +75,14 @@ func cmdInstallHooks(args []string) int {
 	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit)",
 		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit)")
 
-	// 4. peon-ping coexistence.
+	// 3. peon-ping coexistence.
 	handlePeonPing(yes)
 
-	// Notification clicks need the menu-bar app running to jump.
+	// The menu-bar app delivers notifications now (no terminal-notifier). Without
+	// it installed, the hook still tracks state but no banners are posted.
 	if _, err := os.Stat(gtmuxAppPath()); err != nil {
-		i18n.Say("• install the menu-bar app for click-to-jump notifications (curl installer, or 'make app')",
-			"• 安装菜单栏 app 才能点击通知跳转(用 curl 安装脚本,或 'make app')")
+		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
+			"• 安装菜单栏 app 才能收到桌面通知(用 curl 安装脚本,或 'make app')")
 	}
 
 	i18n.Say("Done. Restart your Claude Code sessions to load the hooks.",

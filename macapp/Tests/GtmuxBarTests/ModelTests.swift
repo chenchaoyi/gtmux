@@ -125,6 +125,32 @@ final class ModelTests: XCTestCase {
         XCTAssertFalse(AgentStore.fuzzy("zzz", in: "pica"))
     }
 
+    // MARK: notification queue — decode the hook's request (contract with internal/notify)
+
+    func testNotifyRequestDecode() throws {
+        let json = """
+        {"kind":"input","title":"Diting","subtitle":"Claude Code",
+         "body":"Needs your input","pane":"%12","session":"Diting",
+         "icon":"/tmp/icon.png","ts":1700000000}
+        """
+        let r = try JSONDecoder().decode(NotificationManager.Request.self, from: Data(json.utf8))
+        XCTAssertEqual(r.kind, "input")
+        XCTAssertEqual(r.title, "Diting")
+        XCTAssertEqual(r.pane, "%12")
+        XCTAssertEqual(r.icon, "/tmp/icon.png")
+        XCTAssertEqual(r.ts, 1_700_000_000)
+    }
+
+    /// Tolerates older/sparse JSON: missing fields fall back, kind defaults to "done".
+    func testNotifyRequestDecodeTolerant() throws {
+        let r = try JSONDecoder().decode(
+            NotificationManager.Request.self, from: Data(#"{"title":"X","body":"done"}"#.utf8))
+        XCTAssertEqual(r.kind, "done")   // default
+        XCTAssertEqual(r.title, "X")
+        XCTAssertEqual(r.pane, "")       // missing → empty
+        XCTAssertEqual(r.ts, 0)
+    }
+
     // MARK: command palette (DESIGN §4 B)
 
     /// Search must find IDLE (done-this-turn) agents and exclude non-matches —
