@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -63,6 +64,12 @@ type agentPane struct {
 	status   string // "working" | "waiting" | "idle" | "running"
 	activity bool
 	latest   bool // the most-recently-finished pane (claude-notify last-finished)
+	// terminal generalization (DESIGN §7)
+	source     string // "tmux" | "native"
+	project    string
+	terminal   string
+	tab        string
+	activityAt int64 // epoch seconds of last activity (relative time)
 }
 
 // agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
@@ -78,6 +85,13 @@ type agentJSON struct {
 	Task     string `json:"task"`
 	Latest   bool   `json:"latest"`
 	Activity bool   `json:"activity"`
+	// terminal generalization (DESIGN §7): tmux agents carry session/window/pane;
+	// native agents (run directly in a terminal) carry project/terminal/tab.
+	Source     string `json:"source"`             // "tmux" | "native"
+	Project    string `json:"project,omitempty"`  // native: cwd basename
+	Terminal   string `json:"terminal,omitempty"` // native: terminal app
+	Tab        string `json:"tab,omitempty"`      // native: terminal tab title (jump key)
+	ActivityAt int64  `json:"activity_at,omitempty"`
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -179,10 +193,10 @@ func gatherAgents() []agentPane {
 	waiting := state.WaitingSet()
 
 	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}"
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}"
 	var panes []agentPane
 	for _, line := range tmux.Lines("list-panes", "-a", "-F", fields) {
-		f := strings.SplitN(line, "\t", 7)
+		f := strings.SplitN(line, "\t", 8)
 		if len(f) < 7 {
 			continue
 		}
@@ -200,17 +214,23 @@ func gatherAgents() []agentPane {
 		case waiting[id]:
 			status = "waiting" // blocked on the user
 		}
+		var activityAt int64
+		if len(f) >= 8 {
+			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
+		}
 		panes = append(panes, agentPane{
-			paneID:   id,
-			session:  f[1],
-			window:   f[2],
-			pane:     f[3],
-			loc:      fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]),
-			agent:    agent,
-			task:     task,
-			status:   status,
-			activity: f[6] == "1",
-			latest:   id == lastFinished && status != "working" && status != "waiting",
+			paneID:     id,
+			session:    f[1],
+			window:     f[2],
+			pane:       f[3],
+			loc:        fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]),
+			agent:      agent,
+			task:       task,
+			status:     status,
+			activity:   f[6] == "1",
+			latest:     id == lastFinished && status != "working" && status != "waiting",
+			source:     "tmux",
+			activityAt: activityAt,
 		})
 	}
 	sort.SliceStable(panes, func(i, j int) bool {
@@ -327,10 +347,16 @@ func agentsJSON() int {
 	panes := gatherAgents()
 	out := make([]agentJSON, 0, len(panes))
 	for _, p := range panes {
+		src := p.source
+		if src == "" {
+			src = "tmux"
+		}
 		out = append(out, agentJSON{
 			PaneID: p.paneID, Session: p.session, Window: p.window, Pane: p.pane,
 			Loc: p.loc, Agent: p.agent, Status: p.status, Task: p.task,
 			Latest: p.latest, Activity: p.activity,
+			Source: src, Project: p.project, Terminal: p.terminal, Tab: p.tab,
+			ActivityAt: p.activityAt,
 		})
 	}
 	b, err := json.MarshalIndent(out, "", "  ")

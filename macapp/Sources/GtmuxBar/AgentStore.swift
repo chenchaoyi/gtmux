@@ -112,6 +112,9 @@ final class AgentStore: ObservableObject {
         }
     }
 
+    /// Test seam: inject agents synchronously (used by unit tests).
+    func setForTesting(_ a: [Agent]) { agents = a }
+
     // counts
     var total: Int { agents.count }
     var waiting: Int { agents.filter { $0.state == .waiting }.count }

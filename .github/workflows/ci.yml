@@ -43,6 +43,10 @@ jobs:
       - name: coverage summary
         run: go tool cover -func=coverage.out | tail -1
 
+      # Architecture + design-palette invariants (also run on macOS with swift test).
+      - name: design + architecture conformance
+        run: ./scripts/check-design.sh
+
   cross-build:
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +70,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # The menu-bar app is native Swift (macapp/); compile it here so a PR can't
-      # break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
+      # The menu-bar app is native Swift (macapp/); compile + unit-test it here so
+      # a PR can't break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
       - name: swift build (release)
         run: cd macapp && swift build -c release
+
+      - name: swift test (model + design conformance)
+        run: cd macapp && swift test
+
+      - name: design + architecture conformance
+        run: ./scripts/check-design.sh

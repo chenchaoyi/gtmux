@@ -85,6 +85,33 @@ return procName & "
 	return title == session || strings.HasPrefix(title, session+" — ")
 }
 
+// FocusTerminalTab brings the tab titled `title` in the terminal app `app` to
+// the front — the native-agent jump (DESIGN §7). Ghostty is fully supported
+// (tab-title match); other terminals are best-effort (activate the app, since
+// per-terminal tab scripting differs). Returns "ok"/"notfound" or "".
+func FocusTerminalTab(app, title string) (string, error) {
+	if app == "Ghostty" {
+		return osascript(ghosttyTabScript(title))
+	}
+	return osascript(`tell application "` + Quote(app) + `" to activate`)
+}
+
+func ghosttyTabScript(title string) string {
+	return `tell application "Ghostty"
+  repeat with w in windows
+    repeat with t in tabs of w
+      if name of t is "` + Quote(title) + `" then
+        select tab t
+        activate window w
+        activate
+        return "ok"
+      end if
+    end repeat
+  end repeat
+  return "notfound"
+end tell`
+}
+
 // windowScript builds the AppleScript to open a new Ghostty window running a
 // shell command (the caller is responsible for shell-quoting within command).
 func windowScript(command string) string {

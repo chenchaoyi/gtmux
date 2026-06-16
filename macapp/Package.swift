@@ -7,6 +7,7 @@ let package = Package(
     name: "GtmuxBar",
     platforms: [.macOS(.v14)],
     targets: [
-        .executableTarget(name: "GtmuxBar", path: "Sources/GtmuxBar")
+        .executableTarget(name: "GtmuxBar", path: "Sources/GtmuxBar"),
+        .testTarget(name: "GtmuxBarTests", dependencies: ["GtmuxBar"], path: "Tests/GtmuxBarTests"),
     ]
 )
