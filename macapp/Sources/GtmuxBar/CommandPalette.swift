@@ -42,6 +42,7 @@ final class CommandPaletteController {
     private var panel: KeyablePanel?
     private var model: PaletteModel?
     private var monitor: Any?
+    private var resignObserver: Any?
     private var jump: ((Agent) -> Void)?
 
     func toggle(store: AgentStore, l10n: L10n, onJump: @escaping (Agent) -> Void) {
@@ -87,10 +88,18 @@ final class CommandPaletteController {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = true
-        panel.hidesOnDeactivate = true
+        // NOT hidesOnDeactivate: AppKit auto-RESTORES such panels on the next
+        // app activation, so clicking the status item (which calls NSApp.activate
+        // for the popover) would re-pop the palette. Instead dismiss it explicitly
+        // when it loses key focus — Spotlight-style — so it never lingers hidden.
+        panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         panel.isMovableByWindowBackground = true
         self.panel = panel
+
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: panel, queue: .main
+        ) { [weak self] _ in self?.hide() }
     }
 
     private func center(_ panel: NSPanel) {
@@ -102,7 +111,15 @@ final class CommandPaletteController {
             y: vf.maxY - size.height - vf.height * 0.18))
     }
 
-    private func hide() { panel?.orderOut(nil) }
+    private func hide() {
+        guard let panel = panel, panel.isVisible else { return }
+        dbg("palette hide (orderOut)")
+        panel.orderOut(nil)
+    }
+
+    /// Close the palette if it's open (e.g. when the popover is about to show, so
+    /// the two never coexist on screen).
+    func dismiss() { hide() }
 
     private func installMonitor() {
         guard monitor == nil else { return }

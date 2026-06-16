@@ -106,6 +106,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
         if popover.isShown { popover.performClose(nil); return }
+        // The popover and the center-screen command palette must never coexist.
+        CommandPaletteController.shared.dismiss()
         store.refresh()
         // Activate FIRST: a hotkey press from another app must make gtmux active,
         // else the transient popover dismisses immediately.
