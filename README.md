@@ -1,22 +1,52 @@
+<div align="center">
+
+<img src="docs/assets/logo.png" width="112" alt="gtmux logo" />
+
 # gtmux
 
 **Command center for your tmux sessions and coding agents.**
 
-[中文](README.zh.md)
+[![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
+[![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
+[![Go](https://img.shields.io/badge/go-1.24-00ADD8?logo=go&logoColor=white)](go.mod)
+[![Platform](https://img.shields.io/badge/macOS-Ghostty%201.3%2B-111)](https://ghostty.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-`gtmux` is a small Go CLI that sits over the tmux sessions you already run and
-the coding agents (Claude Code, Codex, Gemini, aider, …) running inside them.
-It tells you who's **waiting on you**, who's **working**, and who's **idle** —
-and jumps you to the exact Ghostty tab and tmux pane.
+**English** · [中文](README.zh.md)
 
-**How it's different.** Unlike agent *spawners* (claude-squad, uzi, dmux, …)
-that create and sandbox agents in git worktrees, gtmux **doesn't run your
-agents** — it's the **radar + remote over whatever you already run in tmux**.
-Non-invasive, tmux-native, and it even surfaces agents *other* tools spawned
-(they're in tmux too). The "g" is for Go.
+<img src="docs/assets/screenshot-popover.png" width="380" alt="gtmux menu-bar popover — agents grouped by who needs you, who's working, who's idle" />
 
-> macOS + [Ghostty](https://ghostty.org) 1.3+. `restore`/`focus` drive Ghostty
-> via AppleScript; `agents`/`overview` work on any tmux.
+</div>
+
+---
+
+`gtmux` sits over the tmux sessions you already run and the coding agents
+(Claude Code, Codex, Gemini, aider, …) running inside them. At a glance it tells
+you who's **waiting on you**, who's **working**, and who's **idle** — then jumps
+you to the exact terminal tab and tmux pane in one click.
+
+Two faces over one source of truth: a small **Go CLI** in your terminal, and an
+always-visible **macOS menu-bar app**.
+
+### Why it's different
+
+Unlike agent *spawners* (claude-squad, uzi, dmux, …) that create and sandbox
+agents in git worktrees, gtmux **doesn't run your agents** — it's the
+**radar + remote over whatever you already run in tmux**. Non-invasive,
+tmux-native, and it even surfaces agents *other* tools spawned (they're in tmux
+too). The "g" is for Go.
+
+### Highlights
+
+- 🛰️ **One glance, every agent** — `⏸ waiting · ⠿ working · ✳ idle`, sorted by urgency.
+- 🎯 **One-click jump** — land on the exact Ghostty tab **and** tmux pane that needs you.
+- 🔔 **Knows when *you're* needed** — a built-in hook tells a permission prompt from an idle nudge by event *timing*, not keyword guessing.
+- 🍫 **Menu-bar app** — a native, ambient status dot (red/cyan/green) with a popover and a ⌘⌥G command palette.
+- 🧩 **Agent-agnostic** — detects any agent that animates a spinner; extend via one JSON file.
+- 🪶 **Non-invasive & cgo-free** — reads tmux, never owns your agents; one static Go binary.
+
+> **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+. `restore`/`focus`
+> drive Ghostty via AppleScript; `agents`/`overview` work on any tmux.
 
 ## Install
 
@@ -24,55 +54,29 @@ Non-invasive, tmux-native, and it even surfaces agents *other* tools spawned
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```
 
-Downloads the signed-by-checksum binary to `~/.local/bin/gtmux`. Pin a version:
+Installs the checksum-verified binary to `~/.local/bin/gtmux`, plus the menu-bar
+app (`GTMUX_NO_APP=1` to skip · `GTMUX_APP_LOGIN=1` to start it at login). Pin a
+version with `GTMUX_VERSION=vX.Y.Z`. From source: `go install
+github.com/chenchaoyi/gtmux/cmd/gtmux@latest`.
 
-```sh
-GTMUX_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
-```
-
-### China / unstable GitHub
+<details>
+<summary>China / unstable GitHub — mirror fallback</summary>
 
 The installer is **GitHub-first and auto-falls back to a mirror chain**
 (`ghfast.top` → `gh-proxy.com` → `ghproxy.net`) when a GitHub asset download
 stalls. `SHASUMS256.txt` is always fetched GitHub-direct first, so the checksum
-the tarball is verified against stays anchored on GitHub even when the tarball
-itself came through a mirror. Override with `GTMUX_INSTALL_MIRROR`:
+stays anchored on GitHub even when the tarball came through a mirror. Override
+with `GTMUX_INSTALL_MIRROR`:
 
 ```sh
-# go straight to the mirror chain (you know GitHub is unreachable)
-GTMUX_INSTALL_MIRROR=ghproxy curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
-
-# a custom <prefix><github-url> proxy
-GTMUX_INSTALL_MIRROR=https://my.mirror/ curl -fsSL ... | bash
-
-# GitHub only, no mirrors
-GTMUX_INSTALL_MIRROR=github curl -fsSL ... | bash
+GTMUX_INSTALL_MIRROR=ghproxy  curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash   # straight to the mirror chain
+GTMUX_INSTALL_MIRROR=https://my.mirror/  curl -fsSL ... | bash   # custom <prefix><github-url> proxy
+GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # GitHub only, no mirrors
 ```
 
-### From source
+</details>
 
-```sh
-go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
-```
-
-## Usage
-
-```
-gtmux <command> [options]      # bare gtmux prints help
-```
-
-| command | what it does |
-| --- | --- |
-| `overview [--popup]` | sessions / windows / panes summary; `--popup` fits a tmux popup |
-| `agents [--watch\|--json]` | coding agents across your panes: ⏸ waiting / ⠿ working / ✳ idle, where, and the pane id to jump to. `--watch` is a live dashboard; `--json` is structured output |
-| `restore [--pick\|--one\|<name>\|--dry-run]` | one Ghostty tab per session, attach all |
-| `focus <name\|pane-id>` | jump to a session's Ghostty tab; a pane id (`%N`) lands on that exact pane |
-
-Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
-follows `--lang=en|zh` (default `en`) or `$GTMUX_LANG`. It's invoked explicitly —
-no shell hooks, works with any shell.
-
-## `gtmux agents`
+## At a glance — `gtmux agents`
 
 ```
 gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
@@ -85,23 +89,23 @@ gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
 jump: gtmux focus <pane>   (e.g. gtmux focus %11)
 ```
 
-One place to see who's working, who's idle, and who just finished. Each row:
-**status**, the **agent**, location, the task, and the **pane id** — sorted by
-urgency (waiting → working → idle), with a breakdown in the header. The three
+One place to see who's working, who's idle, and who just finished. Each row is
+**status · agent · location · task · pane id**, sorted by urgency. The three
 states:
 
-- **⠿ working** — busy (don't bother it)
+- **⠿ working** — busy (don't bother it).
 - **⏸ waiting** — blocked on **you** for a permission/approval, mid-task; sorts to
-  the very top so you instantly see which agent needs a decision
-- **✳ idle** — finished its turn, your move when ready (not urgent)
+  the very top so you instantly see which agent needs a decision.
+- **✳ idle** — finished its turn, your move when ready (not urgent).
 
 **`gtmux agents --watch`** is a live, auto-refreshing dashboard (built with
 [bubbletea](https://github.com/charmbracelet/bubbletea)): polls ~1.5s, **↑/↓**
-select, **Enter** jumps to the pane, **r** refresh, **q** quit. Agents that
-finish while you watch (working → idle) get flagged `✓ done`. **`--json`** emits
-the same data as a structured array for scripts/menu-bar apps.
+select, **Enter** jumps to the pane, **r** refresh, **q** quit. **`--json`**
+emits the same data for scripts and the menu-bar app.
 
-**Detection is not Claude-only:**
+<details>
+<summary>How detection works (not Claude-only)</summary>
+
 - **Status** comes from the pane title the agent sets itself. A leading braille
   spinner (`⠋⠙⠹…`, what most agent TUIs animate) = **working**; Claude Code's `✳`
   = **idle**. This generalizes across agents that animate a spinner.
@@ -109,49 +113,75 @@ the same data as a structured array for scripts/menu-bar apps.
   `aider`, `opencode`, …) or by a name in the title.
 - Extend/override via **`~/.config/gtmux/agents.json`** — a JSON array of
   `{"name","commands","idleGlyph"}`; your entries win over the built-ins.
-- A pane is listed only if the agent **process is actually running** (foreground
-  command is the agent, or the title is animating a spinner). A leftover agent
-  title over a plain shell — e.g. a tmux-resurrect-restored session where the
-  agent was never relaunched — is **not** counted.
+- A pane is listed only if the agent **process is actually running**. A leftover
+  agent title over a plain shell (e.g. a resurrect-restored session never
+  relaunched) is **not** counted.
 
-> `⏸ waiting` and `✓ latest` come from state files under
-> `~/.local/share/gtmux/` (`waiting/<pane>`, `last-finished`) written by a
-> notification hook — the [reference producer](#notification-hook) is the
-> `claude-notify` hook, which tells a *permission* request from an idle nudge by
-> hook-event **timing**, not message keywords. Without that hook, agents never
-> show `⏸`; everything else still works.
+`⏸ waiting` and `✓ latest` come from state files written by the
+[notification hook](#notification-hook). Without it, agents never show `⏸`;
+everything else still works.
 
-## `gtmux restore`
+</details>
+
+## Menu-bar app
+
+<div align="center">
+<img src="docs/assets/screenshot-popover.png" width="340" alt="popover" />
+&nbsp;&nbsp;
+<img src="docs/assets/screenshot-firstrun.png" width="340" alt="first-run permission card" />
+</div>
+
+Your ambient radar over coding agents — a native macOS `LSUIElement` status item
+(Swift / AppKit). The dot is a colored summary of the most-urgent state —
+**red** waiting · **cyan** working · **green** idle · gray when nothing's running
+— with a count badge (e.g. `2` when two agents need you).
+
+- **Click the dot, or press ⌘⌥G**, to open the popover / command palette.
+- Agents are grouped **Needs you → Working → Idle**; each row is `‹glyph› session · task`.
+- **Click a row** (or `⏎` / `⌘1–9`) to run `gtmux focus <pane>` and land on it.
+- A footer has **Overview**, **Live watch**, **Restore detached**, and **New session**.
+
+It's a pure **consumer** of the CLI — it polls `gtmux agents --json` and shells
+out to `gtmux focus`, so gtmux-core stays the single data source. The CLI stays
+cgo-free; the app is the only native build. Releases attach a universal,
+ad-hoc-signed `Gtmux-<version>-macos.zip`; the installer strips the quarantine
+flag so first launch isn't blocked. Remove it with `gtmux uninstall-app`.
+
+## Commands
+
+| command | what it does |
+| --- | --- |
+| `agents [--watch\|--json]` | coding agents across your panes: who's waiting / working / idle, where, and the pane id to jump to |
+| `overview [--popup]` | sessions / windows / panes summary; `--popup` fits a tmux popup |
+| `restore [--pick\|--one\|<name>\|--dry-run]` | one Ghostty tab per session, attach all |
+| `focus <name\|pane-id>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane |
+| `new [name]` | start a new tmux session in a fresh Ghostty tab |
+
+Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
+follows `--lang=en|zh` (default `en`) or `$GTMUX_LANG`. Invoked explicitly — no
+shell hooks, works with any shell.
+
+### `gtmux restore`
 
 Quitting Ghostty leaves the tmux server and all sessions alive — only the tabs
 are gone. After reopening Ghostty, run **once** in any tab:
 
 ```sh
 gtmux restore            # one Ghostty tab per tmux session, all attached
-```
-
-It opens one tab per session (via Ghostty 1.3+ AppleScript) and attaches them
-all; the tab you ran it in takes the first session. The first run pops an
-Automation permission dialog ("wants to control Ghostty") — click Allow. Tabs
-are created in session-name order; the original tab↔session arrangement isn't
-recorded, so it can't be reproduced exactly. Per-tab control:
-
-```sh
-gtmux restore --pick     # list sessions (windows & status), choose: "1 3" / "1,3",
-                         # Enter = all detached, q = cancel
-gtmux restore --one      # attach the next unattached session here
-gtmux restore <name>     # attach a specific session by name here
+gtmux restore --pick     # choose which sessions: "1 3" / "1,3", Enter = all, q = cancel
+gtmux restore --one      # attach the next unattached session in this tab
+gtmux restore <name>     # attach a specific session here
 gtmux restore --dry-run  # print what would happen, change nothing
 ```
 
-**After a reboot** the tmux server itself is gone. `gtmux restore` still works:
-it starts tmux and waits for [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum)
-to restore the last autosave — sessions, windows, per-pane directories, on-screen
-text. **Running programs are not restarted**; each pane comes back as a shell in
-its old directory (e.g. relaunch Claude Code with `claude --resume`). Requires
-tmux-resurrect/continuum installed.
+The first run pops an Automation permission dialog ("wants to control Ghostty") —
+click Allow. **After a reboot** the tmux server is gone too; `gtmux restore`
+starts tmux and waits for
+[tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) to restore the
+last autosave (running programs are not restarted — relaunch e.g. with
+`claude --resume`).
 
-## `gtmux overview`
+### `gtmux overview`
 
 ```
 gtmux overview — 2 sessions · 3 windows · 5 panes
@@ -165,63 +195,26 @@ gtmux overview — 2 sessions · 3 windows · 5 panes
 ▶ current  ● attached  ○ detached   * active  Z zoomed  • new output
 ```
 
-A sessions/windows/panes summary from any shell. **`gtmux overview --popup`** is
-size-fitted for a tmux `display-popup`, so you can bind it to a key and float it
-over a full-screen program without interrupting it (see [tmux integration](#tmux-integration)).
+A sessions/windows/panes summary from any shell. **`--popup`** is size-fitted for
+a tmux `display-popup`, so you can bind it to a key and float it over a
+full-screen program without interrupting it.
 
-## `gtmux focus`
+### `gtmux focus`
 
 ```sh
 gtmux focus Pica         # bring the Ghostty tab showing session "Pica" to front
 gtmux focus %11          # jump to that exact window+pane, then focus its tab
 ```
 
-This is the read side of tmux's `set-titles`: because each tab title is
-`session — window`, `focus` finds the matching tab and runs Ghostty's AppleScript
-`select tab` + `activate`. A pane id (`%N`) additionally `select-window` +
-`select-pane`s inside the session first, so you land on the exact pane — which is
-how a notification click can drop you on the agent that just finished.
+Because each tab title is `session — window`, `focus` finds the matching tab and
+runs Ghostty's AppleScript `select tab` + `activate`. A pane id (`%N`) also
+`select-window` + `select-pane`s inside the session, so you land on the exact
+pane — which is how a notification click drops you on the agent that just
+finished.
 
-> Needs `set-titles on` with `set-titles-string '#S — #W'` (so tab titles stay
-> in the format `focus` matches). If another tool also writes the tab title,
-> disable that so titles stay authoritative.
-
-## menu-bar app
-
-gtmux has two faces over one source of truth: the **CLI** (in the terminal) and a
-**menu-bar app** (always visible). The app is a native macOS `LSUIElement` status
-item (Swift / AppKit, in [`macapp/`](macapp/)) — your ambient radar over coding
-agents — showing at a glance how many are **⏸ waiting on you / ⠿ working /
-✳ idle**, with a popover to jump to any of them.
-
-The curl installer sets it up and launches it (`GTMUX_NO_APP=1` to skip,
-`GTMUX_APP_LOGIN=1` to start it at login). From source: `make app` builds
-`Gtmux.app` (Swift app + the bundled cgo-free CLI). Remove it with
-`gtmux uninstall-app`.
-
-```sh
-# install / update (CLI + app):
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
-```
-
-The status item is a colored dot for the most-urgent state — **red** waiting ·
-**cyan** working · **green** idle · gray when nothing's running — with a count
-badge (e.g. `2` when two agents need you). **Click the dot or press ⌘⌥G** to open
-the popover; agents are grouped **Needs you / Working / Idle**, each row
-`‹glyph› session · task`, and clicking one runs `gtmux focus <pane>` to land you
-on it. A footer has quick actions: **Overview** and **Live watch** (the full
-`gtmux overview` / `agents --watch` views in a fresh Ghostty window),
-**Restore detached** (`gtmux restore`), and **New session** (`gtmux new`).
-
-It's a pure **consumer** of the CLI — it polls `gtmux agents --json` (~1.5s) and
-shells out to `gtmux focus` — so gtmux-core stays the data source. The CLI stays
-cgo-free; the app is the only native/Swift build. `gtmux new [name]` is a CLI
-command too.
-
-> The app (`com.gtmux.menubar`) is also the notification click target: a hook
-> notification `-activate`s it and its reopen handler runs `gtmux focus --last`.
-> Releases attach a universal, ad-hoc-signed `Gtmux-<version>-macos.zip`; the
-> installer strips the quarantine flag so first launch isn't blocked.
+> Needs `set-titles on` with `set-titles-string '#S — #W'` so tab titles stay in
+> the format `focus` matches. If another tool also writes the tab title, disable
+> that so titles stay authoritative.
 
 ## tmux integration
 
@@ -235,10 +228,10 @@ bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
 bind J run-shell "gtmux focus --last"
 ```
 
-## notification hook
+## Notification hook
 
 `⏸ waiting`, `✓ latest`, and click-to-jump notifications rely on a hook writing
-state files under `~/.local/share/gtmux/`. gtmux ships that hook built in — no
+state files under `~/.local/share/gtmux/`. gtmux ships that hook **built in** — no
 external script needed:
 
 ```sh
@@ -247,23 +240,14 @@ gtmux uninstall-hooks        # reverse it
 ```
 
 `install-hooks` registers `gtmux hook` in `~/.claude/settings.json` on the
-`Stop`, `Notification`, and `UserPromptSubmit` events (idempotent; it preserves
-any other hooks and backs the file up first) and caches the Claude icon.
-`terminal-notifier` makes the banner clickable (`brew install terminal-notifier`);
-without it, notifications still fire but aren't clickable.
-
-`gtmux hook` is the producer — Claude Code runs it; you don't. It writes
-`active/<pane>`, `waiting/<pane>`, and `last-finished` purely by event timing,
-and suppresses the banner when you're already looking at that session's tab. A
-click `-activate`s the menu-bar app (`com.gtmux.menubar`), which runs
-`gtmux focus --last` to land you on the pane that just finished — so keep
-`Gtmux.app` installed for clickable notifications. Set `GTMUX_HOOK_DEBUG=1` to
-trace decisions to `~/.local/share/gtmux/hook.log`.
-
-> Using peon-ping? `install-hooks` offers to set its `desktop_notifications` and
-> `terminal_tab_title` to `false` (the latter is required — `focus` needs tmux's
-> `set-titles` to own the tab title). Pass `--yes` to accept non-interactively.
+`Stop`, `Notification`, and `UserPromptSubmit` events (idempotent; preserves
+other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
+runs it, you don't — and writes state purely by event **timing**, telling a
+permission request from an idle nudge without reading message text. A click
+`-activate`s the menu-bar app, which runs `gtmux focus --last` to land you on the
+pane that just finished. `terminal-notifier` makes the banner clickable
+(`brew install terminal-notifier`).
 
 ## License
 
-MIT
+[MIT](LICENSE) © ccy
