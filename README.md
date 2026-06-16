@@ -218,10 +218,10 @@ shells out to `gtmux focus` — so gtmux-core stays the data source. The CLI sta
 cgo-free; the app is the only native/Swift build. `gtmux new [name]` is a CLI
 command too.
 
-> The app (`com.gtmux.menubar`) is separate from the notification click target
-> (`GtmuxFocus.app`, `com.gtmux.focus`); the two coexist. Releases attach a
-> universal, ad-hoc-signed `Gtmux-<version>-macos.zip`; the installer strips the
-> quarantine flag so first launch isn't blocked.
+> The app (`com.gtmux.menubar`) is also the notification click target: a hook
+> notification `-activate`s it and its reopen handler runs `gtmux focus --last`.
+> Releases attach a universal, ad-hoc-signed `Gtmux-<version>-macos.zip`; the
+> installer strips the quarantine flag so first launch isn't blocked.
 
 ## tmux integration
 
@@ -248,18 +248,17 @@ gtmux uninstall-hooks        # reverse it
 
 `install-hooks` registers `gtmux hook` in `~/.claude/settings.json` on the
 `Stop`, `Notification`, and `UserPromptSubmit` events (idempotent; it preserves
-any other hooks and backs the file up first), generates `~/Applications/
-GtmuxFocus.app` (bundle id `com.gtmux.focus`) as the notification's click target,
-and caches the Claude icon. `terminal-notifier` makes the banner clickable
-(`brew install terminal-notifier`); without it, notifications still fire but
-aren't clickable.
+any other hooks and backs the file up first) and caches the Claude icon.
+`terminal-notifier` makes the banner clickable (`brew install terminal-notifier`);
+without it, notifications still fire but aren't clickable.
 
 `gtmux hook` is the producer — Claude Code runs it; you don't. It writes
 `active/<pane>`, `waiting/<pane>`, and `last-finished` purely by event timing,
 and suppresses the banner when you're already looking at that session's tab. A
-click opens `GtmuxFocus.app`, which runs `gtmux focus --last` to land you on the
-pane that just finished. Set `GTMUX_HOOK_DEBUG=1` to trace decisions to
-`~/.local/share/gtmux/hook.log`.
+click `-activate`s the menu-bar app (`com.gtmux.menubar`), which runs
+`gtmux focus --last` to land you on the pane that just finished — so keep
+`Gtmux.app` installed for clickable notifications. Set `GTMUX_HOOK_DEBUG=1` to
+trace decisions to `~/.local/share/gtmux/hook.log`.
 
 > Using peon-ping? `install-hooks` offers to set its `desktop_notifications` and
 > `terminal_tab_title` to `false` (the latter is required — `focus` needs tmux's

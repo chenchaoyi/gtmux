@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // A notification click activates this app (bundle id com.gtmux.menubar);
     // jump to the agent that just finished — same contract as GtmuxFocus.app.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        dbg("reopen (notification click) → focus --last")
         GtmuxCLI.spawn(["focus", "--last"])
         return true
     }

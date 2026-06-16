@@ -1,7 +1,7 @@
 // Package notify posts a desktop notification, preferring terminal-notifier
-// (clickable — it can -activate the GtmuxFocus.app) and falling back to
-// osascript (not clickable). The notifier is spawned DETACHED so it outlives
-// the short-lived hook process that triggered it.
+// (clickable — it can -activate the menu-bar app, which jumps to last-finished)
+// and falling back to osascript (not clickable). The notifier is spawned
+// DETACHED so it outlives the short-lived hook process that triggered it.
 package notify
 
 import (
@@ -16,7 +16,7 @@ type Options struct {
 	Title    string // e.g. "Claude Code"
 	Subtitle string // e.g. the tmux session name
 	Message  string
-	Activate string // bundle id to launch on click, e.g. "com.gtmux.focus"
+	Activate string // bundle id to launch on click, e.g. "com.gtmux.menubar"
 	Group    string // coalescing key, e.g. "gtmux-<session>"
 	IconPath string // -contentImage; omitted when "" (terminal-notifier ignores -appIcon)
 }
