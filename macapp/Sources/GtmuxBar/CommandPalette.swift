@@ -257,11 +257,12 @@ struct CommandPaletteView: View {
         return HStack(spacing: 13) {
             PaletteStatusIcon(status: a.state)
             VStack(alignment: .leading, spacing: 2) {
+                // line 1: the agent's own session name; line 2: where it lives (dim).
                 Text(a.primary).font(.system(size: 15, weight: .semibold)).foregroundStyle(fg).lineLimit(1)
-                Text(a.task.isEmpty ? "—" : a.task).font(.system(size: 12.5)).foregroundStyle(fg2).lineLimit(1)
+                Text(a.secondary).font(.system(size: 12.5)).foregroundStyle(fg2).lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(meta(a)).font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3).lineLimit(1)
+            Text(a.agent).font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3).lineLimit(1)
             if selected {
                 Text(l10n.tr("⏎ jump", "⏎ 跳转")).font(.system(size: 12)).foregroundStyle(fg)
                     .padding(.horizontal, 9).padding(.vertical, 4)
@@ -273,11 +274,6 @@ struct CommandPaletteView: View {
         .contentShape(Rectangle())
         .onHover { if $0 { model.selected = i } }
         .onTapGesture { onJump(a) }
-    }
-
-    private func meta(_ a: Agent) -> String {
-        let id = a.isNative ? a.terminal : a.paneID
-        return a.agent.isEmpty ? id : "\(a.agent) · \(id)"
     }
 
     // MARK: bottom bar
