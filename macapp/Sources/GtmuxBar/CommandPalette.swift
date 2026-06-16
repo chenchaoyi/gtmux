@@ -16,6 +16,7 @@ final class PaletteModel: ObservableObject {
     init(store: AgentStore) { self.store = store }
 
     var results: [Agent] { store.ordered(waitingOnly: false, query: query) }
+    var sections: [(status: Status, agents: [Agent])] { store.sections(waitingOnly: false, query: query) }
 
     func move(_ delta: Int) {
         let n = results.count
@@ -42,10 +43,23 @@ final class CommandPaletteController {
         if panel.isVisible { hide(); return }
         store.refresh()
         model?.reset()
+        sizeToFit(panel)
         center(panel)
         installMonitor()
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
+        dbg("palette shown visible=\(panel.isVisible) key=\(panel.isKeyWindow) frame=\(panel.frame)")
+    }
+
+    /// Lay the SwiftUI content out NOW and adopt its fitting size. `.preferredContentSize`
+    /// auto-sizing is async and leaves the panel 0×0 on first order-front.
+    private func sizeToFit(_ panel: NSPanel) {
+        guard let host = panel.contentViewController else { return }
+        host.view.layoutSubtreeIfNeeded()
+        var s = host.view.fittingSize
+        if s.width < 100 { s.width = 620 }
+        if s.height < 100 { s.height = 420 }
+        panel.setContentSize(s)
     }
 
     private func build(store: AgentStore, l10n: L10n, onJump: @escaping (Agent) -> Void) {
@@ -56,7 +70,7 @@ final class CommandPaletteController {
             model: model, l10n: l10n,
             onJump: { [weak self] a in self?.jump?(a); self?.hide() })
         let panel = KeyablePanel(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 460),
+            contentRect: NSRect(x: 0, y: 0, width: 620, height: 480),
             styleMask: [.borderless, .fullSizeContentView], backing: .buffered, defer: false)
         let host = NSHostingController(rootView: view)
         host.sizingOptions = [.preferredContentSize]
@@ -108,7 +122,7 @@ final class CommandPaletteController {
     }
 }
 
-// MARK: - View
+// MARK: - View (matches docs/design/mockup §4 B)
 
 struct CommandPaletteView: View {
     @ObservedObject var model: PaletteModel
@@ -118,112 +132,199 @@ struct CommandPaletteView: View {
     @FocusState private var searchFocused: Bool
 
     var body: some View {
-        let p = Theme.Palette.of(scheme)
         VStack(spacing: 0) {
-            search(p)
-            Divider().overlay(p.divider)
-            results(p)
-            Divider().overlay(p.divider)
-            shortcutBar(p)
+            search
+            Rectangle().fill(divider).frame(height: 0.5)
+            results
+            bottomBar
         }
-        .frame(width: 560)
-        .background { ZStack { VisualEffectWindow(); p.bg } }
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(p.divider, lineWidth: 1))
+        .frame(width: 620)
+        .background { ZStack { VisualEffectWindow(); bg }.ignoresSafeArea() }
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .stroke(Color.white.opacity(scheme == .dark ? 0.12 : 0.10), lineWidth: 0.5))
         .onAppear { searchFocused = true; model.selected = 0 }
     }
 
-    private func search(_ p: Theme.Palette) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass").font(.system(size: 16)).foregroundStyle(p.fg3)
-            TextField(l10n.tr("Jump to an agent…", "跳到某个 agent…"), text: $model.query)
-                .textFieldStyle(.plain).font(Theme.Font.title).foregroundStyle(p.fg)
+    // MARK: search row — logo + field + hotkey keycap
+
+    private var search: some View {
+        HStack(spacing: 12) {
+            GtmuxLogo(size: 18)
+            TextField(l10n.tr("Jump to agent", "跳到某个 agent"), text: $model.query)
+                .textFieldStyle(.plain).font(.system(size: 18)).foregroundStyle(fg)
                 .focused($searchFocused)
                 .onChange(of: model.query) { _, _ in model.selected = 0 }
+            Text("⌘⌥G").font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3)
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white.opacity(0.15), lineWidth: 0.5))
         }
-        .padding(.horizontal, 16).padding(.vertical, 13)
+        .padding(.horizontal, 18).padding(.vertical, 16)
     }
 
-    @ViewBuilder private func results(_ p: Theme.Palette) -> some View {
+    // MARK: results — grouped, single flat ForEach
+
+    @ViewBuilder private var results: some View {
         let r = model.results
         if r.isEmpty {
-            VStack(spacing: 5) {
-                Text(l10n.tr("No matching agents", "没有匹配的 agent"))
-                    .font(.system(size: 12)).foregroundStyle(p.fg2)
-            }
-            .frame(maxWidth: .infinity).frame(height: 90)
+            Text(l10n.tr("No matching agents", "没有匹配的 agent"))
+                .font(.system(size: 12)).foregroundStyle(fg2)
+                .frame(maxWidth: .infinity).frame(height: 84)
         } else {
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 2) {
-                        ForEach(Array(r.enumerated()), id: \.element.id) { i, agent in
-                            PaletteRow(agent: agent, index: i, selected: i == model.selected, l10n: l10n)
-                                .id(i)
-                                .onHover { if $0 { model.selected = i } }
-                                .onTapGesture { onJump(agent) }
+                    LazyVStack(alignment: .leading, spacing: 1) {
+                        ForEach(items) { item in
+                            switch item {
+                            case let .header(st): sectionHeader(st)
+                            case let .agent(a, i): row(a, i)
+                            }
                         }
                     }
-                    .padding(8)
+                    .padding(.horizontal, 10).padding(.top, 2).padding(.bottom, 10)
                 }
-                .frame(height: min(CGFloat(r.count) * 50 + 16, 360))
-                .onChange(of: model.selected) { _, s in proxy.scrollTo(s) }
+                .frame(height: min(CGFloat(r.count) * 54 + 120, 380))
+                .onChange(of: model.selected) { _, s in proxy.scrollTo("row\(s)") }
             }
         }
     }
 
-    private func shortcutBar(_ p: Theme.Palette) -> some View {
-        HStack(spacing: 12) {
-            hint("↑↓", l10n.tr("select", "选择"), p)
-            hint("⏎", l10n.tr("jump", "跳转"), p)
-            hint("⌘1–9", l10n.tr("direct", "直达"), p)
-            Spacer()
-            hint("esc", l10n.tr("close", "关闭"), p)
+    private enum PItem: Identifiable {
+        case header(Status)
+        case agent(Agent, Int)
+        var id: String {
+            switch self {
+            case let .header(s): return "h\(s.rawValue)"
+            case let .agent(a, _): return "a\(a.id):\(a.status)"
+            }
         }
-        .padding(.horizontal, 16).padding(.vertical, 8)
     }
 
-    private func hint(_ key: String, _ label: String, _ p: Theme.Palette) -> some View {
-        HStack(spacing: 4) {
-            Text(key).font(.system(size: 10, weight: .medium, design: .rounded))
-                .padding(.horizontal, 4).padding(.vertical, 1)
-                .background(RoundedRectangle(cornerRadius: 4).fill(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)))
-            Text(label).font(.system(size: 10))
-        }.foregroundStyle(p.fg3)
+    private var items: [PItem] {
+        var out: [PItem] = []
+        var idx = 0
+        for s in model.sections {
+            out.append(.header(s.status))
+            for a in s.agents { out.append(.agent(a, idx)); idx += 1 }
+        }
+        return out
     }
+
+    private func sectionHeader(_ st: Status) -> some View {
+        Text(sectionTitle(st).uppercased())
+            .font(.system(size: 10.5, weight: .bold)).kerning(0.6)
+            .foregroundStyle(st == .waiting ? Theme.Status.waiting : fg3)
+            .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 5)
+    }
+
+    private func sectionTitle(_ st: Status) -> String {
+        switch st {
+        case .waiting: return l10n.tr("Needs you", "需要你")
+        case .working: return l10n.tr("Working", "运行中")
+        case .idle:    return l10n.tr("Idle", "空闲")
+        case .running: return l10n.tr("Running", "待命")
+        }
+    }
+
+    private func row(_ a: Agent, _ i: Int) -> some View {
+        let selected = i == model.selected
+        return HStack(spacing: 13) {
+            PaletteStatusIcon(status: a.state)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(a.primary).font(.system(size: 15, weight: .semibold)).foregroundStyle(fg).lineLimit(1)
+                Text(a.task.isEmpty ? "—" : a.task).font(.system(size: 12.5)).foregroundStyle(fg2).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            Text(meta(a)).font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3).lineLimit(1)
+            if selected {
+                Text(l10n.tr("⏎ jump", "⏎ 跳转")).font(.system(size: 12)).foregroundStyle(fg)
+                    .padding(.horizontal, 9).padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.14)))
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(selected ? rowSel : .clear))
+        .contentShape(Rectangle())
+        .id("row\(i)")
+        .onHover { if $0 { model.selected = i } }
+        .onTapGesture { onJump(a) }
+    }
+
+    private func meta(_ a: Agent) -> String {
+        let id = a.isNative ? a.terminal : a.paneID
+        return a.agent.isEmpty ? id : "\(a.agent) · \(id)"
+    }
+
+    // MARK: bottom bar
+
+    private var bottomBar: some View {
+        HStack(spacing: 16) {
+            kbd("↑↓ " + l10n.tr("select", "选择"))
+            kbd("⏎ " + l10n.tr("jump", "跳转"))
+            kbd("⌘1–9 " + l10n.tr("direct", "直达"))
+            Spacer()
+            kbd("gtmux focus")
+        }
+        .padding(.horizontal, 16).padding(.vertical, 9)
+        .background(scheme == .dark ? Color.white.opacity(0.04) : Color.black.opacity(0.03))
+        .overlay(Rectangle().fill(divider).frame(height: 0.5), alignment: .top)
+    }
+
+    private func kbd(_ s: String) -> some View {
+        Text(s).font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3)
+    }
+
+    // MARK: palette tokens (DESIGN §9 / mockup — more opaque than the popover)
+
+    private var bg: Color {
+        scheme == .dark ? Color(hex: 0x18181B, opacity: 0.86) : Color(hex: 0xF4F4F6, opacity: 0.90)
+    }
+    private var fg: Color { scheme == .dark ? Color(white: 1, opacity: 0.95) : Color(hex: 0x1D1D1F) }
+    private var fg2: Color {
+        scheme == .dark ? Color(red: 235/255, green: 235/255, blue: 245/255, opacity: 0.60)
+                        : Color(red: 60/255, green: 60/255, blue: 67/255, opacity: 0.62)
+    }
+    private var fg3: Color {
+        scheme == .dark ? Color(red: 235/255, green: 235/255, blue: 245/255, opacity: 0.45)
+                        : Color(red: 60/255, green: 60/255, blue: 67/255, opacity: 0.45)
+    }
+    private var divider: Color { scheme == .dark ? Color(white: 1, opacity: 0.10) : Color(black: 0, opacity: 0.10) }
+    private var rowSel: Color { scheme == .dark ? Color(white: 1, opacity: 0.12) : Color(black: 0, opacity: 0.07) }
 }
 
-private struct PaletteRow: View {
-    let agent: Agent
-    let index: Int
-    let selected: Bool
-    @ObservedObject var l10n: L10n
-    @Environment(\.colorScheme) private var scheme
+/// PaletteStatusIcon — the 32pt status-forward leading icon (mockup §4 B):
+/// waiting is loud (solid red + white pause); the rest are quiet (translucent
+/// tint + the status-colored glyph).
+struct PaletteStatusIcon: View {
+    let status: Status
 
     var body: some View {
-        let p = Theme.Palette.of(scheme)
-        HStack(spacing: 11) {
-            AgentAvatar(agent: agent)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 5) {
-                    Text(agent.primary).font(.system(size: 13, weight: .semibold)).foregroundStyle(p.fg).lineLimit(1)
-                    if !agent.secondary.isEmpty {
-                        Text("· \(agent.secondary)").font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1)
-                    }
-                    if agent.isNative {
-                        Text("native").font(.system(size: 8.5)).foregroundStyle(p.fg3)
-                    }
-                }
-                Text(agent.task.isEmpty ? "—" : agent.task).font(Theme.Font.task).foregroundStyle(p.fg2).lineLimit(1)
+        ZStack {
+            if status == .waiting {
+                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Theme.Status.waiting)
+            } else {
+                Circle().fill(status.color.opacity(0.16))
             }
-            Spacer(minLength: 6)
-            if index < 9 {
-                Text("⌘\(index + 1)").font(.system(size: 10, weight: .medium, design: .rounded)).foregroundStyle(p.fg3)
-            }
+            glyph
         }
-        .padding(.horizontal, 10).padding(.vertical, 7)
-        .frame(minHeight: 44)
-        .background(RoundedRectangle(cornerRadius: Theme.Size.radiusRow, style: .continuous)
-            .fill(selected ? p.rowSelected : .clear))
-        .contentShape(Rectangle())
+        .frame(width: 32, height: 32)
+    }
+
+    @ViewBuilder private var glyph: some View {
+        switch status {
+        case .waiting:
+            HStack(spacing: 2.2) {
+                Capsule().fill(.white).frame(width: 2.6, height: 12)
+                Capsule().fill(.white).frame(width: 2.6, height: 12)
+            }
+        case .idle:
+            Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(status.color)
+        case .working:
+            Circle().trim(from: 0.08, to: 0.92)
+                .stroke(status.color, style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                .frame(width: 15, height: 15).rotationEffect(.degrees(-80))
+        case .running:
+            Circle().fill(status.color).frame(width: 6, height: 6)
+        }
     }
 }
