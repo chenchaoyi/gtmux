@@ -107,11 +107,14 @@ struct MenuView: View {
                 .frame(maxWidth: .infinity).padding(.vertical, 22)
         } else {
             ScrollView {
+                // ONE flat ForEach (headers + rows) — nested ForEach left a row's
+                // status badge stale when an agent moved between sections.
                 LazyVStack(alignment: .leading, spacing: 1) {
-                    ForEach(sections, id: \.status) { section in
-                        SectionHeader(status: section.status, count: section.agents.count, l10n: l10n)
-                        ForEach(section.agents) { agent in
-                            let idx = flat.firstIndex(where: { $0.id == agent.id }) ?? 0
+                    ForEach(listItems) { item in
+                        switch item {
+                        case let .header(status, count):
+                            SectionHeader(status: status, count: count, l10n: l10n)
+                        case let .agent(agent, idx):
                             AgentRowView(agent: agent, selected: idx == selected, l10n: l10n)
                                 .onHover { if $0 { selected = idx } }
                                 .onTapGesture { onJump(agent) }
@@ -122,6 +125,34 @@ struct MenuView: View {
             }
             .frame(maxHeight: Theme.Size.listMaxHeight)
         }
+    }
+
+    /// Flattened list of section headers + agent rows, each with a stable id, so
+    /// SwiftUI reconciles a single identity space (no cross-section staleness).
+    private enum ListItem: Identifiable {
+        case header(Status, Int)
+        case agent(Agent, Int) // agent + its flat index (for keyboard selection)
+        var id: String {
+            switch self {
+            case let .header(s, _): return "h:" + s.rawValue
+            // status is part of the identity → a status change rebuilds the row,
+            // so the badge can never go stale (defends the working/waiting bug).
+            case let .agent(a, _): return "a:" + a.id + ":" + a.status
+            }
+        }
+    }
+
+    private var listItems: [ListItem] {
+        var items: [ListItem] = []
+        var idx = 0
+        for section in sections {
+            items.append(.header(section.status, section.agents.count))
+            for a in section.agents {
+                items.append(.agent(a, idx))
+                idx += 1
+            }
+        }
+        return items
     }
 
     // MARK: footer

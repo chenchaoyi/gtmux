@@ -72,7 +72,7 @@ struct PreferencesView: View {
             GridRow {
                 label(l10n.tr("Global hotkey", "全局热键"))
                 HStack(spacing: 8) {
-                    Text("⌥⇧G").font(.system(size: 12, weight: .medium))
+                    Text("⌘⌥G").font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 10).padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 6).stroke(.secondary.opacity(0.4)))
                     Text(l10n.tr("opens the popover", "打开 popover"))
