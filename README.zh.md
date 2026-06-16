@@ -223,9 +223,12 @@ gtmux uninstall-hooks        # 撤销
 `install-hooks` 把 `gtmux hook` 注册到 `~/.claude/settings.json` 的 `Stop`、
 `Notification`、`UserPromptSubmit` 事件（幂等；保留其它 hook 并先备份）。`gtmux hook`
 是生产端 —— Claude Code 来跑，不用你跑 —— 纯凭事件**时序**写状态，不读消息内容就能区分
-权限请求与空闲提醒。点击通知会 `-activate` 菜单栏 app，由它运行 `gtmux focus --last`
-把你带到刚完成的 pane。`terminal-notifier` 能让横幅可点击
-（`brew install terminal-notifier`）。
+权限请求与空闲提醒。
+
+**通知由菜单栏 app 原生发送** —— 不再需要 `terminal-notifier`。hook 把请求排进
+`~/.local/share/gtmux/notify/`，由 `Gtmux.app` 弹出原生横幅（显示为 **Gtmux**，带
+agent 图标、**Jump** 动作，并区分文案 —— *已完成* 安静无声，*需要你的输入* 有提示音），
+点击即精确跳到那个 pane。首次运行请允许「通知」权限；保持 app 运行即可收到。
 
 ## 许可
 

@@ -110,16 +110,25 @@ func Run(stdin io.Reader) int {
 	if state.Exists(state.IconPath()) {
 		icon = state.IconPath()
 	}
-	group := "gtmux"
-	if session != "" {
-		group = "gtmux-" + session
+	// Differentiate the copy/sound: a Stop is "finished" (calm), a Notification is
+	// "needs your input" (the urgent one). The session name is the bold title.
+	kind := "done"
+	body := i18n.Tr("Finished — tap to jump", "已完成 —— 点按跳转")
+	if event == "Notification" {
+		kind = "input"
+		body = i18n.Tr("Needs your input — tap to jump", "需要你的输入 —— 点按跳转")
+	}
+	title := session
+	if title == "" {
+		title = "Claude Code"
 	}
 	notify.Send(notify.Options{
-		Title:    "Claude Code",
-		Subtitle: session,
-		Message:  i18n.Tr("Agent finished — click to open", "Agent 结束 —— 点击打开"),
-		Activate: "com.gtmux.menubar", // the menu-bar app; reopen → focus --last
-		Group:    group,
+		Kind:     kind,
+		Title:    title,
+		Subtitle: "Claude Code",
+		Message:  body,
+		Pane:     pane,
+		Session:  session,
 		IconPath: icon,
 	})
 	return 0

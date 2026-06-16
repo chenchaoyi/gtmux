@@ -243,10 +243,14 @@ gtmux uninstall-hooks        # reverse it
 `Stop`, `Notification`, and `UserPromptSubmit` events (idempotent; preserves
 other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
 runs it, you don't — and writes state purely by event **timing**, telling a
-permission request from an idle nudge without reading message text. A click
-`-activate`s the menu-bar app, which runs `gtmux focus --last` to land you on the
-pane that just finished. `terminal-notifier` makes the banner clickable
-(`brew install terminal-notifier`).
+permission request from an idle nudge without reading message text.
+
+**Notifications are delivered by the menu-bar app** — no `terminal-notifier`
+needed. The hook queues a request under `~/.local/share/gtmux/notify/` and
+`Gtmux.app` posts a native banner (shown as **Gtmux**, with the agent icon, a
+**Jump** action, and differentiated copy — *finished* is calm and silent,
+*needs your input* sounds). Clicking it lands you on the exact pane. Grant
+"Allow Notifications" on first run; keep the app running to receive them.
 
 ## License
 

@@ -55,6 +55,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { self?.toggleCommandPalette() }
         }
 
+        // Deliver desktop notifications natively (replaces terminal-notifier): the
+        // hook queues requests, we post them and jump on click.
+        NotificationManager.shared.start { pane in
+            GtmuxCLI.spawn(pane.isEmpty ? ["focus", "--last"] : ["focus", pane])
+        }
+
         // Test seam: GTMUXBAR_SHOW_PALETTE auto-opens the palette so it can be
         // exercised without a (flaky) synthetic global keystroke. No-op normally.
         if ProcessInfo.processInfo.environment["GTMUXBAR_SHOW_PALETTE"] != nil {

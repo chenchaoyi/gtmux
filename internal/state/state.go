@@ -6,7 +6,9 @@
 //	active/<pane>     marker: a turn is in progress for that tmux pane id
 //	waiting/<pane>    marker: that pane is blocked on the user (permission/approval)
 //	last-finished     the pane id of the most-recently-finished agent turn
-//	notify-icon.png   cached Claude icon for the notification's -contentImage
+//	notify-icon.png   cached agent icon, used as the notification's thumbnail
+//	notify/<id>.json  queued desktop-notification requests; the menu-bar app
+//	                  drains this dir and posts native banners, then deletes them
 package state
 
 import (
@@ -30,8 +32,12 @@ func WaitingPath(pane string) string { return filepath.Join(WaitingDir(), pane) 
 // LastFinishedPath holds the pane id of the most-recently-finished turn.
 func LastFinishedPath() string { return filepath.Join(Dir(), "last-finished") }
 
-// IconPath is the cached Claude icon used as the notification's content image.
+// IconPath is the cached agent icon used as the notification's thumbnail.
 func IconPath() string { return filepath.Join(Dir(), "notify-icon.png") }
+
+// NotifyDir is the queue the hook writes notification requests into and the
+// menu-bar app drains. It's the delivery channel that replaced terminal-notifier.
+func NotifyDir() string { return filepath.Join(Dir(), "notify") }
 
 // Exists reports whether path exists.
 func Exists(path string) bool { _, err := os.Stat(path); return err == nil }

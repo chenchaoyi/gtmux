@@ -28,8 +28,11 @@ over one Go core (gtmux-core is the single data source):
 
 - **Contracts (don't break):** the `gtmux agents --json` schema; state paths
   `~/.local/share/gtmux/{active/<pane>, waiting/<pane>, last-finished,
-  notify-icon.png}`; hook events `Stop`/`Notification`/`UserPromptSubmit`; bundle
-  id `com.gtmux.menubar`.
+  notify-icon.png, notify/<id>.json}`; hook events
+  `Stop`/`Notification`/`UserPromptSubmit`; bundle id `com.gtmux.menubar`. The
+  hook→app **notify queue** (`internal/notify` writes JSON; macapp
+  `NotificationManager` drains & posts) is the notification channel — there is no
+  terminal-notifier/osascript fallback (notifications need the app running).
 - **i18n:** every user-facing string is en+zh via `internal/i18n` and `GTMUX_LANG`.
 - **Terminal coupling** lives ONLY in `internal/ghostty` (AppleScript). The rest
   (`agents`/`overview`/`hook`/notify) is tmux-only and terminal-agnostic. Project
