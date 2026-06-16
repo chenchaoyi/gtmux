@@ -30,9 +30,12 @@ if grep -rqi "list-panes\|gatherAgents\|classifyAgent" macapp/Sources 2>/dev/nul
   note "macapp must consume 'gtmux agents --json', not re-detect agents"; fail=1
 fi
 
-# 4. The CLI must stay cgo-free (only the Swift app is native).
-if CGO_ENABLED=0 go build -o /dev/null ./cmd/gtmux 2>/dev/null; then :; else
-  note "CLI failed to build cgo-free (CGO_ENABLED=0 ./cmd/gtmux)"; fail=1
+# 4. The CLI must stay cgo-free (only the Swift app is native). Skipped where
+#    there's no Go toolchain (the macOS CI job is Swift-only; Linux CI enforces it).
+if command -v go >/dev/null 2>&1; then
+  if CGO_ENABLED=0 go build -o /dev/null ./cmd/gtmux 2>/dev/null; then :; else
+    note "CLI failed to build cgo-free (CGO_ENABLED=0 ./cmd/gtmux)"; fail=1
+  fi
 fi
 
 if [ "$fail" = 0 ]; then
