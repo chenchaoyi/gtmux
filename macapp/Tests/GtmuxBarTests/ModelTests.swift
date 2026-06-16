@@ -127,6 +127,22 @@ final class ModelTests: XCTestCase {
 
     // MARK: command palette (DESIGN §4 B)
 
+    /// Search must find IDLE (done-this-turn) agents and exclude non-matches —
+    /// regression for the palette showing a stale, non-matching row at a reused
+    /// index instead of the real matches.
+    func testSearchFindsIdleAgents() throws {
+        let json = """
+        [{"pane_id":"%1","session":"HSS Eval Framework","status":"working","task":"eval"},
+         {"pane_id":"%2","session":"ccy_dev","status":"idle","task":"ccy.dev"},
+         {"pane_id":"%3","session":"ccy-workspace","status":"idle","task":"workspace"}]
+        """
+        let s = AgentStore()
+        s.setForTesting(try JSONDecoder().decode([Agent].self, from: Data(json.utf8)))
+        let hit = s.ordered(waitingOnly: false, query: "ccy")
+        XCTAssertEqual(hit.map { $0.session }, ["ccy_dev", "ccy-workspace"]) // both idle, sorted
+        XCTAssertFalse(hit.contains { $0.session == "HSS Eval Framework" })  // non-match excluded
+    }
+
     func testPaletteWrapNavigation() {
         let m = PaletteModel(store: store([("a", "waiting"), ("b", "working"), ("c", "idle")]))
         XCTAssertEqual(m.results.count, 3)

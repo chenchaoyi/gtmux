@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// A borderless floating panel that can become key (for the search field).
@@ -13,7 +14,13 @@ final class PaletteModel: ObservableObject {
     @Published var query = ""
     @Published var selected = 0
     private let store: AgentStore
-    init(store: AgentStore) { self.store = store }
+    private var cancellable: AnyCancellable?
+    init(store: AgentStore) {
+        self.store = store
+        // Re-render the palette when the agent list refreshes while it's open, so
+        // status/grouping stay live (and never show a stale row).
+        cancellable = store.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
+    }
 
     var results: [Agent] { store.ordered(waitingOnly: false, query: query) }
     var sections: [(status: Status, agents: [Agent])] { store.sections(waitingOnly: false, query: query) }
@@ -184,7 +191,9 @@ struct CommandPaletteView: View {
                     .padding(.horizontal, 10).padding(.top, 2).padding(.bottom, 10)
                 }
                 .frame(height: min(CGFloat(r.count) * 54 + 120, 380))
-                .onChange(of: model.selected) { _, s in proxy.scrollTo("row\(s)") }
+                .onChange(of: model.selected) { _, s in
+                    if s < r.count { proxy.scrollTo(PItem.agent(r[s], s).id, anchor: .center) }
+                }
             }
         }
     }
@@ -245,7 +254,6 @@ struct CommandPaletteView: View {
         .padding(.horizontal, 12).padding(.vertical, 10)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(selected ? rowSel : .clear))
         .contentShape(Rectangle())
-        .id("row\(i)")
         .onHover { if $0 { model.selected = i } }
         .onTapGesture { onJump(a) }
     }
