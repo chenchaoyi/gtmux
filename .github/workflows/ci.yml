@@ -66,12 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version: '1.25'
-          cache: true
-
-      # The cgo systray binary is excluded from the Linux build (build tags), so
-      # compile it here so a PR can't break it unnoticed.
-      - name: build menu-bar binary (cgo)
-        run: CGO_ENABLED=1 go build -o /dev/null ./cmd/gtmux-menubar
+      # The menu-bar app is native Swift (macapp/); compile it here so a PR can't
+      # break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
+      - name: swift build (release)
+        run: cd macapp && swift build -c release

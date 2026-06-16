@@ -68,9 +68,9 @@ jobs:
   # universal, ad-hoc-signed Gtmux.app and attaches it to the same release.
   #
   # NOTE: this job only *builds* the app — it cannot see the menu bar. Status-item
-  # rendering regressions (e.g. fyne.io/systray went invisible on macOS 26) are
-  # invisible to CI. Smoke-test Gtmux.app on a real macOS machine before trusting
-  # a tag: launch it and confirm the colored dot + count appears in the bar.
+  # rendering regressions (the menu bar is native AppKit now) are invisible to
+  # CI. Smoke-test Gtmux.app on a real macOS machine before trusting a tag:
+  # launch it and confirm the colored dot + count appears, and the popover opens.
   app:
     name: menu-bar app (macOS)
     needs: goreleaser
@@ -85,34 +85,16 @@ jobs:
           go-version: '1.25'
           cache: true
 
-      - name: build universal binaries (CLI cgo-free, menu-bar cgo)
-        run: |
-          set -euxo pipefail
-          mkdir -p build
-          for arch in arm64 amd64; do
-            CGO_ENABLED=1 GOOS=darwin GOARCH=$arch \
-              go build -ldflags "-X main.version=${GITHUB_REF_NAME}" \
-              -o "build/menubar-$arch" ./cmd/gtmux-menubar
-            CGO_ENABLED=0 GOOS=darwin GOARCH=$arch \
-              go build -ldflags "-s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=${GITHUB_REF_NAME}" \
-              -o "build/gtmux-$arch" ./cmd/gtmux
-          done
-          lipo -create -output build/gtmux-menubar build/menubar-arm64 build/menubar-amd64
-          lipo -create -output build/gtmux build/gtmux-arm64 build/gtmux-amd64
+      # macapp/build.sh compiles the Swift app (universal), builds the cgo-free
+      # gtmux CLI to bundle alongside it, assembles Gtmux.app, and ad-hoc-signs.
+      - name: build Gtmux.app (universal, signed)
+        run: GTMUX_UNIVERSAL=1 GTMUX_VERSION="${GITHUB_REF_NAME}" macapp/build.sh
 
-      - name: assemble + ad-hoc-sign Gtmux.app
+      - name: zip the bundle
         run: |
           set -euxo pipefail
-          APP=Gtmux.app
-          mkdir -p "$APP/Contents/MacOS"
-          cp internal/app/templates/Gtmux.Info.plist "$APP/Contents/Info.plist"
-          cp build/gtmux-menubar "$APP/Contents/MacOS/gtmux-menubar"
-          cp build/gtmux "$APP/Contents/MacOS/gtmux"
-          chmod +x "$APP/Contents/MacOS/"*
-          codesign --force --deep --sign - "$APP"
-          codesign -dv "$APP" || true
           ZIP="Gtmux-${GITHUB_REF_NAME#v}-macos.zip"
-          ditto -c -k --keepParent "$APP" "$ZIP"
+          ditto -c -k --keepParent macapp/build/Gtmux.app "$ZIP"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
       - name: attach Gtmux.app to the release (tag)

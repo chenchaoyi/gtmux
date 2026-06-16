@@ -1,20 +1,16 @@
 # Developer shortcuts. `make check` runs the same gate as CI (.github/workflows/ci.yml).
-.PHONY: build menubar app install test cover fmt vet lint check clean
+.PHONY: build app install test cover fmt vet lint check clean
 
 BIN      ?= gtmux
 PKG       = ./cmd/gtmux
-MENUBAR   = ./cmd/gtmux-menubar
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS   = -s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=$(VERSION)
 
 build: ## Build the gtmux CLI (cgo-free) into ./$(BIN)
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN) $(PKG)
 
-menubar: ## Build the macOS menu-bar binary (needs cgo; darwin only)
-	CGO_ENABLED=1 go build -ldflags "-X main.version=$(VERSION)" -o gtmux-menubar $(MENUBAR)
-
-app: build menubar ## Build both, then assemble + install Gtmux.app (~/Applications)
-	GTMUX_MENUBAR_BIN=./gtmux-menubar ./$(BIN) install-app
+app: ## Build the native menu-bar app (Gtmux.app) — Swift + the bundled CLI
+	cd macapp && GTMUX_VERSION=$(VERSION) ./build.sh
 
 install: ## Install gtmux into $GOBIN / $GOPATH/bin
 	go install -ldflags "$(LDFLAGS)" $(PKG)
@@ -39,5 +35,5 @@ lint: ## staticcheck (pinned via go run)
 check: fmt vet lint test ## Run the full CI gate locally
 
 clean: ## Remove build artifacts
-	rm -f $(BIN) gtmux-menubar coverage.out
-	rm -rf dist/
+	rm -f $(BIN) coverage.out
+	rm -rf dist/ macapp/.build macapp/build

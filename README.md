@@ -189,38 +189,39 @@ how a notification click can drop you on the agent that just finished.
 ## menu-bar app
 
 gtmux has two faces over one source of truth: the **CLI** (in the terminal) and a
-**menu-bar app** (always visible). The app is an `LSUIElement` status item — your
-ambient radar over coding agents — showing at a glance how many are **⏸ waiting on
-you / ⠿ working / ✳ idle**, with a dropdown to jump to any of them.
+**menu-bar app** (always visible). The app is a native macOS `LSUIElement` status
+item (Swift / AppKit, in [`macapp/`](macapp/)) — your ambient radar over coding
+agents — showing at a glance how many are **⏸ waiting on you / ⠿ working /
+✳ idle**, with a popover to jump to any of them.
+
+The curl installer sets it up and launches it (`GTMUX_NO_APP=1` to skip,
+`GTMUX_APP_LOGIN=1` to start it at login). From source: `make app` builds
+`Gtmux.app` (Swift app + the bundled cgo-free CLI). Remove it with
+`gtmux uninstall-app`.
 
 ```sh
-gtmux install-app            # build/register Gtmux.app and launch it
-gtmux install-app --login    # …and start it at login
-gtmux uninstall-app          # remove it (and the login item)
+# install / update (CLI + app):
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```
 
 The status item is a colored dot for the most-urgent state — **red** waiting ·
 **cyan** working · **green** idle · gray when nothing's running — with a count
-badge (e.g. `2` when two agents need you). The dropdown lists each agent
-`‹glyph› session · task`; clicking a row runs `gtmux focus <pane>` to land you on
-it, and a **Waiting only** toggle filters to just the ones blocking you. It's a
-pure **consumer** of the CLI — it polls `gtmux agents --json` (~1.5s), shells out
-to `gtmux focus`, and watches `~/.local/share/gtmux/` so a hook firing (an agent
-starting to wait, or finishing) updates the bar instantly. Chrome follows
-`GTMUX_LANG` (en/zh).
+badge (e.g. `2` when two agents need you). **Click the dot or press ⌘⌥G** to open
+the popover; agents are grouped **Needs you / Working / Idle**, each row
+`‹glyph› session · task`, and clicking one runs `gtmux focus <pane>` to land you
+on it. A footer has quick actions: **Overview** and **Live watch** (the full
+`gtmux overview` / `agents --watch` views in a fresh Ghostty window),
+**Restore detached** (`gtmux restore`), and **New session** (`gtmux new`).
 
-The menu also has quick actions: **Overview** and **Live watch** (the full
-`gtmux overview` / `agents --watch` views, each in a fresh Ghostty window),
-**Restore detached** (`gtmux restore`), and **New session** (`gtmux new` — create
-a tmux session and open a tab for it). `gtmux new [name]` is a CLI command too.
+It's a pure **consumer** of the CLI — it polls `gtmux agents --json` (~1.5s) and
+shells out to `gtmux focus` — so gtmux-core stays the data source. The CLI stays
+cgo-free; the app is the only native/Swift build. `gtmux new [name]` is a CLI
+command too.
 
-It's a separate app from the notification click target (`GtmuxFocus.app`,
-`com.gtmux.focus`); the two coexist. The app is cgo (Cocoa via `energye/systray`),
-so it ships as a separate universal `Gtmux.app` — the CLI binary stays cgo-free.
-Build from source with `make app`.
-
-> Releases attach a `Gtmux-<version>-macos.zip` (ad-hoc signed). On first launch
-> macOS may warn about an unsigned app; the installer strips the quarantine flag.
+> The app (`com.gtmux.menubar`) is separate from the notification click target
+> (`GtmuxFocus.app`, `com.gtmux.focus`); the two coexist. Releases attach a
+> universal, ad-hoc-signed `Gtmux-<version>-macos.zip`; the installer strips the
+> quarantine flag so first launch isn't blocked.
 
 ## tmux integration
 
