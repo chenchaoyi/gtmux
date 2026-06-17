@@ -13,7 +13,7 @@
 | §4 快速切换器（热键） | A: popover 搜索；**B: `CommandPalette.swift` 独立命令面板**（⌘⌥G 唤起，⌘1–9 直达）；`GlobalHotkey` | L2 `testFuzzySearch`/`testPaletteWrapNavigation`；运行时验证面板尺寸/可见（`GTMUXBAR_SHOW_PALETTE` 测试种子） | 热键唤起面板、搜索、⏎/⌘1–9 跳转、**视觉对照 mockup §4 B** | ✅（A+B 完成，面板视觉已按 `docs/design/mockup/gtmux-menubar.dc.html` §4 B 重写——logo+搜索+⌘⌥G keycap、分组、状态前置 32pt 图标、⏎ jump 行内胶囊、底栏。**默认热键 ⌘⌥G** 覆盖 DESIGN 的 ⌥⇧G。截图权限受限，最终视觉由产品真机验收） |
 | §5 空状态 & 首次运行 | `States.swift`（Empty/FirstRun） | — | 文案平实无营销腔；权限卡 | 🟡（视图就绪；首次运行**触发时机/权限探测未接线** ⏳） |
 | §6 Agent 身份（中性单字标、不画 logo） | `agentMonogram`,`AgentAvatar` | L2 `testAgentMonogram`；L3「不自探测」 | 头像中性、不抢状态色 | 🟡（profile `icon` 官方图标字段 ⏳） |
-| §7 tmux 与原生终端（数据泛化 + native 跳转） | `agentJSON`+`Agent`(source/project/terminal/tab/activity_at)；`focus --terminal/--tab`；`ghostty.FocusTerminalTab` | L1 `TestAgentJSONContractFields`/`TestGhosttyTabScript`；L2 `testDecodeNativeAgent`/jumpArgs | native 行渲染、native 跳转真机 | 🟡（schema/渲染/跳转 ✅；**native 探测 scanner ⏳ — 需 ps/cwd/终端 tab 标题，建议随 Terminal 驱动一起做**） |
+| §7 tmux 与原生终端（数据泛化 + native 跳转） | `agentJSON`+`Agent`(source/project/terminal/tab/activity_at)；`focus --terminal/--tab`；`ghostty.FocusTerminalTab` | L1 `TestAgentJSONContractFields`/`TestGhosttyTabScript`；L2 `testDecodeNativeAgent`/jumpArgs | native 行渲染、native 跳转真机 | ⏸ **当前范围外（已决定聚焦 tmux+agent）**。schema/渲染/跳转 ✅ 作为潜在地基保留；**native 探测 scanner 不做** —— 需 ps/cwd/终端 tab 标题（状态与跳转都依赖逐终端读 tab 标题），留待后续定位迭代。 |
 | §8 偏好设置 | `Preferences.swift`,`AppSettings` | —（UI） | 语言三态即时、间隔、自启、显示模式、通知 | 🟡（**可录制热键 ⏳，当前静态显示 ⌥⇧G**） |
 | §9 设计 Token（颜色/字体/间距） | `Theme.swift` | L2/L3 颜色 hex 一致 ✅ | 字体/间距/材质对照 | ✅ 颜色 / 🟡 其余 |
 | §10 动效（仅 idle→waiting 脉冲；环不转） | `StatusItemGlyph`(环静态),`StatusBadge` | — | **idle→waiting 单次脉冲 ⏳ 未实现**；其余零动画 | 🟡 |
@@ -23,11 +23,12 @@
 | §14 数据契约 | `agentJSON`,`Agent` 解码 | L1 契约 + L2 解码 ✅ | — | ✅ |
 | §15 参照 | — | — | — | n/a |
 
-## 本期已知缺口（待后续迭代）
+## 范围决定 & 本期已知缺口
 
-1. **native 探测 scanner**（§7）：契约/渲染/跳转已落地，但「发现非 tmux 里的 agent」未实现（需进程扫描 + cwd +
-   终端 tab 标题映射，且状态判定需读终端 tab 标题）。建议与 `Terminal` 驱动抽象一起做，并真机验证。
-2. **idle→waiting 单次脉冲**（§10）：唯一允许的动效，尚未实现。
+0. **范围（已决定）**：gtmux **聚焦 tmux + agent 工作模式**，只追踪 tmux 里的 agent。**native（非 tmux）终端 agent
+   不在当前范围**——§7 的契约/渲染/跳转作为潜在地基保留，但探测 scanner 不做（状态与跳转都要逐终端读 tab 标题，
+   投入大且不确定）。留待后续「进一步定位迭代」时再评估是否扩展（届时随 `Terminal` 驱动抽象一起做）。
+1. **idle→waiting 单次脉冲**（§10）：唯一允许的动效，尚未实现。
 3. **可录制全局热键**（§8）：目前固定 ⌥⇧G 并静态展示。
 4. **VoiceOver label/hint**（§11）：行已是按钮，但未显式设置无障碍标签。
 5. **首次运行权限卡触发**（§5）：视图就绪，未接「首次点击跳转时检测自动化权限并弹卡」。

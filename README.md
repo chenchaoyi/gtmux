@@ -36,6 +36,14 @@ agents in git worktrees, gtmux **doesn't run your agents** — it's the
 tmux-native, and it even surfaces agents *other* tools spawned (they're in tmux
 too). The "g" is for Go.
 
+### Scope
+
+gtmux is **focused on the tmux + agent workflow**: it tracks coding agents
+running **inside tmux**. Agents started **directly in a terminal tab (no tmux)
+are not detected** — that's a deliberate focus, not a bug. Supporting native,
+non-tmux terminals is a possible future direction; for now, run your agents in
+tmux to see them.
+
 ### Highlights
 
 - 🛰️ **One glance, every agent** — `⏸ waiting · ⠿ working · ✳ idle`, sorted by urgency.
