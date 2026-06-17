@@ -22,6 +22,18 @@ over one Go core (gtmux-core is the single data source):
 - Release: push a tag `vX.Y.Z` → goreleaser ships the CLI tarballs and a macOS
   job runs `macapp/build.sh` to ship `Gtmux-<v>-macos.zip`. CI builds the app
   but **can't see the menu bar** — smoke-test on real macOS before trusting a tag.
+- **Signing & notarization:** `build.sh` signs ad-hoc by default; set
+  `GTMUX_SIGN_ID="Developer ID Application: …"` for a STABLE signature (hardened
+  runtime) so TCC grants persist across updates (ad-hoc changes identity every
+  build → macOS re-prompts). It signs the bundled `gtmux` CLI then the bundle
+  (no `--deep`) and prints the `notarytool`/`stapler` steps. To sign in CI, add
+  the cert + `GTMUX_SIGN_ID` (+ a notarytool keychain profile) as secrets and
+  pass them to the macOS release job — until then releases stay ad-hoc.
+- **Mac App Store is NOT a viable target as built:** the app shells out to
+  `gtmux`/`tmux`/`osascript` and reads `~/.local/share/gtmux`, `~/.tmux/…` etc.,
+  none of which survive the App Sandbox MAS mandates (and there's no entitlement
+  for "drive tmux / control arbitrary terminals"). Ship **Developer ID + notarized
+  direct distribution**; MAS would require a sandbox-compatible rearchitect.
 - Workflow: branch → PR → CI green → squash-merge → tag. Don't commit to `main`.
 
 ## Conventions / invariants

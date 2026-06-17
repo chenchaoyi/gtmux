@@ -261,6 +261,35 @@ needed. The hook queues a request under `~/.local/share/gtmux/notify/` and
 *needs your input* sounds). Clicking it lands you on the exact pane. Grant
 "Allow Notifications" on first run; keep the app running to receive them.
 
+## Permissions
+
+gtmux asks for only what it needs:
+
+- **Automation (control Ghostty)** — required for `focus` / `restore` / `new` and
+  notification click-to-jump. macOS prompts the first time gtmux drives Ghostty
+  via AppleScript; click **Allow**.
+- **Notifications** — so the menu-bar app can post agent banners. Allow on first run.
+- **Launch at login** *(optional)* — only if you enable it in Preferences.
+
+It does **not** need these — if macOS prompts, you can safely **Deny** with no
+loss of function:
+
+- **App Management ("modify apps on your Mac")** — gtmux never modifies other
+  apps; its code only ever touches its own bundle (on update/uninstall). If you
+  see this prompt, macOS attributed *another* app's self-update (e.g. a browser
+  updating itself) to gtmux's long-running background process via its
+  responsible-process chain. Denying changes nothing for gtmux.
+- **Files & Folders (Downloads / Desktop / Documents)** — gtmux doesn't read
+  these. The prompt can appear when `restore` recreates a tmux session whose
+  working directory lives in one of them — that's `tmux` (run by gtmux) opening
+  the folder. Safe to deny; only that one session's directory is affected.
+
+> macOS ties granted permissions to the app's code signature. A **Developer
+> ID-signed + notarized** build keeps your grants across updates; an **ad-hoc**
+> build (a local `make app`, or an unsigned release) changes identity every
+> build, so macOS forgets and re-prompts. Set `GTMUX_SIGN_ID` when building to
+> sign with your Developer ID (see `macapp/build.sh`).
+
 ## License
 
 [MIT](LICENSE) © ccy
