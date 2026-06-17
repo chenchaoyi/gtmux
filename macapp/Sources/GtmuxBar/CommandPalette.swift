@@ -245,10 +245,10 @@ struct CommandPaletteView: View {
 
     private func sectionTitle(_ st: Status) -> String {
         switch st {
-        case .waiting: return l10n.tr("Needs you", "需要你")
+        case .waiting: return l10n.tr("Needs input", "需要输入")
         case .working: return l10n.tr("Working", "运行中")
-        case .idle:    return l10n.tr("Idle", "空闲")
-        case .running: return l10n.tr("Running", "待命")
+        case .idle:    return l10n.tr("Completed", "已完成")
+        case .running: return l10n.tr("Idle", "空闲")
         }
     }
 
@@ -265,7 +265,9 @@ struct CommandPaletteView: View {
                 Text(a.secondary).font(.system(size: 12.5)).foregroundStyle(fg2).lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(a.agent).font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3).lineLimit(1)
+            // duration in the current state ("working 7m"); identity is the avatar.
+            Text(a.relativeTimeLabel).font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(fg3).monospacedDigit().lineLimit(1)
             if selected {
                 Text(l10n.tr("⏎ jump", "⏎ 跳转")).font(.system(size: 12)).foregroundStyle(fg)
                     .padding(.horizontal, 9).padding(.vertical, 4)
