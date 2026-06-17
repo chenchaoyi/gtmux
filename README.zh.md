@@ -237,6 +237,28 @@ gtmux uninstall-hooks        # 撤销
 agent 图标、**Jump** 动作，并区分文案 —— *已完成* 安静无声，*需要你的输入* 有提示音），
 点击即精确跳到那个 pane。首次运行请允许「通知」权限；保持 app 运行即可收到。
 
+## 权限
+
+gtmux 只申请它真正需要的：
+
+- **自动化（控制 Ghostty）** —— `focus` / `restore` / `new` 以及点击通知跳转都要用。
+  第一次用 AppleScript 驱动 Ghostty 时 macOS 会弹窗，点**允许**。
+- **通知** —— 让菜单栏 app 弹 agent 横幅。首次运行允许即可。
+- **开机自启**（可选）—— 仅当你在偏好设置里打开时。
+
+它**不需要**下面这些 —— 如果 macOS 弹了，可以放心**拒绝**，不影响功能：
+
+- **App 管理（"修改你 Mac 上的 app"）** —— gtmux 从不修改其它 app；它的代码只会动它**自己**的
+  bundle（更新/卸载时）。你看到这个弹窗，是 macOS 通过「责任进程链」把*别的* app 的自更新
+  （比如浏览器在更新自己）算到了 gtmux 常驻后台进程头上。拒绝对 gtmux 毫无影响。
+- **文件与文件夹（下载/桌面/文稿）** —— gtmux 不读这些。弹窗通常出现在 `restore` 把某个
+  原工作目录在这些文件夹里的 tmux 会话恢复回去时 —— 那是 gtmux 调起的 `tmux` 在打开该目录。
+  可放心拒绝；只影响那一个会话的目录。
+
+> macOS 把已授的权限绑定到 app 的代码签名上。**Developer ID 签名 + 公证**的构建能让授权在更新后
+> 保留；**ad-hoc** 构建（本地 `make app`、或未签名的 release）每次构建身份都变，macOS 会忘掉、
+> 重新问。构建时设 `GTMUX_SIGN_ID` 即可用你的 Developer ID 签名（见 `macapp/build.sh`）。
+
 ## 许可
 
 [MIT](LICENSE) © ccy

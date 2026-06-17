@@ -47,8 +47,26 @@ cp "$SWIFT_BIN" "$BUNDLE/Contents/MacOS/${APP_BIN}"
 cp build/gtmux "$BUNDLE/Contents/MacOS/gtmux"
 chmod +x "$BUNDLE/Contents/MacOS/"*
 
-echo "==> ad-hoc code signing"
-codesign --force --deep --sign - "$BUNDLE"
+# Code signing. Set GTMUX_SIGN_ID to a "Developer ID Application: …" identity
+# for a STABLE signature (TCC permissions then persist across updates instead of
+# re-prompting every reinstall — the ad-hoc fallback changes identity each build)
+# and Hardened Runtime (required for notarization). Falls back to ad-hoc.
+# Sign nested code (the bundled CLI) BEFORE the outer bundle; avoid --deep.
+SIGN_ID="${GTMUX_SIGN_ID:-}"
+if [ -n "$SIGN_ID" ]; then
+  echo "==> code signing (Developer ID, hardened runtime): $SIGN_ID"
+  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/gtmux"
+  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/${APP_BIN}"
+  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE"
+  codesign --verify --strict --verbose=2 "$BUNDLE" || { echo "codesign verify failed" >&2; exit 1; }
+  echo "   signed. Notarize the zipped bundle next, e.g.:"
+  echo "     ditto -c -k --keepParent \"$BUNDLE\" Gtmux.zip"
+  echo "     xcrun notarytool submit Gtmux.zip --keychain-profile \"\$GTMUX_NOTARY_PROFILE\" --wait"
+  echo "     xcrun stapler staple \"$BUNDLE\""
+else
+  echo "==> ad-hoc code signing (set GTMUX_SIGN_ID='Developer ID Application: …' for a stable signature)"
+  codesign --force --deep --sign - "$BUNDLE"
+fi
 
 echo
 echo "Built $(pwd)/$BUNDLE (version ${VERSION})"
