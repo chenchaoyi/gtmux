@@ -255,7 +255,10 @@ struct CommandPaletteView: View {
     private func row(_ a: Agent, _ i: Int) -> some View {
         let selected = i == model.selected
         return HStack(spacing: 13) {
-            PaletteStatusIcon(status: a.state)
+            // Same identity avatar as the popover: the agent's real icon (else a
+            // monogram) with the status badge in the corner — so you can tell the
+            // agent type at a glance here too, not just in the menu-bar popover.
+            AgentAvatar(agent: a)
             VStack(alignment: .leading, spacing: 2) {
                 // line 1: the agent's own session name; line 2: where it lives (dim).
                 Text(a.primary).font(.system(size: 15, weight: .semibold)).foregroundStyle(fg).lineLimit(1)
@@ -311,41 +314,4 @@ struct CommandPaletteView: View {
     }
     private var divider: Color { scheme == .dark ? Color(white: 1, opacity: 0.10) : Color(black: 0, opacity: 0.10) }
     private var rowSel: Color { scheme == .dark ? Color(white: 1, opacity: 0.12) : Color(black: 0, opacity: 0.07) }
-}
-
-/// PaletteStatusIcon — the 32pt status-forward leading icon (mockup §4 B):
-/// waiting is loud (solid red + white pause); the rest are quiet (translucent
-/// tint + the status-colored glyph).
-struct PaletteStatusIcon: View {
-    let status: Status
-
-    var body: some View {
-        ZStack {
-            if status == .waiting {
-                RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Theme.Status.waiting)
-            } else {
-                Circle().fill(status.color.opacity(0.16))
-            }
-            glyph
-        }
-        .frame(width: 32, height: 32)
-    }
-
-    @ViewBuilder private var glyph: some View {
-        switch status {
-        case .waiting:
-            HStack(spacing: 2.2) {
-                Capsule().fill(.white).frame(width: 2.6, height: 12)
-                Capsule().fill(.white).frame(width: 2.6, height: 12)
-            }
-        case .idle:
-            Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundStyle(status.color)
-        case .working:
-            Circle().trim(from: 0.08, to: 0.92)
-                .stroke(status.color, style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
-                .frame(width: 15, height: 15).rotationEffect(.degrees(-80))
-        case .running:
-            Circle().fill(status.color).frame(width: 6, height: 6)
-        }
-    }
 }
