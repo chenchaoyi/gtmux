@@ -46,34 +46,147 @@ func execTmuxAttach(name string) int {
 	return 0 // unreachable
 }
 
-// ensureServer starts tmux (if down) and waits for tmux-continuum to restore the
-// last autosave. A throwaway detached session boots the server; once restored
-// sessions appear it is dropped, else renamed to "main".
+// ensureServer starts tmux (if down) and restores the last tmux-resurrect
+// autosave. A throwaway detached session boots the server; once restored sessions
+// appear it is dropped, else renamed to "main".
+//
+// We DRIVE tmux-resurrect explicitly (run-shell, in-server context so its socket
+// resolves) rather than passively waiting for continuum's auto-restore hook —
+// which is flaky and, for a large layout, slower than any fixed wait. The old
+// code waited a fixed 10s; a real restore can take 30s+, so it gave up early,
+// created a bare "main", and then continuum's next autosave overwrote the good
+// save — losing every session. The guard below makes that unrecoverable case
+// impossible: if a saved layout exists but didn't restore, we warn loudly and
+// point at the save instead of pretending success.
 func ensureServer() {
 	if tmux.ServerUp() {
 		return
 	}
 	boot := fmt.Sprintf("gtmux-boot-%d", os.Getpid())
-	i18n.Say("tmux server not running — starting it; continuum is restoring the last saved sessions...",
-		"tmux server 未运行 —— 正在启动;continuum 正在恢复最近一次保存的 session...")
 	if !tmux.OK("new-session", "-d", "-s", boot) {
 		i18n.Sae("failed to start tmux", "启动 tmux 失败")
 		os.Exit(1)
 	}
-	for i := 0; i < 20; i++ {
-		for _, n := range tmux.Lines("list-sessions", "-F", "#{session_name}") {
-			if n != boot {
-				tmux.OK("kill-session", "-t", boot)
-				i18n.Say("Restored. Layout/dirs/screen text are back; running programs are NOT (e.g. restart claude with 'claude --resume').",
-					"已恢复。布局/目录/屏幕文本都回来了;正在运行的程序不会自动重启(如 claude 用 'claude --resume' 拉起)。")
-				return
-			}
+
+	save := resurrectLastSave()
+	hadLayout := save != "" && saveHasLayout(save)
+
+	if script := resurrectRestoreScript(); script != "" {
+		i18n.Say("tmux server not running — restoring your saved sessions via tmux-resurrect (may take a moment)...",
+			"tmux server 未运行 —— 正在用 tmux-resurrect 恢复你的存档 session(可能要等一会)...")
+		tmux.OK("run-shell", script) // runs inside the server; deterministic, not a hook wait
+		if waitForRestoredSessions(boot, 120*time.Second) {
+			tmux.OK("kill-session", "-t", boot)
+			i18n.Say("Restored. Layout/dirs/screen text are back; running programs are NOT (e.g. restart claude with 'claude --resume').",
+				"已恢复。布局/目录/屏幕文本都回来了;正在运行的程序不会自动重启(如 claude 用 'claude --resume' 拉起)。")
+			return
 		}
-		time.Sleep(500 * time.Millisecond)
+	} else if hadLayout {
+		// No tmux-resurrect script found, but a save exists — fall back to waiting
+		// for continuum's auto-restore hook (best effort, longer than the old 10s).
+		i18n.Say("tmux server not running — waiting for continuum to restore the last save...",
+			"tmux server 未运行 —— 正在等待 continuum 恢复最近一次存档...")
+		if waitForRestoredSessions(boot, 60*time.Second) {
+			tmux.OK("kill-session", "-t", boot)
+			i18n.Say("Restored saved sessions.", "已恢复存档 session。")
+			return
+		}
 	}
+
+	// Nothing restored. If a real layout was saved, do NOT silently keep a bare
+	// 'main' as if all is well — continuum would autosave it over the good save.
+	// resurrect keeps timestamped saves, so the data is still there; tell the user.
 	tmux.OK("rename-session", "-t", boot, "main")
+	if hadLayout {
+		i18n.Sae("⚠ A saved layout exists but could NOT be restored — it was NOT overwritten. Save: "+save,
+			"⚠ 存在存档但未能恢复 —— 没有覆盖它。存档: "+save)
+		i18n.Sae("  Recover it before continuum autosaves: point .../resurrect/last at it and re-run, or restore manually.",
+			"  请在 continuum 自动存档前恢复: 把 .../resurrect/last 指向它后重试,或手动恢复。")
+		return
+	}
 	i18n.Say("No saved sessions found — created a fresh session 'main'.",
 		"没有找到存档 —— 已新建 session 'main'。")
+}
+
+// resurrectRestoreScript returns the tmux-resurrect restore.sh path ("" if not
+// installed). Must be run inside tmux (run-shell) so its socket resolves.
+func resurrectRestoreScript() string {
+	home := os.Getenv("HOME")
+	cands := []string{
+		home + "/.tmux/plugins/tmux-resurrect/scripts/restore.sh",
+		home + "/.config/tmux/plugins/tmux-resurrect/scripts/restore.sh",
+	}
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		cands = append(cands, xdg+"/tmux/plugins/tmux-resurrect/scripts/restore.sh")
+	}
+	for _, c := range cands {
+		if fi, err := os.Stat(c); err == nil && !fi.IsDir() {
+			return c
+		}
+	}
+	return ""
+}
+
+// resurrectLastSave resolves the resurrect "last" save pointer ("" if none).
+func resurrectLastSave() string {
+	home := os.Getenv("HOME")
+	cands := []string{}
+	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
+		cands = append(cands, xdg+"/tmux/resurrect/last")
+	}
+	cands = append(cands,
+		home+"/.local/share/tmux/resurrect/last",
+		home+"/.tmux/resurrect/last")
+	for _, c := range cands {
+		if _, err := os.Stat(c); err == nil { // follows the symlink
+			return c
+		}
+	}
+	return ""
+}
+
+// saveHasLayout reports whether a resurrect save actually holds sessions (any
+// window/pane lines) — i.e. losing it would lose real work.
+func saveHasLayout(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 1<<20), 1<<20)
+	for sc.Scan() {
+		if line := sc.Text(); strings.HasPrefix(line, "window\t") || strings.HasPrefix(line, "pane\t") {
+			return true
+		}
+	}
+	return false
+}
+
+// waitForRestoredSessions polls until at least one non-boot session exists AND
+// the count has settled (resurrect creates sessions incrementally over many
+// seconds), or timeout. Returns whether any real session came back.
+func waitForRestoredSessions(boot string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	prev, stable := -1, 0
+	for time.Now().Before(deadline) {
+		n := 0
+		for _, s := range tmux.Lines("list-sessions", "-F", "#{session_name}") {
+			if s != boot {
+				n++
+			}
+		}
+		if n > 0 && n == prev {
+			if stable++; stable >= 2 { // unchanged across 2 polls → restore finished
+				return true
+			}
+		} else {
+			stable = 0
+		}
+		prev = n
+		time.Sleep(700 * time.Millisecond)
+	}
+	return prev > 0
 }
 
 // unattached returns session names with no client attached.
