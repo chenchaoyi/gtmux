@@ -34,11 +34,18 @@ over one Go core (gtmux-core is the single data source):
   `NotificationManager` drains & posts) is the notification channel — there is no
   terminal-notifier/osascript fallback (notifications need the app running).
 - **i18n:** every user-facing string is en+zh via `internal/i18n` and `GTMUX_LANG`.
+- **Scope (decided):** gtmux focuses on the **tmux + agent** workflow — it only
+  detects agents running **inside tmux** (`agents` scans `tmux list-panes`).
+  Agents started directly in a terminal tab (no tmux) are intentionally **out of
+  scope** for now. The `source/project/terminal/tab` fields + `focus
+  --terminal/--tab` are latent groundwork kept for a possible future expansion —
+  do NOT build the native-detection scanner without an explicit decision to widen
+  scope (status + jump both need per-terminal tab-title reading).
 - **Terminal coupling** lives ONLY in `internal/ghostty` (AppleScript). The rest
-  (`agents`/`overview`/`hook`/notify) is tmux-only and terminal-agnostic. Project
-  direction: generalize `internal/ghostty` into a `Terminal` driver so gtmux is
-  not Ghostty-only (iTerm2/kitty/WezTerm/Apple Terminal feasible; Warp/Alacritty
-  not). Don't entrench new Ghostty-specific assumptions outside that package.
+  (`agents`/`overview`/`hook`/notify) is tmux-only and terminal-agnostic. If scope
+  later widens, generalize `internal/ghostty` into a `Terminal` driver
+  (iTerm2/kitty/WezTerm/Apple Terminal feasible; Warp/Alacritty not) rather than
+  entrenching new Ghostty-specific assumptions outside that package.
 - **Verifying the status item / popover on macOS** (screen capture is
   permission-blocked): query the accessibility tree, e.g. `osascript -e 'tell
   application "System Events" to get count of menu bar items of menu bar 1 of
