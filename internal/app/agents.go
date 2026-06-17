@@ -61,6 +61,14 @@ func loadProfiles() []agentProfile {
 	return profiles
 }
 
+// fileMtime returns a file's modtime in unix seconds, 0 if it doesn't exist.
+func fileMtime(path string) int64 {
+	if fi, err := os.Stat(path); err == nil {
+		return fi.ModTime().Unix()
+	}
+	return 0
+}
+
 // iconFor returns the icon hint for the agent named name (first matching profile,
 // so user overrides win). "" when none is configured.
 func iconFor(name string, profiles []agentProfile) string {
@@ -89,6 +97,7 @@ type agentPane struct {
 	terminal   string
 	tab        string
 	activityAt int64  // epoch seconds of last activity (relative time)
+	since      int64  // epoch seconds the current state began (for a duration)
 	icon       string // identity icon hint (.app path or image path); "" = monogram
 }
 
@@ -112,7 +121,8 @@ type agentJSON struct {
 	Terminal   string `json:"terminal,omitempty"` // native: terminal app
 	Tab        string `json:"tab,omitempty"`      // native: terminal tab title (jump key)
 	ActivityAt int64  `json:"activity_at,omitempty"`
-	Icon       string `json:"icon,omitempty"` // identity icon hint (.app/image path)
+	Since      int64  `json:"since,omitempty"` // epoch the current state began (duration)
+	Icon       string `json:"icon,omitempty"`  // identity icon hint (.app/image path)
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -239,6 +249,20 @@ func gatherAgents() []agentPane {
 		if len(f) >= 8 {
 			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
 		}
+		// since = when the agent entered its CURRENT state, for a "working 7m" /
+		// "waiting 11m" duration. Hook markers give the turn/wait start; otherwise
+		// fall back to last activity.
+		since := activityAt
+		switch status {
+		case "working":
+			if mt := fileMtime(state.ActivePath(id)); mt > 0 {
+				since = mt
+			}
+		case "waiting":
+			if mt := fileMtime(state.WaitingPath(id)); mt > 0 {
+				since = mt
+			}
+		}
 		panes = append(panes, agentPane{
 			paneID:     id,
 			session:    f[1],
@@ -253,6 +277,7 @@ func gatherAgents() []agentPane {
 			source:     "tmux",
 			icon:       iconFor(agent, profiles),
 			activityAt: activityAt,
+			since:      since,
 		})
 	}
 	sort.SliceStable(panes, func(i, j int) bool {
@@ -378,7 +403,7 @@ func agentsJSON() int {
 			Loc: p.loc, Agent: p.agent, Status: p.status, Task: p.task,
 			Latest: p.latest, Activity: p.activity,
 			Source: src, Project: p.project, Terminal: p.terminal, Tab: p.tab,
-			ActivityAt: p.activityAt, Icon: p.icon,
+			ActivityAt: p.activityAt, Since: p.since, Icon: p.icon,
 		})
 	}
 	b, err := json.MarshalIndent(out, "", "  ")

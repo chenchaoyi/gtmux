@@ -54,6 +54,7 @@ struct Agent: Identifiable, Equatable {
     var terminal = ""
     var tab = ""
     var activityAt = 0 // epoch seconds of last activity (for relative time); 0 = unknown
+    var since = 0      // epoch seconds the current state began (for a "working 7m" duration)
     var icon = ""      // identity icon hint: a .app path (→ that app's real icon) or an image path
 
     var id: String {
@@ -99,12 +100,13 @@ extension Agent: Decodable {
         source = (try? c.decode(String.self, forKey: .source)) ?? "tmux"
         project = s(.project); terminal = s(.terminal); tab = s(.tab)
         activityAt = (try? c.decode(Int.self, forKey: .activityAt)) ?? 0
+        since = (try? c.decode(Int.self, forKey: .since)) ?? 0
         icon = s(.icon)
     }
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity
-        case source, project, terminal, tab, icon
+        case source, project, terminal, tab, icon, since
         case activityAt = "activity_at"
     }
 }

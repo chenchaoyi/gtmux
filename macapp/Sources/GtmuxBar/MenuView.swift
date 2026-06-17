@@ -93,9 +93,9 @@ struct MenuView: View {
         let n = store.total
         if n == 0 { return l10n.tr("no agents", "没有 agent") }
         var parts: [String] = []
-        if store.waiting > 0 { parts.append(l10n.tr("\(store.waiting) waiting", "\(store.waiting) 等输入")) }
+        if store.waiting > 0 { parts.append(l10n.tr("\(store.waiting) awaiting input", "\(store.waiting) 待输入")) }
         parts.append(l10n.tr("\(store.working) working", "\(store.working) 运行中"))
-        parts.append(l10n.tr("\(store.idleCount) idle", "\(store.idleCount) 空闲"))
+        parts.append(l10n.tr("\(store.idleCount) completed", "\(store.idleCount) 已完成"))
         let agents = l10n.tr("\(n) agent\(n == 1 ? "" : "s")", "\(n) 个 agent")
         return agents + " · " + parts.joined(separator: " · ")
     }
@@ -241,10 +241,10 @@ private struct SectionHeader: View {
 
     private var title: String {
         switch status {
-        case .waiting: return l10n.tr("Needs you", "需要你")
+        case .waiting: return l10n.tr("Needs input", "需要输入")
         case .working: return l10n.tr("Working", "运行中")
-        case .idle:    return l10n.tr("Idle", "空闲")
-        case .running: return l10n.tr("Running", "待命")
+        case .idle:    return l10n.tr("Completed", "已完成")
+        case .running: return l10n.tr("Idle", "空闲")
         }
     }
 }

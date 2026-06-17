@@ -32,10 +32,20 @@ final class ModelTests: XCTestCase {
     func testRelativeTime() {
         let now = 1_000_000
         XCTAssertEqual(relativeTime(0, now: now), "")
-        XCTAssertEqual(relativeTime(now - 10, now: now), "now")
+        XCTAssertEqual(relativeTime(now - 7, now: now), "7s")   // seconds granularity
         XCTAssertEqual(relativeTime(now - 120, now: now), "2m")
         XCTAssertEqual(relativeTime(now - 7200, now: now), "2h")
         XCTAssertEqual(relativeTime(now - 172800, now: now), "2d")
+    }
+
+    /// The duration anchors to `since` (state start) when present, else activity.
+    func testDurationAnchorsToSince() throws {
+        let a = try JSONDecoder().decode([Agent].self, from: Data("""
+        [{"pane_id":"%1","agent":"Claude Code","status":"working",
+          "activity_at":1700000000,"since":1700000300}]
+        """.utf8))[0]
+        XCTAssertEqual(a.since, 1_700_000_300)
+        XCTAssertEqual(relativeTime(a.since, now: 1_700_000_360), "1m") // 60s since state start
     }
 
     // MARK: agent identity (DESIGN §6) — neutral monogram, no logos
