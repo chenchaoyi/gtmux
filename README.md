@@ -176,10 +176,11 @@ gtmux restore --dry-run  # print what would happen, change nothing
 
 The first run pops an Automation permission dialog ("wants to control Ghostty") —
 click Allow. **After a reboot** the tmux server is gone too; `gtmux restore`
-starts tmux and waits for
-[tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) to restore the
-last autosave (running programs are not restarted — relaunch e.g. with
-`claude --resume`).
+starts tmux and **explicitly drives
+[tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) to restore the
+last autosave** (it waits for the restore to finish — large layouts take 30s+ —
+and if a saved layout exists but can't be restored it refuses to overwrite it).
+Running programs are not restarted — relaunch e.g. with `claude --resume`.
 
 ### `gtmux overview`
 

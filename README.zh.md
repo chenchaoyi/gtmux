@@ -162,9 +162,10 @@ gtmux restore --dry-run  # 只打印将发生什么，不改动
 ```
 
 首次运行会弹出自动化权限对话框（“想要控制 Ghostty”）—— 点允许。**重启之后** tmux
-服务本身也没了；`gtmux restore` 仍可用：它会启动 tmux 并等
-[tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) 恢复上次自动存档
-（运行中的程序不会被重启 —— 比如用 `claude --resume` 重新拉起）。
+服务本身也没了；`gtmux restore` 仍可用：它会启动 tmux 并**显式驱动
+[tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) 恢复上次自动存档**
+（会一直等到恢复完成 —— 大布局要 30 秒以上；若存档存在却恢复失败，会拒绝覆盖它）。
+运行中的程序不会被重启 —— 比如用 `claude --resume` 重新拉起。
 
 ### `gtmux overview`
 
