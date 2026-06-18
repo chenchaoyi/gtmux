@@ -318,14 +318,21 @@ func gatherAgents() []agentPane {
 			continue
 		}
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
-		if !isAgent && len(f) >= 9 {
-			// Fallback: the title/foreground command didn't identify an agent, but
-			// the pane's process tree might (e.g. an idle Codex running as node).
-			if panePid, err := strconv.Atoi(f[8]); err == nil {
-				if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
-					// No spinner in the title (else classifyAgent → working), so it's
-					// at its prompt → idle. The title (often the project) is the task.
-					isAgent, agent, status, task = true, name, "idle", strings.TrimSpace(f[4])
+		// The title/command can leave a pane unidentified (idle Codex as `node`,
+		// no glyph) OR identified-but-unnamed (a WORKING Codex: a spinner title set
+		// the status, but cmd=node + no name in the title → generic "agent"). The
+		// pane's process tree resolves the real agent in both cases.
+		if len(f) >= 9 {
+			unnamed := agent == "" || agent == i18n.Tr("agent", "agent")
+			if !isAgent || unnamed {
+				if panePid, err := strconv.Atoi(f[8]); err == nil {
+					if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
+						agent = name
+						if !isAgent {
+							// no spinner (else classifyAgent → working) → at prompt = idle.
+							isAgent, status, task = true, "idle", strings.TrimSpace(f[4])
+						}
+					}
 				}
 			}
 		}
