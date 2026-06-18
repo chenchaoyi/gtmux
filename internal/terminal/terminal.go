@@ -27,9 +27,22 @@ type Terminal interface {
 	SpawnTabs(sessions []string, dryRun bool) (string, error)
 }
 
-// Active returns the terminal driver gtmux should drive. For now this is always
-// Ghostty; host detection (iTerm2 / kitty / WezTerm / Apple Terminal) lands in a
-// later slice and only changes what this returns.
+// registry maps a driver name (see detect.go) to its impl. New terminals are
+// registered here; detection resolves the name, this maps it to the driver.
+var registry = map[string]Terminal{
+	"ghostty": ghostty.Driver{},
+}
+
+// fallback is used when the detected terminal has no driver yet (so gtmux on
+// Ghostty keeps working unchanged while other drivers are added).
+var fallback Terminal = ghostty.Driver{}
+
+// Active returns the terminal driver gtmux should drive — resolved from the host
+// terminal (override / this process's env / the tmux client's ancestry), or the
+// fallback when the detected terminal isn't supported yet.
 func Active() Terminal {
-	return ghostty.Driver{}
+	if t, ok := registry[resolveName()]; ok {
+		return t
+	}
+	return fallback
 }
