@@ -31,6 +31,7 @@ type Terminal interface {
 // registered here; detection resolves the name, this maps it to the driver.
 var registry = map[string]Terminal{
 	"ghostty": ghostty.Driver{},
+	"iterm2":  iterm2{},
 }
 
 // fallback is used when the detected terminal has no driver yet (so gtmux on
