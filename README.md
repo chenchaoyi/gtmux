@@ -190,6 +190,21 @@ last autosave** (it waits for the restore to finish — large layouts take 30s+ 
 and if a saved layout exists but can't be restored it refuses to overwrite it).
 Running programs are not restarted — relaunch e.g. with `claude --resume`.
 
+**Each pane's previous output (scrollback) comes back too** — a snapshot — when
+resurrect is set to capture it. Recommended in `tmux.conf`:
+
+```tmux
+set -g @resurrect-capture-pane-contents 'on'   # snapshot each pane's scrollback
+set -g history-limit 50000                     # how much scrollback to keep/restore
+```
+
+> The shell's **↑ command history** is separate — it lives in your shell's
+> histfile, not in resurrect. By default it's written only on shell exit, so a
+> reboot loses recent commands. To persist it immediately (bash):
+> `shopt -s histappend; PROMPT_COMMAND='history -a'` in `~/.bashrc` (zsh:
+> `setopt INC_APPEND_HISTORY`). The restored scrollback still *shows* past
+> commands; this just keeps them recallable with ↑.
+
 ### `gtmux overview`
 
 ```
