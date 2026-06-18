@@ -173,6 +173,19 @@ gtmux restore --dry-run  # 只打印将发生什么，不改动
 （会一直等到恢复完成 —— 大布局要 30 秒以上；若存档存在却恢复失败，会拒绝覆盖它）。
 运行中的程序不会被重启 —— 比如用 `claude --resume` 重新拉起。
 
+**每个 pane 之前的输出（scrollback）也会一起回来** —— 像快照一样 —— 前提是让 resurrect
+抓取它。`tmux.conf` 推荐：
+
+```tmux
+set -g @resurrect-capture-pane-contents 'on'   # 快照每个 pane 的 scrollback
+set -g history-limit 50000                     # 保留/恢复多少滚动缓冲
+```
+
+> shell 的 **↑ 命令历史** 是另一回事 —— 它在 shell 的 histfile 里，不归 resurrect 管。
+> 默认只在 shell 退出时写盘，所以重启会丢最近的命令。要即时落盘（bash）：在 `~/.bashrc` 加
+> `shopt -s histappend; PROMPT_COMMAND='history -a'`（zsh 是 `setopt INC_APPEND_HISTORY`）。
+> 恢复回来的 scrollback 里**能看到**之前的命令；这一步只是让它们还能用 ↑ 调出来。
+
 ### `gtmux overview`
 
 ```
