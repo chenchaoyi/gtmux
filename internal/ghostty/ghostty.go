@@ -10,6 +10,21 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
+// Driver adapts this package to internal/terminal.Terminal, so Ghostty is one of
+// several selectable terminal backends. Methods delegate to the package funcs
+// (kept so the native FocusTerminalTab path and internals stay put).
+type Driver struct{}
+
+func (Driver) Name() string                            { return "Ghostty" }
+func (Driver) FocusTab(session string) (string, error) { return FocusTab(session) }
+func (Driver) IsViewing(session string) bool           { return IsViewing(session) }
+func (Driver) OpenWindow(command string) (string, error) {
+	return OpenWindow(command)
+}
+func (Driver) SpawnTabs(sessions []string, dryRun bool) (string, error) {
+	return SpawnTabs(sessions, dryRun)
+}
+
 // osascript runs an AppleScript and returns trimmed stdout.
 func osascript(script string) (string, error) {
 	out, err := exec.Command("/usr/bin/osascript", "-e", script).Output()

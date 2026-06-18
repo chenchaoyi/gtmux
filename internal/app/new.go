@@ -3,8 +3,8 @@ package app
 import (
 	"runtime"
 
-	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -43,7 +43,7 @@ func cmdNew(args []string) int {
 		i18n.Say("attach with:  tmux attach -t "+created, "接回:  tmux attach -t "+created)
 		return 0
 	}
-	if _, err := ghostty.SpawnTabs([]string{created}, false); err != nil {
+	if _, err := terminal.Active().SpawnTabs([]string{created}, false); err != nil {
 		i18n.Sae("could not open a Ghostty tab — attach with:  tmux attach -t "+created,
 			"无法打开 Ghostty tab —— 请手动接回:  tmux attach -t "+created)
 		return 1

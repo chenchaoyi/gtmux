@@ -13,10 +13,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -101,7 +101,7 @@ func Run(stdin io.Reader) int {
 	if !d.notify {
 		return 0
 	}
-	if session != "" && ghostty.IsViewing(session) {
+	if session != "" && terminal.Active().IsViewing(session) {
 		debugf("suppressed: already viewing session=%q", session)
 		return 0
 	}
