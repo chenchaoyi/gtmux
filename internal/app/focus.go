@@ -6,6 +6,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -23,7 +24,7 @@ func jumpPane(paneID string) {
 	}
 	tmux.OK("select-pane", "-t", paneID)
 	if sess != "" {
-		ghostty.FocusTab(sess)
+		terminal.Active().FocusTab(sess)
 	}
 }
 
@@ -105,7 +106,7 @@ func cmdFocus(args []string) int {
 		return 1
 	}
 
-	res, err := ghostty.FocusTab(target)
+	res, err := terminal.Active().FocusTab(target)
 	switch {
 	case res == "ok":
 		return 0

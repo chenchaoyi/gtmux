@@ -53,11 +53,15 @@ over one Go core (gtmux-core is the single data source):
   --terminal/--tab` are latent groundwork kept for a possible future expansion —
   do NOT build the native-detection scanner without an explicit decision to widen
   scope (status + jump both need per-terminal tab-title reading).
-- **Terminal coupling** lives ONLY in `internal/ghostty` (AppleScript). The rest
-  (`agents`/`overview`/`hook`/notify) is tmux-only and terminal-agnostic. If scope
-  later widens, generalize `internal/ghostty` into a `Terminal` driver
-  (iTerm2/kitty/WezTerm/Apple Terminal feasible; Warp/Alacritty not) rather than
-  entrenching new Ghostty-specific assumptions outside that package.
+- **Terminal coupling** goes through the `internal/terminal.Terminal` interface
+  (`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`); `internal/ghostty.Driver` is
+  the first impl and `terminal.Active()` resolves the host driver (hardcoded
+  Ghostty until host-detection lands). Callers (`focus`/`restore`/`new`/`hook`)
+  use `terminal.Active()`, never a terminal package directly (except the
+  still-deferred native `ghostty.FocusTerminalTab`). The radar side
+  (`agents`/`overview`/notify) is tmux-only and terminal-agnostic. Add new
+  terminals as drivers (iTerm2/kitty/WezTerm/Apple Terminal feasible;
+  Warp/Alacritty not) — see `docs/design/multi-agent-multi-terminal.md`.
 - **Verifying the status item / popover on macOS** (screen capture is
   permission-blocked): query the accessibility tree, e.g. `osascript -e 'tell
   application "System Events" to get count of menu bar items of menu bar 1 of

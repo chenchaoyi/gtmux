@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -221,7 +221,7 @@ func restoreSessions(list []string, dryRun bool) int {
 	}
 
 	if len(spawn) > 0 {
-		script, err := ghostty.SpawnTabs(spawn, dryRun)
+		script, err := terminal.Active().SpawnTabs(spawn, dryRun)
 		if dryRun {
 			i18n.Say(fmt.Sprintf("[dry-run] would open %d Ghostty tab(s) for: %s", len(spawn), strings.Join(spawn, " ")),
 				fmt.Sprintf("[dry-run] 将为以下 session 各开一个 Ghostty tab: %s", strings.Join(spawn, " ")))
