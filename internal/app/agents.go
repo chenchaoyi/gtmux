@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"sort"
 	"strconv"
@@ -214,6 +215,83 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 	return true, agent, status, task
 }
 
+// procInfo is one process row: its parent pid and full command line (argv).
+type procInfo struct {
+	ppid    int
+	command string
+}
+
+// snapshotProcs returns pid → {ppid, argv} for every process (one `ps` call),
+// so we can look inside a pane's process tree. Empty on any failure.
+func snapshotProcs() map[int]procInfo {
+	out := map[int]procInfo{}
+	b, err := exec.Command("ps", "-axo", "pid=,ppid=,command=").Output()
+	if err != nil {
+		return out
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		fs := strings.Fields(line)
+		if len(fs) < 3 {
+			continue
+		}
+		pid, e1 := strconv.Atoi(fs[0])
+		ppid, e2 := strconv.Atoi(fs[1])
+		if e1 != nil || e2 != nil {
+			continue
+		}
+		out[pid] = procInfo{ppid: ppid, command: strings.Join(fs[2:], " ")}
+	}
+	return out
+}
+
+// agentFromCommand matches a full command line against profiles by the basename
+// of each argv token, so `node /usr/.../bin/codex` resolves to "Codex" even
+// though the pane's foreground command is just "node". Returns the profile name.
+func agentFromCommand(command string, profiles []agentProfile) string {
+	for idx, tok := range strings.Fields(command) {
+		// Only the executable (first token) or a path token (has '/') — so a bare
+		// filename argument like `cat codex` doesn't false-match.
+		if idx != 0 && !strings.Contains(tok, "/") {
+			continue
+		}
+		base := tok
+		if i := strings.LastIndexByte(base, '/'); i >= 0 {
+			base = base[i+1:]
+		}
+		for i := range profiles {
+			for _, c := range profiles[i].Commands {
+				if base == c {
+					return profiles[i].Name
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// agentInSubtree walks panePid's process subtree (using a prebuilt child index)
+// and returns the agent name if any process invokes a known agent, else "".
+// This is what catches an idle agent whose pane shows comm=node + a plain title.
+func agentInSubtree(panePid int, procs map[int]procInfo, children map[int][]int, profiles []agentProfile) string {
+	seen := map[int]bool{}
+	queue := []int{panePid}
+	for len(queue) > 0 {
+		pid := queue[0]
+		queue = queue[1:]
+		if seen[pid] {
+			continue
+		}
+		seen[pid] = true
+		if info, ok := procs[pid]; ok {
+			if name := agentFromCommand(info.command, profiles); name != "" {
+				return name
+			}
+		}
+		queue = append(queue, children[pid]...)
+	}
+	return ""
+}
+
 // gatherAgents polls every pane and returns the LIVE coding agents, sorted
 // waiting → working → idle, then by location. Shared by static + watch.
 // A pane is "waiting" (blocked on your input) when claude-notify recorded a
@@ -223,15 +301,34 @@ func gatherAgents() []agentPane {
 	lastFinished := state.ReadLastFinished()
 	waiting := state.WaitingSet()
 
+	// One process snapshot per gather, so we can look inside a pane's tree to
+	// catch agents that run as `node …/codex` (comm=node, no title glyph).
+	procs := snapshotProcs()
+	children := map[int][]int{}
+	for pid, info := range procs {
+		children[info.ppid] = append(children[info.ppid], pid)
+	}
+
 	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}"
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}"
 	var panes []agentPane
 	for _, line := range tmux.Lines("list-panes", "-a", "-F", fields) {
-		f := strings.SplitN(line, "\t", 8)
+		f := strings.SplitN(line, "\t", 9)
 		if len(f) < 7 {
 			continue
 		}
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+		if !isAgent && len(f) >= 9 {
+			// Fallback: the title/foreground command didn't identify an agent, but
+			// the pane's process tree might (e.g. an idle Codex running as node).
+			if panePid, err := strconv.Atoi(f[8]); err == nil {
+				if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
+					// No spinner in the title (else classifyAgent → working), so it's
+					// at its prompt → idle. The title (often the project) is the task.
+					isAgent, agent, status, task = true, name, "idle", strings.TrimSpace(f[4])
+				}
+			}
+		}
 		if !isAgent {
 			continue
 		}
