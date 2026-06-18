@@ -67,7 +67,7 @@ func Run(argv []string) int {
 	case "new", "n":
 		return cmdNew(args)
 	case "hook":
-		return hook.Run(os.Stdin)
+		return hook.Run(os.Stdin, args)
 	case "install-hooks":
 		return cmdInstallHooks(args)
 	case "uninstall-hooks":
