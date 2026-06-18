@@ -46,6 +46,11 @@ sed "s|__VERSION__|${VERSION}|g" Info.plist > "$BUNDLE/Contents/Info.plist"
 cp "$SWIFT_BIN" "$BUNDLE/Contents/MacOS/${APP_BIN}"
 cp build/gtmux "$BUNDLE/Contents/MacOS/gtmux"
 chmod +x "$BUNDLE/Contents/MacOS/"*
+# App icon (the gtmux pane-grid logo) — Info.plist points CFBundleIconFile at it.
+if [ -f AppIcon.icns ]; then
+  mkdir -p "$BUNDLE/Contents/Resources"
+  cp AppIcon.icns "$BUNDLE/Contents/Resources/AppIcon.icns"
+fi
 
 # Code signing. Set GTMUX_SIGN_ID to a "Developer ID Application: …" identity
 # for a STABLE signature (TCC permissions then persist across updates instead of
