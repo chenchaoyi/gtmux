@@ -39,6 +39,28 @@ func TestDecide(t *testing.T) {
 	}
 }
 
+// TestCanonicalEvent: the per-agent translation layer. Claude is identity-mapped
+// (so its behavior is unchanged); unknown agents/events are no-ops ("").
+func TestCanonicalEvent(t *testing.T) {
+	cases := []struct {
+		agent, raw, wantEvent, wantDisplay string
+	}{
+		{"claude", "Stop", "Stop", "Claude Code"},
+		{"claude", "UserPromptSubmit", "UserPromptSubmit", "Claude Code"},
+		{"claude", "Notification", "Notification", "Claude Code"},
+		{"claude", "Frobnicate", "", "Claude Code"}, // unmapped event → no-op event
+		{"", "Stop", "", ""},     // no agent
+		{"nope", "Stop", "", ""}, // unknown agent → no-op
+	}
+	for _, c := range cases {
+		ev, disp := canonicalEvent(c.agent, c.raw)
+		if ev != c.wantEvent || disp != c.wantDisplay {
+			t.Errorf("canonicalEvent(%q,%q) = (%q,%q), want (%q,%q)",
+				c.agent, c.raw, ev, disp, c.wantEvent, c.wantDisplay)
+		}
+	}
+}
+
 // TestApplyStateLifecycle walks a realistic turn against a temp HOME and asserts
 // the marker files match the contract at each step.
 func TestApplyStateLifecycle(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -19,6 +20,39 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
+
+// hookAgent describes how one coding agent's hook/notify events map onto gtmux's
+// CANONICAL event vocabulary — which is just Claude's event names, since Claude
+// is the reference that decide() is written against. Add an agent here (+ its
+// installer in install-hooks) to give it ⏸ needs-input / ✓ done / notifications.
+type hookAgent struct {
+	display string            // notification subtitle, e.g. "Claude Code"
+	events  map[string]string // the agent's raw event name → canonical event name
+}
+
+// hookAgents is keyed by `gtmux hook --agent <key>` (default "claude"). Claude is
+// an identity map; e.g. Codex would map "turn-ended" → "Stop".
+var hookAgents = map[string]hookAgent{
+	"claude": {
+		display: "Claude Code",
+		events: map[string]string{
+			"UserPromptSubmit": "UserPromptSubmit",
+			"Stop":             "Stop",
+			"Notification":     "Notification",
+		},
+	},
+}
+
+// canonicalEvent translates an agent's raw event to the canonical event decide()
+// understands ("" when the agent or event is unknown → no-op), plus the agent's
+// display name for the notification.
+func canonicalEvent(agentKey, rawEvent string) (event, display string) {
+	ag, ok := hookAgents[agentKey]
+	if !ok {
+		return "", ""
+	}
+	return ag.events[rawEvent], ag.display
+}
 
 // decision is what a hook event implies, independent of the filesystem. Keeping
 // it pure makes the (event, active-marker?) → mutations mapping unit-testable.
@@ -72,16 +106,43 @@ func applyState(d decision, pane string) {
 	}
 }
 
-// Run executes one hook invocation. stdin carries Claude Code's hook JSON; it is
-// fully drained (an unread pipe can block the caller) and parsed for
-// hook_event_name. Always returns 0 — a hook must never fail the agent turn.
-func Run(stdin io.Reader) int {
+// Run executes one hook invocation. args come after `gtmux hook`:
+//   - `--agent <key>` selects the agent (default "claude" — Claude's settings.json
+//     calls `gtmux hook` with no args, so the default keeps it working unchanged).
+//   - a positional token is the raw event name (e.g. Codex passes "turn-ended");
+//     otherwise the event is read from stdin's JSON `hook_event_name` (Claude).
+//
+// stdin is always drained (an unread pipe can block the caller). Always returns 0
+// — a hook must never fail the agent's turn.
+func Run(stdin io.Reader, args []string) int {
 	raw, _ := io.ReadAll(stdin) // drain the pipe regardless of what we do next
-	var payload struct {
-		HookEventName string `json:"hook_event_name"`
+
+	agentKey := "claude"
+	rawEvent := ""
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--agent":
+			if i+1 < len(args) {
+				agentKey = args[i+1]
+				i++
+			}
+		default:
+			if rawEvent == "" && !strings.HasPrefix(args[i], "-") {
+				rawEvent = args[i]
+			}
+		}
 	}
-	_ = json.Unmarshal(raw, &payload)
-	event := payload.HookEventName
+	if rawEvent == "" {
+		var payload struct {
+			HookEventName string `json:"hook_event_name"`
+		}
+		_ = json.Unmarshal(raw, &payload)
+		rawEvent = payload.HookEventName
+	}
+	event, display := canonicalEvent(agentKey, rawEvent)
+	if event == "" {
+		return 0 // unknown agent or unmapped event → no-op
+	}
 
 	// The pane id ($TMUX_PANE, e.g. %12) is the state key. Outside tmux we can't
 	// key state or name the session — degrade to a generic, state-less notify.
@@ -96,7 +157,8 @@ func Run(stdin io.Reader) int {
 	if pane != "" {
 		applyState(d, pane)
 	}
-	debugf("event=%s pane=%q session=%q active=%v notify=%v", event, pane, session, activePresent, d.notify)
+	debugf("agent=%s raw=%q event=%s pane=%q session=%q active=%v notify=%v",
+		agentKey, rawEvent, event, pane, session, activePresent, d.notify)
 
 	if !d.notify {
 		return 0
@@ -110,8 +172,8 @@ func Run(stdin io.Reader) int {
 	if state.Exists(state.IconPath()) {
 		icon = state.IconPath()
 	}
-	// Differentiate the copy/sound: a Stop is "finished" (calm), a Notification is
-	// "needs your input" (the urgent one). The session name is the bold title.
+	// Differentiate copy/sound: "finished" (calm) vs "needs your input" (urgent).
+	// The session name is the bold title; the agent name is the subtitle.
 	kind := "done"
 	body := i18n.Tr("Finished — tap to jump", "已完成 —— 点按跳转")
 	if event == "Notification" {
@@ -120,12 +182,12 @@ func Run(stdin io.Reader) int {
 	}
 	title := session
 	if title == "" {
-		title = "Claude Code"
+		title = display
 	}
 	notify.Send(notify.Options{
 		Kind:     kind,
 		Title:    title,
-		Subtitle: "Claude Code",
+		Subtitle: display,
 		Message:  body,
 		Pane:     pane,
 		Session:  session,
