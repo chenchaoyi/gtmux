@@ -48,7 +48,8 @@ func TestCanonicalEvent(t *testing.T) {
 		{"claude", "Stop", "Stop", "Claude Code"},
 		{"claude", "UserPromptSubmit", "UserPromptSubmit", "Claude Code"},
 		{"claude", "Notification", "Notification", "Claude Code"},
-		{"claude", "Frobnicate", "", "Claude Code"}, // unmapped event → no-op event
+		{"claude", "Frobnicate", "", "Claude Code"},       // unmapped event → no-op event
+		{"codex", "agent-turn-complete", "Stop", "Codex"}, // Codex turn done → finished
 		{"", "Stop", "", ""},     // no agent
 		{"nope", "Stop", "", ""}, // unknown agent → no-op
 	}
@@ -57,6 +58,22 @@ func TestCanonicalEvent(t *testing.T) {
 		if ev != c.wantEvent || disp != c.wantDisplay {
 			t.Errorf("canonicalEvent(%q,%q) = (%q,%q), want (%q,%q)",
 				c.agent, c.raw, ev, disp, c.wantEvent, c.wantDisplay)
+		}
+	}
+}
+
+// TestExtractEvent: a positional hook arg is either the event name or — for
+// Codex's notify — a JSON payload whose "type" is the event.
+func TestExtractEvent(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{`{"type":"agent-turn-complete","turn-id":"x"}`, "agent-turn-complete"},
+		{"Stop", "Stop"},
+		{"{not valid json", "{not valid json"},
+		{`{"foo":1}`, `{"foo":1}`}, // JSON but no "type" → as-is
+	}
+	for _, c := range cases {
+		if got := extractEvent(c.in); got != c.want {
+			t.Errorf("extractEvent(%q) = %q, want %q", c.in, got, c.want)
 		}
 	}
 }

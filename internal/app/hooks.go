@@ -34,6 +34,21 @@ func peonPingConfigPath() string {
 	return filepath.Join(homeDir(), ".claude", "hooks", "peon-ping", "config.json")
 }
 
+// installHooksCodex prints how to wire Codex's `notify` at gtmux. We deliberately
+// do NOT auto-edit ~/.codex/config.toml: `notify` is a SINGLE program (often
+// already in use, e.g. computer-use) and Codex's richer hooks format isn't
+// documented, so clobbering either would be worse than guiding. Detection
+// (working/idle) already works without any of this — this only adds notifications.
+func installHooksCodex() int {
+	bin := selfPath()
+	i18n.Say("Codex: add this to ~/.codex/config.toml so gtmux sends a notification when a turn finishes:",
+		"Codex:把下面这行加到 ~/.codex/config.toml,turn 结束时 gtmux 就会发通知:")
+	fmt.Printf("\n  notify = [%q, \"hook\", \"--agent\", \"codex\"]\n\n", bin)
+	i18n.Say("Note: Codex's `notify` points at ONE program — if you already use it (e.g. computer-use),\nthis REPLACES it; gtmux can't chain into it. Detection (working/idle) works regardless.",
+		"注意:Codex 的 `notify` 只能指向一个程序 —— 如果你已在用它(如 computer-use),这会【替换】它;\ngtmux 无法链式追加。检测(working/idle)不依赖它,照常工作。")
+	return 0
+}
+
 // cmdInstallHooks implements `gtmux install-hooks [--yes]`: cache the Claude
 // icon and register `gtmux hook` in ~/.claude/settings.json. Idempotent and
 // reversible (see cmdUninstallHooks). Notification clicks activate the menu-bar
@@ -41,18 +56,27 @@ func peonPingConfigPath() string {
 // install Gtmux.app if it's missing.
 func cmdInstallHooks(args []string) int {
 	yes := false
-	for _, a := range args {
-		switch a {
+	agent := "claude"
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
 		case "-y", "--yes":
 			yes = true
 		case "-h", "--help":
 			usage()
 			return 0
+		case "--agent":
+			if i+1 < len(args) {
+				agent = args[i+1]
+				i++
+			}
 		}
 	}
 	if runtime.GOOS != "darwin" {
 		i18n.Sae("install-hooks is macOS-only", "install-hooks 仅支持 macOS")
 		return 1
+	}
+	if agent == "codex" {
+		return installHooksCodex()
 	}
 	bin := selfPath()
 
