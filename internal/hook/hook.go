@@ -41,6 +41,30 @@ var hookAgents = map[string]hookAgent{
 			"Notification":     "Notification",
 		},
 	},
+	// Codex's `notify` runs `<program> [args…] <json-payload>` when the agent
+	// finishes a turn; the payload's "type" is the event. (Inferred from Codex's
+	// notify contract — verify against a real turn.)
+	"codex": {
+		display: "Codex",
+		events: map[string]string{
+			"agent-turn-complete": "Stop", // turn done, your move → finished/idle
+		},
+	},
+}
+
+// extractEvent returns the raw event from a positional hook arg: the token
+// itself, or — when it's a JSON object (e.g. Codex's notify payload) — its
+// "type" field.
+func extractEvent(token string) string {
+	if t := strings.TrimSpace(token); strings.HasPrefix(t, "{") {
+		var p struct {
+			Type string `json:"type"`
+		}
+		if json.Unmarshal([]byte(t), &p) == nil && p.Type != "" {
+			return p.Type
+		}
+	}
+	return token
 }
 
 // canonicalEvent translates an agent's raw event to the canonical event decide()
@@ -128,7 +152,7 @@ func Run(stdin io.Reader, args []string) int {
 			}
 		default:
 			if rawEvent == "" && !strings.HasPrefix(args[i], "-") {
-				rawEvent = args[i]
+				rawEvent = extractEvent(args[i])
 			}
 		}
 	}
