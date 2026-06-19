@@ -26,8 +26,10 @@ Commands:
                           (%N) lands on that exact window+pane
     focus --last|-l       jump to the most-recently-finished agent pane
   new [name]              create a tmux session and open a terminal tab for it
-  doctor                  read-only health check: tmux / set-titles / plugins /
-                          host terminal / hooks / menu-bar app — with fixes
+  doctor [--fix [--yes]]  health check: tmux / set-titles / plugins / host
+                          terminal / hooks / menu-bar app. --fix applies the
+                          recommended fixes (marked tmux.conf block + backup,
+                          clone plugins, install hook) after a confirmation
   install-hooks [--yes]   register 'gtmux hook' in ~/.claude/settings.json
                           (Stop/Notification/UserPromptSubmit) + cache the icon
     install-hooks --agent codex   print how to wire Codex's notify to gtmux
@@ -74,8 +76,9 @@ const usageZH = `用法:
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
   new [name]              新建一个 tmux session 并为它开一个终端 tab
-  doctor                  只读体检:tmux / set-titles / 插件 / 宿主终端 /
-                          hook / 菜单栏 app —— 附修复建议
+  doctor [--fix [--yes]]  体检:tmux / set-titles / 插件 / 宿主终端 / hook /
+                          菜单栏 app。--fix 自动修复建议项(带标记的 tmux.conf
+                          块 + 备份、克隆插件、装 hook),执行前会确认
   install-hooks [--yes]   在 ~/.claude/settings.json 注册 'gtmux hook'
                           (Stop/Notification/UserPromptSubmit)并缓存图标
     install-hooks --agent codex   打印如何把 Codex 的 notify 接到 gtmux

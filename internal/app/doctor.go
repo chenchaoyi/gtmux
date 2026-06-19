@@ -39,10 +39,24 @@ func (n *doctorCounters) line(status int, en, zh string) {
 	fmt.Printf("  %s %s\n", icon, i18n.Tr(en, zh))
 }
 
-// cmdDoctor implements `gtmux doctor`: a READ-ONLY health check mapping each gtmux
-// feature to the tmux / terminal / hook prerequisite it needs. It changes nothing
-// — it tells you what works and how to fix the rest.
+// cmdDoctor implements `gtmux doctor`: a READ-ONLY health check (Layer 1) mapping
+// each gtmux feature to the tmux / terminal / hook prerequisite it needs. With
+// `--fix` it then applies the recommended fixes (Layer 2, see doctorFix) after a
+// confirmation; `--yes` skips the prompt.
 func cmdDoctor(args []string) int {
+	fix, yes := false, false
+	for _, a := range args {
+		switch a {
+		case "-h", "--help":
+			usage()
+			return 0
+		case "--fix":
+			fix = true
+		case "-y", "--yes":
+			yes = true
+		}
+	}
+
 	i18n.Say("gtmux doctor — environment check (read-only; nothing is changed)",
 		"gtmux doctor —— 环境体检(只读,不改动任何东西)")
 	fmt.Println()
@@ -61,6 +75,15 @@ func cmdDoctor(args []string) int {
 	i18n.Say(
 		fmt.Sprintf("%d ok · %d recommended · %d required-missing", n.ok, n.rec, n.miss),
 		fmt.Sprintf("%d 正常 · %d 建议 · %d 必需缺失", n.ok, n.rec, n.miss))
+
+	if fix {
+		fmt.Println()
+		return doctorFix(yes)
+	}
+	if n.rec > 0 || n.miss > 0 {
+		i18n.Say("Run `gtmux doctor --fix` to apply the recommended fixes.",
+			"跑 `gtmux doctor --fix` 自动修复上面的建议项。")
+	}
 	if n.miss > 0 {
 		return 1
 	}
