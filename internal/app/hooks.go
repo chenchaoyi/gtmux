@@ -323,24 +323,36 @@ func asString(v any) string {
 // EOF with no input (e.g. stdin redirected from /dev/null, which still passes the
 // char-device isTTY check) must NOT count as a yes — otherwise a non-interactive
 // caller would silently auto-confirm a mutating action.
-func confirm(prompt string) bool {
+func confirm(prompt string) bool { return promptConfirm(prompt, true) }
+
+// confirmRisky is confirm with the default flipped to NO — for a destructive
+// choice (e.g. replacing a value the user set), where Enter must not assent.
+func confirmRisky(prompt string) bool { return promptConfirm(prompt, false) }
+
+func promptConfirm(prompt string, defaultYes bool) bool {
 	if !isTTY() {
 		return false
 	}
 	fmt.Print(prompt)
 	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	return answerYes(line, err)
+	return answer(line, err, defaultYes)
 }
 
-// answerYes interprets a prompt answer: Enter (empty line, no error) = default
-// yes; "y"/"yes" = yes; anything else = no. A read error with no input (EOF on a
-// redirected stdin) is NOT a yes — that's the guard against silent auto-confirm.
-func answerYes(line string, readErr error) bool {
+// answerYes interprets a default-yes prompt answer (kept for its callers/tests).
+func answerYes(line string, readErr error) bool { return answer(line, readErr, true) }
+
+// answer interprets a prompt answer: Enter (empty, no error) = the default;
+// "y"/"yes" = yes; anything else = no. A read error with no input (EOF on a
+// redirected stdin) is NEVER a yes — the guard against silent auto-confirm.
+func answer(line string, readErr error, defaultYes bool) bool {
 	s := strings.TrimSpace(strings.ToLower(line))
 	if readErr != nil && s == "" {
 		return false
 	}
-	return s == "" || s == "y" || s == "yes"
+	if s == "" {
+		return defaultYes
+	}
+	return s == "y" || s == "yes"
 }
 
 // runQuiet runs a command discarding its output; returns its error.

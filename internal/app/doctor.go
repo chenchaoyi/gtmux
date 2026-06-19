@@ -132,13 +132,19 @@ func renderSections(secs []dsection) (ok, rec, miss int) {
 
 // doctorSections runs every check and groups the rows by concern.
 func doctorSections() []dsection {
+	agents := []dcheck{rowClaudeHook()}
+	// Only surface Codex when it's actually present (~/.codex exists), so users
+	// who don't run Codex aren't shown an irrelevant row.
+	if fileExists(filepath.Join(homeDir(), ".codex")) {
+		agents = append(agents, rowCodexHook())
+	}
+	agents = append(agents, rowApp())
 	return []dsection{
 		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowSetTitles(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"),
 			append(rowPlugins(), rowCapture(), rowAutoRestore())},
 		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
-		{i18n.Tr("Agents & notifications", "Agent 与通知"),
-			[]dcheck{rowClaudeHook(), rowCodexHook(), rowApp()}},
+		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
 	}
 }
 

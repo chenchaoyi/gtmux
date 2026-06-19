@@ -64,7 +64,7 @@ func doctorFix(yes bool) int {
 	applied += s.stepRestoreSettings()
 	applied += s.stepPlugins()
 	applied += s.stepClaudeHook()
-	stepCodexHook()   // optional, manual — Codex's notify is single-slot
+	applied += s.stepCodexHook()
 	stepAppGuidance() // manual — needs the installer / make app
 
 	fmt.Println()
@@ -245,17 +245,109 @@ func (s *fixState) stepClaudeHook() int {
 	return 1
 }
 
-// stepCodexHook is guidance only: Codex's `notify` is a single program slot and
-// its placement in config.toml is position-sensitive, so we never auto-edit it.
-func stepCodexHook() {
-	if codexNotifyIsGtmux() {
-		return
+// stepCodexHook wires gtmux into Codex's `notify` (with confirmation), instead of
+// printing a copy-paste. Codex allows ONE notify program, so: if none is set we
+// add ours at top level (before any [table], where Codex reads it); if a
+// non-gtmux one is set we warn and ask before replacing it (default NO, and never
+// under --yes — that would silently drop the user's program). Only offered when
+// Codex is actually present (~/.codex exists).
+func (s *fixState) stepCodexHook() int {
+	codexDir := filepath.Join(homeDir(), ".codex")
+	if !fileExists(codexDir) || codexNotifyIsGtmux() {
+		return 0
 	}
-	fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("Codex hook  (optional, manual)", "Codex hook(可选,手动)"), i18n.Reset)
-	i18n.Say("  Codex's `notify` is a single program slot — add this line to ~/.codex/config.toml yourself:",
-		"  Codex 的 `notify` 只有一个程序槽 —— 请自行把下面这行加到 ~/.codex/config.toml:")
-	fmt.Printf("      notify = [%q, \"hook\", \"--agent\", \"codex\"]\n", selfPath())
-	i18n.Say("  Detection (working/idle) already works without it.", "  检测(working/idle)不依赖它,照常工作。")
+	cfgPath := filepath.Join(codexDir, "config.toml")
+	content := ""
+	if b, err := os.ReadFile(cfgPath); err == nil {
+		content = string(b)
+	}
+	line := fmt.Sprintf("notify = [%q, \"hook\", \"--agent\", \"codex\"]", selfPath())
+	existing := findTomlNotify(content)
+
+	if existing != "" {
+		// A notify is already set — Codex runs only one, so this is a replacement.
+		fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("Codex hook  (replaces existing notify)", "Codex hook(替换现有 notify)"), i18n.Reset)
+		fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
+			"  "+tildeify(cfgPath)+" already sets a notify (Codex allows only one):\n      "+strings.TrimSpace(existing)+"\n  Replacing it means that program stops running. New value:\n      "+line,
+			"  "+tildeify(cfgPath)+" 已设置 notify(Codex 只允许一个):\n      "+strings.TrimSpace(existing)+"\n  替换后原程序将不再运行。新值:\n      "+line), i18n.Reset)
+		if s.yes {
+			i18n.Say("  • skipped — re-run interactively to replace your existing notify.",
+				"  • 已跳过 —— 如需替换现有 notify,请交互式重跑。")
+			return 0
+		}
+		if !confirmRisky(i18n.Tr("  replace it? [y/N] ", "  替换它?[y/N] ")) {
+			i18n.Say("  skipped.", "  已跳过。")
+			return 0
+		}
+		backupFile(cfgPath)
+		if s.writeCodex(cfgPath, strings.Replace(content, existing, line, 1)) {
+			i18n.Say("  ✓ replaced Codex notify in "+tildeify(cfgPath), "  ✓ 已替换 "+tildeify(cfgPath)+" 的 notify")
+			return 1
+		}
+		return 0
+	}
+
+	// No notify yet → add ours.
+	detail := i18n.Tr(
+		"  Add to "+tildeify(cfgPath)+":\n      "+line+"\n  Why: gtmux notifies you when a Codex turn finishes (detection works without it too).",
+		"  写入 "+tildeify(cfgPath)+":\n      "+line+"\n  原因:Codex turn 结束时 gtmux 发通知(检测本就不依赖它)。")
+	if !s.ask(i18n.Tr("Codex hook", "Codex hook"), detail) {
+		return 0
+	}
+	backupFile(cfgPath)
+	if s.writeCodex(cfgPath, insertTomlTopLevel(content, line)) {
+		i18n.Say("  ✓ wired Codex notify in "+tildeify(cfgPath), "  ✓ 已接入 "+tildeify(cfgPath)+" 的 notify")
+		return 1
+	}
+	return 0
+}
+
+// writeCodex writes Codex's config.toml, reporting (and flagging rc on) failure.
+func (s *fixState) writeCodex(path, content string) bool {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
+		s.rc = 1
+		return false
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		i18n.Sae("  ✗ write "+tildeify(path)+": "+err.Error(), "  ✗ 写入 "+tildeify(path)+": "+err.Error())
+		s.rc = 1
+		return false
+	}
+	return true
+}
+
+// findTomlNotify returns the first TOP-LEVEL `notify = …` line (before any
+// [table] header — that's where Codex reads it), or "" if none.
+func findTomlNotify(content string) string {
+	for _, line := range strings.Split(content, "\n") {
+		t := strings.TrimSpace(line)
+		if strings.HasPrefix(t, "[") {
+			break // reached a table header → past the top-level keys
+		}
+		if strings.HasPrefix(t, "notify") && strings.Contains(t, "=") {
+			return line
+		}
+	}
+	return ""
+}
+
+// insertTomlTopLevel inserts a top-level key line before the first [table] header
+// (so it stays top-level), or appends it when there are no tables.
+func insertTomlTopLevel(content, line string) string {
+	if strings.TrimSpace(content) == "" {
+		return line + "\n"
+	}
+	lines := strings.Split(content, "\n")
+	for i, l := range lines {
+		if strings.HasPrefix(strings.TrimSpace(l), "[") {
+			out := append([]string{}, lines[:i]...)
+			out = append(out, line)
+			out = append(out, lines[i:]...)
+			return strings.Join(out, "\n")
+		}
+	}
+	return strings.TrimRight(content, "\n") + "\n" + line + "\n"
 }
 
 // stepAppGuidance is guidance only: the app needs the installer / a native build.

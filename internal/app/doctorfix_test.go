@@ -98,3 +98,39 @@ func TestAnswerYes(t *testing.T) {
 		}
 	}
 }
+
+func TestFindTomlNotify(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"", ""},
+		{"model = \"x\"\n", ""},
+		{"notify = [\"a\"]\n", "notify = [\"a\"]"},
+		{"# c\nnotify = [\"a\"]\nmodel=\"x\"\n", "notify = [\"a\"]"},
+		// a notify UNDER a table is not Codex's top-level notify → ignored
+		{"[mcp.x]\nnotify = [\"a\"]\n", ""},
+	}
+	for _, c := range cases {
+		if got := findTomlNotify(c.in); got != c.want {
+			t.Errorf("findTomlNotify(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+func TestInsertTomlTopLevel(t *testing.T) {
+	line := "notify = [\"g\"]"
+
+	// empty file → just the line
+	if got := insertTomlTopLevel("", line); got != line+"\n" {
+		t.Errorf("empty: got %q", got)
+	}
+	// no tables → appended, key stays top-level
+	got := insertTomlTopLevel("model = \"x\"\n", line)
+	if !strings.Contains(got, "model = \"x\"") || !strings.Contains(got, line) {
+		t.Errorf("no-table: got %q", got)
+	}
+	// with a table → inserted BEFORE the table header (stays top-level)
+	got = insertTomlTopLevel("model=\"x\"\n[mcp.y]\nfoo=1\n", line)
+	ni, ti := strings.Index(got, "notify"), strings.Index(got, "[mcp.y]")
+	if ni < 0 || ti < 0 || ni > ti {
+		t.Errorf("notify must come before the table header:\n%s", got)
+	}
+}
