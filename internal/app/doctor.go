@@ -15,34 +15,42 @@ import (
 
 // check status levels.
 const (
-	stOK   = iota
-	stRec  // recommended (a feature degrades without it)
-	stMiss // required (a core feature breaks without it)
-	stInfo // neutral note
+	stOK   = iota // ✓ good
+	stRec         // ⚠ recommended (a feature degrades without it)
+	stMiss        // ✗ blocking (a core feature breaks without it)
+	stInfo        // · neutral note
 )
 
-type doctorCounters struct{ ok, rec, miss int }
-
-// line prints one check line and tallies it.
-func (n *doctorCounters) line(status int, en, zh string) {
-	icon := "✓"
-	switch status {
-	case stRec:
-		icon, n.rec = "⚠", n.rec+1
-	case stMiss:
-		icon, n.miss = "✗", n.miss+1
-	case stInfo:
-		icon = "·"
-	default:
-		n.ok++
-	}
-	fmt.Printf("  %s %s\n", icon, i18n.Tr(en, zh))
+// dcheck is one rendered row: a status, a short label, the current value, and a
+// dim one-line "why it matters" note.
+type dcheck struct {
+	status             int
+	label, value, note string
 }
 
-// cmdDoctor implements `gtmux doctor`: a READ-ONLY health check (Layer 1) mapping
-// each gtmux feature to the tmux / terminal / hook prerequisite it needs. With
-// `--fix` it then applies the recommended fixes (Layer 2, see doctorFix) after a
-// confirmation; `--yes` skips the prompt.
+// dsection groups related checks under a heading.
+type dsection struct {
+	title string
+	rows  []dcheck
+}
+
+func statusGlyph(status int) (glyph, color string) {
+	switch status {
+	case stRec:
+		return "⚠", i18n.Yellow
+	case stMiss:
+		return "✗", i18n.Red
+	case stInfo:
+		return "·", i18n.Dim
+	default:
+		return "✓", i18n.Green
+	}
+}
+
+// cmdDoctor implements `gtmux doctor`: a grouped, READ-ONLY health check (Layer 1)
+// mapping each gtmux feature to the tmux / terminal / hook prerequisite it needs.
+// With `--fix` it then walks the recommended fixes, explaining and confirming each
+// one (Layer 2, see doctorFix); `--yes` applies them all without prompting.
 func cmdDoctor(args []string) int {
 	fix, yes := false, false
 	for _, a := range args {
@@ -57,38 +65,184 @@ func cmdDoctor(args []string) int {
 		}
 	}
 
-	i18n.Say("gtmux doctor — environment check (read-only; nothing is changed)",
-		"gtmux doctor —— 环境体检(只读,不改动任何东西)")
-	fmt.Println()
+	secs := doctorSections()
 
-	n := &doctorCounters{}
-	doctorTmux(n)
-	doctorSetTitles(n)
-	doctorPlugins(n)
-	doctorResurrect(n)
-	doctorHistory(n)
-	doctorTerminal(n)
-	doctorHooks(n)
-	doctorApp(n)
+	fmt.Printf("%sgtmux doctor%s %s· macOS environment (read-only)%s\n\n",
+		i18n.Bold, i18n.Reset, i18n.Dim, i18n.Reset)
+	ok, rec, miss := renderSections(secs)
 
-	fmt.Println()
-	i18n.Say(
-		fmt.Sprintf("%d ok · %d recommended · %d required-missing", n.ok, n.rec, n.miss),
-		fmt.Sprintf("%d 正常 · %d 建议 · %d 必需缺失", n.ok, n.rec, n.miss))
+	fmt.Printf("  %s%d %s%s · %s%d %s%s · %s%d %s%s\n",
+		i18n.Green, ok, i18n.Tr("ok", "正常"), i18n.Reset,
+		i18n.Yellow, rec, i18n.Tr("to improve", "待改进"), i18n.Reset,
+		i18n.Red, miss, i18n.Tr("blocking", "阻塞"), i18n.Reset)
 
 	if fix {
 		fmt.Println()
 		return doctorFix(yes)
 	}
-	if n.rec > 0 || n.miss > 0 {
-		i18n.Say("Run `gtmux doctor --fix` to apply the recommended fixes.",
-			"跑 `gtmux doctor --fix` 自动修复上面的建议项。")
+	if rec > 0 || miss > 0 {
+		i18n.Say("  → run `gtmux doctor --fix` to set up the rest (it explains and asks before each change)",
+			"  → 跑 `gtmux doctor --fix` 把其余项配好(每步都会解释并征求确认)")
 	}
-	if n.miss > 0 {
+	if miss > 0 {
 		return 1
 	}
 	return 0
 }
+
+// renderSections prints the grouped checks with aligned columns and returns the
+// tally (ok / recommended / blocking).
+func renderSections(secs []dsection) (ok, rec, miss int) {
+	lw, vw := 0, 0
+	for _, s := range secs {
+		for _, r := range s.rows {
+			if w := i18n.DispWidth(r.label); w > lw {
+				lw = w
+			}
+			if w := i18n.DispWidth(r.value); w > vw {
+				vw = w
+			}
+		}
+	}
+	for _, s := range secs {
+		fmt.Printf("  %s%s%s\n", i18n.Bold, s.title, i18n.Reset)
+		for _, r := range s.rows {
+			switch r.status {
+			case stOK:
+				ok++
+			case stRec:
+				rec++
+			case stMiss:
+				miss++
+			}
+			glyph, color := statusGlyph(r.status)
+			note := ""
+			if r.note != "" {
+				note = "   " + i18n.Dim + r.note + i18n.Reset
+			}
+			fmt.Printf("    %s%s%s  %s  %s%s\n",
+				color, glyph, i18n.Reset,
+				i18n.PadRight(r.label, lw),
+				i18n.PadRight(r.value, vw), note)
+		}
+		fmt.Println()
+	}
+	return ok, rec, miss
+}
+
+// doctorSections runs every check and groups the rows by concern.
+func doctorSections() []dsection {
+	return []dsection{
+		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowSetTitles(), rowHistory()}},
+		{i18n.Tr("Restore after reboot", "重启后恢复"),
+			append(rowPlugins(), rowCapture(), rowAutoRestore())},
+		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
+		{i18n.Tr("Agents & notifications", "Agent 与通知"),
+			[]dcheck{rowClaudeHook(), rowCodexHook(), rowApp()}},
+	}
+}
+
+// --- individual checks (read-only) ---
+
+func rowTmux() dcheck {
+	if tmux.Bin == "" {
+		return dcheck{stMiss, i18n.Tr("tmux", "tmux"), i18n.Tr("not found", "未找到"),
+			i18n.Tr("gtmux needs tmux — brew install tmux", "gtmux 依赖 tmux —— brew install tmux")}
+	}
+	ver := ""
+	if v := tmux.Lines("-V"); len(v) > 0 {
+		ver = strings.TrimPrefix(v[0], "tmux ")
+	}
+	return dcheck{stOK, i18n.Tr("tmux", "tmux"), ver, ""}
+}
+
+func rowSetTitles() dcheck {
+	label := i18n.Tr("set-titles", "set-titles")
+	note := i18n.Tr("focus/restore locate tabs by this title", "focus/restore 靠此标题定位 tab")
+	if tmuxOpt("set-titles") == "on" && tmuxOpt("set-titles-string") == "#S — #W" {
+		return dcheck{stOK, label, "on · '#S — #W'", note}
+	}
+	return dcheck{stMiss, label, i18n.Tr("not set", "未设置"), note}
+}
+
+func rowHistory() dcheck {
+	label := i18n.Tr("history-limit", "history-limit")
+	hl := tmuxOpt("history-limit")
+	if v, _ := strconv.Atoi(hl); v >= 10000 {
+		return dcheck{stOK, label, hl, i18n.Tr("scrollback depth", "滚动缓冲深度")}
+	}
+	return dcheck{stRec, label, hl, i18n.Tr("raise to ~50000 for deeper snapshots", "调到 ~50000 获得更深快照")}
+}
+
+func rowPlugins() []dcheck {
+	specs := []struct{ dir, label, en, zh string }{
+		{"tpm", i18n.Tr("TPM", "TPM"), "plugin manager", "插件管理器"},
+		{"tmux-resurrect", i18n.Tr("tmux-resurrect", "tmux-resurrect"), "restores layout after reboot", "重启后恢复布局"},
+		{"tmux-continuum", i18n.Tr("tmux-continuum", "tmux-continuum"), "auto-save + auto-restore", "自动存档 + 恢复"},
+	}
+	rows := make([]dcheck, 0, len(specs))
+	for _, s := range specs {
+		if pluginDir(s.dir) != "" {
+			rows = append(rows, dcheck{stOK, s.label, i18n.Tr("installed", "已装"), i18n.Tr(s.en, s.zh)})
+		} else {
+			rows = append(rows, dcheck{stRec, s.label, i18n.Tr("missing", "未装"), i18n.Tr(s.en, s.zh)})
+		}
+	}
+	return rows
+}
+
+func rowCapture() dcheck {
+	label := i18n.Tr("capture-pane", "capture-pane")
+	note := i18n.Tr("snapshot scrollback on restore", "restore 时带回 scrollback")
+	if tmuxOpt("@resurrect-capture-pane-contents") == "on" {
+		return dcheck{stOK, label, "on", note}
+	}
+	return dcheck{stRec, label, "off", note}
+}
+
+func rowAutoRestore() dcheck {
+	label := i18n.Tr("auto-restore", "auto-restore")
+	note := i18n.Tr("continuum restores on tmux start", "tmux 启动时 continuum 自动恢复")
+	if tmuxOpt("@continuum-restore") == "on" {
+		return dcheck{stOK, label, "on", note}
+	}
+	return dcheck{stRec, label, "off", note}
+}
+
+func rowTerminal() dcheck {
+	name := terminal.DetectedName()
+	label := i18n.Tr("host", "宿主终端")
+	if terminal.HasDriver(name) {
+		return dcheck{stOK, label, name, i18n.Tr("focus / restore / new supported", "focus / restore / new 可用")}
+	}
+	return dcheck{stRec, label, name, i18n.Tr("no driver — agents work, focus/restore don't", "暂无驱动 —— agents 照常,focus/restore 不可用")}
+}
+
+func rowClaudeHook() dcheck {
+	label := i18n.Tr("Claude Code hook", "Claude Code hook")
+	if claudeHookInstalled() {
+		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
+	}
+	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
+}
+
+func rowCodexHook() dcheck {
+	label := i18n.Tr("Codex hook", "Codex hook")
+	if codexNotifyIsGtmux() {
+		return dcheck{stOK, label, i18n.Tr("wired", "已接"), i18n.Tr("turn-done notifications", "turn 结束通知")}
+	}
+	return dcheck{stInfo, label, i18n.Tr("not wired", "未接"), i18n.Tr("optional — detection works anyway", "可选 —— 检测不依赖它")}
+}
+
+func rowApp() dcheck {
+	label := i18n.Tr("menu-bar app", "菜单栏 app")
+	if _, err := os.Stat(gtmuxAppPath()); err == nil {
+		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("delivers desktop notifications", "负责发桌面通知")}
+	}
+	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("needed for notifications", "通知需要它")}
+}
+
+// --- shared probes (also used by doctorFix) ---
 
 // tmuxOpt reads a global tmux option's value ("" if unset/error).
 func tmuxOpt(name string) string {
@@ -111,108 +265,6 @@ func pluginDir(name string) string {
 		}
 	}
 	return ""
-}
-
-func doctorTmux(n *doctorCounters) {
-	if tmux.Bin == "" {
-		n.line(stMiss, "tmux: NOT found — gtmux needs tmux.  Install: brew install tmux",
-			"tmux: 未找到 —— gtmux 依赖 tmux。安装: brew install tmux")
-		return
-	}
-	ver := ""
-	if v := tmux.Lines("-V"); len(v) > 0 {
-		ver = v[0]
-	}
-	n.line(stOK, "tmux: "+ver, "tmux: "+ver)
-}
-
-func doctorSetTitles(n *doctorCounters) {
-	if tmuxOpt("set-titles") == "on" && tmuxOpt("set-titles-string") == "#S — #W" {
-		n.line(stOK, "set-titles: on with '#S — #W' (focus/restore can locate tabs)",
-			"set-titles: 已开且为 '#S — #W'(focus/restore 能定位 tab)")
-		return
-	}
-	n.line(stMiss,
-		"set-titles: REQUIRED for focus/restore (tabs are matched by this title). In tmux.conf:\n        set -g set-titles on\n        set -g set-titles-string '#S — #W'",
-		"set-titles: focus/restore 必需(靠这个标题定位 tab)。tmux.conf 加:\n        set -g set-titles on\n        set -g set-titles-string '#S — #W'")
-}
-
-func doctorPlugins(n *doctorCounters) {
-	for _, p := range []struct{ dir, en, zh string }{
-		{"tpm", "TPM (tmux plugin manager)", "TPM(tmux 插件管理器)"},
-		{"tmux-resurrect", "tmux-resurrect (restore layout after reboot)", "tmux-resurrect(重启后恢复布局)"},
-		{"tmux-continuum", "tmux-continuum (auto-save + auto-restore)", "tmux-continuum(自动存档+恢复)"},
-	} {
-		if pluginDir(p.dir) != "" {
-			n.line(stOK, p.en+": installed", p.zh+": 已装")
-		} else {
-			n.line(stRec, p.en+": not installed — restore/snapshot needs it (TPM: github.com/tmux-plugins/tpm)",
-				p.zh+": 未装 —— restore/快照依赖它(TPM: github.com/tmux-plugins/tpm)")
-		}
-	}
-}
-
-func doctorResurrect(n *doctorCounters) {
-	if tmuxOpt("@resurrect-capture-pane-contents") == "on" {
-		n.line(stOK, "@resurrect-capture-pane-contents: on (scrollback snapshot on restore)",
-			"@resurrect-capture-pane-contents: 已开(restore 时带回 scrollback 快照)")
-	} else {
-		n.line(stRec, "@resurrect-capture-pane-contents: off — set 'on' to snapshot each pane's scrollback",
-			"@resurrect-capture-pane-contents: 未开 —— 设为 'on' 才能快照每个 pane 的 scrollback")
-	}
-	if tmuxOpt("@continuum-restore") == "on" {
-		n.line(stOK, "@continuum-restore: on (auto-restore on tmux start)",
-			"@continuum-restore: 已开(tmux 启动时自动恢复)")
-	} else {
-		n.line(stRec, "@continuum-restore: off — set 'on' to auto-restore after a reboot",
-			"@continuum-restore: 未开 —— 设为 'on' 才能重启后自动恢复")
-	}
-}
-
-func doctorHistory(n *doctorCounters) {
-	hl := tmuxOpt("history-limit")
-	if v, _ := strconv.Atoi(hl); v >= 10000 {
-		n.line(stOK, "history-limit: "+hl+" (good scrollback depth)", "history-limit: "+hl+"(滚动缓冲够深)")
-	} else {
-		n.line(stRec, "history-limit: "+hl+" — raise it (e.g. 50000) for deeper scrollback snapshots",
-			"history-limit: "+hl+" —— 调大(如 50000)以获得更深的 scrollback 快照")
-	}
-}
-
-func doctorTerminal(n *doctorCounters) {
-	name := terminal.DetectedName()
-	if terminal.HasDriver(name) {
-		n.line(stOK, "host terminal: "+name+" (supported — focus/restore/new work)",
-			"宿主终端: "+name+"(已支持 —— focus/restore/new 可用)")
-	} else {
-		n.line(stRec, "host terminal: "+name+" (no driver yet — agents/overview still work, but focus/restore/new don't)",
-			"宿主终端: "+name+"(暂无驱动 —— agents/overview 照常,但 focus/restore/new 不可用)")
-	}
-}
-
-func doctorHooks(n *doctorCounters) {
-	if claudeHookInstalled() {
-		n.line(stOK, "Claude Code hook: installed (⏸ needs-input + notifications)",
-			"Claude Code hook: 已装(⏸ 需要输入 + 通知)")
-	} else {
-		n.line(stRec, "Claude Code hook: not installed — run `gtmux install-hooks` for ⏸ needs-input + notifications",
-			"Claude Code hook: 未装 —— 跑 `gtmux install-hooks` 获得 ⏸ 需要输入 + 通知")
-	}
-	if codexNotifyIsGtmux() {
-		n.line(stOK, "Codex hook: wired (turn-done notifications)", "Codex hook: 已接(turn 结束通知)")
-	} else {
-		n.line(stInfo, "Codex hook: not wired — `gtmux install-hooks --agent codex` prints the snippet (detection works regardless)",
-			"Codex hook: 未接 —— `gtmux install-hooks --agent codex` 打印接法(检测不依赖它)")
-	}
-}
-
-func doctorApp(n *doctorCounters) {
-	if _, err := os.Stat(gtmuxAppPath()); err == nil {
-		n.line(stOK, "menu-bar app: installed (delivers notifications)", "菜单栏 app: 已装(负责发通知)")
-	} else {
-		n.line(stRec, "menu-bar app: not installed — needed for desktop notifications (curl installer, or `make app`)",
-			"菜单栏 app: 未装 —— 桌面通知需要它(curl 安装脚本,或 `make app`)")
-	}
 }
 
 // claudeHookInstalled reports whether ~/.claude/settings.json has a gtmux hook.

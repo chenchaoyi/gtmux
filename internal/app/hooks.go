@@ -318,15 +318,28 @@ func asString(v any) string {
 	return ""
 }
 
-// confirm prompts on a TTY (default yes); off a TTY it returns false so callers
-// fall back to a printed recommendation rather than mutating silently.
+// confirm prompts on a TTY (Enter = default yes); off a TTY it returns false so
+// callers fall back to a printed recommendation rather than mutating silently.
+// EOF with no input (e.g. stdin redirected from /dev/null, which still passes the
+// char-device isTTY check) must NOT count as a yes — otherwise a non-interactive
+// caller would silently auto-confirm a mutating action.
 func confirm(prompt string) bool {
 	if !isTTY() {
 		return false
 	}
 	fmt.Print(prompt)
-	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	return answerYes(line, err)
+}
+
+// answerYes interprets a prompt answer: Enter (empty line, no error) = default
+// yes; "y"/"yes" = yes; anything else = no. A read error with no input (EOF on a
+// redirected stdin) is NOT a yes — that's the guard against silent auto-confirm.
+func answerYes(line string, readErr error) bool {
 	s := strings.TrimSpace(strings.ToLower(line))
+	if readErr != nil && s == "" {
+		return false
+	}
 	return s == "" || s == "y" || s == "yes"
 }
 
