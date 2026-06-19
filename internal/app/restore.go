@@ -221,17 +221,19 @@ func restoreSessions(list []string, dryRun bool) int {
 	}
 
 	if len(spawn) > 0 {
-		script, err := terminal.Active().SpawnTabs(spawn, dryRun)
+		term := terminal.Active()
+		tn := term.Name()
+		script, err := term.SpawnTabs(spawn, dryRun)
 		if dryRun {
-			i18n.Say(fmt.Sprintf("[dry-run] would open %d Ghostty tab(s) for: %s", len(spawn), strings.Join(spawn, " ")),
-				fmt.Sprintf("[dry-run] 将为以下 session 各开一个 Ghostty tab: %s", strings.Join(spawn, " ")))
+			i18n.Say(fmt.Sprintf("[dry-run] would open %d %s tab(s) for: %s", len(spawn), tn, strings.Join(spawn, " ")),
+				fmt.Sprintf("[dry-run] 将为以下 session 各开一个 %s tab: %s", tn, strings.Join(spawn, " ")))
 			i18n.Say("[dry-run] AppleScript:", "[dry-run] AppleScript:")
 			fmt.Println(script)
 		} else if err != nil {
-			i18n.Sae("AppleScript failed. Needs Ghostty 1.3+ and Automation permission",
-				"AppleScript 执行失败:需要 Ghostty 1.3+ 及自动化权限")
-			i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling Ghostty).",
-				"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 Ghostty)。")
+			i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
+				"AppleScript 执行失败:需要 "+tn+" 及自动化权限")
+			i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling "+tn+").",
+				"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+")。")
 			i18n.Sae("Fallback: run 'gtmux restore --one' in each tab",
 				"退路: 在每个 tab 里手动运行 gtmux restore --one")
 			return 1

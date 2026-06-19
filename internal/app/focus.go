@@ -106,19 +106,21 @@ func cmdFocus(args []string) int {
 		return 1
 	}
 
-	res, err := terminal.Active().FocusTab(target)
+	term := terminal.Active()
+	tn := term.Name()
+	res, err := term.FocusTab(target)
 	switch {
 	case res == "ok":
 		return 0
 	case err != nil || res == "":
-		i18n.Sae("AppleScript failed. Needs Ghostty 1.3+ and Automation permission",
-			"AppleScript 执行失败:需要 Ghostty 1.3+ 及自动化权限。")
-		i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling Ghostty).",
-			"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 Ghostty)。")
+		i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
+			"AppleScript 执行失败:需要 "+tn+" 及自动化权限。")
+		i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling "+tn+").",
+			"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+")。")
 		return 1
 	default:
-		i18n.Sae("No Ghostty tab is showing session '"+target+"' (it may be detached).",
-			"没有显示 session '"+target+"' 的 Ghostty tab(可能尚未接回)。")
+		i18n.Sae("No "+tn+" tab is showing session '"+target+"' (it may be detached).",
+			"没有显示 session '"+target+"' 的 "+tn+" tab(可能尚未接回)。")
 		i18n.Sae("Restore it with:  gtmux restore "+target, "接回它:  gtmux restore "+target)
 		return 1
 	}

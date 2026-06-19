@@ -8,18 +8,20 @@ import (
 
 // iterm2 drives iTerm2 via AppleScript, mirroring the Ghostty driver. A session's
 // tab is matched by its title "#S — #W" (tmux set-titles), exposed as an iTerm2
-// session's `name`.
+// session's `name` (which iTerm2 may suffix with " (tmux)" — the prefix-match
+// absorbs it).
 //
-// NOTE: written from the iTerm2 scripting dictionary but NOT runtime-verified on
-// the (Ghostty-only) dev machine — verify on iTerm2 before trusting. It only runs
-// when the host terminal is detected as iTerm2, so Ghostty users are unaffected.
+// Two name gotchas, both verified on a real iTerm2: the AppleScript target is
+// "iTerm" — NOT "iTerm2", which resolves to the bundle but loads no scripting
+// dictionary, so every command errors — while the macOS *process* name is
+// "iTerm2" (so IsViewing keys on that).
 type iterm2 struct{}
 
 func (iterm2) Name() string { return "iTerm2" }
 
 func (iterm2) FocusTab(session string) (string, error) {
 	s := aplQuote(session)
-	return osa(`tell application "iTerm2"
+	return osa(`tell application "iTerm"
   repeat with w in windows
     repeat with t in tabs of w
       repeat with ss in sessions of t
@@ -37,12 +39,24 @@ func (iterm2) FocusTab(session string) (string, error) {
 end tell`)
 }
 
+// IsViewing can't use the shared System Events path: iTerm2 leaves the AX
+// window title empty, so that check never matches. Instead ask iTerm directly
+// whether it's frontmost and what its current session is named (the tmux title,
+// possibly suffixed " (tmux)" — prefix-match absorbs it).
 func (iterm2) IsViewing(session string) bool {
-	return isViewing(session, "iTerm2")
+	out, err := osa(`tell application "iTerm"
+  if it is not frontmost then return ""
+  tell current session of current window to return name
+end tell`)
+	if err != nil {
+		return false
+	}
+	out = strings.TrimSpace(out)
+	return out == session || strings.HasPrefix(out, session+" — ")
 }
 
 func (iterm2) OpenWindow(command string) (string, error) {
-	return osa(`tell application "iTerm2"
+	return osa(`tell application "iTerm"
   activate
   create window with default profile command "` + aplQuote(command) + `"
 end tell`)
@@ -50,7 +64,7 @@ end tell`)
 
 func (iterm2) SpawnTabs(sessions []string, dryRun bool) (string, error) {
 	var b strings.Builder
-	b.WriteString("tell application \"iTerm2\"\n  activate\n")
+	b.WriteString("tell application \"iTerm\"\n  activate\n")
 	for _, s := range sessions {
 		// Absolute tmux path: spawned commands don't inherit the shell PATH.
 		// ShellQuote the name so sessions with spaces attach correctly.

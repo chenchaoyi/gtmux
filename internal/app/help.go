@@ -17,15 +17,15 @@ Commands:
                           idle, where, and the pane id to jump to. --watch is a
                           live dashboard (↑/↓ select · enter jump · r · q);
                           --json prints a structured array (for scripts/apps)
-  restore                 one Ghostty tab per session, attach all
+  restore                 one terminal tab per session, attach all
     restore --pick|-p     list & choose (numbers / Enter=all / q=cancel)
     restore <name>        attach that session by name in THIS tab
     restore --one         attach the next unattached session in THIS tab
     restore --dry-run     print what would happen, change nothing
-  focus <name|pane-id>    jump to that session's Ghostty tab; a tmux pane id
+  focus <name|pane-id>    jump to that session's terminal tab; a tmux pane id
                           (%N) lands on that exact window+pane
     focus --last|-l       jump to the most-recently-finished agent pane
-  new [name]              create a tmux session and open a Ghostty tab for it
+  new [name]              create a tmux session and open a terminal tab for it
   doctor                  read-only health check: tmux / set-titles / plugins /
                           host terminal / hooks / menu-bar app — with fixes
   install-hooks [--yes]   register 'gtmux hook' in ~/.claude/settings.json
@@ -47,8 +47,9 @@ Notes:
     permission/approval — sorts to the top) · ✳ idle (finished its turn, your
     move). waiting needs claude-notify (Claude Code's permission Notification);
     its idle-timeout nudge does NOT mark waiting, so long-idle stays idle.
-  - restore/focus drive Ghostty (1.3+) via AppleScript: the first run asks for
-    Automation permission ("wants to control Ghostty") — allow it.
+  - restore/focus drive your host terminal (Ghostty 1.3+ or iTerm2) via
+    AppleScript: the first run asks for Automation permission ("wants to control
+    …") — allow it. The terminal is auto-detected (override: GTMUX_TERMINAL).
   - After a reboot, restore starts tmux and waits for tmux-continuum to restore
     the last autosave (layout/dirs/screen text — not running programs).
 `
@@ -64,15 +65,15 @@ const usageZH = `用法:
                           在哪、以及可跳转的 pane id。--watch 是实时面板
                           (↑/↓ 选择 · enter 跳转 · r 刷新 · q 退出);
                           --json 输出结构化数组(给脚本/app 用)
-  restore                 每个 session 一个 Ghostty tab,全部接回
+  restore                 每个 session 一个终端 tab,全部接回
     restore --pick|-p     列出来选(编号 / 回车=全部 / q=取消)
     restore <名字>         按名字把当前 tab 接回指定 session
     restore --one         只把当前 tab 接回下一个无人连接的 session
     restore --dry-run     只打印将要做什么,不实际执行
-  focus <名字|pane-id>    跳到该 session 的 Ghostty tab;给 tmux pane id(%N)
+  focus <名字|pane-id>    跳到该 session 的终端 tab;给 tmux pane id(%N)
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
-  new [name]              新建一个 tmux session 并为它开一个 Ghostty tab
+  new [name]              新建一个 tmux session 并为它开一个终端 tab
   doctor                  只读体检:tmux / set-titles / 插件 / 宿主终端 /
                           hook / 菜单栏 app —— 附修复建议
   install-hooks [--yes]   在 ~/.claude/settings.json 注册 'gtmux hook'
@@ -93,8 +94,9 @@ const usageZH = `用法:
   - "agents" 状态:⠿ 运行中(忙)· ⏸ 等输入(卡在等你【批准/权限】—— 排最前)·
     ✳ 空闲(完成一轮,轮到你)。⏸ 需要 claude-notify(Claude Code 的权限
     Notification);它的空闲提醒【不】标 ⏸,所以久置会停在 idle。
-  - restore/focus 通过 AppleScript 控制 Ghostty(1.3+):首次运行会弹自动化授权
-    (「想要控制 Ghostty」)—— 点允许。
+  - restore/focus 通过 AppleScript 控制宿主终端(Ghostty 1.3+ 或 iTerm2):首次
+    运行会弹自动化授权(「想要控制…」)—— 点允许。终端自动识别(可用
+    GTMUX_TERMINAL 覆盖)。
   - 电脑重启后,restore 会启动 tmux 并等 tmux-continuum 恢复最近一次自动存档
     (布局/目录/屏幕文本 —— 不含正在运行的程序)。
 `
