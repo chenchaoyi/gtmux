@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -300,6 +301,7 @@ func gatherAgents() []agentPane {
 	profiles := loadProfiles()
 	lastFinished := state.ReadLastFinished()
 	waiting := state.WaitingSet()
+	now := time.Now().Unix()
 
 	// One process snapshot per gather, so we can look inside a pane's tree to
 	// catch agents that run as `node …/codex` (comm=node, no title glyph).
@@ -329,8 +331,14 @@ func gatherAgents() []agentPane {
 					if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
 						agent = name
 						if !isAgent {
-							// no spinner (else classifyAgent → working) → at prompt = idle.
-							isAgent, status, task = true, "idle", strings.TrimSpace(f[4])
+							// Process-tree agent with no title spinner (e.g. Codex sets
+							// no title): use the screen-changing signal to tell working
+							// from idle, rather than assuming idle.
+							status = "idle"
+							if state.PaneFrameWorking(f[0], tmux.CapturePane(f[0]), now) {
+								status = "working"
+							}
+							isAgent, task = true, strings.TrimSpace(f[4])
 						}
 					}
 				}
