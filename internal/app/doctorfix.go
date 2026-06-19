@@ -11,16 +11,20 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-// doctor --fix (Layer 2) applies the recommended fixes that Layer 1 reports.
-// It is conservative and reversible by design:
-//   - tmux.conf edits live inside a clearly MARKED managed block (your own lines
-//     are never touched), and the file is backed up to .gtmux.bak first;
-//   - it MERGES (never drops) managed lines across runs and only adds an option
+// doctor --fix (Layer 2) walks the recommended fixes ONE AT A TIME: each step
+// explains what it will change and WHY, then asks before doing it (`--yes` applies
+// all without prompting; off a TTY every step is skipped rather than mutating
+// silently). It folds in the Claude-hook setup that used to need a separate
+// `gtmux install-hooks`. It is conservative and reversible:
+//   - tmux.conf edits live in a clearly MARKED managed block (your own lines are
+//     never touched), and the file is backed up to .gtmux.bak before the first
+//     edit of the run;
+//   - it MERGES (never drops) managed lines across runs and only writes an option
 //     the running tmux is actually missing, so it won't clobber a value you set;
 //   - plugins are cloned (non-destructive); TPM wiring is added only when your
-//     config has none, and is placed last so TPM loads correctly;
-//   - everything it can't do safely (install tmux, install the app, Codex's
-//     single-slot notify) is printed as guidance, not forced.
+//     config has none, with the `run` line placed last so TPM loads correctly;
+//   - things it can't do safely (install tmux, install the app, Codex's
+//     single-slot notify) are printed as guidance, not forced.
 
 const (
 	fixBlockBegin = "# >>> gtmux managed (gtmux doctor --fix) >>>"
@@ -35,15 +39,237 @@ var fixPlugins = []pluginSpec{
 	{"tmux-continuum", "https://github.com/tmux-plugins/tmux-continuum"},
 }
 
-// optFix is one tmux-option fix: the config line(s) for the managed block, the
-// live `tmux set -g` command(s) to apply it now, and its bilingual plan text.
-type optFix struct {
-	confLines []string
-	setCmds   [][]string
-	en, zh    string
+// fixState threads the config path, the consent flag, a one-shot backup latch,
+// and the running exit code across the steps.
+type fixState struct {
+	confPath string
+	yes      bool
+	backedUp bool
+	rc       int
 }
 
-// usesXDG reports whether the user keeps tmux config under ~/.config/tmux.
+// doctorFix runs the step-by-step fixer. yes applies every step without prompting.
+func doctorFix(yes bool) int {
+	if tmux.Bin == "" {
+		i18n.Sae("tmux is not installed — install it first (e.g. brew install tmux), then re-run.",
+			"tmux 未安装 —— 请先安装(如 brew install tmux)再运行。")
+		return 1
+	}
+	i18n.Say("gtmux doctor --fix — I'll explain each change and ask before doing it (Ctrl-C to stop).",
+		"gtmux doctor --fix —— 每个改动我都会先解释并征求确认(Ctrl-C 退出)。")
+
+	s := &fixState{confPath: tmuxConfPath(), yes: yes}
+	applied := 0
+	applied += s.stepSetTitles()
+	applied += s.stepRestoreSettings()
+	applied += s.stepPlugins()
+	applied += s.stepClaudeHook()
+	stepCodexHook()   // optional, manual — Codex's notify is single-slot
+	stepAppGuidance() // manual — needs the installer / make app
+
+	fmt.Println()
+	if applied == 0 {
+		i18n.Say("Nothing was changed.", "未做任何改动。")
+	} else {
+		i18n.Say("Done — re-run `gtmux doctor` to confirm.", "完成 —— 重新跑 `gtmux doctor` 确认。")
+	}
+	return s.rc
+}
+
+// ask prints a step heading + explanation and returns whether to apply it.
+func (s *fixState) ask(title, detail string) bool {
+	fmt.Printf("\n%s%s%s\n", i18n.Bold, title, i18n.Reset)
+	if detail != "" {
+		fmt.Printf("%s%s%s\n", i18n.Dim, detail, i18n.Reset)
+	}
+	if s.yes {
+		return true
+	}
+	if !confirm(i18n.Tr("  apply? [Y/n] ", "  应用?[Y/n] ")) {
+		i18n.Say("  skipped.", "  已跳过。")
+		return false
+	}
+	return true
+}
+
+// applyConf backs up once, merges `lines` into the managed block, writes it, and
+// live-applies `live` (so the change takes effect now). Returns 1 on success.
+func (s *fixState) applyConf(lines []string, live [][]string) int {
+	conf := ""
+	if b, err := os.ReadFile(s.confPath); err == nil {
+		conf = string(b)
+	}
+	if err := os.MkdirAll(filepath.Dir(s.confPath), 0o755); err != nil {
+		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
+		s.rc = 1
+		return 0
+	}
+	if !s.backedUp {
+		backupFile(s.confPath) // .gtmux.bak (no-op if the file doesn't exist yet)
+		s.backedUp = true
+	}
+	merged := mergeManagedLines(conf, lines)
+	if err := os.WriteFile(s.confPath, []byte(upsertManagedBlock(conf, merged)), 0o644); err != nil {
+		i18n.Sae("  ✗ write "+tildeify(s.confPath)+": "+err.Error(), "  ✗ 写入 "+tildeify(s.confPath)+": "+err.Error())
+		s.rc = 1
+		return 0
+	}
+	for _, c := range live {
+		_, _ = tmux.Run(c...)
+	}
+	i18n.Say("  ✓ updated "+tildeify(s.confPath), "  ✓ 已更新 "+tildeify(s.confPath))
+	return 1
+}
+
+func (s *fixState) stepSetTitles() int {
+	if tmuxOpt("set-titles") == "on" && tmuxOpt("set-titles-string") == "#S — #W" {
+		return 0
+	}
+	detail := i18n.Tr(
+		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      set -g set-titles on\n      set -g set-titles-string '#S — #W'\n  Why: focus/restore find a session's tab by this exact title.",
+		"  写入 "+tildeify(s.confPath)+"(并立即生效):\n      set -g set-titles on\n      set -g set-titles-string '#S — #W'\n  原因:focus/restore 靠这个确切标题找到会话的 tab。")
+	if !s.ask(i18n.Tr("set-titles  (required for focus/restore)", "set-titles(focus/restore 必需)"), detail) {
+		return 0
+	}
+	return s.applyConf(
+		[]string{"set -g set-titles on", "set -g set-titles-string '#S — #W'"},
+		[][]string{{"set", "-g", "set-titles", "on"}, {"set", "-g", "set-titles-string", "#S — #W"}})
+}
+
+func (s *fixState) stepRestoreSettings() int {
+	var lines []string
+	var live [][]string
+	var bullets []string
+	if tmuxOpt("@resurrect-capture-pane-contents") != "on" {
+		lines = append(lines, "set -g @resurrect-capture-pane-contents 'on'")
+		live = append(live, []string{"set", "-g", "@resurrect-capture-pane-contents", "on"})
+		bullets = append(bullets, i18n.Tr("@resurrect-capture-pane-contents on — snapshot each pane's scrollback",
+			"@resurrect-capture-pane-contents on —— 快照每个 pane 的 scrollback"))
+	}
+	if tmuxOpt("@continuum-restore") != "on" {
+		lines = append(lines, "set -g @continuum-restore 'on'")
+		live = append(live, []string{"set", "-g", "@continuum-restore", "on"})
+		bullets = append(bullets, i18n.Tr("@continuum-restore on — auto-restore after a reboot",
+			"@continuum-restore on —— 重启后自动恢复"))
+	}
+	if v, _ := strconv.Atoi(tmuxOpt("history-limit")); v < 10000 {
+		lines = append(lines, "set -g history-limit 50000")
+		live = append(live, []string{"set", "-g", "history-limit", "50000"})
+		bullets = append(bullets, i18n.Tr("history-limit 50000 — deeper scrollback to snapshot",
+			"history-limit 50000 —— 更深的 scrollback 可快照"))
+	}
+	if len(lines) == 0 {
+		return 0
+	}
+	detail := "  " + strings.Join(bullets, "\n  ") + "\n  " +
+		i18n.Tr("Written to "+tildeify(s.confPath)+" (+ applied live).", "写入 "+tildeify(s.confPath)+"(并立即生效)。")
+	if !s.ask(i18n.Tr("restore & snapshot settings", "恢复与快照设置"), detail) {
+		return 0
+	}
+	return s.applyConf(lines, live)
+}
+
+func (s *fixState) stepPlugins() int {
+	var clones []pluginSpec
+	for _, p := range fixPlugins {
+		if pluginDir(p.name) == "" {
+			clones = append(clones, p)
+		}
+	}
+	if len(clones) == 0 {
+		return 0
+	}
+	conf := ""
+	if b, err := os.ReadFile(s.confPath); err == nil {
+		conf = string(b)
+	}
+	wire := !hasTPMWiring(conf)
+	var names []string
+	for _, c := range clones {
+		names = append(names, c.name)
+	}
+	detail := "  " + i18n.Tr("git clone "+strings.Join(names, ", ")+" → "+tildeify(pluginBaseDir()),
+		"git clone "+strings.Join(names, ", ")+" → "+tildeify(pluginBaseDir()))
+	if wire {
+		detail += "\n  " + i18n.Tr("and add TPM loader lines to "+tildeify(s.confPath)+" (run line last)",
+			"并在 "+tildeify(s.confPath)+" 写入 TPM 加载行(run 行置末)")
+	}
+	detail += "\n  " + i18n.Tr("Why: restore-after-reboot & scrollback snapshots need these plugins.",
+		"原因:重启恢复与 scrollback 快照依赖这些插件。")
+	if !s.ask(i18n.Tr("tmux plugins (TPM + resurrect + continuum)", "tmux 插件(TPM + resurrect + continuum)"), detail) {
+		return 0
+	}
+	base := pluginBaseDir()
+	if err := os.MkdirAll(base, 0o755); err != nil {
+		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
+		s.rc = 1
+		return 0
+	}
+	applied := 0
+	for _, p := range clones {
+		if err := runQuiet("git", "clone", "--depth", "1", p.repo, filepath.Join(base, p.name)); err != nil {
+			i18n.Sae("  ✗ clone "+p.name+" failed: "+err.Error(), "  ✗ 克隆 "+p.name+" 失败: "+err.Error())
+			s.rc = 1
+		} else {
+			i18n.Say("  ✓ cloned "+p.name, "  ✓ 已克隆 "+p.name)
+			applied = 1
+		}
+	}
+	if wire {
+		if s.applyConf(tpmWiringLines(), nil) == 1 {
+			applied = 1
+		}
+	}
+	i18n.Say("  • reload tmux to activate: tmux source "+tildeify(s.confPath)+"  (or restart tmux)",
+		"  • 重载 tmux 生效: tmux source "+tildeify(s.confPath)+"  (或重启 tmux)")
+	return applied
+}
+
+func (s *fixState) stepClaudeHook() int {
+	if claudeHookInstalled() {
+		return 0
+	}
+	detail := i18n.Tr(
+		"  Register `gtmux hook` in "+tildeify(claudeSettingsPath())+" (Stop · Notification · UserPromptSubmit).\n  Gives ⏸ needs-input + desktop notifications. (backed up first)",
+		"  在 "+tildeify(claudeSettingsPath())+" 注册 `gtmux hook`(Stop · Notification · UserPromptSubmit)。\n  提供 ⏸ 需要输入 + 桌面通知。(会先备份)")
+	if !s.ask(i18n.Tr("Claude Code hook", "Claude Code hook"), detail) {
+		return 0
+	}
+	cacheClaudeIcon()
+	if err := updateSettings(claudeSettingsPath(), selfPath(), true); err != nil {
+		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败: "+err.Error())
+		s.rc = 1
+		return 0
+	}
+	i18n.Say("  ✓ installed — restart Claude Code sessions to load it", "  ✓ 已安装 —— 重启 Claude Code 会话以加载")
+	return 1
+}
+
+// stepCodexHook is guidance only: Codex's `notify` is a single program slot and
+// its placement in config.toml is position-sensitive, so we never auto-edit it.
+func stepCodexHook() {
+	if codexNotifyIsGtmux() {
+		return
+	}
+	fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("Codex hook  (optional, manual)", "Codex hook(可选,手动)"), i18n.Reset)
+	i18n.Say("  Codex's `notify` is a single program slot — add this line to ~/.codex/config.toml yourself:",
+		"  Codex 的 `notify` 只有一个程序槽 —— 请自行把下面这行加到 ~/.codex/config.toml:")
+	fmt.Printf("      notify = [%q, \"hook\", \"--agent\", \"codex\"]\n", selfPath())
+	i18n.Say("  Detection (working/idle) already works without it.", "  检测(working/idle)不依赖它,照常工作。")
+}
+
+// stepAppGuidance is guidance only: the app needs the installer / a native build.
+func stepAppGuidance() {
+	if _, err := os.Stat(gtmuxAppPath()); err == nil {
+		return
+	}
+	fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("menu-bar app  (manual)", "菜单栏 app(手动)"), i18n.Reset)
+	i18n.Say("  Needed for desktop notifications — install via the curl installer, or `make app`.",
+		"  桌面通知需要它 —— 用 curl 安装脚本,或 `make app`。")
+}
+
+// --- config-path + managed-block helpers (pure; unit-tested) ---
+
 func usesXDG() bool {
 	return fileExists(filepath.Join(homeDir(), ".config", "tmux", "tmux.conf"))
 }
@@ -97,45 +323,6 @@ func tildeify(p string) string {
 	return p
 }
 
-// neededOptFixes returns the tmux-option fixes the RUNNING tmux is missing, so
-// --fix never overrides a value you already set acceptably.
-func neededOptFixes() []optFix {
-	var fixes []optFix
-	if tmuxOpt("set-titles") != "on" || tmuxOpt("set-titles-string") != "#S — #W" {
-		fixes = append(fixes, optFix{
-			confLines: []string{"set -g set-titles on", "set -g set-titles-string '#S — #W'"},
-			setCmds:   [][]string{{"set", "-g", "set-titles", "on"}, {"set", "-g", "set-titles-string", "#S — #W"}},
-			en:        "set-titles on + '#S — #W' (focus/restore tab matching)",
-			zh:        "set-titles on + '#S — #W'(focus/restore 定位 tab)",
-		})
-	}
-	if tmuxOpt("@resurrect-capture-pane-contents") != "on" {
-		fixes = append(fixes, optFix{
-			confLines: []string{"set -g @resurrect-capture-pane-contents 'on'"},
-			setCmds:   [][]string{{"set", "-g", "@resurrect-capture-pane-contents", "on"}},
-			en:        "@resurrect-capture-pane-contents on (scrollback snapshot on restore)",
-			zh:        "@resurrect-capture-pane-contents on(restore 时带回 scrollback 快照)",
-		})
-	}
-	if tmuxOpt("@continuum-restore") != "on" {
-		fixes = append(fixes, optFix{
-			confLines: []string{"set -g @continuum-restore 'on'"},
-			setCmds:   [][]string{{"set", "-g", "@continuum-restore", "on"}},
-			en:        "@continuum-restore on (auto-restore after reboot)",
-			zh:        "@continuum-restore on(重启后自动恢复)",
-		})
-	}
-	if v, _ := strconv.Atoi(tmuxOpt("history-limit")); v < 10000 {
-		fixes = append(fixes, optFix{
-			confLines: []string{"set -g history-limit 50000"},
-			setCmds:   [][]string{{"set", "-g", "history-limit", "50000"}},
-			en:        "history-limit 50000 (deeper scrollback)",
-			zh:        "history-limit 50000(更深的 scrollback)",
-		})
-	}
-	return fixes
-}
-
 // managedKey is the option/command a managed line sets, used to de-dupe across
 // runs ("set -g X …" → "X"; "run …" → "run").
 func managedKey(line string) string {
@@ -152,16 +339,15 @@ func managedKey(line string) string {
 	return line
 }
 
-// extractManagedLines returns the body lines of the existing managed block ("").
+// extractManagedLines returns the body lines of the existing managed block.
 func extractManagedLines(conf string) []string {
 	bi := strings.Index(conf, fixBlockBegin)
 	ei := strings.Index(conf, fixBlockEnd)
 	if bi < 0 || ei <= bi {
 		return nil
 	}
-	body := conf[bi+len(fixBlockBegin) : ei]
 	var out []string
-	for _, l := range strings.Split(body, "\n") {
+	for _, l := range strings.Split(conf[bi+len(fixBlockBegin):ei], "\n") {
 		if strings.TrimSpace(l) != "" {
 			out = append(out, l)
 		}
@@ -187,7 +373,6 @@ func mergeManagedLines(conf string, newLines []string) []string {
 	add(extractManagedLines(conf))
 	add(newLines)
 
-	// Float the single `run` line to the end (TPM must be initialized last).
 	var run string
 	var rest []string
 	for _, l := range out {
@@ -215,138 +400,5 @@ func upsertManagedBlock(conf string, lines []string) string {
 	if conf == "" {
 		return block + "\n"
 	}
-	sep := "\n\n"
-	if !strings.HasSuffix(conf, "\n") {
-		sep = "\n\n"
-	}
-	return strings.TrimRight(conf, "\n") + sep + block + "\n"
-}
-
-// doctorFix runs the Layer-2 fixer. yes skips the confirmation prompt.
-func doctorFix(yes bool) int {
-	if tmux.Bin == "" {
-		i18n.Sae("tmux is not installed — install it first (e.g. brew install tmux), then re-run.",
-			"tmux 未安装 —— 请先安装(如 brew install tmux)再运行。")
-		return 1
-	}
-	confPath := tmuxConfPath()
-	confBytes, _ := os.ReadFile(confPath)
-	conf := string(confBytes)
-
-	opts := neededOptFixes()
-	var clones []pluginSpec
-	for _, p := range fixPlugins {
-		if pluginDir(p.name) == "" {
-			clones = append(clones, p)
-		}
-	}
-	wireTPM := len(clones) > 0 && !hasTPMWiring(conf)
-	installClaude := !claudeHookInstalled()
-
-	if len(opts) == 0 && len(clones) == 0 && !installClaude {
-		i18n.Say("Nothing to fix — everything checks out. ✓", "无需修复 —— 一切正常。✓")
-		return 0
-	}
-
-	// Preview.
-	i18n.Say("gtmux doctor --fix will:", "gtmux doctor --fix 将:")
-	for _, o := range opts {
-		fmt.Printf("  • %s\n", i18n.Tr(o.en, o.zh))
-	}
-	if len(clones) > 0 {
-		var names []string
-		for _, c := range clones {
-			names = append(names, c.name)
-		}
-		fmt.Printf("  • %s\n", i18n.Tr("clone tmux plugins: "+strings.Join(names, ", "),
-			"克隆 tmux 插件: "+strings.Join(names, ", ")))
-	}
-	if wireTPM {
-		fmt.Printf("  • %s\n", i18n.Tr("wire TPM into "+tildeify(confPath), "在 "+tildeify(confPath)+" 写入 TPM 加载配置"))
-	}
-	if installClaude {
-		fmt.Printf("  • %s\n", i18n.Tr("install the Claude Code hook (needs-input + notifications)",
-			"安装 Claude Code hook(需要输入 + 通知)"))
-	}
-	if len(opts) > 0 || wireTPM {
-		i18n.Say("It edits a marked block in "+tildeify(confPath)+" (backup: .gtmux.bak); your own lines are untouched.",
-			"它会改写 "+tildeify(confPath)+" 里一段带标记的配置(备份: .gtmux.bak);不动你自己的行。")
-	}
-	if !yes && !confirm(i18n.Tr("Apply these fixes? [Y/n] ", "应用这些修复?[Y/n] ")) {
-		i18n.Say("Aborted — nothing changed.", "已取消 —— 未做改动。")
-		return 1
-	}
-
-	rc := 0
-
-	// 1. tmux.conf managed block (options + maybe TPM wiring), then live-apply.
-	if len(opts) > 0 || wireTPM {
-		var newLines []string
-		for _, o := range opts {
-			newLines = append(newLines, o.confLines...)
-		}
-		if wireTPM {
-			newLines = append(newLines, tpmWiringLines()...)
-		}
-		if err := os.MkdirAll(filepath.Dir(confPath), 0o755); err != nil {
-			i18n.Sae("could not create "+tildeify(filepath.Dir(confPath))+": "+err.Error(),
-				"无法创建 "+tildeify(filepath.Dir(confPath))+": "+err.Error())
-			return 1
-		}
-		backupFile(confPath) // writes .gtmux.bak if the file exists
-		merged := mergeManagedLines(conf, newLines)
-		if err := os.WriteFile(confPath, []byte(upsertManagedBlock(conf, merged)), 0o644); err != nil {
-			i18n.Sae("failed to write "+tildeify(confPath)+": "+err.Error(),
-				"写入 "+tildeify(confPath)+" 失败: "+err.Error())
-			return 1
-		}
-		i18n.Say("✓ updated "+tildeify(confPath)+" (managed block)", "✓ 已更新 "+tildeify(confPath)+"(托管配置块)")
-		for _, o := range opts {
-			for _, cmd := range o.setCmds {
-				_, _ = tmux.Run(cmd...) // live-apply so focus/restore work now
-			}
-		}
-	}
-
-	// 2. Clone missing plugins.
-	if len(clones) > 0 {
-		base := pluginBaseDir()
-		if err := os.MkdirAll(base, 0o755); err != nil {
-			i18n.Sae("could not create "+tildeify(base)+": "+err.Error(), "无法创建 "+tildeify(base)+": "+err.Error())
-			rc = 1
-		} else {
-			for _, p := range clones {
-				dir := filepath.Join(base, p.name)
-				if err := runQuiet("git", "clone", "--depth", "1", p.repo, dir); err != nil {
-					i18n.Sae("✗ clone "+p.name+" failed: "+err.Error(), "✗ 克隆 "+p.name+" 失败: "+err.Error())
-					rc = 1
-				} else {
-					i18n.Say("✓ cloned "+p.name, "✓ 已克隆 "+p.name)
-				}
-			}
-			i18n.Say("• reload tmux to activate plugins:  tmux source "+tildeify(confPath)+"  (or restart tmux)",
-				"• 重载 tmux 以启用插件:  tmux source "+tildeify(confPath)+"  (或重启 tmux)")
-		}
-	}
-
-	// 3. Claude hook (reuse the install-hooks machinery).
-	if installClaude {
-		cacheClaudeIcon()
-		if err := updateSettings(claudeSettingsPath(), selfPath(), true); err != nil {
-			i18n.Sae("✗ Claude hook install failed: "+err.Error(), "✗ 安装 Claude hook 失败: "+err.Error())
-			rc = 1
-		} else {
-			i18n.Say("✓ installed the Claude Code hook (restart Claude sessions to load it)",
-				"✓ 已安装 Claude Code hook(重启 Claude 会话以加载)")
-		}
-	}
-
-	// Things --fix won't force.
-	if _, err := os.Stat(gtmuxAppPath()); err != nil {
-		i18n.Say("• menu-bar app not installed (needed for notifications): curl installer, or `make app`",
-			"• 菜单栏 app 未装(通知需要它):用 curl 安装脚本,或 `make app`")
-	}
-
-	i18n.Say("Done. Re-run `gtmux doctor` to confirm.", "完成。重新跑 `gtmux doctor` 确认。")
-	return rc
+	return strings.TrimRight(conf, "\n") + "\n\n" + block + "\n"
 }

@@ -6,16 +6,19 @@ import (
 	"testing"
 )
 
-// TestDoctorCountersLine checks the tally + icon mapping per status level.
-func TestDoctorCountersLine(t *testing.T) {
-	n := &doctorCounters{}
-	n.line(stOK, "a", "a")
-	n.line(stOK, "b", "b")
-	n.line(stRec, "c", "c")
-	n.line(stMiss, "d", "d")
-	n.line(stInfo, "e", "e") // info must not tally
-	if n.ok != 2 || n.rec != 1 || n.miss != 1 {
-		t.Fatalf("counts = ok %d rec %d miss %d, want 2/1/1", n.ok, n.rec, n.miss)
+// TestRenderSectionsTally checks the ok/recommended/blocking tally across status
+// levels (stInfo must count toward none).
+func TestRenderSectionsTally(t *testing.T) {
+	secs := []dsection{{"x", []dcheck{
+		{stOK, "a", "", ""},
+		{stOK, "b", "", ""},
+		{stRec, "c", "", ""},
+		{stMiss, "d", "", ""},
+		{stInfo, "e", "", ""},
+	}}}
+	ok, rec, miss := renderSections(secs)
+	if ok != 2 || rec != 1 || miss != 1 {
+		t.Fatalf("tally = ok %d rec %d miss %d, want 2/1/1", ok, rec, miss)
 	}
 }
 

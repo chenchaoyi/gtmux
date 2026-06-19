@@ -1,6 +1,7 @@
 package app
 
 import (
+	"io"
 	"strings"
 	"testing"
 )
@@ -70,5 +71,30 @@ func TestTpmWiringLines(t *testing.T) {
 	}
 	if c := strings.Count(strings.Join(lines, "\n"), "@plugin"); c != 3 {
 		t.Errorf("want 3 @plugin declarations, got %d", c)
+	}
+}
+
+// TestAnswerYes guards the confirm() safety fix: Enter / y / yes = yes, but EOF
+// with no input (redirected stdin) must NOT auto-confirm a mutating action.
+func TestAnswerYes(t *testing.T) {
+	cases := []struct {
+		line    string
+		err     error
+		want    bool
+		comment string
+	}{
+		{"\n", nil, true, "Enter = default yes"},
+		{"y\n", nil, true, "y"},
+		{"yes\n", nil, true, "yes"},
+		{"Y\n", nil, true, "uppercase Y"},
+		{"n\n", nil, false, "n"},
+		{"no\n", nil, false, "no"},
+		{"", io.EOF, false, "EOF, no input → NOT yes"},
+		{"y", io.EOF, true, "y then EOF (no newline) → yes"},
+	}
+	for _, c := range cases {
+		if got := answerYes(c.line, c.err); got != c.want {
+			t.Errorf("answerYes(%q, %v) = %v, want %v (%s)", c.line, c.err, got, c.want, c.comment)
+		}
 	}
 }
