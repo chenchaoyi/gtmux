@@ -55,6 +55,14 @@ func Lines(args ...string) []string {
 	return strings.Split(out, "\n")
 }
 
+// CapturePane returns the visible (current-screen) content of a pane, read-only.
+// Used to tell a working agent (its screen animates) from an idle one (static)
+// when the agent sets no title spinner. "" on error.
+func CapturePane(pane string) string {
+	out, _ := Run("capture-pane", "-p", "-t", pane)
+	return out
+}
+
 // Display returns `tmux display-message -p <fmt>` for the given (optional) target.
 func Display(target, format string) string {
 	args := []string{"display-message", "-p"}
