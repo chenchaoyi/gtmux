@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -62,6 +64,11 @@ func ensureServer() {
 	if tmux.ServerUp() {
 		return
 	}
+	// Fix a poisoned resurrect `last` BEFORE booting: starting the server triggers
+	// continuum's auto-restore (@continuum-restore on), which reads `last`. If we
+	// don't repair it first, both continuum and our own restore below would faithfully
+	// restore an empty save. See sanitizeLast.
+	sanitizeLast()
 	boot := fmt.Sprintf("gtmux-boot-%d", os.Getpid())
 	if !tmux.OK("new-session", "-d", "-s", boot) {
 		i18n.Sae("failed to start tmux", "启动 tmux 失败")
@@ -143,6 +150,70 @@ func resurrectLastSave() string {
 		}
 	}
 	return ""
+}
+
+// resurrectDir returns the tmux-resurrect data directory ("" if none exists),
+// mirroring resurrectLastSave's candidate order.
+func resurrectDir() string {
+	home := os.Getenv("HOME")
+	var cands []string
+	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
+		cands = append(cands, xdg+"/tmux/resurrect")
+	}
+	cands = append(cands,
+		home+"/.local/share/tmux/resurrect",
+		home+"/.tmux/resurrect")
+	for _, c := range cands {
+		if fi, err := os.Stat(c); err == nil && fi.IsDir() {
+			return c
+		}
+	}
+	return ""
+}
+
+// sanitizeLast guards against tmux-resurrect's "poisoned last" failure. resurrect's
+// save_all repoints the `last` symlink to whatever it just dumped, checking only that
+// the content CHANGED — never that it is non-empty. A save that races with the server
+// losing its sessions (classically: jetsam killing them under memory pressure, since
+// continuum runs the save in the background) writes a 0-byte file, and `last` ends up
+// pointing at it. From then on every restore — continuum's auto-restore, gtmux's, a
+// manual prefix+Ctrl-r — faithfully restores nothing.
+//
+// We run this BEFORE booting the server so the good pointer is in place for both
+// continuum's auto-restore hook and our own restore. If `last` is missing or holds no
+// layout, repoint it at the newest timestamped save that actually has one. Timestamped
+// names (tmux_resurrect_YYYYMMDDTHHMMSS.txt) sort lexically by time, so a reverse sort
+// puts the most recent first.
+func sanitizeLast() {
+	dir := resurrectDir()
+	if dir == "" {
+		return
+	}
+	last := filepath.Join(dir, "last")
+	if saveHasLayout(last) { // os.Open follows the symlink; false if missing/empty
+		return
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	var saves []string
+	for _, e := range entries {
+		if n := e.Name(); strings.HasPrefix(n, "tmux_resurrect_") && strings.HasSuffix(n, ".txt") {
+			saves = append(saves, n)
+		}
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(saves)))
+	for _, n := range saves {
+		if saveHasLayout(filepath.Join(dir, n)) {
+			_ = os.Remove(last)
+			if os.Symlink(n, last) == nil {
+				i18n.Say("Repaired tmux-resurrect 'last' (it pointed at an empty save) → "+n,
+					"已修复 tmux-resurrect 的 'last'(原先指向空存档) → "+n)
+			}
+			return
+		}
+	}
 }
 
 // saveHasLayout reports whether a resurrect save actually holds sessions (any
