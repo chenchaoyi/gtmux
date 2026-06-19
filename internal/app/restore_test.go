@@ -104,6 +104,58 @@ func TestResurrectPaths(t *testing.T) {
 	}
 }
 
+// sanitizeLast must repair a `last` poisoned by an empty save (the exact failure
+// that lost every session): point it at the newest save that actually has a layout,
+// skipping the empty one even though the empty one is chronologically newest.
+func TestSanitizeLast(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", "")
+	dir := filepath.Join(home, ".local/share/tmux/resurrect")
+	os.MkdirAll(dir, 0o755)
+
+	pane := []byte("pane\tDiting\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n")
+	older := "tmux_resurrect_20260617T090000.txt"
+	good := "tmux_resurrect_20260617T091940.txt"  // newest WITH a layout
+	empty := "tmux_resurrect_20260618T112958.txt" // newest overall, but 0 bytes
+	os.WriteFile(filepath.Join(dir, older), pane, 0o644)
+	os.WriteFile(filepath.Join(dir, good), pane, 0o644)
+	os.WriteFile(filepath.Join(dir, empty), nil, 0o644)
+
+	last := filepath.Join(dir, "last")
+	os.Symlink(empty, last) // poisoned: points at the empty save
+
+	sanitizeLast()
+
+	if !saveHasLayout(last) {
+		t.Fatal("sanitizeLast left `last` without a layout")
+	}
+	target, _ := os.Readlink(last)
+	if target != good {
+		t.Errorf("last -> %q, want %q (newest non-empty)", target, good)
+	}
+}
+
+// sanitizeLast must NOT touch a `last` that already resolves to a real layout.
+func TestSanitizeLastKeepsGood(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", "")
+	dir := filepath.Join(home, ".local/share/tmux/resurrect")
+	os.MkdirAll(dir, 0o755)
+
+	good := "tmux_resurrect_20260617T091940.txt"
+	os.WriteFile(filepath.Join(dir, good), []byte("pane\tDiting\t0\t0\t:\t0\tt\t:/tmp\t1\tbash\t:x\n"), 0o644)
+	last := filepath.Join(dir, "last")
+	os.Symlink(good, last)
+
+	sanitizeLast()
+
+	if target, _ := os.Readlink(last); target != good {
+		t.Errorf("last -> %q, want it left at %q", target, good)
+	}
+}
+
 func TestSplitAttached(t *testing.T) {
 	cases := []struct {
 		line     string
