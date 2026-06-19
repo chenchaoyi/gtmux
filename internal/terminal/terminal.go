@@ -47,3 +47,10 @@ func Active() Terminal {
 	}
 	return fallback
 }
+
+// DetectedName returns the resolved host-terminal name, which may not have a
+// driver yet (see HasDriver). For diagnostics (gtmux doctor).
+func DetectedName() string { return resolveName() }
+
+// HasDriver reports whether a driver is registered for a terminal name.
+func HasDriver(name string) bool { _, ok := registry[name]; return ok }
