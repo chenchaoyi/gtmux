@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/badge/go-1.24-00ADD8?logo=go&logoColor=white)](go.mod)
-[![Platform](https://img.shields.io/badge/macOS-Ghostty%201.3%2B-111)](https://ghostty.org)
+[![Platform](https://img.shields.io/badge/macOS-Ghostty%201.3%2B%20%7C%20iTerm2-111)](https://ghostty.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 [English](README.md) · **中文**
@@ -39,6 +39,12 @@ gtmux **聚焦在 tmux + agent 的工作模式**：它追踪**在 tmux 里运行
 **直接在终端 tab 里（不经 tmux）启动的 agent 不会被检测到** —— 这是有意的聚焦，不是 bug。
 支持原生、非 tmux 终端是未来可能的方向；当前请把 agent 跑在 tmux 里才能看到。
 
+**支持的终端。** 雷达侧（`agents` / `overview` / 通知）与终端无关 —— 任何承载 tmux 的
+终端都能用。跳转侧（`focus` / `restore` / `new`）通过 AppleScript 驱动终端，目前支持
+**Ghostty**（1.3+）和 **iTerm2**；宿主终端自动识别（可用 `GTMUX_TERMINAL` 覆盖）。其他
+可被 AppleScript/CLI 脚本化的终端（Apple Terminal、kitty、WezTerm）按需可加。**Warp 与
+Alacritty 不支持** —— 它们不提供 gtmux 所需的标签页寻址自动化能力。
+
 ### 亮点
 
 - 🛰️ **一眼看尽所有 agent** —— `⏸ 等待 · ⠿ 运行 · ✳ 空闲`，按紧急度排序。
@@ -48,8 +54,9 @@ gtmux **聚焦在 tmux + agent 的工作模式**：它追踪**在 tmux 里运行
 - 🧩 **不挑 agent** —— 凡是会转加载动画的 agent 都能识别；一个 JSON 文件即可扩展。
 - 🪶 **无侵入、零 cgo** —— 只读 tmux，从不接管你的 agent；单个静态 Go 二进制。
 
-> **要求** macOS + [Ghostty](https://ghostty.org) 1.3+。`restore`/`focus` 通过
-> AppleScript 驱动 Ghostty；`agents`/`overview` 在任何 tmux 上都能用。
+> **要求** macOS + [Ghostty](https://ghostty.org) 1.3+ **或** iTerm2。
+> `restore`/`focus`/`new` 通过 AppleScript 驱动宿主终端（自动识别，可用
+> `GTMUX_TERMINAL` 覆盖）；`agents`/`overview` 在任何 tmux 上都能用。
 
 ## 安装
 

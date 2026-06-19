@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/badge/go-1.24-00ADD8?logo=go&logoColor=white)](go.mod)
-[![Platform](https://img.shields.io/badge/macOS-Ghostty%201.3%2B-111)](https://ghostty.org)
+[![Platform](https://img.shields.io/badge/macOS-Ghostty%201.3%2B%20%7C%20iTerm2-111)](https://ghostty.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **English** · [中文](README.zh.md)
@@ -44,6 +44,15 @@ are not detected** — that's a deliberate focus, not a bug. Supporting native,
 non-tmux terminals is a possible future direction; for now, run your agents in
 tmux to see them.
 
+**Supported terminals.** The radar (`agents` / `overview` / notifications) is
+terminal-agnostic — it works under **any** terminal that hosts tmux. The jump
+side (`focus` / `restore` / `new`) drives the terminal via AppleScript and
+currently supports **Ghostty** (1.3+) and **iTerm2**; the host terminal is
+auto-detected (override with `GTMUX_TERMINAL`). Other AppleScript-/CLI-scriptable
+terminals (Apple Terminal, kitty, WezTerm) are feasible to add on request. **Warp
+and Alacritty are not supported** — they don't expose the tab-addressing
+automation gtmux needs.
+
 ### Highlights
 
 - 🛰️ **One glance, every agent** — `⏸ waiting · ⠿ working · ✳ idle`, sorted by urgency.
@@ -53,8 +62,9 @@ tmux to see them.
 - 🧩 **Agent-agnostic** — detects any agent that animates a spinner; extend via one JSON file.
 - 🪶 **Non-invasive & cgo-free** — reads tmux, never owns your agents; one static Go binary.
 
-> **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+. `restore`/`focus`
-> drive Ghostty via AppleScript; `agents`/`overview` work on any tmux.
+> **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+ **or** iTerm2.
+> `restore`/`focus`/`new` drive the host terminal via AppleScript (auto-detected;
+> override with `GTMUX_TERMINAL`); `agents`/`overview` work on any tmux.
 
 ## Install
 
