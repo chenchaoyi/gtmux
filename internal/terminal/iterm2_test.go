@@ -16,15 +16,20 @@ func TestITerm2Registered(t *testing.T) {
 }
 
 // SpawnTabs(dryRun) is the part testable without iTerm2 running: the generated
-// AppleScript must target iTerm2 and attach each session.
+// AppleScript must target "iTerm" (the scripting name — NOT "iTerm2", which
+// resolves to the bundle but loads no scripting dictionary) and attach each
+// session.
 func TestITerm2SpawnTabsScript(t *testing.T) {
 	script, err := iterm2{}.SpawnTabs([]string{"work", "my proj"}, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`tell application "iTerm2"`, "attach -t 'work'", "attach -t 'my proj'", "create tab with default profile"} {
+	for _, want := range []string{`tell application "iTerm"`, "attach -t 'work'", "attach -t 'my proj'", "create tab with default profile"} {
 		if !strings.Contains(script, want) {
 			t.Errorf("SpawnTabs script missing %q\n---\n%s", want, script)
 		}
+	}
+	if strings.Contains(script, `"iTerm2"`) {
+		t.Errorf("SpawnTabs must NOT target \"iTerm2\" (no scripting dictionary)\n---\n%s", script)
 	}
 }

@@ -54,14 +54,21 @@ over one Go core (gtmux-core is the single data source):
   do NOT build the native-detection scanner without an explicit decision to widen
   scope (status + jump both need per-terminal tab-title reading).
 - **Terminal coupling** goes through the `internal/terminal.Terminal` interface
-  (`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`); `internal/ghostty.Driver` is
-  the first impl and `terminal.Active()` resolves the host driver (hardcoded
-  Ghostty until host-detection lands). Callers (`focus`/`restore`/`new`/`hook`)
-  use `terminal.Active()`, never a terminal package directly (except the
-  still-deferred native `ghostty.FocusTerminalTab`). The radar side
-  (`agents`/`overview`/notify) is tmux-only and terminal-agnostic. Add new
-  terminals as drivers (iTerm2/kitty/WezTerm/Apple Terminal feasible;
-  Warp/Alacritty not) — see `docs/design/multi-agent-multi-terminal.md`.
+  (`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`); `internal/ghostty.Driver`
+  and `terminal.iterm2` are the two impls. `terminal.Active()` resolves the host
+  driver via `detect.go` (`GTMUX_TERMINAL` override → `$TERM_PROGRAM` → tmux
+  client process ancestry → Ghostty fallback). Callers
+  (`focus`/`restore`/`new`/`hook`) use `terminal.Active()`, never a terminal
+  package directly (except the still-deferred native `ghostty.FocusTerminalTab`).
+  The radar side (`agents`/`overview`/notify) is tmux-only and terminal-agnostic.
+  **iTerm2 gotchas (verified on real iTerm2):** the AppleScript target is
+  `"iTerm"` (NOT `"iTerm2"` — that loads no scripting dictionary), the macOS
+  *process* name is `"iTerm2"`, and the iTerm session `name` carries the tmux
+  title (often suffixed `" (tmux)"` → drivers prefix-match). iTerm2's AX window
+  title is empty, so `IsViewing` asks iTerm directly (`frontmost` + current
+  session `name`) instead of System Events. Add new terminals as drivers
+  (kitty/WezTerm/Apple Terminal feasible; Warp/Alacritty not) — see
+  `docs/design/multi-agent-multi-terminal.md`.
 - **Verifying the status item / popover on macOS** (screen capture is
   permission-blocked): query the accessibility tree, e.g. `osascript -e 'tell
   application "System Events" to get count of menu bar items of menu bar 1 of
