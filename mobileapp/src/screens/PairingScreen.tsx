@@ -66,7 +66,7 @@ export function PairingScreen() {
             onPress={() =>
               Alert.alert('gtmux', t('pushDevice'))
             }>
-            <Text style={[styles.qrText, {color: pal.fg2}]}>⃞  {t('scanQR')}</Text>
+            <Text style={[styles.qrText, {color: pal.fg2}]}>▦  {t('scanQR')}</Text>
           </TouchableOpacity>
 
           <Text style={[styles.or, {color: pal.fg3}]}>—— {t('manualEntry')} ——</Text>
