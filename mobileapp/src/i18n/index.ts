@@ -64,6 +64,10 @@ const S: Dict = {
   removeMac: {en: 'Remove this Mac', zh: '移除这台 Mac'},
   push: {en: 'Push notifications', zh: '推送通知'},
   pushDevice: {en: 'Requires a real device build (added later).', zh: '需真机构建(稍后接入)。'},
+  pushHint: {
+    en: 'Lock-screen alerts when an agent needs you or finishes (real device only).',
+    zh: 'agent 需要你或跑完时推送到锁屏(仅真机)。',
+  },
   version: {en: 'Version', zh: '版本'},
   // alerts
   alertWaiting: {en: 'needs you', zh: '等你输入'},

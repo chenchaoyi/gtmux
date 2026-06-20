@@ -273,10 +273,12 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.gtmux.app";
 				PRODUCT_NAME = GtmuxMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = "GtmuxMobile/GtmuxMobile.entitlements";
+				SWIFT_OBJC_BRIDGING_HEADER = "GtmuxMobile/GtmuxMobile-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -302,9 +304,11 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.gtmux.app";
 				PRODUCT_NAME = GtmuxMobile;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				CODE_SIGN_ENTITLEMENTS = "GtmuxMobile/GtmuxMobile.entitlements";
+				SWIFT_OBJC_BRIDGING_HEADER = "GtmuxMobile/GtmuxMobile-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";

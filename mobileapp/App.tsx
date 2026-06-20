@@ -2,23 +2,58 @@
 // or AgentsProvider + a Radar→Detail→Settings stack. The status language mirrors
 // the macOS menu-bar app (see src/ui/StatusBadge.tsx + theme.ts).
 
-import {DarkTheme, DefaultTheme, NavigationContainer} from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+  useNavigationContainerRef,
+} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import React from 'react';
+import React, {useEffect} from 'react';
 import {ActivityIndicator, StatusBar, useColorScheme, View} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {Agent} from './src/api/types';
+import {setupPush} from './src/push';
 import {DetailScreen} from './src/screens/DetailScreen';
 import {PairingScreen} from './src/screens/PairingScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
-import {AgentsProvider} from './src/state/AgentsContext';
+import {AgentsProvider, useAgents} from './src/state/AgentsContext';
 import {AppProvider, useApp} from './src/state/AppContext';
 
 const Stack = createNativeStackNavigator();
 
+// PushBridge wires APNs registration + tap deep-link once we have a client.
+// Renders nothing.
+function PushBridge({navRef}: {navRef: any}) {
+  const {client, agents} = useAgents();
+  const {pushEnabled} = useApp();
+  useEffect(() => {
+    if (!pushEnabled) return;
+    let teardown: (() => void) | undefined;
+    setupPush(client, pane => {
+      const found = agents.find(a => a.pane_id === pane);
+      const agent: Agent =
+        found ?? {
+          pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
+          status: 'working', task: '', latest: false, activity: false, source: 'tmux',
+        };
+      navRef.navigate('Detail', {agent});
+    }).then(t => {
+      teardown = t;
+    });
+    return () => teardown?.();
+    // agents intentionally omitted: re-subscribing on every refetch would churn
+    // the native listeners; the tap handler reads the latest list via closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, pushEnabled, navRef]);
+  return null;
+}
+
 function Root() {
   const {ready, mac, pal} = useApp();
   const scheme = useColorScheme();
+  const navRef = useNavigationContainerRef();
 
   if (!ready) {
     return (
@@ -40,7 +75,8 @@ function Root() {
 
   return (
     <AgentsProvider base={mac.url} token={mac.token}>
-      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <PushBridge navRef={navRef} />
+      <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>
           <Stack.Screen name="Radar" component={RadarScreen} />
           <Stack.Screen name="Detail" component={DetailScreen} />

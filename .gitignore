@@ -7,3 +7,4 @@ coverage.out
 # Swift menu-bar app build artifacts
 /macapp/.build/
 /macapp/build/
+/relay-bin

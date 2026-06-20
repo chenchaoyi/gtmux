@@ -21,7 +21,7 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, pal, langPref, setLangPref, mac, unpair} = useApp();
+  const {t, pal, langPref, setLangPref, mac, unpair, pushEnabled, setPushEnabled} = useApp();
 
   const langs: {key: LangPref; label: string}[] = [
     {key: 'system', label: t('system')},
@@ -71,11 +71,11 @@ export function SettingsScreen({navigation}: any) {
 
         <Section title={t('push')} pal={pal}>
           <View style={styles.rowItem}>
-            <Text style={[styles.rowLabel, {color: pal.fg2}]}>{t('push')}</Text>
-            <Switch value={false} disabled />
+            <Text style={[styles.rowLabel, {color: pal.fg}]}>{t('push')}</Text>
+            <Switch value={pushEnabled} onValueChange={setPushEnabled} />
           </View>
           <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <Text style={[styles.rowSub, {color: pal.fg3}]}>{t('pushDevice')}</Text>
+            <Text style={[styles.rowSub, {color: pal.fg3}]}>{t('pushHint')}</Text>
           </View>
         </Section>
 
