@@ -3,6 +3,7 @@ package app
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -27,6 +28,8 @@ func cmdServe(args []string) int {
 	port := defaultServePort
 	bind := "0.0.0.0"
 	token := ""
+	relayURL := ""
+	relayToken := ""
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -75,6 +78,22 @@ func cmdServe(args []string) int {
 			token = v
 		case strings.HasPrefix(a, "--token="):
 			token = strings.TrimPrefix(a, "--token=")
+		case a == "--relay-url":
+			v, ok := next()
+			if !ok {
+				return serveUsageErr()
+			}
+			relayURL = v
+		case strings.HasPrefix(a, "--relay-url="):
+			relayURL = strings.TrimPrefix(a, "--relay-url=")
+		case a == "--relay-token":
+			v, ok := next()
+			if !ok {
+				return serveUsageErr()
+			}
+			relayToken = v
+		case strings.HasPrefix(a, "--relay-token="):
+			relayToken = strings.TrimPrefix(a, "--relay-token=")
 		default:
 			i18n.Sae("gtmux serve: unknown option '"+a+"'", "gtmux serve: 未知选项 '"+a+"'")
 			return 2
@@ -113,6 +132,12 @@ func cmdServe(args []string) int {
 		},
 	}
 
+	// Push: tokens live here (the relay stays stateless); alerts are forwarded
+	// out to the relay, which holds the APNs key. A blank --relay-url leaves
+	// registration working but forwarding off.
+	relay := server.NewHTTPRelay(relayURL, relayToken)
+	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens, pushCopy)
+
 	srv := server.New(server.Config{Addr: addr, Token: token}, deps)
 	printServeBanner(bind, port, token)
 	if err := srv.ListenAndServe(); err != nil {
@@ -123,9 +148,47 @@ func cmdServe(args []string) int {
 }
 
 func serveUsageErr() int {
-	i18n.Sae("usage: gtmux serve [--port N] [--bind ADDR] [--token TOKEN]",
-		"用法: gtmux serve [--port N] [--bind ADDR] [--token TOKEN]")
+	i18n.Sae("usage: gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]",
+		"用法: gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]")
 	return 2
+}
+
+// pushTokensPath is where registered device push tokens persist across restarts.
+func pushTokensPath() string {
+	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "push-tokens.json")
+}
+
+func loadPushTokens() []server.DeviceToken {
+	b, err := os.ReadFile(pushTokensPath())
+	if err != nil {
+		return nil
+	}
+	var out []server.DeviceToken
+	_ = json.Unmarshal(b, &out)
+	return out
+}
+
+func savePushTokens(toks []server.DeviceToken) {
+	path := pushTokensPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return
+	}
+	if b, err := json.Marshal(toks); err == nil {
+		_ = os.WriteFile(path, b, 0o600)
+	}
+}
+
+// pushCopy renders an alert into a bilingual notification title/body
+// (en/zh via GTMUX_LANG). The body is the agent's current task.
+func pushCopy(a server.Alert) (string, string) {
+	name := a.Agent
+	if name == "" {
+		name = i18n.Tr("agent", "agent")
+	}
+	if a.Kind == "waiting" {
+		return fmt.Sprintf(i18n.Tr("%s needs you", "%s 等你输入"), name), a.Task
+	}
+	return fmt.Sprintf(i18n.Tr("%s finished", "%s 完成了"), name), a.Task
 }
 
 // resolveServeToken returns the explicit flag token, or a persistent one from

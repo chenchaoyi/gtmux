@@ -92,9 +92,25 @@ The server re-snapshots agents every ~1500ms (in step with the watch TUI).
 SSE only signals *that* something changed; `/api/agents` stays the one
 authoritative payload (no second data shape on the wire).
 
+### `POST /api/push/register` — register a device for push
+
+Stores a device push token so the server can forward `alert`s (waiting/done) as
+lock-screen notifications even when the app is closed. Tokens persist on the Mac
+(`~/.config/gtmux/push-tokens.json`, `0600`); the relay stays stateless.
+
+```
+body: {"token":"<device-token>","platform":"ios"}   // platform defaults to ios
+200 {"status":"ok"}
+400 {"error":"invalid token"}        // missing token / bad body
+503 {"error":"push not configured"}  // server started without push support
+```
+
+Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
+key) → APNs → device. The relay's own contract is in `relay/README.md`. APNs is
+delivered by Apple over any network, so push arrives even when the phone is off
+the VPN; only the live view/control needs the tunnel.
+
 ## Reserved (later increments — not yet served)
 
-- `POST /api/push/register` — register a device push token (APNs/FCM/HMS). The
-  server forwards `alert`s to a push relay; see `docs/design/remote-mobile.md`.
 - `POST /api/send` — Phase 2 control (`tmux send-keys`); gated behind an
   explicit write permission. Out of scope for the read-only MVP.

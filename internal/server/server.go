@@ -49,8 +49,13 @@ type Deps struct {
 
 	// OnAlert, if set, is called for every waiting/done transition the events
 	// loop detects — the hook a push manager uses to forward alerts to the relay
-	// without re-deriving them. Optional.
+	// without re-deriving them. Optional. Ignored when Push is set (the manager's
+	// OnAlert is used instead).
 	OnAlert func(Alert)
+
+	// Push, if set, enables POST /api/push/register and receives every alert for
+	// forwarding to the relay. Optional: when nil, push registration returns 503.
+	Push *PushManager
 }
 
 // Config configures the listener and auth token.
@@ -68,10 +73,14 @@ type Server struct {
 
 // New returns a Server. cfg.Token must be non-empty (callers generate one).
 func New(cfg Config, deps Deps) *Server {
+	onAlert := deps.OnAlert
+	if deps.Push != nil { // the push manager forwards alerts to the relay
+		onAlert = deps.Push.OnAlert
+	}
 	return &Server{
 		cfg:  cfg,
 		deps: deps,
-		hub:  newHub(deps.AgentStatuses, eventsInterval, deps.OnAlert),
+		hub:  newHub(deps.AgentStatuses, eventsInterval, onAlert),
 	}
 }
 
@@ -83,6 +92,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
+	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
 	return mux
 }
 
