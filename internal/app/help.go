@@ -26,6 +26,10 @@ Commands:
                           (%N) lands on that exact window+pane
     focus --last|-l       jump to the most-recently-finished agent pane
   new [name]              create a tmux session and open a terminal tab for it
+  serve [--port N]        read-only HTTP radar for the remote mobile app, behind
+                          a VPN/tunnel: GET /api/agents (the --json contract),
+                          /api/pane, POST /api/focus. --bind ADDR --token TOKEN
+                          (a persistent token is auto-generated on first run)
   doctor [--fix [--yes]]  health check, grouped by concern: tmux / restore /
                           terminal / agents+notifications. --fix sets up the
                           rest — set-titles, plugins, the Claude hook — one step
@@ -76,6 +80,10 @@ const usageZH = `用法:
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
   new [name]              新建一个 tmux session 并为它开一个终端 tab
+  serve [--port N]        给远程手机 app 的只读 HTTP 雷达,放在 VPN/隧道之后:
+                          GET /api/agents(即 --json 契约)、/api/pane、
+                          POST /api/focus。--bind ADDR --token TOKEN
+                          (首次运行自动生成并持久化 token)
   doctor [--fix [--yes]]  体检,按主题分组:tmux / 恢复 / 终端 / agent+通知。
                           --fix 把其余项配好 —— set-titles、插件、Claude hook ——
                           逐项进行,每步都先解释并征求确认(--yes 全部应用)。

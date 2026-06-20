@@ -500,9 +500,10 @@ func cmdAgents(args []string) int {
 	return 0
 }
 
-// agentsJSON prints the live agents as a JSON array (stable shape; no colors,
-// no screen-scraping — for scripts and the menu-bar app).
-func agentsJSON() int {
+// agentsJSONBytes marshals the live agents into the stable `gtmux agents --json`
+// array (no colors, no screen-scraping). Shared by the CLI command and the
+// remote server (internal/server) so both speak one byte-identical contract.
+func agentsJSONBytes() ([]byte, error) {
 	panes := gatherAgents()
 	out := make([]agentJSON, 0, len(panes))
 	for _, p := range panes {
@@ -518,7 +519,13 @@ func agentsJSON() int {
 			ActivityAt: p.activityAt, Since: p.since, Icon: p.icon,
 		})
 	}
-	b, err := json.MarshalIndent(out, "", "  ")
+	return json.MarshalIndent(out, "", "  ")
+}
+
+// agentsJSON prints the live agents as a JSON array (stable shape; no colors,
+// no screen-scraping — for scripts and the menu-bar app).
+func agentsJSON() int {
+	b, err := agentsJSONBytes()
 	if err != nil {
 		i18n.Sae("json error: "+err.Error(), "json 错误: "+err.Error())
 		return 1
