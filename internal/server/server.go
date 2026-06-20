@@ -17,6 +17,7 @@
 package server
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"net/http"
@@ -40,6 +41,16 @@ type Deps struct {
 	// Focus selects a pane locally — the "back at your desk, you're already on
 	// it" action. It injects no input. err is non-nil if the pane is gone.
 	Focus func(id string) error
+
+	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
+	// to diff (status transitions → `alert` events + push). Optional: if nil,
+	// GET /api/events still serves heartbeats but emits no agents/alert events.
+	AgentStatuses func() []AgentStatus
+
+	// OnAlert, if set, is called for every waiting/done transition the events
+	// loop detects — the hook a push manager uses to forward alerts to the relay
+	// without re-deriving them. Optional.
+	OnAlert func(Alert)
 }
 
 // Config configures the listener and auth token.
@@ -52,11 +63,16 @@ type Config struct {
 type Server struct {
 	cfg  Config
 	deps Deps
+	hub  *hub
 }
 
 // New returns a Server. cfg.Token must be non-empty (callers generate one).
 func New(cfg Config, deps Deps) *Server {
-	return &Server{cfg: cfg, deps: deps}
+	return &Server{
+		cfg:  cfg,
+		deps: deps,
+		hub:  newHub(deps.AgentStatuses, eventsInterval, deps.OnAlert),
+	}
 }
 
 // Handler builds the routed, token-guarded http.Handler (exposed for tests).
@@ -66,11 +82,14 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
+	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	return mux
 }
 
-// ListenAndServe binds cfg.Addr and serves until error.
+// ListenAndServe starts the SSE diff loop, then binds cfg.Addr and serves until
+// error. The loop runs for the lifetime of the process.
 func (s *Server) ListenAndServe() error {
+	go s.hub.run(context.Background())
 	return http.ListenAndServe(s.cfg.Addr, s.Handler())
 }
 

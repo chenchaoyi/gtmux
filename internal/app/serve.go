@@ -98,6 +98,19 @@ func cmdServe(args []string) int {
 			return tmux.CapturePane(id), true
 		},
 		Focus: func(id string) error { return focusPaneByID(id) },
+		AgentStatuses: func() []server.AgentStatus {
+			if !tmux.ServerUp() {
+				return nil
+			}
+			panes := gatherAgents()
+			out := make([]server.AgentStatus, 0, len(panes))
+			for _, p := range panes {
+				out = append(out, server.AgentStatus{
+					PaneID: p.paneID, Agent: p.agent, Loc: p.loc, Task: p.task, Status: p.status,
+				})
+			}
+			return out
+		},
 	}
 
 	srv := server.New(server.Config{Addr: addr, Token: token}, deps)
