@@ -1,0 +1,138 @@
+// RadarScreen — the agent list. Initial fetch + SSE-driven refetch (via
+// AgentsContext), pull-to-refresh, a waiting-only filter, and an in-app alert
+// banner. Tap a row → Detail. Status language mirrors the menu-bar app.
+
+import React, {useState} from 'react';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Alert as AlertType} from '../api/types';
+import {useAgents} from '../state/AgentsContext';
+import {useApp} from '../state/AppContext';
+import {SectionList} from '../ui/SectionList';
+import {StatusColor, counts} from '../ui/theme';
+
+function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
+  const parts: string[] = [];
+  if (c.waiting) parts.push(`${c.waiting} waiting`);
+  parts.push(`${c.working} working`);
+  parts.push(`${c.idle} idle`);
+  return `${c.total} ${agentsWord} · ${parts.join(' · ')}`;
+}
+
+export function RadarScreen({navigation}: any) {
+  const {agents, conn, banner, dismissBanner, refresh} = useAgents();
+  const {t, pal, lang} = useApp();
+  const [waitingOnly, setWaitingOnly] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const c = counts(agents);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    refresh();
+    setTimeout(() => setRefreshing(false), 600);
+  };
+
+  const Header = (
+    <View style={styles.header}>
+      <View style={styles.headerTop}>
+        <Text style={[styles.brand, {color: pal.fg}]}>gtmux</Text>
+        <View style={styles.headerRight}>
+          <ConnDot conn={conn} t={t} pal={pal} />
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={hit}>
+            <Text style={[styles.gear, {color: pal.fg2}]}>⚙</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.headerBottom}>
+        <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
+          {summary(c, t('agents'))}
+        </Text>
+        <TouchableOpacity
+          onPress={() => setWaitingOnly(v => !v)}
+          style={[
+            styles.filter,
+            {borderColor: pal.divider},
+            waitingOnly && {backgroundColor: StatusColor.waiting, borderColor: StatusColor.waiting},
+          ]}>
+          <Text style={[styles.filterText, {color: waitingOnly ? '#fff' : pal.fg2}]}>
+            {t('waitingOnly')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const Empty = (
+    <View style={styles.empty}>
+      <Text style={[styles.emptyText, {color: pal.fg3}]}>{t('noAgents')}</Text>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+      {banner && <Banner alert={banner} lang={lang} t={t} onClose={dismissBanner} />}
+      <SectionList
+        agents={agents}
+        waitingOnly={waitingOnly}
+        pal={pal}
+        lang={lang}
+        onPressAgent={a => navigation.navigate('Detail', {agent: a})}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListHeaderComponent={Header}
+        ListEmptyComponent={Empty}
+      />
+    </SafeAreaView>
+  );
+}
+
+function ConnDot({conn, t, pal}: any) {
+  const color = conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : pal.fg3;
+  const label = conn === 'live' ? t('live') : conn === 'offline' ? t('offline') : t('reconnecting');
+  return (
+    <View style={styles.conn}>
+      <View style={[styles.connDot, {backgroundColor: color}]} />
+      <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text>
+    </View>
+  );
+}
+
+function Banner({alert, lang, t, onClose}: {alert: AlertType; lang: string; t: any; onClose: () => void}) {
+  const isWaiting = alert.kind === 'waiting';
+  const verb = isWaiting ? t('alertWaiting') : t('alertDone');
+  const name = alert.agent || t('agents');
+  return (
+    <TouchableOpacity
+      onPress={onClose}
+      activeOpacity={0.9}
+      style={[styles.banner, {backgroundColor: isWaiting ? StatusColor.waiting : StatusColor.idle}]}>
+      <Text style={styles.bannerText} numberOfLines={1}>
+        {name} {verb}
+        {alert.task ? ` — ${alert.task}` : ''}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+const hit = {top: 10, bottom: 10, left: 10, right: 10};
+
+const styles = StyleSheet.create({
+  safe: {flex: 1},
+  header: {paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
+  headerTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
+  brand: {fontSize: 22, fontWeight: '800'},
+  headerRight: {flexDirection: 'row', alignItems: 'center'},
+  gear: {fontSize: 20, marginLeft: 14},
+  conn: {flexDirection: 'row', alignItems: 'center'},
+  connDot: {width: 7, height: 7, borderRadius: 3.5, marginRight: 5},
+  connText: {fontSize: 11},
+  headerBottom: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6},
+  summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
+  filter: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 10},
+  filterText: {fontSize: 11.5, fontWeight: '600'},
+  empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80},
+  emptyText: {fontSize: 14},
+  banner: {paddingHorizontal: 14, paddingVertical: 10},
+  bannerText: {color: '#fff', fontSize: 13, fontWeight: '600'},
+});

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
@@ -26,6 +27,22 @@ func jumpPane(paneID string) {
 	if sess != "" {
 		terminal.Active().FocusTab(sess)
 	}
+}
+
+// focusPaneByID selects an exact tmux pane (%N) — window then pane — and brings
+// its terminal tab forward, the same local "jump" the watch TUI does on Enter.
+// It injects no input (read-only/no RCE); the remote server calls it for
+// POST /api/focus ("when you're back at your desk, you're already on this pane").
+// Returns an error if id isn't a pane id or the pane no longer exists.
+func focusPaneByID(id string) error {
+	if !paneIDRe.MatchString(id) {
+		return fmt.Errorf("not a pane id: %q", id)
+	}
+	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
+		return fmt.Errorf("pane %s no longer exists", id)
+	}
+	jumpPane(id)
+	return nil
 }
 
 // cmdFocus implements `gtmux focus <session|pane-id>`.

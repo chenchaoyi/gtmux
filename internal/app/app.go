@@ -66,6 +66,8 @@ func Run(argv []string) int {
 		return cmdAgents(args)
 	case "new", "n":
 		return cmdNew(args)
+	case "serve":
+		return cmdServe(args)
 	case "hook":
 		return hook.Run(os.Stdin, args)
 	case "doctor", "dr":

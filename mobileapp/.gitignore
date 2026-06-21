@@ -1,0 +1,30 @@
+# React Native / Node — the bare project is generated locally (see SPEC.md).
+# Keep SPEC.md, this file, and README.md tracked; ignore generated/build output.
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# iOS
+ios/Pods/
+ios/build/
+ios/*.xcworkspace/xcuserdata/
+ios/.xcode.env.local
+*.xcuserstate
+
+# Android
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+*.keystore
+!debug.keystore
+
+# Metro / RN
+.metro-health-check*
+*.jsbundle
+
+# Misc
+.DS_Store
+.env
+.env.local
+coverage/
