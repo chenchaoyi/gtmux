@@ -14,6 +14,9 @@ export async function setupPush(
   onTapPane: (pane: string) => void,
 ): Promise<Teardown> {
   if (Platform.OS !== 'ios') return () => {};
+  if (!PushNotificationIOS || typeof PushNotificationIOS.addEventListener !== 'function') {
+    throw new Error('PushNotificationIOS native module unavailable');
+  }
 
   const onRegister = (token: string) => {
     client.registerPush(token).catch(() => {});

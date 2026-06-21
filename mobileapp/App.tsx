@@ -39,9 +39,14 @@ function PushBridge({navRef}: {navRef: any}) {
           status: 'working', task: '', latest: false, activity: false, source: 'tmux',
         };
       navRef.navigate('Detail', {agent});
-    }).then(t => {
-      teardown = t;
-    });
+    })
+      .then(t => {
+        teardown = t;
+      })
+      .catch(() => {
+        // Push is best-effort: a setup failure (e.g. the native module missing)
+        // must not break the radar.
+      });
     return () => teardown?.();
     // agents intentionally omitted: re-subscribing on every refetch would churn
     // the native listeners; the tap handler reads the latest list via closure.
