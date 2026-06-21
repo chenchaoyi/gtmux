@@ -1,0 +1,40 @@
+schema: spec-driven
+
+context: |
+  gtmux — a command center for tmux sessions and coding agents, across three
+  surfaces over one Go core:
+    - CLI: cmd/gtmux (Go, MUST stay cgo-free). Logic in internal/.
+    - macOS menu-bar app: macapp/ (Swift, AppKit + NSStatusItem + NSPopover +
+      SwiftUI). A pure consumer of `gtmux agents --json` + `gtmux focus`.
+    - Mobile app: mobileapp/ (bare React Native + TypeScript). A read-only remote
+      consumer of `gtmux serve` (HTTP+SSE) with APNs push via relay/.
+
+  Tech stack: Go 1.24+ (cgo-free CLI), Swift/AppKit/SwiftUI, React Native 0.86 +
+  TypeScript. Push relay is Go (ES256 JWT + HTTP/2 APNs).
+
+  Conventions:
+    - Run `make check` before every commit (gofmt + go vet + staticcheck + go
+      test -race). The CLI must build with CGO_ENABLED=0.
+    - Workflow: branch → PR → CI green → squash-merge. Never commit to main.
+    - Every user-facing CLI string is en+zh via internal/i18n (GTMUX_LANG).
+    - The status language is triple-encoded (color + shape + glyph), identical on
+      every surface: waiting=#EF4444 red rounded-square + pause; working=#06B6D4
+      cyan circle + static loading ring; idle=#22C55E green circle + check;
+      running=#8E8E93 gray circle + dot. Color encodes status ONLY, never agent
+      identity. Section order: waiting → working → idle → running.
+
+  Domain: detect coding agents (Claude Code, Codex, …) running INSIDE tmux,
+  surface who's waiting/working/idle, and jump to the right terminal tab + pane.
+
+  Stable contracts (don't break without versioning): the `gtmux agents --json`
+  shape; state paths under ~/.local/share/gtmux/; hook events
+  Stop/Notification/UserPromptSubmit; bundle id com.gtmux.menubar; the remote
+  HTTP/SSE contract api/contract.md v0.
+
+rules:
+  proposal:
+    - State the why and the user-visible behavior change up front; keep it tight.
+    - Include a "Non-goals" note when scope could creep (e.g. read-only invariants).
+  tasks:
+    - Each task should be independently verifiable (a build, a test, a manual check).
+    - Call out anything needing a real device / Apple account / the menu bar.

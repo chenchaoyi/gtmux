@@ -36,6 +36,23 @@ over one Go core (gtmux-core is the single data source):
   direct distribution**; MAS would require a sandbox-compatible rearchitect.
 - Workflow: branch → PR → CI green → squash-merge → tag. Don't commit to `main`.
 
+## Spec-driven development (OpenSpec)
+
+This repo uses **OpenSpec** for spec-driven development. `openspec/specs/`
+holds the current capability specs (the source of truth for what IS built);
+`openspec/changes/` holds in-flight change proposals. For any non-trivial
+feature, **propose a change first**, implement against it, then sync/archive:
+
+- `/opsx:propose "<idea>"` — draft a change (proposal + tasks + spec deltas).
+- `/opsx:apply-change` — implement an approved change's tasks.
+- `/opsx:sync-specs` / `/opsx:archive-change` — fold the deltas into the main
+  specs when done. `npx @fission-ai/openspec validate --specs --strict` must pass.
+
+Keep specs aligned with the code: when behavior changes, update the relevant
+`openspec/specs/<capability>/spec.md`. Capabilities are backfilled for the major
+existing features (agent-radar, terminal-jump, notifications, menu-bar-app,
+env-doctor, session-restore, remote-access, push-notifications, mobile-app).
+
 ## Conventions / invariants
 
 - **Contracts (don't break):** the `gtmux agents --json` schema; state paths
