@@ -21,6 +21,7 @@ import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
+import {Composer} from '../ui/Composer';
 import {StatusColor} from '../ui/theme';
 
 const FONT_SIZES = [9, 11, 13];
@@ -162,6 +163,9 @@ export function DetailScreen({route, navigation}: any) {
           <Text style={[styles.focusMsg, {color: pal.fg2}]}>{focusMsg}</Text>
         </View>
       )}
+
+      {/* input — Phase 2, write-gated (rendered disabled for now, MOBILE §4) */}
+      <Composer status={agent.status} pal={pal} lang={lang} enabled={false} />
     </SafeAreaView>
   );
 }
