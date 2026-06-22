@@ -13,15 +13,15 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
 import {normalizeHost} from '../pairing/qr';
+import {BrandMark} from '../ui/BrandMark';
 
 export function PairingScreen() {
-  const {t, pal, pair} = useApp();
+  const {t, pal, pair, lang} = useApp();
   const [host, setHost] = useState('');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -45,7 +45,7 @@ export function PairingScreen() {
       // health passes auth-free; validate the token with a real authed call.
       await client.agents();
       await pair({url: base, token: token.trim(), name: base.replace(/^https?:\/\//, '')});
-    } catch (e: any) {
+    } catch {
       setError(t('badToken'));
     } finally {
       setBusy(false);
@@ -58,8 +58,14 @@ export function PairingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <BrandMark size={48} neutral={pal.fg3} />
           <Text style={[styles.brand, {color: pal.fg}]}>gtmux</Text>
           <Text style={[styles.title, {color: pal.fg}]}>{t('addMac')}</Text>
+          <Text style={[styles.subtitle, {color: pal.fg3}]}>
+            {lang === 'zh'
+              ? '在 Mac 上跑 gtmux serve(或 gtmux tunnel)拿到地址 + token,扫码或手动填入。'
+              : 'Run gtmux serve (or gtmux tunnel) on your Mac for an address + token — scan it or enter it below.'}
+          </Text>
 
           <TouchableOpacity
             style={[styles.qrBtn, {borderColor: pal.divider, backgroundColor: pal.surface}]}
@@ -117,8 +123,9 @@ const styles = StyleSheet.create({
   safe: {flex: 1},
   flex: {flex: 1},
   container: {padding: 24, paddingTop: 48},
-  brand: {fontSize: 15, fontWeight: '700', opacity: 0.6, marginBottom: 4},
-  title: {fontSize: 28, fontWeight: '700', marginBottom: 28},
+  brand: {fontSize: 15, fontWeight: '700', opacity: 0.6, marginTop: 14, marginBottom: 4},
+  title: {fontSize: 28, fontWeight: '700', marginBottom: 10},
+  subtitle: {fontSize: 13.5, lineHeight: 19, marginBottom: 26},
   qrBtn: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 12,
