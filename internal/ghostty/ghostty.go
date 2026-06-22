@@ -24,6 +24,44 @@ func (Driver) OpenWindow(command string) (string, error) {
 func (Driver) SpawnTabs(sessions []string, dryRun bool) (string, error) {
 	return SpawnTabs(sessions, dryRun)
 }
+func (Driver) TabOrder() []string { return TabOrder() }
+
+// TabOrder returns the tmux session names of Ghostty's tabs in order (across
+// windows), derived from each tab's title "#S — #W". nil if it can't be read.
+func TabOrder() []string {
+	out, err := osascript(`tell application "Ghostty"
+  set txt to ""
+  repeat with w in windows
+    repeat with t in tabs of w
+      set txt to txt & (name of t) & linefeed
+    end repeat
+  end repeat
+  return txt
+end tell`)
+	if err != nil {
+		return nil
+	}
+	return SessionsFromTitles(out)
+}
+
+// SessionsFromTitles maps newline-separated tab titles ("#S — #W") to their
+// session names, in order, de-duplicated, dropping non-matching lines.
+func SessionsFromTitles(s string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, line := range strings.Split(s, "\n") {
+		t := strings.TrimSpace(line)
+		i := strings.Index(t, " — ")
+		if i < 0 {
+			continue
+		}
+		if name := strings.TrimSpace(t[:i]); name != "" && !seen[name] {
+			seen[name] = true
+			out = append(out, name)
+		}
+	}
+	return out
+}
 
 // osascript runs an AppleScript and returns trimmed stdout.
 func osascript(script string) (string, error) {

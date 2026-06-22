@@ -3,6 +3,7 @@ package terminal
 import (
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -43,6 +44,24 @@ end tell`)
 // window title empty, so that check never matches. Instead ask iTerm directly
 // whether it's frontmost and what its current session is named (the tmux title,
 // possibly suffixed " (tmux)" — prefix-match absorbs it).
+// TabOrder returns the tmux session names of iTerm2's tabs in order (across
+// windows), from each tab's current session name ("#S — #W (tmux)").
+func (iterm2) TabOrder() []string {
+	out, err := osa(`tell application "iTerm"
+  set txt to ""
+  repeat with w in windows
+    repeat with t in tabs of w
+      set txt to txt & (name of current session of t) & linefeed
+    end repeat
+  end repeat
+  return txt
+end tell`)
+	if err != nil {
+		return nil
+	}
+	return ghostty.SessionsFromTitles(out)
+}
+
 func (iterm2) IsViewing(session string) bool {
 	out, err := osa(`tell application "iTerm"
   if it is not frontmost then return ""
