@@ -29,6 +29,26 @@ complete rather than racing a fixed timeout.
 - **WHEN** restoring a large saved layout that takes longer than a fixed timeout
 - **THEN** the system waits until restored sessions settle, then proceeds
 
+### Requirement: Recover when an empty server is already up after reboot
+
+The system SHALL recover the saved layout even when a tmux server is ALREADY
+running but missing it — the post-reboot trap where a reopened terminal tab (or
+anything) started an empty server before `gtmux restore` ran, which would
+otherwise skip the restore. It SHALL drive the restore only when NONE of the
+saved sessions are live (to avoid duplicating a normal reattach).
+
+#### Scenario: Empty server, saved sessions missing
+
+- **WHEN** a server is up whose sessions do not include any of the saved
+  sessions, and a real saved layout exists
+- **THEN** the system drives the tmux-resurrect restore into the running server
+
+#### Scenario: Sessions already present
+
+- **WHEN** a server is up that already has the saved sessions (a normal reattach
+  after the terminal quit)
+- **THEN** the system does NOT re-restore, avoiding duplicate sessions
+
 ### Requirement: Never overwrite a good save
 
 The system SHALL, if a saved layout exists but did not restore, refuse to keep a

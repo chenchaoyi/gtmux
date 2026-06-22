@@ -192,3 +192,43 @@ func TestPaneIDRe(t *testing.T) {
 		}
 	}
 }
+
+// TestShouldRecover: drive a resurrect restore into a running server only when
+// the save has sessions and NONE are live (a fresh post-reboot server). If any
+// saved session is already present, do nothing (normal reattach; no duplicates).
+func TestShouldRecover(t *testing.T) {
+	saved := []string{"Diting", "Pica", "Rodi"}
+	cases := []struct {
+		name string
+		live map[string]bool
+		want bool
+	}{
+		{"empty server (post-reboot)", map[string]bool{}, true},
+		{"only an unrelated stray session", map[string]bool{"main": true}, true},
+		{"a saved session already live", map[string]bool{"Pica": true}, false},
+		{"all saved sessions live (normal reattach)", map[string]bool{"Diting": true, "Pica": true, "Rodi": true}, false},
+	}
+	for _, c := range cases {
+		if got := shouldRecover(saved, c.live); got != c.want {
+			t.Errorf("%s: shouldRecover = %v, want %v", c.name, got, c.want)
+		}
+	}
+	if shouldRecover(nil, map[string]bool{}) {
+		t.Error("no saved sessions → must not recover")
+	}
+}
+
+// TestSavedSessionNames parses the session names from a resurrect save's
+// window/pane lines (field 2), de-duped.
+func TestSavedSessionNames(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "save.txt")
+	content := "window\tDiting\t0\t...\npane\tDiting\t0\t:\t...\nwindow\tPica\t1\t...\npane\tPica\t1\t:\t...\nstate\tDiting\t\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := savedSessionNames(path)
+	if len(got) != 2 || got[0] != "Diting" || got[1] != "Pica" {
+		t.Errorf("savedSessionNames = %v, want [Diting Pica]", got)
+	}
+}
