@@ -26,8 +26,13 @@ import {StatusColor} from '../ui/theme';
 
 const FONT_SIZES = [9, 11, 13];
 
+// DetailScreen is the stack route (compact); it wraps the presentational
+// DetailView, which the iPad split-view also renders directly in its main pane.
 export function DetailScreen({route, navigation}: any) {
-  const agent: Agent = route.params.agent;
+  return <DetailView agent={route.params.agent} onBack={() => navigation.goBack()} />;
+}
+
+export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client} = useAgents();
   const {t, pal, lang} = useApp();
   const [text, setText] = useState('');
@@ -92,9 +97,11 @@ export function DetailScreen({route, navigation}: any) {
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
       {/* header: back · badge · title/sub · Focus on Mac */}
       <View style={[styles.header, {borderBottomColor: pal.divider}]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit} style={styles.back}>
-          <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
-        </TouchableOpacity>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} hitSlop={hit} style={styles.back}>
+            <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.badgeWrap}>
           <StatusBadge status={agent.status} size={18} />
         </View>

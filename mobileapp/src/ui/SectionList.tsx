@@ -35,6 +35,7 @@ export function SectionList({
   onRefresh,
   collapsed,
   onToggle,
+  selectedId,
   ListHeaderComponent,
   ListEmptyComponent,
 }: {
@@ -47,6 +48,7 @@ export function SectionList({
   onRefresh: () => void;
   collapsed: Set<StatusName>;
   onToggle: (s: StatusName) => void;
+  selectedId?: string;
   ListHeaderComponent?: React.ReactElement;
   ListEmptyComponent?: React.ReactElement;
 }) {
@@ -80,7 +82,13 @@ export function SectionList({
         />
       )}
       renderItem={({item}) => (
-        <AgentRow agent={item} pal={pal} lang={lang} onPress={() => onPressAgent(item)} />
+        <AgentRow
+          agent={item}
+          pal={pal}
+          lang={lang}
+          onPress={() => onPressAgent(item)}
+          selected={!!selectedId && agentId(item) === selectedId}
+        />
       )}
     />
   );

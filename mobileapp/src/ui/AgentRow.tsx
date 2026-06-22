@@ -48,11 +48,13 @@ export function AgentRow({
   pal,
   lang,
   onPress,
+  selected = false,
 }: {
   agent: Agent;
   pal: Palette;
   lang: Lang;
   onPress: () => void;
+  selected?: boolean;
 }) {
   const isWaiting = agent.status === 'waiting';
   const time = relTime(agent.since || agent.activity_at);
@@ -65,7 +67,9 @@ export function AgentRow({
         styles.row,
         {borderBottomColor: pal.divider},
         isWaiting && {backgroundColor: pal.waitingTint},
+        selected && {backgroundColor: pal.rowSelected},
       ]}>
+      {selected && <View style={styles.accent} />}
       {/* avatar + status badge */}
       <View style={styles.avatarWrap}>
         <AgentAvatar agent={agent} pal={pal} />
@@ -116,6 +120,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  accent: {position: 'absolute', left: 0, top: 0, bottom: 0, width: 2.5, backgroundColor: '#06B6D4'},
   avatarWrap: {width: Size.avatar, height: Size.avatar, marginRight: Size.gap},
   avatar: {
     width: Size.avatar,
