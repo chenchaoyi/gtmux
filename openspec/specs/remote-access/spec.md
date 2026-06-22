@@ -65,9 +65,11 @@ breaking changes bump the version and route prefix.
 ### Requirement: Reachability is the consumer's network responsibility
 
 The system SHALL require the consumer to provide network reachability to the Mac
-for the live view — it binds the interface but does NOT itself tunnel. Push (see
-push-notifications) arrives independently. A no-VPN hosted tunnel is a future
-increment with its own security review.
+for the live view — the radar server binds the interface but does NOT itself
+tunnel. Push (see push-notifications) arrives independently. Reachability may come
+from the same network, a mesh VPN (Tailscale), or an outbound tunnel (see the
+tunnel requirement below); the transport never reaches the phone app, which only
+ever holds a `{url, token}` pairing.
 
 #### Scenario: Same network or routable tunnel
 
@@ -77,8 +79,38 @@ increment with its own security review.
 
 #### Scenario: Different networks, no tunnel
 
-- **WHEN** the phone cannot reach the Mac (e.g. Mac at the office, phone at home,
-  no routable VPN)
-- **THEN** the live view is unavailable (push alerts still arrive); enabling it
-  from anywhere is a deliberate future "remote-access tunnel" increment with its
-  own security review
+- **WHEN** the phone cannot reach the Mac (e.g. Mac at the office, phone at home)
+  and no VPN or tunnel is set up
+- **THEN** the live view is unavailable (push alerts still arrive); `gtmux tunnel`
+  enables it from anywhere
+
+### Requirement: Outbound tunnel for no-VPN remote access
+
+The system SHALL provide `gtmux tunnel` — a Mac-side, outbound reverse tunnel that
+makes the read-only radar reachable from anywhere without a VPN app and without
+exposing an inbound port. The tunnel client runs only on the Mac; the phone app
+is unchanged (it still pairs to a `{url, token}`). Cloudflare is the default
+(no VPS, no account for a quick tunnel); frp is documented for the China / own-VPS
+path. The command SHALL reuse the persistent serve token (so pairing matches a
+running `gtmux serve`), start the read-only radar in-process when one is not
+already up, and print the public URL plus a scannable pairing QR. It SHALL warn
+that a public URL makes the bearer token the sole gate to the read-only radar.
+
+#### Scenario: Quick tunnel from anywhere
+
+- **WHEN** the user runs `gtmux tunnel` with `cloudflared` available
+- **THEN** an outbound Cloudflare quick tunnel comes up, the command prints a
+  public `https://*.trycloudflare.com` URL + the serve token + a pairing QR, and
+  the phone (on any network) pairs and sees the live radar
+
+#### Scenario: Token still gates a public URL
+
+- **WHEN** the radar is reachable over a public tunnel URL
+- **THEN** every `/api/*` route still requires the bearer token (no token → 401),
+  unchanged from the LAN/VPN case
+
+#### Scenario: Tunnel client missing
+
+- **WHEN** `cloudflared` is not installed
+- **THEN** the command offers to `brew install cloudflared` (with confirmation)
+  and otherwise points at the manual install, rather than failing opaquely

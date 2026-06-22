@@ -68,6 +68,8 @@ func Run(argv []string) int {
 		return cmdNew(args)
 	case "serve":
 		return cmdServe(args)
+	case "tunnel":
+		return cmdTunnel(args)
 	case "save-tab-order":
 		return cmdSaveTabOrder(args)
 	case "hook":

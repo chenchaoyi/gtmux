@@ -181,8 +181,31 @@ gtmux serve --port 8765          # 打印 token 和可达 URL
 > `http://<mac-ip>:8765/api/health`,打不开就说明需要 Tailscale(或隧道)。
 
 > **中国大陆:** Tailscale 属 VPN 类应用,大陆 App Store 一般**没有**。可用非大陆
-> Apple ID 安装;**或**改用反向隧道(Cloudflare Tunnel / frp),让手机连一个普通
-> `https://…` 地址 —— 无需在手机上装 VPN app(配置更复杂,需保护好暴露的只读端点)。
+> Apple ID 安装;**或**直接用下面的隧道,免去 VPN app(手机连一个普通 `https://…`
+> 地址即可)。
+
+### 从任何地方访问 —— `gtmux tunnel`(免 VPN app)
+
+Mac 上的**出站**反向隧道:它主动向外连一个会合点,所以**不用开入站端口**、NAT 也不是
+问题。隧道客户端只跑在 Mac 上 —— 手机 app 完全不变(仍是配对一张 `{url, token}`)。
+
+```sh
+gtmux tunnel                     # Cloudflare quick tunnel —— 免账号、免 VPS
+```
+
+它会(在未启动时)拉起只读雷达、打开隧道,并打印一个公网 `https://…trycloudflare.com`
+地址 + serve token + 一张**可扫的配对二维码**。手机 app → **配对 → 扫一扫** → 任意网络
+即连。(没装 `cloudflared`?它会提示帮你 `brew install`。)
+
+- **Cloudflare**(默认)无需 VPS;quick tunnel 地址每次都变(要固定地址需免费 CF 账号 +
+  一个域名)。面向全球访问最省事。
+- **frp**(`--provider frp`,用你自己的 VPS)是**国内↔国内**最稳的路 —— 在国内 VPS
+  (如阿里云)上跑 `frps`;frp 走裸端口,**无需备案**。(frp 搭建有文档;`gtmux tunnel`
+  目前驱动 Cloudflare。)
+
+> **安全:** 公网地址会让 **token 成为只读雷达的唯一一道关**(前面没有 VPN 层)。API
+> 仍是只读 + 校验 token(无 token → 401),但请把 URL + token 当密码,别把二维码截图
+> 发到公共渠道。
 
 远程这一面是**只读**的(无 `send-keys` / 输入)—— 见 `api/contract.md` 与
 `mobileapp/SPEC.md`。
