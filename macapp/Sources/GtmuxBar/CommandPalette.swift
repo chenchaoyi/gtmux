@@ -289,7 +289,8 @@ struct CommandPaletteView: View {
             kbd("⏎ " + l10n.tr("jump", "跳转"))
             kbd("⌘1–9 " + l10n.tr("direct", "直达"))
             Spacer()
-            kbd("gtmux focus")
+            // Show the version here (replaces the cryptic "gtmux focus" command label).
+            kbd("gtmux \(appVersion)")
         }
         .padding(.horizontal, 16).padding(.vertical, 9)
         .background(scheme == .dark ? Color.white.opacity(0.04) : Color.black.opacity(0.03))
@@ -298,6 +299,10 @@ struct CommandPaletteView: View {
 
     private func kbd(_ s: String) -> some View {
         Text(s).font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3)
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
     }
 
     // MARK: palette tokens (DESIGN §9 / mockup — more opaque than the popover)
