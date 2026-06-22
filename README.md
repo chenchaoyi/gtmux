@@ -165,6 +165,50 @@ cgo-free; the app is the only native build. Releases attach a universal,
 ad-hoc-signed `Gtmux-<version>-macos.zip`; the installer strips the quarantine
 flag so first launch isn't blocked. Remove it with `gtmux uninstall-app`.
 
+## Remote access — the phone (beta)
+
+A phone app (`mobileapp/`, React Native) is the third surface: watch your agents
+and get **lock-screen push** when one needs you or finishes. It's a read-only
+consumer of `gtmux serve` (HTTP+SSE over your network) plus APNs push.
+
+```sh
+gtmux serve --port 8765          # prints a token + the reachable URL(s)
+```
+
+Then pair the app — scan the menu-bar app's pairing QR, or enter the host + token
+manually. Two facts decide what you can do from where:
+
+- **Push reaches you anywhere.** Alerts arrive over APNs on any network (cellular,
+  home Wi-Fi), even when the phone can't reach the Mac — Mac at the office, you at
+  home, you still get "needs you / finished".
+- **The live view (radar / read a pane / focus) needs a network path to the Mac.**
+  Same Wi-Fi works directly. Different networks need a tunnel.
+
+### From anywhere — Tailscale (recommended)
+
+A private mesh between your devices that ignores corporate Wi-Fi client isolation
+and works office↔home.
+
+1. **Mac:** `brew install --cask tailscale` (or the App Store), open it, sign in.
+2. **iPhone:** install **Tailscale**, sign in with the **same account**.
+3. Get the Mac's Tailscale address: `tailscale ip -4` (a `100.x.y.z`).
+4. Pair the app to `http://<that-100.x.y.z>:8765` + the serve token. Now the live
+   view works from any network.
+
+> **Same Wi-Fi can't reach the Mac?** Corporate/guest Wi-Fi often **isolates
+> clients** (phone↔Mac blocked) — Tailscale fixes that. Quick check: open
+> `http://<mac-ip>:8765/api/health` in the phone's browser; if it doesn't load,
+> you need Tailscale (or a tunnel).
+
+> **Mainland China:** Tailscale is a VPN-category app and is generally **not in
+> the China App Store**. Install it with a non-mainland Apple ID, **or** skip the
+> VPN app with a reverse tunnel (Cloudflare Tunnel / frp) so the phone connects to
+> a normal `https://…` URL — no VPN app needed (a more involved setup; secure the
+> exposed read-only endpoint).
+
+The remote surface is **read-only** (no `send-keys`/input) — see
+`api/contract.md` and `mobileapp/SPEC.md`.
+
 ## Commands
 
 | command | what it does |
