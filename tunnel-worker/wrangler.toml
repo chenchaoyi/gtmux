@@ -1,0 +1,31 @@
+# gtmux tunnel control-plane Worker.
+#
+# Runs at api.gtmux.ccy.dev. The `gtmux tunnel` CLI POSTs here to (idempotently)
+# provision a Cloudflare named tunnel + a stable `<id>.gtmux.ccy.dev` hostname for
+# the caller's Mac, and returns the connector token the Mac's cloudflared runs
+# with. Cloudflare carries the data plane (free); this Worker is the only piece
+# gtmux operates.
+#
+# Deploy:  wrangler deploy
+# Secrets: wrangler secret put CF_API_TOKEN   (zone ccy.dev DNS:Edit + account Cloudflare Tunnel:Edit)
+#          wrangler secret put REG_SECRET      (soft anti-abuse gate baked into the CLI build)
+# KV:      wrangler kv namespace create TUNNELS   → paste the id below
+
+name = "gtmux-tunnel"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+
+# Serve the control plane at a stable hostname under the gtmux namespace.
+routes = [{ pattern = "api.gtmux.ccy.dev", custom_domain = true }]
+
+# deviceId -> { tunnelId, label, hostname } so re-runs reuse the same tunnel.
+kv_namespaces = [{ binding = "TUNNELS", id = "REPLACE_AFTER_kv_namespace_create" }]
+
+[vars]
+# The DNS suffix every user tunnel lives under (records created in the ccy.dev zone).
+ZONE_NAME = "gtmux.ccy.dev"
+# The local service on the Mac that cloudflared forwards to (gtmux serve default).
+LOCAL_SERVICE = "http://localhost:8765"
+# Filled in after we read them from the account (non-secret ids).
+CF_ACCOUNT_ID = "REPLACE_WITH_ACCOUNT_ID"
+CF_ZONE_ID = "REPLACE_WITH_ccy.dev_ZONE_ID"
