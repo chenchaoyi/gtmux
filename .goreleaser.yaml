@@ -29,6 +29,9 @@ builds:
       - -trimpath
     ldflags:
       - -s -w -X github.com/chenchaoyi/gtmux/internal/app.Version={{ .Version }}
+      # Hosted-tunnel registration gate, injected from the GTMUX_TUNNEL_REG CI
+      # secret (empty if unset → hosted mode tells the user to use --quick).
+      - -X github.com/chenchaoyi/gtmux/internal/app.TunnelRegSecret={{ .Env.GTMUX_TUNNEL_REG }}
 
 archives:
   - id: gtmux

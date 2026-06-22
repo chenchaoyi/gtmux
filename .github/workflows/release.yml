@@ -45,6 +45,9 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bakes the hosted-tunnel gate into release binaries. Empty if the
+          # secret is unset → hosted `gtmux tunnel` falls back to --quick.
+          GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
 
       - name: GoReleaser (snapshot dry-run on dispatch)
         if: github.event_name == 'workflow_dispatch'
@@ -52,6 +55,8 @@ jobs:
         with:
           version: '~> v2'
           args: release --snapshot --clean
+        env:
+          GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
 
       - name: Upload snapshot artifacts (dispatch only)
         if: github.event_name == 'workflow_dispatch'

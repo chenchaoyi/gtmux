@@ -2,12 +2,16 @@ package app
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,18 +24,20 @@ import (
 
 // cmdTunnel implements `gtmux tunnel` — expose the read-only radar to the phone
 // from ANYWHERE (no LAN, no VPN app) by running an outbound reverse tunnel on the
-// Mac. The tunnel client (cloudflared / frpc) lives only here; the phone app just
-// gets a `{url, token}` pairing payload, so the transport never touches the app.
+// Mac. The tunnel client (cloudflared) lives only here; the phone app just gets a
+// `{url, token}` pairing, so the transport never touches the app.
 //
-// Cloudflare is the default (no VPS, instant quick tunnel). frp is the China /
-// own-VPS path and is documented rather than driven here for now.
+// Default = HOSTED: the gtmux control-plane Worker provisions a STABLE
+// `gtmux-<id>.ccy.dev` named tunnel for this Mac, so the phone pairs ONCE and
+// keeps reaching the Mac across restarts (the address never changes). `--quick`
+// uses an account-less Cloudflare quick tunnel whose URL rotates each run.
 func cmdTunnel(args []string) int {
 	port := defaultServePort
-	provider := "cloudflare"
 	name, _ := os.Hostname()
 	if name == "" {
 		name = "Mac"
 	}
+	quick := false
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -46,6 +52,8 @@ func cmdTunnel(args []string) int {
 		case a == "-h" || a == "--help":
 			tunnelUsage()
 			return 0
+		case a == "--quick":
+			quick = true
 		case a == "--port" || a == "-p":
 			v, ok := next()
 			if !ok {
@@ -64,14 +72,6 @@ func cmdTunnel(args []string) int {
 				return 2
 			}
 			port = n
-		case a == "--provider":
-			v, ok := next()
-			if !ok {
-				return tunnelUsageErr()
-			}
-			provider = v
-		case strings.HasPrefix(a, "--provider="):
-			provider = strings.TrimPrefix(a, "--provider=")
 		case a == "--name":
 			v, ok := next()
 			if !ok {
@@ -86,26 +86,23 @@ func cmdTunnel(args []string) int {
 		}
 	}
 
-	switch provider {
-	case "cloudflare", "cf":
-		return tunnelCloudflare(port, name)
-	case "frp":
-		i18n.Say("frp isn't built into `gtmux tunnel` yet — see the remote-access docs for the frp setup (best for China / your own VPS). Cloudflare needs no VPS: `gtmux tunnel`.",
-			"frp 暂未内置进 `gtmux tunnel` —— 搭建见远程访问文档(国内 / 自有 VPS 首选)。Cloudflare 无需 VPS:`gtmux tunnel`。")
-		return 0
-	default:
-		i18n.Sae("gtmux tunnel: unknown provider '"+provider+"' (use: cloudflare | frp)",
-			"gtmux tunnel: 未知 provider '"+provider+"'(可用:cloudflare | frp)")
-		return 2
+	if quick {
+		return tunnelQuick(port, name)
 	}
+	return tunnelHosted(port, name)
 }
 
-// tryCloudflareRe matches the public URL cloudflared prints for a quick tunnel.
-var tryCloudflareRe = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
+// --- hosted (stable URL via the control-plane Worker) ---------------------------
 
-// tunnelCloudflare runs a Cloudflare quick tunnel (`cloudflared tunnel --url`)
-// in front of the local read-only server, then prints the pairing URL + QR.
-func tunnelCloudflare(port int, name string) int {
+var registeredRe = regexp.MustCompile(`Registered tunnel connection`)
+
+func tunnelHosted(port int, name string) int {
+	reg := tunnelRegSecret()
+	if reg == "" {
+		i18n.Sae("gtmux tunnel: hosted mode isn't configured in this build. Use `gtmux tunnel --quick` for an ephemeral tunnel, or set GTMUX_TUNNEL_REG.",
+			"gtmux tunnel: 此构建未启用托管模式。用 `gtmux tunnel --quick` 走临时隧道,或设置 GTMUX_TUNNEL_REG。")
+		return 2
+	}
 	bin, err := exec.LookPath("cloudflared")
 	if err != nil {
 		if bin = ensureCloudflared(); bin == "" {
@@ -113,28 +110,117 @@ func tunnelCloudflare(port int, name string) int {
 		}
 	}
 
-	token := resolveServeToken("")
+	i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
+	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name)
+	if err != nil {
+		i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败: "+err.Error())
+		return 1
+	}
 
-	// Make sure something read-only answers on the port. If `gtmux serve` is
-	// already up we tunnel straight to it (its token matches — same file);
-	// otherwise we start the radar in-process bound to loopback (the tunnel
-	// reaches it locally, nothing else is exposed).
+	token := startLocalRadar(port)
+	i18n.Say("Starting your tunnel…", "正在启动隧道…")
+	return runCloudflared(bin, []string{"tunnel", "run", "--token", prov.Token}, registeredRe, func(string) {
+		printTunnelPairing(prov.URL, token, name, true)
+	})
+}
+
+// provisionResp is the control-plane Worker's /provision reply.
+type provisionResp struct {
+	URL      string `json:"url"`
+	Hostname string `json:"hostname"`
+	Token    string `json:"token"`
+}
+
+func provisionTunnel(api, reg, deviceID, name string) (*provisionResp, error) {
+	body, _ := json.Marshal(map[string]string{"deviceId": deviceID, "name": name})
+	req, err := http.NewRequest("POST", strings.TrimRight(api, "/")+"/provision", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-gtmux-reg", reg)
+	res, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	data, _ := io.ReadAll(io.LimitReader(res.Body, 1<<16))
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, strings.TrimSpace(string(data)))
+	}
+	var p provisionResp
+	if err := json.Unmarshal(data, &p); err != nil {
+		return nil, err
+	}
+	if p.Token == "" || p.URL == "" {
+		return nil, fmt.Errorf("incomplete provision response")
+	}
+	return &p, nil
+}
+
+// resolveDeviceID returns a stable random id for this Mac (so re-provisioning
+// reuses the same tunnel/hostname), generating + persisting it on first run.
+func resolveDeviceID() string {
+	path := filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "tunnel-device-id")
+	if b, err := os.ReadFile(path); err == nil {
+		if id := strings.TrimSpace(string(b)); len(id) >= 16 {
+			return id
+		}
+	}
+	id := randToken() + randToken() // 64 hex chars
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err == nil {
+		_ = os.WriteFile(path, []byte(id+"\n"), 0o600)
+	}
+	return id
+}
+
+// --- quick (account-less, ephemeral URL) ---------------------------------------
+
+// tryCloudflareRe matches the public URL cloudflared prints for a quick tunnel.
+var tryCloudflareRe = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
+
+func tunnelQuick(port int, name string) int {
+	bin, err := exec.LookPath("cloudflared")
+	if err != nil {
+		if bin = ensureCloudflared(); bin == "" {
+			return 1
+		}
+	}
+	token := startLocalRadar(port)
+	i18n.Say("Opening a Cloudflare quick tunnel (no account, ephemeral URL)…",
+		"正在打开 Cloudflare quick tunnel(免账号、临时地址)…")
+	args := []string{"tunnel", "--no-autoupdate", "--url", fmt.Sprintf("http://localhost:%d", port)}
+	return runCloudflared(bin, args, tryCloudflareRe, func(line string) {
+		printTunnelPairing(tryCloudflareRe.FindString(line), token, name, false)
+	})
+}
+
+// --- shared cloudflared runner -------------------------------------------------
+
+// startLocalRadar makes sure something read-only answers on the port: if `gtmux
+// serve` is already up we tunnel to it (token matches — same file); otherwise we
+// start the radar in-process bound to loopback. Returns the serve token.
+func startLocalRadar(port int) string {
+	token := resolveServeToken("")
 	if portInUse(port) {
 		i18n.Say(fmt.Sprintf("Found a server on :%d — tunneling to it.", port),
 			fmt.Sprintf("检测到 :%d 上已有服务 —— 直接给它开隧道。", port))
-	} else {
-		srv := newServeServer("127.0.0.1", port, token, "", "")
-		go func() { _ = srv.ListenAndServe() }()
-		for i := 0; i < 100 && !portInUse(port); i++ {
-			time.Sleep(20 * time.Millisecond)
-		}
-		i18n.Say(fmt.Sprintf("Started the read-only radar on 127.0.0.1:%d.", port),
-			fmt.Sprintf("已在 127.0.0.1:%d 启动只读雷达。", port))
+		return token
 	}
+	srv := newServeServer("127.0.0.1", port, token, "", "")
+	go func() { _ = srv.ListenAndServe() }()
+	for i := 0; i < 100 && !portInUse(port); i++ {
+		time.Sleep(20 * time.Millisecond)
+	}
+	i18n.Say(fmt.Sprintf("Started the read-only radar on 127.0.0.1:%d.", port),
+		fmt.Sprintf("已在 127.0.0.1:%d 启动只读雷达。", port))
+	return token
+}
 
-	i18n.Say("Opening a Cloudflare quick tunnel (no account, ephemeral URL)…",
-		"正在打开 Cloudflare quick tunnel(免账号、临时地址)…")
-	cmd := exec.Command(bin, "tunnel", "--no-autoupdate", "--url", fmt.Sprintf("http://localhost:%d", port))
+// runCloudflared runs cloudflared, echoes its log dimmed, calls onReady once on
+// the first line matching readyRe, and relays Ctrl-C for a clean shutdown.
+func runCloudflared(bin string, args []string, readyRe *regexp.Regexp, onReady func(line string)) int {
+	cmd := exec.Command(bin, args...)
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
@@ -146,7 +232,6 @@ func tunnelCloudflare(port int, name string) int {
 		return 1
 	}
 
-	// Relay Ctrl-C to cloudflared so the tunnel shuts down cleanly.
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -155,25 +240,21 @@ func tunnelCloudflare(port int, name string) int {
 		}
 	}()
 
-	// cloudflared logs to stderr, including the public URL. Echo its lines dimmed
-	// and, on the first URL we see, print the pairing block + QR.
-	printed := false
+	ready := false
 	sc := bufio.NewScanner(stderr)
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
 	for sc.Scan() {
 		line := sc.Text()
 		fmt.Fprintln(os.Stderr, i18n.Dim+line+i18n.Reset)
-		if !printed {
-			if m := tryCloudflareRe.FindString(line); m != "" {
-				printTunnelPairing(m, token, name)
-				printed = true
-			}
+		if !ready && readyRe.MatchString(line) {
+			onReady(line)
+			ready = true
 		}
 	}
 	err = cmd.Wait()
 	signal.Stop(sigc)
 	close(sigc)
-	if err != nil && !printed {
+	if err != nil && !ready {
 		i18n.Sae("gtmux tunnel: cloudflared exited: "+err.Error(),
 			"gtmux tunnel: cloudflared 退出: "+err.Error())
 		return 1
@@ -221,9 +302,10 @@ func portInUse(port int) bool {
 	return true
 }
 
-// printTunnelPairing prints the public URL, token, and a scannable pairing QR
-// (the same `{v,url,token,name}` payload the menu-bar app encodes).
-func printTunnelPairing(url, token, name string) {
+// printTunnelPairing prints the URL, token, and a scannable pairing QR (the same
+// `{v,url,token,name}` payload the menu-bar app encodes). stable=true for hosted
+// (pair once), false for quick (the URL rotates each run).
+func printTunnelPairing(url, token, name string, stable bool) {
 	payload, _ := json.Marshal(struct {
 		V     int    `json:"v"`
 		URL   string `json:"url"`
@@ -240,15 +322,22 @@ func printTunnelPairing(url, token, name string) {
 	i18n.Say("Scan in the gtmux phone app (Pair → Scan):",
 		"在 gtmux 手机 app 里扫码(配对 → 扫一扫):")
 	qrterminal.GenerateHalfBlock(string(payload), qrterminal.L, os.Stdout)
-	i18n.Say(i18n.Dim+"Quick tunnel: the URL changes each run. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
-		i18n.Dim+"Quick tunnel:每次运行地址都会变。保持开启;Ctrl-C 关闭。拿到此 URL + token 的人都能读你的雷达。"+i18n.Reset)
+	if stable {
+		i18n.Say(i18n.Dim+"Stable address — pair once; it stays the same across restarts. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
+			i18n.Dim+"固定地址 —— 配一次即可,重启也不变。保持开启;Ctrl-C 关闭。拿到此 URL + token 的人都能读你的雷达。"+i18n.Reset)
+	} else {
+		i18n.Say(i18n.Dim+"Quick tunnel: the URL changes each run (use `gtmux tunnel` for a stable address). Keep this open; Ctrl-C stops it."+i18n.Reset,
+			i18n.Dim+"Quick tunnel:每次运行地址都会变(想要固定地址用 `gtmux tunnel`)。保持开启;Ctrl-C 关闭。"+i18n.Reset)
+	}
 }
 
 func tunnelUsage() {
-	i18n.Say("usage: gtmux tunnel [--provider cloudflare|frp] [--port N] [--name LABEL]",
-		"用法: gtmux tunnel [--provider cloudflare|frp] [--port N] [--name 标签]")
+	i18n.Say("usage: gtmux tunnel [--quick] [--port N] [--name LABEL]",
+		"用法: gtmux tunnel [--quick] [--port N] [--name 标签]")
 	i18n.Say("  Expose the read-only radar from anywhere via an outbound tunnel, then print a pairing QR.",
 		"  通过出站隧道把只读雷达暴露到任何地方,并打印配对二维码。")
+	i18n.Say("  default: a stable hosted address (pair once). --quick: an account-less ephemeral URL.",
+		"  默认:固定的托管地址(配一次即可)。--quick:免账号的临时地址。")
 }
 
 func tunnelUsageErr() int {
