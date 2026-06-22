@@ -407,38 +407,34 @@ func splitAttached(line string) (att, name string, ok bool) {
 // restoreSessions opens one Ghostty tab per session and attaches them all.
 // If we are a Ghostty tab ourselves, reuse THIS tab for the first session.
 func restoreSessions(list []string, dryRun bool) int {
-	keepFirst := os.Getenv("TERM_PROGRAM") == "ghostty" && isTTY()
-	spawn := list
-	if keepFirst && len(list) > 0 {
-		spawn = list[1:]
+	if len(list) == 0 {
+		return 0
 	}
-
-	if len(spawn) > 0 {
-		term := terminal.Active()
-		tn := term.Name()
-		script, err := term.SpawnTabs(spawn, dryRun)
-		if dryRun {
-			i18n.Say(fmt.Sprintf("[dry-run] would open %d %s tab(s) for: %s", len(spawn), tn, strings.Join(spawn, " ")),
-				fmt.Sprintf("[dry-run] 将为以下 session 各开一个 %s tab: %s", tn, strings.Join(spawn, " ")))
-			i18n.Say("[dry-run] AppleScript:", "[dry-run] AppleScript:")
-			fmt.Println(script)
-		} else if err != nil {
-			i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
-				"AppleScript 执行失败:需要 "+tn+" 及自动化权限")
-			i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling "+tn+").",
-				"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+")。")
-			i18n.Sae("Fallback: run 'gtmux restore --one' in each tab",
-				"退路: 在每个 tab 里手动运行 gtmux restore --one")
-			return 1
-		}
+	// Open a NEW tab for EVERY unattached session. We deliberately do NOT reuse
+	// the current tab for the first session: that old optimization made the
+	// (alphabetically) first session depend on a fragile `tmux attach` exec in
+	// the current process — if that wasn't a real reusable terminal the first
+	// session was silently orphaned (the recurring "session N didn't come back"
+	// bug, always hitting the alphabetically-first session). A spare launcher
+	// tab is a fine price for never dropping a session.
+	term := terminal.Active()
+	tn := term.Name()
+	script, err := term.SpawnTabs(list, dryRun)
+	if dryRun {
+		i18n.Say(fmt.Sprintf("[dry-run] would open %d %s tab(s) for: %s", len(list), tn, strings.Join(list, " ")),
+			fmt.Sprintf("[dry-run] 将为以下 session 各开一个 %s tab: %s", tn, strings.Join(list, " ")))
+		i18n.Say("[dry-run] AppleScript:", "[dry-run] AppleScript:")
+		fmt.Println(script)
+		return 0
 	}
-
-	if keepFirst && len(list) > 0 {
-		if dryRun {
-			i18n.Say("[dry-run] would attach THIS tab to: "+list[0], "[dry-run] 当前 tab 将接回: "+list[0])
-			return 0
-		}
-		return execTmuxAttach(list[0])
+	if err != nil {
+		i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
+			"AppleScript 执行失败:需要 "+tn+" 及自动化权限")
+		i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling "+tn+").",
+			"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+")。")
+		i18n.Sae("Fallback: run 'gtmux restore --one' in each tab",
+			"退路: 在每个 tab 里手动运行 gtmux restore --one")
+		return 1
 	}
 	return 0
 }

@@ -18,6 +18,13 @@ open one terminal tab per session and attach them (see terminal-jump's restore).
 - **WHEN** the terminal is quit and `gtmux restore` is run
 - **THEN** each tmux session gets an attached terminal tab
 
+#### Scenario: Every unattached session gets its own tab
+
+- **WHEN** restore opens tabs for the unattached sessions
+- **THEN** it opens a NEW tab for EVERY one of them and never silently drops a
+  session by reusing the current tab for the first (which previously orphaned the
+  alphabetically-first session when the current process wasn't a reusable terminal)
+
 ### Requirement: Restore after reboot via resurrect
 
 The system SHALL, when the tmux server is down, start it and DRIVE tmux-resurrect
