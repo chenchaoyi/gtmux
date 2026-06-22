@@ -1,15 +1,38 @@
 // AgentRow — [avatar + badge]  primary(bold) · secondary(dim)  [latest]
 //                              task(dim, ellipsized)            time ›
-// Mirrors the menu-bar app row (DESIGN §3). Avatar is a neutral monogram of
-// agent[0] — we do NOT bundle third-party logos (DESIGN §6), and a macOS .app
-// icon path can't resolve on iOS anyway.
+// Mirrors the menu-bar app row (DESIGN §3, MOBILE §2). The avatar is an
+// app-icon-style ROUNDED SQUARE (radius 9, overflow hidden): the official tool
+// icon from `Agent.icon` when it resolves, else a neutral monogram mark. We do
+// NOT bundle third-party logos (DESIGN §6); color is never used for identity.
 
-import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import React, {useState} from 'react';
+import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
+import {agentMark, resolveIcon} from './agentMark';
 import {Palette, Size, StatusColor} from './theme';
 import {StatusBadge} from './StatusBadge';
+
+// AgentAvatar renders the official icon when loadable, falling back to the mark
+// (also on image load error). Rounded square so square app icons sit flush.
+function AgentAvatar({agent, pal}: {agent: Agent; pal: Palette}) {
+  const [failed, setFailed] = useState(false);
+  const uri = failed ? null : resolveIcon(agent.icon);
+  return (
+    <View style={[styles.avatar, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+      {uri ? (
+        <Image
+          source={{uri}}
+          style={styles.avatarImg}
+          resizeMode="contain"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <Text style={[styles.mono, {color: pal.fg2}]}>{agentMark(agent.agent)}</Text>
+      )}
+    </View>
+  );
+}
 
 function relTime(since?: number): string {
   if (!since) return '';
@@ -32,7 +55,6 @@ export function AgentRow({
   onPress: () => void;
 }) {
   const isWaiting = agent.status === 'waiting';
-  const mono = (agent.agent || '?').trim().charAt(0).toUpperCase() || '?';
   const time = relTime(agent.since || agent.activity_at);
 
   return (
@@ -46,9 +68,7 @@ export function AgentRow({
       ]}>
       {/* avatar + status badge */}
       <View style={styles.avatarWrap}>
-        <View style={[styles.avatar, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-          <Text style={[styles.mono, {color: pal.fg2}]}>{mono}</Text>
-        </View>
+        <AgentAvatar agent={agent} pal={pal} />
         <View style={styles.badge}>
           <StatusBadge status={agent.status} size={Size.badge} />
         </View>
@@ -100,12 +120,14 @@ const styles = StyleSheet.create({
   avatar: {
     width: Size.avatar,
     height: Size.avatar,
-    borderRadius: Size.avatar / 2,
+    borderRadius: Size.radiusAvatar,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  mono: {fontSize: 15, fontWeight: '600'},
+  avatarImg: {width: '100%', height: '100%'},
+  mono: {fontSize: 14, fontWeight: '600'},
   badge: {position: 'absolute', right: -3, bottom: -3},
   text: {flex: 1, minWidth: 0},
   line1: {flexDirection: 'row', alignItems: 'center'},

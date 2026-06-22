@@ -23,6 +23,7 @@ export const SECTION_ORDER: StatusName[] = ['waiting', 'working', 'idle', 'runni
 export const Size = {
   avatar: 34,
   badge: 16,
+  radiusAvatar: 9, // app-icon-style rounded square (MOBILE §2)
   radiusRow: 12,
   radiusBadgeSquare: 4,
   pad: 14,
@@ -37,6 +38,7 @@ export interface Palette {
   fg2: string;
   fg3: string;
   divider: string;
+  divLoud: string; // the 3px section-separator line (MOBILE §3)
   rowSelected: string;
   waitingTint: string;
 }
@@ -48,6 +50,7 @@ const dark: Palette = {
   fg2: 'rgba(235,235,245,0.62)',
   fg3: 'rgba(235,235,245,0.34)',
   divider: 'rgba(255,255,255,0.09)',
+  divLoud: 'rgba(255,255,255,0.16)',
   rowSelected: 'rgba(255,255,255,0.06)',
   waitingTint: 'rgba(239,68,68,0.10)',
 };
@@ -59,6 +62,7 @@ const light: Palette = {
   fg2: 'rgba(60,60,67,0.62)',
   fg3: 'rgba(60,60,67,0.34)',
   divider: 'rgba(0,0,0,0.08)',
+  divLoud: 'rgba(0,0,0,0.16)',
   rowSelected: 'rgba(0,0,0,0.05)',
   waitingTint: 'rgba(239,68,68,0.08)',
 };

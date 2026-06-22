@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #E9E9EC;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .gt-mono { font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace; }
+  .gt-noscroll::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes gtpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
+  @keyframes gtbannerin { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
+  .gtbanner { animation: gtbannerin 0.32s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes gttoast { 0% { opacity: 0; transform: translateY(6px); } 12% { opacity: 1; transform: none; } 82% { opacity: 1; } 100% { opacity: 0; } }
+  .gttoast { animation: gttoast 2.4s ease forwards; }
+</style>
+</helmet>
+
+<div style="position:absolute; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;"><x-import component-from-global-scope="image-slot" from="./image-slot.js" hint-size="1px,1px"></x-import></div>
+
+<div style="max-width: 1320px; margin: 0 auto; padding: 40px 36px 96px;">
+
+  <!-- ============ TITLE ============ -->
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 10px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 14px;">
+        <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:15px; height:15px;"><span style="background:#c4c4ca;border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:#c4c4ca;border-radius:2px;grid-column:span 2;"></span></span>
+        <span class="gt-mono" style="font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #8A8A8E; margin-left: 2px;">gtmux · mobile app · 第三块屏</span>
+      </div>
+      <h1 style="margin: 0; font-size: 34px; line-height: 1.08; font-weight: 700; letter-spacing: -0.5px; color: #1d1d1f;">口袋里的 agent 雷达</h1>
+      <p style="margin: 12px 0 0; max-width: 680px; font-size: 15px; line-height: 1.55; color: #6b6b70;">手机上跑不了 tmux——所以移动端是桌面 gtmux 的<b style="color:#1d1d1f;">远程伴侣</b>：通过 VPN/Tailscale 连到 <span class="gt-mono" style="font-size:13px;">gtmux serve</span>，远程看雷达、读 pane 屏幕、在 Mac 上聚焦；agent 一卡住等你，锁屏推送一声。只读 MVP（无终端输入），与菜单栏 app 共用同一套状态语言。</p>
+    </div>
+    <div class="gt-mono" style="text-align: right; font-size: 11px; line-height: 1.7; color: #9a9aa0;">
+      <div>iOS · React Native · 镜像真实代码</div>
+      <div>mirrors mobileapp/SPEC.md · designed by {{ credit }}</div>
+    </div>
+  </div>
+
+  <!-- legend -->
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 4px;">
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:6px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:2px;"><span style="width:2.5px;height:9px;background:#fff;border-radius:1.5px;"></span><span style="width:2.5px;height:9px;background:#fff;border-radius:1.5px;"></span></span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">waiting · 等输入</div><div style="font-size:11px;color:#9a9aa0;">红方块·双竖线 · 最紧急</div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;"><span style="width:11px;height:11px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;"></span></span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">working · 运行中</div><div style="font-size:11px;color:#9a9aa0;">青圆·加载环（静态）</div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;">✓</span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">idle · 空闲</div><div style="font-size:11px;color:#9a9aa0;">绿圆·对勾 · 你的回合</div></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:10px; padding:8px 13px 8px 10px;">
+      <span style="width:20px;height:20px;border-radius:50%;background:#8E8E93;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:#fff;"></span></span>
+      <div style="line-height:1.25;"><div style="font-size:12.5px;font-weight:600;">running · 待命</div><div style="font-size:11px;color:#9a9aa0;">灰圆·小圆点 · 静默</div></div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 01: INTERACTIVE PHONE ============ -->
+  <div style="margin-top: 56px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">01</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">可交互原型 — 四屏全流程</h2>
+    </div>
+    <p style="margin:0 0 18px; max-width:680px; font-size:13.5px; line-height:1.5; color:#7a7a80;">真机点按：列表点一行进详情、齿轮进设置、详情里「在 Mac 上聚焦」。用下面的控件切场景 / 深浅色 / 中英 / 直达任意屏。镜像 <span class="gt-mono" style="font-size:12px;">mobileapp/src</span> 的真实组件与 token。</p>
+
+    <!-- controls -->
+    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:22px;">
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:11px; color:#9a9aa0; text-transform:uppercase; letter-spacing:0.6px;">screen</span>
+        <div style="display:flex; gap:2px; background:#DCDCE0; padding:3px; border-radius:9px;">
+          <sc-for list="{{ segScreen }}" as="s" hint-placeholder-count="4">
+            <button onClick="{{ s.on }}" style="border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:5px 12px; border-radius:7px; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.sh }};">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:11px; color:#9a9aa0; text-transform:uppercase; letter-spacing:0.6px;">agents</span>
+        <div style="display:flex; gap:2px; background:#DCDCE0; padding:3px; border-radius:9px;">
+          <sc-for list="{{ segScenario }}" as="s" hint-placeholder-count="4">
+            <button onClick="{{ s.on }}" style="border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:5px 11px; border-radius:7px; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.sh }};">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:11px; color:#9a9aa0; text-transform:uppercase; letter-spacing:0.6px;">theme</span>
+        <div style="display:flex; gap:2px; background:#DCDCE0; padding:3px; border-radius:9px;">
+          <sc-for list="{{ segTheme }}" as="s" hint-placeholder-count="2">
+            <button onClick="{{ s.on }}" style="border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:5px 13px; border-radius:7px; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.sh }};">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:7px;">
+        <span style="font-size:11px; color:#9a9aa0; text-transform:uppercase; letter-spacing:0.6px;">lang</span>
+        <div style="display:flex; gap:2px; background:#DCDCE0; padding:3px; border-radius:9px;">
+          <sc-for list="{{ segLang }}" as="s" hint-placeholder-count="2">
+            <button onClick="{{ s.on }}" style="border:none; cursor:pointer; font-family:inherit; font-size:12.5px; font-weight:560; padding:5px 13px; border-radius:7px; background:{{ s.bg }}; color:{{ s.fg }}; box-shadow:{{ s.sh }};">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <button onClick="{{ fireBanner }}" style="border:1px solid rgba(239,68,68,0.3); cursor:pointer; font-family:inherit; font-size:12px; font-weight:560; padding:6px 12px; border-radius:8px; background:rgba(239,68,68,0.08); color:#EF4444;">▸ 触发推送 banner</button>
+    </div>
+
+    <!-- phone + annotations -->
+    <div style="display:grid; grid-template-columns: 392px 1fr; gap:40px; align-items:start;">
+      <!-- PHONE -->
+      <div style="position:relative; width:392px; height:812px; border-radius:56px; background:#0a0a0c; padding:11px; box-shadow:0 2px 4px rgba(0,0,0,0.3), 0 30px 70px rgba(0,0,0,0.28), inset 0 0 0 2px #2a2a2e;">
+        <div class="gt-noscroll" style="position:relative; width:100%; height:100%; border-radius:46px; overflow:hidden; background:{{ P.bg }};">
+
+          <!-- live banner -->
+          <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ false }}">
+            <div class="gtbanner" style="position:absolute; top:0; left:0; right:0; z-index:40; padding:54px 16px 12px; background:{{ bannerBg }};" onClick="{{ dismissBanner }}">
+              <div style="display:flex; align-items:center; gap:9px;">
+                <span style="width:18px;height:18px;border-radius:{{ bannerShape }};background:rgba(255,255,255,0.28);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;">{{ bannerGlyph }}</span>
+                <span style="flex:1; color:#fff; font-size:13px; font-weight:600;">{{ bannerText }}</span>
+                <span style="color:rgba(255,255,255,0.7); font-size:12px;">{{ lblTapOpen }}</span>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- status bar -->
+          <div style="position:absolute; top:0; left:0; right:0; height:54px; z-index:20; display:flex; align-items:flex-end; justify-content:space-between; padding:0 30px 8px;">
+            <span style="font-size:15px; font-weight:680; color:{{ P.fg }}; font-variant-numeric:tabular-nums;">9:41</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="display:flex; align-items:flex-end; gap:1.5px; height:11px;"><span style="width:3px;height:5px;background:{{ P.fg }};border-radius:1px;"></span><span style="width:3px;height:7px;background:{{ P.fg }};border-radius:1px;"></span><span style="width:3px;height:9px;background:{{ P.fg }};border-radius:1px;"></span><span style="width:3px;height:11px;background:{{ P.fg }};border-radius:1px;"></span></span>
+              <span style="font-size:11px; color:{{ P.fg }};">􀙇</span>
+              <span style="display:inline-block; width:23px; height:12px; border-radius:3px; border:1.2px solid {{ P.fg3 }}; position:relative; padding:1.5px;"><span style="display:block; width:70%; height:100%; background:{{ P.fg }}; border-radius:1px;"></span><span style="position:absolute; right:-2.5px; top:3.5px; width:1.5px; height:4px; background:{{ P.fg3 }}; border-radius:1px;"></span></span>
+            </div>
+          </div>
+          <!-- dynamic island -->
+          <div style="position:absolute; top:11px; left:50%; transform:translateX(-50%); width:118px; height:34px; background:#000; border-radius:18px; z-index:30;"></div>
+
+          <!-- ====== SCREEN CONTENT ====== -->
+          <div class="gt-noscroll" style="position:absolute; inset:0; top:0; overflow-y:auto;">
+
+            <!-- ===== RADAR ===== -->
+            <sc-if value="{{ isRadar }}" hint-placeholder-val="{{ true }}">
+              <div style="min-height:100%; padding-top:54px;">
+                <!-- header -->
+                <div style="padding:8px 16px 10px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-size:24px; font-weight:800; letter-spacing:-0.4px; color:{{ P.fg }};">gtmux</span>
+                    <div style="display:flex; align-items:center; gap:14px;">
+                      <div style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:{{ connColor }};"></span><span style="font-size:11px; color:{{ P.fg3 }};">{{ connLabel }}</span></div>
+                      <button onClick="{{ goSettings }}" style="border:none;background:transparent;cursor:pointer;font-size:19px;color:{{ P.fg2 }};padding:0;">⚙</button>
+                    </div>
+                  </div>
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
+                    <span style="font-size:12.5px; font-weight:600; color:{{ P.fg2 }};">{{ summary }}</span>
+                    <button onClick="{{ toggleWaitingOnly }}" style="border:1px solid {{ woBorder }}; background:{{ woBg }}; cursor:pointer; font-family:inherit; border-radius:7px; padding:4px 10px; font-size:11.5px; font-weight:600; color:{{ woFg }};">{{ lblWaitingOnly }}</button>
+                  </div>
+                </div>
+
+                <!-- empty -->
+                <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:120px 30px; text-align:center;">
+                    <div style="width:54px;height:54px;margin:0 auto 16px;border-radius:50%;border:2px dashed {{ P.fg3 }};display:flex;align-items:center;justify-content:center;color:{{ P.fg3 }};font-size:20px;">✳</div>
+                    <div style="font-size:14px; color:{{ P.fg3 }};">{{ lblNoAgents }}</div>
+                  </div>
+                </sc-if>
+
+                <!-- sections -->
+                <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="3">
+                  <sc-if value="{{ sec.notFirst }}" hint-placeholder-val="{{ false }}">
+                    <div style="height:9px; background:{{ P.bg }}; border-top:3px solid {{ sec.sepColor }};"></div>
+                  </sc-if>
+                  <button onClick="{{ sec.onToggle }}" style="width:100%; border:none; background:{{ sec.headerBg }}; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:9px; padding:12px 14px 9px;" style-hover="background:{{ P.rowSel }};">
+                    <span style="font-size:11px; font-weight:700; letter-spacing:0.6px; color:{{ sec.color }};">{{ sec.label }}</span>
+                    <span style="font-size:10.5px; font-weight:700; color:{{ P.fg2 }}; background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; border-radius:9px; min-width:18px; text-align:center; padding:1px 6px;">{{ sec.count }}</span>
+                    <span style="flex:1; height:0.5px; background:{{ P.divider }};"></span>
+                    <span style="font-size:10.5px; font-weight:600; color:{{ P.fg3 }};">{{ sec.toggleLabel }}</span>
+                    <span style="display:inline-flex; width:20px; height:20px; border-radius:50%; background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; align-items:center; justify-content:center; font-size:9px; color:{{ P.fg2 }}; transform:{{ sec.chevRotate }};">▼</span>
+                  </button>
+                  <sc-if value="{{ sec.open }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ sec.rows }}" as="row" hint-placeholder-count="3">
+                    <div onClick="{{ row.onPress }}" style="display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:0.5px solid {{ P.divider }}; background:{{ row.bg }}; cursor:pointer;">
+                      <div style="position:relative; width:34px; height:34px; flex:none;">
+                        <div style="width:34px;height:34px;border-radius:9px;background:{{ row.avatarBg }};border:0.5px solid {{ P.divider }};display:flex;align-items:center;justify-content:center;overflow:hidden;"><span style="font-size:{{ row.markSize }}; font-weight:700; letter-spacing:-0.3px; color:{{ P.fg2 }};">{{ row.mark }}</span></div>
+                        <div class="{{ row.anim }}" style="position:absolute; right:-3px; bottom:-3px; width:16px; height:16px; border-radius:{{ row.badgeShape }}; background:{{ row.badgeColor }}; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px {{ P.bg }};">{{ row.badgeGlyph }}</div>
+                      </div>
+                      <div style="flex:1; min-width:0;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <span style="font-size:15px; font-weight:600; color:{{ P.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 1 auto;">{{ row.primary }}</span>
+                          <sc-if value="{{ row.latest }}" hint-placeholder-val="{{ false }}"><span style="flex:none; font-size:11px; font-weight:600; color:#22C55E;">{{ lblLatest }}</span></sc-if>
+                        </div>
+                        <div style="font-size:12.5px; color:{{ P.fg3 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">{{ row.secondary }}</div>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:6px; flex:none;">
+                        <span class="gt-mono" style="font-size:12px; color:{{ P.fg3 }}; font-variant-numeric:tabular-nums;">{{ row.time }}</span>
+                        <span style="font-size:18px; font-weight:300; color:{{ P.fg3 }};">›</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                  </sc-if>
+                </sc-for>
+                <div style="height:40px;"></div>
+              </div>
+            </sc-if>
+
+            <!-- ===== DETAIL ===== -->
+            <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute; inset:0; padding-top:54px; display:flex; flex-direction:column;">
+                <!-- header -->
+                <div style="display:flex; align-items:center; gap:10px; padding:6px 12px 8px;">
+                  <button onClick="{{ goRadar }}" style="border:none;background:transparent;cursor:pointer;font-size:30px;font-weight:300;line-height:1;color:{{ P.fg2 }};padding:0 4px 0 0;">‹</button>
+                  <div style="width:18px;height:18px;flex:none;border-radius:{{ d_badgeShape }};background:{{ d_badgeColor }};display:flex;align-items:center;justify-content:center;">{{ d_badgeGlyph }}</div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-size:16px; font-weight:700; color:{{ P.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ d_primary }}</div>
+                    <div style="font-size:12px; color:{{ P.fg3 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">{{ d_sub }}</div>
+                  </div>
+                  <button onClick="{{ doFocus }}" style="flex:none; border:none; cursor:pointer; font-family:inherit; background:rgba(6,182,212,0.14); color:#06B6D4; border-radius:9px; padding:7px 12px; font-size:12.5px; font-weight:700;">{{ lblFocusOnMac }}</button>
+                </div>
+                <!-- control bar -->
+                <div style="display:flex; align-items:center; gap:8px; padding:0 12px 8px; border-bottom:0.5px solid {{ P.divider }};">
+                  <span class="gt-mono" style="font-size:11px; color:{{ P.fg3 }};">{{ d_cols }}</span>
+                  <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:{{ P.fg3 }};">live</span></span>
+                  <div style="flex:1;"></div>
+                  <button onClick="{{ toggleWrap }}" style="border:1px solid {{ P.divider }}; background:transparent; cursor:pointer; font-family:inherit; border-radius:7px; padding:4px 11px; font-size:11.5px; font-weight:600; color:{{ P.fg2 }};">{{ d_wrapLabel }}</button>
+                  <div style="display:flex; align-items:center; background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; border-radius:7px; overflow:hidden;">
+                    <button onClick="{{ decFont }}" style="border:none; background:transparent; cursor:pointer; color:{{ P.fg2 }}; font-size:12px; padding:4px 11px; font-family:inherit;">A−</button>
+                    <span style="width:0.5px; height:16px; background:{{ P.divider }};"></span>
+                    <button onClick="{{ incFont }}" style="border:none; background:transparent; cursor:pointer; color:{{ P.fg2 }}; font-size:16px; padding:4px 11px; font-family:inherit;">A+</button>
+                  </div>
+                </div>
+                <!-- terminal -->
+                <div style="position:relative; flex:1; min-height:0;">
+                  <div class="gt-noscroll" ref="{{ setTermRef }}" style="position:absolute; inset:0; background:#0A0A0C; overflow-y:auto; overflow-x:{{ d_termOverflowX }}; padding:12px 13px 16px;">
+                    <div style="text-align:center; font-size:10px; color:rgba(255,255,255,0.28); padding-bottom:10px;">{{ d_scrollbackLbl }}</div>
+                    <div class="gt-mono" style="font-size:{{ d_fontSize }}; line-height:{{ d_lineH }}; color:#D6D6DA; white-space:{{ d_wrapWhite }}; word-break:{{ d_wrapBreak }};">
+                      <sc-for list="{{ d_lines }}" as="ln" hint-placeholder-count="12">
+                        <div><sc-for list="{{ ln }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.c }};">{{ sg.t }}</span></sc-for></div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <button onClick="{{ scrollBottom }}" title="jump to latest" style="position:absolute; right:12px; bottom:12px; width:34px; height:34px; border-radius:50%; border:0.5px solid {{ P.divider }}; background:{{ P.surface }}; cursor:pointer; color:{{ P.fg }}; font-size:15px; box-shadow:0 4px 12px rgba(0,0,0,0.35);">↓</button>
+                </div>
+                <!-- composer -->
+                <div style="border-top:0.5px solid {{ P.divider }}; padding:10px 12px 20px; background:{{ P.bg }};">
+                  <sc-if value="{{ showSent }}" hint-placeholder-val="{{ false }}"><div class="gttoast" style="font-size:12px; color:#06B6D4; padding:0 2px 8px;">{{ sentMsg }}</div></sc-if>
+                  <sc-if value="{{ showFocusMsg }}" hint-placeholder-val="{{ false }}"><div class="gttoast" style="font-size:12px; color:#22C55E; padding:0 2px 8px;">{{ focusMsg }}</div></sc-if>
+                  <div style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:{{ P.fg3 }}; margin:0 2px 6px;">{{ d_quickLabel }}</div>
+                  <div class="gt-noscroll" style="display:flex; align-items:center; gap:7px; overflow-x:auto; padding-bottom:9px;">
+                    <sc-for list="{{ d_quickPrimary }}" as="c" hint-placeholder-count="3">
+                      <button onClick="{{ c.on }}" style="flex:none; border:none; cursor:pointer; font-family:inherit; background:rgba(6,182,212,0.16); color:#22C7E6; border-radius:9px; padding:8px 13px; font-size:13px; font-weight:600;">{{ c.t }}</button>
+                    </sc-for>
+                    <span style="flex:none; width:0.5px; align-self:stretch; background:{{ P.divider }}; margin:2px 1px;"></span>
+                    <sc-for list="{{ d_quickKeys }}" as="k" hint-placeholder-count="4">
+                      <button onClick="{{ k.on }}" class="gt-mono" style="flex:none; border:0.5px solid {{ P.divider }}; cursor:pointer; font-family:inherit; background:transparent; color:{{ P.fg2 }}; border-radius:9px; padding:8px 11px; font-size:12px;">{{ k.t }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <button onClick="{{ openVoice }}" title="{{ d_micLbl }}" style="flex:none; width:38px; height:38px; border-radius:50%; cursor:pointer; background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; color:{{ P.fg }}; display:flex; align-items:center; justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" stroke="none"></rect><path d="M6 11a6 6 0 0 0 12 0"></path><line x1="12" y1="17" x2="12" y2="21"></line></svg></button>
+                    <input placeholder="{{ d_composerPh }}" style="flex:1; min-width:0; border:0.5px solid {{ P.divider }}; background:{{ P.surface }}; color:{{ P.fg }}; border-radius:19px; padding:10px 14px; font-family:inherit; font-size:14px; outline:none;" />
+                    <button style="flex:none; width:38px; height:38px; border-radius:50%; border:none; cursor:pointer; background:#06B6D4; color:#fff; font-size:17px;">↑</button>
+                  </div>
+                  <div style="font-size:10.5px; color:{{ P.fg3 }}; margin-top:8px; text-align:center;">{{ d_gated }}</div>
+                </div>
+              </div>
+
+              <!-- voice modal -->
+              <sc-if value="{{ isVoice }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute; inset:0; z-index:60; background:rgba(8,8,10,0.82); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:46px;">
+                  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 30px;">
+                    <div class="gtpulse" style="width:86px; height:86px; border-radius:50%; background:#06B6D4; display:flex; align-items:center; justify-content:center; color:#fff;"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" stroke="none"></rect><path d="M6 11a6 6 0 0 0 12 0"></path><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
+                    <div style="font-size:19px; font-weight:700; color:#fff;">{{ voiceTitle }}</div>
+                    <div style="display:flex; align-items:flex-end; gap:3px; height:30px;">
+                      <span style="width:3px;height:10px;background:rgba(255,255,255,0.5);border-radius:2px;"></span>
+                      <span style="width:3px;height:22px;background:rgba(255,255,255,0.7);border-radius:2px;"></span>
+                      <span style="width:3px;height:30px;background:#06B6D4;border-radius:2px;"></span>
+                      <span style="width:3px;height:16px;background:rgba(255,255,255,0.7);border-radius:2px;"></span>
+                      <span style="width:3px;height:26px;background:#06B6D4;border-radius:2px;"></span>
+                      <span style="width:3px;height:12px;background:rgba(255,255,255,0.5);border-radius:2px;"></span>
+                      <span style="width:3px;height:20px;background:rgba(255,255,255,0.7);border-radius:2px;"></span>
+                    </div>
+                    <div style="font-size:15px; color:rgba(255,255,255,0.85); text-align:center;">{{ voiceTranscript }}</div>
+                    <div style="font-size:12px; color:rgba(255,255,255,0.45); text-align:center;">{{ voiceHint }}</div>
+                  </div>
+                  <div style="display:flex; gap:12px;">
+                    <button onClick="{{ closeVoice }}" style="border:none; cursor:pointer; font-family:inherit; background:rgba(255,255,255,0.14); color:#fff; border-radius:12px; padding:13px 26px; font-size:15px; font-weight:600;">{{ voiceCancel }}</button>
+                    <button onClick="{{ sendVoice }}" style="border:none; cursor:pointer; font-family:inherit; background:#06B6D4; color:#fff; border-radius:12px; padding:13px 30px; font-size:15px; font-weight:700;">{{ voiceSend }}</button>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <!-- ===== SETTINGS ===== -->
+            <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+              <div style="min-height:100%; padding-top:54px;">
+                <div style="display:flex; align-items:center; gap:6px; padding:6px 12px 12px;">
+                  <button onClick="{{ goRadar }}" style="border:none;background:transparent;cursor:pointer;font-size:28px;font-weight:300;line-height:1;color:{{ P.fg2 }};padding:0;">‹</button>
+                  <span style="font-size:20px; font-weight:700; color:{{ P.fg }};">{{ lblSettings }}</span>
+                </div>
+                <div style="padding:8px 16px;">
+                  <!-- language -->
+                  <div style="font-size:11px; font-weight:700; letter-spacing:0.6px; color:{{ P.fg3 }}; margin:14px 4px 8px;">{{ lblLanguage }}</div>
+                  <div style="background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; border-radius:12px; overflow:hidden;">
+                    <sc-for list="{{ langRows }}" as="l" hint-placeholder-count="3">
+                      <div onClick="{{ l.on }}" style="display:flex; align-items:center; justify-content:space-between; padding:13px 14px; border-bottom:{{ l.border }}; cursor:pointer;">
+                        <span style="font-size:15px; color:{{ P.fg }};">{{ l.label }}</span>
+                        <sc-if value="{{ l.active }}" hint-placeholder-val="{{ false }}"><span style="color:#06B6D4; font-size:16px; font-weight:700;">✓</span></sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <!-- paired mac -->
+                  <div style="font-size:11px; font-weight:700; letter-spacing:0.6px; color:{{ P.fg3 }}; margin:22px 4px 8px;">{{ lblPairedMac }}</div>
+                  <div style="background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; border-radius:12px; overflow:hidden;">
+                    <div style="padding:13px 14px;">
+                      <div style="font-size:15px; color:{{ P.fg }};">Ada's MacBook</div>
+                      <div class="gt-mono" style="font-size:12px; color:{{ P.fg3 }}; margin-top:2px;">https://100.92.14.7:8765</div>
+                    </div>
+                    <div onClick="{{ goPairing }}" style="padding:13px 14px; border-top:0.5px solid {{ P.divider }}; cursor:pointer;"><span style="font-size:15px; color:#EF4444;">{{ lblRemoveMac }}</span></div>
+                  </div>
+                  <!-- push -->
+                  <div style="font-size:11px; font-weight:700; letter-spacing:0.6px; color:{{ P.fg3 }}; margin:22px 4px 8px;">{{ lblPush }}</div>
+                  <div style="background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; border-radius:12px; overflow:hidden;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 14px;">
+                      <span style="font-size:15px; color:{{ P.fg }};">{{ lblPush }}</span>
+                      <span style="width:50px; height:30px; border-radius:15px; background:#22C55E; position:relative; display:inline-block;"><span style="position:absolute; right:2px; top:2px; width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span></span>
+                    </div>
+                    <div style="padding:11px 14px 13px; border-top:0.5px solid {{ P.divider }};"><span style="font-size:12.5px; color:{{ P.fg3 }}; line-height:1.4;">{{ lblPushHint }}</span></div>
+                  </div>
+                  <div style="text-align:center; margin-top:24px;"><span style="font-size:12px; color:{{ P.fg3 }};">{{ lblVersion }} 0.1.0 · by {{ credit }}</span></div>
+                </div>
+                <div style="height:40px;"></div>
+              </div>
+            </sc-if>
+
+            <!-- ===== PAIRING ===== -->
+            <sc-if value="{{ isPairing }}" hint-placeholder-val="{{ false }}">
+              <div style="min-height:100%; padding:78px 24px 24px;">
+                <div style="font-size:15px; font-weight:700; opacity:0.6; color:{{ P.fg }};">gtmux</div>
+                <div style="font-size:28px; font-weight:700; color:{{ P.fg }}; margin:4px 0 6px;">{{ lblAddMac }}</div>
+                <div style="font-size:13px; line-height:1.5; color:{{ P.fg3 }}; margin-bottom:26px;">{{ lblAddMacSub }}</div>
+                <button onClick="{{ goRadar }}" style="width:100%; border:0.5px solid {{ P.divider }}; background:{{ P.surface }}; cursor:pointer; font-family:inherit; border-radius:14px; padding:22px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                  <span style="display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:3px; width:38px; height:38px;"><span style="background:{{ P.fg2 }};border-radius:2px;"></span><span style="background:{{ P.fg2 }};border-radius:2px;"></span><span style="background:{{ P.fg2 }};border-radius:2px;"></span><span style="background:{{ P.fg2 }};border-radius:2px;"></span><span style="background:transparent;"></span><span style="background:{{ P.fg2 }};border-radius:2px;"></span><span style="background:{{ P.fg2 }};border-radius:2px;"></span><span style="background:{{ P.fg2 }};border-radius:2px;"></span><span style="background:{{ P.fg2 }};border-radius:2px;"></span></span>
+                  <span style="font-size:16px; font-weight:600; color:{{ P.fg2 }};">{{ lblScanQR }}</span>
+                </button>
+                <div style="text-align:center; color:{{ P.fg3 }}; margin:22px 0; font-size:12px;">—— {{ lblManual }} ——</div>
+                <div style="font-size:12px; font-weight:600; color:{{ P.fg2 }}; margin-bottom:6px;">{{ lblHost }}</div>
+                <div style="border:0.5px solid {{ P.divider }}; background:{{ P.surface }}; border-radius:10px; padding:13px 14px; margin-bottom:18px;"><span class="gt-mono" style="font-size:15px; color:{{ P.fg3 }};">192.168.1.20:8765</span></div>
+                <div style="font-size:12px; font-weight:600; color:{{ P.fg2 }}; margin-bottom:6px;">{{ lblToken }}</div>
+                <div style="border:0.5px solid {{ P.divider }}; background:{{ P.surface }}; border-radius:10px; padding:13px 14px; margin-bottom:24px;"><span style="font-size:15px; color:{{ P.fg3 }}; letter-spacing:2px;">••••••••••••</span></div>
+                <button onClick="{{ goRadar }}" style="width:100%; border:none; cursor:pointer; font-family:inherit; background:#06B6D4; border-radius:12px; padding:15px; font-size:16px; font-weight:700; color:#fff;">{{ lblConnect }}</button>
+              </div>
+            </sc-if>
+
+          </div>
+
+          <!-- home indicator -->
+          <div style="position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:3px; background:{{ P.homeBar }}; z-index:25;"></div>
+        </div>
+      </div>
+
+      <!-- ANNOTATIONS -->
+      <div style="display:flex; flex-direction:column; gap:12px; padding-top:6px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">{{ annTitle }}</div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">{{ annBody }}</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">data flow</div>
+          <div style="font-size:12.5px; line-height:1.7; color:#5a5a60;">
+            <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#06B6D4;">GET</span> <span class="gt-mono" style="color:#3a3a40;">/api/agents</span> — 雷达数据（唯一权威）</div>
+            <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#06B6D4;">GET</span> <span class="gt-mono" style="color:#3a3a40;">/api/events</span> — SSE，仅通知「变了→重拉」</div>
+            <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#06B6D4;">GET</span> <span class="gt-mono" style="color:#3a3a40;">/api/pane?id</span> — 读 pane 屏幕（详情）</div>
+            <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#22C55E;">POST</span> <span class="gt-mono" style="color:#3a3a40;">/api/focus?id</span> — 在 Mac 上聚焦</div>
+            <div style="display:flex; gap:8px; margin-top:4px; color:#9a9aa0;">全程 Bearer token · VPN/Tailscale 内网可达</div>
+          </div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">tokens（来自 theme.ts）</div>
+          <div style="display:flex; justify-content:space-between; padding:3px 0; font-size:12px;"><span style="color:#6b6b70;">avatar / badge</span><span class="gt-mono" style="color:#1d1d1f;">34 / 16</span></div>
+          <div style="display:flex; justify-content:space-between; padding:3px 0; font-size:12px;"><span style="color:#6b6b70;">row pad / radius</span><span class="gt-mono" style="color:#1d1d1f;">14 / 12</span></div>
+          <div style="display:flex; justify-content:space-between; padding:3px 0; font-size:12px;"><span style="color:#6b6b70;">dark bg / surface</span><span class="gt-mono" style="color:#1d1d1f;">#0D0D0F / #1C1C1F</span></div>
+          <div style="display:flex; justify-content:space-between; padding:3px 0; font-size:12px;"><span style="color:#6b6b70;">primary / secondary</span><span class="gt-mono" style="color:#1d1d1f;">15·600 / 12.5</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 02: PUSH & CONNECTIVITY ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">02</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">推送与连接 — 离开工位也能收到</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">杀手级时刻：你去倒咖啡，agent 卡在权限上——锁屏震一下。推送走 <span class="gt-mono" style="font-size:12px;">gtmux serve → relay → APNs</span>，由 Apple 投递，<b>手机离开 VPN 也能收到</b>；点开后需要内网才拉实况。</p>
+
+    <div style="display:grid; grid-template-columns:300px 1fr; gap:40px; align-items:start;">
+      <!-- lock screen -->
+      <div style="position:relative; width:300px; height:622px; border-radius:48px; background:#0a0a0c; padding:9px; box-shadow:0 2px 4px rgba(0,0,0,0.3), 0 30px 60px rgba(0,0,0,0.26), inset 0 0 0 2px #2a2a2e;">
+        <div style="position:relative; width:100%; height:100%; border-radius:40px; overflow:hidden; background:linear-gradient(170deg, #1a2436 0%, #0f1520 60%, #0a0d14 100%);">
+          <!-- island -->
+          <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:96px; height:28px; background:#000; border-radius:16px; z-index:30;"></div>
+          <!-- time -->
+          <div style="text-align:center; padding-top:62px;">
+            <div style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.8); letter-spacing:0.3px;">周一 6月22日</div>
+            <div style="font-size:74px; font-weight:600; color:#fff; letter-spacing:-1px; line-height:1.05; margin-top:2px;">9:41</div>
+          </div>
+          <!-- notification stack -->
+          <div style="position:absolute; left:12px; right:12px; bottom:96px; display:flex; flex-direction:column; gap:8px;">
+            <!-- waiting push -->
+            <div style="background:rgba(40,40,46,0.72); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); border-radius:18px; padding:13px 14px;">
+              <div style="display:flex; align-items:center; gap:9px; margin-bottom:7px;">
+                <span style="width:22px; height:22px; border-radius:6px; background:#0f1115; display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1px; width:12px; height:12px;"><span style="background:rgba(255,255,255,0.28);border-radius:1px;"></span><span style="background:#06B6D4;border-radius:1px;"></span><span style="background:rgba(255,255,255,0.28);border-radius:1px;grid-column:span 2;"></span></span></span>
+                <span style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.62); flex:1; text-transform:uppercase; letter-spacing:0.4px;">gtmux</span>
+                <span style="font-size:11px; color:rgba(255,255,255,0.45);">now</span>
+              </div>
+              <div style="display:flex; align-items:flex-start; gap:8px;">
+                <span style="margin-top:2px; width:15px;height:15px;flex:none;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span>
+                <div>
+                  <div style="font-size:14px; font-weight:700; color:#fff; line-height:1.3;">Pica 等你输入</div>
+                  <div style="font-size:13px; color:rgba(255,255,255,0.78); line-height:1.35; margin-top:1px;">permission to run tests · Claude Code</div>
+                </div>
+              </div>
+            </div>
+            <!-- done push (older, dim) -->
+            <div style="background:rgba(40,40,46,0.55); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); border-radius:18px; padding:11px 14px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="width:15px;height:15px;flex:none;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800;">✓</span>
+                <span style="font-size:13px; color:rgba(255,255,255,0.7); flex:1;"><b style="color:rgba(255,255,255,0.9);">Rodi 完成了</b> · Rodi feature dev</span>
+                <span style="font-size:11px; color:rgba(255,255,255,0.4);">8m</span>
+              </div>
+            </div>
+          </div>
+          <!-- bottom controls -->
+          <div style="position:absolute; bottom:30px; left:0; right:0; display:flex; justify-content:space-between; padding:0 40px;">
+            <span style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">􀛜</span>
+            <span style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;">􀌞</span>
+          </div>
+          <div style="position:absolute; bottom:9px; left:50%; transform:translateX(-50%); width:120px; height:5px; border-radius:3px; background:rgba(255,255,255,0.5);"></div>
+        </div>
+      </div>
+
+      <!-- push path + behavior -->
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:16px 18px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:14px;">delivery path</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12.5px;">
+            <span style="background:#F1F1F4; border-radius:7px; padding:7px 11px; font-weight:600;">gtmux serve</span>
+            <span style="color:#c4c4ca;">→</span>
+            <span style="background:#F1F1F4; border-radius:7px; padding:7px 11px; font-weight:600;">push relay</span>
+            <span style="color:#c4c4ca;">→</span>
+            <span style="background:#F1F1F4; border-radius:7px; padding:7px 11px; font-weight:600;">APNs</span>
+            <span style="color:#c4c4ca;">→</span>
+            <span style="background:rgba(6,182,212,0.12); color:#0596b0; border-radius:7px; padding:7px 11px; font-weight:600;">📱 设备</span>
+          </div>
+          <div style="font-size:12px; line-height:1.6; color:#6b6b70; margin-top:13px;">
+            Mac 把 <span class="gt-mono" style="font-size:11px;">alert</span>（waiting / done）转给 relay，relay 持 APNs key、保持无状态。设备 token 存在 Mac（<span class="gt-mono" style="font-size:11px;">~/.config/gtmux/push-tokens.json</span>），通过 <span class="gt-mono" style="font-size:11px;">POST /api/push/register</span> 注册。iOS 用<b>原生 APNs token，不需要 Firebase</b>。
+          </div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:16px 18px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">behavior</div>
+          <div style="display:flex; gap:10px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="flex:none; width:62px; font-size:11.5px; font-weight:700; color:#EF4444;">waiting</span><span style="font-size:12.5px; color:#5a5a60; line-height:1.45;">任意态 → waiting（需要你）。锁屏推送 + 前台时改为应用内红色 banner。</span></div>
+          <div style="display:flex; gap:10px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="flex:none; width:62px; font-size:11.5px; font-weight:700; color:#22C55E;">done</span><span style="font-size:12.5px; color:#5a5a60; line-height:1.45;">working → idle（跑完了）。同样可推送，前台绿色 banner。</span></div>
+          <div style="display:flex; gap:10px; padding:6px 0;"><span style="flex:none; width:62px; font-size:11.5px; font-weight:700; color:#06B6D4;">tap</span><span style="font-size:12.5px; color:#5a5a60; line-height:1.45;">点推送 → 深链直达该 pane 的 Detail（读 payload 里的 <span class="gt-mono" style="font-size:11px;">pane</span>），等于 <span class="gt-mono" style="font-size:11px;">gtmux focus --last</span> 的「跳过去」。</span></div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:16px 18px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">pairing QR schema · v1</div>
+          <pre class="gt-mono" style="margin:0; font-size:11.5px; line-height:1.5; color:#3a3a40; white-space:pre-wrap;">{ "v": 1,
+  "url": "https://192.168.1.20:8765",
+  "token": "&lt;serve-token&gt;",
+  "name": "Ada's MacBook" }</pre>
+          <div style="font-size:11.5px; color:#9a9aa0; margin-top:9px; line-height:1.45;">菜单栏 app「允许手机访问」时渲染此二维码；app 扫码解析、校验 <span class="gt-mono" style="font-size:11px;">v===1</span>，容忍未知字段。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 03: STATES & HANDOFF ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">03</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">状态矩阵与交接</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">每个场景的预期行为，可在 01 的原型里逐一切换验证。设计与契约的权威来源在仓库里——此板是它们的可视镜像。</p>
+
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; overflow:hidden;">
+      <div style="display:grid; grid-template-columns:160px 1fr 1.3fr; background:#F5F5F7; border-bottom:1px solid rgba(0,0,0,0.06); padding:11px 18px; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:#9a9aa0;">
+        <div>场景</div><div>连接 / 状态条</div><div>界面行为</div>
+      </div>
+      <sc-for list="{{ matrix }}" as="m" hint-placeholder-count="7">
+        <div style="display:grid; grid-template-columns:160px 1fr 1.3fr; padding:13px 18px; border-bottom:1px solid rgba(0,0,0,0.05); align-items:center; gap:10px;">
+          <div style="font-size:12.5px; font-weight:600; color:#1d1d1f;">{{ m.k }}</div>
+          <div style="font-size:12px; color:#6b6b70;">{{ m.a }}</div>
+          <div style="font-size:12px; color:#6b6b70;">{{ m.b }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">权威来源（仓库）</div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span class="gt-mono" style="color:#3a3a40;">mobileapp/SPEC.md</span><span style="color:#9a9aa0;">构建蓝图</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span class="gt-mono" style="color:#3a3a40;">api/contract.md</span><span style="color:#9a9aa0;">HTTP/SSE v0 契约</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span class="gt-mono" style="color:#3a3a40;">src/ui/theme.ts</span><span style="color:#9a9aa0;">token / 调色板</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12px;"><span class="gt-mono" style="color:#3a3a40;">src/ui/StatusBadge.tsx</span><span style="color:#9a9aa0;">色+形+字形</span></div>
+        <div style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; font-size:12px;"><span class="gt-mono" style="color:#3a3a40;">docs/design/DESIGN.md</span><span style="color:#9a9aa0;">§0–3 状态语言</span></div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">路线图（phases）</div>
+        <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="flex:none; font-size:10px; font-weight:700; color:#fff; background:#22C55E; border-radius:5px; padding:2px 8px;">MVP</span><span style="font-size:12.5px; color:#5a5a60;">只读监控 + focus + push（本设计覆盖）</span></div>
+        <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="flex:none; font-size:10px; font-weight:700; color:#6b6b70; background:#EEE; border-radius:5px; padding:2px 8px;">P2</span><span style="font-size:12.5px; color:#5a5a60;">终端输入 <span class="gt-mono" style="font-size:11px;">POST /api/send</span>（send-keys，写权限门控）</span></div>
+        <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="flex:none; font-size:10px; font-weight:700; color:#6b6b70; background:#EEE; border-radius:5px; padding:2px 8px;">P3</span><span style="font-size:12.5px; color:#5a5a60;">语音</span></div>
+        <div style="display:flex; align-items:center; gap:10px; padding:7px 0;"><span style="flex:none; font-size:10px; font-weight:700; color:#6b6b70; background:#EEE; border-radius:5px; padding:2px 8px;">P4</span><span style="font-size:12.5px; color:#5a5a60;">Android / HarmonyOS（RNOH，组件保持平台中立）</span></div>
+      </div>
+    </div>
+
+    <!-- footer credit -->
+    <div style="margin-top:40px; padding-top:20px; border-top:1px solid rgba(0,0,0,0.08); display:flex; align-items:center; gap:10px;">
+      <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:14px; height:14px;"><span style="background:#c4c4ca;border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:#c4c4ca;border-radius:2px;grid-column:span 2;"></span></span>
+      <span class="gt-mono" style="font-size:11.5px; color:#8a8a8e;">gtmux mobile · 第三块屏 · CLI + 菜单栏 + 手机 = 一个产品</span>
+      <div style="flex:1;"></div>
+      <span class="gt-mono" style="font-size:11.5px; color:#8a8a8e;">designed by {{ credit }}</span>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 04: APP ICON ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">04</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">App 图标 — gtmux mobile</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">沿用 gtmux 的 <b>pane 网格</b>品牌标记：2×2 网格、右上一格点亮青色 = 「被聚焦/在等你的那个 pane」。深底、克制、在小尺寸也认得出。三档 iOS 18 变体：默认 / 深色 / 单色着色。</p>
+
+    <div style="display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap;">
+      <!-- hero icon -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:14px;">
+        <div style="width:200px; height:200px; border-radius:46px; background:linear-gradient(160deg,#262b36 0%,#0e1016 100%); box-shadow:0 20px 50px rgba(0,0,0,0.3), inset 0 1.5px 0 rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center;">
+          <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:9px; width:116px; height:116px;">
+            <span style="background:rgba(255,255,255,0.22); border-radius:15px;"></span>
+            <span style="background:#06B6D4; border-radius:15px; box-shadow:0 4px 14px rgba(6,182,212,0.5);"></span>
+            <span style="background:rgba(255,255,255,0.22); border-radius:15px; grid-column:span 2;"></span>
+          </span>
+        </div>
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">default · 1024²</span>
+      </div>
+
+      <!-- variants + contexts -->
+      <div style="flex:1; min-width:420px; display:flex; flex-direction:column; gap:22px;">
+        <!-- iOS 18 variants -->
+        <div>
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">iOS 18 variants</div>
+          <div style="display:flex; gap:18px;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:84px; height:84px; border-radius:19px; background:linear-gradient(160deg,#262b36,#0e1016); box-shadow:0 6px 16px rgba(0,0,0,0.22); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:4px; width:48px; height:48px;"><span style="background:rgba(255,255,255,0.22);border-radius:6px;"></span><span style="background:#06B6D4;border-radius:6px;"></span><span style="background:rgba(255,255,255,0.22);border-radius:6px;grid-column:span 2;"></span></span></div>
+              <span style="font-size:11px; color:#6b6b70;">Default</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:84px; height:84px; border-radius:19px; background:#000; box-shadow:0 6px 16px rgba(0,0,0,0.22); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:4px; width:48px; height:48px;"><span style="background:rgba(255,255,255,0.16);border-radius:6px;"></span><span style="background:#06B6D4;border-radius:6px;"></span><span style="background:rgba(255,255,255,0.16);border-radius:6px;grid-column:span 2;"></span></span></div>
+              <span style="font-size:11px; color:#6b6b70;">Dark</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:84px; height:84px; border-radius:19px; background:#1a1a1d; box-shadow:0 6px 16px rgba(0,0,0,0.22); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:4px; width:48px; height:48px;"><span style="background:rgba(255,255,255,0.30);border-radius:6px;"></span><span style="background:rgba(255,255,255,0.85);border-radius:6px;"></span><span style="background:rgba(255,255,255,0.30);border-radius:6px;grid-column:span 2;"></span></span></div>
+              <span style="font-size:11px; color:#6b6b70;">Tinted</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:84px; height:84px; border-radius:19px; background:linear-gradient(160deg,#eef0f3,#dadde2); box-shadow:0 6px 16px rgba(0,0,0,0.14); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:4px; width:48px; height:48px;"><span style="background:rgba(0,0,0,0.16);border-radius:6px;"></span><span style="background:#06B6D4;border-radius:6px;"></span><span style="background:rgba(0,0,0,0.16);border-radius:6px;grid-column:span 2;"></span></span></div>
+              <span style="font-size:11px; color:#6b6b70;">Light</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- in context -->
+        <div>
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">in context</div>
+          <div style="display:flex; gap:18px; align-items:flex-end; flex-wrap:wrap;">
+            <!-- home screen -->
+            <div style="width:220px; border-radius:22px; padding:18px 16px 14px; background:linear-gradient(170deg,#3a3f4d,#23262f);">
+              <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px 12px;">
+                <span style="aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,0.14);"></span>
+                <span style="aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,0.14);"></span>
+                <span style="aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,0.14);"></span>
+                <span style="aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,0.14);"></span>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                  <span style="width:100%; aspect-ratio:1; border-radius:11px; background:linear-gradient(160deg,#262b36,#0e1016); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:26px; height:26px;"><span style="background:rgba(255,255,255,0.22);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.22);border-radius:3px;grid-column:span 2;"></span></span></span>
+                  <span style="font-size:9px; color:#fff;">gtmux</span>
+                </div>
+                <span style="aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,0.14);"></span>
+                <span style="aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,0.14);"></span>
+                <span style="aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,0.14);"></span>
+              </div>
+              <div style="font-size:10px; color:rgba(255,255,255,0.7); text-align:center; margin-top:14px;">home screen</div>
+            </div>
+            <!-- small sizes -->
+            <div style="display:flex; align-items:flex-end; gap:16px;">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                <div style="width:40px; height:40px; border-radius:10px; background:linear-gradient(160deg,#262b36,#0e1016); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:23px; height:23px;"><span style="background:rgba(255,255,255,0.22);border-radius:2.5px;"></span><span style="background:#06B6D4;border-radius:2.5px;"></span><span style="background:rgba(255,255,255,0.22);border-radius:2.5px;grid-column:span 2;"></span></span></div>
+                <span class="gt-mono" style="font-size:9.5px; color:#9a9aa0;">notif 40</span>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                <div style="width:29px; height:29px; border-radius:7px; background:linear-gradient(160deg,#262b36,#0e1016); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1px; width:17px; height:17px;"><span style="background:rgba(255,255,255,0.22);border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:rgba(255,255,255,0.22);border-radius:2px;grid-column:span 2;"></span></span></div>
+                <span class="gt-mono" style="font-size:9.5px; color:#9a9aa0;">settings 29</span>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                <div style="width:20px; height:20px; border-radius:5px; background:linear-gradient(160deg,#262b36,#0e1016); display:flex; align-items:center; justify-content:center;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:0.5px; width:12px; height:12px;"><span style="background:rgba(255,255,255,0.22);border-radius:1.5px;"></span><span style="background:#06B6D4;border-radius:1.5px;"></span><span style="background:rgba(255,255,255,0.22);border-radius:1.5px;grid-column:span 2;"></span></span></div>
+                <span class="gt-mono" style="font-size:9.5px; color:#9a9aa0;">spotlight 20</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; line-height:1.5; max-width:560px;">导出全套 iOS 尺寸（20–1024，@2x/@3x）；图标本身画满出血，圆角由系统 squircle 蒙版处理。青色格 = 焦点 pane，是与菜单栏状态项一致的母题，但 app 图标不显示状态数。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 05: OFFICIAL AGENT ICONS ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">05</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Agent 官方图标</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">真机上每个 agent 显示<b>各工具的官方图标</b>，从 <span class="gt-mono" style="font-size:12px;">Agent.icon</span> 在运行时加载——这些是第三方商标，我不在设计稿里重绘。下面把图标槽拖入真实 PNG 即可在行内预览；取不到时回退到中性字标。</p>
+
+    <div style="display:grid; grid-template-columns: 360px 1fr; gap:40px; align-items:start;">
+      <!-- radar rows with image-slots -->
+      <div style="border-radius:20px; background:#1C1C1F; border:0.5px solid rgba(255,255,255,0.09); overflow:hidden; box-shadow:0 18px 44px rgba(0,0,0,0.3);">
+        <div style="padding:14px 16px 6px;"><span style="font-size:11px; font-weight:700; letter-spacing:0.6px; color:#EF4444;">需要你 1</span></div>
+        <div style="display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:0.5px solid rgba(255,255,255,0.09); background:rgba(239,68,68,0.10);">
+          <div style="position:relative; width:34px; height:34px; flex:none;">
+            <image-slot id="agent-claude" shape="rounded" radius="9" style="width:34px;height:34px;display:block;" placeholder="Claude Code"></image-slot>
+            <div style="position:absolute; right:-3px; bottom:-3px; width:16px; height:16px; border-radius:4px; background:#EF4444; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #1C1C1F;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span></div>
+          </div>
+          <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:600; color:rgba(255,255,255,0.96);">permission to run tests</div><div style="font-size:12.5px; color:rgba(235,235,245,0.34); margin-top:2px;">Pica · %7</div></div>
+        </div>
+        <div style="padding:14px 16px 6px;"><span style="font-size:11px; font-weight:700; letter-spacing:0.6px; color:rgba(235,235,245,0.34);">运行中 2</span></div>
+        <div style="display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:0.5px solid rgba(255,255,255,0.09);">
+          <div style="position:relative; width:34px; height:34px; flex:none;">
+            <image-slot id="agent-codex" shape="rounded" radius="9" style="width:34px;height:34px;display:block;" placeholder="Codex"></image-slot>
+            <div style="position:absolute; right:-3px; bottom:-3px; width:16px; height:16px; border-radius:50%; background:#06B6D4; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #1C1C1F;"><span style="width:8px;height:8px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></div>
+          </div>
+          <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:600; color:rgba(255,255,255,0.96);">Refactoring the auth middleware</div><div style="font-size:12.5px; color:rgba(235,235,245,0.34); margin-top:2px;">api-gateway · %14</div></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; padding:11px 16px;">
+          <div style="position:relative; width:34px; height:34px; flex:none;">
+            <image-slot id="agent-gemini" shape="rounded" radius="9" style="width:34px;height:34px;display:block;" placeholder="Gemini"></image-slot>
+            <div style="position:absolute; right:-3px; bottom:-3px; width:16px; height:16px; border-radius:50%; background:#06B6D4; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #1C1C1F;"><span style="width:8px;height:8px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></div>
+          </div>
+          <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:600; color:rgba(255,255,255,0.96);">Wiring the onboarding flow</div><div style="font-size:12.5px; color:rgba(235,235,245,0.34); margin-top:2px;">mobile-app · %18</div></div>
+        </div>
+      </div>
+
+      <!-- registry + runtime note -->
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:16px 18px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:6px;">icon registry · 拖入官方 PNG</div>
+          <div style="font-size:12px; color:#9a9aa0; margin-bottom:14px; line-height:1.4;">把各工具官方图标拖到对应槽里（左侧雷达行同步预览）。每个 agent 一个稳定 id。</div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;"><image-slot id="reg-claude" shape="rounded" radius="11" style="width:52px;height:52px;display:block;" placeholder="CC"></image-slot><span style="font-size:11px; color:#6b6b70;">Claude Code</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;"><image-slot id="reg-codex" shape="rounded" radius="11" style="width:52px;height:52px;display:block;" placeholder="Cx"></image-slot><span style="font-size:11px; color:#6b6b70;">Codex</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;"><image-slot id="reg-gemini" shape="rounded" radius="11" style="width:52px;height:52px;display:block;" placeholder="G"></image-slot><span style="font-size:11px; color:#6b6b70;">Gemini</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;"><image-slot id="reg-aider" shape="rounded" radius="11" style="width:52px;height:52px;display:block;" placeholder="Ai"></image-slot><span style="font-size:11px; color:#6b6b70;">aider</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;"><image-slot id="reg-cursor" shape="rounded" radius="11" style="width:52px;height:52px;display:block;" placeholder="Cu"></image-slot><span style="font-size:11px; color:#6b6b70;">Cursor</span></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;"><image-slot id="reg-opencode" shape="rounded" radius="11" style="width:52px;height:52px;display:block;" placeholder="oc"></image-slot><span style="font-size:11px; color:#6b6b70;">opencode</span></div>
+          </div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:16px 18px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">runtime · AgentRow.tsx</div>
+          <pre class="gt-mono" style="margin:0; font-size:11.5px; line-height:1.55; color:#3a3a40; white-space:pre-wrap;">{agent.icon
+  ? &lt;Image source={ {uri: agent.icon} }
+           style={appIcon} /&gt;
+  : &lt;Text&gt;{agentMark(agent.agent)}&lt;/Text&gt;}</pre>
+          <div style="font-size:12px; color:#6b6b70; line-height:1.55; margin-top:11px;">头像容器：<b>圆角方块（app-icon 风格）</b>，34pt，radius 9，<span class="gt-mono" style="font-size:11px;">overflow:hidden</span> 让方形官方图标贴合。<span class="gt-mono" style="font-size:11px;">Agent.icon</span> 由 <span class="gt-mono" style="font-size:11px;">gtmux serve</span> 提供（<span class="gt-mono" style="font-size:11px;">.app</span> 路径或图片）；缺省回退中性字标。颜色仍只属于状态徽章。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 06: iPad SPLIT-VIEW ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">06</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">iPad — 分栏布局</h2>
+    </div>
+    <p style="margin:0 0 18px; max-width:720px; font-size:13.5px; line-height:1.5; color:#7a7a80;">iPad 的大画布不该是「放大的手机」——用 <b>split-view（侧栏雷达 + 主区详情）</b>：左侧分组列表常驻，右侧实时看选中 pane 的彩色终端 + composer，一屏掌控全局。点左侧任意一行，右侧即时切换（受顶部场景/深浅/语言控件驱动）。</p>
+
+    <div style="display:grid; grid-template-columns: minmax(0,1fr) 290px; gap:32px; align-items:start;">
+      <!-- iPad frame (landscape) -->
+      <div style="position:relative; width:100%; max-width:912px; aspect-ratio:4/3; border-radius:34px; background:#0a0a0c; padding:13px; box-shadow:0 2px 4px rgba(0,0,0,0.3), 0 34px 80px rgba(0,0,0,0.28), inset 0 0 0 2px #2a2a2e;">
+        <!-- front camera -->
+        <div style="position:absolute; top:6px; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:#1a1a1e; box-shadow:inset 0 0 0 1px #333;"></div>
+        <div class="gt-noscroll" style="position:relative; width:100%; height:100%; border-radius:22px; overflow:hidden; background:{{ P.bg }}; display:flex;">
+
+          <!-- ===== SIDEBAR ===== -->
+          <div class="gt-noscroll" style="width:300px; flex:none; height:100%; overflow-y:auto; border-right:0.5px solid {{ P.divider }}; background:{{ P.surface }};">
+            <div style="position:sticky; top:0; z-index:5; background:{{ P.surface }}; padding:14px 16px 8px; border-bottom:0.5px solid {{ P.divider }};">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:21px; font-weight:800; letter-spacing:-0.4px; color:{{ P.fg }};">gtmux</span>
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <span style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:{{ P.fg3 }};">{{ connLabel }}</span></span>
+                  <span style="font-size:17px; color:{{ P.fg2 }};">⚙</span>
+                </div>
+              </div>
+              <div style="font-size:12px; font-weight:600; color:{{ P.fg2 }}; margin-top:7px;">{{ summary }}</div>
+            </div>
+            <div style="padding-bottom:14px;">
+              <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="3">
+                <sc-if value="{{ sec.notFirst }}" hint-placeholder-val="{{ false }}">
+                  <div style="height:8px; background:{{ P.bg }}; border-top:3px solid {{ sec.sepColor }};"></div>
+                </sc-if>
+                <div style="display:flex; align-items:center; gap:8px; padding:11px 14px 6px;">
+                  <span style="font-size:10.5px; font-weight:700; letter-spacing:0.6px; color:{{ sec.color }};">{{ sec.label }}</span>
+                  <span style="font-size:10px; font-weight:700; color:{{ P.fg2 }}; background:{{ P.bg }}; border:0.5px solid {{ P.divider }}; border-radius:8px; min-width:16px; text-align:center; padding:0 5px;">{{ sec.count }}</span>
+                </div>
+                <sc-for list="{{ sec.rows }}" as="row" hint-placeholder-count="3">
+                  <div onClick="{{ row.onPick }}" style="display:flex; align-items:center; gap:10px; padding:9px 13px; cursor:pointer; background:{{ row.selBg }}; border-left:2.5px solid {{ row.selBar }};">
+                    <div style="position:relative; width:30px; height:30px; flex:none;">
+                      <div style="width:30px;height:30px;border-radius:8px;background:{{ row.avatarBg }};border:0.5px solid {{ P.divider }};display:flex;align-items:center;justify-content:center;overflow:hidden;"><span style="font-size:{{ row.markSize }}; font-weight:700; color:{{ P.fg2 }};">{{ row.mark }}</span></div>
+                      <div class="{{ row.anim }}" style="position:absolute; right:-3px; bottom:-3px; width:14px; height:14px; border-radius:{{ row.badgeShape }}; background:{{ row.badgeColor }}; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px {{ P.surface }};">{{ row.badgeGlyph }}</div>
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                      <div style="font-size:13.5px; font-weight:600; color:{{ P.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.primary }}</div>
+                      <div style="font-size:11.5px; color:{{ P.fg3 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">{{ row.secondary }}</div>
+                    </div>
+                    <span class="gt-mono" style="font-size:11px; color:{{ P.fg3 }}; flex:none;">{{ row.time }}</span>
+                  </div>
+                </sc-for>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- ===== DETAIL PANE ===== -->
+          <div style="flex:1; min-width:0; height:100%; display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; gap:11px; padding:12px 16px; border-bottom:0.5px solid {{ P.divider }};">
+              <div style="width:20px;height:20px;flex:none;border-radius:{{ ipBadgeShape }};background:{{ ipBadgeColor }};display:flex;align-items:center;justify-content:center;">{{ ipBadgeGlyph }}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:16px; font-weight:700; color:{{ P.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ ipPrimary }}</div>
+                <div style="font-size:12px; color:{{ P.fg3 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">{{ ipSub }}</div>
+              </div>
+              <span class="gt-mono" style="font-size:11px; color:{{ P.fg3 }};">{{ d_cols }}</span>
+              <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:{{ P.fg3 }};">live</span></span>
+              <button style="flex:none; border:none; cursor:pointer; font-family:inherit; background:#06B6D4; color:#fff; border-radius:9px; padding:8px 15px; font-size:13px; font-weight:700;">{{ lblFocusOnMac }}</button>
+            </div>
+            <div class="gt-noscroll" style="flex:1; min-height:0; background:#0A0A0C; overflow-y:auto; padding:14px 16px;">
+              <div class="gt-mono" style="font-size:{{ d_fontSize }}; line-height:{{ d_lineH }}; color:#D6D6DA; white-space:pre-wrap; word-break:break-word;">
+                <sc-for list="{{ ipLines }}" as="ln" hint-placeholder-count="14">
+                  <div><sc-for list="{{ ln }}" as="sg" hint-placeholder-count="1"><span style="color:{{ sg.c }};">{{ sg.t }}</span></sc-for></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="border-top:0.5px solid {{ P.divider }}; padding:11px 16px 14px; background:{{ P.bg }};">
+              <div style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:{{ P.fg3 }}; margin:0 2px 7px;">{{ d_quickLabel }}</div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <sc-for list="{{ ipQuickPrimary }}" as="c" hint-placeholder-count="3">
+                  <button onClick="{{ c.on }}" style="flex:none; border:none; cursor:pointer; font-family:inherit; background:rgba(6,182,212,0.16); color:#22C7E6; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:600;">{{ c.t }}</button>
+                </sc-for>
+                <div style="flex:1; min-width:0; border:0.5px solid {{ P.divider }}; background:{{ P.surface }}; color:{{ P.fg3 }}; border-radius:19px; padding:10px 15px; font-size:14px;">{{ d_composerPh }}</div>
+                <button style="flex:none; width:38px; height:38px; border-radius:50%; cursor:pointer; background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; color:{{ P.fg }}; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" stroke="none"></rect><path d="M6 11a6 6 0 0 0 12 0"></path><line x1="12" y1="17" x2="12" y2="21"></line></svg></button>
+                <button style="flex:none; width:38px; height:38px; border-radius:50%; border:none; cursor:pointer; background:#06B6D4; color:#fff; font-size:17px;">↑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- annotations -->
+      <div style="display:flex; flex-direction:column; gap:12px; padding-top:6px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">why split-view</div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">手机是「列表 → 进详情」两步；iPad 一屏并置：左栏 <b>320pt</b> 常驻雷达，右区实时终端 + composer。少切换、全局可见，贴合 Mail / Messages 的 iPad 范式。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">adaptive · size class</div>
+          <div style="font-size:12px; line-height:1.6; color:#5a5a60;">
+            <div><b>横屏 / 宽（regular）</b>：双栏并置（如上）。</div>
+            <div><b>竖屏 / 分屏变窄</b>：侧栏退为可滑出抽屉，详情占满；进一步压缩（Slide Over）回退到手机式单列堆叠。</div>
+            <div style="margin-top:6px; color:#9a9aa0;">同一套 RN 组件按 <span class="gt-mono" style="font-size:11px;">useWindowDimensions</span> 断点切换，不另起一套。</div>
+          </div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">iPad extras</div>
+          <div style="font-size:12px; line-height:1.6; color:#5a5a60;">
+            <div>· 硬件键盘：<span class="gt-mono" style="font-size:11px;">↑↓</span> 选 agent、<span class="gt-mono" style="font-size:11px;">⏎</span> focus、<span class="gt-mono" style="font-size:11px;">⌘1–9</span> 直达、<span class="gt-mono" style="font-size:11px;">⌘F</span> 搜索。</div>
+            <div>· Stage Manager / 多任务下窗口可变宽，按断点自适应。</div>
+            <div>· 字号 A−/A+ 与回滚缓冲沿用；终端在大屏可显更多列。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div data-end></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1320 },
+  &quot;defaultTheme&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;dark&quot;, &quot;light&quot;], &quot;default&quot;: &quot;dark&quot;, &quot;tsType&quot;: &quot;\&quot;dark\&quot;|\&quot;light\&quot;&quot; },
+  &quot;defaultLang&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;en&quot;, &quot;zh&quot;], &quot;default&quot;: &quot;en&quot;, &quot;tsType&quot;: &quot;\&quot;en\&quot;|\&quot;zh\&quot;&quot; },
+  &quot;defaultScenario&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;empty&quot;, &quot;one&quot;, &quot;five&quot;, &quot;many&quot;], &quot;default&quot;: &quot;five&quot;, &quot;tsType&quot;: &quot;string&quot; },
+  &quot;creditName&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;ccy&quot;, &quot;tsType&quot;: &quot;string&quot; }
+}">
+class Component extends DCLogic {
+  state = { screen: null, scenario: null, theme: null, lang: null, waitingOnly: false, sel: null, banner: false, focusMsg: false, collapsed: {}, fontIdx: 1, wrap: true, voice: false, sentMsg: '' };
+
+  cur(k) {
+    const s = this.state, p = this.props || {};
+    if (k === 'screen') return s.screen ?? 'radar';
+    if (k === 'scenario') return s.scenario ?? p.defaultScenario ?? 'five';
+    if (k === 'theme') return s.theme ?? p.defaultTheme ?? 'dark';
+    if (k === 'lang') return s.lang ?? p.defaultLang ?? 'en';
+  }
+  t(en, zh) { return this.cur('lang') === 'zh' ? zh : en; }
+
+  palette(theme) {
+    if (theme === 'light') return {
+      bg: '#F2F2F7', surface: '#FFFFFF', fg: '#1D1D1F', fg2: 'rgba(60,60,67,0.62)', fg3: 'rgba(60,60,67,0.34)',
+      divider: 'rgba(0,0,0,0.08)', rowSel: 'rgba(0,0,0,0.05)', waitingTint: 'rgba(239,68,68,0.08)', homeBar: 'rgba(0,0,0,0.3)',
+    };
+    return {
+      bg: '#0D0D0F', surface: '#1C1C1F', fg: 'rgba(255,255,255,0.96)', fg2: 'rgba(235,235,245,0.62)', fg3: 'rgba(235,235,245,0.34)',
+      divider: 'rgba(255,255,255,0.09)', rowSel: 'rgba(255,255,255,0.06)', waitingTint: 'rgba(239,68,68,0.10)', homeBar: 'rgba(255,255,255,0.4)',
+    };
+  }
+  statusColor(s) { return { waiting: '#EF4444', working: '#06B6D4', idle: '#22C55E', running: '#8E8E93' }[s]; }
+
+  // badge glyph as a React element (color+shape+glyph, mirrors StatusBadge.tsx)
+  badgeGlyph(status) {
+    const R = React.createElement;
+    if (status === 'waiting') return R('span', { style: { display: 'flex', gap: '1.5px' } },
+      R('span', { style: { width: '2px', height: '6px', background: '#fff', borderRadius: '1px' } }),
+      R('span', { style: { width: '2px', height: '6px', background: '#fff', borderRadius: '1px' } }));
+    if (status === 'working') return R('span', { style: { width: '8px', height: '8px', border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' } });
+    if (status === 'idle') return R('span', { style: { color: '#fff', fontSize: '9px', fontWeight: 800, lineHeight: 1 } }, '✓');
+    return R('span', { style: { width: '3px', height: '3px', borderRadius: '50%', background: '#fff' } });
+  }
+  badgeShape(s) { return s === 'waiting' ? '4px' : '50%'; }
+
+  // Distinct neutral monogram per agent (IP-safe fallback for Agent.icon).
+  // The shipped app loads each tool's OFFICIAL icon from Agent.icon at runtime;
+  // these are the neutral defaults — never third-party logos (DESIGN §6).
+  agentMark(name) {
+    const map = {
+      'Claude Code': 'CC', 'Codex': 'Cx', 'Gemini': 'G', 'Aider': 'Ai',
+      'opencode': 'oc', 'Cursor': 'Cu', 'Crush': 'Cr', 'Amp': 'Am', 'Cline': 'Cl',
+    };
+    if (map[name]) return map[name];
+    return (name || '?').trim().slice(0, 2);
+  }
+
+  // mirror types.ts primary()/secondary()
+  primary(a) { return a.task || (a.source === 'native' ? (a.project || a.terminal || '') : (a.session || a.loc)); }
+  secondary(a) {
+    if (a.source === 'native') return a.terminal || '';
+    const base = a.session || a.loc;
+    return a.pane_id ? (base + ' · ' + a.pane_id) : base;
+  }
+
+  data() {
+    const P = (agent, session, window, pane_id, status, time, task, extra) => Object.assign({
+      agent, session, window, pane_id, pane: pane_id, key: pane_id, loc: session + ':' + window + '.0', status, time, task: task || '', source: 'tmux', latest: false,
+    }, extra || {});
+    return {
+      empty: [],
+      one: [ P('Claude Code', 'Pica', 'agent', '%7', 'waiting', 'now', 'permission to run tests', { taskZh: '请求运行测试的权限' }) ],
+      five: [
+        P('Claude Code', 'Pica', 'agent', '%7', 'waiting', 'now', 'permission to run tests', { taskZh: '请求运行测试的权限' }),
+        P('Claude Code', 'ccy-workspace', 'main', '%11', 'working', '1m', 'Auto-attach tmux sessions', { taskZh: '自动挂载 tmux 会话' }),
+        P('Codex', 'api-gateway', 'tests', '%14', 'working', '3m', 'Refactoring the auth middleware', { taskZh: '重构鉴权中间件' }),
+        P('Claude Code', 'Rodi', 'dev', '%8', 'idle', '6m', 'Rodi feature dev', { latest: true, taskZh: 'Rodi 功能开发' }),
+        P('Gemini', 'Diting', 'main', '%1', 'idle', '22m', '', {}),
+      ],
+      many: [
+        P('Claude Code', 'Pica', 'agent', '%7', 'waiting', 'now', 'permission to run tests', { taskZh: '请求运行测试的权限' }),
+        P('Codex', 'billing-svc', 'migrations', '%23', 'waiting', '2m', 'approve: delete migration 0014_drop_orders', { taskZh: '确认删除迁移 0014_drop_orders' }),
+        P('Claude Code', 'ccy-workspace', 'main', '%11', 'working', 'now', 'Auto-attach tmux sessions', { taskZh: '自动挂载 tmux 会话' }),
+        P('Codex', 'api-gateway', 'tests', '%14', 'working', '1m', 'Refactoring the auth middleware and adding tests', { taskZh: '重构鉴权中间件并补充测试' }),
+        P('Aider', 'etl-pipeline', 'backfill', '%31', 'working', '4m', 'Backfilling the analytics warehouse', { taskZh: '回填分析数仓数据' }),
+        P('Gemini', 'mobile-app', 'onboarding', '%18', 'working', '5m', 'Wiring the onboarding flow', { taskZh: '打通新用户引导流程' }),
+        P('opencode', 'docs-site', 'mdx', '%9', 'working', '8m', 'Migrating MDX components', { taskZh: '迁移 MDX 组件' }),
+        P('Claude Code', 'Rodi', 'dev', '%8', 'idle', '6m', 'Rodi feature dev', { latest: true, taskZh: 'Rodi 功能开发' }),
+        P('Cursor', 'design-system', 'tokens', '%5', 'idle', '12m', 'Token audit complete', { taskZh: '设计令牌审计完成' }),
+        P('Crush', 'infra-tf', 'plan', '%27', 'idle', '18m', 'terraform plan reviewed', { taskZh: '已审阅 terraform plan' }),
+        P('Amp', 'payments', 'webhooks', '%12', 'idle', '25m', 'Stripe webhook retries', { taskZh: 'Stripe webhook 重试' }),
+        P('Gemini', 'Diting', 'main', '%1', 'idle', '34m', '', {}),
+        P('Claude Code', 'search-svc', 'reindex', '%20', 'idle', '47m', 'Reindex job shipped', { taskZh: '重建索引任务已上线' }),
+        P('Codex', 'ml-train', 'eval', '%33', 'idle', '1h', 'Eval run finished', { taskZh: '评测任务完成' }),
+        P('Claude Code', 'sandbox', 'main', '%2', 'running', '3m', '', {}),
+      ],
+    };
+  }
+
+  paneTextFor(a) {
+    if (!a) return '';
+    const sb = '$ git log --oneline -4\n  a1c2e3f  wire /api/events SSE\n  9b4d8a1  add /api/pane capture\n  3f7c012  serve: bearer auth + token\n  c5e9a22  agents --json: source/project\n\n$ go test ./...\n  ok  internal/app     0.42s\n  ok  internal/server  0.31s\n\n────────────────────────────────────\n\n';
+    if (a.status === 'waiting') {
+      return sb + this._waitText();
+    }
+    if (a.status === 'working') {
+      return sb + this._workText(a);
+    }
+    return sb + this._doneText(a);
+  }
+  _waitText() {
+    return '● Running tests…\n\n  npm test\n\n  PASS  src/api/client.test.ts\n  PASS  src/ui/theme.test.ts\n\n  Tool use: Bash(npm run test:e2e)\n  This will run the end-to-end suite against a\n  live server.\n\n┌─────────────────────────────────────────┐\n│  Allow this tool call?                   │\n│  ❯ 1. Yes                                │\n│    2. Yes, and don\'t ask again           │\n│    3. No, tell Claude what to do         │\n└─────────────────────────────────────────┘\n\n  > _';
+  }
+  _workText(a) {
+    return '● ' + (a.task || 'Working') + '…\n\n  Editing internal/server/serve.go\n   + mux.HandleFunc("/api/events", h.events)\n   + mux.HandleFunc("/api/pane",   h.pane)\n\n  Running: go build ./...\n  ▕▔▔▔▔▔▔▔▔▔▔▔▔▔        ▏ compiling\n\n  esc to interrupt';
+  }
+  _doneText(a) {
+    return '● ' + (a.task || a.session) + '\n\n  Done. 3 files changed, 84 insertions(+),\n  12 deletions(-).\n\n  ✓ build passed\n  ✓ 41 tests passed\n\n  What would you like to do next?\n\n  > _';
+  }
+
+  // Terminal palette — mirrors a macOS Terminal "Pro"-ish scheme. tmux
+  // capture-pane -e emits ANSI SGR; the app parses those. Here we tokenize the
+  // plain text with the same intent so the mockup reads like a real terminal.
+  termColors() { return { D: '#D6D6DA', G: '#5AF78E', R: '#FF6E67', Y: '#E6DB74', C: '#57C7FF', M: '#FF6AC1', DIM: '#6B7079' }; }
+  bulletColor(status, c) { return status === 'waiting' ? c.Y : (status === 'working' ? c.C : c.G); }
+
+  segLine(t, c) {
+    const D = c.D;
+    if (t === '') return [{ t: '\u200b', c: D }];
+    const trimmed = t.replace(/^\s+/, '');
+    const lead = t.slice(0, t.length - trimmed.length);
+    // selector line inside a prompt box (❯ 1. Yes)
+    if (t.indexOf('❯') !== -1) {
+      const i = t.indexOf('❯');
+      return [{ t: t.slice(0, i), c: c.DIM }, { t: t.slice(i), c: c.G }];
+    }
+    // box rows with vertical borders: dim the │, keep inner text default
+    if (t.indexOf('│') !== -1) {
+      const segs = []; let buf = '';
+      for (const ch of t) { if (ch === '│') { if (buf) { segs.push({ t: buf, c: D }); buf = ''; } segs.push({ t: '│', c: c.DIM }); } else buf += ch; }
+      if (buf) segs.push({ t: buf, c: D });
+      return segs;
+    }
+    if (/^[┌└├┐┘─┤\s]+$/.test(t)) return [{ t: t, c: c.DIM }];
+    if (/^[─—]{3,}\s*$/.test(trimmed)) return [{ t: t, c: c.DIM }];
+    // shell prompt: $ <cmd> …
+    if (trimmed.startsWith('$')) {
+      const rest = trimmed.slice(1);
+      const m = rest.match(/^(\s*)(\S+)([\s\S]*)$/);
+      const segs = [{ t: lead, c: D }, { t: '$', c: c.G }];
+      if (m) segs.push({ t: m[1], c: D }, { t: m[2], c: c.C }, { t: m[3], c: D }); else segs.push({ t: rest, c: D });
+      return segs;
+    }
+    // agent activity bullet
+    if (trimmed.startsWith('●')) return [{ t: lead, c: D }, { t: '●', c: c.bullet }, { t: trimmed.slice(1), c: D }];
+    // diff +/-
+    if (trimmed.startsWith('+')) return [{ t: t, c: c.G }];
+    if (/^-[^-]/.test(trimmed)) return [{ t: t, c: c.R }];
+    // pass / ok / check
+    if (/(\bPASS\b|^ok\b|✓)/.test(trimmed)) return [{ t: t, c: c.G }];
+    if (/(\bFAIL\b|error)/i.test(trimmed)) return [{ t: t, c: c.R }];
+    if (/^esc to|interrupt$/.test(trimmed)) return [{ t: t, c: c.DIM }];
+    if (/^Tool use:/.test(trimmed)) return [{ t: lead, c: D }, { t: 'Tool use:', c: c.M }, { t: trimmed.slice(9), c: c.Y }];
+    // commit hash
+    const hash = trimmed.match(/^([0-9a-f]{7})([\s\S]*)$/);
+    if (hash) return [{ t: lead, c: D }, { t: hash[1], c: c.Y }, { t: hash[2], c: D }];
+    // progress bar glyphs
+    if (/[▕▔▏]/.test(t)) return [{ t: t, c: c.C }];
+    return [{ t: t, c: D }];
+  }
+
+  buildLines(sel) {
+    const c = this.termColors();
+    c.bullet = this.bulletColor(sel ? sel.status : 'idle', c);
+    // collapse runs of blank lines to a single blank so the pane reads dense
+    const raw = this.paneTextFor(sel).split('\n');
+    const lines = [];
+    for (const ln of raw) { if (ln.trim() === '' && lines.length && lines[lines.length - 1].trim() === '') continue; lines.push(ln); }
+    return lines.map(line => this.segLine(line, c));
+  }
+
+  toggleSection(st) { this.setState(s => ({ collapsed: Object.assign({}, s.collapsed, { [st]: !(s.collapsed || {})[st] }) })); }
+  fontSizes() { return [10, 11.5, 13.5]; }
+  incFont() { this.setState(s => ({ fontIdx: Math.min((s.fontIdx == null ? 1 : s.fontIdx) + 1, 2) })); }
+  decFont() { this.setState(s => ({ fontIdx: Math.max((s.fontIdx == null ? 1 : s.fontIdx) - 1, 0) })); }
+  toggleWrap() { this.setState(s => ({ wrap: s.wrap === false })); }
+  openVoice() { this.setState({ voice: true }); }
+  closeVoice() { this.setState({ voice: false }); }
+  sendQuick(label) { const zh = this.cur('lang') === 'zh'; this.setState({ sentMsg: (zh ? '已发送 · ' : 'sent · ') + label }); clearTimeout(this._st); this._st = setTimeout(() => this.setState({ sentMsg: '' }), 2200); }
+  scrollBottom() { if (this._term) this._term.scrollTop = this._term.scrollHeight; }
+
+  seg(items) {
+    return items.map(it => ({
+      label: it.label, on: it.on,
+      bg: it.active ? '#ffffff' : 'transparent',
+      fg: it.active ? '#1d1d1f' : 'rgba(60,60,67,0.62)',
+      sh: it.active ? '0 1px 2px rgba(0,0,0,0.14)' : 'none',
+    }));
+  }
+
+  sectionMeta(status, lang) {
+    const m = {
+      waiting: { en: 'NEEDS YOU', zh: '需要你' },
+      working: { en: 'WORKING', zh: '运行中' },
+      idle: { en: 'IDLE', zh: '空闲' },
+      running: { en: 'AT PROMPT', zh: '待命' },
+    }[status];
+    return m[lang === 'zh' ? 'zh' : 'en'];
+  }
+
+  summaryText(arr, lang) {
+    const n = arr.length;
+    const w = arr.filter(a => a.status === 'waiting').length;
+    const wk = arr.filter(a => a.status === 'working').length;
+    const idle = n - w - wk;
+    const word = lang === 'zh' ? 'agents' : (n === 1 ? 'agent' : 'agents');
+    if (lang === 'zh') { const p = []; if (w) p.push(w + ' 等输入'); p.push(wk + ' 运行中'); p.push(idle + ' 空闲'); return n + ' ' + word + ' · ' + p.join(' · '); }
+    const p = []; if (w) p.push(w + ' waiting'); p.push(wk + ' working'); p.push(idle + ' idle');
+    return n + ' ' + word + ' · ' + p.join(' · ');
+  }
+
+  go(screen) { this.setState({ screen }); }
+  openDetail(a) { this.setState({ screen: 'detail', sel: a, focusMsg: false }); }
+  pickAgent(a) { this.setState({ sel: a, focusMsg: false }); }
+  fireBanner() {
+    this.setState({ banner: true });
+    clearTimeout(this._bt); this._bt = setTimeout(() => this.setState({ banner: false }), 4000);
+  }
+  doFocus() {
+    this.setState({ focusMsg: true });
+    clearTimeout(this._ft); this._ft = setTimeout(() => this.setState({ focusMsg: false }), 2400);
+  }
+  componentWillUnmount() { clearTimeout(this._bt); clearTimeout(this._ft); clearTimeout(this._st); }
+
+  renderVals() {
+    const theme = this.cur('theme'), lang = this.cur('lang'), scen = this.cur('scenario'), screen = this.cur('screen');
+    const P = this.palette(theme);
+    const full = this.data()[scen] || [];
+
+    // sections
+    const order = ['waiting', 'working', 'idle', 'running'];
+    let list = full.slice();
+    if (this.state.waitingOnly) list = list.filter(a => a.status === 'waiting');
+    const sections = [];
+    const sepColor = theme === 'light' ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.16)';
+    order.forEach(st => {
+      const rows = list.filter(a => a.status === st).sort((l, r) => this.primary(l).toLowerCase().localeCompare(this.primary(r).toLowerCase()));
+      if (!rows.length) return;
+      sections.push({
+        status: st, label: this.sectionMeta(st, lang), count: rows.length,
+        color: st === 'waiting' ? '#EF4444' : P.fg3,
+        notFirst: sections.length > 0,
+        open: !(this.state.collapsed || {})[st],
+        chevRotate: (this.state.collapsed || {})[st] ? 'rotate(-90deg)' : 'rotate(0deg)',
+        toggleLabel: (this.state.collapsed || {})[st] ? this.t('Show', '展开') : this.t('Hide', '收起'),
+        headerBg: 'transparent', sepColor,
+        onToggle: () => this.toggleSection(st),
+        rows: rows.map(a => ({
+          mark: this.agentMark(a.agent),
+          markSize: this.agentMark(a.agent).length > 1 ? '12px' : '15px',
+          avatarBg: P.surface,
+          primary: this.primary(a) || '—',
+          secondary: this.secondary(a),
+          time: a.time,
+          latest: a.latest, 
+          badgeColor: this.statusColor(a.status), badgeShape: this.badgeShape(a.status), badgeGlyph: this.badgeGlyph(a.status),
+          anim: a.status === 'waiting' ? 'gtpulse' : '',
+          bg: a.status === 'waiting' ? P.waitingTint : 'transparent',
+          selBg: (this.state.sel && this.state.sel.key === a.key) ? P.rowSel : (a.status === 'waiting' ? P.waitingTint : 'transparent'),
+          selBar: (this.state.sel && this.state.sel.key === a.key) ? '#06B6D4' : 'transparent',
+          onPress: () => this.openDetail(a),
+          onPick: () => this.pickAgent(a),
+        })),
+      });
+    });
+
+    // detail
+    let sel = this.state.sel;
+    if (screen === 'detail' && !sel) sel = full[0];
+    const d_present = !!sel;
+    const taskLocalized = (a) => (lang === 'zh' && a && a.taskZh) ? a.taskZh : (a ? a.task : '');
+    const dPrimary = sel ? (taskLocalized(sel) || this.primary(sel)) : '';
+
+    // language rows
+    const langPref = this.state.lang ?? 'system';
+    const langDefs = [
+      { key: 'system', label: this.t('System', '跟随系统') },
+      { key: 'en', label: 'English' },
+      { key: 'zh', label: '中文' },
+    ];
+    const langRows = langDefs.map((l, i) => ({
+      label: l.label, active: langPref === l.key,
+      border: i < langDefs.length - 1 ? ('0.5px solid ' + P.divider) : 'none',
+      on: () => this.setState({ lang: l.key === 'system' ? null : l.key }),
+    }));
+
+    // banner
+    const bannerWaiting = true;
+    const annByScreen = {
+      radar: { title: 'radar · agent 图标', body: '行首是 agent 头像（app-icon 圆角方块）：真机上从 Agent.icon 加载各工具官方图标；拿不到时回退到此处的中性字标（CC / Cx / G / Ai…）。颜色只留给状态徽章——头像永远中性，绝不用第三方 logo 重绘。' },
+      detail: { title: 'detail · 适配窄屏 + 输入', body: '每 ~1.5s 拉 /api/pane（等宽渲染、离线可用）。换行/滚动 + 字号 A−/A+ 适配手机窄屏，回滚缓冲 + 跳到底部。底部 composer 是 Phase 2：agent 化快捷输入（回应提示 1/2/3、控制键）+ 自由输入 + 语音，POST /api/send，写入需一次性授权。Focus 移到顶栏。' },
+      settings: { title: 'settings screen', body: '语言三态 跟随系统/EN/中文，即时生效。已配对 Mac（可移除→回配对页）。推送开关 + 说明：锁屏提醒走 relay→APNs，离开 VPN 也能收到。' },
+      pairing: { title: 'pairing · 连接你的 Mac', body: '手机连接到运行 gtmux serve 的 Mac（不是装在 Mac 上、而是把这台手机配对过去）。首选扫描菜单栏 app 的配对二维码（{v,url,token,name}）；备选手动填 host:port + token。health() 自检 → 存 Keychain → 进雷达。支持配对多台 Mac。' },
+    };
+    const ann = annByScreen[screen] || annByScreen.radar;
+
+    const connLive = full.length >= 0; // demo: live unless empty handled below
+
+    const matrix = [
+      { k: '0 agent', a: 'live · 灰环', b: '空状态卡「没有在跑的 coding agent」，不报错。' },
+      { k: '1 waiting', a: 'live · 红方块 1', b: '直接落在「需要你」，红方块·双竖线 + 淡红底 + 脉冲一次。' },
+      { k: '~5 mixed', a: 'live', b: '三分区 needs-you→working→idle，waiting 标题红、其余中性；标 latest。' },
+      { k: '15+ agent', a: 'live', b: '列表滚动；「只看等输入」过滤收窄；分区计数。' },
+      { k: '超长 task / CJK', a: '不受影响', b: '单行省略号截断，绝不换行；中文更宽也不溢出。' },
+      { k: '离线 / 重连', a: 'offline 红点 / reconnecting', b: 'SSE 断开自动重连；推送仍由 APNs 投递，照收。' },
+      { k: 'idle→waiting', a: '绿圆→红方块', b: '唯一动效：一次脉冲 + 应用内/锁屏提醒。' },
+    ];
+
+    // detail composer + terminal controls
+    const dFs = this.fontSizes()[this.state.fontIdx == null ? 1 : this.state.fontIdx];
+    const dWrap = this.state.wrap !== false;
+    const dWaiting = sel && sel.status === 'waiting';
+    const chip = (txt, send) => ({ t: txt, on: () => this.sendQuick(send || txt) });
+    const dQuickPrimary = dWaiting
+      ? [chip('1 · Yes', '1'), chip('2 · Always', '2'), chip('3 · No', '3')]
+      : [chip(this.t('Continue', '继续'), 'continue'), chip('⏎ Enter', 'Enter'), chip(this.t('Stop', '停止'), 'Ctrl-C')];
+    const dQuickKeys = ['⏎', 'Ctrl-C', 'Esc', 'Tab', '↑', '↓'].map(k => chip(k, k));
+
+    // ===== iPad split-view (always resolves a selected agent) =====
+    const ipSel = sel || full.find(a => a.status === 'waiting') || full[0] || null;
+    const ipWaiting = ipSel && ipSel.status === 'waiting';
+    const taskLoc = (a) => (lang === 'zh' && a && a.taskZh) ? a.taskZh : (a ? a.task : '');
+    const ip = ipSel ? {
+      primary: taskLoc(ipSel) || this.primary(ipSel) || '—',
+      sub: ipSel.agent + ' · ' + this.t(ipSel.status, ({ waiting: '等输入', working: '运行中', idle: '空闲', running: '待命' })[ipSel.status]) + ' · ' + this.secondary(ipSel),
+      badgeColor: this.statusColor(ipSel.status), badgeShape: this.badgeShape(ipSel.status), badgeGlyph: this.badgeGlyph(ipSel.status),
+      lines: this.buildLines(ipSel),
+      quickPrimary: (ipSel.status === 'waiting'
+        ? [chip('1 · Yes', '1'), chip('2 · Always', '2'), chip('3 · No', '3')]
+        : [chip(this.t('Continue', '继续'), 'continue'), chip('⏎ Enter', 'Enter'), chip(this.t('Stop', '停止'), 'Ctrl-C')]),
+    } : null;
+
+    return {
+      P, credit: (this.props && this.props.creditName) || 'ccy',
+      matrix,
+      isRadar: screen === 'radar', isDetail: screen === 'detail', isSettings: screen === 'settings', isPairing: screen === 'pairing',
+      sections, isEmpty: sections.length === 0 && screen === 'radar',
+      summary: this.summaryText(full, lang),
+      connColor: full.length === 0 ? this.statusColor('idle') : this.statusColor('idle'),
+      connLabel: this.t('live', '实时'),
+      lblWaitingOnly: this.t('Waiting only', '只看等输入'),
+      lblNoAgents: this.t('No coding agents running.', '没有在跑的 coding agent。'),
+      lblLatest: this.t('latest', '最近完成'),
+      woBg: this.state.waitingOnly ? '#EF4444' : 'transparent',
+      woBorder: this.state.waitingOnly ? '#EF4444' : P.divider,
+      woFg: this.state.waitingOnly ? '#fff' : P.fg2,
+
+      // detail
+      d_primary: dPrimary || '—',
+      d_sub: sel ? (sel.agent + ' · ' + this.t(sel.status, ({waiting:'等输入',working:'运行中',idle:'空闲',running:'待命'})[sel.status]) + ' · ' + this.secondary(sel)) : '',
+      d_badgeColor: sel ? this.statusColor(sel.status) : '#8E8E93',
+      d_badgeShape: sel ? this.badgeShape(sel.status) : '50%',
+      d_badgeGlyph: sel ? this.badgeGlyph(sel.status) : null,
+      d_paneText: this.paneTextFor(sel),
+      d_lines: this.buildLines(sel),
+      lblFocusOnMac: this.t('Focus on Mac', '在 Mac 上聚焦'),
+      showFocusMsg: this.state.focusMsg, hideFocusMsg: !this.state.focusMsg,
+      focusMsg: this.t('Focused on the Mac', '已在 Mac 上聚焦'),
+      d_fontSize: dFs + 'px', d_lineH: Math.round(dFs * 1.35 * 10) / 10 + 'px',
+      d_wrapWhite: dWrap ? 'pre-wrap' : 'pre', d_wrapBreak: dWrap ? 'break-word' : 'normal',
+      d_termOverflowX: dWrap ? 'hidden' : 'auto',
+      d_wrapLabel: dWrap ? this.t('Wrap', '换行') : this.t('Scroll', '滚动'),
+      d_cols: '80 × 24',
+      d_quickPrimary: dQuickPrimary, d_quickKeys: dQuickKeys,
+      d_quickLabel: dWaiting ? this.t('Reply to prompt', '回应提示') : this.t('Agent actions', 'agent 操作'),
+      d_composerPh: this.t('Type to send… (free input)', '自由输入发送…'),
+      d_gated: this.t('Phase 2 · sending needs write permission', 'Phase 2 · 写入需一次性授权'),
+      d_micLbl: this.t('Hold to talk', '按住说话'),
+      d_scrollbackLbl: this.t('— scrollback buffer —', '— 回滚缓冲 —'),
+      isVoice: this.state.voice,
+      voiceTitle: this.t('Listening…', '正在聆听…'),
+      voiceHint: this.t('Speak a command for this agent', '对这个 agent 说一句指令'),
+      voiceTranscript: this.t('"run the tests, then commit"', '「运行测试，然后提交」'),
+      voiceCancel: this.t('Cancel', '取消'), voiceSend: this.t('Send', '发送'),
+      showSent: !!this.state.sentMsg, sentMsg: this.state.sentMsg,
+      incFont: () => this.incFont(), decFont: () => this.decFont(), toggleWrap: () => this.toggleWrap(),
+      openVoice: () => this.openVoice(), closeVoice: () => this.closeVoice(),
+      sendVoice: () => { this.closeVoice(); this.sendQuick(this.cur('lang') === 'zh' ? '语音指令' : 'voice'); },
+      setTermRef: (el) => { this._term = el; }, scrollBottom: () => this.scrollBottom(),
+
+      // settings
+      lblSettings: this.t('Settings', '设置'),
+      lblLanguage: this.t('LANGUAGE', '语言'),
+      lblPairedMac: this.t('PAIRED MAC', '已配对的 Mac'),
+      lblRemoveMac: this.t('Remove this Mac', '移除这台 Mac'),
+      lblPush: this.t('Push notifications', '推送通知'),
+      lblPushHint: this.t('Lock-screen alerts when an agent needs you or finishes.', 'agent 需要你或跑完时推送到锁屏。'),
+      lblVersion: this.t('Version', '版本'),
+      langRows,
+
+      // pairing
+      lblAddMac: this.t('Connect your Mac', '连接你的 Mac'),
+      lblAddMacSub: this.t('Pair this phone with a Mac running gtmux serve.', '把手机与运行 gtmux serve 的 Mac 配对。'),
+      lblScanQR: this.t('Scan pairing QR', '扫描配对二维码'),
+      lblManual: this.t('Enter manually', '手动输入'),
+      lblHost: this.t('Host (http://ip:port)', '地址 (http://ip:port)'),
+      lblToken: this.t('Token', 'Token'),
+      lblConnect: this.t('Connect', '连接'),
+
+      // banner
+      showBanner: this.state.banner,
+      bannerBg: '#EF4444', bannerShape: '4px', bannerGlyph: this.badgeGlyph('waiting'),
+      bannerText: this.t('Pica needs you — permission to run tests', 'Pica 等你输入 — 请求运行测试的权限'),
+      lblTapOpen: this.t('Tap to open', '点按打开'),
+
+      // iPad split-view
+      ipPrimary: ip ? ip.primary : '—',
+      ipSub: ip ? ip.sub : '',
+      ipBadgeColor: ip ? ip.badgeColor : '#8E8E93',
+      ipBadgeShape: ip ? ip.badgeShape : '50%',
+      ipBadgeGlyph: ip ? ip.badgeGlyph : null,
+      ipLines: ip ? ip.lines : [],
+      ipQuickPrimary: ip ? ip.quickPrimary : [],
+      ipHasSel: !!ip,
+
+      // annotations
+      annTitle: ann.title, annBody: ann.body,
+
+      // handlers
+      goRadar: () => this.go('radar'),
+      goSettings: () => this.go('settings'),
+      goPairing: () => this.go('pairing'),
+      toggleWaitingOnly: () => this.setState(s => ({ waitingOnly: !s.waitingOnly })),
+      doFocus: () => this.doFocus(),
+      dismissBanner: () => this.setState({ banner: false }),
+      fireBanner: () => this.fireBanner(),
+
+      // control segments
+      segScreen: this.seg([
+        { label: this.t('Pair', '配对'), active: screen === 'pairing', on: () => this.go('pairing') },
+        { label: this.t('Radar', '雷达'), active: screen === 'radar', on: () => this.go('radar') },
+        { label: this.t('Detail', '详情'), active: screen === 'detail', on: () => this.go('detail') },
+        { label: this.t('Settings', '设置'), active: screen === 'settings', on: () => this.go('settings') },
+      ]),
+      segScenario: this.seg([
+        { label: '0', active: scen === 'empty', on: () => this.setState({ scenario: 'empty' }) },
+        { label: '1', active: scen === 'one', on: () => this.setState({ scenario: 'one' }) },
+        { label: '5', active: scen === 'five', on: () => this.setState({ scenario: 'five' }) },
+        { label: '15+', active: scen === 'many', on: () => this.setState({ scenario: 'many' }) },
+      ]),
+      segTheme: this.seg([
+        { label: 'Dark', active: theme === 'dark', on: () => this.setState({ theme: 'dark' }) },
+        { label: 'Light', active: theme === 'light', on: () => this.setState({ theme: 'light' }) },
+      ]),
+      segLang: this.seg([
+        { label: 'EN', active: lang === 'en', on: () => this.setState({ lang: 'en' }) },
+        { label: '中文', active: lang === 'zh', on: () => this.setState({ lang: 'zh' }) },
+      ]),
+    };
+  }
+}
+</script>
+</body>
+</html>

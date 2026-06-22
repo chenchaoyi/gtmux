@@ -94,20 +94,29 @@ env-doctor, session-restore, remote-access, push-notifications, mobile-app).
 
 ---
 
-## 菜单栏 app 设计规范（必读）
+## gtmux 设计规范（必读 —— 后续每次 UI 迭代都必须遵循）
 
-实现/改动 macOS 菜单栏 app（`NSStatusItem + NSPopover + SwiftUI`）的任何 UI 时，**先读并遵守
-`docs/design/DESIGN.md`**（权威设计规范），参照 `docs/design/mockup/`。要点：
+gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一套状态语言。**改动任何 UI 前，先读对应
+权威设计规范，并严格遵循；不得擅自偏离。**
+
+- 改 **菜单栏 app**（`NSStatusItem + NSPopover + SwiftUI`）→ 先读 `docs/design/DESIGN.md`。
+- 改 **移动端 app**（bare React Native，`mobileapp/`）→ 先读 `docs/design/MOBILE.md`。
+- 落地总入口 / 顺序 / 验收 → `docs/design/HANDOVER.md`；可视参照 `docs/design/mockup/`。
+
+要点（两块屏统一）：
 
 - **状态语言三重编码**（色+形+字形），全表面统一：waiting=红方块·双竖线 / working=青圆·静态加载环 /
-  idle=绿圆·✓ / running=灰圆·点。颜色**只**表达状态，状态色用权威值（见下方「代码位置对照」）。
+  idle=绿圆·✓ / running=灰圆·点。颜色**只**表达状态，状态色用权威值（见下方「代码位置对照」/
+  `mobileapp/src/ui/theme.ts`）。
 - **层级**：waiting 响、idle 静。分区顺序 needs-you→working→idle→running。
 - **agent 身份**用中性单字标，官方图标走 `agents.json` 的 `icon` 字段；**不在代码里绘制第三方商标**。
-- **双语** en/zh（跟随 `GTMUX_LANG`），CJK 不换行用省略号；偏好语言三态、即时生效。
+- **双语** en/zh（跟随 `GTMUX_LANG` / 设备语言），CJK 不换行用省略号；语言三态（跟随系统/EN/中文）即时生效。
 - **动效最小**：只允许 idle→waiting 一次脉冲；加载环不旋转；空闲零动画。
-- **视觉克制**：无彩虹渐变、无彩色发光阴影；文案平实、禁止营销腔（尤其首次运行权限卡）。
-- **支持原生终端**（无 tmux）：行与跳转按 `source: tmux|native` 泛化（DESIGN §7）。
-- 与 DESIGN.md 冲突的改动，先提出、不擅自偏离。
+- **视觉克制**：无彩虹渐变、无彩色发光阴影；文案平实、禁止营销腔（尤其首次运行/权限卡）。
+- **支持原生终端**（无 tmux）：行与跳转按 `source: tmux|native` 泛化（DESIGN §7 / MOBILE §2）。
+- **移动端**：远程只读 MVP（监控 + focus + 推送）；终端输入是 Phase 2，UI 就位但写入门控置灰。
+- **命名**统一小写 `gtmux`。
+- **与 `DESIGN.md` / `MOBILE.md` 冲突的改动，先提出、不擅自偏离；改了设计就同步更新这两份规范。**
 
 ### 代码位置对照（重要：DESIGN.md 写于原生化迁移之前）
 
