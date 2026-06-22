@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -145,6 +146,7 @@ func doctorSections() []dsection {
 			append(rowPlugins(), rowCapture(), rowAutoRestore())},
 		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
 		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
+		{i18n.Tr("Remote access", "远程访问"), []dcheck{rowCloudflared()}},
 	}
 }
 
@@ -238,6 +240,19 @@ func rowCodexHook() dcheck {
 		return dcheck{stOK, label, i18n.Tr("wired", "已接"), i18n.Tr("turn-done notifications", "turn 结束通知")}
 	}
 	return dcheck{stInfo, label, i18n.Tr("not wired", "未接"), i18n.Tr("optional — detection works anyway", "可选 —— 检测不依赖它")}
+}
+
+// rowCloudflared surfaces the optional tunnel client. It's only needed for
+// `gtmux tunnel` (remote phone access), so a missing one is neutral (·), not a
+// problem — `doctor --fix` offers to install it.
+func rowCloudflared() dcheck {
+	label := i18n.Tr("cloudflared", "cloudflared")
+	if _, err := exec.LookPath("cloudflared"); err == nil {
+		return dcheck{stOK, label, i18n.Tr("installed", "已装"),
+			i18n.Tr("remote access via `gtmux tunnel`", "`gtmux tunnel` 远程访问")}
+	}
+	return dcheck{stInfo, label, i18n.Tr("not installed", "未装"),
+		i18n.Tr("optional — only for `gtmux tunnel`", "可选 —— 仅 `gtmux tunnel` 需要")}
 }
 
 func rowApp() dcheck {
