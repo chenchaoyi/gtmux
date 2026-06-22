@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let l10n = L10n.shared
     private let settings = AppSettings.shared
     private var timer: Timer?
+    private var tabOrderTimer: Timer?
     private var hotkey: GlobalHotkey?
     private var cancellables = Set<AnyCancellable>()
 
@@ -40,6 +41,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         store.refresh()
         resetTimer()
+
+        // Record the live terminal tab→session order on a SLOW timer (reads the
+        // terminal via AppleScript, so not on the 1.5s poll) so `gtmux restore`
+        // can replay your tab arrangement instead of tmux's alphabetical order.
+        GtmuxCLI.spawn(["save-tab-order"])
+        tabOrderTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: true) { _ in
+            GtmuxCLI.spawn(["save-tab-order"])
+        }
 
         // Live-apply preference changes (refresh interval, status-bar display mode).
         settings.objectWillChange.receive(on: RunLoop.main).sink { [weak self] in

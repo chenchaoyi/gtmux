@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -490,9 +491,11 @@ func cmdRestore(args []string) int {
 		return restorePick(dryRun)
 	}
 
-	// default: one Ghostty tab per unattached session
+	// default: one terminal tab per unattached session, in the recorded tab
+	// order (so your arrangement is preserved across restore, not tmux's
+	// alphabetical list-sessions order).
 	ensureServer()
-	sessions := unattached()
+	sessions := orderByTabOrder(unattached(), state.LoadTabOrder())
 	if len(sessions) == 0 {
 		i18n.Say("Every session already has a client attached — nothing to do:",
 			"所有 session 都已有人连接,无需操作:")

@@ -25,6 +25,26 @@ open one terminal tab per session and attach them (see terminal-jump's restore).
   session by reusing the current tab for the first (which previously orphaned the
   alphabetically-first session when the current process wasn't a reusable terminal)
 
+### Requirement: Restore tabs in the recorded order
+
+The system SHALL restore terminal tabs in the user's last recorded tab order
+rather than tmux's alphabetical `list-sessions` order. The always-on menu-bar app
+records the live tab→session order on a slow timer (`gtmux save-tab-order` →
+`~/.local/share/gtmux/tab-order`, plain text, one session per line); restore
+replays it.
+
+#### Scenario: Tabs come back in your arrangement
+
+- **WHEN** restore opens tabs and a tab-order record exists
+- **THEN** sessions present in the record are opened in that order, and any
+  sessions not in the record follow in their existing relative order
+
+#### Scenario: No record yet
+
+- **WHEN** no tab-order record exists (e.g. the menu-bar app never ran)
+- **THEN** restore falls back to the default order, unchanged
+
+
 ### Requirement: Restore after reboot via resurrect
 
 The system SHALL, when the tmux server is down, start it and DRIVE tmux-resurrect

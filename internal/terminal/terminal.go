@@ -25,6 +25,10 @@ type Terminal interface {
 	// SpawnTabs opens one tab per session (each attaching). dryRun returns the
 	// script/plan without executing it.
 	SpawnTabs(sessions []string, dryRun bool) (string, error)
+	// TabOrder returns the tmux session names of the live tabs, in tab order
+	// (across windows). Derived from each tab's title "#S — #W". nil if it can't
+	// be read. Used to record the order so restore replays it.
+	TabOrder() []string
 }
 
 // registry maps a driver name (see detect.go) to its impl. New terminals are
