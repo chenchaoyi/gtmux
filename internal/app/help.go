@@ -34,8 +34,9 @@ Commands:
                           push at a relay so alerts reach the phone's lock screen
   tunnel                  expose the read-only radar from ANYWHERE (no VPN app)
                           via an outbound Cloudflare tunnel; prints a public URL,
-                          token, and a scannable pairing QR. --provider frp for
-                          your own VPS; --port N --name LABEL
+                          token, and a scannable pairing QR. Default is a STABLE
+                          hosted address (pair once); --quick for an account-less
+                          ephemeral URL. --port N --name LABEL
   doctor [--fix [--yes]]  health check, grouped by concern: tmux / restore /
                           terminal / agents+notifications. --fix sets up the
                           rest — set-titles, plugins, the Claude hook — one step
@@ -94,7 +95,8 @@ const usageZH = `用法:
                           让 agent 提醒推到手机锁屏
   tunnel                  把只读雷达暴露到任何地方(免 VPN app):走出站
                           Cloudflare 隧道,打印公网 URL、token 和可扫的配对
-                          二维码。--provider frp 用你自己的 VPS;--port N --name 标签
+                          二维码。默认给固定的托管地址(配一次即可),--quick 走
+                          免账号的临时地址。--port N --name 标签
   doctor [--fix [--yes]]  体检,按主题分组:tmux / 恢复 / 终端 / agent+通知。
                           --fix 把其余项配好 —— set-titles、插件、Claude hook ——
                           逐项进行,每步都先解释并征求确认(--yes 全部应用)。

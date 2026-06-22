@@ -208,23 +208,29 @@ and works office↔home.
 ### From anywhere — `gtmux tunnel` (no VPN app)
 
 An **outbound** reverse tunnel on the Mac: it dials out to a rendezvous point, so
-there's no inbound port to open and NAT is no problem. The tunnel client runs only
-on the Mac — the phone app is unchanged (it still pairs to a `{url, token}`).
+there's no inbound port to open and NAT is no problem. The tunnel client
+(`cloudflared`) runs only on the Mac — the phone app is unchanged (it still pairs
+to a `{url, token}`), so this has **no App Store impact**.
 
 ```sh
-gtmux tunnel                     # Cloudflare quick tunnel — no account, no VPS
+gtmux tunnel            # default: a STABLE hosted address — pair once
+gtmux tunnel --quick    # account-less ephemeral URL (changes each run)
 ```
 
-It starts the read-only radar (if not already up), opens the tunnel, and prints a
-public `https://…trycloudflare.com` URL + the serve token + a **scannable pairing
-QR**. Open the phone app → **Pair → Scan** → connected from any network. (Missing
-`cloudflared`? It offers to `brew install` it.)
+It starts the read-only radar (if not already up), opens the tunnel, and prints
+the public URL + the serve token + a **scannable pairing QR**. Open the phone app
+→ **Pair → Scan** → connected from any network. (Missing `cloudflared`? It offers
+to `brew install` it.)
 
-- **Cloudflare** (default) needs no VPS; the quick-tunnel URL changes each run (a
-  stable URL needs a free Cloudflare account + a domain). Best for worldwide use.
-- **frp** (`--provider frp`, your own VPS) is the most reliable **China↔China**
-  path — run `frps` on a domestic VPS (e.g. Aliyun); frp uses a raw port, so no
-  ICP filing. (frp setup is documented; `gtmux tunnel` drives Cloudflare today.)
+- **Hosted (default)** gives each Mac a **stable** `https://gtmux-<id>.ccy.dev`
+  address via gtmux's control plane, so the phone **pairs once** and keeps working
+  across restarts — the URL never changes. No account or domain on your side.
+- **`--quick`** needs no infrastructure but the `trycloudflare.com` URL **rotates
+  each run** (re-pair every time) — fine for a quick look, not for "leave it
+  running and check from your phone later".
+- **Self-host:** point `gtmux tunnel` at your own control-plane Worker with
+  `GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG`. See `docs/design/remote-access-tunnel.md`
+  and `tunnel-worker/`.
 
 > **Security:** a public URL makes the **bearer token the only gate** to the
 > read-only radar (no VPN layer in front). The API stays read-only and

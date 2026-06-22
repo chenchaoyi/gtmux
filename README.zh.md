@@ -187,21 +187,25 @@ gtmux serve --port 8765          # 打印 token 和可达 URL
 ### 从任何地方访问 —— `gtmux tunnel`(免 VPN app)
 
 Mac 上的**出站**反向隧道:它主动向外连一个会合点,所以**不用开入站端口**、NAT 也不是
-问题。隧道客户端只跑在 Mac 上 —— 手机 app 完全不变(仍是配对一张 `{url, token}`)。
+问题。隧道客户端(`cloudflared`)只跑在 Mac 上 —— 手机 app 完全不变(仍是配对一张
+`{url, token}`),所以**不影响上架**。
 
 ```sh
-gtmux tunnel                     # Cloudflare quick tunnel —— 免账号、免 VPS
+gtmux tunnel            # 默认:固定的托管地址 —— 配一次即可
+gtmux tunnel --quick    # 免账号的临时地址(每次运行都变)
 ```
 
-它会(在未启动时)拉起只读雷达、打开隧道,并打印一个公网 `https://…trycloudflare.com`
-地址 + serve token + 一张**可扫的配对二维码**。手机 app → **配对 → 扫一扫** → 任意网络
-即连。(没装 `cloudflared`?它会提示帮你 `brew install`。)
+它会(在未启动时)拉起只读雷达、打开隧道,并打印公网地址 + serve token + 一张**可扫的
+配对二维码**。手机 app → **配对 → 扫一扫** → 任意网络即连。(没装 `cloudflared`?它会提
+示帮你 `brew install`。)
 
-- **Cloudflare**(默认)无需 VPS;quick tunnel 地址每次都变(要固定地址需免费 CF 账号 +
-  一个域名)。面向全球访问最省事。
-- **frp**(`--provider frp`,用你自己的 VPS)是**国内↔国内**最稳的路 —— 在国内 VPS
-  (如阿里云)上跑 `frps`;frp 走裸端口,**无需备案**。(frp 搭建有文档;`gtmux tunnel`
-  目前驱动 Cloudflare。)
+- **托管(默认)** 通过 gtmux 的控制面给每台 Mac 一个**固定**地址
+  `https://gtmux-<id>.ccy.dev`,所以手机**配一次**就行、重启也不变 —— 你这边零账号、
+  零域名。
+- **`--quick`** 无需任何基础设施,但 `trycloudflare.com` 地址**每次运行都变**(得重新
+  配对)—— 适合随手看一眼,不适合"开着隧道、回头用手机看"。
+- **自托管:** 用 `GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG` 把 `gtmux tunnel` 指向你自己
+  的控制面 Worker。见 `docs/design/remote-access-tunnel.md` 与 `tunnel-worker/`。
 
 > **安全:** 公网地址会让 **token 成为只读雷达的唯一一道关**(前面没有 VPN 层)。API
 > 仍是只读 + 校验 token(无 token → 401),但请把 URL + token 当密码,别把二维码截图
