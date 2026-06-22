@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -65,6 +66,7 @@ func doctorFix(yes bool) int {
 	applied += s.stepPlugins()
 	applied += s.stepClaudeHook()
 	applied += s.stepCodexHook()
+	applied += s.stepCloudflared()
 	stepAppGuidance() // manual — needs the installer / make app
 
 	fmt.Println()
@@ -348,6 +350,45 @@ func insertTomlTopLevel(content, line string) string {
 		}
 	}
 	return strings.TrimRight(content, "\n") + "\n" + line + "\n"
+}
+
+// stepCloudflared offers to install the optional tunnel client for remote phone
+// access. It's optional, so it defaults to NO interactively (and is skipped, not
+// forced, under --yes — installing a 40MB dependency nobody asked for would be
+// presumptuous). `gtmux tunnel` also offers this on first run.
+func (s *fixState) stepCloudflared() int {
+	if _, err := exec.LookPath("cloudflared"); err == nil {
+		return 0
+	}
+	fmt.Printf("\n%s%s%s\n", i18n.Bold,
+		i18n.Tr("cloudflared  (optional — remote phone access)", "cloudflared(可选 —— 手机远程访问)"), i18n.Reset)
+	fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
+		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access — skip if you don't use the phone app away from home.",
+		"  装上它,`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要 ——\n  不在外面用手机 app 可跳过。"), i18n.Reset)
+	if _, err := exec.LookPath("brew"); err != nil {
+		i18n.Say("  • brew not found — install from https://github.com/cloudflare/cloudflared/releases",
+			"  • 未找到 brew —— 从 https://github.com/cloudflare/cloudflared/releases 安装")
+		return 0
+	}
+	if s.yes {
+		i18n.Say("  • skipped (optional) — run `gtmux tunnel` or `brew install cloudflared` when you want remote access.",
+			"  • 已跳过(可选)—— 想远程时跑 `gtmux tunnel` 或 `brew install cloudflared`。")
+		return 0
+	}
+	if !confirmRisky(i18n.Tr("  install it now? [y/N] ", "  现在安装?[y/N] ")) {
+		i18n.Say("  skipped.", "  已跳过。")
+		return 0
+	}
+	i18n.Say("  • brew install cloudflared …", "  • brew install cloudflared …")
+	c := exec.Command("brew", "install", "cloudflared")
+	c.Stdout, c.Stderr = os.Stdout, os.Stderr
+	if err := c.Run(); err != nil {
+		i18n.Sae("  ✗ brew install failed: "+err.Error(), "  ✗ brew 安装失败: "+err.Error())
+		s.rc = 1
+		return 0
+	}
+	i18n.Say("  ✓ installed cloudflared — run `gtmux tunnel` to go live", "  ✓ 已安装 cloudflared —— 跑 `gtmux tunnel` 即可上线")
+	return 1
 }
 
 // stepAppGuidance is guidance only: the app needs the installer / a native build.
