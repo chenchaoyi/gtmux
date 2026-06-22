@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert as AlertType, StatusName} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
+import {BrandMark} from '../ui/BrandMark';
 import {SectionList} from '../ui/SectionList';
 import {StatusColor, counts} from '../ui/theme';
 
@@ -88,7 +89,11 @@ export function RadarScreen({navigation}: any) {
 
   const Empty = (
     <View style={styles.empty}>
-      <Text style={[styles.emptyText, {color: pal.fg3}]}>{t('noAgents')}</Text>
+      <BrandMark size={52} neutral={pal.fg3} />
+      <Text style={[styles.emptyText, {color: pal.fg2}]}>{t('noAgents')}</Text>
+      <Text style={[styles.emptyHint, {color: pal.fg3}]}>
+        {lang === 'zh' ? '在 Mac 上启动一个 coding agent 就会出现在这里' : 'Start a coding agent on your Mac and it shows up here'}
+      </Text>
     </View>
   );
 
@@ -156,8 +161,9 @@ const styles = StyleSheet.create({
   summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
   filter: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 10},
   filterText: {fontSize: 11.5, fontWeight: '600'},
-  empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80},
-  emptyText: {fontSize: 14},
+  empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 70, paddingHorizontal: 40},
+  emptyText: {fontSize: 15, fontWeight: '600', marginTop: 16},
+  emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
   banner: {paddingHorizontal: 14, paddingVertical: 10},
   bannerText: {color: '#fff', fontSize: 13, fontWeight: '600'},
 });
