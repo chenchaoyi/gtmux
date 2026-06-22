@@ -27,6 +27,7 @@ final class PreferencesController {
 struct PreferencesView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var settings: AppSettings
+    @ObservedObject var remote = RemoteAccess.shared
 
     var body: some View {
         Grid(alignment: .trailing, horizontalSpacing: 14, verticalSpacing: 18) {
@@ -87,12 +88,43 @@ struct PreferencesView: View {
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                 }.toggleStyle(.switch).gridColumnAlignment(.leading)
             }
+
+            GridRow {
+                label(l10n.tr("Remote access", "远程访问"))
+                Toggle(isOn: Binding(
+                    get: { remote.isOn },
+                    set: { want in want ? confirmEnable() : remote.disable() })) {
+                    Text(remote.isOn
+                        ? (remote.url ?? l10n.tr("on — reachable from anywhere", "已开启 —— 任意网络可达"))
+                        : l10n.tr("Keep reachable from anywhere (always-on)", "保持任意网络可达(常驻)"))
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                .toggleStyle(.switch).disabled(remote.busy).gridColumnAlignment(.leading)
+            }
         }
         .padding(24)
         .frame(width: 460, alignment: .topLeading)
+        .onAppear { remote.refresh() }
     }
 
     private func label(_ text: String) -> some View {
         Text(text).font(.system(size: 12)).foregroundStyle(.secondary)
+    }
+
+    // confirmEnable shows the standing-exposure warning before turning always-on
+    // on (the CLI's own prompt is skipped via --yes since we confirm here).
+    private func confirmEnable() {
+        let a = NSAlert()
+        a.messageText = l10n.tr("Keep remote access on?", "保持远程访问开启?")
+        a.informativeText = l10n.tr(
+            "Your Mac stays reachable at a public URL (token-gated) across reboots until you turn this off. It's a standing exposure — enable it consciously.",
+            "你的 Mac 会持续在一个公网地址可达(有 token 把关),重启也不停,直到你关闭。这是个长期敞口 —— 请有意识地开启。")
+        a.addButton(withTitle: l10n.tr("Enable", "开启"))
+        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
+        if a.runModal() == .alertFirstButtonReturn {
+            remote.enable()
+        } else {
+            remote.objectWillChange.send() // snap the toggle back to off
+        }
     }
 }
