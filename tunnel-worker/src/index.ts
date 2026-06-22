@@ -87,7 +87,10 @@ async function provision(req: Request, env: Env): Promise<Response> {
     return json({ error: "tunnel create failed", detail: created.errors }, 502);
   }
   const tunnelId = created.result.id;
-  const hostname = `${label}.${env.ZONE_NAME}`;
+  // Single-level host so the zone's free Universal SSL (*.ccy.dev) covers it —
+  // a 3rd-level *.gtmux.ccy.dev would need paid Advanced Cert Manager. The
+  // `gtmux-` prefix keeps the namespace.
+  const hostname = `gtmux-${label}.${env.ZONE_NAME}`;
 
   // 2) Point the tunnel's ingress at the Mac's local gtmux serve.
   const cfg = await cf(env, "PUT", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${tunnelId}/configurations`, {
