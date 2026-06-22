@@ -101,6 +101,18 @@ func cmdServe(args []string) int {
 	}
 
 	token = resolveServeToken(token)
+	srv := newServeServer(bind, port, token, relayURL, relayToken)
+	printServeBanner(bind, port, token)
+	if err := srv.ListenAndServe(); err != nil {
+		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
+		return 1
+	}
+	return 0
+}
+
+// newServeServer builds the read-only radar HTTP server (shared by `gtmux serve`
+// and `gtmux tunnel`, which starts it in-process when one isn't already up).
+func newServeServer(bind string, port int, token, relayURL, relayToken string) *server.Server {
 	addr := net.JoinHostPort(bind, strconv.Itoa(port))
 
 	deps := server.Deps{
@@ -138,13 +150,7 @@ func cmdServe(args []string) int {
 	relay := server.NewHTTPRelay(relayURL, relayToken)
 	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens, pushCopy)
 
-	srv := server.New(server.Config{Addr: addr, Token: token}, deps)
-	printServeBanner(bind, port, token)
-	if err := srv.ListenAndServe(); err != nil {
-		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
-		return 1
-	}
-	return 0
+	return server.New(server.Config{Addr: addr, Token: token}, deps)
 }
 
 func serveUsageErr() int {

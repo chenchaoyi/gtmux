@@ -202,9 +202,34 @@ and works office↔home.
 
 > **Mainland China:** Tailscale is a VPN-category app and is generally **not in
 > the China App Store**. Install it with a non-mainland Apple ID, **or** skip the
-> VPN app with a reverse tunnel (Cloudflare Tunnel / frp) so the phone connects to
-> a normal `https://…` URL — no VPN app needed (a more involved setup; secure the
-> exposed read-only endpoint).
+> VPN app entirely with the tunnel below (the phone connects to a normal
+> `https://…` URL — no VPN app needed).
+
+### From anywhere — `gtmux tunnel` (no VPN app)
+
+An **outbound** reverse tunnel on the Mac: it dials out to a rendezvous point, so
+there's no inbound port to open and NAT is no problem. The tunnel client runs only
+on the Mac — the phone app is unchanged (it still pairs to a `{url, token}`).
+
+```sh
+gtmux tunnel                     # Cloudflare quick tunnel — no account, no VPS
+```
+
+It starts the read-only radar (if not already up), opens the tunnel, and prints a
+public `https://…trycloudflare.com` URL + the serve token + a **scannable pairing
+QR**. Open the phone app → **Pair → Scan** → connected from any network. (Missing
+`cloudflared`? It offers to `brew install` it.)
+
+- **Cloudflare** (default) needs no VPS; the quick-tunnel URL changes each run (a
+  stable URL needs a free Cloudflare account + a domain). Best for worldwide use.
+- **frp** (`--provider frp`, your own VPS) is the most reliable **China↔China**
+  path — run `frps` on a domestic VPS (e.g. Aliyun); frp uses a raw port, so no
+  ICP filing. (frp setup is documented; `gtmux tunnel` drives Cloudflare today.)
+
+> **Security:** a public URL makes the **bearer token the only gate** to the
+> read-only radar (no VPN layer in front). The API stays read-only and
+> token-checked (no token → 401), but treat the URL + token like a password and
+> don't screenshot the QR into a shared channel.
 
 The remote surface is **read-only** (no `send-keys`/input) — see
 `api/contract.md` and `mobileapp/SPEC.md`.
