@@ -23,8 +23,9 @@ routes = [{ pattern = "api.gtmux.ccy.dev", custom_domain = true }]
 kv_namespaces = [{ binding = "TUNNELS", id = "bd42c0b0a0734850bf42def27b14b98b" }]
 
 [vars]
-# The DNS suffix every user tunnel lives under (records created in the ccy.dev zone).
-ZONE_NAME = "gtmux.ccy.dev"
+# The zone tunnels live in. Hosts are single-level `gtmux-<id>.ccy.dev` so the
+# free Universal cert (*.ccy.dev) covers them (a 3rd level would need paid ACM).
+ZONE_NAME = "ccy.dev"
 # The local service on the Mac that cloudflared forwards to (gtmux serve default).
 LOCAL_SERVICE = "http://localhost:8765"
 # Non-secret account/zone ids (the runtime CF_API_TOKEN secret carries the auth).
