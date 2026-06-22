@@ -148,6 +148,45 @@ AppKit）。状态点用颜色概括最紧急的状态 —— **红**=等待 · 
 通用、ad-hoc 签名的 `Gtmux-<version>-macos.zip`，安装脚本会清掉隔离标记，首次启动
 不被拦。用 `gtmux uninstall-app` 卸载。
 
+## 远程访问 —— 手机（beta）
+
+手机 app（`mobileapp/`，React Native）是第三块屏：随时查看 agent，并在 agent
+需要你或跑完时收到**锁屏推送**。它是 `gtmux serve`（HTTP+SSE，走你的网络）的只读
+消费方，外加 APNs 推送。
+
+```sh
+gtmux serve --port 8765          # 打印 token 和可达 URL
+```
+
+然后配对 app —— 扫描菜单栏 app 的配对二维码，或手动填 host + token。能从哪里做什么，
+取决于两点：
+
+- **推送到哪都能收到。** 告警经 APNs 在任何网络（蜂窝、家里 Wi-Fi）送达,哪怕手机
+  连不上 Mac —— Mac 在公司、你在家,照样收到「需要你 / 完成了」。
+- **实时查看（雷达 / 看 pane / 聚焦）需要能连到 Mac。** 同一 Wi-Fi 直接可用,不同
+  网络则需要隧道。
+
+### 从任何地方访问 —— Tailscale（推荐）
+
+在你的设备之间建一张私有 mesh 网络,绕开公司 Wi-Fi 的客户端隔离,公司↔家都能用。
+
+1. **Mac:** `brew install --cask tailscale`（或 App Store）,打开并登录。
+2. **iPhone:** 安装 **Tailscale**,用**同一账号**登录。
+3. 取 Mac 的 Tailscale 地址:`tailscale ip -4`(形如 `100.x.y.z`)。
+4. 把 app 配对到 `http://<这个 100.x.y.z>:8765` + serve token。此后任何网络下都能
+   实时查看。
+
+> **同一 Wi-Fi 却连不上 Mac?** 公司/访客 Wi-Fi 常**隔离客户端**(手机↔Mac 被挡)——
+> 用 Tailscale 即可解决。快速判断:在手机浏览器打开
+> `http://<mac-ip>:8765/api/health`,打不开就说明需要 Tailscale(或隧道)。
+
+> **中国大陆:** Tailscale 属 VPN 类应用,大陆 App Store 一般**没有**。可用非大陆
+> Apple ID 安装;**或**改用反向隧道(Cloudflare Tunnel / frp),让手机连一个普通
+> `https://…` 地址 —— 无需在手机上装 VPN app(配置更复杂,需保护好暴露的只读端点)。
+
+远程这一面是**只读**的(无 `send-keys` / 输入)—— 见 `api/contract.md` 与
+`mobileapp/SPEC.md`。
+
 ## 命令
 
 | 命令 | 作用 |
