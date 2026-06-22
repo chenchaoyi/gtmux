@@ -1,15 +1,11 @@
-// DetailScreen — a read-only view of one pane's current screen, plus a "focus on
-// Mac" action. It polls /api/pane every ~1.5s and refetches on the SSE `agents`
-// signal (via the rev-driven AgentsContext refresh that re-renders Radar).
-//
-// Rendering note: /api/pane is `tmux capture-pane -p` — PLAIN text, no ANSI. The
-// app must also work offline over VPN, where a CDN xterm.js can't load and a
-// bundled one needs Xcode resource wiring. So we render the text directly in a
-// native monospace view (offline, simple, visually identical). When the server
-// later switches to `capture-pane -e` (ANSI colors), swap this for the
-// react-native-webview + xterm.html path (the dep is already installed).
+// DetailScreen — a read-only view of one pane's current screen (MOBILE §4), in
+// COLOR. It polls /api/pane (now `tmux capture-pane -e`) every ~1.5s and renders
+// the ANSI output with a native SGR parser into colored <Text> spans — offline
+// over VPN, no webview/xterm needed. Narrow-screen controls: A−/A+ font size, a
+// wrap↔scroll toggle, and a jump-to-bottom FAB. "Focus on Mac" lives in the top
+// bar (POST /api/focus), not the input area.
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -24,7 +20,10 @@ import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {statusLabel} from '../i18n';
+import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {StatusColor} from '../ui/theme';
+
+const FONT_SIZES = [9, 11, 13];
 
 export function DetailScreen({route, navigation}: any) {
   const agent: Agent = route.params.agent;
@@ -33,6 +32,9 @@ export function DetailScreen({route, navigation}: any) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [focusMsg, setFocusMsg] = useState('');
+  const [fontIdx, setFontIdx] = useState(1);
+  const [wrap, setWrap] = useState(true);
+  const [atBottom, setAtBottom] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -56,15 +58,38 @@ export function DetailScreen({route, navigation}: any) {
     };
   }, [client, agent.pane_id]);
 
+  const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
+  const fontSize = FONT_SIZES[fontIdx];
+  const lineHeight = Math.round(fontSize * 1.36);
+
   const doFocus = async () => {
     const ok = await client.focus(agent.pane_id);
     setFocusMsg(ok ? t('focused') : t('focusFailed'));
     setTimeout(() => setFocusMsg(''), 2500);
   };
 
+  const onScroll = (e: any) => {
+    const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
+    setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
+  };
+
+  const term = (
+    <>
+      {lines.map((spans, i) => (
+        <Text key={i} style={[styles.mono, {fontSize, lineHeight}]} selectable>
+          {spans.length === 0 ? ' ' : spans.map((s, j) => (
+            <Text key={j} style={{color: s.color, fontWeight: s.bold ? '700' : '400'}}>
+              {s.text}
+            </Text>
+          ))}
+        </Text>
+      ))}
+    </>
+  );
+
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
-      {/* header */}
+      {/* header: back · badge · title/sub · Focus on Mac */}
       <View style={[styles.header, {borderBottomColor: pal.divider}]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit} style={styles.back}>
           <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
@@ -80,31 +105,72 @@ export function DetailScreen({route, navigation}: any) {
             {agent.agent} · {statusLabel(agent.status, lang)} · {secondary(agent)}
           </Text>
         </View>
-      </View>
-
-      {/* pane screen */}
-      <ScrollView
-        ref={scrollRef}
-        style={styles.term}
-        contentContainerStyle={styles.termContent}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({animated: false})}>
-        {loading ? (
-          <ActivityIndicator color={pal.fg3} style={styles.loading} />
-        ) : (
-          <Text selectable style={styles.mono}>
-            {text}
-          </Text>
-        )}
-      </ScrollView>
-
-      {/* focus action */}
-      <View style={[styles.footer, {borderTopColor: pal.divider}]}>
-        {!!focusMsg && <Text style={[styles.focusMsg, {color: pal.fg2}]}>{focusMsg}</Text>}
-        <TouchableOpacity style={styles.focusBtn} onPress={doFocus}>
-          <Text style={styles.focusText}>{t('focusOnMac')}</Text>
+        <TouchableOpacity onPress={doFocus} style={[styles.focusTop, {borderColor: pal.divider}]}>
+          <Text style={[styles.focusTopText, {color: StatusColor.working}]}>{t('focusOnMac')}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* controls: live · A− A+ · wrap/scroll */}
+      <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
+        <View style={styles.live}>
+          <View style={[styles.liveDot, {backgroundColor: StatusColor.idle}]} />
+          <Text style={[styles.ctlText, {color: pal.fg3}]}>live</Text>
+        </View>
+        <View style={styles.ctlRight}>
+          <Ctl pal={pal} label="A−" onPress={() => setFontIdx(i => Math.max(0, i - 1))} />
+          <Ctl pal={pal} label="A+" onPress={() => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1))} />
+          <Ctl
+            pal={pal}
+            label={wrap ? (lang === 'zh' ? '换行' : 'Wrap') : (lang === 'zh' ? '滚动' : 'Scroll')}
+            onPress={() => setWrap(w => !w)}
+          />
+        </View>
+      </View>
+
+      {/* pane screen (colored) */}
+      <View style={styles.termWrap}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.term}
+          contentContainerStyle={styles.termContent}
+          scrollEventThrottle={80}
+          onScroll={onScroll}
+          onContentSizeChange={() => {
+            if (atBottom) scrollRef.current?.scrollToEnd({animated: false});
+          }}>
+          {loading ? (
+            <ActivityIndicator color={pal.fg3} style={styles.loading} />
+          ) : wrap ? (
+            term
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator>
+              <View>{term}</View>
+            </ScrollView>
+          )}
+        </ScrollView>
+        {!atBottom && (
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => scrollRef.current?.scrollToEnd({animated: true})}>
+            <Text style={styles.fabText}>↓</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {!!focusMsg && (
+        <View style={[styles.footer, {borderTopColor: pal.divider}]}>
+          <Text style={[styles.focusMsg, {color: pal.fg2}]}>{focusMsg}</Text>
+        </View>
+      )}
     </SafeAreaView>
+  );
+}
+
+function Ctl({pal, label, onPress}: {pal: any; label: string; onPress: () => void}) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.ctl, {borderColor: pal.divider}]}>
+      <Text style={[styles.ctlText, {color: pal.fg2}]}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -125,23 +191,43 @@ const styles = StyleSheet.create({
   headerText: {flex: 1, minWidth: 0},
   title: {fontSize: 16, fontWeight: '700'},
   sub: {fontSize: 12, marginTop: 1},
+  focusTop: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 8},
+  focusTopText: {fontSize: 12, fontWeight: '700'},
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  live: {flexDirection: 'row', alignItems: 'center'},
+  liveDot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
+  ctlRight: {flexDirection: 'row', alignItems: 'center'},
+  ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
+  ctlText: {fontSize: 11.5, fontWeight: '600'},
+  termWrap: {flex: 1},
   term: {flex: 1, backgroundColor: '#0A0A0C'},
   termContent: {padding: 12},
   loading: {marginTop: 40},
-  mono: {
-    color: '#D6D6DA',
-    fontFamily: 'Menlo',
-    fontSize: 11,
-    lineHeight: 15,
+  mono: {color: '#D6D6DA', fontFamily: 'Menlo'},
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#06B6D4',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  fabText: {color: '#fff', fontSize: 20, fontWeight: '700'},
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
     padding: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  focusMsg: {fontSize: 12.5, marginRight: 12, flex: 1},
-  focusBtn: {backgroundColor: '#06B6D4', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10},
-  focusText: {color: '#fff', fontSize: 14, fontWeight: '700'},
+  focusMsg: {fontSize: 12.5, flex: 1},
 });

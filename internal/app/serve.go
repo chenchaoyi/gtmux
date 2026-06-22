@@ -126,7 +126,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
 				return "", false
 			}
-			return tmux.CapturePane(id), true
+			return tmux.CapturePaneColor(id), true
 		},
 		Focus: func(id string) error { return focusPaneByID(id) },
 		AgentStatuses: func() []server.AgentStatus {
