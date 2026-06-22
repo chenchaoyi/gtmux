@@ -14,18 +14,19 @@
 name = "gtmux-tunnel"
 main = "src/index.ts"
 compatibility_date = "2025-06-01"
+workers_dev = true
 
 # Serve the control plane at a stable hostname under the gtmux namespace.
 routes = [{ pattern = "api.gtmux.ccy.dev", custom_domain = true }]
 
 # deviceId -> { tunnelId, label, hostname } so re-runs reuse the same tunnel.
-kv_namespaces = [{ binding = "TUNNELS", id = "REPLACE_AFTER_kv_namespace_create" }]
+kv_namespaces = [{ binding = "TUNNELS", id = "bd42c0b0a0734850bf42def27b14b98b" }]
 
 [vars]
 # The DNS suffix every user tunnel lives under (records created in the ccy.dev zone).
 ZONE_NAME = "gtmux.ccy.dev"
 # The local service on the Mac that cloudflared forwards to (gtmux serve default).
 LOCAL_SERVICE = "http://localhost:8765"
-# Filled in after we read them from the account (non-secret ids).
-CF_ACCOUNT_ID = "REPLACE_WITH_ACCOUNT_ID"
-CF_ZONE_ID = "REPLACE_WITH_ccy.dev_ZONE_ID"
+# Non-secret account/zone ids (the runtime CF_API_TOKEN secret carries the auth).
+CF_ACCOUNT_ID = "e6ad9be63f53997c5844317404a4b043"
+CF_ZONE_ID = "18e9882c3234f0f2a76ac6dcd0cf29ae"
