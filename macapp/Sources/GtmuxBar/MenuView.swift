@@ -12,6 +12,7 @@ enum MenuAction {
 struct MenuView: View {
     @ObservedObject var store: AgentStore
     @ObservedObject var l10n: L10n
+    @ObservedObject var remote = RemoteAccess.shared
     var onJump: (Agent) -> Void
     var onAction: (MenuAction) -> Void
     var onClose: () -> Void = {}
@@ -51,7 +52,7 @@ struct MenuView: View {
         .onKeyPress(.downArrow) { move(1); return .handled }
         .onKeyPress(.return) { jumpSelected(); return .handled }
         .onKeyPress(.escape) { onEscape(); return .handled }
-        .onAppear { selected = 0; if !searchActive { rootFocused = true } }
+        .onAppear { selected = 0; if !searchActive { rootFocused = true }; remote.refresh() }
     }
 
     // MARK: header
@@ -177,6 +178,17 @@ struct MenuView: View {
                 }.buttonStyle(.plain)
                 Text(l10n.tr("Preferences", "偏好设置")).font(.system(size: 10)).foregroundStyle(p.fg3)
                 Spacer()
+                if remote.isOn {
+                    // Visible "remote access is on" indicator (a standing exposure
+                    // should never be silent). Tap opens Preferences to turn off.
+                    Button { onAction(.preferences) } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "globe").font(.system(size: 9))
+                            Text(l10n.tr("Remote on", "远程开启")).font(Theme.Font.footer)
+                        }.foregroundStyle(p.fg2)
+                    }.buttonStyle(.plain).help(remote.url ?? "")
+                    Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
+                }
                 Text("gtmux \(appVersion) · by ccy").font(Theme.Font.footer).foregroundStyle(p.fg3)
             }
             .padding(.horizontal, 12).padding(.vertical, 6)

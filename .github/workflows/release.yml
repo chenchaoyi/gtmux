@@ -94,6 +94,8 @@ jobs:
       # gtmux CLI to bundle alongside it, assembles Gtmux.app, and ad-hoc-signs.
       - name: build Gtmux.app (universal, signed)
         run: GTMUX_UNIVERSAL=1 GTMUX_VERSION="${GITHUB_REF_NAME}" macapp/build.sh
+        env:
+          GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
 
       - name: zip the bundle
         run: |
