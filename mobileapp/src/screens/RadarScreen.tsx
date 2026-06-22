@@ -2,14 +2,17 @@
 // AgentsContext), pull-to-refresh, a waiting-only filter, and an in-app alert
 // banner. Tap a row → Detail. Status language mirrors the menu-bar app.
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Alert as AlertType} from '../api/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Alert as AlertType, StatusName} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {SectionList} from '../ui/SectionList';
 import {StatusColor, counts} from '../ui/theme';
+
+const COLLAPSED_KEY = 'radar.collapsed';
 
 function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
   const parts: string[] = [];
@@ -24,6 +27,26 @@ export function RadarScreen({navigation}: any) {
   const {t, pal, lang} = useApp();
   const [waitingOnly, setWaitingOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Collapsed sections persist across launches (MOBILE §3).
+  const [collapsed, setCollapsed] = useState<Set<StatusName>>(new Set());
+
+  useEffect(() => {
+    AsyncStorage.getItem(COLLAPSED_KEY).then(raw => {
+      if (!raw) return;
+      try {
+        setCollapsed(new Set(JSON.parse(raw) as StatusName[]));
+      } catch {}
+    });
+  }, []);
+
+  const onToggle = (st: StatusName) => {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      next.has(st) ? next.delete(st) : next.add(st);
+      AsyncStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   const c = counts(agents);
 
@@ -71,7 +94,7 @@ export function RadarScreen({navigation}: any) {
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
-      {banner && <Banner alert={banner} lang={lang} t={t} onClose={dismissBanner} />}
+      {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
       <SectionList
         agents={agents}
         waitingOnly={waitingOnly}
@@ -80,6 +103,8 @@ export function RadarScreen({navigation}: any) {
         onPressAgent={a => navigation.navigate('Detail', {agent: a})}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        collapsed={collapsed}
+        onToggle={onToggle}
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
       />
@@ -98,7 +123,7 @@ function ConnDot({conn, t, pal}: any) {
   );
 }
 
-function Banner({alert, lang, t, onClose}: {alert: AlertType; lang: string; t: any; onClose: () => void}) {
+function Banner({alert, t, onClose}: {alert: AlertType; t: any; onClose: () => void}) {
   const isWaiting = alert.kind === 'waiting';
   const verb = isWaiting ? t('alertWaiting') : t('alertDone');
   const name = alert.agent || t('agents');
