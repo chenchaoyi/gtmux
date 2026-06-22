@@ -10,7 +10,7 @@ import {
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import React, {useEffect} from 'react';
-import {ActivityIndicator, StatusBar, useColorScheme, View} from 'react-native';
+import {ActivityIndicator, StatusBar, useColorScheme, useWindowDimensions, View} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {setupPush} from './src/push';
@@ -18,10 +18,18 @@ import {DetailScreen} from './src/screens/DetailScreen';
 import {PairingScreen} from './src/screens/PairingScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
+import {SplitScreen} from './src/screens/SplitScreen';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
 import {AppProvider, useApp} from './src/state/AppContext';
 
 const Stack = createNativeStackNavigator();
+
+// RadarRoute picks the layout by width (MOBILE §5): a split-view (sidebar radar +
+// inline detail) on iPad / wide windows (≥ 768pt), else the stacked phone radar.
+function RadarRoute(props: any) {
+  const {width} = useWindowDimensions();
+  return width >= 768 ? <SplitScreen {...props} /> : <RadarScreen {...props} />;
+}
 
 // PushBridge wires APNs registration + tap deep-link once we have a client.
 // Renders nothing.
@@ -83,7 +91,7 @@ function Root() {
       <PushBridge navRef={navRef} />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>
-          <Stack.Screen name="Radar" component={RadarScreen} />
+          <Stack.Screen name="Radar" component={RadarRoute} />
           <Stack.Screen name="Detail" component={DetailScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </Stack.Navigator>
