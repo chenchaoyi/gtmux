@@ -1,11 +1,10 @@
-// PairingScreen — "Add a Mac". Manual host+token entry (works on the simulator).
-// The QR scanner needs react-native-vision-camera + a real device; that's a
-// later increment, so the Scan button explains it for now.
+// PairingScreen — "Add a Mac". Two ways to pair: scan the menu-bar app's pairing
+// QR (ScanScreen, camera, real device only) or enter host+token manually (works
+// on the simulator). Both end in useApp().pair() → the app flips to the Radar.
 
 import React, {useState} from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,6 +18,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
 import {normalizeHost} from '../pairing/qr';
+import {ScanScreen} from './ScanScreen';
 
 export function PairingScreen() {
   const {t, pal, pair} = useApp();
@@ -26,6 +26,7 @@ export function PairingScreen() {
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [scanning, setScanning] = useState(false);
 
   const connect = async () => {
     const base = normalizeHost(host);
@@ -52,6 +53,10 @@ export function PairingScreen() {
     }
   };
 
+  if (scanning) {
+    return <ScanScreen onCancel={() => setScanning(false)} />;
+  }
+
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]}>
       <KeyboardAvoidingView
@@ -63,9 +68,7 @@ export function PairingScreen() {
 
           <TouchableOpacity
             style={[styles.qrBtn, {borderColor: pal.divider, backgroundColor: pal.surface}]}
-            onPress={() =>
-              Alert.alert('gtmux', t('pushDevice'))
-            }>
+            onPress={() => setScanning(true)}>
             <Text style={[styles.qrText, {color: pal.fg2}]}>▦  {t('scanQR')}</Text>
           </TouchableOpacity>
 
