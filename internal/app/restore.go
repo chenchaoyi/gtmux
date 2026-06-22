@@ -62,6 +62,11 @@ func execTmuxAttach(name string) int {
 // point at the save instead of pretending success.
 func ensureServer() {
 	if tmux.ServerUp() {
+		// A server is already up. The classic post-reboot trap: a reopened
+		// terminal tab (or anything) started an EMPTY server before `gtmux
+		// restore` ran, so the boot+restore path below is skipped and the saved
+		// layout never comes back. Recover it.
+		recoverMissingSavedSessions()
 		return
 	}
 	// Fix a poisoned resurrect `last` BEFORE booting: starting the server triggers
@@ -232,6 +237,123 @@ func saveHasLayout(path string) bool {
 		}
 	}
 	return false
+}
+
+// savedSessionNames returns the distinct session names recorded in a resurrect
+// save (from its window/pane lines, where field 2 is the session name).
+func savedSessionNames(path string) []string {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+	seen := map[string]bool{}
+	var out []string
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 1<<20), 1<<20)
+	for sc.Scan() {
+		line := sc.Text()
+		if !strings.HasPrefix(line, "window\t") && !strings.HasPrefix(line, "pane\t") {
+			continue
+		}
+		fields := strings.Split(line, "\t")
+		if len(fields) < 2 {
+			continue
+		}
+		if name := fields[1]; name != "" && !seen[name] {
+			seen[name] = true
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
+// liveSessionNames is the set of session names in the running server.
+func liveSessionNames() map[string]bool {
+	m := map[string]bool{}
+	for _, s := range tmux.Lines("list-sessions", "-F", "#{session_name}") {
+		if n := strings.TrimSpace(s); n != "" {
+			m[n] = true
+		}
+	}
+	return m
+}
+
+// shouldRecover decides whether to drive a resurrect restore into a RUNNING
+// server: yes only when the save has sessions AND none of them are live (the
+// server is a fresh/empty post-reboot one). If any saved session is already live
+// we assume a normal reattach and do nothing, to avoid duplicating sessions.
+func shouldRecover(saved []string, live map[string]bool) bool {
+	if len(saved) == 0 {
+		return false
+	}
+	for _, s := range saved {
+		if live[s] {
+			return false
+		}
+	}
+	return true
+}
+
+// recoverMissingSavedSessions handles the post-reboot trap: a server is already
+// up (so ensureServer's boot+restore is skipped) but the saved layout never came
+// back. If a real saved layout exists whose sessions are ALL missing from the
+// running server, drive the tmux-resurrect restore into it.
+func recoverMissingSavedSessions() {
+	save := resurrectLastSave()
+	if save == "" || !saveHasLayout(save) {
+		return
+	}
+	saved := savedSessionNames(save)
+	if !shouldRecover(saved, liveSessionNames()) {
+		return
+	}
+	script := resurrectRestoreScript()
+	if script == "" {
+		i18n.Sae("⚠ This tmux server is missing your saved sessions, but tmux-resurrect isn't installed to restore them. Save: "+save,
+			"⚠ 当前 tmux server 缺少你的存档 session,但未装 tmux-resurrect 无法恢复。存档: "+save)
+		return
+	}
+	i18n.Say("A tmux server is running but your saved sessions are missing — restoring them from the last save...",
+		"检测到 tmux server 在跑但缺少你的存档 session —— 正在用最近一次存档恢复...")
+	tmux.OK("run-shell", script)
+	if waitForSavedSessions(saved, 120*time.Second) {
+		i18n.Say("Restored your saved sessions. (running programs are NOT relaunched — e.g. 'claude --resume')",
+			"已恢复你的存档 session。(正在运行的程序不会自动重启 —— 如 'claude --resume')")
+	} else {
+		i18n.Sae("⚠ Restore did not complete in time — your save is intact at "+save,
+			"⚠ 恢复未在限定时间内完成 —— 你的存档完好: "+save)
+	}
+}
+
+// waitForSavedSessions polls until at least one of the saved sessions appears
+// live and the live-session count settles, or timeout.
+func waitForSavedSessions(saved []string, timeout time.Duration) bool {
+	want := map[string]bool{}
+	for _, s := range saved {
+		want[s] = true
+	}
+	deadline := time.Now().Add(timeout)
+	prev, stable := -1, 0
+	for time.Now().Before(deadline) {
+		live := liveSessionNames()
+		n := 0
+		for s := range live {
+			if want[s] {
+				n++
+			}
+		}
+		if n > 0 && n == prev {
+			if stable++; stable >= 2 {
+				return true
+			}
+		} else {
+			stable = 0
+		}
+		prev = n
+		time.Sleep(700 * time.Millisecond)
+	}
+	return prev > 0
 }
 
 // waitForRestoredSessions polls until at least one non-boot session exists AND
