@@ -57,9 +57,17 @@ func Lines(args ...string) []string {
 
 // CapturePane returns the visible (current-screen) content of a pane, read-only.
 // Used to tell a working agent (its screen animates) from an idle one (static)
-// when the agent sets no title spinner. "" on error.
+// when the agent sets no title spinner. "" on error. PLAIN text (no escapes) so
+// frame-diffing stays stable.
 func CapturePane(pane string) string {
 	out, _ := Run("capture-pane", "-p", "-t", pane)
+	return out
+}
+
+// CapturePaneColor returns the pane's current screen WITH ANSI SGR escapes
+// (`-e`), so the mobile app can render it in color (MOBILE §4). Read-only.
+func CapturePaneColor(pane string) string {
+	out, _ := Run("capture-pane", "-e", "-p", "-t", pane)
 	return out
 }
 
