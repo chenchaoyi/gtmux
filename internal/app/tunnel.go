@@ -38,6 +38,8 @@ func cmdTunnel(args []string) int {
 		name = "Mac"
 	}
 	quick := false
+	yes := false
+	var service string // "install" | "remove" | "status"
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -54,6 +56,14 @@ func cmdTunnel(args []string) int {
 			return 0
 		case a == "--quick":
 			quick = true
+		case a == "--service":
+			service = "install"
+		case a == "--unservice":
+			service = "remove"
+		case a == "--status":
+			service = "status"
+		case a == "-y" || a == "--yes":
+			yes = true
 		case a == "--port" || a == "-p":
 			v, ok := next()
 			if !ok {
@@ -86,6 +96,14 @@ func cmdTunnel(args []string) int {
 		}
 	}
 
+	switch service {
+	case "install":
+		return tunnelServiceInstall(port, name, yes)
+	case "remove":
+		return tunnelServiceRemove()
+	case "status":
+		return tunnelServiceStatus()
+	}
 	if quick {
 		return tunnelQuick(port, name)
 	}
@@ -302,10 +320,9 @@ func portInUse(port int) bool {
 	return true
 }
 
-// printTunnelPairing prints the URL, token, and a scannable pairing QR (the same
-// `{v,url,token,name}` payload the menu-bar app encodes). stable=true for hosted
-// (pair once), false for quick (the URL rotates each run).
-func printTunnelPairing(url, token, name string, stable bool) {
+// printPairingBlock prints the URL, token, and a scannable pairing QR (the same
+// `{v,url,token,name}` payload the menu-bar app encodes). Callers add a footer.
+func printPairingBlock(url, token, name string) {
 	payload, _ := json.Marshal(struct {
 		V     int    `json:"v"`
 		URL   string `json:"url"`
@@ -322,6 +339,12 @@ func printTunnelPairing(url, token, name string, stable bool) {
 	i18n.Say("Scan in the gtmux phone app (Pair → Scan):",
 		"在 gtmux 手机 app 里扫码(配对 → 扫一扫):")
 	qrterminal.GenerateHalfBlock(string(payload), qrterminal.L, os.Stdout)
+}
+
+// printTunnelPairing prints the pairing block plus a foreground footer.
+// stable=true for hosted (pair once), false for quick (the URL rotates each run).
+func printTunnelPairing(url, token, name string, stable bool) {
+	printPairingBlock(url, token, name)
 	if stable {
 		i18n.Say(i18n.Dim+"Stable address — pair once; it stays the same across restarts. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
 			i18n.Dim+"固定地址 —— 配一次即可,重启也不变。保持开启;Ctrl-C 关闭。拿到此 URL + token 的人都能读你的雷达。"+i18n.Reset)
@@ -332,12 +355,14 @@ func printTunnelPairing(url, token, name string, stable bool) {
 }
 
 func tunnelUsage() {
-	i18n.Say("usage: gtmux tunnel [--quick] [--port N] [--name LABEL]",
-		"用法: gtmux tunnel [--quick] [--port N] [--name 标签]")
+	i18n.Say("usage: gtmux tunnel [--quick] [--service|--unservice|--status] [--port N] [--name LABEL]",
+		"用法: gtmux tunnel [--quick] [--service|--unservice|--status] [--port N] [--name 标签]")
 	i18n.Say("  Expose the read-only radar from anywhere via an outbound tunnel, then print a pairing QR.",
 		"  通过出站隧道把只读雷达暴露到任何地方,并打印配对二维码。")
-	i18n.Say("  default: a stable hosted address (pair once). --quick: an account-less ephemeral URL.",
-		"  默认:固定的托管地址(配一次即可)。--quick:免账号的临时地址。")
+	i18n.Say("  default: a stable hosted address (pair once), foreground. --quick: an account-less ephemeral URL.",
+		"  默认:固定的托管地址(配一次即可),前台运行。--quick:免账号的临时地址。")
+	i18n.Say("  --service: keep it ON across reboots (launchd); --unservice: turn off; --status: show state.",
+		"  --service:重启也保持开启(launchd);--unservice:关闭;--status:查看状态。")
 }
 
 func tunnelUsageErr() int {

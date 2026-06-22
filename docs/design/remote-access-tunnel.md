@@ -140,11 +140,26 @@ Mac→CF half (cloudflared registers) are verifiable there; the last hop is veri
 from the **phone on cellular/home** (a normal network hits real CF IPs). This is a
 network artifact, not a design flaw, and does not affect real users.
 
+## Always-on (explicit opt-in)
+
+By default `gtmux tunnel` runs in the **foreground** — you consciously open remote
+access for a session; Ctrl-C stops it. The stable URL already means no re-pairing
+across manual restarts. **Always-on** (reachable across reboots without re-running)
+is a separate, opt-in, reversible mode — never a default, because a standing
+public exposure should be a conscious choice and stay visible:
+
+- `gtmux tunnel --service` — provisions the stable tunnel, then registers two
+  per-user **LaunchAgents** (`com.gtmux.serve` → `gtmux serve` on loopback;
+  `com.gtmux.tunnel` → `cloudflared` with the connector token), `RunAtLoad` +
+  `KeepAlive`. It explains the standing exposure and asks first (`--yes` bypasses
+  the prompt — used by the menu-bar toggle, which shows its own confirmation).
+- `gtmux tunnel --unservice` — unloads + deletes both agents.
+- `gtmux tunnel --status` — on/off + the stable URL.
+- The connector token lives in the tunnel plist (0600). The menu-bar app surfaces
+  an on/off toggle + a visible indicator so always-on is never silent.
+
 ## Not yet built (tracked)
 
-- **Always-on (launchd)** — run `cloudflared` + `gtmux serve` as login services so
-  the Mac is reachable across reboots without re-running the command. Today
-  `gtmux tunnel` runs in the foreground (stable URL already means no re-pairing).
 - **Abuse hardening** — per-`deviceId` cap, reap tunnels unused for N days,
   `DELETE /provision`, rate limiting. The `x-gtmux-reg` gate is only a speed bump.
 - **App-layer E2E encryption** — so Cloudflare can't see radar plaintext.
