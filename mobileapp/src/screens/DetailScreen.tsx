@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import Clipboard from '@react-native-clipboard/clipboard';
 import {Agent, primary, secondary} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
@@ -25,6 +26,7 @@ import {StatusBadge} from '../ui/StatusBadge';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
+import {FloatingKeys} from '../ui/FloatingKeys';
 import {StatusColor} from '../ui/theme';
 
 const FONT_SIZES = [9, 11, 13];
@@ -45,7 +47,16 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [wrap, setWrap] = useState(true);
   const [atBottom, setAtBottom] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const [keysOpen, setKeysOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Copy the whole current screen (beyond per-line native text selection, which
+  // is also enabled on the colored spans below).
+  const copyScreen = () => {
+    Clipboard.setString(text);
+    setFocusMsg(lang === 'zh' ? '已复制屏幕' : 'Screen copied');
+    setTimeout(() => setFocusMsg(''), 2000);
+  };
 
   const smaller = () => setFontIdx(i => Math.max(0, i - 1));
   const bigger = () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1));
@@ -106,7 +117,9 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       style={[styles.safe, {backgroundColor: pal.bg}]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar hidden={fullscreen} />
-      <SafeAreaView style={styles.safe} edges={fullscreen ? [] : ['top']}>
+      {/* keep the top safe-area inset even in full-screen so the floating control
+          isn't hidden under the notch / Dynamic Island */}
+      <SafeAreaView style={styles.safe} edges={['top']}>
       {/* header: back · badge · title/sub · Focus on Mac (hidden in full-screen) */}
       {!fullscreen && (
         <View style={[styles.header, {borderBottomColor: pal.divider}]}>
@@ -140,6 +153,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             <Text style={[styles.ctlText, {color: pal.fg3}]}>live</Text>
           </View>
           <View style={styles.ctlRight}>
+            <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyScreen} />
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
             <Ctl pal={pal} label={wrapLabel} onPress={() => setWrap(w => !w)} />
@@ -176,14 +190,13 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             <Text style={styles.fabText}>↓</Text>
           </TouchableOpacity>
         )}
-        {/* full-screen: a floating control pill so chrome is hidden but A−/A+ /
-            wrap / exit stay reachable (more room to talk to the agent) */}
+        {/* full-screen: just a clean exit control (the config options are hidden
+            for more room; adjust A−/A+ / wrap before going full-screen) */}
         {fullscreen && (
           <View style={styles.fsBar}>
-            <FsBtn label="A−" onPress={smaller} />
-            <FsBtn label="A+" onPress={bigger} />
-            <FsBtn label={wrapLabel} onPress={() => setWrap(w => !w)} />
-            <FsBtn label="⤡" onPress={() => setFullscreen(false)} />
+            <FsBtn label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyScreen} />
+            <View style={styles.fsSep} />
+            <FsBtn label={'⤡ ' + (lang === 'zh' ? '退出' : 'Exit')} onPress={() => setFullscreen(false)} />
           </View>
         )}
       </View>
@@ -203,6 +216,16 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           client.send(agent.pane_id, p);
         }}
         onUpload={(uri, name, type) => client.upload(uri, name, type)}
+        onOpenKeys={() => setKeysOpen(true)}
+      />
+
+      {/* Moshi-style draggable nav keypad, floating over the terminal */}
+      <FloatingKeys
+        visible={keysOpen}
+        pal={pal}
+        lang={lang}
+        onKey={key => client.send(agent.pane_id, {key})}
+        onClose={() => setKeysOpen(false)}
       />
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -289,6 +312,7 @@ const styles = StyleSheet.create({
   },
   fsBtn: {paddingHorizontal: 11, paddingVertical: 7},
   fsBtnText: {color: 'rgba(255,255,255,0.88)', fontSize: 13, fontWeight: '600'},
+  fsSep: {width: StyleSheet.hairlineWidth, height: 18, backgroundColor: 'rgba(255,255,255,0.2)'},
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,6 +1,7 @@
 // Neutral monogram marks per agent (MOBILE §2) — for IDENTITY (which tool is
-// running), NOT a logo. Official icons load from `Agent.icon` when resolvable;
-// this is the IP-safe fallback. Color is never used to encode agent identity.
+// running), NOT a logo. The OFFICIAL icon loads over /api/icon (served from the
+// Mac's installed app, see AgentRow); this is the IP-safe fallback when there's
+// no icon or the fetch 404s. Color is never used to encode agent identity.
 
 const MARKS: Record<string, string> = {
   'claude code': 'CC',
@@ -24,18 +25,4 @@ export function agentMark(name: string): string {
   }
   const cleaned = (name || '').trim();
   return cleaned ? cleaned.slice(0, 2) : '?';
-}
-
-/**
- * resolveIcon maps `Agent.icon` to a loadable image source, or null to fall back
- * to the mark. macOS `.app` bundle paths can't render on iOS, so only http(s)
- * URLs and direct image files resolve; everything else falls back (MOBILE §2).
- */
-export function resolveIcon(icon?: string): string | null {
-  if (!icon) return null;
-  if (/^https?:\/\//.test(icon)) return icon;
-  if (/\.(png|jpe?g|gif|webp)$/i.test(icon)) {
-    return icon.startsWith('/') ? 'file://' + icon : icon;
-  }
-  return null;
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -131,6 +132,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Focus:  func(id string) error { return focusPaneByID(id) },
 		Send:   sendToPane,
 		Upload: saveUpload,
+		Icon:   agentIconPNG,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil
@@ -238,7 +240,7 @@ func randToken() string {
 var allowedSendKeys = map[string]bool{
 	"Enter": true, "C-c": true, "Escape": true, "Tab": true,
 	"Up": true, "Down": true, "Left": true, "Right": true,
-	"BSpace": true, "C-d": true, "C-z": true,
+	"BSpace": true, "C-d": true, "C-z": true, "C-l": true,
 }
 
 // sendToPane types into a pane for POST /api/send (a WRITE). A non-empty key must
@@ -294,6 +296,55 @@ func sanitizeFilename(name string) string {
 		out = out[len(out)-80:]
 	}
 	return out
+}
+
+// agentIconPNG returns a PNG of the agent's identity icon, extracted from its
+// installed .app via sips (cached by app mtime), or nil. Read-only; uses the
+// user's installed app — nothing third-party is bundled (DESIGN §6).
+func agentIconPNG(name string) []byte {
+	hint := iconFor(name, loadProfiles())
+	if hint == "" {
+		return nil
+	}
+	if !strings.HasSuffix(hint, ".app") {
+		b, _ := os.ReadFile(hint) // a direct image path
+		return b
+	}
+	cacheDir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "icon-cache")
+	_ = os.MkdirAll(cacheDir, 0o755)
+	cache := filepath.Join(cacheDir, sanitizeFilename(name)+"-"+strconv.FormatInt(fileMtime(hint), 10)+".png")
+	if b, err := os.ReadFile(cache); err == nil {
+		return b
+	}
+	icns := appIcns(hint)
+	if icns == "" {
+		return nil
+	}
+	if exec.Command("sips", "-s", "format", "png", "-Z", "64", icns, "--out", cache).Run() != nil {
+		return nil
+	}
+	b, _ := os.ReadFile(cache)
+	return b
+}
+
+// appIcns finds a .app's .icns icon (CFBundleIconFile, else the first *.icns).
+func appIcns(app string) string {
+	res := filepath.Join(app, "Contents", "Resources")
+	if out, err := exec.Command("defaults", "read", filepath.Join(app, "Contents", "Info"), "CFBundleIconFile").Output(); err == nil {
+		name := strings.TrimSpace(string(out))
+		if name != "" {
+			if !strings.HasSuffix(name, ".icns") {
+				name += ".icns"
+			}
+			if p := filepath.Join(res, name); fileExists(p) {
+				return p
+			}
+		}
+	}
+	if m, _ := filepath.Glob(filepath.Join(res, "*.icns")); len(m) > 0 {
+		return m[0]
+	}
+	return ""
 }
 
 // printServeBanner tells the user where to point the phone and the token to use.

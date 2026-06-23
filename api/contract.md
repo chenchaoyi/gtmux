@@ -85,7 +85,7 @@ Types into a pane via `tmux send-keys`. JSON body — supply **exactly one** of:
 | field | type | meaning |
 | --- | --- | --- |
 | `id` | string | the target pane id (`%N`), required |
-| `key` | string | a NAMED control key, allow-listed: `Enter`, `C-c`, `Escape`, `Tab`, `Up`, `Down`, `Left`, `Right`, `BSpace`, `C-d`, `C-z` |
+| `key` | string | a NAMED control key, allow-listed: `Enter`, `C-c`, `Escape`, `Tab`, `Up`, `Down`, `Left`, `Right`, `BSpace`, `C-d`, `C-z`, `C-l` |
 | `text` | string | literal text typed with `send-keys -l` (never interpreted as keys) |
 | `enter` | bool | with `text`: also press Enter afterward |
 
@@ -107,6 +107,18 @@ can hand a photo/file to an agent by path (e.g. send `look at <path>`).
 400 {"error":"missing file" | "bad upload (too large?)"}
 405 {"error":"method not allowed"}
 503 {"error":"upload not available"}
+```
+
+### `GET /api/icon?agent=<name>` — agent identity icon (PNG)
+
+Returns a PNG of the named agent's identity icon, sourced from the user's
+**installed app** on the Mac (the same icon the menu-bar app shows — nothing
+third-party is bundled). The mobile app uses it for agent avatars.
+
+```
+200 image/png   (Cache-Control: public, max-age=86400)
+404 {"error":"no icon"}            // unknown agent / no resolvable icon
+503 {"error":"icons not available"}  // Icon dep not wired
 ```
 
 ### `GET /api/events` — live updates (Server-Sent Events)
@@ -131,18 +143,28 @@ lock-screen notifications even when the app is closed. Tokens persist on the Mac
 (`~/.config/gtmux/push-tokens.json`, `0600`); the relay stays stateless.
 
 ```
-body: {"token":"<device-token>","platform":"ios"}   // platform defaults to ios
+body: {"token":"<device-token>","platform":"ios","kinds":["waiting","done"]}
 200 {"status":"ok"}
 400 {"error":"invalid token"}        // missing token / bad body
 503 {"error":"push not configured"}  // server started without push support
 ```
+
+`kinds` filters which alert kinds this device wants (`waiting` = needs-you,
+`done` = finished). Omit or send `[]` for **all** kinds. Lets the phone opt out
+of e.g. completion notifications from the settings screen.
 
 Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
 key) → APNs → device. The relay's own contract is in `relay/README.md`. APNs is
 delivered by Apple over any network, so push arrives even when the phone is off
 the VPN; only the live view/control needs the tunnel.
 
-## Reserved (later increments — not yet served)
+### `POST /api/push/test` — send a test notification
 
-- `POST /api/send` — Phase 2 control (`tmux send-keys`); gated behind an
-  explicit write permission. Out of scope for the read-only MVP.
+Sends a test push to **every** registered device (so the settings screen can
+verify notifications end-to-end). No body.
+
+```
+200 {"sent":N}                       // N = devices the relay accepted
+405 {"error":"method not allowed"}   // non-POST
+503 {"error":"push not configured"}  // server started without push support
+```

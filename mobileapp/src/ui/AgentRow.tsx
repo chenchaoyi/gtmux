@@ -9,20 +9,23 @@ import React, {useState} from 'react';
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
-import {agentMark, resolveIcon} from './agentMark';
+import {agentMark} from './agentMark';
+import {useAgents} from '../state/AgentsContext';
 import {Palette, Size, StatusColor} from './theme';
 import {StatusBadge} from './StatusBadge';
 
-// AgentAvatar renders the official icon when loadable, falling back to the mark
-// (also on image load error). Rounded square so square app icons sit flush.
+// AgentAvatar shows the agent's OFFICIAL icon — fetched from the Mac's installed
+// app via /api/icon (like the menu-bar app) — falling back to a neutral mark when
+// there's no icon hint or the fetch 404s. Rounded square so square app icons fit.
 function AgentAvatar({agent, pal}: {agent: Agent; pal: Palette}) {
+  const {client} = useAgents();
   const [failed, setFailed] = useState(false);
-  const uri = failed ? null : resolveIcon(agent.icon);
+  const source = !failed && agent.icon && client ? client.iconUri(agent.agent) : null;
   return (
     <View style={[styles.avatar, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-      {uri ? (
+      {source ? (
         <Image
-          source={{uri}}
+          source={source}
           style={styles.avatarImg}
           resizeMode="contain"
           onError={() => setFailed(true)}
