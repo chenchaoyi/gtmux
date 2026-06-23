@@ -136,6 +136,14 @@ func tunnelHosted(port int, name string) int {
 	}
 
 	token := startLocalRadar(port)
+	// Record the live tunnel URL so the menu-bar "Pair phone" QR can hand the
+	// phone the address that actually works (serve here is loopback-only — a LAN
+	// IP wouldn't be reachable). Clean up on exit unless the always-on service
+	// owns the file.
+	_ = os.WriteFile(tunnelURLPath(), []byte(prov.URL+"\n"), 0o600)
+	if !serviceInstalled() {
+		defer func() { _ = os.Remove(tunnelURLPath()) }()
+	}
 	i18n.Say("Starting your tunnel…", "正在启动隧道…")
 	return runCloudflared(bin, []string{"tunnel", "run", "--token", prov.Token}, registeredRe, func(string) {
 		printTunnelPairing(prov.URL, token, name, true)
@@ -149,31 +157,60 @@ type provisionResp struct {
 	Token    string `json:"token"`
 }
 
+// provisionTunnel calls /provision, retrying across the primary + fallback base
+// and a few attempts — flaky networks reset the connection (EOF) intermittently,
+// and a single shot shouldn't fail the whole command. A 4xx (e.g. bad reg gate)
+// fails fast; network errors + 5xx retry.
 func provisionTunnel(api, reg, deviceID, name string) (*provisionResp, error) {
+	bases := []string{api}
+	if fb := tunnelAPIFallback(); fb != "" && fb != api {
+		bases = append(bases, fb)
+	}
+	var lastErr error
+	for attempt := 0; attempt < 4; attempt++ {
+		for _, base := range bases {
+			p, retryable, err := provisionOnce(base, reg, deviceID, name)
+			if err == nil {
+				return p, nil
+			}
+			lastErr = err
+			if !retryable {
+				return nil, err
+			}
+		}
+		time.Sleep(time.Duration(attempt+1) * 700 * time.Millisecond)
+	}
+	return nil, lastErr
+}
+
+// provisionOnce makes one /provision call. retryable is true for network errors
+// and 5xx (transient), false for 4xx / malformed responses (won't improve).
+func provisionOnce(base, reg, deviceID, name string) (p *provisionResp, retryable bool, err error) {
 	body, _ := json.Marshal(map[string]string{"deviceId": deviceID, "name": name})
-	req, err := http.NewRequest("POST", strings.TrimRight(api, "/")+"/provision", bytes.NewReader(body))
+	req, err := http.NewRequest("POST", strings.TrimRight(base, "/")+"/provision", bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-gtmux-reg", reg)
-	res, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	res, err := (&http.Client{Timeout: 20 * time.Second}).Do(req)
 	if err != nil {
-		return nil, err
+		return nil, true, err // network/reset → retry
 	}
 	defer res.Body.Close()
 	data, _ := io.ReadAll(io.LimitReader(res.Body, 1<<16))
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, strings.TrimSpace(string(data)))
+		return nil, res.StatusCode >= 500,
+			fmt.Errorf("HTTP %d: %s", res.StatusCode, strings.TrimSpace(string(data)))
 	}
-	var p provisionResp
-	if err := json.Unmarshal(data, &p); err != nil {
-		return nil, err
+	var resp provisionResp
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, true, err
 	}
-	if p.Token == "" || p.URL == "" {
-		return nil, fmt.Errorf("incomplete provision response")
+	if resp.Token == "" || resp.URL == "" {
+		return nil, false, fmt.Errorf("incomplete provision response")
 	}
-	return &p, nil
+	return &resp, false, nil
 }
 
 // resolveDeviceID returns a stable random id for this Mac (so re-provisioning

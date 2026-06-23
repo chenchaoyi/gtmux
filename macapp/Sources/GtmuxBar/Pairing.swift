@@ -25,9 +25,10 @@ enum Pairing {
             return nil
         }
         let name = Host.current().localizedName ?? "Mac"
-        let tunnelOn = FileManager.default.fileExists(
-            atPath: "\(home)/Library/LaunchAgents/com.gtmux.tunnel.plist")
-        if tunnelOn, let turl = readTrimmed("\(home)/.config/gtmux/tunnel-url"), !turl.isEmpty {
+        // Prefer the recorded tunnel URL — written by `gtmux tunnel` (foreground)
+        // and the always-on service. serve binds loopback under a tunnel, so a LAN
+        // IP wouldn't actually be reachable; the tunnel URL is what works.
+        if let turl = readTrimmed("\(home)/.config/gtmux/tunnel-url"), !turl.isEmpty {
             return PairingInfo(url: turl, token: token, name: name, anywhere: true)
         }
         let host = primaryIPv4() ?? "localhost"
@@ -108,6 +109,7 @@ final class PairingController {
 struct PairingView: View {
     @ObservedObject var l10n: L10n
     @State private var info: PairingInfo?
+    @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
 
     var body: some View {
         VStack(spacing: 14) {
@@ -125,11 +127,12 @@ struct PairingView: View {
                 Text(p.url)
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                     .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                reachLine
                 Text(p.anywhere
-                     ? l10n.tr("Reachable from anywhere (remote access is on).",
-                               "任意网络可达(远程访问已开启)。")
-                     : l10n.tr("Same Wi-Fi only. Turn on Remote access (Preferences) for anywhere.",
-                               "仅同一 Wi-Fi。想任意网络用,去偏好设置开启远程访问。"))
+                     ? l10n.tr("Reachable from anywhere (a tunnel is up).",
+                               "任意网络可达(隧道在运行)。")
+                     : l10n.tr("Same Wi-Fi only. `gtmux tunnel` (or Remote access) makes it reachable anywhere.",
+                               "仅同一 Wi-Fi。跑 `gtmux tunnel`(或开启远程访问)即可任意网络可达。"))
                     .font(.system(size: 11)).foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
             } else {
@@ -144,6 +147,43 @@ struct PairingView: View {
         }
         .padding(24)
         .frame(width: 340, alignment: .center)
-        .onAppear { info = Pairing.current() }
+        .onAppear {
+            let i = Pairing.current()
+            info = i
+            if let i = i { probe(i.url) }
+        }
+    }
+
+    // reachLine shows whether the address actually answers, so a dead URL is
+    // caught before scanning (the QR can otherwise look fine but never connect).
+    @ViewBuilder private var reachLine: some View {
+        switch reachable {
+        case .some(true):
+            label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
+        case .some(false):
+            label("exclamationmark.triangle.fill", .orange,
+                  l10n.tr("Can't reach it — is `gtmux tunnel` running (or Remote access on)?",
+                          "连不上 —— `gtmux tunnel` 在跑吗(或开了远程访问)?"))
+        case .none:
+            label("clock", .secondary, l10n.tr("Checking…", "检查中…"))
+        }
+    }
+
+    private func label(_ symbol: String, _ color: Color, _ text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: symbol).font(.system(size: 10)).foregroundStyle(color)
+            Text(text).font(.system(size: 11)).foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+        }
+    }
+
+    private func probe(_ url: String) {
+        guard let u = URL(string: url + "/api/health") else { reachable = false; return }
+        var req = URLRequest(url: u)
+        req.timeoutInterval = 6
+        URLSession.shared.dataTask(with: req) { _, resp, _ in
+            let ok = (resp as? HTTPURLResponse)?.statusCode == 200
+            DispatchQueue.main.async { reachable = ok }
+        }.resume()
     }
 }
