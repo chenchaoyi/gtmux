@@ -5,7 +5,7 @@
 import React from 'react';
 import {ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {version as appVersion} from '../../package.json';
+import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
 

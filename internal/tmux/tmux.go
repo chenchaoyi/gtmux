@@ -64,10 +64,12 @@ func CapturePane(pane string) string {
 	return out
 }
 
-// CapturePaneColor returns the pane's current screen WITH ANSI SGR escapes
-// (`-e`), so the mobile app can render it in color (MOBILE §4). Read-only.
+// CapturePaneColor returns the pane's screen + scrollback WITH ANSI SGR escapes
+// (`-e`), so the mobile app can render history in color (MOBILE §4). `-S -2000`
+// includes up to 2000 lines of scrollback (bounded for payload/render cost; the
+// real depth is also capped by tmux history-limit). Read-only.
 func CapturePaneColor(pane string) string {
-	out, _ := Run("capture-pane", "-e", "-p", "-t", pane)
+	out, _ := Run("capture-pane", "-e", "-p", "-S", "-2000", "-t", pane)
 	return out
 }
 

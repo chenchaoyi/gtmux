@@ -6,7 +6,7 @@
 //
 // Color is never used for status here.
 
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {StatusName} from '../api/types';
 import {SendPayload} from '../api/client';
@@ -52,14 +52,20 @@ export function Composer({
   onSend?: (p: SendPayload) => void;
 }) {
   const [text, setText] = useState('');
+  // Guard against a double submit: iOS fires onSubmitEditing twice with
+  // blurOnSubmit=false (notably after voice dictation), which sent the message
+  // twice. Drop a second submit within a short window.
+  const lastSubmit = useRef(0);
   const send = (p: SendPayload) => {
     if (enabled && onSend) onSend(p);
   };
   const sendText = () => {
-    if (text) {
-      send({text, enter: true});
-      setText('');
-    }
+    if (!text) return;
+    const now = Date.now();
+    if (now - lastSubmit.current < 600) return;
+    lastSubmit.current = now;
+    send({text, enter: true});
+    setText('');
   };
 
   return (
