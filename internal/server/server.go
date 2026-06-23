@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -48,6 +49,11 @@ type Deps struct {
 	// text is typed literally, plus Enter when enter is true. err if the pane is
 	// gone or the key isn't allowed. Optional: nil → POST /api/send returns 503.
 	Send func(id, text, key string, enter bool) error
+
+	// Upload saves an uploaded file on the Mac and returns its local path (so the
+	// phone can hand a photo/file to an agent by path). Optional: nil → POST
+	// /api/upload returns 503.
+	Upload func(name string, data []byte) (path string, err error)
 
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
@@ -99,6 +105,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
+	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
 	return mux
@@ -215,6 +222,42 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// handleUpload accepts a multipart "file" and saves it on the Mac (≤ 30 MB),
+// returning {"path": "..."} so the client can reference it to an agent.
+func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if s.deps.Upload == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("upload not available"))
+		return
+	}
+	const maxBytes = 30 << 20
+	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+	if err := r.ParseMultipartForm(maxBytes); err != nil {
+		writeJSON(w, http.StatusBadRequest, errBody("bad upload (too large?)"))
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, errBody("missing file"))
+		return
+	}
+	defer file.Close()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, errBody("read failed"))
+		return
+	}
+	path, err := s.deps.Upload(header.Filename, data)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("save failed: "+err.Error()))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"path": path})
 }
 
 func errBody(msg string) map[string]string { return map[string]string{"error": msg} }

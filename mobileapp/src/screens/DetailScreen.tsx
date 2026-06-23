@@ -202,6 +202,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         onSend={p => {
           client.send(agent.pane_id, p);
         }}
+        onUpload={(uri, name, type) => client.upload(uri, name, type)}
       />
       </SafeAreaView>
     </KeyboardAvoidingView>

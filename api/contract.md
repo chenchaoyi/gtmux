@@ -96,6 +96,19 @@ Types into a pane via `tmux send-keys`. JSON body — supply **exactly one** of:
 503 {"error":"input not available"}                                // Send not wired
 ```
 
+### `POST /api/upload` — attach a file (WRITE)
+
+`multipart/form-data` with a `file` part (≤ 30 MB). Saves it on the Mac under
+`~/.local/share/gtmux/uploads/<rand>-<name>` and returns its path, so the phone
+can hand a photo/file to an agent by path (e.g. send `look at <path>`).
+
+```
+200 {"path":"/Users/…/.local/share/gtmux/uploads/ab12cd34-photo.jpg"}
+400 {"error":"missing file" | "bad upload (too large?)"}
+405 {"error":"method not allowed"}
+503 {"error":"upload not available"}
+```
+
 ### `GET /api/events` — live updates (Server-Sent Events)
 
 `text/event-stream`. Lets the app react to changes instead of polling. On

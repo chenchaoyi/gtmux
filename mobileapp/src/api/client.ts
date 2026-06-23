@@ -65,6 +65,21 @@ export class GtmuxClient {
     return r.ok;
   }
 
+  // upload sends a file to the Mac and returns the saved path (to reference to an
+  // agent), or null. Multipart — don't set Content-Type (RN adds the boundary).
+  async upload(uri: string, name: string, type: string): Promise<string | null> {
+    const form = new FormData();
+    form.append('file', {uri, name, type} as any);
+    try {
+      const r = await fetch(`${this.base}/api/upload`, {method: 'POST', headers: this.h(), body: form});
+      if (!r.ok) return null;
+      const j = await r.json();
+      return typeof j?.path === 'string' ? j.path : null;
+    } catch {
+      return null;
+    }
+  }
+
   async registerPush(deviceToken: string): Promise<boolean> {
     const r = await fetch(`${this.base}/api/push/register`, {
       method: 'POST',
