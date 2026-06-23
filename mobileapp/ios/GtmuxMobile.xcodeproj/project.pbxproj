@@ -275,7 +275,7 @@
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app;
-				PRODUCT_NAME = GtmuxMobile;
+				PRODUCT_NAME = gtmux;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OBJC_BRIDGING_HEADER = "GtmuxMobile/GtmuxMobile-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -306,7 +306,7 @@
 					"-lc++",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app;
-				PRODUCT_NAME = GtmuxMobile;
+				PRODUCT_NAME = gtmux;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OBJC_BRIDGING_HEADER = "GtmuxMobile/GtmuxMobile-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
