@@ -155,6 +155,9 @@ func (p *PushManager) copy(a Alert) (string, string) {
 		name = "agent"
 	}
 	if a.Kind == "waiting" {
+		if a.Repeat {
+			return name + " still needs you", a.Task
+		}
 		return name + " needs you", a.Task
 	}
 	return name + " finished", a.Task

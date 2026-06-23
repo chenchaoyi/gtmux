@@ -129,7 +129,7 @@ connect the server sends one `agents` event to sync; thereafter:
 | event | data | when |
 |---|---|---|
 | `agents` | `{"rev":N}` | the agent set/status changed — **refetch `/api/agents`**. `rev` is monotonic. |
-| `alert` | `{"pane","kind","agent","loc","task"}` | a transition: `kind:"waiting"` (any→waiting, needs you) or `kind:"done"` (working→idle). Also the push trigger. |
+| `alert` | `{"pane","kind","agent","loc","task","repeat"?}` | a transition: `kind:"waiting"` (any→waiting, needs you) or `kind:"done"` (working→idle). Also the push trigger. `repeat:true` marks a **re-nudge** — the pane has stayed `waiting` past the re-nudge interval (~5 min) without you acting, so it re-alerts/re-pushes ("still needs you") until you respond. |
 | `ping` | `{}` | ~20s heartbeat to keep the stream alive. |
 
 The server re-snapshots agents every ~1500ms (in step with the watch TUI).
