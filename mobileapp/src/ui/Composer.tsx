@@ -25,6 +25,7 @@ import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
 import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
+import {MoveKey} from './MoveKey';
 
 function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
   if (status === 'waiting') {
@@ -150,6 +151,7 @@ export function Composer({
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
         contentContainerStyle={styles.keys}>
+        <MoveKey pal={pal} enabled={enabled} onKey={k => send({key: k})} />
         {onOpenKeys && (
           <TouchableOpacity
             onPress={onOpenKeys}
