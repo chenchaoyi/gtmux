@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -43,7 +44,12 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [fontIdx, setFontIdx] = useState(1);
   const [wrap, setWrap] = useState(true);
   const [atBottom, setAtBottom] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  const smaller = () => setFontIdx(i => Math.max(0, i - 1));
+  const bigger = () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1));
+  const wrapLabel = wrap ? (lang === 'zh' ? '换行' : 'Wrap') : lang === 'zh' ? '滚动' : 'Scroll';
 
   useEffect(() => {
     let alive = true;
@@ -99,46 +105,48 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     <KeyboardAvoidingView
       style={[styles.safe, {backgroundColor: pal.bg}]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* header: back · badge · title/sub · Focus on Mac */}
-      <View style={[styles.header, {borderBottomColor: pal.divider}]}>
-        {onBack && (
-          <TouchableOpacity onPress={onBack} hitSlop={hit} style={styles.back}>
-            <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
+      <StatusBar hidden={fullscreen} />
+      <SafeAreaView style={styles.safe} edges={fullscreen ? [] : ['top']}>
+      {/* header: back · badge · title/sub · Focus on Mac (hidden in full-screen) */}
+      {!fullscreen && (
+        <View style={[styles.header, {borderBottomColor: pal.divider}]}>
+          {onBack && (
+            <TouchableOpacity onPress={onBack} hitSlop={hit} style={styles.back}>
+              <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.badgeWrap}>
+            <StatusBadge status={agent.status} size={18} />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
+              {primary(agent)}
+            </Text>
+            <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
+              {agent.agent} · {statusLabel(agent.status, lang)} · {secondary(agent)}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={doFocus} style={[styles.focusTop, {borderColor: pal.divider}]}>
+            <Text style={[styles.focusTopText, {color: StatusColor.working}]}>{t('focusOnMac')}</Text>
           </TouchableOpacity>
-        )}
-        <View style={styles.badgeWrap}>
-          <StatusBadge status={agent.status} size={18} />
         </View>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
-            {primary(agent)}
-          </Text>
-          <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-            {agent.agent} · {statusLabel(agent.status, lang)} · {secondary(agent)}
-          </Text>
-        </View>
-        <TouchableOpacity onPress={doFocus} style={[styles.focusTop, {borderColor: pal.divider}]}>
-          <Text style={[styles.focusTopText, {color: StatusColor.working}]}>{t('focusOnMac')}</Text>
-        </TouchableOpacity>
-      </View>
+      )}
 
-      {/* controls: live · A− A+ · wrap/scroll */}
-      <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
-        <View style={styles.live}>
-          <View style={[styles.liveDot, {backgroundColor: StatusColor.idle}]} />
-          <Text style={[styles.ctlText, {color: pal.fg3}]}>live</Text>
+      {/* controls: live · A− A+ · wrap · full-screen (hidden in full-screen) */}
+      {!fullscreen && (
+        <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
+          <View style={styles.live}>
+            <View style={[styles.liveDot, {backgroundColor: StatusColor.idle}]} />
+            <Text style={[styles.ctlText, {color: pal.fg3}]}>live</Text>
+          </View>
+          <View style={styles.ctlRight}>
+            <Ctl pal={pal} label="A−" onPress={smaller} />
+            <Ctl pal={pal} label="A+" onPress={bigger} />
+            <Ctl pal={pal} label={wrapLabel} onPress={() => setWrap(w => !w)} />
+            <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />
+          </View>
         </View>
-        <View style={styles.ctlRight}>
-          <Ctl pal={pal} label="A−" onPress={() => setFontIdx(i => Math.max(0, i - 1))} />
-          <Ctl pal={pal} label="A+" onPress={() => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1))} />
-          <Ctl
-            pal={pal}
-            label={wrap ? (lang === 'zh' ? '换行' : 'Wrap') : (lang === 'zh' ? '滚动' : 'Scroll')}
-            onPress={() => setWrap(w => !w)}
-          />
-        </View>
-      </View>
+      )}
 
       {/* pane screen (colored) */}
       <View style={styles.termWrap}>
@@ -168,6 +176,16 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             <Text style={styles.fabText}>↓</Text>
           </TouchableOpacity>
         )}
+        {/* full-screen: a floating control pill so chrome is hidden but A−/A+ /
+            wrap / exit stay reachable (more room to talk to the agent) */}
+        {fullscreen && (
+          <View style={styles.fsBar}>
+            <FsBtn label="A−" onPress={smaller} />
+            <FsBtn label="A+" onPress={bigger} />
+            <FsBtn label={wrapLabel} onPress={() => setWrap(w => !w)} />
+            <FsBtn label="⤡" onPress={() => setFullscreen(false)} />
+          </View>
+        )}
       </View>
 
       {!!focusMsg && (
@@ -194,6 +212,15 @@ function Ctl({pal, label, onPress}: {pal: any; label: string; onPress: () => voi
   return (
     <TouchableOpacity onPress={onPress} style={[styles.ctl, {borderColor: pal.divider}]}>
       <Text style={[styles.ctlText, {color: pal.fg2}]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// FsBtn — a button in the floating full-screen control pill (over the terminal).
+function FsBtn({label, onPress}: {label: string; onPress: () => void}) {
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.fsBtn} hitSlop={hit}>
+      <Text style={styles.fsBtnText}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -247,6 +274,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fabText: {color: '#fff', fontSize: 20, fontWeight: '700'},
+  fsBar: {
+    position: 'absolute',
+    top: 8,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20,20,22,0.82)',
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: 4,
+  },
+  fsBtn: {paddingHorizontal: 11, paddingVertical: 7},
+  fsBtnText: {color: 'rgba(255,255,255,0.88)', fontSize: 13, fontWeight: '600'},
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
