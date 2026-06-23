@@ -80,11 +80,23 @@ github.com/chenchaoyi/gtmux/cmd/gtmux@latest`.
 <details>
 <summary>China / unstable GitHub — mirror fallback</summary>
 
-The installer is **GitHub-first and auto-falls back to a mirror chain**
-(`ghfast.top` → `gh-proxy.com` → `ghproxy.net`) when a GitHub asset download
-stalls. `SHASUMS256.txt` is always fetched GitHub-direct first, so the checksum
-stays anchored on GitHub even when the tarball came through a mirror. Override
-with `GTMUX_INSTALL_MIRROR`:
+**If even fetching the script fails** (`raw.githubusercontent.com` blocked),
+bootstrap from a CDN mirror — the script then mirror-falls-back its own
+downloads automatically:
+
+```sh
+curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
+```
+
+Once gtmux is installed, **`gtmux update`** fetches the script via the same
+mirror list (jsdelivr → gh-proxy → ghfast → ghproxy), so updates work on CN
+networks without any of this.
+
+For asset downloads the installer is **GitHub-first and auto-falls back to a
+mirror chain** (`ghfast.top` → `gh-proxy.com` → `ghproxy.net`) when a GitHub
+asset download stalls. `SHASUMS256.txt` is always fetched GitHub-direct first, so
+the checksum stays anchored on GitHub even when the tarball came through a
+mirror. Override with `GTMUX_INSTALL_MIRROR`:
 
 ```sh
 GTMUX_INSTALL_MIRROR=ghproxy  curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash   # straight to the mirror chain

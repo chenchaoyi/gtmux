@@ -7,6 +7,12 @@
 # Pin a version:
 #   GTMUX_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 #
+# CN networks: if even fetching THIS script fails (raw.githubusercontent.com is
+#   blocked), bootstrap from a mirror — the script then mirror-falls-back its own
+#   downloads automatically:
+#   curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
+#   (Already have gtmux? `gtmux update` fetches this script via the same mirrors.)
+#
 # CN networks (GitHub asset downloads often stall on objects.githubusercontent.com):
 #   the installer is GitHub-first and AUTO-falls back to a mirror chain. Force a mode:
 #   GTMUX_INSTALL_MIRROR=ghproxy            # skip the GitHub-first attempt, go to mirrors
