@@ -92,7 +92,7 @@ final class PairingController {
     func show(l10n: L10n) {
         if window == nil {
             let w = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 340, height: 440),
+                contentRect: NSRect(x: 0, y: 0, width: 340, height: 500),
                 styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.contentViewController = NSHostingController(rootView: PairingView(l10n: l10n))
             w.isReleasedWhenClosed = false
@@ -105,65 +105,72 @@ final class PairingController {
     }
 }
 
-/// PairingView — the QR + reachable address, or guidance when nothing's set up.
+/// PairingView — the QR + reachable address. When only the LAN is reachable, a
+/// one-tap "Turn on remote access" enables the always-on tunnel right here (no
+/// terminal needed), and the QR updates to the anywhere-reachable address.
 struct PairingView: View {
     @ObservedObject var l10n: L10n
+    @ObservedObject private var remote = RemoteAccess.shared
     @State private var info: PairingInfo?
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 13) {
             if let p = info, let qr = Pairing.qrImage(Pairing.payload(p)) {
                 Image(nsImage: qr)
-                    .interpolation(.none)
-                    .resizable()
-                    .frame(width: 240, height: 240)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                Text(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
-                             "在 gtmux 手机 app 里:配对 → 扫一扫"))
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                    .interpolation(.none).resizable()
+                    .frame(width: 230, height: 230)
+                    .background(Color.white).cornerRadius(10)
+                wrap(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
+                             "在 gtmux 手机 app 里:配对 → 扫一扫"), size: 12, color: .secondary)
                 Text(p.url)
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                     .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
                 reachLine
-                Text(p.anywhere
-                     ? l10n.tr("Reachable from anywhere (a tunnel is up).",
-                               "任意网络可达(隧道在运行)。")
-                     : l10n.tr("Same Wi-Fi only. `gtmux tunnel` (or Remote access) makes it reachable anywhere.",
-                               "仅同一 Wi-Fi。跑 `gtmux tunnel`(或开启远程访问)即可任意网络可达。"))
-                    .font(.system(size: 11)).foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
+                if p.anywhere {
+                    wrap(l10n.tr("Reachable from anywhere (a tunnel is up).",
+                                 "任意网络可达(隧道在运行)。"), size: 11, color: .tertiary)
+                } else {
+                    wrap(l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"), size: 11, color: .tertiary)
+                    remoteButton
+                }
             } else {
                 Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
-                Text(l10n.tr("Remote access isn't set up yet.", "还没设置远程访问。"))
-                    .font(.system(size: 13, weight: .semibold))
-                Text(l10n.tr("Turn on Remote access in Preferences (or run `gtmux serve`), then reopen this.",
-                             "去偏好设置开启远程访问(或跑 `gtmux serve`),再打开这里。"))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                wrap(l10n.tr("Remote access isn't set up yet.", "还没设置远程访问。"), size: 13, color: .primary)
+                remoteButton
             }
         }
-        .padding(24)
-        .frame(width: 340, alignment: .center)
-        .onAppear {
-            let i = Pairing.current()
-            info = i
-            if let i = i { probe(i.url) }
+        .padding(22)
+        .frame(width: 340)
+        .onAppear { reload() }
+        .onChange(of: remote.isOn) { _ in reload() }
+    }
+
+    // remoteButton — enable the always-on tunnel from here, so pairing works from
+    // anywhere without running `gtmux tunnel` in a terminal.
+    @ViewBuilder private var remoteButton: some View {
+        if remote.busy {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(l10n.tr("Setting up remote access…", "正在开启远程访问…"))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+        } else {
+            Button(action: enableRemote) {
+                Label(l10n.tr("Turn on remote access (anywhere)", "开启远程访问(任意网络)"),
+                      systemImage: "globe")
+            }
+            .controlSize(.regular)
         }
     }
 
-    // reachLine shows whether the address actually answers, so a dead URL is
-    // caught before scanning (the QR can otherwise look fine but never connect).
     @ViewBuilder private var reachLine: some View {
         switch reachable {
         case .some(true):
             label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
         case .some(false):
             label("exclamationmark.triangle.fill", .orange,
-                  l10n.tr("Can't reach it — is `gtmux tunnel` running (or Remote access on)?",
-                          "连不上 —— `gtmux tunnel` 在跑吗(或开了远程访问)?"))
+                  l10n.tr("Can't reach it yet", "暂时连不上"))
         case .none:
             label("clock", .secondary, l10n.tr("Checking…", "检查中…"))
         }
@@ -173,7 +180,36 @@ struct PairingView: View {
         HStack(spacing: 5) {
             Image(systemName: symbol).font(.system(size: 10)).foregroundStyle(color)
             Text(text).font(.system(size: 11)).foregroundStyle(.secondary)
-                .multilineTextAlignment(.leading)
+        }
+    }
+
+    // wrap — a centered, wrapping text (fixedSize vertical so long lines never get
+    // truncated to "…").
+    private func wrap(_ text: String, size: CGFloat, color: HierarchicalShapeStyle) -> some View {
+        Text(text)
+            .font(.system(size: size, weight: size >= 13 ? .semibold : .regular))
+            .foregroundStyle(color)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func reload() {
+        let i = Pairing.current()
+        info = i
+        reachable = nil
+        if let i = i { probe(i.url) }
+    }
+
+    private func enableRemote() {
+        let a = NSAlert()
+        a.messageText = l10n.tr("Turn on remote access?", "开启远程访问?")
+        a.informativeText = l10n.tr(
+            "Your Mac becomes reachable from anywhere at a stable URL (token-gated) until you turn it off in Preferences. It's a standing exposure.",
+            "你的 Mac 会在一个固定地址上从任何网络可达(有 token 把关),直到你在偏好设置里关闭。这是个长期敞口。")
+        a.addButton(withTitle: l10n.tr("Enable", "开启"))
+        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
+        if a.runModal() == .alertFirstButtonReturn {
+            remote.enable()
         }
     }
 
