@@ -11,8 +11,12 @@ import "os"
 // from a CI secret. Both are overridable at runtime via GTMUX_TUNNEL_API /
 // GTMUX_TUNNEL_REG (handy for self-hosters and local testing).
 var (
-	TunnelAPI       = "https://api.gtmux.ccy.dev"
-	TunnelRegSecret = ""
+	TunnelAPI = "https://api.gtmux.ccy.dev"
+	// TunnelAPIFallback is a second base the provision call tries when the
+	// primary is unreachable (e.g. a flaky network resets the custom domain) —
+	// the same Worker via its workers.dev route.
+	TunnelAPIFallback = "https://gtmux-tunnel.ccy-chenchaoyi.workers.dev"
+	TunnelRegSecret   = ""
 )
 
 func tunnelAPI() string {
@@ -20,6 +24,13 @@ func tunnelAPI() string {
 		return v
 	}
 	return TunnelAPI
+}
+
+func tunnelAPIFallback() string {
+	if v := os.Getenv("GTMUX_TUNNEL_API_FALLBACK"); v != "" {
+		return v
+	}
+	return TunnelAPIFallback
 }
 
 func tunnelRegSecret() string {
