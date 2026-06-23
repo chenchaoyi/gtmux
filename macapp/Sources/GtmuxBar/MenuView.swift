@@ -172,17 +172,22 @@ struct MenuView: View {
             }
             .padding(.vertical, 6)
             Divider().overlay(p.divider)
-            HStack(spacing: 5) {
+            HStack(spacing: 16) {
+                // Interactive footer items sit at fg2 (like the actions row above);
+                // only the version meta stays at fg3. The whole icon+label is one
+                // tappable button.
                 Button { onAction(.preferences) } label: {
-                    Image(systemName: "gearshape").font(.system(size: 11)).foregroundStyle(p.fg2)
+                    HStack(spacing: 4) {
+                        Image(systemName: "gearshape").font(.system(size: 12))
+                        Text(l10n.tr("Preferences", "偏好设置")).font(.system(size: 11, weight: .medium))
+                    }.foregroundStyle(p.fg2)
                 }.buttonStyle(.plain)
-                Text(l10n.tr("Preferences", "偏好设置")).font(.system(size: 10)).foregroundStyle(p.fg3)
                 Button { onAction(.pairPhone) } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "qrcode").font(.system(size: 11))
-                        Text(l10n.tr("Pair phone", "配对手机")).font(.system(size: 10))
-                    }.foregroundStyle(p.fg3)
-                }.buttonStyle(.plain).padding(.leading, 12)
+                    HStack(spacing: 4) {
+                        Image(systemName: "qrcode").font(.system(size: 12))
+                        Text(l10n.tr("Pair phone", "配对手机")).font(.system(size: 11, weight: .medium))
+                    }.foregroundStyle(p.fg2)
+                }.buttonStyle(.plain)
                 Spacer()
                 if remote.isOn {
                     // Visible "remote access is on" indicator (a standing exposure
