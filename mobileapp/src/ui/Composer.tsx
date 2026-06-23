@@ -6,7 +6,7 @@
 //
 // Color is never used for status here.
 
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -26,6 +26,8 @@ import {Lang} from '../i18n';
 import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
 import {MoveKey} from './MoveKey';
+import {SnippetsModal} from './SnippetsModal';
+import {loadSnippets, saveSnippets} from '../state/snippets';
 
 function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
   if (status === 'waiting') {
@@ -70,6 +72,16 @@ export function Composer({
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
   const [markupUri, setMarkupUri] = useState<string | null>(null);
+  const [snippets, setSnippets] = useState<string[]>([]);
+  const [manageSnippets, setManageSnippets] = useState(false);
+
+  useEffect(() => {
+    loadSnippets().then(setSnippets);
+  }, []);
+  const updateSnippets = (list: string[]) => {
+    setSnippets(list);
+    saveSnippets(list);
+  };
   // Guard against a double submit: iOS fires onSubmitEditing twice with
   // blurOnSubmit=false (notably after voice dictation), which sent the message
   // twice. Drop a second submit within a short window.
@@ -182,6 +194,23 @@ export function Composer({
             <Text style={[styles.ctlText, {color: pal.fg2}]}>{k.label}</Text>
           </TouchableOpacity>
         ))}
+        {/* saved snippets: one-tap habitual sends + a manage button */}
+        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
+        {snippets.map(s => (
+          <TouchableOpacity
+            key={s}
+            onPress={() => send({text: s, enter: true})}
+            style={[styles.ctxKey, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+            <Text style={[styles.ctxText, {color: pal.fg2}]} numberOfLines={1}>
+              {s}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity
+          onPress={() => setManageSnippets(true)}
+          style={[styles.ctlKey, {borderColor: pal.divider}]}>
+          <Text style={[styles.ctlText, {color: pal.fg3}]}>✎</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* attach + free input + send */}
@@ -216,6 +245,16 @@ export function Composer({
           <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
         </TouchableOpacity>
       </View>
+
+      {/* manage saved snippets */}
+      <SnippetsModal
+        visible={manageSnippets}
+        snippets={snippets}
+        pal={pal}
+        lang={lang}
+        onChange={updateSnippets}
+        onClose={() => setManageSnippets(false)}
+      />
 
       {/* clipboard-image → annotate → upload → reference by path */}
       <ImageMarkup
