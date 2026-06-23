@@ -1,7 +1,14 @@
 // GtmuxClient — every /api/* call sends `Authorization: Bearer <token>`.
-// Mirrors api/contract.md exactly. Read-only surface; `focus` only selects a pane.
+// Mirrors api/contract.md. `focus` selects a pane; `send` types into one (a WRITE
+// gated only by the bearer token).
 
 import {Agent, PaneResponse, toAgent} from './types';
+
+export interface SendPayload {
+  text?: string;
+  key?: string;
+  enter?: boolean;
+}
 
 export class GtmuxClient {
   constructor(
@@ -44,6 +51,16 @@ export class GtmuxClient {
     const r = await fetch(`${this.base}/api/focus?id=${encodeURIComponent(id)}`, {
       method: 'POST',
       headers: this.h(),
+    });
+    return r.ok;
+  }
+
+  // send types into a pane (a WRITE): a named control key, or literal text (+Enter).
+  async send(id: string, payload: SendPayload): Promise<boolean> {
+    const r = await fetch(`${this.base}/api/send`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({id, ...payload}),
     });
     return r.ok;
   }

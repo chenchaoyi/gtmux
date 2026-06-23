@@ -171,8 +171,15 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         </View>
       )}
 
-      {/* input — Phase 2, write-gated (rendered disabled for now, MOBILE §4) */}
-      <Composer status={agent.status} pal={pal} lang={lang} enabled={false} />
+      {/* input — types into the pane via POST /api/send (MOBILE §4) */}
+      <Composer
+        status={agent.status}
+        pal={pal}
+        lang={lang}
+        onSend={p => {
+          client.send(agent.pane_id, p);
+        }}
+      />
     </SafeAreaView>
   );
 }

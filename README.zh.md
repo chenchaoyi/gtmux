@@ -211,7 +211,8 @@ gtmux tunnel --quick    # 免账号的临时地址(每次运行都变)
 > 仍是只读 + 校验 token(无 token → 401),但请把 URL + token 当密码,别把二维码截图
 > 发到公共渠道。
 
-远程这一面是**只读**的(无 `send-keys` / 输入)—— 见 `api/contract.md` 与
+远程这一面除 **`POST /api/send`**(经 `tmux send-keys` 写入终端)外都是只读;send
+仅由 bearer token 把关,请把 token 当密码。见 `api/contract.md` 与
 `mobileapp/SPEC.md`。
 
 ## 命令

@@ -71,6 +71,28 @@ func CapturePaneColor(pane string) string {
 	return out
 }
 
+// SendText types literal text into a pane (`send-keys -l`, so the text is never
+// interpreted as tmux key names), optionally followed by Enter. This is a WRITE.
+func SendText(pane, text string, enter bool) error {
+	if text != "" {
+		if _, err := Run("send-keys", "-t", pane, "-l", text); err != nil {
+			return err
+		}
+	}
+	if enter {
+		_, err := Run("send-keys", "-t", pane, "Enter")
+		return err
+	}
+	return nil
+}
+
+// SendKey sends a single NAMED key (e.g. Enter, C-c, Escape, Tab, Up, Down) to a
+// pane. Callers MUST validate `key` against an allowlist — it is a tmux key name.
+func SendKey(pane, key string) error {
+	_, err := Run("send-keys", "-t", pane, key)
+	return err
+}
+
 // Display returns `tmux display-message -p <fmt>` for the given (optional) target.
 func Display(target, format string) string {
 	args := []string{"display-message", "-p"}

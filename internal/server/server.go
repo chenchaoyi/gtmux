@@ -9,11 +9,12 @@
 //	GET  /api/agents        — the `gtmux agents --json` array (byte-identical)
 //	GET  /api/pane?id=%N    — a pane's current screen text (read-only)
 //	POST /api/focus?id=%N   — select that pane locally (no input injection)
+//	POST /api/send          — type text / a control key into a pane (WRITE)
 //
-// Security model (MVP): every /api/* route (except health) requires a Bearer
-// token, compared in constant time. The server is meant to sit behind a
-// VPN/tunnel and bind an intranet/VPN interface — never the public internet.
-// There is no endpoint that writes to a terminal or runs a command.
+// Security model: every /api/* route (except health) requires a Bearer token,
+// compared in constant time. /api/send WRITES to a terminal (tmux send-keys), so
+// the token now also gates terminal input — a leaked token allows running
+// commands on the Mac. Keep the token secret and the tunnel deliberate.
 package server
 
 import (
@@ -41,6 +42,12 @@ type Deps struct {
 	// Focus selects a pane locally — the "back at your desk, you're already on
 	// it" action. It injects no input. err is non-nil if the pane is gone.
 	Focus func(id string) error
+
+	// Send types into a pane (WRITE). Exactly one of text/key is used: a non-empty
+	// key sends that NAMED key (validated against an allowlist by the impl); else
+	// text is typed literally, plus Enter when enter is true. err if the pane is
+	// gone or the key isn't allowed. Optional: nil → POST /api/send returns 503.
+	Send func(id, text, key string, enter bool) error
 
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
@@ -91,6 +98,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
+	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
 	return mux
@@ -166,6 +174,44 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.deps.Focus(id); err != nil {
 		writeJSON(w, http.StatusNotFound, errBody("focus failed"))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// sendRequest is the JSON body of POST /api/send. Provide `key` for a named
+// control key (Enter, C-c, …) OR `text` for literal input (+ `enter`).
+type sendRequest struct {
+	ID    string `json:"id"`
+	Text  string `json:"text"`
+	Key   string `json:"key"`
+	Enter bool   `json:"enter"`
+}
+
+func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if s.deps.Send == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("input not available"))
+		return
+	}
+	var req sendRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, errBody("bad json"))
+		return
+	}
+	if req.ID == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	if req.Key == "" && req.Text == "" && !req.Enter {
+		writeJSON(w, http.StatusBadRequest, errBody("nothing to send"))
+		return
+	}
+	if err := s.deps.Send(req.ID, req.Text, req.Key, req.Enter); err != nil {
+		writeJSON(w, http.StatusBadRequest, errBody("send failed: "+err.Error()))
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})

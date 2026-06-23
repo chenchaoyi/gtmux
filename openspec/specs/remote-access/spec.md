@@ -8,13 +8,15 @@ phone without opening any write surface on the Mac.
 
 ## Requirements
 
-### Requirement: Read-only HTTP API
+### Requirement: HTTP API (read + terminal input)
 
 The system SHALL, via `gtmux serve`, expose `GET /api/health`,
 `GET /api/agents` (byte-identical to `agents --json`), `GET /api/pane?id=%N`
-(read-only `capture-pane -p`), and `POST /api/focus?id=%N` (local pane select,
-no input injection). It SHALL NOT expose any endpoint that writes to a terminal
-or runs a command (read-only MVP).
+(`capture-pane -e`, ANSI color), `POST /api/focus?id=%N` (local pane select, no
+input), and `POST /api/send` (type into a pane via `tmux send-keys` — a WRITE).
+`/api/send` SHALL accept either an allow-listed named control key or literal text
+(`send-keys -l`, optionally + Enter), and is gated by the same bearer token as the
+rest (no separate authorization) — so the token also gates terminal input.
 
 #### Scenario: Agents match the CLI
 
@@ -27,6 +29,12 @@ or runs a command (read-only MVP).
 - **WHEN** a client POSTs `/api/focus?id=%12`
 - **THEN** the pane is selected locally and its tab brought forward; no input is
   injected
+
+#### Scenario: Send types into the pane
+
+- **WHEN** a client POSTs `/api/send` with `{id, text, enter}` or `{id, key}`
+- **THEN** the text (literal) or the allow-listed control key is sent to that pane
+  via `tmux send-keys`; a disallowed key or missing pane returns an error
 
 ### Requirement: Bearer auth, intranet bind
 
