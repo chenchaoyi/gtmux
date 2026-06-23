@@ -1,12 +1,13 @@
-// Composer — the Detail input area (MOBILE §4). Types into the pane via
-// POST /api/send (a WRITE, gated by the bearer token). Agent-aware context
-// shortcuts (waiting → 1·Yes / 2·Always / 3·No; else continue / ⏎ / stop), a
-// control-key row, and a free-input field. Voice (mic) is a later increment (P3).
+// Composer — the Detail input area (MOBILE §4), Termius-style. Types into the
+// pane via POST /api/send (a WRITE, gated by the bearer token). A single compact,
+// horizontally-scrollable key toolbar (agent-aware context shortcuts + control
+// keys) sits above a free-input row; DetailScreen wraps it in a
+// KeyboardAvoidingView so it floats above the keyboard instead of being covered.
 //
 // Color is never used for status here.
 
 import React, {useState} from 'react';
-import {StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {StatusName} from '../api/types';
 import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
@@ -22,7 +23,6 @@ function contextKeys(status: StatusName, lang: string): {label: string; payload:
   }
   return [
     {label: lang === 'zh' ? '继续' : 'Continue', payload: {key: 'Enter'}},
-    {label: '⏎', payload: {key: 'Enter'}},
     {label: lang === 'zh' ? '停止' : 'Stop', payload: {key: 'C-c'}},
   ];
 }
@@ -34,6 +34,8 @@ const CONTROL_KEYS: {label: string; key: string}[] = [
   {label: 'Tab', key: 'Tab'},
   {label: '↑', key: 'Up'},
   {label: '↓', key: 'Down'},
+  {label: '←', key: 'Left'},
+  {label: '→', key: 'Right'},
 ];
 
 export function Composer({
@@ -61,11 +63,13 @@ export function Composer({
   };
 
   return (
-    <View
-      style={[styles.wrap, {borderTopColor: pal.divider, backgroundColor: pal.bg}, !enabled && styles.disabled]}
-      pointerEvents={enabled ? 'auto' : 'none'}>
-      {/* agent-aware context shortcuts */}
-      <View style={styles.keys}>
+    <View style={[styles.wrap, {borderTopColor: pal.divider, backgroundColor: pal.bg}, !enabled && styles.disabled]}>
+      {/* one compact, scrollable key toolbar (context shortcuts + control keys) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        contentContainerStyle={styles.keys}>
         {contextKeys(status, lang).map(k => (
           <TouchableOpacity
             key={k.label}
@@ -74,19 +78,16 @@ export function Composer({
             <Text style={[styles.ctxText, {color: pal.fg2}]}>{k.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
-
-      {/* control keys */}
-      <View style={styles.keys}>
+        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
         {CONTROL_KEYS.map(k => (
           <TouchableOpacity
             key={k.label}
             onPress={() => send({key: k.key})}
             style={[styles.ctlKey, {borderColor: pal.divider}]}>
-            <Text style={[styles.ctlText, {color: pal.fg3}]}>{k.label}</Text>
+            <Text style={[styles.ctlText, {color: pal.fg2}]}>{k.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {/* free input + send */}
       <View style={styles.inputRow}>
@@ -100,6 +101,7 @@ export function Composer({
           autoCorrect={false}
           returnKeyType="send"
           onSubmitEditing={sendText}
+          blurOnSubmit={false}
           style={[styles.input, {backgroundColor: pal.surface, borderColor: pal.divider, color: pal.fg}]}
         />
         <TouchableOpacity
@@ -114,15 +116,16 @@ export function Composer({
 }
 
 const styles = StyleSheet.create({
-  wrap: {borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 10},
+  wrap: {borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 8},
   disabled: {opacity: 0.55},
-  keys: {flexDirection: 'row', flexWrap: 'wrap', marginBottom: 7},
-  ctxKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 6, marginRight: 7, marginBottom: 6},
-  ctxText: {fontSize: 12.5, fontWeight: '600'},
-  ctlKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5, marginRight: 6, marginBottom: 6},
-  ctlText: {fontSize: 12, fontFamily: 'Menlo'},
-  inputRow: {flexDirection: 'row', alignItems: 'center'},
-  input: {flex: 1, height: 38, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, fontSize: 14},
-  send: {width: 38, height: 38, borderRadius: 19, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
-  sendText: {fontSize: 18, fontWeight: '700'},
+  keys: {flexDirection: 'row', alignItems: 'center', paddingRight: 8},
+  ctxKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginRight: 7},
+  ctxText: {fontSize: 13, fontWeight: '600'},
+  sep: {width: StyleSheet.hairlineWidth, height: 22, marginHorizontal: 6},
+  ctlKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8, marginRight: 7},
+  ctlText: {fontSize: 13, fontFamily: 'Menlo'},
+  inputRow: {flexDirection: 'row', alignItems: 'center', marginTop: 8},
+  input: {flex: 1, height: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, fontSize: 15},
+  send: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
+  sendText: {fontSize: 19, fontWeight: '700'},
 });

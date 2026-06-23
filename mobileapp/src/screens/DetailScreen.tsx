@@ -8,6 +8,8 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -94,7 +96,10 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   );
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+    <KeyboardAvoidingView
+      style={[styles.safe, {backgroundColor: pal.bg}]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
       {/* header: back · badge · title/sub · Focus on Mac */}
       <View style={[styles.header, {borderBottomColor: pal.divider}]}>
         {onBack && (
@@ -180,7 +185,8 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           client.send(agent.pane_id, p);
         }}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
