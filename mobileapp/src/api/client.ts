@@ -80,12 +80,26 @@ export class GtmuxClient {
     }
   }
 
-  async registerPush(deviceToken: string): Promise<boolean> {
+  // iconUri is an authed <Image> source for an agent's official icon (served from
+  // the Mac's installed app, like the menu-bar app). 404 → caller falls back.
+  iconUri(agentName: string): {uri: string; headers: Record<string, string>} {
+    return {uri: `${this.base}/api/icon?agent=${encodeURIComponent(agentName)}`, headers: this.h()};
+  }
+
+  // registerPush registers the APNs token + which alert kinds the device wants
+  // ([] = all). serve filters per-device, so you can opt out of e.g. "done".
+  async registerPush(deviceToken: string, kinds?: string[]): Promise<boolean> {
     const r = await fetch(`${this.base}/api/push/register`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({token: deviceToken, platform: 'ios'}),
+      body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? []}),
     });
+    return r.ok;
+  }
+
+  // testPush asks the Mac to send a test notification to this device.
+  async testPush(): Promise<boolean> {
+    const r = await fetch(`${this.base}/api/push/test`, {method: 'POST', headers: this.h()});
     return r.ok;
   }
 }

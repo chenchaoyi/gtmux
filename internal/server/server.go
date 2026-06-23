@@ -55,6 +55,10 @@ type Deps struct {
 	// /api/upload returns 503.
 	Upload func(name string, data []byte) (path string, err error)
 
+	// Icon returns a PNG of the named agent's identity icon (from the user's
+	// installed app, like the menu-bar app — nothing bundled), or nil. Optional.
+	Icon func(agent string) []byte
+
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
 	// GET /api/events still serves heartbeats but emits no agents/alert events.
@@ -106,8 +110,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
+	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
+	mux.Handle("/api/push/test", s.auth(http.HandlerFunc(s.handleTest)))
 	return mux
 }
 
@@ -258,6 +264,37 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"path": path})
+}
+
+// handleIcon serves a PNG of an agent's identity icon (GET /api/icon?agent=NAME).
+func (s *Server) handleIcon(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Icon == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("icons not available"))
+		return
+	}
+	png := s.deps.Icon(r.URL.Query().Get("agent"))
+	if png == nil {
+		writeJSON(w, http.StatusNotFound, errBody("no icon"))
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = w.Write(png)
+}
+
+// handleTest sends a test push to every registered device (POST /api/push/test),
+// so the settings screen can verify notifications end-to-end.
+func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if s.deps.Push == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
+		return
+	}
+	n := s.deps.Push.Test("gtmux", "Test notification ✅")
+	writeJSON(w, http.StatusOK, map[string]int{"sent": n})
 }
 
 func errBody(msg string) map[string]string { return map[string]string{"error": msg} }

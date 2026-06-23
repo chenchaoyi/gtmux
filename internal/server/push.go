@@ -15,6 +15,22 @@ import (
 type DeviceToken struct {
 	Token    string `json:"token"`
 	Platform string `json:"platform"` // "ios" | "android" | "harmony"
+	// Kinds the device wants ("waiting"/"done"). Empty = all (backward compat),
+	// so a device can opt out of e.g. "done" notifications.
+	Kinds []string `json:"kinds,omitempty"`
+}
+
+// wants reports whether this device wants a notification of the given kind.
+func (d DeviceToken) wants(kind string) bool {
+	if len(d.Kinds) == 0 {
+		return true
+	}
+	for _, k := range d.Kinds {
+		if k == kind {
+			return true
+		}
+	}
+	return false
 }
 
 // PushIntent is one notification to deliver, sent from gtmux serve to the relay.
@@ -99,16 +115,33 @@ func (p *PushManager) OnAlert(a Alert) {
 	go p.dispatch(a)
 }
 
-// dispatch forwards one intent per registered token (best-effort: a dead token
-// must not stop the others). Synchronous — OnAlert runs it in a goroutine.
+// dispatch forwards one intent per registered token that wants this kind
+// (best-effort: a dead token must not stop the others). Synchronous — OnAlert
+// runs it in a goroutine.
 func (p *PushManager) dispatch(a Alert) {
 	title, body := p.copy(a)
 	for _, d := range p.Tokens() {
+		if !d.wants(a.Kind) {
+			continue
+		}
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform,
 			Title: title, Body: body, Pane: a.Pane, Kind: a.Kind,
 		})
 	}
+}
+
+// Test sends a test notification to every registered device (ignores kind prefs).
+// Returns the number of devices it tried.
+func (p *PushManager) Test(title, body string) int {
+	toks := p.Tokens()
+	for _, d := range toks {
+		_ = p.relay.Send(PushIntent{
+			Token: d.Token, Platform: d.Platform,
+			Title: title, Body: body, Pane: "", Kind: "test",
+		})
+	}
+	return len(toks)
 }
 
 // copy builds the notification title/body, via the injected formatter (i18n) or

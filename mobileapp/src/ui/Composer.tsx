@@ -24,6 +24,7 @@ import {StatusName} from '../api/types';
 import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
 import {Palette} from './theme';
+import {ImageMarkup} from './ImageMarkup';
 
 function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
   if (status === 'waiting') {
@@ -39,15 +40,13 @@ function contextKeys(status: StatusName, lang: string): {label: string; payload:
   ];
 }
 
+// Quick control keys in the toolbar; directional nav lives in the floating keypad
+// summoned by the keypad button (onOpenKeys).
 const CONTROL_KEYS: {label: string; key: string}[] = [
   {label: '⏎', key: 'Enter'},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
   {label: 'Tab', key: 'Tab'},
-  {label: '↑', key: 'Up'},
-  {label: '↓', key: 'Down'},
-  {label: '←', key: 'Left'},
-  {label: '→', key: 'Right'},
 ];
 
 export function Composer({
@@ -57,6 +56,7 @@ export function Composer({
   enabled = true,
   onSend,
   onUpload,
+  onOpenKeys,
 }: {
   status: StatusName;
   pal: Palette;
@@ -64,9 +64,11 @@ export function Composer({
   enabled?: boolean;
   onSend?: (p: SendPayload) => void;
   onUpload?: (uri: string, name: string, type: string) => Promise<string | null>;
+  onOpenKeys?: () => void;
 }) {
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [markupUri, setMarkupUri] = useState<string | null>(null);
   // Guard against a double submit: iOS fires onSubmitEditing twice with
   // blurOnSubmit=false (notably after voice dictation), which sent the message
   // twice. Drop a second submit within a short window.
@@ -83,8 +85,20 @@ export function Composer({
     setText('');
   };
 
-  // Paste the clipboard into the input (a quick paste, beyond the native menu).
+  // Paste is image-aware: if the clipboard holds an image, open the markup editor
+  // (annotate → upload → reference by path); otherwise paste the text string.
   const paste = async () => {
+    try {
+      if (await Clipboard.hasImage()) {
+        const raw = await Clipboard.getImagePNG();
+        if (raw) {
+          setMarkupUri(raw.startsWith('data:') ? raw : `data:image/png;base64,${raw}`);
+          return;
+        }
+      }
+    } catch {
+      // fall through to text paste
+    }
     const s = await Clipboard.getString();
     if (s) setText(t => (t ? t + s : s));
   };
@@ -136,6 +150,13 @@ export function Composer({
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
         contentContainerStyle={styles.keys}>
+        {onOpenKeys && (
+          <TouchableOpacity
+            onPress={onOpenKeys}
+            style={[styles.ctlKey, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+            <Text style={[styles.ctlText, {color: pal.fg2}]}>⌨</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           onPress={paste}
           style={[styles.ctlKey, {borderColor: pal.divider}]}>
@@ -193,6 +214,18 @@ export function Composer({
           <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
         </TouchableOpacity>
       </View>
+
+      {/* clipboard-image → annotate → upload → reference by path */}
+      <ImageMarkup
+        visible={!!markupUri}
+        uri={markupUri}
+        lang={lang}
+        onCancel={() => setMarkupUri(null)}
+        onDone={fileUri => {
+          setMarkupUri(null);
+          doUpload(fileUri, 'markup.png', 'image/png');
+        }}
+      />
     </View>
   );
 }
