@@ -92,6 +92,52 @@ func names(evs []sseEvent) []string {
 	return out
 }
 
+// TestHubRenudge verifies a pane that stays waiting re-alerts every renudge
+// interval (Repeat=true), and that leaving waiting stops it.
+func TestHubRenudge(t *testing.T) {
+	working := []AgentStatus{{PaneID: "%1", Agent: "Claude Code", Loc: "a:0.0", Task: "approve?", Status: "working"}}
+	waiting := []AgentStatus{{PaneID: "%1", Agent: "Claude Code", Loc: "a:0.0", Task: "approve?", Status: "waiting"}}
+	cur := working
+	var alerts []Alert
+	h := newHub(func() []AgentStatus { return cur }, time.Hour, func(a Alert) { alerts = append(alerts, a) })
+	now := time.Unix(0, 0)
+	h.now = func() time.Time { return now }
+	h.renudge = 5 * time.Minute
+
+	h.tick() // observe working (prev set), no alert
+	cur = waiting
+	h.tick() // working→waiting: one fresh alert, clock starts at now=0
+	if len(alerts) != 1 || alerts[0].Kind != "waiting" || alerts[0].Repeat {
+		t.Fatalf("transition: got %+v, want 1 fresh waiting alert", alerts)
+	}
+
+	now = now.Add(2 * time.Minute) // inside the interval
+	h.tick()
+	if len(alerts) != 1 {
+		t.Fatalf("re-nudged too early: %+v", alerts)
+	}
+
+	now = now.Add(4 * time.Minute) // 6m since the alert → past 5m
+	h.tick()
+	if len(alerts) != 2 || !alerts[1].Repeat || alerts[1].Pane != "%1" {
+		t.Fatalf("expected a re-nudge (Repeat), got %+v", alerts)
+	}
+
+	now = now.Add(6 * time.Minute) // past the interval again
+	h.tick()
+	if len(alerts) != 3 || !alerts[2].Repeat {
+		t.Fatalf("expected a second re-nudge, got %+v", alerts)
+	}
+
+	cur = working // you acted → no longer waiting
+	h.tick()
+	now = now.Add(30 * time.Minute)
+	h.tick()
+	if len(alerts) != 3 {
+		t.Fatalf("nudged after leaving waiting: %+v", alerts)
+	}
+}
+
 // TestHubNilStatuses verifies the loop is a safe no-op without a status source.
 func TestHubNilStatuses(t *testing.T) {
 	h := newHub(nil, time.Hour, nil)

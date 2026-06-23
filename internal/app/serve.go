@@ -200,6 +200,9 @@ func pushCopy(a server.Alert) (string, string) {
 		name = i18n.Tr("agent", "agent")
 	}
 	if a.Kind == "waiting" {
+		if a.Repeat {
+			return fmt.Sprintf(i18n.Tr("%s still needs you", "%s 仍在等你"), name), a.Task
+		}
 		return fmt.Sprintf(i18n.Tr("%s needs you", "%s 等你输入"), name), a.Task
 	}
 	return fmt.Sprintf(i18n.Tr("%s finished", "%s 完成了"), name), a.Task

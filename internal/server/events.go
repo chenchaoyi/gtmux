@@ -18,6 +18,11 @@ const eventsInterval = 1500 * time.Millisecond
 // intermediary proxy) from timing the stream out.
 const pingInterval = 20 * time.Second
 
+// renudgeInterval is how long a pane may sit `waiting` on the user before the hub
+// re-emits its alert (and re-pushes) — so an agent stalled for a decision while
+// you're away doesn't go unnoticed. Re-nudges repeat every interval until you act.
+const renudgeInterval = 5 * time.Minute
+
 // AgentStatus is the lean per-pane snapshot the events loop diffs — a subset of
 // the full `agents --json` contract. The REST GET /api/agents remains the one
 // authoritative payload; SSE only signals "something changed, refetch".
@@ -33,11 +38,12 @@ type AgentStatus struct {
 // waiting on the user ("waiting") or finished its turn ("done"). It is both an
 // SSE `alert` event (for an in-app banner) and the trigger for a push (later).
 type Alert struct {
-	Pane  string `json:"pane"`
-	Kind  string `json:"kind"` // "waiting" | "done"
-	Agent string `json:"agent"`
-	Loc   string `json:"loc"`
-	Task  string `json:"task"`
+	Pane   string `json:"pane"`
+	Kind   string `json:"kind"` // "waiting" | "done"
+	Agent  string `json:"agent"`
+	Loc    string `json:"loc"`
+	Task   string `json:"task"`
+	Repeat bool   `json:"repeat,omitempty"` // a re-nudge: still waiting, not a fresh transition
 }
 
 // sseEvent is one named Server-Sent Event ready to frame onto the wire.
@@ -56,20 +62,28 @@ type hub struct {
 	statuses func() []AgentStatus
 	onAlert  func(Alert)
 	interval time.Duration
+	renudge  time.Duration    // re-alert a still-waiting pane after this long
+	now      func() time.Time // injectable clock (tests)
 
-	mu      sync.Mutex
-	subs    map[chan sseEvent]struct{}
-	rev     int
-	prev    map[string]AgentStatus
-	started bool
+	mu   sync.Mutex
+	subs map[chan sseEvent]struct{}
+	rev  int
+	prev map[string]AgentStatus
+	// waitAlertAt[pane] is when we last alerted that pane is waiting; used to time
+	// re-nudges. Touched only inside tick() (serial), so it needs no extra lock.
+	waitAlertAt map[string]time.Time
+	started     bool
 }
 
 func newHub(statuses func() []AgentStatus, interval time.Duration, onAlert func(Alert)) *hub {
 	return &hub{
-		statuses: statuses,
-		onAlert:  onAlert,
-		interval: interval,
-		subs:     map[chan sseEvent]struct{}{},
+		statuses:    statuses,
+		onAlert:     onAlert,
+		interval:    interval,
+		renudge:     renudgeInterval,
+		now:         time.Now,
+		subs:        map[chan sseEvent]struct{}{},
+		waitAlertAt: map[string]time.Time{},
 	}
 }
 
@@ -123,6 +137,7 @@ func (h *hub) tick() {
 	}
 	cur := h.statuses()
 	curMap := make(map[string]AgentStatus, len(cur))
+	now := h.now()
 
 	h.mu.Lock()
 	prev := h.prev
@@ -135,13 +150,27 @@ func (h *hub) tick() {
 		if !existed || p.Status != a.Status || p.Task != a.Task {
 			changed = true
 		}
-		// Transitions need a prior observation (skip the very first snapshot so a
-		// reconnect doesn't replay every agent as a fresh alert).
-		if prev != nil {
+		if a.Status == "waiting" {
+			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task}
+			last, tracked := h.waitAlertAt[a.PaneID]
 			switch {
-			case a.Status == "waiting" && p.Status != "waiting":
-				h.emitAlert(Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task})
-			case a.Status == "idle" && p.Status == "working":
+			case prev != nil && p.Status != "waiting":
+				// fresh transition into waiting (skip the very first snapshot so a
+				// reconnect doesn't replay every agent as a new alert)
+				h.emitAlert(al)
+				h.waitAlertAt[a.PaneID] = now
+			case !tracked:
+				// already waiting at first observation — start the clock, don't alert
+				h.waitAlertAt[a.PaneID] = now
+			case now.Sub(last) >= h.renudge:
+				// still waiting after the re-nudge interval → alert again
+				al.Repeat = true
+				h.emitAlert(al)
+				h.waitAlertAt[a.PaneID] = now
+			}
+		} else {
+			delete(h.waitAlertAt, a.PaneID) // no longer waiting → stop tracking
+			if prev != nil && a.Status == "idle" && p.Status == "working" {
 				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task})
 			}
 		}
@@ -149,6 +178,7 @@ func (h *hub) tick() {
 	for id := range prev { // a pane that disappeared is also a change
 		if _, ok := curMap[id]; !ok {
 			changed = true
+			delete(h.waitAlertAt, id)
 		}
 	}
 
