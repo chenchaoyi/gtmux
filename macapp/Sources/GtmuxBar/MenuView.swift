@@ -169,26 +169,20 @@ struct MenuView: View {
                 footerAction("waveform", l10n.tr("Watch", "实时")) { onAction(.watch) }
                 footerAction("arrow.uturn.backward", l10n.tr("Restore", "接回")) { onAction(.restore) }
                 footerAction("plus", l10n.tr("New", "新建")) { onAction(.newSession) }
+                footerAction("qrcode", l10n.tr("Pair", "配对")) { onAction(.pairPhone) }
             }
             .padding(.vertical, 6)
             Divider().overlay(p.divider)
-            HStack(spacing: 16) {
-                // Interactive footer items sit at fg2 (like the actions row above);
-                // only the version meta stays at fg3. The whole icon+label is one
-                // tappable button.
+            HStack(spacing: 10) {
+                // Preferences sits at fg2 (interactive tone); the version meta at
+                // fg3. Single tappable icon+label; fixedSize so nothing wraps.
                 Button { onAction(.preferences) } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "gearshape").font(.system(size: 12))
                         Text(l10n.tr("Preferences", "偏好设置")).font(.system(size: 11, weight: .medium))
                     }.foregroundStyle(p.fg2)
-                }.buttonStyle(.plain)
-                Button { onAction(.pairPhone) } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "qrcode").font(.system(size: 12))
-                        Text(l10n.tr("Pair phone", "配对手机")).font(.system(size: 11, weight: .medium))
-                    }.foregroundStyle(p.fg2)
-                }.buttonStyle(.plain)
-                Spacer()
+                }.buttonStyle(.plain).fixedSize()
+                Spacer(minLength: 8)
                 if remote.isOn {
                     // Visible "remote access is on" indicator (a standing exposure
                     // should never be silent). Tap opens Preferences to turn off.
@@ -197,10 +191,12 @@ struct MenuView: View {
                             Image(systemName: "globe").font(.system(size: 9))
                             Text(l10n.tr("Remote on", "远程开启")).font(Theme.Font.footer)
                         }.foregroundStyle(p.fg2)
-                    }.buttonStyle(.plain).help(remote.url ?? "")
+                    }.buttonStyle(.plain).help(remote.url ?? "").fixedSize()
                     Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }
-                Text("gtmux \(appVersion) · by ccy").font(Theme.Font.footer).foregroundStyle(p.fg3)
+                Text("gtmux \(appVersion) · by ccy")
+                    .font(Theme.Font.footer).foregroundStyle(p.fg3)
+                    .lineLimit(1).fixedSize()
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
         }
