@@ -16,7 +16,7 @@ APP_BIN="GtmuxBar"
 VERSION="${GTMUX_VERSION:-$(cd "$REPO_ROOT" && git describe --tags --always --dirty 2>/dev/null || echo dev)}"
 # GTMUX_TUNNEL_REG bakes the hosted-tunnel gate into the BUNDLED CLI too, so the
 # menu-bar "remote access" toggle can drive hosted `gtmux tunnel` (empty → off).
-LDFLAGS="-s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=${VERSION} -X github.com/chenchaoyi/gtmux/internal/app.TunnelRegSecret=${GTMUX_TUNNEL_REG:-}"
+LDFLAGS="-s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=${VERSION} -X github.com/chenchaoyi/gtmux/internal/app.TunnelRegSecret=${GTMUX_TUNNEL_REG:-} -X github.com/chenchaoyi/gtmux/internal/app.RelayToken=${GTMUX_RELAY_TOKEN:-}"
 
 echo "==> swift build (release) — version ${VERSION}"
 if [ "${GTMUX_UNIVERSAL:-}" = "1" ]; then

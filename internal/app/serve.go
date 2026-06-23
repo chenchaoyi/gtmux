@@ -147,8 +147,12 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	}
 
 	// Push: tokens live here (the relay stays stateless); alerts are forwarded
-	// out to the relay, which holds the APNs key. A blank --relay-url leaves
-	// registration working but forwarding off.
+	// out to the relay, which holds the APNs key. With no explicit --relay-url
+	// (e.g. the serve that `gtmux tunnel` / always-on starts), fall back to the
+	// hosted relay so notifications work by default.
+	if relayURL == "" {
+		relayURL, relayToken = resolveRelay()
+	}
 	relay := server.NewHTTPRelay(relayURL, relayToken)
 	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens, pushCopy)
 

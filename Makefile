@@ -6,7 +6,7 @@ PKG       = ./cmd/gtmux
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 # GTMUX_TUNNEL_REG bakes the hosted-tunnel registration gate into the binary
 # (empty by default → hosted `gtmux tunnel` cleanly tells you to use --quick).
-LDFLAGS   = -s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=$(VERSION) -X github.com/chenchaoyi/gtmux/internal/app.TunnelRegSecret=$(GTMUX_TUNNEL_REG)
+LDFLAGS   = -s -w -X github.com/chenchaoyi/gtmux/internal/app.Version=$(VERSION) -X github.com/chenchaoyi/gtmux/internal/app.TunnelRegSecret=$(GTMUX_TUNNEL_REG) -X github.com/chenchaoyi/gtmux/internal/app.RelayToken=$(GTMUX_RELAY_TOKEN)
 
 build: ## Build the gtmux CLI (cgo-free) into ./$(BIN)
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN) $(PKG)

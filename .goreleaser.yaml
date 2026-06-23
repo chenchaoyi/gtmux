@@ -32,6 +32,9 @@ builds:
       # Hosted-tunnel registration gate, injected from the GTMUX_TUNNEL_REG CI
       # secret (empty if unset → hosted mode tells the user to use --quick).
       - -X github.com/chenchaoyi/gtmux/internal/app.TunnelRegSecret={{ .Env.GTMUX_TUNNEL_REG }}
+      # Push-relay token, injected from the GTMUX_RELAY_TOKEN CI secret (empty →
+      # serve simply doesn't forward push).
+      - -X github.com/chenchaoyi/gtmux/internal/app.RelayToken={{ .Env.GTMUX_RELAY_TOKEN }}
 
 archives:
   - id: gtmux
