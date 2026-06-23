@@ -137,9 +137,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .restore:    GtmuxCLI.spawn(["restore"])
         case .newSession: GtmuxCLI.spawn(["new"])
         case .preferences: PreferencesController.shared.show(l10n: l10n)
+        case .pairPhone:  PairingController.shared.show(l10n: l10n)
         case .quit:       NSApp.terminate(nil)
         }
-        if action != .quit && action != .preferences { popover.performClose(nil) }
+        if action != .quit && action != .preferences && action != .pairPhone {
+            popover.performClose(nil)
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

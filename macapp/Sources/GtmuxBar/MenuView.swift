@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum MenuAction {
-    case overview, watch, restore, newSession, preferences, quit
+    case overview, watch, restore, newSession, preferences, pairPhone, quit
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + waiting-only + search +
@@ -177,6 +177,12 @@ struct MenuView: View {
                     Image(systemName: "gearshape").font(.system(size: 11)).foregroundStyle(p.fg2)
                 }.buttonStyle(.plain)
                 Text(l10n.tr("Preferences", "偏好设置")).font(.system(size: 10)).foregroundStyle(p.fg3)
+                Button { onAction(.pairPhone) } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "qrcode").font(.system(size: 11))
+                        Text(l10n.tr("Pair phone", "配对手机")).font(.system(size: 10))
+                    }.foregroundStyle(p.fg3)
+                }.buttonStyle(.plain).padding(.leading, 12)
                 Spacer()
                 if remote.isOn {
                     // Visible "remote access is on" indicator (a standing exposure
