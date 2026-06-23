@@ -111,8 +111,11 @@ func cmdUpdate(args []string) int {
 // script itself).
 var installScriptMirrors = []string{
 	"https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh",
-	"https://ghfast.top/https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh",
+	// jsdelivr's CDN serves repo files reliably from inside CN — best fallback.
+	"https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh",
 	"https://gh-proxy.com/https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh",
+	"https://ghfast.top/https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh",
+	"https://ghproxy.net/https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh",
 }
 
 func fetchInstallScript() []byte {
