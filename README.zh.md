@@ -8,23 +8,32 @@
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
-[![Go](https://img.shields.io/badge/go-1.24-00ADD8?logo=go&logoColor=white)](go.mod)
+[![Go](https://img.shields.io/badge/go-1.25-00ADD8?logo=go&logoColor=white)](go.mod)
 [![Platform](https://img.shields.io/badge/macOS-Ghostty%201.3%2B%20%7C%20iTerm2-111)](https://ghostty.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 [English](README.md) · **中文**
 
-<img src="docs/assets/screenshot-popover.png" width="380" alt="gtmux 菜单栏弹层 —— 按「需要你 / 运行中 / 空闲」分组的 agent" />
+<img src="docs/assets/screenshot-popover.png" width="300" alt="gtmux 菜单栏弹层 —— 按「需要你 / 运行中 / 空闲」分组的 agent" />
+&nbsp;&nbsp;
+<img src="docs/assets/screenshot-phone.png" width="200" alt="gtmux 手机 app —— 同一套 agent 雷达，带锁屏推送" />
 
 </div>
 
 ---
 
-`gtmux` 架在你已经在用的 tmux 会话、以及会话里运行的 coding agent（Claude
-Code、Codex、Gemini、aider…）之上。一眼看清谁在**等你**、谁在**运行**、谁已**空闲**，
-再一键跳到那个 agent 所在的终端标签页和 tmux pane。
+你在 tmux 里跑着 coding agent —— Claude Code、Codex、Gemini、aider… —— 而且常常同时好几个。
+很容易就搞不清：哪个在**等你**拍板、哪个还在**运行**、哪个刚**干完**。
 
-一个核心、两副面孔：终端里的轻量 **Go CLI**，和常驻可见的 **macOS 菜单栏 app**。
+gtmux 就是那台雷达。它盯着你 tmux 里的 agent，一眼让你看清谁需要你，再**一键**落到那个
+pane。你离开座位时，它会拍你肩膀：菜单栏的一个点、桌面横幅，或者一条**推到手机**的锁屏
+提醒 —— 就在 agent 需要你拍板的那一刻。
+
+**一个核心、三块屏：**
+
+- 🖥️ **CLI** —— `gtmux agents` 列出每个 agent 与跳转位置；`--watch` 是实时看板。
+- 🍫 **菜单栏 app** —— 常驻可见的状态点（红/青/绿）+ 弹层 + ⌘⌥G 命令面板。
+- 📱 **手机 app** —— 同一套雷达搬到 iOS，agent 需要你或干完时**锁屏推送**，点一下即可回复。
 
 ### 它有何不同
 
@@ -33,30 +42,33 @@ dmux…）不同，gtmux **不运行你的 agent** —— 它是**你已有 tmux
 无侵入、tmux 原生，连*别的*工具孵化出来的 agent 也能照见（它们也在 tmux 里）。
 名字里的 “g” 取自 Go。
 
-### 适用范围
-
-gtmux **聚焦在 tmux + agent 的工作模式**：它追踪**在 tmux 里运行**的 coding agent。
-**直接在终端 tab 里（不经 tmux）启动的 agent 不会被检测到** —— 这是有意的聚焦，不是 bug。
-支持原生、非 tmux 终端是未来可能的方向；当前请把 agent 跑在 tmux 里才能看到。
-
-**支持的终端。** 雷达侧（`agents` / `overview` / 通知）与终端无关 —— 任何承载 tmux 的
-终端都能用。跳转侧（`focus` / `restore` / `new`）通过 AppleScript 驱动终端，目前支持
-**Ghostty**（1.3+）和 **iTerm2**；宿主终端自动识别（可用 `GTMUX_TERMINAL` 覆盖）。其他
-可被 AppleScript/CLI 脚本化的终端（Apple Terminal、kitty、WezTerm）按需可加。**Warp 与
-Alacritty 不支持** —— 它们不提供 gtmux 所需的标签页寻址自动化能力。
-
 ### 亮点
 
 - 🛰️ **一眼看尽所有 agent** —— `⏸ 等待 · ⠿ 运行 · ✳ 空闲`，按紧急度排序。
-- 🎯 **一键直达** —— 精确落到需要你的那个 Ghostty 标签页**与** tmux pane。
+- 🎯 **一键直达** —— 精确落到需要你的那个终端标签页**与** tmux pane。
 - 🔔 **知道何时该你出手** —— 内置 hook 凭事件*时序*而非关键词猜测，区分「权限请求」与「空闲提醒」。
-- 🍫 **菜单栏 app** —— 原生的常驻状态点（红/青/绿），带弹层与 ⌘⌥G 命令面板。
+- 📱 **随处可看** —— 经 APNs 的手机推送在任何网络都能找到你，哪怕手机连不上那台 Mac。
 - 🧩 **不挑 agent** —— 凡是会转加载动画的 agent 都能识别；一个 JSON 文件即可扩展。
 - 🪶 **无侵入、零 cgo** —— 只读 tmux，从不接管你的 agent；单个静态 Go 二进制。
 
 > **要求** macOS + [Ghostty](https://ghostty.org) 1.3+ **或** iTerm2。
 > `restore`/`focus`/`new` 通过 AppleScript 驱动宿主终端（自动识别，可用
-> `GTMUX_TERMINAL` 覆盖）；`agents`/`overview` 在任何 tmux 上都能用。
+> `GTMUX_TERMINAL` 覆盖）；`agents`/`overview` 在任何 tmux 上都能用。手机 app 通过
+> `gtmux serve` 与你的网络配对。
+
+<details>
+<summary><b>适用范围与支持的终端</b></summary>
+
+gtmux **聚焦在 tmux + agent 的工作模式**：它追踪**在 tmux 里运行**的 coding agent。
+**直接在终端 tab 里（不经 tmux）启动的 agent 不会被检测到** —— 这是有意的聚焦，不是 bug。
+
+雷达侧（`agents` / `overview` / 通知）与终端无关 —— 任何承载 tmux 的终端都能用。跳转侧
+（`focus` / `restore` / `new`）通过 AppleScript 驱动终端，目前支持 **Ghostty**（1.3+）和
+**iTerm2**；宿主终端自动识别（可用 `GTMUX_TERMINAL` 覆盖）。其他可被 AppleScript/CLI
+脚本化的终端（Apple Terminal、kitty、WezTerm）按需可加。**Warp 与 Alacritty 不支持**
+—— 它们不提供 gtmux 所需的标签页寻址自动化能力。
+
+</details>
 
 ## 安装
 
@@ -148,11 +160,14 @@ AppKit）。状态点用颜色概括最紧急的状态 —— **红**=等待 · 
 通用、ad-hoc 签名的 `Gtmux-<version>-macos.zip`，安装脚本会清掉隔离标记，首次启动
 不被拦。用 `gtmux uninstall-app` 卸载。
 
-## 远程访问 —— 手机（beta）
+## 在你的手机上
 
-手机 app（`mobileapp/`，React Native）是第三块屏：随时查看 agent，并在 agent
-需要你或跑完时收到**锁屏推送**。它是 `gtmux serve`（HTTP+SSE，走你的网络）的只读
-消费方，外加 APNs 推送。
+<img src="docs/assets/screenshot-phone.png" width="200" align="right" alt="gtmux 手机 app 雷达" />
+
+第三块屏是一个**手机 app**（`mobileapp/`，React Native）：把同一套 agent 雷达装进口袋，
+agent 需要你或跑完时**锁屏推送**。彩色读取某个 pane 的实时画面、回一句话或发控制键
+（`Enter`、`Ctrl-C`…）、附一张截图 —— 全部由 bearer token 把关。它通过 `gtmux serve`
+（HTTP+SSE，走你的网络）配对，并经 APNs 收推送。
 
 ```sh
 gtmux serve --port 8765          # 打印 token 和可达 URL
