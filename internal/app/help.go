@@ -42,6 +42,8 @@ Commands:
                           rest — set-titles, plugins, the Claude hook — one step
                           at a time, explaining and asking before each change
                           (--yes applies all). This is the one-stop setup.
+  update [--check]        self-update to the latest release — CLI + menu-bar app
+                          (--check only reports; --cli-only skips the app)
   install-hooks [--yes]   register the Claude hook directly (doctor --fix also
                           does this); --agent codex prints Codex's notify snippet
   uninstall-hooks         reverse install-hooks (de-register the hook)
@@ -101,6 +103,8 @@ const usageZH = `用法:
                           --fix 把其余项配好 —— set-titles、插件、Claude hook ——
                           逐项进行,每步都先解释并征求确认(--yes 全部应用)。
                           这就是一站式安装入口。
+  update [--check]        自我更新到最新版 —— CLI + 菜单栏 app(--check 只检查;
+                          --cli-only 只更新 CLI 不动 app)
   install-hooks [--yes]   直接注册 Claude hook(doctor --fix 也会做这件事);
                           --agent codex 打印 Codex 的 notify 接法
   uninstall-hooks         撤销 install-hooks(注销 hook)

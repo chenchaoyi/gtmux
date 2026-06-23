@@ -76,6 +76,8 @@ func Run(argv []string) int {
 		return hook.Run(os.Stdin, args)
 	case "doctor", "dr":
 		return cmdDoctor(args)
+	case "update", "upgrade":
+		return cmdUpdate(args)
 	case "install-hooks":
 		return cmdInstallHooks(args)
 	case "uninstall-hooks":
