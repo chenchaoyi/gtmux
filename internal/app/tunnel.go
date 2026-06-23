@@ -263,10 +263,17 @@ func runCloudflared(bin string, args []string, readyRe *regexp.Regexp, onReady f
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
 	for sc.Scan() {
 		line := sc.Text()
-		fmt.Fprintln(os.Stderr, i18n.Dim+line+i18n.Reset)
-		if !ready && readyRe.MatchString(line) {
-			onReady(line)
-			ready = true
+		if !ready {
+			fmt.Fprintln(os.Stderr, i18n.Dim+line+i18n.Reset)
+			if readyRe.MatchString(line) {
+				onReady(line)
+				ready = true
+			}
+		} else if cloudflaredProblem(line) {
+			// After the pairing QR is shown, go quiet so cloudflared's INF chatter
+			// (connectivity box, extra connections, DNS tables) doesn't scroll the
+			// QR off-screen — but still surface real warnings/errors.
+			fmt.Fprintln(os.Stderr, i18n.Dim+line+i18n.Reset)
 		}
 	}
 	err = cmd.Wait()
@@ -278,6 +285,13 @@ func runCloudflared(bin string, args []string, readyRe *regexp.Regexp, onReady f
 		return 1
 	}
 	return 0
+}
+
+// cloudflaredProblem reports whether a cloudflared log line is a warning/error
+// worth surfacing after the QR (its levels are INF / WRN / ERR).
+func cloudflaredProblem(line string) bool {
+	return strings.Contains(line, " ERR ") || strings.Contains(line, " WRN ") ||
+		strings.Contains(strings.ToLower(line), "error")
 }
 
 // ensureCloudflared offers to `brew install cloudflared` when it's missing.
