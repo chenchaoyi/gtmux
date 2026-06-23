@@ -1,0 +1,19 @@
+# gtmux push relay (Cloudflare Worker). gtmux serve POSTs a PushIntent here; this
+# signs an APNs provider JWT (ES256, from the .p8 key as a secret) and forwards
+# the alert to APNs. Stateless — it never sees conversation content, only a device
+# token + a one-line title/body (matches relay/ and internal/server/push.go).
+#
+# Deploy:  wrangler deploy
+# Secrets: wrangler secret put RELAY_TOKEN   (bearer the Mac presents)
+#          wrangler secret put APNS_KEY       (the AuthKey_*.p8 PEM content)
+name = "gtmux-relay"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+workers_dev = true
+routes = [{ pattern = "gtmux-relay.ccy.dev", custom_domain = true }]
+
+[vars]
+APNS_ENV = "sandbox"        # development device build → sandbox APNs
+APNS_TOPIC = "com.gtmux.app"
+APNS_KEY_ID = "6KUA65V8Y9"
+APNS_TEAM_ID = "2337SY8FRT"
