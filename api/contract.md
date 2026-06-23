@@ -16,8 +16,9 @@ pre-1.0 and may change; once the mobile app ships, changes here are contracts.
   with `--token`. Compared in constant time; a bad/absent token → `401`.
 - All JSON responses are UTF-8. Errors use `{"error":"<message>"}` with a
   matching HTTP status.
-- This is a **read-only** surface (MVP): nothing here writes to a terminal or
-  runs a command. `/api/focus` only *selects* an existing pane locally.
+- Mostly read-only — except **`POST /api/send`**, which **writes** to a terminal
+  (`tmux send-keys`). It is gated only by the bearer token, so a leaked token
+  allows running commands on the Mac. `/api/focus` only *selects* a pane.
 
 ## Endpoints
 
@@ -75,6 +76,24 @@ Selects that window+pane in tmux and brings its terminal tab forward on the Mac
 400 {"error":"missing id"}
 404 {"error":"focus failed"}       // not a pane id, or pane is gone
 405 {"error":"method not allowed"} // non-POST
+```
+
+### `POST /api/send` — type into a pane (WRITE)
+
+Types into a pane via `tmux send-keys`. JSON body — supply **exactly one** of:
+
+| field | type | meaning |
+| --- | --- | --- |
+| `id` | string | the target pane id (`%N`), required |
+| `key` | string | a NAMED control key, allow-listed: `Enter`, `C-c`, `Escape`, `Tab`, `Up`, `Down`, `Left`, `Right`, `BSpace`, `C-d`, `C-z` |
+| `text` | string | literal text typed with `send-keys -l` (never interpreted as keys) |
+| `enter` | bool | with `text`: also press Enter afterward |
+
+```
+200 {"status":"ok"}
+400 {"error":"missing id" | "nothing to send" | "send failed: …"}  // gone pane / key not allowed
+405 {"error":"method not allowed"}                                 // non-POST
+503 {"error":"input not available"}                                // Send not wired
 ```
 
 ### `GET /api/events` — live updates (Server-Sent Events)

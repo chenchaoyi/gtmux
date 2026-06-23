@@ -237,7 +237,9 @@ to `brew install` it.)
 > token-checked (no token → 401), but treat the URL + token like a password and
 > don't screenshot the QR into a shared channel.
 
-The remote surface is **read-only** (no `send-keys`/input) — see
+The remote surface is read-only **except `POST /api/send`** (terminal input via
+`tmux send-keys`) — gated only by the bearer token, so treat the token like a
+password. See
 `api/contract.md` and `mobileapp/SPEC.md`.
 
 ## Commands

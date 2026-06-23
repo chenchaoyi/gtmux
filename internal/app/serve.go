@@ -129,6 +129,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			return tmux.CapturePaneColor(id), true
 		},
 		Focus: func(id string) error { return focusPaneByID(id) },
+		Send:  sendToPane,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil
@@ -225,6 +226,29 @@ func randToken() string {
 		return "INSECURE-RANDOM-FAILED"
 	}
 	return hex.EncodeToString(b)
+}
+
+// allowedSendKeys whitelists the named control keys POST /api/send accepts (a
+// tmux key name must never be free-form — the rest goes through as literal text).
+var allowedSendKeys = map[string]bool{
+	"Enter": true, "C-c": true, "Escape": true, "Tab": true,
+	"Up": true, "Down": true, "Left": true, "Right": true,
+	"BSpace": true, "C-d": true, "C-z": true,
+}
+
+// sendToPane types into a pane for POST /api/send (a WRITE). A non-empty key must
+// be in the allowlist; otherwise text is typed literally (+ Enter when enter).
+func sendToPane(id, text, key string, enter bool) error {
+	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
+		return fmt.Errorf("pane not found")
+	}
+	if key != "" {
+		if !allowedSendKeys[key] {
+			return fmt.Errorf("key not allowed")
+		}
+		return tmux.SendKey(id, key)
+	}
+	return tmux.SendText(id, text, enter)
 }
 
 // printServeBanner tells the user where to point the phone and the token to use.
