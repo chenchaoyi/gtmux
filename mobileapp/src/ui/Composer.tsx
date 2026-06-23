@@ -7,7 +7,19 @@
 // Color is never used for status here.
 
 import React, {useRef, useState} from 'react';
-import {ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {
+  ActionSheetIOS,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {pick} from '@react-native-documents/picker';
 import {StatusName} from '../api/types';
 import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
@@ -44,14 +56,17 @@ export function Composer({
   lang,
   enabled = true,
   onSend,
+  onUpload,
 }: {
   status: StatusName;
   pal: Palette;
   lang: Lang;
   enabled?: boolean;
   onSend?: (p: SendPayload) => void;
+  onUpload?: (uri: string, name: string, type: string) => Promise<string | null>;
 }) {
   const [text, setText] = useState('');
+  const [uploading, setUploading] = useState(false);
   // Guard against a double submit: iOS fires onSubmitEditing twice with
   // blurOnSubmit=false (notably after voice dictation), which sent the message
   // twice. Drop a second submit within a short window.
@@ -68,6 +83,51 @@ export function Composer({
     setText('');
   };
 
+  // Paste the clipboard into the input (a quick paste, beyond the native menu).
+  const paste = async () => {
+    const s = await Clipboard.getString();
+    if (s) setText(t => (t ? t + s : s));
+  };
+
+  // Upload a picked file to the Mac and drop its path into the input, so the
+  // agent can read it (e.g. "look at /…/screenshot.png").
+  const doUpload = async (uri: string, name: string, type: string) => {
+    if (!onUpload || uploading) return;
+    setUploading(true);
+    const path = await onUpload(uri, name, type);
+    setUploading(false);
+    if (path) setText(t => (t ? t + ' ' + path : path));
+  };
+
+  // Attach → photo library / camera / file (iOS action sheet).
+  const attach = () => {
+    const labels =
+      lang === 'zh'
+        ? ['照片图库', '拍照', '文件', '取消']
+        : ['Photo Library', 'Take Photo', 'File', 'Cancel'];
+    ActionSheetIOS.showActionSheetWithOptions(
+      {options: labels, cancelButtonIndex: 3},
+      async idx => {
+        try {
+          if (idx === 0) {
+            const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
+            const a = r.assets?.[0];
+            if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
+          } else if (idx === 1) {
+            const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
+            const a = r.assets?.[0];
+            if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
+          } else if (idx === 2) {
+            const [f]: any = await pick();
+            if (f?.uri) await doUpload(f.uri, f.name ?? 'file', f.type ?? 'application/octet-stream');
+          }
+        } catch {
+          // cancelled or unsupported — ignore.
+        }
+      },
+    );
+  };
+
   return (
     <View style={[styles.wrap, {borderTopColor: pal.divider, backgroundColor: pal.bg}, !enabled && styles.disabled]}>
       {/* one compact, scrollable key toolbar (context shortcuts + control keys) */}
@@ -76,6 +136,12 @@ export function Composer({
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
         contentContainerStyle={styles.keys}>
+        <TouchableOpacity
+          onPress={paste}
+          style={[styles.ctlKey, {borderColor: pal.divider}]}>
+          <Text style={[styles.ctlText, {color: pal.fg2}]}>{lang === 'zh' ? '粘贴' : 'Paste'}</Text>
+        </TouchableOpacity>
+        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
         {contextKeys(status, lang).map(k => (
           <TouchableOpacity
             key={k.label}
@@ -95,8 +161,18 @@ export function Composer({
         ))}
       </ScrollView>
 
-      {/* free input + send */}
+      {/* attach + free input + send */}
       <View style={styles.inputRow}>
+        <TouchableOpacity
+          onPress={attach}
+          disabled={!enabled || uploading || !onUpload}
+          style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+          {uploading ? (
+            <ActivityIndicator size="small" color={pal.fg3} />
+          ) : (
+            <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
+          )}
+        </TouchableOpacity>
         <TextInput
           value={text}
           onChangeText={setText}
@@ -131,6 +207,8 @@ const styles = StyleSheet.create({
   ctlKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8, marginRight: 7},
   ctlText: {fontSize: 13, fontFamily: 'Menlo'},
   inputRow: {flexDirection: 'row', alignItems: 'center', marginTop: 8},
+  attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
+  attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
   input: {flex: 1, height: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, fontSize: 15},
   send: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
   sendText: {fontSize: 19, fontWeight: '700'},

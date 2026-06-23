@@ -128,8 +128,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return tmux.CapturePaneColor(id), true
 		},
-		Focus: func(id string) error { return focusPaneByID(id) },
-		Send:  sendToPane,
+		Focus:  func(id string) error { return focusPaneByID(id) },
+		Send:   sendToPane,
+		Upload: saveUpload,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil
@@ -249,6 +250,46 @@ func sendToPane(id, text, key string, enter bool) error {
 		return tmux.SendKey(id, key)
 	}
 	return tmux.SendText(id, text, enter)
+}
+
+// saveUpload writes an uploaded file under ~/.local/share/gtmux/uploads with a
+// random prefix (no collisions / overwrites) and returns its path, so the phone
+// can hand a photo/file to an agent by path. Read by whoever the agent can read.
+func saveUpload(name string, data []byte) (string, error) {
+	dir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "uploads")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	safe := sanitizeFilename(name)
+	if safe == "" {
+		safe = "upload"
+	}
+	path := filepath.Join(dir, randToken()[:8]+"-"+safe)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// sanitizeFilename keeps just the base name with a conservative charset, so an
+// uploaded name can't escape the uploads dir or inject anything.
+func sanitizeFilename(name string) string {
+	name = filepath.Base(name)
+	var b strings.Builder
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9',
+			r == '.', r == '-', r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('_')
+		}
+	}
+	out := strings.TrimLeft(b.String(), ".") // no leading dots
+	if len(out) > 80 {
+		out = out[len(out)-80:]
+	}
+	return out
 }
 
 // printServeBanner tells the user where to point the phone and the token to use.
