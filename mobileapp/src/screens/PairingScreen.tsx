@@ -5,8 +5,8 @@
 import React, {useState} from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,8 +17,9 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {normalizeHost} from '../pairing/qr';
+import {normalizeHost, parsePairingQR} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
+import {ScanScreen} from './ScanScreen';
 
 export function PairingScreen() {
   const {t, pal, pair, lang} = useApp();
@@ -26,29 +27,44 @@ export function PairingScreen() {
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [scanning, setScanning] = useState(false);
 
-  const connect = async () => {
-    const base = normalizeHost(host);
-    if (!base || !token.trim()) {
+  // connectWith validates reachability + token, then pairs. Shared by manual
+  // entry and the QR scanner.
+  const connectWith = async (base: string, tok: string, name: string) => {
+    if (!base || !tok) {
       setError(t('cantReach'));
       return;
     }
     setBusy(true);
     setError('');
     try {
-      const client = new GtmuxClient(base, token.trim());
-      const ok = await client.health();
-      if (!ok) {
+      const client = new GtmuxClient(base, tok);
+      if (!(await client.health())) {
         setError(t('cantReach'));
         return;
       }
-      // health passes auth-free; validate the token with a real authed call.
-      await client.agents();
-      await pair({url: base, token: token.trim(), name: base.replace(/^https?:\/\//, '')});
+      await client.agents(); // validate the token with a real authed call
+      await pair({url: base, token: tok, name});
     } catch {
       setError(t('badToken'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const connect = () => {
+    const base = normalizeHost(host);
+    connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
+  };
+
+  const onScanned = (raw: string) => {
+    setScanning(false);
+    try {
+      const m = parsePairingQR(raw);
+      connectWith(m.url, m.token, m.name);
+    } catch (e: any) {
+      setError(e?.message || t('badToken'));
     }
   };
 
@@ -69,9 +85,10 @@ export function PairingScreen() {
 
           <TouchableOpacity
             style={[styles.qrBtn, {borderColor: pal.divider, backgroundColor: pal.surface}]}
-            onPress={() =>
-              Alert.alert('gtmux', t('pushDevice'))
-            }>
+            onPress={() => {
+              setError('');
+              setScanning(true);
+            }}>
             <Text style={[styles.qrText, {color: pal.fg2}]}>▦  {t('scanQR')}</Text>
           </TouchableOpacity>
 
@@ -115,6 +132,9 @@ export function PairingScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+      <Modal visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
+        <ScanScreen onClose={() => setScanning(false)} onScanned={onScanned} />
+      </Modal>
     </SafeAreaView>
   );
 }
