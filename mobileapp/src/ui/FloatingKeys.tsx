@@ -21,10 +21,28 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import Svg, {Path, Rect} from 'react-native-svg';
 import {Lang} from '../i18n';
 import {Palette} from './theme';
 
 type KeyDef = {label: string; key: string; danger?: boolean};
+
+// LockGlyph — a padlock whose STATE is encoded by both shape (open vs closed
+// shackle) and color (cyan when pinned, dim when not), per the DESIGN color+shape
+// language. (An emoji lock would ignore the color prop, so we draw it.)
+function LockGlyph({locked, color}: {locked: boolean; color: string}) {
+  return (
+    <Svg width={15} height={15} viewBox="0 0 24 24">
+      <Rect x={5} y={11} width={14} height={10} rx={2.5} stroke={color} strokeWidth={2} fill="none" />
+      <Path
+        d={locked ? 'M8 11 V8 a4 4 0 0 1 8 0 V11' : 'M8 11 V8 a4 4 0 0 1 8 0'}
+        stroke={color}
+        strokeWidth={2}
+        fill="none"
+      />
+    </Svg>
+  );
+}
 
 // directional + essential cluster — backspace · up · clear / left · enter · right / down
 const PAD: (KeyDef | null)[][] = [
@@ -93,9 +111,7 @@ export function FloatingKeys({
           delayLongPress={300}
           hitSlop={hit}
           style={styles.lock}>
-          <Text style={[styles.lockIcon, {color: locked ? '#06B6D4' : pal.fg3}]}>
-            {locked ? '🔒' : '🔓'}
-          </Text>
+          <LockGlyph locked={locked} color={locked ? '#06B6D4' : pal.fg3} />
         </TouchableOpacity>
       </View>
 
@@ -167,7 +183,6 @@ const styles = StyleSheet.create({
   handleSpacer: {width: 24},
   grip: {flex: 1, height: 4, borderRadius: 2, maxWidth: 40, alignSelf: 'center', marginHorizontal: 8},
   lock: {width: 24, alignItems: 'center'},
-  lockIcon: {fontSize: 13},
   row: {flexDirection: 'row', justifyContent: 'center', marginTop: 6},
   key: {
     width: 58,
