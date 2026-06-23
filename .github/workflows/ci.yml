@@ -64,6 +64,32 @@ jobs:
           CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/gtmux
           CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/gtmux
 
+  mobile:
+    name: mobile app (tsc + eslint + jest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+
+      # JS-only gate (no native build): typecheck, lint, and unit tests. Keeps the
+      # RN app's pure logic (pairing, ANSI parser, api client, i18n, theme) honest.
+      - name: install deps
+        run: cd mobileapp && npm ci
+
+      - name: typecheck (tsc)
+        run: cd mobileapp && npx tsc --noEmit
+
+      - name: lint (eslint)
+        run: cd mobileapp && npx eslint .
+
+      - name: jest
+        run: cd mobileapp && npx jest --ci
+
   menubar:
     name: menu-bar app build (macOS)
     runs-on: macos-latest
