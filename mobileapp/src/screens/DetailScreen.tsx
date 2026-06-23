@@ -39,7 +39,7 @@ export function DetailScreen({route, navigation}: any) {
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client} = useAgents();
-  const {t, pal, lang} = useApp();
+  const {pal, lang} = useApp();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [focusMsg, setFocusMsg] = useState('');
@@ -87,12 +87,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const fontSize = FONT_SIZES[fontIdx];
   const lineHeight = Math.round(fontSize * 1.36);
 
-  const doFocus = async () => {
-    const ok = await client.focus(agent.pane_id);
-    setFocusMsg(ok ? t('focused') : t('focusFailed'));
-    setTimeout(() => setFocusMsg(''), 2500);
-  };
-
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
@@ -139,9 +133,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
               {agent.agent} · {statusLabel(agent.status, lang)} · {secondary(agent)}
             </Text>
           </View>
-          <TouchableOpacity onPress={doFocus} style={[styles.focusTop, {borderColor: pal.divider}]}>
-            <Text style={[styles.focusTopText, {color: StatusColor.working}]}>{t('focusOnMac')}</Text>
-          </TouchableOpacity>
         </View>
       )}
 
@@ -266,8 +257,6 @@ const styles = StyleSheet.create({
   headerText: {flex: 1, minWidth: 0},
   title: {fontSize: 16, fontWeight: '700'},
   sub: {fontSize: 12, marginTop: 1},
-  focusTop: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, marginLeft: 8},
-  focusTopText: {fontSize: 12, fontWeight: '700'},
   controls: {
     flexDirection: 'row',
     alignItems: 'center',

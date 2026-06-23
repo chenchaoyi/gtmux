@@ -53,9 +53,6 @@ const S: Dict = {
   offline: {en: 'offline', zh: '离线'},
   live: {en: 'live', zh: '实时'},
   // detail
-  focusOnMac: {en: 'Focus on Mac', zh: '在 Mac 上聚焦'},
-  focused: {en: 'Focused on the Mac', zh: '已在 Mac 上聚焦'},
-  focusFailed: {en: 'Focus failed (pane gone?)', zh: '聚焦失败(pane 没了?)'},
   // settings
   settings: {en: 'Settings', zh: '设置'},
   language: {en: 'Language', zh: '语言'},
