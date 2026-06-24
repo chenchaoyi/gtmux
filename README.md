@@ -1,422 +1,107 @@
 <div align="center">
 
-<img src="docs/assets/logo.png" width="112" alt="gtmux logo" />
+<img src="docs/assets/logo.png" width="104" alt="gtmux logo" />
 
 # gtmux
 
-**Command center for your tmux sessions and coding agents.**
+**See which coding agent needs you — across every tmux session — and jump straight to it.**
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/badge/go-1.25-00ADD8?logo=go&logoColor=white)](go.mod)
-[![Platform](https://img.shields.io/badge/macOS-Ghostty%201.3%2B%20%7C%20iTerm2-111)](https://ghostty.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **English** · [中文](README.zh.md)
 
-<img src="docs/assets/screenshot-popover.png" width="300" alt="gtmux menu-bar popover — agents grouped by who needs you, who's working, who's idle" />
+<img src="docs/assets/screenshot-popover.png" width="300" alt="gtmux menu-bar popover" />
 &nbsp;&nbsp;
-<img src="docs/assets/screenshot-phone.png" width="200" alt="gtmux phone app — the same agent radar, with lock-screen push" />
+<img src="docs/assets/screenshot-phone.png" width="194" alt="gtmux phone app" />
 
 </div>
 
 ---
 
-You run coding agents — Claude Code, Codex, Gemini, aider, … — inside tmux, often
-several at once. It's easy to lose track of which one is **waiting on you** for a
-yes/no, which is still **working**, and which just **finished**.
+You run coding agents — Claude Code, Codex, Gemini, aider — inside tmux, often
+several at once. They go quiet, and you lose track of which one is waiting on a
+yes/no, which is still working, and which just finished.
 
-gtmux is the radar. It watches the agents in your tmux and shows you — at a
-glance — who needs you, then drops you on the exact pane in **one click**. When
-you step away, it taps you on the shoulder: a menu-bar dot, a desktop banner, or
-a **push to your phone** the moment an agent needs a decision.
+gtmux is the radar over them. It reads the agents in your tmux, shows who needs
+you, and jumps you to the exact pane. When you step away, it tells you the moment
+an agent needs a decision — in the menu bar, on the desktop, or on your phone.
+
+It does **not** run your agents. It watches whatever you already have in tmux —
+including agents other tools started — and never gets in the way.
 
 **Three surfaces, one source of truth:**
 
-- 🖥️ **CLI** — `gtmux agents` lists every agent and where to jump; `--watch` is a live dashboard.
-- 🍫 **Menu-bar app** — an ambient status dot (red/cyan/green) + popover + ⌘⌥G palette, always in sight.
-- 📱 **Phone app** — the same radar on iOS, with **lock-screen push** when an agent needs you or finishes — and a tap to reply.
+- **CLI** — `gtmux agents` lists every agent and where to jump; `--watch` is a live dashboard.
+- **Menu-bar app** — an always-visible status dot (red / cyan / green) with a popover and a `⌘⌥G` palette.
+- **Phone app** — the same radar on iOS, with a lock-screen push when an agent needs you, and a tap to reply.
 
-### Why it's different
+## When you'd use it
 
-Unlike agent *spawners* (claude-squad, uzi, dmux, …) that create and sandbox
-agents in git worktrees, gtmux **doesn't run your agents** — it's the
-**radar + remote over whatever you already run in tmux**. Non-invasive,
-tmux-native, and it even surfaces agents *other* tools spawned (they're in tmux
-too). The "g" is for Go.
-
-### Highlights
-
-- 🛰️ **One glance, every agent** — `⏸ waiting · ⠿ working · ✳ idle`, sorted by urgency.
-- 🎯 **One-click jump** — land on the exact terminal tab **and** tmux pane that needs you.
-- 🔔 **Knows when *you're* needed** — a built-in hook tells a permission prompt from an idle nudge by event *timing*, not keyword guessing.
-- 📱 **Watch from anywhere** — phone push over APNs reaches you on any network, even when the Mac doesn't.
-- 🧩 **Agent-agnostic** — detects any agent that animates a spinner; extend via one JSON file.
-- 🪶 **Non-invasive & cgo-free** — reads tmux, never owns your agents; one static Go binary.
-
-> **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+ **or** iTerm2.
-> `restore`/`focus`/`new` drive the host terminal via AppleScript (auto-detected;
-> override with `GTMUX_TERMINAL`); `agents`/`overview` work on any tmux. The phone
-> app pairs with `gtmux serve` over your network.
-
-<details>
-<summary><b>Scope &amp; supported terminals</b></summary>
-
-gtmux is **focused on the tmux + agent workflow**: it tracks coding agents
-running **inside tmux**. Agents started **directly in a terminal tab (no tmux)
-are not detected** — that's a deliberate focus, not a bug.
-
-The radar (`agents` / `overview` / notifications) is terminal-agnostic — it works
-under **any** terminal that hosts tmux. The jump side (`focus` / `restore` /
-`new`) drives the terminal via AppleScript and currently supports **Ghostty**
-(1.3+) and **iTerm2**; the host terminal is auto-detected (override with
-`GTMUX_TERMINAL`). Other AppleScript-/CLI-scriptable terminals (Apple Terminal,
-kitty, WezTerm) are feasible to add on request. **Warp and Alacritty are not
-supported** — they don't expose the tab-addressing automation gtmux needs.
-
-</details>
-
-## Install
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
-```
-
-Installs the checksum-verified binary to `~/.local/bin/gtmux`, plus the menu-bar
-app (`GTMUX_NO_APP=1` to skip · `GTMUX_APP_LOGIN=1` to start it at login). Pin a
-version with `GTMUX_VERSION=vX.Y.Z`. From source: `go install
-github.com/chenchaoyi/gtmux/cmd/gtmux@latest`.
-
-<details>
-<summary>China / unstable GitHub — mirror fallback</summary>
-
-**If even fetching the script fails** (`raw.githubusercontent.com` blocked),
-bootstrap from a CDN mirror — the script then mirror-falls-back its own
-downloads automatically:
-
-```sh
-curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
-```
-
-Once gtmux is installed, **`gtmux update`** fetches the script via the same
-mirror list (jsdelivr → gh-proxy → ghfast → ghproxy), so updates work on CN
-networks without any of this.
-
-For asset downloads the installer is **GitHub-first and auto-falls back to a
-mirror chain** (`ghfast.top` → `gh-proxy.com` → `ghproxy.net`) when a GitHub
-asset download stalls. `SHASUMS256.txt` is always fetched GitHub-direct first, so
-the checksum stays anchored on GitHub even when the tarball came through a
-mirror. Override with `GTMUX_INSTALL_MIRROR`:
-
-```sh
-GTMUX_INSTALL_MIRROR=ghproxy  curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash   # straight to the mirror chain
-GTMUX_INSTALL_MIRROR=https://my.mirror/  curl -fsSL ... | bash   # custom <prefix><github-url> proxy
-GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # GitHub only, no mirrors
-```
-
-</details>
+- You're running several agents and keep alt-tabbing to check which is blocked.
+- You stepped away and want a nudge the moment one needs a yes/no — not ten minutes later.
+- You're away from the Mac (home, office, commute) and want to check or unblock an agent from your phone.
+- Your Mac rebooted and you want your tmux sessions and tabs back in one command.
 
 ## At a glance — `gtmux agents`
 
 ```
 gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
 
-⏸ waiting  Claude Code  Pica:0.0          permission to run tests   %7
-⠿ working  Claude Code  ccy-workspace:0.0 Auto-attach tmux sessions %11
-✳ idle     Claude Code  Rodi:0.0          Rodi feature dev   %8  ✓ latest
-✳ idle     Claude Code  Diting:0.0        —                  %1
+⏸ waiting  Claude Code  Pica:0.0          permission to run tests    %7
+⠿ working  Claude Code  ccy-workspace:0.0 Auto-attach tmux sessions  %11
+✳ idle     Claude Code  Rodi:0.0          Rodi feature dev    %8  ✓ latest
+✳ idle     Claude Code  Diting:0.0        —                   %1
 
-jump: gtmux focus <pane>   (e.g. gtmux focus %11)
+jump: gtmux focus %7
 ```
 
-One place to see who's working, who's idle, and who just finished. Each row is
-**status · agent · location · task · pane id**, sorted by urgency. The three
-states:
+Each row is **status · agent · location · task · pane id**, sorted by urgency:
 
-- **⠿ working** — busy (don't bother it).
-- **⏸ waiting** — blocked on **you** for a permission/approval, mid-task; sorts to
-  the very top so you instantly see which agent needs a decision.
-- **✳ idle** — finished its turn, your move when ready (not urgent).
+- **⏸ waiting** — blocked on **you** mid-task (a permission/approval). Sorts to the top.
+- **⠿ working** — busy; leave it alone.
+- **✳ idle** — finished its turn; your move when ready.
 
-**`gtmux agents --watch`** is a live, auto-refreshing dashboard (built with
-[bubbletea](https://github.com/charmbracelet/bubbletea)): polls ~1.5s, **↑/↓**
-select, **Enter** jumps to the pane, **r** refresh, **q** quit. **`--json`**
-emits the same data for scripts and the menu-bar app.
+Detection is by event *timing*, not keyword guessing, and works with any agent
+that animates a spinner — not just Claude Code.
 
-<details>
-<summary>How detection works (not Claude-only)</summary>
-
-- **Status** comes from the pane title the agent sets itself. A leading braille
-  spinner (`⠋⠙⠹…`, what most agent TUIs animate) = **working**; Claude Code's `✳`
-  = **idle**. This generalizes across agents that animate a spinner.
-- **Which agent** is matched by foreground command (`claude`, `codex`, `gemini`,
-  `aider`, `opencode`, …) or by a name in the title.
-- Extend/override via **`~/.config/gtmux/agents.json`** — a JSON array of
-  `{"name","commands","idleGlyph"}`; your entries win over the built-ins.
-- A pane is listed only if the agent **process is actually running**. A leftover
-  agent title over a plain shell (e.g. a resurrect-restored session never
-  relaunched) is **not** counted.
-
-`⏸ waiting` and `✓ latest` come from state files written by the
-[notification hook](#notification-hook). Without it, agents never show `⏸`;
-everything else still works.
-
-</details>
-
-## Menu-bar app
-
-<div align="center">
-<img src="docs/assets/screenshot-popover.png" width="340" alt="popover" />
-&nbsp;&nbsp;
-<img src="docs/assets/screenshot-firstrun.png" width="340" alt="first-run permission card" />
-</div>
-
-Your ambient radar over coding agents — a native macOS `LSUIElement` status item
-(Swift / AppKit). The dot is a colored summary of the most-urgent state —
-**red** waiting · **cyan** working · **green** idle · gray when nothing's running
-— with a count badge (e.g. `2` when two agents need you).
-
-- **Click the dot, or press ⌘⌥G**, to open the popover / command palette.
-- Agents are grouped **Needs you → Working → Idle**; each row is `‹glyph› session · task`.
-- **Click a row** (or `⏎` / `⌘1–9`) to run `gtmux focus <pane>` and land on it.
-- A footer has **Overview**, **Live watch**, **Restore detached**, and **New session**.
-
-It's a pure **consumer** of the CLI — it polls `gtmux agents --json` and shells
-out to `gtmux focus`, so gtmux-core stays the single data source. The CLI stays
-cgo-free; the app is the only native build. Releases attach a universal,
-ad-hoc-signed `Gtmux-<version>-macos.zip`; the installer strips the quarantine
-flag so first launch isn't blocked. Remove it with `gtmux uninstall-app`.
-
-## On your phone
-
-<img src="docs/assets/screenshot-phone.png" width="200" align="right" alt="gtmux phone app radar" />
-
-The third surface is a **phone app** (`mobileapp/`, React Native): the same agent
-radar in your pocket, with **lock-screen push** the moment an agent needs you or
-finishes. Read a pane's live screen in color, send a reply or a control key
-(`Enter`, `Ctrl-C`, …), attach a screenshot — all gated by a bearer token. It
-pairs with `gtmux serve` (HTTP+SSE over your network) and gets push over APNs.
+## Quickstart
 
 ```sh
-gtmux serve --port 8765          # prints a token + the reachable URL(s)
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```
 
-Then pair the app — scan the menu-bar app's pairing QR, or enter the host + token
-manually. Two facts decide what you can do from where:
-
-- **Push reaches you anywhere.** Alerts arrive over APNs on any network (cellular,
-  home Wi-Fi), even when the phone can't reach the Mac — Mac at the office, you at
-  home, you still get "needs you / finished".
-- **The live view (radar / read a pane / focus) needs a network path to the Mac.**
-  Same Wi-Fi works directly. Different networks need a tunnel.
-
-### From anywhere — Tailscale (recommended)
-
-A private mesh between your devices that ignores corporate Wi-Fi client isolation
-and works office↔home.
-
-1. **Mac:** `brew install --cask tailscale` (or the App Store), open it, sign in.
-2. **iPhone:** install **Tailscale**, sign in with the **same account**.
-3. Get the Mac's Tailscale address: `tailscale ip -4` (a `100.x.y.z`).
-4. Pair the app to `http://<that-100.x.y.z>:8765` + the serve token. Now the live
-   view works from any network.
-
-> **Same Wi-Fi can't reach the Mac?** Corporate/guest Wi-Fi often **isolates
-> clients** (phone↔Mac blocked) — Tailscale fixes that. Quick check: open
-> `http://<mac-ip>:8765/api/health` in the phone's browser; if it doesn't load,
-> you need Tailscale (or a tunnel).
-
-> **Mainland China:** Tailscale is a VPN-category app and is generally **not in
-> the China App Store**. Install it with a non-mainland Apple ID, **or** skip the
-> VPN app entirely with the tunnel below (the phone connects to a normal
-> `https://…` URL — no VPN app needed).
-
-### From anywhere — `gtmux tunnel` (no VPN app)
-
-An **outbound** reverse tunnel on the Mac: it dials out to a rendezvous point, so
-there's no inbound port to open and NAT is no problem. The tunnel client
-(`cloudflared`) runs only on the Mac — the phone app is unchanged (it still pairs
-to a `{url, token}`), so this has **no App Store impact**.
+Installs the CLI to `~/.local/bin/gtmux` and the menu-bar app. Then:
 
 ```sh
-gtmux tunnel            # default: a STABLE hosted address — pair once
-gtmux tunnel --quick    # account-less ephemeral URL (changes each run)
+gtmux install-hooks          # so agents can report "waiting on you" (one-time)
+gtmux agents --watch         # the live dashboard; Enter jumps to a pane
 ```
 
-It starts the read-only radar (if not already up), opens the tunnel, and prints
-the public URL + the serve token + a **scannable pairing QR**. Open the phone app
-→ **Pair → Scan** → connected from any network. (Missing `cloudflared`? It offers
-to `brew install` it.)
+To watch from your phone, run `gtmux serve` (same network) or `gtmux tunnel`
+(anywhere) and pair the iOS app. See **[docs/phone.md](docs/phone.md)**.
 
-- **Hosted (default)** gives each Mac a **stable** `https://gtmux-<id>.ccy.dev`
-  address via gtmux's control plane, so the phone **pairs once** and keeps working
-  across restarts — the URL never changes. No account or domain on your side.
-- **`--quick`** needs no infrastructure but the `trycloudflare.com` URL **rotates
-  each run** (re-pair every time) — fine for a quick look, not for "leave it
-  running and check from your phone later".
-- **Self-host:** point `gtmux tunnel` at your own control-plane Worker with
-  `GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG`. See `docs/design/remote-access-tunnel.md`
-  and `tunnel-worker/`.
+> **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+ **or** iTerm2 for the
+> jump features (`focus` / `restore` / `new`); `agents` / `overview` work under
+> any terminal that hosts tmux. Mainland China / unstable GitHub: see the
+> [install notes](docs/install.md).
 
-> **Security:** a public URL makes the **bearer token the only gate** to the
-> read-only radar (no VPN layer in front). The API stays read-only and
-> token-checked (no token → 401), but treat the URL + token like a password and
-> don't screenshot the QR into a shared channel.
+## Docs
 
-The remote surface is read-only **except `POST /api/send`** (terminal input via
-`tmux send-keys`) — gated only by the bearer token, so treat the token like a
-password. See
-`api/contract.md` and `mobileapp/SPEC.md`.
+- **[CLI & commands](docs/cli.md)** — `agents` / `overview` / `focus` / `restore` / `new`, detection, the notification hook, tmux key bindings, and permissions.
+- **[Phone & remote access](docs/phone.md)** — the iOS app, `gtmux serve`, and reaching your Mac from anywhere with Tailscale or `gtmux tunnel`.
+- **[Install notes](docs/install.md)** — pinning a version, building from source, and the China / mirror fallback.
+- **Design specs** — `docs/design/` (menu-bar `DESIGN.md`, mobile `MOBILE.md`) and `openspec/` for in-flight changes.
 
-## Commands
+## How it's different
 
-| command | what it does |
-| --- | --- |
-| `agents [--watch\|--json]` | coding agents across your panes: who's waiting / working / idle, where, and the pane id to jump to |
-| `overview [--popup]` | sessions / windows / panes summary; `--popup` fits a tmux popup |
-| `restore [--pick\|--one\|<name>\|--dry-run]` | one Ghostty tab per session, attach all |
-| `focus <name\|pane-id>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane |
-| `new [name]` | start a new tmux session in a fresh Ghostty tab |
-
-Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
-follows `--lang=en|zh` (default `en`) or `$GTMUX_LANG`. Invoked explicitly — no
-shell hooks, works with any shell.
-
-### `gtmux restore`
-
-Quitting Ghostty leaves the tmux server and all sessions alive — only the tabs
-are gone. After reopening Ghostty, run **once** in any tab:
-
-```sh
-gtmux restore            # one Ghostty tab per tmux session, all attached
-gtmux restore --pick     # choose which sessions: "1 3" / "1,3", Enter = all, q = cancel
-gtmux restore --one      # attach the next unattached session in this tab
-gtmux restore <name>     # attach a specific session here
-gtmux restore --dry-run  # print what would happen, change nothing
-```
-
-The first run pops an Automation permission dialog ("wants to control Ghostty") —
-click Allow. **After a reboot** the tmux server is gone too; `gtmux restore`
-starts tmux and **explicitly drives
-[tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) to restore the
-last autosave** (it waits for the restore to finish — large layouts take 30s+ —
-and if a saved layout exists but can't be restored it refuses to overwrite it).
-Running programs are not restarted — relaunch e.g. with `claude --resume`.
-
-**Each pane's previous output (scrollback) comes back too** — a snapshot — when
-resurrect is set to capture it. Recommended in `tmux.conf`:
-
-```tmux
-set -g @resurrect-capture-pane-contents 'on'   # snapshot each pane's scrollback
-set -g history-limit 50000                     # how much scrollback to keep/restore
-```
-
-> The shell's **↑ command history** is separate — it lives in your shell's
-> histfile, not in resurrect. By default it's written only on shell exit, so a
-> reboot loses recent commands. To persist it immediately (bash):
-> `shopt -s histappend; PROMPT_COMMAND='history -a'` in `~/.bashrc` (zsh:
-> `setopt INC_APPEND_HISTORY`). The restored scrollback still *shows* past
-> commands; this just keeps them recallable with ↑.
-
-### `gtmux overview`
-
-```
-gtmux overview — 2 sessions · 3 windows · 5 panes
-
-▶ ccy-workspace        1 window · 1 pane
-    0: ccy-workspace *  (1 pane)
-● Pica                 2 windows · 4 panes
-    0: editor  (1 pane)
-    1: claude *  (3 panes)
-
-▶ current  ● attached  ○ detached   * active  Z zoomed  • new output
-```
-
-A sessions/windows/panes summary from any shell. **`--popup`** is size-fitted for
-a tmux `display-popup`, so you can bind it to a key and float it over a
-full-screen program without interrupting it.
-
-### `gtmux focus`
-
-```sh
-gtmux focus Pica         # bring the Ghostty tab showing session "Pica" to front
-gtmux focus %11          # jump to that exact window+pane, then focus its tab
-```
-
-Because each tab title is `session — window`, `focus` finds the matching tab and
-runs Ghostty's AppleScript `select tab` + `activate`. A pane id (`%N`) also
-`select-window` + `select-pane`s inside the session, so you land on the exact
-pane — which is how a notification click drops you on the agent that just
-finished.
-
-> Needs `set-titles on` with `set-titles-string '#S — #W'` so tab titles stay in
-> the format `focus` matches. If another tool also writes the tab title, disable
-> that so titles stay authoritative.
-
-## tmux integration
-
-gtmux is just a CLI — bind whatever keys you like in `tmux.conf`. Suggested:
-
-```tmux
-set -g set-titles on
-set -g set-titles-string '#S — #W'
-bind g run-shell -b "gtmux overview --popup"
-bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
-bind J run-shell "gtmux focus --last"
-```
-
-## Notification hook
-
-`⏸ waiting`, `✓ latest`, and click-to-jump notifications rely on a hook writing
-state files under `~/.local/share/gtmux/`. gtmux ships that hook **built in** — no
-external script needed:
-
-```sh
-gtmux install-hooks          # one-time setup (macOS)
-gtmux uninstall-hooks        # reverse it
-```
-
-`install-hooks` registers `gtmux hook` in `~/.claude/settings.json` on the
-`Stop`, `Notification`, and `UserPromptSubmit` events (idempotent; preserves
-other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
-runs it, you don't — and writes state purely by event **timing**, telling a
-permission request from an idle nudge without reading message text.
-
-**Notifications are delivered by the menu-bar app** — no `terminal-notifier`
-needed. The hook queues a request under `~/.local/share/gtmux/notify/` and
-`Gtmux.app` posts a native banner (shown as **Gtmux**, with the agent icon, a
-**Jump** action, and differentiated copy — *finished* is calm and silent,
-*needs your input* sounds). Clicking it lands you on the exact pane. Grant
-"Allow Notifications" on first run; keep the app running to receive them.
-
-## Permissions
-
-gtmux asks for only what it needs:
-
-- **Automation (control Ghostty)** — required for `focus` / `restore` / `new` and
-  notification click-to-jump. macOS prompts the first time gtmux drives Ghostty
-  via AppleScript; click **Allow**.
-- **Notifications** — so the menu-bar app can post agent banners. Allow on first run.
-- **Launch at login** *(optional)* — only if you enable it in Preferences.
-
-It does **not** need these — if macOS prompts, you can safely **Deny** with no
-loss of function:
-
-- **App Management ("modify apps on your Mac")** — gtmux never modifies other
-  apps; its code only ever touches its own bundle (on update/uninstall). If you
-  see this prompt, macOS attributed *another* app's self-update (e.g. a browser
-  updating itself) to gtmux's long-running background process via its
-  responsible-process chain. Denying changes nothing for gtmux.
-- **Files & Folders (Downloads / Desktop / Documents)** — gtmux doesn't read
-  these. The prompt can appear when `restore` recreates a tmux session whose
-  working directory lives in one of them — that's `tmux` (run by gtmux) opening
-  the folder. Safe to deny; only that one session's directory is affected.
-
-> macOS ties granted permissions to the app's code signature. A **Developer
-> ID-signed + notarized** build keeps your grants across updates; an **ad-hoc**
-> build (a local `make app`, or an unsigned release) changes identity every
-> build, so macOS forgets and re-prompts. Set `GTMUX_SIGN_ID` when building to
-> sign with your Developer ID (see `macapp/build.sh`).
+Tools like claude-squad, uzi, and dmux *spawn* agents and sandbox them in git
+worktrees. gtmux is the opposite: it runs nothing, owns nothing, and is just a
+radar plus a remote over the tmux you already use. One static, cgo-free Go
+binary; the menu-bar and phone apps are pure consumers of the same `gtmux agents
+--json`. The "g" is for Go.
 
 ## License
 
