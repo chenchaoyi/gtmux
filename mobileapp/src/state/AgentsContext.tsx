@@ -5,7 +5,7 @@
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {GtmuxClient} from '../api/client';
 import {subscribe} from '../api/events';
-import {Agent, Alert} from '../api/types';
+import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity} from '../native/liveActivity';
 
 export type ConnState = 'connecting' | 'live' | 'offline';
@@ -43,11 +43,14 @@ export function AgentsProvider({
         .then(a => {
           setAgents(a);
           setConn('live');
-          // keep the iOS Live Activity (lock screen / Dynamic Island) in step.
+          // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
+          // leading with the name of the agent that needs you.
+          const waiters = a.filter(x => x.status === 'waiting');
           LiveActivity.sync(
-            a.filter(x => x.status === 'waiting').length,
+            waiters.length,
             a.filter(x => x.status === 'working').length,
             a.filter(x => x.status === 'idle').length,
+            waiters.length ? primary(waiters[0]) : '',
           );
         })
         .catch(() => setConn('offline'));

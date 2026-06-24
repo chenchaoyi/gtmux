@@ -3,10 +3,9 @@ import SwiftUI
 import WidgetKit
 
 // gtmux Live Activity — the live agent tally on the lock screen + Dynamic Island.
-// The status marks are drawn to match the app's StatusBadge exactly (DESIGN §1,
-// triple-encoded color + shape + glyph): waiting = red rounded square + two bars,
-// working = cyan circle + static loading ring, idle = green circle + check,
-// running = gray circle + dot. Color encodes status ONLY.
+// Status marks match the app's StatusBadge exactly (DESIGN §1, color + shape +
+// glyph): waiting = red rounded square + two bars, working = cyan circle + static
+// loading ring, idle = green circle + check, running = gray circle + dot.
 
 enum AgentStatus { case waiting, working, idle, running }
 
@@ -19,11 +18,10 @@ private func statusColor(_ s: AgentStatus) -> Color {
   }
 }
 
-// StatusBadge — a faithful SwiftUI port of the app's StatusBadge SVG.
+// StatusBadge — faithful SwiftUI port of the app's StatusBadge SVG.
 struct StatusBadge: View {
   let status: AgentStatus
   var size: CGFloat = 18
-
   var body: some View {
     ZStack {
       if status == .waiting {
@@ -61,27 +59,68 @@ struct StatusBadge: View {
   }
 }
 
-// Tally — a status badge next to its count; dimmed when zero so the layout stays
-// stable without drawing attention to empty buckets.
-private struct Tally: View {
-  let status: AgentStatus
-  let n: Int
-  var badge: CGFloat = 18
+// BrandMark — the gtmux app-icon motif (2×2 pane grid, top-right cell cyan).
+// Replaces the plain "gtmux" wordmark in the banner's trailing corner.
+struct BrandMark: View {
+  var size: CGFloat = 22
   var body: some View {
-    HStack(spacing: 5) {
-      StatusBadge(status: status, size: badge)
-      Text("\(n)").font(.system(.title3, design: .rounded)).fontWeight(.bold).foregroundColor(.white)
+    let cell = size * 0.40
+    let gap = size * 0.12
+    let r = cell * 0.26
+    let neutral = Color.white.opacity(0.42)
+    VStack(spacing: gap) {
+      HStack(spacing: gap) {
+        RoundedRectangle(cornerRadius: r).fill(neutral).frame(width: cell, height: cell)
+        RoundedRectangle(cornerRadius: r).fill(statusColor(.working)).frame(width: cell, height: cell)
+      }
+      RoundedRectangle(cornerRadius: r).fill(neutral).frame(width: cell * 2 + gap, height: cell)
     }
-    .opacity(n > 0 ? 1 : 0.32)
+    .frame(width: size, height: size)
   }
+}
+
+// MiniTally — the small "[badge]N · [badge]M · [badge]K" detail line; a bucket
+// dims to near-zero when empty so the row stays stable and uncluttered.
+private struct MiniTally: View {
+  let waiting: Int, working: Int, idle: Int
+  var body: some View {
+    HStack(spacing: 10) {
+      cell(.waiting, waiting)
+      cell(.working, working)
+      cell(.idle, idle)
+    }
+  }
+  @ViewBuilder private func cell(_ s: AgentStatus, _ n: Int) -> some View {
+    HStack(spacing: 4) {
+      StatusBadge(status: s, size: 12)
+      Text("\(n)").font(.caption2).fontWeight(.semibold).foregroundColor(.white.opacity(0.85))
+    }
+    .opacity(n > 0 ? 1 : 0.3)
+  }
+}
+
+// headline / subtitle derive a glanceable summary: lead with WHO needs you.
+private func headline(_ st: GtmuxActivityAttributes.ContentState) -> String {
+  if st.waiting > 0 { return st.waitingTitle.isEmpty ? "Needs you" : st.waitingTitle }
+  if st.working > 0 { return "Working" }
+  return "All idle"
+}
+private func subtitle(_ st: GtmuxActivityAttributes.ContentState) -> String {
+  if st.waiting > 1 { return "needs you · +\(st.waiting - 1) more waiting" }
+  if st.waiting == 1 { return "needs your input" }
+  if st.working > 0 { return "\(st.working) running · \(st.idle) idle" }
+  return "nothing needs you"
+}
+private func primaryStatus(_ st: GtmuxActivityAttributes.ContentState) -> AgentStatus {
+  if st.waiting > 0 { return .waiting }
+  if st.working > 0 { return .working }
+  return .idle
 }
 
 @main
 struct GtmuxWidgetBundle: WidgetBundle {
   var body: some Widget {
-    if #available(iOS 16.1, *) {
-      GtmuxLiveActivity()
-    }
+    if #available(iOS 16.1, *) { GtmuxLiveActivity() }
   }
 }
 
@@ -89,39 +128,48 @@ struct GtmuxWidgetBundle: WidgetBundle {
 struct GtmuxLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: GtmuxActivityAttributes.self) { context in
-      // Lock-screen / banner.
-      HStack(spacing: 20) {
-        Tally(status: .waiting, n: context.state.waiting)
-        Tally(status: .working, n: context.state.working)
-        Tally(status: .idle, n: context.state.idle)
-        Spacer()
-        Text("gtmux").font(.caption2).foregroundColor(.white.opacity(0.5))
+      // Lock-screen / banner: [big badge] headline + tally ........ [brand mark]
+      HStack(spacing: 12) {
+        StatusBadge(status: primaryStatus(context.state), size: 30)
+        VStack(alignment: .leading, spacing: 3) {
+          Text(headline(context.state))
+            .font(.headline).fontWeight(.bold).foregroundColor(.white)
+            .lineLimit(1)
+          MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+        }
+        Spacer(minLength: 8)
+        BrandMark(size: 24)
       }
-      .padding(.horizontal, 18)
-      .padding(.vertical, 14)
-      .activityBackgroundTint(Color.black.opacity(0.5))
+      .padding(.horizontal, 16)
+      .padding(.vertical, 12)
+      .activityBackgroundTint(Color.black.opacity(0.55))
       .activitySystemActionForegroundColor(.white)
     } dynamicIsland: { context in
       DynamicIsland {
-        DynamicIslandExpandedRegion(.leading) { islandTally(.waiting, context.state.waiting) }
-        DynamicIslandExpandedRegion(.center) { islandTally(.working, context.state.working) }
-        DynamicIslandExpandedRegion(.trailing) { islandTally(.idle, context.state.idle) }
+        DynamicIslandExpandedRegion(.leading) {
+          StatusBadge(status: primaryStatus(context.state), size: 26)
+        }
+        DynamicIslandExpandedRegion(.trailing) {
+          BrandMark(size: 22)
+        }
+        DynamicIslandExpandedRegion(.center) {
+          VStack(spacing: 2) {
+            Text(headline(context.state)).font(.callout).fontWeight(.semibold).lineLimit(1)
+            Text(subtitle(context.state)).font(.caption2).foregroundColor(.secondary).lineLimit(1)
+          }
+        }
+        DynamicIslandExpandedRegion(.bottom) {
+          MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+        }
       } compactLeading: {
-        StatusBadge(status: .waiting, size: 16)
+        StatusBadge(status: primaryStatus(context.state), size: 16)
       } compactTrailing: {
-        Text("\(context.state.waiting)").foregroundColor(.white).fontWeight(.semibold)
+        Text("\(context.state.waiting > 0 ? context.state.waiting : context.state.working)")
+          .foregroundColor(.white).fontWeight(.semibold)
       } minimal: {
-        StatusBadge(status: .waiting, size: 16)
+        StatusBadge(status: primaryStatus(context.state), size: 16)
       }
-      .keylineTint(statusColor(.waiting))
+      .keylineTint(statusColor(primaryStatus(context.state)))
     }
-  }
-
-  @ViewBuilder private func islandTally(_ s: AgentStatus, _ n: Int) -> some View {
-    HStack(spacing: 4) {
-      StatusBadge(status: s, size: 16)
-      Text("\(n)").fontWeight(.semibold)
-    }
-    .opacity(n > 0 ? 1 : 0.4)
   }
 }

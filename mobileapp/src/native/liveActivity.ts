@@ -7,8 +7,8 @@ import {NativeModules, Platform} from 'react-native';
 
 type Mod = {
   areEnabled(): Promise<boolean>;
-  start(waiting: number, working: number, idle: number): Promise<string>;
-  update(waiting: number, working: number, idle: number): void;
+  start(waiting: number, working: number, idle: number, title: string): Promise<string>;
+  update(waiting: number, working: number, idle: number, title: string): void;
   end(): void;
 };
 
@@ -24,7 +24,8 @@ export const LiveActivity = {
 
   // sync drives the activity from the current tally: start it on the first
   // non-empty tally, update while anything runs, end when everything's gone.
-  sync(waiting: number, working: number, idle: number) {
+  // waitingTitle is the name of the agent that needs you (shown as the headline).
+  sync(waiting: number, working: number, idle: number, waitingTitle: string) {
     if (!ok) return;
     const any = waiting + working + idle > 0;
     if (!any) {
@@ -35,10 +36,10 @@ export const LiveActivity = {
       return;
     }
     if (started) {
-      M!.update(waiting, working, idle);
+      M!.update(waiting, working, idle, waitingTitle);
     } else {
       started = true;
-      M!.start(waiting, working, idle).catch(() => {
+      M!.start(waiting, working, idle, waitingTitle).catch(() => {
         started = false;
       });
     }
