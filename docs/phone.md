@@ -1,4 +1,4 @@
-# Phone & remote access
+# Mobile & remote access
 
 <img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux phone — a pane's live screen + reply" />
 
@@ -51,7 +51,7 @@ and works office↔home.
 
 An **outbound** reverse tunnel on the Mac: it dials out to a rendezvous point, so
 there's no inbound port to open and NAT is no problem. The tunnel client
-(`cloudflared`) runs only on the Mac — the phone app is unchanged (it still pairs
+(`cloudflared`) runs only on the Mac — the mobile app is unchanged (it still pairs
 to a `{url, token}`).
 
 ```sh
@@ -60,7 +60,7 @@ gtmux tunnel --quick    # account-less ephemeral URL (changes each run)
 ```
 
 It starts the read-only radar (if not already up), opens the tunnel, and prints
-the public URL + the serve token + a scannable pairing QR. Open the phone app →
+the public URL + the serve token + a scannable pairing QR. Open the mobile app →
 **Add a server → Scan** → connected from any network. (Missing `cloudflared`? It
 offers to `brew install` it.)
 
