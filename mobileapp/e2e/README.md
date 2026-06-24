@@ -15,6 +15,11 @@ WebDriverAgent), so it works where raw synthetic clicks don't.
 - Node ≥ 20. The toolchain is already in devDependencies (`appium`,
   `appium-xcuitest-driver`, `webdriverio`, `ts-jest`). One-time, idempotent:
   `npx appium driver install xcuitest`.
+- **Software keyboard on.** If the sim's hardware keyboard is connected, the soft
+  keyboard never appears and `setValue` silently types nothing (the #1 gotcha).
+  Disable it once, then reboot the sim:
+  `defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false`
+  (or Simulator → I/O → Keyboard → uncheck "Connect Hardware Keyboard").
 
 ## Run
 

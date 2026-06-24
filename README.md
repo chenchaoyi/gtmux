@@ -13,9 +13,11 @@
 
 **English** · [中文](README.zh.md)
 
-<img src="docs/assets/screenshot-popover.png" width="300" alt="gtmux menu-bar popover" />
+<img src="docs/assets/screenshot-popover.png" width="288" alt="gtmux menu-bar popover" />
 &nbsp;&nbsp;
-<img src="docs/assets/screenshot-phone.png" width="194" alt="gtmux phone app" />
+<img src="docs/assets/screenshot-phone.png" width="178" alt="gtmux phone radar" />
+&nbsp;
+<img src="docs/assets/screenshot-detail.png" width="178" alt="gtmux phone — read a pane and reply" />
 
 </div>
 

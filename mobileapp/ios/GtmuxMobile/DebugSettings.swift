@@ -15,19 +15,27 @@ class DebugSettings: NSObject {
 
   @objc static func requiresMainQueueSetup() -> Bool { false }
 
-  // Export every GTMUX_DEBUG_* env var to JS as `flags`.
+  // Export debug flags to JS as `flags`. Two sources, merged (env wins): a JSON
+  // file the e2e harness writes before launch (deterministic — XCUITest's
+  // launchEnvironment is cached per-session and unreliable on relaunch), then
+  // GTMUX_DEBUG_* launch env. Keys are the full GTMUX_DEBUG_* names.
   @objc func constantsToExport() -> [AnyHashable: Any]! {
     var flags: [String: String] = [:]
+    if let url = flagsURL, let data = try? Data(contentsOf: url),
+       let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+      for (k, v) in obj { flags[k] = "\(v)" }
+    }
     for (k, v) in ProcessInfo.processInfo.environment where k.hasPrefix("GTMUX_DEBUG_") {
       flags[k] = v
     }
     return ["flags": flags]
   }
 
-  private var logURL: URL? {
-    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-      .first?.appendingPathComponent("gtmux-debug.jsonl")
+  private var docs: URL? {
+    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
   }
+  private var logURL: URL? { docs?.appendingPathComponent("gtmux-debug.jsonl") }
+  private var flagsURL: URL? { docs?.appendingPathComponent("gtmux-debug-flags.json") }
 
   // Append one line (a JSON object) to the debug log.
   @objc(record:)

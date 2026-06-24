@@ -1,6 +1,6 @@
 # Phone & remote access
 
-<img src="assets/screenshot-phone.png" width="200" align="right" alt="gtmux phone app radar" />
+<img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux phone — a pane's live screen + reply" />
 
 The third surface is an iOS app (`mobileapp/`, React Native): the same agent
 radar in your pocket, with a lock-screen push the moment an agent needs you or

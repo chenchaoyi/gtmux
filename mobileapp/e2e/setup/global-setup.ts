@@ -3,6 +3,7 @@ import {existsSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync} from 'fs'
 import {join, resolve} from 'path';
 import {remote} from 'webdriverio';
 import {appiumPort, appiumServerUrl, iosCapabilities} from './capabilities';
+import {writeDebugFlags} from './app';
 
 /**
  * Boots an Appium server (its own process group so teardown can kill the
@@ -41,6 +42,16 @@ export default async function globalSetup(): Promise<void> {
   await waitForServerReady(60_000);
   // eslint-disable-next-line no-console
   console.log('[e2e] Appium ready; opening session…');
+
+  // Baseline debug flags BEFORE the session's first app launch, so even that
+  // launch has NO_PUSH — otherwise it requests notification permission and the
+  // pending system prompt haunts every later launch, blocking UI interaction.
+  // Requires the app already installed (npm run e2e:build). Best-effort.
+  try {
+    writeDebugFlags({GTMUX_DEBUG_NO_PUSH: '1'});
+  } catch {
+    /* app not installed yet — tests will surface it */
+  }
 
   const driver = await remote({
     hostname: '127.0.0.1',
