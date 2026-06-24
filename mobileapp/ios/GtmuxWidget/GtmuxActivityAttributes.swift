@@ -9,10 +9,14 @@ public struct GtmuxActivityAttributes: ActivityAttributes {
     public var waiting: Int
     public var working: Int
     public var idle: Int
-    public init(waiting: Int, working: Int, idle: Int) {
+    // Name of the agent that needs you (the most relevant waiting one), "" if none
+    // — shown as the headline so you know WHO to attend to at a glance.
+    public var waitingTitle: String
+    public init(waiting: Int, working: Int, idle: Int, waitingTitle: String = "") {
       self.waiting = waiting
       self.working = working
       self.idle = idle
+      self.waitingTitle = waitingTitle
     }
   }
 
