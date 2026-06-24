@@ -46,6 +46,18 @@ const S: Dict = {
     zh: '连不上这台 Mac —— 你和它在同一个 VPN / Wi-Fi / Tailscale 上吗?',
   },
   badToken: {en: 'Connected, but the token was rejected.', zh: '连上了,但 token 被拒绝。'},
+  cancel: {en: 'Cancel', zh: '取消'},
+  // servers (the connection page: every paired Mac, switch / add / remove)
+  servers: {en: 'Macs', zh: '我的 Mac'},
+  serversHint: {
+    en: 'Tap a Mac to connect. The connected one shows a green dot.',
+    zh: '点一台 Mac 连接,已连接的会显示绿点。',
+  },
+  noServers: {en: 'No Macs yet — add one to start.', zh: '还没有 Mac —— 添加一台开始。'},
+  connectedLabel: {en: 'Connected', zh: '已连接'},
+  switchServer: {en: 'Switch Mac', zh: '切换 Mac'},
+  disconnect: {en: 'Disconnect', zh: '断开连接'},
+  removeServerQ: {en: 'Remove this Mac?', zh: '移除这台 Mac?'},
   // radar
   noAgents: {en: 'No coding agents running.', zh: '没有在跑的 coding agent。'},
   waitingOnly: {en: 'Waiting only', zh: '只看等输入'},

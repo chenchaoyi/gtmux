@@ -18,7 +18,7 @@ const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
 export function SplitScreen({navigation}: any) {
   const {agents, refresh} = useAgents();
-  const {t, pal, lang} = useApp();
+  const {t, pal, lang, mac} = useApp();
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [collapsed, setCollapsed] = useState<Set<StatusName>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
@@ -49,10 +49,11 @@ export function SplitScreen({navigation}: any) {
   const Header = (
     <View style={styles.sideHeader}>
       <View style={styles.sideTop}>
-        <View style={styles.brandRow}>
+        <TouchableOpacity style={styles.brandRow} onPress={() => navigation.navigate('Servers')} hitSlop={hit}>
           <BrandMark size={22} neutral={pal.fg3} />
-          <Text style={[styles.brand, {color: pal.fg}]}>gtmux</Text>
-        </View>
+          <Text style={[styles.brand, {color: pal.fg}]} numberOfLines={1}>{mac?.name || 'gtmux'}</Text>
+          <Text style={[styles.switchGlyph, {color: pal.fg3}]}>⇄</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={hit}>
           <Text style={[styles.gear, {color: pal.fg2}]}>⚙</Text>
         </TouchableOpacity>
@@ -108,8 +109,9 @@ const styles = StyleSheet.create({
   main: {flex: 1},
   sideHeader: {paddingHorizontal: 14, paddingTop: 8, paddingBottom: 8},
   sideTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
-  brandRow: {flexDirection: 'row', alignItems: 'center'},
-  brand: {fontSize: 18, fontWeight: '800', marginLeft: 8},
+  brandRow: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8},
+  brand: {fontSize: 18, fontWeight: '800', marginLeft: 8, flexShrink: 1},
+  switchGlyph: {fontSize: 13, marginLeft: 6},
   gear: {fontSize: 18},
   summary: {fontSize: 12, fontWeight: '600', marginTop: 6},
   sideEmpty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60},

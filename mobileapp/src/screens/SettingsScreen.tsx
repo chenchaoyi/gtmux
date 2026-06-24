@@ -21,7 +21,7 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, pal, langPref, setLangPref, mac, unpair, pushEnabled, setPushEnabled} = useApp();
+  const {t, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled} = useApp();
 
   const langs: {key: LangPref; label: string}[] = [
     {key: 'system', label: t('system')},
@@ -64,7 +64,13 @@ export function SettingsScreen({navigation}: any) {
           </View>
           <TouchableOpacity
             style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-            onPress={unpair}>
+            onPress={() => navigation.navigate('Servers')}>
+            <Text style={[styles.rowLabel, {color: pal.fg}]}>{t('switchServer')}</Text>
+            <Text style={[styles.rowSub, {color: pal.fg3}]}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
+            onPress={() => mac && removeServer(mac.url)}>
             <Text style={[styles.rowLabel, styles.danger]}>{t('removeMac')}</Text>
           </TouchableOpacity>
         </Section>

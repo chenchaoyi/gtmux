@@ -15,8 +15,8 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {setupPush} from './src/push';
 import {DetailScreen} from './src/screens/DetailScreen';
-import {PairingScreen} from './src/screens/PairingScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
+import {ServersScreen} from './src/screens/ServersScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
 import {SplitScreen} from './src/screens/SplitScreen';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
@@ -82,17 +82,21 @@ function Root() {
     );
   }
 
+  // No active server → the connection page (it lists saved Macs + lets you add).
   if (!mac) {
-    return <PairingScreen />;
+    return <ServersScreen />;
   }
 
+  // key={mac.url}: switching to another Mac fully remounts the agent store +
+  // navigator with the new base/token (no stale SSE / selection bleed-over).
   return (
-    <AgentsProvider base={mac.url} token={mac.token}>
+    <AgentsProvider key={mac.url} base={mac.url} token={mac.token}>
       <PushBridge navRef={navRef} />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>
           <Stack.Screen name="Radar" component={RadarRoute} />
           <Stack.Screen name="Detail" component={DetailScreen} />
+          <Stack.Screen name="Servers" component={ServersScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
         </Stack.Navigator>
       </NavigationContainer>
