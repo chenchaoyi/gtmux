@@ -1,5 +1,26 @@
 # Install
 
+## Homebrew (macOS)
+
+```sh
+brew install chenchaoyi/tap/gtmux             # the CLI
+brew install --cask chenchaoyi/tap/gtmux-app  # the menu-bar app (optional)
+```
+
+Or tap once, then install by name:
+
+```sh
+brew tap chenchaoyi/tap
+brew install gtmux
+brew install --cask gtmux-app
+```
+
+Upgrade with `brew upgrade gtmux` (and `brew upgrade --cask gtmux-app`). The CLI
+is shipped as a cask (GoReleaser deprecated formulae); since gtmux is macOS-only
+this is no limitation. On a non-macOS box, use the install script below.
+
+## Install script
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```
