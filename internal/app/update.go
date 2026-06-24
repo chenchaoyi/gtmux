@@ -23,11 +23,11 @@ func cmdUpdate(args []string) int {
 		switch a {
 		case "-h", "--help":
 			i18n.Say("usage: gtmux update [--check] [--cli-only]",
-				"用法: gtmux update [--check] [--cli-only]")
+				"用法：gtmux update [--check] [--cli-only]")
 			i18n.Say("  Update gtmux (CLI + menu-bar app) to the latest release.",
-				"  把 gtmux(CLI + 菜单栏 app)更新到最新版。")
+				"  把 gtmux（CLI + 菜单栏 app）更新到最新版。")
 			i18n.Say("  --check: only report if a newer version exists. --cli-only: skip the app.",
-				"  --check:只检查有无新版。--cli-only:只更新 CLI,不动 app。")
+				"  --check：只检查有无新版。--cli-only：只更新 CLI，不动 app。")
 			return 0
 		case "--check":
 			checkOnly = true
@@ -46,19 +46,19 @@ func cmdUpdate(args []string) int {
 		switch {
 		case latest == "":
 			i18n.Sae("gtmux update: couldn't reach the release API (network?).",
-				"gtmux update: 连不上发布接口(网络?)。")
+				"gtmux update: 连不上发布接口（网络问题？）。")
 			return 1
 		case latest == cur:
-			i18n.Say("gtmux is up to date ("+cur+").", "gtmux 已是最新("+cur+")。")
+			i18n.Say("gtmux is up to date ("+cur+").", "gtmux 已是最新（"+cur+"）。")
 		default:
 			i18n.Say("update available: "+cur+" → "+latest+"  (run `gtmux update`)",
-				"有新版本:"+cur+" → "+latest+"  (运行 `gtmux update`)")
+				"有新版本："+cur+" → "+latest+"  （运行 `gtmux update`）")
 		}
 		return 0
 	}
 
 	if latest != "" && latest == cur {
-		i18n.Say("gtmux is already up to date ("+cur+").", "gtmux 已是最新("+cur+")。")
+		i18n.Say("gtmux is already up to date ("+cur+").", "gtmux 已是最新（"+cur+"）。")
 		return 0
 	}
 	if latest != "" {
@@ -100,7 +100,7 @@ func cmdUpdate(args []string) int {
 	}
 	cmd.Env = env
 	if err := cmd.Run(); err != nil {
-		i18n.Sae("gtmux update: installer failed: "+err.Error(), "gtmux update: 安装失败: "+err.Error())
+		i18n.Sae("gtmux update: installer failed: "+err.Error(), "gtmux update: 安装失败："+err.Error())
 		return 1
 	}
 	return 0

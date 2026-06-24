@@ -63,7 +63,7 @@ func renderOverview() string {
 
 	if i18n.Lang() == "zh" {
 		fmt.Fprintf(&b, "%s▶ 当前  ● 已连接  ○ 待接回%s\n", i18n.Dim, i18n.Reset)
-		fmt.Fprintf(&b, "%s* 活跃  Z 放大  • 新输出   (跳转: gtmux focus <名字>)%s\n", i18n.Dim, i18n.Reset)
+		fmt.Fprintf(&b, "%s* 活跃  Z 放大  • 新输出   （跳转：gtmux focus <名字>）%s\n", i18n.Dim, i18n.Reset)
 	} else {
 		fmt.Fprintf(&b, "%s▶ current  ● attached  ○ detached%s\n", i18n.Dim, i18n.Reset)
 		fmt.Fprintf(&b, "%s* active  Z zoomed  • new output   (jump: gtmux focus <name>)%s\n", i18n.Dim, i18n.Reset)

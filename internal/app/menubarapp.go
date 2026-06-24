@@ -36,7 +36,7 @@ func cmdUninstallApp(args []string) int {
 	app := gtmuxAppPath()
 	runQuiet(lsregister, "-u", app)
 	if err := os.RemoveAll(app); err != nil {
-		i18n.Sae("failed to remove Gtmux.app: "+err.Error(), "删除 Gtmux.app 失败: "+err.Error())
+		i18n.Sae("failed to remove Gtmux.app: "+err.Error(), "删除 Gtmux.app 失败："+err.Error())
 		return 1
 	}
 	i18n.Say("✓ removed Gtmux.app and its login item", "✓ 已删除 Gtmux.app 及登录项")

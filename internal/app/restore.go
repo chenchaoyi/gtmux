@@ -88,19 +88,19 @@ func ensureServer() {
 
 	if script := resurrectRestoreScript(); script != "" {
 		i18n.Say("tmux server not running — restoring your saved sessions via tmux-resurrect (may take a moment)...",
-			"tmux server 未运行 —— 正在用 tmux-resurrect 恢复你的存档 session(可能要等一会)...")
+			"tmux server 未运行，正在用 tmux-resurrect 恢复你的存档 session（可能要等一会）...")
 		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
 		if waitForRestoredSessions(boot, 120*time.Second) {
 			tmux.OK("kill-session", "-t", boot)
 			i18n.Say("Restored. Layout/dirs/screen text are back; running programs are NOT (e.g. restart claude with 'claude --resume').",
-				"已恢复。布局/目录/屏幕文本都回来了;正在运行的程序不会自动重启(如 claude 用 'claude --resume' 拉起)。")
+				"已恢复。布局 / 目录 / 屏幕文本都回来了；正在运行的程序不会自动重启（如 claude 用 'claude --resume' 拉起）。")
 			return
 		}
 	} else if hadLayout {
 		// No tmux-resurrect script found, but a save exists — fall back to waiting
 		// for continuum's auto-restore hook (best effort, longer than the old 10s).
 		i18n.Say("tmux server not running — waiting for continuum to restore the last save...",
-			"tmux server 未运行 —— 正在等待 continuum 恢复最近一次存档...")
+			"tmux server 未运行，正在等待 continuum 恢复最近一次存档...")
 		if waitForRestoredSessions(boot, 60*time.Second) {
 			tmux.OK("kill-session", "-t", boot)
 			i18n.Say("Restored saved sessions.", "已恢复存档 session。")
@@ -114,13 +114,13 @@ func ensureServer() {
 	tmux.OK("rename-session", "-t", boot, "main")
 	if hadLayout {
 		i18n.Sae("⚠ A saved layout exists but could NOT be restored — it was NOT overwritten. Save: "+save,
-			"⚠ 存在存档但未能恢复 —— 没有覆盖它。存档: "+save)
+			"⚠ 存在存档但未能恢复，没有覆盖它。存档："+save)
 		i18n.Sae("  Recover it before continuum autosaves: point .../resurrect/last at it and re-run, or restore manually.",
-			"  请在 continuum 自动存档前恢复: 把 .../resurrect/last 指向它后重试,或手动恢复。")
+			"  请在 continuum 自动存档前恢复：把 .../resurrect/last 指向它后重试，或手动恢复。")
 		return
 	}
 	i18n.Say("No saved sessions found — created a fresh session 'main'.",
-		"没有找到存档 —— 已新建 session 'main'。")
+		"没有找到存档，已新建 session 'main'。")
 }
 
 // resurrectRestoreScript returns the tmux-resurrect restore.sh path ("" if not
@@ -274,7 +274,7 @@ func sanitizeLast() {
 			_ = os.Remove(last)
 			if os.Symlink(n, last) == nil {
 				i18n.Say("Repaired tmux-resurrect 'last' (it pointed at an empty save) → "+n,
-					"已修复 tmux-resurrect 的 'last'(原先指向空存档) → "+n)
+					"已修复 tmux-resurrect 的 'last'（原先指向空存档） → "+n)
 			}
 			return
 		}
@@ -371,18 +371,18 @@ func recoverMissingSavedSessions() {
 	script := resurrectRestoreScript()
 	if script == "" {
 		i18n.Sae("⚠ This tmux server is missing your saved sessions, but tmux-resurrect isn't installed to restore them. Save: "+save,
-			"⚠ 当前 tmux server 缺少你的存档 session,但未装 tmux-resurrect 无法恢复。存档: "+save)
+			"⚠ 当前 tmux server 缺少你的存档 session，但未装 tmux-resurrect 无法恢复。存档："+save)
 		return
 	}
 	i18n.Say("A tmux server is running but your saved sessions are missing — restoring them from the last save...",
-		"检测到 tmux server 在跑但缺少你的存档 session —— 正在用最近一次存档恢复...")
+		"检测到 tmux server 在跑但缺少你的存档 session，正在用最近一次存档恢复...")
 	driveResurrectRestore(script)
 	if waitForSavedSessions(saved, 120*time.Second) {
 		i18n.Say("Restored your saved sessions. (running programs are NOT relaunched — e.g. 'claude --resume')",
-			"已恢复你的存档 session。(正在运行的程序不会自动重启 —— 如 'claude --resume')")
+			"已恢复你的存档 session。（正在运行的程序不会自动重启，如 'claude --resume'）")
 	} else {
 		i18n.Sae("⚠ Restore did not complete in time — your save is intact at "+save,
-			"⚠ 恢复未在限定时间内完成 —— 你的存档完好: "+save)
+			"⚠ 恢复未在限定时间内完成，你的存档完好："+save)
 	}
 }
 
@@ -482,18 +482,18 @@ func restoreSessions(list []string, dryRun bool) int {
 	script, err := term.SpawnTabs(list, dryRun)
 	if dryRun {
 		i18n.Say(fmt.Sprintf("[dry-run] would open %d %s tab(s) for: %s", len(list), tn, strings.Join(list, " ")),
-			fmt.Sprintf("[dry-run] 将为以下 session 各开一个 %s tab: %s", tn, strings.Join(list, " ")))
+			fmt.Sprintf("[dry-run] 将为以下 session 各开一个 %s tab：%s", tn, strings.Join(list, " ")))
 		i18n.Say("[dry-run] AppleScript:", "[dry-run] AppleScript:")
 		fmt.Println(script)
 		return 0
 	}
 	if err != nil {
 		i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
-			"AppleScript 执行失败:需要 "+tn+" 及自动化权限")
+			"AppleScript 执行失败：需要 "+tn+" 及自动化权限")
 		i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling "+tn+").",
-			"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+")。")
+			"（系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+"）。")
 		i18n.Sae("Fallback: run 'gtmux restore --one' in each tab",
-			"退路: 在每个 tab 里手动运行 gtmux restore --one")
+			"退路：在每个 tab 里手动运行 gtmux restore --one")
 		return 1
 	}
 	return 0
@@ -502,7 +502,7 @@ func restoreSessions(list []string, dryRun bool) int {
 // cmdRestore implements `gtmux restore [--one|--pick|<name>|--dry-run]`.
 func cmdRestore(args []string) int {
 	if tmux.Bin == "" {
-		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux (brew install tmux)")
+		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
 		return 1
 	}
 	mode, target, dryRun := "all", "", false
@@ -525,7 +525,7 @@ func cmdRestore(args []string) int {
 	}
 
 	if tmux.InTmux() {
-		i18n.Sae("Already inside tmux — run this in a fresh tab.", "已在 tmux 内,请在新 tab 里运行。")
+		i18n.Sae("Already inside tmux — run this in a fresh tab.", "已在 tmux 内，请在新 tab 里运行。")
 		return 1
 	}
 
@@ -539,9 +539,9 @@ func cmdRestore(args []string) int {
 		if u := unattached(); len(u) > 0 {
 			return execTmuxAttach(u[0])
 		}
-		i18n.Say("Every session already has a client attached:", "所有 session 都已有人连接:")
+		i18n.Say("Every session already has a client attached:", "所有 session 都已有人连接：")
 		fmt.Print(mustRun("list-sessions"))
-		i18n.Say("To mirror one anyway:  tmux attach -t <name>", "如需镜像查看:  tmux attach -t <名字>")
+		i18n.Say("To mirror one anyway:  tmux attach -t <name>", "如需镜像查看：  tmux attach -t <名字>")
 		return 0
 	}
 
@@ -557,10 +557,10 @@ func cmdRestore(args []string) int {
 	sessions := orderByTabOrder(unattached(), state.LoadTabOrder())
 	if len(sessions) == 0 {
 		i18n.Say("Every session already has a client attached — nothing to do:",
-			"所有 session 都已有人连接,无需操作:")
+			"所有 session 都已有人连接，无需操作：")
 		fmt.Print(mustRun("list-sessions"))
 		i18n.Say("Tip: pick one to mirror with:  gtmux restore --pick",
-			"提示: 如需镜像查看可用:  gtmux restore --pick")
+			"提示：如需镜像查看可用：  gtmux restore --pick")
 		return 0
 	}
 	return restoreSessions(sessions, dryRun)
@@ -582,7 +582,7 @@ func restorePick(dryRun bool) int {
 		i18n.Sae("No tmux sessions found", "没有任何 tmux session")
 		return 1
 	}
-	i18n.Say("Restorable tmux sessions:", "可接回的 tmux session:")
+	i18n.Say("Restorable tmux sessions:", "可接回的 tmux session：")
 	for i, s := range all {
 		st := i18n.Tr("detached", "待接回")
 		if s.attached {
@@ -593,7 +593,7 @@ func restorePick(dryRun bool) int {
 		fmt.Printf("  %2d) %-24s [%s]  windows: %s\n", i+1, s.name, st, wins)
 	}
 	fmt.Print(i18n.Tr("Pick (numbers, space-separated; Enter = all detached; q = cancel) > ",
-		"选择(编号,空格分隔;回车=全部待接回;q=取消)> "))
+		"选择（编号，空格分隔；回车=全部待接回；q=取消）> "))
 
 	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
 	sel := strings.TrimSpace(line)
@@ -613,18 +613,18 @@ func restorePick(dryRun bool) int {
 		for _, tok := range strings.Fields(strings.ReplaceAll(sel, ",", " ")) {
 			n, err := strconv.Atoi(tok)
 			if err != nil {
-				i18n.Sae("Invalid choice: "+tok, "无效选择: "+tok)
+				i18n.Sae("Invalid choice: "+tok, "无效选择："+tok)
 				return 1
 			}
 			if n < 1 || n > len(all) {
-				i18n.Sae("Out of range: "+tok, "超出范围: "+tok)
+				i18n.Sae("Out of range: "+tok, "超出范围："+tok)
 				return 1
 			}
 			chosen = append(chosen, all[n-1].name)
 		}
 	}
 	if len(chosen) == 0 {
-		i18n.Say("Nothing to restore — every session is attached", "没有待接回的 session(都已连接)")
+		i18n.Say("Nothing to restore — every session is attached", "没有待接回的 session（都已连接）")
 		return 0
 	}
 	return restoreSessions(chosen, dryRun)

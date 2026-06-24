@@ -83,7 +83,7 @@ func cmdDoctor(args []string) int {
 	}
 	if rec > 0 || miss > 0 {
 		i18n.Say("  → run `gtmux doctor --fix` to set up the rest (it explains and asks before each change)",
-			"  → 跑 `gtmux doctor --fix` 把其余项配好(每步都会解释并征求确认)")
+			"  → 跑 `gtmux doctor --fix` 把其余项配好（每步都会解释并征求确认）")
 	}
 	if miss > 0 {
 		return 1
@@ -155,7 +155,7 @@ func doctorSections() []dsection {
 func rowTmux() dcheck {
 	if tmux.Bin == "" {
 		return dcheck{stMiss, i18n.Tr("tmux", "tmux"), i18n.Tr("not found", "未找到"),
-			i18n.Tr("gtmux needs tmux — brew install tmux", "gtmux 依赖 tmux —— brew install tmux")}
+			i18n.Tr("gtmux needs tmux — brew install tmux", "gtmux 依赖 tmux，brew install tmux")}
 	}
 	ver := ""
 	if v := tmux.Lines("-V"); len(v) > 0 {
@@ -223,7 +223,7 @@ func rowTerminal() dcheck {
 	if terminal.HasDriver(name) {
 		return dcheck{stOK, label, name, i18n.Tr("focus / restore / new supported", "focus / restore / new 可用")}
 	}
-	return dcheck{stRec, label, name, i18n.Tr("no driver — agents work, focus/restore don't", "暂无驱动 —— agents 照常,focus/restore 不可用")}
+	return dcheck{stRec, label, name, i18n.Tr("no driver — agents work, focus/restore don't", "暂无驱动，agents 照常，focus/restore 不可用")}
 }
 
 func rowClaudeHook() dcheck {
@@ -239,7 +239,7 @@ func rowCodexHook() dcheck {
 	if codexNotifyIsGtmux() {
 		return dcheck{stOK, label, i18n.Tr("wired", "已接"), i18n.Tr("turn-done notifications", "turn 结束通知")}
 	}
-	return dcheck{stInfo, label, i18n.Tr("not wired", "未接"), i18n.Tr("optional — detection works anyway", "可选 —— 检测不依赖它")}
+	return dcheck{stInfo, label, i18n.Tr("not wired", "未接"), i18n.Tr("optional — detection works anyway", "可选，检测不依赖它")}
 }
 
 // rowCloudflared surfaces the optional tunnel client. It's only needed for
@@ -252,7 +252,7 @@ func rowCloudflared() dcheck {
 			i18n.Tr("remote access via `gtmux tunnel`", "`gtmux tunnel` 远程访问")}
 	}
 	return dcheck{stInfo, label, i18n.Tr("not installed", "未装"),
-		i18n.Tr("optional — only for `gtmux tunnel`", "可选 —— 仅 `gtmux tunnel` 需要")}
+		i18n.Tr("optional — only for `gtmux tunnel`", "可选，仅 `gtmux tunnel` 需要")}
 }
 
 func rowApp() dcheck {

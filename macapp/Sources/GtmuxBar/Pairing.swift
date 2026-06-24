@@ -122,14 +122,14 @@ struct PairingView: View {
                     .frame(width: 230, height: 230)
                     .background(Color.white).cornerRadius(10)
                 wrap(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
-                             "在 gtmux 手机 app 里:配对 → 扫一扫"), size: 12, color: .secondary)
+                             "在 gtmux 手机 app 里：配对 → 扫一扫"), size: 12, color: .secondary)
                 Text(p.url)
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                     .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
                 reachLine
                 if p.anywhere {
                     wrap(l10n.tr("Reachable from anywhere (a tunnel is up).",
-                                 "任意网络可达(隧道在运行)。"), size: 11, color: .tertiary)
+                                 "任意网络可达（隧道在运行）。"), size: 11, color: .tertiary)
                 } else {
                     wrap(l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"), size: 11, color: .tertiary)
                     remoteButton
@@ -157,7 +157,7 @@ struct PairingView: View {
             }
         } else {
             Button(action: enableRemote) {
-                Label(l10n.tr("Turn on remote access (anywhere)", "开启远程访问(任意网络)"),
+                Label(l10n.tr("Turn on remote access (anywhere)", "开启远程访问（任意网络）"),
                       systemImage: "globe")
             }
             .controlSize(.regular)
@@ -202,10 +202,10 @@ struct PairingView: View {
 
     private func enableRemote() {
         let a = NSAlert()
-        a.messageText = l10n.tr("Turn on remote access?", "开启远程访问?")
+        a.messageText = l10n.tr("Turn on remote access?", "开启远程访问？")
         a.informativeText = l10n.tr(
             "Your Mac becomes reachable from anywhere at a stable URL (token-gated) until you turn it off in Preferences. It's a standing exposure.",
-            "你的 Mac 会在一个固定地址上从任何网络可达(有 token 把关),直到你在偏好设置里关闭。这是个长期敞口。")
+            "开启后，你的 Mac 会在一个固定地址上从任何网络可达（有 token 把关），直到你在偏好设置里关闭。这是个长期敞口。")
         a.addButton(withTitle: l10n.tr("Enable", "开启"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {

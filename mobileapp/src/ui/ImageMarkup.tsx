@@ -138,7 +138,7 @@ export function ImageMarkup({
         </View>
 
         <Text style={styles.tip}>
-          {lang === 'zh' ? '手指滑动以标注 · 完成后发送给 agent' : 'Drag to annotate · Done sends it to the agent'}
+          {lang === 'zh' ? '滑动标注 · 点完成发给 agent' : 'Drag to annotate · Done sends it to the agent'}
         </Text>
       </View>
     </Modal>
