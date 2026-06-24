@@ -12,6 +12,7 @@ import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
 import {SectionList} from '../ui/SectionList';
 import {StatusColor, counts} from '../ui/theme';
+import {TestIds} from '../constants/testIds';
 
 const COLLAPSED_KEY = 'radar.collapsed';
 
@@ -107,7 +108,7 @@ export function RadarScreen({navigation}: any) {
   );
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.radar.screen}>
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
       <SectionList
         agents={agents}

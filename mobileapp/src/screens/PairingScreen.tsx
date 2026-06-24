@@ -20,6 +20,7 @@ import {useApp} from '../state/AppContext';
 import {normalizeHost, parsePairingQR} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
 import {ScanScreen} from './ScanScreen';
+import {TestIds} from '../constants/testIds';
 
 // onCancel, when provided, renders a Cancel control — set when PairingScreen is
 // presented as the "Add a Mac" sheet from ServersScreen (vs. the bare first run).
@@ -71,7 +72,7 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} testID={TestIds.pairing.screen}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
@@ -91,6 +92,8 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
           </Text>
 
           <TouchableOpacity
+            testID={TestIds.pairing.scan}
+            accessibilityLabel={TestIds.pairing.scan}
             style={[styles.qrBtn, {borderColor: pal.divider, backgroundColor: pal.surface}]}
             onPress={() => {
               setError('');
@@ -103,6 +106,7 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
 
           <Text style={[styles.label, {color: pal.fg2}]}>{t('host')}</Text>
           <TextInput
+            testID={TestIds.pairing.host}
             value={host}
             onChangeText={setHost}
             placeholder="192.168.1.20:8765"
@@ -115,6 +119,7 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
 
           <Text style={[styles.label, {color: pal.fg2}]}>{t('token')}</Text>
           <TextInput
+            testID={TestIds.pairing.token}
             value={token}
             onChangeText={setToken}
             placeholder="serve-token"
@@ -125,9 +130,15 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
             style={[styles.input, {color: pal.fg, borderColor: pal.divider, backgroundColor: pal.surface}]}
           />
 
-          {!!error && <Text style={styles.error}>{error}</Text>}
+          {!!error && (
+            <Text testID={TestIds.pairing.error} style={styles.error}>
+              {error}
+            </Text>
+          )}
 
           <TouchableOpacity
+            testID={TestIds.pairing.connect}
+            accessibilityLabel={TestIds.pairing.connect}
             style={[styles.connect, busy && styles.connectBusy]}
             onPress={connect}
             disabled={busy}>

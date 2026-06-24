@@ -28,3 +28,8 @@ android/local.properties
 .env
 .env.local
 coverage/
+
+# Appium e2e run artifacts (logs, screenshots, page source)
+.e2e-artifacts/
+ios/build-e2e/
+ios/build-e2e.log
