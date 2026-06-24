@@ -106,6 +106,17 @@ export class GtmuxClient {
     return r.ok;
   }
 
+  // registerActivityToken hands the Mac a Live Activity push token so the relay
+  // can push-to-update the lock-screen tally even when the app is closed.
+  async registerActivityToken(token: string): Promise<boolean> {
+    const r = await fetch(`${this.base}/api/push/activity`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({token}),
+    });
+    return r.ok;
+  }
+
   // testPush asks the Mac to send a test notification to this device.
   async testPush(): Promise<boolean> {
     const r = await fetch(`${this.base}/api/push/test`, {method: 'POST', headers: this.h()});

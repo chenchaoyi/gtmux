@@ -79,6 +79,18 @@ export function AgentsProvider({
   // End the Live Activity when this Mac is unpaired (the provider unmounts).
   useEffect(() => () => LiveActivity.stop(), []);
 
+  // Forward the Live Activity push token to this Mac so the relay can keep the
+  // lock screen live with the app closed. Re-register only on a token change.
+  const lastActivityToken = useRef<string>('');
+  useEffect(() => {
+    const unsub = LiveActivity.onPushToken(tok => {
+      if (tok === lastActivityToken.current) return;
+      lastActivityToken.current = tok;
+      client.registerActivityToken(tok).catch(() => {});
+    });
+    return unsub;
+  }, [client]);
+
   const value: AgentsContextValue = {
     client,
     agents,

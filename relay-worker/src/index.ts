@@ -19,6 +19,11 @@ interface PushIntent {
   body?: string;
   pane?: string;
   kind?: string;
+  // Live Activity update (push-to-update): when set, `token` is the activity push
+  // token and contentState replaces the activity's state on the lock screen.
+  liveActivity?: boolean;
+  event?: string; // "update" | "end"
+  contentState?: Record<string, unknown>;
 }
 
 let jwtCache: {token: string; at: number} | null = null;
@@ -43,6 +48,33 @@ export default {
     const base = env.APNS_ENV === 'sandbox'
       ? 'https://api.sandbox.push.apple.com'
       : 'https://api.push.apple.com';
+
+    // Live Activity push-to-update: a different topic + push-type, and an
+    // aps.content-state that replaces the activity's state even with the app killed.
+    if (intent.liveActivity) {
+      const laPayload = JSON.stringify({
+        aps: {
+          timestamp: Math.floor(Date.now() / 1000),
+          event: intent.event ?? 'update',
+          'content-state': intent.contentState ?? {},
+        },
+      });
+      const lr = await fetch(base + '/3/device/' + intent.token, {
+        method: 'POST',
+        headers: {
+          authorization: 'bearer ' + jwt,
+          'apns-topic': env.APNS_TOPIC + '.push-type.liveactivity',
+          'apns-push-type': 'liveactivity',
+          'apns-priority': '10',
+          'content-type': 'application/json',
+        },
+        body: laPayload,
+      });
+      if (lr.status === 200) return json({ok: true});
+      const d = await lr.text();
+      return json({error: 'apns', status: lr.status, detail: d}, 502);
+    }
+
     // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
     // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
     const aps: Record<string, unknown> = {

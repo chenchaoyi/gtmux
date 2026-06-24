@@ -99,11 +99,15 @@ func New(cfg Config, deps Deps) *Server {
 	if deps.Push != nil { // the push manager forwards alerts to the relay
 		onAlert = deps.Push.OnAlert
 	}
-	return &Server{
+	s := &Server{
 		cfg:  cfg,
 		deps: deps,
 		hub:  newHub(deps.AgentStatuses, eventsInterval, onAlert),
 	}
+	if deps.Push != nil { // push the Live Activity tally on every change
+		s.hub.onTally = deps.Push.PushLiveActivity
+	}
+	return s
 }
 
 // Handler builds the routed, token-guarded http.Handler (exposed for tests).
@@ -119,6 +123,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
+	mux.Handle("/api/push/activity", s.auth(http.HandlerFunc(s.handleActivityRegister)))
 	mux.Handle("/api/push/test", s.auth(http.HandlerFunc(s.handleTest)))
 	return mux
 }

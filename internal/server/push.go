@@ -43,6 +43,11 @@ type PushIntent struct {
 	Body     string `json:"body"`
 	Pane     string `json:"pane"` // jump target for the notification tap
 	Kind     string `json:"kind"` // "waiting" | "done"
+	// Live Activity push-to-update: when set, Token is the activity push token and
+	// ContentState replaces the lock-screen activity's state (even app-killed).
+	LiveActivity bool           `json:"liveActivity,omitempty"`
+	Event        string         `json:"event,omitempty"` // "update" | "end"
+	ContentState map[string]any `json:"contentState,omitempty"`
 }
 
 // Relay forwards a push intent onward to the push gateway (APNs/FCM/HMS). The
@@ -57,15 +62,18 @@ type Relay interface {
 type PushManager struct {
 	mu     sync.Mutex
 	tokens map[string]DeviceToken
-	relay  Relay
-	save   func([]DeviceToken)              // optional persistence hook
-	format func(Alert) (title, body string) // optional copy formatter (i18n lives in app)
+	// activity push tokens for Live Activity push-to-update (in-memory; the app
+	// re-registers on each launch / activity start).
+	activityTokens map[string]struct{}
+	relay          Relay
+	save           func([]DeviceToken)              // optional persistence hook
+	format         func(Alert) (title, body string) // optional copy formatter (i18n lives in app)
 }
 
 // NewPushManager builds a manager seeded with any persisted tokens. relay may be
 // a no-op (empty relay URL) — registration still works, forwarding is just off.
 func NewPushManager(relay Relay, initial []DeviceToken, save func([]DeviceToken), format func(Alert) (string, string)) *PushManager {
-	m := &PushManager{tokens: map[string]DeviceToken{}, relay: relay, save: save, format: format}
+	m := &PushManager{tokens: map[string]DeviceToken{}, activityTokens: map[string]struct{}{}, relay: relay, save: save, format: format}
 	for _, d := range initial {
 		if d.Token != "" {
 			m.tokens[d.Token] = d
@@ -104,6 +112,46 @@ func (p *PushManager) Tokens() []DeviceToken {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.snapshotLocked()
+}
+
+// RegisterActivity records a Live Activity push token so the tally can be pushed
+// to the lock screen even when the app is closed.
+func (p *PushManager) RegisterActivity(token string) {
+	if token == "" {
+		return
+	}
+	p.mu.Lock()
+	if p.activityTokens == nil {
+		p.activityTokens = map[string]struct{}{}
+	}
+	p.activityTokens[token] = struct{}{}
+	p.mu.Unlock()
+}
+
+// PushLiveActivity forwards the current tally to every registered Live Activity
+// push token (best-effort, async). No-op when no relay or no activity is
+// registered. Wired as the hub's onTally hook.
+func (p *PushManager) PushLiveActivity(t Tally) {
+	if p == nil || p.relay == nil {
+		return
+	}
+	p.mu.Lock()
+	toks := make([]string, 0, len(p.activityTokens))
+	for tok := range p.activityTokens {
+		toks = append(toks, tok)
+	}
+	p.mu.Unlock()
+	if len(toks) == 0 {
+		return
+	}
+	cs := map[string]any{
+		"waiting": t.Waiting, "working": t.Working, "idle": t.Idle, "waitingTitle": t.WaitingTitle,
+	}
+	go func() {
+		for _, tok := range toks {
+			_ = p.relay.Send(PushIntent{Token: tok, LiveActivity: true, Event: "update", ContentState: cs})
+		}
+	}()
 }
 
 // OnAlert is wired as the hub's alert hook. It dispatches asynchronously so a
@@ -180,6 +228,28 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.deps.Push.Register(d)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// handleActivityRegister implements POST /api/push/activity — store a Live
+// Activity push token so the tally can be pushed to the lock screen app-killed.
+func (s *Server) handleActivityRegister(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if s.deps.Push == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
+		return
+	}
+	var body struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Token == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
+		return
+	}
+	s.deps.Push.RegisterActivity(body.Token)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
