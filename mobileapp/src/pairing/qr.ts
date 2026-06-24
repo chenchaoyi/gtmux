@@ -24,7 +24,7 @@ export function parsePairingQR(raw: string): PairedMac {
   const token = String(obj.token || '');
   if (!/^https?:\/\/.+/.test(url)) throw new Error('Pairing code has no valid url.');
   if (!token) throw new Error('Pairing code has no token.');
-  return {url, token, name: String(obj.name || 'Mac')};
+  return {url, token, name: String(obj.name || 'Server')};
 }
 
 // Normalize a manually-typed host into a base URL (defaults http:// and port 8765).

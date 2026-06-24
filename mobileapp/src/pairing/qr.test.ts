@@ -13,9 +13,9 @@ describe('parsePairingQR', () => {
     expect(m.url).toBe('http://h:8765');
   });
 
-  it('defaults name to "Mac" when absent', () => {
+  it('defaults name to "Server" when absent', () => {
     const m = parsePairingQR(JSON.stringify({v: 1, url: 'http://h:1', token: 't'}));
-    expect(m.name).toBe('Mac');
+    expect(m.name).toBe('Server');
   });
 
   it('tolerates unknown extra fields', () => {
