@@ -29,3 +29,29 @@ func TestOrderByTabOrder(t *testing.T) {
 		t.Errorf("dead record entries skipped = %v, want [Y X]", got)
 	}
 }
+
+// TestShrinksTabOrder guards the post-reboot clobber: a degraded snapshot (only a
+// bootstrap 'main', or an empty AppleScript read) must NOT overwrite the richer
+// recorded order, but any genuine change (new session) must go through.
+func TestShrinksTabOrder(t *testing.T) {
+	full := []string{"日常更新", "Diting", "ccy-workspace", "Hammer", "main"}
+	cases := []struct {
+		name       string
+		next, prev []string
+		want       bool
+	}{
+		{"post-reboot main-only clobbers full", []string{"main"}, full, true},
+		{"applescript-failed empty clobbers full", nil, full, true},
+		{"pure removal", []string{"Diting", "main"}, full, true},
+		{"unchanged", full, full, false},
+		{"reorder, same set", []string{"main", "Hammer", "Diting", "ccy-workspace", "日常更新"}, full, false},
+		{"a new session appeared", []string{"main", "NewProj"}, full, false},
+		{"grew", append([]string{"NewProj"}, full...), full, false},
+		{"no prior record", full, nil, false},
+	}
+	for _, tc := range cases {
+		if got := shrinksTabOrder(tc.next, tc.prev); got != tc.want {
+			t.Errorf("%s: got %v want %v", tc.name, got, tc.want)
+		}
+	}
+}
