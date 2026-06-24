@@ -232,3 +232,45 @@ func TestSavedSessionNames(t *testing.T) {
 		t.Errorf("savedSessionNames = %v, want [Diting Pica]", got)
 	}
 }
+
+// TestRestorePATH verifies the PATH built for driving restore.sh: the tmux binary's
+// dir leads, the standard locations are present, the inherited PATH is appended,
+// and everything is de-duplicated with no empty segments. This guards the fix for
+// the "Restore from the menu bar does nothing" bug (restore.sh failing with 127
+// because the tmux server's minimal PATH couldn't find tmux/tar/awk).
+func TestRestorePATH(t *testing.T) {
+	orig := tmux.Bin
+	t.Cleanup(func() { tmux.Bin = orig })
+
+	tmux.Bin = "/opt/homebrew/bin/tmux"
+	t.Setenv("PATH", "/usr/bin:/custom:/opt/homebrew/bin")
+	got := restorePATH()
+	parts := strings.Split(got, ":")
+
+	if parts[0] != "/opt/homebrew/bin" {
+		t.Fatalf("PATH should lead with the tmux binary dir, got %q (full %q)", parts[0], got)
+	}
+	seen := map[string]int{}
+	for _, p := range parts {
+		if p == "" {
+			t.Fatalf("empty segment in PATH %q", got)
+		}
+		seen[p]++
+	}
+	for _, want := range []string{"/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/custom"} {
+		if seen[want] == 0 {
+			t.Fatalf("PATH missing %q: %q", want, got)
+		}
+	}
+	for p, n := range seen {
+		if n > 1 {
+			t.Fatalf("PATH has duplicate %q (×%d): %q", p, n, got)
+		}
+	}
+
+	// With no resolved tmux binary, the standard dirs still anchor the PATH.
+	tmux.Bin = ""
+	if g := restorePATH(); !strings.Contains(g, "/opt/homebrew/bin") || !strings.Contains(g, "/usr/bin") {
+		t.Fatalf("PATH without tmux.Bin lost standard dirs: %q", g)
+	}
+}

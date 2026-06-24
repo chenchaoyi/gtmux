@@ -2,8 +2,10 @@ package app
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -87,7 +89,7 @@ func ensureServer() {
 	if script := resurrectRestoreScript(); script != "" {
 		i18n.Say("tmux server not running — restoring your saved sessions via tmux-resurrect (may take a moment)...",
 			"tmux server 未运行 —— 正在用 tmux-resurrect 恢复你的存档 session(可能要等一会)...")
-		tmux.OK("run-shell", script) // runs inside the server; deterministic, not a hook wait
+		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
 		if waitForRestoredSessions(boot, 120*time.Second) {
 			tmux.OK("kill-session", "-t", boot)
 			i18n.Say("Restored. Layout/dirs/screen text are back; running programs are NOT (e.g. restart claude with 'claude --resume').",
@@ -138,6 +140,63 @@ func resurrectRestoreScript() string {
 		}
 	}
 	return ""
+}
+
+// driveResurrectRestore runs tmux-resurrect's restore.sh as a DIRECT subprocess —
+// NOT via `tmux run-shell`. This is the fix for the recurring "Restore from the
+// menu bar does nothing" bug:
+//
+// `run-shell` executes the script inside the tmux SERVER's process environment.
+// After a reboot (or whenever the server was first started by a GUI/login launch),
+// that environment usually has a minimal PATH with no Homebrew, so restore.sh's
+// bare `tmux`/`tar`/`awk`/`sed` calls aren't found and it exits 127 — restoring
+// NOTHING, silently. The same minimal PATH reaches us when gtmux itself is run by
+// the menu-bar app. So we instead spawn restore.sh ourselves with a controlled
+// env: $TMUX pointed at this server's socket (so resurrect's tmux_socket() targets
+// the right server), and a PATH that starts with our resolved tmux binary's dir.
+// restore.sh's output is logged to ~/.local/share/gtmux/restore.log for diagnosis.
+func driveResurrectRestore(script string) {
+	socket := tmux.Display("", "#{socket_path}")
+	pid := tmux.Display("", "#{pid}")
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "bash", script)
+	env := os.Environ()
+	if socket != "" {
+		env = append(env, "TMUX="+socket+","+pid+",0")
+	}
+	env = append(env, "PATH="+restorePATH())
+	cmd.Env = env
+	out, err := cmd.CombinedOutput()
+	if dir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux"); dir != "" {
+		_ = os.WriteFile(filepath.Join(dir, "restore.log"),
+			[]byte(fmt.Sprintf("restore.sh exit=%v\nPATH=%s\nTMUX=%s\n---\n%s", err, restorePATH(), socket, out)), 0o644)
+	}
+}
+
+// restorePATH builds a PATH robust enough for restore.sh even when gtmux was
+// launched (e.g. by the menu-bar app) with a minimal PATH: our resolved tmux
+// binary's dir first, then the standard Homebrew + system locations, then whatever
+// we inherited — all de-duplicated.
+func restorePATH() string {
+	seen := map[string]bool{}
+	var parts []string
+	add := func(p string) {
+		if p != "" && !seen[p] {
+			seen[p] = true
+			parts = append(parts, p)
+		}
+	}
+	if tmux.Bin != "" {
+		add(filepath.Dir(tmux.Bin))
+	}
+	for _, p := range []string{"/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"} {
+		add(p)
+	}
+	for _, p := range strings.Split(os.Getenv("PATH"), ":") {
+		add(p)
+	}
+	return strings.Join(parts, ":")
 }
 
 // resurrectLastSave resolves the resurrect "last" save pointer ("" if none).
@@ -317,7 +376,7 @@ func recoverMissingSavedSessions() {
 	}
 	i18n.Say("A tmux server is running but your saved sessions are missing — restoring them from the last save...",
 		"检测到 tmux server 在跑但缺少你的存档 session —— 正在用最近一次存档恢复...")
-	tmux.OK("run-shell", script)
+	driveResurrectRestore(script)
 	if waitForSavedSessions(saved, 120*time.Second) {
 		i18n.Say("Restored your saved sessions. (running programs are NOT relaunched — e.g. 'claude --resume')",
 			"已恢复你的存档 session。(正在运行的程序不会自动重启 —— 如 'claude --resume')")
