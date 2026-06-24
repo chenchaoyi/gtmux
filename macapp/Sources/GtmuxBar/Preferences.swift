@@ -95,8 +95,8 @@ struct PreferencesView: View {
                     get: { remote.isOn },
                     set: { want in want ? confirmEnable() : remote.disable() })) {
                     Text(remote.isOn
-                        ? (remote.url ?? l10n.tr("on — reachable from anywhere", "已开启 —— 任意网络可达"))
-                        : l10n.tr("Keep reachable from anywhere (always-on)", "保持任意网络可达(常驻)"))
+                        ? (remote.url ?? l10n.tr("on — reachable from anywhere", "已开启，任意网络可达"))
+                        : l10n.tr("Keep reachable from anywhere (always-on)", "保持任意网络可达（常驻）"))
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 .toggleStyle(.switch).disabled(remote.busy).gridColumnAlignment(.leading)
@@ -115,10 +115,10 @@ struct PreferencesView: View {
     // on (the CLI's own prompt is skipped via --yes since we confirm here).
     private func confirmEnable() {
         let a = NSAlert()
-        a.messageText = l10n.tr("Keep remote access on?", "保持远程访问开启?")
+        a.messageText = l10n.tr("Keep remote access on?", "保持远程访问开启？")
         a.informativeText = l10n.tr(
             "Your Mac stays reachable at a public URL (token-gated) across reboots until you turn this off. It's a standing exposure — enable it consciously.",
-            "你的 Mac 会持续在一个公网地址可达(有 token 把关),重启也不停,直到你关闭。这是个长期敞口 —— 请有意识地开启。")
+            "开启后，你的 Mac 会一直在一个公网地址可达（有 token 把关），重启也不会停，直到你手动关闭。这是个长期敞口，请想清楚再开。")
         a.addButton(withTitle: l10n.tr("Enable", "开启"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {

@@ -43,21 +43,21 @@ const S: Dict = {
   connect: {en: 'Connect', zh: '连接'},
   cantReach: {
     en: "Can't reach this Mac — are you both on the same VPN / Wi-Fi / Tailscale?",
-    zh: '连不上这台 Mac —— 你和它在同一个 VPN / Wi-Fi / Tailscale 上吗?',
+    zh: '连不上这台 Mac，你和它在同一个 VPN / Wi-Fi / Tailscale 上吗？',
   },
-  badToken: {en: 'Connected, but the token was rejected.', zh: '连上了,但 token 被拒绝。'},
+  badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired Mac, switch / add / remove)
   servers: {en: 'Macs', zh: '我的 Mac'},
   serversHint: {
     en: 'Tap a Mac to connect. The connected one shows a green dot.',
-    zh: '点一台 Mac 连接,已连接的会显示绿点。',
+    zh: '点一台 Mac 连接，已连接的会显示绿点。',
   },
-  noServers: {en: 'No Macs yet — add one to start.', zh: '还没有 Mac —— 添加一台开始。'},
+  noServers: {en: 'No Macs yet — add one to start.', zh: '还没添加 Mac，先加一台。'},
   connectedLabel: {en: 'Connected', zh: '已连接'},
   switchServer: {en: 'Switch Mac', zh: '切换 Mac'},
   disconnect: {en: 'Disconnect', zh: '断开连接'},
-  removeServerQ: {en: 'Remove this Mac?', zh: '移除这台 Mac?'},
+  removeServerQ: {en: 'Remove this Mac?', zh: '移除这台 Mac？'},
   // radar
   noAgents: {en: 'No coding agents running.', zh: '没有在跑的 coding agent。'},
   waitingOnly: {en: 'Waiting only', zh: '只看等输入'},
@@ -72,10 +72,10 @@ const S: Dict = {
   pairedMac: {en: 'Paired Mac', zh: '已配对的 Mac'},
   removeMac: {en: 'Remove this Mac', zh: '移除这台 Mac'},
   push: {en: 'Push notifications', zh: '推送通知'},
-  pushDevice: {en: 'Requires a real device build (added later).', zh: '需真机构建(稍后接入)。'},
+  pushDevice: {en: 'Requires a real device build (added later).', zh: '需真机构建（稍后接入）。'},
   pushHint: {
     en: 'Lock-screen alerts when an agent needs you or finishes (real device only).',
-    zh: 'agent 需要你或跑完时推送到锁屏(仅真机)。',
+    zh: 'agent 需要你或跑完时推送到锁屏（仅真机）。',
   },
   version: {en: 'Version', zh: '版本'},
   // alerts

@@ -199,10 +199,10 @@ func Run(stdin io.Reader, args []string) int {
 	// Differentiate copy/sound: "finished" (calm) vs "needs your input" (urgent).
 	// The session name is the bold title; the agent name is the subtitle.
 	kind := "done"
-	body := i18n.Tr("Finished — tap to jump", "已完成 —— 点按跳转")
+	body := i18n.Tr("Finished — tap to jump", "已完成，点按跳转")
 	if event == "Notification" {
 		kind = "input"
-		body = i18n.Tr("Needs your input — tap to jump", "需要你的输入 —— 点按跳转")
+		body = i18n.Tr("Needs your input — tap to jump", "需要你的输入，点按跳转")
 	}
 	title := session
 	if title == "" {

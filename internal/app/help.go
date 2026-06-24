@@ -69,64 +69,64 @@ Notes:
     the last autosave (layout/dirs/screen text — not running programs).
 `
 
-const usageZH = `用法:
+const usageZH = `用法：
   gtmux [--lang=en|zh] <命令> [选项]
-  gtmux                    (不带命令)显示本帮助
+  gtmux                    （不带命令）显示本帮助
 
-命令:
+命令：
   overview [--popup]      session / window / pane 汇总
                           --popup 就是 prefix+g 弹的那个弹窗
-  agents [--watch|--json] 各 pane 里的 coding agent:等输入 / 运行中 / 空闲、
+  agents [--watch|--json] 各 pane 里的 coding agent：等输入 / 运行中 / 空闲、
                           在哪、以及可跳转的 pane id。--watch 是实时面板
-                          (↑/↓ 选择 · enter 跳转 · r 刷新 · q 退出);
-                          --json 输出结构化数组(给脚本/app 用)
-  restore                 每个 session 一个终端 tab,全部接回
-    restore --pick|-p     列出来选(编号 / 回车=全部 / q=取消)
+                          （↑/↓ 选择 · enter 跳转 · r 刷新 · q 退出）；
+                          --json 输出结构化数组（给脚本 / app 用）
+  restore                 每个 session 一个终端 tab，全部接回
+    restore --pick|-p     列出来选（编号 / 回车=全部 / q=取消）
     restore <名字>         按名字把当前 tab 接回指定 session
     restore --one         只把当前 tab 接回下一个无人连接的 session
-    restore --dry-run     只打印将要做什么,不实际执行
-  focus <名字|pane-id>    跳到该 session 的终端 tab;给 tmux pane id(%N)
+    restore --dry-run     只打印将要做什么，不实际执行
+  focus <名字|pane-id>    跳到该 session 的终端 tab；给 tmux pane id（%N）
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
   new [name]              新建一个 tmux session 并为它开一个终端 tab
-  serve [--port N]        给远程手机 app 的只读 HTTP 雷达,放在 VPN/隧道之后:
-                          GET /api/agents(即 --json 契约)、/api/pane、
-                          /api/events(SSE)、POST /api/focus。--bind ADDR
-                          --token TOKEN(首次运行自动生成并持久化 token);
-                          --relay-url URL --relay-token TOKEN 把推送指向中继,
+  serve [--port N]        给远程手机 app 的只读 HTTP 雷达，放在 VPN/隧道之后：
+                          GET /api/agents（即 --json 契约）、/api/pane、
+                          /api/events（SSE）、POST /api/focus。--bind ADDR
+                          --token TOKEN（首次运行自动生成并持久化 token）；
+                          --relay-url URL --relay-token TOKEN 把推送指向中继，
                           让 agent 提醒推到手机锁屏
-  tunnel                  把只读雷达暴露到任何地方(免 VPN app):走出站
-                          Cloudflare 隧道,打印公网 URL、token 和可扫的配对
-                          二维码。默认给固定的托管地址(配一次即可),--quick 走
+  tunnel                  把只读雷达暴露到任何地方（免 VPN app）：走出站
+                          Cloudflare 隧道，打印公网 URL、token 和可扫的配对
+                          二维码。默认给固定的托管地址（配一次即可），--quick 走
                           免账号的临时地址。--port N --name 标签
-  doctor [--fix [--yes]]  体检,按主题分组:tmux / 恢复 / 终端 / agent+通知。
-                          --fix 把其余项配好 —— set-titles、插件、Claude hook ——
-                          逐项进行,每步都先解释并征求确认(--yes 全部应用)。
+  doctor [--fix [--yes]]  体检，按主题分组：tmux / 恢复 / 终端 / agent+通知。
+                          --fix 把其余项配好（set-titles、插件、Claude hook），
+                          逐项进行，每步都先解释并征求确认（--yes 全部应用）。
                           这就是一站式安装入口。
-  update [--check]        自我更新到最新版 —— CLI + 菜单栏 app(--check 只检查;
-                          --cli-only 只更新 CLI 不动 app)
-  install-hooks [--yes]   直接注册 Claude hook(doctor --fix 也会做这件事);
+  update [--check]        自我更新到最新版，含 CLI + 菜单栏 app（--check 只检查；
+                          --cli-only 只更新 CLI 不动 app）
+  install-hooks [--yes]   直接注册 Claude hook（doctor --fix 也会做这件事）；
                           --agent codex 打印 Codex 的 notify 接法
-  uninstall-hooks         撤销 install-hooks(注销 hook)
-  uninstall-app           删除菜单栏 app(Gtmux.app)及登录项
-                          (安装请用 curl 安装脚本或 macapp/build.sh)
-  hook                    内部命令:由 Claude Code 作为 hook 调用(读 stdin);
+  uninstall-hooks         撤销 install-hooks（注销 hook）
+  uninstall-app           删除菜单栏 app（Gtmux.app）及登录项
+                          （安装请用 curl 安装脚本或 macapp/build.sh）
+  hook                    内部命令：由 Claude Code 作为 hook 调用（读 stdin）；
                           写入 pane 状态并触发通知
   -h, --help              显示本帮助
   -v, --version           打印版本号
 
-选项:
-  --lang=en|zh   输出语言(默认 en;也可用 GTMUX_LANG 环境变量设默认)
+选项：
+  --lang=en|zh   输出语言（默认 en；也可用 GTMUX_LANG 环境变量设默认）
 
-说明:
-  - "agents" 状态:⠿ 运行中(忙)· ⏸ 等输入(卡在等你【批准/权限】—— 排最前)·
-    ✳ 空闲(完成一轮,轮到你)。⏸ 需要 claude-notify(Claude Code 的权限
-    Notification);它的空闲提醒【不】标 ⏸,所以久置会停在 idle。
-  - restore/focus 通过 AppleScript 控制宿主终端(Ghostty 1.3+ 或 iTerm2):首次
-    运行会弹自动化授权(「想要控制…」)—— 点允许。终端自动识别(可用
-    GTMUX_TERMINAL 覆盖)。
-  - 电脑重启后,restore 会启动 tmux 并等 tmux-continuum 恢复最近一次自动存档
-    (布局/目录/屏幕文本 —— 不含正在运行的程序)。
+说明：
+  - "agents" 状态：⠿ 运行中（忙）· ⏸ 等输入（卡在等你批准 / 授权，排最前）·
+    ✳ 空闲（完成一轮，轮到你）。⏸ 需要 claude-notify（Claude Code 的权限
+    Notification）；它的空闲提醒不标 ⏸，所以久置会停在 idle。
+  - restore/focus 通过 AppleScript 控制宿主终端（Ghostty 1.3+ 或 iTerm2）：首次
+    运行会弹自动化授权（提示「想要控制…」），点允许。终端会自动识别（可用
+    GTMUX_TERMINAL 覆盖）。
+  - 电脑重启后，restore 会启动 tmux 并等 tmux-continuum 恢复最近一次自动存档
+    （布局 / 目录 / 屏幕文本，不含正在运行的程序）。
 `
 
 func usage() {

@@ -42,10 +42,10 @@ func peonPingConfigPath() string {
 func installHooksCodex() int {
 	bin := selfPath()
 	i18n.Say("Codex: add this to ~/.codex/config.toml so gtmux sends a notification when a turn finishes:",
-		"Codex:把下面这行加到 ~/.codex/config.toml,turn 结束时 gtmux 就会发通知:")
+		"Codex：把下面这行加到 ~/.codex/config.toml，turn 结束时 gtmux 就会发通知：")
 	fmt.Printf("\n  notify = [%q, \"hook\", \"--agent\", \"codex\"]\n\n", bin)
 	i18n.Say("Note: Codex's `notify` points at ONE program — if you already use it (e.g. computer-use),\nthis REPLACES it; gtmux can't chain into it. Detection (working/idle) works regardless.",
-		"注意:Codex 的 `notify` 只能指向一个程序 —— 如果你已在用它(如 computer-use),这会【替换】它;\ngtmux 无法链式追加。检测(working/idle)不依赖它,照常工作。")
+		"注意：Codex 的 `notify` 只能指向一个程序，如果你已在用它（如 computer-use），这会替换它；\ngtmux 无法链式追加。检测（working/idle）不依赖它，照常工作。")
 	return 0
 }
 
@@ -93,7 +93,7 @@ func cmdInstallHooks(args []string) int {
 
 	// 2. Register the hook in ~/.claude/settings.json.
 	if err := updateSettings(claudeSettingsPath(), bin, true); err != nil {
-		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败: "+err.Error())
+		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败："+err.Error())
 		return 1
 	}
 	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit)",
@@ -106,7 +106,7 @@ func cmdInstallHooks(args []string) int {
 	// it installed, the hook still tracks state but no banners are posted.
 	if _, err := os.Stat(gtmuxAppPath()); err != nil {
 		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
-			"• 安装菜单栏 app 才能收到桌面通知(用 curl 安装脚本,或 'make app')")
+			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}
 
 	i18n.Say("Done. Restart your Claude Code sessions to load the hooks.",
@@ -125,7 +125,7 @@ func cmdUninstallHooks(args []string) int {
 		}
 	}
 	if err := updateSettings(claudeSettingsPath(), "", false); err != nil {
-		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败: "+err.Error())
+		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败："+err.Error())
 		return 1
 	}
 	i18n.Say("✓ de-registered 'gtmux hook' from ~/.claude/settings.json", "✓ 已从 ~/.claude/settings.json 注销 'gtmux hook'")
@@ -162,21 +162,21 @@ func handlePeonPing(yes bool) {
 	}
 	if !yes && !confirm(i18n.Tr(
 		"peon-ping detected. Disable its desktop_notifications and terminal_tab_title so gtmux owns notifications + tab titles? [Y/n] ",
-		"检测到 peon-ping。关闭它的 desktop_notifications 和 terminal_tab_title,让 gtmux 接管通知与 tab 标题?[Y/n] ")) {
+		"检测到 peon-ping。关闭它的 desktop_notifications 和 terminal_tab_title，让 gtmux 接管通知与 tab 标题？[Y/n] ")) {
 		i18n.Say("• left peon-ping unchanged — for focus to work, set terminal_tab_title=false there yourself.",
-			"• 未改动 peon-ping —— 为使 focus 生效,请自行将其 terminal_tab_title 设为 false。")
+			"• 未改动 peon-ping，为使 focus 生效，请自行将其 terminal_tab_title 设为 false。")
 		return
 	}
 	m, err := loadJSONObject(cfg)
 	if err != nil {
-		i18n.Sae("• could not read peon-ping config: "+err.Error(), "• 无法读取 peon-ping 配置: "+err.Error())
+		i18n.Sae("• could not read peon-ping config: "+err.Error(), "• 无法读取 peon-ping 配置："+err.Error())
 		return
 	}
 	backupFile(cfg)
 	m["desktop_notifications"] = false
 	m["terminal_tab_title"] = false
 	if err := writeJSONObject(cfg, m); err != nil {
-		i18n.Sae("• could not update peon-ping config: "+err.Error(), "• 无法更新 peon-ping 配置: "+err.Error())
+		i18n.Sae("• could not update peon-ping config: "+err.Error(), "• 无法更新 peon-ping 配置："+err.Error())
 		return
 	}
 	i18n.Say("✓ disabled peon-ping desktop_notifications + terminal_tab_title", "✓ 已关闭 peon-ping 的 desktop_notifications 与 terminal_tab_title")

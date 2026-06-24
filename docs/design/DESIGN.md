@@ -109,7 +109,7 @@
 
    **配对手机面板（Allow phone access）**：编码 pairing schema v1 `{v,url,token,name}`
    的二维码（`CIQRCodeGenerator`），供手机 app「配对 → 扫一扫」。`url` 优先用 always-on
-   隧道地址（任意网络可达),否则用 Mac 的局域网 IP:8765（同 Wi-Fi）；`token` 取
+   隧道地址（任意网络可达），否则用 Mac 的局域网 IP:8765（同 Wi-Fi）；`token` 取
    `~/.config/gtmux/serve-token`。没有 token（没设过远程）时不画二维码，改为引导去偏好开启
    远程访问。文案平实、无营销腔。
 

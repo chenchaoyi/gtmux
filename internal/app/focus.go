@@ -77,7 +77,7 @@ func cmdFocus(args []string) int {
 			i18n.Sae("No tab titled '"+tabTitle+"' in "+termApp, "在 "+termApp+" 里没有标题为 '"+tabTitle+"' 的 tab")
 			return 1
 		default:
-			i18n.Sae("AppleScript failed (needs Automation permission)", "AppleScript 执行失败(需要自动化权限)")
+			i18n.Sae("AppleScript failed (needs Automation permission)", "AppleScript 执行失败（需要自动化权限）")
 			return 1
 		}
 	}
@@ -93,7 +93,7 @@ func cmdFocus(args []string) int {
 		return 0
 	case "":
 		i18n.Sae("usage: gtmux focus <session|pane-id|--last>   (jump to that tab / exact pane)",
-			"用法: gtmux focus <session|pane-id|--last>   (跳到那个 tab / 确切 pane)")
+			"用法：gtmux focus <session|pane-id|--last>   （跳到那个 tab / 确切 pane）")
 		return 2
 	case "--last", "-l":
 		// Jump to the pane recorded in last-finished (the notification click target).
@@ -131,14 +131,14 @@ func cmdFocus(args []string) int {
 		return 0
 	case err != nil || res == "":
 		i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
-			"AppleScript 执行失败:需要 "+tn+" 及自动化权限。")
+			"AppleScript 执行失败：需要 "+tn+" 及自动化权限。")
 		i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling "+tn+").",
-			"(系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+")。")
+			"（系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+"）。")
 		return 1
 	default:
 		i18n.Sae("No "+tn+" tab is showing session '"+target+"' (it may be detached).",
-			"没有显示 session '"+target+"' 的 "+tn+" tab(可能尚未接回)。")
-		i18n.Sae("Restore it with:  gtmux restore "+target, "接回它:  gtmux restore "+target)
+			"没有显示 session '"+target+"' 的 "+tn+" tab（可能尚未接回）。")
+		i18n.Sae("Restore it with:  gtmux restore "+target, "接回它：  gtmux restore "+target)
 		return 1
 	}
 }

@@ -45,7 +45,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	reg := tunnelRegSecret()
 	if reg == "" {
 		i18n.Sae("gtmux tunnel: always-on needs hosted mode (not configured in this build).",
-			"gtmux tunnel: always-on 需要托管模式(此构建未启用)。")
+			"gtmux tunnel: always-on 需要托管模式（此构建未启用）。")
 		return 2
 	}
 	bin, err := exec.LookPath("cloudflared")
@@ -58,14 +58,14 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	// --yes bypasses the prompt (the menu-bar toggle shows its own confirmation).
 	if !yes {
 		i18n.Say(i18n.Bold+"Keep remote access ON across reboots?"+i18n.Reset,
-			i18n.Bold+"让远程访问重启后也保持开启?"+i18n.Reset)
+			i18n.Bold+"让远程访问重启后也保持开启？"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  This registers two background services (cloudflared + gtmux serve) that start"+i18n.Reset,
-			i18n.Dim+"  这会注册两个后台服务(cloudflared + gtmux serve),开机自启、"+i18n.Reset)
+			i18n.Dim+"  这会注册两个后台服务（cloudflared + gtmux serve），开机自启、"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  at login and keep your Mac reachable at a public URL (token-gated) until you"+i18n.Reset,
-			i18n.Dim+"  让你的 Mac 持续在一个公网地址可达(有 token 把关),直到你跑"+i18n.Reset)
+			i18n.Dim+"  让你的 Mac 持续在一个公网地址可达（有 token 把关），直到你跑"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  run `gtmux tunnel --unservice`. It is a standing exposure — enable consciously."+i18n.Reset,
-			i18n.Dim+"  `gtmux tunnel --unservice` 关闭。这是个长期敞口 —— 请有意识地开启。"+i18n.Reset)
-		if !confirmRisky(i18n.Tr("  enable always-on? [y/N] ", "  开启 always-on?[y/N] ")) {
+			i18n.Dim+"  `gtmux tunnel --unservice` 关闭。这是个长期敞口，请有意识地开启。"+i18n.Reset)
+		if !confirmRisky(i18n.Tr("  enable always-on? [y/N] ", "  开启 always-on？[y/N] ")) {
 			i18n.Say("  skipped.", "  已跳过。")
 			return 0
 		}
@@ -74,7 +74,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
 	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name)
 	if err != nil {
-		i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败: "+err.Error())
+		i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败："+err.Error())
 		return 1
 	}
 	token := resolveServeToken("")
@@ -113,7 +113,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 
 	printPairingBlock(prov.URL, token, name)
 	i18n.Say(i18n.Dim+"Always-on enabled — reachable across reboots. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
-		i18n.Dim+"Always-on 已开启 —— 重启也可达。关闭:`gtmux tunnel --unservice`。"+i18n.Reset)
+		i18n.Dim+"Always-on 已开启，重启也可达。关闭：`gtmux tunnel --unservice`。"+i18n.Reset)
 	return 0
 }
 
@@ -129,7 +129,7 @@ func tunnelServiceRemove() int {
 	_ = os.Remove(tunnelAgentPath())
 	_ = os.Remove(tunnelURLPath())
 	i18n.Say("Always-on disabled — the background tunnel + serve are stopped and removed.",
-		"Always-on 已关闭 —— 后台隧道与 serve 已停止并移除。")
+		"Always-on 已关闭，后台隧道与 serve 已停止并移除。")
 	return 0
 }
 
@@ -137,14 +137,14 @@ func tunnelServiceRemove() int {
 func tunnelServiceStatus() int {
 	if !serviceInstalled() {
 		i18n.Say("Always-on: off  (run `gtmux tunnel --service` to enable, or `gtmux tunnel` for a foreground session)",
-			"Always-on:关闭  (跑 `gtmux tunnel --service` 开启,或 `gtmux tunnel` 前台开一次)")
+			"Always-on：关闭  （跑 `gtmux tunnel --service` 开启，或 `gtmux tunnel` 前台开一次）")
 		return 0
 	}
 	loaded := launchctlLoaded(serveAgentLabel) && launchctlLoaded(tunnelAgentLabel)
 	state := i18n.Tr("on", "开启")
 	if !loaded {
 		state = i18n.Tr("installed but not running (try re-login or --service again)",
-			"已安装但未运行(重新登录或再跑 --service)")
+			"已安装但未运行（重新登录或再跑 --service）")
 	}
 	i18n.Say("Always-on: "+state, "Always-on:"+state)
 	if b, err := os.ReadFile(tunnelURLPath()); err == nil {

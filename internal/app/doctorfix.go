@@ -53,11 +53,11 @@ type fixState struct {
 func doctorFix(yes bool) int {
 	if tmux.Bin == "" {
 		i18n.Sae("tmux is not installed — install it first (e.g. brew install tmux), then re-run.",
-			"tmux 未安装 —— 请先安装(如 brew install tmux)再运行。")
+			"tmux 未安装，请先安装（如 brew install tmux）再运行。")
 		return 1
 	}
 	i18n.Say("gtmux doctor --fix — I'll explain each change and ask before doing it (Ctrl-C to stop).",
-		"gtmux doctor --fix —— 每个改动我都会先解释并征求确认(Ctrl-C 退出)。")
+		"gtmux doctor --fix，每个改动我都会先解释并征求确认（Ctrl-C 退出）。")
 
 	s := &fixState{confPath: tmuxConfPath(), yes: yes}
 	applied := 0
@@ -73,7 +73,7 @@ func doctorFix(yes bool) int {
 	if applied == 0 {
 		i18n.Say("Nothing was changed.", "未做任何改动。")
 	} else {
-		i18n.Say("Done — re-run `gtmux doctor` to confirm.", "完成 —— 重新跑 `gtmux doctor` 确认。")
+		i18n.Say("Done — re-run `gtmux doctor` to confirm.", "完成，重新跑 `gtmux doctor` 确认。")
 	}
 	return s.rc
 }
@@ -87,7 +87,7 @@ func (s *fixState) ask(title, detail string) bool {
 	if s.yes {
 		return true
 	}
-	if !confirm(i18n.Tr("  apply? [Y/n] ", "  应用?[Y/n] ")) {
+	if !confirm(i18n.Tr("  apply? [Y/n] ", "  应用？[Y/n] ")) {
 		i18n.Say("  skipped.", "  已跳过。")
 		return false
 	}
@@ -112,7 +112,7 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 	}
 	merged := mergeManagedLines(conf, lines)
 	if err := os.WriteFile(s.confPath, []byte(upsertManagedBlock(conf, merged)), 0o644); err != nil {
-		i18n.Sae("  ✗ write "+tildeify(s.confPath)+": "+err.Error(), "  ✗ 写入 "+tildeify(s.confPath)+": "+err.Error())
+		i18n.Sae("  ✗ write "+tildeify(s.confPath)+": "+err.Error(), "  ✗ 写入 "+tildeify(s.confPath)+"："+err.Error())
 		s.rc = 1
 		return 0
 	}
@@ -129,8 +129,8 @@ func (s *fixState) stepSetTitles() int {
 	}
 	detail := i18n.Tr(
 		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      set -g set-titles on\n      set -g set-titles-string '#S — #W'\n  Why: focus/restore find a session's tab by this exact title.",
-		"  写入 "+tildeify(s.confPath)+"(并立即生效):\n      set -g set-titles on\n      set -g set-titles-string '#S — #W'\n  原因:focus/restore 靠这个确切标题找到会话的 tab。")
-	if !s.ask(i18n.Tr("set-titles  (required for focus/restore)", "set-titles(focus/restore 必需)"), detail) {
+		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n      set -g set-titles on\n      set -g set-titles-string '#S — #W'\n  原因：focus/restore 靠这个确切标题找到会话的 tab。")
+	if !s.ask(i18n.Tr("set-titles  (required for focus/restore)", "set-titles（focus/restore 必需）"), detail) {
 		return 0
 	}
 	return s.applyConf(
@@ -146,25 +146,25 @@ func (s *fixState) stepRestoreSettings() int {
 		lines = append(lines, "set -g @resurrect-capture-pane-contents 'on'")
 		live = append(live, []string{"set", "-g", "@resurrect-capture-pane-contents", "on"})
 		bullets = append(bullets, i18n.Tr("@resurrect-capture-pane-contents on — snapshot each pane's scrollback",
-			"@resurrect-capture-pane-contents on —— 快照每个 pane 的 scrollback"))
+			"@resurrect-capture-pane-contents on，快照每个 pane 的 scrollback"))
 	}
 	if tmuxOpt("@continuum-restore") != "on" {
 		lines = append(lines, "set -g @continuum-restore 'on'")
 		live = append(live, []string{"set", "-g", "@continuum-restore", "on"})
 		bullets = append(bullets, i18n.Tr("@continuum-restore on — auto-restore after a reboot",
-			"@continuum-restore on —— 重启后自动恢复"))
+			"@continuum-restore on，重启后自动恢复"))
 	}
 	if v, _ := strconv.Atoi(tmuxOpt("history-limit")); v < 10000 {
 		lines = append(lines, "set -g history-limit 50000")
 		live = append(live, []string{"set", "-g", "history-limit", "50000"})
 		bullets = append(bullets, i18n.Tr("history-limit 50000 — deeper scrollback to snapshot",
-			"history-limit 50000 —— 更深的 scrollback 可快照"))
+			"history-limit 50000，更深的 scrollback 可快照"))
 	}
 	if len(lines) == 0 {
 		return 0
 	}
 	detail := "  " + strings.Join(bullets, "\n  ") + "\n  " +
-		i18n.Tr("Written to "+tildeify(s.confPath)+" (+ applied live).", "写入 "+tildeify(s.confPath)+"(并立即生效)。")
+		i18n.Tr("Written to "+tildeify(s.confPath)+" (+ applied live).", "写入 "+tildeify(s.confPath)+"（并立即生效）。")
 	if !s.ask(i18n.Tr("restore & snapshot settings", "恢复与快照设置"), detail) {
 		return 0
 	}
@@ -194,11 +194,11 @@ func (s *fixState) stepPlugins() int {
 		"git clone "+strings.Join(names, ", ")+" → "+tildeify(pluginBaseDir()))
 	if wire {
 		detail += "\n  " + i18n.Tr("and add TPM loader lines to "+tildeify(s.confPath)+" (run line last)",
-			"并在 "+tildeify(s.confPath)+" 写入 TPM 加载行(run 行置末)")
+			"并在 "+tildeify(s.confPath)+" 写入 TPM 加载行（run 行置末）")
 	}
 	detail += "\n  " + i18n.Tr("Why: restore-after-reboot & scrollback snapshots need these plugins.",
-		"原因:重启恢复与 scrollback 快照依赖这些插件。")
-	if !s.ask(i18n.Tr("tmux plugins (TPM + resurrect + continuum)", "tmux 插件(TPM + resurrect + continuum)"), detail) {
+		"原因：重启恢复与 scrollback 快照依赖这些插件。")
+	if !s.ask(i18n.Tr("tmux plugins (TPM + resurrect + continuum)", "tmux 插件（TPM + resurrect + continuum）"), detail) {
 		return 0
 	}
 	base := pluginBaseDir()
@@ -210,7 +210,7 @@ func (s *fixState) stepPlugins() int {
 	applied := 0
 	for _, p := range clones {
 		if err := runQuiet("git", "clone", "--depth", "1", p.repo, filepath.Join(base, p.name)); err != nil {
-			i18n.Sae("  ✗ clone "+p.name+" failed: "+err.Error(), "  ✗ 克隆 "+p.name+" 失败: "+err.Error())
+			i18n.Sae("  ✗ clone "+p.name+" failed: "+err.Error(), "  ✗ 克隆 "+p.name+" 失败："+err.Error())
 			s.rc = 1
 		} else {
 			i18n.Say("  ✓ cloned "+p.name, "  ✓ 已克隆 "+p.name)
@@ -223,7 +223,7 @@ func (s *fixState) stepPlugins() int {
 		}
 	}
 	i18n.Say("  • reload tmux to activate: tmux source "+tildeify(s.confPath)+"  (or restart tmux)",
-		"  • 重载 tmux 生效: tmux source "+tildeify(s.confPath)+"  (或重启 tmux)")
+		"  • 重载 tmux 生效：tmux source "+tildeify(s.confPath)+"  （或重启 tmux）")
 	return applied
 }
 
@@ -233,17 +233,17 @@ func (s *fixState) stepClaudeHook() int {
 	}
 	detail := i18n.Tr(
 		"  Register `gtmux hook` in "+tildeify(claudeSettingsPath())+" (Stop · Notification · UserPromptSubmit).\n  Gives ⏸ needs-input + desktop notifications. (backed up first)",
-		"  在 "+tildeify(claudeSettingsPath())+" 注册 `gtmux hook`(Stop · Notification · UserPromptSubmit)。\n  提供 ⏸ 需要输入 + 桌面通知。(会先备份)")
+		"  在 "+tildeify(claudeSettingsPath())+" 注册 `gtmux hook`（Stop · Notification · UserPromptSubmit）。\n  提供 ⏸ 需要输入 + 桌面通知。（会先备份）")
 	if !s.ask(i18n.Tr("Claude Code hook", "Claude Code hook"), detail) {
 		return 0
 	}
 	cacheClaudeIcon()
 	if err := updateSettings(claudeSettingsPath(), selfPath(), true); err != nil {
-		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败: "+err.Error())
+		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ installed — restart Claude Code sessions to load it", "  ✓ 已安装 —— 重启 Claude Code 会话以加载")
+	i18n.Say("  ✓ installed — restart Claude Code sessions to load it", "  ✓ 已安装，重启 Claude Code 会话以加载")
 	return 1
 }
 
@@ -268,16 +268,16 @@ func (s *fixState) stepCodexHook() int {
 
 	if existing != "" {
 		// A notify is already set — Codex runs only one, so this is a replacement.
-		fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("Codex hook  (replaces existing notify)", "Codex hook(替换现有 notify)"), i18n.Reset)
+		fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("Codex hook  (replaces existing notify)", "Codex hook（替换现有 notify）"), i18n.Reset)
 		fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
 			"  "+tildeify(cfgPath)+" already sets a notify (Codex allows only one):\n      "+strings.TrimSpace(existing)+"\n  Replacing it means that program stops running. New value:\n      "+line,
-			"  "+tildeify(cfgPath)+" 已设置 notify(Codex 只允许一个):\n      "+strings.TrimSpace(existing)+"\n  替换后原程序将不再运行。新值:\n      "+line), i18n.Reset)
+			"  "+tildeify(cfgPath)+" 已设置 notify（Codex 只允许一个）：\n      "+strings.TrimSpace(existing)+"\n  替换后原程序将不再运行。新值：\n      "+line), i18n.Reset)
 		if s.yes {
 			i18n.Say("  • skipped — re-run interactively to replace your existing notify.",
-				"  • 已跳过 —— 如需替换现有 notify,请交互式重跑。")
+				"  • 已跳过，如需替换现有 notify，请交互式重跑。")
 			return 0
 		}
-		if !confirmRisky(i18n.Tr("  replace it? [y/N] ", "  替换它?[y/N] ")) {
+		if !confirmRisky(i18n.Tr("  replace it? [y/N] ", "  替换它？[y/N] ")) {
 			i18n.Say("  skipped.", "  已跳过。")
 			return 0
 		}
@@ -292,7 +292,7 @@ func (s *fixState) stepCodexHook() int {
 	// No notify yet → add ours.
 	detail := i18n.Tr(
 		"  Add to "+tildeify(cfgPath)+":\n      "+line+"\n  Why: gtmux notifies you when a Codex turn finishes (detection works without it too).",
-		"  写入 "+tildeify(cfgPath)+":\n      "+line+"\n  原因:Codex turn 结束时 gtmux 发通知(检测本就不依赖它)。")
+		"  写入 "+tildeify(cfgPath)+"：\n      "+line+"\n  原因：Codex turn 结束时 gtmux 发通知（检测本就不依赖它）。")
 	if !s.ask(i18n.Tr("Codex hook", "Codex hook"), detail) {
 		return 0
 	}
@@ -312,7 +312,7 @@ func (s *fixState) writeCodex(path, content string) bool {
 		return false
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		i18n.Sae("  ✗ write "+tildeify(path)+": "+err.Error(), "  ✗ 写入 "+tildeify(path)+": "+err.Error())
+		i18n.Sae("  ✗ write "+tildeify(path)+": "+err.Error(), "  ✗ 写入 "+tildeify(path)+"："+err.Error())
 		s.rc = 1
 		return false
 	}
@@ -361,21 +361,21 @@ func (s *fixState) stepCloudflared() int {
 		return 0
 	}
 	fmt.Printf("\n%s%s%s\n", i18n.Bold,
-		i18n.Tr("cloudflared  (optional — remote phone access)", "cloudflared(可选 —— 手机远程访问)"), i18n.Reset)
+		i18n.Tr("cloudflared  (optional — remote phone access)", "cloudflared（可选，手机远程访问）"), i18n.Reset)
 	fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
 		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access — skip if you don't use the phone app away from home.",
-		"  装上它,`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要 ——\n  不在外面用手机 app 可跳过。"), i18n.Reset)
+		"  装上它，`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要，\n  不在外面用手机 app 可跳过。"), i18n.Reset)
 	if _, err := exec.LookPath("brew"); err != nil {
 		i18n.Say("  • brew not found — install from https://github.com/cloudflare/cloudflared/releases",
-			"  • 未找到 brew —— 从 https://github.com/cloudflare/cloudflared/releases 安装")
+			"  • 未找到 brew，从 https://github.com/cloudflare/cloudflared/releases 安装")
 		return 0
 	}
 	if s.yes {
 		i18n.Say("  • skipped (optional) — run `gtmux tunnel` or `brew install cloudflared` when you want remote access.",
-			"  • 已跳过(可选)—— 想远程时跑 `gtmux tunnel` 或 `brew install cloudflared`。")
+			"  • 已跳过（可选）。想远程时跑 `gtmux tunnel` 或 `brew install cloudflared`。")
 		return 0
 	}
-	if !confirmRisky(i18n.Tr("  install it now? [y/N] ", "  现在安装?[y/N] ")) {
+	if !confirmRisky(i18n.Tr("  install it now? [y/N] ", "  现在安装？[y/N] ")) {
 		i18n.Say("  skipped.", "  已跳过。")
 		return 0
 	}
@@ -383,11 +383,11 @@ func (s *fixState) stepCloudflared() int {
 	c := exec.Command("brew", "install", "cloudflared")
 	c.Stdout, c.Stderr = os.Stdout, os.Stderr
 	if err := c.Run(); err != nil {
-		i18n.Sae("  ✗ brew install failed: "+err.Error(), "  ✗ brew 安装失败: "+err.Error())
+		i18n.Sae("  ✗ brew install failed: "+err.Error(), "  ✗ brew 安装失败："+err.Error())
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ installed cloudflared — run `gtmux tunnel` to go live", "  ✓ 已安装 cloudflared —— 跑 `gtmux tunnel` 即可上线")
+	i18n.Say("  ✓ installed cloudflared — run `gtmux tunnel` to go live", "  ✓ 已安装 cloudflared，跑 `gtmux tunnel` 即可上线")
 	return 1
 }
 
@@ -396,9 +396,9 @@ func stepAppGuidance() {
 	if _, err := os.Stat(gtmuxAppPath()); err == nil {
 		return
 	}
-	fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("menu-bar app  (manual)", "菜单栏 app(手动)"), i18n.Reset)
+	fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("menu-bar app  (manual)", "菜单栏 app（手动）"), i18n.Reset)
 	i18n.Say("  Needed for desktop notifications — install via the curl installer, or `make app`.",
-		"  桌面通知需要它 —— 用 curl 安装脚本,或 `make app`。")
+		"  桌面通知需要它，用 curl 安装脚本，或 `make app`。")
 }
 
 // --- config-path + managed-block helpers (pure; unit-tested) ---

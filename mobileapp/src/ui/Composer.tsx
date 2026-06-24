@@ -130,7 +130,7 @@ export function Composer({
   const attach = () => {
     const labels =
       lang === 'zh'
-        ? ['照片图库', '拍照', '文件', '取消']
+        ? ['相册', '拍照', '文件', '取消']
         : ['Photo Library', 'Take Photo', 'File', 'Cancel'];
     ActionSheetIOS.showActionSheetWithOptions(
       {options: labels, cancelButtonIndex: 3},

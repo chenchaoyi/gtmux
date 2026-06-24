@@ -36,7 +36,7 @@ func runWatch(quitOnJump bool) int {
 	p := gatherAgents()
 	m := watchModel{panes: p, prev: statusMap(p), finished: map[string]bool{}, quitOnJump: quitOnJump}
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
-		i18n.Sae("watch failed: "+err.Error(), "watch 失败: "+err.Error())
+		i18n.Sae("watch failed: "+err.Error(), "watch 失败："+err.Error())
 		return 1
 	}
 	return 0
@@ -114,7 +114,7 @@ func (m *watchModel) refresh() {
 
 func (m watchModel) View() string {
 	var b strings.Builder
-	b.WriteString(stBoldW.Render("gtmux "+i18n.Tr("agents (live)", "agent(实时)")) +
+	b.WriteString(stBoldW.Render("gtmux "+i18n.Tr("agents (live)", "agent（实时）")) +
 		" — " + agentsSummary(m.panes) + "\n\n")
 
 	if len(m.panes) == 0 {

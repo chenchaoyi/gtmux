@@ -164,7 +164,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 
 func serveUsageErr() int {
 	i18n.Sae("usage: gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]",
-		"用法: gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]")
+		"用法：gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]")
 	return 2
 }
 
@@ -398,13 +398,13 @@ func appIcns(app string) string {
 // printServeBanner tells the user where to point the phone and the token to use.
 func printServeBanner(bind string, port int, token string) {
 	i18n.Say("gtmux serve — read-only remote radar (keep this behind a VPN/tunnel)",
-		"gtmux serve — 只读远程雷达(请放在 VPN/隧道之后)")
+		"gtmux serve — 只读远程雷达（请放在 VPN/隧道之后）")
 	fmt.Printf("  token: %s\n", token)
 	for _, host := range reachableHosts(bind) {
 		fmt.Printf("  http://%s/api/agents\n", net.JoinHostPort(host, strconv.Itoa(port)))
 	}
 	i18n.Say("  test: curl -H \"Authorization: Bearer <token>\" <url>",
-		"  自测: curl -H \"Authorization: Bearer <token>\" <url>")
+		"  自测：curl -H \"Authorization: Bearer <token>\" <url>")
 }
 
 // reachableHosts lists candidate hosts to advertise. A specific --bind is

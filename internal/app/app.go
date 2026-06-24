@@ -35,7 +35,7 @@ func Run(argv []string) int {
 		case a == "--lang=en":
 			i18n.SetLang("en")
 		case strings.HasPrefix(a, "--lang="):
-			i18n.Sae("gtmux: unknown --lang value (use en|zh)", "gtmux: 无效的 --lang(可用 en|zh)")
+			i18n.Sae("gtmux: unknown --lang value (use en|zh)", "gtmux: 无效的 --lang（可用 en|zh）")
 			return 2
 		default:
 			args = append(args, a)
@@ -86,7 +86,7 @@ func Run(argv []string) int {
 		return cmdUninstallApp(args)
 	default:
 		i18n.Sae("gtmux: unknown command '"+sub+"' (try: overview | agents | restore | focus | --help)",
-			"gtmux: 未知命令 '"+sub+"'(可用:overview | agents | restore | focus | --help)")
+			"gtmux: 未知命令 '"+sub+"'（可用：overview | agents | restore | focus | --help）")
 		return 2
 	}
 }

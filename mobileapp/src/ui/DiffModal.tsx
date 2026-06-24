@@ -59,7 +59,7 @@ export function DiffModal({
           <ActivityIndicator color={pal.fg3} style={styles.center} />
         ) : empty ? (
           <Text style={[styles.empty, {color: pal.fg3}]}>
-            {lang === 'zh' ? '没有改动(或该目录不是 git 仓库)。' : 'No changes (or the directory isn’t a git repo).'}
+            {lang === 'zh' ? '没有改动（或这个目录不是 git 仓库）。' : 'No changes (or the directory isn’t a git repo).'}
           </Text>
         ) : (
           <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>

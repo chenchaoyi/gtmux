@@ -496,7 +496,7 @@ func cmdAgents(args []string) int {
 	}
 	fmt.Printf("\n%s%s%s\n", i18n.Dim,
 		i18n.Tr("jump: gtmux focus <pane>   (e.g. gtmux focus "+panes[0].paneID+")",
-			"跳转: gtmux focus <pane>   (例如 gtmux focus "+panes[0].paneID+")"), i18n.Reset)
+			"跳转：gtmux focus <pane>   （例如 gtmux focus "+panes[0].paneID+"）"), i18n.Reset)
 	return 0
 }
 
@@ -527,7 +527,7 @@ func agentsJSONBytes() ([]byte, error) {
 func agentsJSON() int {
 	b, err := agentsJSONBytes()
 	if err != nil {
-		i18n.Sae("json error: "+err.Error(), "json 错误: "+err.Error())
+		i18n.Sae("json error: "+err.Error(), "json 错误："+err.Error())
 		return 1
 	}
 	fmt.Println(string(b))
