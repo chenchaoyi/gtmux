@@ -25,7 +25,7 @@ function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
 
 export function RadarScreen({navigation}: any) {
   const {agents, conn, banner, dismissBanner, refresh} = useAgents();
-  const {t, pal, lang} = useApp();
+  const {t, pal, lang, mac} = useApp();
   const [waitingOnly, setWaitingOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // Collapsed sections persist across launches (MOBILE §3).
@@ -60,7 +60,16 @@ export function RadarScreen({navigation}: any) {
   const Header = (
     <View style={styles.header}>
       <View style={styles.headerTop}>
-        <Text style={[styles.brand, {color: pal.fg}]}>gtmux</Text>
+        {/* server chip: the connected Mac's name + a switch glyph → Servers page */}
+        <TouchableOpacity
+          style={styles.serverChip}
+          onPress={() => navigation.navigate('Servers')}
+          hitSlop={hit}>
+          <Text style={[styles.brand, {color: pal.fg}]} numberOfLines={1}>
+            {mac?.name || 'gtmux'}
+          </Text>
+          <Text style={[styles.switchGlyph, {color: pal.fg3}]}>⇄</Text>
+        </TouchableOpacity>
         <View style={styles.headerRight}>
           <ConnDot conn={conn} t={t} pal={pal} />
           <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={hit}>
@@ -151,7 +160,9 @@ const styles = StyleSheet.create({
   safe: {flex: 1},
   header: {paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   headerTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
-  brand: {fontSize: 22, fontWeight: '800'},
+  serverChip: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8},
+  brand: {fontSize: 22, fontWeight: '800', flexShrink: 1},
+  switchGlyph: {fontSize: 15, marginLeft: 7, marginTop: 2},
   headerRight: {flexDirection: 'row', alignItems: 'center'},
   gear: {fontSize: 20, marginLeft: 14},
   conn: {flexDirection: 'row', alignItems: 'center'},

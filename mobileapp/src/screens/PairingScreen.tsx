@@ -21,7 +21,9 @@ import {normalizeHost, parsePairingQR} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
 import {ScanScreen} from './ScanScreen';
 
-export function PairingScreen() {
+// onCancel, when provided, renders a Cancel control — set when PairingScreen is
+// presented as the "Add a Mac" sheet from ServersScreen (vs. the bare first run).
+export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
   const {t, pal, pair, lang} = useApp();
   const [host, setHost] = useState('');
   const [token, setToken] = useState('');
@@ -73,6 +75,11 @@ export function PairingScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
+        {onCancel && (
+          <TouchableOpacity onPress={onCancel} hitSlop={hitC} style={styles.cancel}>
+            <Text style={[styles.cancelText, {color: pal.fg2}]}>‹ {t('cancel')}</Text>
+          </TouchableOpacity>
+        )}
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <BrandMark size={48} neutral={pal.fg3} />
           <Text style={[styles.brand, {color: pal.fg}]}>gtmux</Text>
@@ -139,10 +146,14 @@ export function PairingScreen() {
   );
 }
 
+const hitC = {top: 10, bottom: 10, left: 10, right: 10};
+
 const styles = StyleSheet.create({
   safe: {flex: 1},
   flex: {flex: 1},
-  container: {padding: 24, paddingTop: 48},
+  cancel: {paddingHorizontal: 16, paddingTop: 12, paddingBottom: 2},
+  cancelText: {fontSize: 16, fontWeight: '500'},
+  container: {padding: 24, paddingTop: 18},
   brand: {fontSize: 15, fontWeight: '700', opacity: 0.6, marginTop: 14, marginBottom: 4},
   title: {fontSize: 28, fontWeight: '700', marginBottom: 10},
   subtitle: {fontSize: 13.5, lineHeight: 19, marginBottom: 26},
