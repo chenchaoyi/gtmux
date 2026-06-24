@@ -28,6 +28,7 @@ import {Composer} from '../ui/Composer';
 import {FloatingKeys} from '../ui/FloatingKeys';
 import {DiffModal} from '../ui/DiffModal';
 import {StatusColor} from '../ui/theme';
+import {TestIds} from '../constants/testIds';
 
 const FONT_SIZES = [9, 11, 13];
 
@@ -109,6 +110,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
   return (
     <KeyboardAvoidingView
+      testID={TestIds.detail.screen}
       style={[styles.safe, {backgroundColor: pal.bg}]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar hidden={fullscreen} />
@@ -119,7 +121,12 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {!fullscreen && (
         <View style={[styles.header, {borderBottomColor: pal.divider}]}>
           {onBack && (
-            <TouchableOpacity onPress={onBack} hitSlop={hit} style={styles.back}>
+            <TouchableOpacity
+              testID={TestIds.detail.back}
+              accessibilityLabel={TestIds.detail.back}
+              onPress={onBack}
+              hitSlop={hit}
+              style={styles.back}>
               <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
             </TouchableOpacity>
           )}
@@ -155,7 +162,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       )}
 
       {/* pane screen (colored) */}
-      <View style={styles.termWrap}>
+      <View style={styles.termWrap} testID={TestIds.detail.pane}>
         <ScrollView
           ref={scrollRef}
           style={styles.term}

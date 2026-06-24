@@ -11,8 +11,10 @@
 		0C80B921A6F3F58F76C31292 /* libPods-GtmuxMobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-GtmuxMobile.a */; };
 		11CF7E4DEBC3064007292C65 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1E8B7D833636D41EE5F3645B /* DebugSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = 41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */; };
 		31E3E4F233B77A8152F6210D /* LiveActivityModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */; };
 		3545525E293EB9EBC669898D /* GtmuxActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */; };
+		43F2CAF95925B646D7809AB3 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		9CB616CCA2E1A0787F5AB6E3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
@@ -47,6 +49,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DebugSettings.swift; path = GtmuxMobile/DebugSettings.swift; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* GtmuxMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GtmuxMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = GtmuxMobile/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = GtmuxMobile/Info.plist; sourceTree = "<group>"; };
@@ -54,6 +57,7 @@
 		20D906467D450616BB69C208 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2608DA1E53D84193347DD36A /* LiveActivityModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = LiveActivityModule.m; path = GtmuxMobile/LiveActivityModule.m; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-GtmuxMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.debug.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.debug.xcconfig"; sourceTree = "<group>"; };
+		41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DebugSettings.m; path = GtmuxMobile/DebugSettings.m; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-GtmuxMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.release.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-GtmuxMobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-GtmuxMobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6450CBE20B8C88B43F242B3C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
@@ -97,6 +101,8 @@
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
 				AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */,
 				2608DA1E53D84193347DD36A /* LiveActivityModule.m */,
+				12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */,
+				41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */,
 			);
 			name = GtmuxMobile;
 			sourceTree = "<group>";
@@ -351,6 +357,8 @@
 				079DDB2F5521E6812FA0D02F /* GtmuxActivityAttributes.swift in Sources */,
 				31E3E4F233B77A8152F6210D /* LiveActivityModule.swift in Sources */,
 				A871636895EC61F9183130BE /* LiveActivityModule.m in Sources */,
+				43F2CAF95925B646D7809AB3 /* DebugSettings.swift in Sources */,
+				1E8B7D833636D41EE5F3645B /* DebugSettings.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

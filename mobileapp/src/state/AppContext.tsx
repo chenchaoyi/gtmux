@@ -10,6 +10,7 @@ import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
 import {loadServers, saveServers, upsertServer} from '../pairing/store';
 import {Palette, paletteFor} from '../ui/theme';
+import {Debug} from '../debug';
 
 interface AppContextValue {
   ready: boolean;
@@ -48,8 +49,19 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         AsyncStorage.getItem(LANG_KEY),
         AsyncStorage.getItem(PUSH_KEY),
       ]);
-      setServers(store.servers);
-      setActiveUrl(store.activeUrl);
+      if (Debug.logNet) Debug.reset();
+      // Debug auto-pair (UI tests): launch-arg gated, never set in a real launch.
+      // In-memory only (not persisted) so a later launch without the env still
+      // opens the connection page — keeps tests isolated.
+      if (Debug.pairUrl && Debug.pairToken && store.servers.length === 0) {
+        const s = {url: Debug.pairUrl, token: Debug.pairToken, name: 'debug'};
+        Debug.record({event: 'auto-pair', url: s.url});
+        setServers([s]);
+        setActiveUrl(s.url);
+      } else {
+        setServers(store.servers);
+        setActiveUrl(store.activeUrl);
+      }
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);
       if (pe === 'false') setPushEnabledState(false);
       setReady(true);
