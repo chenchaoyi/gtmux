@@ -148,7 +148,7 @@ func TestHubTally(t *testing.T) {
 	h.onTally = func(tl Tally) { tallies = append(tallies, tl) }
 
 	h.tick() // first observation publishes the initial tally
-	if len(tallies) != 1 || tallies[0] != (Tally{Waiting: 1, Working: 1, WaitingTitle: "approve?"}) {
+	if len(tallies) != 1 || tallies[0] != (Tally{Waiting: 1, Working: 1, WaitingTitle: "approve?", WaitingSession: "proj"}) {
 		t.Fatalf("initial tally = %+v", tallies)
 	}
 

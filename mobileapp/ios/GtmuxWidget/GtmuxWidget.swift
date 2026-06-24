@@ -59,23 +59,17 @@ struct StatusBadge: View {
   }
 }
 
-// BrandMark — the gtmux app-icon motif (2×2 pane grid, top-right cell cyan).
-// Replaces the plain "gtmux" wordmark in the banner's trailing corner.
+// BrandMark — the actual gtmux app icon (from the widget's asset catalog),
+// rounded like a home-screen icon. Replaces the old "gtmux" wordmark / hand-drawn
+// motif in the banner's trailing corner so the activity reads as unmistakably ours.
 struct BrandMark: View {
   var size: CGFloat = 22
   var body: some View {
-    let cell = size * 0.40
-    let gap = size * 0.12
-    let r = cell * 0.26
-    let neutral = Color.white.opacity(0.42)
-    VStack(spacing: gap) {
-      HStack(spacing: gap) {
-        RoundedRectangle(cornerRadius: r).fill(neutral).frame(width: cell, height: cell)
-        RoundedRectangle(cornerRadius: r).fill(statusColor(.working)).frame(width: cell, height: cell)
-      }
-      RoundedRectangle(cornerRadius: r).fill(neutral).frame(width: cell * 2 + gap, height: cell)
-    }
-    .frame(width: size, height: size)
+    Image("BrandIcon")
+      .resizable()
+      .interpolation(.high)
+      .frame(width: size, height: size)
+      .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
   }
 }
 
@@ -99,15 +93,23 @@ private struct MiniTally: View {
   }
 }
 
-// headline / subtitle derive a glanceable summary: lead with WHO needs you.
+// headline / subtitle derive a glanceable summary: lead with WHERE needs you (the
+// session), then the prompt. waiting wins, then working, then idle.
 private func headline(_ st: GtmuxActivityAttributes.ContentState) -> String {
-  if st.waiting > 0 { return st.waitingTitle.isEmpty ? "Needs you" : st.waitingTitle }
+  if st.waiting > 0 {
+    if !st.waitingSession.isEmpty { return st.waitingSession }
+    return st.waitingTitle.isEmpty ? "Needs you" : st.waitingTitle
+  }
   if st.working > 0 { return "Working" }
   return "All idle"
 }
 private func subtitle(_ st: GtmuxActivityAttributes.ContentState) -> String {
-  if st.waiting > 1 { return "needs you · +\(st.waiting - 1) more waiting" }
-  if st.waiting == 1 { return "needs your input" }
+  if st.waiting > 0 {
+    // Prefer the actual prompt; append "+N more" when several wait.
+    let detail = st.waitingTitle.isEmpty ? "needs your input" : st.waitingTitle
+    if st.waiting > 1 { return "\(detail) · +\(st.waiting - 1) more" }
+    return detail
+  }
   if st.working > 0 { return "\(st.working) running · \(st.idle) idle" }
   return "nothing needs you"
 }
@@ -128,17 +130,25 @@ struct GtmuxWidgetBundle: WidgetBundle {
 struct GtmuxLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: GtmuxActivityAttributes.self) { context in
-      // Lock-screen / banner: [big badge] headline + tally ........ [brand mark]
-      HStack(spacing: 12) {
-        StatusBadge(status: primaryStatus(context.state), size: 30)
-        VStack(alignment: .leading, spacing: 3) {
-          Text(headline(context.state))
-            .font(.headline).fontWeight(.bold).foregroundColor(.white)
-            .lineLimit(1)
-          MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+      // Lock-screen / banner — detailed yet calm:
+      //   [badge]  session (bold)         [app icon]
+      //            prompt  (dim)
+      //   ───────  N waiting · M working · K idle  ───────
+      VStack(alignment: .leading, spacing: 9) {
+        HStack(alignment: .top, spacing: 12) {
+          StatusBadge(status: primaryStatus(context.state), size: 28)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(headline(context.state))
+              .font(.headline).fontWeight(.bold).foregroundColor(.white)
+              .lineLimit(1)
+            Text(subtitle(context.state))
+              .font(.caption).foregroundColor(.white.opacity(0.62))
+              .lineLimit(1)
+          }
+          Spacer(minLength: 8)
+          BrandMark(size: 26)
         }
-        Spacer(minLength: 8)
-        BrandMark(size: 24)
+        MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
