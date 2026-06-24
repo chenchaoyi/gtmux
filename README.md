@@ -4,7 +4,7 @@
 
 # gtmux
 
-**See which coding agent needs you — across every tmux session — and jump straight to it.**
+**See which coding agent needs you across your tmux sessions — jump to the exact pane, reply, and get a push the moment one's blocked. From your terminal, the menu bar, or your phone.**
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
@@ -12,12 +12,6 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **English** · [中文](README.zh.md)
-
-<img src="docs/assets/screenshot-popover.png" width="288" alt="gtmux menu-bar popover" />
-&nbsp;&nbsp;
-<img src="docs/assets/screenshot-phone.png" width="178" alt="gtmux phone radar" />
-&nbsp;
-<img src="docs/assets/screenshot-detail.png" width="178" alt="gtmux phone — read a pane and reply" />
 
 </div>
 
@@ -38,7 +32,13 @@ including agents other tools started — and never gets in the way.
 
 - **CLI** — `gtmux agents` lists every agent and where to jump; `--watch` is a live dashboard.
 - **Menu-bar app** — an always-visible status dot (red / cyan / green) with a popover and a `⌘⌥G` palette.
-- **Phone app** — the same radar on iOS, with a lock-screen push when an agent needs you, and a tap to reply.
+- **Mobile app** — the same radar on iOS, with a lock-screen push when an agent needs you, and a tap to reply.
+
+<div align="center">
+<img src="docs/assets/surface-cli.png" width="252" alt="CLI — gtmux agents" />
+<img src="docs/assets/surface-menubar.png" width="252" alt="Menu-bar app — popover + status dot" />
+<img src="docs/assets/surface-mobile.png" width="252" alt="Mobile app — the agent radar on iOS" />
+</div>
 
 ## When you'd use it
 
@@ -102,7 +102,7 @@ To watch from your phone, run `gtmux serve` (same network) or `gtmux tunnel`
 ## Docs
 
 - **[CLI & commands](docs/cli.md)** — `agents` / `overview` / `focus` / `restore` / `new`, detection, the notification hook, tmux key bindings, and permissions.
-- **[Phone & remote access](docs/phone.md)** — the iOS app, `gtmux serve`, and reaching your Mac from anywhere with Tailscale or `gtmux tunnel`.
+- **[Mobile & remote access](docs/phone.md)** — the iOS app, `gtmux serve`, and reaching your Mac from anywhere with Tailscale or `gtmux tunnel`.
 - **[Install notes](docs/install.md)** — pinning a version, building from source, and the China / mirror fallback.
 - **Design specs** — `docs/design/` (menu-bar `DESIGN.md`, mobile `MOBILE.md`) and `openspec/` for in-flight changes.
 
@@ -111,7 +111,7 @@ To watch from your phone, run `gtmux serve` (same network) or `gtmux tunnel`
 Tools like claude-squad, uzi, and dmux *spawn* agents and sandbox them in git
 worktrees. gtmux is the opposite: it runs nothing, owns nothing, and is just a
 radar plus a remote over the tmux you already use. One static, cgo-free Go
-binary; the menu-bar and phone apps are pure consumers of the same `gtmux agents
+binary; the menu-bar and mobile apps are pure consumers of the same `gtmux agents
 --json`. The "g" is for Go.
 
 ## License
