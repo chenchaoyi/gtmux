@@ -9,8 +9,37 @@ import (
 // can replay it (instead of tmux's alphabetical `list-sessions` order). The
 // always-on menu-bar app calls this on a slow timer. Silent and best-effort.
 func cmdSaveTabOrder(args []string) int {
-	_ = state.SaveTabOrder(terminal.Active().TabOrder())
+	next := terminal.Active().TabOrder()
+	if shrinksTabOrder(next, state.LoadTabOrder()) {
+		// A degraded snapshot (classically: right after a reboot only a bootstrap
+		// 'main' tab is up) is about to wipe a richer recorded order. Don't — keep
+		// the real order around for `gtmux restore` to replay. This is the tab-order
+		// analogue of sanitizeLast guarding resurrect's `last`.
+		return 0
+	}
+	_ = state.SaveTabOrder(next)
 	return 0
+}
+
+// shrinksTabOrder reports whether `next` is a proper subset of `prev`: strictly
+// fewer entries, every one of them already known. That's a transient/degraded
+// snapshot (post-reboot bootstrap, or an AppleScript read that returned nothing)
+// — not a real reorder — so the caller keeps the existing record instead. A `next`
+// that introduces ANY new session is a genuine change and is allowed through.
+func shrinksTabOrder(next, prev []string) bool {
+	if len(prev) == 0 || len(next) >= len(prev) {
+		return false
+	}
+	have := make(map[string]bool, len(prev))
+	for _, s := range prev {
+		have[s] = true
+	}
+	for _, s := range next {
+		if !have[s] {
+			return false
+		}
+	}
+	return true
 }
 
 // orderByTabOrder reorders `sessions` to follow `order` (the recorded tab order):

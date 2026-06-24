@@ -6,6 +6,7 @@ package ghostty
 import (
 	"os/exec"
 	"strings"
+	"unicode"
 
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -55,7 +56,13 @@ func SessionsFromTitles(s string) []string {
 		if i < 0 {
 			continue
 		}
-		if name := strings.TrimSpace(t[:i]); name != "" && !seen[name] {
+		// Strip any leading decoration the terminal prepends to a background tab's
+		// title — notably Ghostty's bell/activity glyph (🔔) — so "🔔 ccy-workspace"
+		// still maps to the session "ccy-workspace" (else tab-order can't match it).
+		name := strings.TrimSpace(strings.TrimLeftFunc(t[:i], func(r rune) bool {
+			return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+		}))
+		if name != "" && !seen[name] {
 			seen[name] = true
 			out = append(out, name)
 		}
