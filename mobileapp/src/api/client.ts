@@ -55,6 +55,15 @@ export class GtmuxClient {
     return r.ok;
   }
 
+  // diff fetches a unified `git diff` of the pane's cwd ("what the agent changed").
+  // Empty string when the cwd isn't a git repo.
+  async diff(id: string): Promise<string> {
+    const r = await fetch(`${this.base}/api/diff?id=${encodeURIComponent(id)}`, {headers: this.h()});
+    if (!r.ok) throw new Error(`diff: HTTP ${r.status}`);
+    const j = await r.json();
+    return typeof j?.diff === 'string' ? j.diff : '';
+  }
+
   // send types into a pane (a WRITE): a named control key, or literal text (+Enter).
   async send(id: string, payload: SendPayload): Promise<boolean> {
     const r = await fetch(`${this.base}/api/send`, {

@@ -133,6 +133,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Send:   sendToPane,
 		Upload: saveUpload,
 		Icon:   agentIconPNG,
+		Diff:   diffForPane,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil
@@ -244,6 +245,50 @@ var allowedSendKeys = map[string]bool{
 	"Enter": true, "C-c": true, "Escape": true, "Tab": true,
 	"Up": true, "Down": true, "Left": true, "Right": true,
 	"BSpace": true, "C-d": true, "C-z": true, "C-l": true,
+}
+
+// maxDiffBytes caps the diff payload so a huge working tree can't bloat the phone
+// (the rest is the agent's recent edits; a 400 KB head is plenty to review).
+const maxDiffBytes = 400 << 10
+
+// diffForPane returns a unified `git diff` (working tree vs HEAD) plus a list of
+// untracked files for the pane's current working directory — "what did the agent
+// change". Returns "" (no error) when the cwd isn't a git repo. Read-only; git
+// runs with color disabled so the phone renders the raw unified diff.
+func diffForPane(id string) (string, error) {
+	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
+		return "", fmt.Errorf("pane not found")
+	}
+	cwd := tmux.Display(id, "#{pane_current_path}")
+	if cwd == "" {
+		return "", fmt.Errorf("pane not found")
+	}
+	git := func(args ...string) string {
+		c := exec.Command("git", append([]string{"-C", cwd, "-c", "color.ui=never"}, args...)...)
+		out, _ := c.Output()
+		return string(out)
+	}
+	// Not a git repo → empty diff (the app shows a friendly note, not an error).
+	c := exec.Command("git", "-C", cwd, "rev-parse", "--is-inside-work-tree")
+	if c.Run() != nil {
+		return "", nil
+	}
+	var b strings.Builder
+	if branch := strings.TrimSpace(git("rev-parse", "--abbrev-ref", "HEAD")); branch != "" {
+		fmt.Fprintf(&b, "# branch %s\n", branch)
+	}
+	b.WriteString(git("diff", "HEAD"))
+	if u := strings.TrimSpace(git("ls-files", "--others", "--exclude-standard")); u != "" {
+		b.WriteString("\n# untracked:\n")
+		for _, f := range strings.Split(u, "\n") {
+			fmt.Fprintf(&b, "+ %s\n", f)
+		}
+	}
+	out := b.String()
+	if len(out) > maxDiffBytes {
+		out = out[:maxDiffBytes] + "\n… (diff truncated)\n"
+	}
+	return out, nil
 }
 
 // sendToPane types into a pane for POST /api/send (a WRITE). A non-empty key must

@@ -27,6 +27,7 @@ import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
 import {FloatingKeys} from '../ui/FloatingKeys';
+import {DiffModal} from '../ui/DiffModal';
 import {StatusColor} from '../ui/theme';
 
 const FONT_SIZES = [9, 11, 13];
@@ -48,6 +49,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [atBottom, setAtBottom] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [diffOpen, setDiffOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   // Copy the whole current screen (beyond per-line native text selection, which
@@ -144,6 +146,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             <Text style={[styles.ctlText, {color: pal.fg3}]}>live</Text>
           </View>
           <View style={styles.ctlRight}>
+            <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyScreen} />
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
@@ -211,6 +214,16 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       />
 
       {/* Moshi-style draggable nav keypad, floating over the terminal */}
+      {/* "what did the agent change" — git diff of the pane's cwd */}
+      <DiffModal
+        visible={diffOpen}
+        paneId={agent.pane_id}
+        client={client}
+        pal={pal}
+        lang={lang}
+        onClose={() => setDiffOpen(false)}
+      />
+
       <FloatingKeys
         visible={keysOpen}
         pal={pal}

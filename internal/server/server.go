@@ -59,6 +59,11 @@ type Deps struct {
 	// installed app, like the menu-bar app — nothing bundled), or nil. Optional.
 	Icon func(agent string) []byte
 
+	// Diff returns a unified `git diff` (working tree vs HEAD, plus untracked) of
+	// the pane's current working directory — "what did the agent change". Empty
+	// string when the cwd isn't a git repo. Optional: nil → GET /api/diff is 503.
+	Diff func(id string) (diff string, err error)
+
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
 	// GET /api/events still serves heartbeats but emits no agents/alert events.
@@ -111,6 +116,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
+	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
 	mux.Handle("/api/push/test", s.auth(http.HandlerFunc(s.handleTest)))
@@ -280,6 +286,32 @@ func (s *Server) handleIcon(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	_, _ = w.Write(png)
+}
+
+// diffResponse is the JSON shape of GET /api/diff.
+type diffResponse struct {
+	ID   string `json:"id"`
+	Diff string `json:"diff"` // unified diff text; "" when the cwd isn't a git repo
+}
+
+// handleDiff serves a unified `git diff` of the pane's cwd (GET /api/diff?id=%N) —
+// "what did the agent change". Read-only.
+func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Diff == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("diff not available"))
+		return
+	}
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	diff, err := s.deps.Diff(id)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, errBody("diff failed: "+err.Error()))
+		return
+	}
+	writeJSON(w, http.StatusOK, diffResponse{ID: id, Diff: diff})
 }
 
 // handleTest sends a test push to every registered device (POST /api/push/test),
