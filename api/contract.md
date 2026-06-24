@@ -121,6 +121,19 @@ third-party is bundled). The mobile app uses it for agent avatars.
 503 {"error":"icons not available"}  // Icon dep not wired
 ```
 
+### `GET /api/diff?id=<pane>` — what the agent changed (read-only)
+
+Returns a unified `git diff` (working tree vs `HEAD`, plus a list of untracked
+files) of the pane's current working directory — for reviewing an agent's edits
+from the phone. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB.
+
+```
+200 {"id":"%12","diff":"# branch main\ndiff --git a/… …"}
+400 {"error":"missing id"}
+404 {"error":"diff failed: pane not found"}
+503 {"error":"diff not available"}   // Diff dep not wired
+```
+
 ### `GET /api/events` — live updates (Server-Sent Events)
 
 `text/event-stream`. Lets the app react to changes instead of polling. On

@@ -159,3 +159,41 @@ func TestFocusBodyIgnored(t *testing.T) {
 		t.Fatalf("focus = %d (%s), want 200", rr.Code, b)
 	}
 }
+
+func TestDiff(t *testing.T) {
+	// No Diff dep wired → 503.
+	h0 := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{}).Handler()
+	if rr := do(t, h0, http.MethodGet, "/api/diff?id=%251", testToken); rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("no Diff dep = %d, want 503", rr.Code)
+	}
+
+	h := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Diff: func(id string) (string, error) {
+			if id != "%1" {
+				return "", errors.New("pane not found")
+			}
+			return "# branch main\ndiff --git a/x b/x\n+added\n", nil
+		},
+	}).Handler()
+
+	if rr := do(t, h, http.MethodGet, "/api/diff", testToken); rr.Code != http.StatusBadRequest {
+		t.Fatalf("missing id = %d, want 400", rr.Code)
+	}
+	if rr := do(t, h, http.MethodGet, "/api/diff?id=%251", ""); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("no token = %d, want 401", rr.Code)
+	}
+	if rr := do(t, h, http.MethodGet, "/api/diff?id=%2599", testToken); rr.Code != http.StatusNotFound {
+		t.Fatalf("diff error = %d, want 404", rr.Code)
+	}
+	rr := do(t, h, http.MethodGet, "/api/diff?id=%251", testToken)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("ok diff = %d, want 200", rr.Code)
+	}
+	var resp struct{ ID, Diff string }
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp.ID != "%1" || !strings.Contains(resp.Diff, "diff --git") {
+		t.Fatalf("body = %+v", resp)
+	}
+}
