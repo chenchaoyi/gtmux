@@ -63,7 +63,7 @@ async function loadLegacy(): Promise<PairedMac | null> {
     if (!creds) return null;
     const meta = JSON.parse(creds.username);
     if (!meta?.url) return null;
-    return {url: meta.url, name: meta.name || 'Mac', token: creds.password};
+    return {url: meta.url, name: meta.name || 'Server', token: creds.password};
   } catch {
     return null;
   }

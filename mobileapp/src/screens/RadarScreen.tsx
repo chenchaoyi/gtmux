@@ -101,7 +101,7 @@ export function RadarScreen({navigation}: any) {
       <BrandMark size={52} neutral={pal.fg3} />
       <Text style={[styles.emptyText, {color: pal.fg2}]}>{t('noAgents')}</Text>
       <Text style={[styles.emptyHint, {color: pal.fg3}]}>
-        {lang === 'zh' ? '在 Mac 上启动一个 coding agent 就会出现在这里' : 'Start a coding agent on your Mac and it shows up here'}
+        {lang === 'zh' ? '在服务器上启动一个 coding agent 就会出现在这里' : 'Start a coding agent on your server and it shows up here'}
       </Text>
     </View>
   );

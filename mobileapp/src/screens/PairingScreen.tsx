@@ -86,8 +86,8 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
           <Text style={[styles.title, {color: pal.fg}]}>{t('addMac')}</Text>
           <Text style={[styles.subtitle, {color: pal.fg3}]}>
             {lang === 'zh'
-              ? '在 Mac 上跑 gtmux serve（或 gtmux tunnel）拿到地址 + token，扫码或手动填入。'
-              : 'Run gtmux serve (or gtmux tunnel) on your Mac for an address + token — scan it or enter it below.'}
+              ? '在服务器上跑 gtmux serve（或 gtmux tunnel）拿到地址 + token，扫码或手动填入。'
+              : 'Run gtmux serve (or gtmux tunnel) on your server for an address + token — scan it or enter it below.'}
           </Text>
 
           <TouchableOpacity
