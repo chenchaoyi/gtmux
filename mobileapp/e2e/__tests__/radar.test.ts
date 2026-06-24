@@ -1,6 +1,6 @@
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
-import {launchWithEnv, readDebugLog} from '../setup/app';
+import {launchWithFlags, openFirstAgentDetail, readDebugLog} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 
 /**
@@ -25,7 +25,7 @@ const gated = url && token ? describe : describe.skip;
 gated('radar (live, debug-driven)', () => {
   it('auto-pairs, opens a pane, and the network calls are recorded', async () => {
     const driver = getDriver();
-    await launchWithEnv({
+    await launchWithFlags({
       GTMUX_DEBUG_PAIR_URL: url!,
       GTMUX_DEBUG_PAIR_TOKEN: token!,
       GTMUX_DEBUG_NO_PUSH: '1',
@@ -41,23 +41,11 @@ gated('radar (live, debug-driven)', () => {
     }
     await screenshot('radar');
 
-    // 2. Open the first agent row → Detail (the live pane screen).
-    const firstRow = driver.$(`-ios predicate string:name BEGINSWITH '${TestIds.agent.row}-'`);
-    try {
-      await firstRow.waitForDisplayed({timeout: 10_000});
-      await firstRow.click();
-    } catch (err) {
-      return captureOnFailure('no-agent-row', err);
+    // 2. Open the first agent row → Detail (retry-wrapped against SSE re-renders).
+    if (!(await openFirstAgentDetail())) {
+      return captureOnFailure('no-detail', new Error('could not reach Detail after retries'));
     }
-
-    // The back button is the reliable "we're on Detail" signal (a plain <View>
-    // like detail-pane is reported visible=false by XCUITest).
     const back = driver.$(`~${TestIds.detail.back}`);
-    try {
-      await back.waitForDisplayed({timeout: 15_000});
-    } catch (err) {
-      return captureOnFailure('no-detail', err);
-    }
     await screenshot('detail');
 
     // 3. Back to the radar.

@@ -50,18 +50,25 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         AsyncStorage.getItem(PUSH_KEY),
       ]);
       if (Debug.logNet) Debug.reset();
-      // Debug auto-pair (UI tests): launch-arg gated, never set in a real launch.
-      // In-memory only (not persisted) so a later launch without the env still
-      // opens the connection page — keeps tests isolated.
-      if (Debug.pairUrl && Debug.pairToken && store.servers.length === 0) {
-        const s = {url: Debug.pairUrl, token: Debug.pairToken, name: 'debug'};
-        Debug.record({event: 'auto-pair', url: s.url});
-        setServers([s]);
-        setActiveUrl(s.url);
-      } else {
-        setServers(store.servers);
-        setActiveUrl(store.activeUrl);
+      // Debug launch flags (UI tests) — all gated by GTMUX_DEBUG_*, never set in a
+      // real launch. RESET_SERVERS wipes saved servers (clean connection page,
+      // independent of any leftover Keychain). PAIR_* auto-pairs in-memory and
+      // OVERRIDES any persisted state, so a paired test never bleeds into the next.
+      let svs = store.servers;
+      let act = store.activeUrl;
+      if (Debug.resetServers) {
+        svs = [];
+        act = null;
+        void saveServers({servers: [], activeUrl: null});
       }
+      if (Debug.pairUrl && Debug.pairToken) {
+        const s = {url: Debug.pairUrl, token: Debug.pairToken, name: Debug.pairName || 'debug'};
+        Debug.record({event: 'auto-pair', url: s.url});
+        svs = [s];
+        act = s.url;
+      }
+      setServers(svs);
+      setActiveUrl(act);
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);
       if (pe === 'false') setPushEnabledState(false);
       setReady(true);

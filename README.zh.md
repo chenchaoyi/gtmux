@@ -13,9 +13,11 @@
 
 [English](README.md) · **中文**
 
-<img src="docs/assets/screenshot-popover.png" width="300" alt="gtmux 菜单栏弹层" />
+<img src="docs/assets/screenshot-popover.png" width="288" alt="gtmux 菜单栏弹层" />
 &nbsp;&nbsp;
-<img src="docs/assets/screenshot-phone.png" width="194" alt="gtmux 手机 app" />
+<img src="docs/assets/screenshot-phone.png" width="178" alt="gtmux 手机雷达" />
+&nbsp;
+<img src="docs/assets/screenshot-detail.png" width="178" alt="gtmux 手机 —— 看 pane 并回复" />
 
 </div>
 

@@ -31,6 +31,8 @@ export const Debug = {
   enabled: Object.keys(flags).length > 0,
   pairUrl: flag('PAIR_URL'),
   pairToken: flag('PAIR_TOKEN'),
+  pairName: flag('PAIR_NAME'), // display name for the auto-paired server (else "debug")
+  resetServers: flag('RESET_SERVERS') === '1', // clear saved servers on launch (test isolation)
   noPush: flag('NO_PUSH') === '1',
   logNet: flag('LOG_NET') === '1',
 

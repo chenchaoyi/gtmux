@@ -1,29 +1,22 @@
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
+import {launchWithFlags, settle, typeInto} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 
-const BUNDLE = 'com.gtmux.app';
+// Launch clean to the connection page, regardless of any leftover Keychain from
+// a prior run (RESET_SERVERS wipes saved servers; NO_PUSH keeps the auth prompt
+// out of the way). Self-isolating, so re-runs don't need a rebuild.
+const cleanLaunch = () => launchWithFlags({GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_NO_PUSH: '1'});
 
 /**
  * Phase-1 smoke — proves the whole e2e toolchain end-to-end: Appium server
  * (global-setup) → webdriverio session on the booted sim → find by
  * accessibility-id (RN testID) → type → tap → assert → capture.
- *
- * Prerequisite: `npm run e2e:build` installed a FRESH com.gtmux.app on the
- * booted sim (clean Keychain → the app opens on the connection page with the
- * "Add a server" sheet). noReset:true keeps that state between sessions.
  */
 describe('smoke', () => {
   it('launches to the connection page and rejects an unreachable server', async () => {
     const driver = getDriver();
-
-    // Clean process launch (data persists via noReset; only the process resets).
-    try {
-      await driver.terminateApp(BUNDLE);
-    } catch {
-      /* not running — fine */
-    }
-    await driver.activateApp(BUNDLE);
+    await cleanLaunch();
 
     const connect = driver.$(`~${TestIds.pairing.connect}`);
     try {
@@ -34,12 +27,9 @@ describe('smoke', () => {
 
     // Type a host that resolves to nothing, then connect → expect the
     // "can't reach this server" validation error (real UI round-trip).
-    const host = driver.$(`~${TestIds.pairing.host}`);
-    const token = driver.$(`~${TestIds.pairing.token}`);
-    await host.click();
-    await host.setValue('127.0.0.1:1');
-    await token.click();
-    await token.setValue('nope');
+    await settle(1000); // the Add-server modal is still animating in
+    await typeInto(TestIds.pairing.host, '127.0.0.1:1');
+    await typeInto(TestIds.pairing.token, 'nope', {secure: true});
     try {
       await driver.execute('mobile: hideKeyboard', {keys: ['return']});
     } catch {
@@ -62,16 +52,12 @@ describe('smoke', () => {
   const live = process.env.GTMUX_E2E_URL && process.env.GTMUX_E2E_TOKEN ? it : it.skip;
   live('pairs with a live server and reaches the radar', async () => {
     const driver = getDriver();
-    await driver.terminateApp(BUNDLE);
-    await driver.activateApp(BUNDLE);
+    await cleanLaunch();
 
-    const host = driver.$(`~${TestIds.pairing.host}`);
-    await host.waitForDisplayed({timeout: 20_000});
-    await host.click();
-    await host.setValue(process.env.GTMUX_E2E_URL!);
-    const token = driver.$(`~${TestIds.pairing.token}`);
-    await token.click();
-    await token.setValue(process.env.GTMUX_E2E_TOKEN!);
+    await driver.$(`~${TestIds.pairing.connect}`).waitForDisplayed({timeout: 20_000});
+    await settle(1000); // modal animating in
+    await typeInto(TestIds.pairing.host, process.env.GTMUX_E2E_URL!);
+    await typeInto(TestIds.pairing.token, process.env.GTMUX_E2E_TOKEN!, {secure: true});
     try {
       await driver.execute('mobile: hideKeyboard', {keys: ['return']});
     } catch {
