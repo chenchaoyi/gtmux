@@ -103,14 +103,20 @@ func (a *apnsPusher) Push(ctx context.Context, req pushRequest) error {
 // apnsPayload builds the aps dictionary. Pane rides along as a custom key so the
 // app can deep-link the notification tap to the right pane.
 func apnsPayload(req pushRequest) map[string]any {
-	return map[string]any{
-		"aps": map[string]any{
-			"alert": map[string]any{
-				"title": req.Title,
-				"body":  req.Body,
-			},
-			"sound": "default",
+	aps := map[string]any{
+		"alert": map[string]any{
+			"title": req.Title,
+			"body":  req.Body,
 		},
+		"sound": "default",
+	}
+	// `waiting` pushes carry the AGENT_WAITING category so iOS shows the
+	// quick-reply actions (1 Yes / 2 Always / 3 No) the app answers in-background.
+	if req.Kind == "waiting" {
+		aps["category"] = "AGENT_WAITING"
+	}
+	return map[string]any{
+		"aps":  aps,
 		"pane": req.Pane,
 		"kind": req.Kind,
 	}

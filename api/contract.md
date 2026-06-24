@@ -158,6 +158,13 @@ key) → APNs → device. The relay's own contract is in `relay/README.md`. APNs
 delivered by Apple over any network, so push arrives even when the phone is off
 the VPN; only the live view/control needs the tunnel.
 
+**Quick-reply actions.** A `kind:"waiting"` push is tagged with the APNs
+`category:"AGENT_WAITING"`, so iOS shows action buttons (`1 Yes` / `2 Always` /
+`3 No`) on the notification. Tapping one POSTs the answer to `/api/send`
+(`{id:<pane>, text:"1|2|3", enter:true}`) from the background — you unstick a
+waiting agent without opening the app. (Requires the relay built with the
+category + a device build that registers the category.)
+
 ### `POST /api/push/test` — send a test notification
 
 Sends a test push to **every** registered device (so the settings screen can
