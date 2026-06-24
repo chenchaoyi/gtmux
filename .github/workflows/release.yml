@@ -45,6 +45,10 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pushes the regenerated CLI cask to chenchaoyi/homebrew-tap. The
+          # default GITHUB_TOKEN can't write to another repo, so this must be a
+          # PAT (classic, `repo` scope) stored as the HOMEBREW_TAP_TOKEN secret.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           # Bakes the hosted-tunnel gate into release binaries. Empty if the
           # secret is unset → hosted `gtmux tunnel` falls back to --quick.
           GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
@@ -57,6 +61,7 @@ jobs:
           version: '~> v2'
           args: release --snapshot --clean
         env:
+          HOMEBREW_TAP_TOKEN: ""
           GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
           GTMUX_RELAY_TOKEN: ${{ secrets.GTMUX_RELAY_TOKEN }}
 
@@ -112,6 +117,55 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${GITHUB_REF_NAME}" "$ZIP" --clobber
+
+      # GoReleaser publishes the CLI cask (gtmux); the menu-bar app is built
+      # here, outside GoReleaser, so publish its cask (gtmux-app) by hand to the
+      # same tap. Needs the cross-repo PAT (HOMEBREW_TAP_TOKEN).
+      - name: publish Gtmux.app cask to the tap (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euxo pipefail
+          if [ -z "${HOMEBREW_TAP_TOKEN}" ]; then
+            echo "HOMEBREW_TAP_TOKEN not set; skipping app cask publish" >&2
+            exit 0
+          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
+          TAP="$(mktemp -d)"
+          git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/chenchaoyi/homebrew-tap.git" "$TAP"
+          mkdir -p "$TAP/Casks"
+          cat > "$TAP/Casks/gtmux-app.rb" <<CASK
+          # Published by gtmux's release workflow. DO NOT EDIT.
+          cask "gtmux-app" do
+            version "${VERSION}"
+            sha256 "${SHA}"
+
+            url "https://github.com/chenchaoyi/gtmux/releases/download/v#{version}/Gtmux-#{version}-macos.zip"
+            name "Gtmux"
+            desc "Menu-bar companion for the gtmux session overview"
+            homepage "https://github.com/chenchaoyi/gtmux"
+
+            depends_on macos: ">= :ventura"
+
+            app "Gtmux.app"
+
+            zap trash: [
+              "~/Library/Preferences/com.gtmux.menubar.plist",
+            ]
+          end
+          CASK
+          cd "$TAP"
+          git config user.name chenchaoyi
+          git config user.email ccy.chenchaoyi@gmail.com
+          git add Casks/gtmux-app.rb
+          if git diff --cached --quiet; then
+            echo "cask unchanged"
+          else
+            git commit -m "gtmux-app ${VERSION}"
+            git push
+          fi
 
       - name: upload app artifact (dispatch only)
         if: github.event_name == 'workflow_dispatch'

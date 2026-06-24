@@ -69,6 +69,15 @@ that animates a spinner — not just Claude Code.
 
 ## Quickstart
 
+Homebrew (macOS):
+
+```sh
+brew install chenchaoyi/tap/gtmux             # the CLI
+brew install --cask chenchaoyi/tap/gtmux-app  # the menu-bar app (optional)
+```
+
+Or the install script (CLI + menu-bar app in one shot):
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```

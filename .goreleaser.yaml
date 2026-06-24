@@ -66,3 +66,33 @@ changelog:
       - "^docs:"
       - "^test:"
       - "^chore:"
+
+# Homebrew distribution for the CLI. `brews` (formulae) is deprecated in
+# GoReleaser, so the binary ships as a cask; gtmux is macOS-only anyway, so
+# the cask's platform limit is a non-issue. The menu-bar app ships as a
+# separate cask (gtmux-app) published from the release workflow's app job.
+homebrew_casks:
+  - name: gtmux
+    binaries:
+      - gtmux
+    repository:
+      owner: chenchaoyi
+      name: homebrew-tap
+      branch: main
+      # Cross-repo push needs a PAT; the default GITHUB_TOKEN can't write to
+      # another repo. Set HOMEBREW_TAP_TOKEN in this repo's Actions secrets.
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: "https://github.com/chenchaoyi/gtmux"
+    description: "tmux/Ghostty session overview for macOS"
+    commit_author:
+      name: chenchaoyi
+      email: ccy.chenchaoyi@gmail.com
+    # The release binary is unsigned; strip the quarantine bit so the CLI runs
+    # without a Gatekeeper prompt after `brew install`.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/gtmux"]
+          end
