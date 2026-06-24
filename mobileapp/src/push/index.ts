@@ -2,12 +2,29 @@
 // On setup: request permission, register; the native 'register' event yields the
 // hex APNs device token → POST /api/push/register. A tapped notification carries
 // `pane` (a top-level custom key from the relay) → deep-link to that agent.
+//
+// Quick-reply: a `waiting` push arrives with the AGENT_WAITING category, which we
+// register with three actions (1 Yes / 2 Always / 3 No). Tapping one sends that
+// answer straight into the pane via /api/send — in the BACKGROUND, no app open.
 
 import {Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import {GtmuxClient} from '../api/client';
 
 export type Teardown = () => void;
+
+// Notification action id → the text answer typed into the waiting pane (+ Enter).
+// Mirrors the in-app waiting context keys (1·Yes / 2·Always / 3·No).
+const QUICK_REPLY: Record<string, string> = {yes: '1', always: '2', no: '3'};
+
+const WAITING_CATEGORY = {
+  id: 'AGENT_WAITING',
+  actions: [
+    {id: 'yes', title: '1 · Yes', options: {foreground: false}},
+    {id: 'always', title: '2 · Always', options: {foreground: false}},
+    {id: 'no', title: '3 · No', options: {foreground: false, destructive: true}},
+  ],
+};
 
 export async function setupPush(
   client: GtmuxClient,
@@ -25,8 +42,18 @@ export async function setupPush(
   const onNotification = (notification: any) => {
     const data = notification.getData?.() ?? {};
     const pane: string | undefined = data.pane;
-    // Only deep-link when the user tapped the notification (not a foreground
-    // delivery — those are surfaced as the in-app SSE banner instead).
+    const action: string | undefined = notification.getActionIdentifier?.();
+
+    // A quick-reply action button was tapped: answer the waiting pane in the
+    // background (no deep-link, no app foreground).
+    if (pane && action && QUICK_REPLY[action] !== undefined) {
+      client.send(pane, {text: QUICK_REPLY[action], enter: true}).catch(() => {});
+      notification.finish?.(PushNotificationIOS.FetchResult.NoData);
+      return;
+    }
+
+    // Plain tap on the body → deep-link to the agent. Skip a foreground delivery
+    // (those surface as the in-app SSE banner instead).
     if (pane && data.userInteraction) {
       onTapPane(pane);
     }
@@ -36,6 +63,9 @@ export async function setupPush(
   PushNotificationIOS.addEventListener('register', onRegister);
   PushNotificationIOS.addEventListener('notification', onNotification);
   PushNotificationIOS.addEventListener('localNotification', onNotification);
+
+  // Register the quick-reply actions iOS attaches to a `waiting` notification.
+  PushNotificationIOS.setNotificationCategories?.([WAITING_CATEGORY]);
 
   // Triggers the permission prompt + remote-notification registration.
   await PushNotificationIOS.requestPermissions();

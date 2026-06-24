@@ -43,8 +43,15 @@ export default {
     const base = env.APNS_ENV === 'sandbox'
       ? 'https://api.sandbox.push.apple.com'
       : 'https://api.push.apple.com';
+    // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
+    // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
+    const aps: Record<string, unknown> = {
+      alert: {title: intent.title ?? '', body: intent.body ?? ''},
+      sound: 'default',
+    };
+    if (intent.kind === 'waiting') aps.category = 'AGENT_WAITING';
     const payload = JSON.stringify({
-      aps: {alert: {title: intent.title ?? '', body: intent.body ?? ''}, sound: 'default'},
+      aps,
       pane: intent.pane ?? '',
       kind: intent.kind ?? '',
     });
