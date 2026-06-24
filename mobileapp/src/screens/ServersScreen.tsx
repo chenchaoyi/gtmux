@@ -19,6 +19,7 @@ import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
 import {StatusColor} from '../ui/theme';
 import {PairingScreen} from './PairingScreen';
+import {TestIds} from '../constants/testIds';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
   const {t, pal, servers, activeUrl, selectServer, removeServer, disconnect} = useApp();
@@ -40,7 +41,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     ]);
 
   return (
-    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.servers.screen}>
       {/* header: back (only when pushed) + title */}
       <View style={styles.header}>
         {navigation?.canGoBack?.() && (
@@ -98,6 +99,8 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         )}
 
         <TouchableOpacity
+          testID={TestIds.servers.add}
+          accessibilityLabel={TestIds.servers.add}
           style={[styles.add, {borderColor: pal.divider, backgroundColor: pal.surface}]}
           onPress={() => setAdding(true)}>
           <Text style={[styles.addText, {color: pal.fg2}]}>＋  {t('addMac')}</Text>

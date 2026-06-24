@@ -7,7 +7,10 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "jest --config e2e/jest.config.e2e.js --runInBand",
+    "e2e:appium": "appium --port 4723 --log-level info",
+    "e2e:build": "bash scripts/e2e-build-sim.sh"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",
@@ -42,13 +45,18 @@
     "@react-native/metro-config": "0.86.0",
     "@react-native/typescript-config": "0.86.0",
     "@types/jest": "^29.5.13",
+    "@types/node": "^26.0.0",
     "@types/react": "^19.2.0",
     "@types/react-test-renderer": "^19.1.0",
+    "appium": "^3.5.2",
+    "appium-xcuitest-driver": "^11.14.0",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
     "prettier": "2.8.8",
     "react-test-renderer": "19.2.3",
-    "typescript": "^5.8.3"
+    "ts-jest": "^29.4.11",
+    "typescript": "^5.8.3",
+    "webdriverio": "^9.29.0"
   },
   "engines": {
     "node": ">= 22.11.0"
