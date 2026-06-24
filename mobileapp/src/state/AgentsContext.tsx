@@ -44,13 +44,15 @@ export function AgentsProvider({
           setAgents(a);
           setConn('live');
           // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
-          // leading with the name of the agent that needs you.
+          // leading with the session that needs you (bold) + its prompt (detail).
           const waiters = a.filter(x => x.status === 'waiting');
+          const top = waiters[0];
           LiveActivity.sync(
             waiters.length,
             a.filter(x => x.status === 'working').length,
             a.filter(x => x.status === 'idle').length,
-            waiters.length ? primary(waiters[0]) : '',
+            top ? top.task || primary(top) : '',
+            top ? top.session || top.loc : '',
           );
         })
         .catch(() => setConn('offline'));

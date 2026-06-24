@@ -8,8 +8,8 @@ import {NativeEventEmitter, NativeModules, Platform} from 'react-native';
 type Mod = {
   areEnabled(): Promise<boolean>;
   getPushToken(): Promise<string>;
-  start(waiting: number, working: number, idle: number, title: string): Promise<string>;
-  update(waiting: number, working: number, idle: number, title: string): void;
+  start(waiting: number, working: number, idle: number, title: string, session: string): Promise<string>;
+  update(waiting: number, working: number, idle: number, title: string, session: string): void;
   end(): void;
 };
 
@@ -25,8 +25,9 @@ export const LiveActivity = {
 
   // sync drives the activity from the current tally: start it on the first
   // non-empty tally, update while anything runs, end when everything's gone.
-  // waitingTitle is the name of the agent that needs you (shown as the headline).
-  sync(waiting: number, working: number, idle: number, waitingTitle: string) {
+  // waitingSession is the tmux session that needs you (the bold headline) and
+  // waitingTitle is its prompt/task (the detail line).
+  sync(waiting: number, working: number, idle: number, waitingTitle: string, waitingSession: string) {
     if (!ok) return;
     const any = waiting + working + idle > 0;
     if (!any) {
@@ -37,10 +38,10 @@ export const LiveActivity = {
       return;
     }
     if (started) {
-      M!.update(waiting, working, idle, waitingTitle);
+      M!.update(waiting, working, idle, waitingTitle, waitingSession);
     } else {
       started = true;
-      M!.start(waiting, working, idle, waitingTitle).catch(() => {
+      M!.start(waiting, working, idle, waitingTitle, waitingSession).catch(() => {
         started = false;
       });
     }

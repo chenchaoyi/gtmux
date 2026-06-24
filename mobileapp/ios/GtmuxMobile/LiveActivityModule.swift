@@ -29,8 +29,8 @@ class LiveActivityModule: RCTEventEmitter {
     resolve(lastToken ?? "")
   }
 
-  @objc(start:working:idle:title:resolver:rejecter:)
-  func start(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString,
+  @objc(start:working:idle:title:session:resolver:rejecter:)
+  func start(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString,
              resolver resolve: @escaping RCTPromiseResolveBlock,
              rejecter reject: @escaping RCTPromiseRejectBlock) {
     if #available(iOS 16.1, *) {
@@ -41,7 +41,7 @@ class LiveActivityModule: RCTEventEmitter {
       if let existing = Activity<GtmuxActivityAttributes>.activities.first {
         observeToken(existing)
         Task {
-          await existing.update(using: state(waiting, working, idle, title))
+          await existing.update(using: state(waiting, working, idle, title, session))
           resolve(existing.id)
         }
         return
@@ -49,7 +49,7 @@ class LiveActivityModule: RCTEventEmitter {
       do {
         let act = try Activity.request(
           attributes: GtmuxActivityAttributes(),
-          contentState: state(waiting, working, idle, title),
+          contentState: state(waiting, working, idle, title, session),
           pushType: .token)
         observeToken(act)
         resolve(act.id)
@@ -61,10 +61,10 @@ class LiveActivityModule: RCTEventEmitter {
     }
   }
 
-  @objc(update:working:idle:title:)
-  func update(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString) {
+  @objc(update:working:idle:title:session:)
+  func update(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString) {
     if #available(iOS 16.1, *) {
-      let s = state(waiting, working, idle, title)
+      let s = state(waiting, working, idle, title, session)
       Task {
         for act in Activity<GtmuxActivityAttributes>.activities {
           await act.update(using: s)
@@ -95,7 +95,9 @@ class LiveActivityModule: RCTEventEmitter {
   }
 
   @available(iOS 16.1, *)
-  private func state(_ w: NSNumber, _ wk: NSNumber, _ i: NSNumber, _ title: NSString) -> GtmuxActivityAttributes.ContentState {
-    GtmuxActivityAttributes.ContentState(waiting: w.intValue, working: wk.intValue, idle: i.intValue, waitingTitle: title as String)
+  private func state(_ w: NSNumber, _ wk: NSNumber, _ i: NSNumber, _ title: NSString, _ session: NSString) -> GtmuxActivityAttributes.ContentState {
+    GtmuxActivityAttributes.ContentState(
+      waiting: w.intValue, working: wk.intValue, idle: i.intValue,
+      waitingTitle: title as String, waitingSession: session as String)
   }
 }

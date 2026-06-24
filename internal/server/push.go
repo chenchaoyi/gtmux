@@ -145,7 +145,8 @@ func (p *PushManager) PushLiveActivity(t Tally) {
 		return
 	}
 	cs := map[string]any{
-		"waiting": t.Waiting, "working": t.Working, "idle": t.Idle, "waitingTitle": t.WaitingTitle,
+		"waiting": t.Waiting, "working": t.Working, "idle": t.Idle,
+		"waitingTitle": t.WaitingTitle, "waitingSession": t.WaitingSession,
 	}
 	go func() {
 		for _, tok := range toks {

@@ -50,10 +50,11 @@ type Alert struct {
 // name of the agent that needs you (the headline). Pushed to the activity (via the
 // relay) whenever it changes so the lock screen stays current with the app closed.
 type Tally struct {
-	Waiting      int
-	Working      int
-	Idle         int
-	WaitingTitle string
+	Waiting        int
+	Working        int
+	Idle           int
+	WaitingTitle   string // the waiting agent's prompt/task (detail line)
+	WaitingSession string // the waiting agent's session name (bold headline)
 }
 
 // sseEvent is one named Server-Sent Event ready to frame onto the wire.
@@ -90,12 +91,10 @@ type hub struct {
 	started    bool
 }
 
-// waitTitle is the headline for a waiting agent: its task, else its session name
-// (the part of loc before ':'), else the agent name.
-func waitTitle(a AgentStatus) string {
-	if a.Task != "" {
-		return a.Task
-	}
+// waitSession is the session name for a waiting agent — the part of loc before
+// ':' (e.g. "ccy-workspace" from "ccy-workspace:1.0"), else the whole loc, else
+// the agent name. Shown as the Live Activity's bold headline (WHERE to look).
+func waitSession(a AgentStatus) string {
 	if i := indexByte(a.Loc, ':'); i > 0 {
 		return a.Loc[:i]
 	}
@@ -189,8 +188,9 @@ func (h *hub) tick() {
 		switch a.Status {
 		case "waiting":
 			tally.Waiting++
-			if tally.WaitingTitle == "" {
-				tally.WaitingTitle = waitTitle(a)
+			if tally.Waiting == 1 { // the first waiter sets the headline
+				tally.WaitingTitle = a.Task
+				tally.WaitingSession = waitSession(a)
 			}
 		case "working":
 			tally.Working++
