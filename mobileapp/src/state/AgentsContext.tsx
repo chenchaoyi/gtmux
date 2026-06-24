@@ -6,6 +6,7 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState} 
 import {GtmuxClient} from '../api/client';
 import {subscribe} from '../api/events';
 import {Agent, Alert} from '../api/types';
+import {LiveActivity} from '../native/liveActivity';
 
 export type ConnState = 'connecting' | 'live' | 'offline';
 
@@ -42,6 +43,12 @@ export function AgentsProvider({
         .then(a => {
           setAgents(a);
           setConn('live');
+          // keep the iOS Live Activity (lock screen / Dynamic Island) in step.
+          LiveActivity.sync(
+            a.filter(x => x.status === 'waiting').length,
+            a.filter(x => x.status === 'working').length,
+            a.filter(x => x.status === 'idle').length,
+          );
         })
         .catch(() => setConn('offline'));
     },
@@ -65,6 +72,9 @@ export function AgentsProvider({
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
     };
   }, [base, token, refresh]);
+
+  // End the Live Activity when this Mac is unpaired (the provider unmounts).
+  useEffect(() => () => LiveActivity.stop(), []);
 
   const value: AgentsContextValue = {
     client,
