@@ -18,7 +18,6 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import Clipboard from '@react-native-clipboard/clipboard';
 import {Agent, primary, secondary} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
@@ -43,7 +42,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const {pal, lang} = useApp();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
-  const [focusMsg, setFocusMsg] = useState('');
   const [fontIdx, setFontIdx] = useState(1);
   const [wrap, setWrap] = useState(true);
   const [atBottom, setAtBottom] = useState(true);
@@ -51,14 +49,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [keysOpen, setKeysOpen] = useState(false);
   const [diffOpen, setDiffOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-
-  // Copy the whole current screen (beyond per-line native text selection, which
-  // is also enabled on the colored spans below).
-  const copyScreen = () => {
-    Clipboard.setString(text);
-    setFocusMsg(lang === 'zh' ? '已复制屏幕' : 'Screen copied');
-    setTimeout(() => setFocusMsg(''), 2000);
-  };
 
   const smaller = () => setFontIdx(i => Math.max(0, i - 1));
   const bigger = () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1));
@@ -70,7 +60,9 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       try {
         const r = await client.pane(agent.pane_id);
         if (alive) {
-          setText(r.text || '');
+          // Skip the update when the screen is unchanged so a re-render doesn't
+          // clobber an in-progress text selection (React bails on an equal value).
+          setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
           setLoading(false);
         }
       } catch {
@@ -94,18 +86,25 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
   };
 
+  // The whole screen is ONE selectable <Text> (lines joined by '\n'), so a
+  // long-press starts a real drag selection that spans lines — extend the
+  // handles over any region and use iOS's own Copy. (Per-line <Text>s, as before,
+  // could only ever select within a single line, so copy was useless.)
   const term = (
-    <>
+    <Text style={[styles.mono, {fontSize, lineHeight}]} selectable>
       {lines.map((spans, i) => (
-        <Text key={i} style={[styles.mono, {fontSize, lineHeight}]} selectable>
-          {spans.length === 0 ? ' ' : spans.map((s, j) => (
-            <Text key={j} style={{color: s.color, fontWeight: s.bold ? '700' : '400'}}>
-              {s.text}
-            </Text>
-          ))}
+        <Text key={i}>
+          {i > 0 ? '\n' : ''}
+          {spans.length === 0
+            ? ' '
+            : spans.map((s, j) => (
+                <Text key={j} style={{color: s.color, fontWeight: s.bold ? '700' : '400'}}>
+                  {s.text}
+                </Text>
+              ))}
         </Text>
       ))}
-    </>
+    </Text>
   );
 
   return (
@@ -147,7 +146,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           </View>
           <View style={styles.ctlRight}>
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
-            <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyScreen} />
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
             <Ctl pal={pal} label={wrapLabel} onPress={() => setWrap(w => !w)} />
@@ -188,18 +186,10 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             for more room; adjust A−/A+ / wrap before going full-screen) */}
         {fullscreen && (
           <View style={styles.fsBar}>
-            <FsBtn label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyScreen} />
-            <View style={styles.fsSep} />
             <FsBtn label={'⤡ ' + (lang === 'zh' ? '退出' : 'Exit')} onPress={() => setFullscreen(false)} />
           </View>
         )}
       </View>
-
-      {!!focusMsg && (
-        <View style={[styles.footer, {borderTopColor: pal.divider}]}>
-          <Text style={[styles.focusMsg, {color: pal.fg2}]}>{focusMsg}</Text>
-        </View>
-      )}
 
       {/* input — types into the pane via POST /api/send (MOBILE §4) */}
       <Composer
@@ -314,12 +304,4 @@ const styles = StyleSheet.create({
   },
   fsBtn: {paddingHorizontal: 11, paddingVertical: 7},
   fsBtnText: {color: 'rgba(255,255,255,0.88)', fontSize: 13, fontWeight: '600'},
-  fsSep: {width: StyleSheet.hairlineWidth, height: 18, backgroundColor: 'rgba(255,255,255,0.2)'},
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  focusMsg: {fontSize: 12.5, flex: 1},
 });
