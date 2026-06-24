@@ -23,6 +23,7 @@ import {pick} from '@react-native-documents/picker';
 import {StatusName} from '../api/types';
 import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
+import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
 import {MoveKey} from './MoveKey';
@@ -226,6 +227,7 @@ export function Composer({
           )}
         </TouchableOpacity>
         <TextInput
+          testID={TestIds.composer.input}
           value={text}
           onChangeText={setText}
           editable={enabled}
@@ -239,6 +241,8 @@ export function Composer({
           style={[styles.input, {backgroundColor: pal.surface, borderColor: pal.divider, color: pal.fg}]}
         />
         <TouchableOpacity
+          testID={TestIds.composer.send}
+          accessibilityLabel={TestIds.composer.send}
           onPress={sendText}
           disabled={!enabled || !text}
           style={[styles.send, {backgroundColor: text ? '#06B6D4' : pal.surface, borderColor: pal.divider}]}>

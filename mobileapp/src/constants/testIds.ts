@@ -7,6 +7,7 @@ export const TestIds = {
   servers: {
     screen: 'servers-screen',
     add: 'servers-add',
+    disconnect: 'servers-disconnect',
   },
   pairing: {
     screen: 'pairing-screen',
@@ -18,5 +19,21 @@ export const TestIds = {
   },
   radar: {
     screen: 'radar-screen',
+    serverChip: 'radar-server-chip',
+    settings: 'radar-settings',
+    filter: 'radar-filter',
+  },
+  agent: {
+    // one per row; suffixed with the pane id so a test can target a known agent
+    row: 'agent-row', // use `${agent.row}-${paneId}`
+  },
+  detail: {
+    screen: 'detail-screen',
+    back: 'detail-back',
+    pane: 'detail-pane',
+  },
+  composer: {
+    input: 'composer-input',
+    send: 'composer-send',
   },
 } as const;

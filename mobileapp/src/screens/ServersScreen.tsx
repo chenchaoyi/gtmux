@@ -109,7 +109,12 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         {/* Disconnect: only when something is connected — drops the live link and
             lands you back here (the connection page). */}
         {!!activeUrl && (
-          <TouchableOpacity style={styles.disconnect} onPress={disconnect} hitSlop={hit}>
+          <TouchableOpacity
+            testID={TestIds.servers.disconnect}
+            accessibilityLabel={TestIds.servers.disconnect}
+            style={styles.disconnect}
+            onPress={disconnect}
+            hitSlop={hit}>
             <Text style={[styles.disconnectText, {color: StatusColor.waiting}]}>{t('disconnect')}</Text>
           </TouchableOpacity>
         )}

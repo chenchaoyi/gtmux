@@ -63,6 +63,8 @@ export function RadarScreen({navigation}: any) {
       <View style={styles.headerTop}>
         {/* server chip: the connected Mac's name + a switch glyph → Servers page */}
         <TouchableOpacity
+          testID={TestIds.radar.serverChip}
+          accessibilityLabel={TestIds.radar.serverChip}
           style={styles.serverChip}
           onPress={() => navigation.navigate('Servers')}
           hitSlop={hit}>
@@ -73,7 +75,11 @@ export function RadarScreen({navigation}: any) {
         </TouchableOpacity>
         <View style={styles.headerRight}>
           <ConnDot conn={conn} t={t} pal={pal} />
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={hit}>
+          <TouchableOpacity
+            testID={TestIds.radar.settings}
+            accessibilityLabel={TestIds.radar.settings}
+            onPress={() => navigation.navigate('Settings')}
+            hitSlop={hit}>
             <Text style={[styles.gear, {color: pal.fg2}]}>⚙</Text>
           </TouchableOpacity>
         </View>
@@ -83,6 +89,8 @@ export function RadarScreen({navigation}: any) {
           {summary(c, t('agents'))}
         </Text>
         <TouchableOpacity
+          testID={TestIds.radar.filter}
+          accessibilityLabel={TestIds.radar.filter}
           onPress={() => setWaitingOnly(v => !v)}
           style={[
             styles.filter,

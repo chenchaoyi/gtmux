@@ -14,6 +14,7 @@ import {ActivityIndicator, StatusBar, useColorScheme, useWindowDimensions, View}
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {setupPush} from './src/push';
+import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
 import {ServersScreen} from './src/screens/ServersScreen';
@@ -37,7 +38,7 @@ function PushBridge({navRef}: {navRef: any}) {
   const {client, agents} = useAgents();
   const {pushEnabled} = useApp();
   useEffect(() => {
-    if (!pushEnabled) return;
+    if (!pushEnabled || Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
     setupPush(client, pane => {
       const found = agents.find(a => a.pane_id === pane);

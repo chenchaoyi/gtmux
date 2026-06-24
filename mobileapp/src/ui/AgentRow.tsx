@@ -13,6 +13,7 @@ import {agentMark} from './agentMark';
 import {useAgents} from '../state/AgentsContext';
 import {Palette, Size, StatusColor} from './theme';
 import {StatusBadge} from './StatusBadge';
+import {TestIds} from '../constants/testIds';
 
 // AgentAvatar shows the agent's OFFICIAL icon — fetched from the Mac's installed
 // app via /api/icon (like the menu-bar app) — falling back to a neutral mark when
@@ -64,6 +65,8 @@ export function AgentRow({
 
   return (
     <TouchableOpacity
+      testID={`${TestIds.agent.row}-${agent.pane_id}`}
+      accessibilityLabel={`${TestIds.agent.row}-${agent.pane_id}`}
       activeOpacity={0.6}
       onPress={onPress}
       style={[

@@ -36,21 +36,42 @@ grandchild).
 To drive Appium ad-hoc, run the server alone: `npm run e2e:appium`, then connect
 your tool to `http://127.0.0.1:4723`.
 
+## Debug launch-arg layer
+
+For deeper, more convenient tests the app exposes a debug channel gated entirely
+by `GTMUX_DEBUG_*` **launch environment** (native `DebugSettings` module →
+`src/debug`). A normal launch sets none of these, so production is unchanged.
+Appium passes them via `mobile: launchApp` (see `e2e/setup/app.ts`).
+
+| env var | effect |
+| --- | --- |
+| `GTMUX_DEBUG_PAIR_URL` + `GTMUX_DEBUG_PAIR_TOKEN` | auto-pair on launch (in-memory; skip the manual pairing screen) |
+| `GTMUX_DEBUG_NO_PUSH=1` | skip the push-permission prompt (it otherwise blocks UI tests) |
+| `GTMUX_DEBUG_LOG_NET=1` | record every API call (`method · path · status · ms`; token/body never logged) to `Documents/gtmux-debug.jsonl` |
+
+`readDebugLog()` (`e2e/setup/app.ts`) reads that JSONL back via
+`xcrun simctl get_app_container`, so a test can assert on the **network layer**
+the UI drove, not just the pixels.
+
 ## What's covered
 
-`smoke.test.ts`:
-
-- **Always** — launch → the connection page's "Add a server" sheet → type an
+- `smoke.test.ts` — launch → the connection page's "Add a server" sheet → type an
   unreachable host → tap Connect → assert the "can't reach" error. Proves the
-  whole toolchain plus a real type/tap/assert round-trip.
-- **Gated on env** — pair against a live `gtmux serve` and assert the radar
-  renders. Run it locally with a real token (kept out of the committed test):
+  toolchain plus a type/tap/assert round-trip. (A second test pairs against a
+  live serve if `GTMUX_E2E_URL`/`TOKEN` are set.)
+- `radar.test.ts` (gated on env) — launches with the debug layer (auto-pair +
+  no-push + net-log), drives **radar → open a pane → Detail → back**, then
+  asserts the recorded log shows `/api/agents` + `/api/pane` succeeded with no
+  4xx/5xx. A real user scenario exercised end-to-end, UI and network together.
 
-  ```sh
-  GTMUX_E2E_URL=http://127.0.0.1:8765 \
-  GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
-  npm run test:e2e
-  ```
+Run the gated tests with a real token (kept out of the committed tests):
+
+```sh
+GTMUX_E2E_URL=http://127.0.0.1:8765 \
+GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
+GTMUX_E2E_UDID=<booted-udid> \
+npm run test:e2e
+```
 
 ## Conventions
 
