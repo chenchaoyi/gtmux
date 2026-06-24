@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // fakeRelay records every intent it is asked to send.
@@ -62,6 +63,48 @@ func TestPushManagerDispatch(t *testing.T) {
 		}
 		if !strings.Contains(in.Title, "Codex") || in.Body != "build" {
 			t.Fatalf("fallback copy = %q / %q", in.Title, in.Body)
+		}
+	}
+}
+
+func TestPushLiveActivity(t *testing.T) {
+	relay := &fakeRelay{}
+	pm := NewPushManager(relay, nil, nil, nil)
+
+	// No activity registered → no push.
+	pm.PushLiveActivity(Tally{Waiting: 1})
+	if got := len(relay.intents()); got != 0 {
+		t.Fatalf("intents with no activity = %d, want 0", got)
+	}
+
+	pm.RegisterActivity("act-tok-1")
+	pm.RegisterActivity("act-tok-2")
+	pm.RegisterActivity("") // ignored
+
+	pm.PushLiveActivity(Tally{Waiting: 2, Working: 1, Idle: 3, WaitingTitle: "refactor api"})
+
+	// Dispatch is async; poll until both activity tokens are pushed.
+	var got []PushIntent
+	for i := 0; i < 200; i++ {
+		got = relay.intents()
+		if len(got) >= 2 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if len(got) != 2 {
+		t.Fatalf("intents = %d, want 2 (one per activity token)", len(got))
+	}
+	for _, in := range got {
+		if !in.LiveActivity || in.Event != "update" {
+			t.Fatalf("intent not a LA update: %+v", in)
+		}
+		if in.ContentState["waiting"] != 2 || in.ContentState["working"] != 1 ||
+			in.ContentState["idle"] != 3 || in.ContentState["waitingTitle"] != "refactor api" {
+			t.Fatalf("content-state = %+v", in.ContentState)
+		}
+		if in.Token != "act-tok-1" && in.Token != "act-tok-2" {
+			t.Fatalf("unexpected token %q", in.Token)
 		}
 	}
 }

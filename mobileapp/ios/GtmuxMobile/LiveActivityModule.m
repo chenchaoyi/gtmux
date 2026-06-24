@@ -1,8 +1,12 @@
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface RCT_EXTERN_MODULE (LiveActivityModule, NSObject)
+@interface RCT_EXTERN_MODULE (LiveActivityModule, RCTEventEmitter)
 
 RCT_EXTERN_METHOD(areEnabled : (RCTPromiseResolveBlock)resolve
+                  rejecter : (RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(getPushToken : (RCTPromiseResolveBlock)resolve
                   rejecter : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(start : (nonnull NSNumber *)waiting

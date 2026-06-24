@@ -2,15 +2,17 @@ import ActivityKit
 import Foundation
 import React
 
-// RN bridge to start / update / end the gtmux Live Activity from JS. Local
-// (foreground/background-runtime) updates; remote push-to-update can be layered
-// on later by requesting a pushType and forwarding the token to the relay.
+// RN bridge to start / update / end the gtmux Live Activity. Requests a push token
+// so the relay can push-to-update the lock screen even when the app is killed; the
+// token is emitted to JS via `onActivityPushToken` (and cached for a late getter).
 @objc(LiveActivityModule)
-class LiveActivityModule: NSObject {
+class LiveActivityModule: RCTEventEmitter {
 
-  @objc static func requiresMainQueueSetup() -> Bool { false }
+  private var lastToken: String?
 
-  // areEnabled resolves whether the user has Live Activities turned on.
+  override static func requiresMainQueueSetup() -> Bool { false }
+  override func supportedEvents() -> [String]! { ["onActivityPushToken"] }
+
   @objc(areEnabled:rejecter:)
   func areEnabled(_ resolve: @escaping RCTPromiseResolveBlock, rejecter _: @escaping RCTPromiseRejectBlock) {
     if #available(iOS 16.1, *) {
@@ -18,6 +20,13 @@ class LiveActivityModule: NSObject {
     } else {
       resolve(false)
     }
+  }
+
+  // getPushToken returns the most recent activity push token (or "") — a fallback
+  // for a JS listener that attaches after the token was first emitted.
+  @objc(getPushToken:rejecter:)
+  func getPushToken(_ resolve: @escaping RCTPromiseResolveBlock, rejecter _: @escaping RCTPromiseRejectBlock) {
+    resolve(lastToken ?? "")
   }
 
   @objc(start:working:idle:title:resolver:rejecter:)
@@ -29,8 +38,8 @@ class LiveActivityModule: NSObject {
         reject("disabled", "Live Activities are disabled", nil)
         return
       }
-      // Reuse a running activity (just update it) so we never stack duplicates.
       if let existing = Activity<GtmuxActivityAttributes>.activities.first {
+        observeToken(existing)
         Task {
           await existing.update(using: state(waiting, working, idle, title))
           resolve(existing.id)
@@ -41,7 +50,8 @@ class LiveActivityModule: NSObject {
         let act = try Activity.request(
           attributes: GtmuxActivityAttributes(),
           contentState: state(waiting, working, idle, title),
-          pushType: nil)
+          pushType: .token)
+        observeToken(act)
         resolve(act.id)
       } catch {
         reject("start_failed", error.localizedDescription, error)
@@ -69,6 +79,17 @@ class LiveActivityModule: NSObject {
         for act in Activity<GtmuxActivityAttributes>.activities {
           await act.end(dismissalPolicy: .immediate)
         }
+      }
+    }
+  }
+
+  @available(iOS 16.1, *)
+  private func observeToken(_ act: Activity<GtmuxActivityAttributes>) {
+    Task { [weak self] in
+      for await data in act.pushTokenUpdates {
+        let hex = data.map { String(format: "%02x", $0) }.joined()
+        self?.lastToken = hex
+        self?.sendEvent(withName: "onActivityPushToken", body: ["token": hex])
       }
     }
   }

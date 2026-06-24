@@ -138,6 +138,32 @@ func TestHubRenudge(t *testing.T) {
 	}
 }
 
+func TestHubTally(t *testing.T) {
+	cur := []AgentStatus{
+		{PaneID: "%1", Agent: "Claude Code", Loc: "proj:0.0", Task: "approve?", Status: "waiting"},
+		{PaneID: "%2", Agent: "Codex", Loc: "proj:1.0", Status: "working"},
+	}
+	var tallies []Tally
+	h := newHub(func() []AgentStatus { return cur }, time.Hour, nil)
+	h.onTally = func(tl Tally) { tallies = append(tallies, tl) }
+
+	h.tick() // first observation publishes the initial tally
+	if len(tallies) != 1 || tallies[0] != (Tally{Waiting: 1, Working: 1, WaitingTitle: "approve?"}) {
+		t.Fatalf("initial tally = %+v", tallies)
+	}
+
+	h.tick() // unchanged → no new tally push
+	if len(tallies) != 1 {
+		t.Fatalf("tally pushed without a change: %+v", tallies)
+	}
+
+	cur = []AgentStatus{{PaneID: "%2", Agent: "Codex", Loc: "proj:1.0", Status: "idle"}}
+	h.tick() // counts changed → push once
+	if len(tallies) != 2 || tallies[1] != (Tally{Idle: 1}) {
+		t.Fatalf("changed tally = %+v", tallies)
+	}
+}
+
 // TestHubNilStatuses verifies the loop is a safe no-op without a status source.
 func TestHubNilStatuses(t *testing.T) {
 	h := newHub(nil, time.Hour, nil)

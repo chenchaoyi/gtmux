@@ -46,6 +46,16 @@ type Alert struct {
 	Repeat bool   `json:"repeat,omitempty"` // a re-nudge: still waiting, not a fresh transition
 }
 
+// Tally is the lock-screen Live Activity's content: the per-status counts plus the
+// name of the agent that needs you (the headline). Pushed to the activity (via the
+// relay) whenever it changes so the lock screen stays current with the app closed.
+type Tally struct {
+	Waiting      int
+	Working      int
+	Idle         int
+	WaitingTitle string
+}
+
 // sseEvent is one named Server-Sent Event ready to frame onto the wire.
 type sseEvent struct {
 	name string
@@ -61,6 +71,7 @@ type sseEvent struct {
 type hub struct {
 	statuses func() []AgentStatus
 	onAlert  func(Alert)
+	onTally  func(Tally) // fired when the status tally changes (Live Activity push)
 	interval time.Duration
 	renudge  time.Duration    // re-alert a still-waiting pane after this long
 	now      func() time.Time // injectable clock (tests)
@@ -72,7 +83,35 @@ type hub struct {
 	// waitAlertAt[pane] is when we last alerted that pane is waiting; used to time
 	// re-nudges. Touched only inside tick() (serial), so it needs no extra lock.
 	waitAlertAt map[string]time.Time
-	started     bool
+	// lastTally / tallyKnown drive Live Activity push-on-change. Touched only in
+	// tick() (serial).
+	lastTally  Tally
+	tallyKnown bool
+	started    bool
+}
+
+// waitTitle is the headline for a waiting agent: its task, else its session name
+// (the part of loc before ':'), else the agent name.
+func waitTitle(a AgentStatus) string {
+	if a.Task != "" {
+		return a.Task
+	}
+	if i := indexByte(a.Loc, ':'); i > 0 {
+		return a.Loc[:i]
+	}
+	if a.Loc != "" {
+		return a.Loc
+	}
+	return a.Agent
+}
+
+func indexByte(s string, b byte) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			return i
+		}
+	}
+	return -1
 }
 
 func newHub(statuses func() []AgentStatus, interval time.Duration, onAlert func(Alert)) *hub {
@@ -144,8 +183,20 @@ func (h *hub) tick() {
 	h.mu.Unlock()
 
 	changed := prev == nil // first observation always publishes an initial rev
+	tally := Tally{}
 	for _, a := range cur {
 		curMap[a.PaneID] = a
+		switch a.Status {
+		case "waiting":
+			tally.Waiting++
+			if tally.WaitingTitle == "" {
+				tally.WaitingTitle = waitTitle(a)
+			}
+		case "working":
+			tally.Working++
+		case "idle":
+			tally.Idle++
+		}
 		p, existed := prev[a.PaneID]
 		if !existed || p.Status != a.Status || p.Task != a.Task {
 			changed = true
@@ -180,6 +231,14 @@ func (h *hub) tick() {
 			changed = true
 			delete(h.waitAlertAt, id)
 		}
+	}
+
+	// Push the Live Activity tally when it changes (counts or the headline). Fired
+	// outside the lock; the push manager forwards it async to the relay.
+	if h.onTally != nil && (!h.tallyKnown || tally != h.lastTally) {
+		h.lastTally = tally
+		h.tallyKnown = true
+		h.onTally(tally)
 	}
 
 	h.mu.Lock()
