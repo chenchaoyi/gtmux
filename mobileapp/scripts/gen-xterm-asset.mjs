@@ -162,6 +162,10 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
   #term{position:absolute;inset:0;padding:6px;overflow-x:hidden;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x}
   #xwrap{position:relative;height:100%;width:100%}
   .xterm-viewport{overflow-x:hidden !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  /* clip the (absolutely-positioned) WebGL canvas to the logical screen width: on
+     retina iOS it renders wider and, as an absolute descendant, would expand
+     #term's scrollWidth → unbounded horizontal scroll. Verified via Playwright. */
+  .xterm .xterm-screen{overflow:hidden}
 </style></head><body><div id="term"><div id="xwrap"></div></div>
 <script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script><script>${webglJs}</script>
 <script>${bootstrap}</script></body></html>`;
