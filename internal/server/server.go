@@ -78,6 +78,11 @@ type Deps struct {
 	// Push, if set, enables POST /api/push/register and receives every alert for
 	// forwarding to the relay. Optional: when nil, push registration returns 503.
 	Push *PushManager
+
+	// Enroll, if set, lets a phone pair via a short-lived code (POST /api/enroll)
+	// for its own per-device token, which auth then accepts alongside the master
+	// token. Optional: when nil, /api/enroll is 503 and only the master token works.
+	Enroll *EnrollManager
 }
 
 // Config configures the listener and auth token.
@@ -114,6 +119,8 @@ func New(cfg Config, deps Deps) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/health", s.handleHealth) // unauthenticated probe
+	mux.HandleFunc("/api/enroll", s.handleEnroll) // unauthenticated: the short-lived code IS the credential
+	mux.Handle("/api/enroll/mint", s.auth(http.HandlerFunc(s.handleEnrollMint)))
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
@@ -144,7 +151,8 @@ func (s *Server) auth(next http.Handler) http.Handler {
 		if strings.HasPrefix(h, prefix) {
 			tok = strings.TrimPrefix(h, prefix)
 		}
-		if subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) != 1 {
+		master := subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) == 1
+		if !master && !(s.deps.Enroll != nil && s.deps.Enroll.ValidToken(tok)) {
 			writeJSON(w, http.StatusUnauthorized, errBody("unauthorized"))
 			return
 		}

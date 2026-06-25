@@ -159,6 +159,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	relay := server.NewHTTPRelay(relayURL, relayToken)
 	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens, pushCopy)
 
+	// Per-device enrollment: a phone pairs via a short-lived code for its own
+	// token (revocable, and the QR stops being a lasting credential). The master
+	// token keeps working, so existing pairings are unaffected.
+	deps.Enroll = server.NewEnrollManager(loadDevices(), saveDevices)
+
 	return server.New(server.Config{Addr: addr, Token: token}, deps)
 }
 
@@ -189,6 +194,31 @@ func savePushTokens(toks []server.DeviceToken) {
 		return
 	}
 	if b, err := json.Marshal(toks); err == nil {
+		_ = os.WriteFile(path, b, 0o600)
+	}
+}
+
+// devicesPath is where the enrolled-device roster persists (per-device tokens).
+func devicesPath() string {
+	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "devices.json")
+}
+
+func loadDevices() []server.EnrolledDevice {
+	b, err := os.ReadFile(devicesPath())
+	if err != nil {
+		return nil
+	}
+	var out []server.EnrolledDevice
+	_ = json.Unmarshal(b, &out)
+	return out
+}
+
+func saveDevices(d []server.EnrolledDevice) {
+	path := devicesPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return
+	}
+	if b, err := json.Marshal(d); err == nil {
 		_ = os.WriteFile(path, b, 0o600)
 	}
 }
