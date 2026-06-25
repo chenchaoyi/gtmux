@@ -71,6 +71,7 @@ const bootstrap = `
     baseCols = term.cols;                 // the floor: cols that exactly fill the screen
     if (wrapOn) {
       el().style.overflowX = 'hidden';
+      applyScreenWidth();                 // clears the no-wrap min-width
     } else {
       el().style.overflowX = 'auto';
       relayoutCols();
@@ -86,6 +87,19 @@ const bootstrap = `
     lastText.split('\\n').forEach(function (l) { var n = visibleLen(l); if (n > maxLen) maxLen = n; });
     var cols = Math.max(baseCols, Math.min(maxLen || baseCols, 500));
     if (cols !== term.cols) { try { term.resize(cols, term.rows); } catch (e) {} }
+    applyScreenWidth();
+  }
+
+  // applyScreenWidth: the WebGL renderer's canvas is absolutely positioned, so
+  // .xterm-screen no longer grows to the (wide) cols width and there's nothing for
+  // overflow-x to scroll. Force its width to the content so horizontal scroll works.
+  function applyScreenWidth() {
+    var screen = term.element && term.element.querySelector('.xterm-screen');
+    if (!screen) return;
+    if (wrapOn) { screen.style.minWidth = ''; return; }
+    var pad = 12; // #term padding (6px each side)
+    var cellPx = (el().clientWidth - pad) / Math.max(1, baseCols);
+    screen.style.minWidth = Math.ceil(term.cols * cellPx) + 'px';
   }
 
   window.gtmuxWrite = function (text) {

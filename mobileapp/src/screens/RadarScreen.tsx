@@ -11,6 +11,7 @@ import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
 import {SectionList} from '../ui/SectionList';
+import {SettingsIcon} from '../ui/SettingsIcon';
 import {StatusColor, counts} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 
@@ -80,7 +81,7 @@ export function RadarScreen({navigation}: any) {
             accessibilityLabel={TestIds.radar.settings}
             onPress={() => navigation.navigate('Settings')}
             hitSlop={hit}>
-            <Text style={[styles.gear, {color: pal.fg2}]}>⚙</Text>
+            <SettingsIcon size={20} color={pal.fg2} style={styles.gear} />
           </TouchableOpacity>
         </View>
       </View>
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
   brand: {fontSize: 22, fontWeight: '800', flexShrink: 1},
   switchGlyph: {fontSize: 15, marginLeft: 7, marginTop: 2},
   headerRight: {flexDirection: 'row', alignItems: 'center'},
-  gear: {fontSize: 20, marginLeft: 14},
+  gear: {marginLeft: 14},
   conn: {flexDirection: 'row', alignItems: 'center'},
   connDot: {width: 7, height: 7, borderRadius: 3.5, marginRight: 5},
   connText: {fontSize: 11},
