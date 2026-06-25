@@ -11,10 +11,12 @@ func TestClassify(t *testing.T) {
 		source, ev, tool string
 		want             Class
 	}{
-		// Dedicated-approval agents: a tool *starting* is NEVER an approval
-		// (the cmux #4985 fix) — even a side-effecting one.
+		// Claude's PreToolUse escalates ONLY the always-blocking plan/question
+		// tools (#4985 still holds: an ordinary, often auto-approved, tool start
+		// is never an approval).
 		{"claude pre-tool bash = telemetry", "claude", "PreToolUse", "Bash", tele},
-		{"claude pre-tool exitplan = telemetry", "claude", "PreToolUse", "ExitPlanMode", tele},
+		{"claude pre-tool exitplan = plan", "claude", "PreToolUse", "ExitPlanMode", w(KindPlan)},
+		{"claude pre-tool question = question", "claude", "PreToolUse", "AskUserQuestion", w(KindQuestion)},
 		{"claude permission bash = permission", "claude", "PermissionRequest", "Bash", w(KindPermission)},
 		{"claude permission plan = plan", "claude", "PermissionRequest", "ExitPlanMode", w(KindPlan)},
 		{"claude permission question = question", "claude", "PermissionRequest", "AskUserQuestion", w(KindQuestion)},
