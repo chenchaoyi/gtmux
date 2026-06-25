@@ -5,6 +5,7 @@ import "testing"
 func TestClassify(t *testing.T) {
 	w := func(k Kind) Class { return Class{Lifecycle: "Waiting", Kind: k, Actionable: true} }
 	tele := Class{}
+	resume := Class{Lifecycle: "Resumed"}
 
 	cases := []struct {
 		name             string
@@ -22,6 +23,9 @@ func TestClassify(t *testing.T) {
 		{"claude permission question = question", "claude", "PermissionRequest", "AskUserQuestion", w(KindQuestion)},
 		{"claude prompt = turn start", "claude", "UserPromptSubmit", "", Class{Lifecycle: "UserPromptSubmit"}},
 		{"claude stop = turn end", "claude", "Stop", "", Class{Lifecycle: "Stop"}},
+		// PostToolUse (matcher-scoped at install time to plan/question) → the wait
+		// is resolved, so clear it.
+		{"claude post-tool = resume", "claude", "PostToolUse", "ExitPlanMode", resume},
 		{"claude notification = telemetry", "claude", "Notification", "", tele},
 		{"claude unknown event = telemetry", "claude", "Frobnicate", "", tele},
 
@@ -33,6 +37,7 @@ func TestClassify(t *testing.T) {
 		// Hermes: pre_tool_call telemetry, separate approval event.
 		{"hermes pre-tool = telemetry", "hermes-agent", "pre_tool_call", "terminal", tele},
 		{"hermes approval = permission", "hermes-agent", "pre_approval_request", "terminal", w(KindPermission)},
+		{"hermes approval answered = resume", "hermes-agent", "post_approval_response", "terminal", resume},
 
 		// Generic agents (gemini/cursor/copilot/…): the pre-tool event is the
 		// ONLY signal, so side-effecting tools escalate, read-only stay telemetry.
@@ -49,6 +54,7 @@ func TestClassify(t *testing.T) {
 		{"kiro execute_bash = permission", "kiro", "preToolUse", "execute_bash", w(KindPermission)},
 		{"kiro read_file = telemetry", "kiro", "preToolUse", "read_file", tele},
 		{"kiro Bash (canonical) = permission", "kiro", "preToolUse", "Bash", w(KindPermission)},
+		{"kiro post-tool = resume", "kiro", "postToolUse", "fs_write", resume},
 
 		// kiro's lowercase alias must NOT broaden another agent.
 		{"generic lowercase fs_write = telemetry", "gemini", "PreToolUse", "fs_write", tele},

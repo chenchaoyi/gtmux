@@ -42,7 +42,8 @@ const (
 	semToolStart                       // a tool is starting; agent has a dedicated approval event → telemetry
 	semToolStartMaybeApproval          // a tool is starting; no dedicated approval event → escalate side-effecting tools
 	semToolStartDedicatedOnly          // a tool is starting; escalate ONLY dedicated-approval tools (plan/question), drop the rest
-	semToolEnd
+	semToolEnd                         // a tool finished → telemetry
+	semToolEndResume                   // a tool/approval finished, resolving a pending wait → clear waiting
 	semPreCompact
 	semPostCompact
 	semPromptSubmit
@@ -86,6 +87,10 @@ func classify(source, event, tool string) Class {
 		return Class{Lifecycle: "UserPromptSubmit"}
 	case semResponse:
 		return Class{Lifecycle: "Stop"}
+	case semToolEndResume:
+		// A pending plan/question/approval was just resolved (you answered), so the
+		// agent is working again — clear the wait without notifying.
+		return Class{Lifecycle: "Resumed"}
 	default:
 		// toolStart, toolEnd, (pre|post)Compact, subagent*, session*,
 		// statusNotification, unknown → telemetry; no state change, no notify.
@@ -133,7 +138,7 @@ var agentEventSemantics = map[string]map[string]semantic{
 		// gtmux reads plan/question straight off PreToolUse's tool_name, so this
 		// escalates ONLY ExitPlanMode / AskUserQuestion.
 		"PreToolUse":       semToolStartDedicatedOnly,
-		"PostToolUse":      semToolEnd,
+		"PostToolUse":      semToolEndResume, // plan/question resolved → clear waiting
 		"PreCompact":       semPreCompact,
 		"PostCompact":      semPostCompact,
 		"UserPromptSubmit": semPromptSubmit,
@@ -174,7 +179,7 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"pre_tool_call":          semToolStart,
 		"post_tool_call":         semToolEnd,
 		"pre_approval_request":   semApprovalRequest,
-		"post_approval_response": semStatusNotification,
+		"post_approval_response": semToolEndResume, // approval answered → clear waiting
 		"pre_llm_call":           semPromptSubmit,
 		"post_llm_call":          semResponse,
 		"on_session_start":       semSessionStart,
@@ -187,7 +192,7 @@ var agentEventSemantics = map[string]map[string]semantic{
 	// names fall to unknown and every approval is dropped.
 	"kiro": {
 		"preToolUse":       semToolStartMaybeApproval,
-		"postToolUse":      semToolEnd,
+		"postToolUse":      semToolEndResume,
 		"userPromptSubmit": semPromptSubmit,
 		"agentSpawn":       semSessionStart,
 		"stop":             semResponse,

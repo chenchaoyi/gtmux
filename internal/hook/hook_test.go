@@ -27,6 +27,10 @@ func TestDecide(t *testing.T) {
 			decision{setWaiting: true, setLastFinished: true, notify: true}},
 		{"Notification while idle does NOT mark waiting", "Notification", false,
 			decision{setLastFinished: true, notify: true}},
+		{"Resumed clears waiting silently mid-turn", "Resumed", true,
+			decision{clearWaiting: true}},
+		{"Resumed while idle is still just a silent clear", "Resumed", false,
+			decision{clearWaiting: true}},
 		{"unknown event is a no-op", "Frobnicate", true, decision{}},
 		{"empty event is a no-op", "", false, decision{}},
 	}

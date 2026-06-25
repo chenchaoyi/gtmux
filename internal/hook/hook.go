@@ -76,6 +76,9 @@ type decision struct {
 //   - Waiting           → the classifier confirmed an approval/plan/question is
 //     pending (a side-effecting tool, ExitPlanMode, AskUserQuestion, …), so mark
 //     waiting unconditionally and notify; the turn is still in progress.
+//   - Resumed           → that pending wait was just answered (the plan/question
+//     tool finished, the approval was responded to), so clear waiting silently;
+//     the turn is still in progress, so active is untouched and we don't notify.
 func decide(event string, activePresent bool) decision {
 	switch event {
 	case "UserPromptSubmit":
@@ -86,6 +89,11 @@ func decide(event string, activePresent bool) decision {
 		return decision{setWaiting: activePresent, setLastFinished: true, notify: true}
 	case "Waiting":
 		return decision{setWaiting: true, notify: true}
+	case "Resumed":
+		// A pending plan/question/approval was answered → the agent is working
+		// again. Clear the wait silently; the turn is still in progress, so don't
+		// touch active or notify.
+		return decision{clearWaiting: true}
 	default:
 		return decision{}
 	}
