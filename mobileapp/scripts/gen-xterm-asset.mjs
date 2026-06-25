@@ -156,12 +156,13 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>${css}
   html,body{margin:0;padding:0;height:100%;background:#0B0B0F;overflow:hidden}
-  /* #term scrolls HORIZONTALLY, bounded by #xwrap's explicit width. touch-action
-     locks axes: #term takes horizontal pans, the .xterm-viewport takes vertical —
-     so a horizontal swipe never bleeds into a stray vertical scroll, and vice versa. */
-  #term{position:absolute;inset:0;padding:6px;overflow-x:hidden;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  /* #term scrolls HORIZONTALLY, bounded by #xwrap's explicit width; the
+     .xterm-viewport scrolls VERTICALLY. No touch-action lock — iOS already routes a
+     gesture to the nested scroller that can move in that direction, and an explicit
+     pan-x lock made horizontal swipes hard to even start. */
+  #term{position:absolute;inset:0;padding:6px;overflow-x:hidden;overflow-y:hidden;-webkit-overflow-scrolling:touch}
   #xwrap{position:relative;height:100%;width:100%}
-  .xterm-viewport{overflow-x:hidden !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  .xterm-viewport{overflow-x:hidden !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch}
   /* clip the (absolutely-positioned) WebGL canvas to the logical screen width: on
      retina iOS it renders wider and, as an absolute descendant, would expand
      #term's scrollWidth → unbounded horizontal scroll. Verified via Playwright. */
