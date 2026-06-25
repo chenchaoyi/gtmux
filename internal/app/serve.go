@@ -130,11 +130,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			return tmux.CapturePaneColor(id), true
 		},
 		PaneCursor: paneCursor,
-		Focus:  func(id string) error { return focusPaneByID(id) },
-		Send:   sendToPane,
-		Upload: saveUpload,
-		Icon:   agentIconPNG,
-		Diff:   diffForPane,
+		Focus:      func(id string) error { return focusPaneByID(id) },
+		Send:       sendToPane,
+		Upload:     saveUpload,
+		Icon:       agentIconPNG,
+		Diff:       diffForPane,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil
