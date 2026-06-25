@@ -11,6 +11,7 @@ import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
 import {SectionList} from '../ui/SectionList';
+import {SettingsIcon} from '../ui/SettingsIcon';
 import {counts} from '../ui/theme';
 import {DetailView} from './DetailScreen';
 
@@ -55,7 +56,7 @@ export function SplitScreen({navigation}: any) {
           <Text style={[styles.switchGlyph, {color: pal.fg3}]}>⇄</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={hit}>
-          <Text style={[styles.gear, {color: pal.fg2}]}>⚙</Text>
+          <SettingsIcon size={18} color={pal.fg2} />
         </TouchableOpacity>
       </View>
       <Text style={[styles.summary, {color: pal.fg3}]} numberOfLines={1}>
