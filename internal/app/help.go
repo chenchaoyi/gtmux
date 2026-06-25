@@ -45,8 +45,9 @@ Commands:
   update [--check]        self-update to the latest release — CLI + menu-bar app
                           (--check only reports; --cli-only skips the app)
   install-hooks [--yes]   register the Claude hook directly (doctor --fix also
-                          does this); --agent codex prints Codex's notify snippet
-  uninstall-hooks         reverse install-hooks (de-register the hook)
+                          does this); --agent <cursor|gemini|copilot|kiro> wires
+                          another agent; --agent codex prints its notify snippet
+  uninstall-hooks         reverse install-hooks; --agent <key> for another agent
   uninstall-app           remove the menu-bar app (Gtmux.app) + its login item
                           (install it via the curl installer or macapp/build.sh)
   hook                    internal: run BY Claude Code as a hook (reads stdin);
@@ -106,8 +107,9 @@ const usageZH = `用法：
   update [--check]        自我更新到最新版，含 CLI + 菜单栏 app（--check 只检查；
                           --cli-only 只更新 CLI 不动 app）
   install-hooks [--yes]   直接注册 Claude hook（doctor --fix 也会做这件事）；
+                          --agent <cursor|gemini|copilot|kiro> 接入其他 agent；
                           --agent codex 打印 Codex 的 notify 接法
-  uninstall-hooks         撤销 install-hooks（注销 hook）
+  uninstall-hooks         撤销 install-hooks；--agent <key> 注销其他 agent
   uninstall-app           删除菜单栏 app（Gtmux.app）及登录项
                           （安装请用 curl 安装脚本或 macapp/build.sh）
   hook                    内部命令：由 Claude Code 作为 hook 调用（读 stdin）；
