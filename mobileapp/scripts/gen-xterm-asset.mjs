@@ -56,6 +56,14 @@ const bootstrap = `
     relayout();
     window.addEventListener('resize', relayout);
     installScrollControl();
+    // As you scroll vertically (no-wrap), re-fit the horizontal extent to the lines
+    // now in view, so it never lets you scroll past the visible content.
+    var scrollDebounce = null;
+    term.onScroll(function () {
+      if (wrapOn) return;
+      clearTimeout(scrollDebounce);
+      scrollDebounce = setTimeout(function () { relayoutCols(true); }, 120);
+    });
   }
 
   // installScrollControl: per-gesture AXIS LOCK. Nested scrollers (outer #term =
@@ -96,13 +104,19 @@ const bootstrap = `
     t.addEventListener('touchcancel', release, { passive: true });
   }
 
-  // visibleLen: a line's on-screen width, ignoring ANSI escapes (capture-pane -e
-  // embeds SGR + sometimes OSC, which must NOT count toward the no-wrap width).
-  function visibleLen(l) {
-    return l
-      .replace(/\\x1b\\][^\\x07]*\\x07/g, '') // OSC … BEL
-      .replace(/\\x1b\\[[0-9;?]*[A-Za-z]/g, '') // CSI
-      .length;
+  // visibleMaxCols: the widest line currently in the VIEWPORT, in columns (trailing
+  // blanks trimmed). The no-wrap extent tracks this — not the longest line anywhere
+  // in scrollback — so you can never scroll past what's on screen into empty space
+  // (e.g. one very long line far up in history used to make the whole pane scroll
+  // into a black void). Recomputed as you scroll vertically.
+  function visibleMaxCols() {
+    var b = term.buffer.active, max = 0;
+    var start = b.viewportY, end = Math.min(b.length, start + term.rows);
+    for (var i = start; i < end; i++) {
+      var ln = b.getLine(i);
+      if (ln) { var s = ln.translateToString(true); if (s.length > max) max = s.length; }
+    }
+    return max;
   }
 
   // relayout: measure the cell size at fill width, then (no-wrap) widen the wrapper
@@ -128,9 +142,7 @@ const bootstrap = `
   // unchanged, so streaming appends don't thrash fit().
   function relayoutCols(force) {
     if (!term || wrapOn || !xw()) return;
-    var maxLen = 0;
-    lastText.split('\\n').forEach(function (l) { var n = visibleLen(l); if (n > maxLen) maxLen = n; });
-    maxLen = Math.min(maxLen || baseCols, 1000);
+    var maxLen = Math.max(baseCols, Math.min(visibleMaxCols() || baseCols, 1000));
     if (!force && maxLen === lastMaxLen) return;
     lastMaxLen = maxLen;
     var inner = el().clientWidth - 12;     // 12 = #term padding
