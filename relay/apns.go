@@ -77,7 +77,18 @@ func (a *apnsPusher) Push(ctx context.Context, req pushRequest) error {
 	}
 	httpReq.Header.Set("authorization", "bearer "+jwt)
 	httpReq.Header.Set("apns-topic", a.topic)
-	httpReq.Header.Set("apns-push-type", "alert")
+	// A silent (content-available) push must be sent as a background type at low
+	// priority, or APNs throttles/rejects it; alerts stay high-priority.
+	if req.Silent {
+		httpReq.Header.Set("apns-push-type", "background")
+		httpReq.Header.Set("apns-priority", "5")
+	} else {
+		httpReq.Header.Set("apns-push-type", "alert")
+	}
+	// Collapsing merges an agent's banners (re-nudge / cross-device dismiss) into one.
+	if req.CollapseID != "" {
+		httpReq.Header.Set("apns-collapse-id", req.CollapseID)
+	}
 	httpReq.Header.Set("content-type", "application/json")
 
 	resp, err := a.client.Do(httpReq)
@@ -103,17 +114,28 @@ func (a *apnsPusher) Push(ctx context.Context, req pushRequest) error {
 // apnsPayload builds the aps dictionary. Pane rides along as a custom key so the
 // app can deep-link the notification tap to the right pane.
 func apnsPayload(req pushRequest) map[string]any {
-	aps := map[string]any{
-		"alert": map[string]any{
+	aps := map[string]any{}
+	if req.Silent {
+		// Badge/dismiss sync: no alert, no sound — just content-available so the OS
+		// wakes the app, plus the absolute badge. The pane lets the app remove a
+		// resolved agent's delivered banner.
+		aps["content-available"] = 1
+	} else {
+		aps["alert"] = map[string]any{
 			"title": req.Title,
 			"body":  req.Body,
-		},
-		"sound": "default",
+		}
+		aps["sound"] = "default"
+		// `waiting` pushes carry the AGENT_WAITING category so iOS shows the
+		// quick-reply actions (1 Yes / 2 Always / 3 No) the app answers in-background.
+		if req.Kind == "waiting" {
+			aps["category"] = "AGENT_WAITING"
+		}
 	}
-	// `waiting` pushes carry the AGENT_WAITING category so iOS shows the
-	// quick-reply actions (1 Yes / 2 Always / 3 No) the app answers in-background.
-	if req.Kind == "waiting" {
-		aps["category"] = "AGENT_WAITING"
+	// An absolute badge value (the live waiting count) is authoritative on every
+	// device — so a second, offline phone clears its red dot on the next push.
+	if req.Badge != nil {
+		aps["badge"] = *req.Badge
 	}
 	return map[string]any{
 		"aps":  aps,

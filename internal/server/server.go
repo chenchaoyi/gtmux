@@ -104,8 +104,8 @@ func New(cfg Config, deps Deps) *Server {
 		deps: deps,
 		hub:  newHub(deps.AgentStatuses, eventsInterval, onAlert),
 	}
-	if deps.Push != nil { // push the Live Activity tally on every change
-		s.hub.onTally = deps.Push.PushLiveActivity
+	if deps.Push != nil { // on every tally change: Live Activity update + silent badge sync
+		s.hub.onTally = deps.Push.OnTally
 	}
 	return s
 }

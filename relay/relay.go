@@ -26,6 +26,14 @@ type pushRequest struct {
 	Body     string `json:"body"`
 	Pane     string `json:"pane"`
 	Kind     string `json:"kind"`
+	// Silent badge/dismiss sync (6a): a content-available push with no alert, used
+	// to keep the app-icon badge correct across ALL devices and to collapse a
+	// resolved agent's banner. Badge is the absolute waiting count; CollapseID
+	// (apns-collapse-id) merges/replaces an agent's prior banner so re-nudges and
+	// cross-device dismissals don't stack.
+	Silent     bool   `json:"silent,omitempty"`
+	Badge      *int   `json:"badge,omitempty"`
+	CollapseID string `json:"collapseId,omitempty"`
 }
 
 // Pusher delivers one push to a platform gateway.

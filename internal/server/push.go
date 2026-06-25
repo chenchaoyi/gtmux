@@ -48,6 +48,12 @@ type PushIntent struct {
 	LiveActivity bool           `json:"liveActivity,omitempty"`
 	Event        string         `json:"event,omitempty"` // "update" | "end"
 	ContentState map[string]any `json:"contentState,omitempty"`
+	// Silent badge/dismiss sync (6a): a content-available push (no alert) that keeps
+	// the app-icon badge correct on every device and collapses a resolved agent's
+	// banner. Badge is the absolute waiting count; CollapseID is the agent's pane.
+	Silent     bool   `json:"silent,omitempty"`
+	Badge      *int   `json:"badge,omitempty"`
+	CollapseID string `json:"collapseId,omitempty"`
 }
 
 // Relay forwards a push intent onward to the push gateway (APNs/FCM/HMS). The
@@ -176,6 +182,30 @@ func (p *PushManager) dispatch(a Alert) {
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform,
 			Title: title, Body: body, Pane: a.Pane, Kind: a.Kind,
+			// Collapse an agent's banners into one: a re-nudge (#89) replaces the
+			// prior "needs you" instead of stacking a second banner per agent.
+			CollapseID: a.Pane,
+		})
+	}
+}
+
+// OnTally is the hub's tally hook: it pushes the Live Activity update AND a silent
+// badge sync, so the app-icon badge tracks the live waiting count on every device.
+func (p *PushManager) OnTally(t Tally) {
+	p.PushLiveActivity(t)
+	p.pushBadge(t.Waiting)
+}
+
+// pushBadge fans a silent, absolute-badge push out to every registered device so a
+// second (even offline-until-now) phone clears its red dot to the true count.
+func (p *PushManager) pushBadge(waiting int) {
+	if p == nil || p.relay == nil {
+		return
+	}
+	n := waiting
+	for _, d := range p.Tokens() {
+		_ = p.relay.Send(PushIntent{
+			Token: d.Token, Platform: d.Platform, Silent: true, Badge: &n,
 		})
 	}
 }
