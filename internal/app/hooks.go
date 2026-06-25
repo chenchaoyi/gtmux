@@ -22,15 +22,18 @@ type claudeHook struct {
 }
 
 // hookEvents are the Claude Code hooks gtmux registers. Stop/Notification fire
-// notifications; UserPromptSubmit is state-only; PreToolUse is SCOPED via a
-// matcher to the always-blocking plan/question tools, so it fires only when
-// you're actually asked — not on every (auto-approved) tool call. (Contract —
-// do not rename.)
+// notifications; UserPromptSubmit is state-only; PreToolUse/PostToolUse are
+// SCOPED via a matcher to the always-blocking plan/question tools, so they fire
+// only when you're actually asked — not on every (auto-approved) tool call.
+// PreToolUse raises the wait; PostToolUse clears it once you've answered, so a
+// long-running approved plan doesn't keep showing "waiting" until Stop.
+// (Contract — do not rename.)
 var hookEvents = []claudeHook{
 	{event: "Stop"},
 	{event: "Notification"},
 	{event: "UserPromptSubmit"},
 	{event: "PreToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
+	{event: "PostToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
 }
 
 const lsregister = "/System/Library/Frameworks/CoreServices.framework/" +
