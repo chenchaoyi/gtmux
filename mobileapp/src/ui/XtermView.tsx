@@ -19,12 +19,13 @@ const WV = WebView as unknown as React.ComponentType<WebViewProps & {ref?: React
 interface Props {
   text: string; // the colored capture-pane snapshot
   fontSize?: number;
+  wrap?: boolean; // wrap long lines (vs. fixed-width + horizontal scroll)
 }
 
 // jsString safely embeds a value as a JS literal in injected code.
 const jsString = (v: unknown) => JSON.stringify(v);
 
-export function XtermView({text, fontSize = 12}: Props) {
+export function XtermView({text, fontSize = 12, wrap = true}: Props) {
   const ref = useRef<WebView>(null);
   const ready = useRef(false);
 
@@ -39,10 +40,10 @@ export function XtermView({text, fontSize = 12}: Props) {
   useEffect(() => {
     if (ready.current) {
       ref.current?.injectJavaScript(
-        `window.gtmuxConfig && window.gtmuxConfig({fontSize: ${fontSize}}); true;`,
+        `window.gtmuxConfig && window.gtmuxConfig({fontSize: ${fontSize}, wrap: ${wrap}}); true;`,
       );
     }
-  }, [fontSize]);
+  }, [fontSize, wrap]);
 
   return (
     <View style={styles.fill}>
@@ -58,7 +59,7 @@ export function XtermView({text, fontSize = 12}: Props) {
         onLoadEnd={() => {
           ready.current = true;
           ref.current?.injectJavaScript(
-            `window.gtmuxConfig && window.gtmuxConfig({fontSize: ${fontSize}});` +
+            `window.gtmuxConfig && window.gtmuxConfig({fontSize: ${fontSize}, wrap: ${wrap}});` +
               `window.gtmuxWrite && window.gtmuxWrite(${jsString(text)}); true;`,
           );
         }}
