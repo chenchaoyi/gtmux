@@ -16,26 +16,37 @@ import {XTERM_HTML} from './xtermAsset';
 // instance (so injectJavaScript is typed).
 const WV = WebView as unknown as React.ComponentType<WebViewProps & {ref?: React.Ref<WebView>}>;
 
+interface PaneCursor {
+  x: number;
+  up: number;
+  visible: boolean;
+}
+
 interface Props {
   text: string; // the colored capture-pane snapshot
   fontSize?: number;
   wrap?: boolean; // wrap long lines (vs. fixed-width + horizontal scroll)
+  cursor?: PaneCursor; // the pane's text cursor (capture-pane can't carry it)
 }
 
 // jsString safely embeds a value as a JS literal in injected code.
 const jsString = (v: unknown) => JSON.stringify(v);
 
-export function XtermView({text, fontSize = 12, wrap = true}: Props) {
+export function XtermView({text, fontSize = 12, wrap = true, cursor}: Props) {
   const ref = useRef<WebView>(null);
   const ready = useRef(false);
 
-  // Re-render the snapshot whenever it changes (DetailScreen only updates `text`
-  // when the capture actually changed, so this isn't every poll).
+  // Re-render the snapshot whenever it changes, then re-place the cursor (written
+  // after the content so it lands on the real position). DetailScreen only updates
+  // `text` when the capture actually changed, so this isn't every poll.
   useEffect(() => {
     if (ready.current) {
-      ref.current?.injectJavaScript(`window.gtmuxWrite && window.gtmuxWrite(${jsString(text)}); true;`);
+      ref.current?.injectJavaScript(
+        `window.gtmuxWrite && window.gtmuxWrite(${jsString(text)});` +
+          `window.gtmuxCursor && window.gtmuxCursor(${jsString(cursor ?? null)}); true;`,
+      );
     }
-  }, [text]);
+  }, [text, cursor]);
 
   useEffect(() => {
     if (ready.current) {
@@ -60,7 +71,8 @@ export function XtermView({text, fontSize = 12, wrap = true}: Props) {
           ready.current = true;
           ref.current?.injectJavaScript(
             `window.gtmuxConfig && window.gtmuxConfig({fontSize: ${fontSize}, wrap: ${wrap}});` +
-              `window.gtmuxWrite && window.gtmuxWrite(${jsString(text)}); true;`,
+              `window.gtmuxWrite && window.gtmuxWrite(${jsString(text)});` +
+              `window.gtmuxCursor && window.gtmuxCursor(${jsString(cursor ?? null)}); true;`,
           );
         }}
         style={styles.web}
