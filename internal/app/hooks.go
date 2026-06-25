@@ -14,9 +14,24 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// hookEvents are the Claude Code events gtmux registers for. Stop/Notification
-// fire notifications; UserPromptSubmit is state-only. (Contract — do not rename.)
-var hookEvents = []string{"Stop", "Notification", "UserPromptSubmit"}
+// claudeHook is one Claude Code hook gtmux registers: the event + (PreToolUse
+// only) a tool-name matcher regex.
+type claudeHook struct {
+	event   string
+	matcher string
+}
+
+// hookEvents are the Claude Code hooks gtmux registers. Stop/Notification fire
+// notifications; UserPromptSubmit is state-only; PreToolUse is SCOPED via a
+// matcher to the always-blocking plan/question tools, so it fires only when
+// you're actually asked — not on every (auto-approved) tool call. (Contract —
+// do not rename.)
+var hookEvents = []claudeHook{
+	{event: "Stop"},
+	{event: "Notification"},
+	{event: "UserPromptSubmit"},
+	{event: "PreToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
+}
 
 const lsregister = "/System/Library/Frameworks/CoreServices.framework/" +
 	"Frameworks/LaunchServices.framework/Support/lsregister"
@@ -96,8 +111,8 @@ func cmdInstallHooks(args []string) int {
 		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败："+err.Error())
 		return 1
 	}
-	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit)",
-		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit)")
+	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit · plan/question)",
+		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit · 计划/提问)")
 
 	// 3. peon-ping coexistence.
 	handlePeonPing(yes)
@@ -195,11 +210,11 @@ func updateSettings(path, bin string, install bool) error {
 
 	hooks := asObject(m["hooks"])
 	cmd := bin + " hook"
-	for _, ev := range hookEvents {
-		list := removeGtmuxEntries(asArray(hooks[ev]))
+	for _, h := range hookEvents {
+		list := removeGtmuxEntries(asArray(hooks[h.event]))
 		if install {
 			list = append(list, map[string]any{
-				"matcher": "",
+				"matcher": h.matcher,
 				"hooks": []any{map[string]any{
 					"type":    "command",
 					"command": cmd,
@@ -208,9 +223,9 @@ func updateSettings(path, bin string, install bool) error {
 			})
 		}
 		if len(list) == 0 {
-			delete(hooks, ev)
+			delete(hooks, h.event)
 		} else {
-			hooks[ev] = list
+			hooks[h.event] = list
 		}
 	}
 	if len(hooks) == 0 {

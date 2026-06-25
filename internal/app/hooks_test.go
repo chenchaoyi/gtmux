@@ -51,8 +51,8 @@ func TestUpdateSettingsInstallIsIdempotent(t *testing.T) {
 		}
 	}
 	for _, ev := range hookEvents {
-		if g, _ := countHooks(t, path, ev); g != 1 {
-			t.Errorf("event %s: %d gtmux hooks, want exactly 1", ev, g)
+		if g, _ := countHooks(t, path, ev.event); g != 1 {
+			t.Errorf("event %s: %d gtmux hooks, want exactly 1", ev.event, g)
 		}
 	}
 	b, _ := os.ReadFile(path)
@@ -119,5 +119,19 @@ func TestIsGtmuxHookCommand(t *testing.T) {
 		if isGtmuxHookCommand(s) {
 			t.Errorf("isGtmuxHookCommand(%q) = true, want false", s)
 		}
+	}
+}
+
+// TestUpdateSettingsPreToolUseMatcher: the PreToolUse hook is scoped to the
+// plan/question tools so it fires only when you're actually asked, not on every
+// (auto-approved) tool call.
+func TestUpdateSettingsPreToolUseMatcher(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	if err := updateSettings(path, "/opt/gtmux/gtmux", true); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(path)
+	if !strings.Contains(string(b), `"ExitPlanMode|AskUserQuestion"`) {
+		t.Errorf("PreToolUse should be matcher-scoped to plan/question tools; got:\n%s", b)
 	}
 }
