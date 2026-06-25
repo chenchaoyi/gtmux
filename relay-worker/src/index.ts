@@ -24,6 +24,12 @@ interface PushIntent {
   liveActivity?: boolean;
   event?: string; // "update" | "end"
   contentState?: Record<string, unknown>;
+  // Silent badge/dismiss sync (6a): a content-available push with no alert, used to
+  // keep the app-icon badge correct across ALL devices and collapse a resolved
+  // agent's banner. badge = absolute waiting count; collapseId = the agent's pane.
+  silent?: boolean;
+  badge?: number;
+  collapseId?: string;
 }
 
 let jwtCache: {token: string; at: number} | null = null;
@@ -75,26 +81,36 @@ export default {
       return json({error: 'apns', status: lr.status, detail: d}, 502);
     }
 
-    // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
-    // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
-    const aps: Record<string, unknown> = {
-      alert: {title: intent.title ?? '', body: intent.body ?? ''},
-      sound: 'default',
-    };
-    if (intent.kind === 'waiting') aps.category = 'AGENT_WAITING';
+    const aps: Record<string, unknown> = {};
+    if (intent.silent) {
+      // Badge/dismiss sync: no alert/sound — just content-available + the absolute
+      // badge, so a second (offline-until-now) phone clears its red dot.
+      aps['content-available'] = 1;
+    } else {
+      aps.alert = {title: intent.title ?? '', body: intent.body ?? ''};
+      aps.sound = 'default';
+      // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
+      // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
+      if (intent.kind === 'waiting') aps.category = 'AGENT_WAITING';
+    }
+    if (typeof intent.badge === 'number') aps.badge = intent.badge;
     const payload = JSON.stringify({
       aps,
       pane: intent.pane ?? '',
       kind: intent.kind ?? '',
     });
+    const headers: Record<string, string> = {
+      authorization: 'bearer ' + jwt,
+      'apns-topic': env.APNS_TOPIC,
+      // A silent push must be a low-priority background type or APNs throttles it.
+      'apns-push-type': intent.silent ? 'background' : 'alert',
+      'content-type': 'application/json',
+    };
+    if (intent.silent) headers['apns-priority'] = '5';
+    if (intent.collapseId) headers['apns-collapse-id'] = intent.collapseId;
     const r = await fetch(base + '/3/device/' + intent.token, {
       method: 'POST',
-      headers: {
-        authorization: 'bearer ' + jwt,
-        'apns-topic': env.APNS_TOPIC,
-        'apns-push-type': 'alert',
-        'content-type': 'application/json',
-      },
+      headers,
       body: payload,
     });
     if (r.status === 200) return json({ok: true});
