@@ -21,7 +21,8 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled} = useApp();
+  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled} =
+    useApp();
 
   const langs: {key: LangPref; label: string}[] = [
     {key: 'system', label: t('system')},
@@ -82,6 +83,22 @@ export function SettingsScreen({navigation}: any) {
           </View>
           <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
             <Text style={[styles.rowSub, {color: pal.fg3}]}>{t('pushHint')}</Text>
+          </View>
+        </Section>
+
+        <Section title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
+          <View style={styles.rowItem}>
+            <Text style={[styles.rowLabel, {color: pal.fg}]}>
+              {lang === 'zh' ? 'xterm 渲染（实验）' : 'xterm renderer (beta)'}
+            </Text>
+            <Switch value={xtermEnabled} onValueChange={setXtermEnabled} />
+          </View>
+          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
+            <Text style={[styles.rowSub, {color: pal.fg3}]}>
+              {lang === 'zh'
+                ? '用真正的终端内核（xterm.js）渲染窗格，全屏 TUI、真彩、中文宽度更准；关则用经典渲染。'
+                : 'Render the pane with a real terminal core (xterm.js) — better for full-screen TUIs, true color, CJK widths. Off uses the classic renderer.'}
+            </Text>
           </View>
         </Section>
 

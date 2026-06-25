@@ -83,6 +83,13 @@ jest.mock('@react-native-community/push-notification-ios', () => ({
   FetchResult: {NoData: 'noData'},
 }));
 
+// react-native-webview → a stub host component (its native module isn't in jest).
+jest.mock('react-native-webview', () => {
+  const React = require('react');
+  const stub = props => React.createElement('WebView', props, props && props.children);
+  return {__esModule: true, default: stub, WebView: stub};
+});
+
 // react-native-svg → plain host components so SVG-using components render in jest.
 jest.mock('react-native-svg', () => {
   const React = require('react');
