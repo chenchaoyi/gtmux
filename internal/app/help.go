@@ -22,6 +22,11 @@ Commands:
     restore <name>        attach that session by name in THIS tab
     restore --one         attach the next unattached session in THIS tab
     restore --dry-run     print what would happen, change nothing
+    restore --resume-agents=auto|type|off
+                          after restoring, relaunch captured agent conversations
+                          (claude --resume etc.) into their panes. auto runs them;
+                          type pre-fills the command; off skips. Default follows
+                          the autoResumeAgentSessions config (on)
   focus <name|pane-id>    jump to that session's terminal tab; a tmux pane id
                           (%N) lands on that exact window+pane
     focus --last|-l       jump to the most-recently-finished agent pane
@@ -86,6 +91,10 @@ const usageZH = `用法：
     restore <名字>         按名字把当前 tab 接回指定 session
     restore --one         只把当前 tab 接回下一个无人连接的 session
     restore --dry-run     只打印将要做什么，不实际执行
+    restore --resume-agents=auto|type|off
+                          恢复后把捕获到的 agent 会话接回各窗格（claude --resume
+                          等）。auto 直接执行；type 只预填命令；off 跳过。默认跟随
+                          autoResumeAgentSessions 配置（默认开）
   focus <名字|pane-id>    跳到该 session 的终端 tab；给 tmux pane id（%N）
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane

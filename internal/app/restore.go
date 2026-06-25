@@ -94,6 +94,7 @@ func ensureServer() {
 			tmux.OK("kill-session", "-t", boot)
 			i18n.Say("Restored. Layout/dirs/screen text are back; running programs are NOT (e.g. restart claude with 'claude --resume').",
 				"已恢复。布局 / 目录 / 屏幕文本都回来了；正在运行的程序不会自动重启（如 claude 用 'claude --resume' 拉起）。")
+			resumeAgents()
 			return
 		}
 	} else if hadLayout {
@@ -104,6 +105,7 @@ func ensureServer() {
 		if waitForRestoredSessions(boot, 60*time.Second) {
 			tmux.OK("kill-session", "-t", boot)
 			i18n.Say("Restored saved sessions.", "已恢复存档 session。")
+			resumeAgents()
 			return
 		}
 	}
@@ -380,6 +382,7 @@ func recoverMissingSavedSessions() {
 	if waitForSavedSessions(saved, 120*time.Second) {
 		i18n.Say("Restored your saved sessions. (running programs are NOT relaunched — e.g. 'claude --resume')",
 			"已恢复你的存档 session。（正在运行的程序不会自动重启，如 'claude --resume'）")
+		resumeAgents()
 	} else {
 		i18n.Sae("⚠ Restore did not complete in time — your save is intact at "+save,
 			"⚠ 恢复未在限定时间内完成，你的存档完好："+save)
@@ -506,22 +509,28 @@ func cmdRestore(args []string) int {
 		return 1
 	}
 	mode, target, dryRun := "all", "", false
+	restoreResumeFlag = "" // reset per invocation (the flag below overrides config)
 	for _, a := range args {
-		switch a {
-		case "--one":
+		switch {
+		case a == "--one":
 			mode = "one"
-		case "--pick", "-p":
+		case a == "--pick" || a == "-p":
 			mode = "pick"
-		case "--all":
+		case a == "--all":
 			mode = "all"
-		case "--dry-run":
+		case a == "--dry-run":
 			dryRun = true
-		case "-h", "--help":
+		case strings.HasPrefix(a, "--resume-agents="):
+			restoreResumeFlag = strings.TrimPrefix(a, "--resume-agents=")
+		case a == "-h" || a == "--help":
 			usage()
 			return 0
 		default:
 			target = a
 		}
+	}
+	if dryRun {
+		restoreResumeFlag = "off" // never touch panes on a dry run
 	}
 
 	if tmux.InTmux() {

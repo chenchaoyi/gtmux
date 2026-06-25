@@ -16,6 +16,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/notify"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -51,6 +52,29 @@ func extractEvent(token string) string {
 		}
 	}
 	return token
+}
+
+// extractResumeFields tolerantly pulls a resumable session id and cwd from a hook
+// payload whose key names vary by agent (Claude uses session_id/cwd; others use
+// conversation_id, working_directory, …). Best-effort: returns "" for anything missing.
+func extractResumeFields(raw []byte) (sid, cwd string) {
+	var m map[string]any
+	if json.Unmarshal(raw, &m) != nil {
+		return "", ""
+	}
+	for _, k := range []string{"session_id", "sessionId", "conversation_id", "conversationId"} {
+		if s, ok := m[k].(string); ok && s != "" {
+			sid = s
+			break
+		}
+	}
+	for _, k := range []string{"cwd", "working_directory", "project_dir", "projectDir"} {
+		if s, ok := m[k].(string); ok && s != "" {
+			cwd = s
+			break
+		}
+	}
+	return sid, cwd
 }
 
 // decision is what a hook event implies, independent of the filesystem. Keeping
@@ -171,12 +195,24 @@ func Run(stdin io.Reader, args []string) int {
 		HookEventName string `json:"hook_event_name"`
 		SessionID     string `json:"session_id"` // the agent's session id (Claude); "" otherwise
 		ToolName      string `json:"tool_name"`  // the tool a PreToolUse refers to (Claude)
+		Cwd           string `json:"cwd"`        // the agent's working dir (Claude)
 	}
 	_ = json.Unmarshal(raw, &payload)
 	if rawEvent == "" {
 		rawEvent = payload.HookEventName
 	}
 	agentSession := payload.SessionID
+	resumeCwd := payload.Cwd
+	if agentSession == "" || resumeCwd == "" {
+		// Other agents key the id/cwd differently — fall back to a tolerant scan.
+		sid, cwd := extractResumeFields(raw)
+		if agentSession == "" {
+			agentSession = sid
+		}
+		if resumeCwd == "" {
+			resumeCwd = cwd
+		}
+	}
 
 	display, known := agentDisplay[agentKey]
 	if !known {
@@ -204,6 +240,22 @@ func Run(stdin io.Reader, args []string) int {
 	session := ""
 	if pane != "" {
 		session = tmux.Display(pane, "#{session_name}")
+	}
+
+	// Capture a resumable session for `restore` (#4): if we know the agent's
+	// session id and a stable tmux locator, persist {agent, id, cwd} so a reboot
+	// can relaunch the conversation. Keyed by session:window.pane — the same
+	// coordinates tmux-resurrect restores by — so the record matches post-reboot.
+	if pane != "" && agentSession != "" && resume.Resumable(agentKey) {
+		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
+			cwd := resumeCwd
+			if cwd == "" {
+				cwd = tmux.Display(pane, "#{pane_current_path}")
+			}
+			_ = resume.Save(loc, resume.Record{
+				Agent: agentKey, SessionID: agentSession, Cwd: cwd, UpdatedAt: time.Now().Unix(),
+			})
+		}
 	}
 
 	// A Stop from a SUPERSEDED agent session (a newer session now owns this pane,
