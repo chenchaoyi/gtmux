@@ -62,3 +62,24 @@ func TestClassify(t *testing.T) {
 		})
 	}
 }
+
+func TestStaleStop(t *testing.T) {
+	cases := []struct {
+		name                     string
+		event, active, evSession string
+		want                     bool
+	}{
+		{"superseded stop ignored", "Stop", "sessA", "sessB", true},
+		{"matching stop applies", "Stop", "sessA", "sessA", false},
+		{"no active session (pre-upgrade)", "Stop", "", "sessB", false},
+		{"no event session (non-claude)", "Stop", "sessA", "", false},
+		{"non-stop event never stale", "UserPromptSubmit", "sessA", "sessB", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := staleStop(c.event, c.active, c.evSession); got != c.want {
+				t.Fatalf("staleStop(%q,%q,%q)=%v want %v", c.event, c.active, c.evSession, got, c.want)
+			}
+		})
+	}
+}

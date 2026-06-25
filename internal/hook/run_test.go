@@ -138,3 +138,29 @@ func TestExtractEventMore(t *testing.T) {
 		}
 	}
 }
+
+// TestRunSupersededStopIgnored: a Stop from a session that no longer owns the
+// pane (a newer session was started, e.g. after /clear) must NOT clear the
+// current session's active marker — it's a late, out-of-order hook (#5908).
+func TestRunSupersededStopIgnored(t *testing.T) {
+	hermeticEnv(t)
+	t.Setenv("TMUX_PANE", "%1")
+
+	// Session A owns the pane.
+	if err := state.WriteMarker(state.ActivePath("%1"), "sessA"); err != nil {
+		t.Fatal(err)
+	}
+	// A late Stop tagged with a DIFFERENT session is ignored.
+	Run(strings.NewReader(`{"hook_event_name":"Stop","session_id":"sessB"}`), nil)
+	if !state.Exists(state.ActivePath("%1")) {
+		t.Fatal("superseded Stop cleared the active marker")
+	}
+	if got := state.ReadMarker(state.ActivePath("%1")); got != "sessA" {
+		t.Fatalf("active session = %q, want sessA", got)
+	}
+	// A Stop tagged with the OWNING session does clear it.
+	Run(strings.NewReader(`{"hook_event_name":"Stop","session_id":"sessA"}`), nil)
+	if state.Exists(state.ActivePath("%1")) {
+		t.Fatal("matching Stop did not clear the active marker")
+	}
+}
