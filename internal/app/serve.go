@@ -129,6 +129,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return tmux.CapturePaneColor(id), true
 		},
+		PaneCursor: paneCursor,
 		Focus:  func(id string) error { return focusPaneByID(id) },
 		Send:   sendToPane,
 		Upload: saveUpload,
@@ -171,6 +172,30 @@ func serveUsageErr() int {
 	i18n.Sae("usage: gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]",
 		"用法：gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]")
 	return 2
+}
+
+// paneCursor returns the pane's text cursor for /api/pane: column x (0-based), Up =
+// rows above the last captured line (pane_height-1-cursor_y, so it's anchored to the
+// bottom and survives the phone having fewer rows than the Mac pane), and whether
+// the pane's cursor is visible (hidden by alt-screen TUIs).
+func paneCursor(id string) (x, up int, visible, ok bool) {
+	if tmux.Bin == "" {
+		return 0, 0, false, false
+	}
+	f := strings.Fields(tmux.Display(id, "#{cursor_x} #{cursor_y} #{pane_height} #{cursor_flag}"))
+	if len(f) != 4 {
+		return 0, 0, false, false
+	}
+	cx, e1 := strconv.Atoi(f[0])
+	cy, e2 := strconv.Atoi(f[1])
+	h, e3 := strconv.Atoi(f[2])
+	if e1 != nil || e2 != nil || e3 != nil || h <= 0 {
+		return 0, 0, false, false
+	}
+	if up = h - 1 - cy; up < 0 {
+		up = 0
+	}
+	return cx, up, f[3] == "1", true
 }
 
 // pushTokensPath is where registered device push tokens persist across restarts.

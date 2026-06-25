@@ -30,7 +30,9 @@ const bootstrap = `
     term = new Terminal({
       convertEol: true,            // capture-pane lines are LF-only → treat as CRLF
       cursorBlink: false,
-      disableStdin: true,
+      cursorInactiveStyle: 'none', // xterm's own cursor sits at the write position (the
+      cursorStyle: 'block',        // content end); we draw the REAL pane cursor as a
+      disableStdin: true,          // decoration instead (gtmuxCursor) so writes aren't moved
       scrollback: 5000,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       fontSize: 12,
@@ -176,6 +178,35 @@ const bootstrap = `
       if (wasBottom) term.scrollToBottom();
       else { try { term.scrollToLine(Math.max(0, nb.baseY - fromBottom)); } catch (e) {} }
     });
+  };
+
+  // gtmuxCursor mirrors the pane's text cursor (capture-pane doesn't carry it, so
+  // the Mac sends column x + Up = rows above the last line + visible). It's drawn as
+  // a DECORATION (an overlay cell), NOT by moving xterm's cursor — moving the cursor
+  // would make the next incremental append write in the wrong place. The decoration
+  // is anchored to a marker "up" rows above the write cursor (the content's last
+  // line), so it stays correct as you scroll and despite the phone's row count.
+  var curDeco = null, curMarker = null;
+  window.gtmuxCursor = function (c) {
+    if (!term) return;
+    if (curDeco) { try { curDeco.dispose(); } catch (e) {} curDeco = null; }
+    if (curMarker) { try { curMarker.dispose(); } catch (e) {} curMarker = null; }
+    if (!c || c.visible === false) return;            // hidden (alt-screen TUI) → no marker
+    try {
+      curMarker = term.registerMarker(-(c.up | 0));   // up rows above the write cursor
+      if (!curMarker) return;
+      curDeco = term.registerDecoration({
+        marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: '#06B6D4',
+      });
+      // belt-and-suspenders: also style the element on render (some renderers ignore
+      // backgroundColor in the options).
+      if (curDeco && curDeco.onRender) {
+        curDeco.onRender(function (el) {
+          el.style.background = '#06B6D4';
+          el.style.opacity = '0.85';
+        });
+      }
+    } catch (e) {}
   };
 
   window.gtmuxConfig = function (opts) {

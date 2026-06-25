@@ -43,6 +43,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const {client} = useAgents();
   const {pal, lang, xtermEnabled} = useApp();
   const [text, setText] = useState('');
+  const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   const [loading, setLoading] = useState(true);
   const [fontIdx, setFontIdx] = useState(1);
   const [wrap, setWrap] = useState(true);
@@ -65,6 +66,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           // Skip the update when the screen is unchanged so a re-render doesn't
           // clobber an in-progress text selection (React bails on an equal value).
           setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
+          setCursor(r.cursor);
           setLoading(false);
         }
       } catch {
@@ -165,7 +167,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {/* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */}
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
         {xtermEnabled ? (
-          <XtermView text={text} fontSize={fontSize} wrap={wrap} />
+          <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} />
         ) : (
           <ScrollView
             ref={scrollRef}

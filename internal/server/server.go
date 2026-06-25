@@ -40,6 +40,11 @@ type Deps struct {
 	// ok is false when the pane no longer exists.
 	PaneText func(id string) (text string, ok bool)
 
+	// PaneCursor returns the pane's text cursor: column x (0-based) and Up = rows
+	// above the last captured line, plus whether it's visible. Optional: nil → the
+	// pane response omits the cursor (the renderer then shows none / its own).
+	PaneCursor func(id string) (x, up int, visible, ok bool)
+
 	// Focus selects a pane locally — the "back at your desk, you're already on
 	// it" action. It injects no input. err is non-nil if the pane is gone.
 	Focus func(id string) error
@@ -178,8 +183,19 @@ func (s *Server) handleAgents(w http.ResponseWriter, _ *http.Request) {
 
 // paneResponse is the JSON shape of GET /api/pane.
 type paneResponse struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
+	ID     string      `json:"id"`
+	Text   string      `json:"text"`
+	Cursor *paneCursor `json:"cursor,omitempty"`
+}
+
+// paneCursor is the pane's text cursor, positioned RELATIVE TO THE BOTTOM so it
+// survives the phone's terminal having a different row count than the Mac pane:
+// Up = rows up from the last captured line, X = column (0-based), Visible = the
+// pane's cursor flag (false in alt-screen TUIs that hide it).
+type paneCursor struct {
+	X       int  `json:"x"`
+	Up      int  `json:"up"`
+	Visible bool `json:"visible"`
 }
 
 func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +209,13 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, errBody("pane not found"))
 		return
 	}
-	writeJSON(w, http.StatusOK, paneResponse{ID: id, Text: text})
+	resp := paneResponse{ID: id, Text: text}
+	if s.deps.PaneCursor != nil {
+		if x, up, vis, ok := s.deps.PaneCursor(id); ok {
+			resp.Cursor = &paneCursor{X: x, Up: up, Visible: vis}
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
