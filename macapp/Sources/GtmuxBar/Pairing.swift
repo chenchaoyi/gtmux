@@ -4,9 +4,12 @@ import CoreImage.CIFilterBuiltins
 import SwiftUI
 
 // "Allow phone access" — produce the pairing QR the gtmux phone app scans
-// (schema v1: {v,url,token,name}, matching mobileapp/src/pairing/qr.ts). The URL
-// is the always-on tunnel address when it's set up (reachable from anywhere),
-// else the Mac's LAN IP (same Wi-Fi). Token is the persisted serve token.
+// (matching mobileapp/src/pairing/qr.ts). Prefer the SECURE v2 shape
+// {v,url,enrollCode,name}: a short-lived single-use code minted from the local
+// radar, so the QR isn't a lasting credential. Fall back to legacy v1
+// {v,url,token,name} when the radar can't mint (not running on :8765 / too old).
+// The URL is the always-on tunnel address when set up (reachable from anywhere),
+// else the Mac's LAN IP (same Wi-Fi).
 
 struct PairingInfo {
     let url: String
@@ -35,12 +38,41 @@ enum Pairing {
         return PairingInfo(url: "http://\(host):8765", token: token, name: name, anywhere: false)
     }
 
-    /// payload is the JSON the QR encodes.
-    static func payload(_ p: PairingInfo) -> String {
-        let dict: [String: Any] = ["v": 1, "url": p.url, "token": p.token, "name": p.name]
+    /// payload is the JSON the QR encodes: secure v2 when an enroll code was
+    /// minted, else the legacy v1 token shape so pairing still works.
+    static func payload(_ p: PairingInfo, enrollCode: String? = nil) -> String {
+        let dict: [String: Any]
+        if let code = enrollCode, !code.isEmpty {
+            dict = ["v": 2, "url": p.url, "enrollCode": code, "name": p.name]
+        } else {
+            dict = ["v": 1, "url": p.url, "token": p.token, "name": p.name]
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: dict),
               let s = String(data: data, encoding: .utf8) else { return "" }
         return s
+    }
+
+    /// mintEnrollCode asks the local radar (loopback :8765, the default serve port)
+    /// for a short-lived single-use pairing code. completion(nil) when it can't —
+    /// callers then fall back to the legacy token QR.
+    static func mintEnrollCode(token: String, completion: @escaping (String?) -> Void) {
+        guard let u = URL(string: "http://127.0.0.1:8765/api/enroll/mint") else {
+            completion(nil)
+            return
+        }
+        var req = URLRequest(url: u)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 4
+        URLSession.shared.dataTask(with: req) { data, resp, _ in
+            guard (resp as? HTTPURLResponse)?.statusCode == 200, let data = data,
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let code = obj["enrollCode"] as? String, !code.isEmpty else {
+                completion(nil)
+                return
+            }
+            completion(code)
+        }.resume()
     }
 
     /// qrImage renders `text` as a crisp QR (nearest-neighbor upscaled).
@@ -113,26 +145,34 @@ struct PairingView: View {
     @ObservedObject private var remote = RemoteAccess.shared
     @State private var info: PairingInfo?
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
+    @State private var enrollCode: String? // minted short-lived code (v2 QR)
+    @State private var codeReady = false // mint attempt finished (success or fallback)
 
     var body: some View {
         VStack(spacing: 13) {
-            if let p = info, let qr = Pairing.qrImage(Pairing.payload(p)) {
-                Image(nsImage: qr)
-                    .interpolation(.none).resizable()
-                    .frame(width: 230, height: 230)
-                    .background(Color.white).cornerRadius(10)
-                wrap(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
-                             "在 gtmux 手机 app 里：配对 → 扫一扫"), size: 12, color: .secondary)
-                Text(p.url)
-                    .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                    .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
-                reachLine
-                if p.anywhere {
-                    wrap(l10n.tr("Reachable from anywhere (a tunnel is up).",
-                                 "任意网络可达（隧道在运行）。"), size: 11, color: .tertiary)
+            if let p = info {
+                if codeReady, let qr = Pairing.qrImage(Pairing.payload(p, enrollCode: enrollCode)) {
+                    Image(nsImage: qr)
+                        .interpolation(.none).resizable()
+                        .frame(width: 230, height: 230)
+                        .background(Color.white).cornerRadius(10)
+                    wrap(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
+                                 "在 gtmux 手机 app 里：配对 → 扫一扫"), size: 12, color: .secondary)
+                    Text(p.url)
+                        .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                        .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                    reachLine
+                    if p.anywhere {
+                        wrap(l10n.tr("Reachable from anywhere (a tunnel is up).",
+                                     "任意网络可达（隧道在运行）。"), size: 11, color: .tertiary)
+                    } else {
+                        wrap(l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"), size: 11, color: .tertiary)
+                        remoteButton
+                    }
                 } else {
-                    wrap(l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"), size: 11, color: .tertiary)
-                    remoteButton
+                    ProgressView().controlSize(.large).frame(width: 230, height: 230)
+                    wrap(l10n.tr("Preparing a one-time pairing code…", "正在准备一次性配对码…"),
+                         size: 12, color: .secondary)
                 }
             } else {
                 Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
@@ -197,7 +237,19 @@ struct PairingView: View {
         let i = Pairing.current()
         info = i
         reachable = nil
-        if let i = i { probe(i.url) }
+        enrollCode = nil
+        codeReady = false
+        if let i = i {
+            probe(i.url)
+            // Mint a short-lived code for the secure v2 QR; on failure codeReady
+            // still flips so we render the legacy v1 token QR (enrollCode == nil).
+            Pairing.mintEnrollCode(token: i.token) { code in
+                DispatchQueue.main.async {
+                    enrollCode = code
+                    codeReady = true
+                }
+            }
+        }
     }
 
     private func enableRemote() {
