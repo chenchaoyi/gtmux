@@ -42,6 +42,9 @@ Commands:
                           token, and a scannable pairing QR. Default is a STABLE
                           hosted address (pair once); --quick for an account-less
                           ephemeral URL. --port N --name LABEL
+  devices [revoke <id>]   list phones paired via per-device tokens (from a short-
+                          lived QR code), and revoke one (effective immediately).
+                          Talks to the local radar — run while serve/tunnel is up
   doctor [--fix [--yes]]  health check, grouped by concern: tmux / restore /
                           terminal / agents+notifications. --fix sets up the
                           rest — set-titles, plugins, the Claude hook — one step
@@ -109,6 +112,8 @@ const usageZH = `用法：
                           Cloudflare 隧道，打印公网 URL、token 和可扫的配对
                           二维码。默认给固定的托管地址（配一次即可），--quick 走
                           免账号的临时地址。--port N --name 标签
+  devices [revoke <id>]   列出用一次性 QR 码配对的手机（每设备独立 token），
+                          并可吊销某台（即刻生效）。需在 serve/tunnel 运行时使用
   doctor [--fix [--yes]]  体检，按主题分组：tmux / 恢复 / 终端 / agent+通知。
                           --fix 把其余项配好（set-titles、插件、Claude hook），
                           逐项进行，每步都先解释并征求确认（--yes 全部应用）。

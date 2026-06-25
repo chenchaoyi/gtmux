@@ -105,6 +105,43 @@ func TestAuthAcceptsDeviceToken(t *testing.T) {
 	}
 }
 
+// TestDeviceListAndRevoke: GET /api/devices lists without tokens; POST
+// /api/devices/revoke drops one and its token stops authenticating immediately.
+func TestDeviceListAndRevoke(t *testing.T) {
+	en := NewEnrollManager(nil, nil)
+	d, _ := en.Redeem(en.Mint(), "Ada's iPhone")
+	s := New(Config{Addr: "x", Token: "master"}, Deps{Enroll: en})
+	h := s.Handler()
+
+	do := func(method, path, body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer master")
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		return rr
+	}
+
+	list := do(http.MethodGet, "/api/devices", "")
+	if list.Code != http.StatusOK {
+		t.Fatalf("list = %d", list.Code)
+	}
+	body := list.Body.String()
+	if !strings.Contains(body, d.ID) || !strings.Contains(body, "Ada's iPhone") {
+		t.Errorf("device not listed: %s", body)
+	}
+	if strings.Contains(body, d.Token) {
+		t.Error("GET /api/devices must NOT leak tokens")
+	}
+
+	// revoke needs auth
+	if do(http.MethodPost, "/api/devices/revoke", `{"id":"`+d.ID+`"}`).Code != http.StatusOK {
+		t.Fatal("revoke should 200")
+	}
+	if en.ValidToken(d.Token) {
+		t.Error("revoked device token must stop authenticating immediately")
+	}
+}
+
 // TestEnrollEndpoints: mint (auth'd) then redeem (public) over HTTP.
 func TestEnrollEndpoints(t *testing.T) {
 	en := NewEnrollManager(nil, nil)

@@ -196,6 +196,49 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID})
 }
 
+// deviceInfo is a device roster entry WITHOUT its token (safe to list).
+type deviceInfo struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	EnrolledAt int64  `json:"enrolledAt"`
+	LastSeen   int64  `json:"lastSeen,omitempty"`
+}
+
+// handleDevices implements GET /api/devices — AUTHENTICATED. Lists the enrolled
+// devices (no tokens) so `gtmux devices` can show + revoke them.
+func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Enroll == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("enrollment not configured"))
+		return
+	}
+	out := make([]deviceInfo, 0)
+	for _, d := range s.deps.Enroll.Devices() {
+		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"devices": out})
+}
+
+// handleRevoke implements POST /api/devices/revoke {id} — AUTHENTICATED. Drops a
+// device from the roster (in-memory + persisted) so its token stops working now.
+func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if s.deps.Enroll == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("enrollment not configured"))
+		return
+	}
+	var body struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ID == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"revoked": s.deps.Enroll.Revoke(body.ID)})
+}
+
 // handleEnrollMint implements POST /api/enroll/mint — AUTHENTICATED (master or an
 // existing device). It hands back a fresh short-lived code for a pairing QR, so a
 // already-trusted surface can enroll a new phone without ever putting a lasting
