@@ -25,6 +25,7 @@ import {StatusBadge} from '../ui/StatusBadge';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
+import {XtermView} from '../ui/XtermView';
 import {FloatingKeys} from '../ui/FloatingKeys';
 import {DiffModal} from '../ui/DiffModal';
 import {StatusColor} from '../ui/theme';
@@ -40,7 +41,7 @@ export function DetailScreen({route, navigation}: any) {
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client} = useAgents();
-  const {pal, lang} = useApp();
+  const {pal, lang, xtermEnabled} = useApp();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [fontIdx, setFontIdx] = useState(1);
@@ -161,28 +162,32 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         </View>
       )}
 
-      {/* pane screen (colored) */}
+      {/* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */}
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
-        <ScrollView
-          ref={scrollRef}
-          style={styles.term}
-          contentContainerStyle={styles.termContent}
-          scrollEventThrottle={80}
-          onScroll={onScroll}
-          onContentSizeChange={() => {
-            if (atBottom) scrollRef.current?.scrollToEnd({animated: false});
-          }}>
-          {loading ? (
-            <ActivityIndicator color={pal.fg3} style={styles.loading} />
-          ) : wrap ? (
-            term
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator>
-              <View>{term}</View>
-            </ScrollView>
-          )}
-        </ScrollView>
-        {!atBottom && (
+        {xtermEnabled ? (
+          <XtermView text={text} fontSize={fontSize} />
+        ) : (
+          <ScrollView
+            ref={scrollRef}
+            style={styles.term}
+            contentContainerStyle={styles.termContent}
+            scrollEventThrottle={80}
+            onScroll={onScroll}
+            onContentSizeChange={() => {
+              if (atBottom) scrollRef.current?.scrollToEnd({animated: false});
+            }}>
+            {loading ? (
+              <ActivityIndicator color={pal.fg3} style={styles.loading} />
+            ) : wrap ? (
+              term
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator>
+                <View>{term}</View>
+              </ScrollView>
+            )}
+          </ScrollView>
+        )}
+        {!xtermEnabled && !atBottom && (
           <TouchableOpacity
             style={styles.fab}
             onPress={() => scrollRef.current?.scrollToEnd({animated: true})}>

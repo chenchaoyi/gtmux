@@ -10,7 +10,8 @@
     "test": "jest",
     "test:e2e": "jest --config e2e/jest.config.e2e.js --runInBand",
     "e2e:appium": "appium --port 4723 --log-level info",
-    "e2e:build": "bash scripts/e2e-build-sim.sh"
+    "e2e:build": "bash scripts/e2e-build-sim.sh",
+    "gen:xterm": "node scripts/gen-xterm-asset.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.1.1",
@@ -48,6 +49,9 @@
     "@types/node": "^26.0.0",
     "@types/react": "^19.2.0",
     "@types/react-test-renderer": "^19.1.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-unicode11": "^0.8.0",
+    "@xterm/xterm": "^5.5.0",
     "appium": "^3.5.2",
     "appium-xcuitest-driver": "^11.14.0",
     "eslint": "^8.19.0",
