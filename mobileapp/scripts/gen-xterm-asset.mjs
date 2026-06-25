@@ -55,17 +55,45 @@ const bootstrap = `
     } catch (e) {}
     relayout();
     window.addEventListener('resize', relayout);
-    // While the finger is down, pause snapshot writes: a working pane updates every
-    // poll, and a reset+rewrite mid-gesture would yank you back to the bottom.
-    el().addEventListener('touchstart', function () { userScrolling = true; }, { passive: true });
+    installScrollControl();
+  }
+
+  // installScrollControl: per-gesture AXIS LOCK. Nested scrollers (outer #term =
+  // horizontal, inner .xterm-viewport = vertical) otherwise fight — when not at the
+  // vertical bottom, the inner viewport greedily grabs a near-horizontal swipe, so
+  // horizontal won't trigger and you feel a stray vertical nudge. Decide the axis
+  // from the first real movement: horizontal → preventDefault (block the native
+  // vertical scroll) and drive #term.scrollLeft 1:1 with the finger; vertical → let
+  // native momentum scrolling do its thing. Also pauses snapshot writes mid-gesture.
+  function installScrollControl() {
+    var t = el(), x0 = 0, y0 = 0, lastX = 0, axis = '';
+    t.addEventListener('touchstart', function (e) {
+      userScrolling = true;
+      var p = e.touches[0];
+      x0 = lastX = p.clientX; y0 = p.clientY; axis = '';
+    }, { passive: true });
+    t.addEventListener('touchmove', function (e) {
+      if (e.touches.length !== 1) return;
+      var p = e.touches[0];
+      if (!axis) {
+        var dx = Math.abs(p.clientX - x0), dy = Math.abs(p.clientY - y0);
+        if (dx < 8 && dy < 8) return;
+        axis = dx > dy ? 'x' : 'y';
+      }
+      if (axis === 'x') {
+        e.preventDefault();                  // stop the inner vertical scroller grabbing it
+        t.scrollLeft += (lastX - p.clientX); // drive horizontal 1:1 with the finger
+        lastX = p.clientX;
+      }
+    }, { passive: false });
     function release() {
       setTimeout(function () {
         userScrolling = false;
-        if (pending !== null) { var t = pending; pending = null; window.gtmuxWrite(t); }
+        if (pending !== null) { var x = pending; pending = null; window.gtmuxWrite(x); }
       }, 400);
     }
-    el().addEventListener('touchend', release, { passive: true });
-    el().addEventListener('touchcancel', release, { passive: true });
+    t.addEventListener('touchend', release, { passive: true });
+    t.addEventListener('touchcancel', release, { passive: true });
   }
 
   // visibleLen: a line's on-screen width, ignoring ANSI escapes (capture-pane -e
