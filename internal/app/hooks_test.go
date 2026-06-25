@@ -110,7 +110,11 @@ func TestUpdateSettingsPreservesForeignHooksAndUninstalls(t *testing.T) {
 }
 
 func TestIsGtmuxHookCommand(t *testing.T) {
-	for _, s := range []string{"gtmux hook", "/usr/local/bin/gtmux hook", "/Users/x/go/bin/gtmux hook"} {
+	for _, s := range []string{
+		"gtmux hook", "/usr/local/bin/gtmux hook", "/Users/x/go/bin/gtmux hook",
+		"gtmux hook --agent cursor UserPromptSubmit", // per-agent form
+		"/opt/gtmux/gtmux hook --agent kiro preToolUse",
+	} {
 		if !isGtmuxHookCommand(s) {
 			t.Errorf("isGtmuxHookCommand(%q) = false, want true", s)
 		}

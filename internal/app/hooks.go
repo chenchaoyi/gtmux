@@ -96,6 +96,14 @@ func cmdInstallHooks(args []string) int {
 	if agent == "codex" {
 		return installHooksCodex()
 	}
+	if inst, ok := agentInstallers[agent]; ok {
+		return installAgentHooks(inst, yes)
+	}
+	if agent != "claude" {
+		i18n.Sae("unsupported agent: "+agent+" (try: claude, codex, cursor, gemini, copilot, kiro)",
+			"不支持的 agent："+agent+"（可选：claude、codex、cursor、gemini、copilot、kiro）")
+		return 1
+	}
 	bin := selfPath()
 
 	// Retire any legacy one-shot click target from an older install.
@@ -136,11 +144,25 @@ func cmdInstallHooks(args []string) int {
 // settings.json. Leaves cached icon/state and the menu-bar app alone (use
 // uninstall-app for that); cleans up any legacy GtmuxFocus.app.
 func cmdUninstallHooks(args []string) int {
-	for _, a := range args {
-		if a == "-h" || a == "--help" {
+	agent := "claude"
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "-h", "--help":
 			usage()
 			return 0
+		case "--agent":
+			if i+1 < len(args) {
+				agent = args[i+1]
+				i++
+			}
 		}
+	}
+	if inst, ok := agentInstallers[agent]; ok {
+		return uninstallAgentHooks(inst)
+	}
+	if agent != "claude" {
+		i18n.Sae("unsupported agent: "+agent, "不支持的 agent："+agent)
+		return 1
 	}
 	if err := updateSettings(claudeSettingsPath(), "", false); err != nil {
 		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败："+err.Error())
@@ -268,11 +290,12 @@ func removeGtmuxEntries(list []any) []any {
 
 // isGtmuxHookCommand matches our registered command regardless of install path,
 // so reinstalling (even from a moved binary) replaces rather than duplicates and
-// uninstall reliably removes it. Matches "<anything>/gtmux hook" and bare
-// "gtmux hook" by basename — not a brittle string suffix.
+// uninstall reliably removes it. Matches "<anything>/gtmux hook …" and bare
+// "gtmux hook …" by basename — covering both Claude's plain `gtmux hook` and the
+// per-agent `gtmux hook --agent <key> <event>` form. Not a brittle string suffix.
 func isGtmuxHookCommand(cmd string) bool {
 	f := strings.Fields(cmd)
-	return len(f) == 2 && f[1] == "hook" && filepath.Base(f[0]) == "gtmux"
+	return len(f) >= 2 && f[1] == "hook" && filepath.Base(f[0]) == "gtmux"
 }
 
 // --- small generic JSON-object helpers (preserve unknown fields) ---
