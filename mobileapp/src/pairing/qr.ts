@@ -1,8 +1,9 @@
-// Pairing QR schema (SPEC §6). The menu-bar app (a later Mac-side increment)
-// renders this JSON; we parse + validate it. Keep the parser tolerant of unknown
-// fields (a future revision may add a TLS cert fingerprint).
-//
-//   { "v": 1, "url": "https://192.168.1.20:8765", "token": "<serve-token>", "name": "Ada's MacBook" }
+// Pairing QR schema (SPEC §6). Two versions:
+//   v1 (legacy): { v:1, url, token, name } — the QR carries the Bearer token.
+//   v2 (6d):     { v:2, url, enrollCode, name } — the QR carries only a SHORT-LIVED
+//        single-use enroll code; we redeem it (POST /api/enroll) for THIS device's
+//        own token, so the QR is never a lasting credential. Parser stays tolerant
+//        of unknown fields (a future revision may add a TLS cert fingerprint).
 
 export interface PairedMac {
   url: string; // reachable base (scheme+host+port)
@@ -10,21 +11,52 @@ export interface PairedMac {
   name: string; // display label
 }
 
-export function parsePairingQR(raw: string): PairedMac {
+// PairResult is what a scanned QR means: either a ready-to-use token (v1) or an
+// enroll code we must redeem for a token first (v2).
+export type PairResult =
+  | {kind: 'paired'; url: string; token: string; name: string}
+  | {kind: 'enroll'; url: string; enrollCode: string; name: string};
+
+export function parsePairingQR(raw: string): PairResult {
   let obj: any;
   try {
     obj = JSON.parse(raw);
   } catch {
     throw new Error('Not a gtmux pairing code.');
   }
-  if (obj?.v !== 1) {
-    throw new Error('Unsupported pairing-code version.');
-  }
-  const url = String(obj.url || '').replace(/\/+$/, '');
-  const token = String(obj.token || '');
+  const url = String(obj?.url || '').replace(/\/+$/, '');
   if (!/^https?:\/\/.+/.test(url)) throw new Error('Pairing code has no valid url.');
-  if (!token) throw new Error('Pairing code has no token.');
-  return {url, token, name: String(obj.name || 'Server')};
+  const name = String(obj?.name || 'Server');
+  if (obj?.v === 2) {
+    const enrollCode = String(obj.enrollCode || '');
+    if (!enrollCode) throw new Error('Pairing code has no enroll code.');
+    return {kind: 'enroll', url, enrollCode, name};
+  }
+  if (obj?.v === 1) {
+    const token = String(obj.token || '');
+    if (!token) throw new Error('Pairing code has no token.');
+    return {kind: 'paired', url, token, name};
+  }
+  throw new Error('Unsupported pairing-code version.');
+}
+
+// enrollDevice redeems a v2 one-time code for this device's own per-device token
+// (POST /api/enroll — unauthenticated; the code is the credential). name labels
+// this phone in the Mac's device roster.
+export async function enrollDevice(
+  base: string,
+  enrollCode: string,
+  name: string,
+): Promise<string> {
+  const r = await fetch(`${base}/api/enroll`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({enrollCode, name}),
+  });
+  if (!r.ok) throw new Error('Pairing code expired — get a fresh one and rescan.');
+  const j: any = await r.json();
+  if (!j?.token) throw new Error('Enrollment returned no token.');
+  return String(j.token);
 }
 
 // Normalize a manually-typed host into a base URL (defaults http:// and port 8765).

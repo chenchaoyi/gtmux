@@ -146,7 +146,7 @@ func tunnelHosted(port int, name string) int {
 	}
 	i18n.Say("Starting your tunnel…", "正在启动隧道…")
 	return runCloudflared(bin, []string{"tunnel", "run", "--token", prov.Token}, registeredRe, func(string) {
-		printTunnelPairing(prov.URL, token, name, true)
+		printTunnelPairing(prov.URL, token, name, port, true)
 	})
 }
 
@@ -246,7 +246,7 @@ func tunnelQuick(port int, name string) int {
 		"正在打开 Cloudflare quick tunnel（免账号、临时地址）…")
 	args := []string{"tunnel", "--no-autoupdate", "--url", fmt.Sprintf("http://localhost:%d", port)}
 	return runCloudflared(bin, args, tryCloudflareRe, func(line string) {
-		printTunnelPairing(tryCloudflareRe.FindString(line), token, name, false)
+		printTunnelPairing(tryCloudflareRe.FindString(line), token, name, port, false)
 	})
 }
 
@@ -371,31 +371,91 @@ func portInUse(port int) bool {
 	return true
 }
 
-// printPairingBlock prints the URL, token, and a scannable pairing QR (the same
-// `{v,url,token,name}` payload the menu-bar app encodes). Callers add a footer.
-func printPairingBlock(url, token, name string) {
-	payload, _ := json.Marshal(struct {
-		V     int    `json:"v"`
-		URL   string `json:"url"`
-		Token string `json:"token"`
-		Name  string `json:"name"`
-	}{1, url, token, name})
+// printPairingBlock prints the URL and a scannable pairing QR. It prefers a
+// SHORT-LIVED enroll code (v2 `{v,url,enrollCode,name}`) minted from the local
+// radar, so the QR isn't a lasting credential; if minting fails (an old serve, or
+// it isn't up yet) it falls back to the legacy v1 `{v,url,token,name}` so pairing
+// still works. The menu-bar app encodes the same shape.
+func printPairingBlock(url, token, name string, port int) {
+	code := mintEnrollCode(port, token)
+	payload := pairingPayload(url, token, code, name)
 
 	fmt.Println()
 	i18n.Say(i18n.Bold+"Your Mac is reachable from anywhere now:"+i18n.Reset,
 		i18n.Bold+"你的 Mac 现在可从任何地方访问："+i18n.Reset)
 	fmt.Printf("  URL:   %s\n", url)
-	fmt.Printf("  token: %s\n", token)
+	if code != "" {
+		i18n.Say("  pairing code: a one-time code (expires in 5 min) — scan to pair, not the token",
+			"  配对码：一次性，5 分钟内有效 —— 扫码配对，不再暴露长期 token")
+	} else {
+		fmt.Printf("  token: %s\n", token)
+	}
 	fmt.Println()
 	i18n.Say("Scan in the gtmux phone app (Pair → Scan):",
 		"在 gtmux 手机 app 里扫码（配对 → 扫一扫）：")
 	qrterminal.GenerateHalfBlock(string(payload), qrterminal.L, os.Stdout)
 }
 
+// pairingPayload builds the QR JSON: the secure v2 `{enrollCode}` shape when a
+// code was minted, else the legacy v1 `{token}` shape so pairing still works on a
+// radar too old to mint codes.
+func pairingPayload(url, token, code, name string) []byte {
+	if code != "" {
+		b, _ := json.Marshal(struct {
+			V          int    `json:"v"`
+			URL        string `json:"url"`
+			EnrollCode string `json:"enrollCode"`
+			Name       string `json:"name"`
+		}{2, url, code, name})
+		return b
+	}
+	b, _ := json.Marshal(struct {
+		V     int    `json:"v"`
+		URL   string `json:"url"`
+		Token string `json:"token"`
+		Name  string `json:"name"`
+	}{1, url, token, name})
+	return b
+}
+
+// mintEnrollCode asks the local radar for a short-lived single-use pairing code
+// (POST /api/enroll/mint, authenticated with the master token). Returns "" if the
+// radar is unreachable or too old to know the endpoint — callers then fall back to
+// the legacy token QR. Retries briefly so a just-launched serve has time to bind.
+func mintEnrollCode(port int, token string) string {
+	if port == 0 || token == "" {
+		return ""
+	}
+	urlStr := fmt.Sprintf("http://127.0.0.1:%d/api/enroll/mint", port)
+	client := &http.Client{Timeout: 2 * time.Second}
+	for attempt := 0; attempt < 4; attempt++ {
+		req, err := http.NewRequest(http.MethodPost, urlStr, bytes.NewReader([]byte("{}")))
+		if err != nil {
+			return ""
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				var r struct {
+					EnrollCode string `json:"enrollCode"`
+				}
+				if json.NewDecoder(resp.Body).Decode(&r) == nil && r.EnrollCode != "" {
+					return r.EnrollCode
+				}
+			}
+			return "" // reachable but no code (old serve) → don't retry
+		}
+		time.Sleep(500 * time.Millisecond) // not up yet — give it a moment
+	}
+	return ""
+}
+
 // printTunnelPairing prints the pairing block plus a foreground footer.
 // stable=true for hosted (pair once), false for quick (the URL rotates each run).
-func printTunnelPairing(url, token, name string, stable bool) {
-	printPairingBlock(url, token, name)
+func printTunnelPairing(url, token, name string, port int, stable bool) {
+	printPairingBlock(url, token, name, port)
 	if stable {
 		i18n.Say(i18n.Dim+"Stable address — pair once; it stays the same across restarts. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
 			i18n.Dim+"固定地址：配一次即可，重启也不变。保持开启；Ctrl-C 关闭。拿到此 URL + token 的人都能读你的雷达。"+i18n.Reset)

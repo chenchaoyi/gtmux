@@ -111,7 +111,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 		i18n.Sae("gtmux tunnel: launchctl load tunnel: "+err.Error(), "gtmux tunnel: launchctl load tunnel: "+err.Error())
 	}
 
-	printPairingBlock(prov.URL, token, name)
+	printPairingBlock(prov.URL, token, name, port)
 	i18n.Say(i18n.Dim+"Always-on enabled — reachable across reboots. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
 		i18n.Dim+"Always-on 已开启，重启也可达。关闭：`gtmux tunnel --unservice`。"+i18n.Reset)
 	return 0

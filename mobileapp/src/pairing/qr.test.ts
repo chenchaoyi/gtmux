@@ -1,11 +1,27 @@
 import {normalizeHost, parsePairingQR} from './qr';
 
 describe('parsePairingQR', () => {
-  it('parses a valid v1 pairing code', () => {
+  it('parses a valid v1 pairing code (token in QR)', () => {
     const m = parsePairingQR(
       JSON.stringify({v: 1, url: 'https://192.168.1.20:8765', token: 'tok', name: "Ada's Mac"}),
     );
-    expect(m).toEqual({url: 'https://192.168.1.20:8765', token: 'tok', name: "Ada's Mac"});
+    expect(m).toEqual({
+      kind: 'paired',
+      url: 'https://192.168.1.20:8765',
+      token: 'tok',
+      name: "Ada's Mac",
+    });
+  });
+
+  it('parses a v2 enroll code (no token in QR)', () => {
+    const m = parsePairingQR(
+      JSON.stringify({v: 2, url: 'https://h:8765', enrollCode: 'c0de', name: 'Mac'}),
+    );
+    expect(m).toEqual({kind: 'enroll', url: 'https://h:8765', enrollCode: 'c0de', name: 'Mac'});
+  });
+
+  it('rejects a v2 code with no enrollCode', () => {
+    expect(() => parsePairingQR(JSON.stringify({v: 2, url: 'http://h:1'}))).toThrow(/enroll code/i);
   });
 
   it('strips trailing slashes from the url', () => {
@@ -20,7 +36,7 @@ describe('parsePairingQR', () => {
 
   it('tolerates unknown extra fields', () => {
     const m = parsePairingQR(JSON.stringify({v: 1, url: 'http://h:1', token: 't', fp: 'sha', x: 9}));
-    expect(m.token).toBe('t');
+    expect(m).toMatchObject({kind: 'paired', token: 't'});
   });
 
   it('rejects non-JSON', () => {
@@ -28,7 +44,7 @@ describe('parsePairingQR', () => {
   });
 
   it('rejects an unsupported version', () => {
-    expect(() => parsePairingQR(JSON.stringify({v: 2, url: 'http://h:1', token: 't'}))).toThrow(/version/i);
+    expect(() => parsePairingQR(JSON.stringify({v: 3, url: 'http://h:1', token: 't'}))).toThrow(/version/i);
   });
 
   it('rejects a missing/invalid url', () => {
