@@ -111,6 +111,14 @@ func decide(event string, activePresent bool) decision {
 	}
 }
 
+// staleStop reports whether a Stop is from a SUPERSEDED session — a newer agent
+// session now owns the pane — and must be ignored. It fires only when BOTH the
+// recorded active session and the event's session are known, so the pre-session
+// behavior (and agents that send no session id) is unchanged.
+func staleStop(event, activeSession, eventSession string) bool {
+	return event == "Stop" && activeSession != "" && eventSession != "" && activeSession != eventSession
+}
+
 // applyState performs a decision's filesystem mutations for pane.
 func applyState(d decision, pane string) {
 	if d.setActive {
@@ -156,13 +164,15 @@ func Run(stdin io.Reader, args []string) int {
 			}
 		}
 	}
+	var payload struct {
+		HookEventName string `json:"hook_event_name"`
+		SessionID     string `json:"session_id"` // the agent's session id (Claude); "" otherwise
+	}
+	_ = json.Unmarshal(raw, &payload)
 	if rawEvent == "" {
-		var payload struct {
-			HookEventName string `json:"hook_event_name"`
-		}
-		_ = json.Unmarshal(raw, &payload)
 		rawEvent = payload.HookEventName
 	}
+	agentSession := payload.SessionID
 	event, display := canonicalEvent(agentKey, rawEvent)
 	if event == "" {
 		return 0 // unknown agent or unmapped event → no-op
@@ -176,13 +186,27 @@ func Run(stdin io.Reader, args []string) int {
 		session = tmux.Display(pane, "#{session_name}")
 	}
 
+	// A Stop from a SUPERSEDED agent session (a newer session now owns this pane,
+	// e.g. after /clear or a relaunch) must not clear the current session's state
+	// or notify — it's a late, out-of-order hook (cmux issue #5908).
+	if pane != "" && staleStop(event, state.ReadMarker(state.ActivePath(pane)), agentSession) {
+		debugf("ignored stale Stop: agent=%s event-session=%q active-session=%q",
+			agentKey, agentSession, state.ReadMarker(state.ActivePath(pane)))
+		return 0
+	}
+
 	activePresent := pane != "" && state.Exists(state.ActivePath(pane))
 	d := decide(event, activePresent)
 	if pane != "" {
 		applyState(d, pane)
+		// Record the agent session on the active marker so a later superseded Stop
+		// can be told apart (#5908). No session id → plain marker, unchanged.
+		if d.setActive && agentSession != "" {
+			_ = state.WriteMarker(state.ActivePath(pane), agentSession)
+		}
 	}
-	debugf("agent=%s raw=%q event=%s pane=%q session=%q active=%v notify=%v",
-		agentKey, rawEvent, event, pane, session, activePresent, d.notify)
+	debugf("agent=%s raw=%q event=%s pane=%q session=%q agent-session=%q active=%v notify=%v",
+		agentKey, rawEvent, event, pane, session, agentSession, activePresent, d.notify)
 
 	if !d.notify {
 		return 0

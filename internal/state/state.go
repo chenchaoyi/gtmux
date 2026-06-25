@@ -58,6 +58,26 @@ func Touch(path string) error {
 // Remove deletes path, ignoring a missing file.
 func Remove(path string) { _ = os.Remove(path) }
 
+// WriteMarker writes content to a marker file (creating its parent dir). Unlike
+// Touch, the marker carries a small payload — e.g. the active turn's agent
+// session id, so a late hook from a superseded session can be told apart.
+func WriteMarker(path, content string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(content), 0o644)
+}
+
+// ReadMarker returns a marker file's trimmed content ("" if missing/empty). An
+// empty-but-present marker (from Touch) reads as "".
+func ReadMarker(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
 // WriteLastFinished records pane as the most-recently-finished turn.
 func WriteLastFinished(pane string) error {
 	if err := os.MkdirAll(Dir(), 0o755); err != nil {
