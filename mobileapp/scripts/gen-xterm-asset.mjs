@@ -20,7 +20,7 @@ const uni11Js = read(resolve(nm, 'addon-unicode11/lib/addon-unicode11.js'));
 // terminal is read-only here (no key input wired yet — that stays on the existing
 // FloatingKeys/Composer path); we just render the colored capture-pane snapshot.
 const bootstrap = `
-  var term, fit, wrapOn = true, lastText = '';
+  var term, fit, wrapOn = true, lastText = '', baseCols = 80;
   function el() { return document.getElementById('term'); }
 
   function boot() {
@@ -44,14 +44,22 @@ const bootstrap = `
     term.open(el());
     relayout();
     window.addEventListener('resize', relayout);
-    installTouchScroll();
+    // Vertical scroll is the .xterm-viewport's native momentum scroll (smooth); a
+    // custom scrollLines handler just fought it and felt janky, so it's gone.
+  }
+
+  // visibleLen: a line's on-screen width, ignoring ANSI escapes (capture-pane -e
+  // embeds SGR codes, which must NOT count toward the no-wrap width).
+  function visibleLen(l) {
+    return l.replace(/\\x1b\\[[0-9;?]*[A-Za-z]/g, '').length;
   }
 
   // relayout: wrap on → fit cols to width (long lines wrap); wrap off → widen cols
   // to the content's longest line so nothing wraps, with horizontal scroll.
   function relayout() {
     if (!term || !el()) return;
-    try { fit.fit(); } catch (e) {}       // sets rows + cols for the current size
+    try { fit.fit(); } catch (e) {}       // sets rows + the fill-the-width col count
+    baseCols = term.cols;                 // the floor: cols that exactly fill the screen
     if (wrapOn) {
       el().style.overflowX = 'hidden';
     } else {
@@ -60,46 +68,15 @@ const bootstrap = `
     }
   }
 
-  // relayoutCols (no-wrap only): widen cols to the content's longest line so lines
-  // don't wrap; the wide canvas then scrolls horizontally.
+  // relayoutCols (no-wrap only): set cols to the content's longest visible line (but
+  // never below fill-width), so narrow content doesn't scroll and wide content
+  // scrolls to exactly the last column — not into empty space.
   function relayoutCols() {
     if (!term || wrapOn) return;
     var maxLen = 0;
-    lastText.split('\\n').forEach(function (l) { if (l.length > maxLen) maxLen = l.length; });
-    var cols = Math.max(term.cols, Math.min(maxLen || term.cols, 500));
+    lastText.split('\\n').forEach(function (l) { var n = visibleLen(l); if (n > maxLen) maxLen = n; });
+    var cols = Math.max(baseCols, Math.min(maxLen || baseCols, 500));
     if (cols !== term.cols) { try { term.resize(cols, term.rows); } catch (e) {} }
-  }
-
-  function rowPx() {
-    var rows = (term && term.rows) || 24;
-    var h = el() ? el().clientHeight : 200;
-    return Math.max(8, h / rows);
-  }
-
-  // xterm only scrolls its scrollback on wheel events; iOS touch produces none, so
-  // wire touch-drag → term.scrollLines (vertical), letting horizontal drags fall
-  // through to the container's native overflow-x scroll (no-wrap mode).
-  function installTouchScroll() {
-    var e0 = el(), lastY = null, sx = 0, sy = 0, axis = '';
-    e0.addEventListener('touchstart', function (e) {
-      var t = e.touches[0]; lastY = t.clientY; sx = t.clientX; sy = t.clientY; axis = '';
-    }, { passive: true });
-    e0.addEventListener('touchmove', function (e) {
-      if (lastY === null) return;
-      var t = e.touches[0];
-      if (!axis) {
-        var dx = Math.abs(t.clientX - sx), dy = Math.abs(t.clientY - sy);
-        if (dx < 6 && dy < 6) return;
-        axis = dx > dy ? 'x' : 'y';
-        if (axis === 'x') { lastY = null; return; } // native horizontal scroll
-      }
-      var delta = lastY - t.clientY;
-      var lines = delta > 0 ? Math.floor(delta / rowPx()) : Math.ceil(delta / rowPx());
-      if (lines !== 0) { term.scrollLines(lines); lastY = t.clientY; }
-    }, { passive: true });
-    function end() { lastY = null; axis = ''; }
-    e0.addEventListener('touchend', end, { passive: true });
-    e0.addEventListener('touchcancel', end, { passive: true });
   }
 
   window.gtmuxWrite = function (text) {
@@ -147,8 +124,8 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 <style>${css}
   html,body{margin:0;padding:0;height:100%;background:#0B0B0F;overflow:hidden}
   #term{position:absolute;inset:0;padding:6px;overflow:hidden}
-  /* let the viewport scroll horizontally in no-wrap mode (xterm clips it by default) */
-  .xterm-viewport{overflow-x:auto !important;-webkit-overflow-scrolling:touch}
+  /* native momentum scroll both ways (xterm clips horizontal by default) */
+  .xterm-viewport{overflow-x:auto !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch}
 </style></head><body><div id="term"></div>
 <script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script>
 <script>${bootstrap}</script></body></html>`;
