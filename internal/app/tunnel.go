@@ -334,21 +334,21 @@ func runCloudflared(bin string, args []string, readyRe *regexp.Regexp, onReady f
 	}()
 
 	ready := false
+	verbose := os.Getenv("GTMUX_TUNNEL_DEBUG") != ""
 	sc := bufio.NewScanner(stderr)
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
 	for sc.Scan() {
 		line := sc.Text()
-		if !ready {
+		// cloudflared's INF chatter (tunnel id, version, GOOS, ICMP proxy, the
+		// connectivity-pre-checks box, DNS tables, …) is internal noise to an ordinary
+		// user — suppress it both before AND after the QR, surfacing only real
+		// warnings/errors. GTMUX_TUNNEL_DEBUG shows everything for diagnosis.
+		if verbose || cloudflaredProblem(line) {
 			fmt.Fprintln(os.Stderr, i18n.Dim+line+i18n.Reset)
-			if readyRe.MatchString(line) {
-				onReady(line)
-				ready = true
-			}
-		} else if cloudflaredProblem(line) {
-			// After the pairing QR is shown, go quiet so cloudflared's INF chatter
-			// (connectivity box, extra connections, DNS tables) doesn't scroll the
-			// QR off-screen — but still surface real warnings/errors.
-			fmt.Fprintln(os.Stderr, i18n.Dim+line+i18n.Reset)
+		}
+		if !ready && readyRe.MatchString(line) {
+			onReady(line)
+			ready = true
 		}
 	}
 	err = cmd.Wait()

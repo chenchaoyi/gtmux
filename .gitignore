@@ -8,3 +8,4 @@ coverage.out
 /macapp/.build/
 /macapp/build/
 /relay-bin
+.playwright-mcp/
