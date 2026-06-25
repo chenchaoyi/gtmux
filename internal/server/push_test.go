@@ -109,6 +109,43 @@ func TestPushLiveActivity(t *testing.T) {
 	}
 }
 
+// TestWaitingAlertCollapses: a waiting push carries the pane as its collapse-id so
+// a re-nudge replaces the prior banner instead of stacking a second one.
+func TestWaitingAlertCollapses(t *testing.T) {
+	relay := &fakeRelay{}
+	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil, nil)
+	pm.dispatch(Alert{Pane: "%7", Kind: "waiting", Agent: "Claude"})
+	got := relay.intents()
+	if len(got) != 1 || got[0].CollapseID != "%7" {
+		t.Fatalf("waiting intent collapse-id = %+v, want %q", got, "%7")
+	}
+}
+
+// TestOnTallyBadgeSync: every tally change fans a silent, absolute-badge push to
+// all devices (so a second/offline phone syncs its red dot to the waiting count).
+func TestOnTallyBadgeSync(t *testing.T) {
+	relay := &fakeRelay{}
+	pm := NewPushManager(relay, []DeviceToken{{Token: "a"}, {Token: "b"}}, nil, nil)
+	pm.OnTally(Tally{Waiting: 2, Working: 1})
+
+	silent := 0
+	for _, in := range relay.intents() {
+		if !in.Silent {
+			continue
+		}
+		silent++
+		if in.Badge == nil || *in.Badge != 2 {
+			t.Errorf("badge = %v, want 2", in.Badge)
+		}
+		if in.Title != "" || in.Body != "" {
+			t.Errorf("silent badge push must carry no alert copy: %+v", in)
+		}
+	}
+	if silent != 2 {
+		t.Fatalf("silent badge pushes = %d, want 2 (one per device)", silent)
+	}
+}
+
 func TestPushManagerFormatter(t *testing.T) {
 	relay := &fakeRelay{}
 	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil,

@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -146,6 +147,42 @@ func TestAPNSPush(t *testing.T) {
 	}
 	if gotTopic != "com.gtmux.app" || gotType != "alert" || !strings.HasPrefix(gotAuth, "bearer ") {
 		t.Fatalf("headers topic=%q type=%q auth=%q", gotTopic, gotType, gotAuth)
+	}
+}
+
+// TestAPNSSilentBadge: a silent badge-sync push goes out as a background push with
+// a collapse-id, an absolute badge, and content-available — no alert.
+func TestAPNSSilentBadge(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	var gotType, gotCollapse, gotPrio, gotBody string
+	apple := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotType = r.Header.Get("apns-push-type")
+		gotCollapse = r.Header.Get("apns-collapse-id")
+		gotPrio = r.Header.Get("apns-priority")
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer apple.Close()
+
+	p, _ := newAPNSPusher(apple.URL, "t", "k", "tm", mustP8(t, key))
+	badge := 3
+	if err := p.Push(context.Background(), pushRequest{
+		Token: "x", Silent: true, Badge: &badge, CollapseID: "%5", Pane: "%5",
+	}); err != nil {
+		t.Fatalf("push: %v", err)
+	}
+	if gotType != "background" || gotPrio != "5" {
+		t.Errorf("silent push type=%q prio=%q, want background/5", gotType, gotPrio)
+	}
+	if gotCollapse != "%5" {
+		t.Errorf("collapse-id = %q, want %%5", gotCollapse)
+	}
+	if !strings.Contains(gotBody, `"content-available":1`) || !strings.Contains(gotBody, `"badge":3`) {
+		t.Errorf("silent payload = %s", gotBody)
+	}
+	if strings.Contains(gotBody, `"alert"`) || strings.Contains(gotBody, `"sound"`) {
+		t.Errorf("silent push must carry no alert/sound: %s", gotBody)
 	}
 }
 
