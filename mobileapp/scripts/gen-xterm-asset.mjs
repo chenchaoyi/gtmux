@@ -15,6 +15,7 @@ const css = read(resolve(nm, 'xterm/css/xterm.css'));
 const xtermJs = read(resolve(nm, 'xterm/lib/xterm.js'));
 const fitJs = read(resolve(nm, 'addon-fit/lib/addon-fit.js'));
 const uni11Js = read(resolve(nm, 'addon-unicode11/lib/addon-unicode11.js'));
+const webglJs = read(resolve(nm, 'addon-webgl/lib/addon-webgl.js'));
 
 // The bridge: RN calls window.gtmuxWrite / gtmuxConfig via injectJavaScript. The
 // terminal is read-only here (no key input wired yet — that stays on the existing
@@ -42,6 +43,14 @@ const bootstrap = `
       term.unicode.activeVersion = '11';   // correct CJK / wide-glyph widths
     } catch (e) {}
     term.open(el());
+    // GPU renderer — the DOM renderer can't repaint visible rows fast enough to keep
+    // up with momentum scroll on a phone (→ jank). WebGL2 keeps up; on context loss
+    // (e.g. backgrounding) dispose it so xterm falls back to the DOM renderer.
+    try {
+      var webgl = new WebglAddon.WebglAddon();
+      webgl.onContextLoss(function () { try { webgl.dispose(); } catch (e) {} });
+      term.loadAddon(webgl);
+    } catch (e) {}
     relayout();
     window.addEventListener('resize', relayout);
     // Vertical scroll is the .xterm-viewport's native momentum scroll (smooth); a
@@ -127,7 +136,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
   /* native momentum scroll both ways (xterm clips horizontal by default) */
   .xterm-viewport{overflow-x:auto !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch}
 </style></head><body><div id="term"></div>
-<script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script>
+<script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script><script>${webglJs}</script>
 <script>${bootstrap}</script></body></html>`;
 
 const out = resolve(here, '..', 'src', 'ui', 'xtermAsset.ts');
