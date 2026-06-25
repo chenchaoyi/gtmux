@@ -3,7 +3,7 @@
 // falls back to Pairing automatically (the navigator unmounts).
 
 import React from 'react';
-import {ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
@@ -71,7 +71,13 @@ export function SettingsScreen({navigation}: any) {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-            onPress={() => mac && removeServer(mac.url)}>
+            onPress={() =>
+              mac &&
+              Alert.alert(mac.name, t('removeServerQ'), [
+                {text: t('cancel'), style: 'cancel'},
+                {text: t('removeMac'), style: 'destructive', onPress: () => removeServer(mac.url)},
+              ])
+            }>
             <Text style={[styles.rowLabel, styles.danger]}>{t('removeMac')}</Text>
           </TouchableOpacity>
         </Section>
