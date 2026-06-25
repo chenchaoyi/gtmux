@@ -21,35 +21,21 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-// hookAgent describes how one coding agent's hook/notify events map onto gtmux's
-// CANONICAL event vocabulary — which is just Claude's event names, since Claude
-// is the reference that decide() is written against. Add an agent here (+ its
-// installer in install-hooks) to give it ⏸ needs-input / ✓ done / notifications.
-type hookAgent struct {
-	display string            // notification subtitle, e.g. "Claude Code"
-	events  map[string]string // the agent's raw event name → canonical event name
-}
-
-// hookAgents is keyed by `gtmux hook --agent <key>` (default "claude"). Claude is
-// an identity map; e.g. Codex would map "turn-ended" → "Stop".
-var hookAgents = map[string]hookAgent{
-	"claude": {
-		display: "Claude Code",
-		events: map[string]string{
-			"UserPromptSubmit": "UserPromptSubmit",
-			"Stop":             "Stop",
-			"Notification":     "Notification",
-		},
-	},
-	// Codex's `notify` runs `<program> [args…] <json-payload>` when the agent
-	// finishes a turn; the payload's "type" is the event. (Inferred from Codex's
-	// notify contract — verify against a real turn.)
-	"codex": {
-		display: "Codex",
-		events: map[string]string{
-			"agent-turn-complete": "Stop", // turn done, your move → finished/idle
-		},
-	},
+// agentDisplay lists the coding agents gtmux recognizes at hook time, mapping
+// `gtmux hook --agent <key>` to a notification display name. An agent absent here
+// is a no-op (preserves "unknown agent does nothing"). This is just the
+// known-agent gate + display name; per-agent EVENT SEMANTICS live in classify.go
+// (each agent's own table, else the generic table). Install support for each is
+// in install-hooks.
+var agentDisplay = map[string]string{
+	"claude":       "Claude Code",
+	"codex":        "Codex",
+	"gemini":       "Gemini",
+	"cursor":       "Cursor",
+	"opencode":     "opencode",
+	"copilot":      "Copilot",
+	"hermes-agent": "Hermes",
+	"kiro":         "Kiro",
 }
 
 // extractEvent returns the raw event from a positional hook arg: the token
@@ -65,17 +51,6 @@ func extractEvent(token string) string {
 		}
 	}
 	return token
-}
-
-// canonicalEvent translates an agent's raw event to the canonical event decide()
-// understands ("" when the agent or event is unknown → no-op), plus the agent's
-// display name for the notification.
-func canonicalEvent(agentKey, rawEvent string) (event, display string) {
-	ag, ok := hookAgents[agentKey]
-	if !ok {
-		return "", ""
-	}
-	return ag.events[rawEvent], ag.display
 }
 
 // decision is what a hook event implies, independent of the filesystem. Keeping
@@ -98,6 +73,9 @@ type decision struct {
 //   - Notification     → record last-finished, notify; mark waiting ONLY mid-turn
 //     (active present). A Notification while idle is Claude's idle nudge, not a
 //     real "blocked on you", so it must NOT set waiting.
+//   - Waiting           → the classifier confirmed an approval/plan/question is
+//     pending (a side-effecting tool, ExitPlanMode, AskUserQuestion, …), so mark
+//     waiting unconditionally and notify; the turn is still in progress.
 func decide(event string, activePresent bool) decision {
 	switch event {
 	case "UserPromptSubmit":
@@ -106,8 +84,25 @@ func decide(event string, activePresent bool) decision {
 		return decision{clearActive: true, clearWaiting: true, setLastFinished: true, notify: true}
 	case "Notification":
 		return decision{setWaiting: activePresent, setLastFinished: true, notify: true}
+	case "Waiting":
+		return decision{setWaiting: true, notify: true}
 	default:
 		return decision{}
+	}
+}
+
+// waitBody is the notification body for a "needs you" event, tailored to the
+// kind of wait (permission / plan / question), else a generic prompt.
+func waitBody(k Kind) string {
+	switch k {
+	case KindPlan:
+		return i18n.Tr("Plan ready — tap to review", "计划已就绪，点按查看")
+	case KindQuestion:
+		return i18n.Tr("A question for you — tap to answer", "有个问题等你，点按回答")
+	case KindPermission:
+		return i18n.Tr("Needs your approval — tap to jump", "需要你批准，点按跳转")
+	default:
+		return i18n.Tr("Needs your input — tap to jump", "需要你的输入，点按跳转")
 	}
 }
 
@@ -167,15 +162,32 @@ func Run(stdin io.Reader, args []string) int {
 	var payload struct {
 		HookEventName string `json:"hook_event_name"`
 		SessionID     string `json:"session_id"` // the agent's session id (Claude); "" otherwise
+		ToolName      string `json:"tool_name"`  // the tool a PreToolUse refers to (Claude)
 	}
 	_ = json.Unmarshal(raw, &payload)
 	if rawEvent == "" {
 		rawEvent = payload.HookEventName
 	}
 	agentSession := payload.SessionID
-	event, display := canonicalEvent(agentKey, rawEvent)
+
+	display, known := agentDisplay[agentKey]
+	if !known {
+		return 0 // unknown agent → no-op
+	}
+	// Classify the raw event into a canonical lifecycle + (for Waiting) a kind.
+	class := classify(agentKey, rawEvent, payload.ToolName)
+	event := class.Lifecycle
+	waitKind := class.Kind
+	// Claude's Notification is its permission signal — waiting iff mid-turn (a
+	// timing decision the generic classifier marks telemetry). Preserve gtmux's
+	// existing behavior and default the kind to permission.
+	if agentKey == "claude" && rawEvent == "Notification" {
+		event = "Notification"
+		waitKind = KindPermission
+	}
 	if event == "" {
-		return 0 // unknown agent or unmapped event → no-op
+		debugf("telemetry no-op: agent=%s raw=%q tool=%q", agentKey, rawEvent, payload.ToolName)
+		return 0
 	}
 
 	// The pane id ($TMUX_PANE, e.g. %12) is the state key. Outside tmux we can't
@@ -196,6 +208,10 @@ func Run(stdin io.Reader, args []string) int {
 	}
 
 	activePresent := pane != "" && state.Exists(state.ActivePath(pane))
+	priorWaitKind := ""
+	if pane != "" {
+		priorWaitKind = state.ReadMarker(state.WaitingPath(pane))
+	}
 	d := decide(event, activePresent)
 	if pane != "" {
 		applyState(d, pane)
@@ -204,9 +220,19 @@ func Run(stdin io.Reader, args []string) int {
 		if d.setActive && agentSession != "" {
 			_ = state.WriteMarker(state.ActivePath(pane), agentSession)
 		}
+		// The waiting marker carries the KIND (permission/plan/question) so the
+		// radar + notification can say what's actually needed.
+		if d.setWaiting {
+			_ = state.WriteMarker(state.WaitingPath(pane), string(waitKind))
+		}
 	}
-	debugf("agent=%s raw=%q event=%s pane=%q session=%q agent-session=%q active=%v notify=%v",
-		agentKey, rawEvent, event, pane, session, agentSession, activePresent, d.notify)
+	// Don't re-notify a Waiting already flagged with the same kind — a generic
+	// agent's PreToolUse can re-fire while you're still deciding.
+	if event == "Waiting" && waitKind != "" && priorWaitKind == string(waitKind) {
+		d.notify = false
+	}
+	debugf("agent=%s raw=%q event=%s kind=%q pane=%q session=%q agent-session=%q active=%v notify=%v",
+		agentKey, rawEvent, event, waitKind, pane, session, agentSession, activePresent, d.notify)
 
 	if !d.notify {
 		return 0
@@ -224,9 +250,9 @@ func Run(stdin io.Reader, args []string) int {
 	// The session name is the bold title; the agent name is the subtitle.
 	kind := "done"
 	body := i18n.Tr("Finished — tap to jump", "已完成，点按跳转")
-	if event == "Notification" {
+	if event == "Notification" || event == "Waiting" {
 		kind = "input"
-		body = i18n.Tr("Needs your input — tap to jump", "需要你的输入，点按跳转")
+		body = waitBody(waitKind)
 	}
 	title := session
 	if title == "" {

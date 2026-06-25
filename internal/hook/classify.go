@@ -41,6 +41,7 @@ const (
 	semApprovalRequest                 // a real approval is pending → actionable
 	semToolStart                       // a tool is starting; agent has a dedicated approval event → telemetry
 	semToolStartMaybeApproval          // a tool is starting; no dedicated approval event → escalate side-effecting tools
+	semToolStartDedicatedOnly          // a tool is starting; escalate ONLY dedicated-approval tools (plan/question), drop the rest
 	semToolEnd
 	semPreCompact
 	semPostCompact
@@ -73,6 +74,14 @@ func classify(source, event, tool string) Class {
 			return Class{Lifecycle: "Waiting", Kind: KindPermission, Actionable: true}
 		}
 		return Class{} // read-only tool start → telemetry
+	case semToolStartDedicatedOnly:
+		// Claude's PreToolUse fires before EVERY tool (most are auto-approved), so
+		// it is not a "waiting" signal — except ExitPlanMode / AskUserQuestion,
+		// which always block on you. Escalate only those; drop the rest.
+		if k := dedicatedApprovalKind(tool); k != "" {
+			return Class{Lifecycle: "Waiting", Kind: k, Actionable: true}
+		}
+		return Class{}
 	case semPromptSubmit:
 		return Class{Lifecycle: "UserPromptSubmit"}
 	case semResponse:
@@ -119,17 +128,21 @@ func eventSemantic(source, event string) semantic {
 var agentEventSemantics = map[string]map[string]semantic{
 	"claude": {
 		"PermissionRequest": semApprovalRequest,
-		"PreToolUse":        semToolStart,
-		"PostToolUse":       semToolEnd,
-		"PreCompact":        semPreCompact,
-		"PostCompact":       semPostCompact,
-		"UserPromptSubmit":  semPromptSubmit,
-		"SessionStart":      semSessionStart,
-		"SessionEnd":        semSessionEnd,
-		"Stop":              semResponse,
-		"SubagentStart":     semSubagentStart,
-		"SubagentStop":      semSubagentResponse,
-		"Notification":      semStatusNotification,
+		// gtmux deviation from cmux (which keeps claude PreToolUse as pure
+		// telemetry and gets plan/question via a synthesized PermissionRequest):
+		// gtmux reads plan/question straight off PreToolUse's tool_name, so this
+		// escalates ONLY ExitPlanMode / AskUserQuestion.
+		"PreToolUse":       semToolStartDedicatedOnly,
+		"PostToolUse":      semToolEnd,
+		"PreCompact":       semPreCompact,
+		"PostCompact":      semPostCompact,
+		"UserPromptSubmit": semPromptSubmit,
+		"SessionStart":     semSessionStart,
+		"SessionEnd":       semSessionEnd,
+		"Stop":             semResponse,
+		"SubagentStart":    semSubagentStart,
+		"SubagentStop":     semSubagentResponse,
+		"Notification":     semStatusNotification,
 	},
 	"codex": {
 		// Codex runs its own approval reviewer; its PermissionRequest is

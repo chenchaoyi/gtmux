@@ -164,3 +164,55 @@ func TestRunSupersededStopIgnored(t *testing.T) {
 		t.Fatal("matching Stop did not clear the active marker")
 	}
 }
+
+// TestRunClassifierWaiting: the classifier drives waiting + its kind. Generic
+// agents escalate side-effecting tools; Claude escalates only plan/question
+// (and keeps its Notification-as-permission timing); the waiting marker carries
+// the kind.
+func TestRunClassifierWaiting(t *testing.T) {
+	cases := []struct {
+		name      string
+		agent     string
+		stdin     string
+		preActive bool   // pre-create the active marker (mid-turn)
+		wantKind  string // expected waiting marker content; "" = no waiting marker
+	}{
+		{"gemini side-effecting tool → permission", "gemini",
+			`{"hook_event_name":"PreToolUse","tool_name":"Bash"}`, false, "permission"},
+		{"gemini read-only tool → no waiting", "gemini",
+			`{"hook_event_name":"PreToolUse","tool_name":"Read"}`, false, ""},
+		{"claude plan tool → plan", "claude",
+			`{"hook_event_name":"PreToolUse","tool_name":"ExitPlanMode"}`, false, "plan"},
+		{"claude question tool → question", "claude",
+			`{"hook_event_name":"PreToolUse","tool_name":"AskUserQuestion"}`, false, "question"},
+		{"claude bash pre-tool → no waiting", "claude",
+			`{"hook_event_name":"PreToolUse","tool_name":"Bash"}`, false, ""},
+		{"claude notification mid-turn → permission", "claude",
+			`{"hook_event_name":"Notification"}`, true, "permission"},
+		{"claude notification idle → no waiting", "claude",
+			`{"hook_event_name":"Notification"}`, false, ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			hermeticEnv(t)
+			t.Setenv("TMUX_PANE", "%5")
+			if c.preActive {
+				_ = state.Touch(state.ActivePath("%5"))
+			}
+			var args []string
+			if c.agent != "claude" {
+				args = []string{"--agent", c.agent}
+			}
+			Run(strings.NewReader(c.stdin), args)
+			got := ""
+			if state.Exists(state.WaitingPath("%5")) {
+				if got = state.ReadMarker(state.WaitingPath("%5")); got == "" {
+					got = "<empty>"
+				}
+			}
+			if got != c.wantKind {
+				t.Fatalf("waiting marker = %q, want %q", got, c.wantKind)
+			}
+		})
+	}
+}
