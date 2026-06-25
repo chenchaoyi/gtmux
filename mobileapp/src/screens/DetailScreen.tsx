@@ -165,7 +165,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {/* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */}
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
         {xtermEnabled ? (
-          <XtermView text={text} fontSize={fontSize} />
+          <XtermView text={text} fontSize={fontSize} wrap={wrap} />
         ) : (
           <ScrollView
             ref={scrollRef}
