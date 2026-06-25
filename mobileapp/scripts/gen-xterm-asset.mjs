@@ -21,8 +21,10 @@ const webglJs = read(resolve(nm, 'addon-webgl/lib/addon-webgl.js'));
 // terminal is read-only here (no key input wired yet — that stays on the existing
 // FloatingKeys/Composer path); we just render the colored capture-pane snapshot.
 const bootstrap = `
-  var term, fit, wrapOn = true, lastText = '', baseCols = 80, userScrolling = false, pending = null;
-  function el() { return document.getElementById('term'); }
+  var term, fit, wrapOn = true, lastText = '', baseCols = 80, cellPx = 8;
+  var userScrolling = false, pending = null, lastMaxLen = -1;
+  function el() { return document.getElementById('term'); }      // outer: horizontal scroller
+  function xw() { return document.getElementById('xwrap'); }     // inner: width = content extent
 
   function boot() {
     term = new Terminal({
@@ -42,7 +44,7 @@ const bootstrap = `
       term.loadAddon(u);
       term.unicode.activeVersion = '11';   // correct CJK / wide-glyph widths
     } catch (e) {}
-    term.open(el());
+    term.open(xw());                         // xterm lives in the width-controlled wrapper
     // GPU renderer — the DOM renderer can't repaint visible rows fast enough to keep
     // up with momentum scroll on a phone (→ jank). WebGL2 keeps up; on context loss
     // (e.g. backgrounding) dispose it so xterm falls back to the DOM renderer.
@@ -53,13 +55,10 @@ const bootstrap = `
     } catch (e) {}
     relayout();
     window.addEventListener('resize', relayout);
-    // Vertical scroll is the .xterm-viewport's native momentum scroll (smooth); a
-    // custom scrollLines handler just fought it and felt janky, so it's gone.
     // While the finger is down, pause snapshot writes: a working pane updates every
     // poll, and a reset+rewrite mid-gesture would yank you back to the bottom.
     el().addEventListener('touchstart', function () { userScrolling = true; }, { passive: true });
     function release() {
-      // keep paused briefly so momentum settles, then flush the latest snapshot.
       setTimeout(function () {
         userScrolling = false;
         if (pending !== null) { var t = pending; pending = null; window.gtmuxWrite(t); }
@@ -78,44 +77,39 @@ const bootstrap = `
       .length;
   }
 
-  // relayout: wrap on → fit cols to width (long lines wrap); wrap off → widen cols
-  // to the content's longest line so nothing wraps, with horizontal scroll.
+  // relayout: measure the cell size at fill width, then (no-wrap) widen the wrapper
+  // to the content. Horizontal scroll = #term scrolling the wrapper, whose explicit
+  // width is the exact extent — so it can't scroll into empty space, on any renderer.
   function relayout() {
-    if (!term || !el()) return;
-    try { fit.fit(); } catch (e) {}       // sets rows + the fill-the-width col count
-    baseCols = term.cols;                 // the floor: cols that exactly fill the screen
-    relayoutCols();                       // no-op in wrap mode
-    applyXtermWidth();
-  }
-
-  // relayoutCols (no-wrap only): set cols to the content's longest VISIBLE line (but
-  // never below fill-width), so narrow content doesn't scroll and wide content stops
-  // at its last column.
-  function relayoutCols() {
-    if (!term || wrapOn) return;
-    var maxLen = 0;
-    lastText.split('\\n').forEach(function (l) { var n = visibleLen(l); if (n > maxLen) maxLen = n; });
-    var cols = Math.max(baseCols, Math.min(maxLen || baseCols, 500));
-    if (cols !== term.cols) { try { term.resize(cols, term.rows); } catch (e) {} }
-  }
-
-  // applyXtermWidth: horizontal scroll is on #term, BOUNDED by the .xterm element's
-  // width. In no-wrap, pin .xterm to the content width (cols × cell px) so #term
-  // scrolls to exactly the last column — never into empty space — and works for both
-  // the DOM and the (absolutely-positioned) WebGL canvas. In wrap, clear it.
-  function applyXtermWidth() {
-    if (!term || !term.element) return;
+    if (!term || !el() || !xw()) return;
+    xw().style.width = '100%';
+    try { fit.fit(); } catch (e) {}
+    baseCols = term.cols;
+    if (term.element) cellPx = term.element.getBoundingClientRect().width / Math.max(1, baseCols);
+    lastMaxLen = -1;
     if (wrapOn) {
       el().style.overflowX = 'hidden';
-      term.element.style.minWidth = '';
-      return;
+    } else {
+      el().style.overflowX = 'auto';
+      relayoutCols(true);
     }
-    el().style.overflowX = 'auto';
-    var cellPx = (el().clientWidth - 12) / Math.max(1, baseCols); // 12 = #term padding
-    term.element.style.minWidth = Math.ceil(term.cols * cellPx) + 'px';
   }
 
-  function noWrapResize() { if (!wrapOn) { relayoutCols(); applyXtermWidth(); } }
+  // relayoutCols (no-wrap): set the wrapper width to the content's longest VISIBLE
+  // line (bounded), then refit so xterm fills it. Skips when the max width is
+  // unchanged, so streaming appends don't thrash fit().
+  function relayoutCols(force) {
+    if (!term || wrapOn || !xw()) return;
+    var maxLen = 0;
+    lastText.split('\\n').forEach(function (l) { var n = visibleLen(l); if (n > maxLen) maxLen = n; });
+    maxLen = Math.min(maxLen || baseCols, 1000);
+    if (!force && maxLen === lastMaxLen) return;
+    lastMaxLen = maxLen;
+    var inner = el().clientWidth - 12;     // 12 = #term padding
+    var contentPx = Math.max(inner, Math.ceil(maxLen * cellPx));
+    xw().style.width = contentPx + 'px';
+    try { fit.fit(); } catch (e) {}        // xterm now fills the wide wrapper
+  }
 
   window.gtmuxWrite = function (text) {
     if (!term || text === lastText) return;
@@ -124,10 +118,9 @@ const bootstrap = `
     lastText = text;
     // Append-only (the common case: more output at the bottom): write just the new
     // tail — no reset, so no flash, cheap, and xterm natively keeps your scroll
-    // position (only follows the bottom if you were already there). Holds until the
-    // captured scrollback window starts dropping its top lines.
+    // position (only follows the bottom if you were already there).
     if (prev && text.length > prev.length && text.lastIndexOf(prev, 0) === 0) {
-      noWrapResize();
+      relayoutCols();
       term.write(text.slice(prev.length));
       return;
     }
@@ -136,7 +129,7 @@ const bootstrap = `
     var b = term.buffer.active;
     var wasBottom = b.viewportY >= b.baseY;
     var fromBottom = b.baseY - b.viewportY;
-    noWrapResize();
+    relayoutCols();
     term.reset();
     term.write(text, function () {
       var nb = term.buffer.active;
@@ -163,11 +156,13 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>${css}
   html,body{margin:0;padding:0;height:100%;background:#0B0B0F;overflow:hidden}
-  /* #term scrolls HORIZONTALLY (bounded by .xterm's width); vertical is the
-     .xterm-viewport's own native momentum scroll. */
-  #term{position:absolute;inset:0;padding:6px;overflow-x:hidden;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-  .xterm-viewport{overflow-x:hidden !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch}
-</style></head><body><div id="term"></div>
+  /* #term scrolls HORIZONTALLY, bounded by #xwrap's explicit width. touch-action
+     locks axes: #term takes horizontal pans, the .xterm-viewport takes vertical —
+     so a horizontal swipe never bleeds into a stray vertical scroll, and vice versa. */
+  #term{position:absolute;inset:0;padding:6px;overflow-x:hidden;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  #xwrap{position:relative;height:100%;width:100%}
+  .xterm-viewport{overflow-x:hidden !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+</style></head><body><div id="term"><div id="xwrap"></div></div>
 <script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script><script>${webglJs}</script>
 <script>${bootstrap}</script></body></html>`;
 
