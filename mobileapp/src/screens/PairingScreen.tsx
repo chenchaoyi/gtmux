@@ -17,10 +17,16 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {normalizeHost, parsePairingQR} from '../pairing/qr';
+import {enrollDevice, normalizeHost, parsePairingQR} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
+
+// deviceLabel names this phone in the Mac's device roster (so you can tell devices
+// apart and revoke the right one).
+function deviceLabel(): string {
+  return Platform.OS === 'ios' ? 'gtmux • iPhone' : 'gtmux • Android';
+}
 
 // onCancel, when provided, renders a Cancel control — set when PairingScreen is
 // presented as the "Add a Mac" sheet from ServersScreen (vs. the bare first run).
@@ -61,12 +67,28 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
     connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
   };
 
-  const onScanned = (raw: string) => {
+  const onScanned = async (raw: string) => {
     setScanning(false);
+    let res;
     try {
-      const m = parsePairingQR(raw);
-      connectWith(m.url, m.token, m.name);
+      res = parsePairingQR(raw);
     } catch (e: any) {
+      setError(e?.message || t('badToken'));
+      return;
+    }
+    if (res.kind === 'paired') {
+      connectWith(res.url, res.token, res.name); // v1: token in the QR
+      return;
+    }
+    // v2: redeem the one-time code for this device's own token, then connect.
+    setBusy(true);
+    setError('');
+    try {
+      const deviceToken = await enrollDevice(res.url, res.enrollCode, deviceLabel());
+      setBusy(false);
+      await connectWith(res.url, deviceToken, res.name);
+    } catch (e: any) {
+      setBusy(false);
       setError(e?.message || t('badToken'));
     }
   };
