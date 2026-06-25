@@ -131,7 +131,9 @@ func tunnelHosted(port int, name string) int {
 	i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
 	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name)
 	if err != nil {
-		i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败："+err.Error())
+		en, zh := friendlyTunnelError(err)
+		i18n.Sae(en, zh)
+		tunnelDebugf("provision failed: %v", err) // raw detail only under GTMUX_TUNNEL_DEBUG
 		return 1
 	}
 
@@ -148,6 +150,43 @@ func tunnelHosted(port int, name string) int {
 	return runCloudflared(bin, []string{"tunnel", "run", "--token", prov.Token}, registeredRe, func(string) {
 		printTunnelPairing(prov.URL, token, name, port, true)
 	})
+}
+
+// friendlyTunnelError turns a raw provision/network error into a calm, user-facing
+// message — no internal service URLs, Go error strings, or "provision" jargon. The
+// raw detail is still available via GTMUX_TUNNEL_DEBUG for diagnosis.
+func friendlyTunnelError(err error) (en, zh string) {
+	s := strings.ToLower(err.Error())
+	contains := func(subs ...string) bool {
+		for _, sub := range subs {
+			if strings.Contains(s, sub) {
+				return true
+			}
+		}
+		return false
+	}
+	switch {
+	case contains("eof", "timeout", "deadline exceeded", "connection reset",
+		"connection refused", "no such host", "network is unreachable", "dial tcp",
+		"tls", "i/o timeout"):
+		return "Couldn't reach the tunnel service — check your internet and try again (or `gtmux tunnel --quick` for a one-off link).",
+			"连不上隧道服务 —— 请检查网络后重试（或用 `gtmux tunnel --quick` 走一次性链接）。"
+	case contains("http 4"):
+		return "The tunnel service turned down this request. Try `gtmux tunnel --quick` for a one-off link.",
+			"隧道服务拒绝了此请求。可用 `gtmux tunnel --quick` 走一次性链接。"
+	default:
+		return "Couldn't set up the tunnel just now — please try again in a moment.",
+			"暂时无法建立隧道，请稍后重试。"
+	}
+}
+
+// tunnelDebugf prints internal detail (raw errors, service URLs) to stderr ONLY when
+// GTMUX_TUNNEL_DEBUG is set — so normal output stays clean but issues stay diagnosable.
+func tunnelDebugf(format string, a ...any) {
+	if os.Getenv("GTMUX_TUNNEL_DEBUG") == "" {
+		return
+	}
+	fmt.Fprintf(os.Stderr, i18n.Dim+"[tunnel] "+format+i18n.Reset+"\n", a...)
 }
 
 // provisionResp is the control-plane Worker's /provision reply.
@@ -258,8 +297,8 @@ func tunnelQuick(port int, name string) int {
 func startLocalRadar(port int) string {
 	token := resolveServeToken("")
 	if portInUse(port) {
-		i18n.Say(fmt.Sprintf("Found a server on :%d — tunneling to it.", port),
-			fmt.Sprintf("检测到 :%d 上已有服务，直接给它开隧道。", port))
+		i18n.Say(i18n.Dim+"Using the radar already running here."+i18n.Reset,
+			i18n.Dim+"复用本机已在运行的雷达。"+i18n.Reset)
 		return token
 	}
 	srv := newServeServer("127.0.0.1", port, token, "", "")
@@ -267,8 +306,7 @@ func startLocalRadar(port int) string {
 	for i := 0; i < 100 && !portInUse(port); i++ {
 		time.Sleep(20 * time.Millisecond)
 	}
-	i18n.Say(fmt.Sprintf("Started the read-only radar on 127.0.0.1:%d.", port),
-		fmt.Sprintf("已在 127.0.0.1:%d 启动只读雷达。", port))
+	i18n.Say(i18n.Dim+"Local radar ready."+i18n.Reset, i18n.Dim+"本机雷达已就绪。"+i18n.Reset)
 	return token
 }
 
