@@ -51,16 +51,23 @@ const bootstrap = `
   // to the content's longest line so nothing wraps, with horizontal scroll.
   function relayout() {
     if (!term || !el()) return;
-    try { fit.fit(); } catch (e) {}       // sets rows for the current height
+    try { fit.fit(); } catch (e) {}       // sets rows + cols for the current size
     if (wrapOn) {
       el().style.overflowX = 'hidden';
     } else {
       el().style.overflowX = 'auto';
-      var maxLen = 0;
-      lastText.split('\\n').forEach(function (l) { if (l.length > maxLen) maxLen = l.length; });
-      var cols = Math.max(term.cols, Math.min(maxLen || term.cols, 500));
-      if (cols !== term.cols) { try { term.resize(cols, term.rows); } catch (e) {} }
+      relayoutCols();
     }
+  }
+
+  // relayoutCols (no-wrap only): widen cols to the content's longest line so lines
+  // don't wrap; the wide canvas then scrolls horizontally.
+  function relayoutCols() {
+    if (!term || wrapOn) return;
+    var maxLen = 0;
+    lastText.split('\\n').forEach(function (l) { if (l.length > maxLen) maxLen = l.length; });
+    var cols = Math.max(term.cols, Math.min(maxLen || term.cols, 500));
+    if (cols !== term.cols) { try { term.resize(cols, term.rows); } catch (e) {} }
   }
 
   function rowPx() {
@@ -96,14 +103,24 @@ const bootstrap = `
   }
 
   window.gtmuxWrite = function (text) {
-    if (!term) return;
+    if (!term || text === lastText) return;
+    var prev = lastText;
     lastText = text;
-    // preserve the reader's scroll position across the full reset+rewrite: keep the
-    // same distance from the bottom (so scrolling up isn't yanked back every poll).
+    // Append-only (the common case: more output at the bottom): write just the new
+    // tail — no reset, so no flash, cheap, and xterm natively keeps your scroll
+    // position (only follows the bottom if you were already there). Holds until the
+    // captured scrollback window starts dropping its top lines.
+    if (prev && text.length > prev.length && text.lastIndexOf(prev, 0) === 0) {
+      if (!wrapOn) relayoutCols();
+      term.write(text.slice(prev.length));
+      return;
+    }
+    // Full change (scrolled-off / TUI redraw) → repaint, preserving the reader's
+    // distance from the bottom so a manual scroll-up isn't yanked back.
     var b = term.buffer.active;
     var wasBottom = b.viewportY >= b.baseY;
     var fromBottom = b.baseY - b.viewportY;
-    if (!wrapOn) relayout();             // widen before writing so no-wrap is correct
+    if (!wrapOn) relayoutCols();
     term.reset();
     term.write(text, function () {
       var nb = term.buffer.active;
@@ -129,7 +146,9 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>${css}
   html,body{margin:0;padding:0;height:100%;background:#0B0B0F;overflow:hidden}
-  #term{position:absolute;inset:0;padding:6px;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  #term{position:absolute;inset:0;padding:6px;overflow:hidden}
+  /* let the viewport scroll horizontally in no-wrap mode (xterm clips it by default) */
+  .xterm-viewport{overflow-x:auto !important;-webkit-overflow-scrolling:touch}
 </style></head><body><div id="term"></div>
 <script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script>
 <script>${bootstrap}</script></body></html>`;
