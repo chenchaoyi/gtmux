@@ -56,6 +56,7 @@ Notes / harness facts:
 | WRAP-02 | toggle → Scroll (no-wrap) | tap Wrap → label becomes Scroll | long lines extend past the right edge (cut off), not wrapped | visual | |
 | WRAP-03 | toggle back re-wraps | tap Scroll → Wrap | lines wrap again; horizontal disabled | visual | |
 | WRAP-04 | wrap state re-renders content | toggle while content present | content stays correct after each toggle (no blank/garbled) | visual | |
+| WRAP-05 | wrap renders on FIRST open (regression #141) | open detail fresh (no toggle) | terminal shows text immediately — NOT a black screen (the cursor decoration must not blank the WebGL layer in wrap mode) | visual | |
 
 ## TERM-HSCROLL — horizontal scroll (no-wrap)
 
@@ -151,3 +152,17 @@ Driven via Appium (`qa-drive*.mjs`, scratch) + screenshot review. Pane under tes
 **Follow-ups:** add testIds to the detail controls (Wrap/A±/fullscreen) so the e2e
 suite can target them deterministically; add a LIVE streaming-pane case; consider
 a faint horizontal scroll indicator for very wide content.
+
+### 2026-06-26 — pass 2 (iPhone 17 Pro sim, xterm on) — WRAP regression sweep
+
+Triggered by a user report: "wrap doesn't work." Rebuilt the sim from `main`
+(the prior pass had run a *stale* asset predating #140) and re-ran the WRAP set.
+
+| id | result | note |
+|----|--------|------|
+| **WRAP-05 first-open render** | **❌→✅** | **DEFECT (#141): wrap mode — the default — showed a fully BLACK terminal on first open; only the cursor box drew. Root cause: #140's cursor *decoration* leaves xterm's WebGL base layer blank until the next repaint; no-wrap repainted via its per-poll `relayoutCols` refit, but wrap never refits. FIXED: `term.refresh()` (next animation frame) after the cursor decoration changes. Re-tested: wrap renders text at open.** |
+| WRAP-01/03/04 | ✅ | re-verified after the fix — wrap renders, toggles cleanly, no blank |
+
+**Defects fixed this pass:** wrap-mode black-screen-on-open (#141).
+**Process note:** always rebuild the sim from `main` before a regression pass —
+a stale installed `.app` masked this (pass 1 ran #139's asset, not #140's).
