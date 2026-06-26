@@ -247,6 +247,7 @@ const bootstrap = `
       });
     } catch (e) { try { term.refresh(0, Math.max(0, term.rows - 1)); } catch (e2) {} }
   }
+  var curColor = '#bbc1ff';  // cursor decoration color (overridden by the terminal theme)
   window.gtmuxCursor = function (c) {
     if (!term) return;
     if (curDeco) { try { curDeco.dispose(); } catch (e) {} curDeco = null; }
@@ -256,13 +257,13 @@ const bootstrap = `
       curMarker = term.registerMarker(-(c.up | 0));   // up rows above the write cursor
       if (!curMarker) { repaint(); return; }
       curDeco = term.registerDecoration({
-        marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: '#bbc1ff',
+        marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: curColor,
       });
       // belt-and-suspenders: also style the element on render (some renderers ignore
       // backgroundColor in the options).
       if (curDeco && curDeco.onRender) {
         curDeco.onRender(function (el) {
-          el.style.background = '#bbc1ff';
+          el.style.background = curColor;
           el.style.opacity = '0.85';
         });
       }
@@ -274,7 +275,10 @@ const bootstrap = `
     if (!term || !opts) return;
     if (typeof opts.fontSize === 'number') term.options.fontSize = opts.fontSize;
     if (typeof opts.wrap === 'boolean') wrapOn = opts.wrap;
-    if (opts.theme) term.options.theme = opts.theme;
+    if (opts.theme) term.options.theme = opts.theme;                  // {background,foreground,cursor,...,16 palette keys}
+    if (opts.fontFamily) term.options.fontFamily = opts.fontFamily;   // matched bundled font, else default
+    if (opts.cursorColor) curColor = opts.cursorColor;                // terminal cursor color for the decoration
+    if (opts.background) document.body.style.background = opts.background;
     relayout();
     // force a re-render at the new wrap/size (gtmuxWrite skips an unchanged text).
     var t = lastText; lastText = ''; if (t) window.gtmuxWrite(t);

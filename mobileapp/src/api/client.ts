@@ -2,7 +2,7 @@
 // Mirrors api/contract.md. `focus` selects a pane; `send` types into one (a WRITE
 // gated only by the bearer token).
 
-import {Agent, PaneResponse, toAgent} from './types';
+import {Agent, PaneResponse, TermTheme, toAgent} from './types';
 import {Debug} from '../debug';
 
 export interface SendPayload {
@@ -81,6 +81,14 @@ export class GtmuxClient {
     if (!r.ok) return null;
     const j = await r.json().catch(() => null);
     return typeof j?.enrollCode === 'string' ? j.enrollCode : null;
+  }
+
+  // theme returns the host terminal's resolved appearance (colors + font) so the
+  // pane mirror matches the user's real terminal. null on failure.
+  async theme(): Promise<TermTheme | null> {
+    const r = await tfetch(`${this.base}/api/theme`, {headers: this.h()});
+    if (!r.ok) return null;
+    return r.json().catch(() => null);
   }
 
   // diff fetches a unified `git diff` of the pane's cwd ("what the agent changed").

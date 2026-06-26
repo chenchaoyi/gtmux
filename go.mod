@@ -27,5 +27,6 @@ require (
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
+	howett.net/plist v1.0.1 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
