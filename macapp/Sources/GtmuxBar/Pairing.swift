@@ -143,65 +143,101 @@ final class PairingController {
 struct PairingView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject private var remote = RemoteAccess.shared
+    @ObservedObject private var ent = Entitlements.shared
     @State private var info: PairingInfo?
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
     @State private var enrollCode: String? // minted short-lived code (v2 QR)
     @State private var codeReady = false // mint attempt finished (success or fallback)
+    @State private var showPaywall = false
 
     var body: some View {
         VStack(spacing: 13) {
-            if let p = info {
-                if codeReady, let qr = Pairing.qrImage(Pairing.payload(p, enrollCode: enrollCode)) {
-                    Image(nsImage: qr)
-                        .interpolation(.none).resizable()
-                        .frame(width: 230, height: 230)
-                        .background(Color.white).cornerRadius(10)
-                    wrap(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
-                                 "在 gtmux 手机 app 里：配对 → 扫一扫"), size: 12, color: .secondary)
-                    Text(p.url)
-                        .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                        .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
-                    reachLine
-                    if p.anywhere {
-                        wrap(l10n.tr("Reachable from anywhere (a tunnel is up).",
-                                     "任意网络可达（隧道在运行）。"), size: 11, color: .tertiary)
-                    } else {
-                        wrap(l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"), size: 11, color: .tertiary)
-                        remoteButton
-                    }
-                } else {
-                    ProgressView().controlSize(.large).frame(width: 230, height: 230)
-                    wrap(l10n.tr("Preparing a one-time pairing code…", "正在准备一次性配对码…"),
-                         size: 12, color: .secondary)
-                }
-            } else {
+            modeChooser
+            if !ent.isPro { proHint }
+
+            if remote.busy {
+                switchingLine
+            } else if let p = info, codeReady,
+                      let qr = Pairing.qrImage(Pairing.payload(p, enrollCode: enrollCode)) {
+                Image(nsImage: qr)
+                    .interpolation(.none).resizable()
+                    .frame(width: 220, height: 220)
+                    .background(Color.white).cornerRadius(10)
+                wrap(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
+                             "在 gtmux 手机 app 里：配对 → 扫一扫"), size: 12, color: .secondary)
+                Text(p.url)
+                    .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                    .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                reachLine
+                wrap(p.anywhere
+                        ? l10n.tr("Reachable from anywhere (a tunnel is up).", "任意网络可达（隧道在运行）。")
+                        : l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"),
+                     size: 11, color: .tertiary)
+            } else if remote.mode == .off {
                 Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
-                wrap(l10n.tr("Remote access isn't set up yet.", "还没设置远程访问。"), size: 13, color: .primary)
-                remoteButton
+                    .frame(height: 130)
+                wrap(l10n.tr("Pick how your phone reaches this Mac — Wi-Fi (same network) or Anywhere.",
+                             "选择手机如何连到这台 Mac —— 局域网（同一网络）或任意网络。"),
+                     size: 12, color: .secondary)
+            } else {
+                ProgressView().controlSize(.large).frame(width: 220, height: 220)
+                wrap(l10n.tr("Preparing a one-time pairing code…", "正在准备一次性配对码…"),
+                     size: 12, color: .secondary)
             }
         }
         .padding(22)
         .frame(width: 340)
-        .onAppear { reload() }
-        .onChange(of: remote.isOn) { _ in reload() }
+        .onAppear { remote.refresh(); reload() }
+        .onChange(of: remote.mode) { _ in reload() }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(l10n: l10n,
+                        onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
+                        onClose: { showPaywall = false })
+        }
     }
 
-    // remoteButton — enable the always-on tunnel from here, so pairing works from
-    // anywhere without running `gtmux tunnel` in a terminal.
-    @ViewBuilder private var remoteButton: some View {
-        if remote.busy {
-            HStack(spacing: 6) {
-                ProgressView().controlSize(.small)
-                Text(l10n.tr("Setting up remote access…", "正在开启远程访问…"))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-        } else {
-            Button(action: enableRemote) {
-                Label(l10n.tr("Turn on remote access (anywhere)", "开启远程访问（任意网络）"),
-                      systemImage: "globe")
-            }
-            .controlSize(.regular)
+    // modeChooser — the merged remote-access control: Off / Wi-Fi (free LAN serve)
+    // / Anywhere (the Pro always-on tunnel). Selecting Anywhere without Pro opens
+    // the paywall instead of switching.
+    @ViewBuilder private var modeChooser: some View {
+        Picker("", selection: modeBinding) {
+            Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
+            Text(l10n.tr("Wi-Fi", "局域网")).tag(RemoteMode.lan)
+            Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
         }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .frame(width: 290)
+        .disabled(remote.busy)
+    }
+
+    private var modeBinding: Binding<RemoteMode> {
+        Binding(
+            get: { remote.mode },
+            set: { m in
+                switch m {
+                case .off: remote.turnOff()
+                case .lan: remote.enableLan()
+                case .anywhere: ent.isPro ? confirmAnywhere() : (showPaywall = true)
+                }
+            })
+    }
+
+    private var proHint: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "lock.fill").font(.system(size: 9))
+            Text(l10n.tr("“Anywhere” is a Pro feature", "“任意网络”为 Pro 功能"))
+        }
+        .font(.system(size: 10)).foregroundStyle(.tertiary)
+    }
+
+    private var switchingLine: some View {
+        VStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            Text(l10n.tr("Switching remote access…", "正在切换远程访问…"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+        }
+        .frame(width: 220, height: 220)
     }
 
     @ViewBuilder private var reachLine: some View {
@@ -252,16 +288,18 @@ struct PairingView: View {
         }
     }
 
-    private func enableRemote() {
+    // confirmAnywhere — confirm the standing exposure, then enable the always-on
+    // tunnel (Pro). Reached only when Pro is unlocked (else the paywall shows).
+    private func confirmAnywhere() {
         let a = NSAlert()
-        a.messageText = l10n.tr("Turn on remote access?", "开启远程访问？")
+        a.messageText = l10n.tr("Turn on Anywhere access?", "开启任意网络访问？")
         a.informativeText = l10n.tr(
-            "Your Mac becomes reachable from anywhere at a stable URL (token-gated) until you turn it off in Preferences. It's a standing exposure.",
-            "开启后，你的 Mac 会在一个固定地址上从任何网络可达（有 token 把关），直到你在偏好设置里关闭。这是个长期敞口。")
+            "Your Mac becomes reachable from anywhere at a stable URL (token-gated) until you switch it off. It's a standing exposure.",
+            "开启后，你的 Mac 会在一个固定地址上从任何网络可达（有 token 把关），直到你关闭。这是个长期敞口。")
         a.addButton(withTitle: l10n.tr("Enable", "开启"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {
-            remote.enable()
+            remote.enableAnywhere()
         }
     }
 

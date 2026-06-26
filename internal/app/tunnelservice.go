@@ -117,6 +117,60 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	return 0
 }
 
+// serveServiceInstall registers a LAN-only serve LaunchAgent (bind 0.0.0.0 so the
+// phone reaches it on the same Wi-Fi) that survives reboots. This is the free
+// "same Wi-Fi" remote mode; it removes any always-on tunnel agent first, since
+// LAN and anywhere are mutually exclusive remote-access modes (the menu-bar app
+// exposes them as one Off / Wi-Fi / Anywhere chooser).
+func serveServiceInstall(port int) int {
+	_ = resolveServeToken("") // ensure the persistent serve-token exists (0600)
+
+	// drop the tunnel layer if present — this mode is LAN-only.
+	launchctl("unload", tunnelAgentPath())
+	_ = os.Remove(tunnelAgentPath())
+	_ = os.Remove(tunnelURLPath())
+
+	logDir := filepath.Join(homeDir(), ".local", "share", "gtmux")
+	_ = os.MkdirAll(logDir, 0o755)
+	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
+		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
+		return 1
+	}
+	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
+		[]string{selfPath(), "serve", "--bind", "0.0.0.0", "--port", strconv.Itoa(port)},
+		filepath.Join(logDir, "serve.log")); err != nil {
+		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
+		return 1
+	}
+	launchctl("unload", serveAgentPath())
+	if err := launchctl("load", serveAgentPath()); err != nil {
+		i18n.Sae("gtmux serve: launchctl load: "+err.Error(), "gtmux serve: launchctl load: "+err.Error())
+		return 1
+	}
+	i18n.Say("LAN access enabled — reachable on the same Wi-Fi across reboots. Turn off: `gtmux serve --unservice`.",
+		"局域网访问已开启，同一 Wi-Fi 下重启也可达。关闭：`gtmux serve --unservice`。")
+	return 0
+}
+
+// serviceRemoveAll unloads + removes whichever remote-access agents exist (the
+// LAN serve and/or the always-on tunnel). It backs both `gtmux serve --unservice`
+// and the menu-bar "Off" choice, so turning remote access off works from any mode.
+func serviceRemoveAll() int {
+	had := fileExists(serveAgentPath()) || fileExists(tunnelAgentPath())
+	launchctl("unload", serveAgentPath())
+	launchctl("unload", tunnelAgentPath())
+	_ = os.Remove(serveAgentPath())
+	_ = os.Remove(tunnelAgentPath())
+	_ = os.Remove(tunnelURLPath())
+	if had {
+		i18n.Say("Remote access disabled — background services stopped and removed.",
+			"远程访问已关闭，后台服务已停止并移除。")
+	} else {
+		i18n.Say("Remote access is not enabled.", "远程访问未开启。")
+	}
+	return 0
+}
+
 // tunnelServiceRemove unloads + deletes the always-on agents.
 func tunnelServiceRemove() int {
 	if !serviceInstalled() {

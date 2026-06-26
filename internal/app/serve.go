@@ -32,6 +32,8 @@ func cmdServe(args []string) int {
 	token := ""
 	relayURL := ""
 	relayToken := ""
+	service := false
+	unservice := false
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -96,10 +98,23 @@ func cmdServe(args []string) int {
 			relayToken = v
 		case strings.HasPrefix(a, "--relay-token="):
 			relayToken = strings.TrimPrefix(a, "--relay-token=")
+		case a == "--service":
+			service = true
+		case a == "--unservice":
+			unservice = true
 		default:
 			i18n.Sae("gtmux serve: unknown option '"+a+"'", "gtmux serve: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+
+	// LAN access as a managed launchd agent — the free "same Wi-Fi" remote mode,
+	// the counterpart to the always-on tunnel (`gtmux tunnel --service`).
+	if unservice {
+		return serviceRemoveAll()
+	}
+	if service {
+		return serveServiceInstall(port)
 	}
 
 	token = resolveServeToken(token)
@@ -171,8 +186,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 }
 
 func serveUsageErr() int {
-	i18n.Sae("usage: gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]",
-		"用法：gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--relay-url URL] [--relay-token TOKEN]")
+	i18n.Sae("usage: gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--service|--unservice] [--relay-url URL] [--relay-token TOKEN]",
+		"用法：gtmux serve [--port N] [--bind ADDR] [--token TOKEN] [--service|--unservice] [--relay-url URL] [--relay-token TOKEN]")
 	return 2
 }
 

@@ -28,6 +28,8 @@ struct PreferencesView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var settings: AppSettings
     @ObservedObject var remote = RemoteAccess.shared
+    @ObservedObject var ent = Entitlements.shared
+    @State private var showPaywall = false
 
     var body: some View {
         Grid(alignment: .trailing, horizontalSpacing: 14, verticalSpacing: 18) {
@@ -91,40 +93,76 @@ struct PreferencesView: View {
 
             GridRow {
                 label(l10n.tr("Remote access", "远程访问"))
-                Toggle(isOn: Binding(
-                    get: { remote.isOn },
-                    set: { want in want ? confirmEnable() : remote.disable() })) {
-                    Text(remote.isOn
-                        ? (remote.url ?? l10n.tr("on — reachable from anywhere", "已开启，任意网络可达"))
-                        : l10n.tr("Keep reachable from anywhere (always-on)", "保持任意网络可达（常驻）"))
+                VStack(alignment: .leading, spacing: 5) {
+                    // Merged Off / Wi-Fi (free LAN) / Anywhere (Pro tunnel) control.
+                    Picker("", selection: remoteModeBinding) {
+                        Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
+                        Text(l10n.tr("Wi-Fi", "局域网")).tag(RemoteMode.lan)
+                        Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
+                    }
+                    .pickerStyle(.segmented).labelsHidden()
+                    .frame(width: 300).disabled(remote.busy)
+                    Text(remoteSubtitle)
                         .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .toggleStyle(.switch).disabled(remote.busy).gridColumnAlignment(.leading)
+                .gridColumnAlignment(.leading)
             }
         }
         .padding(24)
         .frame(width: 460, alignment: .topLeading)
         .onAppear { remote.refresh() }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(l10n: l10n,
+                        onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
+                        onClose: { showPaywall = false })
+        }
     }
 
     private func label(_ text: String) -> some View {
         Text(text).font(.system(size: 12)).foregroundStyle(.secondary)
     }
 
-    // confirmEnable shows the standing-exposure warning before turning always-on
-    // on (the CLI's own prompt is skipped via --yes since we confirm here).
-    private func confirmEnable() {
+    private var remoteModeBinding: Binding<RemoteMode> {
+        Binding(
+            get: { remote.mode },
+            set: { m in
+                switch m {
+                case .off: remote.turnOff()
+                case .lan: remote.enableLan()
+                case .anywhere: ent.isPro ? confirmAnywhere() : (showPaywall = true)
+                }
+            })
+    }
+
+    private var remoteSubtitle: String {
+        switch remote.mode {
+        case .off:
+            return ent.isPro
+                ? l10n.tr("Phone access is off.", "手机访问已关闭。")
+                : l10n.tr("Off. “Anywhere” is a Pro feature.", "已关闭。“任意网络”为 Pro 功能。")
+        case .lan:
+            return l10n.tr("Reachable on the same Wi-Fi.", "同一 Wi-Fi 下可达。")
+        case .anywhere:
+            return remote.url ?? l10n.tr("Reachable from anywhere (always-on).", "任意网络可达（常驻）。")
+        }
+    }
+
+    // confirmAnywhere shows the standing-exposure warning before enabling the
+    // always-on tunnel (the CLI's own prompt is skipped via --yes since we confirm
+    // here). Reached only when Pro is unlocked.
+    private func confirmAnywhere() {
         let a = NSAlert()
-        a.messageText = l10n.tr("Keep remote access on?", "保持远程访问开启？")
+        a.messageText = l10n.tr("Keep Anywhere access on?", "保持任意网络访问开启？")
         a.informativeText = l10n.tr(
             "Your Mac stays reachable at a public URL (token-gated) across reboots until you turn this off. It's a standing exposure — enable it consciously.",
             "开启后，你的 Mac 会一直在一个公网地址可达（有 token 把关），重启也不会停，直到你手动关闭。这是个长期敞口，请想清楚再开。")
         a.addButton(withTitle: l10n.tr("Enable", "开启"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {
-            remote.enable()
+            remote.enableAnywhere()
         } else {
-            remote.objectWillChange.send() // snap the toggle back to off
+            remote.objectWillChange.send() // snap the picker back
         }
     }
 }
