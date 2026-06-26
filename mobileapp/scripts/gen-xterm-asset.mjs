@@ -15,7 +15,6 @@ const css = read(resolve(nm, 'xterm/css/xterm.css'));
 const xtermJs = read(resolve(nm, 'xterm/lib/xterm.js'));
 const fitJs = read(resolve(nm, 'addon-fit/lib/addon-fit.js'));
 const uni11Js = read(resolve(nm, 'addon-unicode11/lib/addon-unicode11.js'));
-const canvasJs = read(resolve(nm, 'addon-canvas/lib/addon-canvas.js'));
 
 // The bridge: RN calls window.gtmuxWrite / gtmuxConfig via injectJavaScript. The
 // terminal is read-only here (no key input wired yet — that stays on the existing
@@ -47,13 +46,13 @@ const bootstrap = `
       term.unicode.activeVersion = '11';   // correct CJK / wide-glyph widths
     } catch (e) {}
     term.open(xw());                         // xterm lives in the width-controlled wrapper
-    // CANVAS renderer (not WebGL). The DOM renderer can't repaint visible rows fast
-    // enough for momentum scroll on a phone (→ jank), but WebGL is unreliable in iOS
-    // WKWebView on real devices: its GL context black-frames (a blank terminal on
-    // open and after the wrap toggle) in ways that never reproduce on the simulator.
-    // The canvas addon is GPU-composited, smooth enough for scroll, and has none of
-    // WebGL's context fragility. If it fails to load, xterm falls back to DOM.
-    try { term.loadAddon(new CanvasAddon.CanvasAddon()); } catch (e) {}
+    // DOM renderer (no GPU addon). We tried WebGL (black-framed on real iOS WKWebView
+    // — GL context loss, never reproduced on the sim) and then the canvas addon (works,
+    // but it's REMOVED in xterm.js v6). Both are GPU-context renderers — the entire
+    // black-frame class. For a read-only snapshot polled every ~1.5s we don't need GPU
+    // throughput, so the built-in DOM renderer is the durable choice: no GL context to
+    // lose, and it survives the v6 upgrade. (If momentum-scroll repaint feels janky on
+    // device, that's the known DOM tradeoff — revisit a GPU path then.)
     relayout();
     window.addEventListener('resize', relayout);
     installScrollControl();
@@ -290,7 +289,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
      #term's scrollWidth → unbounded horizontal scroll. Verified via Playwright. */
   .xterm .xterm-screen{overflow:hidden}
 </style></head><body><div id="term"><div id="xwrap"></div></div>
-<script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script><script>${canvasJs}</script>
+<script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script>
 <script>${bootstrap}</script></body></html>`;
 
 const out = resolve(here, '..', 'src', 'ui', 'xtermAsset.ts');
