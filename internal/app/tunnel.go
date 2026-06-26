@@ -428,6 +428,15 @@ func printPairingBlock(url, token, name string, port int) {
 	} else {
 		fmt.Printf("  token: %s\n", token)
 	}
+	// Browser mirror: the same tunnel serves the view-only web UI, reachable from
+	// any network. Reuse the one-time code for a browser pairing link.
+	i18n.Say("  or open in a browser (view-only mirror):",
+		"  或在浏览器里打开（只读镜像）：")
+	if code != "" {
+		fmt.Printf("    %s/#c=%s\n", url, code)
+	} else {
+		fmt.Printf("    %s/\n", url)
+	}
 	fmt.Println()
 	i18n.Say("Scan in the gtmux phone app (Pair → Scan):",
 		"在 gtmux 手机 app 里扫码（配对 → 扫一扫）：")

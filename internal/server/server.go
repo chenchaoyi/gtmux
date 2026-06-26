@@ -120,6 +120,15 @@ func New(cfg Config, deps Deps) *Server {
 	return s
 }
 
+// MintEnroll returns a fresh short-lived single-use pairing code (for a browser
+// pairing link), or "" if enrollment isn't configured.
+func (s *Server) MintEnroll() string {
+	if s.deps.Enroll == nil {
+		return ""
+	}
+	return s.deps.Enroll.Mint()
+}
+
 // Handler builds the routed, token-guarded http.Handler (exposed for tests).
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -139,6 +148,10 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
 	mux.Handle("/api/push/activity", s.auth(http.HandlerFunc(s.handleActivityRegister)))
 	mux.Handle("/api/push/test", s.auth(http.HandlerFunc(s.handleTest)))
+	// Browser-mirror web UI (view-only, unauthenticated static page). Registered
+	// at "/" so the specific /api/* patterns take precedence; this only ever serves
+	// non-API paths (index.html, app.js, style.css, vendor/*).
+	mux.Handle("/", webHandler())
 	return mux
 }
 

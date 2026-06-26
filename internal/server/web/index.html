@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>gtmux</title>
+  <link rel="stylesheet" href="vendor/xterm.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="bar">
+    <button id="back" hidden>‹</button>
+    <span id="title">gtmux</span>
+    <span id="sub"></span>
+    <span id="conn" class="conn"></span>
+  </header>
+
+  <!-- pairing / error gate -->
+  <section id="gate" hidden>
+    <div class="gate-box">
+      <div class="gate-dot"></div>
+      <p id="gate-msg"></p>
+    </div>
+  </section>
+
+  <!-- agent radar -->
+  <section id="radar" hidden></section>
+
+  <!-- pane mirror -->
+  <section id="pane" hidden>
+    <div id="term"></div>
+  </section>
+
+  <script src="vendor/xterm.js"></script>
+  <script src="vendor/addon-fit.js"></script>
+  <script src="vendor/addon-unicode11.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
