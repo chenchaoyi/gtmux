@@ -83,5 +83,5 @@ export function XtermView({text, fontSize = 12, wrap = true, cursor}: Props) {
 
 const styles = StyleSheet.create({
   fill: {flex: 1},
-  web: {flex: 1, backgroundColor: '#0B0B0F'},
+  web: {flex: 1, backgroundColor: '#17171a'}, // ghostty bg (matches the terminal theme)
 });
