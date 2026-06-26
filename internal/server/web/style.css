@@ -1,32 +1,41 @@
-/* gtmux browser mirror — dark, restrained, matches the app's status language. */
+/* gtmux browser mirror. List styled like the app (avatar + status badge, primary/
+ * secondary, relative time); colors taken from the user's Ghostty config so the
+ * terminal + chrome match (bg #17171a, fg #d4d2cc, selection #2a2a33). Status
+ * colors are the authoritative status-language values (semantic, not theme). */
 :root {
-  --bg: #0B0B0F;
-  --surface: #15151a;
-  --fg: rgba(255, 255, 255, 0.92);
-  --fg2: rgba(235, 235, 245, 0.6);
-  --fg3: rgba(235, 235, 245, 0.34);
-  --divider: rgba(255, 255, 255, 0.08);
+  --bg: #17171a;          /* ghostty background */
+  --surface: #222228;
+  --fg: #d4d2cc;          /* ghostty foreground */
+  --fg2: rgba(212, 210, 204, 0.62);
+  --fg3: rgba(212, 210, 204, 0.34);
+  --divider: rgba(255, 255, 255, 0.07);
+  --sel: #2a2a33;         /* ghostty selection-background */
   --waiting: #EF4444;
   --working: #06B6D4;
   --idle: #22C55E;
   --running: #8E8E93;
+  --waiting-tint: rgba(239, 68, 68, 0.08);
+  --col: 820px;           /* centered content column on wide screens */
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }  /* beat #gate's display:flex when hidden */
 html, body {
   margin: 0; height: 100%;
   background: var(--bg); color: var(--fg);
   font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 body { display: flex; flex-direction: column; }
 
-#bar {
+/* header — full-width border, content centered to the column */
+#bar { border-bottom: 1px solid var(--divider); background: var(--bg); flex: 0 0 auto; }
+.bar-inner {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; border-bottom: 1px solid var(--divider);
-  background: var(--bg); flex: 0 0 auto;
+  max-width: var(--col); margin: 0 auto; width: 100%; padding: 11px 16px;
 }
 #bar #title { font-weight: 600; }
-#bar #sub { color: var(--fg3); font-size: 12px; }
-#bar .conn { margin-left: auto; font-size: 12px; color: var(--fg3); }
+#bar #sub { color: var(--fg3); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#bar .conn { margin-left: auto; font-size: 12px; color: var(--fg3); flex: 0 0 auto; }
 #bar .conn.live::before { content: "● "; color: var(--idle); }
 #bar .conn.off::before  { content: "● "; color: var(--running); }
 #back {
@@ -38,36 +47,51 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 
 /* gate (pairing / errors) */
 #gate { display: flex; align-items: center; justify-content: center; }
-.gate-box { text-align: center; color: var(--fg2); max-width: 420px; padding: 24px; }
-.gate-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--running); margin: 0 auto 14px;
-}
+.gate-box { text-align: center; color: var(--fg2); max-width: 460px; padding: 24px; line-height: 1.5; }
+.gate-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--running); margin: 0 auto 14px; }
 
-/* radar */
-#radar { padding: 8px 0; }
+/* radar — centered column */
+#radar { max-width: var(--col); margin: 0 auto; width: 100%; padding: 6px 0 40px; }
 .group-label {
-  padding: 14px 16px 6px; font-size: 11px; letter-spacing: .04em;
+  padding: 16px 16px 6px; font-size: 11px; font-weight: 600; letter-spacing: .05em;
   text-transform: uppercase; color: var(--fg3);
 }
 .row {
   display: flex; align-items: center; gap: 12px;
-  padding: 11px 16px; cursor: pointer; border-bottom: 1px solid var(--divider);
+  padding: 10px 16px; cursor: pointer;
+  border-bottom: 1px solid var(--divider); position: relative;
 }
-.row:hover { background: var(--surface); }
-.dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
-.dot.sq { border-radius: 3px; }
-.row .text { min-width: 0; }
+.row:hover { background: rgba(255, 255, 255, 0.03); }
+.row.waiting { background: var(--waiting-tint); }
+
+/* avatar (rounded square) + status badge, like the app */
+.avatar {
+  position: relative; width: 34px; height: 34px; flex: 0 0 auto;
+  border-radius: 9px; background: var(--surface);
+  border: 1px solid var(--divider); overflow: visible;
+  display: flex; align-items: center; justify-content: center;
+}
+.avatar img { width: 100%; height: 100%; border-radius: 9px; object-fit: contain; }
+.avatar .mono { font: 600 14px Menlo, monospace; color: var(--fg2); }
+.avatar .badge { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; }
+.avatar .badge svg { display: block; }
+
+.row .text { flex: 1 1 auto; min-width: 0; }
 .row .primary {
-  font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.row .secondary {
-  color: var(--fg3); font-size: 12px;
+  font-size: 15px; font-weight: 600; color: var(--fg);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.row .agent { margin-left: auto; color: var(--fg3); font-size: 12px; flex: 0 0 auto; }
+.row .secondary {
+  font-size: 12.5px; color: var(--fg3); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row .secondary .task { color: var(--fg2); }
+.row .right { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; color: var(--fg3); }
+.row .time { font-size: 12px; font-variant-numeric: tabular-nums; }
+.row .agent { font-size: 12px; color: var(--fg3); }
+.row .chev { font-size: 18px; font-weight: 300; }
 
-/* pane */
-#pane { padding: 0; }
-#term { position: absolute; inset: 49px 0 0 0; padding: 6px; }
+/* pane (terminal) — Ghostty background; terminal fills full width */
+#pane { padding: 0; background: var(--bg); }
+#term { position: absolute; inset: 49px 0 0 0; padding: 8px 10px; background: var(--bg); }
 .xterm { height: 100%; }
