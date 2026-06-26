@@ -40,8 +40,13 @@ export function DetailScreen({route, navigation}: any) {
 }
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
-  const {client} = useAgents();
+  const {client, agents} = useAgents();
   const {pal, lang, xtermEnabled} = useApp();
+  // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
+  // from the polled store by pane_id so the header badge/status follow status changes
+  // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
+  // it's momentarily absent from the list (e.g. between polls / pane just closed).
+  const live = agents.find(a => a.pane_id === agent.pane_id) ?? agent;
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   const [loading, setLoading] = useState(true);
@@ -134,14 +139,14 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             </TouchableOpacity>
           )}
           <View style={styles.badgeWrap}>
-            <StatusBadge status={agent.status} size={18} />
+            <StatusBadge status={live.status} size={18} />
           </View>
           <View style={styles.headerText}>
             <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
-              {primary(agent)}
+              {primary(live)}
             </Text>
             <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-              {agent.agent} · {statusLabel(agent.status, lang)} · {secondary(agent)}
+              {live.agent} · {statusLabel(live.status, lang)} · {secondary(live)}
             </Text>
           </View>
         </View>
@@ -207,7 +212,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
       {/* input — types into the pane via POST /api/send (MOBILE §4) */}
       <Composer
-        status={agent.status}
+        status={live.status}
         pal={pal}
         lang={lang}
         onSend={p => {
