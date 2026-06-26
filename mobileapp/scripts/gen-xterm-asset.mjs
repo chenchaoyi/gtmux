@@ -17,6 +17,18 @@ const fitJs = read(resolve(nm, 'addon-fit/lib/addon-fit.js'));
 const uni11Js = read(resolve(nm, 'addon-unicode11/lib/addon-unicode11.js'));
 const canvasJs = read(resolve(nm, 'addon-canvas/lib/addon-canvas.js'));
 
+// Bundle the Hack font (the user's Ghostty font) as base64 woff2 so the terminal
+// renders in it on any phone — iOS has no Hack installed, and a webview can only
+// use a system-installed font or one shipped via @font-face. ~106KB each.
+const fontB64 = f => readFileSync(resolve(here, '..', 'assets', 'fonts', f)).toString('base64');
+const hackRegular = fontB64('Hack-Regular.woff2');
+const hackBold = fontB64('Hack-Bold.woff2');
+const fontFace =
+  "@font-face{font-family:'Hack';font-weight:400;font-style:normal;font-display:block;" +
+  "src:url(data:font/woff2;base64," + hackRegular + ") format('woff2')}" +
+  "@font-face{font-family:'Hack';font-weight:700;font-style:normal;font-display:block;" +
+  "src:url(data:font/woff2;base64," + hackBold + ") format('woff2')}";
+
 // The bridge: RN calls window.gtmuxWrite / gtmuxConfig via injectJavaScript. The
 // terminal is read-only here (no key input wired yet — that stays on the existing
 // FloatingKeys/Composer path); we just render the colored capture-pane snapshot.
@@ -34,10 +46,11 @@ const bootstrap = `
       cursorStyle: 'block',        // content end); we draw the REAL pane cursor as a
       disableStdin: true,          // decoration instead (gtmuxCursor) so writes aren't moved
       scrollback: 5000,
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      fontFamily: 'Hack, Menlo, Monaco, "Courier New", monospace',  // bundled @font-face
       fontSize: 12,
       allowProposedApi: true,
-      theme: { background: '#0B0B0F', foreground: '#D6D6DA' }
+      // colors taken from the user's Ghostty config (CJK falls back to the system font).
+      theme: { background: '#17171a', foreground: '#d4d2cc', cursor: '#bbc1ff', selectionBackground: '#2a2a33' }
     });
     fit = new FitAddon.FitAddon();
     term.loadAddon(fit);
@@ -243,13 +256,13 @@ const bootstrap = `
       curMarker = term.registerMarker(-(c.up | 0));   // up rows above the write cursor
       if (!curMarker) { repaint(); return; }
       curDeco = term.registerDecoration({
-        marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: '#06B6D4',
+        marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: '#bbc1ff',
       });
       // belt-and-suspenders: also style the element on render (some renderers ignore
       // backgroundColor in the options).
       if (curDeco && curDeco.onRender) {
         curDeco.onRender(function (el) {
-          el.style.background = '#06B6D4';
+          el.style.background = '#bbc1ff';
           el.style.opacity = '0.85';
         });
       }
@@ -276,8 +289,8 @@ const bootstrap = `
 
 const html = `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<style>${css}
-  html,body{margin:0;padding:0;height:100%;background:#0B0B0F;overflow:hidden}
+<style>${fontFace}${css}
+  html,body{margin:0;padding:0;height:100%;background:#17171a;overflow:hidden}
   /* #term scrolls HORIZONTALLY, bounded by #xwrap's explicit width; the
      .xterm-viewport scrolls VERTICALLY. No touch-action lock — iOS already routes a
      gesture to the nested scroller that can move in that direction, and an explicit
