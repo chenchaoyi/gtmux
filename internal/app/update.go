@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -69,8 +70,17 @@ func cmdUpdate(args []string) int {
 
 	script := fetchInstallScript()
 	if script == nil {
-		i18n.Sae("gtmux update: couldn't download the installer. Use the manual curl command from the README.",
-			"gtmux update: 下载安装脚本失败。可用 README 里的手动 curl 命令。")
+		// Every mirror failed → almost always the network can't reach GitHub/the CDN
+		// (VPN, corp firewall, offline). Say so, and print the exact command to run by
+		// hand — including the CDN mirror that works behind most firewalls — instead of
+		// pointing at the README.
+		gh := installScriptMirrors[0]
+		cdn := installScriptMirrors[1]
+		i18n.Sae("gtmux update: can't reach the release server — check your internet / VPN, then run the install command by hand:",
+			"gtmux update: 连不上发布服务器 —— 请检查网络 / VPN，然后手动运行安装命令：")
+		fmt.Fprintf(os.Stderr, "\n  curl -fsSL %s | bash\n", gh)
+		i18n.Sae("  behind a firewall? use the CDN mirror:", "  在防火墙后？用 CDN 镜像：")
+		fmt.Fprintf(os.Stderr, "  curl -fsSL %s | bash\n\n", cdn)
 		return 1
 	}
 	tmp, err := os.CreateTemp("", "gtmux-install-*.sh")
