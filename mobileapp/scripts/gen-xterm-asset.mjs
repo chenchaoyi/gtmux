@@ -113,18 +113,33 @@ const bootstrap = `
     t.addEventListener('touchcancel', release, { passive: true });
   }
 
-  // visibleMaxCols: the widest line currently in the VIEWPORT, in columns (trailing
-  // blanks trimmed). The no-wrap extent tracks this — not the longest line anywhere
-  // in scrollback — so you can never scroll past what's on screen into empty space
-  // (e.g. one very long line far up in history used to make the whole pane scroll
-  // into a black void). Recomputed as you scroll vertically.
-  function visibleMaxCols() {
-    var b = term.buffer.active, max = 0;
-    var start = b.viewportY, end = Math.min(b.length, start + term.rows);
-    for (var i = start; i < end; i++) {
-      var ln = b.getLine(i);
-      if (ln) { var s = ln.translateToString(true); if (s.length > max) max = s.length; }
+  // The no-wrap extent must come from the SOURCE snapshot, NOT the xterm buffer.
+  // Once the buffer is wrapped at the narrow fit width every buffer row is <= cols,
+  // so measuring the buffer can never widen back out — the wrap/scroll toggle then
+  // does nothing (both modes look wrapped). srcMaxCols scans the raw capture text.
+  var srcMaxCols = 0;
+  // visibleLen: visible column count of one raw line (skips CSI + OSC escape runs)
+  // via a charcode scan — no regex/escape literals, which a template literal would
+  // mangle. OSC 8 file:// hyperlinks (Claude Code) otherwise inflate length ~3x.
+  function visibleLen(line) {
+    var n = 0, i = 0, L = line.length, ESC = 27, BEL = 7;
+    while (i < L) {
+      var c = line.charCodeAt(i);
+      if (c === ESC) {
+        i++; if (i >= L) break;
+        var c2 = line.charCodeAt(i);
+        if (c2 === 91) {            // '[' CSI: run ends at a final byte 0x40-0x7e
+          i++; while (i < L) { var a = line.charCodeAt(i); i++; if (a >= 64 && a <= 126) break; }
+        } else if (c2 === 93) {     // ']' OSC: run ends at BEL or ESC '\'
+          i++; while (i < L) { var b2 = line.charCodeAt(i); if (b2 === BEL) { i++; break; } if (b2 === ESC) { i++; if (i < L && line.charCodeAt(i) === 92) i++; break; } i++; }
+        } else { i++; }            // other two-char escape
+      } else { n++; i++; }
     }
+    return n;
+  }
+  function computeSrcMaxCols(text) {
+    var lines = (text || '').split(String.fromCharCode(10)), max = 0;
+    for (var i = 0; i < lines.length; i++) { var w = visibleLen(lines[i]); if (w > max) max = w; }
     return max;
   }
 
@@ -146,12 +161,13 @@ const bootstrap = `
     }
   }
 
-  // relayoutCols (no-wrap): set the wrapper width to the content's longest VISIBLE
-  // line (bounded), then refit so xterm fills it. Skips when the max width is
-  // unchanged, so streaming appends don't thrash fit().
+  // relayoutCols (no-wrap): set the wrapper width to the SOURCE's longest line
+  // (bounded), then refit so xterm fills it — cols then >= every line so nothing
+  // wraps and #term scrolls horizontally. Skips when unchanged so streaming appends
+  // don't thrash fit().
   function relayoutCols(force) {
     if (!term || wrapOn || !xw()) return;
-    var maxLen = Math.max(baseCols, Math.min(visibleMaxCols() || baseCols, 1000));
+    var maxLen = Math.max(baseCols, Math.min(srcMaxCols || baseCols, 1000));
     if (!force && maxLen === lastMaxLen) return;
     lastMaxLen = maxLen;
     var inner = el().clientWidth - 12;     // 12 = #term padding
@@ -160,11 +176,22 @@ const bootstrap = `
     try { fit.fit(); } catch (e) {}        // xterm now fills the wide wrapper
   }
 
-  window.gtmuxWrite = function (text) {
-    if (!term || text === lastText) return;
+  // iOS/WebKit renders some symbol codepoints as COLOR EMOJI (ignoring the ANSI
+  // color) — Claude Code's U+23FA "BLACK CIRCLE FOR RECORD" tool-call markers show
+  // up as the red record-button emoji instead of a clean ANSI-colored dot like in a
+  // real terminal. Swap them for U+25CF "BLACK CIRCLE" (no emoji presentation), so
+  // the dot renders as a text glyph tinted by the surrounding SGR color (1:1 width).
+  var DOT_REC = String.fromCodePoint(0x23fa), DOT_CIRCLE = String.fromCodePoint(0x25cf);
+  function normalizeGlyphs(t) { return t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE); }
+
+  window.gtmuxWrite = function (rawText) {
+    if (!term) return;
+    var text = normalizeGlyphs(rawText);
+    if (text === lastText) return;
     if (userScrolling) { pending = text; return; } // hold writes while a gesture is active
     var prev = lastText;
     lastText = text;
+    srcMaxCols = computeSrcMaxCols(text);  // no-wrap extent tracks the source, not the wrapped buffer
     // Append-only (the common case: more output at the bottom): write just the new
     // tail — no reset, so no flash, cheap, and xterm natively keeps your scroll
     // position (only follows the bottom if you were already there).
