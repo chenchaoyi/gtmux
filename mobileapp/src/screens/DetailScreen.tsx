@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Agent, primary, secondary} from '../api/types';
+import {Agent, primary, secondary, TermTheme} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
@@ -49,6 +49,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const live = agents.find(a => a.pane_id === agent.pane_id) ?? agent;
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
+  const [theme, setTheme] = useState<TermTheme | undefined>();
   const [loading, setLoading] = useState(true);
   const [fontIdx, setFontIdx] = useState(1);
   const [wrap, setWrap] = useState(true);
@@ -57,6 +58,13 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [keysOpen, setKeysOpen] = useState(false);
   const [diffOpen, setDiffOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Fetch the host terminal's appearance once so the pane matches it (global, not per-pane).
+  useEffect(() => {
+    let alive = true;
+    client.theme().then(t => { if (alive && t) setTheme(t); });
+    return () => { alive = false; };
+  }, [client]);
 
   const smaller = () => setFontIdx(i => Math.max(0, i - 1));
   const bigger = () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1));
@@ -172,7 +180,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {/* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */}
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
         {xtermEnabled ? (
-          <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} />
+          <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} theme={theme} />
         ) : (
           <ScrollView
             ref={scrollRef}

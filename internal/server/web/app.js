@@ -14,7 +14,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var token = null, radarTimer = null, paneTimer = null;
-  var term = null, fit = null, lastText = '', curPane = null, lastSig = '';
+  var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
 
   // ---- auth -------------------------------------------------------------
@@ -144,13 +144,36 @@
   }
 
   // ---- pane mirror ------------------------------------------------------
+  // Build an xterm theme from /api/theme (the user's real terminal), falling back
+  // to the GHOSTTY defaults. palette[0..15] → the 16 named xterm color keys.
+  var PKEYS = ['black','red','green','yellow','blue','magenta','cyan','white','brightBlack','brightRed','brightGreen','brightYellow','brightBlue','brightMagenta','brightCyan','brightWhite'];
+  function xtermTheme() {
+    var t = theme || {};
+    var o = {
+      background: t.background || GHOSTTY.bg,
+      foreground: t.foreground || GHOSTTY.fg,
+      cursor: t.cursor || GHOSTTY.cursor,
+      selectionBackground: GHOSTTY.sel,
+    };
+    if (t.palette) { for (var i = 0; i < 16 && i < t.palette.length; i++) { if (t.palette[i]) o[PKEYS[i]] = t.palette[i]; } }
+    return o;
+  }
+  function themeFont() { return (theme && theme.fontFamily ? theme.fontFamily + ', ' : '') + GHOSTTY.font; }
+  function fetchTheme() {
+    return api('/api/theme').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j) return;
+      theme = j;
+      if (term) { term.options.theme = xtermTheme(); term.options.fontFamily = themeFont(); document.body.style.background = j.background || GHOSTTY.bg; }
+    }).catch(function () {});
+  }
+
   function ensureTerm() {
     if (term) return;
     term = new Terminal({
       convertEol: true, cursorBlink: false, disableStdin: true, cursorInactiveStyle: 'none',
       scrollback: 5000, allowProposedApi: true,
-      fontFamily: GHOSTTY.font, fontSize: GHOSTTY.size,
-      theme: {background: GHOSTTY.bg, foreground: GHOSTTY.fg, cursor: GHOSTTY.cursor, selectionBackground: GHOSTTY.sel},
+      fontFamily: themeFont(), fontSize: GHOSTTY.size,
+      theme: xtermTheme(),
     });
     fit = new FitAddon.FitAddon(); term.loadAddon(fit);
     try { var u = new Unicode11Addon.Unicode11Addon(); term.loadAddon(u); term.unicode.activeVersion = '11'; } catch (e) {}
@@ -201,6 +224,7 @@
     var ready = code ? pair(code).catch(function () { return null; }) : Promise.resolve();
     ready.then(function () {
       if (!token) return gate('Open the pairing link from `gtmux serve` / `gtmux tunnel`, or from the phone app ("open on computer").');
+      fetchTheme(); // match the user's real terminal (async; the pane picks it up)
       startRadar();
     });
   }

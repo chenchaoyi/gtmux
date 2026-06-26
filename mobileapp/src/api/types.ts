@@ -86,3 +86,15 @@ export interface PaneResponse {
   // the last captured line, visible = false in alt-screen TUIs that hide the cursor.
   cursor?: {x: number; up: number; visible: boolean};
 }
+
+// The host terminal's resolved appearance (GET /api/theme) — colors + font, so the
+// pane mirror matches the user's real terminal. Palette is the 16 ANSI colors.
+export interface TermTheme {
+  source: string;
+  background: string;
+  foreground: string;
+  cursor: string;
+  palette: string[];
+  fontFamily: string;
+  fontSize: number;
+}

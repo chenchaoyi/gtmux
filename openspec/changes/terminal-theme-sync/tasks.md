@@ -19,14 +19,14 @@
 
 ## 4. Mobile — apply theme + settings
 
-- [ ] 4.1 `client.ts`: `theme()` → `GET /api/theme`. `AppContext`: store theme + appearance prefs (matchTerminal default true, fontFamily, fontIdx) in AsyncStorage.
-- [ ] 4.2 `XtermView.tsx`/`gen-xterm-asset.mjs`: accept a theme + font prop; apply background/foreground/cursor/selection + 16-palette + cursor decoration via `gtmuxConfig`; map fontFamily→bundled or default. REMOVE the hard-coded Ghostty values.
+- [x] 4.1 `client.ts`: `theme()` → `GET /api/theme`. `AppContext`: store theme + appearance prefs (matchTerminal default true, fontFamily, fontIdx) in AsyncStorage.
+- [x] 4.2 `XtermView.tsx`/`gen-xterm-asset.mjs`: accept a theme + font prop; apply background/foreground/cursor/selection + 16-palette + cursor decoration via `gtmuxConfig`; map fontFamily→bundled or default. REMOVE the hard-coded Ghostty values.
 - [ ] 4.3 `SettingsScreen.tsx` (en+zh): "Match my terminal" toggle (default ON), font-size control (8–20pt) + keep pinch-zoom, bundled-font picker; persist; show the matched source/font.
 - [ ] 4.4 Gate: `tsc --noEmit` + `eslint .` clean.
 
 ## 5. Browser — apply theme + fonts
 
-- [ ] 5.1 `web/app.js`: fetch `/api/theme` on connect; apply colors+palette+cursor to the xterm theme; map fontFamily→bundled/default. Remove hard-coded Ghostty values.
+- [x] 5.1 `web/app.js`: fetch `/api/theme` on connect; apply colors+palette+cursor to the xterm theme; map fontFamily→bundled/default. Remove hard-coded Ghostty values.
 - [ ] 5.2 (Optional v1) a minimal in-page control for font/size; otherwise follow the terminal + a sane default.
 
 ## 6. Verify (manual — sim/browser; device for the font set)

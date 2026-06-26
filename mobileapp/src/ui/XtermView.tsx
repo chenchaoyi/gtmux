@@ -8,6 +8,7 @@
 import React, {useEffect, useRef} from 'react';
 import {StyleSheet, View} from 'react-native';
 import WebView, {WebViewProps} from 'react-native-webview';
+import {TermTheme} from '../api/types';
 import {XTERM_HTML} from './xtermAsset';
 
 // react-native-webview 13's class types default the props generic to `undefined`,
@@ -27,12 +28,33 @@ interface Props {
   fontSize?: number;
   wrap?: boolean; // wrap long lines (vs. fixed-width + horizontal scroll)
   cursor?: PaneCursor; // the pane's text cursor (capture-pane can't carry it)
+  theme?: TermTheme; // the host terminal's resolved appearance (GET /api/theme)
 }
 
 // jsString safely embeds a value as a JS literal in injected code.
 const jsString = (v: unknown) => JSON.stringify(v);
 
-export function XtermView({text, fontSize = 12, wrap = true, cursor}: Props) {
+// the 16 ANSI palette → xterm's named color keys.
+const PKEYS = ['black','red','green','yellow','blue','magenta','cyan','white','brightBlack','brightRed','brightGreen','brightYellow','brightBlue','brightMagenta','brightCyan','brightWhite'];
+
+// buildCfg packs the gtmuxConfig args. With a theme, it maps colors+palette to the
+// xterm theme, picks the matched/bundled font, and passes the cursor + page bg.
+function buildCfg(fontSize: number, wrap: boolean, theme?: TermTheme): Record<string, unknown> {
+  const cfg: Record<string, unknown> = {fontSize, wrap};
+  if (theme) {
+    const xt: Record<string, string> = {
+      background: theme.background, foreground: theme.foreground, cursor: theme.cursor, selectionBackground: '#2a2a33',
+    };
+    (theme.palette || []).forEach((c, i) => { if (c && PKEYS[i]) xt[PKEYS[i]] = c; });
+    cfg.theme = xt;
+    cfg.fontFamily = `${theme.fontFamily || 'Hack'}, Hack, Menlo, Monaco, "Courier New", monospace`;
+    cfg.cursorColor = theme.cursor;
+    cfg.background = theme.background;
+  }
+  return cfg;
+}
+
+export function XtermView({text, fontSize = 12, wrap = true, cursor, theme}: Props) {
   const ref = useRef<WebView>(null);
   const ready = useRef(false);
 
@@ -51,10 +73,10 @@ export function XtermView({text, fontSize = 12, wrap = true, cursor}: Props) {
   useEffect(() => {
     if (ready.current) {
       ref.current?.injectJavaScript(
-        `window.gtmuxConfig && window.gtmuxConfig({fontSize: ${fontSize}, wrap: ${wrap}}); true;`,
+        `window.gtmuxConfig && window.gtmuxConfig(${jsString(buildCfg(fontSize, wrap, theme))}); true;`,
       );
     }
-  }, [fontSize, wrap]);
+  }, [fontSize, wrap, theme]);
 
   return (
     <View style={styles.fill}>
@@ -70,7 +92,7 @@ export function XtermView({text, fontSize = 12, wrap = true, cursor}: Props) {
         onLoadEnd={() => {
           ready.current = true;
           ref.current?.injectJavaScript(
-            `window.gtmuxConfig && window.gtmuxConfig({fontSize: ${fontSize}, wrap: ${wrap}});` +
+            `window.gtmuxConfig && window.gtmuxConfig(${jsString(buildCfg(fontSize, wrap, theme))});` +
               `window.gtmuxWrite && window.gtmuxWrite(${jsString(text)});` +
               `window.gtmuxCursor && window.gtmuxCursor(${jsString(cursor ?? null)}); true;`,
           );
