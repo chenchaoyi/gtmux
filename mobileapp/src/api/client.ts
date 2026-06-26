@@ -74,6 +74,15 @@ export class GtmuxClient {
     return r.ok;
   }
 
+  // enrollMint mints a short-lived single-use pairing code (for handing this paired
+  // server off to a computer browser via `${base}/#c=<code>`). null on failure.
+  async enrollMint(): Promise<string | null> {
+    const r = await tfetch(`${this.base}/api/enroll/mint`, {method: 'POST', headers: this.h()});
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => null);
+    return typeof j?.enrollCode === 'string' ? j.enrollCode : null;
+  }
+
   // diff fetches a unified `git diff` of the pane's cwd ("what the agent changed").
   // Empty string when the cwd isn't a git repo.
   async diff(id: string): Promise<string> {
