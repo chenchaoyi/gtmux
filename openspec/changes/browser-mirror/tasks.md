@@ -14,8 +14,8 @@
 
 ## 3. Phone → computer handoff (mobile app)
 
-- [ ] 3.1 Add an "Open on computer / 在电脑上打开" action in the mobile app: call `POST /api/enroll/mint`, build the pairing URL against the active server's public/LAN base, and present it via the iOS share sheet (AirDrop/copy/Messages). en/zh.
-- [ ] 3.2 Gate: mobile `tsc --noEmit` + `eslint .` clean.
+- [x] 3.1 Add an "Open on computer / 在电脑上打开" action in the mobile app: call `POST /api/enroll/mint`, build the pairing URL against the active server's public/LAN base, and present it via the iOS share sheet (AirDrop/copy/Messages). en/zh.
+- [x] 3.2 Gate: mobile `tsc --noEmit` + `eslint .` clean.
 
 ## 4. Verify (manual — needs a real browser; handoff needs a phone + Mac)
 
