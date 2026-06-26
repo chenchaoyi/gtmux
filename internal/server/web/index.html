@@ -14,8 +14,29 @@
       <span id="title">gtmux</span>
       <span id="sub"></span>
       <span id="conn" class="conn"></span>
+      <button id="gear" hidden title="Appearance">Aa</button>
     </div>
   </header>
+
+  <!-- appearance: font + size -->
+  <div id="settings" hidden>
+    <div class="srow">
+      <label>Font</label>
+      <select id="font-sel">
+        <option value="auto">Match terminal</option>
+        <option value="system">System</option>
+        <option value="Hack">Hack</option>
+        <option value="JetBrains Mono">JetBrains Mono</option>
+        <option value="Fira Code">Fira Code</option>
+        <option value="IBM Plex Mono">IBM Plex Mono</option>
+      </select>
+    </div>
+    <div class="srow">
+      <label>Size</label>
+      <input id="size-rng" type="range" min="10" max="22" step="1" />
+      <span class="sz" id="size-val"></span>
+    </div>
+  </div>
 
   <!-- pairing / error gate -->
   <section id="gate" hidden>

@@ -16,6 +16,10 @@
   var token = null, radarTimer = null, paneTimer = null;
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
+  var BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
+  function lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
+  var fontPref = lsGet('gtmux.fontPref', 'auto');          // 'auto' | 'system' | a bundled family
+  var sizePref = parseInt(lsGet('gtmux.fontSize', '0'), 10) || 0;  // 0 = follow terminal/default
 
   // ---- auth -------------------------------------------------------------
   function authHeaders() { return token ? {Authorization: 'Bearer ' + token} : {}; }
@@ -158,12 +162,32 @@
     if (t.palette) { for (var i = 0; i < 16 && i < t.palette.length; i++) { if (t.palette[i]) o[PKEYS[i]] = t.palette[i]; } }
     return o;
   }
-  function themeFont() { return (theme && theme.fontFamily ? theme.fontFamily + ', ' : '') + GHOSTTY.font; }
+  function normFont(s) { return s.toLowerCase().replace(/[\s_-]/g, ''); }
+  // resolveFont: an explicit picker choice wins; 'system' = SF Mono; 'auto' = the
+  // terminal's font mapped to a bundled family (else default chain).
+  function resolveFont() {
+    if (fontPref === 'system') return 'ui-monospace, Menlo, Monaco, monospace';
+    if (fontPref && fontPref !== 'auto') return '"' + fontPref + '", ' + GHOSTTY.font;
+    if (theme && theme.fontFamily) {
+      var n = normFont(theme.fontFamily), m = null;
+      for (var i = 0; i < BUNDLED.length; i++) { if (normFont(BUNDLED[i]) === n) { m = BUNDLED[i]; break; } }
+      return '"' + (m || theme.fontFamily) + '", ' + GHOSTTY.font;
+    }
+    return GHOSTTY.font;
+  }
+  function termSize() { return sizePref || (theme && theme.fontSize) || 14; }
+  function applyAppearance() {
+    if (!term) return;
+    term.options.theme = xtermTheme();
+    term.options.fontFamily = resolveFont();
+    term.options.fontSize = termSize();
+    document.body.style.background = (theme && theme.background) || GHOSTTY.bg;
+    try { fit.fit(); } catch (e) {}
+  }
   function fetchTheme() {
     return api('/api/theme').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j) return;
-      theme = j;
-      if (term) { term.options.theme = xtermTheme(); term.options.fontFamily = themeFont(); document.body.style.background = j.background || GHOSTTY.bg; }
+      theme = j; applyAppearance();
     }).catch(function () {});
   }
 
@@ -172,7 +196,7 @@
     term = new Terminal({
       convertEol: true, cursorBlink: false, disableStdin: true, cursorInactiveStyle: 'none',
       scrollback: 5000, allowProposedApi: true,
-      fontFamily: themeFont(), fontSize: GHOSTTY.size,
+      fontFamily: resolveFont(), fontSize: termSize(),
       theme: xtermTheme(),
     });
     fit = new FitAddon.FitAddon(); term.loadAddon(fit);
@@ -215,6 +239,29 @@
   }
 
   // ---- boot -------------------------------------------------------------
+  // setupSettings wires the appearance panel (font + size), persisted locally.
+  function setupSettings() {
+    var gear = $('gear'), panel = $('settings'), sel = $('font-sel'), rng = $('size-rng'), sz = $('size-val');
+    gear.hidden = false;
+    sel.value = fontPref;
+    function syncSize() { rng.value = String(termSize()); sz.textContent = termSize(); }
+    syncSize();
+    gear.onclick = function (e) { e.stopPropagation(); panel.hidden = !panel.hidden; syncSize(); };
+    document.addEventListener('click', function (e) {
+      if (!panel.hidden && !panel.contains(e.target) && e.target !== gear) panel.hidden = true;
+    });
+    sel.onchange = function () {
+      fontPref = sel.value;
+      try { localStorage.setItem('gtmux.fontPref', fontPref); } catch (e) {}
+      applyAppearance();
+    };
+    rng.oninput = function () {
+      sizePref = parseInt(rng.value, 10); sz.textContent = sizePref;
+      try { localStorage.setItem('gtmux.fontSize', String(sizePref)); } catch (e) {}
+      applyAppearance();
+    };
+  }
+
   function boot() {
     $('back').onclick = startRadar;
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
@@ -225,6 +272,7 @@
     ready.then(function () {
       if (!token) return gate('Open the pairing link from `gtmux serve` / `gtmux tunnel`, or from the phone app ("open on computer").');
       fetchTheme(); // match the user's real terminal (async; the pane picks it up)
+      setupSettings();
       startRadar();
     });
   }
