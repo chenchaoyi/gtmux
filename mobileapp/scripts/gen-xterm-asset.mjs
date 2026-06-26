@@ -58,6 +58,14 @@ const bootstrap = `
     relayout();
     window.addEventListener('resize', relayout);
     installScrollControl();
+    // SELF-HEAL the initial render. On a real device (and flakily on the sim) the
+    // WebView's final width — and the WebGL renderer — aren't ready when the first
+    // fit() runs at boot/load. The result is a terminal that paints BLACK, or fits
+    // to a too-wide viewport so long lines don't wrap to the visible width. A second
+    // relayout() once things settle re-fit()s at the real width and forces a full
+    // WebGL redraw (the same recovery the Wrap toggle triggers). Cheap + idempotent
+    // once stable, so a few staged passes reliably catch a late-settling layout.
+    [120, 350, 800, 1500].forEach(function (ms) { setTimeout(relayout, ms); });
     // As you scroll vertically (no-wrap), re-fit the horizontal extent to the lines
     // now in view, so it never lets you scroll past the visible content.
     var scrollDebounce = null;
