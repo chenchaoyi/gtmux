@@ -2,6 +2,14 @@
  * secondary, relative time); colors taken from the user's Ghostty config so the
  * terminal + chrome match (bg #17171a, fg #d4d2cc, selection #2a2a33). Status
  * colors are the authoritative status-language values (semantic, not theme). */
+/* bundled monospace set (latin-subset woff2, served from /fonts) so the font
+   picker works on any computer; "System" uses ui-monospace (no bytes). */
+@font-face { font-family: 'Hack'; font-weight: 400; src: url('fonts/Hack-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Hack'; font-weight: 700; src: url('fonts/Hack-Bold.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 400; src: url('fonts/JetBrainsMono-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Fira Code'; font-weight: 400; src: url('fonts/FiraCode-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 400; src: url('fonts/IBMPlexMono-Regular.woff2') format('woff2'); }
+
 :root {
   --bg: #17171a;          /* ghostty background */
   --surface: #222228;
@@ -95,3 +103,23 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 #pane { padding: 0; background: var(--bg); }
 #term { position: absolute; inset: 49px 0 0 0; padding: 8px 10px; background: var(--bg); }
 .xterm { height: 100%; }
+
+/* settings (font + size) */
+#gear {
+  background: none; border: none; color: var(--fg3); cursor: pointer;
+  font-size: 16px; line-height: 1; padding: 0 2px; flex: 0 0 auto;
+}
+#gear:hover { color: var(--fg); }
+#settings {
+  position: absolute; top: 46px; right: 12px; z-index: 50;
+  background: var(--surface); border: 1px solid var(--divider); border-radius: 10px;
+  padding: 10px 12px; min-width: 220px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+#settings .srow { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+#settings label { color: var(--fg3); font-size: 12px; width: 44px; flex: 0 0 auto; }
+#settings select {
+  flex: 1 1 auto; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--divider); border-radius: 6px; padding: 5px 6px; font-size: 13px;
+}
+#settings input[type=range] { flex: 1 1 auto; accent-color: var(--working); }
+#settings .sz { color: var(--fg2); font-size: 12px; width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
