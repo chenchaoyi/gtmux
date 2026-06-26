@@ -187,14 +187,27 @@ const bootstrap = `
   // is anchored to a marker "up" rows above the write cursor (the content's last
   // line), so it stays correct as you scroll and despite the phone's row count.
   var curDeco = null, curMarker = null;
+  // Registering a decoration leaves the WebGL base layer blank until the next
+  // repaint. In no-wrap mode the per-poll relayoutCols() refit repaints it, but
+  // wrap mode never refits — so the whole terminal showed BLACK on first open
+  // until you toggled wrap (which forced a relayout). Always nudge a repaint after
+  // the cursor changes, so wrap renders too. requestAnimationFrame lets the
+  // decoration lay out first.
+  function repaint() {
+    try {
+      requestAnimationFrame(function () {
+        try { term.refresh(0, Math.max(0, term.rows - 1)); } catch (e) {}
+      });
+    } catch (e) { try { term.refresh(0, Math.max(0, term.rows - 1)); } catch (e2) {} }
+  }
   window.gtmuxCursor = function (c) {
     if (!term) return;
     if (curDeco) { try { curDeco.dispose(); } catch (e) {} curDeco = null; }
     if (curMarker) { try { curMarker.dispose(); } catch (e) {} curMarker = null; }
-    if (!c || c.visible === false) return;            // hidden (alt-screen TUI) → no marker
+    if (!c || c.visible === false) { repaint(); return; }  // hidden (alt-screen TUI) → no marker
     try {
       curMarker = term.registerMarker(-(c.up | 0));   // up rows above the write cursor
-      if (!curMarker) return;
+      if (!curMarker) { repaint(); return; }
       curDeco = term.registerDecoration({
         marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: '#06B6D4',
       });
@@ -207,6 +220,7 @@ const bootstrap = `
         });
       }
     } catch (e) {}
+    repaint();
   };
 
   window.gtmuxConfig = function (opts) {
