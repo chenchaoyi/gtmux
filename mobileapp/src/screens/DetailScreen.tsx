@@ -41,7 +41,7 @@ export function DetailScreen({route, navigation}: any) {
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client, agents} = useAgents();
-  const {pal, lang, xtermEnabled} = useApp();
+  const {pal, lang, xtermEnabled, fontPref} = useApp();
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -180,7 +180,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {/* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */}
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
         {xtermEnabled ? (
-          <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} theme={theme} />
+          <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} theme={theme} fontPref={fontPref} />
         ) : (
           <ScrollView
             ref={scrollRef}

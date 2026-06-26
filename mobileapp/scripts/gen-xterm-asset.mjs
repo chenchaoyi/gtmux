@@ -21,13 +21,20 @@ const canvasJs = read(resolve(nm, 'addon-canvas/lib/addon-canvas.js'));
 // renders in it on any phone — iOS has no Hack installed, and a webview can only
 // use a system-installed font or one shipped via @font-face. ~106KB each.
 const fontB64 = f => readFileSync(resolve(here, '..', 'assets', 'fonts', f)).toString('base64');
-const hackRegular = fontB64('Hack-Regular.woff2');
-const hackBold = fontB64('Hack-Bold.woff2');
-const fontFace =
-  "@font-face{font-family:'Hack';font-weight:400;font-style:normal;font-display:block;" +
-  "src:url(data:font/woff2;base64," + hackRegular + ") format('woff2')}" +
-  "@font-face{font-family:'Hack';font-weight:700;font-style:normal;font-display:block;" +
-  "src:url(data:font/woff2;base64," + hackBold + ") format('woff2')}";
+const face = (family, weight, file) =>
+  "@font-face{font-family:'" + family + "';font-weight:" + weight + ";font-style:normal;font-display:block;" +
+  "src:url(data:font/woff2;base64," + fontB64(file) + ") format('woff2')}";
+// The bundled monospace set the picker offers (besides "System" = ui-monospace).
+// Hack ships real bold; the latin-subset Google-Fonts faces are regular-only
+// (bold is synthesized) to keep the asset small.
+const BUNDLED_FONTS = [
+  {family: 'Hack', regular: 'Hack-Regular.woff2', bold: 'Hack-Bold.woff2'},
+  {family: 'JetBrains Mono', regular: 'JetBrainsMono-Regular.woff2'},
+  {family: 'Fira Code', regular: 'FiraCode-Regular.woff2'},
+  {family: 'IBM Plex Mono', regular: 'IBMPlexMono-Regular.woff2'},
+];
+const fontFace = BUNDLED_FONTS.map(f =>
+  face(f.family, 400, f.regular) + (f.bold ? face(f.family, 700, f.bold) : '')).join('');
 
 // The bridge: RN calls window.gtmuxWrite / gtmuxConfig via injectJavaScript. The
 // terminal is read-only here (no key input wired yet — that stays on the existing

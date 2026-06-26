@@ -13,15 +13,15 @@
 
 ## 3. Fonts — curate + bundle
 
-- [ ] 3.1 Acquire + latin-SUBSET the curated woff2 set into `mobileapp/assets/fonts/`: JetBrains Mono, Fira Code, IBM Plex Mono, Cascadia Code, Hack (re-subset, currently ~104KB) — regular + bold; keep license files. Target total ~100–150KB.
-- [ ] 3.2 `gen-xterm-asset.mjs`: emit `@font-face` for each bundled family (base64 woff2); "System" maps to CSS `ui-monospace` (no bytes). Regen; validate the bootstrap JS.
+- [x] 3.1 Acquire + latin-SUBSET the curated woff2 set into `mobileapp/assets/fonts/`: JetBrains Mono, Fira Code, IBM Plex Mono, Cascadia Code, Hack (re-subset, currently ~104KB) — regular + bold; keep license files. Target total ~100–150KB.
+- [x] 3.2 `gen-xterm-asset.mjs`: emit `@font-face` for each bundled family (base64 woff2); "System" maps to CSS `ui-monospace` (no bytes). Regen; validate the bootstrap JS.
 - [ ] 3.3 Vendor the same fonts for the browser mirror (or reuse the generated asset's faces); `web/style.css` exposes the families.
 
 ## 4. Mobile — apply theme + settings
 
 - [x] 4.1 `client.ts`: `theme()` → `GET /api/theme`. `AppContext`: store theme + appearance prefs (matchTerminal default true, fontFamily, fontIdx) in AsyncStorage.
 - [x] 4.2 `XtermView.tsx`/`gen-xterm-asset.mjs`: accept a theme + font prop; apply background/foreground/cursor/selection + 16-palette + cursor decoration via `gtmuxConfig`; map fontFamily→bundled or default. REMOVE the hard-coded Ghostty values.
-- [ ] 4.3 `SettingsScreen.tsx` (en+zh): "Match my terminal" toggle (default ON), font-size control (8–20pt) + keep pinch-zoom, bundled-font picker; persist; show the matched source/font.
+- [x] 4.3 `SettingsScreen.tsx` (en+zh): "Match my terminal" toggle (default ON), font-size control (8–20pt) + keep pinch-zoom, bundled-font picker; persist; show the matched source/font.
 - [ ] 4.4 Gate: `tsc --noEmit` + `eslint .` clean.
 
 ## 5. Browser — apply theme + fonts
