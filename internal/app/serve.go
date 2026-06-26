@@ -14,6 +14,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/server"
+	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -135,6 +136,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Upload:     saveUpload,
 		Icon:       agentIconPNG,
 		Diff:       diffForPane,
+		Theme:      terminal.Appearance,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil

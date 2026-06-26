@@ -24,6 +24,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
 
 // Deps are the read-only capabilities the HTTP layer needs. The caller
@@ -68,6 +70,11 @@ type Deps struct {
 	// the pane's current working directory — "what did the agent change". Empty
 	// string when the cwd isn't a git repo. Optional: nil → GET /api/diff is 503.
 	Diff func(id string) (diff string, err error)
+
+	// Theme returns the active host terminal's resolved appearance (colors + font)
+	// so the pane mirror can match the user's real terminal. Optional: nil → GET
+	// /api/theme is 503.
+	Theme func() terminal.Theme
 
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
@@ -144,6 +151,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
+	mux.Handle("/api/theme", s.auth(http.HandlerFunc(s.handleTheme)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
 	mux.Handle("/api/push/activity", s.auth(http.HandlerFunc(s.handleActivityRegister)))
@@ -320,6 +328,17 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"path": path})
+}
+
+// handleTheme serves the active host terminal's resolved appearance (GET
+// /api/theme) so the pane mirror matches the user's real terminal. Read per
+// request, so editing the terminal's config is reflected on the next fetch.
+func (s *Server) handleTheme(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Theme == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("theme not available"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.deps.Theme())
 }
 
 // handleIcon serves a PNG of an agent's identity icon (GET /api/icon?agent=NAME).
