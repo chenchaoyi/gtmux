@@ -26,5 +26,5 @@
 
 ## 5. Ship
 
-- [ ] 5.1 Branch → PR → CI green → squash-merge (never commit to main).
-- [ ] 5.2 Sync the spec: `openspec` archive/sync so `openspec/specs/browser-mirror/` reflects the shipped behavior; `npx @fission-ai/openspec validate --specs --strict` passes.
+- [x] 5.1 Branch → PR → CI green → squash-merge (never commit to main).
+- [x] 5.2 Sync the spec: `openspec` archive/sync so `openspec/specs/browser-mirror/` reflects the shipped behavior; `npx @fission-ai/openspec validate --specs --strict` passes.
