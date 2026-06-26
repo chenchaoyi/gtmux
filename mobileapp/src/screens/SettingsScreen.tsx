@@ -3,11 +3,12 @@
 // falls back to Pairing automatically (the navigator unmounts).
 
 import React from 'react';
-import {Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
+import {useAgents} from '../state/AgentsContext';
 
 function Section({title, pal, children}: any) {
   return (
@@ -23,12 +24,31 @@ function Section({title, pal, children}: any) {
 export function SettingsScreen({navigation}: any) {
   const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled} =
     useApp();
+  const {client} = useAgents();
 
   const langs: {key: LangPref; label: string}[] = [
     {key: 'system', label: t('system')},
     {key: 'en', label: 'English'},
     {key: 'zh', label: '中文'},
   ];
+
+  // Handoff: mint a one-time code on the paired Mac and share a browser link so you
+  // can continue watching on a computer (the browser pairs via /#c=<code>).
+  const openOnComputer = async () => {
+    try {
+      const code = client && (await client.enrollMint());
+      if (!code || !mac) {
+        Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
+        return;
+      }
+      const url = `${mac.url.replace(/\/+$/, '')}/#c=${code}`;
+      // one link only (message, not message+url) — and `message` is the portable
+      // field for a future Android build.
+      await Share.share({message: url});
+    } catch {
+      Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
@@ -63,6 +83,15 @@ export function SettingsScreen({navigation}: any) {
               </Text>
             </View>
           </View>
+          <TouchableOpacity
+            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
+            onPress={openOnComputer}>
+            <View style={styles.flex}>
+              <Text style={[styles.rowLabel, {color: pal.fg}]}>{t('openOnComputer')}</Text>
+              <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>{t('openOnComputerSub')}</Text>
+            </View>
+            <Text style={[styles.rowSub, {color: pal.fg3}]}>↗</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
             onPress={() => navigation.navigate('Servers')}>

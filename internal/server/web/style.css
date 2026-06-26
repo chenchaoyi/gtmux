@@ -1,0 +1,73 @@
+/* gtmux browser mirror — dark, restrained, matches the app's status language. */
+:root {
+  --bg: #0B0B0F;
+  --surface: #15151a;
+  --fg: rgba(255, 255, 255, 0.92);
+  --fg2: rgba(235, 235, 245, 0.6);
+  --fg3: rgba(235, 235, 245, 0.34);
+  --divider: rgba(255, 255, 255, 0.08);
+  --waiting: #EF4444;
+  --working: #06B6D4;
+  --idle: #22C55E;
+  --running: #8E8E93;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background: var(--bg); color: var(--fg);
+  font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+body { display: flex; flex-direction: column; }
+
+#bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid var(--divider);
+  background: var(--bg); flex: 0 0 auto;
+}
+#bar #title { font-weight: 600; }
+#bar #sub { color: var(--fg3); font-size: 12px; }
+#bar .conn { margin-left: auto; font-size: 12px; color: var(--fg3); }
+#bar .conn.live::before { content: "● "; color: var(--idle); }
+#bar .conn.off::before  { content: "● "; color: var(--running); }
+#back {
+  background: none; border: none; color: var(--fg2);
+  font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px;
+}
+
+section { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+/* gate (pairing / errors) */
+#gate { display: flex; align-items: center; justify-content: center; }
+.gate-box { text-align: center; color: var(--fg2); max-width: 420px; padding: 24px; }
+.gate-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--running); margin: 0 auto 14px;
+}
+
+/* radar */
+#radar { padding: 8px 0; }
+.group-label {
+  padding: 14px 16px 6px; font-size: 11px; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--fg3);
+}
+.row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; cursor: pointer; border-bottom: 1px solid var(--divider);
+}
+.row:hover { background: var(--surface); }
+.dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
+.dot.sq { border-radius: 3px; }
+.row .text { min-width: 0; }
+.row .primary {
+  font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row .secondary {
+  color: var(--fg3); font-size: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row .agent { margin-left: auto; color: var(--fg3); font-size: 12px; flex: 0 0 auto; }
+
+/* pane */
+#pane { padding: 0; }
+#term { position: absolute; inset: 49px 0 0 0; padding: 6px; }
+.xterm { height: 100%; }

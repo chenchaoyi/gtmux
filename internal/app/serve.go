@@ -103,7 +103,7 @@ func cmdServe(args []string) int {
 
 	token = resolveServeToken(token)
 	srv := newServeServer(bind, port, token, relayURL, relayToken)
-	printServeBanner(bind, port, token)
+	printServeBanner(bind, port, token, srv.MintEnroll())
 	if err := srv.ListenAndServe(); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
@@ -451,12 +451,25 @@ func appIcns(app string) string {
 }
 
 // printServeBanner tells the user where to point the phone and the token to use.
-func printServeBanner(bind string, port int, token string) {
+func printServeBanner(bind string, port int, token, pairCode string) {
 	i18n.Say("gtmux serve — read-only remote radar (keep this behind a VPN/tunnel)",
 		"gtmux serve — 只读远程雷达（请放在 VPN/隧道之后）")
 	fmt.Printf("  token: %s\n", token)
-	for _, host := range reachableHosts(bind) {
+	hosts := reachableHosts(bind)
+	for _, host := range hosts {
 		fmt.Printf("  http://%s/api/agents\n", net.JoinHostPort(host, strconv.Itoa(port)))
+	}
+	// Browser mirror: open the web UI on another Mac / your computer. The pairing
+	// link carries a short-lived single-use code (NOT the master token).
+	i18n.Say("  open in a browser (view-only mirror):", "  在浏览器里打开（只读镜像）：")
+	for _, host := range hosts {
+		fmt.Printf("    http://%s/\n", net.JoinHostPort(host, strconv.Itoa(port)))
+	}
+	if pairCode != "" && len(hosts) > 0 {
+		base := net.JoinHostPort(hosts[0], strconv.Itoa(port))
+		i18n.Say("  one-time pairing link (expires in 5 min — open it promptly):",
+			"  一次性配对链接（5 分钟内有效，请尽快打开）：")
+		fmt.Printf("    http://%s/#c=%s\n", base, pairCode)
 	}
 	i18n.Say("  test: curl -H \"Authorization: Bearer <token>\" <url>",
 		"  自测：curl -H \"Authorization: Bearer <token>\" <url>")
