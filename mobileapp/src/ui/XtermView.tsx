@@ -29,6 +29,7 @@ interface Props {
   wrap?: boolean; // wrap long lines (vs. fixed-width + horizontal scroll)
   cursor?: PaneCursor; // the pane's text cursor (capture-pane can't carry it)
   theme?: TermTheme; // the host terminal's resolved appearance (GET /api/theme)
+  fontPref?: string; // 'auto' (match terminal) | 'system' | a bundled family
 }
 
 // jsString safely embeds a value as a JS literal in injected code.
@@ -37,24 +38,38 @@ const jsString = (v: unknown) => JSON.stringify(v);
 // the 16 ANSI palette → xterm's named color keys.
 const PKEYS = ['black','red','green','yellow','blue','magenta','cyan','white','brightBlack','brightRed','brightGreen','brightYellow','brightBlue','brightMagenta','brightCyan','brightWhite'];
 
-// buildCfg packs the gtmuxConfig args. With a theme, it maps colors+palette to the
-// xterm theme, picks the matched/bundled font, and passes the cursor + page bg.
-function buildCfg(fontSize: number, wrap: boolean, theme?: TermTheme): Record<string, unknown> {
-  const cfg: Record<string, unknown> = {fontSize, wrap};
+const DEF_CHAIN = 'Hack, Menlo, Monaco, "Courier New", monospace';
+const BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
+const normFont = (s: string) => s.toLowerCase().replace(/[\s_-]/g, '');
+// resolveFont: an explicit picker choice wins; 'system' = SF Mono; 'auto' = the
+// terminal's font mapped to a bundled family (else the default chain).
+function resolveFont(theme?: TermTheme, fontPref?: string): string {
+  if (fontPref === 'system') return 'ui-monospace, Menlo, Monaco, monospace';
+  if (fontPref && fontPref !== 'auto') return `"${fontPref}", ${DEF_CHAIN}`;
+  if (theme?.fontFamily) {
+    const m = BUNDLED.find(b => normFont(b) === normFont(theme.fontFamily)) || theme.fontFamily;
+    return `"${m}", ${DEF_CHAIN}`;
+  }
+  return DEF_CHAIN;
+}
+
+// buildCfg packs the gtmuxConfig args. Colors+palette always follow the terminal
+// theme; the font follows the picker (or the terminal when 'auto').
+function buildCfg(fontSize: number, wrap: boolean, theme?: TermTheme, fontPref?: string): Record<string, unknown> {
+  const cfg: Record<string, unknown> = {fontSize, wrap, fontFamily: resolveFont(theme, fontPref)};
   if (theme) {
     const xt: Record<string, string> = {
       background: theme.background, foreground: theme.foreground, cursor: theme.cursor, selectionBackground: '#2a2a33',
     };
     (theme.palette || []).forEach((c, i) => { if (c && PKEYS[i]) xt[PKEYS[i]] = c; });
     cfg.theme = xt;
-    cfg.fontFamily = `${theme.fontFamily || 'Hack'}, Hack, Menlo, Monaco, "Courier New", monospace`;
     cfg.cursorColor = theme.cursor;
     cfg.background = theme.background;
   }
   return cfg;
 }
 
-export function XtermView({text, fontSize = 12, wrap = true, cursor, theme}: Props) {
+export function XtermView({text, fontSize = 12, wrap = true, cursor, theme, fontPref}: Props) {
   const ref = useRef<WebView>(null);
   const ready = useRef(false);
 
@@ -73,10 +88,10 @@ export function XtermView({text, fontSize = 12, wrap = true, cursor, theme}: Pro
   useEffect(() => {
     if (ready.current) {
       ref.current?.injectJavaScript(
-        `window.gtmuxConfig && window.gtmuxConfig(${jsString(buildCfg(fontSize, wrap, theme))}); true;`,
+        `window.gtmuxConfig && window.gtmuxConfig(${jsString(buildCfg(fontSize, wrap, theme, fontPref))}); true;`,
       );
     }
-  }, [fontSize, wrap, theme]);
+  }, [fontSize, wrap, theme, fontPref]);
 
   return (
     <View style={styles.fill}>
@@ -92,7 +107,7 @@ export function XtermView({text, fontSize = 12, wrap = true, cursor, theme}: Pro
         onLoadEnd={() => {
           ready.current = true;
           ref.current?.injectJavaScript(
-            `window.gtmuxConfig && window.gtmuxConfig(${jsString(buildCfg(fontSize, wrap, theme))});` +
+            `window.gtmuxConfig && window.gtmuxConfig(${jsString(buildCfg(fontSize, wrap, theme, fontPref))});` +
               `window.gtmuxWrite && window.gtmuxWrite(${jsString(text)});` +
               `window.gtmuxCursor && window.gtmuxCursor(${jsString(cursor ?? null)}); true;`,
           );

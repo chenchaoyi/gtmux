@@ -27,6 +27,8 @@ interface AppContextValue {
   setPushEnabled: (v: boolean) => void;
   xtermEnabled: boolean; // render the pane with the xterm.js terminal (vs the classic renderer)
   setXtermEnabled: (v: boolean) => void;
+  fontPref: string; // terminal font: 'auto' (match terminal) | 'system' | a bundled family
+  setFontPref: (v: string) => void;
   lang: Lang;
   t: (k: any) => string;
   pal: Palette;
@@ -36,6 +38,7 @@ const Ctx = createContext<AppContextValue | null>(null);
 const LANG_KEY = 'gtmux.langPref';
 const PUSH_KEY = 'gtmux.pushEnabled';
 const XTERM_KEY = 'gtmux.xterm';
+const FONT_KEY = 'gtmux.fontPref';
 
 export function AppProvider({children}: {children: React.ReactNode}) {
   const scheme = useColorScheme();
@@ -45,14 +48,16 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [langPref, setLangPrefState] = useState<LangPref>('system');
   const [pushEnabled, setPushEnabledState] = useState(true);
   const [xtermEnabled, setXtermEnabledState] = useState(false);
+  const [fontPref, setFontPrefState] = useState('auto');
 
   useEffect(() => {
     (async () => {
-      const [store, lp, pe, xe] = await Promise.all([
+      const [store, lp, pe, xe, fp] = await Promise.all([
         loadServers(),
         AsyncStorage.getItem(LANG_KEY),
         AsyncStorage.getItem(PUSH_KEY),
         AsyncStorage.getItem(XTERM_KEY),
+        AsyncStorage.getItem(FONT_KEY),
       ]);
       if (Debug.logNet) Debug.reset();
       // Debug launch flags (UI tests) — all gated by GTMUX_DEBUG_*, never set in a
@@ -77,6 +82,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);
       if (pe === 'false') setPushEnabledState(false);
       if (xe === 'true') setXtermEnabledState(true);
+      if (fp) setFontPrefState(fp);
       setReady(true);
     })();
   }, []);
@@ -124,11 +130,16 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setXtermEnabledState(v);
         AsyncStorage.setItem(XTERM_KEY, String(v));
       },
+      fontPref,
+      setFontPref: v => {
+        setFontPrefState(v);
+        AsyncStorage.setItem(FONT_KEY, v);
+      },
       lang,
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, xtermEnabled, lang, scheme]);
+  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, xtermEnabled, fontPref, lang, scheme]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

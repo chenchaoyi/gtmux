@@ -22,7 +22,7 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled} =
+  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled, fontPref, setFontPref} =
     useApp();
   const {client} = useAgents();
 
@@ -30,6 +30,14 @@ export function SettingsScreen({navigation}: any) {
     {key: 'system', label: t('system')},
     {key: 'en', label: 'English'},
     {key: 'zh', label: '中文'},
+  ];
+  const fonts: {key: string; label: string}[] = [
+    {key: 'auto', label: t('fontAuto')},
+    {key: 'system', label: t('fontSystem')},
+    {key: 'Hack', label: 'Hack'},
+    {key: 'JetBrains Mono', label: 'JetBrains Mono'},
+    {key: 'Fira Code', label: 'Fira Code'},
+    {key: 'IBM Plex Mono', label: 'IBM Plex Mono'},
   ];
 
   // Handoff: mint a one-time code on the paired Mac and share a browser link so you
@@ -68,6 +76,18 @@ export function SettingsScreen({navigation}: any) {
               onPress={() => setLangPref(l.key)}>
               <Text style={[styles.rowLabel, {color: pal.fg}]}>{l.label}</Text>
               {langPref === l.key && <Text style={styles.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </Section>
+
+        <Section title={t('terminalFont')} pal={pal}>
+          {fonts.map((f, i) => (
+            <TouchableOpacity
+              key={f.key}
+              style={[styles.rowItem, i < fonts.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}
+              onPress={() => setFontPref(f.key)}>
+              <Text style={[styles.rowLabel, {color: pal.fg}]}>{f.label}</Text>
+              {fontPref === f.key && <Text style={styles.check}>✓</Text>}
             </TouchableOpacity>
           ))}
         </Section>
