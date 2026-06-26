@@ -15,7 +15,7 @@ const css = read(resolve(nm, 'xterm/css/xterm.css'));
 const xtermJs = read(resolve(nm, 'xterm/lib/xterm.js'));
 const fitJs = read(resolve(nm, 'addon-fit/lib/addon-fit.js'));
 const uni11Js = read(resolve(nm, 'addon-unicode11/lib/addon-unicode11.js'));
-const webglJs = read(resolve(nm, 'addon-webgl/lib/addon-webgl.js'));
+const canvasJs = read(resolve(nm, 'addon-canvas/lib/addon-canvas.js'));
 
 // The bridge: RN calls window.gtmuxWrite / gtmuxConfig via injectJavaScript. The
 // terminal is read-only here (no key input wired yet — that stays on the existing
@@ -47,14 +47,13 @@ const bootstrap = `
       term.unicode.activeVersion = '11';   // correct CJK / wide-glyph widths
     } catch (e) {}
     term.open(xw());                         // xterm lives in the width-controlled wrapper
-    // GPU renderer — the DOM renderer can't repaint visible rows fast enough to keep
-    // up with momentum scroll on a phone (→ jank). WebGL2 keeps up; on context loss
-    // (e.g. backgrounding) dispose it so xterm falls back to the DOM renderer.
-    try {
-      var webgl = new WebglAddon.WebglAddon();
-      webgl.onContextLoss(function () { try { webgl.dispose(); } catch (e) {} });
-      term.loadAddon(webgl);
-    } catch (e) {}
+    // CANVAS renderer (not WebGL). The DOM renderer can't repaint visible rows fast
+    // enough for momentum scroll on a phone (→ jank), but WebGL is unreliable in iOS
+    // WKWebView on real devices: its GL context black-frames (a blank terminal on
+    // open and after the wrap toggle) in ways that never reproduce on the simulator.
+    // The canvas addon is GPU-composited, smooth enough for scroll, and has none of
+    // WebGL's context fragility. If it fails to load, xterm falls back to DOM.
+    try { term.loadAddon(new CanvasAddon.CanvasAddon()); } catch (e) {}
     relayout();
     window.addEventListener('resize', relayout);
     installScrollControl();
@@ -239,6 +238,9 @@ const bootstrap = `
     relayout();
     // force a re-render at the new wrap/size (gtmuxWrite skips an unchanged text).
     var t = lastText; lastText = ''; if (t) window.gtmuxWrite(t);
+    // Self-heal after a toggle, same as boot: a single relayout occasionally isn't
+    // enough for the renderer to repaint at the new layout, so stage a couple more.
+    [60, 250, 600].forEach(function (ms) { setTimeout(relayout, ms); });
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
@@ -256,12 +258,12 @@ const html = `<!doctype html><html><head><meta charset="utf-8">
   #term{position:absolute;inset:0;padding:6px;overflow-x:hidden;overflow-y:hidden;-webkit-overflow-scrolling:touch}
   #xwrap{position:relative;height:100%;width:100%}
   .xterm-viewport{overflow-x:hidden !important;overflow-y:scroll !important;-webkit-overflow-scrolling:touch}
-  /* clip the (absolutely-positioned) WebGL canvas to the logical screen width: on
+  /* clip the (absolutely-positioned) render canvas to the logical screen width: on
      retina iOS it renders wider and, as an absolute descendant, would expand
      #term's scrollWidth → unbounded horizontal scroll. Verified via Playwright. */
   .xterm .xterm-screen{overflow:hidden}
 </style></head><body><div id="term"><div id="xwrap"></div></div>
-<script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script><script>${webglJs}</script>
+<script>${xtermJs}</script><script>${fitJs}</script><script>${uni11Js}</script><script>${canvasJs}</script>
 <script>${bootstrap}</script></body></html>`;
 
 const out = resolve(here, '..', 'src', 'ui', 'xtermAsset.ts');
