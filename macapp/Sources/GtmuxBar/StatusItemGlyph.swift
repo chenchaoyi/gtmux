@@ -7,63 +7,85 @@ enum DisplayMode: String, CaseIterable {
     case hideWhenIdle  // hidden unless something is waiting on you
 }
 
-/// StatusItemGlyph renders the menu-bar shape-shift glyph (DESIGN §2): the shape
-/// itself carries the state (calm ring / idle ✓ / working ring / waiting square +
-/// double-bars), so it reads in peripheral vision, for colorblind users, and on
-/// tinted menu bars. Non-template (keeps its color when the bar is tinted); the
-/// count next to it is plain text (auto black/white).
+/// StatusItemGlyph renders the menu-bar **brand** status item (ITERATIONS D1 /
+/// mockup §02): the status item is ALWAYS the gtmux pane grid, so it reads as
+/// gtmux in the bar. The TOP-RIGHT cell (= the pane that needs attention) lights
+/// up with the most-urgent state — color + a micro-glyph (waiting double-bars /
+/// working open ring / idle check) + the count next to it (drawn by AppDelegate
+/// as the button title). The other cells stay neutral and adapt to the bar.
+///
+/// Supersedes the older lone shape-shift glyph (DESIGN §2/§12 "状态项 ≠ logo"):
+/// D1 deliberately makes the status item brand-consistent. Still triple-encoded
+/// (color + shape + count), so it's legible for colorblind / peripheral vision.
 enum StatusItemGlyph {
     static let size: CGFloat = 18
 
-    /// Glyph for the most-urgent state, or the calm hollow ring when empty.
-    static func image(mostUrgent: Status, empty: Bool) -> NSImage {
-        if empty { return draw { ctx, r in calmRing(ctx, r) } }
-        switch mostUrgent {
-        case .waiting: return draw { ctx, r in waiting(ctx, r) }
-        case .working: return draw { ctx, r in workingRing(ctx, r) }
-        case .idle:    return draw { ctx, r in idleCheck(ctx, r) }
-        case .running: return draw { ctx, r in runningDot(ctx, r) }
+    /// The brand grid with the top-right cell lit by the most-urgent state, or a
+    /// quiet all-neutral grid when empty / only running (nothing needs you).
+    static func image(mostUrgent: Status, empty: Bool, dark: Bool) -> NSImage {
+        let lit: Status? = (empty || mostUrgent == .running) ? nil : mostUrgent
+        return draw { _, full in grid(full, dark: dark, lit: lit) }
+    }
+
+    // MARK: pane grid
+
+    private static func grid(_ full: CGRect, dark: Bool, lit: Status?) {
+        let gap: CGFloat = 2
+        let cell = (full.width - gap) / 2           // square top cells
+        let radius: CGFloat = 2
+        let neutral = (dark ? NSColor.white : NSColor.black).withAlphaComponent(dark ? 0.55 : 0.45)
+
+        let topY = full.minY + cell + gap
+        let topLeft = CGRect(x: full.minX, y: topY, width: cell, height: cell)
+        let topRight = CGRect(x: full.minX + cell + gap, y: topY, width: cell, height: cell)
+        let bottom = CGRect(x: full.minX, y: full.minY, width: full.width, height: cell)
+
+        neutral.setFill()
+        NSBezierPath(roundedRect: topLeft, xRadius: radius, yRadius: radius).fill()
+        NSBezierPath(roundedRect: bottom, xRadius: radius, yRadius: radius).fill()
+
+        guard let lit = lit else {
+            NSBezierPath(roundedRect: topRight, xRadius: radius, yRadius: radius).fill()
+            return
+        }
+        lit.nsColor.setFill()
+        NSBezierPath(roundedRect: topRight, xRadius: radius, yRadius: radius).fill()
+        // a 0.5pt white rim so a red/cyan cell keeps contrast on a tinted bar.
+        NSColor.white.withAlphaComponent(0.7).setStroke()
+        let rim = NSBezierPath(roundedRect: topRight.insetBy(dx: 0.25, dy: 0.25), xRadius: radius, yRadius: radius)
+        rim.lineWidth = 0.5; rim.stroke()
+
+        switch lit {
+        case .waiting: waitingBars(in: topRight)
+        case .working: workingRing(in: topRight)
+        case .idle:    idleCheck(in: topRight)
+        case .running: break
         }
     }
 
-    // MARK: shapes
+    // MARK: micro-glyphs (white, inside the lit cell)
 
-    private static func waiting(_ ctx: CGContext, _ r: CGRect) {
-        let sq = NSBezierPath(roundedRect: r, xRadius: 3.5, yRadius: 3.5)
-        Theme.Status.waitingNS.setFill(); sq.fill()
-        // 0.5pt white rim for contrast on red/orange tinted bars (DESIGN §2).
-        NSColor.white.withAlphaComponent(0.85).setStroke(); sq.lineWidth = 0.5; sq.stroke()
-        // two vertical bars (pause)
+    private static func waitingBars(in r: CGRect) {
         NSColor.white.setFill()
-        let barW: CGFloat = 1.9, gap: CGFloat = 2.0, h = r.height * 0.46
+        let barW: CGFloat = 1.3, gap: CGFloat = 1.2, h = r.height * 0.56
         let y = r.midY - h / 2
-        NSBezierPath(roundedRect: CGRect(x: r.midX - gap / 2 - barW, y: y, width: barW, height: h), xRadius: 0.9, yRadius: 0.9).fill()
-        NSBezierPath(roundedRect: CGRect(x: r.midX + gap / 2, y: y, width: barW, height: h), xRadius: 0.9, yRadius: 0.9).fill()
+        NSBezierPath(roundedRect: CGRect(x: r.midX - gap / 2 - barW, y: y, width: barW, height: h), xRadius: 0.6, yRadius: 0.6).fill()
+        NSBezierPath(roundedRect: CGRect(x: r.midX + gap / 2, y: y, width: barW, height: h), xRadius: 0.6, yRadius: 0.6).fill()
     }
 
-    private static func workingRing(_ ctx: CGContext, _ r: CGRect) {
+    private static func workingRing(in r: CGRect) {
         // static open ring — "in progress" via shape, never rotates (DESIGN §10).
         let ring = NSBezierPath()
-        ring.appendArc(withCenter: CGPoint(x: r.midX, y: r.midY), radius: r.width / 2 - 1, startAngle: 70, endAngle: 400)
-        Theme.Status.workingNS.setStroke(); ring.lineWidth = 2; ring.lineCapStyle = .round; ring.stroke()
+        ring.appendArc(withCenter: CGPoint(x: r.midX, y: r.midY), radius: r.width * 0.30, startAngle: 70, endAngle: 400)
+        NSColor.white.setStroke(); ring.lineWidth = 1.2; ring.lineCapStyle = .round; ring.stroke()
     }
 
-    private static func idleCheck(_ ctx: CGContext, _ r: CGRect) {
+    private static func idleCheck(in r: CGRect) {
         let p = NSBezierPath()
-        p.move(to: CGPoint(x: r.minX + 1.5, y: r.midY - 0.5))
-        p.line(to: CGPoint(x: r.midX - 1.5, y: r.minY + 2.5))
-        p.line(to: CGPoint(x: r.maxX - 0.5, y: r.maxY - 1.5))
-        Theme.Status.idleNS.setStroke(); p.lineWidth = 2; p.lineJoinStyle = .round; p.lineCapStyle = .round; p.stroke()
-    }
-
-    private static func runningDot(_ ctx: CGContext, _ r: CGRect) {
-        Theme.Status.noneNS.setFill()
-        NSBezierPath(ovalIn: CGRect(x: r.midX - 2.5, y: r.midY - 2.5, width: 5, height: 5)).fill()
-    }
-
-    private static func calmRing(_ ctx: CGContext, _ r: CGRect) {
-        let ring = NSBezierPath(ovalIn: r.insetBy(dx: 1, dy: 1))
-        Theme.Status.noneNS.setStroke(); ring.lineWidth = 1.5; ring.stroke()
+        p.move(to: CGPoint(x: r.minX + r.width * 0.24, y: r.midY - r.height * 0.02))
+        p.line(to: CGPoint(x: r.midX - r.width * 0.04, y: r.minY + r.height * 0.26))
+        p.line(to: CGPoint(x: r.maxX - r.width * 0.18, y: r.maxY - r.height * 0.24))
+        NSColor.white.setStroke(); p.lineWidth = 1.3; p.lineJoinStyle = .round; p.lineCapStyle = .round; p.stroke()
     }
 
     // MARK: draw helper
@@ -72,9 +94,10 @@ enum StatusItemGlyph {
         let img = NSImage(size: NSSize(width: size, height: size))
         img.lockFocus()
         let ctx = NSGraphicsContext.current!.cgContext
-        body(ctx, CGRect(x: 2.5, y: 2.5, width: size - 5, height: size - 5))
+        // 1pt margin so the 16×16 grid never clips against the 22pt bar.
+        body(ctx, CGRect(x: 1, y: 1, width: size - 2, height: size - 2))
         img.unlockFocus()
-        img.isTemplate = false
+        img.isTemplate = false // keep the lit cell's color even when the bar is tinted.
         return img
     }
 }

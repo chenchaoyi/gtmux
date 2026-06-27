@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 store: store, l10n: l10n,
                 onJump: { [weak self] in self?.jump($0) },
                 onAction: { [weak self] in self?.perform($0) },
+                onSend: { [weak self] in self?.sendReply($0, $1) },
                 onClose: { [weak self] in self?.popover.performClose(nil) }))
 
         // Repaint the status item whenever agents change.
@@ -66,9 +67,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Deliver desktop notifications natively (replaces terminal-notifier): the
         // hook queues requests, we post them and jump on click.
-        NotificationManager.shared.start { pane in
-            GtmuxCLI.spawn(pane.isEmpty ? ["focus", "--last"] : ["focus", pane])
-        }
+        NotificationManager.shared.start(
+            onJump: { pane in GtmuxCLI.spawn(pane.isEmpty ? ["focus", "--last"] : ["focus", pane]) },
+            onSend: { [weak self] pane, n in self?.sendText(pane, "\(n)") },
+            onSendText: { [weak self] pane, text in self?.sendText(pane, text) })
 
         // Test seam: GTMUXBAR_SHOW_PALETTE auto-opens the palette so it can be
         // exercised without a (flaky) synthetic global keystroke. No-op normally.
@@ -81,9 +83,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func toggleCommandPalette() {
         dbg("hotkey fired → toggle command palette")
-        CommandPaletteController.shared.toggle(store: store, l10n: l10n) { agent in
-            GtmuxCLI.spawn(agent.jumpArgs())
-        }
+        CommandPaletteController.shared.toggle(
+            store: store, l10n: l10n,
+            onJump: { agent in GtmuxCLI.spawn(agent.jumpArgs()) },
+            onSend: { [weak self] agent, n in self?.sendReply(agent, n) })
     }
 
     private func resetTimer() {
@@ -106,7 +109,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             statusItem.isVisible = true
         }
 
-        button.image = StatusItemGlyph.image(mostUrgent: urgent, empty: empty)
+        // Auto-withdraw waiting notifications whose pane is no longer waiting (A2).
+        NotificationManager.shared.reconcile(
+            waitingPanes: Set(agents.filter { $0.state == .waiting }.map { $0.paneID }))
+
+        let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        button.image = StatusItemGlyph.image(mostUrgent: urgent, empty: empty, dark: dark)
         let badge = displayMode == .dot ? "" : store.badge
         button.title = badge.isEmpty ? "" : " \(badge)"
         button.imagePosition = badge.isEmpty ? .imageOnly : .imageLeft
@@ -128,6 +136,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func jump(_ agent: Agent) {
         popover.performClose(nil)
         GtmuxCLI.spawn(agent.jumpArgs())
+    }
+
+    /// In-place reply (A1/A3): send the chosen option to the pane and re-poll soon
+    /// so the row flips to working. Stays in the popover (no close).
+    private func sendReply(_ agent: Agent, _ n: Int) { sendText(agent.paneID, "\(n)") }
+
+    /// Send literal text to a pane (notification 1/2/3 + free-text reply, A2).
+    private func sendText(_ pane: String, _ text: String) {
+        guard !pane.isEmpty else { return }
+        GtmuxCLI.spawn(["send", pane, text])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.store.refresh() }
     }
 
     private func perform(_ action: MenuAction) {
