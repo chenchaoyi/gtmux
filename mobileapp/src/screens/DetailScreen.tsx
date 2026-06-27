@@ -59,7 +59,18 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [keysOpen, setKeysOpen] = useState(false);
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
+  const [slow, setSlow] = useState(false); // D8: pane taking >3s to first paint
   const scrollRef = useRef<ScrollView>(null);
+
+  // D8: upgrade the loading copy if the first frame is slow to arrive.
+  useEffect(() => {
+    if (!loading) {
+      setSlow(false);
+      return;
+    }
+    const id = setTimeout(() => setSlow(true), 3000);
+    return () => clearTimeout(id);
+  }, [loading]);
 
   // Fetch the host terminal's appearance once so the pane matches it (global, not per-pane).
   useEffect(() => {
@@ -224,7 +235,14 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
               if (atBottom) scrollRef.current?.scrollToEnd({animated: false});
             }}>
             {loading ? (
-              <ActivityIndicator color={pal.fg3} style={styles.loading} />
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={pal.fg3} />
+                <Text style={[styles.loadingText, {color: pal.fg3}]}>
+                  {slow
+                    ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
+                    : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'}
+                </Text>
+              </View>
             ) : wrap ? (
               term
             ) : (
@@ -348,6 +366,8 @@ const styles = StyleSheet.create({
   term: {flex: 1, backgroundColor: '#0A0A0C'},
   termContent: {padding: 12},
   loading: {marginTop: 40},
+  loadingBox: {marginTop: 56, alignItems: 'center', gap: 10},
+  loadingText: {fontSize: 12.5},
   mono: {color: '#D6D6DA', fontFamily: 'Menlo'},
   fab: {
     position: 'absolute',
