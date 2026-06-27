@@ -144,12 +144,14 @@ export function RadarScreen({navigation}: any) {
 }
 
 function ConnDot({conn, t, pal}: any) {
-  const color = conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : pal.fg3;
-  const label = conn === 'live' ? t('live') : conn === 'offline' ? t('offline') : t('reconnecting');
+  // D9: server name (shown in the chip) + a status dot — no "live" word; only an
+  // abnormal state adds text (amber reconnecting / red offline).
+  const color = conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B';
+  const label = conn === 'live' ? '' : conn === 'offline' ? t('offline') : t('reconnecting');
   return (
     <View style={styles.conn}>
       <View style={[styles.connDot, {backgroundColor: color}]} />
-      <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text>
+      {label ? <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text> : null}
     </View>
   );
 }
