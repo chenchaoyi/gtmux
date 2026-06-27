@@ -104,14 +104,7 @@
 2. **分组列表**：分区顺序固定 **需要你（waiting）→ 运行中（working）→ 空闲（idle）→ 待命（running）**。
    每个分区一个小标题（全大写、字重 700、+0.5 字距）+ 计数；**waiting 分区标题用红色**，其余中性。
 3. **Footer**：四个动作按钮 **Overview · Live watch · Restore · New session**（图标+文字）；分隔线；
-   左侧齿轮 **偏好设置** + **配对手机**（`qrcode` 图标 → 弹出配对二维码面板，见下），
-   右侧（远程开启时）`🌐 远程开启` 指示 + 版本行 `gtmux X.Y · by ccy`。
-
-   **配对手机面板（Allow phone access）**：编码 pairing schema v1 `{v,url,token,name}`
-   的二维码（`CIQRCodeGenerator`），供手机 app「配对 → 扫一扫」。`url` 优先用 always-on
-   隧道地址（任意网络可达），否则用 Mac 的局域网 IP:8765（同 Wi-Fi）；`token` 取
-   `~/.config/gtmux/serve-token`。没有 token（没设过远程）时不画二维码，改为引导去偏好开启
-   远程访问。文案平实、无营销腔。
+   左侧齿轮 **偏好设置**，右侧版本行 `gtmux 0.1.0 · designed by ccy`。
 
 ### 行（Row）模型
 
