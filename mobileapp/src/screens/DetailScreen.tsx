@@ -41,8 +41,8 @@ export function DetailScreen({route, navigation}: any) {
 }
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
-  const {client, agents} = useAgents();
-  const {pal, lang, xtermEnabled, fontPref} = useApp();
+  const {client, agents, conn} = useAgents();
+  const {pal, lang, xtermEnabled, fontPref, mac} = useApp();
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -179,12 +179,25 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         </View>
       )}
 
-      {/* controls: live · A− A+ · wrap · full-screen (hidden in full-screen) */}
+      {/* controls: connection · A− A+ · wrap · full-screen (hidden in full-screen) */}
       {!fullscreen && (
         <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
+          {/* D9: server name + status dot (no "live" text); only abnormal states add a word. */}
           <View style={styles.live}>
-            <View style={[styles.liveDot, {backgroundColor: StatusColor.idle}]} />
-            <Text style={[styles.ctlText, {color: pal.fg3}]}>live</Text>
+            <View
+              style={[
+                styles.liveDot,
+                {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B'},
+              ]}
+            />
+            <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
+              {mac?.name || (lang === 'zh' ? '服务器' : 'server')}
+              {conn === 'offline'
+                ? lang === 'zh' ? ' · 离线' : ' · offline'
+                : conn === 'connecting'
+                ? lang === 'zh' ? ' · 重连中' : ' · reconnecting'
+                : ''}
+            </Text>
           </View>
           <View style={styles.ctlRight}>
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
