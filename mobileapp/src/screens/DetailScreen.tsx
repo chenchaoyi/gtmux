@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import Clipboard from '@react-native-clipboard/clipboard';
 import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
@@ -133,6 +134,15 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
   };
 
+  // D6: copy the visible screen as plain text (ANSI stripped via the parsed spans).
+  const copyVisible = () => {
+    const plain = lines
+      .map(spans => spans.map(s => s.text).join(''))
+      .join('\n')
+      .replace(/\s+$/, '');
+    Clipboard.setString(plain);
+  };
+
   // The whole screen is ONE selectable <Text> (lines joined by '\n'), so a
   // long-press starts a real drag selection that spans lines — extend the
   // handles over any region and use iOS's own Copy. (Per-line <Text>s, as before,
@@ -211,6 +221,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             </Text>
           </View>
           <View style={styles.ctlRight}>
+            <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyVisible} />
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
@@ -357,7 +368,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  live: {flexDirection: 'row', alignItems: 'center'},
+  live: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0, marginRight: 8},
   liveDot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
   ctlRight: {flexDirection: 'row', alignItems: 'center'},
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
