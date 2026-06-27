@@ -79,6 +79,13 @@ export interface Alert {
   task: string;
 }
 
+// One parsed interactive choice from a waiting pane (GET /api/options) — the
+// number you'd press (1/2/3) and the agent's own label for it. Approval card.
+export interface ReplyOption {
+  n: number;
+  label: string;
+}
+
 export interface PaneResponse {
   id: string;
   text: string;
