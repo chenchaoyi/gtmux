@@ -42,7 +42,7 @@ export function DetailScreen({route, navigation}: any) {
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client, agents, conn} = useAgents();
-  const {pal, lang, xtermEnabled, fontPref, mac} = useApp();
+  const {pal, lang, xtermEnabled, fontPref, mac, returnSends} = useApp();
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -266,6 +266,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         status={live.status}
         pal={pal}
         lang={lang}
+        returnSends={returnSends}
         onSend={p => {
           client.send(agent.pane_id, p);
         }}
