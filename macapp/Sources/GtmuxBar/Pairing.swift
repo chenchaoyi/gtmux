@@ -79,14 +79,42 @@ enum Pairing {
     static func qrImage(_ text: String, size: CGFloat = 240) -> NSImage? {
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(text.utf8)
-        filter.correctionLevel = "M"
+        filter.correctionLevel = "H" // level H tolerates the center logo occlusion (A5)
         guard let ci = filter.outputImage else { return nil }
         let scale = size / ci.extent.width
         let scaled = ci.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         let rep = NSCIImageRep(ciImage: scaled)
-        let img = NSImage(size: rep.size)
+        let img = NSImage(size: NSSize(width: size, height: size))
         img.addRepresentation(rep)
+
+        // Brand QR (A5): center the gtmux pane-grid mark on a white rounded
+        // quiet-zone so the code still reads (EC level H covers the occlusion).
+        img.lockFocus()
+        let badge = size * 0.26
+        let r = CGRect(x: (size - badge) / 2, y: (size - badge) / 2, width: badge, height: badge)
+        NSColor.white.setFill()
+        NSBezierPath(roundedRect: r, xRadius: badge * 0.22, yRadius: badge * 0.22).fill()
+        drawPaneGrid(in: r.insetBy(dx: badge * 0.20, dy: badge * 0.20))
+        img.unlockFocus()
         return img
+    }
+
+    /// The gtmux pane-grid mark (2×2, one cyan cell), for the brand QR center.
+    private static func drawPaneGrid(in r: CGRect) {
+        let gap = r.width * 0.12
+        let cell = (r.width - gap) / 2
+        let neutral = NSColor.black.withAlphaComponent(0.32)
+        func tile(_ c: NSColor, _ x: CGFloat, _ y: CGFloat) {
+            c.setFill()
+            NSBezierPath(roundedRect: CGRect(x: x, y: y, width: cell, height: cell),
+                         xRadius: cell * 0.28, yRadius: cell * 0.28).fill()
+        }
+        let x0 = r.minX, x1 = r.minX + cell + gap
+        let y0 = r.minY, y1 = r.minY + cell + gap
+        tile(Theme.Status.workingNS, x0, y1) // top-left cyan (matches GtmuxLogo)
+        tile(neutral, x1, y1)
+        tile(neutral, x0, y0)
+        tile(neutral, x1, y0)
     }
 
     private static func readTrimmed(_ path: String) -> String? {

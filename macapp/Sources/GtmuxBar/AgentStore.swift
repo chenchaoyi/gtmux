@@ -142,10 +142,15 @@ final class AgentStore: ObservableObject {
         return .running // also the calm/none case when empty
     }
 
-    /// Status-bar count next to the glyph (DESIGN §2): waiting else working, else "".
+    /// Count next to the lit grid cell (ITERATIONS D1 / §02): the most-urgent
+    /// state's count — waiting, else working, else the done (idle) count, else "".
+    /// (Extends DESIGN §2's waiting-else-working: D1's lit-cell shows a done count
+    /// too, so the green ✓ cell carries "how many finished".)
     var badge: String {
         if waiting > 0 { return "\(waiting)" }
         if working > 0 { return "\(working)" }
+        let idle = agents.filter { $0.state == .idle }.count
+        if idle > 0 { return "\(idle)" }
         return ""
     }
 

@@ -13,14 +13,17 @@ struct MenuView: View {
     @ObservedObject var store: AgentStore
     @ObservedObject var l10n: L10n
     @ObservedObject var remote = RemoteAccess.shared
+    @ObservedObject private var collapse = SectionCollapse.shared
     var onJump: (Agent) -> Void
     var onAction: (MenuAction) -> Void
+    var onSend: (Agent, Int) -> Void = { _, _ in }
     var onClose: () -> Void = {}
 
     @State private var waitingOnly = false
     @State private var searchActive = false
     @State private var searchText = ""
     @State private var selected = 0
+    @State private var expanded: String? // paneID of the waiting row showing 1/2/3
     @FocusState private var rootFocused: Bool
     @FocusState private var searchFocused: Bool
     @Environment(\.colorScheme) private var scheme
@@ -29,7 +32,11 @@ struct MenuView: View {
     private var sections: [(status: Status, agents: [Agent])] {
         store.sections(waitingOnly: waitingOnly, query: query)
     }
-    private var flat: [Agent] { sections.flatMap { $0.agents } }
+    // Keyboard navigation only walks rows in EXPANDED sections (A4): a collapsed
+    // section's agents are hidden, so ↑/↓ skip them.
+    private var flat: [Agent] {
+        sections.filter { !collapse.isCollapsed($0.status) }.flatMap { $0.agents }
+    }
 
     var body: some View {
         let p = Theme.Palette.of(scheme)
@@ -50,8 +57,18 @@ struct MenuView: View {
         .focused($rootFocused)
         .onKeyPress(.upArrow) { move(-1); return .handled }
         .onKeyPress(.downArrow) { move(1); return .handled }
+        .onKeyPress(.rightArrow) { expandSelectedWaiting() ? .handled : .ignored }
+        .onKeyPress(.leftArrow) { if expanded != nil { expanded = nil; return .handled }; return .ignored }
         .onKeyPress(.return) { jumpSelected(); return .handled }
         .onKeyPress(.escape) { onEscape(); return .handled }
+        // 1/2/3 reply when a waiting row is expanded (A1) — only digits, others pass through.
+        .onKeyPress { press in
+            guard let n = Int(press.characters), (1...9).contains(n),
+                  let pane = expanded, let a = flat.first(where: { $0.paneID == pane })
+            else { return .ignored }
+            onSend(a, n); expanded = nil
+            return .handled
+        }
         .onAppear { selected = 0; if !searchActive { rootFocused = true }; remote.refresh() }
     }
 
@@ -106,7 +123,7 @@ struct MenuView: View {
     @ViewBuilder private func content(_ p: Theme.Palette) -> some View {
         if store.total == 0 {
             EmptyStateView(l10n: l10n, onNew: { onAction(.newSession) })
-        } else if flat.isEmpty {
+        } else if sections.isEmpty {
             Text(l10n.tr("No matches", "无匹配"))
                 .font(.system(size: 12)).foregroundStyle(p.fg3)
                 .frame(maxWidth: .infinity).padding(.vertical, 22)
@@ -118,11 +135,25 @@ struct MenuView: View {
                     ForEach(listItems) { item in
                         switch item {
                         case let .header(status, count):
-                            SectionHeader(status: status, count: count, l10n: l10n)
+                            SectionHeader(status: status, count: count,
+                                          collapsed: collapse.isCollapsed(status), l10n: l10n) {
+                                collapse.toggle(status)
+                                selected = 0
+                            }
                         case let .agent(agent, idx):
-                            AgentRowView(agent: agent, selected: idx == selected, l10n: l10n)
-                                .onHover { if $0 { selected = idx } }
-                                .onTapGesture { onJump(agent) }
+                            VStack(spacing: 0) {
+                                AgentRowView(agent: agent, selected: idx == selected,
+                                             expanded: expanded == agent.paneID,
+                                             canReply: agent.state == .waiting, l10n: l10n,
+                                             onReply: { toggleExpand(agent) })
+                                    .onHover { if $0 { selected = idx } }
+                                    .onTapGesture { onJump(agent) }
+                                if agent.state == .waiting, expanded == agent.paneID {
+                                    WaitingReplyView(agent: agent, l10n: l10n,
+                                                     onSend: { n in onSend(agent, n); expanded = nil },
+                                                     onJump: { onJump(agent) })
+                                }
+                            }
                         }
                     }
                 }
@@ -152,6 +183,7 @@ struct MenuView: View {
         var idx = 0
         for section in sections {
             items.append(.header(section.status, section.agents.count))
+            if collapse.isCollapsed(section.status) { continue } // count stays; rows hidden
             for a in section.agents {
                 items.append(.agent(a, idx))
                 idx += 1
@@ -222,7 +254,20 @@ struct MenuView: View {
 
     private func move(_ delta: Int) {
         guard !flat.isEmpty else { return }
+        expanded = nil // arrowing away closes any open reply
         selected = max(0, min(flat.count - 1, selected + delta))
+    }
+
+    /// Expand the selected row's in-place 1/2/3 reply — only for waiting (A1 /
+    /// cardinal rule: working never offers a reply). Returns false otherwise.
+    private func expandSelectedWaiting() -> Bool {
+        guard selected >= 0, selected < flat.count, flat[selected].state == .waiting else { return false }
+        expanded = flat[selected].paneID
+        return true
+    }
+
+    private func toggleExpand(_ agent: Agent) {
+        expanded = (expanded == agent.paneID) ? nil : agent.paneID
     }
     private func jumpSelected() {
         guard selected >= 0, selected < flat.count else { return }
@@ -244,18 +289,32 @@ struct MenuView: View {
 private struct SectionHeader: View {
     let status: Status
     let count: Int
+    let collapsed: Bool
     @ObservedObject var l10n: L10n
+    var onToggle: () -> Void
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         let p = Theme.Palette.of(scheme)
-        HStack(spacing: 6) {
-            Text(title.uppercased()).font(Theme.Font.section).kerning(0.5)
-                .foregroundStyle(status == .waiting ? Theme.Status.waiting : p.fg3)
-            Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
-            Spacer()
+        // Whole header is a fold toggle (A4): count stays visible when collapsed;
+        // a Hide/Show label + a chevron that rotates ▶ (folded) ↔ ▼ (open).
+        Button(action: onToggle) {
+            HStack(spacing: 6) {
+                Text(title.uppercased()).font(Theme.Font.section).kerning(0.5)
+                    .foregroundStyle(status == .waiting ? Theme.Status.waiting : p.fg3)
+                Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
+                Spacer()
+                Text(collapsed ? l10n.tr("Show", "展开") : l10n.tr("Hide", "收起"))
+                    .font(Theme.Font.footer).foregroundStyle(p.fg3)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .semibold)).foregroundStyle(p.fg3)
+                    .rotationEffect(.degrees(collapsed ? 0 : 90))
+                    .animation(.easeInOut(duration: 0.15), value: collapsed)
+            }
+            .padding(.horizontal, 12).padding(.top, 7).padding(.bottom, 2)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 12).padding(.top, 7).padding(.bottom, 2)
+        .buttonStyle(.plain)
     }
 
     private var title: String {
@@ -268,12 +327,35 @@ private struct SectionHeader: View {
     }
 }
 
+/// SectionCollapse remembers which popover sections the user folded (A4), so the
+/// choice survives reopen. The count stays visible when a section is collapsed.
+final class SectionCollapse: ObservableObject {
+    static let shared = SectionCollapse()
+    @Published private var collapsed: Set<String>
+    private let key = "popover.collapsedSections"
+
+    private init() {
+        let raw = UserDefaults.standard.string(forKey: key) ?? ""
+        collapsed = Set(raw.split(separator: ",").map(String.init))
+    }
+
+    func isCollapsed(_ s: Status) -> Bool { collapsed.contains(s.rawValue) }
+
+    func toggle(_ s: Status) {
+        if collapsed.contains(s.rawValue) { collapsed.remove(s.rawValue) } else { collapsed.insert(s.rawValue) }
+        UserDefaults.standard.set(collapsed.sorted().joined(separator: ","), forKey: key)
+    }
+}
+
 // MARK: - Row
 
 private struct AgentRowView: View {
     let agent: Agent
     let selected: Bool
+    var expanded = false
+    var canReply = false
     @ObservedObject var l10n: L10n
+    var onReply: () -> Void = {}
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -295,8 +377,23 @@ private struct AgentRowView: View {
             }
             VStack(alignment: .trailing, spacing: 3) {
                 Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
-                Image(systemName: selected ? "return" : "chevron.right")
-                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(p.fg3)
+                // Waiting rows offer an in-place "Reply" affordance (A1); others
+                // just show the jump chevron / ⏎.
+                if canReply, selected {
+                    Button(action: onReply) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrowshape.turn.up.left.fill").font(.system(size: 8))
+                            Image(systemName: expanded ? "chevron.down" : "chevron.right").font(.system(size: 8, weight: .semibold))
+                        }
+                        .foregroundStyle(Theme.Status.waiting)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Theme.Status.waiting.opacity(0.14)))
+                        .contentShape(Rectangle())
+                    }.buttonStyle(.plain).help(l10n.tr("Reply here", "就地回应"))
+                } else {
+                    Image(systemName: selected ? "return" : "chevron.right")
+                        .font(.system(size: 10, weight: .semibold)).foregroundStyle(p.fg3)
+                }
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 6)
@@ -327,6 +424,75 @@ private struct AgentRowView: View {
             .foregroundStyle(Theme.Status.idle)
             .padding(.horizontal, 4).padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 3).fill(Theme.Status.idle.opacity(0.14)))
+    }
+}
+
+// MARK: - In-place reply (A1)
+
+struct ReplyOption: Identifiable, Decodable {
+    let n: Int
+    let label: String
+    var id: Int { n }
+}
+
+/// WaitingReplyView shows a waiting agent's own 1/2/3 choices as full-row buttons
+/// (A1/A3 / mockup §09). Options come from the shared parser via `gtmux options
+/// <pane>`; tapping one (or pressing its digit) sends it. Shared by the popover
+/// (A1) and the command palette (A3). Falls back to "jump to reply" when nothing
+/// parses.
+struct WaitingReplyView: View {
+    let agent: Agent
+    @ObservedObject var l10n: L10n
+    var onSend: (Int) -> Void
+    var onJump: () -> Void
+    @State private var options: [ReplyOption]? // nil = still loading
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let p = Theme.Palette.of(scheme)
+        VStack(alignment: .leading, spacing: 4) {
+            if let opts = options, !opts.isEmpty {
+                ForEach(opts) { o in
+                    Button { onSend(o.n) } label: { optionLabel(o, p) }.buttonStyle(.plain)
+                }
+                Text(l10n.tr("1/2/3 send · ⏎ jump · ← close", "1/2/3 发送 · ⏎ 跳转 · ← 收起"))
+                    .font(.system(size: 9)).foregroundStyle(p.fg3).padding(.top, 1)
+            } else if options == nil {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text(l10n.tr("Reading options…", "正在读取选项…")).font(.system(size: 11)).foregroundStyle(p.fg3)
+                }.padding(.vertical, 3)
+            } else {
+                Button(action: onJump) {
+                    Text(l10n.tr("Jump to reply →", "去终端回应 →"))
+                        .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.Status.waiting)
+                }.buttonStyle(.plain).padding(.vertical, 3)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 53).padding(.trailing, 16).padding(.bottom, 7)
+        .task(id: agent.paneID) { await load() }
+    }
+
+    private func optionLabel(_ o: ReplyOption, _ p: Theme.Palette) -> some View {
+        HStack(spacing: 8) {
+            Text("\(o.n)").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.Status.waiting)
+                .frame(width: 18, height: 18)
+                .background(RoundedRectangle(cornerRadius: 4).fill(Theme.Status.waiting.opacity(0.16)))
+            Text(o.label).font(.system(size: 12)).foregroundStyle(p.fg)
+                .lineLimit(2).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 6)
+            .fill(scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04)))
+        .contentShape(Rectangle())
+    }
+
+    private func load() async {
+        let pane = agent.paneID
+        let data = await Task.detached { GtmuxCLI.capture(["options", pane]) ?? Data("[]".utf8) }.value
+        options = (try? JSONDecoder().decode([ReplyOption].self, from: data)) ?? []
     }
 }
 
