@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
 import {StatusColor} from '../ui/theme';
@@ -121,7 +121,11 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       </ScrollView>
 
       <Modal visible={adding} animationType="slide" onRequestClose={() => setAdding(false)}>
-        <PairingScreen onCancel={() => setAdding(false)} />
+        {/* Fresh provider: inside a RN Modal, safe-area insets are otherwise zero,
+            so PairingScreen's Cancel collided with the status-bar clock (REVIEW P0). */}
+        <SafeAreaProvider>
+          <PairingScreen onCancel={() => setAdding(false)} />
+        </SafeAreaProvider>
       </Modal>
     </SafeAreaView>
   );

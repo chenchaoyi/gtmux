@@ -58,6 +58,7 @@ export function Composer({
   pal,
   lang,
   enabled = true,
+  returnSends = false,
   onSend,
   onUpload,
   onOpenKeys,
@@ -66,11 +67,13 @@ export function Composer({
   pal: Palette;
   lang: Lang;
   enabled?: boolean;
+  returnSends?: boolean; // D7: when off (default) Return = newline; send via ↑ only
   onSend?: (p: SendPayload) => void;
   onUpload?: (uri: string, name: string, type: string) => Promise<string | null>;
   onOpenKeys?: () => void;
 }) {
   const [text, setText] = useState('');
+  const [inputH, setInputH] = useState(0); // measured content height, for 1→6 line auto-grow
   const [uploading, setUploading] = useState(false);
   const [markupUri, setMarkupUri] = useState<string | null>(null);
   const [snippets, setSnippets] = useState<string[]>([]);
@@ -235,10 +238,24 @@ export function Composer({
           placeholderTextColor={pal.fg3}
           autoCapitalize="none"
           autoCorrect={false}
-          returnKeyType="send"
-          onSubmitEditing={sendText}
+          // D7 core fix: multiline so Return inserts a newline; sending is the ↑
+          // button only (unless the user opted into "Return sends"). Auto-grows
+          // 1→6 lines, then scrolls inside.
+          multiline
+          textAlignVertical="top"
+          onContentSizeChange={e => setInputH(e.nativeEvent.contentSize.height)}
+          returnKeyType={returnSends ? 'send' : 'default'}
+          onSubmitEditing={returnSends ? sendText : undefined}
           blurOnSubmit={false}
-          style={[styles.input, {backgroundColor: pal.surface, borderColor: pal.divider, color: pal.fg}]}
+          style={[
+            styles.input,
+            {
+              backgroundColor: pal.surface,
+              borderColor: pal.divider,
+              color: pal.fg,
+              height: Math.min(132, Math.max(40, inputH + 16)),
+            },
+          ]}
         />
         <TouchableOpacity
           testID={TestIds.composer.send}
@@ -284,10 +301,10 @@ const styles = StyleSheet.create({
   sep: {width: StyleSheet.hairlineWidth, height: 22, marginHorizontal: 6},
   ctlKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8, marginRight: 7},
   ctlText: {fontSize: 13, fontFamily: 'Menlo'},
-  inputRow: {flexDirection: 'row', alignItems: 'center', marginTop: 8},
+  inputRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 8},
   attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
   attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
-  input: {flex: 1, height: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, fontSize: 15},
+  input: {flex: 1, minHeight: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
   send: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
   sendText: {fontSize: 19, fontWeight: '700'},
 });
