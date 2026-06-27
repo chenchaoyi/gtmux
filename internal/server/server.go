@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
 
@@ -146,6 +147,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
+	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
@@ -237,6 +239,27 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// handleOptions returns a waiting pane's interactive 1/2/3 choice block as JSON
+// ({"options":[{n,label}…]}) using the SAME parser as the menu-bar / `gtmux
+// options` (HANDOFF: one shared parser). The mobile approval card renders these.
+func (s *Server) handleOptions(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	text, ok := s.deps.PaneText(id)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errBody("pane not found"))
+		return
+	}
+	opts := prompt.ParseOptions(text)
+	if opts == nil {
+		opts = []prompt.Option{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"options": opts})
 }
 
 func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {

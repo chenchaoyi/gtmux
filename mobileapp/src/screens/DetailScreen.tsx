@@ -18,13 +18,14 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Agent, primary, secondary, TermTheme} from '../api/types';
+import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
+import {ApprovalCard} from '../ui/ApprovalCard';
 import {XtermView} from '../ui/XtermView';
 import {FloatingKeys} from '../ui/FloatingKeys';
 import {DiffModal} from '../ui/DiffModal';
@@ -57,6 +58,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [fullscreen, setFullscreen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [diffOpen, setDiffOpen] = useState(false);
+  const [options, setOptions] = useState<ReplyOption[]>([]);
   const scrollRef = useRef<ScrollView>(null);
 
   // Fetch the host terminal's appearance once so the pane matches it (global, not per-pane).
@@ -93,6 +95,23 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       clearInterval(id);
     };
   }, [client, agent.pane_id]);
+
+  // Approval card (B1): only while waiting (cardinal rule), poll the pane's 1/2/3
+  // choices from the shared parser. Cleared the moment it's no longer waiting.
+  useEffect(() => {
+    if (live.status !== 'waiting') {
+      setOptions([]);
+      return;
+    }
+    let alive = true;
+    const load = () => client.options(agent.pane_id).then(o => alive && setOptions(o));
+    load();
+    const id = setInterval(load, 2000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client, agent.pane_id, live.status]);
 
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
@@ -217,6 +236,17 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           </View>
         )}
       </View>
+
+      {/* approval card (B1): waiting → the agent's own 1/2/3 as big buttons */}
+      <ApprovalCard
+        options={options}
+        pal={pal}
+        lang={lang}
+        onSend={n => {
+          client.send(agent.pane_id, {text: String(n), enter: true});
+          setOptions([]);
+        }}
+      />
 
       {/* input — types into the pane via POST /api/send (MOBILE §4) */}
       <Composer

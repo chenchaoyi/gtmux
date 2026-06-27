@@ -2,7 +2,7 @@
 // Mirrors api/contract.md. `focus` selects a pane; `send` types into one (a WRITE
 // gated only by the bearer token).
 
-import {Agent, PaneResponse, TermTheme, toAgent} from './types';
+import {Agent, PaneResponse, ReplyOption, TermTheme, toAgent} from './types';
 import {Debug} from '../debug';
 
 export interface SendPayload {
@@ -72,6 +72,17 @@ export class GtmuxClient {
       headers: this.h(),
     });
     return r.ok;
+  }
+
+  // options returns a waiting pane's interactive 1/2/3 choice block (parsed by the
+  // SAME Go parser the menu-bar uses), for the approval card. [] when none parse.
+  async options(id: string): Promise<ReplyOption[]> {
+    const r = await tfetch(`${this.base}/api/options?id=${encodeURIComponent(id)}`, {
+      headers: this.h(),
+    });
+    if (!r.ok) return [];
+    const j = await r.json().catch(() => null);
+    return Array.isArray(j?.options) ? j.options : [];
   }
 
   // enrollMint mints a short-lived single-use pairing code (for handing this paired
