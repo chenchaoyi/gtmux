@@ -22,7 +22,7 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled, fontPref, setFontPref} =
+  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled, fontPref, setFontPref, returnSends, setReturnSends} =
     useApp();
   const {client} = useAgents();
 
@@ -153,6 +153,19 @@ export function SettingsScreen({navigation}: any) {
               {lang === 'zh'
                 ? '用真正的终端内核（xterm.js）渲染窗格，全屏 TUI、真彩、中文宽度更准；关则用经典渲染。'
                 : 'Render the pane with a real terminal core (xterm.js) — better for full-screen TUIs, true color, CJK widths. Off uses the classic renderer.'}
+            </Text>
+          </View>
+          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
+            <Text style={[styles.rowLabel, {color: pal.fg}]}>
+              {lang === 'zh' ? '回车直接发送' : 'Return sends'}
+            </Text>
+            <Switch value={returnSends} onValueChange={setReturnSends} />
+          </View>
+          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
+            <Text style={[styles.rowSub, {color: pal.fg3}]}>
+              {lang === 'zh'
+                ? '开启后回车直接发送消息；关闭（默认）时回车为换行，用 ↑ 按钮发送。'
+                : 'On: Return sends the message. Off (default): Return inserts a newline; send with the ↑ button.'}
             </Text>
           </View>
         </Section>

@@ -10,6 +10,9 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -78,6 +81,7 @@ export function Composer({
   const [markupUri, setMarkupUri] = useState<string | null>(null);
   const [snippets, setSnippets] = useState<string[]>([]);
   const [manageSnippets, setManageSnippets] = useState(false);
+  const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
 
   useEffect(() => {
     loadSnippets().then(setSnippets);
@@ -180,6 +184,11 @@ export function Composer({
           style={[styles.ctlKey, {borderColor: pal.divider}]}>
           <Text style={[styles.ctlText, {color: pal.fg2}]}>{lang === 'zh' ? '粘贴' : 'Paste'}</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setFullCompose(true)}
+          style={[styles.ctlKey, {borderColor: pal.divider}]}>
+          <Text style={[styles.ctlText, {color: pal.fg2}]}>⤢</Text>
+        </TouchableOpacity>
         <View style={[styles.sep, {backgroundColor: pal.divider}]} />
         {contextKeys(status, lang).map(k => (
           <TouchableOpacity
@@ -277,6 +286,45 @@ export function Composer({
         onClose={() => setManageSnippets(false)}
       />
 
+      {/* B3 ②: full-screen compose — a big monospace editor for long replies.
+          Return = newline here too; ⌘⏎ (hardware kbd) or the Send button sends. */}
+      <Modal visible={fullCompose} animationType="slide" onRequestClose={() => setFullCompose(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[styles.fcWrap, {backgroundColor: pal.bg}]}>
+          <View style={[styles.fcBar, {borderBottomColor: pal.divider}]}>
+            <TouchableOpacity onPress={() => setFullCompose(false)} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <Text style={[styles.fcAction, {color: pal.fg2}]}>{lang === 'zh' ? '收起' : 'Done'}</Text>
+            </TouchableOpacity>
+            <Text style={[styles.fcTitle, {color: pal.fg3}]}>{lang === 'zh' ? '撰写' : 'Compose'}</Text>
+            <TouchableOpacity
+              disabled={!enabled || !text}
+              onPress={() => { sendText(); setFullCompose(false); }}>
+              <Text style={[styles.fcAction, {color: text ? '#06B6D4' : pal.fg3, fontWeight: '700'}]}>
+                {lang === 'zh' ? '发送' : 'Send'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            editable={enabled}
+            multiline
+            autoFocus
+            textAlignVertical="top"
+            placeholder={lang === 'zh' ? '输入…（回车换行，⌘⏎ 发送）' : 'Type… (Return = newline, ⌘⏎ to send)'}
+            placeholderTextColor={pal.fg3}
+            keyboardAppearance={pal.bg === '#ffffff' ? 'light' : 'dark'}
+            onKeyPress={e => {
+              // hardware keyboard ⌘⏎ sends (soft keyboard has no modifiers).
+              const ne: any = e.nativeEvent;
+              if (ne.key === 'Enter' && (ne.metaKey || ne.ctrlKey)) { sendText(); setFullCompose(false); }
+            }}
+            style={[styles.fcInput, {color: pal.fg}]}
+          />
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* clipboard-image → annotate → upload → reference by path */}
       <ImageMarkup
         visible={!!markupUri}
@@ -305,6 +353,11 @@ const styles = StyleSheet.create({
   attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
   attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
   input: {flex: 1, minHeight: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
+  fcWrap: {flex: 1},
+  fcBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth},
+  fcTitle: {fontSize: 13, fontWeight: '600'},
+  fcAction: {fontSize: 15},
+  fcInput: {flex: 1, fontSize: 16, lineHeight: 22, padding: 16, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
   send: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
   sendText: {fontSize: 19, fontWeight: '700'},
 });
