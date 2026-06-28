@@ -86,6 +86,12 @@ export function Composer({
   const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
   const [history, setHistory] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Moshi-style: the composer rests as a single icon row; the text field +
+  // keyboard appear only when you tap the ⌨ key (and collapse again with ▾). This
+  // keeps the terminal full-height and stops an accidental tap from popping the
+  // keyboard. Any action that needs the field (snippets/history/attach) opens it.
+  const [composing, setComposing] = useState(false);
+  const openCompose = () => setComposing(true);
 
   useEffect(() => {
     loadSnippets().then(setSnippets);
@@ -131,7 +137,10 @@ export function Composer({
       // fall through to text paste
     }
     const s = await Clipboard.getString();
-    if (s) setText(t => (t ? t + s : s));
+    if (s) {
+      setText(t => (t ? t + s : s));
+      openCompose();
+    }
   };
 
   // Upload a picked file to the Mac and drop its path into the input, so the
@@ -141,7 +150,10 @@ export function Composer({
     setUploading(true);
     const path = await onUpload(uri, name, type);
     setUploading(false);
-    if (path) setText(t => (t ? t + ' ' + path : path));
+    if (path) {
+      setText(t => (t ? t + ' ' + path : path));
+      openCompose();
+    }
   };
 
   // Attach → photo library / camera / file (iOS action sheet).
@@ -181,12 +193,21 @@ export function Composer({
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="always"
         contentContainerStyle={styles.keys}>
+        {/* keyboard toggle: pop / dismiss the text field (Moshi-style) */}
+        <TouchableOpacity
+          onPress={() => setComposing(c => !c)}
+          style={[
+            styles.ctlKey,
+            {backgroundColor: composing ? '#06B6D4' : pal.surface, borderColor: composing ? '#06B6D4' : pal.divider},
+          ]}>
+          <Text style={[styles.ctlText, {color: composing ? '#fff' : pal.fg2}]}>{composing ? '▾' : '⌨'}</Text>
+        </TouchableOpacity>
         <MoveKey pal={pal} enabled={enabled} onKey={k => send({key: k})} />
         {onOpenKeys && (
           <TouchableOpacity
             onPress={onOpenKeys}
             style={[styles.ctlKey, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-            <Text style={[styles.ctlText, {color: pal.fg2}]}>⌨</Text>
+            <Text style={[styles.ctlText, {color: pal.fg2}]}>✛</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -243,55 +264,59 @@ export function Composer({
         </TouchableOpacity>
       </ScrollView>
 
-      {/* attach + free input + send */}
-      <View style={styles.inputRow}>
-        <TouchableOpacity
-          onPress={attach}
-          disabled={!enabled || uploading || !onUpload}
-          style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-          {uploading ? (
-            <ActivityIndicator size="small" color={pal.fg3} />
-          ) : (
-            <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
-          )}
-        </TouchableOpacity>
-        <TextInput
-          testID={TestIds.composer.input}
-          value={text}
-          onChangeText={setText}
-          editable={enabled}
-          placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
-          placeholderTextColor={pal.fg3}
-          autoCapitalize="none"
-          autoCorrect={false}
-          // D7 core fix: multiline so Return inserts a newline; sending is the ↑
-          // button only (unless the user opted into "Return sends"). Auto-grows
-          // 1→6 lines, then scrolls inside.
-          multiline
-          textAlignVertical="top"
-          onContentSizeChange={e => setInputH(e.nativeEvent.contentSize.height)}
-          returnKeyType={returnSends ? 'send' : 'default'}
-          onSubmitEditing={returnSends ? sendText : undefined}
-          blurOnSubmit={false}
-          style={[
-            styles.input,
-            {
-              backgroundColor: pal.surface,
-              borderColor: pal.divider,
-              color: pal.fg,
-              height: Math.min(132, Math.max(40, inputH + 16)),
-            },
-          ]}
-        />
-        <TouchableOpacity
-          testID={TestIds.composer.send}
-          accessibilityLabel={TestIds.composer.send}
-          onPress={sendText}
-          disabled={!enabled || !text}
-          style={[styles.send, {backgroundColor: text ? '#06B6D4' : pal.surface, borderColor: pal.divider}]}>
-          <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
-        </TouchableOpacity>
-      </View>
+      {/* attach + free input + send — only while composing (tap ⌨ to reveal). The
+          TextInput auto-focuses on mount, so the keyboard rises exactly then. */}
+      {composing && (
+        <View style={styles.inputRow}>
+          <TouchableOpacity
+            onPress={attach}
+            disabled={!enabled || uploading || !onUpload}
+            style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+            {uploading ? (
+              <ActivityIndicator size="small" color={pal.fg3} />
+            ) : (
+              <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
+            )}
+          </TouchableOpacity>
+          <TextInput
+            testID={TestIds.composer.input}
+            value={text}
+            onChangeText={setText}
+            editable={enabled}
+            autoFocus
+            placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
+            placeholderTextColor={pal.fg3}
+            autoCapitalize="none"
+            autoCorrect={false}
+            // D7 core fix: multiline so Return inserts a newline; sending is the ↑
+            // button only (unless the user opted into "Return sends"). Auto-grows
+            // 1→6 lines, then scrolls inside.
+            multiline
+            textAlignVertical="top"
+            onContentSizeChange={e => setInputH(e.nativeEvent.contentSize.height)}
+            returnKeyType={returnSends ? 'send' : 'default'}
+            onSubmitEditing={returnSends ? sendText : undefined}
+            blurOnSubmit={false}
+            style={[
+              styles.input,
+              {
+                backgroundColor: pal.surface,
+                borderColor: pal.divider,
+                color: pal.fg,
+                height: Math.min(132, Math.max(40, inputH + 16)),
+              },
+            ]}
+          />
+          <TouchableOpacity
+            testID={TestIds.composer.send}
+            accessibilityLabel={TestIds.composer.send}
+            onPress={sendText}
+            disabled={!enabled || !text}
+            style={[styles.send, {backgroundColor: text ? '#06B6D4' : pal.surface, borderColor: pal.divider}]}>
+            <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* recall a previously-sent message → load it into the input for editing */}
       <HistoryModal
@@ -302,6 +327,7 @@ export function Composer({
         onPick={h => {
           setText(t => (t ? t + h : h));
           setHistoryOpen(false);
+          openCompose();
         }}
         onClear={() => {
           setHistory([]);

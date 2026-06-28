@@ -52,4 +52,34 @@ describe('parseBlocks', () => {
     const b = parseBlocks('1. first\n2. second');
     expect(b[0]).toEqual({t: 'ol', items: [[{t: 'text', s: 'first'}], [{t: 'text', s: 'second'}]]});
   });
+
+  it('parses a GitHub pipe table with alignment and inline cells', () => {
+    const src = '| Name | Qty |\n|:-----|----:|\n| `a`  | 1   |\n| b    | 22  |';
+    const b = parseBlocks(src);
+    expect(b[0]).toEqual({
+      t: 'table',
+      align: ['left', 'right'],
+      header: [[{t: 'text', s: 'Name'}], [{t: 'text', s: 'Qty'}]],
+      rows: [
+        [[{t: 'code', s: 'a'}], [{t: 'text', s: '1'}]],
+        [[{t: 'text', s: 'b'}], [{t: 'text', s: '22'}]],
+      ],
+    });
+  });
+
+  it('center alignment via :-:', () => {
+    const b = parseBlocks('| a | b |\n| :-: | --- |\n| 1 | 2 |');
+    expect((b[0] as any).align).toEqual(['center', 'left']);
+  });
+
+  it('does NOT treat a bare --- as a table (stays an hr)', () => {
+    const b = parseBlocks('text\n\n---');
+    expect(b[1]).toEqual({t: 'hr'});
+  });
+
+  it('a paragraph immediately followed by a table does not swallow it', () => {
+    const b = parseBlocks('intro\n| a | b |\n|---|---|\n| 1 | 2 |');
+    expect(b[0]).toEqual({t: 'p', spans: [{t: 'text', s: 'intro'}]});
+    expect((b[1] as any).t).toBe('table');
+  });
 });

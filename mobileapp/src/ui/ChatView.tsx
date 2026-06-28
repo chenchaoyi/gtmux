@@ -12,7 +12,7 @@
 import React from 'react';
 import {ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
-import {agentMark} from './agentMark';
+import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {Agent, StatusName} from '../api/types';
 import {GtmuxClient, TranscriptTurn} from '../api/client';
@@ -112,9 +112,7 @@ export function ChatView({agent, lines, status, fontSize, lang, client, paneId, 
       contentContainerStyle={styles.content}>
       {/* current-state row: avatar + agent + status dot */}
       <View style={styles.stateRow}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{agentMark(agent.agent)}</Text>
-        </View>
+        <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
         <View style={styles.stateText}>
           <Text style={[styles.agentName, {color: CHAT_FG}]} numberOfLines={1}>
             {agent.agent}
@@ -178,9 +176,7 @@ export function ChatView({agent, lines, status, fontSize, lang, client, paneId, 
 
           {!!t.response && (
             <View style={styles.agentRow}>
-              <View style={styles.agentAvatar}>
-                <Text style={styles.agentAvatarText}>{agentMark(agent.agent)}</Text>
-              </View>
+              <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
               <View style={styles.agentBubble}>
                 <MarkdownView source={t.response} colors={MD_COLORS} fontSize={14} />
               </View>
@@ -228,15 +224,6 @@ const styles = StyleSheet.create({
   center: {paddingVertical: 24, alignItems: 'center'},
   empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},
-  avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    backgroundColor: '#1C1C1F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {fontSize: 10, fontWeight: '700', color: 'rgba(235,235,245,0.7)'},
   stateText: {flex: 1, minWidth: 0},
   agentName: {fontSize: 13.5, fontWeight: '700'},
   statusLine: {flexDirection: 'row', alignItems: 'center', marginTop: 2},
@@ -266,15 +253,6 @@ const styles = StyleSheet.create({
 
   // agent final response — left, with avatar.
   agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},
-  agentAvatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    backgroundColor: '#1C1C1F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  agentAvatarText: {fontSize: 10, fontWeight: '700', color: 'rgba(235,235,245,0.7)'},
   agentBubble: {
     flex: 1,
     backgroundColor: '#1C1C1F',

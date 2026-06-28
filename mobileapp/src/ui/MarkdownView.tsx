@@ -59,6 +59,39 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number): React.ReactNode[
 
 const HEADING_SIZE: Record<number, number> = {1: 6, 2: 4, 3: 2, 4: 1, 5: 0, 6: 0};
 
+function TableRow({
+  cells,
+  align,
+  c,
+  fs,
+  header,
+}: {
+  cells: Inline[][];
+  align: import('./markdown').Align[];
+  c: MdColors;
+  fs: number;
+  header?: boolean;
+}) {
+  return (
+    <View style={styles.tr}>
+      {cells.map((cell, i) => (
+        <View key={i} style={[styles.td, {borderColor: c.border, backgroundColor: header ? c.codeBg : 'transparent'}]}>
+          <Text
+            style={{
+              color: c.text,
+              fontSize: fs - 0.5,
+              lineHeight: (fs - 0.5) * 1.4,
+              fontWeight: header ? '700' : '400',
+              textAlign: align[i] ?? 'left',
+            }}>
+            {renderSpans(cell, c, fs)}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function BlockView({b, c, fs}: {b: Block; c: MdColors; fs: number}) {
   switch (b.t) {
     case 'h':
@@ -99,6 +132,17 @@ function BlockView({b, c, fs}: {b: Block; c: MdColors; fs: number}) {
           <Text style={{color: c.dim, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs)}</Text>
         </View>
       );
+    case 'table':
+      return (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
+          <View>
+            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header />
+            {b.rows.map((row, i) => (
+              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} />
+            ))}
+          </View>
+        </ScrollView>
+      );
     case 'hr':
       return <View style={[styles.hr, {backgroundColor: c.border}]} />;
     default:
@@ -130,4 +174,6 @@ const styles = StyleSheet.create({
   liText: {flex: 1},
   quote: {borderLeftWidth: 3, paddingLeft: 10, marginBottom: 8},
   hr: {height: StyleSheet.hairlineWidth, marginVertical: 10},
+  tr: {flexDirection: 'row'},
+  td: {borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingVertical: 5, minWidth: 92, justifyContent: 'center'},
 });
