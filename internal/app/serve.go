@@ -387,9 +387,10 @@ func writeRemoteClients(count int) {
 	_ = os.WriteFile(state.RemoteClientsPath(), b, 0o644)
 }
 
-// maxTranscriptTurns bounds the chat-history payload sent to the phone (recent
-// history is what matters; the parser also tail-reads the log).
-const maxTranscriptTurns = 40
+// maxTranscriptTurns bounds the chat-history payload sent to the phone. Set high
+// so the chat view shows as much as the terminal scrollback would — the parser
+// tail-reads the log (8 MiB window), so this is the effective ceiling.
+const maxTranscriptTurns = 300
 
 // transcriptForPane returns the pane's parsed chat history as a JSON array of
 // turns for GET /api/transcript. It maps the pane → its resume record (agent +

@@ -13,6 +13,7 @@ import React from 'react';
 import {ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {agentMark} from './agentMark';
+import {MarkdownView, MdColors} from './MarkdownView';
 import {Agent, StatusName} from '../api/types';
 import {GtmuxClient, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
@@ -39,6 +40,17 @@ interface Props {
 // mode (dark text on the dark bubble). These fixed colors keep it readable.
 const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
 const CHAT_FG_DIM = 'rgba(235,235,245,0.5)'; // secondary / muted text
+
+// Markdown colors for the agent response — all fixed light-on-dark (the chat
+// surface is always dark), so markdown stays readable in light app mode too.
+const MD_COLORS: MdColors = {
+  text: CHAT_FG,
+  dim: CHAT_FG_DIM,
+  code: '#E6F7FB',
+  codeBg: 'rgba(255,255,255,0.08)',
+  border: 'rgba(255,255,255,0.16)',
+  link: '#27C7E6',
+};
 
 function dotColor(status: StatusName): string {
   return status === 'waiting'
@@ -170,7 +182,7 @@ export function ChatView({agent, lines, status, fontSize, lang, client, paneId, 
                 <Text style={styles.agentAvatarText}>{agentMark(agent.agent)}</Text>
               </View>
               <View style={styles.agentBubble}>
-                <Text style={[styles.agentText, {color: CHAT_FG}]}>{t.response}</Text>
+                <MarkdownView source={t.response} colors={MD_COLORS} fontSize={14} />
               </View>
             </View>
           )}
@@ -271,7 +283,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
-  agentText: {fontSize: 14, lineHeight: 20},
 
   liveCard: {
     backgroundColor: 'rgba(6,182,212,0.06)',
