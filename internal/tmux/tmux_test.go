@@ -3,6 +3,7 @@ package tmux
 import (
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -138,6 +139,47 @@ func TestDisplayNoBin(t *testing.T) {
 	}
 	if got := Display("%1", "#{pane_id}"); got != "" {
 		t.Errorf("Display(target) = %q, want empty", got)
+	}
+}
+
+// TestCommandForcesUTF8 guards the daemon-radar fix: every tmux invocation must
+// pass `-u` first, or a process with no UTF-8 locale (serve/tunnel LaunchAgents)
+// makes tmux replace the ✳ agent glyph with "_" and the radar reports zero
+// agents ("phone connected but empty" bug).
+func TestCommandForcesUTF8(t *testing.T) {
+	saved := Bin
+	Bin = "/usr/bin/true"
+	t.Cleanup(func() { Bin = saved })
+	c := command("list-panes", "-a")
+	if len(c.Args) < 2 || c.Args[1] != "-u" {
+		t.Fatalf("expected -u as first tmux arg, got %v", c.Args)
+	}
+}
+
+// TestUTF8Env injects a UTF-8 locale only when none is already selected.
+func TestUTF8Env(t *testing.T) {
+	hasUTF8CType := func(env []string) bool {
+		for _, e := range env {
+			if strings.HasPrefix(e, "LC_CTYPE=") && strings.Contains(strings.ToUpper(e), "UTF") {
+				return true
+			}
+		}
+		return false
+	}
+
+	// No locale at all (the LaunchAgent case) → inject one.
+	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		t.Setenv(k, "placeholder")
+		os.Unsetenv(k)
+	}
+	if !hasUTF8CType(utf8Env()) {
+		t.Fatal("utf8Env must inject a UTF-8 LC_CTYPE when no locale is set")
+	}
+
+	// Already UTF-8 via LANG → leave the env untouched (no injected LC_CTYPE).
+	t.Setenv("LANG", "en_US.UTF-8")
+	if hasUTF8CType(utf8Env()) {
+		t.Fatal("utf8Env must not add LC_CTYPE when LANG is already UTF-8")
 	}
 }
 
