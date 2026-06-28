@@ -2,8 +2,8 @@
 // status, and app version. Removing the Mac clears the Keychain; the app then
 // falls back to Pairing automatically (the navigator unmounts).
 
-import React from 'react';
-import {Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import React, {useState} from 'react';
+import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
@@ -22,8 +22,9 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, fontPref, setFontPref, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode} =
+  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, fontPref, setFontPref, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode} =
     useApp();
+  const [testing, setTesting] = useState(false);
 
   const detailModes: {key: 'chat' | 'terminal'; label: string}[] = [
     {key: 'terminal', label: lang === 'zh' ? '终端' : 'Terminal'},
@@ -61,6 +62,30 @@ export function SettingsScreen({navigation}: any) {
     } catch {
       Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
     }
+  };
+
+  // Ask the Mac to send a test push to this device, so you can confirm pushes
+  // actually arrive (permission granted, relay reachable). Backend: /api/push/test.
+  const sendTest = async () => {
+    if (!client || testing) return;
+    setTesting(true);
+    let ok = false;
+    try {
+      ok = await client.testPush();
+    } catch {
+      ok = false;
+    }
+    setTesting(false);
+    Alert.alert(
+      lang === 'zh' ? '测试通知' : 'Test notification',
+      ok
+        ? lang === 'zh'
+          ? '已发送 —— 请留意锁屏 / 通知中心。'
+          : 'Sent — check your lock screen / Notification Center.'
+        : lang === 'zh'
+        ? '发送失败（推送未配置，或 Mac 不可达）。'
+        : 'Failed (push not configured, or the Mac is unreachable).',
+    );
   };
 
   return (
@@ -125,10 +150,55 @@ export function SettingsScreen({navigation}: any) {
         </Section>
 
         <Section title={t('push')} pal={pal}>
+          {/* master switch */}
           <View style={styles.rowItem}>
             <Text style={[styles.rowLabel, {color: pal.fg}]}>{t('push')}</Text>
             <Switch value={pushEnabled} onValueChange={setPushEnabled} />
           </View>
+
+          {/* per-kind filters (sub-settings of the master switch) */}
+          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
+            <View style={styles.flex}>
+              <Text style={[styles.rowLabel, {color: pushEnabled ? pal.fg : pal.fg3}]}>
+                {lang === 'zh' ? '等你回应' : 'Needs you'}
+              </Text>
+              <Text style={[styles.rowSub, {color: pal.fg3}]}>
+                {lang === 'zh' ? '有 agent 在等你输入' : 'An agent is waiting for your input'}
+              </Text>
+            </View>
+            <Switch
+              value={pushEnabled && pushKinds.waiting}
+              disabled={!pushEnabled}
+              onValueChange={v => setPushKinds({...pushKinds, waiting: v})}
+            />
+          </View>
+          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
+            <View style={styles.flex}>
+              <Text style={[styles.rowLabel, {color: pushEnabled ? pal.fg : pal.fg3}]}>
+                {lang === 'zh' ? '已完成' : 'Finished'}
+              </Text>
+              <Text style={[styles.rowSub, {color: pal.fg3}]}>
+                {lang === 'zh' ? 'agent 完成了一轮' : 'An agent finished a turn'}
+              </Text>
+            </View>
+            <Switch
+              value={pushEnabled && pushKinds.done}
+              disabled={!pushEnabled}
+              onValueChange={v => setPushKinds({...pushKinds, done: v})}
+            />
+          </View>
+
+          {/* test button */}
+          <TouchableOpacity
+            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
+            disabled={!pushEnabled || testing}
+            onPress={sendTest}>
+            <Text style={[styles.rowLabel, {color: pushEnabled ? '#06B6D4' : pal.fg3}]}>
+              {lang === 'zh' ? '发送测试通知' : 'Send a test notification'}
+            </Text>
+            {testing ? <ActivityIndicator color={pal.fg3} /> : <Text style={[styles.rowSub, {color: pal.fg3}]}>›</Text>}
+          </TouchableOpacity>
+
           <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
             <Text style={[styles.rowSub, {color: pal.fg3}]}>{t('pushHint')}</Text>
           </View>
