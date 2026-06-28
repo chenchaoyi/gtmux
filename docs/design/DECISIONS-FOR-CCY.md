@@ -11,13 +11,13 @@
 > - ✅ 顺手修了：二维码中心 logo 对齐品牌（PR #171）
 > - 发布：CLI/app 走 **v0.11.5**；移动端改动（D3 + A 的 ChatView）需一次**真机构建**才能上手机（tag 流水线不含移动端）。
 >
-> **D2(a) radar++ 待办（下个专注会话做，已写好可直接实现的规格）：** 给雷达行补充信息。
-> **不在本会话改 `gatherAgents` 核心循环**——那正是「空雷达」bug 所在的关键代码，刚修过，不在超长上下文末尾冒险。
-> 实现规格：(1) 在 `gatherAgents` 的 list-panes fields 末尾加 `#{pane_current_path}`（SplitN 9→10）；
-> (2) 新增 `gitInfo(cwd)`：直接读 `<cwd>/.git/HEAD` 解析 branch（不起 git 子进程；处理 worktree 的 `.git` 文件 + detached SHA），向上找 `.git` 取 repo 顶层 basename 作 `project`；
-> (3) `agentJSON` 加 `branch`（omitempty）、给 tmux agent 填 `project`（契约**附加**，消费端可忽略，安全）；
-> (4) 先在**手机行**显示 branch/project（主屏），菜单栏/web 随后；
-> (5) 后续 radar++：dev-server 端口/URL、PR 状态、idle 的「待 review」（这些每行成本更高，单独评估）。
+> **✅ D2(a) radar++ 已交付 (2026-06-28, PR #176)：** 雷达行补充 git branch/project。
+> 实现：(1) `gatherAgents` 的 list-panes fields 加 `#{pane_current_path}`（SplitN 9→10）；
+> (2) `gitInfo(cwd)` 直接读 `.git/HEAD` 解析 branch（不起 git 子进程，CLI 保持 cgo-free；处理 worktree 的 `.git` 文件指针 + detached HEAD→短 SHA），向上找 `.git` 取 repo 顶层 basename 作 `project`；
+> (3) `agentJSON` 加 `branch`（omitempty）、给 tmux agent 填 `project`（契约**附加**，消费端可忽略）；
+> (4) **手机行**显示 branch chip（line2 等宽小药丸）；菜单栏/web 随后（契约已就绪）。
+> 验证：`make check` 绿、cgo-free 通过；live `agents --json` 仍 10 个 agent（检测/状态无回归），branch/project 已填、非 repo cwd 正确为空。
+> **后续 radar++（更高每行成本，单独评估）：** dev-server 端口/URL、PR 状态、idle 的「待 review」。
 
 > 来自 2026-06-28 的同类项目调研（见 `RESEARCH-prior-art-2026-06.md`）。下面每条我都给了**默认假设/推荐**——在你回复前，我就按推荐继续做，不卡住。你醒来后只需对不同意的条目说一声。
 
