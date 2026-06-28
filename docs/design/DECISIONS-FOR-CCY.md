@@ -2,6 +2,22 @@
 
 > **已决策 (2026-06-28)：D1=(a) 维持单层 TLS+token，写清信任边界（见 `SECURITY.md`）；
 > D2=(a) 维持雷达 + radar++，不做 launcher；D3/D4/D5 实施；D6 暂缓。**
+>
+> **已交付 (2026-06-28)：**
+> - ✅ D1=(a) `SECURITY.md`（PR #170）
+> - ✅ D3 对话乐观回显（PR #174）—— 注：字面意义的 Mosh 预测回显**不适配** gtmux 的 composer 输入模型（本地即时回显，批量发送），所以实现为「发送即在对话里乐观显示气泡，等 transcript 追上替换」。
+> - ✅ D4 免 hook 的 **CPU 活动**working 信号（PR #172）—— 注：诚实评估：LLM「思考」是**网络 bound**（本地进程空闲），CPU 兜底主要覆盖**本地工具**（编译/测试）无输出的情况；OR 叠加，只会 idle→working，不引入抖动。
+> - ✅ D5 `gtmux status` tmux 状态栏段（PR #173）
+> - ✅ 顺手修了：二维码中心 logo 对齐品牌（PR #171）
+> - 发布：CLI/app 走 **v0.11.5**；移动端改动（D3 + A 的 ChatView）需一次**真机构建**才能上手机（tag 流水线不含移动端）。
+>
+> **D2(a) radar++ 待办（下个专注会话做，已写好可直接实现的规格）：** 给雷达行补充信息。
+> **不在本会话改 `gatherAgents` 核心循环**——那正是「空雷达」bug 所在的关键代码，刚修过，不在超长上下文末尾冒险。
+> 实现规格：(1) 在 `gatherAgents` 的 list-panes fields 末尾加 `#{pane_current_path}`（SplitN 9→10）；
+> (2) 新增 `gitInfo(cwd)`：直接读 `<cwd>/.git/HEAD` 解析 branch（不起 git 子进程；处理 worktree 的 `.git` 文件 + detached SHA），向上找 `.git` 取 repo 顶层 basename 作 `project`；
+> (3) `agentJSON` 加 `branch`（omitempty）、给 tmux agent 填 `project`（契约**附加**，消费端可忽略，安全）；
+> (4) 先在**手机行**显示 branch/project（主屏），菜单栏/web 随后；
+> (5) 后续 radar++：dev-server 端口/URL、PR 状态、idle 的「待 review」（这些每行成本更高，单独评估）。
 
 > 来自 2026-06-28 的同类项目调研（见 `RESEARCH-prior-art-2026-06.md`）。下面每条我都给了**默认假设/推荐**——在你回复前，我就按推荐继续做，不卡住。你醒来后只需对不同意的条目说一声。
 
