@@ -10,9 +10,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -27,8 +25,7 @@ import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
 import {StatusName} from '../api/types';
 import {SendPayload} from '../api/client';
-import {Lang, makeT} from '../i18n';
-import {mergeVoiceText, useVoiceInput} from '../voice/useVoiceInput';
+import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
@@ -89,26 +86,6 @@ export function Composer({
   const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
   const [history, setHistory] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const t = makeT(lang);
-
-  // Voice dictation: capture whatever's typed as the base when listening starts,
-  // then stream the transcript after it (partials replace the live region).
-  const voiceBase = useRef('');
-  const voice = useVoiceInput(lang, recognized => {
-    setText(mergeVoiceText(voiceBase.current, recognized));
-  });
-  const toggleVoice = () => {
-    if (!voice.listening) voiceBase.current = text;
-    voice.toggle();
-  };
-  // Surface a denied/failed mic once, with a jump to Settings to grant access.
-  useEffect(() => {
-    if (!voice.error) return;
-    Alert.alert(t('voiceDeniedTitle'), t('voiceDeniedBody'), [
-      {text: t('cancel'), style: 'cancel'},
-      {text: t('openSettings'), onPress: () => Linking.openSettings()},
-    ]);
-  }, [voice.error]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadSnippets().then(setSnippets);
@@ -154,7 +131,7 @@ export function Composer({
       // fall through to text paste
     }
     const s = await Clipboard.getString();
-    if (s) setText(prev => (prev ? prev + s : s));
+    if (s) setText(t => (t ? t + s : s));
   };
 
   // Upload a picked file to the Mac and drop its path into the input, so the
@@ -164,7 +141,7 @@ export function Composer({
     setUploading(true);
     const path = await onUpload(uri, name, type);
     setUploading(false);
-    if (path) setText(prev => (prev ? prev + ' ' + path : path));
+    if (path) setText(t => (t ? t + ' ' + path : path));
   };
 
   // Attach → photo library / camera / file (iOS action sheet).
@@ -278,30 +255,12 @@ export function Composer({
             <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
           )}
         </TouchableOpacity>
-        {voice.supported && (
-          <TouchableOpacity
-            testID={TestIds.composer.mic}
-            accessibilityLabel={TestIds.composer.mic}
-            onPress={toggleVoice}
-            disabled={!enabled}
-            style={[
-              styles.mic,
-              {
-                backgroundColor: voice.listening ? '#06B6D4' : pal.surface,
-                borderColor: voice.listening ? '#06B6D4' : pal.divider,
-              },
-            ]}>
-            <Text style={[styles.micText, {color: voice.listening ? '#fff' : pal.fg2}]}>
-              {voice.listening ? '■' : '🎤'}
-            </Text>
-          </TouchableOpacity>
-        )}
         <TextInput
           testID={TestIds.composer.input}
           value={text}
           onChangeText={setText}
           editable={enabled}
-          placeholder={voice.listening ? t('voiceListening') : lang === 'zh' ? '输入…' : 'Type a message…'}
+          placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
           placeholderTextColor={pal.fg3}
           autoCapitalize="none"
           autoCorrect={false}
@@ -341,7 +300,7 @@ export function Composer({
         pal={pal}
         lang={lang}
         onPick={h => {
-          setText(prev => (prev ? prev + h : h));
+          setText(t => (t ? t + h : h));
           setHistoryOpen(false);
         }}
         onClear={() => {
@@ -427,8 +386,6 @@ const styles = StyleSheet.create({
   inputRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 8},
   attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
   attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
-  mic: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
-  micText: {fontSize: 17, lineHeight: 20},
   input: {flex: 1, minHeight: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
   fcWrap: {flex: 1},
   fcBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth},

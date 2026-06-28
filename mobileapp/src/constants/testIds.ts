@@ -38,6 +38,5 @@ export const TestIds = {
   composer: {
     input: 'composer-input',
     send: 'composer-send',
-    mic: 'composer-mic',
   },
 } as const;
