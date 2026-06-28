@@ -87,6 +87,14 @@ const S: Dict = {
   // alerts
   alertWaiting: {en: 'needs you', zh: '等你输入'},
   alertDone: {en: 'finished', zh: '完成了'},
+  // voice input
+  voiceListening: {en: 'Listening… tap to stop', zh: '聆听中…点按停止'},
+  voiceDeniedTitle: {en: 'Voice input is off', zh: '语音输入未开启'},
+  voiceDeniedBody: {
+    en: 'Allow Microphone and Speech Recognition for gtmux in Settings to dictate.',
+    zh: '请在「设置」里允许 gtmux 使用麦克风与语音识别后再口述。',
+  },
+  openSettings: {en: 'Open Settings', zh: '打开设置'},
 };
 
 export function makeT(lang: Lang) {
