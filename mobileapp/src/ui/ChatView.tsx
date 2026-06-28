@@ -33,6 +33,13 @@ interface Props {
   pendingPrompt?: string;
 }
 
+// The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
+// text is light-on-dark regardless of the app's light/dark appearance. Using the
+// theme palette (pal.fg) here made the agent name + response invisible in light
+// mode (dark text on the dark bubble). These fixed colors keep it readable.
+const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
+const CHAT_FG_DIM = 'rgba(235,235,245,0.5)'; // secondary / muted text
+
 function dotColor(status: StatusName): string {
   return status === 'waiting'
     ? StatusColor.waiting
@@ -43,7 +50,7 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, pal, lang, client, paneId, pendingPrompt}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, client, paneId, pendingPrompt}: Props) {
   const [turns, setTurns] = React.useState<TranscriptTurn[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
@@ -97,12 +104,12 @@ export function ChatView({agent, lines, status, fontSize, pal, lang, client, pan
           <Text style={styles.avatarText}>{agentMark(agent.agent)}</Text>
         </View>
         <View style={styles.stateText}>
-          <Text style={[styles.agentName, {color: pal.fg}]} numberOfLines={1}>
+          <Text style={[styles.agentName, {color: CHAT_FG}]} numberOfLines={1}>
             {agent.agent}
           </Text>
           <View style={styles.statusLine}>
             <View style={[styles.dot, {backgroundColor: dotColor(status)}]} />
-            <Text style={[styles.statusText, {color: pal.fg3}]} numberOfLines={1}>
+            <Text style={[styles.statusText, {color: CHAT_FG_DIM}]} numberOfLines={1}>
               {sub}
             </Text>
           </View>
@@ -111,12 +118,12 @@ export function ChatView({agent, lines, status, fontSize, pal, lang, client, pan
 
       {loading && turns.length === 0 && (
         <View style={styles.center}>
-          <ActivityIndicator color={pal.fg3} />
+          <ActivityIndicator color={CHAT_FG_DIM} />
         </View>
       )}
 
       {!loading && turns.length === 0 && (
-        <Text style={[styles.empty, {color: pal.fg3}]}>
+        <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
             ? '暂无对话历史。\n历史来自 agent 的会话记录（需已装 gtmux hooks）——开始对话后即会出现。切到「终端」可看当前屏幕。'
             : 'No conversation history yet.\nHistory comes from the agent’s session log (needs the gtmux hooks). It appears once you start talking. Switch to Terminal for the current screen.'}
@@ -163,7 +170,7 @@ export function ChatView({agent, lines, status, fontSize, pal, lang, client, pan
                 <Text style={styles.agentAvatarText}>{agentMark(agent.agent)}</Text>
               </View>
               <View style={styles.agentBubble}>
-                <Text style={[styles.agentText, {color: pal.fg}]}>{t.response}</Text>
+                <Text style={[styles.agentText, {color: CHAT_FG}]}>{t.response}</Text>
               </View>
             </View>
           )}
