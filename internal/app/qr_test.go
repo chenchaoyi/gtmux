@@ -62,8 +62,8 @@ func TestBrandGridLogo(t *testing.T) {
 	}
 }
 
-// printBrandQR must emit quadrant blocks, the cyan accent escape, and stay
-// compact (≈ half the module width, since each char packs a 2×2 block).
+// printBrandQR must emit SQUARE half-blocks (NOT quadrant — that distorts the
+// code 2:1 tall; see the footgun note in qr.go), plus the cyan accent escape.
 func TestPrintBrandQR(t *testing.T) {
 	var b bytes.Buffer
 	printBrandQR(&b, `{"v":2,"url":"https://gtmux-x.ccy.dev","enrollCode":"deadbeef","name":"mac"}`)

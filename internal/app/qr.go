@@ -13,14 +13,20 @@ import (
 // BrandMark (MOBILE §1): two square top cells (top-left neutral, TOP-RIGHT cyan =
 // the focused/waiting pane) over one wide bottom cell that spans both columns.
 //
-// Rendered with QUADRANT blocks (one char = 2 modules wide × 2 modules tall), so
-// the whole code is HALF as many columns as the module count — compact enough to
-// fit comfortably in a terminal. (Half-blocks render each module visually square
-// but take a full column per module, which made the code too wide.) Phone QR
-// scanners rectify the modest cell aspect via the finder patterns, so it scans
-// fine. The brand mark is drawn in real color (ANSI truecolor) on a white patch,
-// so it reads like the app's logo; its cells are even-aligned to land on whole
-// quadrant characters.
+// Rendered with HALF blocks (one char = 1 module wide × 2 modules tall). A
+// terminal cell is ~1:2 (twice as tall as wide), so a half block makes each QR
+// module render visually SQUARE.
+//
+// FOOTGUN — DO NOT "shrink" this by switching to quadrant blocks (2×2 modules per
+// char). That halves the columns but renders each module at the cell's 1:2 ratio,
+// so the WHOLE code comes out STRETCHED 2:1 tall — a distorted, ugly QR. We tried
+// it (PR #179) and it was reverted (this comment). The code MUST stay square. The
+// only way to make a square code smaller is to reduce the MODULE COUNT (shorter
+// payload / smaller quiet zone), never the render aspect.
+//
+// The brand mark is drawn in real color (ANSI truecolor) on a white patch, so it
+// reads like the app's logo; its cells are even-aligned to land on whole
+// half-block characters (top module == bottom module → one solid colored block).
 //
 // Polarity: a DARK module renders as empty (terminal bg shows through), a LIGHT
 // module / quiet zone as a filled block in the default fg — so it scans the same
@@ -53,7 +59,7 @@ func printBrandQR(w io.Writer, payload string) {
 		renderPlainQR(w, payload)
 		return
 	}
-	renderQuadrant(w, buildGrid(code, true))
+	renderHalfBlocks(w, buildGrid(code, true))
 }
 
 func renderPlainQR(w io.Writer, payload string) {
@@ -61,7 +67,7 @@ func renderPlainQR(w io.Writer, payload string) {
 	if err != nil {
 		return
 	}
-	renderQuadrant(w, buildGrid(code, false))
+	renderHalfBlocks(w, buildGrid(code, false))
 }
 
 // buildGrid turns a QR code into a padded module grid (quiet zone + even row count
@@ -122,46 +128,38 @@ func overlayBrandMark(g [][]int8) {
 	fill(cx0, cy1, 2*cell+gap, cell, cGrey) // bottom spans both columns
 }
 
-// quadrantGlyph maps a 4-bit on/off mask of the 2×2 module block to its Unicode
-// quadrant block. Bit order: TL=8, TR=4, BL=2, BR=1 ("on" = a filled module).
-var quadrantGlyph = [16]rune{
-	' ', '▗', '▖', '▄', '▝', '▐', '▞', '▟',
-	'▘', '▚', '▌', '▙', '▀', '▜', '▛', '█',
-}
-
-// renderQuadrant prints the grid with one character per 2-module-wide,
-// 2-module-tall block — half the columns of a half-block render. The grid size is
-// even (buildGrid pads it), so every 2×2 block is in range. A logo cell (a 2×2
-// block of one color, even-aligned by overlayBrandMark) becomes a solid colored
-// block; data blocks pick a quadrant glyph from their on/off pattern.
-func renderQuadrant(w io.Writer, g [][]int8) {
+// renderHalfBlocks prints the grid with one character per 1-module-wide,
+// 2-module-tall cell (top row + bottom row), so modules render visually SQUARE.
+// (Do NOT replace this with a quadrant render to save width — see the FOOTGUN note
+// at the top of the file: it distorts the code 2:1 tall.)
+func renderHalfBlocks(w io.Writer, g [][]int8) {
 	size := len(g)
 	var b strings.Builder
 	for y := 0; y < size; y += 2 {
-		for x := 0; x < size; x += 2 {
-			tl, tr := g[y][x], g[y][x+1]
-			bl, br := g[y+1][x], g[y+1][x+1]
-			// a uniform colored 2×2 logo cell → one solid colored block.
-			if c := cellColor[tl]; c != "" && tl == tr && tl == bl && tl == br {
+		for x := 0; x < size; x++ {
+			top := g[y][x]
+			bot := cLight
+			if y+1 < size {
+				bot = g[y+1][x]
+			}
+			// a logo cell fills both module rows → one solid colored block.
+			if c := cellColor[top]; c != "" && top == bot {
 				b.WriteString(c)
-				b.WriteRune('█')
+				b.WriteString("█")
 				b.WriteString(qrReset)
 				continue
 			}
-			mask := 0
-			if tl != cDark {
-				mask |= 8
+			td, bd := top != cDark, bot != cDark
+			switch {
+			case td && bd:
+				b.WriteString("█")
+			case td && !bd:
+				b.WriteString("▀")
+			case !td && bd:
+				b.WriteString("▄")
+			default:
+				b.WriteByte(' ')
 			}
-			if tr != cDark {
-				mask |= 4
-			}
-			if bl != cDark {
-				mask |= 2
-			}
-			if br != cDark {
-				mask |= 1
-			}
-			b.WriteRune(quadrantGlyph[mask])
 		}
 		b.WriteByte('\n')
 	}
