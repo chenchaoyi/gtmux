@@ -38,6 +38,9 @@ function RadarRoute(props: any) {
 function PushBridge({navRef}: {navRef: any}) {
   const {client, agents} = useAgents();
   const {pushEnabled, pushKinds} = useApp();
+  const {width} = useWindowDimensions();
+  const wideRef = useRef(width >= 768);
+  wideRef.current = width >= 768;
   // A ref so setupPush's onRegister always reads the CURRENT kinds without the
   // main effect re-running (which would churn the native listeners).
   const kindsRef = useRef(kindsList(pushKinds));
@@ -48,6 +51,12 @@ function PushBridge({navRef}: {navRef: any}) {
     setupPush(
       client,
       pane => {
+        // On a wide screen the Radar route is the split view — select the pane
+        // there instead of stacking a full-screen Detail over it.
+        if (wideRef.current) {
+          navRef.navigate('Radar', {selectPane: pane});
+          return;
+        }
         const found = agents.find(a => a.pane_id === pane);
         const agent: Agent =
           found ?? {
