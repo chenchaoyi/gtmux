@@ -17,6 +17,7 @@ export interface Agent {
   activity: boolean;
   source: string; // "tmux" | "native"
   project?: string;
+  branch?: string; // git branch of the pane's cwd (radar++)
   terminal?: string;
   tab?: string;
   activity_at?: number;
@@ -43,6 +44,7 @@ export function toAgent(raw: any): Agent {
     activity: b('activity'),
     source: s('source') || 'tmux',
     project: s('project') || undefined,
+    branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,
     tab: s('tab') || undefined,
     activity_at: n('activity_at'),

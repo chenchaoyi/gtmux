@@ -100,11 +100,12 @@ export function AgentRow({
           <Text style={[styles.secondary, {color: pal.fg3}]} numberOfLines={1}>
             {secondary(agent)}
           </Text>
-          {!!agent.task && primary(agent) !== agent.task && (
-            <Text style={[styles.task, {color: pal.fg2}]} numberOfLines={1}>
-              {'  '}
-              {agent.task}
-            </Text>
+          {!!agent.branch && (
+            <View style={[styles.branchChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              <Text style={[styles.branchText, {color: pal.fg2}]} numberOfLines={1}>
+                {agent.branch}
+              </Text>
+            </View>
           )}
         </View>
       </View>
@@ -146,7 +147,16 @@ const styles = StyleSheet.create({
   latest: {fontSize: 11, fontWeight: '600', marginLeft: 8},
   line2: {flexDirection: 'row', alignItems: 'center', marginTop: 2},
   secondary: {fontSize: 12.5, flexShrink: 0},
-  task: {fontSize: 12.5, flexShrink: 1},
+  // radar++ branch chip: subtle monospace pill carrying the pane's git branch.
+  branchChip: {
+    marginLeft: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexShrink: 1,
+  },
+  branchText: {fontSize: 10.5, fontFamily: 'Menlo'},
   right: {alignItems: 'flex-end', marginLeft: 8, flexDirection: 'row'},
   time: {fontSize: 12, fontVariant: ['tabular-nums'], marginRight: 6},
   chev: {fontSize: 18, fontWeight: '300'},

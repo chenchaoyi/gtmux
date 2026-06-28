@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -96,6 +97,7 @@ type agentPane struct {
 	// terminal generalization (DESIGN §7)
 	source     string // "tmux" | "native"
 	project    string
+	branch     string // git branch of the pane's cwd (radar++), "" if not a repo
 	terminal   string
 	tab        string
 	activityAt int64  // epoch seconds of last activity (relative time)
@@ -119,7 +121,8 @@ type agentJSON struct {
 	// terminal generalization (DESIGN §7): tmux agents carry session/window/pane;
 	// native agents (run directly in a terminal) carry project/terminal/tab.
 	Source     string `json:"source"`             // "tmux" | "native"
-	Project    string `json:"project,omitempty"`  // native: cwd basename
+	Project    string `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
+	Branch     string `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
 	Terminal   string `json:"terminal,omitempty"` // native: terminal app
 	Tab        string `json:"tab,omitempty"`      // native: terminal tab title (jump key)
 	ActivityAt int64  `json:"activity_at,omitempty"`
@@ -333,6 +336,66 @@ func agentInSubtree(panePid int, procs map[int]procInfo, children map[int][]int,
 	return ""
 }
 
+// gitInfo resolves the git project (repo-root basename) and branch for a pane's
+// working directory by reading the repo metadata directly — NO git subprocess,
+// so the CLI stays cgo-free and cheap to call per pane every poll. It walks up
+// from cwd to the first ancestor that has a .git entry; project is that dir's
+// basename, branch is parsed from its HEAD. Returns ("", "") for a non-repo cwd.
+func gitInfo(cwd string) (project, branch string) {
+	if cwd == "" {
+		return "", ""
+	}
+	dir := cwd
+	for i := 0; i < 64; i++ {
+		gitPath := filepath.Join(dir, ".git")
+		if fi, err := os.Stat(gitPath); err == nil {
+			return filepath.Base(dir), headBranch(gitPath, fi.IsDir())
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return "", ""
+}
+
+// headBranch parses the branch name from a .git location. gitPath is either a
+// directory (normal repo) or a file (worktree/submodule: "gitdir: <path>"). It
+// reads HEAD: "ref: refs/heads/<branch>" → branch; a detached HEAD (raw SHA) →
+// short SHA. Returns "" if anything is unreadable.
+func headBranch(gitPath string, isDir bool) string {
+	gitDir := gitPath
+	if !isDir {
+		b, err := os.ReadFile(gitPath)
+		if err != nil {
+			return ""
+		}
+		line := strings.TrimSpace(string(b))
+		const p = "gitdir:"
+		if !strings.HasPrefix(line, p) {
+			return ""
+		}
+		gitDir = strings.TrimSpace(strings.TrimPrefix(line, p))
+		if !filepath.IsAbs(gitDir) {
+			gitDir = filepath.Join(filepath.Dir(gitPath), gitDir)
+		}
+	}
+	b, err := os.ReadFile(filepath.Join(gitDir, "HEAD"))
+	if err != nil {
+		return ""
+	}
+	head := strings.TrimSpace(string(b))
+	const ref = "ref: refs/heads/"
+	if strings.HasPrefix(head, ref) {
+		return strings.TrimPrefix(head, ref)
+	}
+	if len(head) >= 7 { // detached HEAD → short SHA
+		return head[:7]
+	}
+	return ""
+}
+
 // gatherAgents polls every pane and returns the LIVE coding agents, sorted
 // waiting → working → idle, then by location. Shared by static + watch.
 // A pane is "waiting" (blocked on your input) when claude-notify recorded a
@@ -352,10 +415,10 @@ func gatherAgents() []agentPane {
 	}
 
 	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}"
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}"
 	var panes []agentPane
 	for _, line := range tmux.Lines("list-panes", "-a", "-F", fields) {
-		f := strings.SplitN(line, "\t", 9)
+		f := strings.SplitN(line, "\t", 10)
 		if len(f) < 7 {
 			continue
 		}
@@ -420,6 +483,12 @@ func gatherAgents() []agentPane {
 				since = mt
 			}
 		}
+		// radar++ : the pane's cwd → git repo root basename (project) + branch,
+		// read straight from .git (no git subprocess; cgo-free). "" if not a repo.
+		var project, branch string
+		if len(f) >= 10 {
+			project, branch = gitInfo(f[9])
+		}
 		panes = append(panes, agentPane{
 			paneID:     id,
 			session:    f[1],
@@ -432,6 +501,8 @@ func gatherAgents() []agentPane {
 			activity:   f[6] == "1",
 			latest:     id == lastFinished && status != "working" && status != "waiting",
 			source:     "tmux",
+			project:    project,
+			branch:     branch,
 			icon:       iconFor(agent, profiles),
 			activityAt: activityAt,
 			since:      since,
@@ -560,7 +631,7 @@ func agentsJSONBytes() ([]byte, error) {
 			PaneID: p.paneID, Session: p.session, Window: p.window, Pane: p.pane,
 			Loc: p.loc, Agent: p.agent, Status: p.status, Task: p.task,
 			Latest: p.latest, Activity: p.activity,
-			Source: src, Project: p.project, Terminal: p.terminal, Tab: p.tab,
+			Source: src, Project: p.project, Branch: p.branch, Terminal: p.terminal, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.since, Icon: p.icon,
 		})
 	}
