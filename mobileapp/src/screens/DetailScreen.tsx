@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
@@ -26,6 +27,7 @@ import {StatusBadge} from '../ui/StatusBadge';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
+import {ChatView} from '../ui/ChatView';
 import {ApprovalCard} from '../ui/ApprovalCard';
 import {XtermView} from '../ui/XtermView';
 import {FloatingKeys} from '../ui/FloatingKeys';
@@ -34,6 +36,9 @@ import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 
 const FONT_SIZES = [9, 11, 13];
+
+type DetailMode = 'chat' | 'terminal';
+const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
 
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
@@ -61,7 +66,26 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
   const [slow, setSlow] = useState(false); // D8: pane taking >3s to first paint
+  // B1: 对话 ↔ 终端. 对话 (glance + approval) is the default (mockup §10); the
+  // choice is remembered per pane so power-users who prefer the raw TUI stick there.
+  const [mode, setMode] = useState<DetailMode>('chat');
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(MODE_KEY(agent.pane_id)).then(v => {
+      if (alive && (v === 'chat' || v === 'terminal')) setMode(v);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [agent.pane_id]);
+
+  const pickMode = (m: DetailMode) => {
+    setMode(m);
+    AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
+    if (m === 'chat') setFullscreen(false); // full-screen is terminal-only
+  };
 
   // D8: upgrade the loading copy if the first frame is slow to arrive.
   useEffect(() => {
@@ -200,7 +224,29 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         </View>
       )}
 
-      {/* controls: connection · A− A+ · wrap · full-screen (hidden in full-screen) */}
+      {/* B1: 对话 ↔ 终端 segmented (remembered per pane) */}
+      {!fullscreen && (
+        <View style={styles.segWrap}>
+          <View style={[styles.seg, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+            <Seg
+              label={lang === 'zh' ? '对话' : 'Chat'}
+              active={mode === 'chat'}
+              onPress={() => pickMode('chat')}
+              testID={TestIds.detail.modeChat}
+              pal={pal}
+            />
+            <Seg
+              label={lang === 'zh' ? '终端' : 'Terminal'}
+              active={mode === 'terminal'}
+              onPress={() => pickMode('terminal')}
+              testID={TestIds.detail.modeTerminal}
+              pal={pal}
+            />
+          </View>
+        </View>
+      )}
+
+      {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen */}
       {!fullscreen && (
         <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
           {/* D9: server name + status dot (no "live" text); only abnormal states add a word. */}
@@ -221,17 +267,25 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             </Text>
           </View>
           <View style={styles.ctlRight}>
-            <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyVisible} />
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
-            <Ctl pal={pal} label="A−" onPress={smaller} />
-            <Ctl pal={pal} label="A+" onPress={bigger} />
-            <Ctl pal={pal} label={wrapLabel} onPress={() => setWrap(w => !w)} />
-            <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />
+            {mode === 'terminal' && (
+              <>
+                <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyVisible} />
+                <Ctl pal={pal} label="A−" onPress={smaller} />
+                <Ctl pal={pal} label="A+" onPress={bigger} />
+                <Ctl pal={pal} label={wrapLabel} onPress={() => setWrap(w => !w)} />
+                <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />
+              </>
+            )}
           </View>
         </View>
       )}
 
-      {/* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */}
+      {/* body: 对话 (glance) or 终端 (raw TUI) */}
+      {mode === 'chat' ? (
+        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} />
+      ) : (
+      /* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
         {xtermEnabled ? (
           <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} theme={theme} fontPref={fontPref} />
@@ -278,6 +332,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           </View>
         )}
       </View>
+      )}
 
       {/* approval card (B1): waiting → the agent's own 1/2/3 as big buttons */}
       <ApprovalCard
@@ -326,6 +381,32 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   );
 }
 
+// Seg — one segment of the 对话/终端 toggle (B1).
+function Seg({
+  label,
+  active,
+  onPress,
+  testID,
+  pal,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  testID: string;
+  pal: any;
+}) {
+  return (
+    <TouchableOpacity
+      testID={testID}
+      accessibilityLabel={testID}
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[styles.segBtn, active && {backgroundColor: pal.bg}]}>
+      <Text style={[styles.segText, {color: active ? pal.fg : pal.fg3}]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
 function Ctl({pal, label, onPress}: {pal: any; label: string; onPress: () => void}) {
   return (
     <TouchableOpacity onPress={onPress} style={[styles.ctl, {borderColor: pal.divider}]}>
@@ -368,6 +449,10 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  segWrap: {paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4},
+  seg: {flexDirection: 'row', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, padding: 2},
+  segBtn: {flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 7},
+  segText: {fontSize: 13, fontWeight: '600'},
   live: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0, marginRight: 8},
   liveDot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
   ctlRight: {flexDirection: 'row', alignItems: 'center'},
