@@ -8,9 +8,10 @@ import (
 	"rsc.io/qr"
 )
 
-// The branded QR stamps the 2×2 brand mark into the center. Guard that the
-// finder patterns (corners) stay clear of the logo and that the mark lands with
-// the app's colors: top-left cyan, the other three grey, on a white patch.
+// The branded QR stamps the gtmux brand mark into the center. Guard that the
+// finder patterns (corners) stay clear of the logo and that the mark matches the
+// app's BrandMark: top-left neutral, TOP-RIGHT cyan (the focused pane), and a
+// wide bottom cell spanning both columns — on a white patch.
 func TestBrandGridLogo(t *testing.T) {
 	code, err := qr.Encode(`{"v":2,"url":"https://gtmux-x.ccy.dev","enrollCode":"deadbeef","name":"mac"}`, qr.H)
 	if err != nil {
@@ -31,15 +32,20 @@ func TestBrandGridLogo(t *testing.T) {
 			t.Fatalf("patch corner (%d,%d) not white: %d", p[0], p[1], g[p[1]][p[0]])
 		}
 	}
-	// the four cells.
 	cx0, cx1 := x0+margin, x0+margin+cell+gap
 	cy0, cy1 := y0+margin, y0+margin+cell+gap
-	if g[cy0][cx0] != cCyan {
-		t.Fatalf("top-left cell not cyan: %d", g[cy0][cx0])
+	// top-right is the cyan (focused) cell; top-left is neutral.
+	if g[cy0][cx1] != cCyan {
+		t.Fatalf("top-right cell not cyan: %d", g[cy0][cx1])
 	}
-	for _, p := range [][2]int{{cx1, cy0}, {cx0, cy1}, {cx1, cy1}} {
-		if g[p[1]][p[0]] != cGrey {
-			t.Fatalf("cell (%d,%d) not grey: %d", p[0], p[1], g[p[1]][p[0]])
+	if g[cy0][cx0] != cGrey {
+		t.Fatalf("top-left cell not grey: %d", g[cy0][cx0])
+	}
+	// the bottom cell spans BOTH columns (the gap between them is grey too, not
+	// the white patch) — sample its left, middle (the former gap), and right.
+	for _, x := range []int{cx0, cx0 + cell, cx1} {
+		if g[cy1][x] != cGrey {
+			t.Fatalf("bottom span at x=%d not grey: %d", x, g[cy1][x])
 		}
 	}
 
