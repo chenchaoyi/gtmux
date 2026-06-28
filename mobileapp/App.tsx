@@ -10,7 +10,7 @@ import {
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import React, {useEffect, useRef} from 'react';
-import {StatusBar, useColorScheme, useWindowDimensions} from 'react-native';
+import {StatusBar, useWindowDimensions} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {Splash} from './src/ui/Splash';
@@ -80,8 +80,7 @@ function PushBridge({navRef}: {navRef: any}) {
 }
 
 function Root() {
-  const {ready, mac, pal, lang} = useApp();
-  const scheme = useColorScheme();
+  const {ready, mac, pal, lang, scheme} = useApp();
   const navRef = useNavigationContainerRef();
 
   // D8: a branded splash (matches the native LaunchScreen) while we restore the
@@ -112,12 +111,18 @@ function Root() {
   );
 }
 
+// ThemedStatusBar lives inside AppProvider so it follows the effective theme
+// (the user's System/Light/Dark override), not just the raw system scheme.
+function ThemedStatusBar() {
+  const {scheme} = useApp();
+  return <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />;
+}
+
 export default function App() {
-  const scheme = useColorScheme();
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
       <AppProvider>
+        <ThemedStatusBar />
         <Root />
       </AppProvider>
     </SafeAreaProvider>
