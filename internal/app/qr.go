@@ -9,8 +9,9 @@ import (
 )
 
 // Branded terminal QR (matches the phone-app / menu-bar pairing QR): the gtmux
-// 2×2 brand mark (top-left cyan, other three grey) sits on a white patch in the
-// CENTER, the same treatment Pairing.drawPaneGrid draws in the app.
+// brand mark sits on a white patch in the CENTER — the same motif as the app's
+// BrandMark (MOBILE §1): two square top cells (top-left neutral, TOP-RIGHT cyan =
+// the focused/waiting pane) over one wide bottom cell that spans both columns.
 //
 // Rendered with HALF blocks (one char = 1 module wide × 2 modules tall). A
 // terminal cell is ~1:2 (twice as tall as wide), so a half block makes each QR
@@ -87,10 +88,12 @@ func buildGrid(code *qr.Code, logo bool) [][]int8 {
 	return g
 }
 
-// overlayBrandMark stamps the 2×2 brand mark (white patch, cyan top-left, grey
-// rest) in the center. Offsets are even-aligned so each logo cell fills whole
-// half-block characters (top module == bottom module → one solid colored block).
-// The patch is small (~5% area) so qr.M's recovery absorbs it.
+// overlayBrandMark stamps the gtmux brand mark on a white patch in the center,
+// matching the app's BrandMark: top-left neutral + top-right cyan (the focused
+// pane), over a wide bottom cell spanning both columns. Offsets are even-aligned
+// so each logo cell fills whole half-block characters (top module == bottom
+// module → one solid colored block). The patch is small (~5% area) so qr.M's
+// recovery absorbs it.
 func overlayBrandMark(g [][]int8) {
 	size := len(g)
 	const cell, gap, margin = 2, 2, 2
@@ -111,10 +114,9 @@ func overlayBrandMark(g [][]int8) {
 	fill(x0, y0, knock, knock, cWhite) // white patch
 	cx0, cx1 := x0+margin, x0+margin+cell+gap
 	cy0, cy1 := y0+margin, y0+margin+cell+gap
-	fill(cx0, cy0, cell, cell, cCyan) // top-left accent
-	fill(cx1, cy0, cell, cell, cGrey)
-	fill(cx0, cy1, cell, cell, cGrey)
-	fill(cx1, cy1, cell, cell, cGrey)
+	fill(cx0, cy0, cell, cell, cGrey)       // top-left (neutral)
+	fill(cx1, cy0, cell, cell, cCyan)       // top-right (cyan = focused/waiting pane)
+	fill(cx0, cy1, 2*cell+gap, cell, cGrey) // bottom spans both columns
 }
 
 // renderHalfBlocks prints the grid with one character per 1-module-wide,
