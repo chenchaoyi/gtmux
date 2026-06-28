@@ -36,10 +36,16 @@ interface AppContextValue {
   setReturnSends: (v: boolean) => void;
   defaultDetailMode: 'chat' | 'terminal'; // B1: which mode a pane opens in by default
   setDefaultDetailMode: (v: 'chat' | 'terminal') => void;
+  // B2 appearance: theme follows the system by default, or is forced light/dark.
+  themePref: ThemePref;
+  setThemePref: (v: ThemePref) => void;
+  scheme: 'light' | 'dark'; // the EFFECTIVE scheme (after the override)
   lang: Lang;
   t: (k: any) => string;
   pal: Palette;
 }
+
+export type ThemePref = 'system' | 'light' | 'dark';
 
 export interface PushKinds {
   waiting: boolean; // "等你回应" alerts (an agent is blocked on you)
@@ -63,9 +69,10 @@ const PUSH_KINDS_KEY = 'gtmux.pushKinds';
 const FONT_KEY = 'gtmux.fontPref';
 const RETURN_KEY = 'gtmux.returnSends';
 const DETAIL_MODE_KEY = 'gtmux.defaultDetailMode';
+const THEME_KEY = 'gtmux.themePref';
 
 export function AppProvider({children}: {children: React.ReactNode}) {
-  const scheme = useColorScheme();
+  const sysScheme = useColorScheme();
   const [ready, setReady] = useState(false);
   const [servers, setServers] = useState<PairedMac[]>([]);
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
@@ -75,10 +82,11 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [fontPref, setFontPrefState] = useState('auto');
   const [returnSends, setReturnSendsState] = useState(false);
   const [defaultDetailMode, setDefaultDetailModeState] = useState<'chat' | 'terminal'>('terminal');
+  const [themePref, setThemePrefState] = useState<ThemePref>('system');
 
   useEffect(() => {
     (async () => {
-      const [store, lp, pe, pk, fp, rs, dm] = await Promise.all([
+      const [store, lp, pe, pk, fp, rs, dm, th] = await Promise.all([
         loadServers(),
         AsyncStorage.getItem(LANG_KEY),
         AsyncStorage.getItem(PUSH_KEY),
@@ -86,6 +94,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         AsyncStorage.getItem(FONT_KEY),
         AsyncStorage.getItem(RETURN_KEY),
         AsyncStorage.getItem(DETAIL_MODE_KEY),
+        AsyncStorage.getItem(THEME_KEY),
       ]);
       if (Debug.logNet) Debug.reset();
       // Debug launch flags (UI tests) — all gated by GTMUX_DEBUG_*, never set in a
@@ -120,11 +129,15 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       if (fp) setFontPrefState(fp);
       if (rs === 'true') setReturnSendsState(true);
       if (dm === 'chat' || dm === 'terminal') setDefaultDetailModeState(dm);
+      if (th === 'system' || th === 'light' || th === 'dark') setThemePrefState(th);
       setReady(true);
     })();
   }, []);
 
   const lang = resolveLang(langPref);
+  // The effective scheme: follow the system unless the user forced light/dark.
+  const scheme: 'light' | 'dark' =
+    themePref === 'system' ? (sysScheme === 'light' ? 'light' : 'dark') : themePref;
   const mac = useMemo(
     () => servers.find(s => s.url === activeUrl) ?? null,
     [servers, activeUrl],
@@ -183,11 +196,17 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setDefaultDetailModeState(v);
         AsyncStorage.setItem(DETAIL_MODE_KEY, v);
       },
+      themePref,
+      setThemePref: v => {
+        setThemePrefState(v);
+        AsyncStorage.setItem(THEME_KEY, v);
+      },
+      scheme,
       lang,
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, pushKinds, fontPref, returnSends, defaultDetailMode, lang, scheme]);
+  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, pushKinds, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

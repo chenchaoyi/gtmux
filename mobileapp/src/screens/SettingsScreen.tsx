@@ -22,13 +22,18 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, fontPref, setFontPref, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode} =
+  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, fontPref, setFontPref, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
   const [testing, setTesting] = useState(false);
 
   const detailModes: {key: 'chat' | 'terminal'; label: string}[] = [
     {key: 'terminal', label: lang === 'zh' ? '终端' : 'Terminal'},
     {key: 'chat', label: lang === 'zh' ? '对话' : 'Chat'},
+  ];
+  const themes: {key: 'system' | 'light' | 'dark'; label: string}[] = [
+    {key: 'system', label: t('system')},
+    {key: 'light', label: lang === 'zh' ? '浅色' : 'Light'},
+    {key: 'dark', label: lang === 'zh' ? '深色' : 'Dark'},
   ];
   const {client} = useAgents();
 
@@ -106,6 +111,18 @@ export function SettingsScreen({navigation}: any) {
               onPress={() => setLangPref(l.key)}>
               <Text style={[styles.rowLabel, {color: pal.fg}]}>{l.label}</Text>
               {langPref === l.key && <Text style={styles.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+        </Section>
+
+        <Section title={lang === 'zh' ? '外观' : 'Appearance'} pal={pal}>
+          {themes.map((th, i) => (
+            <TouchableOpacity
+              key={th.key}
+              style={[styles.rowItem, i < themes.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}
+              onPress={() => setThemePref(th.key)}>
+              <Text style={[styles.rowLabel, {color: pal.fg}]}>{th.label}</Text>
+              {themePref === th.key && <Text style={styles.check}>✓</Text>}
             </TouchableOpacity>
           ))}
         </Section>
