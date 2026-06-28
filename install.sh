@@ -283,8 +283,8 @@ fi
 printf '\n  %sInstalled.%s  %sgtmux %s%s\n' "$BOLD" "$RESET" "$DIM" "$VERSION" "$RESET"
 if [ -z "${GTMUX_NO_APP:-}" ] && [ -d "${APP_DIR}/Gtmux.app" ]; then
   case "$LOCALE" in
-    zh) printf '  菜单栏 app 已启动 — 看右上角的彩色圆点(左键点开)\n' ;;
-    *)  printf '  menu-bar app launched — look for the colored dot up top (left-click it)\n' ;;
+    zh) printf '  菜单栏 app 已启动 — 看右上角的 gtmux 标记(有状态时着色，左键点开)\n' ;;
+    *)  printf '  menu-bar app launched — look for the gtmux mark up top (it tints when agents need you; left-click it)\n' ;;
   esac
 fi
 case ":$PATH:" in

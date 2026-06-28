@@ -10,26 +10,18 @@ import (
 
 // Branded terminal QR (matches the phone-app / menu-bar pairing QR): the gtmux
 // 2×2 brand mark (top-left cyan, other three grey) sits on a white patch in the
-// CENTER, the same treatment Pairing.drawPaneGrid draws in the app. Two things
-// make it look right in a terminal:
+// CENTER, the same treatment Pairing.drawPaneGrid draws in the app.
 //
-//   - QUADRANT blocks (▘▝▀▖▌… one char = a 2×2 module cell) instead of half
-//     blocks, so the code is ~half as wide AND half as tall — a compact, square
-//     QR that fits the window instead of overflowing it.
-//   - The brand mark is drawn in real color (ANSI truecolor) on a white patch,
-//     so it reads like the app's logo, not a monochrome knockout.
+// Rendered with HALF blocks (one char = 1 module wide × 2 modules tall). A
+// terminal cell is ~1:2 (twice as tall as wide), so a half block makes each QR
+// module render visually SQUARE — quadrant blocks (2×2 modules/char) instead come
+// out stretched 2:1 tall. The brand mark is drawn in real color (ANSI truecolor)
+// on a white patch, so it reads like the app's logo.
 //
 // Polarity: a DARK module renders as empty (terminal bg shows through), a LIGHT
-// module / quiet zone as a filled quadrant in the default fg — so it scans the
-// same way qrterminal renders. Encoded at qr.H (~30% recovery) so the center
-// logo occlusion still decodes.
-
-// quadrant glyphs indexed by a 4-bit mask: top-left=1, top-right=2,
-// bottom-left=4, bottom-right=8 (bit set = that sub-cell is filled).
-var quadGlyph = [16]string{
-	" ", "▘", "▝", "▀", "▖", "▌", "▞", "▛",
-	"▗", "▚", "▐", "▜", "▄", "▙", "▟", "█",
-}
+// module / quiet zone as a filled block in the default fg — so it scans the same
+// way qrterminal renders. Encoded at qr.M (~15% recovery), enough for the small
+// center logo while keeping the code smaller than level H.
 
 // module cell kinds.
 const (
@@ -49,15 +41,15 @@ var cellColor = map[int8]string{
 
 const qrReset = "\x1b[0m"
 
-// printBrandQR renders payload as a quadrant-block QR with the centered, colored
+// printBrandQR renders payload as a half-block QR with the centered, colored
 // brand mark. On any encode failure it falls back to a markless render.
 func printBrandQR(w io.Writer, payload string) {
-	code, err := qr.Encode(payload, qr.H)
+	code, err := qr.Encode(payload, qr.M)
 	if err != nil {
 		renderPlainQR(w, payload)
 		return
 	}
-	renderQuadrant(w, buildGrid(code, true))
+	renderHalfBlocks(w, buildGrid(code, true))
 }
 
 func renderPlainQR(w io.Writer, payload string) {
@@ -65,17 +57,17 @@ func renderPlainQR(w io.Writer, payload string) {
 	if err != nil {
 		return
 	}
-	renderQuadrant(w, buildGrid(code, false))
+	renderHalfBlocks(w, buildGrid(code, false))
 }
 
-// buildGrid turns a QR code into a padded module grid (quiet zone + even size for
-// quadrant packing) of cell kinds, optionally overlaying the brand mark.
+// buildGrid turns a QR code into a padded module grid (quiet zone + even row count
+// for half-block packing) of cell kinds, optionally overlaying the brand mark.
 func buildGrid(code *qr.Code, logo bool) [][]int8 {
-	const qz = 4 // quiet-zone modules each side
+	const qz = 2 // quiet-zone modules each side
 	n := code.Size
 	size := n + 2*qz
 	if size%2 != 0 {
-		size++ // pad to even so 2×2 quadrant packing is clean
+		size++ // pad to even so half-block (2 rows/char) packing is clean
 	}
 	g := make([][]int8, size)
 	for y := 0; y < size; y++ {
@@ -96,9 +88,9 @@ func buildGrid(code *qr.Code, logo bool) [][]int8 {
 }
 
 // overlayBrandMark stamps the 2×2 brand mark (white patch, cyan top-left, grey
-// rest) in the center. All offsets are even and aligned to the quadrant grid so
-// every logo character is a single solid color. The patch is small (~22% wide,
-// ~5% area) so qr.H's recovery absorbs it.
+// rest) in the center. Offsets are even-aligned so each logo cell fills whole
+// half-block characters (top module == bottom module → one solid colored block).
+// The patch is small (~5% area) so qr.M's recovery absorbs it.
 func overlayBrandMark(g [][]int8) {
 	size := len(g)
 	const cell, gap, margin = 2, 2, 2
@@ -125,36 +117,36 @@ func overlayBrandMark(g [][]int8) {
 	fill(cx1, cy1, cell, cell, cGrey)
 }
 
-// renderQuadrant prints the grid with one character per 2×2 module block.
-func renderQuadrant(w io.Writer, g [][]int8) {
+// renderHalfBlocks prints the grid with one character per 1-module-wide,
+// 2-module-tall cell (top row + bottom row), so modules render visually square.
+func renderHalfBlocks(w io.Writer, g [][]int8) {
 	size := len(g)
 	var b strings.Builder
 	for y := 0; y < size; y += 2 {
-		for x := 0; x < size; x += 2 {
-			tl, tr := g[y][x], g[y][x+1]
-			bl, br := g[y+1][x], g[y+1][x+1]
-			// when all four sub-cells share a logo color, emit a solid colored
-			// block; otherwise a default-fg quadrant glyph from the fill mask.
-			if c := cellColor[tl]; c != "" && tl == tr && tl == bl && tl == br {
+		for x := 0; x < size; x++ {
+			top := g[y][x]
+			bot := cLight
+			if y+1 < size {
+				bot = g[y+1][x]
+			}
+			// a logo cell fills both module rows → one solid colored block.
+			if c := cellColor[top]; c != "" && top == bot {
 				b.WriteString(c)
 				b.WriteString("█")
 				b.WriteString(qrReset)
 				continue
 			}
-			mask := 0
-			if tl != cDark {
-				mask |= 1
+			td, bd := top != cDark, bot != cDark
+			switch {
+			case td && bd:
+				b.WriteString("█")
+			case td && !bd:
+				b.WriteString("▀")
+			case !td && bd:
+				b.WriteString("▄")
+			default:
+				b.WriteByte(' ')
 			}
-			if tr != cDark {
-				mask |= 2
-			}
-			if bl != cDark {
-				mask |= 4
-			}
-			if br != cDark {
-				mask |= 8
-			}
-			b.WriteString(quadGlyph[mask])
 		}
 		b.WriteByte('\n')
 	}
