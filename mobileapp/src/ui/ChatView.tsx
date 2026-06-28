@@ -1,18 +1,20 @@
-// ChatView — 对话模式 (B1 / mockup §10): a glance-friendly rendering of the pane,
-// as opposed to the raw TUI in 终端 mode. It shows the agent's CURRENT screen as a
-// soft bubble + an optional tool card; the approval card (when waiting) and the
-// composer live in DetailView, below.
+// ChatView — 对话模式 (B1 / mockup §10): a glance-friendly conversation view.
+// It shows the REAL chat history (GET /api/transcript): each turn = your prompt,
+// the agent's collapsed middle steps (tap to expand), and its final response.
+// Below the history, a compact "live" card shows the current screen while the
+// agent is working. Switch to 终端 for the full raw TUI + scrollback.
 //
-// HONESTY NOTE: tmux `capture-pane` only exposes the VISIBLE screen — there is no
-// scrollback transcript to reconstruct a full Moshi-style chat log from. So this
-// is a faithful "what's on screen right now" glance (cleaner than the raw TUI),
-// not a fabricated message history. Switch to 终端 for the complete buffer.
+// History comes from the agent's on-disk session log (parsed server-side per
+// agent — Claude + Codex), so it survives across the visible-screen window that
+// `capture-pane` alone can't reconstruct. It's available once the pane has a
+// resume record (the gtmux hooks capture the agent + session id).
 
 import React from 'react';
-import {ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {agentMark} from './agentMark';
 import {Agent, StatusName} from '../api/types';
+import {GtmuxClient, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
 import {StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
@@ -24,11 +26,9 @@ interface Props {
   fontSize: number;
   pal: any;
   lang: Lang;
+  client: GtmuxClient;
+  paneId: string;
 }
-
-// Detect the most recent tool invocation on screen (Claude Code prints
-// "Tool use: Bash(cmd)" / "⏺ Bash(cmd)"). Best-effort, additive — absent → no card.
-const TOOL_RE = /(?:Tool use:|⏺|●)\s*([A-Za-z][\w-]*)\s*\(([^)]*)\)/;
 
 function dotColor(status: StatusName): string {
   return status === 'waiting'
@@ -40,24 +40,29 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, pal, lang}: Props) {
-  const plain = lines.map(spans => spans.map(s => s.text).join(''));
+export function ChatView({agent, lines, status, fontSize, pal, lang, client, paneId}: Props) {
+  const [turns, setTurns] = React.useState<TranscriptTurn[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
+  const scrollRef = React.useRef<ScrollView>(null);
 
-  // most-recent tool-use line, scanning from the bottom.
-  let tool: {name: string; arg: string} | undefined;
-  for (let i = plain.length - 1; i >= 0; i--) {
-    const m = plain[i].match(TOOL_RE);
-    if (m) {
-      tool = {name: m[1], arg: m[2].trim()};
-      break;
-    }
-  }
-
-  // visible-screen tail: drop trailing blank lines, keep the last ~18 rows.
-  let end = lines.length;
-  while (end > 0 && plain[end - 1].trim() === '') end--;
-  const start = Math.max(0, end - 18);
-  const shown = lines.slice(start, end);
+  // Fetch history on mount, on pane change, and when the status flips (a turn has
+  // likely just completed — working→idle/waiting), so the final response lands.
+  React.useEffect(() => {
+    let alive = true;
+    client
+      .transcript(paneId)
+      .then(ts => {
+        if (!alive) return;
+        setTurns(ts);
+        setLoading(false);
+        requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+      })
+      .catch(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [client, paneId, status]);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
@@ -71,8 +76,15 @@ export function ChatView({agent, lines, status, fontSize, pal, lang}: Props) {
         : 'Working…'
       : statusLabel(status, lang);
 
+  // current-screen tail, for the live card while working.
+  const plain = lines.map(spans => spans.map(s => s.text).join(''));
+  let end = lines.length;
+  while (end > 0 && plain[end - 1].trim() === '') end--;
+  const liveShown = lines.slice(Math.max(0, end - 14), end);
+
   return (
     <ScrollView
+      ref={scrollRef}
       testID={TestIds.detail.chat}
       style={styles.body}
       contentContainerStyle={styles.content}>
@@ -94,59 +106,96 @@ export function ChatView({agent, lines, status, fontSize, pal, lang}: Props) {
         </View>
       </View>
 
-      {/* optional tool card — the most recent tool the agent invoked */}
-      {tool && (
-        <View style={styles.toolCard}>
-          <View style={styles.toolHead}>
-            <Text style={styles.toolIcon}>🔧</Text>
-            <Text style={styles.toolName}>{tool.name}</Text>
-          </View>
-          {!!tool.arg && (
-            <Text style={styles.toolArg} numberOfLines={2}>
-              {tool.arg}
-            </Text>
-          )}
+      {loading && turns.length === 0 && (
+        <View style={styles.center}>
+          <ActivityIndicator color={pal.fg3} />
         </View>
       )}
 
-      {/* the current screen, as a soft agent bubble (ANSI-colored, monospace) */}
-      <View style={styles.bubbleRow}>
-        <View style={styles.bubble}>
-          <Text style={[styles.mono, {fontSize, lineHeight}]}>
-            {shown.length === 0 ? (
-              <Text style={{color: 'rgba(235,235,245,0.4)'}}>
-                {lang === 'zh' ? '（屏幕为空）' : '(screen is empty)'}
+      {!loading && turns.length === 0 && (
+        <Text style={[styles.empty, {color: pal.fg3}]}>
+          {lang === 'zh'
+            ? '暂无对话历史。\n历史来自 agent 的会话记录（需已装 gtmux hooks）——开始对话后即会出现。切到「终端」可看当前屏幕。'
+            : 'No conversation history yet.\nHistory comes from the agent’s session log (needs the gtmux hooks). It appears once you start talking. Switch to Terminal for the current screen.'}
+        </Text>
+      )}
+
+      {/* the conversation: prompt → collapsed steps → final response */}
+      {turns.map((t, i) => (
+        <View key={i} style={styles.turn}>
+          {!!t.prompt && (
+            <View style={styles.userRow}>
+              <View style={styles.userBubble}>
+                <Text style={styles.userText}>{t.prompt}</Text>
+              </View>
+            </View>
+          )}
+
+          {!!t.steps?.length && (
+            <TouchableOpacity
+              style={styles.stepsToggle}
+              activeOpacity={0.7}
+              onPress={() => setExpanded(e => ({...e, [i]: !e[i]}))}>
+              <Text style={styles.stepsToggleText}>
+                {expanded[i] ? '▾ ' : '▸ '}
+                {lang === 'zh' ? `${t.steps.length} 个步骤` : `${t.steps.length} step${t.steps.length > 1 ? 's' : ''}`}
               </Text>
-            ) : (
-              shown.map((spans, i) => (
-                <Text key={i}>
-                  {i > 0 ? '\n' : ''}
-                  {spans.length === 0
-                    ? ' '
-                    : spans.map((s, j) => (
-                        <Text key={j} style={{color: s.color, fontWeight: s.bold ? '700' : '400'}}>
-                          {s.text}
-                        </Text>
-                      ))}
-                </Text>
-              ))
-            )}
+            </TouchableOpacity>
+          )}
+          {expanded[i] &&
+            t.steps?.map((s, j) => (
+              <View key={j} style={styles.stepRow}>
+                <Text style={styles.stepName}>{s.title}</Text>
+                {!!s.detail && (
+                  <Text style={styles.stepDetail} numberOfLines={1}>
+                    {s.detail}
+                  </Text>
+                )}
+              </View>
+            ))}
+
+          {!!t.response && (
+            <View style={styles.agentRow}>
+              <View style={styles.agentAvatar}>
+                <Text style={styles.agentAvatarText}>{agentMark(agent.agent)}</Text>
+              </View>
+              <View style={styles.agentBubble}>
+                <Text style={[styles.agentText, {color: pal.fg}]}>{t.response}</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      ))}
+
+      {/* live card: the current screen while the agent is working */}
+      {status === 'working' && liveShown.length > 0 && (
+        <View style={styles.liveCard}>
+          <Text style={styles.liveLabel}>{lang === 'zh' ? '正在进行' : 'Live'}</Text>
+          <Text style={[styles.mono, {fontSize, lineHeight}]}>
+            {liveShown.map((spans, i) => (
+              <Text key={i}>
+                {i > 0 ? '\n' : ''}
+                {spans.length === 0
+                  ? ' '
+                  : spans.map((s, j) => (
+                      <Text key={j} style={{color: s.color, fontWeight: s.bold ? '700' : '400'}}>
+                        {s.text}
+                      </Text>
+                    ))}
+              </Text>
+            ))}
           </Text>
         </View>
-      </View>
-
-      <Text style={[styles.hint, {color: pal.fg3}]}>
-        {lang === 'zh'
-          ? '对话模式只显示当前屏幕概览 — 切到「终端」看完整缓冲与滚动历史'
-          : 'Chat shows the current screen only — switch to Terminal for the full buffer & scrollback'}
-      </Text>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   body: {flex: 1, backgroundColor: '#0D0D0F'},
-  content: {padding: 12, gap: 11},
+  content: {padding: 12, gap: 10},
+  center: {paddingVertical: 24, alignItems: 'center'},
+  empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},
   avatar: {
     width: 26,
@@ -162,26 +211,56 @@ const styles = StyleSheet.create({
   statusLine: {flexDirection: 'row', alignItems: 'center', marginTop: 2},
   dot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
   statusText: {fontSize: 12, flexShrink: 1},
-  toolCard: {
-    marginLeft: 35,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.09)',
-    borderRadius: 10,
-    padding: 10,
+
+  turn: {gap: 6},
+  // user prompt — right-aligned accent bubble.
+  userRow: {flexDirection: 'row', justifyContent: 'flex-end'},
+  userBubble: {
+    maxWidth: '88%',
+    backgroundColor: 'rgba(6,182,212,0.16)',
+    borderRadius: 13,
+    borderTopRightRadius: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  toolHead: {flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4},
-  toolIcon: {fontSize: 11},
-  toolName: {fontSize: 11.5, fontWeight: '700', color: '#27C7E6', fontFamily: 'Menlo'},
-  toolArg: {fontSize: 11, color: 'rgba(235,235,245,0.6)', fontFamily: 'Menlo'},
-  bubbleRow: {flexDirection: 'row'},
-  bubble: {
+  userText: {color: '#E6F7FB', fontSize: 14, lineHeight: 20},
+
+  // collapsed middle steps.
+  stepsToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 2},
+  stepsToggleText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', fontWeight: '600'},
+  stepRow: {marginLeft: 35, flexDirection: 'row', alignItems: 'baseline', gap: 6},
+  stepName: {fontSize: 11, fontWeight: '700', color: '#27C7E6', fontFamily: 'Menlo'},
+  stepDetail: {fontSize: 11, color: 'rgba(235,235,245,0.55)', fontFamily: 'Menlo', flexShrink: 1},
+
+  // agent final response — left, with avatar.
+  agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},
+  agentAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    backgroundColor: '#1C1C1F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  agentAvatarText: {fontSize: 10, fontWeight: '700', color: 'rgba(235,235,245,0.7)'},
+  agentBubble: {
     flex: 1,
     backgroundColor: '#1C1C1F',
-    borderRadius: 12,
+    borderRadius: 13,
     borderTopLeftRadius: 3,
-    padding: 11,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
+  agentText: {fontSize: 14, lineHeight: 20},
+
+  liveCard: {
+    backgroundColor: 'rgba(6,182,212,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(6,182,212,0.25)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 4,
+  },
+  liveLabel: {fontSize: 10, fontWeight: '700', color: '#27C7E6', letterSpacing: 0.5, marginBottom: 5},
   mono: {color: '#D6D6DA', fontFamily: 'Menlo'},
-  hint: {fontSize: 11, textAlign: 'center', lineHeight: 16, marginTop: 2},
 });

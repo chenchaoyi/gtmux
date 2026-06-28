@@ -70,12 +70,13 @@ type sseEvent struct {
 // waiting/done transition. onAlert (optional) lets a push manager hook the same
 // transitions without re-deriving them.
 type hub struct {
-	statuses func() []AgentStatus
-	onAlert  func(Alert)
-	onTally  func(Tally) // fired when the status tally changes (Live Activity push)
-	interval time.Duration
-	renudge  time.Duration    // re-alert a still-waiting pane after this long
-	now      func() time.Time // injectable clock (tests)
+	statuses  func() []AgentStatus
+	onAlert   func(Alert)
+	onTally   func(Tally) // fired when the status tally changes (Live Activity push)
+	onClients func(int)   // fired with the live SSE-client count (remote-viewer indicator)
+	interval  time.Duration
+	renudge   time.Duration    // re-alert a still-waiting pane after this long
+	now       func() time.Time // injectable clock (tests)
 
 	mu   sync.Mutex
 	subs map[chan sseEvent]struct{}
@@ -131,7 +132,9 @@ func (h *hub) subscribe() chan sseEvent {
 	ch := make(chan sseEvent, 16)
 	h.mu.Lock()
 	h.subs[ch] = struct{}{}
+	n := len(h.subs)
 	h.mu.Unlock()
+	h.notifyClients(n)
 	return ch
 }
 
@@ -143,7 +146,24 @@ func (h *hub) unsubscribe(ch chan sseEvent) {
 		delete(h.subs, ch)
 		close(ch)
 	}
+	n := len(h.subs)
 	h.mu.Unlock()
+	h.notifyClients(n)
+}
+
+// notifyClients reports the live SSE-client count (remote viewers) to the app so
+// it can surface a "remote client connected" indicator. Called outside h.mu.
+func (h *hub) notifyClients(n int) {
+	if h.onClients != nil {
+		h.onClients(n)
+	}
+}
+
+// clientCount returns the number of connected SSE clients.
+func (h *hub) clientCount() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return len(h.subs)
 }
 
 // currentRev returns the latest agents revision (for a client's initial sync).
@@ -239,6 +259,13 @@ func (h *hub) tick() {
 		h.lastTally = tally
 		h.tallyKnown = true
 		h.onTally(tally)
+	}
+
+	// Heartbeat the remote-viewer indicator while clients are connected, so its
+	// state file stays fresh and a dead serve (no more ticks) goes stale → the
+	// menu bar can treat it as disconnected.
+	if n := h.clientCount(); n > 0 {
+		h.notifyClients(n)
 	}
 
 	h.mu.Lock()

@@ -11,11 +11,15 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/server"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 const defaultServePort = 8765
@@ -151,7 +155,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Upload:     saveUpload,
 		Icon:       agentIconPNG,
 		Diff:       diffForPane,
+		Transcript: transcriptForPane,
 		Theme:      terminal.Appearance,
+		OnClients:  writeRemoteClients,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil
@@ -361,6 +367,57 @@ func diffForPane(id string) (string, error) {
 		out = out[:maxDiffBytes] + "\n… (diff truncated)\n"
 	}
 	return out, nil
+}
+
+// writeRemoteClients records the live remote-viewer count + timestamp so the
+// menu-bar app can show a "remote client connected" indicator. Written on every
+// SSE connect/disconnect and heartbeated while clients are connected, so a dead
+// serve's file goes stale and the app treats it as disconnected. Best-effort.
+func writeRemoteClients(count int) {
+	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+		return
+	}
+	b, err := json.Marshal(struct {
+		Count int   `json:"count"`
+		At    int64 `json:"at"`
+	}{Count: count, At: time.Now().Unix()})
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(state.RemoteClientsPath(), b, 0o644)
+}
+
+// maxTranscriptTurns bounds the chat-history payload sent to the phone (recent
+// history is what matters; the parser also tail-reads the log).
+const maxTranscriptTurns = 40
+
+// transcriptForPane returns the pane's parsed chat history as a JSON array of
+// turns for GET /api/transcript. It maps the pane → its resume record (agent +
+// session id, captured by the hooks) → the agent's on-disk conversation log.
+// Always returns a valid JSON array — "[]" when the pane has no resumable
+// session or the agent's log can't be found — never a hard error for those.
+func transcriptForPane(id string) ([]byte, error) {
+	empty := []byte("[]")
+	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
+		return empty, nil
+	}
+	loc := tmux.Display(id, "#{session_name}:#{window_index}.#{pane_index}")
+	if loc == "" {
+		return empty, nil
+	}
+	rec, ok := resume.Load(loc)
+	if !ok {
+		return empty, nil
+	}
+	turns, err := transcript.Load(rec.Agent, rec.SessionID, maxTranscriptTurns)
+	if err != nil || len(turns) == 0 {
+		return empty, nil
+	}
+	b, err := json.Marshal(turns)
+	if err != nil {
+		return empty, nil
+	}
+	return b, nil
 }
 
 // sendToPane types into a pane for POST /api/send (a WRITE). A non-empty key must

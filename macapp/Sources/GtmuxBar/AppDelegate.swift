@@ -93,6 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: settings.refreshInterval, repeats: true) { [weak self] _ in
             self?.store.refresh()
+            RemoteAccess.shared.refreshClients() // keep the remote-viewer indicator live
         }
     }
 

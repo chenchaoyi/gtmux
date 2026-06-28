@@ -23,6 +23,12 @@ final class RemoteAccess: ObservableObject {
     /// itself instead of silently snapping back to the previous mode.
     @Published var lastError: String?
 
+    /// How many remote viewers (phone/browser) are connected RIGHT NOW — derived
+    /// from the serve's `remote-clients.json` (live SSE-client count), with a
+    /// staleness guard so a dead serve reads as 0. Surfaced as a popover indicator
+    /// so you know when someone is looking at this Mac.
+    @Published private(set) var remoteClients: Int = 0
+
     /// Back-compat: callers that only care about the always-on tunnel being up.
     var isOn: Bool { mode == .anywhere }
 
@@ -30,6 +36,9 @@ final class RemoteAccess: ObservableObject {
     private var servePlist: String { "\(agentsDir)/com.gtmux.serve.plist" }
     private var tunnelPlist: String { "\(agentsDir)/com.gtmux.tunnel.plist" }
     private var urlPath: String { "\(NSHomeDirectory())/.config/gtmux/tunnel-url" }
+    private var clientsPath: String { "\(NSHomeDirectory())/.local/share/gtmux/remote-clients.json" }
+    /// remote-clients.json older than this is treated as stale (serve gone) → 0.
+    private let clientsStaleAfter: TimeInterval = 8
 
     /// The stable public URL, when always-on is set up (for display).
     var url: String? {
@@ -44,6 +53,24 @@ final class RemoteAccess: ObservableObject {
         let tunnelOn = fm.fileExists(atPath: tunnelPlist)
         let m: RemoteMode = tunnelOn ? .anywhere : (serveOn ? .lan : .off)
         DispatchQueue.main.async { self.mode = m }
+        refreshClients()
+    }
+
+    /// Re-read the live remote-viewer count from `remote-clients.json`, honoring
+    /// staleness (a dead serve stops heartbeating → reads as 0). Cheap; safe to
+    /// call on the poll timer.
+    func refreshClients() {
+        var n = 0
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: clientsPath)),
+           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let count = obj["count"] as? Int,
+           let at = obj["at"] as? Double,
+           Date().timeIntervalSince1970 - at <= clientsStaleAfter {
+            n = count
+        }
+        if n != remoteClients {
+            DispatchQueue.main.async { self.remoteClients = n }
+        }
     }
 
     /// Enable LAN (same Wi-Fi) access — the free mode. Removes the tunnel if any.

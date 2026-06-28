@@ -103,10 +103,44 @@ func cmdTunnel(args []string) int {
 	case "status":
 		return tunnelServiceStatus()
 	}
+	// Dual-tunnel guard: if the always-on tunnel (the menu-bar's "Anywhere" mode)
+	// is already running, a foreground `gtmux tunnel` would start a SECOND,
+	// redundant tunnel. Print the existing address instead so you can just pair.
+	if alreadyServingTunnel() {
+		return reuseRunningTunnel(name, port)
+	}
 	if quick {
 		return tunnelQuick(port, name)
 	}
 	return tunnelHosted(port, name)
+}
+
+// alreadyServingTunnel reports whether the always-on tunnel LaunchAgent is both
+// installed AND loaded — i.e. the Mac is already reachable from anywhere, so a
+// foreground tunnel is redundant.
+func alreadyServingTunnel() bool {
+	return serviceInstalled() && launchctlLoaded(tunnelAgentLabel)
+}
+
+// reuseRunningTunnel tells the user the always-on tunnel is already up and prints
+// its existing pairing block (URL + QR) instead of starting a second tunnel.
+func reuseRunningTunnel(name string, port int) int {
+	url := ""
+	if b, err := os.ReadFile(tunnelURLPath()); err == nil {
+		url = strings.TrimSpace(string(b))
+	}
+	i18n.Say("Always-on tunnel is already running (enabled from the menu bar) — reusing it instead of starting another.",
+		"always-on 隧道已在运行（从菜单栏开启）—— 直接复用，不再启动第二条。")
+	if url == "" {
+		// Running but URL file missing (rare) — point at --status rather than guess.
+		i18n.Say("  Run `gtmux tunnel --status` for its address, or `gtmux tunnel --unservice` to turn it off.",
+			"  跑 `gtmux tunnel --status` 看地址，或 `gtmux tunnel --unservice` 关闭。")
+		return 0
+	}
+	printPairingBlock(url, resolveServeToken(""), name, port)
+	i18n.Say(i18n.Dim+"This is the always-on tunnel. Turn it off with `gtmux tunnel --unservice`."+i18n.Reset,
+		i18n.Dim+"这是 always-on 隧道。用 `gtmux tunnel --unservice` 关闭。"+i18n.Reset)
+	return 0
 }
 
 // --- hosted (stable URL via the control-plane Worker) ---------------------------

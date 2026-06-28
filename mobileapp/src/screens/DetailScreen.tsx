@@ -285,7 +285,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
       {/* body: 对话 (glance) or 终端 (raw TUI) */}
       {mode === 'chat' ? (
-        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} />
+        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} client={client} paneId={agent.pane_id} />
       ) : (
       /* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
