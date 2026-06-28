@@ -54,9 +54,11 @@ func NewEnrollManager(initial []EnrolledDevice, save func([]EnrolledDevice)) *En
 	return m
 }
 
-// Mint creates a short-lived, single-use enroll code for a pairing QR.
+// Mint creates a short-lived, single-use enroll code for a pairing QR. Kept
+// SHORT on purpose (8 bytes = 64-bit, single-use, 5-min TTL) so the pairing QR
+// stays small/scannable — see the module-count footgun note in app/qr.go.
 func (m *EnrollManager) Mint() string {
-	code := randHex(16)
+	code := randHex(8)
 	m.mu.Lock()
 	m.pruneLocked()
 	m.codes[code] = m.now().Add(enrollCodeTTL).Unix()

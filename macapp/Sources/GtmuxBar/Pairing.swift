@@ -43,7 +43,9 @@ enum Pairing {
     static func payload(_ p: PairingInfo, enrollCode: String? = nil) -> String {
         let dict: [String: Any]
         if let code = enrollCode, !code.isEmpty {
-            dict = ["v": 2, "url": p.url, "enrollCode": code, "name": p.name]
+            // v2 omits `name` (the phone derives a label from the URL host) to keep
+            // the QR small/scannable — see app/qr.go's module-count footgun note.
+            dict = ["v": 2, "url": p.url, "enrollCode": code]
         } else {
             dict = ["v": 1, "url": p.url, "token": p.token, "name": p.name]
         }

@@ -479,14 +479,18 @@ func printPairingBlock(url, token, name string, port int) {
 // pairingPayload builds the QR JSON: the secure v2 `{enrollCode}` shape when a
 // code was minted, else the legacy v1 `{token}` shape so pairing still works on a
 // radar too old to mint codes.
+//
+// v2 OMITS `name` on purpose: it's only the server display label, and the phone
+// derives a good label from the URL host when it's absent (PairingScreen). Every
+// dropped field shrinks the QR module count — the only safe way to make the
+// SQUARE terminal QR smaller (see the footgun note in qr.go).
 func pairingPayload(url, token, code, name string) []byte {
 	if code != "" {
 		b, _ := json.Marshal(struct {
 			V          int    `json:"v"`
 			URL        string `json:"url"`
 			EnrollCode string `json:"enrollCode"`
-			Name       string `json:"name"`
-		}{2, url, code, name})
+		}{2, url, code})
 		return b
 	}
 	b, _ := json.Marshal(struct {

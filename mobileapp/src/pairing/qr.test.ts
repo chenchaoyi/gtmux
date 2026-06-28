@@ -1,4 +1,4 @@
-import {normalizeHost, parsePairingQR} from './qr';
+import {labelFromUrl, normalizeHost, parsePairingQR} from './qr';
 
 describe('parsePairingQR', () => {
   it('parses a valid v1 pairing code (token in QR)', () => {
@@ -29,9 +29,11 @@ describe('parsePairingQR', () => {
     expect(m.url).toBe('http://h:8765');
   });
 
-  it('defaults name to "Server" when absent', () => {
-    const m = parsePairingQR(JSON.stringify({v: 1, url: 'http://h:1', token: 't'}));
-    expect(m.name).toBe('Server');
+  it('derives the name from the URL host when absent (v2 omits name)', () => {
+    const m = parsePairingQR(
+      JSON.stringify({v: 2, url: 'https://gtmux-7a3f.ccy.dev', enrollCode: 'c0de'}),
+    );
+    expect(m.name).toBe('gtmux-7a3f');
   });
 
   it('tolerates unknown extra fields', () => {
@@ -54,6 +56,16 @@ describe('parsePairingQR', () => {
 
   it('rejects a missing token', () => {
     expect(() => parsePairingQR(JSON.stringify({v: 1, url: 'http://h:1'}))).toThrow(/token/i);
+  });
+});
+
+describe('labelFromUrl', () => {
+  it('takes the first DNS label for a hosted/quick tunnel', () => {
+    expect(labelFromUrl('https://gtmux-7a3f.ccy.dev')).toBe('gtmux-7a3f');
+    expect(labelFromUrl('https://random-words.trycloudflare.com')).toBe('random-words');
+  });
+  it('keeps the whole IP for a LAN address', () => {
+    expect(labelFromUrl('http://192.168.1.5:8765')).toBe('192.168.1.5');
   });
 });
 

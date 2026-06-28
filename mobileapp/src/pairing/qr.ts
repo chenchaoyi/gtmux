@@ -17,6 +17,15 @@ export type PairResult =
   | {kind: 'paired'; url: string; token: string; name: string}
   | {kind: 'enroll'; url: string; enrollCode: string; name: string};
 
+// labelFromUrl makes a friendly server label from a base URL when the QR omits
+// `name`: the host's first DNS label (or the bare IP), stripped of scheme/port.
+export function labelFromUrl(url: string): string {
+  const host = url.replace(/^https?:\/\//, '').replace(/[/:].*$/, '');
+  if (!host) return 'Server';
+  // keep the leading label for a hosted/quick tunnel; keep the whole IP/host otherwise.
+  return /^\d+\.\d+\.\d+\.\d+$/.test(host) ? host : host.split('.')[0] || host;
+}
+
 export function parsePairingQR(raw: string): PairResult {
   let obj: any;
   try {
@@ -26,7 +35,9 @@ export function parsePairingQR(raw: string): PairResult {
   }
   const url = String(obj?.url || '').replace(/\/+$/, '');
   if (!/^https?:\/\/.+/.test(url)) throw new Error('Pairing code has no valid url.');
-  const name = String(obj?.name || 'Server');
+  // v2 QRs omit `name` to stay small; derive a label from the URL host instead
+  // (`gtmux-7a3f.ccy.dev` → `gtmux-7a3f`, `1.2.3.4:8765` → `1.2.3.4`).
+  const name = String(obj?.name || '') || labelFromUrl(url);
   if (obj?.v === 2) {
     const enrollCode = String(obj.enrollCode || '');
     if (!enrollCode) throw new Error('Pairing code has no enroll code.');
