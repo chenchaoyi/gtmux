@@ -182,6 +182,7 @@ struct PairingView: View {
         VStack(spacing: 13) {
             modeChooser
             if !ent.isPro { proHint }
+            if let err = remote.lastError { errorLine(err) }
 
             if remote.busy {
                 switchingLine
@@ -249,6 +250,22 @@ struct PairingView: View {
                 case .anywhere: ent.isPro ? confirmAnywhere() : (showPaywall = true)
                 }
             })
+    }
+
+    // errorLine — why the last switch didn't take (e.g. Anywhere needs a hosted
+    // build). Shown instead of silently reverting the chooser to the old mode.
+    private func errorLine(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 5) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10)).foregroundStyle(.orange)
+            Text(text)
+                .font(.system(size: 10)).foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(Color.orange.opacity(0.12)).cornerRadius(6)
+        .frame(width: 290)
     }
 
     private var proHint: some View {

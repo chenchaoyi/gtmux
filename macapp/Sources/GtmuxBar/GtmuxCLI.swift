@@ -52,6 +52,23 @@ enum GtmuxCLI {
         return data
     }
 
+    /// Run gtmux and return its exit status + trimmed stderr. Blocking — call
+    /// off-main. status is -1 if the process couldn't be launched. Used by
+    /// state-changing commands (e.g. `tunnel --service`) that need to surface a
+    /// failure reason instead of failing silently.
+    static func captureResult(_ args: [String]) -> (status: Int32, stderr: String) {
+        let proc = makeProcess(args)
+        let err = Pipe()
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = err
+        do { try proc.run() } catch { return (-1, "") }
+        let data = err.fileHandleForReading.readDataToEndOfFile()
+        proc.waitUntilExit()
+        let msg = String(data: data, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return (proc.terminationStatus, msg)
+    }
+
     /// Fire-and-forget (focus / restore / new) — don't block the UI on it.
     static func spawn(_ args: [String]) {
         let proc = makeProcess(args)

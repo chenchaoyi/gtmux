@@ -142,10 +142,11 @@ final class AgentStore: ObservableObject {
         return .running // also the calm/none case when empty
     }
 
-    /// Count next to the lit grid cell (ITERATIONS D1 / §02): the most-urgent
+    /// Count next to the tinted brand mark (ITERATIONS D1 / §02): the most-urgent
     /// state's count — waiting, else working, else the done (idle) count, else "".
-    /// (Extends DESIGN §2's waiting-else-working: D1's lit-cell shows a done count
-    /// too, so the green ✓ cell carries "how many finished".)
+    /// Matches the mark's tint (mostUrgent), so color + number always agree —
+    /// e.g. a green mark reads "how many finished". (Extends DESIGN §2's
+    /// waiting-else-working to also surface a done count.)
     var badge: String {
         if waiting > 0 { return "\(waiting)" }
         if working > 0 { return "\(working)" }
