@@ -28,6 +28,9 @@ interface Props {
   lang: Lang;
   client: GtmuxClient;
   paneId: string;
+  // The just-sent prompt, echoed optimistically as a trailing bubble until the
+  // transcript refetch catches up — so sending feels instant over the tunnel.
+  pendingPrompt?: string;
 }
 
 function dotColor(status: StatusName): string {
@@ -40,7 +43,7 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, pal, lang, client, paneId}: Props) {
+export function ChatView({agent, lines, status, fontSize, pal, lang, client, paneId, pendingPrompt}: Props) {
   const [turns, setTurns] = React.useState<TranscriptTurn[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
@@ -62,7 +65,7 @@ export function ChatView({agent, lines, status, fontSize, pal, lang, client, pan
     return () => {
       alive = false;
     };
-  }, [client, paneId, status]);
+  }, [client, paneId, status, pendingPrompt]);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
@@ -167,6 +170,15 @@ export function ChatView({agent, lines, status, fontSize, pal, lang, client, pan
         </View>
       ))}
 
+      {/* optimistic echo: the just-sent prompt, until the transcript catches up */}
+      {!!pendingPrompt && (turns.length === 0 || turns[turns.length - 1].prompt !== pendingPrompt) && (
+        <View style={styles.userRow}>
+          <View style={[styles.userBubble, styles.userBubblePending]}>
+            <Text style={styles.userText}>{pendingPrompt}</Text>
+          </View>
+        </View>
+      )}
+
       {/* live card: the current screen while the agent is working */}
       {status === 'working' && liveShown.length > 0 && (
         <View style={styles.liveCard}>
@@ -223,6 +235,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  userBubblePending: {opacity: 0.55},
   userText: {color: '#E6F7FB', fontSize: 14, lineHeight: 20},
 
   // collapsed middle steps.

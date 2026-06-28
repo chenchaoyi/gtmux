@@ -63,6 +63,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [atBottom, setAtBottom] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
   const [slow, setSlow] = useState(false); // D8: pane taking >3s to first paint
@@ -285,7 +286,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
       {/* body: 对话 (glance) or 终端 (raw TUI) */}
       {mode === 'chat' ? (
-        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} client={client} paneId={agent.pane_id} />
+        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} client={client} paneId={agent.pane_id} pendingPrompt={pendingPrompt} />
       ) : (
       /* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
@@ -355,6 +356,9 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         returnSends={returnSends}
         onSend={p => {
           client.send(agent.pane_id, p);
+          // optimistic echo in 对话 mode: show the sent text immediately as a
+          // pending bubble until the transcript refetch confirms it.
+          if (p.text) setPendingPrompt(p.text);
         }}
         onUpload={(uri, name, type) => client.upload(uri, name, type)}
         onOpenKeys={() => setKeysOpen(true)}
