@@ -31,7 +31,9 @@ import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
 import {MoveKey} from './MoveKey';
 import {SnippetsModal} from './SnippetsModal';
+import {HistoryModal} from './HistoryModal';
 import {loadSnippets, saveSnippets} from '../state/snippets';
+import {loadHistory, saveHistory, pushHistory} from '../state/history';
 
 function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
   if (status === 'waiting') {
@@ -82,9 +84,12 @@ export function Composer({
   const [snippets, setSnippets] = useState<string[]>([]);
   const [manageSnippets, setManageSnippets] = useState(false);
   const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     loadSnippets().then(setSnippets);
+    loadHistory().then(setHistory);
   }, []);
   const updateSnippets = (list: string[]) => {
     setSnippets(list);
@@ -103,6 +108,11 @@ export function Composer({
     if (now - lastSubmit.current < 600) return;
     lastSubmit.current = now;
     send({text, enter: true});
+    setHistory(h => {
+      const next = pushHistory(h, text);
+      saveHistory(next);
+      return next;
+    });
     setText('');
   };
 
@@ -207,6 +217,13 @@ export function Composer({
             <Text style={[styles.ctlText, {color: pal.fg2}]}>{k.label}</Text>
           </TouchableOpacity>
         ))}
+        {/* input history: recall a previously-sent message (mockup §10 "↑ 历史") */}
+        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
+        <TouchableOpacity
+          onPress={() => setHistoryOpen(true)}
+          style={[styles.ctlKey, {borderColor: pal.divider}]}>
+          <Text style={[styles.ctlText, {color: pal.fg2}]}>{lang === 'zh' ? '↑ 历史' : '↑ History'}</Text>
+        </TouchableOpacity>
         {/* saved snippets: one-tap habitual sends + a manage button */}
         <View style={[styles.sep, {backgroundColor: pal.divider}]} />
         {snippets.map(s => (
@@ -275,6 +292,23 @@ export function Composer({
           <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
         </TouchableOpacity>
       </View>
+
+      {/* recall a previously-sent message → load it into the input for editing */}
+      <HistoryModal
+        visible={historyOpen}
+        history={history}
+        pal={pal}
+        lang={lang}
+        onPick={h => {
+          setText(t => (t ? t + h : h));
+          setHistoryOpen(false);
+        }}
+        onClear={() => {
+          setHistory([]);
+          saveHistory([]);
+        }}
+        onClose={() => setHistoryOpen(false)}
+      />
 
       {/* manage saved snippets */}
       <SnippetsModal
