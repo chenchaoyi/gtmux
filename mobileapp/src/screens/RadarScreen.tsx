@@ -10,6 +10,7 @@ import {Alert as AlertType, StatusName} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
+import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
 import {SettingsIcon} from '../ui/SettingsIcon';
 import {StatusColor, counts} from '../ui/theme';
@@ -26,7 +27,7 @@ function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
 }
 
 export function RadarScreen({navigation}: any) {
-  const {agents, conn, banner, dismissBanner, refresh} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [waitingOnly, setWaitingOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,6 +127,9 @@ export function RadarScreen({navigation}: any) {
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.radar.screen}>
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
+      {conn === 'offline' && (
+        <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} onRetry={refresh} />
+      )}
       <SectionList
         agents={agents}
         waitingOnly={waitingOnly}
