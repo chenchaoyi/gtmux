@@ -5,38 +5,14 @@
 // icon from `Agent.icon` when it resolves, else a neutral monogram mark. We do
 // NOT bundle third-party logos (DESIGN §6); color is never used for identity.
 
-import React, {useState} from 'react';
-import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import React from 'react';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
-import {agentMark} from './agentMark';
-import {useAgents} from '../state/AgentsContext';
+import {AgentAvatar} from './AgentAvatar';
 import {Palette, Size, StatusColor} from './theme';
 import {StatusBadge} from './StatusBadge';
 import {TestIds} from '../constants/testIds';
-
-// AgentAvatar shows the agent's OFFICIAL icon — fetched from the Mac's installed
-// app via /api/icon (like the menu-bar app) — falling back to a neutral mark when
-// there's no icon hint or the fetch 404s. Rounded square so square app icons fit.
-function AgentAvatar({agent, pal}: {agent: Agent; pal: Palette}) {
-  const {client} = useAgents();
-  const [failed, setFailed] = useState(false);
-  const source = !failed && agent.icon && client ? client.iconUri(agent.agent) : null;
-  return (
-    <View style={[styles.avatar, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-      {source ? (
-        <Image
-          source={source}
-          style={styles.avatarImg}
-          resizeMode="contain"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <Text style={[styles.mono, {color: pal.fg2}]}>{agentMark(agent.agent)}</Text>
-      )}
-    </View>
-  );
-}
 
 function relTime(since?: number): string {
   if (!since) return '';
@@ -78,7 +54,14 @@ export function AgentRow({
       {selected && <View style={styles.accent} />}
       {/* avatar + status badge */}
       <View style={styles.avatarWrap}>
-        <AgentAvatar agent={agent} pal={pal} />
+        <AgentAvatar
+          agent={agent}
+          size={Size.avatar}
+          radius={Size.radiusAvatar}
+          bg={pal.surface}
+          fg={pal.fg2}
+          border={pal.divider}
+        />
         <View style={styles.badge}>
           <StatusBadge status={agent.status} size={Size.badge} />
         </View>
@@ -129,17 +112,6 @@ const styles = StyleSheet.create({
   },
   accent: {position: 'absolute', left: 0, top: 0, bottom: 0, width: 2.5, backgroundColor: '#06B6D4'},
   avatarWrap: {width: Size.avatar, height: Size.avatar, marginRight: Size.gap},
-  avatar: {
-    width: Size.avatar,
-    height: Size.avatar,
-    borderRadius: Size.radiusAvatar,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatarImg: {width: '100%', height: '100%'},
-  mono: {fontSize: 14, fontWeight: '600'},
   badge: {position: 'absolute', right: -3, bottom: -3},
   text: {flex: 1, minWidth: 0},
   line1: {flexDirection: 'row', alignItems: 'center'},
