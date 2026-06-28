@@ -11,6 +11,19 @@ export interface SendPayload {
   enter?: boolean;
 }
 
+// A chat-history turn (GET /api/transcript): one user instruction, the agent's
+// final text reply, and the intermediate tool calls folded into collapsible steps.
+export interface TranscriptStep {
+  kind: string; // "tool"
+  title: string; // tool name (Edit, Bash, exec…)
+  detail?: string; // short arg summary (path / command head)
+}
+export interface TranscriptTurn {
+  prompt: string;
+  response: string;
+  steps?: TranscriptStep[];
+}
+
 // tfetch is fetch + optional debug logging (method · path · status · ms). It
 // records the path only (host stripped, token/id query values redacted) — never
 // the bearer token or request body. No-op overhead when Debug.logNet is off.
@@ -109,6 +122,15 @@ export class GtmuxClient {
     if (!r.ok) throw new Error(`diff: HTTP ${r.status}`);
     const j = await r.json();
     return typeof j?.diff === 'string' ? j.diff : '';
+  }
+
+  // transcript fetches the pane's parsed chat history (prompt → collapsed steps →
+  // final response). [] when the pane has no resumable session / no agent log.
+  async transcript(id: string): Promise<TranscriptTurn[]> {
+    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}`, {headers: this.h()});
+    if (!r.ok) return [];
+    const j = await r.json().catch(() => null);
+    return Array.isArray(j) ? j : [];
   }
 
   // send types into a pane (a WRITE): a named control key, or literal text (+Enter).

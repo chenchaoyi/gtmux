@@ -101,6 +101,25 @@ describe('pane', () => {
   });
 });
 
+describe('transcript', () => {
+  it('GETs /api/transcript?id=… and returns the turns array', async () => {
+    const turns = [{prompt: 'fix it', response: 'done', steps: [{kind: 'tool', title: 'Edit', detail: 'a.go'}]}];
+    fetchMock.mockResolvedValueOnce(okJson(turns));
+    const res = await client().transcript('%12');
+    expect(res).toEqual(turns);
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/transcript?id=%2512`);
+    expect((init?.headers as any).Authorization).toBe(AUTH);
+  });
+
+  it('returns [] on non-ok or non-array', async () => {
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 404));
+    expect(await client().transcript('%9')).toEqual([]);
+    fetchMock.mockResolvedValueOnce(okJson({not: 'array'}));
+    expect(await client().transcript('%9')).toEqual([]);
+  });
+});
+
 describe('focus', () => {
   it('POSTs /api/focus?id=… with bearer and returns r.ok', async () => {
     fetchMock.mockResolvedValueOnce(okJson({}, true));
