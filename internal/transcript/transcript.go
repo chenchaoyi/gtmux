@@ -33,10 +33,11 @@ type Turn struct {
 }
 
 // maxTailBytes bounds how much of a (potentially huge) log we read: only the tail
-// matters for "recent history", and a partial first turn is simply dropped. 4 MiB
-// covers many turns of normal use; a single hyperactive in-progress turn can still
-// exceed it, in which case it surfaces as one prompt-less "current activity" card.
-const maxTailBytes = 4 << 20 // 4 MiB
+// matters for "recent history", and a partial first turn is simply dropped. 8 MiB
+// covers a lot of turns (so the chat view can show deep history); a single
+// hyperactive in-progress turn can still exceed it, in which case it surfaces as
+// one prompt-less "current activity" card.
+const maxTailBytes = 8 << 20 // 8 MiB
 
 // Load returns up to maxTurns most-recent turns (oldest-first) for an agent
 // session, dispatching to the per-agent parser. Unknown agent or missing log →
