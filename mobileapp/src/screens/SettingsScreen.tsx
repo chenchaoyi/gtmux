@@ -3,7 +3,7 @@
 // falls back to Pairing automatically (the navigator unmounts).
 
 import React, {useState} from 'react';
-import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Alert, Linking, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
@@ -214,6 +214,22 @@ export function SettingsScreen({navigation}: any) {
               {lang === 'zh' ? '发送测试通知' : 'Send a test notification'}
             </Text>
             {testing ? <ActivityIndicator color={pal.fg3} /> : <Text style={[styles.rowSub, {color: pal.fg3}]}>›</Text>}
+          </TouchableOpacity>
+
+          {/* Sound + quiet hours are handled by iOS itself (per-app Sounds toggle +
+              Focus modes) — deep-link there instead of duplicating it in-app. */}
+          <TouchableOpacity
+            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
+            onPress={() => Linking.openSettings().catch(() => {})}>
+            <View style={styles.flex}>
+              <Text style={[styles.rowLabel, {color: pal.fg}]}>
+                {lang === 'zh' ? '声音与勿扰' : 'Sound & quiet hours'}
+              </Text>
+              <Text style={[styles.rowSub, {color: pal.fg3}]}>
+                {lang === 'zh' ? '在 iOS 设置中管理（声音 / 专注模式）' : 'Manage in iOS Settings (Sounds / Focus)'}
+              </Text>
+            </View>
+            <Text style={[styles.rowSub, {color: pal.fg3}]}>↗</Text>
           </TouchableOpacity>
 
           <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
