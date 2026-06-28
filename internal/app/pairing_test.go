@@ -15,6 +15,10 @@ func TestPairingPayload(t *testing.T) {
 	if strings.Contains(v2, "MASTERTOK") {
 		t.Errorf("v2 QR must NOT leak the master token; got %s", v2)
 	}
+	// v2 OMITS name to keep the QR small (the phone derives a label from the host).
+	if strings.Contains(v2, `"name"`) {
+		t.Errorf("v2 QR must omit name to stay compact; got %s", v2)
+	}
 
 	v1 := string(pairingPayload("https://x.dev", "MASTERTOK", "", "Mac"))
 	if !strings.Contains(v1, `"v":1`) || !strings.Contains(v1, `"token":"MASTERTOK"`) {
