@@ -15,11 +15,13 @@
   var $ = function (id) { return document.getElementById(id); };
   var token = null, radarTimer = null, paneTimer = null, selIdx = -1;
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
+  var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
   var BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
   function lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
   var fontPref = lsGet('gtmux.fontPref', 'auto');          // 'auto' | 'system' | a bundled family
   var sizePref = parseInt(lsGet('gtmux.fontSize', '0'), 10) || 0;  // 0 = follow terminal/default
+  var paneMode = lsGet('gtmux.paneMode', 'term');          // pane view tab: 'term' | 'chat'
 
   // ---- auth -------------------------------------------------------------
   function authHeaders() { return token ? {Authorization: 'Bearer ' + token} : {}; }
@@ -37,8 +39,13 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { ['gate', 'radar', 'pane'].forEach(function (id) { $(id).hidden = id !== which; }); }
-  function gate(msg) { $('gate-msg').textContent = msg; show('gate'); }
+  function show(which) { ['gate', 'radar', 'pane', 'chat'].forEach(function (id) { $(id).hidden = id !== which; }); }
+  function gate(msg) {
+    $('gate-msg').textContent = msg; show('gate');
+    $('mode').hidden = true; $('back').hidden = true;
+    clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer);
+    radarTimer = paneTimer = chatTimer = null;
+  }
   function setConn(live) { $('conn').className = 'conn ' + (live ? 'live' : 'off'); $('conn').textContent = live ? 'live' : 'offline'; }
   function primary(a) { return a.task || a.session || a.loc || a.pane_id || ''; }
   function secondary(a) { var b = a.session || a.loc || ''; return a.pane_id ? b + ' · ' + a.pane_id : b; }
@@ -85,18 +92,26 @@
     p.then(function () { loadIcon(key, img, mono); });
   }
 
+  // avatarEl builds the rounded-square avatar (official icon → monogram fallback),
+  // optionally with the status badge. Shared by the radar rows + the chat view.
+  function avatarEl(a, size, withBadge) {
+    var av = document.createElement('div'); av.className = 'avatar';
+    if (size) { av.style.width = size + 'px'; av.style.height = size + 'px'; }
+    var img = document.createElement('img'); img.alt = ''; img.style.display = 'none';
+    var mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = agentMark(a.agent);
+    av.appendChild(img); av.appendChild(mono);
+    if (withBadge) { var bdg = document.createElement('span'); bdg.className = 'badge'; bdg.innerHTML = badgeSVG(COLORS[a.status] ? a.status : 'running'); av.appendChild(bdg); }
+    if (a.icon) loadIcon(a.agent, img, mono);
+    return av;
+  }
+
   // ---- radar ------------------------------------------------------------
   function rowEl(a) {
     var st = COLORS[a.status] ? a.status : 'running';
     var row = document.createElement('div');
     row.className = 'row' + (st === 'waiting' ? ' waiting' : '');
 
-    var av = document.createElement('div'); av.className = 'avatar';
-    var img = document.createElement('img'); img.alt = ''; img.style.display = 'none';
-    var mono = document.createElement('span'); mono.className = 'mono'; mono.textContent = agentMark(a.agent);
-    var bdg = document.createElement('span'); bdg.className = 'badge'; bdg.innerHTML = badgeSVG(st);
-    av.appendChild(img); av.appendChild(mono); av.appendChild(bdg);
-    if (a.icon) loadIcon(a.agent, img, mono);
+    var av = avatarEl(a, 0, true);
 
     var text = document.createElement('div'); text.className = 'text';
     var p = document.createElement('div'); p.className = 'primary'; p.textContent = primary(a);
@@ -113,7 +128,7 @@
     var ch = document.createElement('span'); ch.className = 'chev'; ch.textContent = '›'; right.appendChild(ch);
 
     row.appendChild(av); row.appendChild(text); row.appendChild(right);
-    row.onclick = function () { openPane(a); };
+    row.onclick = function () { openAgent(a); };
     return row;
   }
 
@@ -155,8 +170,10 @@
         if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
         else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
         else if (e.key === 'Enter') { var rows = radarRows(); if (rows[selIdx]) { e.preventDefault(); rows[selIdx].click(); } }
-      } else if (!$('pane').hidden) {
+      } else if (!$('pane').hidden || !$('chat').hidden) {
         if (e.key === 'Escape') { e.preventDefault(); $('back').click(); }
+        else if (e.key === 'c') { e.preventDefault(); setMode('chat'); }
+        else if (e.key === 't') { e.preventDefault(); setMode('term'); }
       }
     });
   }
@@ -169,8 +186,9 @@
       .catch(function () { setConn(false); });
   }
   function startRadar() {
-    show('radar'); $('back').hidden = true; $('title').textContent = 'gtmux'; $('sub').textContent = '';
-    curPane = null; lastSig = ''; clearInterval(paneTimer); paneTimer = null;
+    show('radar'); $('back').hidden = true; $('mode').hidden = true; $('title').textContent = 'gtmux'; $('sub').textContent = '';
+    curPane = null; curAgent = null; lastSig = '';
+    clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
     pollRadar(); clearInterval(radarTimer); radarTimer = setInterval(pollRadar, 2000);
   }
 
@@ -256,13 +274,204 @@
     }).then(function (j) { if (!j) return; setConn(true); writePane(j.text); })
       .catch(function () { setConn(false); });
   }
-  function openPane(a) {
-    curPane = a.pane_id; show('pane'); $('back').hidden = false;
+  // openAgent enters the pane view for an agent; the selected tab (terminal mirror
+  // vs chat history) is remembered across agents (gtmux.paneMode).
+  function openAgent(a) {
+    curPane = a.pane_id; curAgent = a; $('back').hidden = false; $('mode').hidden = false;
     $('title').textContent = primary(a); $('sub').textContent = (a.agent || '') + ' · ' + secondary(a);
     clearInterval(radarTimer); radarTimer = null;
-    ensureTerm(); lastText = '';
-    try { fit.fit(); } catch (e) {}
-    pollPane(); clearInterval(paneTimer); paneTimer = setInterval(pollPane, 1200);
+    applyMode();
+  }
+  // applyMode shows the active pane tab and (re)starts ONLY that tab's poll loop.
+  function applyMode() {
+    syncModeButtons();
+    if (paneMode === 'chat') {
+      clearInterval(paneTimer); paneTimer = null;
+      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {};
+      pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
+    } else {
+      clearInterval(chatTimer); chatTimer = null;
+      show('pane'); ensureTerm(); lastText = '';
+      try { fit.fit(); } catch (e) {}
+      pollPane(); clearInterval(paneTimer); paneTimer = setInterval(pollPane, 1200);
+    }
+  }
+  function setMode(m) {
+    if (m === paneMode || !curPane) return;
+    paneMode = m;
+    try { localStorage.setItem('gtmux.paneMode', m); } catch (e) {}
+    applyMode();
+  }
+  function syncModeButtons() {
+    var bs = $('mode').querySelectorAll('button');
+    Array.prototype.forEach.call(bs, function (b) { b.classList.toggle('on', b.getAttribute('data-mode') === paneMode); });
+  }
+
+  // ---- chat (对话 mode) -------------------------------------------------
+  // Renders the parsed transcript (GET /api/transcript) as prompt → collapsed
+  // steps → final response, mirroring the phone's ChatView. View-only.
+  function pollChat() {
+    if (!curPane) return;
+    api('/api/transcript?id=' + encodeURIComponent(curPane)).then(function (r) {
+      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
+      if (r.status === 404 || r.status === 503) { setConn(true); return []; } // no resume record / not available
+      if (!r.ok) throw new Error('transcript'); return r.json();
+    }).then(function (turns) { if (turns === null) return; setConn(true); renderChat(turns || []); })
+      .catch(function () { setConn(false); });
+  }
+  function renderChat(turns) {
+    lastTurns = turns;
+    // only repaint when content changed (keeps scroll position + expanded steps)
+    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, (t.steps || []).length]; }));
+    if (sig === chatSig) return;
+    chatSig = sig;
+    drawChat(turns);
+  }
+  function drawChat(turns) {
+    var root = $('chat');
+    var atBottom = root.scrollHeight - root.scrollTop - root.clientHeight < 48;
+    var prevTop = root.scrollTop;
+    root.innerHTML = '';
+    var col = document.createElement('div'); col.className = 'chat-col';
+    var a = curAgent || {};
+
+    var sr = document.createElement('div'); sr.className = 'chat-state';
+    sr.appendChild(avatarEl(a, 30, false));
+    var stx = document.createElement('div'); stx.className = 'cs-text';
+    var nm = document.createElement('div'); nm.className = 'cs-name'; nm.textContent = a.agent || ''; stx.appendChild(nm);
+    var stl = document.createElement('div'); stl.className = 'cs-status';
+    var dot = document.createElement('span'); dot.className = 'cs-dot'; dot.style.background = COLORS[a.status] || COLORS.running; stl.appendChild(dot);
+    var lb = document.createElement('span'); lb.textContent = LABEL[a.status] || a.status || ''; stl.appendChild(lb);
+    stx.appendChild(stl); sr.appendChild(stx); col.appendChild(sr);
+
+    if (!turns.length) {
+      var e = document.createElement('div'); e.className = 'chat-empty';
+      e.textContent = 'No conversation history yet. History comes from the agent’s session log (needs the gtmux hooks); it appears once you start talking. Switch to Terminal for the current screen.';
+      col.appendChild(e);
+    }
+    turns.forEach(function (t, idx) {
+      var ct = document.createElement('div'); ct.className = 'cturn';
+      if (t.prompt) {
+        var ur = document.createElement('div'); ur.className = 'urow';
+        var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = t.prompt;
+        ur.appendChild(ub); ct.appendChild(ur);
+      }
+      if (t.steps && t.steps.length) {
+        var open = !!chatExpanded[idx];
+        var tog = document.createElement('button'); tog.className = 'steps-toggle';
+        tog.textContent = (open ? '▾ ' : '▸ ') + t.steps.length + ' step' + (t.steps.length > 1 ? 's' : '');
+        tog.onclick = (function (k) { return function () { chatExpanded[k] = !chatExpanded[k]; drawChat(lastTurns); }; })(idx);
+        ct.appendChild(tog);
+        if (open) {
+          t.steps.forEach(function (s) {
+            var row = document.createElement('div'); row.className = 'step-row';
+            var sn = document.createElement('span'); sn.className = 'step-name'; sn.textContent = s.title || ''; row.appendChild(sn);
+            if (s.detail) { var sd = document.createElement('span'); sd.className = 'step-detail'; sd.textContent = s.detail; row.appendChild(sd); }
+            ct.appendChild(row);
+          });
+        }
+      }
+      if (t.response) {
+        var ar = document.createElement('div'); ar.className = 'arow';
+        ar.appendChild(avatarEl(a, 26, false));
+        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(t.response));
+        ar.appendChild(ab); ct.appendChild(ar);
+      }
+      col.appendChild(ct);
+    });
+    root.appendChild(col);
+    root.scrollTop = atBottom ? root.scrollHeight : prevTop;
+  }
+
+  // ---- markdown (vanilla → DOM) -----------------------------------------
+  // A tiny Markdown subset matching the phone's markdown.ts: **bold**/*italic*/
+  // `code`/[links] inline; heading/para/fenced-code/list/quote/hr/pipe-table
+  // blocks. Underscore emphasis is intentionally OFF (snake_case). Built as DOM
+  // with textContent (never innerHTML) so agent output can't inject markup.
+  function mdInline(s) {
+    var frag = document.createDocumentFragment(), rest = String(s);
+    while (rest.length) {
+      var best = null;
+      var probe = function (re, kind) {
+        var m = re.exec(rest);
+        if (m && (!best || m.index < best.idx)) best = {idx: m.index, len: m[0].length, kind: kind, m: m};
+      };
+      probe(/`([^`]+)`/, 'code');
+      probe(/\[([^\]]+)\]\(([^)\s]+)\)/, 'link');
+      probe(/\*\*([^*]+)\*\*/, 'b');
+      probe(/\*([^*\n]+)\*/, 'i');
+      if (!best) { frag.appendChild(document.createTextNode(rest)); break; }
+      if (best.idx > 0) frag.appendChild(document.createTextNode(rest.slice(0, best.idx)));
+      var m = best.m, el;
+      if (best.kind === 'code') { el = document.createElement('code'); el.className = 'md-ic'; el.textContent = m[1]; }
+      else if (best.kind === 'link') { el = document.createElement('a'); el.href = m[2]; el.target = '_blank'; el.rel = 'noopener noreferrer'; el.textContent = m[1]; }
+      else if (best.kind === 'b') { el = document.createElement('strong'); el.textContent = m[1]; }
+      else { el = document.createElement('em'); el.textContent = m[1]; }
+      frag.appendChild(el);
+      rest = rest.slice(best.idx + best.len);
+    }
+    return frag;
+  }
+  function mdRender(src) {
+    var root = document.createElement('div'); root.className = 'md';
+    var lines = String(src).replace(/\r\n/g, '\n').split('\n'), i = 0;
+    var FENCE = /^\s*```(.*)$/, HR = /^\s*([-*_])(\s*\1){2,}\s*$/, HEADING = /^\s*(#{1,6})\s+(.*)$/;
+    var QUOTE = /^\s*>\s?/, BULLET = /^\s*[-*+]\s+/, ORDERED = /^\s*\d+\.\s+/;
+    var TABLE_SEP = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+    function isTableStart(idx) { return lines[idx].indexOf('|') !== -1 && idx + 1 < lines.length && lines[idx + 1].indexOf('|') !== -1 && TABLE_SEP.test(lines[idx + 1]); }
+    function trimPipes(s) { s = s.trim(); if (s.charAt(0) === '|') s = s.slice(1); if (s.charAt(s.length - 1) === '|') s = s.slice(0, -1); return s; }
+    function splitRow(line) { return trimPipes(line).split('|').map(function (c) { return c.trim(); }); }
+    function parseAlign(line) {
+      return trimPipes(line).split('|').map(function (c) {
+        var t = c.trim(), l = t.charAt(0) === ':', r = t.charAt(t.length - 1) === ':';
+        return l && r ? 'center' : r ? 'right' : 'left';
+      });
+    }
+    while (i < lines.length) {
+      var line = lines[i], fm = FENCE.exec(line);
+      if (fm) {
+        var body = []; i++;
+        while (i < lines.length && !/^\s*```/.test(lines[i])) { body.push(lines[i]); i++; }
+        i++;
+        var pre = document.createElement('pre'); pre.className = 'md-pre';
+        var code = document.createElement('code'); code.textContent = body.join('\n'); pre.appendChild(code);
+        root.appendChild(pre); continue;
+      }
+      if (line.trim() === '') { i++; continue; }
+      if (HR.test(line)) { root.appendChild(document.createElement('hr')); i++; continue; }
+      var h = HEADING.exec(line);
+      if (h) { var he = document.createElement('div'); he.className = 'md-h md-h' + h[1].length; he.appendChild(mdInline(h[2].trim())); root.appendChild(he); i++; continue; }
+      if (QUOTE.test(line)) {
+        var q = []; while (i < lines.length && QUOTE.test(lines[i])) { q.push(lines[i].replace(QUOTE, '')); i++; }
+        var bq = document.createElement('blockquote'); bq.className = 'md-q'; bq.appendChild(mdInline(q.join(' '))); root.appendChild(bq); continue;
+      }
+      if (BULLET.test(line)) {
+        var ul = document.createElement('ul'); ul.className = 'md-list';
+        while (i < lines.length && BULLET.test(lines[i])) { var li = document.createElement('li'); li.appendChild(mdInline(lines[i].replace(BULLET, ''))); ul.appendChild(li); i++; }
+        root.appendChild(ul); continue;
+      }
+      if (ORDERED.test(line)) {
+        var ol = document.createElement('ol'); ol.className = 'md-list';
+        while (i < lines.length && ORDERED.test(lines[i])) { var li2 = document.createElement('li'); li2.appendChild(mdInline(lines[i].replace(ORDERED, ''))); ol.appendChild(li2); i++; }
+        root.appendChild(ol); continue;
+      }
+      if (isTableStart(i)) {
+        var header = splitRow(lines[i]), align = parseAlign(lines[i + 1]); i += 2;
+        var rows = []; while (i < lines.length && lines[i].trim() !== '' && lines[i].indexOf('|') !== -1) { rows.push(splitRow(lines[i])); i++; }
+        var wrap = document.createElement('div'); wrap.className = 'md-tablewrap';
+        var tbl = document.createElement('table'); tbl.className = 'md-table';
+        var thead = document.createElement('thead'), htr = document.createElement('tr');
+        header.forEach(function (c, ci) { var th = document.createElement('th'); th.style.textAlign = align[ci] || 'left'; th.appendChild(mdInline(c)); htr.appendChild(th); });
+        thead.appendChild(htr); tbl.appendChild(thead);
+        var tb = document.createElement('tbody');
+        rows.forEach(function (r) { var tr = document.createElement('tr'); r.forEach(function (c, ci) { var td = document.createElement('td'); td.style.textAlign = align[ci] || 'left'; td.appendChild(mdInline(c)); tr.appendChild(td); }); tb.appendChild(tr); });
+        tbl.appendChild(tb); wrap.appendChild(tbl); root.appendChild(wrap); continue;
+      }
+      var para = [];
+      while (i < lines.length && lines[i].trim() !== '' && !/^\s*```/.test(lines[i]) && !HR.test(lines[i]) && !HEADING.test(lines[i]) && !QUOTE.test(lines[i]) && !BULLET.test(lines[i]) && !ORDERED.test(lines[i]) && !isTableStart(i)) { para.push(lines[i]); i++; }
+      var p = document.createElement('p'); p.className = 'md-p'; p.appendChild(mdInline(para.join(' '))); root.appendChild(p);
+    }
+    return root;
   }
 
   // ---- boot -------------------------------------------------------------
@@ -289,9 +498,16 @@
     };
   }
 
+  // setupMode wires the pane-view tab switcher (对话 / 终端).
+  function setupMode() {
+    var bs = $('mode').querySelectorAll('button');
+    Array.prototype.forEach.call(bs, function (b) { b.onclick = function () { setMode(b.getAttribute('data-mode')); }; });
+  }
+
   function boot() {
     $('back').onclick = startRadar;
     setupKeyboard();
+    setupMode();
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
     var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(location.hash || '');
     var code = m && m[1];
