@@ -22,8 +22,13 @@ function Section({title, pal, children}: any) {
 }
 
 export function SettingsScreen({navigation}: any) {
-  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled, fontPref, setFontPref, returnSends, setReturnSends} =
+  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, xtermEnabled, setXtermEnabled, fontPref, setFontPref, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode} =
     useApp();
+
+  const detailModes: {key: 'chat' | 'terminal'; label: string}[] = [
+    {key: 'terminal', label: lang === 'zh' ? '终端' : 'Terminal'},
+    {key: 'chat', label: lang === 'zh' ? '对话' : 'Chat'},
+  ];
   const {client} = useAgents();
 
   const langs: {key: LangPref; label: string}[] = [
@@ -138,6 +143,25 @@ export function SettingsScreen({navigation}: any) {
           </View>
           <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
             <Text style={[styles.rowSub, {color: pal.fg3}]}>{t('pushHint')}</Text>
+          </View>
+        </Section>
+
+        <Section title={lang === 'zh' ? '详情页默认模式' : 'Detail default mode'} pal={pal}>
+          {detailModes.map((m, i) => (
+            <TouchableOpacity
+              key={m.key}
+              style={[styles.rowItem, i < detailModes.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}
+              onPress={() => setDefaultDetailMode(m.key)}>
+              <Text style={[styles.rowLabel, {color: pal.fg}]}>{m.label}</Text>
+              {defaultDetailMode === m.key && <Text style={styles.check}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
+            <Text style={[styles.rowSub, {color: pal.fg3}]}>
+              {lang === 'zh'
+                ? '打开窗格时默认进哪个模式。对话=当前屏幕概览 + 审批卡；终端=完整 TUI。每个窗格的手动切换会被单独记住。'
+                : 'Which mode a pane opens in. Chat = current-screen glance + approval card; Terminal = full TUI. Each pane remembers its own manual switch.'}
+            </Text>
           </View>
         </Section>
 

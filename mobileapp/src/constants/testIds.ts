@@ -31,6 +31,9 @@ export const TestIds = {
     screen: 'detail-screen',
     back: 'detail-back',
     pane: 'detail-pane',
+    modeChat: 'detail-mode-chat',
+    modeTerminal: 'detail-mode-terminal',
+    chat: 'detail-chat',
   },
   composer: {
     input: 'composer-input',
