@@ -276,6 +276,14 @@ divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
   用于 popover 头部、空状态、首次运行、快速切换器、Dock/关于。
 - 三色圆点（红/青/绿）降为**辅助母题**（图例、强调），不再做主 logo。
 - **状态项 ≠ logo**：菜单栏里显示的是**状态字形**（§2），不是 app logo。
+- **配对二维码的中央品牌 mark = 同一规范，分屏渲染**（不复用代码、不得漂移）：
+  2×2 网格、左上 `#06B6D4` 青、其余中性灰、居中于白底、纠错等级 H 容忍遮挡。
+  - app（Swift）画位图：`Pairing.qrImage` + `drawPaneGrid`（CoreImage + CoreGraphics）。
+  - CLI（Go）画终端文本：`internal/app/qr.go` 用四分之一块字符（2×2 模块/字）压缩尺寸 +
+    ANSI 真彩给那 4 格上色。
+  - 二者**共用同一 payload 契约**（v2 `{v,url,enrollCode,name}`：CLI `pairingPayload` /
+    app `Pairing.payload`）；改 mark 的几何或配色时**两处同步更新**。这与状态色
+    `#06B6D4` 在 Swift/TS/Go 各写一份是同一模式：一套语言、分屏实现。
 
 ---
 
