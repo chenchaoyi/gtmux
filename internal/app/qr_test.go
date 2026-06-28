@@ -43,8 +43,8 @@ func TestBrandGridLogo(t *testing.T) {
 		}
 	}
 
-	// finder patterns (data corners at the qz=4 offset, 7×7) must be logo-free.
-	const qz = 4
+	// finder patterns (data corners at the quiet-zone offset, 7×7) must be logo-free.
+	const qz = 2
 	for _, c := range [][2]int{{qz, qz}, {size - qz - 7, qz}, {qz, size - qz - 7}} {
 		for dy := 0; dy < 7; dy++ {
 			for dx := 0; dx < 7; dx++ {
