@@ -25,6 +25,10 @@ interface AppContextValue {
   setLangPref: (p: LangPref) => void;
   pushEnabled: boolean;
   setPushEnabled: (v: boolean) => void;
+  // B2: which alert kinds the device wants pushed. Mirrors the server's per-kind
+  // filter (DeviceToken.Kinds: "waiting"/"done"). Sub-setting of pushEnabled.
+  pushKinds: PushKinds;
+  setPushKinds: (v: PushKinds) => void;
   xtermEnabled: boolean; // always true now — the pane is always rendered with xterm.js
   fontPref: string; // terminal font: 'auto' (match terminal) | 'system' | a bundled family
   setFontPref: (v: string) => void;
@@ -37,9 +41,25 @@ interface AppContextValue {
   pal: Palette;
 }
 
+export interface PushKinds {
+  waiting: boolean; // "等你回应" alerts (an agent is blocked on you)
+  done: boolean; // "已完成" alerts (an agent finished a turn)
+}
+
+// kindsList turns the per-kind prefs into the server's Kinds wire form. An empty
+// list means "all" on the server, so when BOTH are off we send a sentinel that
+// matches no real kind → no pushes (the master pushEnabled switch is separate).
+export function kindsList(k: PushKinds): string[] {
+  const out: string[] = [];
+  if (k.waiting) out.push('waiting');
+  if (k.done) out.push('done');
+  return out.length ? out : ['none'];
+}
+
 const Ctx = createContext<AppContextValue | null>(null);
 const LANG_KEY = 'gtmux.langPref';
 const PUSH_KEY = 'gtmux.pushEnabled';
+const PUSH_KINDS_KEY = 'gtmux.pushKinds';
 const FONT_KEY = 'gtmux.fontPref';
 const RETURN_KEY = 'gtmux.returnSends';
 const DETAIL_MODE_KEY = 'gtmux.defaultDetailMode';
@@ -51,16 +71,18 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
   const [langPref, setLangPrefState] = useState<LangPref>('system');
   const [pushEnabled, setPushEnabledState] = useState(true);
+  const [pushKinds, setPushKindsState] = useState<PushKinds>({waiting: true, done: true});
   const [fontPref, setFontPrefState] = useState('auto');
   const [returnSends, setReturnSendsState] = useState(false);
   const [defaultDetailMode, setDefaultDetailModeState] = useState<'chat' | 'terminal'>('terminal');
 
   useEffect(() => {
     (async () => {
-      const [store, lp, pe, fp, rs, dm] = await Promise.all([
+      const [store, lp, pe, pk, fp, rs, dm] = await Promise.all([
         loadServers(),
         AsyncStorage.getItem(LANG_KEY),
         AsyncStorage.getItem(PUSH_KEY),
+        AsyncStorage.getItem(PUSH_KINDS_KEY),
         AsyncStorage.getItem(FONT_KEY),
         AsyncStorage.getItem(RETURN_KEY),
         AsyncStorage.getItem(DETAIL_MODE_KEY),
@@ -87,6 +109,14 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       setActiveUrl(act);
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);
       if (pe === 'false') setPushEnabledState(false);
+      if (pk) {
+        try {
+          const v = JSON.parse(pk);
+          setPushKindsState({waiting: v?.waiting !== false, done: v?.done !== false});
+        } catch {
+          /* keep default */
+        }
+      }
       if (fp) setFontPrefState(fp);
       if (rs === 'true') setReturnSendsState(true);
       if (dm === 'chat' || dm === 'terminal') setDefaultDetailModeState(dm);
@@ -132,6 +162,11 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setPushEnabledState(v);
         AsyncStorage.setItem(PUSH_KEY, String(v));
       },
+      pushKinds,
+      setPushKinds: v => {
+        setPushKindsState(v);
+        AsyncStorage.setItem(PUSH_KINDS_KEY, JSON.stringify(v));
+      },
       xtermEnabled: true, // xterm-only now (the classic renderer + its toggle were removed)
       fontPref,
       setFontPref: v => {
@@ -152,7 +187,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, fontPref, returnSends, defaultDetailMode, lang, scheme]);
+  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, pushKinds, fontPref, returnSends, defaultDetailMode, lang, scheme]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

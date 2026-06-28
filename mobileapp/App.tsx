@@ -9,12 +9,12 @@ import {
   useNavigationContainerRef,
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {StatusBar, useColorScheme, useWindowDimensions} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {Splash} from './src/ui/Splash';
-import {setupPush} from './src/push';
+import {setupPush, reregisterKinds} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
@@ -22,7 +22,7 @@ import {ServersScreen} from './src/screens/ServersScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
 import {SplitScreen} from './src/screens/SplitScreen';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
-import {AppProvider, useApp} from './src/state/AppContext';
+import {AppProvider, useApp, kindsList} from './src/state/AppContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,19 +37,27 @@ function RadarRoute(props: any) {
 // Renders nothing.
 function PushBridge({navRef}: {navRef: any}) {
   const {client, agents} = useAgents();
-  const {pushEnabled} = useApp();
+  const {pushEnabled, pushKinds} = useApp();
+  // A ref so setupPush's onRegister always reads the CURRENT kinds without the
+  // main effect re-running (which would churn the native listeners).
+  const kindsRef = useRef(kindsList(pushKinds));
+  kindsRef.current = kindsList(pushKinds);
   useEffect(() => {
     if (!pushEnabled || Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
-    setupPush(client, pane => {
-      const found = agents.find(a => a.pane_id === pane);
-      const agent: Agent =
-        found ?? {
-          pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
-          status: 'working', task: '', latest: false, activity: false, source: 'tmux',
-        };
-      navRef.navigate('Detail', {agent});
-    })
+    setupPush(
+      client,
+      pane => {
+        const found = agents.find(a => a.pane_id === pane);
+        const agent: Agent =
+          found ?? {
+            pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
+            status: 'working', task: '', latest: false, activity: false, source: 'tmux',
+          };
+        navRef.navigate('Detail', {agent});
+      },
+      () => kindsRef.current,
+    )
       .then(t => {
         teardown = t;
       })
@@ -62,6 +70,12 @@ function PushBridge({navRef}: {navRef: any}) {
     // the native listeners; the tap handler reads the latest list via closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, pushEnabled, navRef]);
+
+  // When the per-kind prefs change (and push is on), re-register the cached token
+  // so the server's filter updates without re-running the setup effect.
+  useEffect(() => {
+    if (pushEnabled && !Debug.noPush) reregisterKinds(client, kindsList(pushKinds));
+  }, [client, pushEnabled, pushKinds]);
   return null;
 }
 

@@ -26,9 +26,20 @@ const WAITING_CATEGORY = {
   ],
 };
 
+// The last APNs token iOS handed us, kept so a later kinds-toggle can re-register
+// the same device without re-running setup (which would re-add native listeners).
+let lastToken: string | null = null;
+
+// reregisterKinds updates the device's per-kind push filter on the server, using
+// the cached APNs token. No-op until the token has arrived.
+export function reregisterKinds(client: GtmuxClient, kinds: string[]): void {
+  if (lastToken) client.registerPush(lastToken, kinds).catch(() => {});
+}
+
 export async function setupPush(
   client: GtmuxClient,
   onTapPane: (pane: string) => void,
+  getKinds: () => string[] = () => [],
 ): Promise<Teardown> {
   if (Platform.OS !== 'ios') return () => {};
   if (!PushNotificationIOS || typeof PushNotificationIOS.addEventListener !== 'function') {
@@ -36,7 +47,8 @@ export async function setupPush(
   }
 
   const onRegister = (token: string) => {
-    client.registerPush(token).catch(() => {});
+    lastToken = token;
+    client.registerPush(token, getKinds()).catch(() => {});
   };
 
   const onNotification = (notification: any) => {
