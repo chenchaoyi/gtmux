@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
-	qrterminal "github.com/mdp/qrterminal/v3"
 )
 
 // cmdTunnel implements `gtmux tunnel` — expose the read-only radar to the phone
@@ -440,7 +439,7 @@ func printPairingBlock(url, token, name string, port int) {
 	fmt.Println()
 	i18n.Say("Scan in the gtmux phone app (Pair → Scan):",
 		"在 gtmux 手机 app 里扫码（配对 → 扫一扫）：")
-	qrterminal.GenerateHalfBlock(string(payload), qrterminal.L, os.Stdout)
+	printBrandQR(os.Stdout, string(payload))
 }
 
 // pairingPayload builds the QR JSON: the secure v2 `{enrollCode}` shape when a
