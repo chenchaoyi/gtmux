@@ -31,6 +31,8 @@ interface AppContextValue {
   setFontPref: (v: string) => void;
   returnSends: boolean; // composer: Return sends (default false → Return = newline, send via ↑)
   setReturnSends: (v: boolean) => void;
+  defaultDetailMode: 'chat' | 'terminal'; // B1: which mode a pane opens in by default
+  setDefaultDetailMode: (v: 'chat' | 'terminal') => void;
   lang: Lang;
   t: (k: any) => string;
   pal: Palette;
@@ -42,6 +44,7 @@ const PUSH_KEY = 'gtmux.pushEnabled';
 const XTERM_KEY = 'gtmux.xterm';
 const FONT_KEY = 'gtmux.fontPref';
 const RETURN_KEY = 'gtmux.returnSends';
+const DETAIL_MODE_KEY = 'gtmux.defaultDetailMode';
 
 export function AppProvider({children}: {children: React.ReactNode}) {
   const scheme = useColorScheme();
@@ -53,16 +56,18 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [xtermEnabled, setXtermEnabledState] = useState(false);
   const [fontPref, setFontPrefState] = useState('auto');
   const [returnSends, setReturnSendsState] = useState(false);
+  const [defaultDetailMode, setDefaultDetailModeState] = useState<'chat' | 'terminal'>('terminal');
 
   useEffect(() => {
     (async () => {
-      const [store, lp, pe, xe, fp, rs] = await Promise.all([
+      const [store, lp, pe, xe, fp, rs, dm] = await Promise.all([
         loadServers(),
         AsyncStorage.getItem(LANG_KEY),
         AsyncStorage.getItem(PUSH_KEY),
         AsyncStorage.getItem(XTERM_KEY),
         AsyncStorage.getItem(FONT_KEY),
         AsyncStorage.getItem(RETURN_KEY),
+        AsyncStorage.getItem(DETAIL_MODE_KEY),
       ]);
       if (Debug.logNet) Debug.reset();
       // Debug launch flags (UI tests) — all gated by GTMUX_DEBUG_*, never set in a
@@ -89,6 +94,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       if (xe === 'true') setXtermEnabledState(true);
       if (fp) setFontPrefState(fp);
       if (rs === 'true') setReturnSendsState(true);
+      if (dm === 'chat' || dm === 'terminal') setDefaultDetailModeState(dm);
       setReady(true);
     })();
   }, []);
@@ -146,11 +152,16 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setReturnSendsState(v);
         AsyncStorage.setItem(RETURN_KEY, String(v));
       },
+      defaultDetailMode,
+      setDefaultDetailMode: v => {
+        setDefaultDetailModeState(v);
+        AsyncStorage.setItem(DETAIL_MODE_KEY, v);
+      },
       lang,
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, xtermEnabled, fontPref, returnSends, lang, scheme]);
+  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, xtermEnabled, fontPref, returnSends, defaultDetailMode, lang, scheme]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

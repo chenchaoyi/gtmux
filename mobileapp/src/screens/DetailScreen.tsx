@@ -48,7 +48,7 @@ export function DetailScreen({route, navigation}: any) {
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client, agents, conn} = useAgents();
-  const {pal, lang, xtermEnabled, fontPref, mac, returnSends} = useApp();
+  const {pal, lang, xtermEnabled, fontPref, mac, returnSends, defaultDetailMode} = useApp();
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -66,9 +66,11 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
   const [slow, setSlow] = useState(false); // D8: pane taking >3s to first paint
-  // B1: 对话 ↔ 终端. 对话 (glance + approval) is the default (mockup §10); the
-  // choice is remembered per pane so power-users who prefer the raw TUI stick there.
-  const [mode, setMode] = useState<DetailMode>('chat');
+  // B1: 对话 ↔ 终端. Initial mode = the global "default mode" setting (B2, default
+  // 终端 — preserves the established read-the-pane behavior; 对话 is a visible-
+  // screen glance, not a full transcript), overridden by this pane's own
+  // remembered choice if it has one.
+  const [mode, setMode] = useState<DetailMode>(defaultDetailMode);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
