@@ -156,3 +156,22 @@ func TestLoadProfilesUserOverride(t *testing.T) {
 		t.Errorf("cmdIsLiveAgent(myagent) = (%q, %v), want (MyAgent, true)", name, live)
 	}
 }
+
+func TestParseCPUTime(t *testing.T) {
+	cases := []struct {
+		in   string
+		want float64
+	}{
+		{"0:00.00", 0},
+		{"12.50", 12.5},
+		{"1:30.00", 90},
+		{"168:49.35", 168*60 + 49.35},
+		{"1:02:03.00", 3723},
+		{"garbage", 0},
+	}
+	for _, c := range cases {
+		if got := parseCPUTime(c.in); got != c.want {
+			t.Errorf("parseCPUTime(%q) = %v, want %v", c.in, got, c.want)
+		}
+	}
+}

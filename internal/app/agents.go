@@ -216,23 +216,26 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 	return true, agent, status, task
 }
 
-// procInfo is one process row: its parent pid and full command line (argv).
+// procInfo is one process row: its parent pid, cumulative CPU seconds, and full
+// command line (argv).
 type procInfo struct {
 	ppid    int
+	cpu     float64 // cumulative CPU seconds (for the hook-free working signal)
 	command string
 }
 
-// snapshotProcs returns pid → {ppid, argv} for every process (one `ps` call),
-// so we can look inside a pane's process tree. Empty on any failure.
+// snapshotProcs returns pid → {ppid, cpu, argv} for every process (one `ps`
+// call), so we can look inside a pane's process tree and sum its CPU. Empty on
+// any failure.
 func snapshotProcs() map[int]procInfo {
 	out := map[int]procInfo{}
-	b, err := exec.Command("ps", "-axo", "pid=,ppid=,command=").Output()
+	b, err := exec.Command("ps", "-axo", "pid=,ppid=,cputime=,command=").Output()
 	if err != nil {
 		return out
 	}
 	for _, line := range strings.Split(string(b), "\n") {
 		fs := strings.Fields(line)
-		if len(fs) < 3 {
+		if len(fs) < 4 {
 			continue
 		}
 		pid, e1 := strconv.Atoi(fs[0])
@@ -240,9 +243,46 @@ func snapshotProcs() map[int]procInfo {
 		if e1 != nil || e2 != nil {
 			continue
 		}
-		out[pid] = procInfo{ppid: ppid, command: strings.Join(fs[2:], " ")}
+		// cputime has no internal spaces (e.g. "12:34.56"), so the command is the
+		// remainder. A field that won't parse → cpu 0 (just no CPU signal).
+		out[pid] = procInfo{ppid: ppid, cpu: parseCPUTime(fs[2]), command: strings.Join(fs[3:], " ")}
 	}
 	return out
+}
+
+// parseCPUTime parses `ps cputime` ("[[HH:]MM:]SS.cc") into seconds. 0 on error.
+func parseCPUTime(s string) float64 {
+	parts := strings.Split(s, ":")
+	var total float64
+	for _, p := range parts {
+		v, err := strconv.ParseFloat(p, 64)
+		if err != nil {
+			return 0
+		}
+		total = total*60 + v
+	}
+	return total
+}
+
+// subtreeCPU sums cumulative CPU seconds over panePid's process subtree — the
+// "how much is this pane computing" input to the hook-free working signal.
+func subtreeCPU(panePid int, procs map[int]procInfo, children map[int][]int) float64 {
+	var total float64
+	seen := map[int]bool{}
+	queue := []int{panePid}
+	for len(queue) > 0 {
+		pid := queue[0]
+		queue = queue[1:]
+		if seen[pid] {
+			continue
+		}
+		seen[pid] = true
+		if info, ok := procs[pid]; ok {
+			total += info.cpu
+		}
+		queue = append(queue, children[pid]...)
+	}
+	return total
 }
 
 // agentFromCommand matches a full command line against profiles by the basename
@@ -332,10 +372,15 @@ func gatherAgents() []agentPane {
 						agent = name
 						if !isAgent {
 							// Process-tree agent with no title spinner (e.g. Codex sets
-							// no title): use the screen-changing signal to tell working
-							// from idle, rather than assuming idle.
+							// no title): tell working from idle with two hook-free
+							// signals OR'd together — the screen is changing (frame),
+							// or its process subtree is burning CPU (a local tool
+							// running quietly). Both are sampled every poll to keep
+							// their baselines fresh.
+							frameW := state.PaneFrameWorking(f[0], tmux.CapturePane(f[0]), now)
+							cpuW := state.PaneCPUWorking(f[0], subtreeCPU(panePid, procs, children), now)
 							status = "idle"
-							if state.PaneFrameWorking(f[0], tmux.CapturePane(f[0]), now) {
+							if frameW || cpuW {
 								status = "working"
 							}
 							isAgent, task = true, strings.TrimSpace(f[4])
