@@ -77,6 +77,12 @@ type Deps struct {
 	// /api/theme is 503.
 	Theme func() terminal.Theme
 
+	// Transcript returns the marshaled chat-history turns for a pane (the agent's
+	// conversation parsed into prompt → collapsed steps → final response), as a
+	// JSON array. Empty array (not error) when the pane has no resumable session
+	// or the agent's log isn't found. Optional: nil → GET /api/transcript is 503.
+	Transcript func(id string) ([]byte, error)
+
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
 	// GET /api/events still serves heartbeats but emits no agents/alert events.
@@ -153,6 +159,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
+	mux.Handle("/api/transcript", s.auth(http.HandlerFunc(s.handleTranscript)))
 	mux.Handle("/api/theme", s.auth(http.HandlerFunc(s.handleTheme)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
@@ -404,6 +411,27 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, diffResponse{ID: id, Diff: diff})
+}
+
+// handleTranscript serves the pane's parsed chat history (GET /api/transcript?id=%N)
+// as a JSON array of turns. Read-only.
+func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Transcript == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("transcript not available"))
+		return
+	}
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	b, err := s.deps.Transcript(id)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, errBody("transcript failed: "+err.Error()))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(b)
 }
 
 // handleTest sends a test push to every registered device (POST /api/push/test),
