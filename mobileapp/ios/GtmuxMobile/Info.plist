@@ -37,8 +37,12 @@
 	<string>Scan a gtmux pairing QR code.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Dictate a message to your agent by voice.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Attach a photo to send to your agent.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Transcribe your dictation into the message box.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>RCTNewArchEnabled</key>
