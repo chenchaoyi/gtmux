@@ -14,6 +14,7 @@ interface AgentsContextValue {
   client: GtmuxClient;
   agents: Agent[];
   conn: ConnState;
+  lastUpdated: number | null; // epoch ms of the last successful fetch (offline banner)
   banner: Alert | null;
   dismissBanner: () => void;
   refresh: () => void;
@@ -33,6 +34,7 @@ export function AgentsProvider({
   const client = useMemo(() => new GtmuxClient(base, token), [base, token]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [conn, setConn] = useState<ConnState>('connecting');
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [banner, setBanner] = useState<Alert | null>(null);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,6 +45,7 @@ export function AgentsProvider({
         .then(a => {
           setAgents(a);
           setConn('live');
+          setLastUpdated(Date.now());
           // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
           // leading with the session that needs you (bold) + its prompt (detail).
           const waiters = a.filter(x => x.status === 'waiting');
@@ -97,6 +100,7 @@ export function AgentsProvider({
     client,
     agents,
     conn,
+    lastUpdated,
     banner,
     dismissBanner: () => setBanner(null),
     refresh,

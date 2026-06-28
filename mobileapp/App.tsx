@@ -10,9 +10,10 @@ import {
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import React, {useEffect} from 'react';
-import {ActivityIndicator, StatusBar, useColorScheme, useWindowDimensions, View} from 'react-native';
+import {StatusBar, useColorScheme, useWindowDimensions} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
+import {Splash} from './src/ui/Splash';
 import {setupPush} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
@@ -65,22 +66,14 @@ function PushBridge({navRef}: {navRef: any}) {
 }
 
 function Root() {
-  const {ready, mac, pal} = useApp();
+  const {ready, mac, pal, lang} = useApp();
   const scheme = useColorScheme();
   const navRef = useNavigationContainerRef();
 
+  // D8: a branded splash (matches the native LaunchScreen) while we restore the
+  // paired Mac + settings, instead of a bare spinner.
   if (!ready) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: pal.bg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        <ActivityIndicator color={pal.fg3} />
-      </View>
-    );
+    return <Splash pal={pal} lang={lang} />;
   }
 
   // No active server → the connection page (it lists saved Macs + lets you add).
