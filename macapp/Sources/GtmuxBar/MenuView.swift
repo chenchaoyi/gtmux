@@ -216,33 +216,39 @@ struct MenuView: View {
                 }.buttonStyle(.plain).fixedSize()
                 Spacer(minLength: 8)
                 if remote.isOn {
-                    // Visible "remote access is on" indicator (a standing exposure
-                    // should never be silent). Tap opens Preferences to turn off.
+                    // ONE compact remote indicator (avoids the footer overflowing the
+                    // 320pt popover — showing "Remote on" + a separate phone cluster +
+                    // two separators clipped the version on the right). A live client
+                    // (green phone, the connection-indicator convention) is a stronger
+                    // exposure signal than "remote on", so it supersedes the globe
+                    // label when present; otherwise show "Remote on" (a standing
+                    // exposure should never be silent). Tap opens Preferences.
                     Button { onAction(.preferences) } label: {
                         HStack(spacing: 3) {
-                            Image(systemName: "globe").font(.system(size: 9))
-                            Text(l10n.tr("Remote on", "远程开启")).font(Theme.Font.footer)
-                        }.foregroundStyle(p.fg2)
-                    }.buttonStyle(.plain).help(remote.url ?? "").fixedSize()
-                    Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
-                }
-                if remote.remoteClients > 0 {
-                    // A phone/browser is viewing this Mac right now (green = connected,
-                    // the connection-indicator convention). Count shown when >1.
-                    HStack(spacing: 3) {
-                        Image(systemName: "iphone.radiowaves.left.and.right").font(.system(size: 9))
-                        if remote.remoteClients > 1 {
-                            Text("\(remote.remoteClients)").font(Theme.Font.footer)
+                            if remote.remoteClients > 0 {
+                                Image(systemName: "iphone.radiowaves.left.and.right").font(.system(size: 9))
+                                if remote.remoteClients > 1 {
+                                    Text("\(remote.remoteClients)").font(Theme.Font.footer)
+                                }
+                            } else {
+                                Image(systemName: "globe").font(.system(size: 9))
+                                Text(l10n.tr("Remote on", "远程开启")).font(Theme.Font.footer)
+                            }
                         }
-                    }
-                    .foregroundStyle(Theme.Status.idle)
-                    .help(l10n.tr("A device is viewing this Mac right now", "有设备正在查看本机"))
-                    .fixedSize()
+                        .foregroundStyle(remote.remoteClients > 0 ? Theme.Status.idle : p.fg2)
+                    }.buttonStyle(.plain)
+                        .help(remote.remoteClients > 0
+                            ? l10n.tr("A device is viewing this Mac right now", "有设备正在查看本机")
+                            : (remote.url ?? ""))
+                        .fixedSize()
                     Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }
+                // The version is the lowest-priority element: if anything still
+                // doesn't fit (a longer locale), it truncates gracefully instead of
+                // clipping at the popover edge.
                 Text("gtmux \(appVersion) · by ccy")
                     .font(Theme.Font.footer).foregroundStyle(p.fg3)
-                    .lineLimit(1).fixedSize()
+                    .lineLimit(1).truncationMode(.tail).layoutPriority(-1)
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
         }
