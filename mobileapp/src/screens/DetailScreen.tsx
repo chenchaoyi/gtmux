@@ -5,12 +5,11 @@
 // wrap↔scroll toggle, and a jump-to-bottom FAB. "Focus on Mac" lives in the top
 // bar (POST /api/focus), not the input area.
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -48,7 +47,7 @@ export function DetailScreen({route, navigation}: any) {
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client, agents, conn} = useAgents();
-  const {pal, lang, xtermEnabled, fontPref, mac, returnSends, defaultDetailMode} = useApp();
+  const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -60,7 +59,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [loading, setLoading] = useState(true);
   const [fontIdx, setFontIdx] = useState(1);
   const [wrap, setWrap] = useState(true);
-  const [atBottom, setAtBottom] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
@@ -72,7 +70,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   // screen glance, not a full transcript), overridden by this pane's own
   // remembered choice if it has one.
   const [mode, setMode] = useState<DetailMode>(defaultDetailMode);
-  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     let alive = true;
@@ -154,12 +151,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
-  const lineHeight = Math.round(fontSize * 1.36);
-
-  const onScroll = (e: any) => {
-    const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
-    setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
-  };
 
   // D6: copy the visible screen as plain text (ANSI stripped via the parsed spans).
   const copyVisible = () => {
@@ -169,27 +160,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       .replace(/\s+$/, '');
     Clipboard.setString(plain);
   };
-
-  // The whole screen is ONE selectable <Text> (lines joined by '\n'), so a
-  // long-press starts a real drag selection that spans lines — extend the
-  // handles over any region and use iOS's own Copy. (Per-line <Text>s, as before,
-  // could only ever select within a single line, so copy was useless.)
-  const term = (
-    <Text style={[styles.mono, {fontSize, lineHeight}]} selectable>
-      {lines.map((spans, i) => (
-        <Text key={i}>
-          {i > 0 ? '\n' : ''}
-          {spans.length === 0
-            ? ' '
-            : spans.map((s, j) => (
-                <Text key={j} style={{color: s.color, fontWeight: s.bold ? '700' : '400'}}>
-                  {s.text}
-                </Text>
-              ))}
-        </Text>
-      ))}
-    </Text>
-  );
 
   return (
     <KeyboardAvoidingView
@@ -288,44 +258,19 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {mode === 'chat' ? (
         <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} client={client} paneId={agent.pane_id} pendingPrompt={pendingPrompt} />
       ) : (
-      /* pane screen (colored) — xterm.js emulator (opt-in) or the classic renderer */
+      /* pane screen (colored) — xterm.js terminal emulator */
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
-        {xtermEnabled ? (
-          <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} theme={theme} fontPref={fontPref} />
-        ) : (
-          <ScrollView
-            ref={scrollRef}
-            style={styles.term}
-            contentContainerStyle={styles.termContent}
-            scrollEventThrottle={80}
-            onScroll={onScroll}
-            onContentSizeChange={() => {
-              if (atBottom) scrollRef.current?.scrollToEnd({animated: false});
-            }}>
-            {loading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator color={pal.fg3} />
-                <Text style={[styles.loadingText, {color: pal.fg3}]}>
-                  {slow
-                    ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
-                    : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'}
-                </Text>
-              </View>
-            ) : wrap ? (
-              term
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator>
-                <View>{term}</View>
-              </ScrollView>
-            )}
-          </ScrollView>
-        )}
-        {!xtermEnabled && !atBottom && (
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => scrollRef.current?.scrollToEnd({animated: true})}>
-            <Text style={styles.fabText}>↓</Text>
-          </TouchableOpacity>
+        <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} theme={theme} fontPref={fontPref} />
+        {/* D8: pane-loading feedback (until the first frame arrives) */}
+        {loading && !text && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator color={pal.fg3} />
+            <Text style={[styles.loadingText, {color: pal.fg3}]}>
+              {slow
+                ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
+                : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'}
+            </Text>
+          </View>
         )}
         {/* full-screen: just a clean exit control (the config options are hidden
             for more room; adjust A−/A+ / wrap before going full-screen) */}
@@ -465,24 +410,8 @@ const styles = StyleSheet.create({
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
   ctlText: {fontSize: 11.5, fontWeight: '600'},
   termWrap: {flex: 1},
-  term: {flex: 1, backgroundColor: '#0A0A0C'},
-  termContent: {padding: 12},
-  loading: {marginTop: 40},
-  loadingBox: {marginTop: 56, alignItems: 'center', gap: 10},
+  loadingOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10},
   loadingText: {fontSize: 12.5},
-  mono: {color: '#D6D6DA', fontFamily: 'Menlo'},
-  fab: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#06B6D4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabText: {color: '#fff', fontSize: 20, fontWeight: '700'},
   fsBar: {
     position: 'absolute',
     top: 8,

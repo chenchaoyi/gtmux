@@ -29,7 +29,6 @@ interface AppContextValue {
   // filter (DeviceToken.Kinds: "waiting"/"done"). Sub-setting of pushEnabled.
   pushKinds: PushKinds;
   setPushKinds: (v: PushKinds) => void;
-  xtermEnabled: boolean; // always true now — the pane is always rendered with xterm.js
   fontPref: string; // terminal font: 'auto' (match terminal) | 'system' | a bundled family
   setFontPref: (v: string) => void;
   returnSends: boolean; // composer: Return sends (default false → Return = newline, send via ↑)
@@ -180,7 +179,6 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setPushKindsState(v);
         AsyncStorage.setItem(PUSH_KINDS_KEY, JSON.stringify(v));
       },
-      xtermEnabled: true, // xterm-only now (the classic renderer + its toggle were removed)
       fontPref,
       setFontPref: v => {
         setFontPrefState(v);
