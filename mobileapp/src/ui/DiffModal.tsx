@@ -66,7 +66,7 @@ export function DiffModal({
             <ScrollView horizontal showsHorizontalScrollIndicator>
               <View>
                 {lines.map((ln, i) => (
-                  <Text key={i} style={[styles.line, {color: diffLineColor(ln, pal)}]}>
+                  <Text key={i} style={[styles.line, {color: diffLineColor(ln)}]}>
                     {ln === '' ? ' ' : ln}
                   </Text>
                 ))}
