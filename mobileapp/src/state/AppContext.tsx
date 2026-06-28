@@ -25,8 +25,7 @@ interface AppContextValue {
   setLangPref: (p: LangPref) => void;
   pushEnabled: boolean;
   setPushEnabled: (v: boolean) => void;
-  xtermEnabled: boolean; // render the pane with the xterm.js terminal (vs the classic renderer)
-  setXtermEnabled: (v: boolean) => void;
+  xtermEnabled: boolean; // always true now — the pane is always rendered with xterm.js
   fontPref: string; // terminal font: 'auto' (match terminal) | 'system' | a bundled family
   setFontPref: (v: string) => void;
   returnSends: boolean; // composer: Return sends (default false → Return = newline, send via ↑)
@@ -41,7 +40,6 @@ interface AppContextValue {
 const Ctx = createContext<AppContextValue | null>(null);
 const LANG_KEY = 'gtmux.langPref';
 const PUSH_KEY = 'gtmux.pushEnabled';
-const XTERM_KEY = 'gtmux.xterm';
 const FONT_KEY = 'gtmux.fontPref';
 const RETURN_KEY = 'gtmux.returnSends';
 const DETAIL_MODE_KEY = 'gtmux.defaultDetailMode';
@@ -53,18 +51,16 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
   const [langPref, setLangPrefState] = useState<LangPref>('system');
   const [pushEnabled, setPushEnabledState] = useState(true);
-  const [xtermEnabled, setXtermEnabledState] = useState(false);
   const [fontPref, setFontPrefState] = useState('auto');
   const [returnSends, setReturnSendsState] = useState(false);
   const [defaultDetailMode, setDefaultDetailModeState] = useState<'chat' | 'terminal'>('terminal');
 
   useEffect(() => {
     (async () => {
-      const [store, lp, pe, xe, fp, rs, dm] = await Promise.all([
+      const [store, lp, pe, fp, rs, dm] = await Promise.all([
         loadServers(),
         AsyncStorage.getItem(LANG_KEY),
         AsyncStorage.getItem(PUSH_KEY),
-        AsyncStorage.getItem(XTERM_KEY),
         AsyncStorage.getItem(FONT_KEY),
         AsyncStorage.getItem(RETURN_KEY),
         AsyncStorage.getItem(DETAIL_MODE_KEY),
@@ -91,7 +87,6 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       setActiveUrl(act);
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);
       if (pe === 'false') setPushEnabledState(false);
-      if (xe === 'true') setXtermEnabledState(true);
       if (fp) setFontPrefState(fp);
       if (rs === 'true') setReturnSendsState(true);
       if (dm === 'chat' || dm === 'terminal') setDefaultDetailModeState(dm);
@@ -137,11 +132,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setPushEnabledState(v);
         AsyncStorage.setItem(PUSH_KEY, String(v));
       },
-      xtermEnabled,
-      setXtermEnabled: v => {
-        setXtermEnabledState(v);
-        AsyncStorage.setItem(XTERM_KEY, String(v));
-      },
+      xtermEnabled: true, // xterm-only now (the classic renderer + its toggle were removed)
       fontPref,
       setFontPref: v => {
         setFontPrefState(v);
@@ -161,7 +152,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, xtermEnabled, fontPref, returnSends, defaultDetailMode, lang, scheme]);
+  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, fontPref, returnSends, defaultDetailMode, lang, scheme]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
