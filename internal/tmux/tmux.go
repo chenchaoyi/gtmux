@@ -26,12 +26,37 @@ func resolve() string {
 	return ""
 }
 
+// command builds a tmux invocation that always speaks UTF-8. Without this, tmux
+// run from an environment with no UTF-8 locale (notably a LaunchAgent — the
+// serve/tunnel daemons inherit NO LANG/LC_*) substitutes every non-ASCII byte
+// in pane titles / captures with "_". That mangles the ✳/braille agent glyphs
+// `classifyAgent` keys off, so the radar silently reports ZERO agents (the
+// "phone connected but empty" bug). `-u` forces UTF-8 OUTPUT (titles/captures);
+// a UTF-8 LC_CTYPE fixes INPUT so `send-keys -l` of CJK text isn't garbled.
+func command(args ...string) *exec.Cmd {
+	c := exec.Command(Bin, append([]string{"-u"}, args...)...)
+	c.Env = utf8Env()
+	return c
+}
+
+// utf8Env returns the parent environment, guaranteeing a UTF-8 LC_CTYPE when
+// none of LC_ALL/LC_CTYPE/LANG already selects one.
+func utf8Env() []string {
+	env := os.Environ()
+	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		if v := strings.ToUpper(os.Getenv(k)); strings.Contains(v, "UTF-8") || strings.Contains(v, "UTF8") {
+			return env
+		}
+	}
+	return append(env, "LC_CTYPE=en_US.UTF-8")
+}
+
 // Run runs tmux with args and returns trimmed stdout (stderr discarded).
 func Run(args ...string) (string, error) {
 	if Bin == "" {
 		return "", exec.ErrNotFound
 	}
-	out, err := exec.Command(Bin, args...).Output()
+	out, err := command(args...).Output()
 	return strings.TrimRight(string(out), "\n"), err
 }
 
@@ -40,7 +65,7 @@ func OK(args ...string) bool {
 	if Bin == "" {
 		return false
 	}
-	return exec.Command(Bin, args...).Run() == nil
+	return command(args...).Run() == nil
 }
 
 // ServerUp reports whether a tmux server is running.
@@ -111,7 +136,7 @@ func InTmux() bool { return os.Getenv("TMUX") != "" }
 
 // RunInteractive runs a tmux subcommand inheriting stdio and returns its exit code.
 func RunInteractive(args ...string) int {
-	c := exec.Command(Bin, args...)
+	c := command(args...)
 	c.Stdin, c.Stdout, c.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := c.Run(); err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
