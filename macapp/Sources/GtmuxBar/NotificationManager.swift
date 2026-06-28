@@ -41,33 +41,61 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    private let category = "GTMUX_AGENT"
+    private let doneCategory = "GTMUX_DONE"
     private let jumpAction = "JUMP"
+    private let replyTextAction = "REPLY_TEXT"
+    private let replyPrefix = "REPLY_" // + N
 
-    /// Wire up authorization, the Jump action, the queue watcher, and an initial
-    /// drain. `onJump` jumps to a pane id (or `focus --last` when it's empty).
-    func start(onJump: @escaping (String) -> Void) {
+    private var onSend: ((String, Int) -> Void)?      // pane, option number
+    private var onSendText: ((String, String) -> Void)? // pane, free text
+    private var lastKind: [String: String] = [:]      // pane → last posted kind (dedup)
+    private var categories: [String: UNNotificationCategory] = [:]
+
+    private func waitID(_ pane: String) -> String { "gtmux-wait-\(pane)" }
+    private func doneID(_ pane: String) -> String { "gtmux-done-\(pane)" }
+
+    /// Wire up authorization, the actions, the queue watcher, and an initial drain.
+    /// `onJump` lands on a pane; `onSend`/`onSendText` answer a waiting prompt from
+    /// the notification itself (A2) without opening the app.
+    func start(onJump: @escaping (String) -> Void,
+               onSend: @escaping (String, Int) -> Void = { _, _ in },
+               onSendText: @escaping (String, String) -> Void = { _, _ in }) {
         self.onJump = onJump
+        self.onSend = onSend
+        self.onSendText = onSendText
         guard Bundle.main.bundleIdentifier != nil else {
             dbg("notifications: no bundle id (bare binary) — skipping setup")
             return
         }
         let center = UNUserNotificationCenter.current()
         center.delegate = self
+        // The "done" category is static (just Jump). "input" categories are built
+        // per-pane at post time so the buttons carry the agent's real 1/2/3 labels.
         let jump = UNNotificationAction(
-            identifier: jumpAction,
-            title: L10n.shared.tr("Jump", "跳转"),
-            options: [.foreground])
-        center.setNotificationCategories([
-            UNNotificationCategory(identifier: category, actions: [jump],
-                                   intentIdentifiers: [], options: [])
-        ])
+            identifier: jumpAction, title: L10n.shared.tr("Jump", "跳转"), options: [.foreground])
+        register(UNNotificationCategory(identifier: doneCategory, actions: [jump],
+                                        intentIdentifiers: [], options: []))
         center.requestAuthorization(options: [.alert, .sound]) { granted, err in
             dbg("notifications: authorization granted=\(granted) err=\(String(describing: err))")
         }
         try? FileManager.default.createDirectory(at: queueDir, withIntermediateDirectories: true)
         drain()
         watch()
+    }
+
+    /// Withdraw waiting banners whose pane is no longer waiting (A2 auto-withdraw).
+    /// Called from the agent poll so a prompt you answered elsewhere clears itself.
+    func reconcile(waitingPanes: Set<String>) {
+        let resolved = lastKind.filter { $0.value == "input" && !waitingPanes.contains($0.key) }.map { $0.key }
+        guard !resolved.isEmpty else { return }
+        UNUserNotificationCenter.current().removeDeliveredNotifications(
+            withIdentifiers: resolved.map(waitID))
+        for p in resolved { lastKind[p] = nil }
+    }
+
+    private func register(_ cat: UNNotificationCategory) {
+        categories[cat.identifier] = cat
+        UNUserNotificationCenter.current().setNotificationCategories(Set(categories.values))
     }
 
     // MARK: queue
@@ -105,22 +133,61 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private func post(_ req: Request) {
+        // Dedup: the same pane already showing the same kind isn't re-posted (A2).
+        if lastKind[req.pane] == req.kind, !req.pane.isEmpty { return }
+
         let content = UNMutableNotificationContent()
         content.title = req.title.isEmpty ? "gtmux" : req.title
         if !req.subtitle.isEmpty { content.subtitle = req.subtitle }
         content.body = req.body
-        content.categoryIdentifier = category
         content.userInfo = ["pane": req.pane]
         if !req.session.isEmpty { content.threadIdentifier = req.session } // coalesce per session
-        // "needs you" is the urgent one → sound; "finished" is calm → silent.
-        content.sound = req.kind == "input" ? .default : nil
         if let att = attachment(req.icon) { content.attachments = [att] }
 
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request) { err in
-            if let err = err { dbg("notifications: post failed \(err)") }
+        let isInput = req.kind == "input"
+        let id: String
+        if isInput, !req.pane.isEmpty {
+            // Build this pane's reply buttons from the agent's real 1/2/3 labels
+            // (shared parser via `gtmux options`), plus a free-text reply.
+            content.categoryIdentifier = replyCategory(for: req.pane)
+            content.sound = .default
+            content.interruptionLevel = .timeSensitive // pierce Focus — you're blocking it
+            id = waitID(req.pane)
+        } else {
+            content.categoryIdentifier = doneCategory
+            content.sound = nil // finished is calm
+            id = req.pane.isEmpty ? UUID().uuidString : doneID(req.pane)
         }
+
+        UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        ) { err in if let err = err { dbg("notifications: post failed \(err)") } }
+        if !req.pane.isEmpty { lastKind[req.pane] = req.kind }
+    }
+
+    /// Register (and return the id of) a per-pane category whose action buttons are
+    /// the agent's actual choices: "1 · Yes", "2 · …", … + a free-text reply. Falls
+    /// back to text-reply + Jump when no menu parses.
+    private func replyCategory(for pane: String) -> String {
+        let data = GtmuxCLI.capture(["options", pane]) ?? Data("[]".utf8)
+        let opts = (try? JSONDecoder().decode([ReplyOption].self, from: data)) ?? []
+        var actions = opts.prefix(3).map { o in
+            UNNotificationAction(identifier: "\(replyPrefix)\(o.n)",
+                                 title: "\(o.n) · \(o.label)", options: [])
+        }
+        actions.append(UNTextInputNotificationAction(
+            identifier: replyTextAction,
+            title: L10n.shared.tr("Reply…", "回复…"),
+            options: [],
+            textInputButtonTitle: L10n.shared.tr("Send", "发送"),
+            textInputPlaceholder: L10n.shared.tr("Type a reply", "输入回复")))
+        actions.append(UNNotificationAction(
+            identifier: jumpAction, title: L10n.shared.tr("Jump", "跳转"), options: [.foreground]))
+
+        let id = "GTMUX_REPLY_\(pane)"
+        register(UNNotificationCategory(identifier: id, actions: actions,
+                                        intentIdentifiers: [], options: []))
+        return id
     }
 
     /// Copy the icon to a unique temp file before attaching: UNNotificationAttachment
@@ -157,10 +224,25 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         withCompletionHandler handler: @escaping () -> Void
     ) {
         let pane = response.notification.request.content.userInfo["pane"] as? String ?? ""
-        if response.actionIdentifier == UNNotificationDismissActionIdentifier {
-            handler(); return
+        let action = response.actionIdentifier
+
+        switch action {
+        case UNNotificationDismissActionIdentifier:
+            break
+        case replyTextAction:
+            if let r = response as? UNTextInputNotificationResponse, !r.userText.isEmpty {
+                onSendText?(pane, r.userText)
+                lastKind[pane] = nil // answered → let it re-notify on a future prompt
+            }
+        case let a where a.hasPrefix(replyPrefix):
+            if let n = Int(a.dropFirst(replyPrefix.count)) {
+                onSend?(pane, n)
+                lastKind[pane] = nil
+            }
+        default:
+            // JUMP action or the default click → land on the pane.
+            onJump?(pane)
         }
-        onJump?(pane)
         handler()
     }
 }

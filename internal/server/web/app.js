@@ -13,7 +13,7 @@
   var MARKS = {'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
 
   var $ = function (id) { return document.getElementById(id); };
-  var token = null, radarTimer = null, paneTimer = null;
+  var token = null, radarTimer = null, paneTimer = null, selIdx = -1;
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
   var BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
@@ -132,6 +132,33 @@
       list.forEach(function (a) { root.appendChild(rowEl(a)); });
     });
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = 'no agents'; root.appendChild(e); }
+    if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
+  }
+
+  // ---- desktop keyboard nav (j/k or ↑↓ select · Enter open · Esc back) -----
+  function radarRows() { return Array.prototype.slice.call($('radar').querySelectorAll('.row')); }
+  function highlightSel() {
+    var rows = radarRows();
+    rows.forEach(function (r, i) { r.classList.toggle('kbd-sel', i === selIdx); });
+    if (selIdx >= 0 && rows[selIdx]) rows[selIdx].scrollIntoView({block: 'nearest'});
+  }
+  function moveSel(d) {
+    var rows = radarRows(); if (!rows.length) return;
+    selIdx = Math.max(0, Math.min(rows.length - 1, (selIdx < 0 ? 0 : selIdx) + d));
+    highlightSel();
+  }
+  function setupKeyboard() {
+    document.addEventListener('keydown', function (e) {
+      var tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (!$('radar').hidden) {
+        if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
+        else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
+        else if (e.key === 'Enter') { var rows = radarRows(); if (rows[selIdx]) { e.preventDefault(); rows[selIdx].click(); } }
+      } else if (!$('pane').hidden) {
+        if (e.key === 'Escape') { e.preventDefault(); $('back').click(); }
+      }
+    });
   }
 
   function pollRadar() {
@@ -264,6 +291,7 @@
 
   function boot() {
     $('back').onclick = startRadar;
+    setupKeyboard();
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
     var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(location.hash || '');
     var code = m && m[1];

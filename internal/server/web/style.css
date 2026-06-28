@@ -71,6 +71,8 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 }
 .row:hover { background: rgba(255, 255, 255, 0.03); }
 .row.waiting { background: var(--waiting-tint); }
+/* desktop keyboard selection (j/k · Enter) */
+.row.kbd-sel { background: rgba(255, 255, 255, 0.08); box-shadow: inset 2px 0 0 var(--working); }
 
 /* avatar (rounded square) + status badge, like the app */
 .avatar {

@@ -74,7 +74,7 @@
       <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">01</span>
       <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">可交互原型 — 四屏全流程</h2>
     </div>
-    <p style="margin:0 0 18px; max-width:680px; font-size:13.5px; line-height:1.5; color:#7a7a80;">真机点按：列表点一行进详情、齿轮进设置、详情里「在 Mac 上聚焦」。用下面的控件切场景 / 深浅色 / 中英 / 直达任意屏。镜像 <span class="gt-mono" style="font-size:12px;">mobileapp/src</span> 的真实组件与 token。</p>
+    <p style="margin:0 0 18px; max-width:680px; font-size:13.5px; line-height:1.5; color:#7a7a80;">真机点按：列表点一行进详情、齿轮进设置、详情里回应 agent。用下面的控件切场景 / 深浅色 / 中英 / 直达任意屏。镜像 <span class="gt-mono" style="font-size:12px;">mobileapp/src</span> 的真实组件与 token。</p>
 
     <!-- controls -->
     <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-bottom:22px;">
@@ -153,7 +153,7 @@
                   <div style="display:flex; align-items:center; justify-content:space-between;">
                     <span style="font-size:24px; font-weight:800; letter-spacing:-0.4px; color:{{ P.fg }};">gtmux</span>
                     <div style="display:flex; align-items:center; gap:14px;">
-                      <div style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:{{ connColor }};"></span><span style="font-size:11px; color:{{ P.fg3 }};">{{ connLabel }}</span></div>
+                      <div style="display:flex; align-items:center; gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:{{ connColor }};box-shadow:0 0 0 3px {{ connHalo }};"></span><span style="font-size:12px; font-weight:560; color:{{ P.fg2 }};">{{ connLabel }}</span></div>
                       <button onClick="{{ goSettings }}" style="border:none;background:transparent;cursor:pointer;font-size:19px;color:{{ P.fg2 }};padding:0;">⚙</button>
                     </div>
                   </div>
@@ -220,12 +220,11 @@
                     <div style="font-size:16px; font-weight:700; color:{{ P.fg }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ d_primary }}</div>
                     <div style="font-size:12px; color:{{ P.fg3 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">{{ d_sub }}</div>
                   </div>
-                  <button onClick="{{ doFocus }}" style="flex:none; border:none; cursor:pointer; font-family:inherit; background:rgba(6,182,212,0.14); color:#06B6D4; border-radius:9px; padding:7px 12px; font-size:12.5px; font-weight:700;">{{ lblFocusOnMac }}</button>
                 </div>
                 <!-- control bar -->
                 <div style="display:flex; align-items:center; gap:8px; padding:0 12px 8px; border-bottom:0.5px solid {{ P.divider }};">
                   <span class="gt-mono" style="font-size:11px; color:{{ P.fg3 }};">{{ d_cols }}</span>
-                  <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:{{ P.fg3 }};">live</span></span>
+                  <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:{{ P.fg3 }};">home-mac</span></span>
                   <div style="flex:1;"></div>
                   <button onClick="{{ toggleWrap }}" style="border:1px solid {{ P.divider }}; background:transparent; cursor:pointer; font-family:inherit; border-radius:7px; padding:4px 11px; font-size:11.5px; font-weight:600; color:{{ P.fg2 }};">{{ d_wrapLabel }}</button>
                   <div style="display:flex; align-items:center; background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; border-radius:7px; overflow:hidden;">
@@ -236,7 +235,7 @@
                 </div>
                 <!-- terminal -->
                 <div style="position:relative; flex:1; min-height:0;">
-                  <div class="gt-noscroll" ref="{{ setTermRef }}" style="position:absolute; inset:0; background:#0A0A0C; overflow-y:auto; overflow-x:{{ d_termOverflowX }}; padding:12px 13px 16px;">
+                  <div class="gt-noscroll" ref="{{ setTermRef }}" onScroll="{{ onTermScroll }}" style="position:absolute; inset:0; background:#0A0A0C; overflow-y:auto; overflow-x:{{ d_termOverflowX }}; padding:12px 13px 16px;">
                     <div style="text-align:center; font-size:10px; color:rgba(255,255,255,0.28); padding-bottom:10px;">{{ d_scrollbackLbl }}</div>
                     <div class="gt-mono" style="font-size:{{ d_fontSize }}; line-height:{{ d_lineH }}; color:#D6D6DA; white-space:{{ d_wrapWhite }}; word-break:{{ d_wrapBreak }};">
                       <sc-for list="{{ d_lines }}" as="ln" hint-placeholder-count="12">
@@ -244,12 +243,13 @@
                       </sc-for>
                     </div>
                   </div>
-                  <button onClick="{{ scrollBottom }}" title="jump to latest" style="position:absolute; right:12px; bottom:12px; width:34px; height:34px; border-radius:50%; border:0.5px solid {{ P.divider }}; background:{{ P.surface }}; cursor:pointer; color:{{ P.fg }}; font-size:15px; box-shadow:0 4px 12px rgba(0,0,0,0.35);">↓</button>
+                  <sc-if value="{{ showJumpBottom }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ scrollBottom }}" title="jump to latest" style="position:absolute; right:12px; bottom:12px; display:flex; align-items:center; gap:5px; height:32px; padding:0 12px 0 10px; border-radius:16px; border:0.5px solid {{ P.divider }}; background:{{ jumpBtnBg }}; cursor:pointer; color:{{ jumpBtnFg }}; font-size:13px; font-weight:600; box-shadow:0 4px 14px rgba(0,0,0,0.4);"><span style="font-size:14px;">↓</span>{{ jumpBtnLabel }}</button>
+                  </sc-if>
                 </div>
                 <!-- composer -->
                 <div style="border-top:0.5px solid {{ P.divider }}; padding:10px 12px 20px; background:{{ P.bg }};">
                   <sc-if value="{{ showSent }}" hint-placeholder-val="{{ false }}"><div class="gttoast" style="font-size:12px; color:#06B6D4; padding:0 2px 8px;">{{ sentMsg }}</div></sc-if>
-                  <sc-if value="{{ showFocusMsg }}" hint-placeholder-val="{{ false }}"><div class="gttoast" style="font-size:12px; color:#22C55E; padding:0 2px 8px;">{{ focusMsg }}</div></sc-if>
                   <div style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:{{ P.fg3 }}; margin:0 2px 6px;">{{ d_quickLabel }}</div>
                   <div class="gt-noscroll" style="display:flex; align-items:center; gap:7px; overflow-x:auto; padding-bottom:9px;">
                     <sc-for list="{{ d_quickPrimary }}" as="c" hint-placeholder-count="3">
@@ -375,7 +375,7 @@
             <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#06B6D4;">GET</span> <span class="gt-mono" style="color:#3a3a40;">/api/agents</span> — 雷达数据（唯一权威）</div>
             <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#06B6D4;">GET</span> <span class="gt-mono" style="color:#3a3a40;">/api/events</span> — SSE，仅通知「变了→重拉」</div>
             <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#06B6D4;">GET</span> <span class="gt-mono" style="color:#3a3a40;">/api/pane?id</span> — 读 pane 屏幕（详情）</div>
-            <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#22C55E;">POST</span> <span class="gt-mono" style="color:#3a3a40;">/api/focus?id</span> — 在 Mac 上聚焦</div>
+            <div style="display:flex; gap:8px;"><span class="gt-mono" style="color:#22C55E;">POST</span> <span class="gt-mono" style="color:#3a3a40;">/api/send?id</span> — 向 pane 发输入</div>
             <div style="display:flex; gap:8px; margin-top:4px; color:#9a9aa0;">全程 Bearer token · VPN/Tailscale 内网可达</div>
           </div>
         </div>
@@ -740,8 +740,7 @@
                 <div style="font-size:12px; color:{{ P.fg3 }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">{{ ipSub }}</div>
               </div>
               <span class="gt-mono" style="font-size:11px; color:{{ P.fg3 }};">{{ d_cols }}</span>
-              <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:{{ P.fg3 }};">live</span></span>
-              <button style="flex:none; border:none; cursor:pointer; font-family:inherit; background:#06B6D4; color:#fff; border-radius:9px; padding:8px 15px; font-size:13px; font-weight:700;">{{ lblFocusOnMac }}</button>
+              <span style="display:flex; align-items:center; gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,0.18);"></span><span style="font-size:11px; color:{{ P.fg2 }}; font-weight:560;">home-mac</span></span>
             </div>
             <div class="gt-noscroll" style="flex:1; min-height:0; background:#0A0A0C; overflow-y:auto; padding:14px 16px;">
               <div class="gt-mono" style="font-size:{{ d_fontSize }}; line-height:{{ d_lineH }}; color:#D6D6DA; white-space:pre-wrap; word-break:break-word;">
@@ -782,10 +781,1378 @@
         <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
           <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">iPad extras</div>
           <div style="font-size:12px; line-height:1.6; color:#5a5a60;">
-            <div>· 硬件键盘：<span class="gt-mono" style="font-size:11px;">↑↓</span> 选 agent、<span class="gt-mono" style="font-size:11px;">⏎</span> focus、<span class="gt-mono" style="font-size:11px;">⌘1–9</span> 直达、<span class="gt-mono" style="font-size:11px;">⌘F</span> 搜索。</div>
+            <div>· 硬件键盘：<span class="gt-mono" style="font-size:11px;">↑↓</span> 选 agent、<span class="gt-mono" style="font-size:11px;">⏎</span> 打开、<span class="gt-mono" style="font-size:11px;">⌘1–9</span> 直达、<span class="gt-mono" style="font-size:11px;">⌘F</span> 搜索。</div>
             <div>· Stage Manager / 多任务下窗口可变宽，按断点自适应。</div>
             <div>· 字号 A−/A+ 与回滚缓冲沿用；终端在大屏可显更多列。</div>
           </div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">指针 · Apple Pencil</div>
+          <div style="font-size:12px; line-height:1.6; color:#5a5a60;">· <b>触控板/鼠标</b>：行 hover 高亮、徽章 hover 显 tooltip(agent·loc·status)。<br>· <b>右键</b>菜单：聚焦 / 复制 pane / 跳转。<br>· <b>Apple Pencil</b>：在 pane 镜像上随手圈画 → 转图片标注发回(复用 ImageMarkup)。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- compact / portrait depiction -->
+    <div style="margin-top:22px;">
+      <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">竖屏 / 分屏变窄 · 侧栏退为抽屉</div>
+      <div style="display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start;">
+        <div style="position:relative; width:300px; aspect-ratio:3/4; border-radius:30px; background:#0a0a0c; padding:11px; box-shadow:0 24px 60px rgba(0,0,0,0.26), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:20px; overflow:hidden; background:#0D0D0F;">
+            <!-- detail fills, drawer slides over -->
+            <div style="position:absolute; inset:0; padding:16px 14px; opacity:0.5;">
+              <div style="display:flex; align-items:center; gap:9px; margin-bottom:12px;"><span style="font-size:20px; color:rgba(235,235,245,0.5);">☰</span><div><div style="font-size:14px; font-weight:700; color:#fff;">permission to run tests</div><div style="font-size:11px; color:rgba(235,235,245,0.34);">Pica · waiting · %7</div></div></div>
+              <div class="gt-mono" style="font-size:10px; line-height:1.5; color:#8A9099;">● Running tests…<br>&nbsp;&nbsp;PASS src/api/client.test.ts</div>
+            </div>
+            <!-- scrim -->
+            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.4);"></div>
+            <!-- drawer -->
+            <div style="position:absolute; left:0; top:0; bottom:0; width:74%; background:#1C1C1F; border-right:0.5px solid rgba(255,255,255,0.12); box-shadow:8px 0 30px rgba(0,0,0,0.5); padding:16px 12px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span style="font-size:18px; font-weight:800; color:#fff;">gtmux</span><span style="display:flex; align-items:center; gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:rgba(235,235,245,0.55);">home-mac</span></span></div>
+              <div style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:#EF4444; padding:6px 4px;">NEEDS YOU 1</div>
+              <div style="display:flex; align-items:center; gap:9px; padding:8px 6px; border-radius:8px; background:rgba(239,68,68,0.1);"><div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.11);display:flex;align-items:center;justify-content:center;font:700 10px Menlo;color:rgba(235,235,245,0.78);">CC</div><div style="min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;">Pica</div><div style="font-size:11px;color:rgba(235,235,245,0.34);">permission to run tests</div></div></div>
+              <div style="font-size:10px; font-weight:700; letter-spacing:0.5px; color:rgba(235,235,245,0.5); padding:10px 4px 6px;">WORKING 1</div>
+              <div style="display:flex; align-items:center; gap:9px; padding:8px 6px;"><div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.11);display:flex;align-items:center;justify-content:center;font:700 9px Menlo;color:rgba(235,235,245,0.78);">Cx</div><div style="min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;">api-gateway</div><div style="font-size:11px;color:rgba(235,235,245,0.34);">Refactoring auth</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1; min-width:260px; max-width:420px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div style="font-size:12.5px; line-height:1.7; color:#5a5a60;">变窄时(竖屏 / Split View 1/2 / Slide Over):侧栏不再常驻,收成 <b>☰ 抽屉</b>,详情占满;选行后抽屉自动收起。再窄(Slide Over)直接回退手机式<b>单列堆叠</b>(列表 ↔ 详情两步)。<br><br>同一套组件、同一断点逻辑(<span class="gt-mono" style="font-size:11px;">useWindowDimensions</span>),不另起一套 UI。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 07: PAIRING 合并 + TUNNEL 付费 ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">07</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">连接方式合并 + Tunnel 付费</h2>
+      <span style="font-size:10.5px; color:#9a6b00; background:#FFF3D6; border-radius:5px; padding:2px 8px; font-weight:600;">产品提案</span>
+    </div>
+    <p style="margin:0 0 22px; max-width:740px; font-size:13.5px; line-height:1.5; color:#7a7a80;">把「局域网 serve」和「远程 tunnel」合并成<b>一个连接流程、两种模式</b>：本地免费、随时可用；远程（从任何网络访问）作为 <b>gtmux Pro</b> 付费解锁。配对页用 segmented 切换，远程档锁定时引导升级。</p>
+
+    <!-- decision rationale -->
+    <div style="background:#F4F8FF; border:1px solid rgba(10,90,200,0.15); border-radius:12px; padding:14px 17px; margin-bottom:24px; max-width:820px;">
+      <div style="font-size:12.5px; font-weight:660; color:#0a5ac8; margin-bottom:6px;">为什么合并</div>
+      <div style="font-size:12.5px; line-height:1.6; color:#3a4a60;">用户其实只想「连上我的 Mac」——不该先懂 serve vs tunnel 的区别。所以入口统一为<b>「添加 server」</b>，里面分两档：<b>本地网络</b>（同 VPN/局域网，对应 <span class="gt-mono" style="font-size:11px;">gtmux serve</span>，免费）/ <b>远程访问</b>（任意网络，对应 <span class="gt-mono" style="font-size:11px;">gtmux tunnel</span>，Pro）。本地能满足「在家/同 WiFi」，远程覆盖「在外面也要看」——后者价值高、成本高（中转带宽），适合做订阅。</div>
+    </div>
+
+    <div style="display:flex; gap:26px; flex-wrap:wrap;">
+
+      <!-- Frame 1: Local (free) -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① 本地网络 · 免费</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <div style="padding:60px 22px 22px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;"><span style="font-size:14px; color:#06B6D4;">‹ 取消</span></div>
+              <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:3px; width:36px; height:36px;"><span style="background:#c4c4ca;border-radius:5px;"></span><span style="background:#06B6D4;border-radius:5px;"></span><span style="background:#c4c4ca;border-radius:5px;grid-column:span 2;"></span></span>
+              <div style="font-size:26px; font-weight:700; color:#1d1d1f; margin:12px 0 16px;">添加 server</div>
+              <!-- segmented -->
+              <div style="display:flex; gap:3px; background:#E4E4E8; padding:3px; border-radius:11px; margin-bottom:18px;">
+                <div style="flex:1; text-align:center; background:#fff; border-radius:8px; padding:9px; font-size:13.5px; font-weight:600; color:#1d1d1f; box-shadow:0 1px 2px rgba(0,0,0,0.12);">本地网络</div>
+                <div style="flex:1; display:flex; align-items:center; justify-content:center; gap:5px; border-radius:8px; padding:9px; font-size:13.5px; color:#6b6b70;">远程访问 <span style="font-size:10px;">🔒</span></div>
+              </div>
+              <div style="font-size:12.5px; line-height:1.55; color:#6b6b70; margin-bottom:18px;">和 Mac 在同一网络（或 VPN）。在 Mac 上跑 <span class="gt-mono" style="font-size:11px;">gtmux serve</span>，扫码或手动填地址。</div>
+              <div style="background:#fff; border-radius:13px; padding:18px; text-align:center; margin-bottom:14px;">
+                <span style="display:inline-grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:3px; width:34px; height:34px;"><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span></span>
+                <div style="font-size:15px; font-weight:600; color:#1d1d1f; margin-top:10px;">扫描配对二维码</div>
+              </div>
+              <div style="text-align:center; color:#a8a8ae; font-size:12px; margin-bottom:14px;">—— 或手动输入 ——</div>
+              <div style="border:0.5px solid rgba(0,0,0,0.1); background:#fff; border-radius:10px; padding:12px 13px; margin-bottom:18px;"><span class="gt-mono" style="font-size:14px; color:#a8a8ae;">192.168.1.20:8765</span></div>
+              <div style="background:#06B6D4; border-radius:12px; padding:14px; text-align:center; font-size:15px; font-weight:700; color:#fff;">连接</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">默认档。免费、零配置，覆盖在家/同 WiFi。</div>
+      </div>
+
+      <!-- Frame 2: Remote locked -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 远程访问 · 锁定引导</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <div style="padding:60px 22px 22px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;"><span style="font-size:14px; color:#06B6D4;">‹ 取消</span></div>
+              <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:3px; width:36px; height:36px;"><span style="background:#c4c4ca;border-radius:5px;"></span><span style="background:#06B6D4;border-radius:5px;"></span><span style="background:#c4c4ca;border-radius:5px;grid-column:span 2;"></span></span>
+              <div style="font-size:26px; font-weight:700; color:#1d1d1f; margin:12px 0 16px;">添加 server</div>
+              <div style="display:flex; gap:3px; background:#E4E4E8; padding:3px; border-radius:11px; margin-bottom:20px;">
+                <div style="flex:1; text-align:center; border-radius:8px; padding:9px; font-size:13.5px; color:#6b6b70;">本地网络</div>
+                <div style="flex:1; display:flex; align-items:center; justify-content:center; gap:5px; background:#fff; border-radius:8px; padding:9px; font-size:13.5px; font-weight:600; color:#1d1d1f; box-shadow:0 1px 2px rgba(0,0,0,0.12);">远程访问 <span style="font-size:10px;">🔒</span></div>
+              </div>
+              <!-- pro lock card -->
+              <div style="background:linear-gradient(165deg,#1b1d24,#0f1016); border-radius:16px; padding:22px 18px; text-align:center;">
+                <div style="width:46px; height:46px; margin:0 auto 14px; border-radius:12px; background:rgba(6,182,212,0.16); display:flex; align-items:center; justify-content:center; font-size:20px;">🔒</div>
+                <div style="display:inline-flex; align-items:center; gap:6px; margin-bottom:10px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:15px; height:15px;"><span style="background:rgba(255,255,255,0.3);border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:2px;grid-column:span 2;"></span></span><span style="font-size:15px; font-weight:700; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></span></div>
+                <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,0.92); line-height:1.45;">从任何网络访问你的 Mac</div>
+                <div style="font-size:12px; color:rgba(235,235,245,0.55); line-height:1.5; margin-top:7px;">不在同一 WiFi 也能看 agent、读 pane、收推送。加密中转，零端口转发。</div>
+                <div style="background:#06B6D4; border-radius:11px; padding:12px; margin-top:16px; font-size:14.5px; font-weight:700; color:#fff;">解锁远程访问</div>
+                <div style="font-size:11px; color:rgba(235,235,245,0.45); margin-top:9px;">¥10/月 · 首 7 天免费</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">切到「远程」即露出价值主张 + 单一 CTA，不堆功能。</div>
+      </div>
+
+      <!-- Frame 3: Paywall sheet -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">③ Pro 付费墙</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:linear-gradient(180deg,#10131a 0%,#0a0c11 100%);">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <div style="padding:54px 22px 20px; height:100%; display:flex; flex-direction:column;">
+              <div style="display:flex; justify-content:flex-end;"><span style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);font-size:14px;">✕</span></div>
+              <div style="text-align:center; margin-top:6px;">
+                <div style="display:inline-flex; align-items:center; gap:7px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:20px; height:20px;"><span style="background:rgba(255,255,255,0.3);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:3px;grid-column:span 2;"></span></span><span style="font-size:21px; font-weight:800; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></span></div>
+                <div style="font-size:14px; color:rgba(235,235,245,0.6); margin-top:8px; line-height:1.45;">随时随地掌控你的 coding agent</div>
+              </div>
+              <div style="margin-top:22px; display:flex; flex-direction:column; gap:14px;">
+                <div style="display:flex; align-items:flex-start; gap:11px;"><span style="color:#06B6D4; font-size:15px; margin-top:1px;">✓</span><div><div style="font-size:13.5px; font-weight:600; color:#fff;">远程访问（tunnel）</div><div style="font-size:11.5px; color:rgba(235,235,245,0.5);">离开局域网也能连，加密中转</div></div></div>
+                <div style="display:flex; align-items:flex-start; gap:11px;"><span style="color:#06B6D4; font-size:15px; margin-top:1px;">✓</span><div><div style="font-size:13.5px; font-weight:600; color:#fff;">多设备 + 多 server</div><div style="font-size:11.5px; color:rgba(235,235,245,0.5);">手机/iPad 同时连多台 Mac</div></div></div>
+                <div style="display:flex; align-items:flex-start; gap:11px;"><span style="color:#06B6D4; font-size:15px; margin-top:1px;">✓</span><div><div style="font-size:13.5px; font-weight:600; color:#fff;">锁屏推送不限量</div><div style="font-size:11.5px; color:rgba(235,235,245,0.5);">agent 等你/完成第一时间提醒</div></div></div>
+              </div>
+              <div style="flex:1;"></div>
+              <!-- plan picker -->
+              <div style="display:flex; gap:9px; margin-bottom:14px;">
+                <div style="flex:1; border:1.5px solid #06B6D4; background:rgba(6,182,212,0.08); border-radius:13px; padding:13px 10px; text-align:center; position:relative;">
+                  <div style="position:absolute; top:-9px; left:50%; transform:translateX(-50%); background:#06B6D4; color:#fff; font-size:9px; font-weight:700; border-radius:5px; padding:2px 7px; white-space:nowrap;">省 27%</div>
+                  <div style="font-size:12px; color:rgba(235,235,245,0.6);">年付</div>
+                  <div style="font-size:19px; font-weight:800; color:#fff; margin-top:2px;">¥88</div>
+                  <div style="font-size:10.5px; color:rgba(235,235,245,0.45);">≈ ¥7.3/月</div>
+                </div>
+                <div style="flex:1; border:1px solid rgba(255,255,255,0.14); border-radius:13px; padding:13px 10px; text-align:center;">
+                  <div style="font-size:12px; color:rgba(235,235,245,0.6);">月付</div>
+                  <div style="font-size:19px; font-weight:800; color:#fff; margin-top:2px;">¥10</div>
+                  <div style="font-size:10.5px; color:rgba(235,235,245,0.45);">每月</div>
+                </div>
+              </div>
+              <div style="background:#06B6D4; border-radius:13px; padding:15px; text-align:center; font-size:15.5px; font-weight:700; color:#fff;">开始 7 天免费试用</div>
+              <div style="text-align:center; font-size:10.5px; color:rgba(235,235,245,0.4); margin-top:11px; line-height:1.5;">试用后 ¥88/年，随时取消 · <span style="text-decoration:underline;">恢复购买</span> · <span style="text-decoration:underline;">条款</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">价值在前、价格在后；年付默认高亮 + 免费试用降低门槛。走 App Store 订阅。</div>
+      </div>
+
+      <!-- Frame 4: connected via tunnel -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">④ 已用远程连接</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#0D0D0F;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <div style="padding:58px 16px 16px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:22px; font-weight:800; color:rgba(255,255,255,0.96);">home-mac</span>
+                <span style="font-size:17px; color:rgba(235,235,245,0.62);">⚙</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:9px;">
+                <span style="display:flex; align-items:center; gap:5px; background:rgba(6,182,212,0.16); border-radius:6px; padding:3px 8px;"><span style="font-size:10px;">🛰</span><span style="font-size:11px; font-weight:600; color:#27C7E6;">远程 · Pro</span></span>
+                <span style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:rgba(235,235,245,0.5);">home-mac</span></span>
+              </div>
+              <div style="font-size:12px; color:rgba(235,235,245,0.5); margin-top:12px;">3 agents · 1 waiting · 2 working</div>
+              <div style="height:8px; background:#0D0D0F; border-top:3px solid rgba(255,255,255,0.16); margin:14px -16px 0;"></div>
+              <div style="padding:12px 0 6px; font-size:10.5px; font-weight:700; letter-spacing:0.6px; color:#EF4444;">NEEDS YOU 1</div>
+              <div style="display:flex; align-items:center; gap:11px; padding:9px 0;">
+                <div style="position:relative; width:30px; height:30px;"><div style="width:30px;height:30px;border-radius:8px;background:#1C1C1F;border:0.5px solid rgba(255,255,255,0.09);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(235,235,245,0.62);">CC</div><div style="position:absolute; right:-3px; bottom:-3px; width:15px; height:15px; border-radius:4px; background:#EF4444; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #0D0D0F;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span></div></div>
+                <div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:600; color:rgba(255,255,255,0.96);">permission to run tests</div><div style="font-size:11.5px; color:rgba(235,235,245,0.34);">Pica · %7</div></div>
+                <span class="gt-mono" style="font-size:11px; color:rgba(235,235,245,0.34);">now</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">远程连接时 header 显 <b>🛰 远程·Pro</b> 徽章,与本地区分。</div>
+      </div>
+    </div>
+
+    <!-- spec notes -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; max-width:1000px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">免费 / Pro 边界</div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#3a3a40;">本地网络（serve）</span><span style="color:#22C55E; font-weight:600;">免费</span></div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#3a3a40;">读 pane / 输入 / 推送（本地）</span>本地）</span><span style="color:#22C55E; font-weight:600;">免费</span></div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#3a3a40;">远程访问（tunnel）</span><span style="color:#06B6D4; font-weight:600;">Pro</span></div>
+        <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:12.5px;"><span style="color:#3a3a40;">多 server / 多设备</span><span style="color:#06B6D4; font-weight:600;">Pro</span></div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">落地要点</div>
+        <div style="font-size:12px; line-height:1.6; color:#5a5a60;">
+          · 配对入口统一为「添加 server」，segmented 切 <b>本地 / 远程</b>。<br>
+          · 远程档未订阅 → 锁定卡 + 单一 CTA → App Store 订阅（StoreKit 2）。<br>
+          · 已订阅 → 远程档显示 tunnel 配对（扫码/账号），连上后 header 加 <span class="gt-mono" style="font-size:11px;">🛰 远程·Pro</span> 徽章。<br>
+          · 入门免费体验完整本地功能,不设功能阉割,只在「远程」这一跨网价值点收费。<br>
+          · 订阅状态、价格、试用以 App Store 配置为准；此处 ¥10/月、¥88/年为占位。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 08: SERVER 管理 + 多设备/多 SERVER 计费 ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">08</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Server 管理 + 多设备 / 多 server 计费</h2>
+      <span style="font-size:10.5px; color:#9a6b00; background:#FFF3D6; border-radius:5px; padding:2px 8px; font-weight:600;">产品提案</span>
+    </div>
+    <p style="margin:0 0 22px; max-width:760px; font-size:13.5px; line-height:1.5; color:#7a7a80;">Pairing 的完整面貌:一个 <b>Servers</b> 管理页统辖「添加 / 切换 / 移除 server」与配对入口。免费版 = <b>1 台 server + 1 台设备</b>,够单人单机;<b>多 server / 多设备 / 远程</b>统一归到 gtmux Pro。下面是免费态、达限引导、Pro 态、多设备四屏。</p>
+
+    <!-- billing matrix -->
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; overflow:hidden; max-width:880px; margin-bottom:26px;">
+      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; background:#F5F5F7; border-bottom:1px solid rgba(0,0,0,0.06); padding:11px 18px; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:#9a9aa0;">
+        <div>能力</div><div>免费</div><div>Pro</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">server 数量</div><div style="color:#6b6b70;">1 台</div><div style="color:#06B6D4; font-weight:600;">无限</div></div>
+      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">连接设备(手机 / iPad)</div><div style="color:#6b6b70;">1 台</div><div style="color:#06B6D4; font-weight:600;">无限</div></div>
+      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">本地网络访问(serve)</div><div style="color:#22C55E; font-weight:600;">✓</div><div style="color:#22C55E; font-weight:600;">✓</div></div>
+      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">远程访问(tunnel)</div><div style="color:#c4c4ca;">—</div><div style="color:#06B6D4; font-weight:600;">✓</div></div>
+      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; font-size:12.5px;"><div style="color:#3a3a40;">读 pane / 输入 / 本地推送</div><div style="color:#22C55E; font-weight:600;">✓</div><div style="color:#22C55E; font-weight:600;">✓</div></div>
+    </div>
+
+    <div style="display:flex; gap:26px; flex-wrap:wrap;">
+
+      <!-- Frame A: Servers (free, at limit) -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① Servers · 免费(已达 1 台上限)</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <div style="padding:60px 20px 20px;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;"><span style="font-size:28px; font-weight:700; color:#1d1d1f;">‹ Servers</span></div>
+              <div style="font-size:12.5px; color:#6b6b70; line-height:1.5; margin-bottom:18px;">点一台连接,绿点是当前已连。免费版含 1 台 server。</div>
+              <!-- connected server -->
+              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px; margin-bottom:12px;">
+                <span style="width:9px;height:9px;border-radius:50%;background:#22C55E;flex:none;"></span>
+                <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:600; color:#1d1d1f;">debug</div><div class="gt-mono" style="font-size:11.5px; color:#a8a8ae; margin-top:1px;">已连接 · 127.0.0.1:8799</div></div>
+                <span style="font-size:17px; color:#c4c4ca;">✕</span>
+              </div>
+              <!-- locked: add server -->
+              <div style="background:#fff; border:1px dashed rgba(0,0,0,0.12); border-radius:13px; padding:15px; display:flex; align-items:center; gap:11px; margin-bottom:8px;">
+                <span style="width:30px;height:30px;border-radius:8px;background:rgba(6,182,212,0.12);display:flex;align-items:center;justify-content:center;font-size:14px;flex:none;">🔒</span>
+                <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#1d1d1f;">再添加一台 server</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">多 server 属于 gtmux Pro</div></div>
+                <span style="font-size:10px; font-weight:700; color:#fff; background:#06B6D4; border-radius:5px; padding:2px 7px;">Pro</span>
+              </div>
+              <div style="font-size:11.5px; color:#a8a8ae; text-align:center; line-height:1.5; margin-top:14px;">家里一台、公司一台?<br><span style="color:#06B6D4; font-weight:600;">升级 Pro</span> 同时管理多台。</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">免费态:1 台够用,第 2 台是温和的 Pro 锚点,不挡当前使用。</div>
+      </div>
+
+      <!-- Frame B: add-server gating sheet -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 达限引导(点「再添加」时)</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <!-- dimmed bg -->
+            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <!-- bottom sheet -->
+            <div style="position:absolute; left:0; right:0; bottom:0; background:linear-gradient(180deg,#181b22,#0e1015); border-radius:24px 24px 0 0; padding:22px 22px 28px;">
+              <div style="width:38px; height:5px; border-radius:3px; background:rgba(255,255,255,0.2); margin:0 auto 18px;"></div>
+              <div style="text-align:center;">
+                <div style="display:inline-flex; align-items:center; gap:7px; margin-bottom:12px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:18px; height:18px;"><span style="background:rgba(255,255,255,0.3);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:3px;grid-column:span 2;"></span></span><span style="font-size:18px; font-weight:800; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></span></div>
+                <div style="font-size:16px; font-weight:700; color:#fff;">管理多台 server</div>
+                <div style="font-size:12.5px; color:rgba(235,235,245,0.55); line-height:1.5; margin-top:8px;">免费版含 1 台。升级后无限 server、无限设备,并解锁远程访问。</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.05); border-radius:12px; padding:13px 14px; margin-top:18px;">
+                <span style="color:#06B6D4; font-size:14px;">✓</span><span style="font-size:12.5px; color:rgba(255,255,255,0.9);">无限 server + 无限设备</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.05); border-radius:12px; padding:13px 14px; margin-top:8px;">
+                <span style="color:#06B6D4; font-size:14px;">✓</span><span style="font-size:12.5px; color:rgba(255,255,255,0.9);">远程访问(tunnel),离开局域网也能连</span>
+              </div>
+              <div style="background:#06B6D4; border-radius:13px; padding:15px; text-align:center; font-size:15.5px; font-weight:700; color:#fff; margin-top:18px;">开始 7 天免费试用</div>
+              <div style="text-align:center; font-size:11.5px; color:rgba(235,235,245,0.5); margin-top:12px;">查看全部方案</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">触发点收费:在「真的要第 2 台」时弹,转化最自然。</div>
+      </div>
+
+      <!-- Frame C: Servers (Pro) -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">③ Servers · Pro(多 server)</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <div style="padding:60px 20px 20px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:28px; font-weight:700; color:#1d1d1f;">‹ Servers</span>
+                <span style="font-size:10px; font-weight:700; color:#fff; background:#06B6D4; border-radius:6px; padding:3px 9px;">PRO</span>
+              </div>
+              <div style="font-size:12.5px; color:#6b6b70; line-height:1.5; margin-bottom:18px;">点一台连接,绿点是当前已连。</div>
+              <!-- connected (remote) -->
+              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px; margin-bottom:10px;">
+                <span style="width:9px;height:9px;border-radius:50%;background:#22C55E;flex:none;"></span>
+                <div style="flex:1; min-width:0;"><div style="display:flex; align-items:center; gap:7px;"><span style="font-size:15px; font-weight:600; color:#1d1d1f;">home-mac</span><span style="display:flex; align-items:center; gap:3px; background:rgba(6,182,212,0.12); border-radius:5px; padding:1px 6px;"><span style="font-size:9px;">🛰</span><span style="font-size:10px; font-weight:600; color:#0596b0;">远程</span></span></div><div class="gt-mono" style="font-size:11.5px; color:#a8a8ae; margin-top:2px;">已连接 · tunnel</div></div>
+                <span style="font-size:17px; color:#c4c4ca;">✕</span>
+              </div>
+              <!-- idle local -->
+              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px; margin-bottom:10px;">
+                <span style="width:9px;height:9px;border-radius:50%;background:#c4c4ca;flex:none;"></span>
+                <div style="flex:1; min-width:0;"><div style="display:flex; align-items:center; gap:7px;"><span style="font-size:15px; font-weight:600; color:#1d1d1f;">office-mac</span><span style="font-size:10px; color:#9a9aa0; background:#F1F1F4; border-radius:5px; padding:1px 6px;">本地</span></div><div class="gt-mono" style="font-size:11.5px; color:#a8a8ae; margin-top:2px;">192.168.1.20:8765</div></div>
+                <span style="font-size:17px; color:#c4c4ca;">✕</span>
+              </div>
+              <!-- add (unlocked) -->
+              <div style="background:#fff; border-radius:13px; padding:15px; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:18px;">
+                <span style="font-size:18px; color:#06B6D4;">＋</span><span style="font-size:15px; font-weight:600; color:#1d1d1f;">添加 server</span>
+              </div>
+              <div style="text-align:center;"><span style="font-size:13px; color:#EF4444;">断开连接</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">Pro 态:多 server 并存,远程/本地各带标签,自由切换。</div>
+      </div>
+
+      <!-- Frame D: devices on this Mac -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">④ 这台 Mac 的连接设备</span>
+        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
+            <div style="padding:60px 20px 20px;">
+              <span style="font-size:28px; font-weight:700; color:#1d1d1f;">‹ 设备</span>
+              <div style="font-size:12.5px; color:#6b6b70; line-height:1.5; margin:6px 0 18px;">正在看 <b>home-mac</b> 的设备。免费版限 1 台。</div>
+              <!-- this device -->
+              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                <span style="font-size:20px;">📱</span>
+                <div style="flex:1;"><div style="font-size:15px; font-weight:600; color:#1d1d1f;">iPhone 15 Pro</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">这台设备 · 刚刚活跃</div></div>
+                <span style="width:9px;height:9px;border-radius:50%;background:#22C55E;"></span>
+              </div>
+              <!-- second device (Pro) -->
+              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                <span style="font-size:20px;">📲</span>
+                <div style="flex:1;"><div style="font-size:15px; font-weight:600; color:#1d1d1f;">iPad Pro</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">2 小时前</div></div>
+                <span style="font-size:10px; font-weight:700; color:#fff; background:#06B6D4; border-radius:5px; padding:2px 7px;">Pro</span>
+              </div>
+              <!-- add device locked -->
+              <div style="background:#fff; border:1px dashed rgba(0,0,0,0.12); border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px;">
+                <span style="width:30px;height:30px;border-radius:8px;background:rgba(6,182,212,0.12);display:flex;align-items:center;justify-content:center;font-size:14px;">🔒</span>
+                <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#1d1d1f;">连接更多设备</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">手机 + iPad 同时在线属于 Pro</div></div>
+              </div>
+              <div style="font-size:11.5px; color:#a8a8ae; text-align:center; line-height:1.5; margin-top:16px;">手机看一眼、iPad 上细看?<br><span style="color:#06B6D4; font-weight:600;">升级 Pro</span> 多设备同时在线。</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">多设备价值:手机 glance、iPad 细看,跨设备是付费动机。</div>
+      </div>
+    </div>
+
+    <!-- landing notes -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; max-width:1000px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">计费心智(一句话)</div>
+        <div style="font-size:12.5px; line-height:1.65; color:#5a5a60;"><b>免费 = 单人单机的完整本地体验</b>(1 server + 1 设备 + 本地全功能)。<b>Pro = 规模 + 远程</b>:多 server、多设备、tunnel。不阉割核心功能,只在「更多 / 跨网」处收费——免费用户也爽,付费动机清晰。</div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">落地要点</div>
+        <div style="font-size:12px; line-height:1.65; color:#5a5a60;">
+          · 限额在客户端 + 服务端双校验(serve/tunnel 上报已连设备数)。<br>
+          · 达限触发统一 Pro sheet(server / 设备 / 远程三入口共用一个付费墙)。<br>
+          · 设备列表来自 server 端会话表;可远程「移除某设备」。<br>
+          · 降级(退订)后:保留全部 server 配置,仅强制回到「1 server + 1 设备 + 本地」生效,不删数据。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 9: TERMINAL / DETAIL — 深度设计 ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">9</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Terminal 页 ① — 渲染与交互</h2>
+    </div>
+    <p style="margin:0 0 8px; max-width:780px; font-size:13.5px; line-height:1.5; color:#7a7a80;">查看某个 pane 的核心页。现有实现已很成熟(ANSI 彩色、Termius 式 Composer、Moshi 式悬浮键盘、xterm、diff、全屏)。本节<b>对标 Moshi / Termius / Blink / Warp</b>,把「面向 agent 的简化输入」推到位:让你<b>不用打字</b>就能驱动 agent,打字只是兜底。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:780px; margin-bottom:22px; line-height:1.5;">竞品定位:Termius/Blink = 通用 SSH 键盘(强但杂);Moshi = 可拖拽悬浮方向键(已借鉴);Warp = AI block + 命令面板。gtmux 的差异点:<b>agent 感知</b>——根据 waiting/working 动态给「下一步该按什么」,而不是给一整块 QWERTY。</p>
+
+    <div style="display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start;">
+
+      <!-- MAIN annotated phone -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">主视图 · waiting 态(标注)</span>
+        <div style="position:relative; width:330px; height:700px; border-radius:50px; background:#0a0a0c; padding:11px; box-shadow:0 28px 64px rgba(0,0,0,0.26), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:40px; overflow:hidden; background:#0D0D0F; display:flex; flex-direction:column;">
+            <div style="position:absolute; top:10px; left:50%; transform:translateX(-50%); width:108px; height:30px; background:#000; border-radius:17px; z-index:20;"></div>
+            <!-- header -->
+            <div style="padding:50px 14px 9px; display:flex; align-items:center; gap:10px; border-bottom:0.5px solid rgba(255,255,255,0.09);">
+              <span style="font-size:26px; font-weight:300; color:rgba(235,235,245,0.62); line-height:1;">‹</span>
+              <div style="position:relative; width:18px;height:18px;flex:none;"><div style="width:18px;height:18px;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:7px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:7px;background:#fff;border-radius:1px;"></span></span></div></div>
+              <div style="flex:1; min-width:0;"><div style="font-size:16px; font-weight:700; color:rgba(255,255,255,0.96); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">permission to run tests</div><div style="font-size:11.5px; color:rgba(235,235,245,0.34);">Claude Code · 等输入 · Pica · %7</div></div>
+            </div>
+            <!-- control bar -->
+            <div style="padding:7px 12px; display:flex; align-items:center; gap:6px; border-bottom:0.5px solid rgba(255,255,255,0.09);">
+              <span style="display:flex; align-items:center; gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:rgba(235,235,245,0.34);">home-mac</span></span>
+              <div style="flex:1;"></div>
+              <span style="font-size:11px; color:rgba(235,235,245,0.62); border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:3px 8px;">改动</span>
+              <span style="font-size:11px; color:rgba(235,235,245,0.62); border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:3px 8px;">A−</span>
+              <span style="font-size:11px; color:rgba(235,235,245,0.62); border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:3px 8px;">A+</span>
+              <span style="font-size:11px; color:rgba(235,235,245,0.62); border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:3px 8px;">换行</span>
+              <span style="font-size:11px; color:rgba(235,235,245,0.62); border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:3px 7px;">⛶</span>
+            </div>
+            <!-- terminal -->
+            <div style="flex:1; min-height:0; background:#0A0A0C; padding:11px 12px; overflow:hidden;">
+              <pre class="gt-mono" style="margin:0; font-size:11px; line-height:1.5; white-space:pre-wrap; word-break:break-word;"><span style="color:#5AF78E;">●</span><span style="color:#D6D6DA;"> Running tests…</span>
+<span style="color:#8A9099;">  npm test</span>
+
+<span style="color:#5AF78E;">  PASS </span><span style="color:#8A9099;"> src/api/client.test.ts</span>
+<span style="color:#5AF78E;">  PASS </span><span style="color:#8A9099;"> src/ui/theme.test.ts</span>
+
+<span style="color:#FF6AC1;">  Tool use:</span><span style="color:#E6DB74;"> Bash(npm run test:e2e)</span>
+<span style="color:#8A9099;">  Runs the end-to-end suite against a</span>
+<span style="color:#8A9099;">  live server.</span>
+
+<span style="color:#6B7079;">┌────────────────────────────┐</span>
+<span style="color:#6B7079;">│</span><span style="color:#D6D6DA;">  Allow this tool call?     </span><span style="color:#6B7079;">│</span>
+<span style="color:#6B7079;">│</span><span style="color:#5AF78E;">  ❯ 1. Yes                  </span><span style="color:#6B7079;">│</span>
+<span style="color:#6B7079;">│</span><span style="color:#D6D6DA;">    2. Yes, and don't ask   </span><span style="color:#6B7079;">│</span>
+<span style="color:#6B7079;">│</span><span style="color:#D6D6DA;">    3. No, tell Claude…     </span><span style="color:#6B7079;">│</span>
+<span style="color:#6B7079;">└────────────────────────────┘</span>
+
+<span style="color:#D6D6DA;">  › </span><span style="color:#06B6D4;">▋</span></pre>
+            </div>
+            <!-- agent-aware quick bar (the star) -->
+            <div style="background:#0D0D0F; border-top:0.5px solid rgba(255,255,255,0.09); padding:9px 10px 7px;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px; padding:0 2px;">
+                <span style="font-size:9.5px; font-weight:700; letter-spacing:0.5px; color:#EF4444;">↳ AGENT 在等你回应</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:7px; overflow:hidden;">
+                <span style="flex:none; background:#06B6D4; color:#fff; border-radius:9px; padding:9px 14px; font-size:13px; font-weight:700;">1 · 是</span>
+                <span style="flex:none; background:rgba(6,182,212,0.16); color:#27C7E6; border-radius:9px; padding:9px 13px; font-size:13px; font-weight:600;">2 · 总是</span>
+                <span style="flex:none; background:rgba(255,255,255,0.06); color:rgba(235,235,245,0.7); border-radius:9px; padding:9px 13px; font-size:13px; font-weight:600;">3 · 否</span>
+                <span style="flex:none; width:0.5px; height:22px; background:rgba(255,255,255,0.12);"></span>
+                <span class="gt-mono" style="flex:none; color:rgba(235,235,245,0.55); border:0.5px solid rgba(255,255,255,0.12); border-radius:9px; padding:8px 10px; font-size:12px;">⌨</span>
+                <span class="gt-mono" style="flex:none; color:rgba(235,235,245,0.55); border:0.5px solid rgba(255,255,255,0.12); border-radius:9px; padding:8px 10px; font-size:12px;">⏎</span>
+              </div>
+              <!-- input row -->
+              <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                <span style="flex:none; width:36px; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.6); font-size:20px;">+</span>
+                <span style="flex:1; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.12); display:flex; align-items:center; padding:0 14px; color:rgba(235,235,245,0.34); font-size:14px;">回复 agent…</span>
+                <span style="flex:none; width:36px; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.34); font-size:17px;">↑</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- callouts column -->
+      <div style="flex:1; min-width:300px; max-width:430px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:5px;background:#EF4444;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">A</span><span style="font-size:13px; font-weight:660;">agent-aware quick bar(核心差异点)</span></div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">最上面一排<b>随 agent 状态变形</b>:waiting → 直接给该提示的 <span class="gt-mono" style="font-size:11px;">1/2/3</span> 选项(读自 pane 的菜单);working → <span class="gt-mono" style="font-size:11px;">继续 / 停止(Ctrl-C)</span>;idle → 常用 snippet + ⏎。一句话:<b>「下一步该按什么」直接摆出来,不用进键盘找。</b>这是对 Termius 通用键盘的关键超越。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:5px;background:#06B6D4;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">B</span><span style="font-size:13px; font-weight:660;">键盘工具条(横滑)</span></div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">同一排右滑出更多:<span class="gt-mono" style="font-size:11px;">⌨(悬浮方向键)· 粘贴 · ⏎ Ctrl-C Esc Tab · snippets · ✎</span>。已实现且符合设计——保持单排横滑、不堆成网格。建议:把<b>最高频 2-3 个置顶不滚动</b>,其余滑动(防止 waiting 的 1/2/3 被划走)。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:5px;background:#22C55E;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">C</span><span style="font-size:13px; font-weight:660;">Moshi 式悬浮方向键</span></div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">⌨ 唤起可拖拽方向键盘(↑↓←→ + ⏎ ⌫ Clr),长按锁 pin 住、终端仍可交互。已实现,做得好。建议补:pin 后给一个<b>极简贴边模式</b>(只剩一颗 ↕ 拖回),减少遮挡。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:5px;background:#8E8E93;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">D</span><span style="font-size:13px; font-weight:660;">输入兜底 + 附件</span></div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">自由输入框 + <span class="gt-mono" style="font-size:11px;">+</span>(相册/拍照/文件→上传到 Mac 回填路径)+ 图片粘贴标注。已实现。这是「任意输入」兜底,主路径仍是上方 quick bar。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- state-driven quick bar matrix -->
+    <div style="margin-top:30px;">
+      <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">quick bar 随状态变形 · 这是 agent-aware 的关键</div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+        <!-- waiting -->
+        <div style="background:#0D0D0F; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;"><span style="width:16px;height:16px;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span></span><span style="font-size:12.5px; font-weight:700; color:#EF4444;">waiting · 等输入</span></div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+            <span style="background:#06B6D4; color:#fff; border-radius:8px; padding:7px 12px; font-size:12px; font-weight:700;">1 · 是</span>
+            <span style="background:rgba(6,182,212,0.16); color:#27C7E6; border-radius:8px; padding:7px 12px; font-size:12px; font-weight:600;">2 · 总是</span>
+            <span style="background:rgba(255,255,255,0.06); color:rgba(235,235,245,0.7); border-radius:8px; padding:7px 12px; font-size:12px; font-weight:600;">3 · 否</span>
+          </div>
+          <div style="font-size:11.5px; color:rgba(235,235,245,0.45); line-height:1.5;">解析 pane 里的选项菜单,直接摆成按钮。最常见、最该一键。</div>
+        </div>
+        <!-- working -->
+        <div style="background:#0D0D0F; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;"><span style="width:16px;height:16px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></span><span style="font-size:12.5px; font-weight:700; color:#27C7E6;">working · 运行中</span></div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+            <span style="background:rgba(255,255,255,0.06); color:rgba(235,235,245,0.7); border-radius:8px; padding:7px 12px; font-size:12px; font-weight:600;">继续</span>
+            <span style="background:rgba(239,68,68,0.14); color:#FF6E67; border-radius:8px; padding:7px 12px; font-size:12px; font-weight:600;">停止 Ctrl-C</span>
+            <span style="background:rgba(255,255,255,0.06); color:rgba(235,235,245,0.7); border-radius:8px; padding:7px 12px; font-size:12px; font-weight:600;">Esc</span>
+          </div>
+          <div style="font-size:11.5px; color:rgba(235,235,245,0.45); line-height:1.5;">运行中不打扰为主;只给「打断 / 让它继续」这类低频但关键的控制。</div>
+        </div>
+        <!-- idle -->
+        <div style="background:#0D0D0F; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;"><span style="width:16px;height:16px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800;">✓</span><span style="font-size:12.5px; font-weight:700; color:#34D26B;">idle · 空闲(你的回合)</span></div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+            <span style="background:rgba(255,255,255,0.06); color:rgba(235,235,245,0.7); border-radius:8px; padding:7px 11px; font-size:12px; font-weight:600;">继续开发</span>
+            <span style="background:rgba(255,255,255,0.06); color:rgba(235,235,245,0.7); border-radius:8px; padding:7px 11px; font-size:12px; font-weight:600;">运行测试</span>
+            <span style="background:rgba(255,255,255,0.06); color:rgba(235,235,245,0.7); border-radius:8px; padding:7px 11px; font-size:12px; font-weight:600;">提交</span>
+            <span style="border:0.5px solid rgba(255,255,255,0.14); color:rgba(235,235,245,0.5); border-radius:8px; padding:7px 10px; font-size:12px;">✎</span>
+          </div>
+          <div style="font-size:11.5px; color:rgba(235,235,245,0.45); line-height:1.5;">轮到你了:给自定义 snippet(常用指令),一键发,不用敲。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- competitive bench + landing -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">对标竞品 · 取舍</div>
+        <div style="font-size:12.5px; line-height:1.55; color:#5a5a60;">
+          <div style="padding:5px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><b>Termius / Blink</b> — 完整 SSH 键盘排。强,但对「只想回个 1」太重 → gtmux 用 agent-aware 收窄。</div>
+          <div style="padding:5px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><b>Moshi</b> — 可拖拽悬浮方向键 → 已采纳为 FloatingKeys。</div>
+          <div style="padding:5px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><b>Warp</b> — AI block + 命令面板 → 借鉴「snippet/命令面板」做常用指令。</div>
+          <div style="padding:5px 0;"><b>gtmux 独有</b> — 读 pane 语义,把「下一步」摆成按钮;状态驱动而非固定键盘。</div>
+        </div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">落地建议(给 repo CC)</div>
+        <div style="font-size:12px; line-height:1.6; color:#5a5a60;">
+          · <b>quick bar 置顶不滚</b>:waiting 的 1/2/3 固定在左,控制键/snippet 才横滑,避免误划走主操作。<br>
+          · <b>选项解析</b>:waiting 时解析 pane 尾部的 <span class="gt-mono" style="font-size:11px;">❯ 1. / 2. / 3.</span> 菜单,自动生成对应按钮(找不到则回退当前固定 1/2/3)。<br>
+          · <b>发送即反馈</b>:点按钮后底部短 toast「已发送 · 1」,因为 pane 刷新有 ~1.5s 延迟。<br>
+          · FloatingKeys pin 后加「贴边收成一颗」减少遮挡。<br>
+          · 终端 dim 行对比度提到 ≈ <span class="gt-mono" style="font-size:11px;">#8A9099</span>(见 REVIEW-mobile-01 P1)。
+        </div>
+      </div>
+    </div>
+
+    <!-- copy interactions -->
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px; margin-top:16px;">
+      <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">复制 · 终端与对话都可复制</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+        <div>
+          <div style="font-size:12.5px; font-weight:660; margin-bottom:7px;">终端模式</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">· <b>长按</b>进入选择态:出现起止把手,拖动选区,气泡给 <b>拷贝 / 全选</b>。<br>· 顶栏 <b>⋯ → 复制可见屏</b> / <b>复制回滚缓冲</b>(纯文本,去 ANSI 转义)。<br>· 复制保留换行与等宽对齐;含 ANSI 时默认去色,长按气泡可选「带颜色(富文本)」。</div>
+        </div>
+        <div>
+          <div style="font-size:12.5px; font-weight:660; margin-bottom:7px;">对话模式</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">· <b>长按气泡</b> → 拷贝 / 引用回复 / 分享。<br>· <b>代码块右上角常驻「复制」按钮</b>,点一下整段进剪贴板 + 短 toast「已复制」。<br>· 工具卡/审批卡可复制其命令文本(如 <span class="gt-mono" style="font-size:11px;">npm run test:e2e</span>)。</div>
+        </div>
+      </div>
+      <!-- mini visual: copy menu + code copy -->
+      <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:14px;">
+        <div style="position:relative; flex:none; width:230px; border-radius:10px; background:#0A0A0C; padding:12px 13px;">
+          <pre class="gt-mono" style="margin:0; font-size:11px; line-height:1.5; color:#D6D6DA; white-space:pre-wrap;"><span style="background:rgba(6,182,212,0.32);">  PASS  src/ui/theme.test.ts</span>
+  Tool use: Bash(npm test)</pre>
+          <div style="position:absolute; left:34px; top:2px; display:flex; gap:1px; background:#2A2A2F; border-radius:7px; box-shadow:0 4px 14px rgba(0,0,0,0.5); overflow:hidden;">
+            <span style="font-size:11px; color:#fff; padding:6px 11px;">拷贝</span>
+            <span style="width:0.5px; background:rgba(255,255,255,0.15);"></span>
+            <span style="font-size:11px; color:#fff; padding:6px 11px;">全选</span>
+          </div>
+        </div>
+        <div style="position:relative; flex:none; width:230px; border-radius:10px; background:#1C1C1F; padding:11px 12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;"><span class="gt-mono" style="font-size:10px; color:rgba(235,235,245,0.5);">bash</span><span style="display:flex; align-items:center; gap:4px; background:rgba(255,255,255,0.1); border-radius:6px; padding:3px 8px;"><span style="font-size:11px;">⧉</span><span style="font-size:11px; color:#fff;">复制</span></span></div>
+          <pre class="gt-mono" style="margin:0; font-size:11px; line-height:1.5; color:#D6D6DA; white-space:pre-wrap;">git commit -m "wire /api/send"</pre>
+        </div>
+      </div>
+      <div style="font-size:11.5px; color:#9a9aa0; margin-top:12px; line-height:1.5;">落地:终端用原生文本选择(xterm/SelectableText);代码块/气泡复制走 <span class="gt-mono" style="font-size:11px;">Clipboard.setString</span>;「复制回滚缓冲」从 <span class="gt-mono" style="font-size:11px;">/api/pane</span> 取纯文本。复制是只读操作,不受写权限门控。</div>
+    </div>
+
+    <!-- scroll lock / follow tail -->
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px; margin-top:16px;">
+      <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">滚动锁定 · 跟随最新</div>
+      <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:18px; align-items:center;">
+        <div style="font-size:12.5px; line-height:1.7; color:#5a5a60;">
+          · <b>停在你看的位置</b>:一旦向上滚进历史,新输出<b>不再把你拽到底部</b>——视图冻结在当前行,安心读。<br>
+          · <b>跟随仅在底部</b>:只有当你本来就贴在底部时,新内容才自动跟随滚动(类似 <span class="gt-mono" style="font-size:11px;">tail -f</span>)。<br>
+          · <b>↓ 最新 浮标</b>:离开底部即在右下浮出;冻结期间有新输出时,浮标加一个<b>「新」圆点</b>提示。<br>
+          · <b>一键回到底</b>:点浮标平滑滚到底并重新进入跟随;到底后浮标自动消失。<br>
+          · 切 pane / 首次进入默认贴底;<b>阈值 24px</b> 内都算「在底部」,避免抖动误判。
+        </div>
+        <!-- mini terminal showing frozen + floating pill with new dot -->
+        <div style="position:relative; border-radius:11px; background:#0A0A0C; padding:12px 13px; height:150px; overflow:hidden;">
+          <pre class="gt-mono" style="margin:0; font-size:10.5px; line-height:1.55; color:#D6D6DA; white-space:pre-wrap;">  9b4d8a1  add /api/pane capture
+  3f7c012  serve: bearer auth + token
+<span style="color:#5AF78E;">  ok  internal/app     0.42s</span>
+  Editing internal/server/serve.go
+   <span style="color:#5AF78E;">+ mux.HandleFunc("/api/events"…</span>
+  Running: go build ./...</pre>
+          <div style="position:absolute; left:0; right:0; bottom:0; height:34px; background:linear-gradient(transparent,#0A0A0C);"></div>
+          <div style="position:absolute; right:12px; bottom:12px; display:flex; align-items:center; gap:5px; height:30px; padding:0 12px 0 10px; border-radius:15px; background:#06B6D4; color:#fff; font-size:12.5px; font-weight:600; box-shadow:0 4px 14px rgba(0,0,0,0.45);"><span style="font-size:13px;">↓</span>最新<span style="width:7px;height:7px;border-radius:50%;background:#fff;margin-left:1px;box-shadow:0 0 0 2px #06B6D4;"></span></div>
+        </div>
+      </div>
+      <div style="font-size:11.5px; color:#9a9aa0; margin-top:12px; line-height:1.5;">落地:每次 <span class="gt-mono" style="font-size:11px;">/api/pane</span> 刷新前记录 <span class="gt-mono" style="font-size:11px;">atBottom = scrollHeight − scrollTop − clientHeight &lt; 24</span>;为 true 才在刷新后 <span class="gt-mono" style="font-size:11px;">scrollToEnd</span>,否则保持 <span class="gt-mono" style="font-size:11px;">scrollTop</span> 不变并标记有新内容。</div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 10: TERMINAL 输入重构（对标 Moshi） ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">10</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Terminal 页 ② — 双模式与审批卡（对标 Moshi）</h2>
+    </div>
+    <p style="margin:0 0 8px; max-width:800px; font-size:13.5px; line-height:1.5; color:#7a7a80;">调研结论:Moshi 的杀手锏不是「更好的终端键盘」,而是 <b>Chat View</b> —— 把 Claude Code 会话解析成<b>原生聊天</b>(工具卡、计划卡、<b>审批卡</b>、语音、图片粘贴)。<b>面向 agent 的回复,最佳形态是「审批卡」而非在终端里找菜单。</b>所以核心改动:详情页加 <b>终端 ↔ 对话</b> 双模式;输入工具条重排、图标语义化。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:800px; margin-bottom:22px; line-height:1.5;">Moshi 借鉴点:Chat View(审批卡)· 工具条修饰键可切图标/文字 · 键盘键(单击显隐/双击回车/长按语音)· 可拖拽 D-pad · 工具条暂存输入 · 语音优先。gtmux 已有的 ANSI 终端保留为「终端模式」,新增「对话模式」做主路径。</p>
+
+    <div style="display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- Chat mode phone (the star) -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">★ 对话模式 · 审批卡(最佳 agent 回复)</span>
+        <div style="position:relative; width:330px; height:710px; border-radius:50px; background:#0a0a0c; padding:11px; box-shadow:0 28px 64px rgba(0,0,0,0.26), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:40px; overflow:hidden; background:#0D0D0F; display:flex; flex-direction:column;">
+            <div style="position:absolute; top:10px; left:50%; transform:translateX(-50%); width:108px; height:30px; background:#000; border-radius:17px; z-index:20;"></div>
+            <!-- header with mode toggle -->
+            <div style="padding:50px 14px 9px; border-bottom:0.5px solid rgba(255,255,255,0.09);">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px;">
+                <span style="font-size:24px; font-weight:300; color:rgba(235,235,245,0.62); line-height:1;">‹</span>
+                <div style="position:relative; width:18px;height:18px;flex:none;"><div style="width:18px;height:18px;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:7px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:7px;background:#fff;border-radius:1px;"></span></span></div></div>
+                <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:700; color:rgba(255,255,255,0.96); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Pica</div><div style="font-size:11px; color:rgba(235,235,245,0.34);">Claude Code · 等输入 · %7</div></div>
+                <span style="font-size:13px; color:rgba(235,235,245,0.5);">⋯</span>
+              </div>
+              <!-- mode segmented -->
+              <div style="display:flex; gap:2px; background:rgba(255,255,255,0.06); padding:2px; border-radius:8px;">
+                <div style="flex:1; text-align:center; background:rgba(255,255,255,0.14); border-radius:6px; padding:5px; font-size:12px; font-weight:600; color:#fff;">对话</div>
+                <div style="flex:1; text-align:center; border-radius:6px; padding:5px; font-size:12px; color:rgba(235,235,245,0.5);">终端</div>
+              </div>
+            </div>
+            <!-- chat body -->
+            <div style="flex:1; min-height:0; overflow:hidden; padding:14px 12px; display:flex; flex-direction:column; gap:11px; background:#0D0D0F;">
+              <!-- agent text bubble -->
+              <div style="display:flex; gap:8px;">
+                <span style="width:22px;height:22px;flex:none;border-radius:6px;background:#1C1C1F;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:rgba(235,235,245,0.6);">CC</span>
+                <div style="background:#1C1C1F; border-radius:12px; border-top-left-radius:3px; padding:9px 12px; font-size:13px; color:rgba(235,235,245,0.9); line-height:1.45;">I've written the tests. Ready to run the end-to-end suite.</div>
+              </div>
+              <!-- tool card -->
+              <div style="margin-left:30px; background:rgba(255,255,255,0.04); border:0.5px solid rgba(255,255,255,0.09); border-radius:10px; padding:9px 11px;">
+                <div style="display:flex; align-items:center; gap:7px; margin-bottom:5px;"><span style="font-size:11px;">🔧</span><span class="gt-mono" style="font-size:11px; color:#27C7E6;">Bash</span></div>
+                <div class="gt-mono" style="font-size:11px; color:rgba(235,235,245,0.6);">npm run test:e2e</div>
+              </div>
+              <!-- approval card (the star) -->
+              <div style="margin-left:30px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); border-radius:13px; overflow:hidden;">
+                <div style="padding:11px 13px;">
+                  <div style="display:flex; align-items:center; gap:7px; margin-bottom:6px;"><span style="width:14px;height:14px;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:1px;"><span style="width:1.5px;height:5px;background:#fff;border-radius:1px;"></span><span style="width:1.5px;height:5px;background:#fff;border-radius:1px;"></span></span><span style="font-size:11px; font-weight:700; color:#FF6E67; text-transform:uppercase; letter-spacing:0.4px;">需要你批准</span></div>
+                  <div style="font-size:13.5px; font-weight:600; color:#fff;">Allow this tool call?</div>
+                  <div style="font-size:12px; color:rgba(235,235,245,0.6); margin-top:2px;">Run the end-to-end suite against a live server.</div>
+                </div>
+                <div style="border-top:0.5px solid rgba(255,255,255,0.08);">
+                  <div style="display:flex; align-items:center; gap:9px; padding:11px 13px; border-bottom:0.5px solid rgba(255,255,255,0.06);"><span style="width:19px;height:19px;flex:none;border-radius:5px;background:#06B6D4;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</span><span style="font-size:13px; font-weight:600; color:#fff;">Yes</span></div>
+                  <div style="display:flex; align-items:center; gap:9px; padding:11px 13px; border-bottom:0.5px solid rgba(255,255,255,0.06);"><span style="width:19px;height:19px;flex:none;border-radius:5px;background:rgba(255,255,255,0.1);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</span><span style="font-size:13px; color:rgba(235,235,245,0.85);">Yes, and don't ask again</span></div>
+                  <div style="display:flex; align-items:center; gap:9px; padding:11px 13px;"><span style="width:19px;height:19px;flex:none;border-radius:5px;background:rgba(255,255,255,0.1);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span><span style="font-size:13px; color:rgba(235,235,245,0.85);">No, tell Claude what to do</span></div>
+                </div>
+              </div>
+            </div>
+            <!-- redesigned input toolbar -->
+            <div style="background:#0D0D0F; border-top:0.5px solid rgba(255,255,255,0.09); padding:7px 8px 8px;">
+              <!-- modifier row (icon mode) -->
+              <div class="gt-noscroll" style="display:flex; align-items:center; gap:6px; overflow-x:auto; padding-bottom:7px;">
+                <span style="flex:none; width:34px; height:32px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.7); font-size:14px;">⎈</span>
+                <span style="flex:none; width:34px; height:32px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.7); font-size:12px;">esc</span>
+                <span style="flex:none; width:34px; height:32px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.7); font-size:12px;">tab</span>
+                <span style="flex:none; width:34px; height:32px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.7); font-size:14px;">⊞</span>
+                <span style="flex:none; width:0.5px; height:22px; background:rgba(255,255,255,0.12);"></span>
+                <span style="flex:none; height:32px; padding:0 12px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; color:rgba(235,235,245,0.7); font-size:12px;">↑ 历史</span>
+                <span style="flex:none; height:32px; padding:0 12px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; color:rgba(235,235,245,0.7); font-size:12px;">✎ 片段</span>
+              </div>
+              <!-- input row: attach · field · mic · send -->
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="flex:none; width:36px; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.6); font-size:19px;">+</span>
+                <span style="flex:1; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; padding:0 14px; color:rgba(235,235,245,0.34); font-size:14px;">回复 Pica…</span>
+                <span style="flex:none; width:36px; height:36px; border-radius:18px; background:rgba(6,182,212,0.16); display:flex; align-items:center; justify-content:center; color:#27C7E6;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" stroke="none"></rect><path d="M6 11a6 6 0 0 0 12 0"></path><line x1="12" y1="17" x2="12" y2="21"></line></svg></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- right: icon legend + behaviors -->
+      <div style="flex:1; min-width:320px; max-width:440px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:5px;background:#EF4444;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">★</span><span style="font-size:13px; font-weight:660;">审批卡 = 最佳 agent 回复</span></div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">agent 要权限时,不让你在终端里找 <span class="gt-mono" style="font-size:11px;">❯ 1./2./3.</span>,而是浮出一张卡:问题 + 选项做成<b>整行大按钮(真实文案)</b>。点一下即发 <span class="gt-mono" style="font-size:11px;">/api/send</span>。这是「不打字解阻塞」的核心,和通知/Live Activity 的回复按钮同源。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">输入图标 · 语义</div>
+          <div style="display:flex; align-items:center; gap:11px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="width:30px;height:28px;border-radius:7px;background:#F1F1F4;display:flex;align-items:center;justify-content:center;font-size:14px;">⎈</span><div style="font-size:12.5px; color:#5a5a60;"><b>修饰键</b> Ctrl/Esc/Tab/⊞ —— 长按 Ctrl 出自适应面板(tmux / agent 命令);设置可切「图标/文字」。</div></div>
+          <div style="display:flex; align-items:center; gap:11px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="width:30px;height:28px;border-radius:7px;background:#F1F1F4;display:flex;align-items:center;justify-content:center;font-size:14px;">⊞</span><div style="font-size:12.5px; color:#5a5a60;"><b>D-pad</b> 方向键 —— 唤起可拖拽方向盘(沿用 FloatingKeys),vim/菜单导航。</div></div>
+          <div style="display:flex; align-items:center; gap:11px; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><span style="width:30px;height:28px;border-radius:7px;background:#F1F1F4;display:flex;align-items:center;justify-content:center;font-size:13px;">＋</span><div style="font-size:12.5px; color:#5a5a60;"><b>附件</b> —— 相册/拍照/文件,上传到 Mac 回填路径;图片可标注。</div></div>
+          <div style="display:flex; align-items:center; gap:11px; padding:6px 0;"><span style="width:30px;height:28px;border-radius:7px;background:rgba(6,182,212,0.12);display:flex;align-items:center;justify-content:center;color:#06B6D4;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" stroke="none"></rect><path d="M6 11a6 6 0 0 0 12 0"></path><line x1="12" y1="17" x2="12" y2="21"></line></svg></span><div style="font-size:12.5px; color:#5a5a60;"><b>语音</b> —— 单击进语音、转写后可改再发(对标 Moshi 的 chat-mode 听写)。</div></div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">终端模式键盘键(沿用)</div>
+          <div style="font-size:12px; line-height:1.65; color:#5a5a60;">切到「终端」时,右下键盘键:<b>单击</b> 显隐 iOS 键盘 · <b>双击</b> 发 Enter · <b>长按</b> 语音听写。终端模式保留 A−/A+、换行/滚动、回滚缓冲、全屏。</div>
+        </div>
+        <div style="background:#F4F8FF; border:1px solid rgba(10,90,200,0.15); border-radius:12px; padding:14px 16px;">
+          <div style="font-size:12.5px; font-weight:660; color:#0a5ac8; margin-bottom:5px;">两模式怎么选</div>
+          <div style="font-size:12px; line-height:1.6; color:#3a4a60;"><b>对话(默认)</b>:日常 glance + 审批,干净、好点。<b>终端</b>:看原始 TUI、滚历史、跑/调试。顶部一键切,记住每个 pane 的选择。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 11: 多行输入 + 粘贴/附件 + 图片标注 ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">11</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Terminal 页 ③ — 长回复 · 粘贴 · 标注</h2>
+    </div>
+    <p style="margin:0 0 8px; max-width:820px; font-size:13.5px; line-height:1.5; color:#7a7a80;">读了 <span class="gt-mono" style="font-size:12px;">Composer.tsx</span> / <span class="gt-mono" style="font-size:12px;">ImageMarkup.tsx</span>:现状输入框是<b>单行</b> <span class="gt-mono" style="font-size:12px;">returnKeyType="send"</span> + <span class="gt-mono" style="font-size:12px;">onSubmitEditing</span>——所以<b>一回车就发,无法换行写长回复</b>。粘贴(识图)、附件(相册/拍照/文件→上传回填路径)、剪贴板图片标注都已具备,一并细化。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:820px; margin-bottom:22px; line-height:1.5;">核心改动:输入框改<b>多行自增高</b>,<b>回车=换行</b>,发送只走 <b>↑ 按钮</b>;长文给<b>全屏撰写</b>。快捷回复(waiting 的 1/2/3、⏎ 控制键)仍即时发,不受影响。</p>
+
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- frame 1: multi-line composer -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① 多行输入 · 回车换行</span>
+        <div style="position:relative; width:300px; height:560px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#0D0D0F; display:flex; flex-direction:column;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
+            <!-- a bit of chat above -->
+            <div style="flex:1; min-height:0; padding:52px 12px 10px; display:flex; flex-direction:column; justify-content:flex-end; gap:9px;">
+              <div style="display:flex; gap:8px;"><span style="width:20px;height:20px;flex:none;border-radius:5px;background:#1C1C1F;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:rgba(235,235,245,0.6);">CC</span><div style="background:#1C1C1F; border-radius:11px; border-top-left-radius:3px; padding:8px 11px; font-size:12.5px; color:rgba(235,235,245,0.9); line-height:1.4;">How should I handle the retry backoff?</div></div>
+            </div>
+            <!-- composer with multi-line input -->
+            <div style="border-top:0.5px solid rgba(255,255,255,0.09); padding:7px 8px 10px; background:#0D0D0F;">
+              <!-- key toolbar (compact) -->
+              <div class="gt-noscroll" style="display:flex; gap:6px; overflow:hidden; padding-bottom:7px;">
+                <span style="flex:none; width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.7); font-size:13px;">⌨</span>
+                <span style="flex:none; height:30px; padding:0 11px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; color:rgba(235,235,245,0.7); font-size:12px;">粘贴</span>
+                <span style="flex:none; height:30px; padding:0 11px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; color:rgba(235,235,245,0.7); font-size:12px;">继续</span>
+                <span style="flex:none; height:30px; padding:0 11px; border-radius:8px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; color:rgba(235,235,245,0.7); font-size:12px;">⏎</span>
+              </div>
+              <!-- input row: attach · MULTILINE field · send -->
+              <div style="display:flex; align-items:flex-end; gap:8px;">
+                <span style="flex:none; width:36px; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.6); font-size:19px;">+</span>
+                <div style="flex:1; min-width:0; border:0.5px solid rgba(6,182,212,0.5); background:rgba(255,255,255,0.06); border-radius:16px; padding:8px 11px;">
+                  <div style="font-size:13.5px; color:rgba(255,255,255,0.92); line-height:1.5;">Use exponential backoff:<br>- base 500ms, factor 2<br>- max 5 retries, then fail<span style="display:inline-block; width:1.5px; height:15px; background:#06B6D4; vertical-align:-3px; margin-left:1px;"></span></div>
+                  <div style="display:flex; align-items:center; gap:8px; margin-top:7px;"><span style="flex:1;"></span><span style="font-size:15px; color:rgba(235,235,245,0.45);">⤢</span></div>
+                </div>
+                <span style="flex:none; width:36px; height:36px; border-radius:18px; background:#06B6D4; display:flex; align-items:center; justify-content:center; color:#fff; font-size:17px;">↑</span>
+              </div>
+              <div style="font-size:10px; color:rgba(235,235,245,0.34); text-align:center; margin-top:7px;">回车换行 · ↑ 发送 · ⤢ 全屏撰写</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- frame 2: fullscreen compose -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 全屏撰写 · 长回复</span>
+        <div style="position:relative; width:300px; height:560px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#0D0D0F; display:flex; flex-direction:column;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:48px 16px 12px; border-bottom:0.5px solid rgba(255,255,255,0.09);">
+              <span style="font-size:14px; color:rgba(235,235,245,0.62);">取消</span>
+              <span style="font-size:14.5px; font-weight:700; color:#fff;">回复 Pica</span>
+              <span style="font-size:13px; font-weight:700; color:#06B6D4;">发送</span>
+            </div>
+            <div style="flex:1; min-height:0; padding:14px 16px;">
+              <div class="gt-mono" style="font-size:13px; color:rgba(255,255,255,0.92); line-height:1.7;">Use exponential backoff:<br><br>- base 500ms, factor 2<br>- max 5 retries, then fail<br>- jitter ±20% to avoid thundering<br>&nbsp;&nbsp;herd<br><br>Log each attempt at debug level.<span style="display:inline-block; width:2px; height:16px; background:#06B6D4; vertical-align:-3px;"></span></div>
+            </div>
+            <div style="border-top:0.5px solid rgba(255,255,255,0.09); padding:9px 14px; display:flex; align-items:center; gap:14px;">
+              <span style="font-size:11px; color:rgba(235,235,245,0.4);">7 行 · 142 字</span>
+              <div style="flex:1;"></div>
+              <span style="font-size:11px; color:rgba(235,235,245,0.4);">⌘⏎ 发送</span>
+            </div>
+          </div>
+        </div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.4;">长文/带格式的回复在这里写,等宽对齐、随便换行;⌘⏎ 或「发送」提交。</span>
+      </div>
+
+      <!-- frame 3: image markup -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">③ 图片标注 · 发送前编辑</span>
+        <div style="position:relative; width:300px; height:560px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#000; display:flex; flex-direction:column;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:48px 16px 12px;">
+              <span style="font-size:14px; color:rgba(255,255,255,0.8);">取消</span>
+              <span style="font-size:14px; font-weight:700; color:#fff;">标注</span>
+              <span style="font-size:13px; font-weight:700; color:#06B6D4;">发送</span>
+            </div>
+            <!-- canvas with a fake screenshot + annotations -->
+            <div style="flex:1; min-height:0; margin:0 14px; border-radius:10px; background:linear-gradient(135deg,#1a2230,#0e1420); position:relative; overflow:hidden;">
+              <!-- fake UI lines -->
+              <div style="position:absolute; left:14px; top:18px; right:14px; height:9px; border-radius:3px; background:rgba(255,255,255,0.1);"></div>
+              <div style="position:absolute; left:14px; top:38px; width:60%; height:9px; border-radius:3px; background:rgba(255,255,255,0.1);"></div>
+              <div style="position:absolute; left:14px; top:72px; right:40px; height:40px; border-radius:6px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08);"></div>
+              <!-- redact bar -->
+              <div style="position:absolute; left:30px; top:130px; width:120px; height:16px; border-radius:3px; background:#11151c;"></div>
+              <!-- red box annotation -->
+              <div style="position:absolute; left:120px; top:64px; width:90px; height:56px; border:2.5px solid #FF3B30; border-radius:4px;"></div>
+              <!-- red arrow -->
+              <svg style="position:absolute; left:150px; top:150px;" width="80" height="60" viewBox="0 0 80 60"><path d="M70 50 L20 14" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" fill="none"></path><path d="M20 14 L34 18 M20 14 L24 30" stroke="#FF3B30" stroke-width="3" stroke-linecap="round" fill="none"></path></svg>
+            </div>
+            <!-- markup toolbar -->
+            <div style="padding:14px 16px 18px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <span style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">✏️</span>
+                <span style="width:38px;height:38px;border-radius:10px;background:rgba(6,182,212,0.2);border:1px solid #06B6D4;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">↗</span>
+                <span style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;">▢</span>
+                <span style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;">▦</span>
+                <span style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;">⤢</span>
+                <span style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;">↶</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:11px; justify-content:center;">
+                <span style="width:22px;height:22px;border-radius:50%;background:#FF3B30;box-shadow:0 0 0 2px #fff;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#FFCC00;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#34C759;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#0A84FF;"></span>
+                <span style="width:20px;height:20px;border-radius:50%;background:#fff;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.4;">画笔/箭头/框/打码/裁剪/撤销 + 配色;Done 拍平 PNG → 上传 → 回填路径。</span>
+      </div>
+
+      <!-- spec column -->
+      <div style="flex:1; min-width:300px; max-width:400px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;"><span style="width:20px;height:20px;border-radius:5px;background:#EF4444;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">!</span><span style="font-size:13px; font-weight:660;">回车换行 vs 发送(核心修复)</span></div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;">把输入框改 <span class="gt-mono" style="font-size:11px;">multiline</span> + <span class="gt-mono" style="font-size:11px;">returnKeyType="default"</span>,<b>去掉 <span class="gt-mono" style="font-size:11px;">onSubmitEditing</span> 发送</b>——回车只插换行。发送统一走 <b>↑ 按钮</b>(或全屏的 ⌘⏎)。这样长回复、带换行的指令都能正常写。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">输入框行为</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">· <b>自增高</b> 1→6 行,超出内部滚动;<span class="gt-mono" style="font-size:11px;">⤢</span> 进<b>全屏撰写</b>(等宽、大区域、⌘⏎ 发送)。<br>· <b>快捷回复不变</b>:waiting 的 <span class="gt-mono" style="font-size:11px;">1/2/3</span>、控制键 <span class="gt-mono" style="font-size:11px;">⏎/Ctrl-C/Esc/Tab</span> 仍即时发(它们是「发送 payload」,与文本框换行无关)。<br>· 设置里给一个 <b>「回车直接发送」</b>开关(默认关),照顾习惯党。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">粘贴 · 附件(已具备 → 细化)</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">· <b>粘贴识图</b>:剪贴板是图 → 进标注编辑器;是文 → 插入文本框(<span class="gt-mono" style="font-size:11px;">Clipboard.hasImage</span>)。<br>· <b>＋ 附件</b>:相册 / 拍照 / 文件(<span class="gt-mono" style="font-size:11px;">ActionSheetIOS</span>)→ 上传到 Mac → <b>回填路径</b>到输入框,让 agent 直接读(如 <span class="gt-mono" style="font-size:11px;">look at /…/shot.png</span>)。<br>· 上传中显示 spinner;失败提示重试。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">图片标注(扩展 ImageMarkup)</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">现状仅<b>红色画笔</b>。扩展工具:<b>画笔 · 箭头 · 方框 · 打码(马赛克/黑条)· 裁剪 · 撤销</b> + 5 色板。截图圈重点、遮敏感信息后再发最实用。Done 用 <span class="gt-mono" style="font-size:11px;">react-native-view-shot</span> 拍平 → 上传 → 回填路径。</div>
+        </div>
+        <div style="background:#F4F8FF; border:1px solid rgba(10,90,200,0.15); border-radius:12px; padding:14px 16px;">
+          <div style="font-size:12.5px; font-weight:660; color:#0a5ac8; margin-bottom:5px;">落地顺序</div>
+          <div style="font-size:12px; line-height:1.6; color:#3a4a60;">① 多行输入(最高优先,直接解你的痛点)→ ② 全屏撰写 → ③ 标注工具扩展。①② 只动 <span class="gt-mono" style="font-size:11px;">Composer.tsx</span>;③ 动 <span class="gt-mono" style="font-size:11px;">ImageMarkup.tsx</span>。粘贴/附件已可用,补 spinner 与错误态即可。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 12: 消息通知 (mobile + menubar) ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">12</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">消息通知 — 手机 + 菜单栏</h2>
+    </div>
+    <p style="margin:0 0 8px; max-width:780px; font-size:13.5px; line-height:1.5; color:#7a7a80;">两类事件:<b>waiting</b>(agent 卡住、等你 — 最重要)与 <b>done</b>(working→idle、跑完了)。手机走 APNs 锁屏推送,菜单栏走原生通知。设计原则:<b>waiting 显眼、done 安静</b>,可逐类开关,同 agent 的重复提醒<b>合并不堆叠</b>,点按直达对应 pane。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:780px; margin-bottom:22px; line-height:1.5;">实现已就绪(<span class="gt-mono" style="font-size:11px;">push.go</span>):每类一条 intent、<span class="gt-mono" style="font-size:11px;">CollapseID = pane</span> 合并、静默 badge 同步绝对 waiting 数。本节统一两端的视觉与文案。</p>
+
+    <div style="display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- mobile lock screen -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">手机锁屏 · waiting + done</span>
+        <div style="position:relative; width:300px; height:600px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.24), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:linear-gradient(170deg,#1a2436 0%,#0f1520 60%,#0a0d14 100%);">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:30;"></div>
+            <div style="text-align:center; padding-top:54px;">
+              <div style="font-size:12px; font-weight:600; color:rgba(255,255,255,0.8);">周一 6月29日</div>
+              <div style="font-size:66px; font-weight:600; color:#fff; letter-spacing:-1px; line-height:1.05;">9:41</div>
+            </div>
+            <div style="position:absolute; left:11px; right:11px; bottom:74px; display:flex; flex-direction:column; gap:8px;">
+              <!-- waiting push -->
+              <div style="background:rgba(40,40,46,0.72); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); border-radius:17px; padding:12px 13px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:7px;">
+                  <span style="width:20px;height:20px;border-radius:5px;background:#0f1115;display:flex;align-items:center;justify-content:center;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;width:11px;height:11px;"><span style="background:rgba(255,255,255,0.28);border-radius:1px;"></span><span style="background:#06B6D4;border-radius:1px;"></span><span style="background:rgba(255,255,255,0.28);border-radius:1px;grid-column:span 2;"></span></span></span>
+                  <span style="font-size:11.5px; font-weight:600; color:rgba(255,255,255,0.6); flex:1; text-transform:uppercase; letter-spacing:0.3px;">gtmux</span>
+                  <span style="font-size:11px; color:rgba(255,255,255,0.45);">now</span>
+                </div>
+                <div style="display:flex; align-items:flex-start; gap:8px;">
+                  <span style="margin-top:2px; width:15px;height:15px;flex:none;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span>
+                  <div><div style="font-size:13.5px; font-weight:700; color:#fff; line-height:1.3;">Pica 等你输入</div><div style="font-size:12.5px; color:rgba(255,255,255,0.78); line-height:1.35; margin-top:1px;">permission to run tests · Claude Code</div></div>
+                </div>
+              </div>
+              <!-- done push (dim) -->
+              <div style="background:rgba(40,40,46,0.55); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); border-radius:17px; padding:10px 13px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="width:15px;height:15px;flex:none;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800;">✓</span>
+                  <span style="font-size:13px; color:rgba(255,255,255,0.7); flex:1;"><b style="color:rgba(255,255,255,0.9);">Rodi 完成了</b> · Rodi feature dev</span>
+                  <span style="font-size:11px; color:rgba(255,255,255,0.4);">8m</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">waiting = 红方块·双竖线 + 加粗;done = 绿勾、低饱和。点按深链到该 pane。</div>
+      </div>
+
+      <!-- menubar native notification -->
+      <div style="flex:1; min-width:360px; display:flex; flex-direction:column; gap:16px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">菜单栏(macOS 原生通知)</span>
+        <!-- banner waiting -->
+        <div style="background:rgba(245,245,247,0.86); -webkit-backdrop-filter:blur(30px); backdrop-filter:blur(30px); border:0.5px solid rgba(0,0,0,0.1); border-radius:18px; box-shadow:0 16px 44px rgba(0,0,0,0.18); padding:14px 16px; display:flex; align-items:flex-start; gap:12px; max-width:420px;">
+          <div style="width:40px;height:40px;flex:none;border-radius:10px;background:#0f1115;display:flex;align-items:center;justify-content:center;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;width:22px;height:22px;"><span style="background:rgba(255,255,255,0.28);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.28);border-radius:3px;grid-column:span 2;"></span></span></div>
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="font-size:13px; font-weight:700; color:#1d1d1f;">gtmux</span><span style="width:13px;height:13px;border-radius:3px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:1px;"><span style="width:1.5px;height:5px;background:#fff;border-radius:1px;"></span><span style="width:1.5px;height:5px;background:#fff;border-radius:1px;"></span></span><span style="margin-left:auto; font-size:11px; color:#9a9aa0;">now</span></div>
+            <div style="font-size:13px; font-weight:600; color:#1d1d1f; margin-top:3px;">Pica 等你输入</div>
+            <div style="font-size:12.5px; color:#6b6b70; margin-top:1px;">permission to run tests · Claude Code</div>
+          </div>
+        </div>
+        <!-- banner done -->
+        <div style="background:rgba(245,245,247,0.86); -webkit-backdrop-filter:blur(30px); backdrop-filter:blur(30px); border:0.5px solid rgba(0,0,0,0.1); border-radius:18px; box-shadow:0 16px 44px rgba(0,0,0,0.14); padding:13px 16px; display:flex; align-items:center; gap:12px; max-width:420px;">
+          <div style="width:34px;height:34px;flex:none;border-radius:9px;background:#0f1115;display:flex;align-items:center;justify-content:center;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:18px;height:18px;"><span style="background:rgba(255,255,255,0.28);border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:rgba(255,255,255,0.28);border-radius:2px;grid-column:span 2;"></span></span></div>
+          <div style="flex:1;"><div style="display:flex; align-items:center; gap:6px;"><span style="width:13px;height:13px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:800;">✓</span><span style="font-size:13px; color:#1d1d1f;"><b>Rodi 完成了</b></span><span style="margin-left:auto; font-size:11px; color:#9a9aa0;">8m</span></div><div style="font-size:12px; color:#6b6b70; margin-top:2px;">Rodi feature dev</div></div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">两端一致的规则</div>
+          <div style="font-size:12px; line-height:1.65; color:#5a5a60;">
+            · 文案统一:waiting = <span class="gt-mono" style="font-size:11px;">「{session} 等你输入」+ task</span>;done = <span class="gt-mono" style="font-size:11px;">「{session} 完成了」+ task</span>。<br>
+            · 重复提醒合并:同 pane 再次 nudge <b>替换</b>原 banner(<span class="gt-mono" style="font-size:11px;">CollapseID=pane</span>),不堆叠。<br>
+            · 点按 → 手机深链到 pane 详情 / 菜单栏打开 popover 并高亮该行。<br>
+            · 菜单栏 waiting 可加 <b>Approve / Stop</b> 通知动作(原生 actions),无需开窗。<br>
+            · 静默 badge:app 图标红点 = 当前 waiting 总数,多设备同步(<span class="gt-mono" style="font-size:11px;">Silent + Badge</span>)。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- notification settings -->
+    <div style="margin-top:24px; display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:880px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">逐类开关(设置)</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px dashed rgba(0,0,0,0.07);"><div><div style="font-size:13px; font-weight:600; color:#1d1d1f;">等你输入 (waiting)</div><div style="font-size:11.5px; color:#9a9aa0;">最重要,默认开</div></div><span style="width:42px;height:25px;border-radius:13px;background:#22C55E;position:relative;display:inline-block;flex:none;"><span style="position:absolute;right:2px;top:2px;width:21px;height:21px;border-radius:50%;background:#fff;"></span></span></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 0;"><div><div style="font-size:13px; font-weight:600; color:#1d1d1f;">已完成 (done)</div><div style="font-size:11.5px; color:#9a9aa0;">可关,避免过度打扰</div></div><span style="width:42px;height:25px;border-radius:13px;background:#22C55E;position:relative;display:inline-block;flex:none;"><span style="position:absolute;right:2px;top:2px;width:21px;height:21px;border-radius:50%;background:#fff;"></span></span></div>
+        <div style="font-size:11.5px; color:#9a9aa0; margin-top:10px; line-height:1.5;">对应 <span class="gt-mono" style="font-size:11px;">DeviceToken.Kinds</span>:设备级订阅,关掉 done 就只收 waiting。</div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">投递保证</div>
+        <div style="font-size:12px; line-height:1.7; color:#5a5a60;">
+          · 路径:<span class="gt-mono" style="font-size:11px;">serve → relay → APNs</span>,Apple 投递,<b>离开 VPN 也收</b>。<br>· relay 无状态、不持内容:只见 token + 一行 title/body。<br>· iOS 原生 APNs,无需 Firebase;Android/Harmony 同一 intent 模型。<br>· 本地(同网)亦可直发,前台收到改为应用内 banner。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 13: LIVE ACTIVITY ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">13</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Live Activity — 锁屏 + 灵动岛</h2>
+    </div>
+    <p style="margin:0 0 8px; max-width:780px; font-size:13.5px; line-height:1.5; color:#7a7a80;">把 agent 总览常驻锁屏与灵动岛,<b>不用解锁就能扫一眼</b>:几个在等你、几个在跑。状态变化通过 push-to-update 实时刷新(<span class="gt-mono" style="font-size:11px;">PushLiveActivity</span> 推 tally),app 被杀也更新。设计随<b>有无 waiting 切换强弱</b>:有人等你时变红、醒目;全在跑时安静。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:780px; margin-bottom:22px; line-height:1.5;">数据已就绪(<span class="gt-mono" style="font-size:11px;">ContentState: waiting/working/idle + waitingTitle/waitingSession</span>)。ActivityKit,iOS 16.1+。</div>
+
+    <div style="display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- lock screen live activity -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">锁屏 Live Activity · 有人等你</span>
+        <div style="width:340px; background:rgba(28,28,32,0.92); border-radius:22px; padding:16px 18px; box-shadow:0 18px 44px rgba(0,0,0,0.24); border:0.5px solid rgba(255,255,255,0.08);">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+            <span style="width:26px;height:26px;border-radius:7px;background:#0f1115;display:flex;align-items:center;justify-content:center;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:15px;height:15px;"><span style="background:rgba(255,255,255,0.3);border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:2px;grid-column:span 2;"></span></span></span>
+            <span style="font-size:13px; font-weight:700; color:#fff;">gtmux</span>
+            <span style="margin-left:auto; font-size:11px; color:rgba(235,235,245,0.45);">home-mac</span>
+          </div>
+          <!-- primary: who needs you -->
+          <div style="display:flex; align-items:center; gap:11px; margin-bottom:14px;">
+            <div style="width:38px;height:38px;flex:none;border-radius:9px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:2px;"><span style="width:3px;height:13px;background:#fff;border-radius:1.5px;"></span><span style="width:3px;height:13px;background:#fff;border-radius:1.5px;"></span></div>
+            <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:700; color:#fff;">Pica 等你输入</div><div style="font-size:12px; color:rgba(235,235,245,0.55);">permission to run tests</div></div>
+          </div>
+          <!-- tally bar -->
+          <div style="display:flex; gap:8px;">
+            <div style="flex:1; background:rgba(239,68,68,0.16); border-radius:9px; padding:8px 0; text-align:center;"><div style="font-size:18px; font-weight:800; color:#FF6E67;">1</div><div style="font-size:10px; color:rgba(255,255,255,0.5);">等你</div></div>
+            <div style="flex:1; background:rgba(6,182,212,0.14); border-radius:9px; padding:8px 0; text-align:center;"><div style="font-size:18px; font-weight:800; color:#27C7E6;">2</div><div style="font-size:10px; color:rgba(255,255,255,0.5);">运行中</div></div>
+            <div style="flex:1; background:rgba(255,255,255,0.06); border-radius:9px; padding:8px 0; text-align:center;"><div style="font-size:18px; font-weight:800; color:rgba(235,235,245,0.7);">5</div><div style="font-size:10px; color:rgba(255,255,255,0.5);">空闲</div></div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:340px; text-align:center; line-height:1.45;">有 waiting:顶部突出「谁在等你」,下面三色计数条。</div>
+      </div>
+
+      <!-- calm state + dynamic island -->
+      <div style="flex:1; min-width:340px; display:flex; flex-direction:column; gap:20px;">
+        <!-- calm lock -->
+        <div>
+          <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">锁屏 · 全在跑(安静态)</span>
+          <div style="width:340px; background:rgba(28,28,32,0.92); border-radius:22px; padding:14px 18px; box-shadow:0 14px 36px rgba(0,0,0,0.2); border:0.5px solid rgba(255,255,255,0.08); margin-top:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="width:24px;height:24px;border-radius:6px;background:#0f1115;display:flex;align-items:center;justify-content:center;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;width:13px;height:13px;"><span style="background:rgba(255,255,255,0.3);border-radius:1px;"></span><span style="background:#06B6D4;border-radius:1px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:1px;grid-column:span 2;"></span></span></span>
+              <span style="font-size:13px; font-weight:700; color:#fff;">gtmux</span>
+              <span style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+                <span style="display:flex; align-items:center; gap:5px;"><span style="width:11px;height:11px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;"><span style="width:5px;height:5px;border:1.3px solid #fff;border-top-color:transparent;border-radius:50%;"></span></span><span style="font-size:14px; font-weight:700; color:#fff;">3</span></span>
+                <span style="display:flex; align-items:center; gap:5px;"><span style="width:11px;height:11px;border-radius:50%;background:#22C55E;display:flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:800;">✓</span><span style="font-size:14px; font-weight:700; color:rgba(235,235,245,0.7);">5</span></span>
+              </span>
+            </div>
+            <div style="font-size:11.5px; color:rgba(235,235,245,0.45); margin-top:8px;">没有人在等你 · 一切顺利</div>
+          </div>
+          <div style="font-size:11.5px; color:#9a9aa0; max-width:340px; line-height:1.45; margin-top:8px;">无 waiting:塌成一行计数,不变红、不喧哗(绝不 nag)。</div>
+        </div>
+
+        <!-- dynamic island -->
+        <div>
+          <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">灵动岛</span>
+          <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap; margin-top:12px;">
+            <!-- compact -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;">
+              <div style="background:#000; border-radius:20px; padding:7px 12px; display:flex; align-items:center; gap:60px; min-width:150px;">
+                <span style="width:16px;height:16px;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span>
+                <span style="font-size:14px; font-weight:800; color:#FF6E67;">1</span>
+              </div>
+              <span style="font-size:10.5px; color:#9a9aa0;">compact · 有 waiting</span>
+            </div>
+            <!-- minimal calm -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:7px;">
+              <div style="background:#000; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center;"><span style="width:13px;height:13px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;"><span style="width:6px;height:6px;border:1.4px solid #fff;border-top-color:transparent;border-radius:50%;"></span></span></div>
+              <span style="font-size:10.5px; color:#9a9aa0;">minimal · 全在跑</span>
+            </div>
+          </div>
+          <!-- expanded -->
+          <div style="margin-top:16px;">
+            <div style="background:#000; border-radius:26px; padding:16px 20px; max-width:360px;">
+              <div style="display:flex; align-items:center; gap:11px; margin-bottom:13px;">
+                <div style="width:34px;height:34px;flex:none;border-radius:8px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:2px;"><span style="width:3px;height:11px;background:#fff;border-radius:1.5px;"></span><span style="width:3px;height:11px;background:#fff;border-radius:1.5px;"></span></div>
+                <div style="flex:1;"><div style="font-size:14px; font-weight:700; color:#fff;">Pica 等你输入</div><div style="font-size:11.5px; color:rgba(235,235,245,0.5);">permission to run tests</div></div>
+              </div>
+              <div style="display:flex; gap:7px;">
+                <div style="flex:1; background:rgba(239,68,68,0.18); border-radius:8px; padding:6px 0; text-align:center;"><span style="font-size:15px; font-weight:800; color:#FF6E67;">1</span> <span style="font-size:10px; color:rgba(255,255,255,0.5);">等你</span></div>
+                <div style="flex:1; background:rgba(6,182,212,0.16); border-radius:8px; padding:6px 0; text-align:center;"><span style="font-size:15px; font-weight:800; color:#27C7E6;">2</span> <span style="font-size:10px; color:rgba(255,255,255,0.5);">跑</span></div>
+                <div style="flex:1; background:rgba(255,255,255,0.07); border-radius:8px; padding:6px 0; text-align:center;"><span style="font-size:15px; font-weight:800; color:rgba(235,235,245,0.7);">5</span> <span style="font-size:10px; color:rgba(255,255,255,0.5);">闲</span></div>
+              </div>
+            </div>
+            <span style="font-size:10.5px; color:#9a9aa0; display:block; margin-top:8px;">expanded · 长按展开:谁在等你 + 三色计数</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- live activity spec -->
+    <div style="margin-top:24px; display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:880px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">状态驱动强弱</div>
+        <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;"><b>有 waiting</b> → 红方块·双竖线主图、突出「谁在等你」、灵动岛 compact 显红计数。<b>无 waiting</b> → 塌成计数行/minimal 加载环,中性、绝不变红。这与全局「needs-you 响、其余静」一致。</div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">落地要点</div>
+        <div style="font-size:12px; line-height:1.65; color:#5a5a60;">
+          · ActivityKit,内容 = <span class="gt-mono" style="font-size:11px;">waiting/working/idle + waitingTitle/waitingSession</span>。<br>· push-to-update:<span class="gt-mono" style="font-size:11px;">PushLiveActivity</span> 在 tally 变化时推,app 杀掉也刷新。<br>· 多 waiting 时主图显最新一个 + 计数「等你 N」;点开进 app 该 pane。<br>· Live Activity 属 Pro 远程能力一并交付(本地也可用,锁屏聚合是高频价值)。<br>· 启动/结束:有 agent 时自动起,全空闲一段时间后 end。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 14: 通知 / LIVE ACTIVITY 直接回复 ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">14</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">不进 app 直接回复 waiting</h2>
+      <span style="font-size:10.5px; color:#0a5ac8; background:#E8F1FF; border-radius:5px; padding:2px 8px; font-weight:600;">高价值交互</span>
+    </div>
+    <p style="margin:0 0 8px; max-width:780px; font-size:13.5px; line-height:1.5; color:#7a7a80;">完全可行,而且是体验的高光点:agent 等你时,大多数情况只是按 <span class="gt-mono" style="font-size:12px;">1/2/3</span>。<b>从通知 / 灵动岛 / Live Activity 一键回</b>,不解锁、不进 app —— 几秒钟解除阻塞。底层已就绪:通知带 <span class="gt-mono" style="font-size:11px;">pane</span>,回复 = <span class="gt-mono" style="font-size:11px;">POST /api/send {text:"1", enter:true}</span>。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:780px; margin-bottom:22px; line-height:1.5;">技术路径:通知用 <b>UNNotificationAction</b>(category=waiting);Live Activity / 灵动岛用 <b>App Intent 按钮</b>(iOS 17+)。回复在 <b>Notification Service / App Intent extension</b> 里直接发 HTTPS,无需唤起主 app。</p>
+
+    <div style="display:flex; gap:30px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- notification expanded with actions -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">通知长按 / 下拉 · 回复动作</span>
+        <div style="position:relative; width:320px; height:560px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.24), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:linear-gradient(170deg,#1a2436 0%,#0f1520 60%,#0a0d14 100%);">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:30;"></div>
+            <div style="text-align:center; padding-top:40px;">
+              <div style="font-size:46px; font-weight:600; color:#fff; letter-spacing:-1px;">9:41</div>
+            </div>
+            <!-- expanded notification -->
+            <div style="position:absolute; left:11px; right:11px; top:130px;">
+              <div style="background:rgba(245,245,247,0.96); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+                <div style="padding:14px 15px 13px;">
+                  <div style="display:flex; align-items:center; gap:8px; margin-bottom:9px;">
+                    <span style="width:22px;height:22px;border-radius:5px;background:#0f1115;display:flex;align-items:center;justify-content:center;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;width:12px;height:12px;"><span style="background:rgba(255,255,255,0.28);border-radius:1px;"></span><span style="background:#06B6D4;border-radius:1px;"></span><span style="background:rgba(255,255,255,0.28);border-radius:1px;grid-column:span 2;"></span></span></span>
+                    <span style="font-size:11.5px; font-weight:600; color:#6b6b70; flex:1; text-transform:uppercase; letter-spacing:0.3px;">gtmux</span>
+                    <span style="font-size:11px; color:#9a9aa0;">now</span>
+                  </div>
+                  <div style="display:flex; align-items:flex-start; gap:9px;">
+                    <span style="margin-top:1px; width:16px;height:16px;flex:none;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span>
+                    <div><div style="font-size:14px; font-weight:700; color:#1d1d1f;">Pica 等你输入</div><div style="font-size:13px; color:#3a3a40; margin-top:2px; line-height:1.35;">Run the end-to-end suite against a live server?</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:4px;">Claude Code · permission to run tests</div></div>
+                  </div>
+                </div>
+                <!-- preview of pane snippet (notification has the menu) -->
+                <div style="margin:0 15px 12px; background:#0A0A0C; border-radius:10px; padding:10px 12px;">
+                  <pre class="gt-mono" style="margin:0; font-size:10.5px; line-height:1.5;"><span style="color:#5AF78E;">❯ 1. Yes</span>
+<span style="color:#8A9099;">  2. Yes, and don't ask again</span>
+<span style="color:#8A9099;">  3. No, tell Claude what to do</span></pre>
+                </div>
+                <!-- action buttons: real labels from the pane menu, one per row -->
+                <div style="border-top:0.5px solid rgba(0,0,0,0.1);">
+                  <div style="display:flex; align-items:center; gap:10px; padding:12px 15px; border-bottom:0.5px solid rgba(0,0,0,0.08);"><span style="width:20px;height:20px;flex:none;border-radius:6px;background:#06B6D4;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</span><span style="font-size:13.5px; font-weight:600; color:#1d1d1f;">Yes</span></div>
+                  <div style="display:flex; align-items:center; gap:10px; padding:12px 15px; border-bottom:0.5px solid rgba(0,0,0,0.08);"><span style="width:20px;height:20px;flex:none;border-radius:6px;background:rgba(0,0,0,0.07);color:#3a3a40;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</span><span style="font-size:13.5px; color:#3a3a40;">Yes, and don't ask again</span></div>
+                  <div style="display:flex; align-items:center; gap:10px; padding:12px 15px;"><span style="width:20px;height:20px;flex:none;border-radius:6px;background:rgba(0,0,0,0.07);color:#3a3a40;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span><span style="font-size:13.5px; color:#3a3a40;">No, tell Claude what to do</span></div>
+                </div>
+                <div style="border-top:0.5px solid rgba(0,0,0,0.1); text-align:center; padding:12px 0; font-size:13px; color:#6b6b70;">⌨ 回复… · 打开</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:#9a9aa0; max-width:320px; text-align:center; line-height:1.45;">长按通知展开:解析 pane 菜单成 1/2/3 按钮 + 「回复…」文本框兜底。点完即发、通知消失。</div>
+      </div>
+
+      <!-- right column: live activity buttons + dynamic island + text reply -->
+      <div style="flex:1; min-width:340px; display:flex; flex-direction:column; gap:22px;">
+        <!-- live activity with buttons -->
+        <div>
+          <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">Live Activity · 交互按钮(iOS 17+)</span>
+          <div style="width:340px; background:rgba(28,28,32,0.94); border-radius:22px; padding:15px 17px; box-shadow:0 16px 40px rgba(0,0,0,0.24); border:0.5px solid rgba(255,255,255,0.08); margin-top:10px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:13px;">
+              <span style="width:24px;height:24px;border-radius:6px;background:#0f1115;display:flex;align-items:center;justify-content:center;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;width:13px;height:13px;"><span style="background:rgba(255,255,255,0.3);border-radius:1px;"></span><span style="background:#06B6D4;border-radius:1px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:1px;grid-column:span 2;"></span></span></span>
+              <div style="flex:1; min-width:0;"><div style="font-size:13.5px; font-weight:700; color:#fff;">Pica 等你输入</div><div style="font-size:11px; color:rgba(235,235,245,0.5);">permission to run tests</div></div>
+              <span style="font-size:11px; color:rgba(235,235,245,0.4);">+2 等你</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:7px;">
+              <div style="display:flex; align-items:center; gap:9px; background:#06B6D4; border-radius:10px; padding:9px 13px;"><span style="width:18px;height:18px;flex:none;border-radius:5px;background:rgba(255,255,255,0.25);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</span><span style="font-size:13px; font-weight:700; color:#fff;">Yes</span></div>
+              <div style="display:flex; align-items:center; gap:9px; background:rgba(255,255,255,0.1); border-radius:10px; padding:9px 13px;"><span style="width:18px;height:18px;flex:none;border-radius:5px;background:rgba(255,255,255,0.16);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</span><span style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.9);">Yes, and don't ask again</span></div>
+              <div style="display:flex; align-items:center; gap:9px; background:rgba(255,255,255,0.1); border-radius:10px; padding:9px 13px;"><span style="width:18px;height:18px;flex:none;border-radius:5px;background:rgba(255,255,255,0.16);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span><span style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.9);">No, tell Claude what to do</span></div>
+            </div>
+          </div>
+          <div style="font-size:11.5px; color:#9a9aa0; max-width:340px; line-height:1.45; margin-top:8px;">锁屏 Live Activity 直接嵌按钮(App Intent)。点完后内容 push-to-update,按钮换成下一个等你的 agent 或塌成安静计数。</div>
+        </div>
+
+        <!-- dynamic island expanded with buttons -->
+        <div>
+          <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">灵动岛展开 · 带回复</span>
+          <div style="background:#000; border-radius:26px; padding:15px 18px; max-width:360px; margin-top:12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+              <div style="width:30px;height:30px;flex:none;border-radius:7px;background:#EF4444;display:flex;align-items:center;justify-content:center;gap:2px;"><span style="width:2.5px;height:10px;background:#fff;border-radius:1.5px;"></span><span style="width:2.5px;height:10px;background:#fff;border-radius:1.5px;"></span></div>
+              <div style="flex:1;"><div style="font-size:13.5px; font-weight:700; color:#fff;">Pica 等你输入</div><div style="font-size:11px; color:rgba(235,235,245,0.5);">permission to run tests</div></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; align-items:center; gap:8px; background:#06B6D4; border-radius:9px; padding:8px 12px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:rgba(255,255,255,0.25);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</span><span style="font-size:12.5px; font-weight:700; color:#fff;">Yes</span></div>
+              <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.12); border-radius:9px; padding:8px 12px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:rgba(255,255,255,0.18);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</span><span style="font-size:12.5px; font-weight:600; color:#fff;">Yes, and don't ask again</span></div>
+              <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.12); border-radius:9px; padding:8px 12px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:rgba(255,255,255,0.18);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span><span style="font-size:12.5px; font-weight:600; color:#fff;">No, tell Claude what to do</span></div>
+            </div>
+          </div>
+          <div style="font-size:11.5px; color:#9a9aa0; max-width:360px; line-height:1.45; margin-top:8px;">长按灵动岛展开:同样的 1/2/3 按钮,手指不离屏即可解阻塞。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- design rules + landing -->
+    <div style="margin-top:26px; display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:980px;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">交互规则</div>
+        <div style="font-size:12.5px; line-height:1.65; color:#5a5a60;">
+          · <b>只在 waiting 时</b>出现回复按钮;working/done 通知不带(无可回内容)。<br>
+          · 按钮 = 解析 pane 菜单(<span class="gt-mono" style="font-size:11px;">❯ 1./2./3.</span>);解析不到则回退通用「✓ 批准 / ✕ 拒绝」。<br>
+          · 点完<b>即时反馈</b>:通知收起 + 短震动;Live Activity 内容更新成下一个 waiting 或安静态。<br>
+          · 危险项(如 <span class="gt-mono" style="font-size:11px;">3 · 否</span> 之外的删除/部署确认)<b>不放进按钮</b>,引导进 app,避免锁屏误触。<br>
+          · 「回复…」文本框只在通知里(iOS textInput action),自由输入兜底。
+        </div>
+      </div>
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
+        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:12px;">落地要点(给 repo CC)</div>
+        <div style="font-size:12px; line-height:1.7; color:#5a5a60;">
+          · <b>通知</b>:注册 <span class="gt-mono" style="font-size:11px;">UNNotificationCategory("waiting")</span>,带 3 个 <span class="gt-mono" style="font-size:11px;">UNNotificationAction</span> + 1 个 textInput;在 <b>NotificationService/Content extension</b> 里 POST /api/send,不进主 app。<br>
+          · <b>Live Activity / 岛</b>:iOS 17+ <span class="gt-mono" style="font-size:11px;">Button(intent:)</span> + <span class="gt-mono" style="font-size:11px;">AppIntent</span>,intent 内发 /api/send。<br>
+          · push 需带菜单选项(扩展 PushIntent:<span class="gt-mono" style="font-size:11px;">options:["1·Yes","2·Always","3·No"]</span>)供 extension 渲染按钮。<br>
+          · 远程(tunnel)下也要能发——extension 走同一鉴权 token。<br>
+          · 发送幂等:附 <span class="gt-mono" style="font-size:11px;">pane + 时间戳</span>,防止重复点。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 15: 设置页详细设计 ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">15</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">设置页 — 详细设计</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:780px; font-size:13.5px; line-height:1.5; color:#7a7a80;">iOS 分组列表(Form),信息架构按使用频率排:账户/Pro → 通知 → 外观 → 终端 → 语音 → server → 安全 → 关于。下面是完整两屏(可滚)+ 字段说明。</p>
+
+    <div style="display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- settings screen 1 -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① 账户 · 通知 · 外观</span>
+        <div style="position:relative; width:300px; height:640px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div class="gt-noscroll" style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
+            <div style="padding:54px 16px 16px;">
+              <div style="font-size:26px; font-weight:700; color:#1d1d1f; margin-bottom:14px;">设置</div>
+              <!-- Pro banner -->
+              <div style="background:linear-gradient(160deg,#1b1d24,#0f1016); border-radius:14px; padding:14px 15px; display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+                <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:26px; height:26px;"><span style="background:rgba(255,255,255,0.3);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:3px;grid-column:span 2;"></span></span>
+                <div style="flex:1;"><div style="font-size:14px; font-weight:700; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></div><div style="font-size:11px; color:rgba(235,235,245,0.55);">远程访问 · 多 server · 多设备</div></div>
+                <span style="font-size:12px; font-weight:700; color:#fff; background:#06B6D4; border-radius:7px; padding:6px 12px;">升级</span>
+              </div>
+              <!-- Notifications group -->
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">通知</div>
+              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">等你输入</span><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">已完成</span><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">通知声音</span><span style="font-size:13.5px; color:#8a8a8e;">默认 ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">勿扰时段</span><span style="font-size:13.5px; color:#8a8a8e;">23:00–8:00 ›</span></div>
+              </div>
+              <!-- Appearance group -->
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">外观</div>
+              <div style="background:#fff; border-radius:12px; overflow:hidden;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">主题</span><span style="font-size:13.5px; color:#8a8a8e;">跟随系统 ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">语言</span><span style="font-size:13.5px; color:#8a8a8e;">跟随系统 ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">App 图标</span><span style="font-size:13.5px; color:#8a8a8e;">默认 ›</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- settings screen 2 -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 终端 · 语音 · server · 安全</span>
+        <div style="position:relative; width:300px; height:640px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div class="gt-noscroll" style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
+            <div style="padding:54px 16px 16px;">
+              <!-- Terminal group -->
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">终端</div>
+              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">默认打开</span><span style="font-size:13.5px; color:#8a8a8e;">对话 ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">终端字体</span><span style="font-size:13.5px; color:#8a8a8e;">JetBrains Mono ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">字号</span><span style="font-size:13.5px; color:#8a8a8e;">13 ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">修饰键显示</span><span style="font-size:13.5px; color:#8a8a8e;">图标 ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><div><div style="font-size:14.5px; color:#1d1d1f;">xterm 渲染器</div><div style="font-size:11px; color:#9a9aa0; margin-top:1px;">真彩 · CJK 宽度 · beta</div></div><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
+              </div>
+              <!-- Voice -->
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">语音</div>
+              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">听写引擎</span><span style="font-size:13.5px; color:#8a8a8e;">设备端 ›</span></div>
+              </div>
+              <!-- Server -->
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">server</div>
+              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#22C55E;"></span><span style="font-size:14.5px; color:#1d1d1f;">home-mac</span></div><span style="font-size:13.5px; color:#8a8a8e;">管理 ›</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">在电脑上打开</span><span style="font-size:13.5px; color:#8a8a8e;">↗</span></div>
+              </div>
+              <!-- Security -->
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">安全</div>
+              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">Face ID 解锁</span><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
+              </div>
+              <div style="text-align:center;"><span style="font-size:12px; color:#a8a8ae;">gtmux 0.9.3 · by ccy</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- settings spec -->
+      <div style="flex:1; min-width:280px; max-width:380px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">信息架构(按频率)</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">
+            <b>账户/Pro</b> · <b>通知</b>(等你/完成开关 + 声音 + 勿扰)· <b>外观</b>(主题/语言/图标)· <b>终端</b>(默认模式/字体/字号/修饰键显示/xterm)· <b>语音</b>(引擎)· <b>server</b>(当前+管理+在电脑打开)· <b>安全</b>(Face ID)· <b>关于</b>(版本)。
+          </div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">新增项(相对现状)</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">
+            · <b>通知声音 / 勿扰时段</b>:夜里不被 done 吵醒。<br>· <b>主题</b>:跟随系统 / 浅 / 深。<br>· <b>App 图标</b>:备用图标(Pro 彩蛋)。<br>· <b>默认打开 对话/终端</b>:呼应 §14 双模式。<br>· <b>修饰键显示 图标/文字</b>:呼应 Moshi toolbar。<br>· <b>Face ID 解锁</b>:打开 app / 远程连接前生物识别。<br>· <b>语音引擎</b>:设备端 / 云端(配额)。
+          </div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">交互规范</div>
+          <div style="font-size:12px; line-height:1.65; color:#5a5a60;">分组 Form;开关即时生效;带二级页的用 <span class="gt-mono" style="font-size:11px;">›</span> 进选择列表(单选打勾);破坏性项(移除 server / 退出登录)红色置底;Pro 项未订阅显示锁,点击进付费墙。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 16: 启动 · 离线 · 加载态 ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">16</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">启动 · 离线 · 加载态</h2>
+    </div>
+    <p style="margin:0 0 22px; max-width:780px; font-size:13.5px; line-height:1.5; color:#7a7a80;">三个容易被忽略但很影响体感的时刻:<b>启动闪屏</b>、<b>连不上时</b>、<b>进 pane 等数据时</b>。原则:不空屏、不卡死、永远告诉用户「现在在干什么、能做什么」。</p>
+
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- splash -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① 启动闪屏 · splash</span>
+        <div style="position:relative; width:280px; height:560px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#0D0D0F; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px;"></div>
+            <div style="width:84px; height:84px; border-radius:21px; background:#0f1115; box-shadow:0 10px 30px rgba(0,0,0,0.4), inset 0 0 0 0.5px rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center;">
+              <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:5px; width:48px; height:48px;"><span style="background:rgba(255,255,255,0.22); border-radius:6px;"></span><span style="background:#06B6D4; border-radius:6px;"></span><span style="background:rgba(255,255,255,0.22); border-radius:6px; grid-column:span 2;"></span></span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:9px;">
+              <div style="font-size:22px; font-weight:800; letter-spacing:-0.4px; color:rgba(255,255,255,0.95);">gtmux</div>
+              <div style="display:flex; flex-direction:column; align-items:center; gap:3px;"><div style="font-size:15px; font-weight:600; letter-spacing:0.2px; color:rgba(235,235,245,0.6);">tmux × agent</div><div style="font-size:11.5px; letter-spacing:0.2px; color:rgba(235,235,245,0.38);">Your agents across tmux, at a glance.</div></div>
+            </div>
+            <div style="position:absolute; bottom:54px; display:flex; flex-direction:column; align-items:center; gap:10px;">
+              <div style="width:26px; height:26px; border:2.5px solid rgba(255,255,255,0.15); border-top-color:#06B6D4; border-radius:50%;"></div>
+              <span style="font-size:12px; color:rgba(235,235,245,0.4);">正在连接 home-mac…</span>
+            </div>
+          </div>
+        </div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:280px; text-align:center; line-height:1.4;">品牌标记 + 字标,底部小转圈;冷启 → 恢复 token → 拉首屏。&lt;1s 一闪而过,慢时才显文案。</span>
+      </div>
+
+      <!-- offline -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 离线 / 连不上</span>
+        <div style="position:relative; width:280px; height:560px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#0D0D0F;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
+            <!-- header with offline indicator -->
+            <div style="padding:46px 16px 8px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:22px; font-weight:800; letter-spacing:-0.4px; color:rgba(255,255,255,0.95);">gtmux</span>
+                <div style="display:flex; align-items:center; gap:6px;"><span class="gtbreath" style="width:6px;height:6px;border-radius:50%;background:#FF6E67;box-shadow:0 0 0 3px rgba(239,68,68,0.18);"></span><span style="font-size:12px; color:#FF6E67; font-weight:560;">重连中…</span></div>
+              </div>
+            </div>
+            <!-- offline banner -->
+            <div style="margin:6px 14px 0; background:rgba(239,68,68,0.1); border:0.5px solid rgba(239,68,68,0.28); border-radius:11px; padding:11px 13px; display:flex; align-items:center; gap:10px;">
+              <span style="font-size:15px;">⚠</span>
+              <div style="flex:1; min-width:0;"><div style="font-size:13px; font-weight:600; color:#fff;">连不上 home-mac</div><div style="font-size:11.5px; color:rgba(235,235,245,0.55); margin-top:1px;">检查 VPN/Tailscale · 上次更新 2 分钟前</div></div>
+              <span style="font-size:12px; font-weight:600; color:#06B6D4; background:rgba(6,182,212,0.16); border-radius:7px; padding:6px 11px;">重试</span>
+            </div>
+            <!-- cached, dimmed list -->
+            <div style="opacity:0.4; pointer-events:none; padding:6px 0;">
+              <div style="padding:14px 16px 6px; font-size:11px; font-weight:700; letter-spacing:0.6px; color:#EF4444;">需要你 1</div>
+              <div style="display:flex; align-items:center; gap:12px; padding:10px 16px;"><div style="position:relative; width:34px;height:34px;flex:none;"><div style="width:34px;height:34px;border-radius:9px;background:#1C1C1F;display:flex;align-items:center;justify-content:center;font:700 12px Menlo;color:rgba(235,235,245,0.6);">CC</div><div style="position:absolute;right:-3px;bottom:-3px;width:15px;height:15px;border-radius:4px;background:#EF4444;"></div></div><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#d4d2cc;">permission to run tests</div><div style="font-size:12px;color:rgba(235,235,245,0.34);">Pica · %7</div></div></div>
+              <div style="padding:12px 16px 6px; font-size:11px; font-weight:700; letter-spacing:0.6px; color:rgba(235,235,245,0.5);">运行中 2</div>
+              <div style="display:flex; align-items:center; gap:12px; padding:10px 16px;"><div style="position:relative; width:34px;height:34px;flex:none;"><div style="width:34px;height:34px;border-radius:9px;background:#1C1C1F;display:flex;align-items:center;justify-content:center;font:700 12px Menlo;color:rgba(235,235,245,0.6);">Cx</div><div style="position:absolute;right:-3px;bottom:-3px;width:15px;height:15px;border-radius:50%;background:#06B6D4;"></div></div><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#d4d2cc;">Refactoring the auth middleware</div><div style="font-size:12px;color:rgba(235,235,245,0.34);">api-gateway · %14</div></div></div>
+            </div>
+            <div style="position:absolute; left:0; right:0; bottom:30px; text-align:center;"><span style="font-size:11px; color:rgba(235,235,245,0.4);">显示的是缓存数据 · 推送仍会照常送达</span></div>
+          </div>
+        </div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:280px; text-align:center; line-height:1.4;">不清空已有数据(留缓存、置灰),顶部红点「重连中」+ 可重试横幅;SSE 指数退避自动重连。</span>
+      </div>
+
+      <!-- terminal loading -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">③ 进 pane · 加载态</span>
+        <div style="position:relative; width:280px; height:560px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#0D0D0F; display:flex; flex-direction:column;">
+            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
+            <div style="display:flex; align-items:center; gap:10px; padding:46px 14px 9px; border-bottom:0.5px solid rgba(255,255,255,0.09);">
+              <span style="font-size:24px; font-weight:300; color:rgba(235,235,245,0.62);">‹</span>
+              <div style="position:relative; width:18px;height:18px;flex:none;"><div style="width:18px;height:18px;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:7px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:7px;background:#fff;border-radius:1px;"></span></span></div></div>
+              <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:700; color:#fff;">Pica</div><div style="font-size:11px; color:rgba(235,235,245,0.34);">Claude Code · waiting · %7</div></div>
+            </div>
+            <!-- skeleton terminal -->
+            <div style="flex:1; min-height:0; background:#0A0A0C; padding:16px 14px; position:relative;">
+              <div style="display:flex; flex-direction:column; gap:11px;">
+                <div style="height:9px; width:62%; border-radius:4px; background:rgba(255,255,255,0.08);"></div>
+                <div style="height:9px; width:84%; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+                <div style="height:9px; width:48%; border-radius:4px; background:rgba(255,255,255,0.08);"></div>
+                <div style="height:9px; width:73%; border-radius:4px; background:rgba(255,255,255,0.05);"></div>
+                <div style="height:9px; width:38%; border-radius:4px; background:rgba(255,255,255,0.06);"></div>
+              </div>
+              <!-- centered spinner -->
+              <div style="position:absolute; left:0; right:0; top:50%; display:flex; flex-direction:column; align-items:center; gap:11px;">
+                <div class="gtbreath" style="width:26px; height:26px; border:2.5px solid rgba(255,255,255,0.12); border-top-color:#06B6D4; border-radius:50%;"></div>
+                <span style="font-size:12px; color:rgba(235,235,245,0.45);">正在拉取屏幕…</span>
+              </div>
+            </div>
+            <!-- composer stays, disabled-ish -->
+            <div style="border-top:0.5px solid rgba(255,255,255,0.09); padding:10px 12px 18px; opacity:0.5;">
+              <div style="display:flex; align-items:center; gap:8px;"><span style="flex:none; width:36px; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:rgba(235,235,245,0.6); font-size:19px;">+</span><span style="flex:1; height:36px; border-radius:18px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1);"></span><span style="flex:none; width:36px; height:36px; border-radius:18px; background:rgba(255,255,255,0.1);"></span></div>
+            </div>
+          </div>
+        </div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:280px; text-align:center; line-height:1.4;">骨架行 + 居中转圈「正在拉取屏幕…」;首帧到达即淡入替换。慢/失败有兜底(下方)。</span>
+      </div>
+
+      <!-- spec column -->
+      <div style="flex:1; min-width:280px; max-width:380px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">连接状态 · 三态</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">· <b style="color:#22A34E;">已连接</b> 绿点 + server 名(如 home-mac)。<br>· <b style="color:#b46a00;">重连中</b> 琥珀/红点呼吸 + 「重连中…」,保留缓存、置灰。<br>· <b style="color:#b42318;">离线</b> 红点 + 横幅(原因 + 重试 + 上次更新)。<br>· 任一非连接态都<b>不清屏</b>;推送由 APNs 投递,离线也照收。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">进 pane 的加载</div>
+          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">· 立刻进页(头部 + composer 在位),终端区放<b>骨架 + 转圈</b>,不白屏。<br>· 首帧 <span class="gt-mono" style="font-size:11px;">/api/pane</span> 到达即<b>淡入</b>替换骨架。<br>· <b>&gt;3s</b> 文案升级为「连接较慢,仍在尝试…」;<b>失败</b>给「拉取失败 · 重试」按钮 + 错误原因。<br>· composer 在数据到达前<b>禁用态</b>(灰),避免对着空屏发指令。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">splash</div>
+          <div style="font-size:12px; line-height:1.65; color:#5a5a60;">原生 LaunchScreen(品牌标记,纯静态、秒出)→ 交接到 RN 同款画面(加转圈)。&lt;1s 不显文案;恢复 token 失败 → 直接进配对页,不卡在闪屏。</div>
         </div>
       </div>
     </div>
@@ -802,7 +2169,7 @@
   &quot;creditName&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;ccy&quot;, &quot;tsType&quot;: &quot;string&quot; }
 }">
 class Component extends DCLogic {
-  state = { screen: null, scenario: null, theme: null, lang: null, waitingOnly: false, sel: null, banner: false, focusMsg: false, collapsed: {}, fontIdx: 1, wrap: true, voice: false, sentMsg: '' };
+  state = { screen: null, scenario: null, theme: null, lang: null, waitingOnly: false, sel: null, banner: false, collapsed: {}, fontIdx: 1, wrap: true, voice: false, sentMsg: '' };
 
   cur(k) {
     const s = this.state, p = this.props || {};
@@ -981,7 +2348,8 @@ class Component extends DCLogic {
   openVoice() { this.setState({ voice: true }); }
   closeVoice() { this.setState({ voice: false }); }
   sendQuick(label) { const zh = this.cur('lang') === 'zh'; this.setState({ sentMsg: (zh ? '已发送 · ' : 'sent · ') + label }); clearTimeout(this._st); this._st = setTimeout(() => this.setState({ sentMsg: '' }), 2200); }
-  scrollBottom() { if (this._term) this._term.scrollTop = this._term.scrollHeight; }
+  scrollBottom() { if (this._term) { this._term.scrollTop = this._term.scrollHeight; } this.setState({ atBottom: true }); }
+  onTermScroll = (e) => { const el = e.target; const near = el.scrollHeight - el.scrollTop - el.clientHeight < 24; if (near !== (this.state.atBottom !== false)) this.setState({ atBottom: near }); };
 
   seg(items) {
     return items.map(it => ({
@@ -1014,17 +2382,13 @@ class Component extends DCLogic {
   }
 
   go(screen) { this.setState({ screen }); }
-  openDetail(a) { this.setState({ screen: 'detail', sel: a, focusMsg: false }); }
-  pickAgent(a) { this.setState({ sel: a, focusMsg: false }); }
+  openDetail(a) { this.setState({ screen: 'detail', sel: a }); }
+  pickAgent(a) { this.setState({ sel: a }); }
   fireBanner() {
     this.setState({ banner: true });
     clearTimeout(this._bt); this._bt = setTimeout(() => this.setState({ banner: false }), 4000);
   }
-  doFocus() {
-    this.setState({ focusMsg: true });
-    clearTimeout(this._ft); this._ft = setTimeout(() => this.setState({ focusMsg: false }), 2400);
-  }
-  componentWillUnmount() { clearTimeout(this._bt); clearTimeout(this._ft); clearTimeout(this._st); }
+  componentWillUnmount() { clearTimeout(this._bt); clearTimeout(this._st); }
 
   renderVals() {
     const theme = this.cur('theme'), lang = this.cur('lang'), scen = this.cur('scenario'), screen = this.cur('screen');
@@ -1092,7 +2456,7 @@ class Component extends DCLogic {
     const bannerWaiting = true;
     const annByScreen = {
       radar: { title: 'radar · agent 图标', body: '行首是 agent 头像（app-icon 圆角方块）：真机上从 Agent.icon 加载各工具官方图标；拿不到时回退到此处的中性字标（CC / Cx / G / Ai…）。颜色只留给状态徽章——头像永远中性，绝不用第三方 logo 重绘。' },
-      detail: { title: 'detail · 适配窄屏 + 输入', body: '每 ~1.5s 拉 /api/pane（等宽渲染、离线可用）。换行/滚动 + 字号 A−/A+ 适配手机窄屏，回滚缓冲 + 跳到底部。底部 composer 是 Phase 2：agent 化快捷输入（回应提示 1/2/3、控制键）+ 自由输入 + 语音，POST /api/send，写入需一次性授权。Focus 移到顶栏。' },
+      detail: { title: 'detail · 适配窄屏 + 输入', body: '每 ~1.5s 拉 /api/pane（等宽渲染、离线可用）。换行/滚动 + 字号 A−/A+ 适配手机窄屏，回滚缓冲 + 跳到底部。底部 composer 是 agent-aware：waiting 给 1/2/3、working 给继续/停止，自由输入兜底，POST /api/send。' },
       settings: { title: 'settings screen', body: '语言三态 跟随系统/EN/中文，即时生效。已配对 Mac（可移除→回配对页）。推送开关 + 说明：锁屏提醒走 relay→APNs，离开 VPN 也能收到。' },
       pairing: { title: 'pairing · 连接你的 Mac', body: '手机连接到运行 gtmux serve 的 Mac（不是装在 Mac 上、而是把这台手机配对过去）。首选扫描菜单栏 app 的配对二维码（{v,url,token,name}）；备选手动填 host:port + token。health() 自检 → 存 Keychain → 进雷达。支持配对多台 Mac。' },
     };
@@ -1101,10 +2465,10 @@ class Component extends DCLogic {
     const connLive = full.length >= 0; // demo: live unless empty handled below
 
     const matrix = [
-      { k: '0 agent', a: 'live · 灰环', b: '空状态卡「没有在跑的 coding agent」，不报错。' },
-      { k: '1 waiting', a: 'live · 红方块 1', b: '直接落在「需要你」，红方块·双竖线 + 淡红底 + 脉冲一次。' },
-      { k: '~5 mixed', a: 'live', b: '三分区 needs-you→working→idle，waiting 标题红、其余中性；标 latest。' },
-      { k: '15+ agent', a: 'live', b: '列表滚动；「只看等输入」过滤收窄；分区计数。' },
+      { k: '0 agent', a: '已连接 · 灰环', b: '空状态卡「没有在跑的 coding agent」，不报错。' },
+      { k: '1 waiting', a: '已连接 · 红方块 1', b: '直接落在「需要你」，红方块·双竖线 + 淡红底 + 脉冲一次。' },
+      { k: '~5 mixed', a: '已连接', b: '三分区 needs-you→working→idle，waiting 标题红、其余中性；标 latest。' },
+      { k: '15+ agent', a: '已连接', b: '列表滚动；「只看等输入」过滤收窄；分区计数。' },
       { k: '超长 task / CJK', a: '不受影响', b: '单行省略号截断，绝不换行；中文更宽也不溢出。' },
       { k: '离线 / 重连', a: 'offline 红点 / reconnecting', b: 'SSE 断开自动重连；推送仍由 APNs 投递，照收。' },
       { k: 'idle→waiting', a: '绿圆→红方块', b: '唯一动效：一次脉冲 + 应用内/锁屏提醒。' },
@@ -1140,8 +2504,8 @@ class Component extends DCLogic {
       isRadar: screen === 'radar', isDetail: screen === 'detail', isSettings: screen === 'settings', isPairing: screen === 'pairing',
       sections, isEmpty: sections.length === 0 && screen === 'radar',
       summary: this.summaryText(full, lang),
-      connColor: full.length === 0 ? this.statusColor('idle') : this.statusColor('idle'),
-      connLabel: this.t('live', '实时'),
+      connColor: '#22C55E', connHalo: 'rgba(34,197,94,0.18)',
+      connLabel: 'home-mac',
       lblWaitingOnly: this.t('Waiting only', '只看等输入'),
       lblNoAgents: this.t('No coding agents running.', '没有在跑的 coding agent。'),
       lblLatest: this.t('latest', '最近完成'),
@@ -1157,9 +2521,6 @@ class Component extends DCLogic {
       d_badgeGlyph: sel ? this.badgeGlyph(sel.status) : null,
       d_paneText: this.paneTextFor(sel),
       d_lines: this.buildLines(sel),
-      lblFocusOnMac: this.t('Focus on Mac', '在 Mac 上聚焦'),
-      showFocusMsg: this.state.focusMsg, hideFocusMsg: !this.state.focusMsg,
-      focusMsg: this.t('Focused on the Mac', '已在 Mac 上聚焦'),
       d_fontSize: dFs + 'px', d_lineH: Math.round(dFs * 1.35 * 10) / 10 + 'px',
       d_wrapWhite: dWrap ? 'pre-wrap' : 'pre', d_wrapBreak: dWrap ? 'break-word' : 'normal',
       d_termOverflowX: dWrap ? 'hidden' : 'auto',
@@ -1181,6 +2542,10 @@ class Component extends DCLogic {
       openVoice: () => this.openVoice(), closeVoice: () => this.closeVoice(),
       sendVoice: () => { this.closeVoice(); this.sendQuick(this.cur('lang') === 'zh' ? '语音指令' : 'voice'); },
       setTermRef: (el) => { this._term = el; }, scrollBottom: () => this.scrollBottom(),
+      onTermScroll: this.onTermScroll,
+      showJumpBottom: this.state.atBottom === false,
+      jumpBtnLabel: this.t('Latest', '最新'),
+      jumpBtnBg: '#06B6D4', jumpBtnFg: '#fff',
 
       // settings
       lblSettings: this.t('Settings', '设置'),
@@ -1225,7 +2590,6 @@ class Component extends DCLogic {
       goSettings: () => this.go('settings'),
       goPairing: () => this.go('pairing'),
       toggleWaitingOnly: () => this.setState(s => ({ waitingOnly: !s.waitingOnly })),
-      doFocus: () => this.doFocus(),
       dismissBanner: () => this.setState({ banner: false }),
       fireBanner: () => this.fireBanner(),
 

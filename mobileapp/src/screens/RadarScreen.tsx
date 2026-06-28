@@ -52,6 +52,10 @@ export function RadarScreen({navigation}: any) {
   };
 
   const c = counts(agents);
+  // Don't get stuck filtered on an empty list when the last waiter clears (REVIEW #6).
+  useEffect(() => {
+    if (!c.waiting && waitingOnly) setWaitingOnly(false);
+  }, [c.waiting, waitingOnly]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -92,14 +96,17 @@ export function RadarScreen({navigation}: any) {
         <TouchableOpacity
           testID={TestIds.radar.filter}
           accessibilityLabel={TestIds.radar.filter}
+          disabled={!c.waiting}
           onPress={() => setWaitingOnly(v => !v)}
           style={[
             styles.filter,
             {borderColor: pal.divider},
+            !c.waiting && styles.filterDisabled, // greyed at 0 (REVIEW #6: no empty-state tap)
             waitingOnly && {backgroundColor: StatusColor.waiting, borderColor: StatusColor.waiting},
           ]}>
           <Text style={[styles.filterText, {color: waitingOnly ? '#fff' : pal.fg2}]}>
-            {t('waitingOnly')}
+            {/* show the count at 0 so it reads "Waiting 0" instead of inviting a tap */}
+            {c.waiting ? t('waitingOnly') : `${t('waitingOnly')} 0`}
           </Text>
         </TouchableOpacity>
       </View>
@@ -137,12 +144,14 @@ export function RadarScreen({navigation}: any) {
 }
 
 function ConnDot({conn, t, pal}: any) {
-  const color = conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : pal.fg3;
-  const label = conn === 'live' ? t('live') : conn === 'offline' ? t('offline') : t('reconnecting');
+  // D9: server name (shown in the chip) + a status dot — no "live" word; only an
+  // abnormal state adds text (amber reconnecting / red offline).
+  const color = conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B';
+  const label = conn === 'live' ? '' : conn === 'offline' ? t('offline') : t('reconnecting');
   return (
     <View style={styles.conn}>
       <View style={[styles.connDot, {backgroundColor: color}]} />
-      <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text>
+      {label ? <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text> : null}
     </View>
   );
 }
@@ -181,6 +190,7 @@ const styles = StyleSheet.create({
   headerBottom: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6},
   summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
   filter: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 10},
+  filterDisabled: {opacity: 0.4},
   filterText: {fontSize: 11.5, fontWeight: '600'},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 70, paddingHorizontal: 40},
   emptyText: {fontSize: 15, fontWeight: '600', marginTop: 16},

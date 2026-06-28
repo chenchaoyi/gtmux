@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #E9E9EC; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif; color: #1d1d1f; -webkit-font-smoothing: antialiased; }
+  .gt-mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; }
+</style>
+</helmet>
+
+<div style="max-width: 1180px; margin: 0 auto; padding: 40px 36px 96px;">
+  <!-- TITLE -->
+  <div style="margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 14px;">
+      <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:15px; height:15px;"><span style="background:#c4c4ca;border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:#c4c4ca;border-radius:2px;grid-column:span 2;"></span></span>
+      <span class="gt-mono" style="font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #8A8A8E;">gtmux · web 浏览器镜像</span>
+    </div>
+    <h1 style="margin: 0; font-size: 32px; line-height: 1.1; font-weight: 700; letter-spacing: -0.5px;">任意电脑上的只读雷达</h1>
+    <p style="margin: 12px 0 0; max-width: 720px; font-size: 15px; line-height: 1.55; color: #6b6b70;">「Open on computer」生成一个<b>一次性、view-only 链接</b>,在任意电脑的浏览器里看雷达 + 读 pane——单二进制内嵌、xterm.js 渲染、颜色取自你的 Ghostty 配置。与手机/菜单栏<b>同一套状态语言</b>,但为<b>桌面宽屏 + 真键盘</b>而设计;不假装能输入,避免权限与误操作。实现见 <span class="gt-mono" style="font-size:13px;">internal/server/web/</span>。</p>
+  </div>
+
+  <!-- SECTION 01: SHARE-LINK FLOW -->
+  <div style="margin-top: 44px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">01</span>
+      <h2 style="margin:0; font-size:21px; font-weight:680; letter-spacing:-0.2px;">链接怎么来 — 一次性、可过期</h2>
+    </div>
+    <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:center;">
+      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:14px 16px; flex:1; min-width:240px;">
+        <div style="font-size:12.5px; line-height:1.7; color:#5a5a60;">
+          <div style="display:flex; gap:9px; padding:4px 0;"><span style="flex:none; width:20px; height:20px; border-radius:50%; background:#06B6D4; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">1</span><div>菜单栏 / 手机 → <b>Open on computer</b></div></div>
+          <div style="display:flex; gap:9px; padding:4px 0;"><span style="flex:none; width:20px; height:20px; border-radius:50%; background:#06B6D4; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">2</span><div>serve 生成带签名 token 的短链 + <b>有效期</b>(默认 60 分钟)</div></div>
+          <div style="display:flex; gap:9px; padding:4px 0;"><span style="flex:none; width:20px; height:20px; border-radius:50%; background:#06B6D4; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">3</span><div>电脑浏览器打开 → 只读雷达;过期或撤销即失效</div></div>
+        </div>
+      </div>
+      <div style="flex:1; min-width:280px; background:#1d1d1f; border-radius:12px; padding:18px 20px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:10px;"><span style="font-size:13px; color:rgba(255,255,255,0.6);">分享只读链接</span><span style="margin-left:auto; font-size:11px; color:#22C55E;">● 已生成</span></div>
+        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border-radius:9px; padding:10px 12px;"><span class="gt-mono" style="flex:1; font-size:13px; color:#fff;">gtmux.local/v/8f3a…2c</span><span style="font-size:12px; color:#06B6D4; font-weight:600;">复制</span></div>
+        <div style="display:flex; align-items:center; gap:14px; font-size:11.5px; color:rgba(255,255,255,0.45);"><span>⏱ 59:32 后过期</span><span>view-only</span><span style="margin-left:auto; color:#FF6E67;">立即撤销</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 02: RADAR (browser) -->
+  <div style="margin-top: 44px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">02</span>
+      <h2 style="margin:0; font-size:21px; font-weight:680; letter-spacing:-0.2px;">雷达 — 居中内容列</h2>
+    </div>
+    <div style="border-radius:12px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.18); border:1px solid rgba(0,0,0,0.1); max-width:1000px;">
+      <div style="background:#e4e4e7; padding:9px 14px; display:flex; align-items:center; gap:8px;">
+        <span style="width:11px;height:11px;border-radius:50%;background:#FF5F57;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#FEBC2E;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#28C840;"></span>
+        <div style="flex:1; display:flex; justify-content:center;"><div style="background:#fff; border-radius:7px; padding:4px 16px; font-size:12px; color:#6b6b70; min-width:280px; text-align:center;">🔒 gtmux.local/v/8f3a…2c · view-only</div></div>
+      </div>
+      <div style="background:#17171a; min-height:420px;">
+        <div style="border-bottom:1px solid rgba(255,255,255,0.07);">
+          <div style="max-width:820px; margin:0 auto; padding:11px 16px; display:flex; align-items:center; gap:10px;">
+            <span style="font-weight:600; color:#d4d2cc; font-size:14px;">gtmux</span>
+            <span style="font-size:12px; color:rgba(212,210,204,0.34);">home-mac · 3 agents</span>
+            <span style="margin-left:auto; display:flex; align-items:center; gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,0.18);"></span><span style="font-size:12px; color:rgba(212,210,204,0.55); font-weight:560;">home-mac</span></span>
+            <span style="font-size:14px; color:rgba(212,210,204,0.34); margin-left:4px;">Aa</span>
+          </div>
+        </div>
+        <div style="max-width:820px; margin:0 auto; padding:6px 0 30px;">
+          <div style="padding:16px 16px 6px; font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color:#EF4444;">Needs you</div>
+          <div style="display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.07); background:rgba(239,68,68,0.08); cursor:pointer;">
+            <div style="position:relative; width:34px;height:34px;flex:none;"><div style="width:34px;height:34px;border-radius:9px;background:#222228;border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font:600 14px Menlo,monospace;color:rgba(212,210,204,0.62);">CC</div><div style="position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:4px;background:#EF4444;display:flex;align-items:center;justify-content:center;"><span style="display:flex;gap:1.5px;"><span style="width:1.5px;height:5px;background:#fff;border-radius:1px;"></span><span style="width:1.5px;height:5px;background:#fff;border-radius:1px;"></span></span></div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#d4d2cc;">permission to run tests</div><div style="font-size:12.5px;color:rgba(212,210,204,0.34);">Pica · %7</div></div>
+            <div style="display:flex;align-items:center;gap:8px;color:rgba(212,210,204,0.34);"><span style="font-size:12px;">now</span><span style="font-size:18px;font-weight:300;">›</span></div>
+          </div>
+          <div style="padding:16px 16px 6px; font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; color:rgba(212,210,204,0.34);">Working</div>
+          <div style="display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.07); cursor:pointer;">
+            <div style="position:relative; width:34px;height:34px;flex:none;"><div style="width:34px;height:34px;border-radius:9px;background:#222228;border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font:600 14px Menlo,monospace;color:rgba(212,210,204,0.62);">Cx</div><div style="position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;"><span style="width:7px;height:7px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:#d4d2cc;">Refactoring the auth middleware</div><div style="font-size:12.5px;color:rgba(212,210,204,0.34);">api-gateway · %14</div></div>
+            <div style="display:flex;align-items:center;gap:8px;color:rgba(212,210,204,0.34);"><span style="font-size:12px;">3m</span><span style="font-size:18px;font-weight:300;">›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 03: PANE MIRROR -->
+  <div style="margin-top: 44px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">03</span>
+      <h2 style="margin:0; font-size:21px; font-weight:680; letter-spacing:-0.2px;">pane 镜像 — xterm.js 真彩</h2>
+    </div>
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+      <div style="border-radius:12px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.18); border:1px solid rgba(0,0,0,0.1); flex:1; min-width:440px;">
+        <div style="background:#e4e4e7; padding:9px 14px; display:flex; align-items:center; gap:8px;">
+          <span style="width:11px;height:11px;border-radius:50%;background:#FF5F57;"></span><span style="width:11px;height:11px;border-radius:50%;background:#FEBC2E;"></span><span style="width:11px;height:11px;border-radius:50%;background:#28C840;"></span>
+        </div>
+        <div style="background:#17171a;">
+          <div style="border-bottom:1px solid rgba(255,255,255,0.07); padding:11px 16px; display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px; color:rgba(212,210,204,0.62);">‹</span>
+            <span style="font-weight:600; color:#d4d2cc; font-size:14px;">permission to run tests</span>
+            <span style="font-size:12px; color:rgba(212,210,204,0.34);">Claude Code · waiting · %7</span>
+            <span style="margin-left:auto; display:flex; align-items:center; gap:6px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,0.18);"></span><span style="font-size:12px; color:rgba(212,210,204,0.55); font-weight:560;">home-mac</span></span>
+            <span style="font-size:14px; color:rgba(212,210,204,0.34);">Aa</span>
+          </div>
+          <div style="padding:12px 14px; min-height:300px;">
+            <pre class="gt-mono" style="margin:0; font-size:12.5px; line-height:1.5; white-space:pre-wrap;"><span style="color:#5AF78E;">●</span><span style="color:#d4d2cc;"> Running tests…</span>
+<span style="color:#5AF78E;">  PASS </span><span style="color:#8A9099;"> src/api/client.test.ts</span>
+<span style="color:#FF6AC1;">  Tool use:</span><span style="color:#E6DB74;"> Bash(npm run test:e2e)</span>
+
+<span style="color:#6B7079;">┌────────────────────────────┐</span>
+<span style="color:#6B7079;">│</span><span style="color:#d4d2cc;">  Allow this tool call?     </span><span style="color:#6B7079;">│</span>
+<span style="color:#6B7079;">│</span><span style="color:#5AF78E;">  ❯ 1. Yes                  </span><span style="color:#6B7079;">│</span>
+<span style="color:#6B7079;">│</span><span style="color:#d4d2cc;">    2. Yes, and don't ask   </span><span style="color:#6B7079;">│</span>
+<span style="color:#6B7079;">└────────────────────────────┘</span>
+<span style="color:#d4d2cc;">  › </span><span style="color:#06B6D4;">▋</span></pre>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.07); padding:10px 16px; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11.5px; color:rgba(212,210,204,0.34);">🔒 view-only · 输入请用手机或回到 Mac</span>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1; min-width:280px; max-width:380px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">定位</div>
+          <div style="font-size:12.5px; line-height:1.6; color:#5a5a60;"><b>只读镜像</b>,不是完整客户端。价值:<b>大屏 + 真键盘</b>盯全局、细读 pane;一次性链接、免装 app。输入仍走手机/Mac —— web 不假装能写。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">桌面适配</div>
+          <div style="font-size:12px; line-height:1.65; color:#5a5a60;">· 内容居中到 <span class="gt-mono" style="font-size:11px;">820px</span> 列,两侧留白。<br>· xterm.js 真彩 + CJK 宽度;字体/字号可选(内嵌 5 款 mono)。<br>· 颜色取自 Ghostty 配置,网页与终端同色系。<br>· 复制:终端原生选择;链接顶部 view-only 常驻。</div>
+        </div>
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">键盘 · 安全</div>
+          <div style="font-size:12px; line-height:1.65; color:#5a5a60;">· <span class="gt-mono" style="font-size:11px;">j/k</span> 选行、<span class="gt-mono" style="font-size:11px;">Enter</span> 进 pane、<span class="gt-mono" style="font-size:11px;">Esc</span> 返回、<span class="gt-mono" style="font-size:11px;">/</span> 搜索。<br>· waiting 时浏览器标题闪烁 + favicon 红点(可选)。<br>· 链接过期/撤销即 410;空/断连用与 app 一致的 gate 文案。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div data-end></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{ &quot;$preview&quot;: { &quot;width&quot;: 1180 } }"></script>
+</body>
+</html>

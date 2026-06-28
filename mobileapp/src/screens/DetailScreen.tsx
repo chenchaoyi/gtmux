@@ -18,13 +18,15 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Agent, primary, secondary, TermTheme} from '../api/types';
+import Clipboard from '@react-native-clipboard/clipboard';
+import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
+import {ApprovalCard} from '../ui/ApprovalCard';
 import {XtermView} from '../ui/XtermView';
 import {FloatingKeys} from '../ui/FloatingKeys';
 import {DiffModal} from '../ui/DiffModal';
@@ -40,8 +42,8 @@ export function DetailScreen({route, navigation}: any) {
 }
 
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
-  const {client, agents} = useAgents();
-  const {pal, lang, xtermEnabled, fontPref} = useApp();
+  const {client, agents, conn} = useAgents();
+  const {pal, lang, xtermEnabled, fontPref, mac, returnSends} = useApp();
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -57,7 +59,19 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [fullscreen, setFullscreen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [diffOpen, setDiffOpen] = useState(false);
+  const [options, setOptions] = useState<ReplyOption[]>([]);
+  const [slow, setSlow] = useState(false); // D8: pane taking >3s to first paint
   const scrollRef = useRef<ScrollView>(null);
+
+  // D8: upgrade the loading copy if the first frame is slow to arrive.
+  useEffect(() => {
+    if (!loading) {
+      setSlow(false);
+      return;
+    }
+    const id = setTimeout(() => setSlow(true), 3000);
+    return () => clearTimeout(id);
+  }, [loading]);
 
   // Fetch the host terminal's appearance once so the pane matches it (global, not per-pane).
   useEffect(() => {
@@ -94,6 +108,23 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     };
   }, [client, agent.pane_id]);
 
+  // Approval card (B1): only while waiting (cardinal rule), poll the pane's 1/2/3
+  // choices from the shared parser. Cleared the moment it's no longer waiting.
+  useEffect(() => {
+    if (live.status !== 'waiting') {
+      setOptions([]);
+      return;
+    }
+    let alive = true;
+    const load = () => client.options(agent.pane_id).then(o => alive && setOptions(o));
+    load();
+    const id = setInterval(load, 2000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client, agent.pane_id, live.status]);
+
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
   const lineHeight = Math.round(fontSize * 1.36);
@@ -101,6 +132,15 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
+  };
+
+  // D6: copy the visible screen as plain text (ANSI stripped via the parsed spans).
+  const copyVisible = () => {
+    const plain = lines
+      .map(spans => spans.map(s => s.text).join(''))
+      .join('\n')
+      .replace(/\s+$/, '');
+    Clipboard.setString(plain);
   };
 
   // The whole screen is ONE selectable <Text> (lines joined by '\n'), so a
@@ -160,14 +200,28 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         </View>
       )}
 
-      {/* controls: live · A− A+ · wrap · full-screen (hidden in full-screen) */}
+      {/* controls: connection · A− A+ · wrap · full-screen (hidden in full-screen) */}
       {!fullscreen && (
         <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
+          {/* D9: server name + status dot (no "live" text); only abnormal states add a word. */}
           <View style={styles.live}>
-            <View style={[styles.liveDot, {backgroundColor: StatusColor.idle}]} />
-            <Text style={[styles.ctlText, {color: pal.fg3}]}>live</Text>
+            <View
+              style={[
+                styles.liveDot,
+                {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B'},
+              ]}
+            />
+            <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
+              {mac?.name || (lang === 'zh' ? '服务器' : 'server')}
+              {conn === 'offline'
+                ? lang === 'zh' ? ' · 离线' : ' · offline'
+                : conn === 'connecting'
+                ? lang === 'zh' ? ' · 重连中' : ' · reconnecting'
+                : ''}
+            </Text>
           </View>
           <View style={styles.ctlRight}>
+            <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyVisible} />
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
@@ -192,7 +246,14 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
               if (atBottom) scrollRef.current?.scrollToEnd({animated: false});
             }}>
             {loading ? (
-              <ActivityIndicator color={pal.fg3} style={styles.loading} />
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={pal.fg3} />
+                <Text style={[styles.loadingText, {color: pal.fg3}]}>
+                  {slow
+                    ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
+                    : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'}
+                </Text>
+              </View>
             ) : wrap ? (
               term
             ) : (
@@ -218,11 +279,23 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         )}
       </View>
 
+      {/* approval card (B1): waiting → the agent's own 1/2/3 as big buttons */}
+      <ApprovalCard
+        options={options}
+        pal={pal}
+        lang={lang}
+        onSend={n => {
+          client.send(agent.pane_id, {text: String(n), enter: true});
+          setOptions([]);
+        }}
+      />
+
       {/* input — types into the pane via POST /api/send (MOBILE §4) */}
       <Composer
         status={live.status}
         pal={pal}
         lang={lang}
+        returnSends={returnSends}
         onSend={p => {
           client.send(agent.pane_id, p);
         }}
@@ -295,7 +368,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  live: {flexDirection: 'row', alignItems: 'center'},
+  live: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0, marginRight: 8},
   liveDot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
   ctlRight: {flexDirection: 'row', alignItems: 'center'},
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
@@ -304,6 +377,8 @@ const styles = StyleSheet.create({
   term: {flex: 1, backgroundColor: '#0A0A0C'},
   termContent: {padding: 12},
   loading: {marginTop: 40},
+  loadingBox: {marginTop: 56, alignItems: 'center', gap: 10},
+  loadingText: {fontSize: 12.5},
   mono: {color: '#D6D6DA', fontFamily: 'Menlo'},
   fab: {
     position: 'absolute',

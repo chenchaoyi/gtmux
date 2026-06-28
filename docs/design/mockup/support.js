@@ -116,9 +116,11 @@
        in sync until dc-runtime regains a build step. */
     @media print {
       @page { margin: 0.5cm; }
-      html, body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-      section, article, figure, table { break-inside: avoid; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
       *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
         animation-delay: -99s !important; animation-duration: .001s !important;
         animation-iteration-count: 1 !important; animation-fill-mode: both !important;
         animation-play-state: running !important; transition-duration: 0s !important;
@@ -149,6 +151,7 @@
     const React = getReact();
     const rootName = rootNameForDocument(doc, location);
     runtime.markFetched(rootName);
+    runtime.setRootName(rootName);
     runtime.adoptParsed(rootName, parsed);
     fetch(location.href).then((res) => res.ok ? res.text() : "").then((t) => {
       const raw = t ? parseDcText(t) : null;
@@ -175,7 +178,15 @@
           entry.subs.delete(sub);
         };
       }, []);
-      return h(Root, entry.propOverrides || null);
+      const defaults = React.useMemo(() => {
+        const d = {};
+        for (const k in entry.propsMeta || {}) {
+          const v = entry.propsMeta?.[k]?.default;
+          if (v !== void 0) d[k] = v;
+        }
+        return d;
+      }, [entry.propsMeta]);
+      return h(Root, { ...defaults, ...entry.propOverrides || {} });
     }
     const ReactDOM = getReactDOM();
     if (ReactDOM.createRoot)
@@ -363,7 +374,7 @@
   }
 
   // src/compile.ts
-  function collectProps(node, isComponent, host) {
+  function collectProps(node, kind, host) {
     const propGetters = [];
     const pseudoClasses = [];
     let hintSize = null;
@@ -380,8 +391,9 @@
         pseudoClasses.push(host.pseudoClass(key.slice(6), value));
         continue;
       }
-      if (isComponent) {
-        if (key.includes("-")) key = kebabToCamel(key);
+      if (kind !== "dom") {
+        if (key.includes("-") && !(kind === "x-import" && (key.startsWith("aria-") || key.startsWith("data-"))))
+          key = kebabToCamel(key);
       } else {
         if (key === "class") key = "className";
         else if (key === "for") key = "htmlFor";
@@ -552,7 +564,7 @@
     const styleRaw = el.getAttribute("style");
     el.removeAttribute("style");
     const styleGet = styleRaw != null ? compileAttr(styleRaw) : null;
-    const { propGetters, hintSize } = collectProps(el, true, host);
+    const { propGetters, hintSize } = collectProps(el, "dc-import", host);
     const kids = walkChildren(el, host);
     return (vals, ctx, key) => {
       const props = {
@@ -561,7 +573,14 @@
         __tplId: tplId,
         __hostStyle: styleGet ? hostPositionStyle(styleGet(vals)) : void 0
       };
-      for (const [k, g] of propGetters) props[k] = g(vals);
+      for (const [k, g] of propGetters) {
+        const v = g(vals);
+        if (k === "dcProps") {
+          if (v && typeof v === "object") Object.assign(props, v);
+          continue;
+        }
+        props[k] = v;
+      }
       if (kids.length) props.children = kids.map((b, j) => b(vals, ctx, j));
       return h(host.component(name), props);
     };
@@ -573,18 +592,23 @@
     const exportNameGet = compileAttr(
       el.getAttribute("component") || el.getAttribute("name") || ""
     );
-    const url = el.getAttribute("from") || el.getAttribute("src") || el.getAttribute("import") || "";
-    const kind = /\.(jsx|tsx)(\?|#|$)/i.test(url) ? "jsx" : "js";
+    const fromRaw = el.getAttribute("from") || el.getAttribute("src") || el.getAttribute("import") || "";
+    const urls = fromRaw.trim() ? fromRaw.trim().split(/\s+/) : [];
+    const url = urls.length ? urls[urls.length - 1] : "";
+    const kindOf = (u) => /\.(jsx|tsx)(\?|#|$)/i.test(u) ? "jsx" : "js";
     const tplId = el.getAttribute("data-dc-tpl");
     const styleRaw = el.getAttribute("style");
     el.removeAttribute("style");
     const styleGet = styleRaw != null ? compileAttr(styleRaw) : null;
     const wrap = tplId != null || styleGet != null;
-    const { propGetters, hintSize } = collectProps(el, true, host);
+    const { propGetters, hintSize } = collectProps(el, "x-import", host);
     const hasContent = el.children.length > 0 || !!(el.textContent || "").trim();
     const kids = hasContent ? walkChildren(el, host) : [];
-    const urlBindable = url.includes("{{");
-    if (url && !urlBindable) host.loadExternal(kind, url);
+    const urlBindable = fromRaw.includes("{{");
+    if (urls.length && !urlBindable) {
+      let prev;
+      for (const u of urls) prev = host.loadExternal(kindOf(u), u, prev);
+    }
     const evalName = (g, vals) => {
       const v = g(vals);
       const s = v == null ? "" : String(v);
@@ -612,11 +636,27 @@
         return wrapper ? h("div", wrapper, ph) : ph;
       }
       const props = wrapper ? {} : { key };
+      let unresolvedHole = false;
       for (const [k, g] of propGetters) {
-        if (k === "component" || k === "componentFromGlobalScope" || k === "name" || k === "from" || k === "src" || k === "import") {
+        if (k === "component" || k === "componentFromGlobalScope" || k === "from") {
           continue;
         }
-        props[k] = g(vals);
+        const v = g(vals);
+        if (v === void 0) unresolvedHole = true;
+        if (k === "dcProps") {
+          if (v && typeof v === "object") Object.assign(props, v);
+          continue;
+        }
+        props[k] = v;
+      }
+      if (unresolvedHole && ctx?.__htmlStreamingNow) {
+        const ph = host.placeholder({
+          key: wrapper ? void 0 : key,
+          name,
+          hintSize,
+          error: null
+        });
+        return wrapper ? h("div", wrapper, ph) : ph;
       }
       if (kids.length) props.children = kids.map((b, j) => b(vals, ctx, j));
       return wrapper ? h("div", wrapper, h(C, props)) : h(C, props);
@@ -625,7 +665,7 @@
   function walkElement(el, host) {
     const realTag = RAW_UNWRAP[el.localName] || el.localName;
     const tplId = el.getAttribute("data-dc-tpl");
-    const { propGetters, pseudoClasses } = collectProps(el, false, host);
+    const { propGetters, pseudoClasses } = collectProps(el, "dom", host);
     const kids = walkChildren(el, host);
     return (vals, ctx, key) => {
       const props = { key, "data-dc-tpl": tplId };
@@ -682,6 +722,14 @@
   }
 
   // src/component.ts
+  function shallowEqual(a, b) {
+    if (!b) return false;
+    const ak = Object.keys(a).filter((k) => k !== "children");
+    const bk = Object.keys(b).filter((k) => k !== "children");
+    if (ak.length !== bk.length) return false;
+    for (const k of ak) if (a[k] !== b[k]) return false;
+    return true;
+  }
   function Placeholder({
     name,
     hintSize,
@@ -721,11 +769,24 @@
          *  builders read it off the RenderCtx (this) to pick placeholder vs
          *  render-nothing for unresolved values. */
         __publicField(this, "__streamingNow", false);
+        __publicField(this, "__htmlStreamingNow", false);
+        /** When a construct throws, remember the (class, registry.ver, props)
+         *  triple so render-time reconcile doesn't re-attempt it on every parent
+         *  re-render. A registry bump (new class, template, external module
+         *  resolving via bumpAll) changes `ver` and breaks the memo so an
+         *  env-dependent constructor can self-heal. */
+        __publicField(this, "__failedLogic", null);
+        __publicField(this, "__failedUserProps", null);
+        __publicField(this, "__failedVer", -1);
+        /** Per-instance constructor error — kept here (not on the registry entry)
+         *  so one instance's successful construct can't hide a sibling's failure,
+         *  and a construct can never wipe an eval error `updateJs` recorded on
+         *  `r.logicError`. */
+        __publicField(this, "__ctorError", null);
         __publicField(this, "logic");
         this.__name = props.__name;
         this.state = { __v: 0, __err: null };
         this.__sub = () => {
-          this.__reconcileLogic();
           if (this.state.__err) this.setState({ __err: null });
           this.forceUpdate();
         };
@@ -751,9 +812,15 @@
         const L = Logic || StreamableLogic;
         try {
           this.logic = new L(this.__userProps());
+          this.__failedLogic = null;
+          this.__failedUserProps = null;
+          this.__ctorError = null;
         } catch (e) {
           console.error(e);
-          registry.get(this.__name).logicError = this.__name + ": " + (e instanceof Error && e.message ? e.message : String(e));
+          this.__failedLogic = Logic;
+          this.__failedUserProps = this.__userProps();
+          this.__failedVer = registry.get(this.__name).ver;
+          this.__ctorError = this.__name + ": " + (e instanceof Error && e.message ? e.message : String(e));
           this.logic = new StreamableLogic(
             this.__userProps()
           );
@@ -778,14 +845,18 @@
        *  (streaming completion, hot reload). State carries over; didMount
        *  re-fires after the swap commits so refs exist. */
       __reconcileLogic() {
-        const Next = registry.get(this.__name).Logic;
+        const r = registry.get(this.__name);
+        const Next = r.Logic;
         const Cur = this.logic.constructor;
-        if (Next === Cur || !Next && Cur === StreamableLogic)
+        if (Next === Cur || !Next && Cur === StreamableLogic || Next === this.__failedLogic && r.ver === this.__failedVer && shallowEqual(this.__userProps(), this.__failedUserProps)) {
           return;
-        try {
-          this.logic.componentWillUnmount();
-        } catch (e) {
-          console.error(e);
+        }
+        if (!this.__needsDidMount) {
+          try {
+            this.logic.componentWillUnmount();
+          } catch (e) {
+            console.error(e);
+          }
         }
         this.__makeLogic(Next, this.logic.state);
         this.__needsDidMount = true;
@@ -801,6 +872,7 @@
       componentDidUpdate(prevProps) {
         this.logic.props = this.__userProps();
         if (this.__needsDidMount) {
+          if (this.state.__err || !registry.get(this.__name).tpl) return;
           this.__needsDidMount = false;
           try {
             this.logic.componentDidMount();
@@ -817,10 +889,12 @@
       }
       componentWillUnmount() {
         registry.get(this.__name).subs.delete(this.__sub);
-        try {
-          this.logic.componentWillUnmount();
-        } catch (e) {
-          console.error(e);
+        if (!this.__needsDidMount) {
+          try {
+            this.logic.componentWillUnmount();
+          } catch (e) {
+            console.error(e);
+          }
         }
       }
       render() {
@@ -856,7 +930,7 @@
             { ...hostBase, className: cls + " sc-has-error" },
             h(
               "div",
-              { className: "sc-logic-error" },
+              { className: "sc-logic-error", "data-omelette-chrome": "" },
               this.__name + ": " + this.state.__err
             ),
             h(Placeholder, {
@@ -866,6 +940,7 @@
             })
           );
         }
+        this.__reconcileLogic();
         if (!r.tpl) {
           return h(
             "div",
@@ -876,7 +951,7 @@
         const userProps = this.__userProps();
         this.logic.props = userProps;
         let vals = userProps;
-        let renderErr = r.logicError;
+        let renderErr = r.logicError || this.__ctorError;
         try {
           vals = { ...userProps, ...this.logic.renderVals() || {} };
         } catch (e) {
@@ -884,10 +959,15 @@
           renderErr = this.__name + ".renderVals(): " + (e instanceof Error && e.message ? e.message : String(e));
         }
         this.__streamingNow = !!(r.htmlStreaming || r.jsStreaming);
+        this.__htmlStreamingNow = !!r.htmlStreaming;
         return h(
           "div",
           { ...hostBase, className: cls + (renderErr ? " sc-has-error" : "") },
-          renderErr && h("div", { className: "sc-logic-error" }, renderErr),
+          renderErr && h(
+            "div",
+            { className: "sc-logic-error", "data-omelette-chrome": "" },
+            renderErr
+          ),
           h(
             AncestorContext.Provider,
             { value: [...chain, this.__name] },
@@ -958,12 +1038,17 @@
       });
       return babelLoading;
     }
-    function load(kind, url) {
-      if (cache.has(url)) return;
+    const pending = /* @__PURE__ */ new Map();
+    function load(kind, url, after) {
+      const existing = pending.get(url);
+      if (existing) return existing;
       cache.set(url, null);
       console.info("[dc-runtime] x-import: loading", url, "(" + kind + ")");
-      const ready = kind === "jsx" ? ensureBabel() : Promise.resolve();
-      ready.then(() => fetch(url)).then((r) => {
+      const ready = Promise.all([
+        kind === "jsx" ? ensureBabel() : Promise.resolve(),
+        after ?? Promise.resolve()
+      ]);
+      const p = ready.then(() => fetch(url)).then((r) => {
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.text();
       }).then((src) => {
@@ -1010,6 +1095,8 @@
         );
         onResolved();
       });
+      pending.set(url, p);
+      return p;
     }
     function resolve2(url, name) {
       const entry = cache.get(url);
@@ -1110,13 +1197,57 @@
     }
   }
 
+  // src/atomics.ts
+  var ATOMIC_CSS = (
+    // layout
+    ".fx{display:flex}.col{display:flex;flex-direction:column}.grid{display:grid}.ac{align-items:center}.jc{justify-content:center}.jb{justify-content:space-between}.f1{flex:1}.noshrink{flex-shrink:0}.wrap{flex-wrap:wrap}.fw5{font-weight:500}.fw6{font-weight:600}.fw7{font-weight:700}.fw8{font-weight:800}.fs11{font-size:11px}.fs12{font-size:12px}.fs13{font-size:13px}.fs14{font-size:14px}.fs15{font-size:15px}.fs16{font-size:16px}.fs20{font-size:20px}.fs22{font-size:22px}.upper{text-transform:uppercase}.tc{text-align:center}.nowrap{white-space:nowrap}.gap8{gap:8px}.gap10{gap:10px}.gap12{gap:12px}.gap16{gap:16px}.gap24{gap:24px}.m0{margin:0}.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.posrel{position:relative}.posabs{position:absolute}.round{border-radius:50%}.ohide{overflow:hidden}.bbox{box-sizing:border-box}.pointer{cursor:pointer}.w100{width:100%}.b0{border:none}"
+  );
+
   // src/helmet.ts
+  var DESIGN_DOC_MODE_RE = /<meta\b[^>]*\bname\s*=\s*["']design_doc_mode["'][^>]*\b(?:content|value)\s*=\s*["'](\w+)["']/i;
+  var CANVAS_BG = "#f0eee9";
   function createHelmetManager(doc, isStreaming) {
     const mounted = /* @__PURE__ */ new Set();
     const live = /* @__PURE__ */ new Map();
+    let designDocMode = null;
+    let canvasStyleEl = null;
+    function postDesignMode(mode) {
+      if (window.parent === window) return;
+      try {
+        window.parent.postMessage({ type: "__dc_design_mode", mode }, "*");
+      } catch {
+      }
+    }
+    function setDesignDocMode(mode) {
+      if (mode === designDocMode) return;
+      designDocMode = mode;
+      postDesignMode(mode);
+      if (mode === "canvas") {
+        doc.documentElement.setAttribute("data-dc-canvas", "");
+        canvasStyleEl = doc.createElement("style");
+        canvasStyleEl.setAttribute("data-dc-canvas", "");
+        canvasStyleEl.textContent = `html,body{background:${CANVAS_BG}}#dc-root>.sc-host{position:relative}`;
+        doc.head.appendChild(canvasStyleEl);
+      } else {
+        doc.documentElement.removeAttribute("data-dc-canvas");
+        canvasStyleEl?.remove();
+        canvasStyleEl = null;
+      }
+    }
+    window.addEventListener("message", (e) => {
+      if (!designDocMode || (e.data && e.data.type) !== "__dc_probe") return;
+      postDesignMode(designDocMode);
+    });
     function compile(node) {
       const raw = [...node.children];
       const helmetClosed = node.nextSibling != null || node.parentNode?.nextSibling != null;
+      if (node.hasAttribute("data-dc-atomics") && !mounted.has("__dc-atomics")) {
+        mounted.add("__dc-atomics");
+        const el = doc.createElement("style");
+        el.id = "__dc-atomics";
+        el.textContent = ATOMIC_CSS;
+        doc.head.appendChild(el);
+      }
       return (_vals, ctx) => {
         const name = ctx && ctx.__name || "";
         const streaming = !!(name && isStreaming(name));
@@ -1159,7 +1290,7 @@
         return null;
       };
     }
-    return { compile };
+    return { compile, setDesignDocMode };
   }
 
   // src/pseudo.ts
@@ -1228,7 +1359,7 @@
       component: (name) => factory.getDC(name),
       placeholder: (props) => h(Placeholder, props),
       helmet: (node) => helmet.compile(node),
-      loadExternal: (kind, url) => external.load(kind, url),
+      loadExternal: (kind, url, after) => external.load(kind, url, after),
       resolveExternal: (url, name) => external.resolve(url, name),
       resolveExternalGlobal: (url, name) => external.resolveGlobal(url, name),
       resolveExternalError: (url, name) => external.getError(url, name),
@@ -1238,7 +1369,7 @@
       const r = registry.get(name);
       if (r.fetched) return;
       r.fetched = true;
-      const url = COMPONENT_DIR + "/" + name + ".dc.html";
+      const url = COMPONENT_DIR + "/" + encodeURIComponent(name) + ".dc.html";
       fetch(url).then((res) => {
         if (!res.ok) {
           console.error(
@@ -1274,9 +1405,14 @@
         )
       );
     }
+    let rootName = null;
     function updateHtml(name, html) {
       const r = registry.get(name);
       r.html = html;
+      if (name === rootName) {
+        const mode = DESIGN_DOC_MODE_RE.exec(html)?.[1] ?? null;
+        if (mode || !r.htmlStreaming) helmet.setDesignDocMode(mode);
+      }
       try {
         r.tpl = compileTemplate(html, host);
       } catch (e) {
@@ -1359,6 +1495,9 @@
       dcUpdate,
       setProps,
       adoptParsed,
+      setRootName: (name) => {
+        rootName = name;
+      },
       markFetched: (name) => {
         registry.get(name).fetched = true;
       },

@@ -18,6 +18,10 @@ final class RemoteAccess: ObservableObject {
 
     @Published private(set) var mode: RemoteMode = .off
     @Published private(set) var busy = false
+    /// A human-readable reason the last switch didn't take (e.g. "Anywhere" needs
+    /// a hosted build), or nil. Surfaced by the UI so a failed enable explains
+    /// itself instead of silently snapping back to the previous mode.
+    @Published var lastError: String?
 
     /// Back-compat: callers that only care about the always-on tunnel being up.
     var isOn: Bool { mode == .anywhere }
@@ -43,28 +47,52 @@ final class RemoteAccess: ObservableObject {
     }
 
     /// Enable LAN (same Wi-Fi) access — the free mode. Removes the tunnel if any.
-    func enableLan() { run(["serve", "--service"]) }
+    func enableLan() { run(["serve", "--service"], expect: .lan) }
 
     /// Enable the always-on tunnel (Pro). The UI confirms the standing exposure
     /// first; `--yes` skips the CLI's own prompt.
-    func enableAnywhere() { run(["tunnel", "--service", "--yes"]) }
+    func enableAnywhere() { run(["tunnel", "--service", "--yes"], expect: .anywhere) }
 
     /// Turn remote access off from any mode (removes whichever agents exist).
-    func turnOff() { run(["serve", "--unservice"]) }
+    func turnOff() { run(["serve", "--unservice"], expect: .off) }
 
     // Back-compat shims (Pairing/Preferences migrated to the explicit methods).
     func enable() { enableAnywhere() }
     func disable() { turnOff() }
 
-    private func run(_ args: [String]) {
+    /// Run a state-changing CLI command, then settle `mode` to ground truth. If
+    /// the resulting mode isn't what we asked for, publish `lastError` (the CLI's
+    /// own stderr when it gave one) so the UI can explain the silent revert.
+    private func run(_ args: [String], expect: RemoteMode) {
         guard !busy else { return }
         busy = true
+        lastError = nil
         DispatchQueue.global().async {
-            _ = GtmuxCLI.capture(args)
+            let res = GtmuxCLI.captureResult(args)
+            let fm = FileManager.default
+            let serveOn = fm.fileExists(atPath: self.servePlist)
+            let tunnelOn = fm.fileExists(atPath: self.tunnelPlist)
+            let m: RemoteMode = tunnelOn ? .anywhere : (serveOn ? .lan : .off)
             DispatchQueue.main.async {
+                self.mode = m
                 self.busy = false
-                self.refresh()
+                if m != expect {
+                    self.lastError = res.stderr.isEmpty
+                        ? self.genericFailure(expect)
+                        : res.stderr
+                }
             }
+        }
+    }
+
+    private func genericFailure(_ expect: RemoteMode) -> String {
+        switch expect {
+        case .anywhere:
+            return "Couldn't turn on Anywhere access. / 无法开启任意网络访问。"
+        case .lan:
+            return "Couldn't turn on Wi-Fi access. / 无法开启局域网访问。"
+        case .off:
+            return "Couldn't turn off remote access. / 无法关闭远程访问。"
         }
     }
 }

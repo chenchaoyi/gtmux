@@ -44,9 +44,12 @@ final class CommandPaletteController {
     private var monitor: Any?
     private var resignObserver: Any?
     private var jump: ((Agent) -> Void)?
+    private var send: ((Agent, Int) -> Void)?
 
-    func toggle(store: AgentStore, l10n: L10n, onJump: @escaping (Agent) -> Void) {
-        if panel == nil { build(store: store, l10n: l10n, onJump: onJump) }
+    func toggle(store: AgentStore, l10n: L10n,
+                onJump: @escaping (Agent) -> Void,
+                onSend: @escaping (Agent, Int) -> Void = { _, _ in }) {
+        if panel == nil { build(store: store, l10n: l10n, onJump: onJump, onSend: onSend) }
         guard let panel = panel else { return }
         if panel.isVisible { hide(); return }
         store.refresh()
@@ -70,13 +73,17 @@ final class CommandPaletteController {
         panel.setContentSize(s)
     }
 
-    private func build(store: AgentStore, l10n: L10n, onJump: @escaping (Agent) -> Void) {
+    private func build(store: AgentStore, l10n: L10n,
+                       onJump: @escaping (Agent) -> Void,
+                       onSend: @escaping (Agent, Int) -> Void) {
         let model = PaletteModel(store: store)
         self.model = model
         self.jump = onJump
+        self.send = onSend
         let view = CommandPaletteView(
             model: model, l10n: l10n,
-            onJump: { [weak self] a in self?.jump?(a); self?.hide() })
+            onJump: { [weak self] a in self?.jump?(a); self?.hide() },
+            onSend: { [weak self] a, n in self?.send?(a, n); self?.hide() })
         let panel = KeyablePanel(
             contentRect: NSRect(x: 0, y: 0, width: 620, height: 480),
             styleMask: [.borderless, .fullSizeContentView], backing: .buffered, defer: false)
@@ -136,6 +143,14 @@ final class CommandPaletteController {
             case 53: self.hide(); return nil                // escape
             default: break
             }
+            // Plain 1–9 → in-place reply for the selected waiting row (A3 ④), but
+            // only when the query is empty so digits can still be typed in search.
+            if model.query.isEmpty, !event.modifierFlags.contains(.command),
+               let s = event.charactersIgnoringModifiers, let n = Int(s), (1...9).contains(n),
+               model.selected < r.count, r[model.selected].state == .waiting {
+                self.send?(r[model.selected], n); self.hide()
+                return nil
+            }
             if event.modifierFlags.contains(.command),
                let s = event.charactersIgnoringModifiers, let n = Int(s), (1...9).contains(n) {
                 if n - 1 < r.count { self.jump?(r[n - 1]); self.hide() }
@@ -152,6 +167,7 @@ struct CommandPaletteView: View {
     @ObservedObject var model: PaletteModel
     @ObservedObject var l10n: L10n
     var onJump: (Agent) -> Void
+    var onSend: (Agent, Int) -> Void = { _, _ in }
     @Environment(\.colorScheme) private var scheme
     @FocusState private var searchFocused: Bool
 
@@ -254,31 +270,43 @@ struct CommandPaletteView: View {
 
     private func row(_ a: Agent, _ i: Int) -> some View {
         let selected = i == model.selected
-        return HStack(spacing: 13) {
-            // Same identity avatar as the popover: the agent's real icon (else a
-            // monogram) with the status badge in the corner — so you can tell the
-            // agent type at a glance here too, not just in the menu-bar popover.
-            AgentAvatar(agent: a)
-            VStack(alignment: .leading, spacing: 2) {
-                // line 1: the agent's own session name; line 2: where it lives (dim).
-                Text(a.primary).font(.system(size: 15, weight: .semibold)).foregroundStyle(fg).lineLimit(1)
-                Text(a.secondary).font(.system(size: 12.5)).foregroundStyle(fg2).lineLimit(1)
+        let showReply = selected && a.state == .waiting // in-place 1/2/3 (A3 ④)
+        return VStack(spacing: 0) {
+            HStack(spacing: 11) {
+                // 1–9 row number, echoing the ⌘1–9 direct-jump shortcut (A3 ③).
+                Text(i < 9 ? "\(i + 1)" : " ")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(fg3).frame(width: 14, alignment: .center)
+                // Same identity avatar as the popover: the agent's real icon (else a
+                // monogram) with the status badge in the corner.
+                AgentAvatar(agent: a)
+                VStack(alignment: .leading, spacing: 2) {
+                    // line 1: the agent's own session name; line 2: where it lives (dim).
+                    Text(a.primary).font(.system(size: 15, weight: .semibold)).foregroundStyle(fg).lineLimit(1)
+                    Text(a.secondary).font(.system(size: 12.5)).foregroundStyle(fg2).lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                // duration in the current state ("working 7m"); identity is the avatar.
+                Text(a.relativeTimeLabel).font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(fg3).monospacedDigit().lineLimit(1)
+                if selected {
+                    Text(l10n.tr("⏎ jump", "⏎ 跳转")).font(.system(size: 12)).foregroundStyle(fg)
+                        .padding(.horizontal, 9).padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.14)))
+                }
             }
-            Spacer(minLength: 8)
-            // duration in the current state ("working 7m"); identity is the avatar.
-            Text(a.relativeTimeLabel).font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(fg3).monospacedDigit().lineLimit(1)
-            if selected {
-                Text(l10n.tr("⏎ jump", "⏎ 跳转")).font(.system(size: 12)).foregroundStyle(fg)
-                    .padding(.horizontal, 9).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.14)))
+            .padding(.horizontal, 12).padding(.vertical, 10)
+            .contentShape(Rectangle())
+            .onTapGesture { onJump(a) }
+            if showReply {
+                WaitingReplyView(agent: a, l10n: l10n,
+                                 onSend: { n in onSend(a, n) },
+                                 onJump: { onJump(a) })
+                    .padding(.bottom, 4)
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 10)
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(selected ? rowSel : .clear))
-        .contentShape(Rectangle())
         .onHover { if $0 { model.selected = i } }
-        .onTapGesture { onJump(a) }
     }
 
     // MARK: bottom bar
@@ -288,6 +316,7 @@ struct CommandPaletteView: View {
             kbd("↑↓ " + l10n.tr("select", "选择"))
             kbd("⏎ " + l10n.tr("jump", "跳转"))
             kbd("⌘1–9 " + l10n.tr("direct", "直达"))
+            kbd("1/2/3 " + l10n.tr("reply", "回应"))
             Spacer()
             // Show the version here (replaces the cryptic "gtmux focus" command label).
             kbd("gtmux \(appVersion)")

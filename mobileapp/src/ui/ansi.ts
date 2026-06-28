@@ -11,7 +11,7 @@ export interface Span {
 export type AnsiLine = Span[];
 
 const BASE = '#D6D6DA'; // default foreground (MOBILE §4)
-const DIM = '#8A8A90';
+const DIM = '#9AA0A8'; // raised a notch so dim/comment lines stay readable on the dark bg (REVIEW #2)
 
 // 16-color palette: 0–7 normal, 8–15 bright. Status hues reused (green #22C55E,
 // red #EF4444, cyan #06B6D4) so the terminal reads consistently with the badges.

@@ -101,10 +101,11 @@ gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一
 
 - 改 **菜单栏 app**（`NSStatusItem + NSPopover + SwiftUI`）→ 先读 `docs/design/DESIGN.md`。
 - 改 **移动端 app**（bare React Native，`mobileapp/`）→ 先读 `docs/design/MOBILE.md`。
-- 落地总入口 / 顺序 / 验收 → `docs/design/HANDOVER.md`；可视参照 `docs/design/mockup/`。
+- 落地总入口 / 顺序 / 验收 → `docs/design/HANDOFF.md`；可视参照 `docs/design/mockup/`。
 
 要点（两块屏统一）：
 
+- **「等你输入」= 仅 `waiting`（红）；`working`（蓝）永不等输入。** 结构化 `1/2/3` 回应只挂 waiting。
 - **状态语言三重编码**（色+形+字形），全表面统一：waiting=红方块·双竖线 / working=青圆·静态加载环 /
   idle=绿圆·✓ / running=灰圆·点。颜色**只**表达状态，状态色用权威值（见下方「代码位置对照」/
   `mobileapp/src/ui/theme.ts`）。
@@ -114,6 +115,7 @@ gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一
 - **动效最小**：只允许 idle→waiting 一次脉冲；加载环不旋转；空闲零动画。
 - **视觉克制**：无彩虹渐变、无彩色发光阴影；文案平实、禁止营销腔（尤其首次运行/权限卡）。
 - **支持原生终端**（无 tmux）：行与跳转按 `source: tmux|native` 泛化（DESIGN §7 / MOBILE §2）。
+- **连接指示**用 server 名 + 状态点（已连接绿 / 重连琥珀 / 离线红），不用 "live" 字样；离线不清屏、留缓存置灰。
 - **移动端**：监控 + focus + 推送 + **终端输入**（`POST /api/send` → `tmux send-keys`，仅
   bearer token 把关，默认开启 —— token 泄露即可在 Mac 上执行命令,务必当密码看待）。语音输入仍属 P3。
 - **命名**统一小写 `gtmux`。
@@ -121,7 +123,7 @@ gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一
 
 ### 代码位置对照（重要：DESIGN.md 写于原生化迁移之前）
 
-`docs/design/DESIGN.md` / `HANDOVER.md` 里引用的 Go 文件在迁移到原生 Swift app（v0.0.11）后
+`docs/design/DESIGN.md` / `HANDOFF.md` 里引用的 Go 文件在迁移到原生 Swift app（v0.0.11）后
 已删除。按下表换算到现状，**实现以现状为准、设计意图以 DESIGN.md 为准**：
 
 | DESIGN.md 引用 | 现状位置 |

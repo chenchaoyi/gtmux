@@ -2,7 +2,7 @@ import {parseAnsi, AnsiLine} from './ansi';
 
 const ESC = String.fromCharCode(27);
 const BASE = '#D6D6DA';
-const DIM = '#8A8A90';
+const DIM = '#9AA0A8';
 
 // 16-color palette indices (see ansi.ts PALETTE).
 const RED = '#EF4444';
