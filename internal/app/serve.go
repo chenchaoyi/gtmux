@@ -11,10 +11,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/server"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -155,6 +157,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Diff:       diffForPane,
 		Transcript: transcriptForPane,
 		Theme:      terminal.Appearance,
+		OnClients:  writeRemoteClients,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
 				return nil
@@ -364,6 +367,24 @@ func diffForPane(id string) (string, error) {
 		out = out[:maxDiffBytes] + "\n… (diff truncated)\n"
 	}
 	return out, nil
+}
+
+// writeRemoteClients records the live remote-viewer count + timestamp so the
+// menu-bar app can show a "remote client connected" indicator. Written on every
+// SSE connect/disconnect and heartbeated while clients are connected, so a dead
+// serve's file goes stale and the app treats it as disconnected. Best-effort.
+func writeRemoteClients(count int) {
+	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+		return
+	}
+	b, err := json.Marshal(struct {
+		Count int   `json:"count"`
+		At    int64 `json:"at"`
+	}{Count: count, At: time.Now().Unix()})
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(state.RemoteClientsPath(), b, 0o644)
 }
 
 // maxTranscriptTurns bounds the chat-history payload sent to the phone (recent

@@ -226,6 +226,20 @@ struct MenuView: View {
                     }.buttonStyle(.plain).help(remote.url ?? "").fixedSize()
                     Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }
+                if remote.remoteClients > 0 {
+                    // A phone/browser is viewing this Mac right now (green = connected,
+                    // the connection-indicator convention). Count shown when >1.
+                    HStack(spacing: 3) {
+                        Image(systemName: "iphone.radiowaves.left.and.right").font(.system(size: 9))
+                        if remote.remoteClients > 1 {
+                            Text("\(remote.remoteClients)").font(Theme.Font.footer)
+                        }
+                    }
+                    .foregroundStyle(Theme.Status.idle)
+                    .help(l10n.tr("A device is viewing this Mac right now", "有设备正在查看本机"))
+                    .fixedSize()
+                    Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
+                }
                 Text("gtmux \(appVersion) · by ccy")
                     .font(Theme.Font.footer).foregroundStyle(p.fg3)
                     .lineLimit(1).fixedSize()

@@ -23,6 +23,31 @@ func drain(ch chan sseEvent) []sseEvent {
 	}
 }
 
+// onClients fires with the live SSE-client count on connect/disconnect, and is
+// heartbeated by tick() while clients are connected — the remote-viewer indicator.
+func TestHubClientCount(t *testing.T) {
+	var counts []int
+	h := newHub(func() []AgentStatus { return nil }, time.Hour, nil)
+	h.onClients = func(n int) { counts = append(counts, n) }
+
+	a := h.subscribe()
+	b := h.subscribe()
+	h.tick() // heartbeat while 2 connected → reports 2
+	h.unsubscribe(a)
+	h.unsubscribe(b)
+	h.tick() // none connected → no heartbeat
+
+	want := []int{1, 2, 2, 1, 0}
+	if len(counts) != len(want) {
+		t.Fatalf("counts = %v, want %v", counts, want)
+	}
+	for i := range want {
+		if counts[i] != want[i] {
+			t.Fatalf("counts = %v, want %v", counts, want)
+		}
+	}
+}
+
 func revOf(t *testing.T, ev sseEvent) int {
 	t.Helper()
 	var v struct {

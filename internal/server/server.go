@@ -98,6 +98,12 @@ type Deps struct {
 	// forwarding to the relay. Optional: when nil, push registration returns 503.
 	Push *PushManager
 
+	// OnClients, if set, is called with the live count of connected SSE clients
+	// (phones/browsers actively viewing) whenever it changes, plus a heartbeat on
+	// each tick while >0 — so the menu-bar app can show a "remote client connected"
+	// indicator and detect a dead serve via staleness. Optional.
+	OnClients func(count int)
+
 	// Enroll, if set, lets a phone pair via a short-lived code (POST /api/enroll)
 	// for its own per-device token, which auth then accepts alongside the master
 	// token. Optional: when nil, /api/enroll is 503 and only the master token works.
@@ -131,6 +137,7 @@ func New(cfg Config, deps Deps) *Server {
 	if deps.Push != nil { // on every tally change: Live Activity update + silent badge sync
 		s.hub.onTally = deps.Push.OnTally
 	}
+	s.hub.onClients = deps.OnClients // remote-viewer indicator (count of live SSE clients)
 	return s
 }
 

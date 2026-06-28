@@ -35,6 +35,12 @@ func LastFinishedPath() string { return filepath.Join(Dir(), "last-finished") }
 // IconPath is the cached agent icon used as the notification's thumbnail.
 func IconPath() string { return filepath.Join(Dir(), "notify-icon.png") }
 
+// RemoteClientsPath holds the live remote-viewer state ({"count":N,"at":unix}),
+// written by `gtmux serve` on every SSE connect/disconnect + a heartbeat while
+// clients are connected; the menu-bar app reads it to show a "remote client
+// connected" indicator (and treats a stale `at` as disconnected).
+func RemoteClientsPath() string { return filepath.Join(Dir(), "remote-clients.json") }
+
 // NotifyDir is the queue the hook writes notification requests into and the
 // menu-bar app drains. It's the delivery channel that replaced terminal-notifier.
 func NotifyDir() string { return filepath.Join(Dir(), "notify") }
