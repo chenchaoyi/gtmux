@@ -20,6 +20,16 @@ type Option struct {
 // numbered matches a cleaned line like "1. Yes, proceed" → (1, "Yes, proceed").
 var numbered = regexp.MustCompile(`^(\d+)\.\s+(.*\S)`)
 
+// ansiCSI matches an ANSI CSI escape (e.g. the SGR color codes "\x1b[38;5;153m",
+// "\x1b[0m") and ansiOSC an OSC sequence (e.g. the "\x1b]8;;file://…" hyperlinks
+// Claude Code emits), terminated by BEL or ST. The ESC byte is non-printing, so
+// when a colored capture leaks these into an option line only the "[…m" / "]…"
+// tail shows — we strip them so labels are plain text. (See clean.)
+var (
+	ansiCSI = regexp.MustCompile("\x1b\\[[0-9;?]*[ -/]*[@-~]")
+	ansiOSC = regexp.MustCompile("\x1b\\][^\x07\x1b]*(?:\x07|\x1b\\\\)")
+)
+
 // ParseOptions extracts the LAST contiguous run of options starting at 1 from the
 // captured pane text (the most recent menu on screen). Returns nil when there's
 // no parseable choice block — callers fall back to "jump to reply".
@@ -59,9 +69,11 @@ func ParseOptions(text string) []Option {
 }
 
 // clean strips the menu's box-drawing/selector chrome so numbered() can match the
-// content: leading │ ╭ ╰ ╮ ╯ ─ space and the ❯ / > selector, and a trailing │ +
-// padding spaces.
+// content: ANSI color/hyperlink escapes anywhere in the line, then the leading
+// │ ╭ ╰ ╮ ╯ ─ space and the ❯ / > selector, and a trailing │ + padding spaces.
 func clean(s string) string {
+	s = ansiOSC.ReplaceAllString(s, "")
+	s = ansiCSI.ReplaceAllString(s, "")
 	s = strings.TrimSpace(s)
 	s = strings.TrimLeft(s, "│╭╰╮╯─ \t")
 	s = strings.TrimLeft(s, "❯> \t")
