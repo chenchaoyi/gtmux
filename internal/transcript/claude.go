@@ -38,10 +38,11 @@ type claudeMessage struct {
 }
 
 type claudeBlock struct {
-	Type  string          `json:"type"`
-	Text  string          `json:"text"`
-	Name  string          `json:"name"`
-	Input json.RawMessage `json:"input"`
+	Type    string          `json:"type"`
+	Text    string          `json:"text"`
+	Name    string          `json:"name"`
+	Input   json.RawMessage `json:"input"`
+	Content json.RawMessage `json:"content"` // tool_result payload (string | block[])
 }
 
 func claudeLogPath(sessionID string) string {
@@ -95,7 +96,10 @@ func claudePrompt(raw json.RawMessage) (string, bool) {
 	if json.Unmarshal(raw, &s) == nil {
 		return cleanPrompt(s)
 	}
-	// content as blocks: collect text, ignore tool_result-only payloads.
+	// content as blocks: collect typed text, plus any user feedback embedded in a
+	// tool_result (a tool REJECTED with "No, and tell Claude what to do" — the typed
+	// message lives inside the rejection result, not a plain prompt; without this it
+	// silently vanishes from the chat). Plain tool_result OUTPUT still yields nothing.
 	var blocks []claudeBlock
 	if json.Unmarshal(raw, &blocks) != nil {
 		return "", false
@@ -104,12 +108,40 @@ func claudePrompt(raw json.RawMessage) (string, bool) {
 	for _, b := range blocks {
 		if b.Type == "text" && strings.TrimSpace(b.Text) != "" {
 			parts = append(parts, strings.TrimSpace(b.Text))
+		} else if b.Type == "tool_result" {
+			if fb := toolResultFeedback(b.Content); fb != "" {
+				parts = append(parts, fb)
+			}
 		}
 	}
 	if len(parts) == 0 {
-		return "", false // tool_result / image only
+		return "", false // tool_result OUTPUT / image only
 	}
 	return cleanPrompt(strings.Join(parts, "\n"))
+}
+
+// rejectFeedbackMarker precedes the user's typed message inside a tool_result when
+// they reject a tool use with "No, and tell Claude what to do (esc)" — Claude Code
+// embeds the feedback in the rejection result rather than logging a plain prompt.
+const rejectFeedbackMarker = "To tell you how to proceed, the user said:"
+
+// toolResultFeedback returns the user's typed feedback from a tool_result block's
+// content, or "" when there is none. A real tool OUTPUT result has array content
+// (or a string without the marker) → "". A plain rejection ("…wait for the user to
+// tell you how to proceed.") lacks the marker → "".
+func toolResultFeedback(content json.RawMessage) string {
+	if len(content) == 0 {
+		return ""
+	}
+	var s string
+	if json.Unmarshal(content, &s) != nil {
+		return "" // array/object content = real tool output, not feedback
+	}
+	i := strings.Index(s, rejectFeedbackMarker)
+	if i < 0 {
+		return ""
+	}
+	return strings.TrimSpace(s[i+len(rejectFeedbackMarker):])
 }
 
 // harnessBlockRe strips the synthetic XML-ish blocks the Claude Code harness
