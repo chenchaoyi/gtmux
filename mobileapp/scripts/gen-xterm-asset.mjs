@@ -261,7 +261,30 @@ const bootstrap = `
     if (curMarker) { try { curMarker.dispose(); } catch (e) {} curMarker = null; }
     if (!c || c.visible === false) { repaint(); return; }  // hidden (alt-screen TUI) → no marker
     try {
-      curMarker = term.registerMarker(-(c.up | 0));   // up rows above the write cursor
+      // SAFE DEFAULT: the cursor's row offset above the write cursor. capture-pane
+      // ends every row with "\n", so after the write xterm's cursor is one row
+      // BELOW the pane's bottom line → it's (up + 1) rows below the cursor's row.
+      var off = -((c.up | 0) + 1);
+      // WRAP CORRECTION (best-effort): `up` counts SOURCE lines, but in wrap mode one
+      // long source line spans several buffer rows, so the constant offset drifts.
+      // Walk up `up` LOGICAL lines (skipping isWrapped continuations) for the true
+      // buffer-row offset. ONLY adopt it when it stays within the viewport — an
+      // off-screen marker decoration blanks the canvas base layer (the #200 black
+      // screen); the clamp + fallback make this regression impossible.
+      try {
+        var buf = term.buffer.active;
+        var base = buf.baseY + buf.cursorY;
+        var hasNL = lastText && lastText.charAt(lastText.length - 1) === '\n';
+        var row = base - (hasNL ? 1 : 0);
+        while (row > 0 && buf.getLine(row) && buf.getLine(row).isWrapped) row--;
+        for (var k = 0, up = c.up | 0; k < up && row > 0; k++) {
+          row--;
+          while (row > 0 && buf.getLine(row) && buf.getLine(row).isWrapped) row--;
+        }
+        var d = row - base;
+        if (d <= 0 && d > -term.rows) off = d; // sane + on-screen → use the walked offset
+      } catch (e) { /* keep the safe default */ }
+      curMarker = term.registerMarker(off);
       if (!curMarker) { repaint(); return; }
       curDeco = term.registerDecoration({
         marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: curColor,
