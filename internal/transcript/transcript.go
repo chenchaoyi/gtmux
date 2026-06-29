@@ -240,6 +240,17 @@ func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	return lastN(turns, maxTurns), nil
 }
 
+// appendText joins assistant text segments WITHIN one turn. An agent emits a
+// turn's reply as several messages interleaved with tool calls (text → tool → more
+// text → …); we keep them ALL (joined by a blank line) instead of overwriting with
+// the last, so the chat view shows the full reply, not just the closing paragraph.
+func appendText(acc, next string) string {
+	if acc == "" {
+		return next
+	}
+	return acc + "\n\n" + next
+}
+
 // normalizeAgent maps a display name or key ("Claude Code", "claude", "Codex")
 // to a parser key.
 func normalizeAgent(agent string) string {

@@ -78,14 +78,18 @@ func codexStep(line string, st *parseState) {
 			}
 			st.open(strings.TrimSpace(p.Message), e.Timestamp)
 		case "agent_message":
-			if strings.TrimSpace(p.Message) != "" {
+			if msg := strings.TrimSpace(p.Message); msg != "" {
 				st.ensure()
-				st.cur.Response = strings.TrimSpace(p.Message) // latest wins
+				st.cur.Response = appendText(st.cur.Response, msg) // keep every reply segment
 			}
 		case "task_complete":
-			if strings.TrimSpace(p.LastAgentMessage) != "" {
+			// authoritative final reply — append it unless an agent_message already
+			// carried it (avoid duplicating the closing paragraph).
+			if fin := strings.TrimSpace(p.LastAgentMessage); fin != "" {
 				st.ensure()
-				st.cur.Response = strings.TrimSpace(p.LastAgentMessage) // authoritative final
+				if !strings.HasSuffix(st.cur.Response, fin) {
+					st.cur.Response = appendText(st.cur.Response, fin)
+				}
 			}
 		}
 	case "response_item":

@@ -62,7 +62,8 @@ func TestLoadClaude(t *testing.T) {
 	if len(turns) != 2 {
 		t.Fatalf("want 2 turns, got %d: %+v", len(turns), turns)
 	}
-	if turns[0].Prompt != "fix the build" || turns[0].Response != "Done — fixed it." {
+	// both assistant text segments are kept (preamble + closing), not just the last.
+	if turns[0].Prompt != "fix the build" || turns[0].Response != "Let me look\n\nDone — fixed it." {
 		t.Fatalf("turn0 mismatch: %+v", turns[0])
 	}
 	if len(turns[0].Steps) != 1 || turns[0].Steps[0].Title != "Edit" || turns[0].Steps[0].Detail != "/x/main.go" {
@@ -113,6 +114,30 @@ func TestLoadCodexCapturesPromptTime(t *testing.T) {
 	}
 	if len(turns) != 1 || turns[0].Time != "2026-06-28T10:00:01.000Z" {
 		t.Fatalf("codex time mismatch: %+v", turns)
+	}
+}
+
+// A turn's reply spread across several assistant messages (text → tool → text →
+// tool → text) keeps EVERY text segment, not just the last one.
+func TestLoadClaudeKeepsAllReplySegments(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "bbbbbbbb-cccc-dddd-eeee-ffffffffffff"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","message":{"role":"user","content":"do the thing"}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"First, some context."},{"type":"tool_use","name":"Read","input":{"file_path":"/a"}}]}}`,
+		`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"ok"}]}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Now the middle bit."},{"type":"tool_use","name":"Edit","input":{"file_path":"/a"}}]}}`,
+		`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t2","content":"ok"}]}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"And the conclusion."}]}}`,
+	})
+	turns, err := Load("Claude Code", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "First, some context.\n\nNow the middle bit.\n\nAnd the conclusion."
+	if len(turns) != 1 || turns[0].Response != want {
+		t.Fatalf("want all 3 segments %q, got %+v", want, turns)
 	}
 }
 
@@ -272,7 +297,8 @@ func TestLoadClaudeIncrementalGrowth(t *testing.T) {
 	if turns[0].Prompt != "q1" || turns[0].Response != "a1" {
 		t.Fatalf("turn0 clobbered: %+v", turns[0])
 	}
-	if turns[1].Prompt != "q2" || turns[1].Response != "a2 final" {
+	// q2 accumulates both reply segments across the Bash step (text → tool → text).
+	if turns[1].Prompt != "q2" || turns[1].Response != "a2 partial\n\na2 final" {
 		t.Fatalf("turn1 not updated incrementally: %+v", turns[1])
 	}
 	if len(turns[1].Steps) != 1 || turns[1].Steps[0].Title != "Bash" {
@@ -308,7 +334,8 @@ func TestLoadCodex(t *testing.T) {
 	if turns[0].Prompt != "build the app" {
 		t.Fatalf("prompt mismatch: %q", turns[0].Prompt)
 	}
-	if turns[0].Response != "Build passed." { // task_complete overrides agent_message
+	// both the interim agent_message and the task_complete final are kept.
+	if turns[0].Response != "working on it\n\nBuild passed." {
 		t.Fatalf("response mismatch: %q", turns[0].Response)
 	}
 	if len(turns[0].Steps) != 1 || turns[0].Steps[0].Title != "exec" || turns[0].Steps[0].Detail != "go build ./..." {
