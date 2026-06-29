@@ -22,6 +22,50 @@ func TestRenderSectionsTally(t *testing.T) {
 	}
 }
 
+// TestIsUTF8Locale covers the charset sniff used by rowLocale / stepLocale.
+func TestIsUTF8Locale(t *testing.T) {
+	for _, v := range []string{"en_US.UTF-8", "zh_CN.UTF-8", "C.utf8", "en_US.utf-8"} {
+		if !isUTF8Locale(v) {
+			t.Errorf("%q should be UTF-8", v)
+		}
+	}
+	for _, v := range []string{"", "C", "POSIX", "en_US", "en_US.ISO8859-1"} {
+		if isUTF8Locale(v) {
+			t.Errorf("%q should not be UTF-8", v)
+		}
+	}
+}
+
+// TestLocaleCharsetPrecedence checks POSIX precedence (LC_ALL > LC_CTYPE > LANG)
+// and that rowLocale flags a non-UTF-8 / unset locale as recommended, OK otherwise.
+func TestLocaleCharsetPrecedence(t *testing.T) {
+	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		t.Setenv(k, "")
+	}
+	if got := localeCharset(); got != "" {
+		t.Fatalf("all unset → %q, want empty", got)
+	}
+	if rowLocale().status != stRec {
+		t.Error("unset locale → recommended")
+	}
+
+	t.Setenv("LANG", "en_US.UTF-8")
+	if got := localeCharset(); got != "en_US.UTF-8" {
+		t.Fatalf("LANG only → %q", got)
+	}
+	if rowLocale().status != stOK {
+		t.Error("UTF-8 LANG → ok")
+	}
+
+	t.Setenv("LC_ALL", "C") // LC_ALL wins over a UTF-8 LANG
+	if got := localeCharset(); got != "C" {
+		t.Fatalf("LC_ALL precedence → %q", got)
+	}
+	if rowLocale().status != stRec {
+		t.Error("LC_ALL=C overrides UTF-8 LANG → recommended")
+	}
+}
+
 // TestClaudeHookInstalled exercises the settings.json walk against a temp HOME:
 // absent file, a non-gtmux hook, and a real gtmux hook command.
 func TestClaudeHookInstalled(t *testing.T) {

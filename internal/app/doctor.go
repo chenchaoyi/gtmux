@@ -141,7 +141,7 @@ func doctorSections() []dsection {
 	}
 	agents = append(agents, rowApp())
 	return []dsection{
-		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowSetTitles(), rowHistory()}},
+		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"),
 			append(rowPlugins(), rowCapture(), rowAutoRestore())},
 		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
@@ -162,6 +162,46 @@ func rowTmux() dcheck {
 		ver = strings.TrimPrefix(v[0], "tmux ")
 	}
 	return dcheck{stOK, i18n.Tr("tmux", "tmux"), ver, ""}
+}
+
+// rowLocale flags when the environment's locale isn't UTF-8. Without a UTF-8
+// LC_CTYPE/LANG, tmux substitutes every non-ASCII byte with "_"/"?" — so CJK
+// (中文) file names render as ? and the ✳/braille agent glyphs `classifyAgent`
+// keys off get mangled. gtmux forces UTF-8 on its OWN tmux calls (internal/tmux),
+// but panes and shells you open inherit the ambient env, so a non-UTF-8 locale
+// still bites your interactive `ls` and any pane gtmux didn't spawn.
+func rowLocale() dcheck {
+	label := i18n.Tr("locale", "字符集")
+	note := i18n.Tr("UTF-8 so 中文 names + agent glyphs render right",
+		"UTF-8 才能正确显示中文名称与 agent 图标")
+	cs := localeCharset()
+	if isUTF8Locale(cs) {
+		return dcheck{stOK, label, cs, note}
+	}
+	val := cs
+	if val == "" {
+		val = i18n.Tr("unset", "未设置")
+	}
+	return dcheck{stRec, label, val,
+		i18n.Tr("not UTF-8 — 中文 file names show as ?; set a UTF-8 LANG",
+			"非 UTF-8——中文文件名显示为 ?；需设置 UTF-8 的 LANG")}
+}
+
+// localeCharset returns the effective locale string in POSIX precedence
+// (LC_ALL > LC_CTYPE > LANG), or "" when none is set.
+func localeCharset() string {
+	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// isUTF8Locale reports whether a locale string selects the UTF-8 charset.
+func isUTF8Locale(v string) bool {
+	u := strings.ToUpper(v)
+	return strings.Contains(u, "UTF-8") || strings.Contains(u, "UTF8")
 }
 
 func rowSetTitles() dcheck {
