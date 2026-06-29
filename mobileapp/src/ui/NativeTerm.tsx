@@ -5,8 +5,12 @@
 //
 // Why native instead of xterm-in-webview:
 //   • a tap doesn't focus a hidden <textarea> → NO soft-keyboard pop-up;
-//   • <Text selectable> gives iOS long-press selection + the Copy callout for free
-//     (web-like arbitrary selection — the thing xterm can't do on touch);
+//   • long-press gives iOS text selection + the Copy callout (web-like arbitrary
+//     selection — the thing xterm can't do on touch). NOTE: the selection itself
+//     rides a read-only <TextInput> layer, NOT <Text selectable>: on-device, a
+//     colored deeply-nested <Text selectable> selects+copies but draws NO visible
+//     highlight, so we overlay a colored <Text> on a selectable TextInput (see the
+//     dual-layer body) to get a VISIBLE highlight while keeping the colors;
 //   • native ScrollView momentum (no DOM/canvas repaint jank);
 //   • no WebGL/canvas/DOM renderer fragility (the ~10-PR webview saga);
 //   • pure JS → the same renderer works on iOS AND Android.
@@ -18,7 +22,15 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {ScrollView, StyleSheet, Text, View, NativeSyntheticEvent, NativeScrollEvent} from 'react-native';
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import {AnsiLine, parseAnsi, Span} from './ansi';
 import {TermTheme} from '../api/types';
 
@@ -97,6 +109,12 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const frozen = useRef(false);
   const pending = useRef<{text: string; cursor?: PaneCursor} | null>(null);
   const thawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // `selecting` flips on while the user holds a text selection (see the dual-layer
+  // body below). A ref mirrors it so the thaw timer can keep the snapshot frozen
+  // until the selection is released (a flush would change the TextInput value and
+  // drop the selection out from under the Copy menu).
+  const [selecting, setSelecting] = useState(false);
+  const selectingRef = useRef(false);
 
   // `shown`/`shownCursor` are the snapshot actually rendered. While the user is
   // TOUCHING the pane — scrolling OR holding a text selection — we FREEZE BOTH: a
@@ -122,18 +140,24 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
       thawTimer.current = null;
     }
   };
+  const finishThaw = () => {
+    if (selectingRef.current) {
+      // a selection is still held — keep frozen, re-check shortly.
+      thawTimer.current = setTimeout(finishThaw, 1500);
+      return;
+    }
+    frozen.current = false;
+    thawTimer.current = null;
+    if (pending.current !== null) {
+      const p = pending.current;
+      pending.current = null;
+      setShown(p.text);
+      setShownCursor(p.cursor);
+    }
+  };
   const thawSoon = () => {
     if (thawTimer.current) clearTimeout(thawTimer.current);
-    thawTimer.current = setTimeout(() => {
-      frozen.current = false;
-      thawTimer.current = null;
-      if (pending.current !== null) {
-        const p = pending.current;
-        pending.current = null;
-        setShown(p.text);
-        setShownCursor(p.cursor);
-      }
-    }, 3500);
+    thawTimer.current = setTimeout(finishThaw, 3500);
   };
   useEffect(() => () => {
     if (thawTimer.current) clearTimeout(thawTimer.current);
@@ -161,23 +185,41 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
     return copy;
   }, [lines, shownCursor, curColor, bg]);
 
-  // NOTE: deliberately NO custom lineHeight on the selectable <Text>. On a real
-  // iOS device, setting lineHeight on a `selectable` Text suppresses the blue
-  // selection HIGHLIGHT (Copy still works, but you can't see what's selected) — a
-  // long-standing RN/iOS quirk that the simulator doesn't reproduce. We let the
-  // monospace font's natural leading space the rows so selection paints normally.
+  // Plain (ANSI-stripped) text of the same capped lines — the value of the hidden
+  // selection layer (TextInput). Cursor cell is intentionally excluded.
+  const plainText = useMemo(() => lines.map(spans => spans.map(s => s.text).join('')).join('\n'), [lines]);
+
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     stick.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
   };
   const onContentSizeChange = () => {
-    if (stick.current) ref.current?.scrollToEnd({animated: false});
+    if (stick.current && !selectingRef.current) ref.current?.scrollToEnd({animated: false});
+  };
+  // A non-empty selection turns the selection layer visible and hides the colored
+  // overlay (so the iOS highlight shows); clearing it restores the colored view.
+  const onSelectionChange = (e: {nativeEvent: {selection: {start: number; end: number}}}) => {
+    const sel = e.nativeEvent.selection;
+    const has = !!sel && sel.end > sel.start;
+    selectingRef.current = has;
+    setSelecting(prev => (prev === has ? prev : has));
   };
 
-  // one big selectable <Text> → native cross-row selection + Copy. Rows are nested
-  // <Text> joined by "\n"; spans carry fg/bg/bold.
-  const body = (
-    <Text selectable style={[styles.mono, {fontSize, color: fg}]}>
+  // Two stacked layers solve "read in color, select with a VISIBLE highlight":
+  //   • selection layer — a read-only multiline <TextInput>. iOS draws a real
+  //     selection highlight + Copy callout for a TextInput (which a colored,
+  //     deeply-nested <Text selectable> does NOT on-device). Its text is
+  //     transparent until a selection exists, so normally you don't see it.
+  //   • color layer — the colored <Text> overlay (pointerEvents none), shown on
+  //     top while NOT selecting; hidden the instant a selection starts so the
+  //     highlight underneath becomes visible. On release/deselect it returns —
+  //     long-press → highlight → Copy → back to color, seamlessly.
+  // Touches always land on the TextInput (the overlay ignores them), so a long-
+  // press selects the word you actually pressed. Both layers share font/size, and
+  // since they're never both visible there's no ghosting if wrapping differs by a
+  // hair.
+  const colorOverlay = (
+    <Text style={[styles.mono, {fontSize, color: fg}]}>
       {rendered.map((spans, i) => (
         <Text key={i}>
           {spans.map((s, j) => (
@@ -209,7 +251,22 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
         onMomentumScrollEnd={thawSoon}
         scrollEventThrottle={100}
         onContentSizeChange={onContentSizeChange}>
-        {body}
+        <View style={styles.layerWrap}>
+          <TextInput
+            value={plainText}
+            editable={false}
+            multiline
+            scrollEnabled={false}
+            selectionColor="#3478F7"
+            onSelectionChange={onSelectionChange}
+            style={[styles.mono, styles.input, {fontSize, color: selecting ? fg : 'transparent'}]}
+          />
+          {!selecting && (
+            <View pointerEvents="none" style={styles.overlay}>
+              {colorOverlay}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -219,4 +276,8 @@ const styles = StyleSheet.create({
   fill: {flex: 1},
   pad: {padding: 6},
   mono: {fontFamily: MONO},
+  // selection layer (TextInput) defines the height; color layer overlays it.
+  layerWrap: {position: 'relative', overflow: 'visible'},
+  input: {padding: 0, margin: 0},
+  overlay: {position: 'absolute', top: 0, left: 0, right: 0},
 });

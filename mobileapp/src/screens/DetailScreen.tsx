@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Clipboard from '@react-native-clipboard/clipboard';
 import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
@@ -183,15 +182,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
 
-  // D6: copy the visible screen as plain text (ANSI stripped via the parsed spans).
-  const copyVisible = () => {
-    const plain = lines
-      .map(spans => spans.map(s => s.text).join(''))
-      .join('\n')
-      .replace(/\s+$/, '');
-    Clipboard.setString(plain);
-  };
-
   return (
     <KeyboardAvoidingView
       testID={TestIds.detail.screen}
@@ -277,7 +267,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             {mode === 'terminal' && (
               <>
-                <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyVisible} />
                 <Ctl pal={pal} label="A−" onPress={smaller} />
                 <Ctl pal={pal} label="A+" onPress={bigger} />
                 <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />
