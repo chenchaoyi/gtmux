@@ -94,17 +94,43 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const curColor = theme?.cursor || '#bbc1ff';
   const ref = useRef<ScrollView>(null);
   const stick = useRef(true); // follow the bottom unless the user scrolled up
-  const scrolling = useRef(false);
+  const frozen = useRef(false);
   const pending = useRef<string | null>(null);
+  const thawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // `shown` is the snapshot actually rendered. While the user is scrolling we FREEZE
-  // it (a working pane streams a new snapshot every poll, and re-rendering the grid
-  // mid-gesture causes the periodic scroll hitches), flushing the latest on release.
+  // `shown` is the snapshot actually rendered. While the user is TOUCHING the pane —
+  // scrolling OR holding a text selection — we FREEZE it: a working pane streams a
+  // new snapshot every poll, and re-rendering would both hitch a scroll AND wipe an
+  // in-progress selection (native selection can't survive a re-render). We stay
+  // frozen for a few seconds after release so the selection lives long enough to
+  // Copy, then flush the latest snapshot.
   const [shown, setShown] = useState(text);
   useEffect(() => {
-    if (scrolling.current) pending.current = text;
+    if (frozen.current) pending.current = text;
     else setShown(text);
   }, [text]);
+  const freeze = () => {
+    frozen.current = true;
+    if (thawTimer.current) {
+      clearTimeout(thawTimer.current);
+      thawTimer.current = null;
+    }
+  };
+  const thawSoon = () => {
+    if (thawTimer.current) clearTimeout(thawTimer.current);
+    thawTimer.current = setTimeout(() => {
+      frozen.current = false;
+      thawTimer.current = null;
+      if (pending.current !== null) {
+        const t = pending.current;
+        pending.current = null;
+        setShown(t);
+      }
+    }, 3500);
+  };
+  useEffect(() => () => {
+    if (thawTimer.current) clearTimeout(thawTimer.current);
+  }, []);
 
   // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
   // lines of scrollback; one big selectable <Text> of that many nested spans is
@@ -132,17 +158,6 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     stick.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
-  };
-  const onScrollBeginDrag = () => {
-    scrolling.current = true;
-  };
-  const onScrollEnd = () => {
-    scrolling.current = false;
-    if (pending.current !== null) {
-      const t = pending.current;
-      pending.current = null;
-      setShown(t);
-    }
   };
   const onContentSizeChange = () => {
     if (stick.current) ref.current?.scrollToEnd({animated: false});
@@ -175,9 +190,12 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
         style={styles.fill}
         contentContainerStyle={styles.pad}
         onScroll={onScroll}
-        onScrollBeginDrag={onScrollBeginDrag}
-        onScrollEndDrag={onScrollEnd}
-        onMomentumScrollEnd={onScrollEnd}
+        onTouchStart={freeze}
+        onTouchEnd={thawSoon}
+        onTouchCancel={thawSoon}
+        onScrollBeginDrag={freeze}
+        onScrollEndDrag={thawSoon}
+        onMomentumScrollEnd={thawSoon}
         scrollEventThrottle={100}
         onContentSizeChange={onContentSizeChange}>
         {body}
