@@ -54,6 +54,31 @@ const MD_COLORS: MdColors = {
   link: '#27C7E6',
 };
 
+// fmtTurnTime renders a turn's prompt timestamp as a compact, glance-friendly
+// label: today → "14:35"; yesterday → "昨天 14:35"/"Yesterday 14:35"; older →
+// date + time (year only when not the current year). "" when there's no/invalid time.
+function fmtTurnTime(iso: string | undefined, lang: Lang): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const sameY = d.getFullYear() === now.getFullYear();
+  const isDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (isDay(d, now)) return hm;
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
+  if (isDay(d, yest)) return (lang === 'zh' ? '昨天 ' : 'Yesterday ') + hm;
+  if (lang === 'zh') {
+    const md = `${d.getMonth() + 1}月${d.getDate()}日`;
+    return (sameY ? md : `${d.getFullYear()}年${md}`) + ' ' + hm;
+  }
+  const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  return sameY ? `${mon} ${d.getDate()}, ${hm}` : `${mon} ${d.getDate()} ${d.getFullYear()}, ${hm}`;
+}
+
 function dotColor(status: StatusName): string {
   return status === 'waiting'
     ? StatusColor.waiting
@@ -72,6 +97,20 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   React.useEffect(() => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
   }, [turns.length]);
+
+  // Per-turn time labels, with adjacent duplicates blanked so a burst of turns in
+  // the same minute shows the label once (a centered separator, chat-app style).
+  const timeLabels = React.useMemo(() => {
+    let prev = '';
+    return turns.map(t => {
+      const l = fmtTurnTime(t.time, lang);
+      if (l && l !== prev) {
+        prev = l;
+        return l;
+      }
+      return '';
+    });
+  }, [turns, lang]);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
@@ -130,6 +169,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
       {/* the conversation: prompt → collapsed steps → final response */}
       {turns.map((t, i) => (
         <View key={i} style={styles.turn}>
+          {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
           {!!t.prompt && (
             <View style={styles.userRow}>
               <View style={styles.userBubble}>
@@ -218,6 +258,8 @@ const styles = StyleSheet.create({
   statusText: {fontSize: 12, flexShrink: 1},
 
   turn: {gap: 6},
+  // centered time separator above a turn (chat-app style), deliberately quiet.
+  timeLabel: {fontSize: 10.5, color: CHAT_FG_DIM, textAlign: 'center', alignSelf: 'center', letterSpacing: 0.3, marginTop: 2},
   // user prompt — right-aligned accent bubble.
   userRow: {flexDirection: 'row', justifyContent: 'flex-end'},
   userBubble: {

@@ -28,6 +28,7 @@ type claudeLine struct {
 	Type        string         `json:"type"`
 	IsMeta      bool           `json:"isMeta"`
 	IsSidechain bool           `json:"isSidechain"`
+	Timestamp   string         `json:"timestamp"`
 	Message     *claudeMessage `json:"message"`
 }
 
@@ -74,7 +75,7 @@ func claudeStep(line string, st *parseState) {
 		if !isPrompt {
 			return // a tool_result-only user event — not a new turn
 		}
-		st.open(prompt)
+		st.open(prompt, e.Timestamp)
 	case "assistant":
 		st.ensure() // tail may have started mid-turn (no preceding prompt)
 		text, steps := claudeAssistant(e.Message.Content)

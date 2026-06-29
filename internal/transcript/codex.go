@@ -23,8 +23,9 @@ import (
 //   - token_count events are everywhere and irrelevant to turn structure — ignored.
 
 type codexLine struct {
-	Type    string          `json:"type"`
-	Payload json.RawMessage `json:"payload"`
+	Type      string          `json:"type"`
+	Timestamp string          `json:"timestamp"`
+	Payload   json.RawMessage `json:"payload"`
 }
 
 type codexPayload struct {
@@ -75,7 +76,7 @@ func codexStep(line string, st *parseState) {
 			if strings.TrimSpace(p.Message) == "" {
 				return
 			}
-			st.open(strings.TrimSpace(p.Message))
+			st.open(strings.TrimSpace(p.Message), e.Timestamp)
 		case "agent_message":
 			if strings.TrimSpace(p.Message) != "" {
 				st.ensure()

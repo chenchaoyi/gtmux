@@ -76,6 +76,46 @@ func TestLoadClaude(t *testing.T) {
 	}
 }
 
+// The prompt's log timestamp is captured onto Turn.Time (chat-view time label).
+func TestLoadClaudeCapturesPromptTime(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","timestamp":"2026-06-15T04:15:35.802Z","message":{"role":"user","content":"hello"}}`,
+		`{"type":"assistant","timestamp":"2026-06-15T04:15:40.000Z","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"hi"}]}}`,
+	})
+	turns, err := Load("Claude Code", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(turns) != 1 {
+		t.Fatalf("want 1 turn, got %d", len(turns))
+	}
+	if turns[0].Time != "2026-06-15T04:15:35.802Z" {
+		t.Fatalf("want prompt timestamp, got %q", turns[0].Time)
+	}
+}
+
+// Codex turns carry the user_message line's timestamp too.
+func TestLoadCodexCapturesPromptTime(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+	sid := "ffffffff-1111-2222-3333-444444444444"
+	writeCodexLog(t, home, sid, []string{
+		`{"timestamp":"2026-06-28T10:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"build it"}}`,
+		`{"timestamp":"2026-06-28T10:00:05.000Z","type":"event_msg","payload":{"type":"agent_message","message":"done"}}`,
+	})
+	turns, err := Load("Codex", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(turns) != 1 || turns[0].Time != "2026-06-28T10:00:01.000Z" {
+		t.Fatalf("codex time mismatch: %+v", turns)
+	}
+}
+
 // Harness-injected user turns (<task-notification>, <system-reminder>) must not
 // show up as chat prompts; a reminder appended to a real prompt is trimmed off.
 func TestLoadClaudeSkipsHarnessBlocks(t *testing.T) {

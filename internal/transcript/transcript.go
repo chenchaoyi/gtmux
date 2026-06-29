@@ -30,6 +30,9 @@ type Turn struct {
 	Prompt   string `json:"prompt"`
 	Response string `json:"response"`
 	Steps    []Step `json:"steps,omitempty"`
+	// Time is the prompt's wall-clock timestamp (RFC3339, as logged by the agent),
+	// for the chat view's per-turn time label. "" when the log line carried none.
+	Time string `json:"time,omitempty"`
 }
 
 // maxTailBytes bounds how much of a (potentially huge) log we read: only the tail
@@ -84,10 +87,11 @@ func (st *parseState) flush() {
 	st.cur = nil
 }
 
-// open starts a fresh turn at a user prompt, closing the previous one.
-func (st *parseState) open(prompt string) {
+// open starts a fresh turn at a user prompt, closing the previous one. ts is the
+// prompt's log timestamp (RFC3339), used for the chat view's time label.
+func (st *parseState) open(prompt, ts string) {
 	st.flush()
-	st.cur = &Turn{Prompt: prompt}
+	st.cur = &Turn{Prompt: prompt, Time: ts}
 	st.curStart = st.off
 }
 

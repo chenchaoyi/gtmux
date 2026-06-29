@@ -22,6 +22,7 @@ export interface TranscriptTurn {
   prompt: string;
   response: string;
   steps?: TranscriptStep[];
+  time?: string; // prompt's RFC3339 timestamp (agent log) — for the chat time label
 }
 
 // tfetch is fetch + optional debug logging (method · path · status · ms). It
