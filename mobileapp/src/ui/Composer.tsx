@@ -417,7 +417,7 @@ export function Composer({
             multiline
             autoFocus
             textAlignVertical="top"
-            placeholder={lang === 'zh' ? '输入…（回车换行，⌘⏎ 发送）' : 'Type… (Return = newline, ⌘⏎ to send)'}
+            placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
             placeholderTextColor={pal.fg3}
             keyboardAppearance={pal.bg === '#ffffff' ? 'light' : 'dark'}
             onKeyPress={e => {
