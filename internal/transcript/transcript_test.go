@@ -76,6 +76,39 @@ func TestLoadClaude(t *testing.T) {
 	}
 }
 
+// Harness-injected user turns (<task-notification>, <system-reminder>) must not
+// show up as chat prompts; a reminder appended to a real prompt is trimmed off.
+func TestLoadClaudeSkipsHarnessBlocks(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "22222222-3333-4444-5555-666666666666"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","message":{"role":"user","content":"real question"}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"an answer"}]}}`,
+		// a pure background-task notice injected as a user turn — NOT a prompt
+		`{"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>abc</task-id>\n<status>completed</status>\n</task-notification>"}}`,
+		// a pure context reminder injected as a user turn — NOT a prompt
+		`{"type":"user","message":{"role":"user","content":[{"type":"text","text":"<system-reminder>be nice</system-reminder>"}]}}`,
+		// a real prompt with a reminder appended by the harness — keep only the prompt
+		`{"type":"user","message":{"role":"user","content":"second question\n<system-reminder>context here</system-reminder>"}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"second answer"}]}}`,
+	})
+
+	turns, err := Load("Claude Code", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(turns) != 2 {
+		t.Fatalf("want 2 turns (harness blocks dropped), got %d: %+v", len(turns), turns)
+	}
+	if turns[0].Prompt != "real question" {
+		t.Fatalf("turn0 prompt mismatch: %q", turns[0].Prompt)
+	}
+	if turns[1].Prompt != "second question" || turns[1].Response != "second answer" {
+		t.Fatalf("turn1 mismatch: %+v", turns[1])
+	}
+}
+
 func TestLoadClaudeMaxTurns(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
