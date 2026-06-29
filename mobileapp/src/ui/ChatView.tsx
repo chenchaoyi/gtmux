@@ -178,7 +178,9 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
           {!!t.prompt && (
             <View style={styles.userRow}>
               <View style={styles.userBubble}>
-                <Text style={styles.userText}>{t.prompt}</Text>
+                <Text selectable style={styles.userText}>
+                  {t.prompt}
+                </Text>
               </View>
             </View>
           )}
@@ -213,7 +215,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
                 {segs.map((seg, k) => (
                   <View key={k}>
                     {k > 0 && <View style={styles.segDivider} />}
-                    <MarkdownView source={seg} colors={MD_COLORS} fontSize={14} />
+                    <MarkdownView source={seg} colors={MD_COLORS} fontSize={14} selectable />
                   </View>
                 ))}
               </View>
