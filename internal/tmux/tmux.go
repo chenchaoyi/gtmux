@@ -60,6 +60,18 @@ func Run(args ...string) (string, error) {
 	return strings.TrimRight(string(out), "\n"), err
 }
 
+// runRaw is Run WITHOUT trimming trailing newlines — for capture-pane, where the
+// pane's trailing blank rows must be preserved so a bottom-anchored cursor offset
+// (pane_height-1-cursor_y) maps to the right line. Trimming them shifted the
+// rendered cursor up by however many blank rows sat below the content.
+func runRaw(args ...string) (string, error) {
+	if Bin == "" {
+		return "", exec.ErrNotFound
+	}
+	out, err := command(args...).Output()
+	return string(out), err
+}
+
 // OK runs tmux and reports whether it exited 0 (output ignored).
 func OK(args ...string) bool {
 	if Bin == "" {
@@ -94,7 +106,9 @@ func CapturePane(pane string) string {
 // includes up to 2000 lines of scrollback (bounded for payload/render cost; the
 // real depth is also capped by tmux history-limit). Read-only.
 func CapturePaneColor(pane string) string {
-	out, _ := Run("capture-pane", "-e", "-p", "-S", "-2000", "-t", pane)
+	// runRaw (not Run): keep the pane's trailing blank rows so the bottom-anchored
+	// text cursor (pane_height-1-cursor_y) lands on the right line in the renderer.
+	out, _ := runRaw("capture-pane", "-e", "-p", "-S", "-2000", "-t", pane)
 	return out
 }
 
