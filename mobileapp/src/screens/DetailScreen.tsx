@@ -20,6 +20,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
@@ -65,6 +66,11 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
   const [slow, setSlow] = useState(false); // D8: pane taking >3s to first paint
+  // Chat transcript lives HERE (DetailScreen stays mounted across mode switches) so
+  // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
+  // spinning every time. Polled on status/prompt change; turns are never cleared.
+  const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  const [chatLoaded, setChatLoaded] = useState(false);
   // B1: 对话 ↔ 终端. Initial mode = the global "default mode" setting (B2, default
   // 终端 — preserves the established read-the-pane behavior; 对话 is a visible-
   // screen glance, not a full transcript), overridden by this pane's own
@@ -116,7 +122,15 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           // Skip the update when the screen is unchanged so a re-render doesn't
           // clobber an in-progress text selection (React bails on an equal value).
           setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
-          setCursor(r.cursor);
+          // Same for the cursor: r.cursor is a fresh object every poll, so setting
+          // it unconditionally re-rendered the terminal every 1.5s and wiped any
+          // active selection. Keep the previous object when the values are equal.
+          setCursor(prev => {
+            const c = r.cursor;
+            if (prev === c) return prev;
+            if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
+            return c;
+          });
           setLoading(false);
         }
       } catch {
@@ -147,6 +161,24 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       clearInterval(id);
     };
   }, [client, agent.pane_id, live.status]);
+
+  // Fetch the transcript on mount + when the status flips or a prompt is sent (a
+  // turn likely completed). Never clears `turns`, so a background refetch swaps in
+  // fresh history without flashing the spinner — and a mode switch is instant.
+  useEffect(() => {
+    let alive = true;
+    client
+      .transcript(agent.pane_id)
+      .then(ts => {
+        if (!alive) return;
+        setTurns(ts);
+        setChatLoaded(true);
+      })
+      .catch(() => alive && setChatLoaded(true));
+    return () => {
+      alive = false;
+    };
+  }, [client, agent.pane_id, live.status, pendingPrompt]);
 
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
@@ -257,7 +289,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
       {/* body: 对话 (glance) or 终端 (raw TUI) */}
       {mode === 'chat' ? (
-        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} client={client} paneId={agent.pane_id} pendingPrompt={pendingPrompt} />
+        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} />
       ) : (
       /* pane screen (colored) — native RN <Text> renderer (selectable, no keyboard) */
       <View style={styles.termWrap} testID={TestIds.detail.pane}>

@@ -15,7 +15,7 @@ import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {Agent, StatusName} from '../api/types';
-import {GtmuxClient, TranscriptTurn} from '../api/client';
+import {TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
 import {StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
@@ -27,8 +27,10 @@ interface Props {
   fontSize: number;
   pal: any;
   lang: Lang;
-  client: GtmuxClient;
-  paneId: string;
+  // Transcript is fetched + cached by DetailScreen (survives mode switches), passed
+  // in here so 终端→对话 shows instantly instead of re-fetching every mount.
+  turns: TranscriptTurn[];
+  loading: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
   pendingPrompt?: string;
@@ -62,29 +64,14 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, client, paneId, pendingPrompt}: Props) {
-  const [turns, setTurns] = React.useState<TranscriptTurn[]>([]);
-  const [loading, setLoading] = React.useState(true);
+export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt}: Props) {
   const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
   const scrollRef = React.useRef<ScrollView>(null);
 
-  // Fetch history on mount, on pane change, and when the status flips (a turn has
-  // likely just completed — working→idle/waiting), so the final response lands.
+  // Jump to the latest turn whenever the history grows (kept in sync by the parent).
   React.useEffect(() => {
-    let alive = true;
-    client
-      .transcript(paneId)
-      .then(ts => {
-        if (!alive) return;
-        setTurns(ts);
-        setLoading(false);
-        requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
-      })
-      .catch(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, [client, paneId, status, pendingPrompt]);
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+  }, [turns.length]);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
