@@ -95,20 +95,26 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const ref = useRef<ScrollView>(null);
   const stick = useRef(true); // follow the bottom unless the user scrolled up
   const frozen = useRef(false);
-  const pending = useRef<string | null>(null);
+  const pending = useRef<{text: string; cursor?: PaneCursor} | null>(null);
   const thawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // `shown` is the snapshot actually rendered. While the user is TOUCHING the pane —
-  // scrolling OR holding a text selection — we FREEZE it: a working pane streams a
-  // new snapshot every poll, and re-rendering would both hitch a scroll AND wipe an
-  // in-progress selection (native selection can't survive a re-render). We stay
-  // frozen for a few seconds after release so the selection lives long enough to
-  // Copy, then flush the latest snapshot.
+  // `shown`/`shownCursor` are the snapshot actually rendered. While the user is
+  // TOUCHING the pane — scrolling OR holding a text selection — we FREEZE BOTH: a
+  // working pane streams a new snapshot AND a moving cursor every poll, and either
+  // one changing re-renders the <Text> tree, which both hitches a scroll AND wipes
+  // an in-progress selection (native selection can't survive a re-render). The
+  // cursor matters as much as the text here — it ticks every second on a busy pane,
+  // so freezing only the text still let the selection get cleared. We stay frozen a
+  // few seconds after release so the selection lives long enough to Copy.
   const [shown, setShown] = useState(text);
+  const [shownCursor, setShownCursor] = useState(cursor);
   useEffect(() => {
-    if (frozen.current) pending.current = text;
-    else setShown(text);
-  }, [text]);
+    if (frozen.current) pending.current = {text, cursor};
+    else {
+      setShown(text);
+      setShownCursor(cursor);
+    }
+  }, [text, cursor]);
   const freeze = () => {
     frozen.current = true;
     if (thawTimer.current) {
@@ -122,9 +128,10 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
       frozen.current = false;
       thawTimer.current = null;
       if (pending.current !== null) {
-        const t = pending.current;
+        const p = pending.current;
         pending.current = null;
-        setShown(t);
+        setShown(p.text);
+        setShownCursor(p.cursor);
       }
     }, 3500);
   };
@@ -145,14 +152,14 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   // place the cursor: capture-pane ends rows with "\n" (trailing empty line), and
   // `up` = rows above the bottom content line.
   const rendered = useMemo(() => {
-    if (!cursor || cursor.visible === false) return lines;
+    if (!shownCursor || shownCursor.visible === false) return lines;
     let last = lines.length - 1;
     if (last > 0 && lines[last].length === 0) last--; // skip the trailing-newline blank
-    const row = Math.max(0, Math.min(last, last - (cursor.up | 0)));
+    const row = Math.max(0, Math.min(last, last - (shownCursor.up | 0)));
     const copy = lines.slice();
-    copy[row] = cursorSpans(copy[row] || [], cursor.x | 0, curColor, bg);
+    copy[row] = cursorSpans(copy[row] || [], shownCursor.x | 0, curColor, bg);
     return copy;
-  }, [lines, cursor, curColor, bg]);
+  }, [lines, shownCursor, curColor, bg]);
 
   const lineHeight = Math.round(fontSize * 1.3);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
