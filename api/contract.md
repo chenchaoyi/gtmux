@@ -57,14 +57,27 @@ app, and mobile app share one shape. Empty array when no tmux server is running.
 
 ### `GET /api/pane?id=%N` — read a pane's screen (read-only)
 
-`tmux capture-pane -p` of the pane's current screen. `id` is URL-encoded
+`tmux capture-pane -e -p -S -2000` of the pane (the visible screen plus up to
+2000 lines of scrollback), with `-e` keeping ANSI SGR so the mirror renders
+colors. Trailing blank rows are **preserved** (the capture is not right-trimmed)
+so the cursor offset below anchors to the true bottom. `id` is URL-encoded
 (`%` → `%25`, so pane `%12` is `?id=%2512`).
 
 ```
-200 {"id":"%12","text":"…current screen…"}
+200 {"id":"%12","text":"…current screen…","cursor":{"x":4,"up":0,"visible":true}}
 400 {"error":"missing id"}
 404 {"error":"pane not found"}     // pane no longer exists
 ```
+
+`cursor` is **optional** (omitted when the server can't resolve a cursor for the
+pane). It is **bottom-anchored** so a client can place a cursor block without
+knowing the capture's top:
+
+| field | type | meaning |
+| --- | --- | --- |
+| `x` | int | cursor column, 0-based from the left |
+| `up` | int | rows **up from the last captured line** (`pane_height-1-cursor_y`); `0` = the bottom row |
+| `visible` | bool | whether the pane's cursor is currently shown |
 
 ### `POST /api/focus?id=%N` — select a pane locally
 
@@ -134,6 +147,57 @@ from the phone. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB.
 503 {"error":"diff not available"}   // Diff dep not wired
 ```
 
+### `GET /api/transcript?id=%N` — the pane's parsed chat history (read-only)
+
+Parses the agent's on-disk session log for the pane's cwd/session into an ordered
+list of turns (one user prompt → the agent's reply, with its tool calls folded
+into collapsible steps). Drives the phone's and browser's "对话/chat" view. `[]`
+when the pane has no resumable session or no agent log. See the `chat-transcript`
+capability for the parsing rules (multi-segment replies, reject-feedback, harness
+stripping, incremental cache).
+
+```
+200 [ {turn}, … ]    // application/json
+400 {"error":"missing id"}
+404 {"error":"transcript failed: <reason>"}
+503 {"error":"transcript not available"}   // Transcript dep not wired
+```
+
+`turn` object:
+
+| field | type | meaning |
+| --- | --- | --- |
+| `prompt` | string | the user's instruction that opened the turn |
+| `response` | string | the full reply — all segment texts joined by a blank line (back-compat / simple consumers) |
+| `segments` | array? | the reply in chronological order; each item is one assistant text bubble plus the tool steps that ran AFTER it (text → tools → text → …) |
+| `time` | string? | the prompt's wall-clock timestamp (RFC3339, as logged by the agent); omitted when the log carried none |
+
+`segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
+`{"kind":"tool", "title":"Edit|Bash|exec_command|…", "detail":"<short arg summary>"?}`.
+
+### `GET /api/options?id=%N` — a waiting pane's interactive choices (read-only)
+
+Parses a pane that is `waiting` on a numbered prompt (the SAME parser the
+menu-bar/CLI use) into its `1/2/3` options, for the approval card. `options` is
+`[]` when nothing parses.
+
+```
+200 {"options":[{"n":1,"label":"Yes"},{"n":2,"label":"Yes, and don't ask again"},{"n":3,"label":"No"}]}
+400 {"error":"missing id"}
+404 {"error":"pane not found"}
+```
+
+### `GET /api/theme` — the host terminal's resolved appearance (read-only)
+
+Returns the Mac terminal's resolved colors + font so the mirror can match the
+user's real terminal (see the `terminal-theme` capability). `source` is
+`ghostty | iterm2 | default`.
+
+```
+200 {"source":"ghostty","background":"#17171a","foreground":"#d4d2cc","cursor":"#d4d2cc","palette":["#…", … 16],"fontFamily":"Hack","fontSize":13}
+503 {"error":"theme not available"}   // Theme dep not wired
+```
+
 ### `GET /api/events` — live updates (Server-Sent Events)
 
 `text/event-stream`. Lets the app react to changes instead of polling. On
@@ -187,4 +251,60 @@ verify notifications end-to-end). No body.
 200 {"sent":N}                       // N = devices the relay accepted
 405 {"error":"method not allowed"}   // non-POST
 503 {"error":"push not configured"}  // server started without push support
+```
+
+### `POST /api/push/activity` — register a Live Activity push token
+
+Hands the Mac a Live Activity push token so the relay can push-to-update the
+lock-screen tally even when the app is closed (see `push-notifications`).
+
+```
+body: {"token":"<activity-push-token>"}
+200 {"status":"ok"}
+400 {"error":"invalid token"}        // missing token / bad body
+503 {"error":"push not configured"}
+```
+
+## Enrollment (per-device tokens)
+
+So a phone/browser never carries the master token, a trusted surface mints a
+short-lived single-use **enroll code** that the new device redeems for its own
+per-device token (see `browser-mirror` pairing). `POST /api/enroll` is the only
+**unauthenticated** `/api/*` route besides `/api/health` — the code itself is the
+credential. The rest are master-or-device authenticated.
+
+### `POST /api/enroll` — redeem an enroll code (unauthenticated)
+
+```
+body: {"enrollCode":"<code>","name":"<device label>"}
+200 {"token":"<per-device-token>","deviceId":"<id>"}
+400 {"error":"invalid request"}                 // missing/garbled body
+401 {"error":"invalid or expired enroll code"}
+405 {"error":"method not allowed"}              // non-POST
+503 {"error":"enrollment not configured"}
+```
+
+### `POST /api/enroll/mint` — mint a fresh enroll code
+
+```
+200 {"enrollCode":"<code>","expiresInSec":N}
+405 {"error":"method not allowed"}
+503 {"error":"enrollment not configured"}
+```
+
+### `GET /api/devices` — list enrolled devices (no tokens)
+
+```
+200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?}, …]}
+503 {"error":"enrollment not configured"}
+```
+
+### `POST /api/devices/revoke` — revoke a device's token now
+
+```
+body: {"id":"<deviceId>"}
+200 {"revoked":true|false}                       // false = no such device
+400 {"error":"invalid request"}
+405 {"error":"method not allowed"}
+503 {"error":"enrollment not configured"}
 ```

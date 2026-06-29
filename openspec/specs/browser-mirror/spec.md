@@ -94,6 +94,26 @@ tmux pane.
 - **THEN** the terminal refits to the new size and the source Mac's pane width is
   unchanged
 
+### Requirement: Chat (对话) mode mirrors the transcript
+
+The pane view SHALL offer a 对话/终端 (chat/terminal) switch; the chat mode SHALL
+render the pane's parsed transcript (see `chat-transcript`) by polling
+`GET /api/transcript` — a user-prompt bubble followed by the reply's `segments` as
+separate speech bubbles with the interleaved tool steps as collapsible groups,
+mirroring the phone's chat view. It stays view-only (no input).
+
+#### Scenario: Switch to chat mode
+
+- **WHEN** a session is selected and the user switches to 对话/chat mode
+- **THEN** the browser renders the parsed transcript as a conversation (prompt
+  bubble, segmented reply bubbles, collapsible steps) and keeps it fresh by polling
+  `/api/transcript`
+
+#### Scenario: Chat mode is view-only
+
+- **WHEN** the chat mode is displayed
+- **THEN** there is no control to type, send, or focus (view-only, like the pane mirror)
+
 ### Requirement: Reachable over LAN and tunnel
 
 The web UI SHALL be reachable on the LAN (`http://<ip>:<port>/`) and remotely via
