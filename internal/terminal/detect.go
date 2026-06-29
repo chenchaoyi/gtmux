@@ -40,6 +40,8 @@ func fromTermEnv() string {
 		return "appleterminal"
 	case "WezTerm":
 		return "wezterm"
+	case "WarpTerminal":
+		return "warp"
 	}
 	if os.Getenv("KITTY_WINDOW_ID") != "" || os.Getenv("TERM") == "xterm-kitty" {
 		return "kitty"
@@ -97,6 +99,8 @@ func terminalFromCommand(cmd string) string {
 		return "kitty"
 	case strings.Contains(lc, "wezterm"):
 		return "wezterm"
+	case strings.Contains(lc, "warp.app") || strings.Contains(lc, "/warp"):
+		return "warp"
 	}
 	return ""
 }
