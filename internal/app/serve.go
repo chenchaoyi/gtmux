@@ -206,6 +206,14 @@ func paneCursor(id string) (x, up int, visible, ok bool) {
 		return 0, 0, false, false
 	}
 	f := strings.Fields(tmux.Display(id, "#{cursor_x} #{cursor_y} #{pane_height} #{cursor_flag}"))
+	return cursorFromFields(f)
+}
+
+// cursorFromFields is the pure half of paneCursor: it turns tmux's
+// "cursor_x cursor_y pane_height cursor_flag" fields into the bottom-anchored
+// cursor (Up = pane_height-1-cursor_y, clamped at 0). Split out so the anchoring
+// math is unit-testable without a running tmux.
+func cursorFromFields(f []string) (x, up int, visible, ok bool) {
 	if len(f) != 4 {
 		return 0, 0, false, false
 	}

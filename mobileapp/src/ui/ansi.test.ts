@@ -210,6 +210,70 @@ describe('parseAnsi — malformed / incomplete sequences', () => {
   });
 });
 
+// The native terminal grid (NativeTerm) passes {bg:true, palette, base, dim}.
+// These paths are otherwise untested — only the Chat-view defaults were covered.
+describe('parseAnsi — opts.bg (background parsing)', () => {
+  it('emits Span.bg for 40–47 when bg is on', () => {
+    const out = parseAnsi(`${ESC}[41mx`, {bg: true});
+    expect(out[0]).toEqual([{text: 'x', color: BASE, bold: undefined, bg: RED}]);
+  });
+
+  it('emits Span.bg for bright background 100–107', () => {
+    const out = parseAnsi(`${ESC}[101mx`, {bg: true});
+    expect(out[0][0].bg).toBe(BRIGHT_RED);
+  });
+
+  it('parses 256-color background (48;5;n)', () => {
+    const out = parseAnsi(`${ESC}[48;5;2mx`, {bg: true});
+    expect(out[0][0].bg).toBe(GREEN); // n=2 → palette[2]
+  });
+
+  it('parses truecolor background (48;2;r;g;b)', () => {
+    const out = parseAnsi(`${ESC}[48;2;255;0;0mx`, {bg: true});
+    expect(out[0][0].bg).toBe('#ff0000');
+  });
+
+  it('clears bg on 49 and on reset', () => {
+    expect(parseAnsi(`${ESC}[41mx${ESC}[49my`, {bg: true})[0]).toEqual([
+      {text: 'x', color: BASE, bold: undefined, bg: RED},
+      {text: 'y', color: BASE, bold: undefined, bg: undefined},
+    ]);
+    expect(parseAnsi(`${ESC}[41mx${ESC}[0my`, {bg: true})[0][1].bg).toBeUndefined();
+  });
+
+  it('never emits bg when bg is off, even with a bg SGR present', () => {
+    const out = parseAnsi(`${ESC}[41mx`); // default opts
+    expect(out[0][0].bg).toBeUndefined();
+  });
+});
+
+describe('parseAnsi — opts.palette / base / dim overrides', () => {
+  const PAL = [
+    '#000000', '#110000', '#001100', '#111100', '#000011', '#110011', '#001111', '#111111',
+    '#222222', '#330000', '#003300', '#333300', '#000033', '#330033', '#003333', '#333333',
+  ];
+
+  it('maps fg 30–37 through the supplied palette', () => {
+    const out = parseAnsi(`${ESC}[32mx`, {palette: PAL});
+    expect(out[0][0].color).toBe('#001100'); // palette[2]
+  });
+
+  it('maps bright fg 90–97 through palette[8..15]', () => {
+    const out = parseAnsi(`${ESC}[91mx`, {palette: PAL});
+    expect(out[0][0].color).toBe('#330000'); // palette[9]
+  });
+
+  it('honors base and dim overrides', () => {
+    expect(parseAnsi('plain', {base: '#abcdef'})[0][0].color).toBe('#abcdef');
+    expect(parseAnsi(`${ESC}[2mx`, {dim: '#123456'})[0][0].color).toBe('#123456');
+  });
+
+  it('falls back to the built-in palette when fewer than 16 colors given', () => {
+    const out = parseAnsi(`${ESC}[31mx`, {palette: ['#fff']});
+    expect(out[0][0].color).toBe(RED); // built-in PALETTE[1]
+  });
+});
+
 describe('parseAnsi — shape invariants', () => {
   it('always returns an array of lines, each an array of spans', () => {
     const out: AnsiLine[] = parseAnsi(`${ESC}[31ma\nb`);

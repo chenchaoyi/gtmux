@@ -14,6 +14,7 @@ import {ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View}
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
+import {fmtTurnTime} from './time';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
@@ -53,32 +54,6 @@ const MD_COLORS: MdColors = {
   border: 'rgba(255,255,255,0.16)',
   link: '#27C7E6',
 };
-
-// fmtTurnTime renders a turn's prompt timestamp as a glance-friendly label that
-// always carries the DATE for clarity: today → "今天 14:35"/"Today 14:35";
-// yesterday → "昨天 14:35"/"Yesterday 14:35"; older → calendar date + time (year
-// only when not the current year). "" when there's no/invalid time.
-function fmtTurnTime(iso: string | undefined, lang: Lang): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
-  const now = new Date();
-  const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  const sameY = d.getFullYear() === now.getFullYear();
-  const isDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (isDay(d, now)) return (lang === 'zh' ? '今天 ' : 'Today ') + hm;
-  const yest = new Date(now);
-  yest.setDate(now.getDate() - 1);
-  if (isDay(d, yest)) return (lang === 'zh' ? '昨天 ' : 'Yesterday ') + hm;
-  if (lang === 'zh') {
-    const md = `${d.getMonth() + 1}月${d.getDate()}日`;
-    return (sameY ? md : `${d.getFullYear()}年${md}`) + ' ' + hm;
-  }
-  const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
-  return sameY ? `${mon} ${d.getDate()}, ${hm}` : `${mon} ${d.getDate()} ${d.getFullYear()}, ${hm}`;
-}
 
 function dotColor(status: StatusName): string {
   return status === 'waiting'

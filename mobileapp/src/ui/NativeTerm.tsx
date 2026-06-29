@@ -23,7 +23,8 @@
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
-import {AnsiLine, parseAnsi, Span} from './ansi';
+import {parseAnsi} from './ansi';
+import {cursorSpans, normalizeGlyphs} from './term';
 import {TermTheme} from '../api/types';
 
 interface PaneCursor {
@@ -43,16 +44,6 @@ interface Props {
 const DEF_BG = '#17171a';
 const DEF_FG = '#d4d2cc';
 
-// iOS Core Text renders U+23FA "⏺ BLACK CIRCLE FOR RECORD" (Claude Code's tool-call
-// marker) as the glossy RED record-button COLOR EMOJI, ignoring the ANSI color.
-// Swap it for U+25CF "● BLACK CIRCLE" (no emoji presentation) so it renders as a
-// clean text glyph tinted by the surrounding SGR color — same fix as the xterm
-// path (gen-xterm-asset.mjs normalizeGlyphs).
-const DOT_REC = '⏺';
-const DOT_CIRCLE = '●';
-function normalizeGlyphs(t: string): string {
-  return t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE);
-}
 // iOS system monospace (covers Latin + falls back to PingFang for CJK at 2-cell
 // width). The bundled woff2 picker fonts are webview-only; native would need them
 // linked as .ttf — a later follow-up, not needed for the read-only viewer.
@@ -61,36 +52,6 @@ const MONO = 'Menlo';
 // scrollback for a phone glance, light enough not to hitch/crash. Deeper history
 // lives in Chat mode (the full transcript).
 const MAX_LINES = 500;
-
-// cursorSpans rewrites one line's spans to paint a reverse-video block at column x
-// (the pane's text cursor). Approximated on CHAR offset (the cursor is near the
-// input line, ~ASCII, so char≈cell); pads with spaces when x is past the content.
-function cursorSpans(spans: AnsiLine, x: number, curColor: string, bg: string): AnsiLine {
-  const lineLen = spans.reduce((n, s) => n + s.text.length, 0);
-  const cell = (ch: string): Span => ({text: ch || ' ', color: bg, bg: curColor});
-  if (x >= lineLen) {
-    const out = [...spans];
-    if (x > lineLen) out.push({text: ' '.repeat(x - lineLen), color: bg});
-    out.push(cell(' '));
-    return out;
-  }
-  const out: AnsiLine = [];
-  let col = 0;
-  for (const s of spans) {
-    const end = col + s.text.length;
-    if (x < col || x >= end) {
-      out.push(s);
-      col = end;
-      continue;
-    }
-    const i = x - col;
-    if (i > 0) out.push({...s, text: s.text.slice(0, i)});
-    out.push({...cell(s.text[i]), bold: s.bold});
-    if (i + 1 < s.text.length) out.push({...s, text: s.text.slice(i + 1)});
-    col = end;
-  }
-  return out;
-}
 
 export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const bg = theme?.background || DEF_BG;
