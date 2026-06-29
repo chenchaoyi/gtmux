@@ -54,9 +54,10 @@ const MD_COLORS: MdColors = {
   link: '#27C7E6',
 };
 
-// fmtTurnTime renders a turn's prompt timestamp as a compact, glance-friendly
-// label: today → "14:35"; yesterday → "昨天 14:35"/"Yesterday 14:35"; older →
-// date + time (year only when not the current year). "" when there's no/invalid time.
+// fmtTurnTime renders a turn's prompt timestamp as a glance-friendly label that
+// always carries the DATE for clarity: today → "今天 14:35"/"Today 14:35";
+// yesterday → "昨天 14:35"/"Yesterday 14:35"; older → calendar date + time (year
+// only when not the current year). "" when there's no/invalid time.
 function fmtTurnTime(iso: string | undefined, lang: Lang): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -67,7 +68,7 @@ function fmtTurnTime(iso: string | undefined, lang: Lang): string {
   const sameY = d.getFullYear() === now.getFullYear();
   const isDay = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  if (isDay(d, now)) return hm;
+  if (isDay(d, now)) return (lang === 'zh' ? '今天 ' : 'Today ') + hm;
   const yest = new Date(now);
   yest.setDate(now.getDate() - 1);
   if (isDay(d, yest)) return (lang === 'zh' ? '昨天 ' : 'Yesterday ') + hm;

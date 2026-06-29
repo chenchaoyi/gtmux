@@ -161,7 +161,11 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
     return copy;
   }, [lines, shownCursor, curColor, bg]);
 
-  const lineHeight = Math.round(fontSize * 1.3);
+  // NOTE: deliberately NO custom lineHeight on the selectable <Text>. On a real
+  // iOS device, setting lineHeight on a `selectable` Text suppresses the blue
+  // selection HIGHLIGHT (Copy still works, but you can't see what's selected) — a
+  // long-standing RN/iOS quirk that the simulator doesn't reproduce. We let the
+  // monospace font's natural leading space the rows so selection paints normally.
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     stick.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
@@ -173,7 +177,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   // one big selectable <Text> → native cross-row selection + Copy. Rows are nested
   // <Text> joined by "\n"; spans carry fg/bg/bold.
   const body = (
-    <Text selectable style={[styles.mono, {fontSize, lineHeight, color: fg}]}>
+    <Text selectable style={[styles.mono, {fontSize, color: fg}]}>
       {rendered.map((spans, i) => (
         <Text key={i}>
           {spans.map((s, j) => (
