@@ -7,8 +7,19 @@ export interface Span {
   text: string;
   color: string;
   bold?: boolean;
+  bg?: string; // background color — only emitted when opts.bg is set (terminal grid)
 }
 export type AnsiLine = Span[];
+
+// parseAnsi options. Defaults preserve the original Chat-view behavior exactly
+// (fixed PALETTE, no background) so existing callers/tests are unaffected; the
+// native terminal grid passes a theme palette + opts.bg for full fidelity.
+export interface AnsiOpts {
+  palette?: string[]; // 16 hex colors (theme); falls back to PALETTE per-index
+  base?: string; // default foreground
+  dim?: string; // dim default foreground
+  bg?: boolean; // parse background SGR (40–49 / 48 / 100–107) into Span.bg
+}
 
 const BASE = '#D6D6DA'; // default foreground (MOBILE §4)
 const DIM = '#9AA0A8'; // raised a notch so dim/comment lines stay readable on the dark bg (REVIEW #2)
@@ -25,8 +36,8 @@ function rgb(r: number, g: number, b: number): string {
   return `#${h(r)}${h(g)}${h(b)}`;
 }
 
-function color256(n: number): string {
-  if (n < 16) return PALETTE[n];
+function color256(n: number, pal: string[]): string {
+  if (n < 16) return pal[n];
   if (n >= 232) {
     const v = 8 + (n - 232) * 10;
     return rgb(v, v, v);
@@ -40,9 +51,12 @@ interface Style {
   color?: string;
   bold?: boolean;
   dim?: boolean;
+  bg?: string;
 }
 
-function applySGR(style: Style, codes: number[]): Style {
+// applySGR folds a code list into the running style. `pal` is the active 16-color
+// palette; `wantBg` enables background parsing (40–49 / 48 / 100–107).
+function applySGR(style: Style, codes: number[], pal: string[], wantBg: boolean): Style {
   const s = {...style};
   for (let i = 0; i < codes.length; i++) {
     const c = codes[i];
@@ -50,6 +64,7 @@ function applySGR(style: Style, codes: number[]): Style {
       s.color = undefined;
       s.bold = false;
       s.dim = false;
+      s.bg = undefined;
     } else if (c === 1) {
       s.bold = true;
     } else if (c === 2) {
@@ -60,19 +75,37 @@ function applySGR(style: Style, codes: number[]): Style {
     } else if (c === 39) {
       s.color = undefined;
     } else if (c >= 30 && c <= 37) {
-      s.color = PALETTE[c - 30];
+      s.color = pal[c - 30];
     } else if (c >= 90 && c <= 97) {
-      s.color = PALETTE[c - 90 + 8];
+      s.color = pal[c - 90 + 8];
     } else if (c === 38) {
       if (codes[i + 1] === 5) {
-        s.color = color256(codes[i + 2] || 0);
+        s.color = color256(codes[i + 2] || 0, pal);
         i += 2;
       } else if (codes[i + 1] === 2) {
         s.color = rgb(codes[i + 2] || 0, codes[i + 3] || 0, codes[i + 4] || 0);
         i += 4;
       }
+    } else if (wantBg && c === 49) {
+      s.bg = undefined;
+    } else if (wantBg && c >= 40 && c <= 47) {
+      s.bg = pal[c - 40];
+    } else if (wantBg && c >= 100 && c <= 107) {
+      s.bg = pal[c - 100 + 8];
+    } else if (wantBg && c === 48) {
+      if (codes[i + 1] === 5) {
+        s.bg = color256(codes[i + 2] || 0, pal);
+        i += 2;
+      } else if (codes[i + 1] === 2) {
+        s.bg = rgb(codes[i + 2] || 0, codes[i + 3] || 0, codes[i + 4] || 0);
+        i += 4;
+      }
+    } else if (!wantBg && c === 48) {
+      // skip the 256/truecolor bg payload so it isn't mis-read as fg codes.
+      if (codes[i + 1] === 5) i += 2;
+      else if (codes[i + 1] === 2) i += 4;
     }
-    // 40–49 / 48 (background) and others ignored.
+    // when !wantBg: 40–47 / 49 / 100–107 ignored (Chat-view default).
   }
   return s;
 }
@@ -82,7 +115,11 @@ const SGR_RE = /\u001b\[([0-9;]*)m/g;
 // eslint-disable-next-line no-control-regex
 const OTHER_ESC = /\u001b\[[0-9;?]*[A-Za-z]|\u001b[()][AB0]/g;
 
-export function parseAnsi(input: string): AnsiLine[] {
+export function parseAnsi(input: string, opts?: AnsiOpts): AnsiLine[] {
+  const pal = opts?.palette && opts.palette.length >= 16 ? opts.palette : PALETTE;
+  const base = opts?.base ?? BASE;
+  const dim = opts?.dim ?? DIM;
+  const wantBg = !!opts?.bg;
   return input.split('\n').map(raw => {
     const spans: AnsiLine = [];
     let style: Style = {};
@@ -91,14 +128,14 @@ export function parseAnsi(input: string): AnsiLine[] {
     const push = (text: string) => {
       text = text.replace(OTHER_ESC, '');
       if (!text) return;
-      const color = style.color ?? (style.dim ? DIM : BASE);
-      spans.push({text, color, bold: style.bold});
+      const color = style.color ?? (style.dim ? dim : base);
+      spans.push({text, color, bold: style.bold, bg: wantBg ? style.bg : undefined});
     };
     let m: RegExpExecArray | null;
     while ((m = SGR_RE.exec(raw))) {
       push(raw.slice(last, m.index));
       const codes = m[1] === '' ? [0] : m[1].split(';').map(x => parseInt(x, 10) || 0);
-      style = applySGR(style, codes);
+      style = applySGR(style, codes, pal, wantBg);
       last = m.index + m[0].length;
     }
     push(raw.slice(last));

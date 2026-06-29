@@ -29,7 +29,7 @@ import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
 import {ChatView} from '../ui/ChatView';
 import {ApprovalCard} from '../ui/ApprovalCard';
-import {XtermView} from '../ui/XtermView';
+import {NativeTerm} from '../ui/NativeTerm';
 import {FloatingKeys} from '../ui/FloatingKeys';
 import {DiffModal} from '../ui/DiffModal';
 import {StatusColor} from '../ui/theme';
@@ -59,7 +59,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [theme, setTheme] = useState<TermTheme | undefined>();
   const [loading, setLoading] = useState(true);
   const [fontIdx, setFontIdx] = useState(1);
-  const [wrap, setWrap] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
@@ -107,7 +106,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
   const smaller = () => setFontIdx(i => Math.max(0, i - 1));
   const bigger = () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1));
-  const wrapLabel = wrap ? (lang === 'zh' ? '换行' : 'Wrap') : lang === 'zh' ? '滚动' : 'Scroll';
 
   useEffect(() => {
     let alive = true;
@@ -250,7 +248,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
                 <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyVisible} />
                 <Ctl pal={pal} label="A−" onPress={smaller} />
                 <Ctl pal={pal} label="A+" onPress={bigger} />
-                <Ctl pal={pal} label={wrapLabel} onPress={() => setWrap(w => !w)} />
                 <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />
               </>
             )}
@@ -262,9 +259,9 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {mode === 'chat' ? (
         <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} client={client} paneId={agent.pane_id} pendingPrompt={pendingPrompt} />
       ) : (
-      /* pane screen (colored) — xterm.js terminal emulator */
+      /* pane screen (colored) — native RN <Text> renderer (selectable, no keyboard) */
       <View style={styles.termWrap} testID={TestIds.detail.pane}>
-        <XtermView text={text} fontSize={fontSize} wrap={wrap} cursor={cursor} theme={theme} fontPref={fontPref} />
+        <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} />
         {/* D8: pane-loading feedback (until the first frame arrives) */}
         {loading && !text && (
           <View style={styles.loadingOverlay}>
