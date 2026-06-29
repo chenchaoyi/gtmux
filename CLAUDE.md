@@ -16,7 +16,11 @@ over one Go core (gtmux-core is the single data source):
 - CLI: `make build`. App: `make app` (Swift app + bundled CLI → `Gtmux.app`).
 - **Run the gate before every commit** (same as CI): `make check`
   (= gofmt + `go vet` + staticcheck + `go test -race`). For the app:
-  `cd macapp && swift build -c release`.
+  `cd macapp && swift build -c release`. For the **mobile app**, the equivalent
+  one-command gate is `cd mobileapp && npm run check` (= `tsc --noEmit` + `eslint .`
+  + `jest --ci`; 0 errors required, eslint warnings tolerated) — same three checks
+  CI's `mobile` job runs. The release tag gate also runs `make check` (not a weaker
+  `go test`), so a tag can't ship a regression a PR would have caught.
 - The CLI MUST stay cgo-free — `CGO_ENABLED=0 go build ./cmd/gtmux` must pass.
   Only the Swift app is native; nothing in `internal/` may pull in cgo.
 - Release: push a tag `vX.Y.Z` → goreleaser ships the CLI tarballs and a macOS
