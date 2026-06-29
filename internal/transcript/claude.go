@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -114,11 +115,7 @@ func claudePrompt(raw json.RawMessage) (string, bool) {
 	// content as a bare string (the common typed-prompt case).
 	var s string
 	if json.Unmarshal(raw, &s) == nil {
-		s = strings.TrimSpace(s)
-		if s == "" || isClaudeMetaPrompt(s) {
-			return "", false
-		}
-		return s, true
+		return cleanPrompt(s)
 	}
 	// content as blocks: collect text, ignore tool_result-only payloads.
 	var blocks []claudeBlock
@@ -134,7 +131,20 @@ func claudePrompt(raw json.RawMessage) (string, bool) {
 	if len(parts) == 0 {
 		return "", false // tool_result / image only
 	}
-	s = strings.TrimSpace(strings.Join(parts, "\n"))
+	return cleanPrompt(strings.Join(parts, "\n"))
+}
+
+// harnessBlockRe strips the synthetic XML-ish blocks the Claude Code harness
+// injects INTO user content — context reminders and background-task notices. They
+// are not typed by the user, so they must never surface as chat prompts (a turn
+// that is ONLY such a block collapses to empty and is dropped; one appended to a
+// real prompt is just trimmed off).
+var harnessBlockRe = regexp.MustCompile(`(?s)<(system-reminder|task-notification)>.*?</(system-reminder|task-notification)>`)
+
+// cleanPrompt strips harness-injected blocks then rejects empty/meta wrappers,
+// returning the displayable prompt and whether it's a real typed prompt.
+func cleanPrompt(s string) (string, bool) {
+	s = strings.TrimSpace(harnessBlockRe.ReplaceAllString(s, ""))
 	if s == "" || isClaudeMetaPrompt(s) {
 		return "", false
 	}
