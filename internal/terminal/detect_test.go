@@ -8,6 +8,7 @@ func TestFromTermEnv(t *testing.T) {
 		{"iTerm.app", "iterm2"},
 		{"Apple_Terminal", "appleterminal"},
 		{"WezTerm", "wezterm"},
+		{"WarpTerminal", "warp"},
 		{"", ""},
 		{"SomethingElse", ""},
 	}
@@ -34,6 +35,7 @@ func TestTerminalFromCommand(t *testing.T) {
 		{"/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal", "appleterminal"},
 		{"/Applications/kitty.app/Contents/MacOS/kitty", "kitty"},
 		{"/opt/homebrew/bin/wezterm-gui", "wezterm"},
+		{"/Applications/Warp.app/Contents/MacOS/stable", "warp"},
 		{"-bash", ""},
 		{"/usr/bin/login -fp ccy", ""},
 	}
