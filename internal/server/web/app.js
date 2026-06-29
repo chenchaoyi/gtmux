@@ -16,6 +16,7 @@
   var token = null, radarTimer = null, paneTimer = null, selIdx = -1;
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
+  var userScrolling = false, scrollIdle = null, pendingText = null, resizeIdle = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
   var BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
   function lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
@@ -247,23 +248,53 @@
     fit = new FitAddon.FitAddon(); term.loadAddon(fit);
     try { var u = new Unicode11Addon.Unicode11Addon(); term.loadAddon(u); term.unicode.activeVersion = '11'; } catch (e) {}
     term.open($('term'));
-    window.addEventListener('resize', function () { try { fit.fit(); } catch (e) {} });
+    // Hold repaints while the reader is actively scrolling (wheel/drag), so a poll
+    // mid-gesture doesn't yank the view; flush the held frame once they settle.
+    var el = $('term');
+    var mark = function () {
+      userScrolling = true; clearTimeout(scrollIdle);
+      scrollIdle = setTimeout(function () {
+        userScrolling = false;
+        if (pendingText !== null) { var t = pendingText; pendingText = null; writePane(t); }
+      }, 900);
+    };
+    el.addEventListener('wheel', mark, {passive: true});
+    el.addEventListener('touchmove', mark, {passive: true});
+    // On window resize: refit cols/rows, then re-render the current frame so long
+    // lines re-wrap to the new browser width (dynamic 折行), debounced.
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeIdle);
+      resizeIdle = setTimeout(function () {
+        try { fit.fit(); } catch (e) {}
+        if (lastText) { var t = lastText; lastText = ''; writePane(t); }
+      }, 120);
+    });
   }
   function normalize(t) { return t.indexOf('⏺') === -1 ? t : t.split('⏺').join('●'); }
 
-  // Incremental: when the snapshot only GREW (history appended — the common case),
-  // write just the new tail — no reset, so no flash. Only a real redraw resets.
+  // Incremental write that preserves the reader's position (matches the mobile
+  // xterm bridge). Append-only growth writes just the new tail (no reset → no
+  // flash, scroll untouched). A full change (TUI redraw / scrolled-off) repaints
+  // but keeps the reader's DISTANCE FROM THE BOTTOM, so a manual scroll-up isn't
+  // snapped back to the bottom every poll.
   function writePane(text) {
     text = normalize(text || '');
     if (text === lastText) return;
+    if (userScrolling) { pendingText = text; return; }
     var prev = lastText; lastText = text;
     if (prev && text.length > prev.length && text.lastIndexOf(prev, 0) === 0) {
       term.write(text.slice(prev.length));
       return;
     }
-    var b = term.buffer.active, wasBottom = b.viewportY >= b.baseY;
+    var b = term.buffer.active;
+    var wasBottom = b.viewportY >= b.baseY;
+    var fromBottom = b.baseY - b.viewportY;
     term.reset();
-    term.write(text, function () { if (wasBottom) term.scrollToBottom(); });
+    term.write(text, function () {
+      var nb = term.buffer.active;
+      if (wasBottom) term.scrollToBottom();
+      else { try { term.scrollToLine(Math.max(0, nb.baseY - fromBottom)); } catch (e) {} }
+    });
   }
 
   function pollPane() {
@@ -291,7 +322,7 @@
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
     } else {
       clearInterval(chatTimer); chatTimer = null;
-      show('pane'); ensureTerm(); lastText = '';
+      show('pane'); ensureTerm(); lastText = ''; pendingText = null; userScrolling = false;
       try { fit.fit(); } catch (e) {}
       pollPane(); clearInterval(paneTimer); paneTimer = setInterval(pollPane, 1200);
     }
