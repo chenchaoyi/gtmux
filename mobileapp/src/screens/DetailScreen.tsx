@@ -185,7 +185,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             </TouchableOpacity>
           )}
           <View style={styles.avatarWrap}>
-            <AgentAvatar agent={live} size={30} radius={8} bg={pal.surface} fg={pal.fg2} border={pal.divider} />
+            <AgentAvatar agent={live} size={26} radius={7} bg={pal.surface} fg={pal.fg2} border={pal.divider} />
             <View style={styles.headerBadge}>
               <StatusBadge status={live.status} size={15} />
             </View>
@@ -387,27 +387,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingBottom: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   back: {paddingRight: 6},
-  backText: {fontSize: 30, fontWeight: '300', lineHeight: 30},
+  backText: {fontSize: 28, fontWeight: '300', lineHeight: 28},
   avatarWrap: {marginHorizontal: 8, marginLeft: 4},
   headerBadge: {position: 'absolute', right: -3, bottom: -3},
   headerText: {flex: 1, minWidth: 0},
-  title: {fontSize: 16, fontWeight: '700'},
-  sub: {fontSize: 12, marginTop: 1},
+  title: {fontSize: 15, fontWeight: '700'},
+  sub: {fontSize: 11.5, marginTop: 1},
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 5,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  segWrap: {paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4},
+  segWrap: {paddingHorizontal: 12, paddingTop: 5, paddingBottom: 5},
   seg: {flexDirection: 'row', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, padding: 2},
-  segBtn: {flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 7},
+  segBtn: {flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 7},
   segText: {fontSize: 13, fontWeight: '600'},
   live: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0, marginRight: 8},
   liveDot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
