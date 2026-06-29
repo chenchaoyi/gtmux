@@ -38,6 +38,17 @@ interface Props {
 
 const DEF_BG = '#17171a';
 const DEF_FG = '#d4d2cc';
+
+// iOS Core Text renders U+23FA "⏺ BLACK CIRCLE FOR RECORD" (Claude Code's tool-call
+// marker) as the glossy RED record-button COLOR EMOJI, ignoring the ANSI color.
+// Swap it for U+25CF "● BLACK CIRCLE" (no emoji presentation) so it renders as a
+// clean text glyph tinted by the surrounding SGR color — same fix as the xterm
+// path (gen-xterm-asset.mjs normalizeGlyphs).
+const DOT_REC = '⏺';
+const DOT_CIRCLE = '●';
+function normalizeGlyphs(t: string): string {
+  return t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE);
+}
 // iOS system monospace (covers Latin + falls back to PingFang for CJK at 2-cell
 // width). The bundled woff2 picker fonts are webview-only; native would need them
 // linked as .ttf — a later follow-up, not needed for the read-only viewer.
@@ -81,7 +92,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const stick = useRef(true); // follow the bottom unless the user scrolled up
 
   const lines = useMemo(
-    () => parseAnsi(text, {palette: theme?.palette, base: fg, bg: true}),
+    () => parseAnsi(normalizeGlyphs(text), {palette: theme?.palette, base: fg, bg: true}),
     [text, theme?.palette, fg],
   );
 
