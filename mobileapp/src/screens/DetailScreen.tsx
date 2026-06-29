@@ -23,6 +23,7 @@ import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
+import {AgentAvatar} from '../ui/AgentAvatar';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
@@ -183,8 +184,11 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
               <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
             </TouchableOpacity>
           )}
-          <View style={styles.badgeWrap}>
-            <StatusBadge status={live.status} size={18} />
+          <View style={styles.avatarWrap}>
+            <AgentAvatar agent={live} size={30} radius={8} bg={pal.surface} fg={pal.fg2} border={pal.divider} />
+            <View style={styles.headerBadge}>
+              <StatusBadge status={live.status} size={15} />
+            </View>
           </View>
           <View style={styles.headerText}>
             <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
@@ -388,7 +392,8 @@ const styles = StyleSheet.create({
   },
   back: {paddingRight: 6},
   backText: {fontSize: 30, fontWeight: '300', lineHeight: 30},
-  badgeWrap: {marginHorizontal: 8},
+  avatarWrap: {marginHorizontal: 8, marginLeft: 4},
+  headerBadge: {position: 'absolute', right: -3, bottom: -3},
   headerText: {flex: 1, minWidth: 0},
   title: {fontSize: 16, fontWeight: '700'},
   sub: {fontSize: 12, marginTop: 1},
