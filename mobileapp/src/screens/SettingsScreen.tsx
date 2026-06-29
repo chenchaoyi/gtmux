@@ -1,46 +1,36 @@
-// SettingsScreen — language (en/zh/system), the paired Mac (+ remove), push
-// status, and app version. Removing the Mac clears the Keychain; the app then
-// falls back to Pairing automatically (the navigator unmounts).
+// SettingsScreen — Moshi-style grouped preferences. Each multi-option setting is
+// one row showing its current value + a chevron that opens a PickerSheet (instead
+// of a long inline radio list); booleans are inline toggles; sections are labelled
+// cards with leading outline icons. Removing the Mac clears the Keychain and the
+// app falls back to Pairing automatically.
 
 import React, {useState} from 'react';
-import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
+import {SettingsGroup, SettingsRow, PickerSheet} from '../ui/SettingsRow';
 
-function Section({title, pal, children}: any) {
-  return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, {color: pal.fg3}]}>{title.toUpperCase()}</Text>
-      <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-        {children}
-      </View>
-    </View>
-  );
-}
+type PickerKind = 'lang' | 'theme' | 'font' | 'mode' | null;
 
 export function SettingsScreen({navigation}: any) {
   const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, fontPref, setFontPref, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
-  const [testing, setTesting] = useState(false);
-
-  const detailModes: {key: 'chat' | 'terminal'; label: string}[] = [
-    {key: 'terminal', label: lang === 'zh' ? '终端' : 'Terminal'},
-    {key: 'chat', label: lang === 'zh' ? '对话' : 'Chat'},
-  ];
-  const themes: {key: 'system' | 'light' | 'dark'; label: string}[] = [
-    {key: 'system', label: t('system')},
-    {key: 'light', label: lang === 'zh' ? '浅色' : 'Light'},
-    {key: 'dark', label: lang === 'zh' ? '深色' : 'Dark'},
-  ];
   const {client} = useAgents();
+  const [testing, setTesting] = useState(false);
+  const [picker, setPicker] = useState<PickerKind>(null);
 
   const langs: {key: LangPref; label: string}[] = [
     {key: 'system', label: t('system')},
     {key: 'en', label: 'English'},
     {key: 'zh', label: '中文'},
+  ];
+  const themes: {key: 'system' | 'light' | 'dark'; label: string}[] = [
+    {key: 'system', label: t('system')},
+    {key: 'light', label: lang === 'zh' ? '浅色' : 'Light'},
+    {key: 'dark', label: lang === 'zh' ? '深色' : 'Dark'},
   ];
   const fonts: {key: string; label: string}[] = [
     {key: 'auto', label: t('fontAuto')},
@@ -50,27 +40,25 @@ export function SettingsScreen({navigation}: any) {
     {key: 'Fira Code', label: 'Fira Code'},
     {key: 'IBM Plex Mono', label: 'IBM Plex Mono'},
   ];
+  const detailModes: {key: 'chat' | 'terminal'; label: string; sub?: string}[] = [
+    {key: 'terminal', label: lang === 'zh' ? '终端' : 'Terminal', sub: lang === 'zh' ? '完整 TUI' : 'Full TUI'},
+    {key: 'chat', label: lang === 'zh' ? '对话' : 'Chat', sub: lang === 'zh' ? '当前屏幕概览 + 审批卡' : 'Glance + approval card'},
+  ];
 
-  // Handoff: mint a one-time code on the paired Mac and share a browser link so you
-  // can continue watching on a computer (the browser pairs via /#c=<code>).
+  const labelOf = <T extends string>(arr: {key: T; label: string}[], k: T) => arr.find(o => o.key === k)?.label ?? '';
+
+  // Handoff: mint a one-time code on the paired Mac and share a browser link.
   const openOnComputer = async () => {
     try {
       const code = client && (await client.enrollMint());
-      if (!code || !mac) {
-        Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
-        return;
-      }
-      const url = `${mac.url.replace(/\/+$/, '')}/#c=${code}`;
-      // one link only (message, not message+url) — and `message` is the portable
-      // field for a future Android build.
-      await Share.share({message: url});
+      if (!code || !mac) return Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
+      await Share.share({message: `${mac.url.replace(/\/+$/, '')}/#c=${code}`});
     } catch {
       Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
     }
   };
 
-  // Ask the Mac to send a test push to this device, so you can confirm pushes
-  // actually arrive (permission granted, relay reachable). Backend: /api/push/test.
+  // Ask the Mac to send a test push so you can confirm pushes actually arrive.
   const sendTest = async () => {
     if (!client || testing) return;
     setTesting(true);
@@ -84,14 +72,17 @@ export function SettingsScreen({navigation}: any) {
     Alert.alert(
       lang === 'zh' ? '测试通知' : 'Test notification',
       ok
-        ? lang === 'zh'
-          ? '已发送 —— 请留意锁屏 / 通知中心。'
-          : 'Sent — check your lock screen / Notification Center.'
-        : lang === 'zh'
-        ? '发送失败（推送未配置，或 Mac 不可达）。'
-        : 'Failed (push not configured, or the Mac is unreachable).',
+        ? lang === 'zh' ? '已发送 —— 请留意锁屏 / 通知中心。' : 'Sent — check your lock screen / Notification Center.'
+        : lang === 'zh' ? '发送失败（推送未配置，或 Mac 不可达）。' : 'Failed (push not configured, or the Mac is unreachable).',
     );
   };
+
+  const confirmRemove = () =>
+    mac &&
+    Alert.alert(mac.name, t('removeServerQ'), [
+      {text: t('cancel'), style: 'cancel'},
+      {text: t('removeMac'), style: 'destructive', onPress: () => removeServer(mac.url)},
+    ]);
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
@@ -103,186 +94,65 @@ export function SettingsScreen({navigation}: any) {
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
-        <Section title={t('language')} pal={pal}>
-          {langs.map((l, i) => (
-            <TouchableOpacity
-              key={l.key}
-              style={[styles.rowItem, i < langs.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}
-              onPress={() => setLangPref(l.key)}>
-              <Text style={[styles.rowLabel, {color: pal.fg}]}>{l.label}</Text>
-              {langPref === l.key && <Text style={styles.check}>✓</Text>}
-            </TouchableOpacity>
-          ))}
-        </Section>
+        {/* CONNECTION */}
+        <SettingsGroup title={lang === 'zh' ? '连接' : 'Connection'} pal={pal}>
+          <SettingsRow icon="server" label={mac?.name || '—'} sub={mac?.url} pal={pal} chevron divider onPress={() => navigation.navigate('Servers')} />
+          <SettingsRow icon="share" label={t('openOnComputer')} sub={t('openOnComputerSub')} pal={pal} chevron divider onPress={openOnComputer} />
+          <SettingsRow icon="trash" label={t('removeMac')} danger pal={pal} onPress={confirmRemove} />
+        </SettingsGroup>
 
-        <Section title={lang === 'zh' ? '外观' : 'Appearance'} pal={pal}>
-          {themes.map((th, i) => (
-            <TouchableOpacity
-              key={th.key}
-              style={[styles.rowItem, i < themes.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}
-              onPress={() => setThemePref(th.key)}>
-              <Text style={[styles.rowLabel, {color: pal.fg}]}>{th.label}</Text>
-              {themePref === th.key && <Text style={styles.check}>✓</Text>}
-            </TouchableOpacity>
-          ))}
-        </Section>
+        {/* TERMINAL */}
+        <SettingsGroup title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
+          <SettingsRow icon="palette" label={lang === 'zh' ? '外观' : 'Appearance'} value={labelOf(themes, themePref)} pal={pal} chevron divider onPress={() => setPicker('theme')} />
+          <SettingsRow icon="font" label={lang === 'zh' ? '字体' : 'Font'} value={labelOf(fonts, fontPref)} pal={pal} chevron divider onPress={() => setPicker('font')} />
+          <SettingsRow icon="layout" label={lang === 'zh' ? '默认模式' : 'Default mode'} value={labelOf(detailModes, defaultDetailMode)} pal={pal} chevron divider onPress={() => setPicker('mode')} />
+          <SettingsRow icon="return" label={lang === 'zh' ? '回车直接发送' : 'Return sends'} sub={lang === 'zh' ? '关闭时回车为换行，用 ↑ 发送' : 'Off: Return = newline; send with ↑'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
+        </SettingsGroup>
 
-        <Section title={t('pairedMac')} pal={pal}>
-          <View style={styles.rowItem}>
-            <View style={styles.flex}>
-              <Text style={[styles.rowLabel, {color: pal.fg}]} numberOfLines={1}>
-                {mac?.name || '—'}
-              </Text>
-              <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
-                {mac?.url || ''}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-            onPress={openOnComputer}>
-            <View style={styles.flex}>
-              <Text style={[styles.rowLabel, {color: pal.fg}]}>{t('openOnComputer')}</Text>
-              <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>{t('openOnComputerSub')}</Text>
-            </View>
-            <Text style={[styles.rowSub, {color: pal.fg3}]}>↗</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-            onPress={() => navigation.navigate('Servers')}>
-            <Text style={[styles.rowLabel, {color: pal.fg}]}>{t('switchServer')}</Text>
-            <Text style={[styles.rowSub, {color: pal.fg3}]}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-            onPress={() =>
-              mac &&
-              Alert.alert(mac.name, t('removeServerQ'), [
-                {text: t('cancel'), style: 'cancel'},
-                {text: t('removeMac'), style: 'destructive', onPress: () => removeServer(mac.url)},
-              ])
-            }>
-            <Text style={[styles.rowLabel, styles.danger]}>{t('removeMac')}</Text>
-          </TouchableOpacity>
-        </Section>
+        {/* NOTIFICATIONS */}
+        <SettingsGroup title={t('push')} pal={pal}>
+          <SettingsRow icon="bell" label={t('push')} pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
+          <SettingsRow
+            label={lang === 'zh' ? '等你回应' : 'Needs you'}
+            sub={lang === 'zh' ? '有 agent 在等你输入' : 'An agent is waiting for your input'}
+            pal={pal}
+            toggle={pushEnabled && pushKinds.waiting}
+            toggleDisabled={!pushEnabled}
+            onToggle={v => setPushKinds({...pushKinds, waiting: v})}
+            divider
+          />
+          <SettingsRow
+            label={lang === 'zh' ? '已完成' : 'Finished'}
+            sub={lang === 'zh' ? 'agent 完成了一轮' : 'An agent finished a turn'}
+            pal={pal}
+            toggle={pushEnabled && pushKinds.done}
+            toggleDisabled={!pushEnabled}
+            onToggle={v => setPushKinds({...pushKinds, done: v})}
+            divider
+          />
+          <SettingsRow
+            label={lang === 'zh' ? '发送测试通知' : 'Send a test notification'}
+            pal={pal}
+            onPress={pushEnabled && !testing ? sendTest : undefined}
+            right={testing ? <ActivityIndicator color={pal.fg3} /> : <Text style={[styles.action, {color: pushEnabled ? '#06B6D4' : pal.fg3}]}>›</Text>}
+          />
+        </SettingsGroup>
 
-        <Section title={t('push')} pal={pal}>
-          {/* master switch */}
-          <View style={styles.rowItem}>
-            <Text style={[styles.rowLabel, {color: pal.fg}]}>{t('push')}</Text>
-            <Switch value={pushEnabled} onValueChange={setPushEnabled} />
-          </View>
+        {/* GENERAL */}
+        <SettingsGroup title={lang === 'zh' ? '通用' : 'General'} pal={pal}>
+          <SettingsRow icon="globe" label={t('language')} value={labelOf(langs, langPref)} pal={pal} chevron onPress={() => setPicker('lang')} />
+        </SettingsGroup>
 
-          {/* per-kind filters (sub-settings of the master switch) */}
-          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <View style={styles.flex}>
-              <Text style={[styles.rowLabel, {color: pushEnabled ? pal.fg : pal.fg3}]}>
-                {lang === 'zh' ? '等你回应' : 'Needs you'}
-              </Text>
-              <Text style={[styles.rowSub, {color: pal.fg3}]}>
-                {lang === 'zh' ? '有 agent 在等你输入' : 'An agent is waiting for your input'}
-              </Text>
-            </View>
-            <Switch
-              value={pushEnabled && pushKinds.waiting}
-              disabled={!pushEnabled}
-              onValueChange={v => setPushKinds({...pushKinds, waiting: v})}
-            />
-          </View>
-          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <View style={styles.flex}>
-              <Text style={[styles.rowLabel, {color: pushEnabled ? pal.fg : pal.fg3}]}>
-                {lang === 'zh' ? '已完成' : 'Finished'}
-              </Text>
-              <Text style={[styles.rowSub, {color: pal.fg3}]}>
-                {lang === 'zh' ? 'agent 完成了一轮' : 'An agent finished a turn'}
-              </Text>
-            </View>
-            <Switch
-              value={pushEnabled && pushKinds.done}
-              disabled={!pushEnabled}
-              onValueChange={v => setPushKinds({...pushKinds, done: v})}
-            />
-          </View>
-
-          {/* test button */}
-          <TouchableOpacity
-            style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-            disabled={!pushEnabled || testing}
-            onPress={sendTest}>
-            <Text style={[styles.rowLabel, {color: pushEnabled ? '#06B6D4' : pal.fg3}]}>
-              {lang === 'zh' ? '发送测试通知' : 'Send a test notification'}
-            </Text>
-            {testing ? <ActivityIndicator color={pal.fg3} /> : <Text style={[styles.rowSub, {color: pal.fg3}]}>›</Text>}
-          </TouchableOpacity>
-
-          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <Text style={[styles.rowSub, {color: pal.fg3}]}>{t('pushHint')}</Text>
-          </View>
-        </Section>
-
-        <Section title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
-          {/* default mode */}
-          <View style={styles.rowHeader}>
-            <Text style={[styles.rowGroupLabel, {color: pal.fg3}]}>
-              {lang === 'zh' ? '默认模式' : 'Default mode'}
-            </Text>
-          </View>
-          {detailModes.map(m => (
-            <TouchableOpacity
-              key={m.key}
-              style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-              onPress={() => setDefaultDetailMode(m.key)}>
-              <Text style={[styles.rowLabel, {color: pal.fg}]}>{m.label}</Text>
-              {defaultDetailMode === m.key && <Text style={styles.check}>✓</Text>}
-            </TouchableOpacity>
-          ))}
-          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <Text style={[styles.rowSub, {color: pal.fg3}]}>
-              {lang === 'zh'
-                ? '对话=当前屏幕概览 + 审批卡；终端=完整 TUI。每个窗格的手动切换会被单独记住。'
-                : 'Chat = current-screen glance + approval card; Terminal = full TUI. Each pane remembers its own manual switch.'}
-            </Text>
-          </View>
-
-          {/* font */}
-          <View style={[styles.rowHeader, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <Text style={[styles.rowGroupLabel, {color: pal.fg3}]}>
-              {lang === 'zh' ? '字体' : 'Font'}
-            </Text>
-          </View>
-          {fonts.map(f => (
-            <TouchableOpacity
-              key={f.key}
-              style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}
-              onPress={() => setFontPref(f.key)}>
-              <Text style={[styles.rowLabel, {color: pal.fg}]}>{f.label}</Text>
-              {fontPref === f.key && <Text style={styles.check}>✓</Text>}
-            </TouchableOpacity>
-          ))}
-
-          {/* return sends */}
-          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <Text style={[styles.rowLabel, {color: pal.fg}]}>
-              {lang === 'zh' ? '回车直接发送' : 'Return sends'}
-            </Text>
-            <Switch value={returnSends} onValueChange={setReturnSends} />
-          </View>
-          <View style={[styles.rowItem, {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
-            <Text style={[styles.rowSub, {color: pal.fg3}]}>
-              {lang === 'zh'
-                ? '开启后回车直接发送消息；关闭（默认）时回车为换行，用 ↑ 按钮发送。'
-                : 'On: Return sends the message. Off (default): Return inserts a newline; send with the ↑ button.'}
-            </Text>
-          </View>
-        </Section>
-
-        <View style={styles.versionWrap}>
-          <Text style={[styles.version, {color: pal.fg3}]}>
-            {t('version')} {appVersion}
-          </Text>
-        </View>
+        {/* ABOUT */}
+        <SettingsGroup title={lang === 'zh' ? '关于' : 'About'} pal={pal}>
+          <SettingsRow icon="info" label={t('version')} value={appVersion} pal={pal} />
+        </SettingsGroup>
       </ScrollView>
+
+      <PickerSheet visible={picker === 'lang'} title={t('language')} options={langs} selected={langPref} pal={pal} onSelect={setLangPref} onClose={() => setPicker(null)} />
+      <PickerSheet visible={picker === 'theme'} title={lang === 'zh' ? '外观' : 'Appearance'} options={themes} selected={themePref} pal={pal} onSelect={setThemePref} onClose={() => setPicker(null)} />
+      <PickerSheet visible={picker === 'font'} title={lang === 'zh' ? '字体' : 'Font'} options={fonts} selected={fontPref} pal={pal} onSelect={setFontPref} onClose={() => setPicker(null)} />
+      <PickerSheet visible={picker === 'mode'} title={lang === 'zh' ? '默认模式' : 'Default mode'} options={detailModes} selected={defaultDetailMode} pal={pal} onSelect={setDefaultDetailMode} onClose={() => setPicker(null)} />
     </SafeAreaView>
   );
 }
@@ -294,18 +164,6 @@ const styles = StyleSheet.create({
   header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10},
   back: {fontSize: 28, fontWeight: '300'},
   title: {fontSize: 20, fontWeight: '700'},
-  body: {padding: 16},
-  section: {marginBottom: 24},
-  sectionTitle: {fontSize: 11, fontWeight: '700', letterSpacing: 0.6, marginBottom: 8, marginLeft: 4},
-  card: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
-  rowItem: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 13},
-  rowHeader: {paddingHorizontal: 14, paddingTop: 11, paddingBottom: 4},
-  rowGroupLabel: {fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase'},
-  rowLabel: {fontSize: 15},
-  rowSub: {fontSize: 12.5, marginTop: 2},
-  flex: {flex: 1, minWidth: 0},
-  check: {color: '#06B6D4', fontSize: 16, fontWeight: '700'},
-  danger: {color: '#EF4444'},
-  versionWrap: {alignItems: 'center', marginTop: 8},
-  version: {fontSize: 12},
+  body: {paddingVertical: 16},
+  action: {fontSize: 20, fontWeight: '300'},
 });
