@@ -15,7 +15,7 @@ import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {Agent, StatusName} from '../api/types';
-import {TranscriptTurn} from '../api/client';
+import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
 import {StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
@@ -91,7 +91,7 @@ function dotColor(status: StatusName): string {
 }
 
 export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt}: Props) {
-  const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
   const scrollRef = React.useRef<ScrollView>(null);
 
   // Jump to the latest turn whenever the history grows (kept in sync by the parent).
@@ -167,61 +167,70 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         </Text>
       )}
 
-      {/* the conversation: prompt → collapsed steps → final response */}
+      {/* the conversation: prompt → interleaved (text bubble / step group) segments */}
       {turns.map((t, i) => {
-        // the reply's separate segments (CC emits a turn as several messages); render
-        // each as its own block with a divider so the seams read clearly.
-        const segs = t.segments?.length ? t.segments : t.response ? [t.response] : [];
+        // each segment = one assistant message's text bubble + the tool steps that
+        // ran after it; rendering them in order puts intermediate process BETWEEN
+        // separate speech bubbles. Fall back to the joined response when no segments.
+        const segs: TranscriptSegment[] = t.segments?.length ? t.segments : t.response ? [{text: t.response}] : [];
+        const firstText = segs.findIndex(s => !!s.text); // avatar only on the first bubble
         return (
-        <View key={i} style={styles.turn}>
-          {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
-          {!!t.prompt && (
-            <View style={styles.userRow}>
-              <View style={styles.userBubble}>
-                <Text selectable style={styles.userText}>
-                  {t.prompt}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {!!t.steps?.length && (
-            <TouchableOpacity
-              style={styles.stepsToggle}
-              activeOpacity={0.7}
-              onPress={() => setExpanded(e => ({...e, [i]: !e[i]}))}>
-              <Text style={styles.stepsToggleText}>
-                {expanded[i] ? '▾ ' : '▸ '}
-                {lang === 'zh' ? `${t.steps.length} 个步骤` : `${t.steps.length} step${t.steps.length > 1 ? 's' : ''}`}
-              </Text>
-            </TouchableOpacity>
-          )}
-          {expanded[i] &&
-            t.steps?.map((s, j) => (
-              <View key={j} style={styles.stepRow}>
-                <Text style={styles.stepName}>{s.title}</Text>
-                {!!s.detail && (
-                  <Text style={styles.stepDetail} numberOfLines={1}>
-                    {s.detail}
+          <View key={i} style={styles.turn}>
+            {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
+            {!!t.prompt && (
+              <View style={styles.userRow}>
+                <View style={styles.userBubble}>
+                  <Text selectable style={styles.userText}>
+                    {t.prompt}
                   </Text>
-                )}
+                </View>
               </View>
-            ))}
+            )}
 
-          {segs.length > 0 && (
-            <View style={styles.agentRow}>
-              <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
-              <View style={styles.agentBubble}>
-                {segs.map((seg, k) => (
-                  <View key={k}>
-                    {k > 0 && <View style={styles.segDivider} />}
-                    <MarkdownView source={seg} colors={MD_COLORS} fontSize={14} selectable />
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-        </View>
+            {segs.map((seg, k) => {
+              const key = `${i}-${k}`;
+              return (
+                <View key={k} style={styles.segBlock}>
+                  {!!seg.text && (
+                    <View style={styles.agentRow}>
+                      {k === firstText ? (
+                        <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+                      ) : (
+                        <View style={styles.avatarSpacer} />
+                      )}
+                      <View style={styles.agentBubble}>
+                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={14} selectable />
+                      </View>
+                    </View>
+                  )}
+                  {!!seg.steps?.length && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.stepsToggle}
+                        activeOpacity={0.7}
+                        onPress={() => setExpanded(e => ({...e, [key]: !e[key]}))}>
+                        <Text style={styles.stepsToggleText}>
+                          {expanded[key] ? '▾ ' : '▸ '}
+                          {lang === 'zh' ? `${seg.steps.length} 个步骤` : `${seg.steps.length} step${seg.steps.length > 1 ? 's' : ''}`}
+                        </Text>
+                      </TouchableOpacity>
+                      {expanded[key] &&
+                        seg.steps.map((s, j) => (
+                          <View key={j} style={styles.stepRow}>
+                            <Text style={styles.stepName}>{s.title}</Text>
+                            {!!s.detail && (
+                              <Text style={styles.stepDetail} numberOfLines={1}>
+                                {s.detail}
+                              </Text>
+                            )}
+                          </View>
+                        ))}
+                    </>
+                  )}
+                </View>
+              );
+            })}
+          </View>
         );
       })}
 
@@ -293,16 +302,12 @@ const styles = StyleSheet.create({
   stepName: {fontSize: 11, fontWeight: '700', color: '#27C7E6', fontFamily: 'Menlo'},
   stepDetail: {fontSize: 11, color: 'rgba(235,235,245,0.55)', fontFamily: 'Menlo', flexShrink: 1},
 
-  // divider between consecutive reply segments inside one agent bubble — a clear
-  // seam so the separate messages of a multi-part reply don't read as one blob.
-  segDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    marginVertical: 11,
-    marginHorizontal: -2,
-  },
+  // one reply segment = a text bubble + its trailing step group (small inner gap).
+  segBlock: {gap: 4},
+  // keeps a follow-up bubble left-aligned with the first when the avatar is omitted.
+  avatarSpacer: {width: 26},
 
-  // agent final response — left, with avatar.
+  // agent reply bubble — left, with avatar (only on the turn's first text bubble).
   agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},
   agentBubble: {
     flex: 1,

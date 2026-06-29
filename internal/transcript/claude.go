@@ -80,9 +80,9 @@ func claudeStep(line string, st *parseState) {
 		st.ensure() // tail may have started mid-turn (no preceding prompt)
 		text, steps := claudeAssistant(e.Message.Content)
 		if text != "" {
-			st.cur.Segments = append(st.cur.Segments, text) // keep every reply segment, not just the last
+			st.addText(text) // each assistant text starts a new bubble
 		}
-		st.cur.Steps = append(st.cur.Steps, steps...)
+		st.addSteps(steps) // its tool calls attach to that bubble (intermediate process)
 	}
 }
 

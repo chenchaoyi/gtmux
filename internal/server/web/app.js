@@ -353,7 +353,7 @@
   function renderChat(turns) {
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
-    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, (t.steps || []).length]; }));
+    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, (t.segments || []).map(function (s) { return (s.steps || []).length; })]; }));
     if (sig === chatSig) return;
     chatSig = sig;
     drawChat(turns);
@@ -387,33 +387,35 @@
         var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = t.prompt;
         ur.appendChild(ub); ct.appendChild(ur);
       }
-      if (t.steps && t.steps.length) {
-        var open = !!chatExpanded[idx];
-        var tog = document.createElement('button'); tog.className = 'steps-toggle';
-        tog.textContent = (open ? '▾ ' : '▸ ') + t.steps.length + ' step' + (t.steps.length > 1 ? 's' : '');
-        tog.onclick = (function (k) { return function () { chatExpanded[k] = !chatExpanded[k]; drawChat(lastTurns); }; })(idx);
-        ct.appendChild(tog);
-        if (open) {
-          t.steps.forEach(function (s) {
-            var row = document.createElement('div'); row.className = 'step-row';
-            var sn = document.createElement('span'); sn.className = 'step-name'; sn.textContent = s.title || ''; row.appendChild(sn);
-            if (s.detail) { var sd = document.createElement('span'); sd.className = 'step-detail'; sd.textContent = s.detail; row.appendChild(sd); }
-            ct.appendChild(row);
-          });
+      // each segment = an assistant text bubble + the tool steps that followed it;
+      // render in order so intermediate process sits BETWEEN separate bubbles.
+      var segs = (t.segments && t.segments.length) ? t.segments : (t.response ? [{text: t.response}] : []);
+      var firstText = -1;
+      segs.forEach(function (s, k) { if (firstText < 0 && s.text) firstText = k; });
+      segs.forEach(function (seg, k) {
+        if (seg.text) {
+          var ar = document.createElement('div'); ar.className = 'arow';
+          ar.appendChild(k === firstText ? avatarEl(a, 26, false) : (function () { var sp = document.createElement('div'); sp.className = 'arow-spacer'; return sp; })());
+          var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text));
+          ar.appendChild(ab); ct.appendChild(ar);
         }
-      }
-      var segs = (t.segments && t.segments.length) ? t.segments : (t.response ? [t.response] : []);
-      if (segs.length) {
-        var ar = document.createElement('div'); ar.className = 'arow';
-        ar.appendChild(avatarEl(a, 26, false));
-        var ab = document.createElement('div'); ab.className = 'abubble';
-        // render each reply segment as its own block, separated by a clear seam.
-        segs.forEach(function (seg, k) {
-          if (k > 0) { var hr = document.createElement('div'); hr.className = 'seg-divider'; ab.appendChild(hr); }
-          ab.appendChild(mdRender(seg));
-        });
-        ar.appendChild(ab); ct.appendChild(ar);
-      }
+        if (seg.steps && seg.steps.length) {
+          var sk = idx + '-' + k;
+          var open = !!chatExpanded[sk];
+          var tog = document.createElement('button'); tog.className = 'steps-toggle';
+          tog.textContent = (open ? '▾ ' : '▸ ') + seg.steps.length + ' step' + (seg.steps.length > 1 ? 's' : '');
+          tog.onclick = (function (key) { return function () { chatExpanded[key] = !chatExpanded[key]; drawChat(lastTurns); }; })(sk);
+          ct.appendChild(tog);
+          if (open) {
+            seg.steps.forEach(function (s) {
+              var row = document.createElement('div'); row.className = 'step-row';
+              var sn = document.createElement('span'); sn.className = 'step-name'; sn.textContent = s.title || ''; row.appendChild(sn);
+              if (s.detail) { var sd = document.createElement('span'); sd.className = 'step-detail'; sd.textContent = s.detail; row.appendChild(sd); }
+              ct.appendChild(row);
+            });
+          }
+        }
+      });
       col.appendChild(ct);
     });
     root.appendChild(col);
