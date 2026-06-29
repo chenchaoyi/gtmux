@@ -402,10 +402,16 @@
           });
         }
       }
-      if (t.response) {
+      var segs = (t.segments && t.segments.length) ? t.segments : (t.response ? [t.response] : []);
+      if (segs.length) {
         var ar = document.createElement('div'); ar.className = 'arow';
         ar.appendChild(avatarEl(a, 26, false));
-        var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(t.response));
+        var ab = document.createElement('div'); ab.className = 'abubble';
+        // render each reply segment as its own block, separated by a clear seam.
+        segs.forEach(function (seg, k) {
+          if (k > 0) { var hr = document.createElement('div'); hr.className = 'seg-divider'; ab.appendChild(hr); }
+          ab.appendChild(mdRender(seg));
+        });
         ar.appendChild(ab); ct.appendChild(ar);
       }
       col.appendChild(ct);

@@ -27,9 +27,16 @@ type Step struct {
 // Turn is one user instruction and what the agent ultimately answered, with the
 // intermediate tool calls folded into Steps.
 type Turn struct {
-	Prompt   string `json:"prompt"`
+	Prompt string `json:"prompt"`
+	// Response is the full reply (all Segments joined by a blank line) — kept for
+	// back-compat and simple consumers.
 	Response string `json:"response"`
-	Steps    []Step `json:"steps,omitempty"`
+	// Segments are the reply's individual assistant-message texts, in order — an
+	// agent emits a turn's reply as several messages interleaved with tool calls.
+	// Clients render each as its own block so the seams between them read clearly
+	// (a single joined blob made segment breaks indistinguishable from paragraphs).
+	Segments []string `json:"segments,omitempty"`
+	Steps    []Step   `json:"steps,omitempty"`
 	// Time is the prompt's wall-clock timestamp (RFC3339, as logged by the agent),
 	// for the chat view's per-turn time label. "" when the log line carried none.
 	Time string `json:"time,omitempty"`
@@ -78,9 +85,10 @@ type parseState struct {
 }
 
 // flush commits the in-progress turn (if it carries any content) and records
-// where it started.
+// where it started. Response is derived here from the accumulated Segments.
 func (st *parseState) flush() {
-	if st.cur != nil && (st.cur.Prompt != "" || st.cur.Response != "" || len(st.cur.Steps) > 0) {
+	if st.cur != nil && (st.cur.Prompt != "" || len(st.cur.Segments) > 0 || len(st.cur.Steps) > 0) {
+		st.cur.Response = strings.Join(st.cur.Segments, "\n\n")
 		st.turns = append(st.turns, *st.cur)
 		st.turnStarts = append(st.turnStarts, st.curStart)
 	}
@@ -238,17 +246,6 @@ func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 		return nil, nil
 	}
 	return lastN(turns, maxTurns), nil
-}
-
-// appendText joins assistant text segments WITHIN one turn. An agent emits a
-// turn's reply as several messages interleaved with tool calls (text → tool → more
-// text → …); we keep them ALL (joined by a blank line) instead of overwriting with
-// the last, so the chat view shows the full reply, not just the closing paragraph.
-func appendText(acc, next string) string {
-	if acc == "" {
-		return next
-	}
-	return acc + "\n\n" + next
 }
 
 // normalizeAgent maps a display name or key ("Claude Code", "claude", "Codex")

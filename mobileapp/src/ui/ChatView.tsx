@@ -168,7 +168,11 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
       )}
 
       {/* the conversation: prompt → collapsed steps → final response */}
-      {turns.map((t, i) => (
+      {turns.map((t, i) => {
+        // the reply's separate segments (CC emits a turn as several messages); render
+        // each as its own block with a divider so the seams read clearly.
+        const segs = t.segments?.length ? t.segments : t.response ? [t.response] : [];
+        return (
         <View key={i} style={styles.turn}>
           {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
           {!!t.prompt && (
@@ -202,16 +206,22 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
               </View>
             ))}
 
-          {!!t.response && (
+          {segs.length > 0 && (
             <View style={styles.agentRow}>
               <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
               <View style={styles.agentBubble}>
-                <MarkdownView source={t.response} colors={MD_COLORS} fontSize={14} />
+                {segs.map((seg, k) => (
+                  <View key={k}>
+                    {k > 0 && <View style={styles.segDivider} />}
+                    <MarkdownView source={seg} colors={MD_COLORS} fontSize={14} />
+                  </View>
+                ))}
               </View>
             </View>
           )}
         </View>
-      ))}
+        );
+      })}
 
       {/* optimistic echo: the just-sent prompt, until the transcript catches up */}
       {!!pendingPrompt && (turns.length === 0 || turns[turns.length - 1].prompt !== pendingPrompt) && (
@@ -280,6 +290,15 @@ const styles = StyleSheet.create({
   stepRow: {marginLeft: 35, flexDirection: 'row', alignItems: 'baseline', gap: 6},
   stepName: {fontSize: 11, fontWeight: '700', color: '#27C7E6', fontFamily: 'Menlo'},
   stepDetail: {fontSize: 11, color: 'rgba(235,235,245,0.55)', fontFamily: 'Menlo', flexShrink: 1},
+
+  // divider between consecutive reply segments inside one agent bubble — a clear
+  // seam so the separate messages of a multi-part reply don't read as one blob.
+  segDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginVertical: 11,
+    marginHorizontal: -2,
+  },
 
   // agent final response — left, with avatar.
   agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},

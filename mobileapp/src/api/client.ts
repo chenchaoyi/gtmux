@@ -21,6 +21,7 @@ export interface TranscriptStep {
 export interface TranscriptTurn {
   prompt: string;
   response: string;
+  segments?: string[]; // the reply's individual assistant-message texts, rendered as separate blocks
   steps?: TranscriptStep[];
   time?: string; // prompt's RFC3339 timestamp (agent log) — for the chat time label
 }

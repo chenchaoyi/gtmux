@@ -139,6 +139,15 @@ func TestLoadClaudeKeepsAllReplySegments(t *testing.T) {
 	if len(turns) != 1 || turns[0].Response != want {
 		t.Fatalf("want all 3 segments %q, got %+v", want, turns)
 	}
+	wantSegs := []string{"First, some context.", "Now the middle bit.", "And the conclusion."}
+	if len(turns[0].Segments) != len(wantSegs) {
+		t.Fatalf("want %d segments, got %v", len(wantSegs), turns[0].Segments)
+	}
+	for i, s := range wantSegs {
+		if turns[0].Segments[i] != s {
+			t.Fatalf("segment %d = %q, want %q", i, turns[0].Segments[i], s)
+		}
+	}
 }
 
 // Harness-injected user turns (<task-notification>, <system-reminder>) must not

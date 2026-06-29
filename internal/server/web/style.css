@@ -162,6 +162,8 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   flex: 1 1 auto; min-width: 0; background: var(--surface);
   border: 1px solid var(--divider); border-radius: 12px; padding: 10px 13px;
 }
+/* seam between consecutive reply segments inside one agent bubble */
+.seg-divider { height: 1px; background: var(--divider); margin: 11px -3px; }
 
 /* markdown inside the agent bubble */
 .md { color: var(--fg); font-size: 14px; line-height: 1.6; }

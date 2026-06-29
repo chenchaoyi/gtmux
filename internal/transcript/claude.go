@@ -80,7 +80,7 @@ func claudeStep(line string, st *parseState) {
 		st.ensure() // tail may have started mid-turn (no preceding prompt)
 		text, steps := claudeAssistant(e.Message.Content)
 		if text != "" {
-			st.cur.Response = appendText(st.cur.Response, text) // keep every reply segment, not just the last
+			st.cur.Segments = append(st.cur.Segments, text) // keep every reply segment, not just the last
 		}
 		st.cur.Steps = append(st.cur.Steps, steps...)
 	}
