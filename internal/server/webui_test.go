@@ -37,3 +37,39 @@ func TestWebUIRouting(t *testing.T) {
 		t.Errorf("GET /api/agents (no token) = %d, want 401", rr.Code)
 	}
 }
+
+// The browser UI must defeat stale CDN/tunnel edge caching: index.html is served
+// uncached with content-hashed asset URLs, and static assets carry no-cache. This
+// is what makes `gtmux update` actually show up in the browser.
+func TestWebHandlerCacheBusting(t *testing.T) {
+	if len(assetTag) != 12 {
+		t.Fatalf("assetTag should be a 12-char content hash, got %q", assetTag)
+	}
+
+	h := webHandler()
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("GET / = %d", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "app.js?v="+assetTag) {
+		t.Errorf("index.html app.js not cache-busted with assetTag")
+	}
+	if !strings.Contains(body, "style.css?v="+assetTag) {
+		t.Errorf("index.html style.css not cache-busted with assetTag")
+	}
+	if cc := rr.Header().Get("Cache-Control"); !strings.Contains(cc, "no-cache") {
+		t.Errorf("index.html Cache-Control missing no-cache: %q", cc)
+	}
+
+	rr2 := httptest.NewRecorder()
+	h.ServeHTTP(rr2, httptest.NewRequest(http.MethodGet, "/app.js", nil))
+	if rr2.Code != http.StatusOK {
+		t.Fatalf("GET /app.js = %d", rr2.Code)
+	}
+	if cc := rr2.Header().Get("Cache-Control"); !strings.Contains(cc, "no-cache") {
+		t.Errorf("app.js Cache-Control missing no-cache: %q", cc)
+	}
+}

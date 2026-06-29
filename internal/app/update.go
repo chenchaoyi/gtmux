@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -113,7 +115,32 @@ func cmdUpdate(args []string) int {
 		i18n.Sae("gtmux update: installer failed: "+err.Error(), "gtmux update: 安装失败："+err.Error())
 		return 1
 	}
+	// The installer swapped the binary on disk, but a long-running `gtmux serve`
+	// LaunchAgent keeps executing the OLD in-memory binary — so the phone app /
+	// browser mirror it backs would keep serving stale assets (e.g. "no chat mode"
+	// after updating) until the next logout/reboot. Re-exec it now.
+	restartServeAgents()
 	return 0
+}
+
+// restartServeAgents re-execs the persistent `gtmux serve` LaunchAgent on macOS so
+// a freshly-installed binary takes effect immediately. No-op when the agent isn't
+// loaded or off macOS. cloudflared (the separate tunnel agent) reconnects on its
+// own, so only the serve needs kicking.
+func restartServeAgents() {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	target := "gui/" + strconv.Itoa(os.Getuid()) + "/com.gtmux.serve"
+	// Only restart if it's actually loaded — otherwise there's nothing persistent
+	// to refresh (a one-off `gtmux serve` is the user's own process to manage).
+	if err := exec.Command("launchctl", "print", target).Run(); err != nil {
+		return
+	}
+	if err := exec.Command("launchctl", "kickstart", "-k", target).Run(); err == nil {
+		i18n.Say("Restarted the remote serve so the update takes effect.",
+			"已重启远程 serve，更新即时生效。")
+	}
 }
 
 // installScriptMirrors lists the installer URL GitHub-first, then CN proxies (the
