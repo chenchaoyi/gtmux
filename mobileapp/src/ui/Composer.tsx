@@ -1,8 +1,13 @@
-// Composer — the Detail input area (MOBILE §4), Termius-style. Types into the
-// pane via POST /api/send (a WRITE, gated by the bearer token). A single compact,
-// horizontally-scrollable key toolbar (agent-aware context shortcuts + control
-// keys) sits above a free-input row; DetailScreen wraps it in a
-// KeyboardAvoidingView so it floats above the keyboard instead of being covered.
+// Composer — the Detail input area (MOBILE §4), Moshi-style. Types into the pane
+// via POST /api/send (a WRITE, gated by the bearer token).
+//
+// Layout (MOBILE §4):
+//   • Resting (keyboard down): a single horizontally-scrollable row of key pills
+//     (agent-aware context shortcuts + control keys + arrows + snippets), sitting
+//     ABOVE the home-indicator safe area so the edge pills stay tappable.
+//   • Typing (keyboard up): tap ⌨ to reveal a compact input field; on iOS the key
+//     row docks directly above the keyboard via an InputAccessoryView (replacing
+//     iOS's sparse prev/next/done assistant bar), exactly like Moshi.
 //
 // Color is never used for status here.
 
@@ -10,6 +15,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   ActionSheetIOS,
   ActivityIndicator,
+  InputAccessoryView,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -20,6 +26,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
@@ -34,6 +41,11 @@ import {SnippetsModal} from './SnippetsModal';
 import {HistoryModal} from './HistoryModal';
 import {loadSnippets, saveSnippets} from '../state/snippets';
 import {loadHistory, saveHistory, pushHistory} from '../state/history';
+
+// iOS docks the key row on the keyboard via this accessory id (so it replaces the
+// default assistant bar instead of stacking another sparse row above it).
+const ACCESSORY_ID = 'gtmux-composer-keys';
+const ACCENT = '#06B6D4';
 
 function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
   if (status === 'waiting') {
@@ -77,6 +89,7 @@ export function Composer({
   onUpload?: (uri: string, name: string, type: string) => Promise<string | null>;
   onOpenKeys?: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
   const [inputH, setInputH] = useState(0); // measured content height, for 1→6 line auto-grow
   const [uploading, setUploading] = useState(false);
@@ -86,7 +99,7 @@ export function Composer({
   const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
   const [history, setHistory] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
-  // Moshi-style: the composer rests as a single icon row; the text field +
+  // Moshi-style: the composer rests as a single key row; the text field +
   // keyboard appear only when you tap the ⌨ key (and collapse again with ▾). This
   // keeps the terminal full-height and stops an accidental tap from popping the
   // keyboard. Any action that needs the field (snippets/history/attach) opens it.
@@ -185,137 +198,169 @@ export function Composer({
     );
   };
 
-  return (
-    <View style={[styles.wrap, {borderTopColor: pal.divider, backgroundColor: pal.bg}, !enabled && styles.disabled]}>
-      {/* one compact, scrollable key toolbar (context shortcuts + control keys) */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="always"
-        contentContainerStyle={styles.keys}>
-        {/* keyboard toggle: pop / dismiss the text field (Moshi-style) */}
-        <TouchableOpacity
-          onPress={() => setComposing(c => !c)}
-          style={[
-            styles.ctlKey,
-            {backgroundColor: composing ? '#06B6D4' : pal.surface, borderColor: composing ? '#06B6D4' : pal.divider},
-          ]}>
-          <Text style={[styles.ctlText, {color: composing ? '#fff' : pal.fg2}]}>{composing ? '▾' : '⌨'}</Text>
-        </TouchableOpacity>
-        <MoveKey pal={pal} enabled={enabled} onKey={k => send({key: k})} />
-        {onOpenKeys && (
-          <TouchableOpacity
-            onPress={onOpenKeys}
-            style={[styles.ctlKey, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-            <Text style={[styles.ctlText, {color: pal.fg2}]}>✛</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={paste}
-          style={[styles.ctlKey, {borderColor: pal.divider}]}>
-          <Text style={[styles.ctlText, {color: pal.fg2}]}>{lang === 'zh' ? '粘贴' : 'Paste'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setFullCompose(true)}
-          style={[styles.ctlKey, {borderColor: pal.divider}]}>
-          <Text style={[styles.ctlText, {color: pal.fg2}]}>⤢</Text>
-        </TouchableOpacity>
-        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-        {contextKeys(status, lang).map(k => (
-          <TouchableOpacity
-            key={k.label}
-            onPress={() => send(k.payload)}
-            style={[styles.ctxKey, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-            <Text style={[styles.ctxText, {color: pal.fg2}]}>{k.label}</Text>
-          </TouchableOpacity>
-        ))}
-        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-        {CONTROL_KEYS.map(k => (
-          <TouchableOpacity
-            key={k.label}
-            onPress={() => send({key: k.key})}
-            style={[styles.ctlKey, {borderColor: pal.divider}]}>
-            <Text style={[styles.ctlText, {color: pal.fg2}]}>{k.label}</Text>
-          </TouchableOpacity>
-        ))}
-        {/* input history: recall a previously-sent message (mockup §10 "↑ 历史") */}
-        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-        <TouchableOpacity
-          onPress={() => setHistoryOpen(true)}
-          style={[styles.ctlKey, {borderColor: pal.divider}]}>
-          <Text style={[styles.ctlText, {color: pal.fg2}]}>{lang === 'zh' ? '↑ 历史' : '↑ History'}</Text>
-        </TouchableOpacity>
-        {/* saved snippets: one-tap habitual sends + a manage button */}
-        <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-        {snippets.map(s => (
-          <TouchableOpacity
-            key={s}
-            onPress={() => send({text: s, enter: true})}
-            style={[styles.ctxKey, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-            <Text style={[styles.ctxText, {color: pal.fg2}]} numberOfLines={1}>
-              {s}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity
-          onPress={() => setManageSnippets(true)}
-          style={[styles.ctlKey, {borderColor: pal.divider}]}>
-          <Text style={[styles.ctlText, {color: pal.fg3}]}>✎</Text>
-        </TouchableOpacity>
-      </ScrollView>
+  // A pill in the key row. `glyph` keys are square-ish single symbols; `text` keys
+  // size to their label. All are filled (surface) with a hairline border.
+  const Key = ({
+    children,
+    onPress,
+    glyph,
+    fg,
+    activeBg,
+    testID,
+  }: {
+    children: React.ReactNode;
+    onPress: () => void;
+    glyph?: boolean;
+    fg?: string;
+    activeBg?: boolean;
+    testID?: string;
+  }) => (
+    <TouchableOpacity
+      testID={testID}
+      accessibilityLabel={testID}
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[
+        styles.key,
+        {
+          backgroundColor: activeBg ? ACCENT : pal.surface,
+          borderColor: activeBg ? ACCENT : pal.divider,
+        },
+      ]}>
+      <Text style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
+        {children}
+      </Text>
+    </TouchableOpacity>
+  );
 
-      {/* attach + free input + send — only while composing (tap ⌨ to reveal). The
-          TextInput auto-focuses on mount, so the keyboard rises exactly then. */}
-      {composing && (
-        <View style={styles.inputRow}>
-          <TouchableOpacity
-            onPress={attach}
-            disabled={!enabled || uploading || !onUpload}
-            style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-            {uploading ? (
-              <ActivityIndicator size="small" color={pal.fg3} />
-            ) : (
-              <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
-            )}
-          </TouchableOpacity>
-          <TextInput
-            testID={TestIds.composer.input}
-            value={text}
-            onChangeText={setText}
-            editable={enabled}
-            autoFocus
-            placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
-            placeholderTextColor={pal.fg3}
-            autoCapitalize="none"
-            autoCorrect={false}
-            // D7 core fix: multiline so Return inserts a newline; sending is the ↑
-            // button only (unless the user opted into "Return sends"). Auto-grows
-            // 1→6 lines, then scrolls inside.
-            multiline
-            textAlignVertical="top"
-            onContentSizeChange={e => setInputH(e.nativeEvent.contentSize.height)}
-            returnKeyType={returnSends ? 'send' : 'default'}
-            onSubmitEditing={returnSends ? sendText : undefined}
-            blurOnSubmit={false}
-            style={[
-              styles.input,
-              {
-                backgroundColor: pal.surface,
-                borderColor: pal.divider,
-                color: pal.fg,
-                height: Math.min(132, Math.max(40, inputH + 16)),
-              },
-            ]}
-          />
-          <TouchableOpacity
-            testID={TestIds.composer.send}
-            accessibilityLabel={TestIds.composer.send}
-            onPress={sendText}
-            disabled={!enabled || !text}
-            style={[styles.send, {backgroundColor: text ? '#06B6D4' : pal.surface, borderColor: pal.divider}]}>
-            <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
-          </TouchableOpacity>
-        </View>
+  // The key row (context shortcuts + control keys + arrows + snippets). Always
+  // visible — when composing it sits just above the input field, so the special
+  // keys AND the ▾ dismiss stay reachable while the keyboard is up.
+  const renderKeys = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="always"
+      contentContainerStyle={styles.keys}>
+      <Key onPress={() => setComposing(c => !c)} glyph activeBg={composing} testID={TestIds.composer.keyboard}>
+        {composing ? '▾' : '⌨'}
+      </Key>
+      <MoveKey pal={pal} enabled={enabled} onKey={k => send({key: k})} />
+      {onOpenKeys && (
+        <Key onPress={onOpenKeys} glyph>
+          ✛
+        </Key>
+      )}
+      <Key onPress={paste}>{lang === 'zh' ? '粘贴' : 'Paste'}</Key>
+      <Key onPress={() => setFullCompose(true)} glyph>
+        ⤢
+      </Key>
+      <View style={[styles.sep, {backgroundColor: pal.divider}]} />
+      {contextKeys(status, lang).map(k => (
+        <Key key={k.label} onPress={() => send(k.payload)}>
+          {k.label}
+        </Key>
+      ))}
+      <View style={[styles.sep, {backgroundColor: pal.divider}]} />
+      {CONTROL_KEYS.map(k => (
+        <Key key={k.label} onPress={() => send({key: k.key})}>
+          {k.label}
+        </Key>
+      ))}
+      <View style={[styles.sep, {backgroundColor: pal.divider}]} />
+      <Key onPress={() => setHistoryOpen(true)}>{lang === 'zh' ? '↑ 历史' : '↑ History'}</Key>
+      {snippets.length > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
+      {snippets.map(s => (
+        <Key key={s} onPress={() => send({text: s, enter: true})}>
+          {s}
+        </Key>
+      ))}
+      <Key onPress={() => setManageSnippets(true)} glyph fg={pal.fg3}>
+        ✎
+      </Key>
+    </ScrollView>
+  );
+
+  // attach + free input + send — shown while composing (tap ⌨ to reveal). The
+  // TextInput auto-focuses on mount so the keyboard rises exactly then; on iOS the
+  // key row rides up docked to the keyboard (inputAccessoryViewID).
+  const renderInputRow = () => (
+    <View style={styles.inputRow}>
+      <TouchableOpacity
+        onPress={attach}
+        disabled={!enabled || uploading || !onUpload}
+        style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+        {uploading ? (
+          <ActivityIndicator size="small" color={pal.fg3} />
+        ) : (
+          <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
+        )}
+      </TouchableOpacity>
+      <TextInput
+        testID={TestIds.composer.input}
+        value={text}
+        onChangeText={setText}
+        editable={enabled}
+        autoFocus
+        placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
+        placeholderTextColor={pal.fg3}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardAppearance={pal.bg === '#ffffff' ? 'light' : 'dark'}
+        inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
+        // D7 core fix: multiline so Return inserts a newline; sending is the ↑
+        // button only (unless the user opted into "Return sends"). Auto-grows
+        // 1→6 lines, then scrolls inside.
+        multiline
+        textAlignVertical="top"
+        onContentSizeChange={e => setInputH(e.nativeEvent.contentSize.height)}
+        returnKeyType={returnSends ? 'send' : 'default'}
+        onSubmitEditing={returnSends ? sendText : undefined}
+        blurOnSubmit={false}
+        style={[
+          styles.input,
+          {
+            backgroundColor: pal.surface,
+            borderColor: pal.divider,
+            color: pal.fg,
+            height: Math.min(132, Math.max(40, inputH + 16)),
+          },
+        ]}
+      />
+      <TouchableOpacity
+        testID={TestIds.composer.send}
+        accessibilityLabel={TestIds.composer.send}
+        onPress={sendText}
+        disabled={!enabled || !text}
+        style={[styles.send, {backgroundColor: text ? ACCENT : pal.surface, borderColor: text ? ACCENT : pal.divider}]}>
+        <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <View
+      style={[
+        styles.wrap,
+        {
+          borderTopColor: pal.divider,
+          backgroundColor: pal.bg,
+          // sit above the home indicator when resting; the keyboard covers it
+          // while composing, so collapse the inset then.
+          paddingBottom: composing ? 8 : Math.max(8, insets.bottom),
+        },
+        !enabled && styles.disabled,
+      ]}>
+      {renderKeys()}
+      {composing && renderInputRow()}
+
+      {/* An empty accessory replaces (and thus suppresses) iOS's sparse
+          prev/next/done assistant bar above the keyboard — the key row above the
+          input field already covers those actions. */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={ACCESSORY_ID}>
+          <View style={styles.accessory} />
+        </InputAccessoryView>
       )}
 
       {/* recall a previously-sent message → load it into the input for editing */}
@@ -360,7 +405,7 @@ export function Composer({
             <TouchableOpacity
               disabled={!enabled || !text}
               onPress={() => { sendText(); setFullCompose(false); }}>
-              <Text style={[styles.fcAction, {color: text ? '#06B6D4' : pal.fg3, fontWeight: '700'}]}>
+              <Text style={[styles.fcAction, {color: text ? ACCENT : pal.fg3, fontWeight: '700'}]}>
                 {lang === 'zh' ? '发送' : 'Send'}
               </Text>
             </TouchableOpacity>
@@ -401,18 +446,29 @@ export function Composer({
 }
 
 const styles = StyleSheet.create({
-  wrap: {borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 8},
+  wrap: {borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, paddingTop: 8},
   disabled: {opacity: 0.55},
-  keys: {flexDirection: 'row', alignItems: 'center', paddingRight: 8},
-  ctxKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginRight: 7},
-  ctxText: {fontSize: 13, fontWeight: '600'},
-  sep: {width: StyleSheet.hairlineWidth, height: 22, marginHorizontal: 6},
-  ctlKey: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8, marginRight: 7},
-  ctlText: {fontSize: 13, fontFamily: 'Menlo'},
+  keys: {flexDirection: 'row', alignItems: 'center', paddingRight: 8, paddingVertical: 2},
+  // one unified pill: ≥44pt touch target, filled, pill-rounded (Moshi-like).
+  key: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 11,
+    paddingHorizontal: 13,
+    height: 40,
+    minWidth: 40,
+    marginRight: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  keyText: {fontSize: 14, fontWeight: '600'},
+  keyGlyph: {fontSize: 17, fontWeight: '600'},
+  sep: {width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 6},
+  accessory: {height: 0}, // empty: only there to suppress iOS's default assistant bar
   inputRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 8},
   attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
   attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
-  input: {flex: 1, minHeight: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
+  input: {flex: 1, minHeight: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 11, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
   fcWrap: {flex: 1},
   fcBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth},
   fcTitle: {fontSize: 13, fontWeight: '600'},
