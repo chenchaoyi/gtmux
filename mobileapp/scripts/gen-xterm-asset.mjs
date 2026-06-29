@@ -235,19 +235,11 @@ const bootstrap = `
   };
 
   // gtmuxCursor mirrors the pane's text cursor (capture-pane doesn't carry it, so
-  // the Mac sends column x + Up = SOURCE rows above the pane's bottom line + visible).
-  // It's drawn as a DECORATION (an overlay cell), NOT by moving xterm's cursor —
-  // moving the cursor would make the next incremental append write in the wrong
-  // place. Placing it correctly needs two corrections the naive "Up rows above the
-  // write cursor" got wrong:
-  //   1. capture-pane terminates every row (incl. the last) with "\n", so after the
-  //      write xterm's cursor sits on a fresh EMPTY row one BELOW the pane's bottom
-  //      line — the bottom line is cursorY-1, not cursorY.
-  //   2. Up is counted in SOURCE lines, but in wrap mode one long source line (e.g.
-  //      the bottom status bar) spans several buffer rows — so we must walk up by
-  //      LOGICAL lines (skipping isWrapped continuations), not raw buffer rows, and
-  //      fold the column's own wrap. Without this the cursor drifts whenever the rows
-  //      below it wrap.
+  // the Mac sends column x + Up = rows above the last line + visible). It's drawn as
+  // a DECORATION (an overlay cell), NOT by moving xterm's cursor — moving the cursor
+  // would make the next incremental append write in the wrong place. The decoration
+  // is anchored to a marker "up" rows above the write cursor (the content's last
+  // line), so it stays correct as you scroll and despite the phone's row count.
   var curDeco = null, curMarker = null;
   // Registering a decoration leaves the WebGL base layer blank until the next
   // repaint. In no-wrap mode the per-poll relayoutCols() refit repaints it, but
@@ -269,27 +261,10 @@ const bootstrap = `
     if (curMarker) { try { curMarker.dispose(); } catch (e) {} curMarker = null; }
     if (!c || c.visible === false) { repaint(); return; }  // hidden (alt-screen TUI) → no marker
     try {
-      var buf = term.buffer.active;
-      var cols = term.cols || 80;
-      // (1) bottom pane line = the write cursor's row minus the trailing-newline row.
-      var hasNL = lastText && lastText.charAt(lastText.length - 1) === '\n';
-      var row = buf.baseY + buf.cursorY - (hasNL ? 1 : 0);
-      // step to the FIRST buffer row of that bottom source line (skip wrap continuations)
-      while (row > 0 && buf.getLine(row) && buf.getLine(row).isWrapped) row--;
-      // (2) walk up the given LOGICAL lines, each time landing on the line's first row.
-      for (var k = 0, up = c.up | 0; k < up && row > 0; k++) {
-        row--; // into the last row of the previous source line
-        while (row > 0 && buf.getLine(row) && buf.getLine(row).isWrapped) row--;
-      }
-      // fold the column's own wrap (long cursor line); in no-wrap mode x < cols so x/cols=0.
-      var x = c.x | 0;
-      row += Math.floor(x / cols);
-      var col = x % cols;
-      // registerMarker is cursor-relative → convert the absolute target row to a delta.
-      curMarker = term.registerMarker(row - (buf.baseY + buf.cursorY));
+      curMarker = term.registerMarker(-(c.up | 0));   // up rows above the write cursor
       if (!curMarker) { repaint(); return; }
       curDeco = term.registerDecoration({
-        marker: curMarker, x: col, width: 1, height: 1, backgroundColor: curColor,
+        marker: curMarker, x: c.x | 0, width: 1, height: 1, backgroundColor: curColor,
       });
       // belt-and-suspenders: also style the element on render (some renderers ignore
       // backgroundColor in the options).
