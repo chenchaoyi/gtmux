@@ -126,18 +126,32 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
       thawTimer.current = null;
     }
   };
+  const flushPending = () => {
+    frozen.current = false;
+    if (thawTimer.current) {
+      clearTimeout(thawTimer.current);
+      thawTimer.current = null;
+    }
+    if (pending.current !== null) {
+      const p = pending.current;
+      pending.current = null;
+      setShown(p.text);
+      setShownCursor(p.cursor);
+    }
+  };
   const thawSoon = () => {
     if (thawTimer.current) clearTimeout(thawTimer.current);
-    thawTimer.current = setTimeout(() => {
-      frozen.current = false;
-      thawTimer.current = null;
-      if (pending.current !== null) {
-        const p = pending.current;
-        pending.current = null;
-        setShown(p.text);
-        setShownCursor(p.cursor);
-      }
-    }, 3500);
+    thawTimer.current = setTimeout(flushPending, 3500);
+  };
+  // End-of-scroll thaw: if the gesture ended AT the bottom, flush the latest
+  // snapshot IMMEDIATELY and resume following live (you scrolled down to see the
+  // newest output — no selection to protect there). If it ended scrolled UP, keep
+  // the snapshot frozen a few seconds (a held selection / reading history). Without
+  // this, scrolling to the bottom while a working pane streamed left you stuck on a
+  // stale frame, unable to reach the live tail.
+  const thawByPosition = () => {
+    if (stick.current) flushPending();
+    else thawSoon();
   };
   useEffect(() => () => {
     if (thawTimer.current) clearTimeout(thawTimer.current);
@@ -218,9 +232,9 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
         onTouchEnd={thawSoon}
         onTouchCancel={thawSoon}
         onScrollBeginDrag={freeze}
-        onScrollEndDrag={thawSoon}
-        onMomentumScrollEnd={thawSoon}
-        scrollEventThrottle={100}
+        onScrollEndDrag={thawByPosition}
+        onMomentumScrollEnd={thawByPosition}
+        scrollEventThrottle={16}
         onContentSizeChange={onContentSizeChange}>
         <View style={styles.layerWrap}>
           {colorLayer}
