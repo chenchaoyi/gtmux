@@ -109,6 +109,60 @@ func TestLoadClaudeSkipsHarnessBlocks(t *testing.T) {
 	}
 }
 
+// Rejecting a tool with "No, and tell Claude what to do" embeds the typed message
+// in the rejection tool_result — it must surface as a user turn (it used to vanish).
+func TestLoadClaudeShowsRejectFeedback(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "33333333-4444-5555-6666-777777777777"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","message":{"role":"user","content":"edit main.go"}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"tool_use","content":[{"type":"tool_use","name":"Edit","input":{"file_path":"/x/main.go"}}]}}`,
+		`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). To tell you how to proceed, the user said:\nuse a map instead of a slice"}]}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"Got it, switching to a map."}]}}`,
+	})
+
+	turns, err := Load("Claude Code", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(turns) != 2 {
+		t.Fatalf("want 2 turns (reject feedback opens one), got %d: %+v", len(turns), turns)
+	}
+	if turns[1].Prompt != "use a map instead of a slice" {
+		t.Fatalf("reject-feedback prompt mismatch: %q", turns[1].Prompt)
+	}
+	if turns[1].Response != "Got it, switching to a map." {
+		t.Fatalf("turn1 response mismatch: %q", turns[1].Response)
+	}
+}
+
+// A normal tool OUTPUT result and a plain rejection (no typed feedback) must NOT
+// open a turn — only a rejection that carries the user's own message does.
+func TestLoadClaudePlainRejectionNotATurn(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "44444444-5555-6666-7777-888888888888"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","message":{"role":"user","content":"do it"}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"tool_use","content":[{"type":"tool_use","name":"Bash","input":{"command":"ls"}}]}}`,
+		`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"file1\nfile2"}]}}`,
+		`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t2","content":"The user doesn't want to proceed with this tool use. STOP what you are doing and wait for the user to tell you how to proceed."}]}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"ok"}]}}`,
+	})
+
+	turns, err := Load("Claude Code", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(turns) != 1 {
+		t.Fatalf("want 1 turn (output/plain-reject open none), got %d: %+v", len(turns), turns)
+	}
+	if turns[0].Prompt != "do it" {
+		t.Fatalf("turn0 prompt mismatch: %q", turns[0].Prompt)
+	}
+}
+
 func TestLoadClaudeMaxTurns(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
