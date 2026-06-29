@@ -56,54 +56,32 @@ func claudeProjectsDir() string {
 	return filepath.Join(os.Getenv("HOME"), ".claude", "projects")
 }
 
-func loadClaude(sessionID string, maxTurns int) ([]Turn, error) {
-	path := claudeLogPath(sessionID)
-	if path == "" {
-		return nil, nil
+// claudeStep folds one Claude log line into the parse state: a real user prompt
+// opens a turn; tool_result-only user events are skipped; assistant text/tool_use
+// extend the open turn (latest text wins → the final reply).
+func claudeStep(line string, st *parseState) {
+	var e claudeLine
+	if json.Unmarshal([]byte(line), &e) != nil || e.Message == nil || e.IsSidechain {
+		return
 	}
-	lines, err := tailLines(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var turns []Turn
-	var cur *Turn
-	flush := func() {
-		if cur != nil && (cur.Prompt != "" || cur.Response != "" || len(cur.Steps) > 0) {
-			turns = append(turns, *cur)
+	switch e.Type {
+	case "user":
+		if e.IsMeta {
+			return
 		}
-		cur = nil
-	}
-
-	for _, line := range lines {
-		var e claudeLine
-		if json.Unmarshal([]byte(line), &e) != nil || e.Message == nil || e.IsSidechain {
-			continue
+		prompt, isPrompt := claudePrompt(e.Message.Content)
+		if !isPrompt {
+			return // a tool_result-only user event — not a new turn
 		}
-		switch e.Type {
-		case "user":
-			if e.IsMeta {
-				continue
-			}
-			prompt, isPrompt := claudePrompt(e.Message.Content)
-			if !isPrompt {
-				continue // a tool_result-only user event — not a new turn
-			}
-			flush()
-			cur = &Turn{Prompt: prompt}
-		case "assistant":
-			if cur == nil {
-				cur = &Turn{} // tail started mid-turn (no preceding prompt)
-			}
-			text, steps := claudeAssistant(e.Message.Content)
-			if text != "" {
-				cur.Response = text // latest assistant text wins → the final reply
-			}
-			cur.Steps = append(cur.Steps, steps...)
+		st.open(prompt)
+	case "assistant":
+		st.ensure() // tail may have started mid-turn (no preceding prompt)
+		text, steps := claudeAssistant(e.Message.Content)
+		if text != "" {
+			st.cur.Response = text // latest assistant text wins → the final reply
 		}
+		st.cur.Steps = append(st.cur.Steps, steps...)
 	}
-	flush()
-	return lastN(turns, maxTurns), nil
 }
 
 // claudePrompt extracts a user-typed prompt from message.content. Returns ok=false

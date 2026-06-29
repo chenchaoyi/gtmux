@@ -127,6 +127,68 @@ func TestLoadClaudeMaxTurns(t *testing.T) {
 	}
 }
 
+// appendClaudeLog appends lines to an existing session log (simulating a growing
+// live log between polls).
+func appendClaudeLog(t *testing.T, home, sessionID string, lines []string) {
+	t.Helper()
+	p := filepath.Join(home, ".claude", "projects", "-some-project", sessionID+".jsonl")
+	f, err := os.OpenFile(p, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	for _, l := range lines {
+		if _, err := f.WriteString(l + "\n"); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// A growing log must re-parse incrementally: the last cached turn picks up its
+// appended content, and new turns are spliced on — without dropping or
+// duplicating turns. This exercises Loader's growth path.
+func TestLoadClaudeIncrementalGrowth(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "abababab-cdcd-efef-0101-202020202020"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","message":{"role":"user","content":"q1"}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"a1"}]}}`,
+		`{"type":"user","message":{"role":"user","content":"q2"}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"a2 partial"}]}}`,
+	})
+
+	turns, _ := Load("claude", sid, 50)
+	if len(turns) != 2 || turns[1].Prompt != "q2" || turns[1].Response != "a2 partial" {
+		t.Fatalf("pre-growth mismatch: %+v", turns)
+	}
+
+	// The open turn (q2) gains more output, then a brand-new turn (q3) arrives.
+	appendClaudeLog(t, home, sid, []string{
+		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Bash","input":{"command":"ls"}}]}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"a2 final"}]}}`,
+		`{"type":"user","message":{"role":"user","content":"q3"}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"a3"}]}}`,
+	})
+
+	turns, _ = Load("claude", sid, 50)
+	if len(turns) != 3 {
+		t.Fatalf("want 3 turns after growth, got %d: %+v", len(turns), turns)
+	}
+	if turns[0].Prompt != "q1" || turns[0].Response != "a1" {
+		t.Fatalf("turn0 clobbered: %+v", turns[0])
+	}
+	if turns[1].Prompt != "q2" || turns[1].Response != "a2 final" {
+		t.Fatalf("turn1 not updated incrementally: %+v", turns[1])
+	}
+	if len(turns[1].Steps) != 1 || turns[1].Steps[0].Title != "Bash" {
+		t.Fatalf("turn1 step not picked up: %+v", turns[1].Steps)
+	}
+	if turns[2].Prompt != "q3" || turns[2].Response != "a3" {
+		t.Fatalf("turn2 (new) mismatch: %+v", turns[2])
+	}
+}
+
 func TestLoadCodex(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)

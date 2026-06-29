@@ -56,68 +56,43 @@ func codexLogPath(sessionID string) string {
 	return ""
 }
 
-func loadCodex(sessionID string, maxTurns int) ([]Turn, error) {
-	path := codexLogPath(sessionID)
-	if path == "" {
-		return nil, nil
+// codexStep folds one Codex log line into the parse state: event_msg user_message
+// opens a turn; agent_message / task_complete set the (latest/authoritative)
+// reply; response_item function_call adds a tool step.
+func codexStep(line string, st *parseState) {
+	var e codexLine
+	if json.Unmarshal([]byte(line), &e) != nil || len(e.Payload) == 0 {
+		return
 	}
-	lines, err := tailLines(path)
-	if err != nil {
-		return nil, err
+	var p codexPayload
+	if json.Unmarshal(e.Payload, &p) != nil {
+		return
 	}
-
-	var turns []Turn
-	var cur *Turn
-	flush := func() {
-		if cur != nil && (cur.Prompt != "" || cur.Response != "" || len(cur.Steps) > 0) {
-			turns = append(turns, *cur)
-		}
-		cur = nil
-	}
-	ensure := func() {
-		if cur == nil {
-			cur = &Turn{}
-		}
-	}
-
-	for _, line := range lines {
-		var e codexLine
-		if json.Unmarshal([]byte(line), &e) != nil || len(e.Payload) == 0 {
-			continue
-		}
-		var p codexPayload
-		if json.Unmarshal(e.Payload, &p) != nil {
-			continue
-		}
-		switch e.Type {
-		case "event_msg":
-			switch p.Type {
-			case "user_message":
-				if strings.TrimSpace(p.Message) == "" {
-					continue
-				}
-				flush()
-				cur = &Turn{Prompt: strings.TrimSpace(p.Message)}
-			case "agent_message":
-				if strings.TrimSpace(p.Message) != "" {
-					ensure()
-					cur.Response = strings.TrimSpace(p.Message) // latest wins
-				}
-			case "task_complete":
-				if strings.TrimSpace(p.LastAgentMessage) != "" {
-					ensure()
-					cur.Response = strings.TrimSpace(p.LastAgentMessage) // authoritative final
-				}
+	switch e.Type {
+	case "event_msg":
+		switch p.Type {
+		case "user_message":
+			if strings.TrimSpace(p.Message) == "" {
+				return
 			}
-		case "response_item":
-			if p.Type == "function_call" && p.Name != "" {
-				ensure()
-				cur.Steps = append(cur.Steps, Step{Kind: "tool", Title: codexToolName(p.Name), Detail: codexToolDetail(p.Arguments)})
+			st.open(strings.TrimSpace(p.Message))
+		case "agent_message":
+			if strings.TrimSpace(p.Message) != "" {
+				st.ensure()
+				st.cur.Response = strings.TrimSpace(p.Message) // latest wins
+			}
+		case "task_complete":
+			if strings.TrimSpace(p.LastAgentMessage) != "" {
+				st.ensure()
+				st.cur.Response = strings.TrimSpace(p.LastAgentMessage) // authoritative final
 			}
 		}
+	case "response_item":
+		if p.Type == "function_call" && p.Name != "" {
+			st.ensure()
+			st.cur.Steps = append(st.cur.Steps, Step{Kind: "tool", Title: codexToolName(p.Name), Detail: codexToolDetail(p.Arguments)})
+		}
 	}
-	flush()
-	return lastN(turns, maxTurns), nil
 }
 
 // codexToolName tidies a raw function name (exec_command → "exec") for display.

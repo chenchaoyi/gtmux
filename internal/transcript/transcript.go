@@ -10,10 +10,10 @@ package transcript
 
 import (
 	"bufio"
-	"bytes"
 	"io"
 	"os"
 	"strings"
+	"sync"
 )
 
 // Step is one collapsed middle action in a turn (a tool call). The chat view
@@ -37,22 +37,203 @@ type Turn struct {
 // covers a lot of turns (so the chat view can show deep history); a single
 // hyperactive in-progress turn can still exceed it, in which case it surfaces as
 // one prompt-less "current activity" card.
-const maxTailBytes = 8 << 20 // 8 MiB
+const maxTailBytes = 64 << 20 // 64 MiB
 
 // Load returns up to maxTurns most-recent turns (oldest-first) for an agent
-// session, dispatching to the per-agent parser. Unknown agent or missing log →
-// (nil, nil): the caller renders a friendly "no history yet" state, not an error.
+// session. It is backed by a process-wide incremental cache (see Loader): the
+// first call deep-tails the log, and subsequent polls of a GROWING log re-parse
+// only from the last turn's start — so the chat endpoint can poll a 100 MiB+
+// agentic log every couple of seconds without re-reading it each time. Unknown
+// agent or missing log → (nil, nil): the caller renders "no history yet".
 func Load(agent, sessionID string, maxTurns int) ([]Turn, error) {
+	return defaultLoader.load(agent, sessionID, maxTurns)
+}
+
+// stepFn folds one decoded log line into the running parse state. Each agent has
+// its own (claudeStep / codexStep) over the SHARED parseState.
+type stepFn func(line string, st *parseState)
+
+// resolveLog maps an agent + session id to its on-disk log path and parser.
+func resolveLog(agent, sessionID string) (string, stepFn) {
+	switch normalizeAgent(agent) {
+	case "claude":
+		return claudeLogPath(sessionID), claudeStep
+	case "codex":
+		return codexLogPath(sessionID), codexStep
+	}
+	return "", nil
+}
+
+// parseState accumulates turns as a parser walks the log linearly, tracking the
+// byte offset at which each turn began so the cache can restart incrementally.
+type parseState struct {
+	turns      []Turn
+	turnStarts []int64 // turnStarts[i] = byte offset of turns[i]'s first line
+	cur        *Turn
+	curStart   int64
+	off        int64 // start offset of the line currently being fed to a step
+}
+
+// flush commits the in-progress turn (if it carries any content) and records
+// where it started.
+func (st *parseState) flush() {
+	if st.cur != nil && (st.cur.Prompt != "" || st.cur.Response != "" || len(st.cur.Steps) > 0) {
+		st.turns = append(st.turns, *st.cur)
+		st.turnStarts = append(st.turnStarts, st.curStart)
+	}
+	st.cur = nil
+}
+
+// open starts a fresh turn at a user prompt, closing the previous one.
+func (st *parseState) open(prompt string) {
+	st.flush()
+	st.cur = &Turn{Prompt: prompt}
+	st.curStart = st.off
+}
+
+// ensure opens a prompt-less turn for assistant output that arrived with no
+// preceding prompt (the tail began mid-turn).
+func (st *parseState) ensure() {
+	if st.cur == nil {
+		st.cur = &Turn{}
+		st.curStart = st.off
+	}
+}
+
+// parseTurns streams path from startOffset through step. Pass startOffset = -1 to
+// "tail" the last maxTailBytes (dropping the partial first line); pass a known
+// line-aligned offset (from a prior parse) to resume incrementally. Returns the
+// turns, the byte offset where the LAST turn began (-1 if none), and the file
+// size it parsed to.
+func parseTurns(path string, startOffset int64, step stepFn) ([]Turn, int64, int64, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, -1, 0, err
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, -1, 0, err
+	}
+	size := fi.Size()
+
+	start := startOffset
+	dropPartial := false
+	if start < 0 { // tail mode
+		start = 0
+		if size > maxTailBytes {
+			start = size - maxTailBytes
+			dropPartial = true // we seeked into the middle of a line
+		}
+	}
+	if start > size {
+		start = size
+	}
+	if _, err := f.Seek(start, io.SeekStart); err != nil {
+		return nil, -1, size, err
+	}
+
+	r := bufio.NewReaderSize(f, 64*1024)
+	off := start
+	if dropPartial {
+		first, _ := r.ReadString('\n')
+		off += int64(len(first))
+	}
+	st := &parseState{off: off}
+	for {
+		line, rerr := r.ReadString('\n')
+		if len(line) > 0 {
+			st.off = off
+			if strings.TrimSpace(line) != "" {
+				step(strings.TrimRight(line, "\n"), st)
+			}
+			off += int64(len(line))
+		}
+		if rerr != nil {
+			break
+		}
+	}
+	st.flush()
+	last := int64(-1)
+	if n := len(st.turnStarts); n > 0 {
+		last = st.turnStarts[n-1]
+	}
+	return st.turns, last, size, nil
+}
+
+// cacheTurnCap bounds how many turns the cache retains per session, so a
+// long-lived session can't grow the cache without limit. Trimming the FRONT is
+// safe — we only ever extend forward, and the incremental restart depends on the
+// last turn's offset, not the front.
+const cacheTurnCap = 800
+
+type cacheEntry struct {
+	path     string
+	size     int64
+	turns    []Turn
+	lastTurn int64 // byte offset of the last turn's start (-1 if none)
+}
+
+// Loader caches parsed transcripts per session and re-parses incrementally as the
+// log grows (see Load).
+type Loader struct {
+	mu sync.Mutex
+	m  map[string]*cacheEntry
+}
+
+var defaultLoader = &Loader{m: map[string]*cacheEntry{}}
+
+func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	if sessionID == "" {
 		return nil, nil
 	}
-	switch normalizeAgent(agent) {
-	case "claude":
-		return loadClaude(sessionID, maxTurns)
-	case "codex":
-		return loadCodex(sessionID, maxTurns)
+	path, step := resolveLog(agent, sessionID)
+	if path == "" || step == nil {
+		return nil, nil
 	}
-	return nil, nil
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if hit := l.m[sessionID]; hit != nil && hit.path == path {
+		if fi, err := os.Stat(path); err == nil {
+			switch {
+			case fi.Size() == hit.size: // unchanged → serve cache
+				return lastN(hit.turns, maxTurns), nil
+			case fi.Size() > hit.size && hit.lastTurn >= 0 && len(hit.turns) > 0:
+				// grew → re-parse only from the last turn's start and splice.
+				tail, last, size, perr := parseTurns(path, hit.lastTurn, step)
+				if perr == nil {
+					merged := make([]Turn, 0, len(hit.turns)-1+len(tail))
+					merged = append(merged, hit.turns[:len(hit.turns)-1]...)
+					merged = append(merged, tail...)
+					newLast := hit.lastTurn
+					if len(tail) > 0 {
+						newLast = last
+					}
+					if len(merged) > cacheTurnCap {
+						merged = append([]Turn(nil), merged[len(merged)-cacheTurnCap:]...)
+					}
+					l.m[sessionID] = &cacheEntry{path: path, size: size, turns: merged, lastTurn: newLast}
+					return lastN(merged, maxTurns), nil
+				}
+			}
+		}
+	}
+
+	// cold / shrunk / rotated → full deep-tail parse.
+	turns, last, size, err := parseTurns(path, -1, step)
+	if err != nil {
+		return nil, err
+	}
+	if len(turns) > cacheTurnCap {
+		turns = append([]Turn(nil), turns[len(turns)-cacheTurnCap:]...)
+	}
+	l.m[sessionID] = &cacheEntry{path: path, size: size, turns: turns, lastTurn: last}
+	if len(turns) == 0 {
+		return nil, nil
+	}
+	return lastN(turns, maxTurns), nil
 }
 
 // normalizeAgent maps a display name or key ("Claude Code", "claude", "Codex")
@@ -66,48 +247,6 @@ func normalizeAgent(agent string) string {
 		return "codex"
 	}
 	return a
-}
-
-// tailLines reads the last maxTailBytes of a file and returns its complete lines
-// (the first, possibly-truncated line is dropped unless we read from the start).
-func tailLines(path string) ([]string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	size := fi.Size()
-	start := int64(0)
-	truncated := false
-	if size > maxTailBytes {
-		start = size - maxTailBytes
-		truncated = true
-	}
-	if _, err := f.Seek(start, io.SeekStart); err != nil {
-		return nil, err
-	}
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-	if truncated {
-		if i := bytes.IndexByte(data, '\n'); i >= 0 {
-			data = data[i+1:] // drop the partial first line
-		}
-	}
-	var lines []string
-	sc := bufio.NewScanner(bytes.NewReader(data))
-	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024) // tolerate very long lines
-	for sc.Scan() {
-		if l := sc.Text(); strings.TrimSpace(l) != "" {
-			lines = append(lines, l)
-		}
-	}
-	return lines, sc.Err()
 }
 
 // lastN trims turns to the most recent n (oldest-first order preserved).
