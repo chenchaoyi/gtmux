@@ -14,10 +14,19 @@
       <span id="title">gtmux</span>
       <span id="sub"></span>
       <span id="conn" class="conn"></span>
+      <span id="focus-nav" hidden>
+        <button id="pane-prev" title="Previous pane">‹</button>
+        <button id="pane-next" title="Next pane">›</button>
+      </span>
       <div id="mode" hidden>
-        <button data-mode="chat">Chat</button>
-        <button data-mode="term">Terminal</button>
+        <button data-mode="term">终端</button>
+        <button data-mode="chat">对话</button>
       </div>
+      <span id="focus-ctl" hidden>
+        <button id="font-dn" title="Smaller">A−</button>
+        <button id="font-up" title="Larger">A+</button>
+        <button id="copy-screen" title="Copy visible screen">⧉</button>
+      </span>
       <button id="gear" hidden title="Appearance">Aa</button>
     </div>
   </header>
@@ -84,6 +93,15 @@
   <!-- pane mirror -->
   <section id="pane" hidden>
     <div id="term"></div>
+    <button id="jump" hidden>↓ 最新<span class="jdot" hidden></span></button>
+    <!-- waiting: read-only 1/2/3 (browser can't send) + "reply on phone" hint -->
+    <div id="reply-bar" hidden>
+      <span class="rb-lead">view-only · 在此 pane 回应：</span>
+      <span id="reply-opts" class="rb-opts"></span>
+      <span class="rb-hint">→ 用手机/Mac 发送，或扫码接管</span>
+      <span class="rb-spacer"></span>
+      <span id="reply-size" class="rb-size"></span>
+    </div>
   </section>
 
   <!-- chat history (对话 mode) -->
