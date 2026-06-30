@@ -171,6 +171,9 @@ const styles = StyleSheet.create({
   // dark page was nearly invisible).
   backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end'},
   sheet: {
+    width: '100%',
+    maxWidth: 520, // centered, not edge-to-edge, on iPad/wide
+    alignSelf: 'center',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderTopWidth: StyleSheet.hairlineWidth,

@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -53,6 +54,11 @@ export function DetailScreen({route, navigation}: any) {
 export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
   const {client, agents, conn} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
+  // ≥768 means we're embedded in the iPad split-view's main pane (never a narrow
+  // phone). Constrain content so the chat/segmented don't stretch across ~1000pt,
+  // and drop the connection chip the sidebar already shows.
+  const {width} = useWindowDimensions();
+  const isWide = width >= 768;
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -305,7 +311,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {/* B1: 对话 ↔ 终端 segmented (remembered per pane) */}
       {!fullscreen && (
         <View style={styles.segWrap}>
-          <View style={[styles.seg, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+          <View style={[styles.seg, {backgroundColor: pal.surface, borderColor: pal.divider}, isWide && styles.segWide]}>
             <Seg
               label={lang === 'zh' ? '对话' : 'Chat'}
               active={mode === 'chat'}
@@ -327,23 +333,29 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen */}
       {!fullscreen && (
         <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
-          {/* D9: server name + status dot (no "live" text); only abnormal states add a word. */}
-          <View style={styles.live}>
-            <View
-              style={[
-                styles.liveDot,
-                {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B'},
-              ]}
-            />
-            <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
-              {mac?.name || (lang === 'zh' ? '服务器' : 'server')}
-              {conn === 'offline'
-                ? lang === 'zh' ? ' · 离线' : ' · offline'
-                : conn === 'connecting'
-                ? lang === 'zh' ? ' · 重连中' : ' · reconnecting'
-                : ''}
-            </Text>
-          </View>
+          {/* D9: server name + status dot (no "live" text); only abnormal states add a
+              word. Hidden on iPad (isWide): the split-view sidebar already shows the
+              connection, so repeating it in the main pane is redundant noise. */}
+          {isWide ? (
+            <View style={styles.live} />
+          ) : (
+            <View style={styles.live}>
+              <View
+                style={[
+                  styles.liveDot,
+                  {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B'},
+                ]}
+              />
+              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
+                {mac?.name || (lang === 'zh' ? '服务器' : 'server')}
+                {conn === 'offline'
+                  ? lang === 'zh' ? ' · 离线' : ' · offline'
+                  : conn === 'connecting'
+                  ? lang === 'zh' ? ' · 重连中' : ' · reconnecting'
+                  : ''}
+              </Text>
+            </View>
+          )}
           <View style={styles.ctlRight}>
             <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
@@ -516,6 +528,7 @@ const styles = StyleSheet.create({
   },
   segWrap: {paddingHorizontal: 12, paddingTop: 5, paddingBottom: 5},
   seg: {flexDirection: 'row', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, padding: 2},
+  segWide: {maxWidth: 460, alignSelf: 'center', width: '100%'}, // iPad: don't span the whole main pane
   segBtn: {flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 7},
   segText: {fontSize: 13, fontWeight: '600'},
   live: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0, marginRight: 8},
