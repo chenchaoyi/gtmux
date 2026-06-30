@@ -22,6 +22,7 @@
   --working: #06B6D4;
   --idle: #22C55E;
   --running: #8E8E93;
+  --amber: #F59E0B;       /* connection "reconnecting" dot */
   --waiting-tint: rgba(239, 68, 68, 0.08);
   --col: 820px;           /* centered content column on wide screens */
 }
@@ -43,9 +44,13 @@ body { display: flex; flex-direction: column; }
 }
 #bar #title { font-weight: 600; }
 #bar #sub { color: var(--fg3); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#bar .conn { margin-left: auto; font-size: 12px; color: var(--fg3); flex: 0 0 auto; }
-#bar .conn.live::before { content: "● "; color: var(--idle); }
-#bar .conn.off::before  { content: "● "; color: var(--running); }
+/* connection indicator: server name + status dot (no "live" text). 3 states. */
+#bar .conn { margin-left: auto; }
+.conn { font-size: 12px; color: var(--fg3); flex: 0 0 auto; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conn::before { content: "● "; color: var(--running); }
+.conn.live::before  { color: var(--idle); }
+.conn.retry::before { color: var(--amber); }
+.conn.off::before   { color: var(--waiting); }
 #back {
   background: none; border: none; color: var(--fg2);
   font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px;
@@ -268,6 +273,47 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .wb-spacer { flex: 1 1 auto; }
 #wb-bar #wb-gear { background: none; border: none; color: var(--fg3); cursor: pointer; font-size: 14px; }
 #wb-bar #wb-gear:hover { color: var(--fg); }
+.wb-toggle:hover { color: var(--fg); }
+#wb-preset-cur { color: var(--working); }
+
+/* layout-presets dropdown */
+#wb-preset-wrap { position: relative; display: inline-flex; }
+#wb-preset-menu {
+  position: absolute; top: 32px; left: 0; z-index: 60; min-width: 200px;
+  background: var(--surface); border: 1px solid var(--divider); border-radius: 10px;
+  padding: 5px; box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+}
+.pm-row { display: flex; align-items: center; border-radius: 6px; }
+.pm-row.on { background: rgba(255,255,255,0.06); }
+.pm-row:hover { background: rgba(255,255,255,0.08); }
+.pm-name { flex: 1 1 auto; padding: 7px 9px; font-size: 13px; color: var(--fg); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pm-row.on .pm-name { color: var(--working); }
+.pm-del { background: none; border: none; color: var(--fg3); cursor: pointer; font-size: 14px; padding: 0 9px; }
+.pm-del:hover { color: var(--waiting); }
+.pm-empty { padding: 8px 9px; font-size: 12px; color: var(--fg3); }
+.pm-save { margin-top: 4px; border-top: 1px solid var(--divider); padding: 8px 9px; font-size: 12.5px; color: var(--fg2); cursor: pointer; border-radius: 0 0 6px 6px; }
+.pm-save:hover { color: var(--fg); background: rgba(255,255,255,0.05); }
+
+/* tile auto-surface flash (a one-time attention pulse) */
+.tile.flash { animation: tile-flash 1.6s ease-out 1; }
+@keyframes tile-flash {
+  0% { box-shadow: 0 10px 30px rgba(0,0,0,0.4), 0 0 0 4px rgba(6,182,212,0.55); }
+  100% { box-shadow: 0 10px 30px rgba(0,0,0,0.4), 0 0 0 0 rgba(6,182,212,0); }
+}
+
+/* ⌘K command palette */
+#cmdk { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: flex; justify-content: center; align-items: flex-start; }
+#cmdk-box { margin-top: 12vh; width: 540px; max-width: 92vw; background: var(--surface); border: 1px solid var(--divider); border-radius: 13px; box-shadow: 0 24px 64px rgba(0,0,0,0.55); overflow: hidden; }
+#cmdk-input { width: 100%; box-sizing: border-box; background: none; border: none; outline: none; color: var(--fg); font-size: 15px; padding: 15px 17px; border-bottom: 1px solid var(--divider); }
+#cmdk-input::placeholder { color: var(--fg3); }
+#cmdk-list { max-height: 50vh; overflow-y: auto; padding: 5px; }
+.ck-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.ck-row.on { background: rgba(255,255,255,0.08); }
+.ck-tx { flex: 1 1 auto; min-width: 0; }
+.ck-nm { font-size: 13.5px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ck-sb { font-size: 11.5px; color: var(--fg3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.ck-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.ck-empty { padding: 14px 12px; font-size: 13px; color: var(--fg3); text-align: center; }
 
 #wb-body { flex: 1 1 auto; display: flex; min-height: 0; position: relative; background: var(--bg); }
 

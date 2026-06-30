@@ -49,7 +49,19 @@
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer);
     radarTimer = paneTimer = chatTimer = null;
   }
-  function setConn(live) { $('conn').className = 'conn ' + (live ? 'live' : 'off'); $('conn').textContent = live ? 'live' : 'offline'; }
+  // Connection indicator (铁律: server 名 + 状态点,不用 "live"). 3 states:
+  // 已连接绿 / 重连琥珀(首次失败) / 离线红(持续失败). Both the radar/pane bar
+  // (#conn) and the workbench bar (#wb-conn) render the same shared state.
+  function serverLabel() {
+    var h = location.hostname || 'server';
+    if (h === 'localhost' || /^[0-9.]+$/.test(h) || h.indexOf(':') !== -1) return h; // IP / localhost as-is
+    return h.split('.')[0]; // gtmux-qclyu2s2.ccy.dev → gtmux-qclyu2s2
+  }
+  var connFails = 0;
+  function connStateFor(ok) { if (ok) { connFails = 0; return 'live'; } connFails++; return connFails === 1 ? 'retry' : 'off'; }
+  var CONN_TITLE = {live: '已连接 / connected', retry: '重连中 / reconnecting…', off: '离线 / offline'};
+  function renderConn(el, st) { el.className = 'conn ' + st; el.textContent = serverLabel(); el.title = CONN_TITLE[st] || ''; }
+  function setConn(ok) { renderConn($('conn'), connStateFor(ok)); }
   function primary(a) { return a.task || a.session || a.loc || a.pane_id || ''; }
   function secondary(a) { var b = a.session || a.loc || ''; return a.pane_id ? b + ' · ' + a.pane_id : b; }
 
@@ -186,9 +198,17 @@
     document.addEventListener('keydown', function (e) {
       var tag = (e.target && e.target.tagName) || '';
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (!$('cmdk').hidden) { return; } // cmdk has its own input handler
       if (!$('workbench').hidden) {
-        if (e.key === 'Escape' && maxedTile) { e.preventDefault(); restoreBoard(); }
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); openCmdk(); }
+        else if (e.metaKey || e.ctrlKey) { return; } // let other ⌘ combos pass
+        else if (e.key === 'Escape' && maxedTile) { e.preventDefault(); restoreBoard(); }
         else if (e.key === '/') { e.preventDefault(); $('rail-search').focus(); }
+        else if (e.key === 'g') { e.preventDefault(); $('wb-snap').click(); }
+        else if (e.key === 'f') { e.preventDefault(); focusTopTile(); }
+        else if (e.key === '[') { e.preventDefault(); cyclePreset(-1); }
+        else if (e.key === ']') { e.preventDefault(); cyclePreset(1); }
+        else if (e.key >= '1' && e.key <= '9') { e.preventDefault(); var ti = WB.tiles[parseInt(e.key, 10) - 1]; if (ti) maximizeTile(ti); }
       } else if (!$('radar').hidden) {
         if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
         else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
@@ -636,7 +656,7 @@
   // CONCURRENT pane mirrors. Wide screens only; <900px keeps the single column.
   // View-only, no new backend — each tile is another /api/pane|transcript|diff.
   // ======================================================================
-  var WB = {on: false, agents: [], tiles: [], railW: 232, railCollapsed: false, snap: false, surface: false};
+  var WB = {on: false, agents: [], tiles: [], railW: 232, railCollapsed: false, snap: false, surface: false, presetCur: '', prevStatus: null};
   var WB_KEY = 'gtmux.board';
   function isWide() { return window.innerWidth >= 900; }
   function wbLoad() {
@@ -666,12 +686,13 @@
     applyRail();
     $('board').classList.toggle('snap', WB.snap);
     setToggle($('wb-snap'), WB.snap); setToggle($('wb-surface'), WB.surface);
+    updatePresetLabel();
     updateEmpty();
     // restore saved tiles once agents arrive (need their status/agent); poll now.
     pollWB(); clearInterval(radarTimer); radarTimer = setInterval(pollWB, 2000);
   }
   function setToggle(btn, on) { btn.classList.toggle('on', !!on); }
-  function setWbConn(live) { $('wb-conn').className = 'conn ' + (live ? 'live' : 'off'); $('wb-conn').textContent = live ? 'live' : 'offline'; }
+  function setWbConn(ok) { renderConn($('wb-conn'), connStateFor(ok)); }
 
   function pollWB() {
     api('/api/agents').then(function (r) {
@@ -683,7 +704,26 @@
       renderTree(agents);
       // refresh each tile's header status + waiting border
       WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
+      if (WB.surface) autoSurface(agents);
+      var ps = {}; agents.forEach(function (a) { ps[a.pane_id] = a.status; }); WB.prevStatus = ps;
     }).catch(function () { setWbConn(false); });
+  }
+  // auto-surface: a pane newly turning waiting floats onto the board and pulses
+  // once → the board doubles as a radar (WEB.md §7). Skips the first poll so we
+  // don't flood the board with everything already waiting at load.
+  function autoSurface(agents) {
+    if (!WB.prevStatus) return;
+    agents.forEach(function (a) {
+      if (a.status !== 'waiting' || WB.prevStatus[a.pane_id] === 'waiting') return;
+      if (WB.tiles.some(function (t) { return t.id === a.pane_id; })) return;
+      flashTile(addTile(a));
+    });
+  }
+  function flashTile(t) {
+    if (!t || !t.el) return;
+    t.el.classList.add('flash'); t.el.style.zIndex = ++zTop;
+    try { t.el.scrollIntoView({block: 'nearest', behavior: 'smooth'}); } catch (e) {}
+    setTimeout(function () { if (t.el) t.el.classList.remove('flash'); }, 1600);
   }
   function byId(agents, id) { for (var i = 0; i < agents.length; i++) if (agents[i].pane_id === id) return agents[i]; return null; }
   function restoreTiles(agents) {
@@ -754,6 +794,19 @@
     document.addEventListener('mouseup', function () { if (dragging) { dragging = false; document.body.style.cursor = ''; wbSave(); } });
     $('wb-snap').onclick = function () { WB.snap = !WB.snap; setToggle($('wb-snap'), WB.snap); $('board').classList.toggle('snap', WB.snap); wbSave(); };
     $('wb-surface').onclick = function () { WB.surface = !WB.surface; setToggle($('wb-surface'), WB.surface); wbSave(); };
+    // layout presets dropdown
+    $('wb-preset').onclick = function (e) { e.stopPropagation(); var m = $('wb-preset-menu'); if (m.hidden) showPresetMenu(); else hidePresetMenu(); };
+    document.addEventListener('click', function (e) { if (!$('wb-preset-menu').hidden && !$('wb-preset-wrap').contains(e.target)) hidePresetMenu(); });
+    // ⌘K command palette input: ↑/↓ select, Enter pick, Esc close
+    var ci = $('cmdk-input');
+    ci.addEventListener('input', function () { renderCmdk(ci.value); });
+    ci.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeCmdk(); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); if (cmdkSel < cmdkRows.length - 1) { cmdkSel++; markCmdk(); } }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (cmdkSel > 0) { cmdkSel--; markCmdk(); } }
+      else if (e.key === 'Enter') { e.preventDefault(); if (cmdkRows[cmdkSel]) pickCmdk(cmdkRows[cmdkSel]); }
+    });
+    $('cmdk').addEventListener('mousedown', function (e) { if (e.target === $('cmdk')) closeCmdk(); }); // click backdrop
     // accept drops from the tree
     var board = $('board');
     board.addEventListener('dragover', function (e) { if (e.dataTransfer.types.indexOf('text/pane') !== -1) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
@@ -994,6 +1047,14 @@
 
   // ---- board: single-click a tile to maximize it to fill the board (§05) ----
   var maxedTile = null;
+  // `f` — fullscreen the front-most tile (highest z); toggles if already max.
+  function focusTopTile() {
+    if (maxedTile) { restoreBoard(); return; }
+    if (!WB.tiles.length) return;
+    var top = WB.tiles[0];
+    WB.tiles.forEach(function (t) { if ((parseInt(t.el.style.zIndex, 10) || 0) >= (parseInt(top.el.style.zIndex, 10) || 0)) top = t; });
+    maximizeTile(top);
+  }
   function maximizeTile(t) {
     if (maxedTile === t) { restoreBoard(); return; }
     if (maxedTile) restoreBoard();
@@ -1014,6 +1075,91 @@
   function refitTile(t) {
     if (t.fit && t.mode === 'term') setTimeout(function () { try { t.fit.fit(); } catch (e) {} if (t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } }, 0);
   }
+
+  // ---- layout presets (WEB.md §7) ---------------------------------------
+  // A preset = a named board layout (which panes, position, size, mode) + rail
+  // state. Stored in localStorage; the top-bar dropdown + [ ] switch between them.
+  var PRESETS_KEY = 'gtmux.presets';
+  function loadPresets() { try { var a = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function savePresets(a) { try { localStorage.setItem(PRESETS_KEY, JSON.stringify(a)); } catch (e) {} }
+  function captureLayout() {
+    return {
+      tiles: WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; }),
+      railW: WB.railW, railCollapsed: WB.railCollapsed, snap: WB.snap,
+    };
+  }
+  function applyPreset(p) {
+    if (!p) return;
+    if (maxedTile) restoreBoard();
+    WB.tiles.slice().forEach(removeTile); // clear board
+    (p.tiles || []).forEach(function (s) { var a = byId(WB.agents, s.id); if (a) addTile(a, s); });
+    if (typeof p.railW === 'number') { WB.railW = Math.max(170, Math.min(360, p.railW)); }
+    if (typeof p.railCollapsed === 'boolean') WB.railCollapsed = p.railCollapsed;
+    if (typeof p.snap === 'boolean') { WB.snap = p.snap; $('board').classList.toggle('snap', WB.snap); setToggle($('wb-snap'), WB.snap); }
+    applyRail(); WB.presetCur = p.name; updatePresetLabel(); wbSave();
+  }
+  function updatePresetLabel() { $('wb-preset-cur').textContent = WB.presetCur ? ' · ' + WB.presetCur : ''; }
+  function cyclePreset(dir) {
+    var ps = loadPresets(); if (!ps.length) return;
+    var i = -1; for (var k = 0; k < ps.length; k++) if (ps[k].name === WB.presetCur) { i = k; break; }
+    applyPreset(ps[(i + dir + ps.length) % ps.length]);
+  }
+  function renderPresetMenu() {
+    var menu = $('wb-preset-menu'); menu.innerHTML = '';
+    var ps = loadPresets();
+    if (!ps.length) { var em = document.createElement('div'); em.className = 'pm-empty'; em.textContent = '还没有预设'; menu.appendChild(em); }
+    ps.forEach(function (p) {
+      var row = document.createElement('div'); row.className = 'pm-row' + (p.name === WB.presetCur ? ' on' : '');
+      var nm = document.createElement('span'); nm.className = 'pm-name'; nm.textContent = p.name;
+      nm.onclick = function () { applyPreset(p); hidePresetMenu(); }; row.appendChild(nm);
+      var del = document.createElement('button'); del.className = 'pm-del'; del.textContent = '×'; del.title = '删除';
+      del.onclick = function (e) { e.stopPropagation(); var rest = loadPresets().filter(function (x) { return x.name !== p.name; }); savePresets(rest); if (WB.presetCur === p.name) { WB.presetCur = ''; updatePresetLabel(); } renderPresetMenu(); };
+      row.appendChild(del); menu.appendChild(row);
+    });
+    var save = document.createElement('div'); save.className = 'pm-save'; save.textContent = '＋ 存为当前布局…';
+    save.onclick = function () {
+      var name = (window.prompt('预设名称 / Preset name', WB.presetCur || ('布局 ' + (ps.length + 1))) || '').trim();
+      if (!name) return;
+      var arr = loadPresets().filter(function (x) { return x.name !== name; });
+      var lay = captureLayout(); lay.name = name; arr.push(lay); savePresets(arr);
+      WB.presetCur = name; updatePresetLabel(); renderPresetMenu(); hidePresetMenu();
+    };
+    menu.appendChild(save);
+  }
+  function showPresetMenu() { renderPresetMenu(); $('wb-preset-menu').hidden = false; }
+  function hidePresetMenu() { $('wb-preset-menu').hidden = true; }
+
+  // ---- ⌘K command palette (WEB.md §8) -----------------------------------
+  var cmdkSel = 0, cmdkRows = [];
+  function openCmdk() {
+    if ($('workbench').hidden) return; // workbench-only
+    $('cmdk').hidden = false; var inp = $('cmdk-input'); inp.value = ''; cmdkSel = 0;
+    renderCmdk(''); setTimeout(function () { inp.focus(); }, 0);
+  }
+  function closeCmdk() { $('cmdk').hidden = true; }
+  function renderCmdk(q) {
+    q = (q || '').trim().toLowerCase();
+    var list = $('cmdk-list'); list.innerHTML = '';
+    cmdkRows = (WB.agents || []).filter(function (a) {
+      return !q || (primary(a) + ' ' + (a.agent || '') + ' ' + (a.session || '') + ' ' + (a.pane_id || '')).toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 50);
+    if (cmdkSel >= cmdkRows.length) cmdkSel = Math.max(0, cmdkRows.length - 1);
+    cmdkRows.forEach(function (a, i) {
+      var row = document.createElement('div'); row.className = 'ck-row' + (i === cmdkSel ? ' on' : '');
+      row.appendChild(avatarEl(a, 22, true));
+      var tx = document.createElement('div'); tx.className = 'ck-tx';
+      var nm = document.createElement('div'); nm.className = 'ck-nm'; nm.textContent = primary(a); tx.appendChild(nm);
+      var sb = document.createElement('div'); sb.className = 'ck-sb'; sb.textContent = a.pane_id + ' · ' + (a.agent || '') + ' · ' + (LABEL[a.status] || a.status || ''); tx.appendChild(sb);
+      row.appendChild(tx);
+      var dot = document.createElement('span'); dot.className = 'ck-dot'; dot.style.background = COLORS[a.status] || COLORS.running; row.appendChild(dot);
+      row.onmousemove = function () { if (cmdkSel !== i) { cmdkSel = i; markCmdk(); } };
+      row.onclick = function () { pickCmdk(a); };
+      list.appendChild(row);
+    });
+    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? '无匹配' : '无 agent'; list.appendChild(e); }
+  }
+  function markCmdk() { Array.prototype.forEach.call($('cmdk-list').children, function (c, i) { c.classList.toggle('on', i === cmdkSel); }); }
+  function pickCmdk(a) { closeCmdk(); var t = addTile(a); flashTile(t); maximizeTile(t); }
 
   // ---- boot -------------------------------------------------------------
   // setupSettings wires the appearance panel (font + size), persisted locally.
