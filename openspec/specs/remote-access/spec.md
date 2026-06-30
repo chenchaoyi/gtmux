@@ -36,6 +36,59 @@ rest (no separate authorization) — so the token also gates terminal input.
 - **THEN** the text (literal) or the allow-listed control key is sent to that pane
   via `tmux send-keys`; a disallowed key or missing pane returns an error
 
+### Requirement: Pane capture preserves a bottom-anchored cursor
+
+`GET /api/pane` SHALL capture with `capture-pane -e -p -S -2000` (visible screen +
+up to 2000 scrollback lines, ANSI SGR kept) and SHALL NOT right-trim trailing blank
+rows, so the cursor offset anchors to the true bottom. The response MAY include an
+optional `cursor{x, up, visible}` where `up` is rows up from the LAST captured line
+(`pane_height-1-cursor_y`, `0` = bottom row) — letting a client place a cursor cell
+without knowing the capture's top. The field is omitted when no cursor resolves.
+
+#### Scenario: Cursor anchors to the bottom
+
+- **WHEN** a client GETs `/api/pane` for a pane with a visible cursor
+- **THEN** the response carries `cursor.up` measured up from the last captured line
+  and `cursor.x` as the column, and trailing blank rows are not stripped
+
+### Requirement: Read endpoints for chat, choices, and appearance
+
+The system SHALL expose read-only `GET /api/transcript?id=%N` (the pane's parsed
+chat history — see `chat-transcript`), `GET /api/options?id=%N` (a waiting pane's
+parsed `1/2/3` choices, same parser as the menu-bar/CLI), and `GET /api/theme`
+(the host terminal's resolved appearance — see `terminal-theme`). `/api/transcript`
+returns `503` when its dependency is not wired and `[]` when the pane has no
+session; `/api/options` returns `{"options":[]}` when nothing parses.
+
+#### Scenario: Transcript when no session
+
+- **WHEN** a client GETs `/api/transcript` for a pane with no resumable session
+- **THEN** the server returns an empty list (not an error)
+
+#### Scenario: Options parse a waiting prompt
+
+- **WHEN** a client GETs `/api/options` for a pane waiting on a numbered prompt
+- **THEN** the response lists the `{n,label}` choices the parser found
+
+### Requirement: Per-device enrollment so the master token isn't shared
+
+The system SHALL let a trusted surface mint a short-lived single-use enroll code
+(`POST /api/enroll/mint`) that a new device redeems for its own per-device token
+(`POST /api/enroll`, the only authenticated-exempt `/api/*` route besides
+`/api/health` — the code itself is the credential), and SHALL let the roster be
+listed (`GET /api/devices`, no tokens) and revoked (`POST /api/devices/revoke`), so
+a phone/browser never carries the master token and a lost device can be cut off.
+
+#### Scenario: Redeem an enroll code
+
+- **WHEN** a device POSTs a valid enroll code to `/api/enroll`
+- **THEN** it receives its own `{token, deviceId}`; an expired/unknown code returns 401
+
+#### Scenario: Revoke a device
+
+- **WHEN** the master surface POSTs a device id to `/api/devices/revoke`
+- **THEN** that device's token stops working immediately
+
 ### Requirement: Bearer auth, intranet bind
 
 The system SHALL guard every `/api/*` route except `/api/health` with a constant-

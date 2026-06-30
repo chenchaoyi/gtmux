@@ -18,10 +18,18 @@ export interface TranscriptStep {
   title: string; // tool name (Edit, Bash, exec…)
   detail?: string; // short arg summary (path / command head)
 }
+// One chronological piece of a reply: an assistant text bubble + the tool steps
+// that ran after it. The chat renders each as its own speech bubble so interleaved
+// process (steps between texts) reads clearly.
+export interface TranscriptSegment {
+  text?: string;
+  steps?: TranscriptStep[];
+}
 export interface TranscriptTurn {
   prompt: string;
-  response: string;
-  steps?: TranscriptStep[];
+  response: string; // joined segment texts (fallback / web sig)
+  segments?: TranscriptSegment[];
+  time?: string; // prompt's RFC3339 timestamp (agent log) — for the chat time label
 }
 
 // tfetch is fetch + optional debug logging (method · path · status · ms). It

@@ -14,8 +14,9 @@ import {ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View}
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
+import {fmtTurnTime} from './time';
 import {Agent, StatusName} from '../api/types';
-import {TranscriptTurn} from '../api/client';
+import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
 import {StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
@@ -40,6 +41,11 @@ interface Props {
 // text is light-on-dark regardless of the app's light/dark appearance. Using the
 // theme palette (pal.fg) here made the agent name + response invisible in light
 // mode (dark text on the dark bubble). These fixed colors keep it readable.
+// Explicit selection tint for long-press copy. iOS won't paint the DEFAULT
+// highlight on the chat's colored/nested <Text selectable> (the same quirk
+// NativeTerm hits), so we force a visible band — same blue the terminal overlay
+// uses. Without this, long-press copies but shows no highlight.
+const SEL_COLOR = 'rgba(52,120,247,0.5)';
 const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
 const CHAT_FG_DIM = 'rgba(235,235,245,0.5)'; // secondary / muted text
 
@@ -65,13 +71,27 @@ function dotColor(status: StatusName): string {
 }
 
 export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt}: Props) {
-  const [expanded, setExpanded] = React.useState<Record<number, boolean>>({});
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
   const scrollRef = React.useRef<ScrollView>(null);
 
   // Jump to the latest turn whenever the history grows (kept in sync by the parent).
   React.useEffect(() => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
   }, [turns.length]);
+
+  // Per-turn time labels, with adjacent duplicates blanked so a burst of turns in
+  // the same minute shows the label once (a centered separator, chat-app style).
+  const timeLabels = React.useMemo(() => {
+    let prev = '';
+    return turns.map(t => {
+      const l = fmtTurnTime(t.time, lang);
+      if (l && l !== prev) {
+        prev = l;
+        return l;
+      }
+      return '';
+    });
+  }, [turns, lang]);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
@@ -127,50 +147,72 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         </Text>
       )}
 
-      {/* the conversation: prompt → collapsed steps → final response */}
-      {turns.map((t, i) => (
-        <View key={i} style={styles.turn}>
-          {!!t.prompt && (
-            <View style={styles.userRow}>
-              <View style={styles.userBubble}>
-                <Text style={styles.userText}>{t.prompt}</Text>
-              </View>
-            </View>
-          )}
-
-          {!!t.steps?.length && (
-            <TouchableOpacity
-              style={styles.stepsToggle}
-              activeOpacity={0.7}
-              onPress={() => setExpanded(e => ({...e, [i]: !e[i]}))}>
-              <Text style={styles.stepsToggleText}>
-                {expanded[i] ? '▾ ' : '▸ '}
-                {lang === 'zh' ? `${t.steps.length} 个步骤` : `${t.steps.length} step${t.steps.length > 1 ? 's' : ''}`}
-              </Text>
-            </TouchableOpacity>
-          )}
-          {expanded[i] &&
-            t.steps?.map((s, j) => (
-              <View key={j} style={styles.stepRow}>
-                <Text style={styles.stepName}>{s.title}</Text>
-                {!!s.detail && (
-                  <Text style={styles.stepDetail} numberOfLines={1}>
-                    {s.detail}
+      {/* the conversation: prompt → interleaved (text bubble / step group) segments */}
+      {turns.map((t, i) => {
+        // each segment = one assistant message's text bubble + the tool steps that
+        // ran after it; rendering them in order puts intermediate process BETWEEN
+        // separate speech bubbles. Fall back to the joined response when no segments.
+        const segs: TranscriptSegment[] = t.segments?.length ? t.segments : t.response ? [{text: t.response}] : [];
+        const firstText = segs.findIndex(s => !!s.text); // avatar only on the first bubble
+        return (
+          <View key={i} style={styles.turn}>
+            {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
+            {!!t.prompt && (
+              <View style={styles.userRow}>
+                <View style={styles.userBubble}>
+                  <Text selectable selectionColor={SEL_COLOR} style={styles.userText}>
+                    {t.prompt}
                   </Text>
-                )}
+                </View>
               </View>
-            ))}
+            )}
 
-          {!!t.response && (
-            <View style={styles.agentRow}>
-              <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
-              <View style={styles.agentBubble}>
-                <MarkdownView source={t.response} colors={MD_COLORS} fontSize={14} />
-              </View>
-            </View>
-          )}
-        </View>
-      ))}
+            {segs.map((seg, k) => {
+              const key = `${i}-${k}`;
+              return (
+                <View key={k} style={styles.segBlock}>
+                  {!!seg.text && (
+                    <View style={styles.agentRow}>
+                      {k === firstText ? (
+                        <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+                      ) : (
+                        <View style={styles.avatarSpacer} />
+                      )}
+                      <View style={styles.agentBubble}>
+                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={14} selectable selectionColor={SEL_COLOR} />
+                      </View>
+                    </View>
+                  )}
+                  {!!seg.steps?.length && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.stepsToggle}
+                        activeOpacity={0.7}
+                        onPress={() => setExpanded(e => ({...e, [key]: !e[key]}))}>
+                        <Text style={styles.stepsToggleText}>
+                          {expanded[key] ? '▾ ' : '▸ '}
+                          {lang === 'zh' ? `${seg.steps.length} 个步骤` : `${seg.steps.length} step${seg.steps.length > 1 ? 's' : ''}`}
+                        </Text>
+                      </TouchableOpacity>
+                      {expanded[key] &&
+                        seg.steps.map((s, j) => (
+                          <View key={j} style={styles.stepRow}>
+                            <Text style={styles.stepName}>{s.title}</Text>
+                            {!!s.detail && (
+                              <Text style={styles.stepDetail} numberOfLines={1}>
+                                {s.detail}
+                              </Text>
+                            )}
+                          </View>
+                        ))}
+                    </>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        );
+      })}
 
       {/* optimistic echo: the just-sent prompt, until the transcript catches up */}
       {!!pendingPrompt && (turns.length === 0 || turns[turns.length - 1].prompt !== pendingPrompt) && (
@@ -218,6 +260,8 @@ const styles = StyleSheet.create({
   statusText: {fontSize: 12, flexShrink: 1},
 
   turn: {gap: 6},
+  // centered time separator above a turn (chat-app style), deliberately quiet.
+  timeLabel: {fontSize: 10.5, color: CHAT_FG_DIM, textAlign: 'center', alignSelf: 'center', letterSpacing: 0.3, marginTop: 2},
   // user prompt — right-aligned accent bubble.
   userRow: {flexDirection: 'row', justifyContent: 'flex-end'},
   userBubble: {
@@ -238,7 +282,12 @@ const styles = StyleSheet.create({
   stepName: {fontSize: 11, fontWeight: '700', color: '#27C7E6', fontFamily: 'Menlo'},
   stepDetail: {fontSize: 11, color: 'rgba(235,235,245,0.55)', fontFamily: 'Menlo', flexShrink: 1},
 
-  // agent final response — left, with avatar.
+  // one reply segment = a text bubble + its trailing step group (small inner gap).
+  segBlock: {gap: 4},
+  // keeps a follow-up bubble left-aligned with the first when the avatar is omitted.
+  avatarSpacer: {width: 26},
+
+  // agent reply bubble — left, with avatar (only on the turn's first text bubble).
   agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},
   agentBubble: {
     flex: 1,

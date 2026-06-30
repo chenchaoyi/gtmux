@@ -33,3 +33,7 @@ coverage/
 .e2e-artifacts/
 ios/build-e2e/
 ios/build-e2e.log
+ios/build-device/
+ios/build-device.log
+ios/build-sim/
+ios/build-sim.log

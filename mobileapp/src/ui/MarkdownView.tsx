@@ -20,6 +20,11 @@ interface Props {
   source: string;
   colors: MdColors;
   fontSize?: number;
+  selectable?: boolean; // long-press to select + Copy (per block; chat uses this)
+  // iOS won't paint the DEFAULT selection tint on nested/colored <Text selectable>
+  // (the same quirk NativeTerm works around). Passing an explicit selectionColor
+  // forces the highlight to render, so the chat shows a visible selection band.
+  selectionColor?: string;
 }
 
 function renderSpans(nodes: Inline[], c: MdColors, fs: number): React.ReactNode[] {
@@ -65,18 +70,24 @@ function TableRow({
   c,
   fs,
   header,
+  sel,
+  sc,
 }: {
   cells: Inline[][];
   align: import('./markdown').Align[];
   c: MdColors;
   fs: number;
   header?: boolean;
+  sel?: boolean;
+  sc?: string;
 }) {
   return (
     <View style={styles.tr}>
       {cells.map((cell, i) => (
         <View key={i} style={[styles.td, {borderColor: c.border, backgroundColor: header ? c.codeBg : 'transparent'}]}>
           <Text
+            selectable={sel}
+            selectionColor={sc}
             style={{
               color: c.text,
               fontSize: fs - 0.5,
@@ -92,17 +103,17 @@ function TableRow({
   );
 }
 
-function BlockView({b, c, fs}: {b: Block; c: MdColors; fs: number}) {
+function BlockView({b, c, fs, sel, sc}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string}) {
   switch (b.t) {
     case 'h':
       return (
-        <Text style={[styles.block, {color: c.text, fontSize: fs + (HEADING_SIZE[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3}]}>
+        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontSize: fs + (HEADING_SIZE[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3}]}>
           {renderSpans(b.spans, c, fs)}
         </Text>
       );
     case 'p':
       return (
-        <Text style={[styles.block, {color: c.text, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(b.spans, c, fs)}</Text>
+        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(b.spans, c, fs)}</Text>
       );
     case 'code':
       return (
@@ -111,7 +122,7 @@ function BlockView({b, c, fs}: {b: Block; c: MdColors; fs: number}) {
           showsHorizontalScrollIndicator={false}
           style={[styles.codeBlock, {backgroundColor: c.codeBg, borderColor: c.border}]}
           contentContainerStyle={styles.codeBlockContent}>
-          <Text style={[styles.codeBlockText, {color: c.code, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}]}>{b.text}</Text>
+          <Text selectable={sel} selectionColor={sc} style={[styles.codeBlockText, {color: c.code, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}]}>{b.text}</Text>
         </ScrollView>
       );
     case 'ul':
@@ -121,7 +132,7 @@ function BlockView({b, c, fs}: {b: Block; c: MdColors; fs: number}) {
           {b.items.map((item, i) => (
             <View key={i} style={styles.li}>
               <Text style={[styles.bullet, {color: c.dim, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${i + 1}. ` : '• '}</Text>
-              <Text style={[styles.liText, {color: c.text, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs)}</Text>
+              <Text selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs)}</Text>
             </View>
           ))}
         </View>
@@ -129,16 +140,16 @@ function BlockView({b, c, fs}: {b: Block; c: MdColors; fs: number}) {
     case 'quote':
       return (
         <View style={[styles.quote, {borderLeftColor: c.border}]}>
-          <Text style={{color: c.dim, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs)}</Text>
+          <Text selectable={sel} selectionColor={sc} style={{color: c.dim, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs)}</Text>
         </View>
       );
     case 'table':
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
           <View>
-            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header />
+            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} />
             {b.rows.map((row, i) => (
-              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} />
+              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} />
             ))}
           </View>
         </ScrollView>
@@ -150,12 +161,12 @@ function BlockView({b, c, fs}: {b: Block; c: MdColors; fs: number}) {
   }
 }
 
-export function MarkdownView({source, colors, fontSize = 14}: Props) {
+export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor}: Props) {
   const blocks = React.useMemo(() => parseBlocks(source), [source]);
   return (
     <View>
       {blocks.map((b, i) => (
-        <BlockView key={i} b={b} c={colors} fs={fontSize} />
+        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} />
       ))}
     </View>
   );

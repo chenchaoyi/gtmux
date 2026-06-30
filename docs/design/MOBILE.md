@@ -119,17 +119,44 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
 
 ## 4. Detail 交互（pane 视图 + 输入）
 
-### 终端渲染（窄屏适配）
+> **实现现状（2026-06，权威）：** pane 视图是原生 RN `<Text>` 渲染器
+> `src/ui/NativeTerm.tsx`（capability `mobile-pane-renderer`），**不是** webview/
+> xterm.js。早期的 xterm-in-webview 经过约 10 个 PR 的 WebGL/canvas/DOM 在真机上的反复
+> 折腾后被放弃；下面的「换行/滚动切换、↓ 跳到底部 FAB」属于旧 webview 方案,**已被原生渲染器
+> 取代**（原生 ScrollView 跟随到底 + 长按选区,见下）。色板/字体仍走 `theme.ts` + `terminal-theme`。
 
-- 数据：每 ~1.5s `GET /api/pane`。**`/api/pane` 用 `tmux capture-pane -e -p`**（带 ANSI SGR），
-  保留颜色。
-- **彩色输出**：RN 端用一个轻量 ANSI/SGR 解析器把转义映射到彩色 `<Text>` span，对标 macOS
-  Terminal「Pro」深色：prompt `$` 绿、命令名青、commit 哈希黄、PASS/✓/`ok`/diff `+` 绿、
-  FAIL/diff `-` 红、`Tool use:` 品红、盒线/选择器暗灰、`❯` 选中绿、正文 `#D6D6DA`。
-  色板对齐 `theme.ts`。
-- **窄屏 ↔ 宽窗技巧**：①**换行 / 滚动**切换（软换行读着舒服 / 横向滚动保原始列宽）；
-  ②**字号 A− / A+** 三档；③顶部 `cols × rows · live` 指示；④**回滚缓冲** + 右下 **↓ 跳到底部** FAB。
-- 等宽字体；离线时显示最后一帧。
+### 终端渲染（原生 NativeTerm）
+
+- 数据：每 ~1.5s `GET /api/pane`，**`capture-pane -e -p -S -2000`**（可见屏 + 至多 2000 行回滚，
+  带 ANSI SGR）。**不右裁尾部空行**,使光标偏移能锚到真实底部(见光标）。
+- **彩色输出**：共享 ANSI/SGR 解析器 `src/ui/ansi.ts` 把转义映射到彩色原生 `<Text>` span
+  （fg+bg、bold/dim、256/truecolor）。capture-pane 已把光标移动/清屏/备用屏解析成平面彩色网格,
+  故无需终端模拟器。色板对齐 `theme.ts` / `GET /api/theme`。
+- **长按选区 + Copy（透明叠层）**：彩色的深层嵌套 `<Text selectable>` 在真机上能选能复制但**画不出
+  可见高亮**;因此选区由一层独立的**扁平单色 `<Text selectable>`**(字形透明)叠在彩色层之上,iOS 的
+  半透明高亮层于是把背后的彩色文字染上底色 —— 无跳动、无模式切换。
+- **触摸期冻结**：手指按住时冻结快照(文本 + 光标),streaming 的 pane 刷新不会抹掉进行中的选区/滚动;
+  松手后稍延迟(~3.5s 或滚动到底)再 thaw,把期间缓冲的最新快照应用上。
+- **跟随到底**：默认跟随 pane 底部;用户上滑看历史则停止跟随;再滑回底部时即便 pane 仍在 streaming
+  也能抵达真实 live tail 并恢复跟随(`stick` 标志 + 到底阈值)。
+- **光标**：按 `GET /api/pane` 的 `cursor{x,up,visible}`(底锚:`up` = 距末行上推行数)画一个反显格。
+- **字形归一**：U+23FA「⏺」在 iOS 会被当成红色 emoji,映射为 U+25CF「●」(纯文本字形,随 SGR 上色)。
+- 等宽字体(Menlo → PingFang 兜底 CJK 2 格宽);仅渲染末 500 行;离线时显示最后一帧。
+- 纯逻辑(`cursorSpans` / `normalizeGlyphs` 抽到 `src/ui/term.ts` 单测;光标算术见 `paneCursor`)。
+
+### 对话 / chat 模式（NativeTerm 的姊妹视图）
+
+Detail 顶部「终端 / 对话」可切。对话视图(`src/ui/ChatView.tsx`,capability `mobile-chat-view`)
+渲染**解析后的会话历史**(`GET /api/transcript`,capability `chat-transcript`),比裸终端更易一眼读懂
+agent 做了什么:
+
+- **多段气泡**：一个回合的回复按 `segments` 时序拆成多个 speech bubble —— 每段是一条 assistant 文本
+  气泡 + 其后运行的工具步骤(text → tools → text → …)。头像只挂在首条文本气泡;中间穿插的工具步骤折叠
+  为可点开的「N 步」组,夹在气泡之间,使中间过程一目了然。
+- **带日期的时间标签**：取回合 prompt 的时间戳,带日期(今天/昨天 + HH:MM、否则日历日期、跨年带年份),
+  随设备语言 en/zh;相邻相同标签去重(`fmtTurnTime`,抽到 `src/ui/time.ts` 单测)。
+- **长按选区 + Copy**：prompt 气泡与渲染后的回复块均可长按选取复制,与终端视图一致。
+- 数据形状(`Turn` / `Segment` / `Step`)见 `api/contract.md` 的 `/api/transcript` 与 `chat-transcript` spec。
 
 ### 顶栏
 
@@ -137,7 +164,11 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
   裸状态徽章）+ primary/secondary；**Focus on Mac 移到顶栏轻按钮**（不占输入区），
   = `POST /api/focus`。
 
-### Composer（输入 · Phase 2，写入需一次性授权）
+### Composer（输入 · 已上线，仅 bearer token 门控）
+
+> **现状：** 终端输入**已上线、默认开启**,仅由配对的 bearer token 把关(无单独授权门 —— token
+> 即密码,泄露即可在 Mac 上执行命令)。早期文档把它写成「Phase 2 · 写入需一次性授权」,**已过时**。
+> 发送后 app 立即刷新 pane(不等下一轮轮询),并对刚发的 prompt 做乐观回显。
 
 输入主次分明、**突出 agent 相关管理输入**，自由输入作为扩展：
 
@@ -145,8 +176,7 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
   `继续 / ⏎ / 停止`。
 - **控制键排**：`⏎ Ctrl-C Esc Tab ↑ ↓`。
 - **自由输入框 + 发送**：任意文本兜底。
-- 全部走 `POST /api/send`（send-keys），**写权限门控**：未授权时 composer 置灰并标注
-  `Phase 2 · 写入需一次性授权`。
+- 全部走 `POST /api/send`（send-keys）；发送后立即 `bumpPane` 刷新。
 
 **样式与布局要求（对标 Moshi，2026-06-29 迭代）：**
 - **键统一为「填充药丸」**：高 40pt（含行内边距 ≥44pt 触达）、圆角 11、`surface` 底 + 发丝边、

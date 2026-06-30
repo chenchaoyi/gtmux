@@ -54,3 +54,31 @@ func TestReachableHostsWildcardNonEmpty(t *testing.T) {
 		t.Fatalf("wildcard hosts must not be empty")
 	}
 }
+
+// TestCursorFromFields covers the bottom-anchored cursor math (Up =
+// pane_height-1-cursor_y, clamped) and the reject paths, without a running tmux.
+func TestCursorFromFields(t *testing.T) {
+	cases := []struct {
+		name            string
+		fields          []string
+		wantX, wantUp   int
+		wantVis, wantOK bool
+	}{
+		{"bottom row", []string{"4", "23", "24", "1"}, 4, 0, true, true}, // cy at last row → up 0
+		{"three up", []string{"0", "20", "24", "1"}, 0, 3, true, true},   // 24-1-20 = 3
+		{"hidden cursor", []string{"7", "23", "24", "0"}, 7, 0, false, true},
+		{"clamp negative", []string{"2", "30", "24", "1"}, 2, 0, true, true}, // cy past bottom → clamp 0
+		{"wrong arity", []string{"4", "23", "24"}, 0, 0, false, false},
+		{"non-numeric", []string{"x", "23", "24", "1"}, 0, 0, false, false},
+		{"zero height", []string{"4", "0", "0", "1"}, 0, 0, false, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			x, up, vis, ok := cursorFromFields(c.fields)
+			if x != c.wantX || up != c.wantUp || vis != c.wantVis || ok != c.wantOK {
+				t.Fatalf("cursorFromFields(%v) = (%d,%d,%v,%v), want (%d,%d,%v,%v)",
+					c.fields, x, up, vis, ok, c.wantX, c.wantUp, c.wantVis, c.wantOK)
+			}
+		})
+	}
+}

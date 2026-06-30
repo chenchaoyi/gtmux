@@ -6,6 +6,8 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "tsc --noEmit && eslint . && jest --ci",
     "start": "react-native start",
     "test": "jest",
     "test:e2e": "jest --config e2e/jest.config.e2e.js --runInBand",

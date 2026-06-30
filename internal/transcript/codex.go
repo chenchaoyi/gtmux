@@ -23,8 +23,9 @@ import (
 //   - token_count events are everywhere and irrelevant to turn structure — ignored.
 
 type codexLine struct {
-	Type    string          `json:"type"`
-	Payload json.RawMessage `json:"payload"`
+	Type      string          `json:"type"`
+	Timestamp string          `json:"timestamp"`
+	Payload   json.RawMessage `json:"payload"`
 }
 
 type codexPayload struct {
@@ -75,22 +76,21 @@ func codexStep(line string, st *parseState) {
 			if strings.TrimSpace(p.Message) == "" {
 				return
 			}
-			st.open(strings.TrimSpace(p.Message))
+			st.open(strings.TrimSpace(p.Message), e.Timestamp)
 		case "agent_message":
-			if strings.TrimSpace(p.Message) != "" {
-				st.ensure()
-				st.cur.Response = strings.TrimSpace(p.Message) // latest wins
+			if msg := strings.TrimSpace(p.Message); msg != "" {
+				st.addText(msg) // each agent message starts a new bubble
 			}
 		case "task_complete":
-			if strings.TrimSpace(p.LastAgentMessage) != "" {
-				st.ensure()
-				st.cur.Response = strings.TrimSpace(p.LastAgentMessage) // authoritative final
+			// authoritative final reply — append it unless an agent_message already
+			// carried it (avoid duplicating the closing paragraph).
+			if fin := strings.TrimSpace(p.LastAgentMessage); fin != "" && !lastSegmentText(st, fin) {
+				st.addText(fin)
 			}
 		}
 	case "response_item":
 		if p.Type == "function_call" && p.Name != "" {
-			st.ensure()
-			st.cur.Steps = append(st.cur.Steps, Step{Kind: "tool", Title: codexToolName(p.Name), Detail: codexToolDetail(p.Arguments)})
+			st.addSteps([]Step{{Kind: "tool", Title: codexToolName(p.Name), Detail: codexToolDetail(p.Arguments)}})
 		}
 	}
 }

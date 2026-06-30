@@ -5,7 +5,7 @@
 // wrap↔scroll toggle, and a jump-to-bottom FAB. "Focus on Mac" lives in the top
 // bar (POST /api/focus), not the input area.
 
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,9 +18,8 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Clipboard from '@react-native-clipboard/clipboard';
 import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
-import {TranscriptTurn} from '../api/client';
+import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
@@ -76,6 +75,12 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   // screen glance, not a full transcript), overridden by this pane's own
   // remembered choice if it has one.
   const [mode, setMode] = useState<DetailMode>(defaultDetailMode);
+  // Switching modes re-mounts a heavy view (terminal = hundreds of dual-layer
+  // <Text> rows; chat = many markdown turns), which blocks JS for a beat. Show a
+  // spinner OVER the old view first (ActivityIndicator animates natively, so it
+  // keeps spinning through the JS hitch), then swap on the next frame, then clear
+  // once the new view has committed — so a switch always feels responsive.
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -88,9 +93,18 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   }, [agent.pane_id]);
 
   const pickMode = (m: DetailMode) => {
-    setMode(m);
+    if (m === mode) return;
     AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
     if (m === 'chat') setFullscreen(false); // full-screen is terminal-only
+    setSwitching(true);
+    // 2 frames so the spinner paints before the heavy mount blocks; clear 2 frames
+    // after the swap commits.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        setMode(m);
+        requestAnimationFrame(() => requestAnimationFrame(() => setSwitching(false)));
+      }),
+    );
   };
 
   // D8: upgrade the loading copy if the first frame is slow to arrive.
@@ -113,37 +127,47 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const smaller = () => setFontIdx(i => Math.max(0, i - 1));
   const bigger = () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1));
 
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      try {
-        const r = await client.pane(agent.pane_id);
-        if (alive) {
-          // Skip the update when the screen is unchanged so a re-render doesn't
-          // clobber an in-progress text selection (React bails on an equal value).
-          setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
-          // Same for the cursor: r.cursor is a fresh object every poll, so setting
-          // it unconditionally re-rendered the terminal every 1.5s and wiped any
-          // active selection. Keep the previous object when the values are equal.
-          setCursor(prev => {
-            const c = r.cursor;
-            if (prev === c) return prev;
-            if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
-            return c;
-          });
-          setLoading(false);
-        }
-      } catch {
-        if (alive) setLoading(false);
-      }
-    };
-    load();
-    const id = setInterval(load, 1500);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
+  const loadPane = useCallback(async () => {
+    try {
+      const r = await client.pane(agent.pane_id);
+      // Skip the update when the screen is unchanged so a re-render doesn't
+      // clobber an in-progress text selection (React bails on an equal value).
+      setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
+      // Same for the cursor: r.cursor is a fresh object every poll, so setting
+      // it unconditionally re-rendered the terminal every 1.5s and wiped any
+      // active selection. Keep the previous object when the values are equal.
+      setCursor(prev => {
+        const c = r.cursor;
+        if (prev === c) return prev;
+        if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
+        return c;
+      });
+      setLoading(false);
+    } catch {
+      setLoading(false);
+    }
   }, [client, agent.pane_id]);
+
+  // After sending input, the pane needs a beat to process it and redraw; poll a
+  // few times right away so the echo/redraw shows up promptly instead of waiting
+  // up to a full 1.5s interval (the lag that read as "did it even send?").
+  const bumpPane = useCallback(() => {
+    [0, 120, 300, 650].forEach(d => setTimeout(loadPane, d));
+  }, [loadPane]);
+
+  // sendPane = type into the pane, then immediately refresh so the screen reacts.
+  const sendPane = useCallback(
+    (payload: SendPayload) => {
+      client.send(agent.pane_id, payload).finally(bumpPane);
+    },
+    [client, agent.pane_id, bumpPane],
+  );
+
+  useEffect(() => {
+    loadPane();
+    const id = setInterval(loadPane, 1500);
+    return () => clearInterval(id);
+  }, [loadPane]);
 
   // Approval card (B1): only while waiting (cardinal rule), poll the pane's 1/2/3
   // choices from the shared parser. Cleared the moment it's no longer waiting.
@@ -182,15 +206,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
-
-  // D6: copy the visible screen as plain text (ANSI stripped via the parsed spans).
-  const copyVisible = () => {
-    const plain = lines
-      .map(spans => spans.map(s => s.text).join(''))
-      .join('\n')
-      .replace(/\s+$/, '');
-    Clipboard.setString(plain);
-  };
 
   return (
     <KeyboardAvoidingView
@@ -277,7 +292,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             {mode === 'terminal' && (
               <>
-                <Ctl pal={pal} label={lang === 'zh' ? '复制' : 'Copy'} onPress={copyVisible} />
                 <Ctl pal={pal} label="A−" onPress={smaller} />
                 <Ctl pal={pal} label="A+" onPress={bigger} />
                 <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />
@@ -288,6 +302,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       )}
 
       {/* body: 对话 (glance) or 终端 (raw TUI) */}
+      <View style={styles.body}>
       {mode === 'chat' ? (
         <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} />
       ) : (
@@ -314,6 +329,14 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         )}
       </View>
       )}
+      {/* mode-switch spinner — overlays the old view while the heavy new view
+          mounts, so the switch reads as "loading" instead of a dead pause. */}
+      {switching && (
+        <View style={[styles.loadingOverlay, {backgroundColor: pal.bg}]} pointerEvents="none">
+          <ActivityIndicator color={pal.fg3} />
+        </View>
+      )}
+      </View>
 
       {/* approval card (B1): waiting → the agent's own 1/2/3 as big buttons */}
       <ApprovalCard
@@ -321,7 +344,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         pal={pal}
         lang={lang}
         onSend={n => {
-          client.send(agent.pane_id, {text: String(n), enter: true});
+          sendPane({text: String(n), enter: true});
           setOptions([]);
         }}
       />
@@ -333,7 +356,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         lang={lang}
         returnSends={returnSends}
         onSend={p => {
-          client.send(agent.pane_id, p);
+          sendPane(p);
           // optimistic echo in 对话 mode: show the sent text immediately as a
           // pending bubble until the transcript refetch confirms it.
           if (p.text) setPendingPrompt(p.text);
@@ -357,7 +380,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         visible={keysOpen}
         pal={pal}
         lang={lang}
-        onKey={key => client.send(agent.pane_id, {key})}
+        onKey={key => sendPane({key})}
         onClose={() => setKeysOpen(false)}
       />
       </SafeAreaView>
@@ -443,6 +466,7 @@ const styles = StyleSheet.create({
   ctlRight: {flexDirection: 'row', alignItems: 'center'},
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
   ctlText: {fontSize: 11.5, fontWeight: '600'},
+  body: {flex: 1},
   termWrap: {flex: 1},
   loadingOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10},
   loadingText: {fontSize: 12.5},

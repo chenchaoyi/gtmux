@@ -34,8 +34,11 @@ jobs:
           go-version: '1.25'
           cache: true
 
-      - name: test before release
-        run: go test ./...
+      - name: gate before release (same as PR CI)
+        # `make check` = gofmt + go vet + staticcheck + go test -race, so a tag
+        # can't ship a regression that a PR's CI would have caught (the old
+        # `go test ./...` here skipped -race and staticcheck).
+        run: make check
 
       - name: GoReleaser (release on tag)
         if: startsWith(github.ref, 'refs/tags/')

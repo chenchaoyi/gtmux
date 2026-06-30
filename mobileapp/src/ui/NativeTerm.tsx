@@ -5,8 +5,12 @@
 //
 // Why native instead of xterm-in-webview:
 //   • a tap doesn't focus a hidden <textarea> → NO soft-keyboard pop-up;
-//   • <Text selectable> gives iOS long-press selection + the Copy callout for free
-//     (web-like arbitrary selection — the thing xterm can't do on touch);
+//   • long-press gives iOS text selection + the Copy callout (web-like arbitrary
+//     selection — the thing xterm can't do on touch). NOTE: a colored, deeply-nested
+//     <Text selectable> selects+copies but draws NO visible highlight on-device, so
+//     selection rides a separate FLAT, single-color <Text selectable> with
+//     TRANSPARENT glyphs overlaid on the colored layer — the iOS highlight (its own
+//     translucent layer) then tints the colors behind it (see the dual-layer body);
 //   • native ScrollView momentum (no DOM/canvas repaint jank);
 //   • no WebGL/canvas/DOM renderer fragility (the ~10-PR webview saga);
 //   • pure JS → the same renderer works on iOS AND Android.
@@ -18,8 +22,9 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {ScrollView, StyleSheet, Text, View, NativeSyntheticEvent, NativeScrollEvent} from 'react-native';
-import {AnsiLine, parseAnsi, Span} from './ansi';
+import {NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {parseAnsi} from './ansi';
+import {cursorSpans, normalizeGlyphs} from './term';
 import {TermTheme} from '../api/types';
 
 interface PaneCursor {
@@ -39,16 +44,6 @@ interface Props {
 const DEF_BG = '#17171a';
 const DEF_FG = '#d4d2cc';
 
-// iOS Core Text renders U+23FA "⏺ BLACK CIRCLE FOR RECORD" (Claude Code's tool-call
-// marker) as the glossy RED record-button COLOR EMOJI, ignoring the ANSI color.
-// Swap it for U+25CF "● BLACK CIRCLE" (no emoji presentation) so it renders as a
-// clean text glyph tinted by the surrounding SGR color — same fix as the xterm
-// path (gen-xterm-asset.mjs normalizeGlyphs).
-const DOT_REC = '⏺';
-const DOT_CIRCLE = '●';
-function normalizeGlyphs(t: string): string {
-  return t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE);
-}
 // iOS system monospace (covers Latin + falls back to PingFang for CJK at 2-cell
 // width). The bundled woff2 picker fonts are webview-only; native would need them
 // linked as .ttf — a later follow-up, not needed for the read-only viewer.
@@ -56,37 +51,10 @@ const MONO = 'Menlo';
 // cap how many trailing capture lines we render as one selectable <Text> — enough
 // scrollback for a phone glance, light enough not to hitch/crash. Deeper history
 // lives in Chat mode (the full transcript).
-const MAX_LINES = 500;
-
-// cursorSpans rewrites one line's spans to paint a reverse-video block at column x
-// (the pane's text cursor). Approximated on CHAR offset (the cursor is near the
-// input line, ~ASCII, so char≈cell); pads with spaces when x is past the content.
-function cursorSpans(spans: AnsiLine, x: number, curColor: string, bg: string): AnsiLine {
-  const lineLen = spans.reduce((n, s) => n + s.text.length, 0);
-  const cell = (ch: string): Span => ({text: ch || ' ', color: bg, bg: curColor});
-  if (x >= lineLen) {
-    const out = [...spans];
-    if (x > lineLen) out.push({text: ' '.repeat(x - lineLen), color: bg});
-    out.push(cell(' '));
-    return out;
-  }
-  const out: AnsiLine = [];
-  let col = 0;
-  for (const s of spans) {
-    const end = col + s.text.length;
-    if (x < col || x >= end) {
-      out.push(s);
-      col = end;
-      continue;
-    }
-    const i = x - col;
-    if (i > 0) out.push({...s, text: s.text.slice(0, i)});
-    out.push({...cell(s.text[i]), bold: s.bold});
-    if (i + 1 < s.text.length) out.push({...s, text: s.text.slice(i + 1)});
-    col = end;
-  }
-  return out;
-}
+const MAX_LINES = 350; // dual-layer (color + selectable overlay) makes each line
+// cost twice; 350 keeps a deep-enough phone glance while cutting the mount hitch on
+// a mode switch (full history lives in Chat mode). The bottom is preserved so the
+// bottom-anchored cursor still maps.
 
 export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const bg = theme?.background || DEF_BG;
@@ -94,17 +62,64 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   const curColor = theme?.cursor || '#bbc1ff';
   const ref = useRef<ScrollView>(null);
   const stick = useRef(true); // follow the bottom unless the user scrolled up
-  const scrolling = useRef(false);
-  const pending = useRef<string | null>(null);
+  const frozen = useRef(false);
+  const pending = useRef<{text: string; cursor?: PaneCursor} | null>(null);
+  const thawTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // `shown` is the snapshot actually rendered. While the user is scrolling we FREEZE
-  // it (a working pane streams a new snapshot every poll, and re-rendering the grid
-  // mid-gesture causes the periodic scroll hitches), flushing the latest on release.
+  // `shown`/`shownCursor` are the snapshot actually rendered. While the user is
+  // TOUCHING the pane — scrolling OR holding a text selection — we FREEZE BOTH: a
+  // working pane streams a new snapshot AND a moving cursor every poll, and either
+  // one changing re-renders the <Text> tree, which both hitches a scroll AND wipes
+  // an in-progress selection (native selection can't survive a re-render). The
+  // cursor matters as much as the text here — it ticks every second on a busy pane,
+  // so freezing only the text still let the selection get cleared. We stay frozen a
+  // few seconds after release so the selection lives long enough to Copy.
   const [shown, setShown] = useState(text);
+  const [shownCursor, setShownCursor] = useState(cursor);
   useEffect(() => {
-    if (scrolling.current) pending.current = text;
-    else setShown(text);
-  }, [text]);
+    if (frozen.current) pending.current = {text, cursor};
+    else {
+      setShown(text);
+      setShownCursor(cursor);
+    }
+  }, [text, cursor]);
+  const freeze = () => {
+    frozen.current = true;
+    if (thawTimer.current) {
+      clearTimeout(thawTimer.current);
+      thawTimer.current = null;
+    }
+  };
+  const flushPending = () => {
+    frozen.current = false;
+    if (thawTimer.current) {
+      clearTimeout(thawTimer.current);
+      thawTimer.current = null;
+    }
+    if (pending.current !== null) {
+      const p = pending.current;
+      pending.current = null;
+      setShown(p.text);
+      setShownCursor(p.cursor);
+    }
+  };
+  const thawSoon = () => {
+    if (thawTimer.current) clearTimeout(thawTimer.current);
+    thawTimer.current = setTimeout(flushPending, 3500);
+  };
+  // End-of-scroll thaw: if the gesture ended AT the bottom, flush the latest
+  // snapshot IMMEDIATELY and resume following live (you scrolled down to see the
+  // newest output — no selection to protect there). If it ended scrolled UP, keep
+  // the snapshot frozen a few seconds (a held selection / reading history). Without
+  // this, scrolling to the bottom while a working pane streamed left you stuck on a
+  // stale frame, unable to reach the live tail.
+  const thawByPosition = () => {
+    if (stick.current) flushPending();
+    else thawSoon();
+  };
+  useEffect(() => () => {
+    if (thawTimer.current) clearTimeout(thawTimer.current);
+  }, []);
 
   // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
   // lines of scrollback; one big selectable <Text> of that many nested spans is
@@ -119,39 +134,41 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   // place the cursor: capture-pane ends rows with "\n" (trailing empty line), and
   // `up` = rows above the bottom content line.
   const rendered = useMemo(() => {
-    if (!cursor || cursor.visible === false) return lines;
+    if (!shownCursor || shownCursor.visible === false) return lines;
     let last = lines.length - 1;
     if (last > 0 && lines[last].length === 0) last--; // skip the trailing-newline blank
-    const row = Math.max(0, Math.min(last, last - (cursor.up | 0)));
+    const row = Math.max(0, Math.min(last, last - (shownCursor.up | 0)));
     const copy = lines.slice();
-    copy[row] = cursorSpans(copy[row] || [], cursor.x | 0, curColor, bg);
+    copy[row] = cursorSpans(copy[row] || [], shownCursor.x | 0, curColor, bg);
     return copy;
-  }, [lines, cursor, curColor, bg]);
+  }, [lines, shownCursor, curColor, bg]);
 
-  const lineHeight = Math.round(fontSize * 1.3);
+  // Plain (ANSI-stripped) text of the same capped lines — the content of the
+  // transparent selection layer. Cursor cell is intentionally excluded.
+  const plainText = useMemo(() => lines.map(spans => spans.map(s => s.text).join('')).join('\n'), [lines]);
+
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     stick.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
-  };
-  const onScrollBeginDrag = () => {
-    scrolling.current = true;
-  };
-  const onScrollEnd = () => {
-    scrolling.current = false;
-    if (pending.current !== null) {
-      const t = pending.current;
-      pending.current = null;
-      setShown(t);
-    }
   };
   const onContentSizeChange = () => {
     if (stick.current) ref.current?.scrollToEnd({animated: false});
   };
 
-  // one big selectable <Text> → native cross-row selection + Copy. Rows are nested
-  // <Text> joined by "\n"; spans carry fg/bg/bold.
-  const body = (
-    <Text selectable style={[styles.mono, {fontSize, lineHeight, color: fg}]}>
+  // Two STACKED, always-on layers solve "read in color, select with a VISIBLE
+  // highlight" without any mode switch (the earlier TextInput-toggle jumped the
+  // layout and only showed a cursor loupe, no real selection):
+  //   • color layer (bottom) — the colored <Text>, display only, defines height.
+  //   • selection layer (top) — a FLAT, single-color <Text selectable> of the same
+  //     plain text, absolutely overlaid, with TRANSPARENT glyphs. iOS draws the
+  //     selection HIGHLIGHT as its own translucent layer independent of glyph color,
+  //     so the blue band shows and tints the colored text behind it; Copy works
+  //     (Text selectable gives the callout). Crucially the selection text is FLAT
+  //     (not the per-span nested <Text> that suppresses the highlight on-device).
+  // Both layers are <Text> with identical font/size/wrapping, so they align exactly
+  // — no ghosting, no jump. selectionColor is translucent so colors stay readable.
+  const colorLayer = (
+    <Text style={[styles.mono, {fontSize, color: fg}]}>
       {rendered.map((spans, i) => (
         <Text key={i}>
           {spans.map((s, j) => (
@@ -175,12 +192,23 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
         style={styles.fill}
         contentContainerStyle={styles.pad}
         onScroll={onScroll}
-        onScrollBeginDrag={onScrollBeginDrag}
-        onScrollEndDrag={onScrollEnd}
-        onMomentumScrollEnd={onScrollEnd}
-        scrollEventThrottle={100}
+        onTouchStart={freeze}
+        onTouchEnd={thawSoon}
+        onTouchCancel={thawSoon}
+        onScrollBeginDrag={freeze}
+        onScrollEndDrag={thawByPosition}
+        onMomentumScrollEnd={thawByPosition}
+        scrollEventThrottle={16}
         onContentSizeChange={onContentSizeChange}>
-        {body}
+        <View style={styles.layerWrap}>
+          {colorLayer}
+          {/* transparent selectable layer on top → the blue selection highlight
+              tints the colored text behind it; Copy works; FLAT text so the
+              highlight paints on-device. */}
+          <Text selectable selectionColor="rgba(52,120,247,0.5)" style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
+            {plainText}
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -190,4 +218,8 @@ const styles = StyleSheet.create({
   fill: {flex: 1},
   pad: {padding: 6},
   mono: {fontFamily: MONO},
+  // color layer (bottom) defines the height; the transparent selectable layer is
+  // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
+  layerWrap: {position: 'relative', overflow: 'visible'},
+  overlay: {position: 'absolute', top: 0, left: 0, right: 0},
 });

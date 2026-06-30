@@ -27,9 +27,27 @@ type Step struct {
 // Turn is one user instruction and what the agent ultimately answered, with the
 // intermediate tool calls folded into Steps.
 type Turn struct {
-	Prompt   string `json:"prompt"`
+	Prompt string `json:"prompt"`
+	// Response is the full reply (all segment texts joined by a blank line) — kept
+	// for back-compat and simple consumers.
 	Response string `json:"response"`
-	Steps    []Step `json:"steps,omitempty"`
+	// Segments are the reply in chronological order: an agent emits a turn as
+	// several assistant messages interleaved with tool calls (text → tools → text →
+	// …). Each Segment is one text bubble plus the tool steps that ran AFTER it
+	// (until the next text), so the chat can render each text as its own speech
+	// bubble with the intermediate process shown between bubbles.
+	Segments []Segment `json:"segments,omitempty"`
+	// Time is the prompt's wall-clock timestamp (RFC3339, as logged by the agent),
+	// for the chat view's per-turn time label. "" when the log line carried none.
+	Time string `json:"time,omitempty"`
+}
+
+// Segment is one chronological piece of a turn's reply: an assistant text bubble
+// and the tool calls that followed it. Either side may be empty (a tools-only
+// segment renders as just the collapsed step group; a text-only one as a bubble).
+type Segment struct {
+	Text  string `json:"text,omitempty"`
+	Steps []Step `json:"steps,omitempty"`
 }
 
 // maxTailBytes bounds how much of a (potentially huge) log we read: only the tail
@@ -75,19 +93,57 @@ type parseState struct {
 }
 
 // flush commits the in-progress turn (if it carries any content) and records
-// where it started.
+// where it started. Response is derived here from the segment texts.
 func (st *parseState) flush() {
-	if st.cur != nil && (st.cur.Prompt != "" || st.cur.Response != "" || len(st.cur.Steps) > 0) {
+	if st.cur != nil && (st.cur.Prompt != "" || len(st.cur.Segments) > 0) {
+		var texts []string
+		for _, s := range st.cur.Segments {
+			if s.Text != "" {
+				texts = append(texts, s.Text)
+			}
+		}
+		st.cur.Response = strings.Join(texts, "\n\n")
 		st.turns = append(st.turns, *st.cur)
 		st.turnStarts = append(st.turnStarts, st.curStart)
 	}
 	st.cur = nil
 }
 
-// open starts a fresh turn at a user prompt, closing the previous one.
-func (st *parseState) open(prompt string) {
+// addText starts a new reply segment (a text bubble).
+func (st *parseState) addText(text string) {
+	st.ensure()
+	st.cur.Segments = append(st.cur.Segments, Segment{Text: text})
+}
+
+// lastSegmentText reports whether the current turn's last segment text already
+// equals s — so a Codex task_complete doesn't duplicate the closing agent_message.
+func lastSegmentText(st *parseState, s string) bool {
+	if st.cur == nil || len(st.cur.Segments) == 0 {
+		return false
+	}
+	return st.cur.Segments[len(st.cur.Segments)-1].Text == s
+}
+
+// addSteps attaches tool steps to the current segment (the tools that ran after the
+// last text bubble); if none exists yet, opens a leading tools-only segment so the
+// steps that preceded the first text still appear in order.
+func (st *parseState) addSteps(steps []Step) {
+	if len(steps) == 0 {
+		return
+	}
+	st.ensure()
+	if len(st.cur.Segments) == 0 {
+		st.cur.Segments = append(st.cur.Segments, Segment{})
+	}
+	last := &st.cur.Segments[len(st.cur.Segments)-1]
+	last.Steps = append(last.Steps, steps...)
+}
+
+// open starts a fresh turn at a user prompt, closing the previous one. ts is the
+// prompt's log timestamp (RFC3339), used for the chat view's time label.
+func (st *parseState) open(prompt, ts string) {
 	st.flush()
-	st.cur = &Turn{Prompt: prompt}
+	st.cur = &Turn{Prompt: prompt, Time: ts}
 	st.curStart = st.off
 }
 

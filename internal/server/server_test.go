@@ -122,6 +122,80 @@ func TestPane(t *testing.T) {
 	}
 }
 
+// TestPaneCursor wires PaneCursor and asserts the bottom-anchored cursor JSON
+// shape (the cursor branch of handlePane is otherwise never exercised).
+func TestPaneCursor(t *testing.T) {
+	f := &fakeDeps{paneOK: true, paneText: "❯ "}
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		PaneText:   f.PaneText,
+		PaneCursor: func(id string) (x, up int, visible, ok bool) { return 4, 0, true, true },
+	})
+	rr := do(t, s.Handler(), http.MethodGet, "/api/pane?id=%251", testToken)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("pane = %d, want 200", rr.Code)
+	}
+	var pr paneResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &pr); err != nil {
+		t.Fatalf("pane body: %v", err)
+	}
+	if pr.Cursor == nil {
+		t.Fatalf("cursor missing; body=%s", rr.Body.String())
+	}
+	if pr.Cursor.X != 4 || pr.Cursor.Up != 0 || !pr.Cursor.Visible {
+		t.Fatalf("cursor = %+v, want {4 0 true}", *pr.Cursor)
+	}
+
+	// Cursor unresolved (ok=false) → field omitted.
+	s2 := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		PaneText:   f.PaneText,
+		PaneCursor: func(id string) (x, up int, visible, ok bool) { return 0, 0, false, false },
+	})
+	rr2 := do(t, s2.Handler(), http.MethodGet, "/api/pane?id=%251", testToken)
+	if strings.Contains(rr2.Body.String(), "\"cursor\"") {
+		t.Fatalf("cursor should be omitted when unresolved; body=%s", rr2.Body.String())
+	}
+}
+
+// TestTranscript covers the /api/transcript handler: 503 (no dep), 400 (no id),
+// 404 (parse error), 200 passthrough.
+func TestTranscript(t *testing.T) {
+	// No Transcript dep wired → 503.
+	h0 := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{}).Handler()
+	if rr := do(t, h0, http.MethodGet, "/api/transcript?id=%251", testToken); rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("no Transcript dep = %d, want 503", rr.Code)
+	}
+
+	turns := []byte(`[{"prompt":"hi","response":"yo","segments":[{"text":"yo"}],"time":"2026-06-29T10:00:00Z"}]`)
+	h := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Transcript: func(id string) ([]byte, error) {
+			if id != "%1" {
+				return nil, errors.New("transcript failed")
+			}
+			return turns, nil
+		},
+	}).Handler()
+
+	if rr := do(t, h, http.MethodGet, "/api/transcript", testToken); rr.Code != http.StatusBadRequest {
+		t.Fatalf("missing id = %d, want 400", rr.Code)
+	}
+	if rr := do(t, h, http.MethodGet, "/api/transcript?id=%251", ""); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("no token = %d, want 401", rr.Code)
+	}
+	if rr := do(t, h, http.MethodGet, "/api/transcript?id=%2599", testToken); rr.Code != http.StatusNotFound {
+		t.Fatalf("parse error = %d, want 404", rr.Code)
+	}
+	rr := do(t, h, http.MethodGet, "/api/transcript?id=%251", testToken)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("ok = %d, want 200", rr.Code)
+	}
+	if ct := rr.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
+		t.Fatalf("content-type = %q", ct)
+	}
+	if got := rr.Body.String(); got != string(turns) {
+		t.Fatalf("transcript body = %q, want passthrough %q", got, turns)
+	}
+}
+
 func TestFocus(t *testing.T) {
 	s, f := newTestServer()
 	h := s.Handler()
