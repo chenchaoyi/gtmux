@@ -43,5 +43,6 @@ export const TestIds = {
     input: 'composer-input',
     send: 'composer-send',
     keyboard: 'composer-kbd',
+    snippets: 'composer-snippets',
   },
 } as const;

@@ -30,7 +30,6 @@ import {ChatView} from '../ui/ChatView';
 import {BrandLoader} from '../ui/BrandLoader';
 import {ApprovalCard} from '../ui/ApprovalCard';
 import {NativeTerm} from '../ui/NativeTerm';
-import {FloatingKeys} from '../ui/FloatingKeys';
 import {DiffModal} from '../ui/DiffModal';
 import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
@@ -65,7 +64,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [loading, setLoading] = useState(true);
   const [fontIdx, setFontIdx] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
-  const [keysOpen, setKeysOpen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
@@ -337,7 +335,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             </Text>
           </View>
           <View style={styles.ctlRight}>
-            <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
+            <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
@@ -421,10 +419,8 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           if (p.text) setPendingPrompt(p.text);
         }}
         onUpload={(uri, name, type) => client.upload(uri, name, type)}
-        onOpenKeys={() => setKeysOpen(true)}
       />
 
-      {/* Moshi-style draggable nav keypad, floating over the terminal */}
       {/* "what did the agent change" — git diff of the pane's cwd */}
       <DiffModal
         visible={diffOpen}
@@ -433,14 +429,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         pal={pal}
         lang={lang}
         onClose={() => setDiffOpen(false)}
-      />
-
-      <FloatingKeys
-        visible={keysOpen}
-        pal={pal}
-        lang={lang}
-        onKey={key => sendPane({key})}
-        onClose={() => setKeysOpen(false)}
       />
       </SafeAreaView>
     </KeyboardAvoidingView>
