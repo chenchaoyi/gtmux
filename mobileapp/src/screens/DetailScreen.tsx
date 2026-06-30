@@ -75,6 +75,12 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   // screen glance, not a full transcript), overridden by this pane's own
   // remembered choice if it has one.
   const [mode, setMode] = useState<DetailMode>(defaultDetailMode);
+  // Switching modes re-mounts a heavy view (terminal = hundreds of dual-layer
+  // <Text> rows; chat = many markdown turns), which blocks JS for a beat. Show a
+  // spinner OVER the old view first (ActivityIndicator animates natively, so it
+  // keeps spinning through the JS hitch), then swap on the next frame, then clear
+  // once the new view has committed — so a switch always feels responsive.
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -87,9 +93,18 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   }, [agent.pane_id]);
 
   const pickMode = (m: DetailMode) => {
-    setMode(m);
+    if (m === mode) return;
     AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
     if (m === 'chat') setFullscreen(false); // full-screen is terminal-only
+    setSwitching(true);
+    // 2 frames so the spinner paints before the heavy mount blocks; clear 2 frames
+    // after the swap commits.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        setMode(m);
+        requestAnimationFrame(() => requestAnimationFrame(() => setSwitching(false)));
+      }),
+    );
   };
 
   // D8: upgrade the loading copy if the first frame is slow to arrive.
@@ -287,6 +302,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       )}
 
       {/* body: 对话 (glance) or 终端 (raw TUI) */}
+      <View style={styles.body}>
       {mode === 'chat' ? (
         <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} />
       ) : (
@@ -313,6 +329,14 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         )}
       </View>
       )}
+      {/* mode-switch spinner — overlays the old view while the heavy new view
+          mounts, so the switch reads as "loading" instead of a dead pause. */}
+      {switching && (
+        <View style={[styles.loadingOverlay, {backgroundColor: pal.bg}]} pointerEvents="none">
+          <ActivityIndicator color={pal.fg3} />
+        </View>
+      )}
+      </View>
 
       {/* approval card (B1): waiting → the agent's own 1/2/3 as big buttons */}
       <ApprovalCard
@@ -442,6 +466,7 @@ const styles = StyleSheet.create({
   ctlRight: {flexDirection: 'row', alignItems: 'center'},
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
   ctlText: {fontSize: 11.5, fontWeight: '600'},
+  body: {flex: 1},
   termWrap: {flex: 1},
   loadingOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10},
   loadingText: {fontSize: 12.5},

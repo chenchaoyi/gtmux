@@ -41,6 +41,11 @@ interface Props {
 // text is light-on-dark regardless of the app's light/dark appearance. Using the
 // theme palette (pal.fg) here made the agent name + response invisible in light
 // mode (dark text on the dark bubble). These fixed colors keep it readable.
+// Explicit selection tint for long-press copy. iOS won't paint the DEFAULT
+// highlight on the chat's colored/nested <Text selectable> (the same quirk
+// NativeTerm hits), so we force a visible band — same blue the terminal overlay
+// uses. Without this, long-press copies but shows no highlight.
+const SEL_COLOR = 'rgba(52,120,247,0.5)';
 const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
 const CHAT_FG_DIM = 'rgba(235,235,245,0.5)'; // secondary / muted text
 
@@ -155,7 +160,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
             {!!t.prompt && (
               <View style={styles.userRow}>
                 <View style={styles.userBubble}>
-                  <Text selectable style={styles.userText}>
+                  <Text selectable selectionColor={SEL_COLOR} style={styles.userText}>
                     {t.prompt}
                   </Text>
                 </View>
@@ -174,7 +179,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
                         <View style={styles.avatarSpacer} />
                       )}
                       <View style={styles.agentBubble}>
-                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={14} selectable />
+                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={14} selectable selectionColor={SEL_COLOR} />
                       </View>
                     </View>
                   )}
