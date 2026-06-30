@@ -16,6 +16,7 @@
   var token = null, radarTimer = null, paneTimer = null, selIdx = -1;
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
+  var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
   var userScrolling = false, scrollIdle = null, pendingText = null, resizeIdle = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
   var BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
@@ -167,7 +168,10 @@
     document.addEventListener('keydown', function (e) {
       var tag = (e.target && e.target.tagName) || '';
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      if (!$('radar').hidden) {
+      if (!$('workbench').hidden) {
+        if (e.key === 'Escape' && maxedTile) { e.preventDefault(); restoreBoard(); }
+        else if (e.key === '/') { e.preventDefault(); $('rail-search').focus(); }
+      } else if (!$('radar').hidden) {
         if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
         else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
         else if (e.key === 'Enter') { var rows = radarRows(); if (rows[selIdx]) { e.preventDefault(); rows[selIdx].click(); } }
@@ -175,6 +179,8 @@
         if (e.key === 'Escape') { e.preventDefault(); $('back').click(); }
         else if (e.key === 'c') { e.preventDefault(); setMode('chat'); }
         else if (e.key === 't') { e.preventDefault(); setMode('term'); }
+        else if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); cyclePane(1); }
+        else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); cyclePane(-1); }
       }
     });
   }
@@ -183,11 +189,11 @@
     api('/api/agents').then(function (r) {
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
       if (!r.ok) throw new Error('agents'); return r.json();
-    }).then(function (agents) { if (!agents) return; setConn(true); renderRadar(agents); })
+    }).then(function (agents) { if (!agents) return; setConn(true); lastAgents = agents; renderRadar(agents); })
       .catch(function () { setConn(false); });
   }
   function startRadar() {
-    show('radar'); $('bar').hidden = false; $('back').hidden = true; $('mode').hidden = true; $('title').textContent = 'gtmux'; $('sub').textContent = '';
+    show('radar'); $('bar').hidden = false; $('back').hidden = true; $('mode').hidden = true; hideFocusChrome(); $('title').textContent = 'gtmux'; $('sub').textContent = '';
     curPane = null; curAgent = null; lastSig = '';
     clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
     pollRadar(); clearInterval(radarTimer); radarTimer = setInterval(pollRadar, 2000);
@@ -269,6 +275,7 @@
     };
     el.addEventListener('wheel', mark, {passive: true});
     el.addEventListener('touchmove', mark, {passive: true});
+    term.onScroll(function () { updateJump(false); }); // §02 jump-to-latest pill
     // On window resize: refit cols/rows, then re-render the current frame so long
     // lines re-wrap to the new browser width (dynamic 折行), debounced.
     window.addEventListener('resize', function () {
@@ -292,7 +299,7 @@
     if (userScrolling) { pendingText = text; return; }
     var prev = lastText; lastText = text;
     if (prev && text.length > prev.length && text.lastIndexOf(prev, 0) === 0) {
-      term.write(text.slice(prev.length));
+      term.write(text.slice(prev.length), function () { updateJump(true); });
       return;
     }
     var b = term.buffer.active;
@@ -303,6 +310,7 @@
       var nb = term.buffer.active;
       if (wasBottom) term.scrollToBottom();
       else { try { term.scrollToLine(Math.max(0, nb.baseY - fromBottom)); } catch (e) {} }
+      updateJump(true);
     });
   }
 
@@ -330,11 +338,13 @@
     if (paneMode === 'chat') {
       clearInterval(paneTimer); paneTimer = null;
       show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {};
+      showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
     } else {
       clearInterval(chatTimer); chatTimer = null;
       show('pane'); ensureTerm(); lastText = ''; pendingText = null; userScrolling = false;
       try { fit.fit(); } catch (e) {}
+      showFocusChrome(true);
       pollPane(); clearInterval(paneTimer); paneTimer = setInterval(pollPane, 1200);
     }
   }
@@ -554,7 +564,7 @@
     ['gate', 'radar', 'pane', 'chat'].forEach(function (id) { $(id).hidden = true; });
     $('workbench').hidden = false;
     $('bar').hidden = true; // the workbench has its own #wb-bar
-    $('back').hidden = true; $('mode').hidden = true; $('gear').hidden = true;
+    $('back').hidden = true; $('mode').hidden = true; $('gear').hidden = true; hideFocusChrome();
     clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
     applyRail();
     $('board').classList.toggle('snap', WB.snap);
@@ -571,7 +581,7 @@
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
       if (!r.ok) throw new Error('agents'); return r.json();
     }).then(function (agents) {
-      if (!agents) return; setWbConn(true); WB.agents = agents;
+      if (!agents) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
       if (WB.saved) { restoreTiles(agents); WB.saved = null; }
       renderTree(agents);
       // refresh each tile's header status + waiting border
@@ -795,9 +805,10 @@
   function dragMove(t, handle) {
     handle.addEventListener('mousedown', function (e) {
       if (e.target.closest('button')) return; e.preventDefault();
-      var sx = e.clientX, sy = e.clientY, ox = t.x, oy = t.y;
-      function mv(ev) { t.x = Math.max(0, snapv(ox + ev.clientX - sx)); t.y = Math.max(0, snapv(oy + ev.clientY - sy)); t.el.style.left = t.x + 'px'; t.el.style.top = t.y + 'px'; }
-      function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); wbSave(); }
+      if (maxedTile) return; // maximized → head is not draggable
+      var sx = e.clientX, sy = e.clientY, ox = t.x, oy = t.y, moved = false;
+      function mv(ev) { if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 4) moved = true; t.x = Math.max(0, snapv(ox + ev.clientX - sx)); t.y = Math.max(0, snapv(oy + ev.clientY - sy)); t.el.style.left = t.x + 'px'; t.el.style.top = t.y + 'px'; }
+      function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); if (moved) wbSave(); else maximizeTile(t); }
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     });
   }
@@ -809,6 +820,88 @@
       function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); if (t.fit && t.mode === 'term' && t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } wbSave(); }
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     });
+  }
+
+  // ---- focus pane (§02): toolbar + jump-to-latest + read-only reply bar ----
+  function persistSize() { try { localStorage.setItem('gtmux.fontSize', String(sizePref)); } catch (e) {} }
+  function focusVisibleText() {
+    var b = term.buffer.active, out = [];
+    for (var i = 0; i < term.rows; i++) { var ln = b.getLine(b.viewportY + i); if (ln) out.push(ln.translateToString(true).replace(/\s+$/, '')); }
+    return out.join('\n').replace(/\n+$/, '');
+  }
+  function flashBtn(b) { var o = b.textContent; b.textContent = '✓'; setTimeout(function () { b.textContent = o; }, 700); }
+  function copyScreen() {
+    if (!term) return;
+    var text = term.getSelection() || focusVisibleText(), done = function () { flashBtn($('copy-screen')); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(done); else done();
+  }
+  function cyclePane(d) {
+    if (!curAgent || !lastAgents.length) return;
+    var i = -1; for (var k = 0; k < lastAgents.length; k++) if (lastAgents[k].pane_id === curAgent.pane_id) { i = k; break; }
+    if (i < 0) return; openAgent(lastAgents[(i + d + lastAgents.length) % lastAgents.length]);
+  }
+  // jump pill — shown when scrolled up; a dot marks new content while away from bottom.
+  function updateJump(newContent) {
+    if ($('pane').hidden || paneMode !== 'term' || !term) { $('jump').hidden = true; return; }
+    var b = term.buffer.active, atBottom = b.viewportY >= b.baseY - 1;
+    if (atBottom) { $('jump').hidden = true; $('jump').querySelector('.jdot').hidden = true; }
+    else { $('jump').hidden = false; if (newContent) $('jump').querySelector('.jdot').hidden = false; }
+  }
+  // reply bar — when the focused pane is waiting, list its 1/2/3 (READ-ONLY) + size.
+  function pollOptions() {
+    if (!curPane || $('pane').hidden || paneMode !== 'term') return;
+    if (!curAgent || curAgent.status !== 'waiting') { hideReply(); return; }
+    api('/api/options?id=' + encodeURIComponent(curPane)).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { renderReply(j && j.options ? j.options : []); }).catch(function () {});
+  }
+  function renderReply(opts) {
+    var had = !$('reply-bar').hidden;
+    $('pane').classList.add('has-reply'); $('reply-bar').hidden = false;
+    var box = $('reply-opts'); box.innerHTML = '';
+    (opts.length ? opts : [{n: 1, label: 'Yes'}, {n: 2, label: 'Always'}, {n: 3, label: 'No'}]).forEach(function (o) {
+      var s = document.createElement('span'); s.className = 'rb-opt'; s.textContent = o.n + ' ' + (o.label || ''); box.appendChild(s);
+    });
+    if (term) $('reply-size').textContent = term.cols + ' × ' + term.rows;
+    if (!had) { try { fit.fit(); } catch (e) {} }
+  }
+  function hideReply() { if ($('reply-bar').hidden) return; $('reply-bar').hidden = true; $('pane').classList.remove('has-reply'); try { fit.fit(); } catch (e) {} }
+  function showFocusChrome(isTerm) {
+    $('focus-nav').hidden = false;
+    $('focus-ctl').hidden = !isTerm;
+    if (isTerm) { pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000); }
+    else { hideReply(); $('jump').hidden = true; clearInterval(optTimer); optTimer = null; }
+  }
+  function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; clearInterval(optTimer); optTimer = null; }
+  function setupFocus() {
+    $('font-dn').onclick = function () { sizePref = Math.max(10, termSize() - 1); persistSize(); applyAppearance(); };
+    $('font-up').onclick = function () { sizePref = Math.min(22, termSize() + 1); persistSize(); applyAppearance(); };
+    $('copy-screen').onclick = copyScreen;
+    $('pane-prev').onclick = function () { cyclePane(-1); };
+    $('pane-next').onclick = function () { cyclePane(1); };
+    $('jump').onclick = function () { if (term) term.scrollToBottom(); updateJump(false); };
+  }
+
+  // ---- board: single-click a tile to maximize it to fill the board (§05) ----
+  var maxedTile = null;
+  function maximizeTile(t) {
+    if (maxedTile === t) { restoreBoard(); return; }
+    if (maxedTile) restoreBoard();
+    maxedTile = t; t.prevRect = {w: t.w, h: t.h};
+    var board = $('board'), br = board.getBoundingClientRect();
+    board.classList.add('maximized'); t.el.classList.add('max'); t.el.style.zIndex = ++zTop;
+    t.el.style.width = (br.width - 16) + 'px'; t.el.style.height = (br.height - 16) + 'px';
+    refitTile(t);
+    var ex = document.createElement('div'); ex.className = 'max-exit'; ex.id = 'max-exit'; ex.textContent = '‹ 还原'; ex.onclick = restoreBoard; board.appendChild(ex);
+  }
+  function restoreBoard() {
+    if (!maxedTile) return; var t = maxedTile; maxedTile = null;
+    $('board').classList.remove('maximized'); t.el.classList.remove('max');
+    t.el.style.width = t.prevRect.w + 'px'; t.el.style.height = t.prevRect.h + 'px';
+    var ex = document.getElementById('max-exit'); if (ex) ex.remove();
+    refitTile(t);
+  }
+  function refitTile(t) {
+    if (t.fit && t.mode === 'term') setTimeout(function () { try { t.fit.fit(); } catch (e) {} if (t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } }, 0);
   }
 
   // ---- boot -------------------------------------------------------------
@@ -850,6 +943,7 @@
     $('back').onclick = function () { if (focusFromWB && isWide()) startWorkbench(); else startRadar(); };
     setupKeyboard();
     setupMode();
+    setupFocus();
     wbLoad();
     setupRail();
     $('wb-gear').onclick = function (e) { e.stopPropagation(); var p = $('settings'); p.hidden = !p.hidden; };
