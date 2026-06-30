@@ -107,6 +107,23 @@
     return av;
   }
 
+  // userAvatarEl — the human's "人形电池 / person-battery" avatar (WEB.md §6): a
+  // person inside a battery on a cyan gradient disc. Same mark as the mobile
+  // UserAvatar. Static SVG (no user data) so innerHTML is safe; unique gradient id.
+  var uaSeq = 0;
+  function userAvatarEl(size) {
+    var id = 'ua' + (++uaSeq), el = document.createElement('div'); el.className = 'user-avatar';
+    if (size) { el.style.width = size + 'px'; el.style.height = size + 'px'; }
+    el.innerHTML = '<svg viewBox="0 0 40 40" width="100%" height="100%">' +
+      '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#0E7490"/></linearGradient></defs>' +
+      '<circle cx="20" cy="20" r="20" fill="url(#' + id + ')"/>' +
+      '<rect x="9" y="7" width="22" height="28" rx="4" stroke="#fff" stroke-width="2.4" fill="none"/>' +
+      '<rect x="15.5" y="4" width="9" height="4" rx="1.5" fill="#fff"/>' +
+      '<circle cx="20" cy="17" r="3.4" fill="#fff"/>' +
+      '<path d="M13.5 30 Q13.5 23 20 23 Q26.5 23 26.5 30 Z" fill="#fff"/></svg>';
+    return el;
+  }
+
   // ---- radar ------------------------------------------------------------
   function rowEl(a) {
     var st = COLORS[a.status] ? a.status : 'running';
@@ -406,7 +423,7 @@
       if (t.prompt) {
         var ur = document.createElement('div'); ur.className = 'urow';
         var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = t.prompt;
-        ur.appendChild(ub); ct.appendChild(ur);
+        ur.appendChild(ub); ur.appendChild(userAvatarEl(26)); ct.appendChild(ur);
       }
       // each segment = an assistant text bubble + the tool steps that followed it;
       // render in order so intermediate process sits BETWEEN separate bubbles.
@@ -777,7 +794,7 @@
     if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = 'No history yet.'; wrap.appendChild(e); }
     turns.forEach(function (tn) {
       var ct = document.createElement('div'); ct.className = 'cturn';
-      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = tn.prompt; ur.appendChild(ub); ct.appendChild(ur); }
+      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = tn.prompt; ur.appendChild(ub); ur.appendChild(userAvatarEl(22)); ct.appendChild(ur); }
       var segs = (tn.segments && tn.segments.length) ? tn.segments : (tn.response ? [{text: tn.response}] : []);
       segs.forEach(function (s) { if (s.text) { var ar = document.createElement('div'); ar.className = 'arow'; var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(s.text)); ar.appendChild(ab); ct.appendChild(ar); } });
       wrap.appendChild(ct);
