@@ -50,6 +50,34 @@
     </div>
   </section>
 
+  <!-- desktop workbench: session tree rail + freeform board of concurrent panes
+       (wide screens only; <900px falls back to the single-column radar→pane). -->
+  <section id="workbench" hidden>
+    <header id="wb-bar">
+      <span class="wb-brand"><span class="wb-mark"><i></i><i class="lit"></i><i class="wide"></i></span>gtmux</span>
+      <button id="wb-snap" class="wb-toggle" title="Snap to grid"><span class="wb-sw"></span>贴齐网格</button>
+      <button id="wb-surface" class="wb-toggle" title="Auto-surface waiting">⤢ 自动浮出 waiting</button>
+      <span class="wb-spacer"></span>
+      <span id="wb-conn" class="conn"></span>
+      <button id="wb-gear" title="Appearance">Aa</button>
+    </header>
+    <div id="wb-body">
+      <aside id="rail">
+        <div id="rail-head">
+          <span class="rail-title">Sessions</span>
+          <span class="rail-spacer"></span>
+          <input id="rail-search" placeholder="⌕ search" />
+          <button id="rail-collapse" title="Collapse sidebar">⇤</button>
+        </div>
+        <div id="tree"></div>
+        <div class="rail-hint">拖 pane 到画板 · 双击全屏</div>
+        <div id="rail-resize" title="Drag to resize"><span></span></div>
+      </aside>
+      <button id="rail-tab" hidden title="Show sidebar">⇥<span id="rail-tab-n"></span></button>
+      <div id="board"></div>
+    </div>
+  </section>
+
   <!-- agent radar -->
   <section id="radar" hidden></section>
 
