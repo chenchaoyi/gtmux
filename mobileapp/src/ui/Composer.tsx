@@ -37,7 +37,9 @@ import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
 import {SnippetsModal} from './SnippetsModal';
+import {SnippetsPicker} from './SnippetsPicker';
 import {HistoryModal} from './HistoryModal';
+import {KeyboardIcon, HistoryIcon} from './Icons';
 import {loadSnippets, saveSnippets} from '../state/snippets';
 import {loadHistory, saveHistory, pushHistory} from '../state/history';
 
@@ -90,6 +92,7 @@ export function Composer({
   const [uploading, setUploading] = useState(false);
   const [markupUri, setMarkupUri] = useState<string | null>(null);
   const [snippets, setSnippets] = useState<string[]>([]);
+  const [snippetsOpen, setSnippetsOpen] = useState(false); // the picker sheet
   const [manageSnippets, setManageSnippets] = useState(false);
   const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
   const [history, setHistory] = useState<string[]>([]);
@@ -197,22 +200,6 @@ export function Composer({
     );
   };
 
-  // Snippets picker (replaces the flat row of snippet pills): tap → pick one to
-  // send, or manage. Uses the native action sheet so saved phrases aren't laid out
-  // inline.
-  const pickSnippet = () => {
-    const manage = lang === 'zh' ? '管理…' : 'Manage…';
-    const cancel = lang === 'zh' ? '取消' : 'Cancel';
-    const opts = [...snippets, manage, cancel];
-    ActionSheetIOS.showActionSheetWithOptions(
-      {options: opts, cancelButtonIndex: opts.length - 1, title: lang === 'zh' ? '快捷短语' : 'Snippets'},
-      idx => {
-        if (idx < snippets.length) send({text: snippets[idx], enter: true});
-        else if (idx === snippets.length) setManageSnippets(true);
-      },
-    );
-  };
-
   // A pill in the key row. `glyph` keys are square-ish single symbols; `text` keys
   // size to their label. All are filled (surface) with a hairline border.
   const Key = ({
@@ -222,6 +209,7 @@ export function Composer({
     fg,
     activeBg,
     testID,
+    icon,
   }: {
     children: React.ReactNode;
     onPress: () => void;
@@ -229,6 +217,7 @@ export function Composer({
     fg?: string;
     activeBg?: boolean;
     testID?: string;
+    icon?: boolean; // render children directly (an SVG), not wrapped in <Text>
   }) => (
     <TouchableOpacity
       testID={testID}
@@ -242,9 +231,13 @@ export function Composer({
           borderColor: activeBg ? ACCENT : pal.divider,
         },
       ]}>
-      <Text style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
-        {children}
-      </Text>
+      {icon ? (
+        children
+      ) : (
+        <Text style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
+          {children}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 
@@ -261,8 +254,12 @@ export function Composer({
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="always"
       contentContainerStyle={styles.keys}>
-      <Key onPress={() => setComposing(c => !c)} glyph activeBg={composing} testID={TestIds.composer.keyboard}>
-        {composing ? '▾' : '⌨'}
+      <Key onPress={() => setComposing(c => !c)} icon activeBg={composing} testID={TestIds.composer.keyboard}>
+        {composing ? (
+          <Text style={[styles.keyGlyph, {color: '#fff'}]}>▾</Text>
+        ) : (
+          <KeyboardIcon size={20} color={pal.fg2} />
+        )}
       </Key>
       {ctx.length > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
       {ctx.map(k => (
@@ -277,10 +274,12 @@ export function Composer({
         </Key>
       ))}
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-      <Key onPress={pickSnippet} testID={TestIds.composer.snippets}>
+      <Key onPress={() => setSnippetsOpen(true)} testID={TestIds.composer.snippets}>
         {lang === 'zh' ? '快捷短语 ▾' : 'Snippets ▾'}
       </Key>
-      <Key onPress={() => setHistoryOpen(true)}>{lang === 'zh' ? '历史' : 'History'}</Key>
+      <Key onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}>
+        <HistoryIcon size={20} color={pal.fg2} />
+      </Key>
     </ScrollView>
   );
 
@@ -388,6 +387,23 @@ export function Composer({
           saveHistory([]);
         }}
         onClose={() => setHistoryOpen(false)}
+      />
+
+      {/* pick a snippet to send (or jump to manage) — branded bottom sheet */}
+      <SnippetsPicker
+        visible={snippetsOpen}
+        snippets={snippets}
+        pal={pal}
+        lang={lang}
+        onPick={s => {
+          send({text: s, enter: true});
+          setSnippetsOpen(false);
+        }}
+        onManage={() => {
+          setSnippetsOpen(false);
+          setManageSnippets(true);
+        }}
+        onClose={() => setSnippetsOpen(false)}
       />
 
       {/* manage saved snippets */}

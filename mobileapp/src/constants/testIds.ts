@@ -44,5 +44,7 @@ export const TestIds = {
     send: 'composer-send',
     keyboard: 'composer-kbd',
     snippets: 'composer-snippets',
+    snippetSheet: 'composer-snippet-sheet',
+    history: 'composer-history',
   },
 } as const;
