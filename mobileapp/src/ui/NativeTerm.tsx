@@ -24,7 +24,7 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {parseAnsi} from './ansi';
-import {cursorSpans, normalizeGlyphs} from './term';
+import {cursorSpans, nativeFontFamily, normalizeGlyphs} from './term';
 import {TermTheme} from '../api/types';
 
 interface PaneCursor {
@@ -45,9 +45,10 @@ const DEF_BG = '#17171a';
 const DEF_FG = '#d4d2cc';
 
 // iOS system monospace (covers Latin + falls back to PingFang for CJK at 2-cell
-// width). The bundled woff2 picker fonts are webview-only; native would need them
-// linked as .ttf — a later follow-up, not needed for the read-only viewer.
-const MONO = 'Menlo';
+// width), via the shared resolver so the chat view uses the exact same font. The
+// bundled woff2 picker fonts are webview-only; native would need them linked as
+// .ttf — a later follow-up, not needed for the read-only viewer.
+const MONO = nativeFontFamily();
 // cap how many trailing capture lines we render as one selectable <Text> — enough
 // scrollback for a phone glance, light enough not to hitch/crash. Deeper history
 // lives in Chat mode (the full transcript).

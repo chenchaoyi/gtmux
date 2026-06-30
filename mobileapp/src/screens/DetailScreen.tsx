@@ -35,10 +35,15 @@ import {DiffModal} from '../ui/DiffModal';
 import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 
-const FONT_SIZES = [9, 11, 13];
+// Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
+// either mode) so switching modes never jumps the text size. Middle = default.
+const FONT_SIZES = [11, 13, 15];
 
 type DetailMode = 'chat' | 'terminal';
 const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
+// Font size is a GLOBAL config (not per-pane): shared by both chat + terminal and
+// remembered across panes/sessions, so A−/A+ in either mode adjusts both and sticks.
+const FONT_IDX_KEY = 'detail.fontIdx';
 
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
@@ -75,12 +80,20 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   // screen glance, not a full transcript), overridden by this pane's own
   // remembered choice if it has one.
   const [mode, setMode] = useState<DetailMode>(defaultDetailMode);
-  // Switching modes re-mounts a heavy view (terminal = hundreds of dual-layer
-  // <Text> rows; chat = many markdown turns), which blocks JS for a beat. Show a
-  // spinner OVER the old view first (ActivityIndicator animates natively, so it
-  // keeps spinning through the JS hitch), then swap on the next frame, then clear
-  // once the new view has committed — so a switch always feels responsive.
+  // Each view (terminal = hundreds of dual-layer <Text> rows; chat = many markdown
+  // turns) is expensive to MOUNT, so we keep BOTH mounted once visited and just
+  // toggle visibility with display:none — a switch is then instant (no re-mount, no
+  // re-parse) and even preserves each view's scroll position. `seen{Chat,Term}`
+  // lazily mounts a view the first time its mode is opened (no upfront cost for a
+  // mode you never visit); the spinner below only covers that one first mount.
+  const [seenChat, setSeenChat] = useState(defaultDetailMode === 'chat');
+  const [seenTerm, setSeenTerm] = useState(defaultDetailMode === 'terminal');
   const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    if (mode === 'chat') setSeenChat(true);
+    else setSeenTerm(true);
+  }, [mode]);
 
   useEffect(() => {
     let alive = true;
@@ -96,13 +109,16 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     if (m === mode) return;
     AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
     if (m === 'chat') setFullscreen(false); // full-screen is terminal-only
+    // Show the spinner on EVERY switch: the first mount is slow (heavy layout) and
+    // even a subsequent opacity swap has a slight composite delay — the spinner
+    // (native-animated, survives the JS hitch) covers both. Paint it for 2 frames
+    // before swapping, then hold it a perceptible minimum so it never just flickers
+    // (a 4-frame clear was invisible on a fast switch → "loading only the first time").
     setSwitching(true);
-    // 2 frames so the spinner paints before the heavy mount blocks; clear 2 frames
-    // after the swap commits.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         setMode(m);
-        requestAnimationFrame(() => requestAnimationFrame(() => setSwitching(false)));
+        setTimeout(() => setSwitching(false), 280);
       }),
     );
   };
@@ -124,8 +140,24 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     return () => { alive = false; };
   }, [client]);
 
-  const smaller = () => setFontIdx(i => Math.max(0, i - 1));
-  const bigger = () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1));
+  // Load the remembered global font size once; persist on every change. Both modes
+  // read the same fontSize, so this is the single source of truth for either A−/A+.
+  useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(FONT_IDX_KEY).then(v => {
+      const n = v == null ? NaN : parseInt(v, 10);
+      if (alive && Number.isInteger(n) && n >= 0 && n < FONT_SIZES.length) setFontIdx(n);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const setFont = (i: number) => {
+    setFontIdx(i);
+    AsyncStorage.setItem(FONT_IDX_KEY, String(i));
+  };
+  const smaller = () => setFont(Math.max(0, fontIdx - 1));
+  const bigger = () => setFont(Math.min(FONT_SIZES.length - 1, fontIdx + 1));
 
   const loadPane = useCallback(async () => {
     try {
@@ -206,6 +238,22 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
+
+  // Memoize the two HEAVY views by their real data deps so a mode switch (which
+  // changes only `mode`/`switching`, not these deps) reuses the SAME element refs
+  // → React skips reconciling their trees entirely → the switch is instant. Without
+  // this, every setState (the switch itself AND each 1.5s poll) re-ran both render
+  // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
+  const chatEl = useMemo(
+    () => (
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} />
+    ),
+    [live, lines, fontSize, pal, lang, turns, chatLoaded, pendingPrompt, fontPref],
+  );
+  const termEl = useMemo(
+    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} />,
+    [text, fontSize, cursor, theme, fontPref],
+  );
 
   return (
     <KeyboardAvoidingView
@@ -290,25 +338,33 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           </View>
           <View style={styles.ctlRight}>
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
-            {mode === 'terminal' && (
-              <>
-                <Ctl pal={pal} label="A−" onPress={smaller} />
-                <Ctl pal={pal} label="A+" onPress={bigger} />
-                <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />
-              </>
-            )}
+            {/* font size adjusts BOTH modes (shared fontSize), so it's available in
+                chat too; full-screen stays terminal-only. */}
+            <Ctl pal={pal} label="A−" onPress={smaller} />
+            <Ctl pal={pal} label="A+" onPress={bigger} />
+            {mode === 'terminal' && <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />}
           </View>
         </View>
       )}
 
-      {/* body: 对话 (glance) or 终端 (raw TUI) */}
+      {/* body: 对话 (glance) + 终端 (raw TUI). Both stay MOUNTED AND LAID OUT once
+          visited — they're absolutely stacked and we toggle only opacity/zIndex/
+          pointerEvents (compositor props, NO Yoga relayout), so after a mode's
+          first mount, switching is genuinely instant (display:none would relayout
+          hundreds of <Text> nodes — that was the lag). Each is lazily mounted. */}
       <View style={styles.body}>
-      {mode === 'chat' ? (
-        <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} />
-      ) : (
+      {seenChat && (
+        <View style={[styles.layer, mode === 'chat' ? styles.layerOn : styles.layerOff]} pointerEvents={mode === 'chat' ? 'auto' : 'none'}>
+          {chatEl}
+        </View>
+      )}
+      {seenTerm && (
       /* pane screen (colored) — native RN <Text> renderer (selectable, no keyboard) */
-      <View style={styles.termWrap} testID={TestIds.detail.pane}>
-        <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} />
+      <View
+        style={[styles.layer, mode === 'terminal' ? styles.layerOn : styles.layerOff]}
+        pointerEvents={mode === 'terminal' ? 'auto' : 'none'}
+        testID={TestIds.detail.pane}>
+        {termEl}
         {/* D8: pane-loading feedback (until the first frame arrives) */}
         {loading && !text && (
           <View style={styles.loadingOverlay}>
@@ -329,8 +385,8 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         )}
       </View>
       )}
-      {/* mode-switch spinner — overlays the old view while the heavy new view
-          mounts, so the switch reads as "loading" instead of a dead pause. */}
+      {/* mode-switch spinner — only the FIRST mount of a mode is slow (subsequent
+          switches are an instant opacity toggle), so the spinner covers just that. */}
       {switching && (
         <View style={[styles.loadingOverlay, {backgroundColor: pal.bg}]} pointerEvents="none">
           <ActivityIndicator color={pal.fg3} />
@@ -467,6 +523,11 @@ const styles = StyleSheet.create({
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
   ctlText: {fontSize: 11.5, fontWeight: '600'},
   body: {flex: 1},
+  // Stacked, always-laid-out mode layers (see the body comment). Toggling opacity/
+  // zIndex never relayouts — that's what makes switching instant after first mount.
+  layer: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
+  layerOn: {opacity: 1, zIndex: 1},
+  layerOff: {opacity: 0, zIndex: 0},
   termWrap: {flex: 1},
   loadingOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10},
   loadingText: {fontSize: 12.5},

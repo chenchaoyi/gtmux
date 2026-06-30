@@ -1,5 +1,13 @@
-import {cursorSpans, normalizeGlyphs, DOT_REC, DOT_CIRCLE} from './term';
+import {cursorSpans, nativeFontFamily, normalizeGlyphs, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
+
+describe('nativeFontFamily', () => {
+  it('resolves every pref to the system monospace (native links no picker fonts yet)', () => {
+    for (const pref of [undefined, 'auto', 'system', 'JetBrains Mono', 'Hack']) {
+      expect(nativeFontFamily(pref)).toBe('Menlo');
+    }
+  });
+});
 
 describe('normalizeGlyphs', () => {
   it('maps U+23FA record glyph to U+25CF black circle', () => {

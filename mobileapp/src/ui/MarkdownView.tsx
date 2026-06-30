@@ -25,6 +25,9 @@ interface Props {
   // (the same quirk NativeTerm works around). Passing an explicit selectionColor
   // forces the highlight to render, so the chat shows a visible selection band.
   selectionColor?: string;
+  // Optional font family for PROSE blocks (headings/paragraphs/lists/quotes/tables);
+  // chat passes the terminal's font so the two surfaces match. Code stays monospace.
+  fontFamily?: string;
 }
 
 function renderSpans(nodes: Inline[], c: MdColors, fs: number): React.ReactNode[] {
@@ -72,6 +75,7 @@ function TableRow({
   header,
   sel,
   sc,
+  ff,
 }: {
   cells: Inline[][];
   align: import('./markdown').Align[];
@@ -80,6 +84,7 @@ function TableRow({
   header?: boolean;
   sel?: boolean;
   sc?: string;
+  ff?: string;
 }) {
   return (
     <View style={styles.tr}>
@@ -90,6 +95,7 @@ function TableRow({
             selectionColor={sc}
             style={{
               color: c.text,
+              fontFamily: ff,
               fontSize: fs - 0.5,
               lineHeight: (fs - 0.5) * 1.4,
               fontWeight: header ? '700' : '400',
@@ -103,17 +109,17 @@ function TableRow({
   );
 }
 
-function BlockView({b, c, fs, sel, sc}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string}) {
+function BlockView({b, c, fs, sel, sc, ff}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string}) {
   switch (b.t) {
     case 'h':
       return (
-        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontSize: fs + (HEADING_SIZE[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3}]}>
+        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs + (HEADING_SIZE[b.level] ?? 0), fontWeight: '700', lineHeight: (fs + 6) * 1.3}]}>
           {renderSpans(b.spans, c, fs)}
         </Text>
       );
     case 'p':
       return (
-        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(b.spans, c, fs)}</Text>
+        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(b.spans, c, fs)}</Text>
       );
     case 'code':
       return (
@@ -131,8 +137,8 @@ function BlockView({b, c, fs, sel, sc}: {b: Block; c: MdColors; fs: number; sel?
         <View style={styles.block}>
           {b.items.map((item, i) => (
             <View key={i} style={styles.li}>
-              <Text style={[styles.bullet, {color: c.dim, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${i + 1}. ` : '• '}</Text>
-              <Text selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs)}</Text>
+              <Text style={[styles.bullet, {color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${i + 1}. ` : '• '}</Text>
+              <Text selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs)}</Text>
             </View>
           ))}
         </View>
@@ -140,16 +146,16 @@ function BlockView({b, c, fs, sel, sc}: {b: Block; c: MdColors; fs: number; sel?
     case 'quote':
       return (
         <View style={[styles.quote, {borderLeftColor: c.border}]}>
-          <Text selectable={sel} selectionColor={sc} style={{color: c.dim, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs)}</Text>
+          <Text selectable={sel} selectionColor={sc} style={{color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45, fontStyle: 'italic'}}>{renderSpans(b.spans, c, fs)}</Text>
         </View>
       );
     case 'table':
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
           <View>
-            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} />
+            <TableRow cells={b.header} align={b.align} c={c} fs={fs} header sel={sel} sc={sc} ff={ff} />
             {b.rows.map((row, i) => (
-              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} />
+              <TableRow key={i} cells={row} align={b.align} c={c} fs={fs} sel={sel} sc={sc} ff={ff} />
             ))}
           </View>
         </ScrollView>
@@ -161,12 +167,12 @@ function BlockView({b, c, fs, sel, sc}: {b: Block; c: MdColors; fs: number; sel?
   }
 }
 
-export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor}: Props) {
+export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily}: Props) {
   const blocks = React.useMemo(() => parseBlocks(source), [source]);
   return (
     <View>
       {blocks.map((b, i) => (
-        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} />
+        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} />
       ))}
     </View>
   );

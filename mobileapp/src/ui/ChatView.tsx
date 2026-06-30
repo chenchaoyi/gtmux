@@ -15,6 +15,7 @@ import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {fmtTurnTime} from './time';
+import {nativeFontFamily} from './term';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
@@ -35,6 +36,9 @@ interface Props {
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
   pendingPrompt?: string;
+  // Font-family config (same value the terminal uses), so chat text matches the
+  // terminal font — resolved via the shared nativeFontFamily().
+  fontPref?: string;
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -70,7 +74,8 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt, fontPref}: Props) {
+  const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
   const scrollRef = React.useRef<ScrollView>(null);
 
@@ -160,7 +165,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
             {!!t.prompt && (
               <View style={styles.userRow}>
                 <View style={styles.userBubble}>
-                  <Text selectable selectionColor={SEL_COLOR} style={styles.userText}>
+                  <Text selectable selectionColor={SEL_COLOR} style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
                     {t.prompt}
                   </Text>
                 </View>
@@ -179,7 +184,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
                         <View style={styles.avatarSpacer} />
                       )}
                       <View style={styles.agentBubble}>
-                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={14} selectable selectionColor={SEL_COLOR} />
+                        <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} selectable selectionColor={SEL_COLOR} />
                       </View>
                     </View>
                   )}
@@ -218,7 +223,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
       {!!pendingPrompt && (turns.length === 0 || turns[turns.length - 1].prompt !== pendingPrompt) && (
         <View style={styles.userRow}>
           <View style={[styles.userBubble, styles.userBubblePending]}>
-            <Text style={styles.userText}>{pendingPrompt}</Text>
+            <Text style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>{pendingPrompt}</Text>
           </View>
         </View>
       )}
