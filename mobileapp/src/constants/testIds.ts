@@ -34,6 +34,9 @@ export const TestIds = {
     modeChat: 'detail-mode-chat',
     modeTerminal: 'detail-mode-terminal',
     chat: 'detail-chat',
+    fullscreen: 'detail-fullscreen',
+    fsExit: 'detail-fs-exit',
+    collapseAll: 'detail-collapse-all',
   },
   composer: {
     input: 'composer-input',

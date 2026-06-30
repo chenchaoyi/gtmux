@@ -50,6 +50,7 @@ interface Props {
 // NativeTerm hits), so we force a visible band — same blue the terminal overlay
 // uses. Without this, long-press copies but shows no highlight.
 const SEL_COLOR = 'rgba(52,120,247,0.5)';
+const hitSlop = {top: 8, bottom: 8, left: 12, right: 12};
 const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
 const CHAT_FG_DIM = 'rgba(235,235,245,0.5)'; // secondary / muted text
 
@@ -76,8 +77,24 @@ function dotColor(status: StatusName): string {
 
 export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt, fontPref}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
-  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
+
+  // Collapse/expand all agent replies — so you can scan prompts to find a turn, then
+  // open just that one. `collapsedAll` is the default; `turnOpen[i]` overrides a
+  // single turn while collapsed. This state lives in ChatView (kept mounted across
+  // mode switches), so the collapse layout persists when you flip 终端↔对话.
+  const [collapsedAll, setCollapsedAll] = React.useState(false);
+  const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
+  const collapseAll = () => {
+    setCollapsedAll(true);
+    setTurnOpen({});
+  };
+  const expandAll = () => {
+    setCollapsedAll(false);
+    setTurnOpen({});
+  };
+  const toggleTurn = (i: number) => setTurnOpen(o => ({...o, [i]: !o[i]}));
 
   // Jump to the latest turn whenever the history grows (kept in sync by the parent).
   React.useEffect(() => {
@@ -117,6 +134,20 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   const liveShown = lines.slice(Math.max(0, end - 14), end);
 
   return (
+    <View style={styles.root}>
+      {/* FIXED one-tap collapse / expand-all bar (outside the scroll, so it's always
+          reachable even after the chat auto-scrolls to the latest turn). */}
+      {turns.length > 0 && (
+        <View style={styles.collapseBar}>
+          <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={TestIds.detail.collapseAll} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop}>
+            <Text style={styles.collapseBarText}>
+              {collapsedAll
+                ? lang === 'zh' ? '▾ 展开全部' : '▾ Expand all'
+                : lang === 'zh' ? '▸ 折叠全部' : '▸ Collapse all'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     <ScrollView
       ref={scrollRef}
       testID={TestIds.detail.chat}
@@ -159,6 +190,11 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         // separate speech bubbles. Fall back to the joined response when no segments.
         const segs: TranscriptSegment[] = t.segments?.length ? t.segments : t.response ? [{text: t.response}] : [];
         const firstText = segs.findIndex(s => !!s.text); // avatar only on the first bubble
+        const hasReply = firstText !== -1;
+        const open = collapsedAll ? !!turnOpen[i] : true; // collapsed turns hide the reply
+        // one-line reply preview, shown next to the toggle while collapsed so a
+        // promptless turn is still locatable.
+        const preview = !open && hasReply ? (segs[firstText].text || '').split('\n').find(l => l.trim())?.slice(0, 64) ?? '' : '';
         return (
           <View key={i} style={styles.turn}>
             {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
@@ -172,7 +208,19 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
               </View>
             )}
 
-            {segs.map((seg, k) => {
+            {/* per-turn reply toggle — only while collapse mode is on (clean default) */}
+            {collapsedAll && hasReply && (
+              <TouchableOpacity onPress={() => toggleTurn(i)} activeOpacity={0.7} style={styles.replyToggle}>
+                <Text style={styles.replyToggleText} numberOfLines={1}>
+                  {open
+                    ? lang === 'zh' ? '▾ 收起回复' : '▾ Collapse reply'
+                    : `▸ ${preview || (lang === 'zh' ? '展开回复' : 'Expand reply')}`}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {open &&
+            segs.map((seg, k) => {
               const key = `${i}-${k}`;
               return (
                 <View key={k} style={styles.segBlock}>
@@ -249,15 +297,23 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         </View>
       )}
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {flex: 1, backgroundColor: '#0D0D0F'},
   body: {flex: 1, backgroundColor: '#0D0D0F'},
   content: {padding: 12, gap: 10},
   center: {paddingVertical: 24, alignItems: 'center'},
   empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},
+  // fixed collapse/expand-all bar above the scroll — right-aligned, quiet.
+  collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
+  collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},
+  // per-turn reply toggle shown while collapsed (chevron + preview).
+  replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},
+  replyToggleText: {fontSize: 12.5, color: 'rgba(235,235,245,0.55)'},
   stateText: {flex: 1, minWidth: 0},
   agentName: {fontSize: 13.5, fontWeight: '700'},
   statusLine: {flexDirection: 'row', alignItems: 'center', marginTop: 2},
