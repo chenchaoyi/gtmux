@@ -13,6 +13,7 @@ struct MenuView: View {
     @ObservedObject var store: AgentStore
     @ObservedObject var l10n: L10n
     @ObservedObject var remote = RemoteAccess.shared
+    @ObservedObject private var updater = Updater.shared
     @ObservedObject private var collapse = SectionCollapse.shared
     var onJump: (Agent) -> Void
     var onAction: (MenuAction) -> Void
@@ -196,6 +197,7 @@ struct MenuView: View {
 
     @ViewBuilder private func footer(_ p: Theme.Palette) -> some View {
         VStack(spacing: 0) {
+            updateBanner(p)
             HStack(spacing: 0) {
                 footerAction("square.grid.2x2", l10n.tr("Overview", "概览")) { onAction(.overview) }
                 footerAction("waveform", l10n.tr("Watch", "实时")) { onAction(.watch) }
@@ -243,14 +245,53 @@ struct MenuView: View {
                         .fixedSize()
                     Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }
-                // The version is the lowest-priority element: if anything still
-                // doesn't fit (a longer locale), it truncates gracefully instead of
-                // clipping at the popover edge.
-                Text("gtmux \(appVersion) · by ccy")
-                    .font(Theme.Font.footer).foregroundStyle(p.fg3)
-                    .lineLimit(1).truncationMode(.tail).layoutPriority(-1)
+                // The version doubles as a tap-to-"check for updates" affordance and
+                // shows the check's result inline. Lowest layout priority so a longer
+                // locale truncates here instead of clipping at the popover edge.
+                Button { updater.check() } label: {
+                    Text(versionLabel)
+                        .font(Theme.Font.footer).foregroundStyle(p.fg3)
+                        .lineLimit(1).truncationMode(.tail)
+                }.buttonStyle(.plain).layoutPriority(-1)
+                    .help(l10n.tr("Check for updates", "检查更新"))
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
+        }
+    }
+
+    // A prominent, tappable "new version" banner above the footer actions — the
+    // one-click path to install an update (same effect as `gtmux update`). Shows a
+    // working state while updating; hidden when up to date.
+    @ViewBuilder private func updateBanner(_ p: Theme.Palette) -> some View {
+        switch updater.state {
+        case .available(let v):
+            Button { updater.install() } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.down.circle.fill").font(.system(size: 13))
+                    Text(l10n.tr("New version \(v) — click to update", "新版本 \(v) · 点此更新"))
+                        .font(.system(size: 11.5, weight: .semibold))
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .frame(maxWidth: .infinity)
+                .background(Theme.Status.working)
+                .contentShape(Rectangle())
+            }.buttonStyle(.plain)
+                .help(l10n.tr("Update gtmux (CLI + app) to \(v)", "把 gtmux（CLI + app）更新到 \(v)"))
+        case .updating:
+            HStack(spacing: 7) {
+                ProgressView().controlSize(.small)
+                Text(l10n.tr("Updating gtmux… it will relaunch when done",
+                             "正在更新 gtmux…完成后会自动重启"))
+                    .font(.system(size: 11)).foregroundStyle(p.fg2)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.Status.working.opacity(0.12))
+        default:
+            EmptyView()
         }
     }
 
@@ -268,6 +309,18 @@ struct MenuView: View {
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+    }
+
+    // The footer version line, suffixed with the check's transient result. The
+    // `.available` case is intentionally NOT shown here — the prominent banner above
+    // owns that state — so this stays "gtmux X · by ccy" until the user checks.
+    private var versionLabel: String {
+        switch updater.state {
+        case .checking: return l10n.tr("gtmux \(appVersion) · checking…", "gtmux \(appVersion) · 检查中…")
+        case .upToDate: return l10n.tr("gtmux \(appVersion) · up to date", "gtmux \(appVersion) · 已是最新")
+        case .failed: return l10n.tr("gtmux \(appVersion) · check failed", "gtmux \(appVersion) · 检查失败")
+        default: return "gtmux \(appVersion) · by ccy"
+        }
     }
 
     // MARK: keyboard
