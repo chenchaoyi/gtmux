@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -32,6 +34,7 @@ type AgentStatus struct {
 	Loc    string
 	Task   string
 	Status string // working | waiting | idle | running
+	Since  int64  // epoch seconds the current state started (relative-time line); 0 if unknown
 }
 
 // Alert is a status transition worth surfacing: a pane that just started
@@ -55,6 +58,93 @@ type Tally struct {
 	Idle           int
 	WaitingTitle   string // the waiting agent's prompt/task (detail line)
 	WaitingSession string // the waiting agent's session name (bold headline)
+	// Items is the top few in-flight sessions to LIST concretely on the lock screen
+	// (waiting first, then working, most-recent first), so the activity shows real
+	// session names + a relative time, not just a count. More is how many active
+	// sessions are not shown.
+	Items []TallyItem
+	More  int
+}
+
+// TallyItem is one listed session in the Live Activity (a session name + its status
+// + a compact relative time like "2m").
+type TallyItem struct {
+	Title  string `json:"title"`
+	Status string `json:"status"` // waiting | working
+	Time   string `json:"time"`   // compact relative time, e.g. "now" / "2m" / "1h"
+}
+
+// tallyMaxItems is how many sessions the Live Activity lists before "+N more".
+const tallyMaxItems = 3
+
+// relTime formats seconds-since into a compact label: "now" (<60s), "Nm" (<1h),
+// "Nh" (<1d), else "Nd". Empty when since is unknown (0).
+func relTime(nowUnix, since int64) string {
+	if since <= 0 {
+		return ""
+	}
+	d := nowUnix - since
+	if d < 0 {
+		d = 0
+	}
+	switch {
+	case d < 60:
+		return "now"
+	case d < 3600:
+		return itoa(d/60) + "m"
+	case d < 86400:
+		return itoa(d/3600) + "h"
+	default:
+		return itoa(d/86400) + "d"
+	}
+}
+
+func itoa(n int64) string { return strconv.FormatInt(n, 10) }
+
+// topTallyItems builds the listed sessions: waiting first, then working, each
+// most-recent-first, capped at tallyMaxItems. Returns the items + how many active
+// (waiting+working) sessions are NOT shown.
+func topTallyItems(nowUnix int64, waiters, workers []AgentStatus) ([]TallyItem, int) {
+	byRecent := func(s []AgentStatus) {
+		sort.SliceStable(s, func(i, j int) bool { return s[i].Since > s[j].Since }) // newest first
+	}
+	byRecent(waiters)
+	byRecent(workers)
+	ordered := append(append([]AgentStatus{}, waiters...), workers...)
+	items := make([]TallyItem, 0, tallyMaxItems)
+	for _, a := range ordered {
+		if len(items) >= tallyMaxItems {
+			break
+		}
+		title := a.Task
+		if title == "" {
+			title = waitSession(a)
+		}
+		if title == "" {
+			title = a.Agent
+		}
+		items = append(items, TallyItem{Title: title, Status: a.Status, Time: relTime(nowUnix, a.Since)})
+	}
+	more := len(waiters) + len(workers) - len(items)
+	if more < 0 {
+		more = 0
+	}
+	return items, more
+}
+
+// tallyEqual compares two tallies (Tally has a slice, so it isn't `==`-comparable).
+func tallyEqual(a, b Tally) bool {
+	if a.Waiting != b.Waiting || a.Working != b.Working || a.Idle != b.Idle ||
+		a.WaitingTitle != b.WaitingTitle || a.WaitingSession != b.WaitingSession ||
+		a.More != b.More || len(a.Items) != len(b.Items) {
+		return false
+	}
+	for i := range a.Items {
+		if a.Items[i] != b.Items[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // sseEvent is one named Server-Sent Event ready to frame onto the wire.
@@ -203,17 +293,20 @@ func (h *hub) tick() {
 
 	changed := prev == nil // first observation always publishes an initial rev
 	tally := Tally{}
+	var waiters, workers []AgentStatus // collected to LIST the top in-flight sessions
 	for _, a := range cur {
 		curMap[a.PaneID] = a
 		switch a.Status {
 		case "waiting":
 			tally.Waiting++
+			waiters = append(waiters, a)
 			if tally.Waiting == 1 { // the first waiter sets the headline
 				tally.WaitingTitle = a.Task
 				tally.WaitingSession = waitSession(a)
 			}
 		case "working":
 			tally.Working++
+			workers = append(workers, a)
 		case "idle":
 			tally.Idle++
 		}
@@ -253,9 +346,13 @@ func (h *hub) tick() {
 		}
 	}
 
-	// Push the Live Activity tally when it changes (counts or the headline). Fired
-	// outside the lock; the push manager forwards it async to the relay.
-	if h.onTally != nil && (!h.tallyKnown || tally != h.lastTally) {
+	// List the top in-flight sessions (waiting first, then working; most-recent
+	// first) so the Live Activity shows concrete session names + a relative time.
+	tally.Items, tally.More = topTallyItems(now.Unix(), waiters, workers)
+
+	// Push the Live Activity tally when it changes (counts, headline, or the listed
+	// items). Fired outside the lock; the push manager forwards it async to the relay.
+	if h.onTally != nil && (!h.tallyKnown || !tallyEqual(tally, h.lastTally)) {
 		h.lastTally = tally
 		h.tallyKnown = true
 		h.onTally(tally)

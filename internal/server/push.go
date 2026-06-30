@@ -150,9 +150,14 @@ func (p *PushManager) PushLiveActivity(t Tally) {
 	if len(toks) == 0 {
 		return
 	}
+	items := make([]map[string]any, 0, len(t.Items))
+	for _, it := range t.Items {
+		items = append(items, map[string]any{"title": it.Title, "status": it.Status, "time": it.Time})
+	}
 	cs := map[string]any{
 		"waiting": t.Waiting, "working": t.Working, "idle": t.Idle,
 		"waitingTitle": t.WaitingTitle, "waitingSession": t.WaitingSession,
+		"items": items, "more": t.More,
 	}
 	go func() {
 		for _, tok := range toks {

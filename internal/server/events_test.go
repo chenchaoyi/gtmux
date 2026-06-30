@@ -173,7 +173,11 @@ func TestHubTally(t *testing.T) {
 	h.onTally = func(tl Tally) { tallies = append(tallies, tl) }
 
 	h.tick() // first observation publishes the initial tally
-	if len(tallies) != 1 || tallies[0] != (Tally{Waiting: 1, Working: 1, WaitingTitle: "approve?", WaitingSession: "proj"}) {
+	want0 := Tally{Waiting: 1, Working: 1, WaitingTitle: "approve?", WaitingSession: "proj", Items: []TallyItem{
+		{Title: "approve?", Status: "waiting"},
+		{Title: "proj", Status: "working"},
+	}}
+	if len(tallies) != 1 || !tallyEqual(tallies[0], want0) {
 		t.Fatalf("initial tally = %+v", tallies)
 	}
 
@@ -184,7 +188,7 @@ func TestHubTally(t *testing.T) {
 
 	cur = []AgentStatus{{PaneID: "%2", Agent: "Codex", Loc: "proj:1.0", Status: "idle"}}
 	h.tick() // counts changed → push once
-	if len(tallies) != 2 || tallies[1] != (Tally{Idle: 1}) {
+	if len(tallies) != 2 || !tallyEqual(tallies[1], Tally{Idle: 1}) {
 		t.Fatalf("changed tally = %+v", tallies)
 	}
 }
@@ -250,5 +254,62 @@ func readEvent(t *testing.T, br *bufio.Reader) string {
 			return b.String()
 		}
 		b.WriteString(line)
+	}
+}
+
+func TestRelTime(t *testing.T) {
+	cases := []struct {
+		now, since int64
+		want       string
+	}{
+		{1000, 0, ""},         // unknown
+		{1000, 1000, "now"},   // 0s
+		{1000, 970, "now"},    // 30s
+		{1000, 880, "2m"},     // 120s
+		{10000, 6400, "1h"},   // 3600s
+		{200000, 27200, "2d"}, // 172800s
+	}
+	for _, c := range cases {
+		if got := relTime(c.now, c.since); got != c.want {
+			t.Errorf("relTime(%d,%d) = %q, want %q", c.now, c.since, got, c.want)
+		}
+	}
+}
+
+func TestTopTallyItems(t *testing.T) {
+	now := int64(1000)
+	waiters := []AgentStatus{
+		{Task: "fix the bug", Status: "waiting", Since: 940}, // 1m
+		{Task: "review PR", Status: "waiting", Since: 880},   // 2m
+	}
+	workers := []AgentStatus{
+		{Task: "run tests", Status: "working", Since: 760}, // 4m
+		{Task: "build", Status: "working", Since: 700},     // 5m
+	}
+	items, more := topTallyItems(now, waiters, workers)
+	// cap 3: both waiters (newest first) + the newest worker
+	if len(items) != 3 {
+		t.Fatalf("len(items) = %d, want 3", len(items))
+	}
+	if items[0].Title != "fix the bug" || items[0].Status != "waiting" || items[0].Time != "1m" {
+		t.Errorf("items[0] = %+v", items[0])
+	}
+	if items[1].Title != "review PR" || items[1].Time != "2m" {
+		t.Errorf("items[1] = %+v", items[1])
+	}
+	if items[2].Status != "working" || items[2].Time != "4m" { // waiters before workers
+		t.Errorf("items[2] = %+v", items[2])
+	}
+	if more != 1 { // 4 active − 3 shown
+		t.Errorf("more = %d, want 1", more)
+	}
+}
+
+func TestTopTallyItemsTitleFallback(t *testing.T) {
+	now := int64(1000)
+	// no task → falls back to the session from loc
+	items, _ := topTallyItems(now, []AgentStatus{{Loc: "mysess:1.0", Status: "waiting", Since: 900}}, nil)
+	if len(items) != 1 || items[0].Title != "mysess" {
+		t.Fatalf("title fallback = %+v", items)
 	}
 }

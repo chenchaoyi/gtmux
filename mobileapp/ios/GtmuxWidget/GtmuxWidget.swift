@@ -93,6 +93,59 @@ private struct MiniTally: View {
   }
 }
 
+private func itemStatus(_ s: String) -> AgentStatus {
+  switch s {
+  case "waiting": return .waiting
+  case "working": return .working
+  case "idle": return .idle
+  default: return .running
+  }
+}
+
+// SessionRow — one listed session: [status badge] title …… time. The new
+// "concrete" line so the activity shows real sessions, not just a count.
+private struct SessionRow: View {
+  let item: GtmuxActivityAttributes.Item
+  var body: some View {
+    HStack(spacing: 8) {
+      StatusBadge(status: itemStatus(item.status), size: 13)
+      Text(item.title.isEmpty ? "—" : item.title)
+        .font(.subheadline).foregroundColor(.white.opacity(0.92)).lineLimit(1)
+      Spacer(minLength: 6)
+      if !item.time.isEmpty {
+        Text(item.time).font(.caption).foregroundColor(.white.opacity(0.5)).monospacedDigit()
+      }
+    }
+  }
+}
+
+// SessionList — up to maxRows session rows + a "+N more" footer.
+private struct SessionList: View {
+  let items: [GtmuxActivityAttributes.Item]
+  let more: Int
+  var maxRows: Int = 3
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      ForEach(Array(items.prefix(maxRows).enumerated()), id: \.offset) { _, it in
+        SessionRow(item: it)
+      }
+      if more > 0 {
+        Text("+\(more) more").font(.caption).foregroundColor(.white.opacity(0.45))
+      }
+    }
+  }
+}
+
+// summaryLine — the bold header count, e.g. "2 waiting · 3 working" (waiting first),
+// "1 idle", or "No agents".
+private func summaryLine(_ st: GtmuxActivityAttributes.ContentState) -> String {
+  var parts: [String] = []
+  if st.waiting > 0 { parts.append("\(st.waiting) waiting") }
+  if st.working > 0 { parts.append("\(st.working) working") }
+  if parts.isEmpty { return st.idle > 0 ? "\(st.idle) idle" : "No agents" }
+  return parts.joined(separator: " · ")
+}
+
 // headline / subtitle derive a glanceable summary: lead with WHERE needs you (the
 // session), then the prompt. waiting wins, then working, then idle.
 private func headline(_ st: GtmuxActivityAttributes.ContentState) -> String {
@@ -134,21 +187,22 @@ struct GtmuxLiveActivity: Widget {
       //   [badge]  session (bold)         [app icon]
       //            prompt  (dim)
       //   ───────  N waiting · M working · K idle  ───────
-      VStack(alignment: .leading, spacing: 9) {
-        HStack(alignment: .top, spacing: 12) {
-          StatusBadge(status: primaryStatus(context.state), size: 28)
-          VStack(alignment: .leading, spacing: 2) {
-            Text(headline(context.state))
-              .font(.headline).fontWeight(.bold).foregroundColor(.white)
-              .lineLimit(1)
-            Text(subtitle(context.state))
-              .font(.caption).foregroundColor(.white.opacity(0.62))
-              .lineLimit(1)
-          }
+      VStack(alignment: .leading, spacing: 10) {
+        HStack(alignment: .center, spacing: 12) {
+          StatusBadge(status: primaryStatus(context.state), size: 26)
+          Text(summaryLine(context.state))
+            .font(.headline).fontWeight(.bold).foregroundColor(.white).lineLimit(1)
           Spacer(minLength: 8)
-          BrandMark(size: 26)
+          BrandMark(size: 24)
         }
-        MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+        // The concrete part: list the top in-flight sessions. Falls back to the
+        // glanceable subtitle when there's nothing to list (idle-only / old push).
+        if !context.state.items.isEmpty {
+          SessionList(items: context.state.items, more: context.state.more)
+        } else {
+          Text(subtitle(context.state))
+            .font(.caption).foregroundColor(.white.opacity(0.62)).lineLimit(1)
+        }
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
@@ -169,7 +223,11 @@ struct GtmuxLiveActivity: Widget {
           }
         }
         DynamicIslandExpandedRegion(.bottom) {
-          MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+          if !context.state.items.isEmpty {
+            SessionList(items: context.state.items, more: context.state.more, maxRows: 2)
+          } else {
+            MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+          }
         }
       } compactLeading: {
         StatusBadge(status: primaryStatus(context.state), size: 16)

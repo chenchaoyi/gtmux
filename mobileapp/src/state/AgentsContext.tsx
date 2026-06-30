@@ -7,6 +7,7 @@ import {GtmuxClient} from '../api/client';
 import {subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity} from '../native/liveActivity';
+import {buildActivityItems} from './activityItems';
 
 export type ConnState = 'connecting' | 'live' | 'offline';
 
@@ -47,15 +48,19 @@ export function AgentsProvider({
           setConn('live');
           setLastUpdated(Date.now());
           // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
-          // leading with the session that needs you (bold) + its prompt (detail).
+          // leading with the session that needs you (bold) + its prompt (detail),
+          // and LISTING the top in-flight sessions (concrete names + relative time).
           const waiters = a.filter(x => x.status === 'waiting');
           const top = waiters[0];
+          const {items, more} = buildActivityItems(a, Math.floor(Date.now() / 1000));
           LiveActivity.sync(
             waiters.length,
             a.filter(x => x.status === 'working').length,
             a.filter(x => x.status === 'idle').length,
             top ? top.task || primary(top) : '',
             top ? top.session || top.loc : '',
+            items,
+            more,
           );
         })
         .catch(() => setConn('offline'));
