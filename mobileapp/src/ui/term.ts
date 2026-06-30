@@ -4,6 +4,16 @@
 
 import {AnsiLine, Span} from './ansi';
 
+// nativeFontFamily resolves the font-pref config to an actual iOS font family,
+// the SINGLE source of truth shared by the terminal renderer AND the chat view so
+// they always match. Native only has system fonts linked (the bundled picker
+// woff2 are webview-only), so every pref currently resolves to the system
+// monospace; centralized here so when native font-linking lands, both surfaces
+// follow the same config automatically.
+export function nativeFontFamily(_fontPref?: string): string {
+  return 'Menlo';
+}
+
 // iOS Core Text renders U+23FA "⏺ BLACK CIRCLE FOR RECORD" (Claude Code's tool-call
 // marker) as the glossy RED record-button COLOR EMOJI, ignoring the ANSI color.
 // Swap it for U+25CF "● BLACK CIRCLE" (no emoji presentation) so it renders as a
