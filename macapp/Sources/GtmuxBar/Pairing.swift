@@ -176,6 +176,7 @@ struct PairingView: View {
     @ObservedObject private var ent = Entitlements.shared
     @State private var info: PairingInfo?
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
+    @State private var dnsBlocked = false // reach failed because the host resolves to a private IP (corp-DNS interception)
     @State private var enrollCode: String? // minted short-lived code (v2 QR)
     @State private var codeReady = false // mint attempt finished (success or fallback)
     @State private var showPaywall = false
@@ -291,6 +292,13 @@ struct PairingView: View {
         switch reachable {
         case .some(true):
             label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
+        case .some(false) where dnsBlocked:
+            // The tunnel host resolves to a private IP → this network is hijacking
+            // DNS (common on corporate Wi-Fi). The tunnel itself is fine; a phone on
+            // cellular reaches it. Inform calmly (blue), don't alarm (orange).
+            label("wifi.exclamationmark", .blue,
+                  l10n.tr("This network blocks the address · a phone on cellular connects fine",
+                          "本机网络拦截了该地址 · 手机用蜂窝可正常连接"))
         case .some(false):
             label("exclamationmark.triangle.fill", .orange,
                   l10n.tr("Can't reach it yet", "暂时连不上"))
@@ -300,10 +308,13 @@ struct PairingView: View {
     }
 
     private func label(_ symbol: String, _ color: Color, _ text: String) -> some View {
-        HStack(spacing: 5) {
+        HStack(alignment: .top, spacing: 5) {
             Image(systemName: symbol).font(.system(size: 10)).foregroundStyle(color)
             Text(text).font(.system(size: 11)).foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: 220)
     }
 
     // wrap — a centered, wrapping text (fixedSize vertical so long lines never get
@@ -320,6 +331,7 @@ struct PairingView: View {
         let i = Pairing.current()
         info = i
         reachable = nil
+        dnsBlocked = false
         enrollCode = nil
         codeReady = false
         if let i = i {
@@ -351,12 +363,40 @@ struct PairingView: View {
     }
 
     private func probe(_ url: String) {
-        guard let u = URL(string: url + "/api/health") else { reachable = false; return }
+        guard let u = URL(string: url + "/api/health") else { reachable = false; dnsBlocked = false; return }
+        let host = u.host
         var req = URLRequest(url: u)
         req.timeoutInterval = 6
         URLSession.shared.dataTask(with: req) { _, resp, _ in
             let ok = (resp as? HTTPURLResponse)?.statusCode == 200
-            DispatchQueue.main.async { reachable = ok }
+            // On failure, check whether the host resolves to a private (RFC1918) IP —
+            // i.e. this network is intercepting DNS (the tunnel host should map to a
+            // public Cloudflare edge). If so we surface the calmer "blocked" message.
+            let blocked = !ok && (host.map(PairingView.resolvesToPrivateIP) ?? false)
+            DispatchQueue.main.async { reachable = ok; dnsBlocked = blocked }
         }.resume()
+    }
+
+    // resolvesToPrivateIP — true if `host` resolves (IPv4) to an RFC1918 / loopback
+    // address. Used to tell "corp-DNS hijack" apart from a genuinely down tunnel.
+    private static func resolvesToPrivateIP(_ host: String) -> Bool {
+        var hints = addrinfo(ai_flags: 0, ai_family: AF_INET, ai_socktype: SOCK_STREAM,
+                             ai_protocol: 0, ai_addrlen: 0, ai_canonname: nil, ai_addr: nil, ai_next: nil)
+        var res: UnsafeMutablePointer<addrinfo>?
+        guard getaddrinfo(host, nil, &hints, &res) == 0 else { return false }
+        defer { freeaddrinfo(res) }
+        var ptr = res
+        while let p = ptr {
+            if p.pointee.ai_family == AF_INET, let sa = p.pointee.ai_addr {
+                let s = sa.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { $0.pointee }
+                let v = UInt32(bigEndian: s.sin_addr.s_addr)
+                let a = (v >> 24) & 0xff, b = (v >> 16) & 0xff
+                if a == 10 || a == 127 || (a == 172 && (16...31).contains(b)) || (a == 192 && b == 168) {
+                    return true
+                }
+            }
+            ptr = p.pointee.ai_next
+        }
+        return false
     }
 }
