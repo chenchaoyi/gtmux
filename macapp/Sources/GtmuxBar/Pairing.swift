@@ -43,9 +43,11 @@ enum Pairing {
     static func payload(_ p: PairingInfo, enrollCode: String? = nil) -> String {
         let dict: [String: Any]
         if let code = enrollCode, !code.isEmpty {
-            // v2 omits `name` (the phone derives a label from the URL host) to keep
-            // the QR small/scannable — see app/qr.go's module-count footgun note.
-            dict = ["v": 2, "url": p.url, "enrollCode": code]
+            // v2 carries the Mac's name so the phone shows the computer name (e.g.
+            // "ccy's MacBook Pro") rather than deriving a label from the URL host —
+            // which, over an Anywhere tunnel, would be the opaque `gtmux-<id>`. The
+            // name is ~20 bytes; negligible for the QR's capacity.
+            dict = ["v": 2, "url": p.url, "enrollCode": code, "name": p.name]
         } else {
             dict = ["v": 1, "url": p.url, "token": p.token, "name": p.name]
         }
