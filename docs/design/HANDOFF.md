@@ -2,8 +2,9 @@
 
 ## 你（用户）怎么操作
 
-1. 用本 `docs/design/` 文件夹**整体替换**旧目录（无需挑选覆盖）。
-   > 注：旧目录里你自有的 `multi-agent-multi-terminal.md` / `remote-access-tunnel.md` 若仍需保留，replace 前先备份。
+1. 把本 `docs/design/` 的内容**叠加覆盖**进仓库(只覆盖同名文件)。
+   > 不要删除仓库自有的 `DECISIONS-FOR-CCY.md` / `SECURITY.md` / `multi-agent-multi-terminal.md` /
+   > `multiplexer-research.md` / `remote-access-tunnel.md` / `RESEARCH-prior-art-2026-06.md`——它们不在本包里。
 2. 仓库根开 Claude Code，整段粘贴下面「给 CC 的 Prompt」。
 
 ---
@@ -40,8 +41,11 @@
 10. **启动 splash**（`tmux × agent` slogan）/ **离线态**（红横幅 + 缓存置灰，不清屏）/ **进 pane 加载态**（骨架 + 转圈 + 慢/失败兜底）（§16）。
 11. iPad split-view + 竖屏抽屉 + 指针/Pencil（§06）。
 
-**Web 浏览器镜像**（独立）
-12. 一次性可过期链接 + 居中只读雷达 + xterm.js pane 镜像 + 键盘导航（`gtmux-web.dc.html`）。
+**Web 浏览器镜像**（独立表面，详见 `WEB.md`）
+12. **工作台**：左侧 session→window→pane 目录树（可搜/可展开/**可收起·右缘拖拽调宽**，窄屏自动收起）+ 自由画板（拖 pane 生 tile、多个并发 `/api/pane` 实时镜像、拖动/缩放/贴齐）。
+13. **tile 缩放其余自适应回流 + 单击最大化聚焦**（gtmux-web §02）；tile 头部 **终端 / 对话 / diff**（不要 term/chat）。
+14. **对话模式·宽屏版**（§03）：轮次目录 + 居中对话列 + 气泡悬停复制/引用 + waiting 审批卡 + 多行 composer；**人类头像默认「人形电池」**（青色渐变底，与 agent 官方图标区分；设置可换/上传/emoji/首字母），三屏统一替换现有 `UserAvatar`。
+15. 一次性可过期链接 + 顶栏（布局预设·贴齐网格·自动浮出 waiting·连接指示）+ 键盘（⌘K/1–9/f/Esc/g/[ ]///·对话 j/k）。红线：**view-only，不新增后端**，只用现有 `/api/agents·pane·transcript·diff·icon·SSE`；窄屏可退回现有单列。
 
 每项落地后，若与 mockup 有出入，**先报差异再改**，不要擅自偏离。
 
@@ -55,4 +59,4 @@
 - 多行输入/粘贴/附件 → `mobileapp/src/ui/Composer.tsx`；图片标注 → `ImageMarkup.tsx`。
 - 双模式/审批卡 → DetailScreen + 新增 Chat 视图。
 - 设置 → `SettingsScreen.tsx`；splash → 原生 LaunchScreen + RN。
-- 配对/Web → `api/contract.md`、`internal/server/`、`PairingScreen.tsx`。
+- 配对/Web → `api/contract.md`、`internal/server/`（Web 前端全在 `internal/server/web/`）、`PairingScreen.tsx`。

@@ -40,7 +40,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { ['gate', 'radar', 'pane', 'chat'].forEach(function (id) { $(id).hidden = id !== which; }); }
+  function show(which) { ['gate', 'radar', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
   function gate(msg) {
     $('gate-msg').textContent = msg; show('gate');
     $('mode').hidden = true; $('back').hidden = true;
@@ -187,7 +187,7 @@
       .catch(function () { setConn(false); });
   }
   function startRadar() {
-    show('radar'); $('back').hidden = true; $('mode').hidden = true; $('title').textContent = 'gtmux'; $('sub').textContent = '';
+    show('radar'); $('bar').hidden = false; $('back').hidden = true; $('mode').hidden = true; $('title').textContent = 'gtmux'; $('sub').textContent = '';
     curPane = null; curAgent = null; lastSig = '';
     clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
     pollRadar(); clearInterval(radarTimer); radarTimer = setInterval(pollRadar, 2000);
@@ -223,12 +223,21 @@
   }
   function termSize() { return sizePref || (theme && theme.fontSize) || 14; }
   function applyAppearance() {
-    if (!term) return;
-    term.options.theme = xtermTheme();
-    term.options.fontFamily = resolveFont();
-    term.options.fontSize = termSize();
     document.body.style.background = (theme && theme.background) || GHOSTTY.bg;
-    try { fit.fit(); } catch (e) {}
+    if (term) {
+      term.options.theme = xtermTheme();
+      term.options.fontFamily = resolveFont();
+      term.options.fontSize = termSize();
+      try { fit.fit(); } catch (e) {}
+    }
+    // tiles each own a smaller xterm — keep them in step with the picker.
+    if (WB && WB.tiles) WB.tiles.forEach(function (t) {
+      if (!t.term) return;
+      t.term.options.theme = xtermTheme();
+      t.term.options.fontFamily = resolveFont();
+      t.term.options.fontSize = Math.max(10, termSize() - 3);
+      try { t.fit.fit(); } catch (e) {}
+    });
   }
   function fetchTheme() {
     return api('/api/theme').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -307,8 +316,10 @@
   }
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
   // vs chat history) is remembered across agents (gtmux.paneMode).
+  var focusFromWB = false;
   function openAgent(a) {
-    curPane = a.pane_id; curAgent = a; $('back').hidden = false; $('mode').hidden = false;
+    focusFromWB = !$('workbench').hidden; // remember where to return (workbench vs radar)
+    curPane = a.pane_id; curAgent = a; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = false; $('gear').hidden = false;
     $('title').textContent = primary(a); $('sub').textContent = (a.agent || '') + ' · ' + secondary(a);
     clearInterval(radarTimer); radarTimer = null;
     applyMode();
@@ -513,6 +524,293 @@
     return root;
   }
 
+  // ======================================================================
+  // Desktop workbench (WEB.md §1–§3): a session tree rail + a freeform board of
+  // CONCURRENT pane mirrors. Wide screens only; <900px keeps the single column.
+  // View-only, no new backend — each tile is another /api/pane|transcript|diff.
+  // ======================================================================
+  var WB = {on: false, agents: [], tiles: [], railW: 232, railCollapsed: false, snap: false, surface: false};
+  var WB_KEY = 'gtmux.board';
+  function isWide() { return window.innerWidth >= 900; }
+  function wbLoad() {
+    try {
+      var s = JSON.parse(localStorage.getItem(WB_KEY) || '{}');
+      WB.railW = Math.max(170, Math.min(360, s.railW || 232));
+      WB.railCollapsed = !!s.railCollapsed; WB.snap = !!s.snap; WB.surface = !!s.surface;
+      WB.saved = Array.isArray(s.tiles) ? s.tiles : [];
+    } catch (e) { WB.saved = []; }
+  }
+  function wbSave() {
+    try {
+      localStorage.setItem(WB_KEY, JSON.stringify({
+        railW: WB.railW, railCollapsed: WB.railCollapsed, snap: WB.snap, surface: WB.surface,
+        tiles: WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; }),
+      }));
+    } catch (e) {}
+  }
+
+  function startWorkbench() {
+    WB.on = true;
+    ['gate', 'radar', 'pane', 'chat'].forEach(function (id) { $(id).hidden = true; });
+    $('workbench').hidden = false;
+    $('bar').hidden = true; // the workbench has its own #wb-bar
+    $('back').hidden = true; $('mode').hidden = true; $('gear').hidden = true;
+    clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
+    applyRail();
+    $('board').classList.toggle('snap', WB.snap);
+    setToggle($('wb-snap'), WB.snap); setToggle($('wb-surface'), WB.surface);
+    updateEmpty();
+    // restore saved tiles once agents arrive (need their status/agent); poll now.
+    pollWB(); clearInterval(radarTimer); radarTimer = setInterval(pollWB, 2000);
+  }
+  function setToggle(btn, on) { btn.classList.toggle('on', !!on); }
+  function setWbConn(live) { $('wb-conn').className = 'conn ' + (live ? 'live' : 'off'); $('wb-conn').textContent = live ? 'live' : 'offline'; }
+
+  function pollWB() {
+    api('/api/agents').then(function (r) {
+      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
+      if (!r.ok) throw new Error('agents'); return r.json();
+    }).then(function (agents) {
+      if (!agents) return; setWbConn(true); WB.agents = agents;
+      if (WB.saved) { restoreTiles(agents); WB.saved = null; }
+      renderTree(agents);
+      // refresh each tile's header status + waiting border
+      WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
+    }).catch(function () { setWbConn(false); });
+  }
+  function byId(agents, id) { for (var i = 0; i < agents.length; i++) if (agents[i].pane_id === id) return agents[i]; return null; }
+  function restoreTiles(agents) {
+    WB.saved.forEach(function (s) { var a = byId(agents, s.id); if (a) addTile(a, s); });
+  }
+
+  // ---- tree -------------------------------------------------------------
+  function renderTree(agents) {
+    var q = ($('rail-search').value || '').trim().toLowerCase();
+    var match = function (a) { return !q || (primary(a) + ' ' + (a.agent || '') + ' ' + (a.session || '') + ' ' + (a.pane_id || '')).toLowerCase().indexOf(q) !== -1; };
+    var by = {waiting: [], working: [], idle: [], running: []};
+    agents.forEach(function (a) { if (match(a)) (by[a.status] || by.running).push(a); });
+    var root = $('tree'); root.innerHTML = '';
+    var nWait = (by.waiting || []).length;
+    $('rail-tab-n').textContent = nWait ? nWait : '';
+    ORDER.forEach(function (st) {
+      var list = by[st]; if (!list.length) return;
+      var lbl = document.createElement('div'); lbl.className = 'tree-group' + (st === 'waiting' ? ' waiting' : '');
+      lbl.textContent = LABEL[st] + ' ' + list.length; root.appendChild(lbl);
+      // group by window (session:window) so a window expands to its panes
+      var wins = {}; var order = [];
+      list.forEach(function (a) { var w = (a.session || '') + ':' + ((a.loc || '').split(':')[1] || '').split('.')[0]; if (!wins[w]) { wins[w] = []; order.push(w); } wins[w].push(a); });
+      order.forEach(function (w) {
+        var panes = wins[w];
+        if (panes.length > 1) {
+          var wh = document.createElement('div'); wh.className = 'tree-win';
+          wh.innerHTML = '<span>▾</span><span>' + esc(w) + '</span>'; root.appendChild(wh);
+        }
+        panes.forEach(function (a) { root.appendChild(treeRow(a, panes.length > 1)); });
+      });
+    });
+    if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? 'no match' : 'no agents'; root.appendChild(e); }
+  }
+  function esc(s) { var d = document.createElement('span'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+  function treeRow(a, nested) {
+    var st = COLORS[a.status] ? a.status : 'running';
+    var row = document.createElement('div'); row.className = 'tree-row' + (nested ? ' nested' : '') + (st === 'waiting' ? ' waiting' : '');
+    row.draggable = true;
+    row.appendChild(avatarEl(a, 24, true));
+    var tx = document.createElement('div'); tx.className = 'tr-text';
+    var nm = document.createElement('div'); nm.className = 'tr-name'; nm.textContent = primary(a);
+    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '');
+    tx.appendChild(nm); tx.appendChild(sb); row.appendChild(tx);
+    var g = document.createElement('span'); g.className = 'tr-grip'; g.textContent = '⠿'; row.appendChild(g);
+    row.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/pane', a.pane_id); e.dataTransfer.effectAllowed = 'copy'; });
+    row.ondblclick = function () { addTile(a); };
+    return row;
+  }
+  function shortAgent(s) { var w = String(s).split(' ')[0]; return w.length > 8 ? w.slice(0, 8) : w; }
+
+  // ---- rail collapse / resize -------------------------------------------
+  function applyRail() {
+    $('workbench').classList.toggle('rail-collapsed', WB.railCollapsed);
+    $('rail-tab').hidden = !WB.railCollapsed;
+    if (!WB.railCollapsed) $('rail').style.width = WB.railW + 'px';
+  }
+  function setupRail() {
+    $('rail-collapse').onclick = function () { WB.railCollapsed = true; applyRail(); wbSave(); };
+    $('rail-tab').onclick = function () { WB.railCollapsed = false; applyRail(); wbSave(); };
+    $('rail-search').oninput = function () { renderTree(WB.agents); };
+    var rz = $('rail-resize'), dragging = false;
+    rz.addEventListener('mousedown', function (e) { e.preventDefault(); dragging = true; document.body.style.cursor = 'col-resize'; });
+    document.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      WB.railW = Math.max(170, Math.min(360, e.clientX - $('rail').getBoundingClientRect().left));
+      $('rail').style.width = WB.railW + 'px';
+    });
+    document.addEventListener('mouseup', function () { if (dragging) { dragging = false; document.body.style.cursor = ''; wbSave(); } });
+    $('wb-snap').onclick = function () { WB.snap = !WB.snap; setToggle($('wb-snap'), WB.snap); $('board').classList.toggle('snap', WB.snap); wbSave(); };
+    $('wb-surface').onclick = function () { WB.surface = !WB.surface; setToggle($('wb-surface'), WB.surface); wbSave(); };
+    // accept drops from the tree
+    var board = $('board');
+    board.addEventListener('dragover', function (e) { if (e.dataTransfer.types.indexOf('text/pane') !== -1) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+    board.addEventListener('drop', function (e) {
+      var id = e.dataTransfer.getData('text/pane'); if (!id) return; e.preventDefault();
+      var a = byId(WB.agents, id); if (!a) return;
+      var r = board.getBoundingClientRect();
+      addTile(a, {x: e.clientX - r.left - 60, y: e.clientY - r.top - 16});
+    });
+  }
+
+  // ---- tiles ------------------------------------------------------------
+  var SNAP = 20;
+  function snapv(v) { return WB.snap ? Math.round(v / SNAP) * SNAP : v; }
+  function addTile(a, pos) {
+    pos = pos || {};
+    var existing = null; WB.tiles.forEach(function (t) { if (t.id === a.pane_id) existing = t; });
+    if (existing) { existing.el.style.zIndex = ++zTop; return existing; }
+    var board = $('board'), br = board.getBoundingClientRect();
+    var t = {
+      id: a.pane_id, agent: a, mode: pos.mode || 'term',
+      x: pos.x != null ? Math.max(0, pos.x) : 14 + (WB.tiles.length % 4) * 28,
+      y: pos.y != null ? Math.max(0, pos.y) : 14 + (WB.tiles.length % 4) * 28,
+      w: pos.w || 360, h: pos.h || 240,
+      term: null, fit: null, lastText: '', pending: null, scrolling: false, scrollIdle: null, timer: null, chatSig: '', expanded: {},
+    };
+    buildTile(t); WB.tiles.push(t); board.classList.remove('has-empty'); updateEmpty();
+    setTileMode(t, t.mode); wbSave();
+    return t;
+  }
+  var zTop = 10;
+  function removeTile(t) {
+    clearInterval(t.timer); if (t.term) { try { t.term.dispose(); } catch (e) {} }
+    t.el.remove(); WB.tiles = WB.tiles.filter(function (x) { return x !== t; });
+    updateEmpty(); wbSave();
+  }
+  function updateEmpty() {
+    var board = $('board'), ex = board.querySelector('.board-empty');
+    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = '从左侧把 pane 拖到这里 · 或双击树中的 pane'; board.appendChild(e); } }
+    else if (ex) ex.remove();
+  }
+  function buildTile(t) {
+    var el = document.createElement('div'); el.className = 'tile'; t.el = el;
+    el.style.left = t.x + 'px'; el.style.top = t.y + 'px'; el.style.width = t.w + 'px'; el.style.height = t.h + 'px'; el.style.zIndex = ++zTop;
+    var head = document.createElement('div'); head.className = 'tile-head';
+    head.appendChild(avatarEl(t.agent, 20, true));
+    var nm = document.createElement('span'); nm.className = 'tile-name'; nm.textContent = primary(t.agent); head.appendChild(nm);
+    var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = t.id; head.appendChild(id);
+    var sp = document.createElement('span'); sp.className = 'th-spacer'; head.appendChild(sp);
+    var modes = document.createElement('span'); modes.className = 'tile-modes';
+    [['term', '终端'], ['chat', '对话'], ['diff', 'diff']].forEach(function (m) {
+      var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]);
+      b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
+    });
+    head.appendChild(modes);
+    var max = document.createElement('button'); max.className = 'tile-btn'; max.textContent = '⤢'; max.title = '全屏'; max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent); }; head.appendChild(max);
+    var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = '关闭'; cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; head.appendChild(cl);
+    el.appendChild(head);
+    var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
+    var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
+    el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
+    dragMove(t, head); dragResize(t, rz);
+    $('board').appendChild(el);
+    t.headNm = nm; t.headAv = head.querySelector('.avatar');
+    updateTileHead(t);
+  }
+  function updateTileHead(t) {
+    var st = COLORS[t.agent.status] ? t.agent.status : 'running';
+    t.el.classList.toggle('waiting', st === 'waiting');
+    if (t.headNm) t.headNm.textContent = primary(t.agent);
+    var bdg = t.headAv && t.headAv.querySelector('.badge');
+    if (bdg) bdg.innerHTML = badgeSVG(st);
+  }
+  function setTileMode(t, m) {
+    t.mode = m;
+    Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
+    clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';
+    if (t.term) { try { t.term.dispose(); } catch (e) {} t.term = null; }
+    if (m === 'term') { tileTermStart(t); }
+    else if (m === 'chat') { t.chatSig = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
+    else { tilePollDiff(t); t.timer = setInterval(function () { tilePollDiff(t); }, 3000); }
+    wbSave();
+  }
+
+  // per-tile terminal (own xterm; same incremental write + scroll-lock as #pane)
+  function tileTermStart(t) {
+    var xt = document.createElement('div'); xt.className = 'xt'; t.body.appendChild(xt);
+    t.term = new Terminal({convertEol: true, cursorBlink: false, disableStdin: true, cursorInactiveStyle: 'none', scrollback: 4000, allowProposedApi: true, fontFamily: resolveFont(), fontSize: Math.max(10, termSize() - 3), theme: xtermTheme()});
+    t.fit = new FitAddon.FitAddon(); t.term.loadAddon(t.fit);
+    try { var u = new Unicode11Addon.Unicode11Addon(); t.term.loadAddon(u); t.term.unicode.activeVersion = '11'; } catch (e) {}
+    t.term.open(xt); t.lastText = '';
+    var mark = function () { t.scrolling = true; clearTimeout(t.scrollIdle); t.scrollIdle = setTimeout(function () { t.scrolling = false; if (t.pending !== null) { var x = t.pending; t.pending = null; tileWrite(t, x); } }, 900); };
+    xt.addEventListener('wheel', mark, {passive: true});
+    setTimeout(function () { try { t.fit.fit(); } catch (e) {} }, 0);
+    tilePollPane(t); t.timer = setInterval(function () { tilePollPane(t); }, 1300);
+  }
+  function tileWrite(t, text) {
+    text = normalize(text || ''); if (text === t.lastText) return;
+    if (t.scrolling) { t.pending = text; return; }
+    var prev = t.lastText; t.lastText = text;
+    if (prev && text.length > prev.length && text.lastIndexOf(prev, 0) === 0) { t.term.write(text.slice(prev.length)); return; }
+    var b = t.term.buffer.active, wasBottom = b.viewportY >= b.baseY, fromBottom = b.baseY - b.viewportY;
+    t.term.reset();
+    t.term.write(text, function () { var nb = t.term.buffer.active; if (wasBottom) t.term.scrollToBottom(); else { try { t.term.scrollToLine(Math.max(0, nb.baseY - fromBottom)); } catch (e) {} } });
+  }
+  function tilePollPane(t) {
+    api('/api/pane?id=' + encodeURIComponent(t.id)).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && t.mode === 'term' && t.term) { t.el.classList.remove('off'); tileWrite(t, j.text); } })
+      .catch(function () {});
+  }
+  function tilePollChat(t) {
+    api('/api/transcript?id=' + encodeURIComponent(t.id)).then(function (r) { return (r.status === 404 || r.status === 503) ? [] : (r.ok ? r.json() : null); })
+      .then(function (turns) { if (turns === null || t.mode !== 'chat') return; var sig = JSON.stringify((turns || []).map(function (x) { return [x.prompt, x.response]; })); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
+      .catch(function () {});
+  }
+  function renderTileChat(t, turns) {
+    var wrap = document.createElement('div'); wrap.className = 'tile-chat';
+    if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = 'No history yet.'; wrap.appendChild(e); }
+    turns.forEach(function (tn) {
+      var ct = document.createElement('div'); ct.className = 'cturn';
+      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = tn.prompt; ur.appendChild(ub); ct.appendChild(ur); }
+      var segs = (tn.segments && tn.segments.length) ? tn.segments : (tn.response ? [{text: tn.response}] : []);
+      segs.forEach(function (s) { if (s.text) { var ar = document.createElement('div'); ar.className = 'arow'; var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(s.text)); ar.appendChild(ab); ct.appendChild(ar); } });
+      wrap.appendChild(ct);
+    });
+    t.body.innerHTML = ''; t.body.appendChild(wrap); wrap.scrollTop = wrap.scrollHeight;
+  }
+  function tilePollDiff(t) {
+    api('/api/diff?id=' + encodeURIComponent(t.id)).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (!j || t.mode !== 'diff') return; renderTileDiff(t, j.diff || ''); })
+      .catch(function () {});
+  }
+  function renderTileDiff(t, diff) {
+    var pre = document.createElement('pre'); pre.className = 'tile-diff';
+    if (!diff) { pre.textContent = '(cwd 不是 git 仓库 / 无改动)'; t.body.innerHTML = ''; t.body.appendChild(pre); return; }
+    diff.split('\n').forEach(function (ln) {
+      var span = document.createElement('span');
+      if (ln.charAt(0) === '+' && ln.indexOf('+++') !== 0) span.className = 'add';
+      else if (ln.charAt(0) === '-' && ln.indexOf('---') !== 0) span.className = 'del';
+      span.textContent = ln + '\n'; pre.appendChild(span);
+    });
+    t.body.innerHTML = ''; t.body.appendChild(pre);
+  }
+
+  // drag-move (head) + resize (corner), with optional snap-to-grid.
+  function dragMove(t, handle) {
+    handle.addEventListener('mousedown', function (e) {
+      if (e.target.closest('button')) return; e.preventDefault();
+      var sx = e.clientX, sy = e.clientY, ox = t.x, oy = t.y;
+      function mv(ev) { t.x = Math.max(0, snapv(ox + ev.clientX - sx)); t.y = Math.max(0, snapv(oy + ev.clientY - sy)); t.el.style.left = t.x + 'px'; t.el.style.top = t.y + 'px'; }
+      function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); wbSave(); }
+      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+    });
+  }
+  function dragResize(t, handle) {
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var sx = e.clientX, sy = e.clientY, ow = t.w, oh = t.h;
+      function mv(ev) { t.w = Math.max(180, snapv(ow + ev.clientX - sx)); t.h = Math.max(120, snapv(oh + ev.clientY - sy)); t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px'; if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e2) {} } }
+      function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); if (t.fit && t.mode === 'term' && t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } wbSave(); }
+      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+    });
+  }
+
   // ---- boot -------------------------------------------------------------
   // setupSettings wires the appearance panel (font + size), persisted locally.
   function setupSettings() {
@@ -543,10 +841,26 @@
     Array.prototype.forEach.call(bs, function (b) { b.onclick = function () { setMode(b.getAttribute('data-mode')); }; });
   }
 
+  // home() = the top-level view for the current width: the workbench on wide
+  // screens, the single-column radar on narrow. The back button + the responsive
+  // switch both route through here.
+  function home() { if (isWide()) startWorkbench(); else startRadar(); }
+
   function boot() {
-    $('back').onclick = startRadar;
+    $('back').onclick = function () { if (focusFromWB && isWide()) startWorkbench(); else startRadar(); };
     setupKeyboard();
     setupMode();
+    wbLoad();
+    setupRail();
+    $('wb-gear').onclick = function (e) { e.stopPropagation(); var p = $('settings'); p.hidden = !p.hidden; };
+    // responsive: cross the 900px threshold → switch top-level layout (only when
+    // at a top-level view, not inside a focused pane/chat).
+    var lastWide = isWide();
+    window.addEventListener('resize', function () {
+      var w = isWide(); if (w === lastWide) return; lastWide = w;
+      if (!$('pane').hidden || !$('chat').hidden || !$('gate').hidden) return; // mid-focus / gated
+      home();
+    });
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
     var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(location.hash || '');
     var code = m && m[1];
@@ -556,7 +870,7 @@
       if (!token) return gate('Open the pairing link from `gtmux serve` / `gtmux tunnel`, or from the phone app ("open on computer").');
       fetchTheme(); // match the user's real terminal (async; the pane picks it up)
       setupSettings();
-      startRadar();
+      home();
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
