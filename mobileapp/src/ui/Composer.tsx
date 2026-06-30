@@ -36,7 +36,6 @@ import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
-import {MoveKey} from './MoveKey';
 import {SnippetsModal} from './SnippetsModal';
 import {HistoryModal} from './HistoryModal';
 import {loadSnippets, saveSnippets} from '../state/snippets';
@@ -47,6 +46,9 @@ import {loadHistory, saveHistory, pushHistory} from '../state/history';
 const ACCESSORY_ID = 'gtmux-composer-keys';
 const ACCENT = '#06B6D4';
 
+// Agent-context keys: ONLY the waiting approval (1/2/3) — the one genuinely useful
+// context action. The old non-waiting "继续/停止" pair was redundant (继续=Enter is
+// noise; 停止 duplicates Ctrl-C below) and is removed.
 function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
   if (status === 'waiting') {
     return [
@@ -55,19 +57,14 @@ function contextKeys(status: StatusName, lang: string): {label: string; payload:
       {label: lang === 'zh' ? '3 · 否' : '3 · No', payload: {text: '3', enter: true}},
     ];
   }
-  return [
-    {label: lang === 'zh' ? '继续' : 'Continue', payload: {key: 'Enter'}},
-    {label: lang === 'zh' ? '停止' : 'Stop', payload: {key: 'C-c'}},
-  ];
+  return [];
 }
 
-// Quick control keys in the toolbar; directional nav lives in the floating keypad
-// summoned by the keypad button (onOpenKeys).
+// The only control keys worth a permanent pill: Ctrl-C (interrupt) + Esc. The
+// standalone ⏎ (redundant with Send) and Tab + directional nav were removed.
 const CONTROL_KEYS: {label: string; key: string}[] = [
-  {label: '⏎', key: 'Enter'},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
-  {label: 'Tab', key: 'Tab'},
 ];
 
 export function Composer({
@@ -78,7 +75,6 @@ export function Composer({
   returnSends = false,
   onSend,
   onUpload,
-  onOpenKeys,
 }: {
   status: StatusName;
   pal: Palette;
@@ -87,7 +83,6 @@ export function Composer({
   returnSends?: boolean; // D7: when off (default) Return = newline; send via ↑ only
   onSend?: (p: SendPayload) => void;
   onUpload?: (uri: string, name: string, type: string) => Promise<string | null>;
-  onOpenKeys?: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
@@ -169,14 +164,16 @@ export function Composer({
     }
   };
 
-  // Attach → photo library / camera / file (iOS action sheet).
+  // Attach → photo library / camera / file / clipboard (iOS action sheet). Paste
+  // lives here now (no top-level pill) — it still handles a clipboard IMAGE
+  // (→ annotate → upload) as well as text.
   const attach = () => {
     const labels =
       lang === 'zh'
-        ? ['相册', '拍照', '文件', '取消']
-        : ['Photo Library', 'Take Photo', 'File', 'Cancel'];
+        ? ['相册', '拍照', '文件', '粘贴', '取消']
+        : ['Photo Library', 'Take Photo', 'File', 'Paste', 'Cancel'];
     ActionSheetIOS.showActionSheetWithOptions(
-      {options: labels, cancelButtonIndex: 3},
+      {options: labels, cancelButtonIndex: 4},
       async idx => {
         try {
           if (idx === 0) {
@@ -190,10 +187,28 @@ export function Composer({
           } else if (idx === 2) {
             const [f]: any = await pick();
             if (f?.uri) await doUpload(f.uri, f.name ?? 'file', f.type ?? 'application/octet-stream');
+          } else if (idx === 3) {
+            await paste();
           }
         } catch {
           // cancelled or unsupported — ignore.
         }
+      },
+    );
+  };
+
+  // Snippets picker (replaces the flat row of snippet pills): tap → pick one to
+  // send, or manage. Uses the native action sheet so saved phrases aren't laid out
+  // inline.
+  const pickSnippet = () => {
+    const manage = lang === 'zh' ? '管理…' : 'Manage…';
+    const cancel = lang === 'zh' ? '取消' : 'Cancel';
+    const opts = [...snippets, manage, cancel];
+    ActionSheetIOS.showActionSheetWithOptions(
+      {options: opts, cancelButtonIndex: opts.length - 1, title: lang === 'zh' ? '快捷短语' : 'Snippets'},
+      idx => {
+        if (idx < snippets.length) send({text: snippets[idx], enter: true});
+        else if (idx === snippets.length) setManageSnippets(true);
       },
     );
   };
@@ -236,6 +251,10 @@ export function Composer({
   // The key row (context shortcuts + control keys + arrows + snippets). Always
   // visible — when composing it sits just above the input field, so the special
   // keys AND the ▾ dismiss stay reachable while the keyboard is up.
+  // Resting row — decluttered + grouped: ⌨ | (waiting → 1/2/3) | Ctrl-C Esc |
+  // 快捷短语▾ 历史. Snippets are a picker (not a flat list); attach/compose/paste
+  // live in the input row + attach sheet; directional keypads were removed.
+  const ctx = contextKeys(status, lang);
   const renderKeys = () => (
     <ScrollView
       horizontal
@@ -245,18 +264,8 @@ export function Composer({
       <Key onPress={() => setComposing(c => !c)} glyph activeBg={composing} testID={TestIds.composer.keyboard}>
         {composing ? '▾' : '⌨'}
       </Key>
-      <MoveKey pal={pal} enabled={enabled} onKey={k => send({key: k})} />
-      {onOpenKeys && (
-        <Key onPress={onOpenKeys} glyph>
-          ✛
-        </Key>
-      )}
-      <Key onPress={paste}>{lang === 'zh' ? '粘贴' : 'Paste'}</Key>
-      <Key onPress={() => setFullCompose(true)} glyph>
-        ⤢
-      </Key>
-      <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-      {contextKeys(status, lang).map(k => (
+      {ctx.length > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
+      {ctx.map(k => (
         <Key key={k.label} onPress={() => send(k.payload)}>
           {k.label}
         </Key>
@@ -268,16 +277,10 @@ export function Composer({
         </Key>
       ))}
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-      <Key onPress={() => setHistoryOpen(true)}>{lang === 'zh' ? '↑ 历史' : '↑ History'}</Key>
-      {snippets.length > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
-      {snippets.map(s => (
-        <Key key={s} onPress={() => send({text: s, enter: true})}>
-          {s}
-        </Key>
-      ))}
-      <Key onPress={() => setManageSnippets(true)} glyph fg={pal.fg3}>
-        ✎
+      <Key onPress={pickSnippet} testID={TestIds.composer.snippets}>
+        {lang === 'zh' ? '快捷短语 ▾' : 'Snippets ▾'}
       </Key>
+      <Key onPress={() => setHistoryOpen(true)}>{lang === 'zh' ? '历史' : 'History'}</Key>
     </ScrollView>
   );
 
@@ -327,6 +330,12 @@ export function Composer({
           },
         ]}
       />
+      {/* expand to the full-screen editor for long messages */}
+      <TouchableOpacity
+        onPress={() => setFullCompose(true)}
+        style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+        <Text style={[styles.attachText, {color: pal.fg2, fontSize: 17}]}>⤢</Text>
+      </TouchableOpacity>
       <TouchableOpacity
         testID={TestIds.composer.send}
         accessibilityLabel={TestIds.composer.send}
