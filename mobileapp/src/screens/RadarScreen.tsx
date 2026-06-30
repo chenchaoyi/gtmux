@@ -128,7 +128,7 @@ export function RadarScreen({navigation}: any) {
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.radar.screen}>
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
       {conn === 'offline' && (
-        <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} onRetry={refresh} />
+        <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} onRetry={refresh} pal={pal} />
       )}
       <SectionList
         agents={agents}
