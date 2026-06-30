@@ -178,17 +178,27 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     }
   }, [client, agent.pane_id]);
 
-  // After sending input, the pane needs a beat to process it and redraw; poll a
-  // few times right away so the echo/redraw shows up promptly instead of waiting
-  // up to a full 1.5s interval (the lag that read as "did it even send?").
+  // Late safety polls for a redraw slower than the server's post-send settle (the
+  // snapshot below already covers the common case in ONE round-trip). The base 1.5s
+  // poll keeps running regardless.
   const bumpPane = useCallback(() => {
-    [0, 120, 300, 650].forEach(d => setTimeout(loadPane, d));
+    [300, 750].forEach(d => setTimeout(loadPane, d));
   }, [loadPane]);
 
-  // sendPane = type into the pane, then immediately refresh so the screen reacts.
+  // sendPane = type into the pane. /api/send now returns the post-send screen, so
+  // we render the echo straight from its response — one round-trip instead of two
+  // (the big win over a remote tunnel). Late bumps catch a slow TUI redraw.
   const sendPane = useCallback(
     (payload: SendPayload) => {
-      client.send(agent.pane_id, payload).finally(bumpPane);
+      client
+        .send(agent.pane_id, payload)
+        .then(snap => {
+          if (snap && snap.text) {
+            setText(prev => (prev === snap.text ? prev : snap.text));
+            if (snap.cursor) setCursor(snap.cursor);
+          }
+        })
+        .finally(bumpPane);
     },
     [client, agent.pane_id, bumpPane],
   );
