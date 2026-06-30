@@ -64,10 +64,14 @@
   <section id="workbench" hidden>
     <header id="wb-bar">
       <span class="wb-brand"><span class="wb-mark"><i></i><i class="lit"></i><i class="wide"></i></span>gtmux</span>
+      <span id="wb-preset-wrap">
+        <button id="wb-preset" class="wb-toggle" title="Layout presets">▦ 布局<span id="wb-preset-cur"></span> ▾</button>
+        <div id="wb-preset-menu" hidden></div>
+      </span>
       <button id="wb-snap" class="wb-toggle" title="Snap to grid"><span class="wb-sw"></span>贴齐网格</button>
       <button id="wb-surface" class="wb-toggle" title="Auto-surface waiting">⤢ 自动浮出 waiting</button>
       <span class="wb-spacer"></span>
-      <span id="wb-conn" class="conn"></span>
+      <span id="wb-conn" class="conn" title="Connection"></span>
       <button id="wb-gear" title="Appearance">Aa</button>
     </header>
     <div id="wb-body">
@@ -106,6 +110,14 @@
 
   <!-- chat history (对话 mode) -->
   <section id="chat" hidden></section>
+
+  <!-- ⌘K command palette: jump to / surface any pane (workbench) -->
+  <div id="cmdk" hidden>
+    <div id="cmdk-box">
+      <input id="cmdk-input" placeholder="⌘K · 跳到 pane（输入名称 / agent / %id）" autocomplete="off" spellcheck="false" />
+      <div id="cmdk-list"></div>
+    </div>
+  </div>
 
   <script src="vendor/xterm.js"></script>
   <script src="vendor/addon-fit.js"></script>
