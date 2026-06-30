@@ -108,7 +108,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const pickMode = (m: DetailMode) => {
     if (m === mode) return;
     AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
-    if (m === 'chat') setFullscreen(false); // full-screen is terminal-only
+    // full-screen carries across modes now (both 对话 + 终端 support it)
     // Show the spinner on EVERY switch: the first mount is slow (heavy layout) and
     // even a subsequent opacity swap has a slight composite delay — the spinner
     // (native-animated, survives the JS hitch) covers both. Paint it for 2 frames
@@ -338,11 +338,10 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           </View>
           <View style={styles.ctlRight}>
             <Ctl pal={pal} label={lang === 'zh' ? '改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
-            {/* font size adjusts BOTH modes (shared fontSize), so it's available in
-                chat too; full-screen stays terminal-only. */}
+            {/* font size + full-screen both apply to either mode (consistent behavior). */}
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
-            {mode === 'terminal' && <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} />}
+            <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
           </View>
         </View>
       )}
@@ -376,20 +375,20 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             </Text>
           </View>
         )}
-        {/* full-screen: just a clean exit control (the config options are hidden
-            for more room; adjust A−/A+ / wrap before going full-screen) */}
-        {fullscreen && (
-          <View style={styles.fsBar}>
-            <FsBtn label={'⤡ ' + (lang === 'zh' ? '退出' : 'Exit')} onPress={() => setFullscreen(false)} />
-          </View>
-        )}
       </View>
       )}
       {/* mode-switch spinner — only the FIRST mount of a mode is slow (subsequent
           switches are an instant opacity toggle), so the spinner covers just that. */}
       {switching && (
-        <View style={[styles.loadingOverlay, {backgroundColor: pal.bg}]} pointerEvents="none">
+        <View style={[styles.loadingOverlay, {backgroundColor: pal.bg, zIndex: 5}]} pointerEvents="none">
           <ActivityIndicator color={pal.fg3} />
+        </View>
+      )}
+      {/* full-screen exit pill — at body level so it floats over EITHER mode (the
+          top chrome is hidden in full-screen; this is the way back). */}
+      {fullscreen && (
+        <View style={styles.fsBar}>
+          <FsBtn label={'⤡ ' + (lang === 'zh' ? '退出' : 'Exit')} onPress={() => setFullscreen(false)} testID={TestIds.detail.fsExit} />
         </View>
       )}
       </View>
@@ -470,18 +469,18 @@ function Seg({
   );
 }
 
-function Ctl({pal, label, onPress}: {pal: any; label: string; onPress: () => void}) {
+function Ctl({pal, label, onPress, testID}: {pal: any; label: string; onPress: () => void; testID?: string}) {
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.ctl, {borderColor: pal.divider}]}>
+    <TouchableOpacity testID={testID} accessibilityLabel={testID} onPress={onPress} style={[styles.ctl, {borderColor: pal.divider}]}>
       <Text style={[styles.ctlText, {color: pal.fg2}]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 // FsBtn — a button in the floating full-screen control pill (over the terminal).
-function FsBtn({label, onPress}: {label: string; onPress: () => void}) {
+function FsBtn({label, onPress, testID}: {label: string; onPress: () => void; testID?: string}) {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.fsBtn} hitSlop={hit}>
+    <TouchableOpacity testID={testID} accessibilityLabel={testID} onPress={onPress} style={styles.fsBtn} hitSlop={hit}>
       <Text style={styles.fsBtnText}>{label}</Text>
     </TouchableOpacity>
   );
@@ -534,7 +533,8 @@ const styles = StyleSheet.create({
   fsBar: {
     position: 'absolute',
     top: 8,
-    right: 10,
+    left: 10, // top-LEFT so it doesn't collide with the chat's top-right collapse bar
+    zIndex: 10, // above the mode layers (layerOn uses zIndex:1) so it's tappable
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(20,20,22,0.82)',
