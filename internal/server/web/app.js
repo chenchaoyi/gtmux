@@ -17,6 +17,7 @@
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
   var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
+  var lastOpts = [], lastOptsSig = ''; // waiting options, shared by reply bar (term) + approval card (chat)
   var userScrolling = false, scrollIdle = null, pendingText = null, resizeIdle = null;
   var iconCache = {}; // agentName -> objectURL | 'none' | Promise
   var BUNDLED = ['Hack', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono'];
@@ -193,11 +194,14 @@
         else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
         else if (e.key === 'Enter') { var rows = radarRows(); if (rows[selIdx]) { e.preventDefault(); rows[selIdx].click(); } }
       } else if (!$('pane').hidden || !$('chat').hidden) {
+        var inChat = !$('chat').hidden;
         if (e.key === 'Escape') { e.preventDefault(); $('back').click(); }
-        else if (e.key === 'c') { e.preventDefault(); setMode('chat'); }
         else if (e.key === 't') { e.preventDefault(); setMode('term'); }
-        else if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); cyclePane(1); }
-        else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); cyclePane(-1); }
+        // in chat: c = collapse all step groups (mockup §03); in term: c = switch to chat.
+        else if (e.key === 'c') { e.preventDefault(); if (inChat) collapseAllSteps(); else setMode('chat'); }
+        // in chat: j/k walks the turn outline; in term: j/k cycles panes.
+        else if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); inChat ? selectTurn(curTurnIdx + 1, true) : cyclePane(1); }
+        else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); inChat ? selectTurn(curTurnIdx - 1, true) : cyclePane(-1); }
       }
     });
   }
@@ -354,7 +358,7 @@
     syncModeButtons();
     if (paneMode === 'chat') {
       clearInterval(paneTimer); paneTimer = null;
-      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {};
+      show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {}; curTurnIdx = 1e9;
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
     } else {
@@ -396,13 +400,19 @@
     chatSig = sig;
     drawChat(turns);
   }
+  // §03 wide chat: a turn-outline rail (left) + a centered conversation column with
+  // hover copy/quote on agent bubbles + a waiting approval card. Narrow: no rail.
   function drawChat(turns) {
-    var root = $('chat');
-    var atBottom = root.scrollHeight - root.scrollTop - root.clientHeight < 48;
-    var prevTop = root.scrollTop;
-    root.innerHTML = '';
-    var col = document.createElement('div'); col.className = 'chat-col';
+    var root = $('chat'), wide = isWide() && turns.length;
+    var oldScroll = root.querySelector('.conv-scroll');
+    var atBottom = !oldScroll || (oldScroll.scrollHeight - oldScroll.scrollTop - oldScroll.clientHeight < 48);
+    var prevTop = oldScroll ? oldScroll.scrollTop : 0;
+    root.innerHTML = ''; root.classList.toggle('wide', !!wide);
     var a = curAgent || {};
+
+    if (wide) root.appendChild(buildOutline(turns));
+    var scroll = document.createElement('div'); scroll.className = 'conv-scroll';
+    var col = document.createElement('div'); col.className = 'chat-col';
 
     var sr = document.createElement('div'); sr.className = 'chat-state';
     sr.appendChild(avatarEl(a, 30, false));
@@ -419,7 +429,7 @@
       col.appendChild(e);
     }
     turns.forEach(function (t, idx) {
-      var ct = document.createElement('div'); ct.className = 'cturn';
+      var ct = document.createElement('div'); ct.className = 'cturn'; ct.id = 'cturn-' + idx;
       if (t.prompt) {
         var ur = document.createElement('div'); ur.className = 'urow';
         var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = t.prompt;
@@ -435,6 +445,7 @@
           var ar = document.createElement('div'); ar.className = 'arow';
           ar.appendChild(k === firstText ? avatarEl(a, 26, false) : (function () { var sp = document.createElement('div'); sp.className = 'arow-spacer'; return sp; })());
           var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text));
+          ab.appendChild(bubbleActions(seg.text)); // hover: 复制 / 引用 (desktop)
           ar.appendChild(ab); ct.appendChild(ar);
         }
         if (seg.steps && seg.steps.length) {
@@ -456,8 +467,77 @@
       });
       col.appendChild(ct);
     });
-    root.appendChild(col);
-    root.scrollTop = atBottom ? root.scrollHeight : prevTop;
+    // waiting → an inline approval card (read-only 1/2/3 from /api/options).
+    if (a.status === 'waiting') col.appendChild(approvalCard());
+    scroll.appendChild(col); root.appendChild(scroll);
+    scroll.scrollTop = atBottom ? scroll.scrollHeight : prevTop;
+    if (curTurnIdx >= turns.length) curTurnIdx = Math.max(0, turns.length - 1);
+    if (wide) syncOutline();
+  }
+
+  // ---- §03 wide-chat helpers --------------------------------------------
+  var curTurnIdx = 0; // highlighted turn in the outline (j/k nav)
+  function buildOutline(turns) {
+    var rail = document.createElement('div'); rail.className = 'turn-rail';
+    var hd = document.createElement('div'); hd.className = 'to-head'; hd.textContent = 'Turns'; rail.appendChild(hd);
+    var list = document.createElement('div'); list.className = 'to-list'; list.id = 'to-list';
+    turns.forEach(function (t, idx) {
+      var it = document.createElement('button'); it.className = 'to-item'; it.dataset.idx = idx;
+      var n = document.createElement('span'); n.className = 'to-n'; n.textContent = (idx + 1); it.appendChild(n);
+      var tx = document.createElement('span'); tx.className = 'to-tx';
+      tx.textContent = (t.prompt || (t.segments && t.segments[0] && t.segments[0].text) || t.response || '…').replace(/\s+/g, ' ').trim();
+      it.appendChild(tx);
+      it.onclick = function () { selectTurn(idx, true); };
+      list.appendChild(it);
+    });
+    rail.appendChild(list);
+    var ft = document.createElement('div'); ft.className = 'to-foot'; ft.textContent = 'j/k 跳转 · c 折叠全部'; rail.appendChild(ft);
+    return rail;
+  }
+  function syncOutline() {
+    var list = $('to-list'); if (!list) return;
+    var items = list.querySelectorAll('.to-item');
+    for (var i = 0; i < items.length; i++) items[i].classList.toggle('on', +items[i].dataset.idx === curTurnIdx);
+  }
+  function selectTurn(idx, scrollIt) {
+    var turns = lastTurns || []; if (!turns.length) return;
+    curTurnIdx = Math.max(0, Math.min(turns.length - 1, idx));
+    syncOutline();
+    if (scrollIt) { var el = $('cturn-' + curTurnIdx); if (el) el.scrollIntoView({block: 'start', behavior: 'smooth'}); }
+  }
+  // hover floating 复制 / 引用 on an agent bubble (desktop pointer only).
+  function bubbleActions(text) {
+    var bar = document.createElement('div'); bar.className = 'bub-act';
+    var mk = function (label, fn) { var b = document.createElement('button'); b.textContent = label; b.onclick = function (e) { e.stopPropagation(); fn(); }; return b; };
+    bar.appendChild(mk('⧉ 复制', function () { copyText(text); }));
+    bar.appendChild(mk('❝ 引用', function () { copyText(String(text).split('\n').map(function (l) { return '> ' + l; }).join('\n')); }));
+    return bar;
+  }
+  function copyText(s) {
+    try { navigator.clipboard.writeText(s); } catch (e) {}
+  }
+  function collapseAllSteps() { chatExpanded = {}; drawChat(lastTurns); }
+  // waiting approval card — view-only: shows the agent's 1/2/3 options (from
+  // /api/options) with the active one marked, but the buttons are disabled
+  // (the browser mirror can't send; reply on phone/Mac).
+  function approvalCard() {
+    var card = document.createElement('div'); card.className = 'appr-card';
+    var hd = document.createElement('div'); hd.className = 'appr-head';
+    var d = document.createElement('span'); d.className = 'appr-dot'; hd.appendChild(d);
+    var ht = document.createElement('span'); ht.textContent = '需要你批准'; hd.appendChild(ht); card.appendChild(hd);
+    var opts = lastOpts || [];
+    if (!opts.length) {
+      var ph = document.createElement('div'); ph.className = 'appr-empty'; ph.textContent = '在终端里有一个待确认的选择 · 用手机/Mac 回应'; card.appendChild(ph);
+    } else {
+      opts.forEach(function (o) {
+        var row = document.createElement('div'); row.className = 'appr-opt';
+        var k = document.createElement('span'); k.className = 'appr-key'; k.textContent = o.n; row.appendChild(k);
+        var lb = document.createElement('span'); lb.className = 'appr-label'; lb.textContent = o.label || ''; row.appendChild(lb);
+        card.appendChild(row);
+      });
+    }
+    var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = 'view-only · 用手机/Mac 发送,或扫码接管'; card.appendChild(hint);
+    return card;
   }
 
   // ---- markdown (vanilla → DOM) -----------------------------------------
@@ -864,12 +944,24 @@
     if (atBottom) { $('jump').hidden = true; $('jump').querySelector('.jdot').hidden = true; }
     else { $('jump').hidden = false; if (newContent) $('jump').querySelector('.jdot').hidden = false; }
   }
-  // reply bar — when the focused pane is waiting, list its 1/2/3 (READ-ONLY) + size.
+  // waiting options — drive BOTH the term reply bar and the chat approval card.
   function pollOptions() {
-    if (!curPane || $('pane').hidden || paneMode !== 'term') return;
-    if (!curAgent || curAgent.status !== 'waiting') { hideReply(); return; }
+    if (!curPane) return;
+    var inTerm = !$('pane').hidden && paneMode === 'term';
+    var inChat = !$('chat').hidden && paneMode === 'chat';
+    if (!inTerm && !inChat) return;
+    if (!curAgent || curAgent.status !== 'waiting') {
+      if (inTerm) hideReply();
+      if (lastOpts.length) { lastOpts = []; lastOptsSig = ''; if (inChat) drawChat(lastTurns); }
+      return;
+    }
     api('/api/options?id=' + encodeURIComponent(curPane)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { renderReply(j && j.options ? j.options : []); }).catch(function () {});
+      .then(function (j) {
+        var opts = (j && j.options) ? j.options : [];
+        if (inTerm) { renderReply(opts); return; }
+        var sig = JSON.stringify(opts); // chat: only redraw the card when options change
+        if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
+      }).catch(function () {});
   }
   function renderReply(opts) {
     var had = !$('reply-bar').hidden;
@@ -885,10 +977,12 @@
   function showFocusChrome(isTerm) {
     $('focus-nav').hidden = false;
     $('focus-ctl').hidden = !isTerm;
-    if (isTerm) { pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000); }
-    else { hideReply(); $('jump').hidden = true; clearInterval(optTimer); optTimer = null; }
+    if (!isTerm) { hideReply(); $('jump').hidden = true; }
+    // both term (reply bar) and chat (approval card) poll the waiting options.
+    lastOpts = []; lastOptsSig = '';
+    pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000);
   }
-  function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; clearInterval(optTimer); optTimer = null; }
+  function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
   function setupFocus() {
     $('font-dn').onclick = function () { sizePref = Math.max(10, termSize() - 1); persistSize(); applyAppearance(); };
     $('font-up').onclick = function () { sizePref = Math.min(22, termSize() + 1); persistSize(); applyAppearance(); };
@@ -969,7 +1063,9 @@
     var lastWide = isWide();
     window.addEventListener('resize', function () {
       var w = isWide(); if (w === lastWide) return; lastWide = w;
-      if (!$('pane').hidden || !$('chat').hidden || !$('gate').hidden) return; // mid-focus / gated
+      // mid-focus chat: reflow to add/remove the wide turn-outline rail (§03).
+      if (!$('chat').hidden) { chatSig = ''; drawChat(lastTurns); return; }
+      if (!$('pane').hidden || !$('gate').hidden) return; // mid-focus / gated
       home();
     });
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
