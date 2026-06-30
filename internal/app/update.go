@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,25 +16,50 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
+// updateCheckJSON is the `gtmux update --check --json` payload the menu-bar app
+// reads to decide whether to surface a "new version available" prompt.
+type updateCheckJSON struct {
+	Current string `json:"current"`
+	Latest  string `json:"latest"`
+	Update  bool   `json:"update"`
+	Error   string `json:"error,omitempty"`
+}
+
+// updateCheckPayload builds the --json result from the current + latest versions.
+// An empty latest means the release API was unreachable (surfaced via `error`, and
+// `update` stays false so the app never prompts on a failed check).
+func updateCheckPayload(cur, latest string) updateCheckJSON {
+	out := updateCheckJSON{Current: cur, Latest: latest, Update: latest != "" && latest != cur}
+	if latest == "" {
+		out.Error = "couldn't reach the release API"
+	}
+	return out
+}
+
 // cmdUpdate implements `gtmux update` — self-update to the latest release by
 // driving the maintained installer (which fetches + SHA-verifies the CLI tarball
 // AND the menu-bar app, with the same CN mirror fallback as the curl install).
 // `--check` only reports; `--cli-only` skips the app. Updating in place is safe:
 // the installer atomic-swaps the binary, and a running executable keeps its inode.
 func cmdUpdate(args []string) int {
-	checkOnly, cliOnly := false, false
+	checkOnly, cliOnly, jsonOut := false, false, false
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			i18n.Say("usage: gtmux update [--check] [--cli-only]",
-				"用法：gtmux update [--check] [--cli-only]")
+			i18n.Say("usage: gtmux update [--check [--json]] [--cli-only]",
+				"用法：gtmux update [--check [--json]] [--cli-only]")
 			i18n.Say("  Update gtmux (CLI + menu-bar app) to the latest release.",
 				"  把 gtmux（CLI + 菜单栏 app）更新到最新版。")
 			i18n.Say("  --check: only report if a newer version exists. --cli-only: skip the app.",
 				"  --check：只检查有无新版。--cli-only：只更新 CLI，不动 app。")
+			i18n.Say("  --json: with --check, print {current,latest,update} as JSON (for the app).",
+				"  --json：配合 --check，以 JSON 输出 {current,latest,update}（供 app 调用）。")
 			return 0
 		case "--check":
 			checkOnly = true
+		case "--json":
+			jsonOut = true
+			checkOnly = true // JSON is a machine-readable check; never installs
 		case "--cli-only":
 			cliOnly = true
 		default:
@@ -44,6 +70,13 @@ func cmdUpdate(args []string) int {
 
 	cur := strings.TrimPrefix(Version, "v")
 	latest := strings.TrimPrefix(fetchLatestTag(), "v")
+
+	if jsonOut {
+		// Machine-readable check for the menu-bar app's "check for updates".
+		b, _ := json.Marshal(updateCheckPayload(cur, latest))
+		fmt.Println(string(b))
+		return 0
+	}
 
 	if checkOnly {
 		switch {

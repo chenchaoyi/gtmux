@@ -43,6 +43,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.refresh()
         resetTimer()
 
+        // Quietly check for a newer release a few seconds after launch (throttled to
+        // once/day inside Updater). If one exists, the popover shows a "new version"
+        // banner the user can click to install — same effect as `gtmux update`.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.autoCheck() }
+
         // Record the live terminal tab→session order on a SLOW timer (reads the
         // terminal via AppleScript, so not on the 1.5s poll) so `gtmux restore`
         // can replay your tab arrangement instead of tmux's alphabetical order.
