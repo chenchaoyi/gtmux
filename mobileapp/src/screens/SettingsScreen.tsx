@@ -12,6 +12,7 @@ import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet} from '../ui/SettingsRow';
+import {ContentColumn} from '../ui/ContentColumn';
 
 type PickerKind = 'lang' | 'theme' | 'font' | 'mode' | null;
 
@@ -94,6 +95,7 @@ export function SettingsScreen({navigation}: any) {
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
+        <ContentColumn>
         {/* CONNECTION */}
         <SettingsGroup title={lang === 'zh' ? '连接' : 'Connection'} pal={pal}>
           <SettingsRow icon="server" label={mac?.name || '—'} sub={mac?.url} pal={pal} chevron divider onPress={() => navigation.navigate('Servers')} />
@@ -147,6 +149,7 @@ export function SettingsScreen({navigation}: any) {
         <SettingsGroup title={lang === 'zh' ? '关于' : 'About'} pal={pal}>
           <SettingsRow icon="info" label={t('version')} value={appVersion} pal={pal} />
         </SettingsGroup>
+        </ContentColumn>
       </ScrollView>
 
       <PickerSheet visible={picker === 'lang'} title={t('language')} options={langs} selected={langPref} pal={pal} onSelect={setLangPref} onClose={() => setPicker(null)} />

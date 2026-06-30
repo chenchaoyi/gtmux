@@ -17,6 +17,7 @@ import {
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
+import {ContentColumn} from '../ui/ContentColumn';
 import {StatusColor} from '../ui/theme';
 import {PairingScreen} from './PairingScreen';
 import {TestIds} from '../constants/testIds';
@@ -53,6 +54,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
+        <ContentColumn>
         {servers.length === 0 ? (
           <View style={styles.empty}>
             <BrandMark size={48} neutral={pal.fg3} />
@@ -118,6 +120,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
             <Text style={[styles.disconnectText, {color: StatusColor.waiting}]}>{t('disconnect')}</Text>
           </TouchableOpacity>
         )}
+        </ContentColumn>
       </ScrollView>
 
       <Modal visible={adding} animationType="slide" onRequestClose={() => setAdding(false)}>
