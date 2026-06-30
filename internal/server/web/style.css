@@ -134,7 +134,8 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 #mode button:hover:not(.on) { color: var(--fg2); }
 
 /* chat (对话 mode) — dark bubbles, mirrors the phone's ChatView */
-#chat { background: var(--bg); }
+#chat { background: var(--bg); display: flex; overflow: hidden; }
+.conv-scroll { flex: 1 1 auto; min-width: 0; height: 100%; overflow-y: auto; }
 .chat-col { max-width: var(--col); margin: 0 auto; width: 100%; padding: 14px 16px 56px; }
 .chat-state { display: flex; align-items: center; gap: 10px; padding: 2px 2px 16px; }
 .chat-state .avatar { width: 30px; height: 30px; }
@@ -166,6 +167,62 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 }
 /* keeps a follow-up reply bubble aligned with the first when its avatar is omitted */
 .arow-spacer { width: 26px; flex: 0 0 26px; }
+
+/* ── §03 wide chat: turn outline rail + hover actions + approval card ── */
+.turn-rail {
+  flex: 0 0 196px; width: 196px; border-right: 1px solid var(--divider);
+  display: flex; flex-direction: column; min-height: 0; background: var(--bg);
+}
+.to-head { padding: 16px 14px 8px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--fg3); }
+.to-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 6px; }
+.to-item {
+  display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left;
+  background: none; border: none; color: var(--fg2); cursor: pointer;
+  padding: 6px 8px; border-radius: 7px; font-size: 12.5px; line-height: 1.35;
+}
+.to-item:hover { background: var(--surface); }
+.to-item.on { background: var(--surface); color: var(--fg); }
+.to-item.on .to-n { color: var(--working); }
+.to-n { flex: 0 0 auto; color: var(--fg3); font-variant-numeric: tabular-nums; font-size: 11px; }
+.to-tx { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.to-foot { padding: 8px 14px 12px; font-size: 11px; color: var(--fg3); border-top: 1px solid var(--divider); }
+
+/* hover floating copy / quote on an agent bubble (desktop pointer only) */
+.abubble { position: relative; }
+.bub-act {
+  position: absolute; top: 6px; right: 6px; display: flex; gap: 4px;
+  opacity: 0; transition: opacity .12s; pointer-events: none;
+}
+.arow:hover .bub-act { opacity: 1; pointer-events: auto; }
+.bub-act button {
+  background: var(--bg); border: 1px solid var(--divider); color: var(--fg2);
+  font-size: 11px; padding: 2px 7px; border-radius: 6px; cursor: pointer; line-height: 1.5;
+}
+.bub-act button:hover { color: var(--fg); border-color: var(--fg3); }
+@media (pointer: coarse) { .bub-act { display: none; } }
+
+/* waiting approval card — read-only mirror of the agent's 1/2/3 */
+.appr-card {
+  margin: 6px 0 8px 36px; border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 12px; background: rgba(239, 68, 68, 0.06); overflow: hidden;
+}
+.appr-head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 13px;
+  font-size: 13px; font-weight: 600; color: var(--fg);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.22);
+}
+.appr-dot { width: 9px; height: 9px; border-radius: 2px; background: var(--waiting); flex: 0 0 auto; }
+.appr-opt { display: flex; align-items: center; gap: 10px; padding: 9px 13px; font-size: 14px; color: var(--fg); }
+.appr-opt + .appr-opt { border-top: 1px solid var(--divider); }
+.appr-key {
+  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--divider);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: var(--fg2); font-variant-numeric: tabular-nums;
+}
+.appr-label { min-width: 0; }
+.appr-empty { padding: 12px 13px; font-size: 13px; color: var(--fg3); }
+.appr-hint { padding: 8px 13px; font-size: 11.5px; color: var(--fg3); background: var(--surface); }
 
 /* markdown inside the agent bubble */
 .md { color: var(--fg); font-size: 14px; line-height: 1.6; }
