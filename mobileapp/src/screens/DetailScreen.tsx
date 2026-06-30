@@ -7,7 +7,6 @@
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -28,6 +27,7 @@ import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
 import {ChatView} from '../ui/ChatView';
+import {BrandLoader} from '../ui/BrandLoader';
 import {ApprovalCard} from '../ui/ApprovalCard';
 import {NativeTerm} from '../ui/NativeTerm';
 import {FloatingKeys} from '../ui/FloatingKeys';
@@ -367,21 +367,25 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
         {/* D8: pane-loading feedback (until the first frame arrives) */}
         {loading && !text && (
           <View style={styles.loadingOverlay}>
-            <ActivityIndicator color={pal.fg3} />
-            <Text style={[styles.loadingText, {color: pal.fg3}]}>
-              {slow
-                ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
-                : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'}
-            </Text>
+            <BrandLoader
+              size={40}
+              neutral={pal.fg3}
+              label={
+                slow
+                  ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
+                  : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'
+              }
+              labelColor={pal.fg3}
+            />
           </View>
         )}
       </View>
       )}
-      {/* mode-switch spinner — only the FIRST mount of a mode is slow (subsequent
-          switches are an instant opacity toggle), so the spinner covers just that. */}
+      {/* mode-switch loader — only the FIRST mount of a mode is slow (subsequent
+          switches are an instant opacity toggle), so it covers just that. */}
       {switching && (
         <View style={[styles.loadingOverlay, {backgroundColor: pal.bg, zIndex: 5}]} pointerEvents="none">
-          <ActivityIndicator color={pal.fg3} />
+          <BrandLoader size={40} neutral={pal.fg3} />
         </View>
       )}
       {/* full-screen exit pill — at body level so it floats over EITHER mode (the
@@ -529,7 +533,6 @@ const styles = StyleSheet.create({
   layerOff: {opacity: 0, zIndex: 0},
   termWrap: {flex: 1},
   loadingOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10},
-  loadingText: {fontSize: 12.5},
   fsBar: {
     position: 'absolute',
     top: 8,

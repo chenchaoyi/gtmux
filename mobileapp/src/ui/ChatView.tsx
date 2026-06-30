@@ -10,12 +10,13 @@
 // resume record (the gtmux hooks capture the agent + session id).
 
 import React from 'react';
-import {ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {fmtTurnTime} from './time';
 import {nativeFontFamily} from './term';
+import {BrandLoader} from './BrandLoader';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
@@ -86,14 +87,28 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   // mode switches), so the collapse layout persists when you flip 终端↔对话.
   const [collapsedAll, setCollapsedAll] = React.useState(false);
   const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
-  const collapseAll = () => {
+  // collapse/expand-ALL re-renders every turn (expand rebuilds all markdown), which
+  // blocks JS for a beat — show the branded loader over it (it animates natively, so
+  // it stays smooth through the hitch). Defer the state change one frame so the
+  // loader paints first, then hold it a perceptible minimum.
+  const [busy, setBusy] = React.useState(false);
+  const runBusy = (fn: () => void) => {
+    setBusy(true);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        fn();
+        setTimeout(() => setBusy(false), 260);
+      }),
+    );
+  };
+  const collapseAll = () => runBusy(() => {
     setCollapsedAll(true);
     setTurnOpen({});
-  };
-  const expandAll = () => {
+  });
+  const expandAll = () => runBusy(() => {
     setCollapsedAll(false);
     setTurnOpen({});
-  };
+  });
   const toggleTurn = (i: number) => setTurnOpen(o => ({...o, [i]: !o[i]}));
 
   // Jump to the latest turn whenever the history grows (kept in sync by the parent).
@@ -171,7 +186,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
 
       {loading && turns.length === 0 && (
         <View style={styles.center}>
-          <ActivityIndicator color={CHAT_FG_DIM} />
+          <BrandLoader size={36} neutral="rgba(255,255,255,0.18)" />
         </View>
       )}
 
@@ -194,7 +209,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         const open = collapsedAll ? !!turnOpen[i] : true; // collapsed turns hide the reply
         // one-line reply preview, shown next to the toggle while collapsed so a
         // promptless turn is still locatable.
-        const preview = !open && hasReply ? (segs[firstText].text || '').split('\n').find(l => l.trim())?.slice(0, 64) ?? '' : '';
+        const preview = !open && hasReply ? (segs[firstText].text || '').replace(/\s*\n+\s*/g, ' ').trim().slice(0, 140) : '';
         return (
           <View key={i} style={styles.turn}>
             {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
@@ -208,14 +223,19 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
               </View>
             )}
 
-            {/* per-turn reply toggle — only while collapse mode is on (clean default) */}
-            {collapsedAll && hasReply && (
-              <TouchableOpacity onPress={() => toggleTurn(i)} activeOpacity={0.7} style={styles.replyToggle}>
-                <Text style={styles.replyToggleText} numberOfLines={1}>
-                  {open
-                    ? lang === 'zh' ? '▾ 收起回复' : '▾ Collapse reply'
-                    : `▸ ${preview || (lang === 'zh' ? '展开回复' : 'Expand reply')}`}
-                </Text>
+            {/* COLLAPSED: keep the agent avatar + a tappable preview bubble, so a
+                collapsed turn still reads as a normal conversation row (just short). */}
+            {collapsedAll && hasReply && !open && (
+              <TouchableOpacity testID={TestIds.detail.collapsedReply} onPress={() => toggleTurn(i)} activeOpacity={0.7}>
+                <View style={styles.agentRow}>
+                  <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+                  <View style={[styles.agentBubble, styles.collapsedBubble]}>
+                    <Text style={[styles.collapsedPreview, {fontFamily, fontSize: fontSize - 0.5}]} numberOfLines={2}>
+                      {preview || (lang === 'zh' ? '（无文本回复）' : '(no text reply)')}
+                    </Text>
+                    <Text style={styles.collapsedHint}>{lang === 'zh' ? '轻点展开 ▸' : 'Tap to expand ▸'}</Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             )}
 
@@ -263,6 +283,13 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
                 </View>
               );
             })}
+
+            {/* re-collapse affordance when this turn was individually expanded */}
+            {collapsedAll && hasReply && open && (
+              <TouchableOpacity onPress={() => toggleTurn(i)} activeOpacity={0.7} style={styles.replyToggle}>
+                <Text style={styles.replyToggleText}>{lang === 'zh' ? '▾ 收起回复' : '▾ Collapse reply'}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         );
       })}
@@ -297,6 +324,12 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         </View>
       )}
     </ScrollView>
+      {/* branded loader over the list while collapse/expand-all re-renders. */}
+      {busy && (
+        <View style={styles.busyOverlay} pointerEvents="none">
+          <BrandLoader size={40} neutral="rgba(255,255,255,0.2)" />
+        </View>
+      )}
     </View>
   );
 }
@@ -357,6 +390,20 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 3,
     paddingHorizontal: 12,
     paddingVertical: 9,
+  },
+  // collapsed agent bubble — a quieter, truncated version of agentBubble.
+  collapsedBubble: {backgroundColor: 'rgba(255,255,255,0.05)', paddingVertical: 8},
+  collapsedPreview: {color: 'rgba(235,235,245,0.62)'},
+  collapsedHint: {fontSize: 10.5, color: '#27C7E6', marginTop: 4, fontWeight: '600'},
+  busyOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(13,13,15,0.55)',
   },
 
   liveCard: {

@@ -51,11 +51,32 @@ gated('chat fullscreen + collapse (live, debug-driven)', () => {
     } catch (err) {
       return captureOnFailure('cfc-no-collapse-bar', err);
     }
-    await collapse.click(); // collapse all
-    await settle(900);
+    // Count collapsed-reply rows by testID (XCUITest reports a TouchableOpacity/View
+    // as visible=false, so isDisplayed is unreliable — counting elements isn't).
+    // >0 = collapsed. Tap the bar until the state flips; the live pane re-renders
+    // ~1.5s so a single tap can hit a stale element — retry.
+    const countCollapsed = async () => (await driver.$$(`~${TestIds.detail.collapsedReply}`).catch(() => [])).length;
+    const tapUntil = async (wantCollapsed: boolean) => {
+      for (let i = 0; i < 6; i++) {
+        if ((await countCollapsed()) > 0 === wantCollapsed) return true;
+        await collapse.click().catch(() => {});
+        await settle(700);
+      }
+      return (await countCollapsed()) > 0 === wantCollapsed;
+    };
+
+    if (!(await tapUntil(true))) {
+      return captureOnFailure('cfc-collapse-failed', new Error('replies did not collapse'));
+    }
+    await settle(400);
     await screenshot('cfc-2-collapsed');
-    await collapse.click(); // expand all
-    await settle(900);
+    // collapsed turns must still carry the agent avatar (conversation flow)
+    expect(await countCollapsed()).toBeGreaterThan(0);
+
+    if (!(await tapUntil(false))) {
+      return captureOnFailure('cfc-expand-failed', new Error('replies did not expand'));
+    }
+    await settle(400);
     await screenshot('cfc-3-expanded');
 
     // full-screen in chat: tap ⛶, the exit pill must appear, tap it to return
