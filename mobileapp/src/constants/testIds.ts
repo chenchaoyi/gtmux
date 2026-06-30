@@ -37,6 +37,7 @@ export const TestIds = {
     fullscreen: 'detail-fullscreen',
     fsExit: 'detail-fs-exit',
     collapseAll: 'detail-collapse-all',
+    collapsedReply: 'detail-collapsed-reply',
   },
   composer: {
     input: 'composer-input',
