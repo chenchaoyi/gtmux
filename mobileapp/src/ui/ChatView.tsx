@@ -13,6 +13,7 @@ import React from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
+import {UserAvatar} from './UserAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {fmtTurnTime} from './time';
 import {nativeFontFamily} from './term';
@@ -220,6 +221,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
                     {t.prompt}
                   </Text>
                 </View>
+                <UserAvatar size={26} />
               </View>
             )}
 
@@ -300,6 +302,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
           <View style={[styles.userBubble, styles.userBubblePending]}>
             <Text style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>{pendingPrompt}</Text>
           </View>
+          <UserAvatar size={26} />
         </View>
       )}
 
@@ -356,10 +359,10 @@ const styles = StyleSheet.create({
   turn: {gap: 6},
   // centered time separator above a turn (chat-app style), deliberately quiet.
   timeLabel: {fontSize: 10.5, color: CHAT_FG_DIM, textAlign: 'center', alignSelf: 'center', letterSpacing: 0.3, marginTop: 2},
-  // user prompt — right-aligned accent bubble.
-  userRow: {flexDirection: 'row', justifyContent: 'flex-end'},
+  // user prompt — right-aligned accent bubble + the human avatar on the right.
+  userRow: {flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8},
   userBubble: {
-    maxWidth: '88%',
+    maxWidth: '82%',
     backgroundColor: 'rgba(6,182,212,0.16)',
     borderRadius: 13,
     borderTopRightRadius: 3,

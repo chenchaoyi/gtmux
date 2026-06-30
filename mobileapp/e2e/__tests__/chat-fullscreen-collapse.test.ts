@@ -42,7 +42,7 @@ gated('chat fullscreen + collapse (live, debug-driven)', () => {
     await chatTab.waitForDisplayed({timeout: 8_000});
     await chatTab.click();
     await settle(1200);
-    await screenshot('cfc-1-chat');
+    await screenshot('cfc-1-chat'); // resting composer (flat icons) + user avatars
 
     // collapse-all bar must be present (fixed, reachable without scrolling up)
     const collapse = driver.$(`~${TestIds.detail.collapseAll}`);
