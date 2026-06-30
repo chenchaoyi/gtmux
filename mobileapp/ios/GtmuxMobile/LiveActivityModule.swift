@@ -29,8 +29,8 @@ class LiveActivityModule: RCTEventEmitter {
     resolve(lastToken ?? "")
   }
 
-  @objc(start:working:idle:title:session:resolver:rejecter:)
-  func start(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString,
+  @objc(start:working:idle:title:session:items:resolver:rejecter:)
+  func start(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString, items: NSString,
              resolver resolve: @escaping RCTPromiseResolveBlock,
              rejecter reject: @escaping RCTPromiseRejectBlock) {
     if #available(iOS 16.1, *) {
@@ -41,7 +41,7 @@ class LiveActivityModule: RCTEventEmitter {
       if let existing = Activity<GtmuxActivityAttributes>.activities.first {
         observeToken(existing)
         Task {
-          await existing.update(using: state(waiting, working, idle, title, session))
+          await existing.update(using: state(waiting, working, idle, title, session, items))
           resolve(existing.id)
         }
         return
@@ -49,7 +49,7 @@ class LiveActivityModule: RCTEventEmitter {
       do {
         let act = try Activity.request(
           attributes: GtmuxActivityAttributes(),
-          contentState: state(waiting, working, idle, title, session),
+          contentState: state(waiting, working, idle, title, session, items),
           pushType: .token)
         observeToken(act)
         resolve(act.id)
@@ -61,10 +61,10 @@ class LiveActivityModule: RCTEventEmitter {
     }
   }
 
-  @objc(update:working:idle:title:session:)
-  func update(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString) {
+  @objc(update:working:idle:title:session:items:)
+  func update(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString, items: NSString) {
     if #available(iOS 16.1, *) {
-      let s = state(waiting, working, idle, title, session)
+      let s = state(waiting, working, idle, title, session, items)
       Task {
         for act in Activity<GtmuxActivityAttributes>.activities {
           await act.update(using: s)
@@ -95,9 +95,24 @@ class LiveActivityModule: RCTEventEmitter {
   }
 
   @available(iOS 16.1, *)
-  private func state(_ w: NSNumber, _ wk: NSNumber, _ i: NSNumber, _ title: NSString, _ session: NSString) -> GtmuxActivityAttributes.ContentState {
-    GtmuxActivityAttributes.ContentState(
+  private func state(_ w: NSNumber, _ wk: NSNumber, _ i: NSNumber, _ title: NSString, _ session: NSString, _ itemsJson: NSString) -> GtmuxActivityAttributes.ContentState {
+    var items: [GtmuxActivityAttributes.Item] = []
+    var more = 0
+    if let data = (itemsJson as String).data(using: .utf8),
+       let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+      if let arr = obj["items"] as? [[String: Any]] {
+        items = arr.map {
+          GtmuxActivityAttributes.Item(
+            title: $0["title"] as? String ?? "",
+            status: $0["status"] as? String ?? "",
+            time: $0["time"] as? String ?? "")
+        }
+      }
+      more = obj["more"] as? Int ?? 0
+    }
+    return GtmuxActivityAttributes.ContentState(
       waiting: w.intValue, working: wk.intValue, idle: i.intValue,
-      waitingTitle: title as String, waitingSession: session as String)
+      waitingTitle: title as String, waitingSession: session as String,
+      items: items, more: more)
   }
 }

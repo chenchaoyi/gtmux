@@ -4,12 +4,15 @@
 // when nothing is running.
 
 import {NativeEventEmitter, NativeModules, Platform} from 'react-native';
+import {ActivityItem} from '../state/activityItems';
 
 type Mod = {
   areEnabled(): Promise<boolean>;
   getPushToken(): Promise<string>;
-  start(waiting: number, working: number, idle: number, title: string, session: string): Promise<string>;
-  update(waiting: number, working: number, idle: number, title: string, session: string): void;
+  // items is a JSON string {items:[{title,status,time}], more} — passed as a string
+  // since the RN bridge handles primitives cleanly; the native side decodes it.
+  start(waiting: number, working: number, idle: number, title: string, session: string, items: string): Promise<string>;
+  update(waiting: number, working: number, idle: number, title: string, session: string, items: string): void;
   end(): void;
 };
 
@@ -27,7 +30,15 @@ export const LiveActivity = {
   // non-empty tally, update while anything runs, end when everything's gone.
   // waitingSession is the tmux session that needs you (the bold headline) and
   // waitingTitle is its prompt/task (the detail line).
-  sync(waiting: number, working: number, idle: number, waitingTitle: string, waitingSession: string) {
+  sync(
+    waiting: number,
+    working: number,
+    idle: number,
+    waitingTitle: string,
+    waitingSession: string,
+    items: ActivityItem[] = [],
+    more = 0,
+  ) {
     if (!ok) return;
     const any = waiting + working + idle > 0;
     if (!any) {
@@ -37,11 +48,12 @@ export const LiveActivity = {
       }
       return;
     }
+    const itemsJson = JSON.stringify({items, more});
     if (started) {
-      M!.update(waiting, working, idle, waitingTitle, waitingSession);
+      M!.update(waiting, working, idle, waitingTitle, waitingSession, itemsJson);
     } else {
       started = true;
-      M!.start(waiting, working, idle, waitingTitle, waitingSession).catch(() => {
+      M!.start(waiting, working, idle, waitingTitle, waitingSession, itemsJson).catch(() => {
         started = false;
       });
     }
