@@ -24,6 +24,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -328,7 +329,40 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("send failed: "+err.Error()))
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	// Return the freshly-redrawn screen WITH the send so the client renders the echo
+	// in a SINGLE round-trip instead of a separate /api/pane fetch — the big latency
+	// win over a remote tunnel (two RTTs → one). Settle briefly first so the agent's
+	// TUI has a frame to redraw the typed input into the captured screen.
+	resp := sendResponse{Status: "ok"}
+	if s.deps.PaneText != nil {
+		if sendSettle > 0 {
+			time.Sleep(sendSettle)
+		}
+		if text, ok := s.deps.PaneText(req.ID); ok {
+			resp.Text = text
+			if s.deps.PaneCursor != nil {
+				if x, up, vis, ok := s.deps.PaneCursor(req.ID); ok {
+					resp.Cursor = &paneCursor{X: x, Up: up, Visible: vis}
+				}
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// sendSettle is how long handleSend waits after send-keys before snapshotting the
+// pane, giving the agent's TUI a frame to redraw the echoed input into the returned
+// screen. A var so tests can zero it.
+var sendSettle = 90 * time.Millisecond
+
+// sendResponse is POST /api/send's reply: the post-send pane snapshot (text +
+// cursor) so the client shows the echo in one round-trip. `status` stays for
+// back-compat with older clients that only checked it; `text`/`cursor` are omitted
+// when the pane couldn't be read (the client then falls back to its poll).
+type sendResponse struct {
+	Status string      `json:"status"`
+	Text   string      `json:"text,omitempty"`
+	Cursor *paneCursor `json:"cursor,omitempty"`
 }
 
 // handleUpload accepts a multipart "file" and saves it on the Mac (≤ 30 MB),

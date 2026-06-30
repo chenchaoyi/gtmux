@@ -36,6 +36,58 @@ func (f *fakeDeps) AgentsJSON() ([]byte, error)       { return f.agents, f.agent
 func (f *fakeDeps) PaneText(id string) (string, bool) { return f.paneText, f.paneOK }
 func (f *fakeDeps) Focus(id string) error             { f.focusCalls = append(f.focusCalls, id); return f.focusErr }
 
+// TestSendReturnsPaneSnapshot: POST /api/send echoes the post-send pane text +
+// cursor so the client renders the echo in one round-trip (no separate /api/pane).
+func TestSendReturnsPaneSnapshot(t *testing.T) {
+	old := sendSettle
+	sendSettle = 0 // don't sleep in the test
+	defer func() { sendSettle = old }()
+
+	var sent []string
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Send: func(id, text, key string, enter bool) error {
+			sent = append(sent, id+"|"+text)
+			return nil
+		},
+		PaneText:   func(id string) (string, bool) { return "$ ls\nfile.txt", true },
+		PaneCursor: func(id string) (x, up int, visible, ok bool) { return 4, 0, true, true },
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/send", strings.NewReader(`{"id":"%1","text":"ls","enter":true}`))
+	req.Header.Set("Authorization", "Bearer "+testToken)
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("send = %d, want 200 (%s)", rr.Code, rr.Body.String())
+	}
+	var body struct {
+		Status string `json:"status"`
+		Text   string `json:"text"`
+		Cursor *struct {
+			X       int  `json:"x"`
+			Up      int  `json:"up"`
+			Visible bool `json:"visible"`
+		} `json:"cursor"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("send body: %v", err)
+	}
+	if body.Status != "ok" {
+		t.Errorf("status = %q, want ok", body.Status)
+	}
+	if body.Text != "$ ls\nfile.txt" {
+		t.Errorf("text = %q, want the post-send pane snapshot", body.Text)
+	}
+	if body.Cursor == nil || body.Cursor.X != 4 || !body.Cursor.Visible {
+		t.Errorf("cursor = %+v, want {x:4 visible:true}", body.Cursor)
+	}
+	if len(sent) != 1 || sent[0] != "%1|ls" {
+		t.Errorf("Send calls = %v, want [%%1|ls]", sent)
+	}
+}
+
 func do(t *testing.T, h http.Handler, method, target, token string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(method, target, nil)

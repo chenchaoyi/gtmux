@@ -142,13 +142,21 @@ export class GtmuxClient {
   }
 
   // send types into a pane (a WRITE): a named control key, or literal text (+Enter).
-  async send(id: string, payload: SendPayload): Promise<boolean> {
+  // Returns the post-send pane snapshot the server captures after a brief settle
+  // (text + cursor) so the caller can render the echo in ONE round-trip instead of
+  // a separate pane() fetch — the latency win over a remote tunnel. null on failure.
+  async send(id: string, payload: SendPayload): Promise<PaneResponse | null> {
     const r = await tfetch(`${this.base}/api/send`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({id, ...payload}),
     });
-    return r.ok;
+    if (!r.ok) return null;
+    try {
+      return (await r.json()) as PaneResponse;
+    } catch {
+      return {id, text: ''}; // sent ok, but no snapshot body — caller falls back to poll
+    }
   }
 
   // upload sends a file to the Mac and returns the saved path (to reference to an

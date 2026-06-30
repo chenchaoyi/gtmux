@@ -139,10 +139,10 @@ describe('focus', () => {
 });
 
 describe('send', () => {
-  it('POSTs JSON {id, ...payload} with bearer + Content-Type', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({}, true));
-    const ok = await client().send('%3', {text: 'ls', enter: true});
-    expect(ok).toBe(true);
+  it('POSTs JSON {id, ...payload} with bearer + Content-Type, returns the snapshot', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({status: 'ok', text: '$ ls\nfile'}, true));
+    const snap = await client().send('%3', {text: 'ls', enter: true});
+    expect(snap).toEqual({status: 'ok', text: '$ ls\nfile'}); // post-send pane snapshot
 
     const [url, init] = call();
     expect(url).toBe(`${BASE}/api/send`);
@@ -158,15 +158,15 @@ describe('send', () => {
   });
 
   it('supports a key payload', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({}, true));
+    fetchMock.mockResolvedValueOnce(okJson({status: 'ok'}, true));
     await client().send('%4', {key: 'Enter'});
     const [, init] = call();
     expect(JSON.parse(init?.body as string)).toEqual({id: '%4', key: 'Enter'});
   });
 
-  it('returns false when not ok', async () => {
+  it('returns null when not ok', async () => {
     fetchMock.mockResolvedValueOnce(okJson({}, false, 400));
-    expect(await client().send('%1', {text: 'x'})).toBe(false);
+    expect(await client().send('%1', {text: 'x'})).toBeNull();
   });
 });
 
