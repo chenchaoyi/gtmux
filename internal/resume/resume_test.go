@@ -22,6 +22,24 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 }
 
+func TestAllMostRecentFirst(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if All() != nil {
+		t.Fatal("All on an empty store should be nil")
+	}
+	_ = Save("a:0.0", Record{Agent: "claude", SessionID: "old", Cwd: "/p1", UpdatedAt: 100})
+	_ = Save("b:0.0", Record{Agent: "codex", SessionID: "new", Cwd: "/p2", UpdatedAt: 300})
+	_ = Save("c:0.0", Record{Agent: "claude", SessionID: "mid", Cwd: "/p3", UpdatedAt: 200})
+	all := All()
+	if len(all) != 3 {
+		t.Fatalf("All len = %d, want 3", len(all))
+	}
+	// restore's CWD fallback relies on newest-first ordering to pick the right record
+	if all[0].SessionID != "new" || all[1].SessionID != "mid" || all[2].SessionID != "old" {
+		t.Errorf("All not sorted newest-first: %v/%v/%v", all[0].SessionID, all[1].SessionID, all[2].SessionID)
+	}
+}
+
 func TestLoadMissing(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	if _, ok := Load("nope:0.0"); ok {
