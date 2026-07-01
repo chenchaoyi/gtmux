@@ -282,18 +282,26 @@ func saveDevices(d []server.EnrolledDevice) {
 
 // pushCopy renders an alert into a bilingual notification title/body
 // (en/zh via GTMUX_LANG). The body is the agent's current task.
+// pushCopy builds the notification (title, body). The TITLE is the agent's session
+// name (its task/title — the bold line in the app/popover), matching the macOS
+// banner, instead of "<Agent> needs you"; the state (needs you / finished) is the
+// body. Falls back to the locator then a generic word when the task is empty.
 func pushCopy(a server.Alert) (string, string) {
-	name := a.Agent
-	if name == "" {
-		name = i18n.Tr("agent", "agent")
+	title := a.Task
+	if title == "" {
+		title = a.Loc
 	}
-	if a.Kind == "waiting" {
-		if a.Repeat {
-			return fmt.Sprintf(i18n.Tr("%s still needs you", "%s 仍在等你"), name), a.Task
-		}
-		return fmt.Sprintf(i18n.Tr("%s needs you", "%s 等你输入"), name), a.Task
+	if title == "" {
+		title = i18n.Tr("agent", "agent")
 	}
-	return fmt.Sprintf(i18n.Tr("%s finished", "%s 完成了"), name), a.Task
+	switch {
+	case a.Kind == "waiting" && a.Repeat:
+		return title, i18n.Tr("Still needs you", "仍在等你输入")
+	case a.Kind == "waiting":
+		return title, i18n.Tr("Needs you", "等你输入")
+	default:
+		return title, i18n.Tr("Finished", "已完成")
+	}
 }
 
 // resolveServeToken returns the explicit flag token, or a persistent one from

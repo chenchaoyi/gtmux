@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/server"
 )
 
 func TestResolveServeTokenFlagWins(t *testing.T) {
@@ -80,5 +82,28 @@ func TestCursorFromFields(t *testing.T) {
 					c.fields, x, up, vis, ok, c.wantX, c.wantUp, c.wantVis, c.wantOK)
 			}
 		})
+	}
+}
+
+// pushCopy: the TITLE is the agent's session name (its task), NOT "<Agent> needs
+// you"; the state (needs you / still / finished) is the body. Falls back to the
+// locator when the task is empty.
+func TestPushCopyTitleIsSessionName(t *testing.T) {
+	waiting := server.Alert{Kind: "waiting", Agent: "Claude Code", Task: "gtmux.app dev", Loc: "ws:1.0"}
+	if title, body := pushCopy(waiting); title != "gtmux.app dev" || body == "" || title == body {
+		t.Errorf("waiting → title=%q body=%q; want title=session name, body=state", title, body)
+	}
+	repeat := waiting
+	repeat.Repeat = true
+	if _, body := pushCopy(repeat); body == "" {
+		t.Errorf("repeat should have a 'still needs you' body, got empty")
+	}
+	done := server.Alert{Kind: "done", Agent: "Codex", Task: "fix build", Loc: "ws:2.0"}
+	if title, _ := pushCopy(done); title != "fix build" {
+		t.Errorf("done title = %q, want the task name", title)
+	}
+	// empty task → fall back to the locator, never "<Agent> needs you"
+	if title, _ := pushCopy(server.Alert{Kind: "waiting", Agent: "Claude Code", Loc: "ws:3.0"}); title != "ws:3.0" {
+		t.Errorf("empty-task title = %q, want the loc fallback", title)
 	}
 }
