@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -62,3 +64,29 @@ func Load(key string) (Record, bool) {
 
 // Remove drops the record for a location key (best-effort).
 func Remove(key string) { _ = os.Remove(fileFor(key)) }
+
+// All returns every saved record, most-recent first. Restore uses it as a cwd
+// fallback: when a restored pane's exact locator key didn't match (a session was
+// renamed / windows reindexed), it can still find the conversation by working dir.
+func All() []Record {
+	entries, err := os.ReadDir(Dir())
+	if err != nil {
+		return nil
+	}
+	var out []Record
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(Dir(), e.Name()))
+		if err != nil {
+			continue
+		}
+		var r Record
+		if json.Unmarshal(b, &r) == nil {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].UpdatedAt > out[j].UpdatedAt })
+	return out
+}

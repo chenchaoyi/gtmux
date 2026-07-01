@@ -92,8 +92,8 @@ func ensureServer() {
 		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
 		if waitForRestoredSessions(boot, 120*time.Second) {
 			tmux.OK("kill-session", "-t", boot)
-			i18n.Say("Restored. Layout/dirs/screen text are back; running programs are NOT (e.g. restart claude with 'claude --resume').",
-				"已恢复。布局 / 目录 / 屏幕文本都回来了；正在运行的程序不会自动重启（如 claude 用 'claude --resume' 拉起）。")
+			i18n.Say("Restored layout, dirs and screen text — bringing your agent conversations back…",
+				"已恢复布局 / 目录 / 屏幕文本 —— 正在接回你的 agent 会话…")
 			resumeAgents()
 			return
 		}
@@ -380,8 +380,8 @@ func recoverMissingSavedSessions() {
 		"检测到 tmux server 在跑但缺少你的存档 session，正在用最近一次存档恢复...")
 	driveResurrectRestore(script)
 	if waitForSavedSessions(saved, 120*time.Second) {
-		i18n.Say("Restored your saved sessions. (running programs are NOT relaunched — e.g. 'claude --resume')",
-			"已恢复你的存档 session。（正在运行的程序不会自动重启，如 'claude --resume'）")
+		i18n.Say("Restored your saved sessions — bringing your agent conversations back…",
+			"已恢复你的存档 session —— 正在接回你的 agent 会话…")
 		resumeAgents()
 	} else {
 		i18n.Sae("⚠ Restore did not complete in time — your save is intact at "+save,
