@@ -418,18 +418,23 @@ func diffForPane(id string) (string, error) {
 	return out, nil
 }
 
-// writeRemoteClients records the live remote-viewer count + timestamp so the
-// menu-bar app can show a "remote client connected" indicator. Written on every
-// SSE connect/disconnect and heartbeated while clients are connected, so a dead
-// serve's file goes stale and the app treats it as disconnected. Best-effort.
-func writeRemoteClients(count int) {
+// writeRemoteClients records the live remote-viewer roster + count + timestamp so
+// the menu-bar app can show WHO is connected (paired phones by name; browsers as
+// anonymous "Safari · macOS"-style entries). Written on every SSE connect/disconnect
+// and heartbeated while clients are connected, so a dead serve's file goes stale and
+// the app treats it as disconnected. `count` is kept for older readers. Best-effort.
+func writeRemoteClients(clients []server.ClientInfo) {
 	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
 		return
 	}
+	if clients == nil {
+		clients = []server.ClientInfo{}
+	}
 	b, err := json.Marshal(struct {
-		Count int   `json:"count"`
-		At    int64 `json:"at"`
-	}{Count: count, At: time.Now().Unix()})
+		Clients []server.ClientInfo `json:"clients"`
+		Count   int                 `json:"count"`
+		At      int64               `json:"at"`
+	}{Clients: clients, Count: len(clients), At: time.Now().Unix()})
 	if err != nil {
 		return
 	}

@@ -239,9 +239,7 @@ struct MenuView: View {
                         }
                         .foregroundStyle(remote.remoteClients > 0 ? Theme.Status.idle : p.fg2)
                     }.buttonStyle(.plain)
-                        .help(remote.remoteClients > 0
-                            ? l10n.tr("A device is viewing this Mac right now", "有设备正在查看本机")
-                            : (remote.url ?? ""))
+                        .help(remoteViewersHelp)
                         .fixedSize()
                     Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }
@@ -321,6 +319,23 @@ struct MenuView: View {
         case .failed: return l10n.tr("gtmux \(appVersion) · check failed", "gtmux \(appVersion) · 检查失败")
         default: return "gtmux \(appVersion) · by ccy"
         }
+    }
+
+    // Tooltip for the live-viewer indicator: enumerate WHO is connected (phone
+    // names / browser platforms), falling back to the tunnel URL when nobody is.
+    private var remoteViewersHelp: String {
+        let list = remote.remoteClientList
+        if list.isEmpty {
+            return remote.remoteClients > 0
+                ? l10n.tr("A device is viewing this Mac right now", "有设备正在查看本机")
+                : (remote.url ?? "")
+        }
+        let header = l10n.tr("Viewing this Mac right now:", "正在查看本机：")
+        let rows = list.map { c -> String in
+            let icon = c.isPhone ? "📱" : "🌐"
+            return "\(icon) \(c.title(l10n.tr))"
+        }
+        return ([header] + rows).joined(separator: "\n")
     }
 
     // MARK: keyboard
