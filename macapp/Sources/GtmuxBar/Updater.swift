@@ -29,8 +29,12 @@ final class Updater: ObservableObject {
 
     /// Auto-check shortly after launch, at most once a day. Silent: only flips to
     /// `.available` (which the popover surfaces) — never shows "up to date" noise.
+    /// Throttled to a few checks a day: Sparkle's default is daily, but since we
+    /// also call this each time the popover opens, a 6h floor keeps it fresh when
+    /// you actually look without hitting the release API on every menu click.
+    private let autoCheckInterval: TimeInterval = 6 * 3600
     func autoCheck() {
-        if let last = lastCheck, Date().timeIntervalSince(last) < 24 * 3600 { return }
+        if let last = lastCheck, Date().timeIntervalSince(last) < autoCheckInterval { return }
         check(silent: true)
     }
 
