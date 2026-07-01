@@ -89,6 +89,9 @@ export default {
     } else {
       aps.alert = {title: intent.title ?? '', body: intent.body ?? ''};
       aps.sound = 'default';
+      // mutable-content wakes the app's Notification Service Extension, which
+      // attaches a per-kind status badge (red stop / green ✓) to the banner.
+      aps['mutable-content'] = 1;
       // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
       // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
       if (intent.kind === 'waiting') aps.category = 'AGENT_WAITING';
