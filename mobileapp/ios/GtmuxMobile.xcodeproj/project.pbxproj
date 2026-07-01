@@ -14,9 +14,12 @@
 		1E8B7D833636D41EE5F3645B /* DebugSettings.m in Sources */ = {isa = PBXBuildFile; fileRef = 41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */; };
 		31E3E4F233B77A8152F6210D /* LiveActivityModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */; };
 		3545525E293EB9EBC669898D /* GtmuxActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */; };
+		428A2C66713EBF3B5094D188 /* GtmuxNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8C33A1DEFD37FCD54FCBB330 /* GtmuxNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		43F2CAF95925B646D7809AB3 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		9362A88EBB6225D84FBAA822 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
+		9B1C87A523DBCCFF3901E6DB /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */; };
 		9CB616CCA2E1A0787F5AB6E3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
 		A583F29FA5633DC72EEFA30E /* GtmuxWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CC356C44C721110E87B71238 /* GtmuxWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A871636895EC61F9183130BE /* LiveActivityModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 2608DA1E53D84193347DD36A /* LiveActivityModule.m */; };
@@ -32,6 +35,13 @@
 			remoteGlobalIDString = F614844304E1A4CA6DE421EB;
 			remoteInfo = GtmuxWidget;
 		};
+		F6D1B62B5E2C82B170F57DB7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 028B5D728732B58F18019E79;
+			remoteInfo = GtmuxNotificationService;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -42,6 +52,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				A583F29FA5633DC72EEFA30E /* GtmuxWidget.appex in Embed Foundation Extensions */,
+				428A2C66713EBF3B5094D188 /* GtmuxNotificationService.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -58,16 +69,19 @@
 		2608DA1E53D84193347DD36A /* LiveActivityModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = LiveActivityModule.m; path = GtmuxMobile/LiveActivityModule.m; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-GtmuxMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.debug.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.debug.xcconfig"; sourceTree = "<group>"; };
 		41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DebugSettings.m; path = GtmuxMobile/DebugSettings.m; sourceTree = "<group>"; };
+		4ECA7D8A49AE1F83D34BAA70 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-GtmuxMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.release.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-GtmuxMobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-GtmuxMobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6450CBE20B8C88B43F242B3C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = GtmuxMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = GtmuxMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8C33A1DEFD37FCD54FCBB330 /* GtmuxNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		91D5E11FEF927BEFA4B1338A /* GtmuxWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxWidget.swift; sourceTree = "<group>"; };
 		A660F7F131237D343EC00CAE /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AE9A810E4413FBDAACA7916E /* LiveActivityModule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LiveActivityModule.swift; path = GtmuxMobile/LiveActivityModule.swift; sourceTree = "<group>"; };
 		CC356C44C721110E87B71238 /* GtmuxWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GtmuxWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxActivityAttributes.swift; sourceTree = "<group>"; };
+		D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -77,6 +91,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C80B921A6F3F58F76C31292 /* libPods-GtmuxMobile.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27B25DA2CE72037792BB6F06 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9362A88EBB6225D84FBAA822 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,6 +163,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
 				C3ECC1BD2307C0A643A96A7C /* GtmuxWidget */,
+				AA2A85A60DAF96D974DC690A /* GtmuxNotificationService */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -152,9 +175,20 @@
 			children = (
 				13B07F961A680F5B00A75B9A /* GtmuxMobile.app */,
 				CC356C44C721110E87B71238 /* GtmuxWidget.appex */,
+				8C33A1DEFD37FCD54FCBB330 /* GtmuxNotificationService.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
+		};
+		AA2A85A60DAF96D974DC690A /* GtmuxNotificationService */ = {
+			isa = PBXGroup;
+			children = (
+				D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */,
+				4ECA7D8A49AE1F83D34BAA70 /* Info.plist */,
+			);
+			name = GtmuxNotificationService;
+			path = GtmuxNotificationService;
+			sourceTree = SOURCE_ROOT;
 		};
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
@@ -180,6 +214,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		028B5D728732B58F18019E79 /* GtmuxNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1E223C4C17873363A272BFE2 /* Build configuration list for PBXNativeTarget "GtmuxNotificationService" */;
+			buildPhases = (
+				5C6C218C9ECA56DEED513187 /* Sources */,
+				27B25DA2CE72037792BB6F06 /* Frameworks */,
+				8FDCB125384F7500B3BD4D15 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GtmuxNotificationService;
+			productName = GtmuxNotificationService;
+			productReference = 8C33A1DEFD37FCD54FCBB330 /* GtmuxNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		13B07F861A680F5B00A75B9A /* GtmuxMobile */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "GtmuxMobile" */;
@@ -197,6 +248,7 @@
 			);
 			dependencies = (
 				044D39CD332AF8684DECE4A4 /* PBXTargetDependency */,
+				208FF6EEC55CF27DC3FA725E /* PBXTargetDependency */,
 			);
 			name = GtmuxMobile;
 			productName = GtmuxMobile;
@@ -248,6 +300,7 @@
 			targets = (
 				13B07F861A680F5B00A75B9A /* GtmuxMobile */,
 				F614844304E1A4CA6DE421EB /* GtmuxWidget */,
+				028B5D728732B58F18019E79 /* GtmuxNotificationService */,
 			);
 		};
 /* End PBXProject section */
@@ -268,6 +321,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				B67B43A4AABD1CBA3AF68F95 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FDCB125384F7500B3BD4D15 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,6 +431,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5C6C218C9ECA56DEED513187 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9B1C87A523DBCCFF3901E6DB /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -379,6 +447,12 @@
 			name = GtmuxWidget;
 			target = F614844304E1A4CA6DE421EB /* GtmuxWidget */;
 			targetProxy = DDCE67737DCAEF944C9C7953 /* PBXContainerItemProxy */;
+		};
+		208FF6EEC55CF27DC3FA725E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = GtmuxNotificationService;
+			target = 028B5D728732B58F18019E79 /* GtmuxNotificationService */;
+			targetProxy = F6D1B62B5E2C82B170F57DB7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -652,6 +726,55 @@
 			};
 			name = Debug;
 		};
+		CADAB19CBBED10D7AB5135A8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GtmuxNotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app.notificationservice;
+				PRODUCT_NAME = GtmuxNotificationService;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D57D9CF197347DAC270A724B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GtmuxNotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gtmux.app.notificationservice;
+				PRODUCT_NAME = GtmuxNotificationService;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -660,6 +783,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1E223C4C17873363A272BFE2 /* Build configuration list for PBXNativeTarget "GtmuxNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D57D9CF197347DAC270A724B /* Release */,
+				CADAB19CBBED10D7AB5135A8 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
