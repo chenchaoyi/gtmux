@@ -30,7 +30,12 @@ struct PreferencesView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject var ent = Entitlements.shared
+    @ObservedObject var updater = Updater.shared
     @State private var showPaywall = false
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+    }
 
     // A grouped Form (macOS System-Settings idiom) — sectioned cards instead of a
     // flat grid, so the preferences read at a glance like Moshi's settings.
@@ -88,14 +93,62 @@ struct PreferencesView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            Section(l10n.tr("Software update", "软件更新")) {
+                LabeledContent(l10n.tr("Current version", "当前版本")) {
+                    Text(appVersion).font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
+                }
+                updateRow
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 560)
-        .onAppear { remote.refresh() }
+        .frame(width: 460, height: 640)
+        .onAppear { remote.refresh(); updater.autoCheck() }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
                         onClose: { showPaywall = false })
+        }
+    }
+
+    // Explicit check-for-updates row (reuses Updater — same effect as `gtmux
+    // update`): a Check button, or a "new version available → Update now" row, or a
+    // progress line while updating.
+    @ViewBuilder private var updateRow: some View {
+        switch updater.state {
+        case .available(let v):
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.down.circle.fill").foregroundStyle(Theme.Status.working)
+                Text(l10n.tr("New version \(v) available", "有新版本 \(v)")).font(.system(size: 12))
+                Spacer()
+                Button(l10n.tr("Update now", "立即更新")) { updater.install() }
+                    .buttonStyle(.borderedProminent)
+            }
+        case .updating:
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text(l10n.tr("Updating… the app will relaunch when done", "正在更新…完成后会自动重启"))
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+        default:
+            HStack(spacing: 8) {
+                Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
+                    .disabled(isChecking)
+                if isChecking { ProgressView().controlSize(.small) }
+                Spacer()
+                if let s = checkStatusText {
+                    Text(s).font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private var isChecking: Bool { if case .checking = updater.state { return true }; return false }
+    private var checkStatusText: String? {
+        switch updater.state {
+        case .upToDate: return l10n.tr("Up to date", "已是最新")
+        case .failed: return l10n.tr("Check failed — try again", "检查失败，请重试")
+        default: return nil
         }
     }
 
