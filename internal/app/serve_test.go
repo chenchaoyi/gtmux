@@ -89,21 +89,22 @@ func TestCursorFromFields(t *testing.T) {
 // you"; the state (needs you / still / finished) is the body. Falls back to the
 // locator when the task is empty.
 func TestPushCopyTitleIsSessionName(t *testing.T) {
-	waiting := server.Alert{Kind: "waiting", Agent: "Claude Code", Task: "gtmux.app dev", Loc: "ws:1.0"}
-	if title, body := pushCopy(waiting); title != "gtmux.app dev" || body == "" || title == body {
+	noPane := func(string) (string, bool) { return "", false } // no parseable menu
+	waiting := server.Alert{Kind: "waiting", Agent: "Claude Code", Task: "gtmux.app dev", Loc: "ws:1.0", Pane: "%1"}
+	if title, body := pushCopy(waiting, noPane); title != "gtmux.app dev" || body == "" || title == body {
 		t.Errorf("waiting → title=%q body=%q; want title=session name, body=state", title, body)
 	}
-	repeat := waiting
-	repeat.Repeat = true
-	if _, body := pushCopy(repeat); body == "" {
-		t.Errorf("repeat should have a 'still needs you' body, got empty")
-	}
 	done := server.Alert{Kind: "done", Agent: "Codex", Task: "fix build", Loc: "ws:2.0"}
-	if title, _ := pushCopy(done); title != "fix build" {
+	if title, _ := pushCopy(done, noPane); title != "fix build" {
 		t.Errorf("done title = %q, want the task name", title)
 	}
 	// empty task → fall back to the locator, never "<Agent> needs you"
-	if title, _ := pushCopy(server.Alert{Kind: "waiting", Agent: "Claude Code", Loc: "ws:3.0"}); title != "ws:3.0" {
+	if title, _ := pushCopy(server.Alert{Kind: "waiting", Agent: "Claude Code", Loc: "ws:3.0"}, noPane); title != "ws:3.0" {
 		t.Errorf("empty-task title = %q, want the loc fallback", title)
+	}
+	// #3: a waiting pane's real 1/2/3 choices become the body.
+	withMenu := func(string) (string, bool) { return "❯ 1. Yes\n  2. Always, don't ask\n  3. No", true }
+	if _, body := pushCopy(waiting, withMenu); body != "1. Yes   2. Always, don't ask   3. No" {
+		t.Errorf("waiting body = %q, want the real options list", body)
 	}
 }

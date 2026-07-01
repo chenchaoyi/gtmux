@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -182,7 +183,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		relayURL, relayToken = resolveRelay()
 	}
 	relay := server.NewHTTPRelay(relayURL, relayToken)
-	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens, pushCopy)
+	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens,
+		func(a server.Alert) (string, string) { return pushCopy(a, deps.PaneText) })
 
 	// Per-device enrollment: a phone pairs via a short-lived code for its own
 	// token (revocable, and the QR stops being a lasting credential). The master
@@ -286,7 +288,7 @@ func saveDevices(d []server.EnrolledDevice) {
 // name (its task/title — the bold line in the app/popover), matching the macOS
 // banner, instead of "<Agent> needs you"; the state (needs you / finished) is the
 // body. Falls back to the locator then a generic word when the task is empty.
-func pushCopy(a server.Alert) (string, string) {
+func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, string) {
 	title := a.Task
 	if title == "" {
 		title = a.Loc
@@ -294,14 +296,44 @@ func pushCopy(a server.Alert) (string, string) {
 	if title == "" {
 		title = i18n.Tr("agent", "agent")
 	}
-	switch {
-	case a.Kind == "waiting" && a.Repeat:
-		return title, i18n.Tr("Still needs you", "仍在等你输入")
-	case a.Kind == "waiting":
-		return title, i18n.Tr("Needs you", "等你输入")
-	default:
-		return title, i18n.Tr("Finished", "已完成")
+	if a.Kind == "waiting" {
+		// Body = this session's ACTUAL choices, so expanding the notification shows
+		// what you're being asked (not a generic "needs you"). Falls back to the
+		// plain phrase when the pane has no parseable menu.
+		body := optionsBody(a.Pane, paneText)
+		switch {
+		case body != "" && a.Repeat:
+			return title, i18n.Tr("Still waiting · ", "仍在等待 · ") + body
+		case body != "":
+			return title, body
+		case a.Repeat:
+			return title, i18n.Tr("Still needs you", "仍在等你输入")
+		default:
+			return title, i18n.Tr("Needs you", "等你输入")
+		}
 	}
+	return title, i18n.Tr("Finished", "已完成")
+}
+
+// optionsBody formats a waiting pane's 1/2/3 choices as "1. Yes  2. Always  3. No"
+// for the notification body — the same parser the reply UI uses. "" when none.
+func optionsBody(pane string, paneText func(string) (string, bool)) string {
+	if pane == "" || paneText == nil {
+		return ""
+	}
+	text, ok := paneText(pane)
+	if !ok {
+		return ""
+	}
+	opts := prompt.ParseOptions(text)
+	if len(opts) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(opts))
+	for _, o := range opts {
+		parts = append(parts, fmt.Sprintf("%d. %s", o.N, o.Label))
+	}
+	return strings.Join(parts, "   ")
 }
 
 // resolveServeToken returns the explicit flag token, or a persistent one from
