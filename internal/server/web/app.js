@@ -482,14 +482,14 @@
         ur.appendChild(ub); ur.appendChild(userAvatarEl(26)); ct.appendChild(ur);
       }
       // each segment = an assistant text bubble + the tool steps that followed it;
-      // render in order so intermediate process sits BETWEEN separate bubbles.
+      // render in order so intermediate process sits BETWEEN separate bubbles. Every
+      // agent bubble carries the avatar (a turn can split into many bubbles across
+      // tool calls; one-per-turn left the follow-ups looking orphaned).
       var segs = (t.segments && t.segments.length) ? t.segments : (t.response ? [{text: t.response}] : []);
-      var firstText = -1;
-      segs.forEach(function (s, k) { if (firstText < 0 && s.text) firstText = k; });
       segs.forEach(function (seg, k) {
         if (seg.text) {
           var ar = document.createElement('div'); ar.className = 'arow';
-          ar.appendChild(k === firstText ? avatarEl(a, 26, false) : (function () { var sp = document.createElement('div'); sp.className = 'arow-spacer'; return sp; })());
+          ar.appendChild(avatarEl(a, 26, false));
           var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(seg.text));
           ab.appendChild(bubbleActions(seg.text)); // hover: 复制 / 引用 (desktop)
           ar.appendChild(ab); ct.appendChild(ar);

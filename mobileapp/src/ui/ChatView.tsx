@@ -205,7 +205,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         // ran after it; rendering them in order puts intermediate process BETWEEN
         // separate speech bubbles. Fall back to the joined response when no segments.
         const segs: TranscriptSegment[] = t.segments?.length ? t.segments : t.response ? [{text: t.response}] : [];
-        const firstText = segs.findIndex(s => !!s.text); // avatar only on the first bubble
+        const firstText = segs.findIndex(s => !!s.text); // first reply bubble (preview + hasReply)
         const hasReply = firstText !== -1;
         const open = collapsedAll ? !!turnOpen[i] : true; // collapsed turns hide the reply
         // one-line reply preview, shown next to the toggle while collapsed so a
@@ -248,11 +248,10 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
                 <View key={k} style={styles.segBlock}>
                   {!!seg.text && (
                     <View style={styles.agentRow}>
-                      {k === firstText ? (
-                        <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
-                      ) : (
-                        <View style={styles.avatarSpacer} />
-                      )}
+                      {/* every agent bubble carries the avatar — a turn can split into
+                          many bubbles across tool calls; one-per-turn left the
+                          follow-ups looking orphaned. */}
+                      <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
                       <View style={styles.agentBubble}>
                         <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} selectable selectionColor={SEL_COLOR} />
                       </View>
@@ -381,10 +380,8 @@ const styles = StyleSheet.create({
 
   // one reply segment = a text bubble + its trailing step group (small inner gap).
   segBlock: {gap: 4},
-  // keeps a follow-up bubble left-aligned with the first when the avatar is omitted.
-  avatarSpacer: {width: 26},
 
-  // agent reply bubble — left, with avatar (only on the turn's first text bubble).
+  // agent reply bubble — left, avatar on every bubble.
   agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},
   agentBubble: {
     flex: 1,
