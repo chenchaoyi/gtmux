@@ -3,6 +3,12 @@
 A tiny, **stateless, dumb forwarder** that turns gtmux's agent alerts into
 lock-screen push notifications on your phone.
 
+> ⚠️ **This Go relay is the SELF-HOST reference impl.** The project's LIVE relay at
+> `gtmux-relay.ccy.dev` is the Cloudflare Worker in `../relay-worker/` (TS), deployed
+> with `cd relay-worker && npx wrangler deploy`. **Keep the two payload builders in
+> sync** (`relay/apns.go` ↔ `relay-worker/src/index.ts`) and redeploy the Worker —
+> editing only this Go file changes nothing live. See CLAUDE.md → "Deploy".
+
 ## Why it exists
 
 iOS won't let an app run in the background to watch your Mac, so the only way to

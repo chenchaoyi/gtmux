@@ -40,6 +40,22 @@ over one Go core (gtmux-core is the single data source):
   direct distribution**; MAS would require a sandbox-compatible rearchitect.
 - Workflow: branch → PR → CI green → squash-merge → tag. Don't commit to `main`.
 
+## Deploy — where each artifact ships (DON'T FORGET)
+
+Four artifacts, **three different delivery paths**. A code change isn't "shipped"
+until the right one runs:
+
+| Artifact | Ships via | Command / notes |
+|---|---|---|
+| **CLI** (`gtmux`) | git tag `vX.Y.Z` → `release.yml` (goreleaser) | tarballs + Homebrew. Users get it with `gtmux update` / curl `install.sh`. |
+| **macOS app** (`Gtmux.app`) | same git tag → `release.yml` runs `macapp/build.sh` | `Gtmux-<v>-macos.zip` + Homebrew cask → `~/Applications`. |
+| **Mobile app** (`com.gtmux.app`) | **NOT a git tag** — manual device build | `cd mobileapp && bash scripts/set-version.sh` then `xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile -configuration Release -destination 'id=00008130-001C75142290013A' -derivedDataPath ios/build/dd DEVELOPMENT_TEAM=2337SY8FRT CODE_SIGN_STYLE=Automatic MARKETING_VERSION=<v> -allowProvisioningUpdates build` → `xcrun devicectl device install app --device 1BBBCF4D-4207-516C-AB87-B17F911F753B <app>`. Embeds the `GtmuxWidget` + `GtmuxNotificationService` app-extension targets (wired by the `ios/add_*.rb` xcodeproj scripts). |
+| **Push relay** (`gtmux-relay.ccy.dev`) | **the LIVE relay is the Cloudflare Worker `relay-worker/` (TS)** — NOT the Go `relay/` (that's the self-host reference impl) | `cd relay-worker && npx wrangler deploy` (wrangler is OAuth-logged-in; `APNS_ENV=sandbox` → matches dev-signed device builds). **Keep `relay-worker/src/index.ts` and `relay/apns.go` in sync, and REDEPLOY the Worker** — editing only the Go one changes nothing live. |
+| **Tunnel provisioner** (`api.gtmux.ccy.dev`) | Cloudflare Worker `tunnel-worker/` | `cd tunnel-worker && npx wrangler deploy`. See [[hosted-tunnel-a1]] / `docs/design/remote-access-tunnel.md`. |
+
+Corp-network caveat: `api.cloudflare.com` is intermittently TLS-reset from the
+office — wrangler calls may need a retry (see `docs/design/remote-access-tunnel.md`).
+
 ## Spec-driven development (OpenSpec)
 
 This repo uses **OpenSpec** for spec-driven development. `openspec/specs/`
