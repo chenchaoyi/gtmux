@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -86,5 +87,32 @@ func TestParseOptions_GapBreaksRun(t *testing.T) {
 	want := []Option{{1, "only"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %#v", got)
+	}
+}
+
+// WaitingOptions must fire on a live approval menu at the bottom (selector + ≥2
+// options) but NOT on a numbered list in prose output, nor a menu far from the
+// bottom — that's what keeps screen-based waiting detection from false alarms.
+func TestWaitingOptions(t *testing.T) {
+	codexMenu := "› Allow Codex to run this command?\n\n  › 1. Yes\n    2. Yes, don't ask again\n    3. No, tell Codex what to do\n"
+	if got := WaitingOptions(codexMenu); len(got) != 3 || got[0].Label != "Yes" {
+		t.Errorf("codex approval menu → %#v, want 3 options", got)
+	}
+
+	// a numbered list in prose (no selector cursor) must NOT read as waiting
+	proseList := "Here's the plan:\n1. First refactor the parser\n2. Then add tests\n3. Finally ship it\nRunning now…\n"
+	if got := WaitingOptions(proseList); got != nil {
+		t.Errorf("prose numbered list → %#v, want nil", got)
+	}
+
+	// a menu buried far above the bottom (agent moved on) must NOT read as waiting
+	buried := "› 1. Yes\n  2. No\n" + strings.Repeat("output line\n", 20)
+	if got := WaitingOptions(buried); got != nil {
+		t.Errorf("menu far from bottom → %#v, want nil", got)
+	}
+
+	// a single "1." with a selector isn't enough (need ≥2 real choices)
+	if got := WaitingOptions("› 1. Only one\n"); got != nil {
+		t.Errorf("single option → %#v, want nil", got)
 	}
 }

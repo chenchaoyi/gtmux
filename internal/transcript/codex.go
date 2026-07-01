@@ -1,9 +1,11 @@
 package transcript
 
 import (
+	"bufio"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -35,6 +37,8 @@ type codexPayload struct {
 	LastAgentMessage string `json:"last_agent_message"` // event_msg task_complete
 	Name             string `json:"name"`               // response_item function_call
 	Arguments        string `json:"arguments"`          // response_item function_call (JSON string)
+	SessionID        string `json:"session_id"`         // session_meta (first line)
+	Cwd              string `json:"cwd"`                // session_meta (first line)
 }
 
 func codexHome() string {
@@ -55,6 +59,65 @@ func codexLogPath(sessionID string) string {
 		}
 	}
 	return ""
+}
+
+// CodexSessionForCwd finds the most-recently-active Codex session started in
+// `cwd` and returns its session id. Codex's `notify` payload (unlike Claude's
+// hooks) carries NO conversation id, so the resume/transcript machinery would
+// otherwise have nothing to key on — we derive it from the on-disk rollout whose
+// session_meta.cwd matches the pane's dir. Newest-first by mtime so the current
+// session wins. Returns ok=false when nothing matches.
+func CodexSessionForCwd(cwd string) (string, bool) {
+	if cwd == "" {
+		return "", false
+	}
+	var files []string
+	for _, pat := range []string{
+		filepath.Join(codexHome(), "sessions", "*", "*", "*", "rollout-*.jsonl"),
+		filepath.Join(codexHome(), "archived_sessions", "rollout-*.jsonl"),
+	} {
+		m, _ := filepath.Glob(pat)
+		files = append(files, m...)
+	}
+	sort.Slice(files, func(i, j int) bool { return fileMtime(files[i]) > fileMtime(files[j]) })
+	for _, f := range files {
+		if sid, fcwd := codexSessionMeta(f); sid != "" && fcwd == cwd {
+			return sid, true
+		}
+	}
+	return "", false
+}
+
+// codexSessionMeta reads a rollout's first line (the session_meta record) and
+// returns its session id + cwd. Cheap: only the first line is read.
+func codexSessionMeta(path string) (sessionID, cwd string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", ""
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 1<<20) // session_meta can be large (base_instructions)
+	if !sc.Scan() {
+		return "", ""
+	}
+	var e codexLine
+	if json.Unmarshal(sc.Bytes(), &e) != nil || e.Type != "session_meta" {
+		return "", ""
+	}
+	var p codexPayload
+	if json.Unmarshal(e.Payload, &p) != nil {
+		return "", ""
+	}
+	return p.SessionID, p.Cwd
+}
+
+func fileMtime(path string) int64 {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	return fi.ModTime().UnixNano()
 }
 
 // codexStep folds one Codex log line into the parse state: event_msg user_message

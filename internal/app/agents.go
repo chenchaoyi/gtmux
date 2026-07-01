@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -463,7 +464,18 @@ func gatherAgents() []agentPane {
 				delete(waiting, id)
 			}
 		case waiting[id]:
-			status = "waiting" // blocked on the user
+			status = "waiting" // blocked on the user (hook-marked, e.g. Claude)
+		default:
+			// Screen-scan fallback for agents that fire NO waiting hook — only
+			// Claude hook-marks waiting (handled above), so a live approval menu is
+			// the only "needs you" signal for Codex/Cursor/Gemini/etc. Skipping
+			// Claude also avoids a capture per idle Claude pane every poll.
+			// WaitingOptions is strict (bottom-anchored, selector cursor, ≥2
+			// choices) so a numbered list in output doesn't false-alarm; recomputed
+			// each poll, so it self-clears once you answer.
+			if agent != "Claude Code" && len(prompt.WaitingOptions(tmux.CapturePane(id))) > 0 {
+				status = "waiting"
+			}
 		}
 		var activityAt int64
 		if len(f) >= 8 {
