@@ -142,7 +142,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         content.body = req.body
         content.userInfo = ["pane": req.pane]
         if !req.session.isEmpty { content.threadIdentifier = req.session } // coalesce per session
-        if let att = attachment(req.icon) { content.attachments = [att] }
+        if let att = attachment(req.icon, kind: req.kind) { content.attachments = [att] }
 
         let isInput = req.kind == "input"
         let id: String
@@ -190,15 +190,47 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         return id
     }
 
-    /// Copy the icon to a unique temp file before attaching: UNNotificationAttachment
-    /// takes ownership of (moves) the file, and we must not consume the shared
-    /// cached icon at notify-icon.png.
-    private func attachment(_ iconPath: String) -> UNNotificationAttachment? {
-        guard !iconPath.isEmpty, FileManager.default.fileExists(atPath: iconPath) else { return nil }
+    /// Build the notification thumbnail: the agent icon with a STATUS badge in the
+    /// corner (kind-specific, matching the popover rows) so a needs-you banner reads
+    /// differently at a glance from a finished one — waiting = red "stop" square with
+    /// two bars, done = green ✓ disc. Rendered to a fresh temp PNG (the attachment
+    /// moves the file, so we never consume the shared notify-icon.png).
+    private func attachment(_ iconPath: String, kind: String) -> UNNotificationAttachment? {
+        guard !iconPath.isEmpty, let base = NSImage(contentsOfFile: iconPath) else { return nil }
+        let s: CGFloat = 96
+        let img = NSImage(size: NSSize(width: s, height: s))
+        img.lockFocus()
+        base.draw(in: NSRect(x: 0, y: 0, width: s, height: s))
+        // badge bottom-right (AppKit origin is bottom-left), like .badge in the popover
+        let d: CGFloat = 42
+        let rect = NSRect(x: s - d - 1, y: 1, width: d, height: d)
+        let ring = rect.insetBy(dx: -3, dy: -3)
+        if kind == "input" {
+            NSColor.white.setFill(); NSBezierPath(roundedRect: ring, xRadius: 13, yRadius: 13).fill()
+            Theme.Status.waitingNS.setFill(); NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10).fill()
+            NSColor.white.setFill() // two vertical bars = the "waiting for you" glyph
+            let bw = d * 0.13, bh = d * 0.44, gap = d * 0.16
+            let cy = rect.midY - bh / 2
+            NSBezierPath(roundedRect: NSRect(x: rect.midX - gap / 2 - bw, y: cy, width: bw, height: bh), xRadius: bw / 2, yRadius: bw / 2).fill()
+            NSBezierPath(roundedRect: NSRect(x: rect.midX + gap / 2, y: cy, width: bw, height: bh), xRadius: bw / 2, yRadius: bw / 2).fill()
+        } else {
+            NSColor.white.setFill(); NSBezierPath(ovalIn: ring).fill()
+            Theme.Status.idleNS.setFill(); NSBezierPath(ovalIn: rect).fill()
+            let p = NSBezierPath() // white check
+            p.lineWidth = 4; p.lineCapStyle = .round; p.lineJoinStyle = .round
+            p.move(to: NSPoint(x: rect.minX + d * 0.28, y: rect.minY + d * 0.52))
+            p.line(to: NSPoint(x: rect.minX + d * 0.43, y: rect.minY + d * 0.36))
+            p.line(to: NSPoint(x: rect.minX + d * 0.74, y: rect.minY + d * 0.66))
+            NSColor.white.setStroke(); p.stroke()
+        }
+        img.unlockFocus()
+
+        guard let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]) else { return nil }
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("gtmux-icon-\(UUID().uuidString).png")
         do {
-            try FileManager.default.copyItem(at: URL(fileURLWithPath: iconPath), to: tmp)
+            try png.write(to: tmp)
             return try UNNotificationAttachment(identifier: "icon", url: tmp, options: nil)
         } catch {
             dbg("notifications: attachment failed \(error)")
