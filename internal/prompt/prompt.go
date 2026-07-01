@@ -68,6 +68,45 @@ func ParseOptions(text string) []Option {
 	return opts
 }
 
+// selectorGlyphs are the cursor marks interactive TUI choice menus put on the
+// highlighted row (Claude ❯, Codex ›, others ▶ ▸ →). A numbered list in prose
+// output has none — so requiring one tells an ACTIVE approval menu apart from a
+// list, which is what lets us detect "waiting" from the screen for agents that
+// (unlike Claude) fire no waiting hook.
+const selectorGlyphs = "❯›▶▸→"
+
+// WaitingOptions returns the on-screen choice block ONLY when it looks like an
+// ACTIVE approval menu the agent is blocked on: a run of ≥2 numbered options in
+// the bottom of the capture, with a selector cursor present. It's deliberately
+// stricter than ParseOptions (which callers use once a pane is already known to
+// be waiting) so it can be used to DETECT waiting without false-positiving on a
+// numbered list. Returns nil otherwise.
+func WaitingOptions(text string) []Option {
+	lines := strings.Split(text, "\n")
+	end := len(lines)
+	for end > 0 && clean(lines[end-1]) == "" {
+		end-- // ignore trailing blank / chrome-only lines
+	}
+	if end == 0 {
+		return nil
+	}
+	lo := end - 14 // only the bottom of the screen — the active prompt lives there
+	if lo < 0 {
+		lo = 0
+	}
+	window := lines[lo:end]
+	opts := ParseOptions(strings.Join(window, "\n"))
+	if len(opts) < 2 {
+		return nil // a real menu has ≥2 choices; a lone "1." is likely a list item
+	}
+	for _, l := range window {
+		if strings.ContainsAny(l, selectorGlyphs) {
+			return opts // an interactive selector is present → a live menu
+		}
+	}
+	return nil
+}
+
 // clean strips the menu's box-drawing/selector chrome so numbered() can match the
 // content: ANSI color/hyperlink escapes anywhere in the line, then the leading
 // │ ╭ ╰ ╮ ╯ ─ space and the ❯ / > selector, and a trailing │ + padding spaces.
@@ -76,7 +115,7 @@ func clean(s string) string {
 	s = ansiCSI.ReplaceAllString(s, "")
 	s = strings.TrimSpace(s)
 	s = strings.TrimLeft(s, "│╭╰╮╯─ \t")
-	s = strings.TrimLeft(s, "❯> \t")
+	s = strings.TrimLeft(s, selectorGlyphs+"> \t") // ❯ (Claude) › ▶ ▸ → (others) > and padding
 	s = strings.TrimRight(s, "│ \t")
 	return s
 }

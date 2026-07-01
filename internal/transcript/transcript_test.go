@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // allSteps flattens every tool step across a turn's segments (steps now live per
@@ -57,6 +58,39 @@ func writeCodexLog(t *testing.T, home, sessionID string, lines []string) {
 	name := "rollout-2026-06-28T10-00-00-" + sessionID + ".jsonl"
 	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// CodexSessionForCwd derives a Codex pane's session id from disk (its notify
+// carries none): the most-recent rollout whose session_meta.cwd matches wins.
+func TestCodexSessionForCwd(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+
+	meta := func(sid, cwd string) []string {
+		return []string{`{"timestamp":"t","type":"session_meta","payload":{"type":"session_meta","session_id":"` + sid + `","cwd":"` + cwd + `"}}`}
+	}
+	writeCodexLog(t, home, "old-sid", meta("old-sid", "/proj/a"))
+	writeCodexLog(t, home, "other", meta("other", "/proj/b"))
+
+	if sid, ok := CodexSessionForCwd("/proj/b"); !ok || sid != "other" {
+		t.Errorf("cwd /proj/b → %q,%v; want other,true", sid, ok)
+	}
+	if _, ok := CodexSessionForCwd("/proj/none"); ok {
+		t.Error("unknown cwd should not match")
+	}
+	if _, ok := CodexSessionForCwd(""); ok {
+		t.Error("empty cwd should not match")
+	}
+
+	// A newer rollout for the same cwd must win (mtime-ordered).
+	newer := filepath.Join(home, ".codex", "sessions", "2026", "06", "28", "rollout-2026-06-28T10-00-00-new-sid.jsonl")
+	os.WriteFile(newer, []byte(meta("new-sid", "/proj/a")[0]+"\n"), 0o644)
+	future := time.Now().Add(time.Hour)
+	os.Chtimes(newer, future, future)
+	if sid, ok := CodexSessionForCwd("/proj/a"); !ok || sid != "new-sid" {
+		t.Errorf("cwd /proj/a → %q,%v; want new-sid,true (most recent)", sid, ok)
 	}
 }
 

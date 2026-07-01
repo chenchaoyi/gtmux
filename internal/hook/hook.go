@@ -20,6 +20,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // agentDisplay lists the coding agents gtmux recognizes at hook time, mapping
@@ -246,15 +247,24 @@ func Run(stdin io.Reader, args []string) int {
 	// session id and a stable tmux locator, persist {agent, id, cwd} so a reboot
 	// can relaunch the conversation. Keyed by session:window.pane — the same
 	// coordinates tmux-resurrect restores by — so the record matches post-reboot.
-	if pane != "" && agentSession != "" && resume.Resumable(agentKey) {
+	if pane != "" && resume.Resumable(agentKey) {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
 			cwd := resumeCwd
 			if cwd == "" {
 				cwd = tmux.Display(pane, "#{pane_current_path}")
 			}
-			_ = resume.Save(loc, resume.Record{
-				Agent: agentKey, SessionID: agentSession, Cwd: cwd, UpdatedAt: time.Now().Unix(),
-			})
+			sid := agentSession
+			if sid == "" && agentKey == "codex" {
+				// Codex's notify carries no conversation id — derive it from the
+				// on-disk rollout whose session_meta.cwd is this pane's dir. Without
+				// this, restore couldn't resume Codex and its chat mode stayed empty.
+				sid, _ = transcript.CodexSessionForCwd(cwd)
+			}
+			if sid != "" {
+				_ = resume.Save(loc, resume.Record{
+					Agent: agentKey, SessionID: sid, Cwd: cwd, UpdatedAt: time.Now().Unix(),
+				})
+			}
 		}
 	}
 
