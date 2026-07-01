@@ -355,12 +355,36 @@
     });
   }
 
+  // Branded loading placeholder (the gtmux 2×2 mark + a pulse) shown over a pane/
+  // chat/tile before its first frame arrives — so opening a session reads as
+  // "loading…", not a long black screen (mirrors the phone's BrandLoader).
+  function brandLoaderEl(label) {
+    var w = document.createElement('div'); w.className = 'brandload';
+    var m = document.createElement('div'); m.className = 'brandload-mark';
+    m.innerHTML = '<i></i><i class="lit"></i><i class="wide"></i>';
+    w.appendChild(m);
+    if (label) { var l = document.createElement('div'); l.className = 'brandload-label'; l.textContent = label; w.appendChild(l); }
+    return w;
+  }
+  function showPaneLoader() {
+    hidePaneLoader();
+    var el = brandLoaderEl('正在拉取屏幕…'); el.id = 'pane-load';
+    $('pane').appendChild(el);
+  }
+  function hidePaneLoader() { var e = $('pane-load'); if (e) e.remove(); }
+  function showChatLoader() {
+    hideChatLoader();
+    var el = brandLoaderEl('正在拉取对话…'); el.id = 'chat-load';
+    $('chat').appendChild(el);
+  }
+  function hideChatLoader() { var e = $('chat-load'); if (e) e.remove(); }
+
   function pollPane() {
     if (!curPane) return;
     api('/api/pane?id=' + encodeURIComponent(curPane)).then(function (r) {
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
       if (!r.ok) throw new Error('pane'); return r.json();
-    }).then(function (j) { if (!j) return; setConn(true); writePane(j.text); })
+    }).then(function (j) { if (!j) return; setConn(true); writePane(j.text); hidePaneLoader(); })
       .catch(function () { setConn(false); });
   }
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
@@ -379,11 +403,13 @@
     if (paneMode === 'chat') {
       clearInterval(paneTimer); paneTimer = null;
       show('chat'); chatSig = ''; lastTurns = []; chatExpanded = {}; curTurnIdx = 1e9;
+      showChatLoader();
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
     } else {
       clearInterval(chatTimer); chatTimer = null;
       show('pane'); ensureTerm(); lastText = ''; pendingText = null; userScrolling = false;
+      showPaneLoader();
       try { fit.fit(); } catch (e) {}
       showFocusChrome(true);
       pollPane(); clearInterval(paneTimer); paneTimer = setInterval(pollPane, 1200);
@@ -409,7 +435,7 @@
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
       if (r.status === 404 || r.status === 503) { setConn(true); return []; } // no resume record / not available
       if (!r.ok) throw new Error('transcript'); return r.json();
-    }).then(function (turns) { if (turns === null) return; setConn(true); renderChat(turns || []); })
+    }).then(function (turns) { if (turns === null) return; setConn(true); hideChatLoader(); renderChat(turns || []); })
       .catch(function () { setConn(false); });
   }
   function renderChat(turns) {
@@ -885,6 +911,7 @@
     Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
     clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';
     if (t.term) { try { t.term.dispose(); } catch (e) {} t.term = null; }
+    t.body.appendChild(brandLoaderEl(null)); // cleared on first frame (or by a chat/diff re-render)
     if (m === 'term') { tileTermStart(t); }
     else if (m === 'chat') { t.chatSig = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
     else { tilePollDiff(t); t.timer = setInterval(function () { tilePollDiff(t); }, 3000); }
@@ -914,7 +941,12 @@
   }
   function tilePollPane(t) {
     api('/api/pane?id=' + encodeURIComponent(t.id)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { if (j && t.mode === 'term' && t.term) { t.el.classList.remove('off'); tileWrite(t, j.text); } })
+      .then(function (j) {
+        if (j && t.mode === 'term' && t.term) {
+          t.el.classList.remove('off'); tileWrite(t, j.text);
+          var ld = t.body.querySelector('.brandload'); if (ld) ld.remove(); // first frame in
+        }
+      })
       .catch(function () {});
   }
   function tilePollChat(t) {
