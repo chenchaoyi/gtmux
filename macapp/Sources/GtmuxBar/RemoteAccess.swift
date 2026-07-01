@@ -13,6 +13,29 @@ enum RemoteMode {
     case off, lan, anywhere
 }
 
+/// One live remote viewer, mirrored from the serve's `remote-clients.json`
+/// roster: a paired phone (`kind == "phone"`, `name` from the enroll roster) or
+/// an anonymous browser mirror (`kind == "browser"`, `platform` sniffed from the
+/// User-Agent). So the Mac can show WHO is connected, not just how many.
+struct RemoteClient: Identifiable {
+    let name: String
+    let kind: String // "phone" | "browser"
+    let platform: String
+    let ip: String
+    let connectedAt: Double
+    // Stable across polls: identity is name/platform/ip, so the SwiftUI list
+    // doesn't re-animate rows while a viewer stays connected.
+    var id: String { "\(kind)|\(name)|\(platform)|\(ip)" }
+
+    var isPhone: Bool { kind == "phone" }
+    /// The row's primary label: a phone's name, else the browser platform, else a
+    /// generic fallback (both languages, since callers pick by GTMUX_LANG upstream).
+    func title(_ tr: (String, String) -> String) -> String {
+        if isPhone { return name.isEmpty ? tr("Phone", "手机") : name }
+        return platform.isEmpty ? tr("Browser", "浏览器") : platform
+    }
+}
+
 final class RemoteAccess: ObservableObject {
     static let shared = RemoteAccess()
 
@@ -28,6 +51,12 @@ final class RemoteAccess: ObservableObject {
     /// staleness guard so a dead serve reads as 0. Surfaced as a popover indicator
     /// so you know when someone is looking at this Mac.
     @Published private(set) var remoteClients: Int = 0
+
+    /// WHO is connected right now (paired phones by name; browsers as anonymous
+    /// "Safari · macOS"-style rows), same staleness guard as the count. Empty when
+    /// nobody's viewing or the serve is dead. Ordered oldest-connection-first by
+    /// the serve, so the list is stable.
+    @Published private(set) var remoteClientList: [RemoteClient] = []
 
     /// Back-compat: callers that only care about the always-on tunnel being up.
     var isOn: Bool { mode == .anywhere }
@@ -61,15 +90,32 @@ final class RemoteAccess: ObservableObject {
     /// call on the poll timer.
     func refreshClients() {
         var n = 0
+        var list: [RemoteClient] = []
         if let data = try? Data(contentsOf: URL(fileURLWithPath: clientsPath)),
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let count = obj["count"] as? Int,
            let at = obj["at"] as? Double,
            Date().timeIntervalSince1970 - at <= clientsStaleAfter {
-            n = count
+            // Prefer the identified roster; fall back to the bare count for a file
+            // written by an older serve (no `clients` key).
+            if let raw = obj["clients"] as? [[String: Any]] {
+                list = raw.map { c in
+                    RemoteClient(
+                        name: c["name"] as? String ?? "",
+                        kind: c["kind"] as? String ?? "browser",
+                        platform: c["platform"] as? String ?? "",
+                        ip: c["ip"] as? String ?? "",
+                        connectedAt: c["connectedAt"] as? Double ?? 0)
+                }
+                n = list.count
+            } else if let count = obj["count"] as? Int {
+                n = count
+            }
         }
         if n != remoteClients {
             DispatchQueue.main.async { self.remoteClients = n }
+        }
+        if list.map(\.id) != remoteClientList.map(\.id) {
+            DispatchQueue.main.async { self.remoteClientList = list }
         }
     }
 

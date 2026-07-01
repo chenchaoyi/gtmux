@@ -23,28 +23,37 @@ func drain(ch chan sseEvent) []sseEvent {
 	}
 }
 
-// onClients fires with the live SSE-client count on connect/disconnect, and is
-// heartbeated by tick() while clients are connected — the remote-viewer indicator.
-func TestHubClientCount(t *testing.T) {
-	var counts []int
+// onClients fires with the live remote-viewer roster on connect/disconnect, and
+// is heartbeated by tick() while clients are connected. The roster carries each
+// viewer's identity (phone name / browser) — not just a count.
+func TestHubClientRoster(t *testing.T) {
+	var rosters [][]ClientInfo
 	h := newHub(func() []AgentStatus { return nil }, time.Hour, nil)
-	h.onClients = func(n int) { counts = append(counts, n) }
+	h.onClients = func(list []ClientInfo) { rosters = append(rosters, list) }
 
-	a := h.subscribe()
-	b := h.subscribe()
-	h.tick() // heartbeat while 2 connected → reports 2
+	a := h.subscribe(ClientInfo{Kind: "phone", Name: "My Phone", ConnectedAt: 1})
+	b := h.subscribe(ClientInfo{Kind: "browser", Platform: "Safari · macOS", ConnectedAt: 2})
+	h.tick() // heartbeat while 2 connected → reports both
 	h.unsubscribe(a)
 	h.unsubscribe(b)
 	h.tick() // none connected → no heartbeat
 
-	want := []int{1, 2, 2, 1, 0}
-	if len(counts) != len(want) {
-		t.Fatalf("counts = %v, want %v", counts, want)
+	wantLens := []int{1, 2, 2, 1, 0}
+	if len(rosters) != len(wantLens) {
+		t.Fatalf("rosters = %v, want %d emissions", rosters, len(wantLens))
 	}
-	for i := range want {
-		if counts[i] != want[i] {
-			t.Fatalf("counts = %v, want %v", counts, want)
+	for i, n := range wantLens {
+		if len(rosters[i]) != n {
+			t.Fatalf("roster[%d] len = %d, want %d", i, len(rosters[i]), n)
 		}
+	}
+	// While both are connected the roster is sorted oldest-first and identifies each.
+	full := rosters[1]
+	if full[0].Name != "My Phone" || full[0].Kind != "phone" {
+		t.Errorf("first viewer = %+v, want the phone", full[0])
+	}
+	if full[1].Kind != "browser" || full[1].Platform != "Safari · macOS" {
+		t.Errorf("second viewer = %+v, want the browser", full[1])
 	}
 }
 
@@ -76,7 +85,7 @@ func TestHubDiffAndAlerts(t *testing.T) {
 	}
 	var alerts []Alert
 	h := newHub(statuses, time.Hour, func(a Alert) { alerts = append(alerts, a) })
-	ch := h.subscribe()
+	ch := h.subscribe(ClientInfo{})
 
 	h.tick() // first observe → agents rev1, no alert
 	h.tick() // %1 working→idle → done alert + agents rev2
@@ -196,13 +205,52 @@ func TestHubTally(t *testing.T) {
 // TestHubNilStatuses verifies the loop is a safe no-op without a status source.
 func TestHubNilStatuses(t *testing.T) {
 	h := newHub(nil, time.Hour, nil)
-	ch := h.subscribe()
+	ch := h.subscribe(ClientInfo{})
 	h.tick()
 	if got := drain(ch); len(got) != 0 {
 		t.Fatalf("nil statuses emitted %v", names(got))
 	}
 	if h.currentRev() != 0 {
 		t.Fatalf("rev advanced without statuses")
+	}
+}
+
+// browserPlatform sniffs a coarse "<Browser> · <OS>" label; order matters since
+// Edge/Chrome UAs also contain "Safari"/"Chrome".
+func TestBrowserPlatform(t *testing.T) {
+	cases := map[string]string{
+		"": "",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15":                   "Safari · macOS",
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1": "Safari · iPhone",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0":           "Edge · Windows",
+		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36":                                   "Chrome · Linux",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0":                                                        "Firefox · Windows",
+	}
+	for ua, want := range cases {
+		if got := browserPlatform(ua); got != want {
+			t.Errorf("browserPlatform(%q) = %q, want %q", ua, got, want)
+		}
+	}
+}
+
+// clientInfo resolves a device token to its enrolled phone (name + kind), and any
+// other token (the shared master secret a browser uses) to an anonymous browser.
+func TestClientInfoIdentity(t *testing.T) {
+	en := NewEnrollManager([]EnrolledDevice{{ID: "a", Token: "tok-phone", Name: "My Phone"}}, nil)
+	s := New(Config{Addr: "x", Token: "master"}, Deps{Enroll: en})
+
+	rp := httptest.NewRequest(http.MethodGet, "/api/events", nil)
+	rp.Header.Set("Authorization", "Bearer tok-phone")
+	if info := s.clientInfo(rp); info.Kind != "phone" || info.Name != "My Phone" {
+		t.Errorf("device token → %+v, want phone 'My Phone'", info)
+	}
+
+	rb := httptest.NewRequest(http.MethodGet, "/api/events", nil)
+	rb.Header.Set("Authorization", "Bearer master")
+	rb.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15")
+	info := s.clientInfo(rb)
+	if info.Kind != "browser" || info.Name != "" || info.Platform != "Safari · macOS" {
+		t.Errorf("master token → %+v, want anonymous 'Safari · macOS' browser", info)
 	}
 }
 

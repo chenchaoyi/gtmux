@@ -92,6 +92,18 @@ func (m *EnrollManager) Redeem(code, name string) (EnrolledDevice, bool) {
 	return d, true
 }
 
+// DeviceByToken returns the enrolled device a token belongs to (for showing WHO
+// is connected). Read-only; ok=false for the master token or any unknown token.
+func (m *EnrollManager) DeviceByToken(tok string) (EnrolledDevice, bool) {
+	if tok == "" {
+		return EnrolledDevice{}, false
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	d, ok := m.devices[tok]
+	return d, ok
+}
+
 // ValidToken reports whether tok belongs to an enrolled device (best-effort
 // LastSeen update, not persisted — kept cheap so it runs on every request).
 func (m *EnrollManager) ValidToken(tok string) bool {

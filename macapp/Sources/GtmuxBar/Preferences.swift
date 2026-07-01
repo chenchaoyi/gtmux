@@ -92,6 +92,7 @@ struct PreferencesView: View {
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                connectedDevices
             }
 
             Section(l10n.tr("Software update", "软件更新")) {
@@ -108,6 +109,35 @@ struct PreferencesView: View {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
                         onClose: { showPaywall = false })
+        }
+    }
+
+    // WHO is connected right now — paired phones by name, browsers as anonymous
+    // "Safari · macOS" rows. Hidden entirely when nobody's viewing, so the section
+    // stays quiet at rest (matches the "idle 静" ethos). A phone icon vs a globe
+    // reuses the phone/browser distinction from the popover indicator.
+    @ViewBuilder private var connectedDevices: some View {
+        let list = remote.remoteClientList
+        if !list.isEmpty {
+            Divider()
+            VStack(alignment: .leading, spacing: 6) {
+                Text(l10n.tr("Connected now", "当前已连接"))
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                ForEach(list) { c in
+                    HStack(spacing: 8) {
+                        Image(systemName: c.isPhone ? "iphone" : "globe")
+                            .font(.system(size: 12)).foregroundStyle(Theme.Status.idle)
+                            .frame(width: 16)
+                        Text(c.title(l10n.tr)).font(.system(size: 12))
+                        if !c.ip.isEmpty {
+                            Text(c.ip).font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

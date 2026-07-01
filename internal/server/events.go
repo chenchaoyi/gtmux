@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -153,6 +155,19 @@ type sseEvent struct {
 	data []byte
 }
 
+// ClientInfo identifies one live remote viewer (an /api/events SSE connection):
+// a paired phone (Name from the enroll roster, Kind "phone") or an anonymous
+// browser mirror (Kind "browser", Platform inferred from the User-Agent). It is
+// surfaced so the Mac can show WHO is connected, not just how many. IP/Platform
+// stay best-effort (blank behind a tunnel that hides them).
+type ClientInfo struct {
+	Name        string `json:"name,omitempty"`     // enrolled phone name; "" for a browser
+	Kind        string `json:"kind"`               // "phone" | "browser"
+	Platform    string `json:"platform,omitempty"` // e.g. "Safari · macOS" (browsers)
+	IP          string `json:"ip,omitempty"`       // best-effort remote address (no port)
+	ConnectedAt int64  `json:"connectedAt"`        // unix seconds the SSE stream opened
+}
+
 // hub fans agent-status changes out to all connected SSE clients. A single
 // background loop snapshots agents every eventsInterval, diffs against the
 // previous snapshot, and broadcasts: an `agents` event (with a monotonically
@@ -162,14 +177,14 @@ type sseEvent struct {
 type hub struct {
 	statuses  func() []AgentStatus
 	onAlert   func(Alert)
-	onTally   func(Tally) // fired when the status tally changes (Live Activity push)
-	onClients func(int)   // fired with the live SSE-client count (remote-viewer indicator)
+	onTally   func(Tally)        // fired when the status tally changes (Live Activity push)
+	onClients func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
 	interval  time.Duration
 	renudge   time.Duration    // re-alert a still-waiting pane after this long
 	now       func() time.Time // injectable clock (tests)
 
 	mu   sync.Mutex
-	subs map[chan sseEvent]struct{}
+	subs map[chan sseEvent]ClientInfo
 	rev  int
 	prev map[string]AgentStatus
 	// waitAlertAt[pane] is when we last alerted that pane is waiting; used to time
@@ -211,20 +226,21 @@ func newHub(statuses func() []AgentStatus, interval time.Duration, onAlert func(
 		interval:    interval,
 		renudge:     renudgeInterval,
 		now:         time.Now,
-		subs:        map[chan sseEvent]struct{}{},
+		subs:        map[chan sseEvent]ClientInfo{},
 		waitAlertAt: map[string]time.Time{},
 	}
 }
 
 // subscribe registers a new client channel (buffered so a momentarily slow
-// reader doesn't block the broadcast).
-func (h *hub) subscribe() chan sseEvent {
+// reader doesn't block the broadcast). info carries the viewer's identity so the
+// roster reflects WHO connected, not just a count.
+func (h *hub) subscribe(info ClientInfo) chan sseEvent {
 	ch := make(chan sseEvent, 16)
 	h.mu.Lock()
-	h.subs[ch] = struct{}{}
-	n := len(h.subs)
+	h.subs[ch] = info
+	snap := h.snapshotLocked()
 	h.mu.Unlock()
-	h.notifyClients(n)
+	h.emitClients(snap)
 	return ch
 }
 
@@ -236,24 +252,41 @@ func (h *hub) unsubscribe(ch chan sseEvent) {
 		delete(h.subs, ch)
 		close(ch)
 	}
-	n := len(h.subs)
+	snap := h.snapshotLocked()
 	h.mu.Unlock()
-	h.notifyClients(n)
+	h.emitClients(snap)
 }
 
-// notifyClients reports the live SSE-client count (remote viewers) to the app so
-// it can surface a "remote client connected" indicator. Called outside h.mu.
-func (h *hub) notifyClients(n int) {
+// snapshotLocked returns a stable-sorted copy of the connected clients (oldest
+// connection first, then by name) so the roster file doesn't churn on map order.
+// Caller must hold h.mu.
+func (h *hub) snapshotLocked() []ClientInfo {
+	out := make([]ClientInfo, 0, len(h.subs))
+	for _, info := range h.subs {
+		out = append(out, info)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].ConnectedAt != out[j].ConnectedAt {
+			return out[i].ConnectedAt < out[j].ConnectedAt
+		}
+		return out[i].Name < out[j].Name
+	})
+	return out
+}
+
+// emitClients reports the live remote-viewer roster to the app so it can surface
+// WHO is connected. Called outside h.mu.
+func (h *hub) emitClients(list []ClientInfo) {
 	if h.onClients != nil {
-		h.onClients(n)
+		h.onClients(list)
 	}
 }
 
-// clientCount returns the number of connected SSE clients.
-func (h *hub) clientCount() int {
+// clientsSnapshot returns the current remote-viewer roster (locking wrapper).
+func (h *hub) clientsSnapshot() []ClientInfo {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return len(h.subs)
+	return h.snapshotLocked()
 }
 
 // currentRev returns the latest agents revision (for a client's initial sync).
@@ -361,8 +394,8 @@ func (h *hub) tick() {
 	// Heartbeat the remote-viewer indicator while clients are connected, so its
 	// state file stays fresh and a dead serve (no more ticks) goes stale → the
 	// menu bar can treat it as disconnected.
-	if n := h.clientCount(); n > 0 {
-		h.notifyClients(n)
+	if snap := h.clientsSnapshot(); len(snap) > 0 {
+		h.emitClients(snap)
 	}
 
 	h.mu.Lock()
@@ -432,7 +465,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	ch := s.hub.subscribe()
+	ch := s.hub.subscribe(s.clientInfo(r))
 	defer s.hub.unsubscribe(ch)
 
 	// Immediately sync the just-connected client to the current revision so it
@@ -452,6 +485,93 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 			writeSSE(w, ev)
 			flusher.Flush()
 		}
+	}
+}
+
+// clientInfo derives a viewer's identity from the (already-authenticated)
+// request: an enrolled phone (its roster Name) when it presents a device token,
+// else an anonymous browser (platform sniffed from the User-Agent). Best-effort —
+// a blank name/platform just renders as a generic viewer.
+func (s *Server) clientInfo(r *http.Request) ClientInfo {
+	info := ClientInfo{Kind: "browser", ConnectedAt: time.Now().Unix(), IP: clientIP(r)}
+	if s.deps.Enroll != nil {
+		if d, ok := s.deps.Enroll.DeviceByToken(bearerToken(r)); ok {
+			info.Kind = "phone"
+			info.Name = d.Name
+			return info
+		}
+	}
+	info.Platform = browserPlatform(r.Header.Get("User-Agent"))
+	return info
+}
+
+// bearerToken extracts the token from an "Authorization: Bearer <t>" header.
+func bearerToken(r *http.Request) string {
+	const prefix = "Bearer "
+	if h := r.Header.Get("Authorization"); strings.HasPrefix(h, prefix) {
+		return strings.TrimPrefix(h, prefix)
+	}
+	return ""
+}
+
+// clientIP returns the viewer's address (no port), best-effort. Behind the
+// always-on tunnel RemoteAddr is localhost, so the real client rides in
+// X-Forwarded-For (first hop) — but only trust it when it's present.
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if i := strings.IndexByte(xff, ','); i > 0 {
+			return strings.TrimSpace(xff[:i])
+		}
+		return strings.TrimSpace(xff)
+	}
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
+}
+
+// browserPlatform sniffs a coarse, human-readable "<Browser> · <OS>" label from a
+// User-Agent — enough to tell two browser mirrors apart, not to fingerprint. Order
+// matters: Edge/Chrome UAs also contain "Safari"/"Chrome".
+func browserPlatform(ua string) string {
+	if ua == "" {
+		return ""
+	}
+	browser := ""
+	switch {
+	case strings.Contains(ua, "Edg/"):
+		browser = "Edge"
+	case strings.Contains(ua, "OPR/"), strings.Contains(ua, "Opera"):
+		browser = "Opera"
+	case strings.Contains(ua, "Firefox"):
+		browser = "Firefox"
+	case strings.Contains(ua, "Chrome"):
+		browser = "Chrome"
+	case strings.Contains(ua, "Safari"):
+		browser = "Safari"
+	}
+	os := ""
+	switch {
+	case strings.Contains(ua, "iPhone"):
+		os = "iPhone"
+	case strings.Contains(ua, "iPad"):
+		os = "iPad"
+	case strings.Contains(ua, "Android"):
+		os = "Android"
+	case strings.Contains(ua, "Mac OS X"), strings.Contains(ua, "Macintosh"):
+		os = "macOS"
+	case strings.Contains(ua, "Windows"):
+		os = "Windows"
+	case strings.Contains(ua, "Linux"):
+		os = "Linux"
+	}
+	switch {
+	case browser != "" && os != "":
+		return browser + " · " + os
+	case browser != "":
+		return browser
+	default:
+		return os
 	}
 }
 
