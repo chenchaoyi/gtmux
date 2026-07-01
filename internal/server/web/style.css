@@ -107,7 +107,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .row .chev { font-size: 18px; font-weight: 300; }
 
 /* pane (terminal) — Ghostty background; terminal fills full width */
-#pane { padding: 0; background: var(--bg); }
+#pane { padding: 0; background: var(--bg); position: relative; }
 #term { position: absolute; inset: 49px 0 0 0; padding: 8px 10px; background: var(--bg); }
 .xterm { height: 100%; }
 
@@ -139,7 +139,21 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 #mode button:hover:not(.on) { color: var(--fg2); }
 
 /* chat (对话 mode) — dark bubbles, mirrors the phone's ChatView */
-#chat { background: var(--bg); display: flex; overflow: hidden; }
+#chat { background: var(--bg); display: flex; overflow: hidden; position: relative; }
+
+/* branded loading placeholder (gtmux mark + pulse) — over a pane/chat/tile until
+   its first frame, so opening a session reads as "loading", not a black screen. */
+.brandload {
+  position: absolute; inset: 0; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px;
+  background: var(--bg);
+}
+.brandload-mark { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; width: 38px; height: 38px; }
+.brandload-mark > i { background: rgba(255, 255, 255, 0.16); border-radius: 5px; }
+.brandload-mark > i.lit { background: var(--working); animation: brandload-pulse 1.1s ease-in-out infinite; }
+.brandload-mark > i.wide { grid-column: span 2; }
+.brandload-label { font-size: 12.5px; color: var(--fg3); letter-spacing: 0.02em; }
+@keyframes brandload-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
 .conv-scroll { flex: 1 1 auto; min-width: 0; height: 100%; overflow-y: auto; }
 .chat-col { max-width: var(--col); margin: 0 auto; width: 100%; padding: 14px 16px 56px; }
 .chat-state { display: flex; align-items: center; gap: 10px; padding: 2px 2px 16px; }
