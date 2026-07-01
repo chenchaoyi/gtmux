@@ -132,6 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()
         store.refresh()
+        // Check for a new release each time the menu is opened (throttled inside
+        // Updater) so the "new version" banner is fresh when you actually look —
+        // not just once a day.
+        Updater.shared.autoCheck()
         // Activate FIRST: a hotkey press from another app must make gtmux active,
         // else the transient popover dismisses immediately.
         NSApp.activate(ignoringOtherApps: true)
