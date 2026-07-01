@@ -126,6 +126,9 @@ func apnsPayload(req pushRequest) map[string]any {
 			"body":  req.Body,
 		}
 		aps["sound"] = "default"
+		// mutable-content wakes the app's Notification Service Extension, which
+		// attaches a per-kind status badge (red stop / green ✓) to the banner.
+		aps["mutable-content"] = 1
 		// `waiting` pushes carry the AGENT_WAITING category so iOS shows the
 		// quick-reply actions (1 Yes / 2 Always / 3 No) the app answers in-background.
 		if req.Kind == "waiting" {
