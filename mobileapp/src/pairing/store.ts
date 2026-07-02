@@ -57,6 +57,17 @@ export function upsertServer(servers: PairedMac[], m: PairedMac): PairedMac[] {
   return [m, ...servers.filter(s => s.url !== m.url)];
 }
 
+// serverForPush picks which paired server a tapped push belongs to, matching the
+// push's server name (the Mac's ComputerName, carried alongside the pane) against
+// the roster. Returns the url to SWITCH to, or null when it already IS the active
+// server or the name is unknown (stay put). Names can collide across Macs (rare) —
+// first match wins. Pure — unit-tested.
+export function serverForPush(servers: PairedMac[], serverName: string, activeUrl: string | null): string | null {
+  if (!serverName) return null;
+  const match = servers.find(s => s.name === serverName);
+  return match && match.url !== activeUrl ? match.url : null;
+}
+
 async function loadLegacy(): Promise<PairedMac | null> {
   try {
     const creds = await Keychain.getGenericPassword({service: LEGACY_SERVICE});

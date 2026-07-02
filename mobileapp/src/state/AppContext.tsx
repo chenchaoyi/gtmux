@@ -21,6 +21,11 @@ interface AppContextValue {
   selectServer: (url: string) => Promise<void>; // connect to an already-saved one
   disconnect: () => Promise<void>; // back to the connection page (keeps servers)
   removeServer: (url: string) => Promise<void>; // forget a server
+  // A pane to deep-link once a notification-tap has switched to its server. Lives
+  // here (above the per-server AgentsProvider) so it survives the switch remount;
+  // the newly-mounted PushBridge consumes + clears it.
+  pendingPane: string | null;
+  setPendingPane: (p: string | null) => void;
   langPref: LangPref;
   setLangPref: (p: LangPref) => void;
   pushEnabled: boolean;
@@ -75,6 +80,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [ready, setReady] = useState(false);
   const [servers, setServers] = useState<PairedMac[]>([]);
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
+  const [pendingPane, setPendingPane] = useState<string | null>(null);
   const [langPref, setLangPrefState] = useState<LangPref>('system');
   const [pushEnabled, setPushEnabledState] = useState(true);
   const [pushKinds, setPushKindsState] = useState<PushKinds>({waiting: true, done: true});
@@ -164,6 +170,8 @@ export function AppProvider({children}: {children: React.ReactNode}) {
           servers.filter(s => s.url !== url),
           activeUrl === url ? null : activeUrl,
         ),
+      pendingPane,
+      setPendingPane,
       langPref,
       setLangPref: p => {
         setLangPrefState(p);
@@ -204,7 +212,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, mac, langPref, pushEnabled, pushKinds, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
+  }, [ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
