@@ -60,5 +60,13 @@ public struct GtmuxActivityAttributes: ActivityAttributes {
   }
 
   public var title: String
-  public init(title: String = "gtmux") { self.title = title }
+  // The paired Mac's name (which server this activity tracks) — static for the
+  // activity's life, so it's shown even before the first push and never wiped by a
+  // push-to-update (those only replace ContentState). Switching servers ends this
+  // activity and starts a fresh one with the new name.
+  public var server: String
+  public init(title: String = "gtmux", server: String = "") {
+    self.title = title
+    self.server = server
+  }
 }

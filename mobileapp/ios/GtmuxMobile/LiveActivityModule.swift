@@ -29,8 +29,8 @@ class LiveActivityModule: RCTEventEmitter {
     resolve(lastToken ?? "")
   }
 
-  @objc(start:working:idle:title:session:items:resolver:rejecter:)
-  func start(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString, items: NSString,
+  @objc(start:working:idle:title:session:items:server:resolver:rejecter:)
+  func start(_ waiting: NSNumber, working: NSNumber, idle: NSNumber, title: NSString, session: NSString, items: NSString, server: NSString,
              resolver resolve: @escaping RCTPromiseResolveBlock,
              rejecter reject: @escaping RCTPromiseRejectBlock) {
     if #available(iOS 16.1, *) {
@@ -38,17 +38,24 @@ class LiveActivityModule: RCTEventEmitter {
         reject("disabled", "Live Activities are disabled", nil)
         return
       }
+      let srv = server as String
+      // Reuse the running activity ONLY if it tracks the SAME server. After a
+      // server switch (end + start can race), a leftover activity for the OLD Mac
+      // must be replaced — its static server name can't be updated in place.
       if let existing = Activity<GtmuxActivityAttributes>.activities.first {
-        observeToken(existing)
-        Task {
-          await existing.update(using: state(waiting, working, idle, title, session, items))
-          resolve(existing.id)
+        if existing.attributes.server == srv {
+          observeToken(existing)
+          Task {
+            await existing.update(using: state(waiting, working, idle, title, session, items))
+            resolve(existing.id)
+          }
+          return
         }
-        return
+        Task { for act in Activity<GtmuxActivityAttributes>.activities { await act.end(dismissalPolicy: .immediate) } }
       }
       do {
         let act = try Activity.request(
-          attributes: GtmuxActivityAttributes(),
+          attributes: GtmuxActivityAttributes(server: srv),
           contentState: state(waiting, working, idle, title, session, items),
           pushType: .token)
         observeToken(act)

@@ -11,7 +11,8 @@ type Mod = {
   getPushToken(): Promise<string>;
   // items is a JSON string {items:[{title,status,time}], more} — passed as a string
   // since the RN bridge handles primitives cleanly; the native side decodes it.
-  start(waiting: number, working: number, idle: number, title: string, session: string, items: string): Promise<string>;
+  // server = the paired Mac's name (static per activity → WHICH server this tracks).
+  start(waiting: number, working: number, idle: number, title: string, session: string, items: string, server: string): Promise<string>;
   update(waiting: number, working: number, idle: number, title: string, session: string, items: string): void;
   end(): void;
 };
@@ -38,6 +39,7 @@ export const LiveActivity = {
     waitingSession: string,
     items: ActivityItem[] = [],
     more = 0,
+    server = '',
   ) {
     if (!ok) return;
     const any = waiting + working + idle > 0;
@@ -53,7 +55,7 @@ export const LiveActivity = {
       M!.update(waiting, working, idle, waitingTitle, waitingSession, itemsJson);
     } else {
       started = true;
-      M!.start(waiting, working, idle, waitingTitle, waitingSession, itemsJson).catch(() => {
+      M!.start(waiting, working, idle, waitingTitle, waitingSession, itemsJson, server).catch(() => {
         started = false;
       });
     }
