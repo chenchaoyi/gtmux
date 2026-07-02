@@ -6,7 +6,12 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
-const usageEN = `Usage:
+const usageEN = `Getting started:
+  new here? run  gtmux doctor        — checks your setup, grouped by concern
+             then gtmux doctor --fix — one-stop setup (hooks, set-titles, restore,
+                                        the menu-bar app), explained + confirmed
+
+Usage:
   gtmux [--lang=en|zh] <command> [options]
   gtmux                    (no command) prints this help
 
@@ -78,7 +83,12 @@ Notes:
     the last autosave (layout/dirs/screen text — not running programs).
 `
 
-const usageZH = `用法：
+const usageZH = `快速开始：
+  第一次用？先跑  gtmux doctor        —— 按主题分组体检你的配置
+             再跑 gtmux doctor --fix —— 一站式配置（hook、set-titles、重启恢复、
+                                        菜单栏 app），每步先解释并确认
+
+用法：
   gtmux [--lang=en|zh] <命令> [选项]
   gtmux                    （不带命令）显示本帮助
 

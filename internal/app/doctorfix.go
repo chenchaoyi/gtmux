@@ -68,7 +68,7 @@ func doctorFix(yes bool) int {
 	applied += s.stepClaudeHook()
 	applied += s.stepCodexHook()
 	applied += s.stepCloudflared()
-	stepAppGuidance() // manual — needs the installer / make app
+	applied += s.stepAppInstall()
 
 	fmt.Println()
 	if applied == 0 {
@@ -416,14 +416,25 @@ func (s *fixState) stepCloudflared() int {
 	return 1
 }
 
-// stepAppGuidance is guidance only: the app needs the installer / a native build.
-func stepAppGuidance() {
+// stepAppInstall offers to install the menu-bar app (needed for desktop
+// notifications) by running the official installer. Unlike the tmux/hook steps it
+// fetches + runs install.sh (CLI + app) — the app is a signed bundle we can't
+// assemble locally. No-op when it's already present.
+func (s *fixState) stepAppInstall() int {
 	if _, err := os.Stat(gtmuxAppPath()); err == nil {
-		return
+		return 0
 	}
-	fmt.Printf("\n%s%s%s\n", i18n.Bold, i18n.Tr("menu-bar app  (manual)", "菜单栏 app（手动）"), i18n.Reset)
-	i18n.Say("  Needed for desktop notifications — install via the curl installer, or `make app`.",
-		"  桌面通知需要它，用 curl 安装脚本，或 `make app`。")
+	detail := i18n.Tr(
+		"  Fetch + run the official installer (install.sh) to add the menu-bar app.\n  Why: desktop notifications (the \"waiting on you\" alert) are delivered BY the app — nothing else posts them.",
+		"  拉取并运行官方安装脚本（install.sh）装上菜单栏 app。\n  原因：桌面通知（\"等你输入\"提醒）由这个 app 负责发出，没有它就没有通知。")
+	if !s.ask(i18n.Tr("menu-bar app  (for desktop notifications)", "菜单栏 app（桌面通知需要）"), detail) {
+		return 0
+	}
+	if runInstaller(false) != 0 {
+		s.rc = 1
+		return 0
+	}
+	return 1
 }
 
 // --- config-path + managed-block helpers (pure; unit-tested) ---
