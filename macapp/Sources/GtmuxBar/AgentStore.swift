@@ -161,8 +161,12 @@ final class AgentStore: ObservableObject {
         var out: [(Status, [Agent])] = []
         for st in [Status.waiting, .working, .idle, .running] {
             if waitingOnly && st != .waiting { continue }
-            let rows = agents.filter { $0.state == st && matches($0, query) }
-                .sorted { lhs, rhs in lhs.primary.localizedCaseInsensitiveCompare(rhs.primary) == .orderedAscending }
+            let group = agents.filter { $0.state == st && matches($0, query) }
+            // Finished (idle): most-recently-finished first (its `since` is frozen at
+            // last activity, so order stays stable). Other sections: by name.
+            let rows = st == .idle
+                ? group.sorted { $0.since > $1.since }
+                : group.sorted { $0.primary.localizedCaseInsensitiveCompare($1.primary) == .orderedAscending }
             if !rows.isEmpty { out.append((st, rows)) }
         }
         return out

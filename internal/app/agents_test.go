@@ -105,6 +105,30 @@ func TestStatusRank(t *testing.T) {
 	}
 }
 
+// sortPanes: status groups first, then the finished (idle) group most-recently-
+// finished first (by `since` desc), other groups by location.
+func TestSortPanes(t *testing.T) {
+	panes := []agentPane{
+		{loc: "z-idle", status: "idle", since: 100},
+		{loc: "a-idle", status: "idle", since: 300}, // finished most recently
+		{loc: "m-idle", status: "idle", since: 200},
+		{loc: "b-working", status: "working", since: 50},
+		{loc: "a-waiting", status: "waiting", since: 10},
+	}
+	sortPanes(panes)
+	got := make([]string, len(panes))
+	for i, p := range panes {
+		got[i] = p.loc
+	}
+	// waiting, then working, then the three idle by since desc (a=300, m=200, z=100).
+	want := []string{"a-waiting", "b-working", "a-idle", "m-idle", "z-idle"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("order = %v, want %v", got, want)
+		}
+	}
+}
+
 func TestFirstNonEmpty(t *testing.T) {
 	if got := firstNonEmpty("", "", "third"); got != "third" {
 		t.Errorf("firstNonEmpty = %q, want %q", got, "third")

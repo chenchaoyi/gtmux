@@ -520,13 +520,24 @@ func gatherAgents() []agentPane {
 			since:      since,
 		})
 	}
+	sortPanes(panes)
+	return panes
+}
+
+// sortPanes orders the radar: status groups first (waiting → working → idle/running),
+// then within the FINISHED (idle) group most-recently-finished first (its `since` is
+// frozen at last activity, so the order stays stable — no jumping), and every other
+// group by location (a stable, familiar layout).
+func sortPanes(panes []agentPane) {
 	sort.SliceStable(panes, func(i, j int) bool {
 		if ri, rj := statusRank(panes[i].status), statusRank(panes[j].status); ri != rj {
 			return ri < rj
 		}
+		if panes[i].status == "idle" && panes[j].status == "idle" && panes[i].since != panes[j].since {
+			return panes[i].since > panes[j].since
+		}
 		return panes[i].loc < panes[j].loc
 	})
-	return panes
 }
 
 func statusRank(s string) int {
