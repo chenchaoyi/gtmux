@@ -137,6 +137,8 @@ func cmdInstallHooks(args []string) int {
 
 	i18n.Say("Done. Restart your Claude Code sessions to load the hooks.",
 		"完成。重启 Claude Code 会话以加载 hook。")
+	i18n.Say("→ run `gtmux doctor` to finish setup — set-titles (focus/restore need it) + restore-after-reboot.",
+		"→ 跑 `gtmux doctor` 完成其余配置 —— set-titles（focus/restore 需要）+ 重启后恢复。")
 	return 0
 }
 

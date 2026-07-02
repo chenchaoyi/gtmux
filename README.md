@@ -71,25 +71,34 @@ that animates a spinner — not just Claude Code.
 
 ## Quickstart
 
-Homebrew (macOS):
-
-```sh
-brew install chenchaoyi/tap/gtmux             # the CLI
-brew install --cask chenchaoyi/tap/gtmux-app  # the menu-bar app (optional)
-```
-
-Or the install script (CLI + menu-bar app in one shot):
+**1. Install** — the script gets you the CLI *and* the menu-bar app in one shot
+(the app delivers the desktop "waiting on you" notifications, so you want both):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```
 
-Installs the CLI to `~/.local/bin/gtmux` and the menu-bar app. Then:
+Prefer Homebrew? `brew install chenchaoyi/tap/gtmux` (CLI) and
+`brew install --cask chenchaoyi/tap/gtmux-app` (menu-bar app).
+
+**2. Set up** — one command checks everything and configures the rest, explaining
+and asking before each change:
 
 ```sh
-gtmux install-hooks          # so agents can report "waiting on you" (one-time)
+gtmux doctor                 # health check, grouped by concern (read-only)
+gtmux doctor --fix           # one-stop setup: the agent hook, set-titles (focus/
+                             # restore need it), restore-after-reboot, the app
+```
+
+**3. Use it:**
+
+```sh
 gtmux agents --watch         # the live dashboard; Enter jumps to a pane
 ```
+
+> Just want notifications and nothing else? `gtmux install-hooks` registers only
+> the agent hook — but `gtmux doctor --fix` is the recommended path (it does that
+> **and** the set-titles focus/restore depend on).
 
 To watch from your phone, run `gtmux serve` (same network) or `gtmux tunnel`
 (anywhere) and pair the iOS app. See **[docs/phone.md](docs/phone.md)**.

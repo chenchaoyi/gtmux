@@ -103,6 +103,13 @@ func cmdUpdate(args []string) int {
 		i18n.Say("Updating gtmux to the latest release…", "正在更新 gtmux 到最新版…")
 	}
 
+	return runInstaller(cliOnly)
+}
+
+// runInstaller fetches the official install.sh and runs it in place (over the
+// running binary's dir), installing the CLI + menu-bar app unless cliOnly. Returns
+// 0 on success. Shared by `gtmux update` and `doctor --fix`'s app step.
+func runInstaller(cliOnly bool) int {
 	script := fetchInstallScript()
 	if script == nil {
 		// Every mirror failed → almost always the network can't reach GitHub/the CDN
@@ -111,8 +118,8 @@ func cmdUpdate(args []string) int {
 		// pointing at the README.
 		gh := installScriptMirrors[0]
 		cdn := installScriptMirrors[1]
-		i18n.Sae("gtmux update: can't reach the release server — check your internet / VPN, then run the install command by hand:",
-			"gtmux update: 连不上发布服务器 —— 请检查网络 / VPN，然后手动运行安装命令：")
+		i18n.Sae("gtmux: can't reach the release server — check your internet / VPN, then run the install command by hand:",
+			"gtmux: 连不上发布服务器 —— 请检查网络 / VPN，然后手动运行安装命令：")
 		fmt.Fprintf(os.Stderr, "\n  curl -fsSL %s | bash\n", gh)
 		i18n.Sae("  behind a firewall? use the CDN mirror:", "  在防火墙后？用 CDN 镜像：")
 		fmt.Fprintf(os.Stderr, "  curl -fsSL %s | bash\n\n", cdn)
@@ -120,7 +127,7 @@ func cmdUpdate(args []string) int {
 	}
 	tmp, err := os.CreateTemp("", "gtmux-install-*.sh")
 	if err != nil {
-		i18n.Sae("gtmux update: "+err.Error(), "gtmux update: "+err.Error())
+		i18n.Sae("gtmux: "+err.Error(), "gtmux: "+err.Error())
 		return 1
 	}
 	defer os.Remove(tmp.Name())
@@ -130,8 +137,8 @@ func cmdUpdate(args []string) int {
 	cmd := exec.Command("bash", tmp.Name())
 	cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 	env := os.Environ()
-	// Update IN PLACE: install over the binary that's running (its dir), unless
-	// the user already pinned a dir.
+	// Install IN PLACE: over the binary that's running (its dir), unless the user
+	// already pinned a dir.
 	if _, ok := os.LookupEnv("GTMUX_BIN_DIR"); !ok {
 		if self, e := os.Executable(); e == nil {
 			if real, e2 := filepath.EvalSymlinks(self); e2 == nil {
@@ -145,7 +152,7 @@ func cmdUpdate(args []string) int {
 	}
 	cmd.Env = env
 	if err := cmd.Run(); err != nil {
-		i18n.Sae("gtmux update: installer failed: "+err.Error(), "gtmux update: 安装失败："+err.Error())
+		i18n.Sae("gtmux: installer failed: "+err.Error(), "gtmux: 安装失败："+err.Error())
 		return 1
 	}
 	// The installer swapped the binary on disk, but a long-running `gtmux serve`
