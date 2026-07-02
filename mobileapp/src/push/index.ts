@@ -36,6 +36,19 @@ export function reregisterKinds(client: GtmuxClient, kinds: string[]): void {
   if (lastToken) client.registerPush(lastToken, kinds).catch(() => {});
 }
 
+// setBadge sets the app-icon badge to the live waiting count. The server's silent
+// push keeps it right while backgrounded/killed; this keeps it right (and reconciled)
+// while the app is running — the two target the same absolute count. Best-effort;
+// no-op off iOS or without notification permission.
+export function setBadge(n: number): void {
+  if (Platform.OS !== 'ios' || !PushNotificationIOS?.setApplicationIconBadgeNumber) return;
+  try {
+    PushNotificationIOS.setApplicationIconBadgeNumber(Math.max(0, n));
+  } catch {
+    // best-effort
+  }
+}
+
 export async function setupPush(
   client: GtmuxClient,
   // server = the sending Mac's name (carried top-level), so the tap can route to
