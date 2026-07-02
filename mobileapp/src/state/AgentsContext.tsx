@@ -96,6 +96,31 @@ export function AgentsProvider({
   // End the Live Activity when this Mac is unpaired (the provider unmounts).
   useEffect(() => () => LiveActivity.stop(), []);
 
+  // Dismiss the Live Activity when the server has been offline a while: its tally is
+  // frozen/stale (no refresh reaches it), so a lingering lock-screen card is
+  // misleading. A grace period avoids flapping on brief blips. On reconnect the next
+  // successful refresh's sync() starts a fresh activity — so it reappears on its own.
+  const offlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (conn === 'offline') {
+      if (!offlineTimer.current) {
+        offlineTimer.current = setTimeout(() => {
+          LiveActivity.stop();
+          offlineTimer.current = null;
+        }, 60_000);
+      }
+    } else if (offlineTimer.current) {
+      clearTimeout(offlineTimer.current);
+      offlineTimer.current = null;
+    }
+    return () => {
+      if (offlineTimer.current) {
+        clearTimeout(offlineTimer.current);
+        offlineTimer.current = null;
+      }
+    };
+  }, [conn]);
+
   // Forward the Live Activity push token to this Mac so the relay can keep the
   // lock screen live with the app closed. Re-register only on a token change.
   const lastActivityToken = useRef<string>('');
