@@ -4,8 +4,8 @@
 // plain action). Multi-option settings collapse to one value+chevron row that
 // opens a PickerSheet, instead of spilling a long inline radio list.
 
-import React from 'react';
-import {Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {SIcon, IconName} from './SettingsIcons';
 
@@ -111,45 +111,78 @@ export function PickerSheet<T extends string>({
   onSelect: (key: T) => void;
   onClose: () => void;
 }) {
+  // Animate the backdrop and the sheet SEPARATELY: the dim fades in place while the
+  // panel slides up from the bottom. RN's Modal animationType="slide" instead slid
+  // the WHOLE modal (dim included) up together, so mid-animation you saw a gray
+  // curtain sweeping up over the lower half with no panel — reading as a janky
+  // half-screen overlay. `mounted` keeps the Modal alive through the exit animation.
+  const [mounted, setMounted] = useState(visible);
+  const [sheetH, setSheetH] = useState(0);
+  const prog = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.timing(prog, {toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
+    } else if (mounted) {
+      Animated.timing(prog, {toValue: 0, duration: 180, easing: Easing.in(Easing.cubic), useNativeDriver: true}).start(({finished}) => {
+        if (finished) setMounted(false);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  if (!mounted) return null;
+
+  const translateY = prog.interpolate({inputRange: [0, 1], outputRange: [sheetH || 800, 0]});
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* the sheet is an ELEVATED surface (pal.surface, lighter than the page) with
-            a top border + shadow, so on a dark screen it reads as a distinct panel
-            instead of blending into the dimmed background. */}
-        <Pressable style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider}]} onPress={() => {}}>
-          <SafeAreaView edges={['bottom']}>
-            <View style={styles.sheetHandle}>
-              <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
-            </View>
-            <Text style={[styles.sheetTitle, {color: pal.fg2}]}>{title}</Text>
-            <View style={[styles.sheetSep, {backgroundColor: pal.divider}]} />
-            {options.map((o, i) => {
-              const sel = selected === o.key;
-              return (
-                <TouchableOpacity
-                  key={o.key}
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    onSelect(o.key);
-                    onClose();
-                  }}
-                  style={[
-                    styles.pickRow,
-                    sel && {backgroundColor: SELECTED_TINT},
-                    i < options.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
-                  ]}>
-                  <View style={styles.textWrap}>
-                    <Text style={[styles.pickLabel, {color: sel ? ACCENT : pal.fg}]}>{o.label}</Text>
-                    {!!o.sub && <Text style={[styles.sub, {color: pal.fg3}]}>{o.sub}</Text>}
-                  </View>
-                  {sel && <Text style={styles.check}>✓</Text>}
-                </TouchableOpacity>
-              );
-            })}
-          </SafeAreaView>
-        </Pressable>
-      </Pressable>
+    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
+      <View style={styles.fill}>
+        {/* dim: fades in place, never slides */}
+        <Animated.View style={[StyleSheet.absoluteFill, styles.dim, {opacity: prog}]}>
+          <Pressable style={styles.fill} onPress={onClose} />
+        </Animated.View>
+        {/* sheet: an ELEVATED surface (pal.surface, lighter than the page) that slides
+            up from the bottom; measured once so the slide starts fully off-screen. */}
+        <Animated.View style={[styles.sheetWrap, {transform: [{translateY}]}]}>
+          <Pressable
+            onLayout={e => setSheetH(e.nativeEvent.layout.height)}
+            style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider}]}
+            onPress={() => {}}>
+            <SafeAreaView edges={['bottom']}>
+              <View style={styles.sheetHandle}>
+                <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
+              </View>
+              <Text style={[styles.sheetTitle, {color: pal.fg2}]}>{title}</Text>
+              <View style={[styles.sheetSep, {backgroundColor: pal.divider}]} />
+              {options.map((o, i) => {
+                const sel = selected === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    activeOpacity={0.6}
+                    onPress={() => {
+                      onSelect(o.key);
+                      onClose();
+                    }}
+                    style={[
+                      styles.pickRow,
+                      sel && {backgroundColor: SELECTED_TINT},
+                      i < options.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
+                    ]}>
+                    <View style={styles.textWrap}>
+                      <Text style={[styles.pickLabel, {color: sel ? ACCENT : pal.fg}]}>{o.label}</Text>
+                      {!!o.sub && <Text style={[styles.sub, {color: pal.fg3}]}>{o.sub}</Text>}
+                    </View>
+                    {sel && <Text style={styles.check}>✓</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+            </SafeAreaView>
+          </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -167,9 +200,12 @@ const styles = StyleSheet.create({
   value: {fontSize: 15, flexShrink: 1},
   chev: {fontSize: 20, fontWeight: '300', marginLeft: 6},
   check: {color: ACCENT, fontSize: 18, fontWeight: '700', marginLeft: 10},
+  fill: {flex: 1},
   // a noticeably stronger dim so the modal clearly takes focus (0.4 black over a
-  // dark page was nearly invisible).
-  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end'},
+  // dark page was nearly invisible). Its opacity is animated 0→1 in place.
+  dim: {backgroundColor: 'rgba(0,0,0,0.5)'},
+  // pins the sliding sheet to the bottom, centered (not edge-to-edge) on iPad/wide.
+  sheetWrap: {position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center'},
   sheet: {
     width: '100%',
     maxWidth: 520, // centered, not edge-to-edge, on iPad/wide
