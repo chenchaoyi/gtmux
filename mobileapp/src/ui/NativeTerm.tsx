@@ -23,6 +23,7 @@
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {JumpToBottom} from './JumpToBottom';
 import {parseAnsi} from './ansi';
 import {cursorSpans, nativeFontFamily, normalizeGlyphs} from './term';
 import {TermTheme} from '../api/types';
@@ -148,9 +149,22 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
   // transparent selection layer. Cursor cell is intentionally excluded.
   const plainText = useMemo(() => lines.map(spans => spans.map(s => s.text).join('')).join('\n'), [lines]);
 
+  // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
+  // follow-live behavior. Both track the same "near the tail" test.
+  const [atBottom, setAtBottom] = useState(true);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
-    stick.current = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
+    const bottom = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
+    stick.current = bottom;
+    setAtBottom(bottom);
+  };
+  // Snap back to the live tail: resume following, flush any frozen snapshot (so you
+  // land on the newest output, not a stale frame), and scroll down.
+  const jumpToBottom = () => {
+    stick.current = true;
+    setAtBottom(true);
+    flushPending();
+    ref.current?.scrollToEnd({animated: true});
   };
   const onContentSizeChange = () => {
     if (stick.current) ref.current?.scrollToEnd({animated: false});
@@ -211,6 +225,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
           </Text>
         </View>
       </ScrollView>
+      <JumpToBottom visible={!atBottom} onPress={jumpToBottom} />
     </View>
   );
 }

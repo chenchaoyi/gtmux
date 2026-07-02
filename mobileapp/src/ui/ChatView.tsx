@@ -13,6 +13,7 @@ import React from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
+import {JumpToBottom} from './JumpToBottom';
 import {UserAvatar} from './UserAvatar';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {fmtTurnTime} from './time';
@@ -81,6 +82,16 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
+  // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
+  const [atBottom, setAtBottom] = React.useState(true);
+  const onScroll = (e: any) => {
+    const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
+    setAtBottom(contentSize.height - contentOffset.y - layoutMeasurement.height < 60);
+  };
+  const jumpToBottom = () => {
+    scrollRef.current?.scrollToEnd({animated: true});
+    setAtBottom(true);
+  };
 
   // Collapse/expand all agent replies — so you can scan prompts to find a turn, then
   // open just that one. `collapsedAll` is the default; `turnOpen[i]` overrides a
@@ -115,6 +126,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   // Jump to the latest turn whenever the history grows (kept in sync by the parent).
   React.useEffect(() => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+    setAtBottom(true);
   }, [turns.length]);
 
   // Per-turn time labels, with adjacent duplicates blanked so a burst of turns in
@@ -168,7 +180,9 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
       ref={scrollRef}
       testID={TestIds.detail.chat}
       style={styles.body}
-      contentContainerStyle={styles.content}>
+      contentContainerStyle={styles.content}
+      onScroll={onScroll}
+      scrollEventThrottle={16}>
       {/* current-state row: avatar + agent + status dot */}
       <View style={styles.stateRow}>
         <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
@@ -332,6 +346,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
           <BrandLoader size={40} neutral="rgba(255,255,255,0.2)" />
         </View>
       )}
+      <JumpToBottom visible={!atBottom && turns.length > 0} onPress={jumpToBottom} />
     </View>
   );
 }

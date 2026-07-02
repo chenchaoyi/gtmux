@@ -38,6 +38,7 @@ export const TestIds = {
     fsExit: 'detail-fs-exit',
     collapseAll: 'detail-collapse-all',
     collapsedReply: 'detail-collapsed-reply',
+    jumpBottom: 'detail-jump-bottom',
   },
   composer: {
     input: 'composer-input',
