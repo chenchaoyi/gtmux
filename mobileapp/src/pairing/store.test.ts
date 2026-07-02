@@ -1,4 +1,4 @@
-import {sanitize, upsertServer} from './store';
+import {sanitize, serverForPush, upsertServer} from './store';
 
 const a = {url: 'http://a:8765', token: 'ta', name: 'A'};
 const b = {url: 'http://b:8765', token: 'tb', name: 'B'};
@@ -31,5 +31,21 @@ describe('upsertServer', () => {
   });
   it('adds to an empty list', () => {
     expect(upsertServer([], a)).toEqual([a]);
+  });
+});
+
+describe('serverForPush', () => {
+  it('returns the url of the named server when it is not the active one', () => {
+    expect(serverForPush([a, b], 'B', a.url)).toBe(b.url);
+  });
+  it('returns null when the named server IS already active', () => {
+    expect(serverForPush([a, b], 'A', a.url)).toBeNull();
+  });
+  it('returns null for an unknown / empty name', () => {
+    expect(serverForPush([a, b], 'C', a.url)).toBeNull();
+    expect(serverForPush([a, b], '', a.url)).toBeNull();
+  });
+  it('switches even when nothing is active yet', () => {
+    expect(serverForPush([a, b], 'B', null)).toBe(b.url);
   });
 });

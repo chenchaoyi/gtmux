@@ -105,6 +105,9 @@ export default {
       aps,
       pane: intent.pane ?? '',
       kind: intent.kind ?? '',
+      // top-level (readable on tap) so the app can route to the RIGHT server; same
+      // value as aps.alert.subtitle, which is display-only.
+      server: intent.subtitle ?? '',
     });
     const headers: Record<string, string> = {
       authorization: 'bearer ' + jwt,

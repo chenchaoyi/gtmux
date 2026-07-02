@@ -23,6 +23,7 @@ import {SettingsScreen} from './src/screens/SettingsScreen';
 import {SplitScreen} from './src/screens/SplitScreen';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
 import {AppProvider, useApp, kindsList} from './src/state/AppContext';
+import {serverForPush} from './src/pairing/store';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,7 +38,7 @@ function RadarRoute(props: any) {
 // Renders nothing.
 function PushBridge({navRef}: {navRef: any}) {
   const {client, agents} = useAgents();
-  const {pushEnabled, pushKinds} = useApp();
+  const {pushEnabled, pushKinds, servers, activeUrl, selectServer, pendingPane, setPendingPane} = useApp();
   const {width} = useWindowDimensions();
   const wideRef = useRef(width >= 768);
   wideRef.current = width >= 768;
@@ -45,28 +46,68 @@ function PushBridge({navRef}: {navRef: any}) {
   // main effect re-running (which would churn the native listeners).
   const kindsRef = useRef(kindsList(pushKinds));
   kindsRef.current = kindsList(pushKinds);
+  // Refs so the tap handler routes against the CURRENT roster without re-running
+  // the setup effect (which would churn the native listeners).
+  const serversRef = useRef(servers);
+  serversRef.current = servers;
+  const activeUrlRef = useRef(activeUrl);
+  activeUrlRef.current = activeUrl;
+
+  // openPane deep-links to a pane ON THE ACTIVE SERVER. Wide screens select it in
+  // the split Radar; narrow screens push Detail (a placeholder agent is fine — the
+  // screen fetches the pane by id).
+  const openPane = (pane: string) => {
+    if (wideRef.current) {
+      navRef.navigate('Radar', {selectPane: pane});
+      return;
+    }
+    const found = agents.find(a => a.pane_id === pane);
+    const agent: Agent =
+      found ?? {
+        pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
+        status: 'working', task: '', latest: false, activity: false, source: 'tmux',
+      };
+    navRef.navigate('Detail', {agent});
+  };
+  // navRef isn't ready until NavigationContainer mounts (this bridge renders
+  // first), so a deep-link consumed on mount retries briefly until it is.
+  const openPaneWhenReady = (pane: string, tries = 0) => {
+    if (navRef.isReady?.()) {
+      openPane(pane);
+    } else if (tries < 40) {
+      setTimeout(() => openPaneWhenReady(pane, tries + 1), 50); // up to ~2s
+    }
+  };
+
+  // A tapped push may belong to a DIFFERENT paired server than the active one. If
+  // so, switch to it (identified by the Mac name the push carries) and stash the
+  // pane in AppContext — it survives the server-switch remount, and the freshly
+  // mounted bridge opens it (below). Otherwise deep-link on the active server now.
+  const onTap = (pane: string, server?: string) => {
+    const target = serverForPush(serversRef.current, server ?? '', activeUrlRef.current);
+    if (target) {
+      setPendingPane(pane);
+      void selectServer(target);
+      return;
+    }
+    openPane(pane);
+  };
+
+  // Consume a pending deep-link left by a cross-server tap: this bridge instance
+  // mounted AFTER the switch, now connected to the right server.
+  useEffect(() => {
+    if (pendingPane) {
+      const p = pendingPane;
+      setPendingPane(null);
+      openPaneWhenReady(p);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPane]);
+
   useEffect(() => {
     if (!pushEnabled || Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
-    setupPush(
-      client,
-      pane => {
-        // On a wide screen the Radar route is the split view — select the pane
-        // there instead of stacking a full-screen Detail over it.
-        if (wideRef.current) {
-          navRef.navigate('Radar', {selectPane: pane});
-          return;
-        }
-        const found = agents.find(a => a.pane_id === pane);
-        const agent: Agent =
-          found ?? {
-            pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
-            status: 'working', task: '', latest: false, activity: false, source: 'tmux',
-          };
-        navRef.navigate('Detail', {agent});
-      },
-      () => kindsRef.current,
-    )
+    setupPush(client, onTap, () => kindsRef.current)
       .then(t => {
         teardown = t;
       })
@@ -75,8 +116,8 @@ function PushBridge({navRef}: {navRef: any}) {
         // must not break the radar.
       });
     return () => teardown?.();
-    // agents intentionally omitted: re-subscribing on every refetch would churn
-    // the native listeners; the tap handler reads the latest list via closure.
+    // agents/onTap intentionally omitted: re-subscribing on every refetch would
+    // churn the native listeners; the handler reads live state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, pushEnabled, navRef]);
 

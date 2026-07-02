@@ -38,7 +38,9 @@ export function reregisterKinds(client: GtmuxClient, kinds: string[]): void {
 
 export async function setupPush(
   client: GtmuxClient,
-  onTapPane: (pane: string) => void,
+  // server = the sending Mac's name (carried top-level), so the tap can route to
+  // the RIGHT paired server before opening the pane.
+  onTapPane: (pane: string, server?: string) => void,
   getKinds: () => string[] = () => [],
 ): Promise<Teardown> {
   if (Platform.OS !== 'ios') return () => {};
@@ -67,7 +69,7 @@ export async function setupPush(
     // Plain tap on the body → deep-link to the agent. Skip a foreground delivery
     // (those surface as the in-app SSE banner instead).
     if (pane && data.userInteraction) {
-      onTapPane(pane);
+      onTapPane(pane, data.server);
     }
     notification.finish?.(PushNotificationIOS.FetchResult.NoData);
   };
@@ -86,7 +88,7 @@ export async function setupPush(
   const initial = await PushNotificationIOS.getInitialNotification();
   if (initial) {
     const data: any = initial.getData?.() ?? {};
-    if (data.pane) onTapPane(data.pane);
+    if (data.pane) onTapPane(data.pane, data.server);
   }
 
   return () => {

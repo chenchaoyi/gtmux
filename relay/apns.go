@@ -149,6 +149,9 @@ func apnsPayload(req pushRequest) map[string]any {
 		"aps":  aps,
 		"pane": req.Pane,
 		"kind": req.Kind,
+		// top-level (readable on tap) so the app can route to the RIGHT server; same
+		// value as aps.alert.subtitle, which is display-only.
+		"server": req.Subtitle,
 	}
 }
 
