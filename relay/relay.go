@@ -24,6 +24,7 @@ type pushRequest struct {
 	Platform string `json:"platform"` // "ios" | "android" | "harmony"
 	Title    string `json:"title"`
 	Body     string `json:"body"`
+	Subtitle string `json:"subtitle,omitempty"` // the sending Mac's name (which server)
 	Pane     string `json:"pane"`
 	Kind     string `json:"kind"`
 	// Silent badge/dismiss sync (6a): a content-available push with no alert, used

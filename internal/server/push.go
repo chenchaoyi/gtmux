@@ -41,8 +41,9 @@ type PushIntent struct {
 	Platform string `json:"platform"`
 	Title    string `json:"title"`
 	Body     string `json:"body"`
-	Pane     string `json:"pane"` // jump target for the notification tap
-	Kind     string `json:"kind"` // "waiting" | "done"
+	Pane     string `json:"pane"`               // jump target for the notification tap
+	Kind     string `json:"kind"`               // "waiting" | "done"
+	Subtitle string `json:"subtitle,omitempty"` // this Mac's name — WHICH server, for multi-server
 	// Live Activity push-to-update: when set, Token is the activity push token and
 	// ContentState replaces the lock-screen activity's state (even app-killed).
 	LiveActivity bool           `json:"liveActivity,omitempty"`
@@ -74,12 +75,13 @@ type PushManager struct {
 	relay          Relay
 	save           func([]DeviceToken)              // optional persistence hook
 	format         func(Alert) (title, body string) // optional copy formatter (i18n lives in app)
+	serverName     string                           // this Mac's name → notification subtitle (WHICH server)
 }
 
 // NewPushManager builds a manager seeded with any persisted tokens. relay may be
 // a no-op (empty relay URL) — registration still works, forwarding is just off.
-func NewPushManager(relay Relay, initial []DeviceToken, save func([]DeviceToken), format func(Alert) (string, string)) *PushManager {
-	m := &PushManager{tokens: map[string]DeviceToken{}, activityTokens: map[string]struct{}{}, relay: relay, save: save, format: format}
+func NewPushManager(relay Relay, initial []DeviceToken, save func([]DeviceToken), serverName string, format func(Alert) (string, string)) *PushManager {
+	m := &PushManager{tokens: map[string]DeviceToken{}, activityTokens: map[string]struct{}{}, relay: relay, save: save, format: format, serverName: serverName}
 	for _, d := range initial {
 		if d.Token != "" {
 			m.tokens[d.Token] = d
@@ -186,7 +188,7 @@ func (p *PushManager) dispatch(a Alert) {
 		}
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform,
-			Title: title, Body: body, Pane: a.Pane, Kind: a.Kind,
+			Title: title, Body: body, Subtitle: p.serverName, Pane: a.Pane, Kind: a.Kind,
 			// Collapse an agent's banners into one: a re-nudge (#89) replaces the
 			// prior "needs you" instead of stacking a second banner per agent.
 			CollapseID: a.Pane,
@@ -222,7 +224,7 @@ func (p *PushManager) Test(title, body string) int {
 	for _, d := range toks {
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform,
-			Title: title, Body: body, Pane: "", Kind: "test",
+			Title: title, Body: body, Subtitle: p.serverName, Pane: "", Kind: "test",
 		})
 	}
 	return len(toks)

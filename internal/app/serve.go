@@ -183,7 +183,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		relayURL, relayToken = resolveRelay()
 	}
 	relay := server.NewHTTPRelay(relayURL, relayToken)
-	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens,
+	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens, serverDisplayName(),
 		func(a server.Alert) (string, string) { return pushCopy(a, deps.PaneText) })
 
 	// Per-device enrollment: a phone pairs via a short-lived code for its own
@@ -416,6 +416,25 @@ func diffForPane(id string) (string, error) {
 		out = out[:maxDiffBytes] + "\n… (diff truncated)\n"
 	}
 	return out, nil
+}
+
+// serverDisplayName is this Mac's human name, shown as the push notification's
+// subtitle so a phone paired to several Macs can tell WHICH one an alert came from.
+// Prefers the macOS ComputerName (matches the pairing QR's Host.localizedName —
+// e.g. "Chaoyi's MacBook Pro"); falls back to the network hostname, then "Mac".
+// cgo-free (shells out to scutil).
+func serverDisplayName() string {
+	if out, err := exec.Command("scutil", "--get", "ComputerName").Output(); err == nil {
+		if n := strings.TrimSpace(string(out)); n != "" {
+			return n
+		}
+	}
+	if h, err := os.Hostname(); err == nil {
+		if n := strings.TrimSpace(strings.TrimSuffix(h, ".local")); n != "" {
+			return n
+		}
+	}
+	return "Mac"
 }
 
 // writeRemoteClients records the live remote-viewer roster + count + timestamp so

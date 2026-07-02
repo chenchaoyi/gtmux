@@ -34,7 +34,7 @@ func (f *fakeRelay) intents() []PushIntent {
 func TestPushManagerDispatch(t *testing.T) {
 	relay := &fakeRelay{}
 	var saved [][]DeviceToken
-	pm := NewPushManager(relay, nil, func(d []DeviceToken) { saved = append(saved, d) }, nil)
+	pm := NewPushManager(relay, nil, func(d []DeviceToken) { saved = append(saved, d) }, "MacBook Pro", nil)
 
 	pm.Register(DeviceToken{Token: "tok-a", Platform: "ios"})
 	pm.Register(DeviceToken{Token: "tok-b"}) // platform defaults to ios
@@ -64,12 +64,15 @@ func TestPushManagerDispatch(t *testing.T) {
 		if !strings.Contains(in.Title, "Codex") || in.Body != "build" {
 			t.Fatalf("fallback copy = %q / %q", in.Title, in.Body)
 		}
+		if in.Subtitle != "MacBook Pro" {
+			t.Fatalf("subtitle = %q, want the server name 'MacBook Pro'", in.Subtitle)
+		}
 	}
 }
 
 func TestPushLiveActivity(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, nil, nil, nil)
+	pm := NewPushManager(relay, nil, nil, "", nil)
 
 	// No activity registered → no push.
 	pm.PushLiveActivity(Tally{Waiting: 1})
@@ -113,7 +116,7 @@ func TestPushLiveActivity(t *testing.T) {
 // a re-nudge replaces the prior banner instead of stacking a second one.
 func TestWaitingAlertCollapses(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil, nil)
+	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil, "", nil)
 	pm.dispatch(Alert{Pane: "%7", Kind: "waiting", Agent: "Claude"})
 	got := relay.intents()
 	if len(got) != 1 || got[0].CollapseID != "%7" {
@@ -125,7 +128,7 @@ func TestWaitingAlertCollapses(t *testing.T) {
 // all devices (so a second/offline phone syncs its red dot to the waiting count).
 func TestOnTallyBadgeSync(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, []DeviceToken{{Token: "a"}, {Token: "b"}}, nil, nil)
+	pm := NewPushManager(relay, []DeviceToken{{Token: "a"}, {Token: "b"}}, nil, "", nil)
 	pm.OnTally(Tally{Waiting: 2, Working: 1})
 
 	silent := 0
@@ -148,7 +151,7 @@ func TestOnTallyBadgeSync(t *testing.T) {
 
 func TestPushManagerFormatter(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil,
+	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil, "",
 		func(a Alert) (string, string) { return "T:" + a.Kind, "B:" + a.Agent })
 	pm.dispatch(Alert{Kind: "done", Agent: "Claude"})
 	got := relay.intents()
@@ -159,7 +162,7 @@ func TestPushManagerFormatter(t *testing.T) {
 
 func TestHandleRegister(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, nil, nil, nil)
+	pm := NewPushManager(relay, nil, nil, "", nil)
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Push: pm})
 	h := s.Handler()
 
