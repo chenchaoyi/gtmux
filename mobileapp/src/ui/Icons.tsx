@@ -22,6 +22,23 @@ export function KeyboardIcon({size = 20, color = '#fff'}: {size?: number; color?
   );
 }
 
+// Dismiss-keyboard: the keyboard outline with a down chevron below — the standard
+// iOS "hide keyboard" glyph. Replaces the tiny "▾" that dismissed the composer.
+export function KeyboardDismissIcon({size = 24, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Rect x={2.5} y={3.5} width={19} height={11} rx={2.4} stroke={color} strokeWidth={1.5} />
+      <Circle cx={6.5} cy={7} r={0.9} fill={color} />
+      <Circle cx={10} cy={7} r={0.9} fill={color} />
+      <Circle cx={13.5} cy={7} r={0.9} fill={color} />
+      <Circle cx={17} cy={7} r={0.9} fill={color} />
+      <Rect x={8.5} y={10} width={7} height={1.4} rx={0.7} fill={color} />
+      <Path d="M8.5 18 L12 21 L15.5 18" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 // A "history" clock: a clock face + hands + a counterclockwise back-arrow over the
 // top — the standard recall-the-past glyph (replaces the "历史/History" word).
 export function HistoryIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {

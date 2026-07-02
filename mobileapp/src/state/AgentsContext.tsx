@@ -7,6 +7,7 @@ import {GtmuxClient} from '../api/client';
 import {subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity} from '../native/liveActivity';
+import {setBadge} from '../push';
 import {buildActivityItems} from './activityItems';
 
 export type ConnState = 'connecting' | 'live' | 'offline';
@@ -53,6 +54,9 @@ export function AgentsProvider({
           // leading with the session that needs you (bold) + its prompt (detail),
           // and LISTING the top in-flight sessions (concrete names + relative time).
           const waiters = a.filter(x => x.status === 'waiting');
+          // App-icon badge = live count of sessions waiting on you (reconciled every
+          // refresh; the server's silent push covers backgrounded/killed).
+          setBadge(waiters.length);
           const top = waiters[0];
           const {items, more} = buildActivityItems(a, Math.floor(Date.now() / 1000));
           LiveActivity.sync(

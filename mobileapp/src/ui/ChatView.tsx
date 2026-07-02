@@ -99,6 +99,10 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   // mode switches), so the collapse layout persists when you flip 终端↔对话.
   const [collapsedAll, setCollapsedAll] = React.useState(false);
   const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
+  // A very long USER prompt (e.g. a pasted context dump) is auto-collapsed to a few
+  // lines with a tap-to-expand toggle, so it doesn't bury the conversation.
+  const [promptOpen, setPromptOpen] = React.useState<Record<number, boolean>>({});
+  const togglePrompt = (i: number) => setPromptOpen(o => ({...o, [i]: !o[i]}));
   // collapse/expand-ALL re-renders every turn (expand rebuilds all markdown), which
   // blocks JS for a beat — show the branded loader over it (it animates natively, so
   // it stays smooth through the hitch). Defer the state change one frame so the
@@ -228,16 +232,36 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         return (
           <View key={i} style={styles.turn}>
             {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
-            {!!t.prompt && (
-              <View style={styles.userRow}>
-                <View style={styles.userBubble}>
-                  <Text selectable selectionColor={SEL_COLOR} style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
-                    {t.prompt}
-                  </Text>
-                </View>
-                <UserAvatar size={26} />
-              </View>
-            )}
+            {!!t.prompt && (() => {
+              const nLines = t.prompt.split('\n').length;
+              const long = t.prompt.length > 600 || nLines > 12;
+              const collapsed = long && !promptOpen[i];
+              return (
+                <>
+                  <View style={styles.userRow}>
+                    <View style={styles.userBubble}>
+                      <Text
+                        selectable
+                        selectionColor={SEL_COLOR}
+                        numberOfLines={collapsed ? 8 : undefined}
+                        style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
+                        {t.prompt}
+                      </Text>
+                    </View>
+                    <UserAvatar size={26} />
+                  </View>
+                  {long && (
+                    <TouchableOpacity onPress={() => togglePrompt(i)} activeOpacity={0.7} style={styles.userToggle}>
+                      <Text style={styles.userToggleText}>
+                        {promptOpen[i]
+                          ? lang === 'zh' ? '▴ 收起' : '▴ Collapse'
+                          : lang === 'zh' ? `▾ 展开全部（${nLines} 行）` : `▾ Show all (${nLines} lines)`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              );
+            })()}
 
             {/* COLLAPSED: keep the agent avatar + a tappable preview bubble, so a
                 collapsed turn still reads as a normal conversation row (just short). */}
@@ -385,6 +409,10 @@ const styles = StyleSheet.create({
   },
   userBubblePending: {opacity: 0.55},
   userText: {color: '#E6F7FB', fontSize: 14, lineHeight: 20},
+  // expand/collapse toggle for an auto-collapsed long prompt — right-aligned under
+  // the bubble (marginRight = avatar 26 + gap 8, so it sits under the bubble's edge).
+  userToggle: {alignSelf: 'flex-end', marginRight: 34, marginTop: 3, paddingVertical: 2},
+  userToggleText: {fontSize: 12.5, color: 'rgba(230,247,251,0.6)', fontWeight: '600'},
 
   // collapsed middle steps.
   stepsToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 2},

@@ -39,7 +39,7 @@ import {ImageMarkup} from './ImageMarkup';
 import {SnippetsModal} from './SnippetsModal';
 import {SnippetsPicker} from './SnippetsPicker';
 import {HistoryModal} from './HistoryModal';
-import {KeyboardIcon, HistoryIcon} from './Icons';
+import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon} from './Icons';
 import {loadSnippets, saveSnippets} from '../state/snippets';
 import {loadHistory, saveHistory, pushHistory} from '../state/history';
 
@@ -256,9 +256,9 @@ export function Composer({
       contentContainerStyle={styles.keys}>
       <Key onPress={() => setComposing(c => !c)} icon activeBg={composing} testID={TestIds.composer.keyboard}>
         {composing ? (
-          <Text style={[styles.keyGlyph, {color: '#fff'}]}>▾</Text>
+          <KeyboardDismissIcon size={24} color="#fff" />
         ) : (
-          <KeyboardIcon size={20} color={pal.fg2} />
+          <KeyboardIcon size={24} color={pal.fg2} />
         )}
       </Key>
       {ctx.length > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
@@ -278,7 +278,7 @@ export function Composer({
         {lang === 'zh' ? '快捷短语 ▾' : 'Snippets ▾'}
       </Key>
       <Key onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}>
-        <HistoryIcon size={20} color={pal.fg2} />
+        <HistoryIcon size={24} color={pal.fg2} />
       </Key>
     </ScrollView>
   );
