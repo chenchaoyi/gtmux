@@ -147,7 +147,7 @@ function Root() {
   // key={mac.url}: switching to another Mac fully remounts the agent store +
   // navigator with the new base/token (no stale SSE / selection bleed-over).
   return (
-    <AgentsProvider key={mac.url} base={mac.url} token={mac.token}>
+    <AgentsProvider key={mac.url} base={mac.url} token={mac.token} name={mac.name}>
       <PushBridge navRef={navRef} />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>

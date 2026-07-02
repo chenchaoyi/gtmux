@@ -188,6 +188,13 @@ struct GtmuxLiveActivity: Widget {
       //            prompt  (dim)
       //   ───────  N waiting · M working · K idle  ───────
       VStack(alignment: .leading, spacing: 10) {
+        // Which Mac this activity tracks — a small header label so a phone paired to
+        // several servers knows whose tally this is (static per activity).
+        if !context.attributes.server.isEmpty {
+          Text(context.attributes.server)
+            .font(.caption2).fontWeight(.semibold)
+            .foregroundColor(.white.opacity(0.55)).lineLimit(1)
+        }
         HStack(alignment: .center, spacing: 12) {
           StatusBadge(status: primaryStatus(context.state), size: 26)
           Text(summaryLine(context.state))
@@ -218,6 +225,9 @@ struct GtmuxLiveActivity: Widget {
         }
         DynamicIslandExpandedRegion(.center) {
           VStack(spacing: 2) {
+            if !context.attributes.server.isEmpty {
+              Text(context.attributes.server).font(.caption2).fontWeight(.semibold).foregroundColor(.secondary).lineLimit(1)
+            }
             Text(headline(context.state)).font(.callout).fontWeight(.semibold).lineLimit(1)
             Text(subtitle(context.state)).font(.caption2).foregroundColor(.secondary).lineLimit(1)
           }

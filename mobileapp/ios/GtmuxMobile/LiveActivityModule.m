@@ -15,6 +15,7 @@ RCT_EXTERN_METHOD(start : (nonnull NSNumber *)waiting
                   title : (nonnull NSString *)title
                   session : (nonnull NSString *)session
                   items : (nonnull NSString *)items
+                  server : (nonnull NSString *)server
                   resolver : (RCTPromiseResolveBlock)resolve
                   rejecter : (RCTPromiseRejectBlock)reject)
 

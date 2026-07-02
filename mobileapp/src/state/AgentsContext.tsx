@@ -26,10 +26,12 @@ const Ctx = createContext<AgentsContextValue | null>(null);
 export function AgentsProvider({
   base,
   token,
+  name = '',
   children,
 }: {
   base: string;
   token: string;
+  name?: string; // the paired Mac's display name → the Live Activity's server label
   children: React.ReactNode;
 }) {
   const client = useMemo(() => new GtmuxClient(base, token), [base, token]);
@@ -61,11 +63,12 @@ export function AgentsProvider({
             top ? top.session || top.loc : '',
             items,
             more,
+            name,
           );
         })
         .catch(() => setConn('offline'));
     },
-    [client],
+    [client, name],
   );
 
   useEffect(() => {
