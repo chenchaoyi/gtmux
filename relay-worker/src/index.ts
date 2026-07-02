@@ -19,6 +19,7 @@ interface PushIntent {
   body?: string;
   pane?: string;
   kind?: string;
+  subtitle?: string; // the sending Mac's name — shown as the notification subtitle (which server)
   // Live Activity update (push-to-update): when set, `token` is the activity push
   // token and contentState replaces the activity's state on the lock screen.
   liveActivity?: boolean;
@@ -87,7 +88,10 @@ export default {
       // badge, so a second (offline-until-now) phone clears its red dot.
       aps['content-available'] = 1;
     } else {
-      aps.alert = {title: intent.title ?? '', body: intent.body ?? ''};
+      const alert: Record<string, unknown> = {title: intent.title ?? '', body: intent.body ?? ''};
+      // subtitle = which Mac (multi-server): the bold line between title and body.
+      if (intent.subtitle) alert.subtitle = intent.subtitle;
+      aps.alert = alert;
       aps.sound = 'default';
       // mutable-content wakes the app's Notification Service Extension, which
       // attaches a per-kind status badge (red stop / green ✓) to the banner.

@@ -121,10 +121,15 @@ func apnsPayload(req pushRequest) map[string]any {
 		// resolved agent's delivered banner.
 		aps["content-available"] = 1
 	} else {
-		aps["alert"] = map[string]any{
+		alert := map[string]any{
 			"title": req.Title,
 			"body":  req.Body,
 		}
+		// subtitle = which Mac (multi-server): the bold line between title and body.
+		if req.Subtitle != "" {
+			alert["subtitle"] = req.Subtitle
+		}
+		aps["alert"] = alert
 		aps["sound"] = "default"
 		// mutable-content wakes the app's Notification Service Extension, which
 		// attaches a per-kind status badge (red stop / green ✓) to the banner.
