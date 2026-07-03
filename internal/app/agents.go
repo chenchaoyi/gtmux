@@ -457,15 +457,27 @@ func gatherAgents() []agentPane {
 			continue
 		}
 		id := f[0]
+		var activityAt int64
+		if len(f) >= 8 {
+			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
+		}
 		switch {
 		case status == "working":
 			if waiting[id] { // resumed working → clear the stale waiting mark
 				state.Remove(state.WaitingPath(id))
 				delete(waiting, id)
 			}
-		case waiting[id]:
+		case waiting[id] && !waitMarkStale(id, activityAt):
 			status = "waiting" // blocked on the user (hook-marked, e.g. Claude)
 		default:
+			// A waiting mark survives on disk across a tmux restart; when pane ids
+			// reset and a new session reuses this id, it inherits a days-old orphan
+			// mark (the "waiting 9d" bug). Clear any mark on a non-working pane whose
+			// activity postdates it — the agent has clearly moved on.
+			if waiting[id] {
+				state.Remove(state.WaitingPath(id))
+				delete(waiting, id)
+			}
 			// Screen-scan fallback for agents that fire NO waiting hook — only
 			// Claude hook-marks waiting (handled above), so a live approval menu is
 			// the only "needs you" signal for Codex/Cursor/Gemini/etc. Skipping
@@ -476,10 +488,6 @@ func gatherAgents() []agentPane {
 			if agent != "Claude Code" && len(prompt.WaitingOptions(tmux.CapturePane(id))) > 0 {
 				status = "waiting"
 			}
-		}
-		var activityAt int64
-		if len(f) >= 8 {
-			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
 		}
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
 		// "waiting 11m" duration. Hook markers give the turn/wait start; otherwise
@@ -538,6 +546,23 @@ func sortPanes(panes []agentPane) {
 		}
 		return panes[i].loc < panes[j].loc
 	})
+}
+
+// waitStaleGrace is how far a pane's activity may postdate its waiting mark before
+// the mark is treated as obsolete. A real wait leaves the pane quiet (activity ≈ the
+// mark); activity well after it means the agent resumed, or the pane id was reused
+// across a tmux restart and inherited an orphan mark from a prior incarnation.
+const waitStaleGrace int64 = 15 * 60 // seconds
+
+// waitMarkStale reports whether a pane's waiting mark is obsolete — the pane's tmux
+// window activity is newer than the mark by more than the grace. Guards against the
+// "waiting 9d" orphan-mark case (window_activity is coarse, hence the grace).
+func waitMarkStale(id string, activityAt int64) bool {
+	if activityAt <= 0 {
+		return false
+	}
+	mt := fileMtime(state.WaitingPath(id))
+	return mt > 0 && activityAt > mt+waitStaleGrace
 }
 
 func statusRank(s string) int {
