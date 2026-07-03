@@ -154,10 +154,12 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"Notification":     semStatusNotification,
 	},
 	"codex": {
-		// Codex runs its own approval reviewer; its PermissionRequest is
-		// telemetry so "approve for me" can use Codex's path, not gtmux.
-		"PermissionRequest":    semToolStart,
-		"permission_request":   semToolStart,
+		// Codex's NEW hooks system (~/.codex/hooks.json, features.hooks) fires
+		// PermissionRequest when it's about to ASK you (shell escalation, managed
+		// network) — a real user-facing approval → waiting. (Its PreToolUse still
+		// fires for every tool, so that stays telemetry.)
+		"PermissionRequest":    semApprovalRequest,
+		"permission_request":   semApprovalRequest,
 		"PreToolUse":           semToolStart,
 		"pre_tool_use":         semToolStart,
 		"beforeShellExecution": semToolStart,

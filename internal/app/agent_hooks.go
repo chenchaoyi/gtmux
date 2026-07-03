@@ -70,6 +70,9 @@ var agentInstallers = map[string]agentInstaller{
 			{key: "afterAgentResponse", event: "Stop"},
 			{key: "beforeShellExecution", event: "PermissionRequest"}, // a shell is always blocking
 			{key: "afterShellExecution", event: "PostToolUse"},        // resolved → clear waiting
+			{key: "beforeMCPExecution", event: "PermissionRequest"},   // an MCP tool also blocks on you
+			{key: "afterMCPExecution", event: "PostToolUse"},          // resolved → clear waiting
+			{key: "sessionEnd", event: "SessionEnd"},                  // clear markers when the conversation ends
 		},
 	},
 	"gemini": {
@@ -78,8 +81,13 @@ var agentInstallers = map[string]agentInstaller{
 		bindings: []agentHookBinding{
 			{key: "BeforeAgent", event: "UserPromptSubmit"},
 			{key: "AfterAgent", event: "Stop"},
-			{key: "PreToolUse", event: "PreToolUse", feed: true},   // tool-discriminated
-			{key: "PostToolUse", event: "PostToolUse", feed: true}, // resolved → clear waiting
+			// Gemini names its tool hooks Before/After Tool, NOT Pre/Post — the old
+			// Pre/PostToolUse keys silently never fired. The gtmux TOKEN stays
+			// canonical (Pre/PostToolUse) so the classifier still handles it.
+			{key: "BeforeTool", event: "PreToolUse", feed: true},
+			{key: "AfterTool", event: "PostToolUse", feed: true},
+			{key: "SessionStart", event: "SessionStart"}, // clear markers on (re)start
+			{key: "SessionEnd", event: "SessionEnd"},     // clear markers on end
 		},
 	},
 	"copilot": {

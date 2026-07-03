@@ -99,12 +99,16 @@ func TestInstallGeminiNested(t *testing.T) {
 	if got := firstCommand(t, m, "BeforeAgent"); got != testBin+" hook --agent gemini UserPromptSubmit" {
 		t.Errorf("BeforeAgent cmd = %q", got)
 	}
-	// Lifecycle timeout = 10000; feed (PreToolUse) = 120000.
+	// Lifecycle timeout = 10000; feed (BeforeTool) = 120000. Gemini's tool hooks are
+	// BeforeTool/AfterTool (NOT Pre/Post) — the gtmux TOKEN stays PreToolUse.
 	if to := nestedTimeout(t, m, "AfterAgent"); to != 10000 {
 		t.Errorf("AfterAgent timeout = %d, want 10000", to)
 	}
-	if to := nestedTimeout(t, m, "PreToolUse"); to != feedTimeoutMs {
-		t.Errorf("PreToolUse (feed) timeout = %d, want %d", to, feedTimeoutMs)
+	if got := firstCommand(t, m, "BeforeTool"); got != testBin+" hook --agent gemini PreToolUse" {
+		t.Errorf("BeforeTool cmd = %q", got)
+	}
+	if to := nestedTimeout(t, m, "BeforeTool"); to != feedTimeoutMs {
+		t.Errorf("BeforeTool (feed) timeout = %d, want %d", to, feedTimeoutMs)
 	}
 }
 

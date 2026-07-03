@@ -60,18 +60,31 @@ func peonPingConfigPath() string {
 	return filepath.Join(homeDir(), ".claude", "hooks", "peon-ping", "config.json")
 }
 
-// installHooksCodex prints how to wire Codex's `notify` at gtmux. We deliberately
-// do NOT auto-edit ~/.codex/config.toml: `notify` is a SINGLE program (often
-// already in use, e.g. computer-use) and Codex's richer hooks format isn't
-// documented, so clobbering either would be worse than guiding. Detection
-// (working/idle) already works without any of this — this only adds notifications.
+// installHooksCodex guides Codex setup. We deliberately do NOT auto-edit
+// ~/.codex/config.toml: both surfaces are user-owned and easy to clobber. We show
+// TWO options: the newer hooks system (precise per-event state, and — crucially —
+// it does NOT conflict with a `notify` already taken by e.g. computer-use), and the
+// legacy `notify` (turn-done only). Detection (working/idle + on-screen approval)
+// works without either — this only sharpens it.
 func installHooksCodex() int {
 	bin := selfPath()
-	i18n.Say("Codex: add this to ~/.codex/config.toml so gtmux sends a notification when a turn finishes:",
-		"Codex：把下面这行加到 ~/.codex/config.toml，turn 结束时 gtmux 就会发通知：")
-	fmt.Printf("\n  notify = [%q, \"hook\", \"--agent\", \"codex\"]\n\n", bin)
-	i18n.Say("Note: Codex's `notify` points at ONE program — if you already use it (e.g. computer-use),\nthis REPLACES it; gtmux can't chain into it. Detection (working/idle) works regardless.",
-		"注意：Codex 的 `notify` 只能指向一个程序，如果你已在用它（如 computer-use），这会替换它；\ngtmux 无法链式追加。检测（working/idle）不依赖它，照常工作。")
+	// Preferred: the hooks system. Precise, and coexists with an occupied `notify`.
+	i18n.Say("Codex (recommended — precise state, coexists with any existing `notify`):",
+		"Codex（推荐 —— 状态精准，且与已占用的 `notify` 不冲突）：")
+	i18n.Say("  1) enable it in ~/.codex/config.toml:   features.hooks = true",
+		"  1) 在 ~/.codex/config.toml 里启用：   features.hooks = true")
+	i18n.Say("  2) create ~/.codex/hooks.json with:", "  2) 新建 ~/.codex/hooks.json，内容：")
+	for _, ev := range []string{"UserPromptSubmit", "PermissionRequest", "Stop", "SessionStart", "SessionEnd"} {
+		fmt.Printf("       %q: [ { \"hooks\": [ { \"type\": \"command\", \"command\": %q } ] } ]\n",
+			ev, fmt.Sprintf("%s hook --agent codex %s", bin, ev))
+	}
+	fmt.Println()
+	i18n.Say("     (PermissionRequest = needs-you; UserPromptSubmit/Stop = turn start/end; Session* clean up state.)",
+		"     （PermissionRequest = 等你批准；UserPromptSubmit/Stop = turn 起止；Session* 清理状态。）")
+	// Legacy fallback.
+	i18n.Say("Or the legacy `notify` (turn-done only, and REPLACES any existing notify):",
+		"或用旧的 `notify`（仅 turn 结束，且会替换已有 notify）：")
+	fmt.Printf("  notify = [%q, \"hook\", \"--agent\", \"codex\"]\n", bin)
 	return 0
 }
 

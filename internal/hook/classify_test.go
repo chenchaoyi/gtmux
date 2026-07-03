@@ -32,9 +32,10 @@ func TestClassify(t *testing.T) {
 		{"claude session start", "claude", "SessionStart", "", Class{Lifecycle: "SessionStart"}},
 		{"claude session end", "claude", "SessionEnd", "", Class{Lifecycle: "SessionEnd"}},
 
-		// Codex runs its own approval reviewer → pre-tool/permission are telemetry.
+		// Codex's PreToolUse fires for every tool → telemetry; its PermissionRequest
+		// (new hooks system) is a real user-facing approval → waiting.
 		{"codex pre-tool bash = telemetry", "codex", "PreToolUse", "Bash", tele},
-		{"codex permission = telemetry", "codex", "PermissionRequest", "shell", tele},
+		{"codex permission = waiting", "codex", "PermissionRequest", "shell", w(KindPermission)},
 		{"codex turn complete = stop", "codex", "agent-turn-complete", "", Class{Lifecycle: "Stop"}},
 
 		// Hermes: pre_tool_call telemetry, separate approval event.
