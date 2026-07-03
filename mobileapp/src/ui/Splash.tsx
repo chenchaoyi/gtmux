@@ -13,7 +13,7 @@ export function Splash({pal, lang}: {pal: Palette; lang: Lang}) {
   return (
     <View style={[styles.root, {backgroundColor: pal.bg}]}>
       <View style={styles.center}>
-        <BrandMark size={68} />
+        <BrandMark size={88} />
         <Text style={[styles.word, {color: pal.fg}]}>gtmux</Text>
         <Text style={[styles.slogan, {color: pal.fg3}]}>
           {lang === 'zh'
