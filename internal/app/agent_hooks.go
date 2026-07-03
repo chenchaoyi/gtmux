@@ -33,6 +33,10 @@ const (
 	// formatKiro: flat command entries carrying timeout_ms, plus an agent-def
 	// wrapper (name/description/tools) — Kiro's ~/.kiro/agents/<name>.json.
 	formatKiro
+	// formatCopilot: {"version":1,"hooks":{"<Event>":[{"type":"command","bash":"…",
+	// "timeoutSec":N}]}} in ~/.copilot/hooks/<file>.json (one file per tool) — Copilot
+	// CLI. Distinct from formatNested: flat entries keyed on `bash`/`timeoutSec`.
+	formatCopilot
 )
 
 // feedTimeoutMs is the long timeout for tool feed events (they can block on you).
@@ -91,12 +95,19 @@ var agentInstallers = map[string]agentInstaller{
 		},
 	},
 	"copilot": {
-		key: "copilot", display: "Copilot", relDir: ".copilot", file: "config.json",
-		envDir: "COPILOT_HOME", format: formatNested, timeoutMs: 5000,
+		// Copilot CLI reads ~/.copilot/hooks/<file>.json (one file per source),
+		// NOT ~/.copilot/config.json — the old path/format silently never fired.
+		// Shape is {"version":1,"hooks":{"<Event>":[{"type":"command","bash":…,
+		// "timeoutSec":N}]}} with PascalCase event keys. A dedicated gtmux file.
+		key: "copilot", display: "Copilot", relDir: ".copilot/hooks", file: "gtmux.json",
+		envDir: "COPILOT_HOME", envSubpath: "hooks", format: formatCopilot, timeoutMs: 5000,
+		dedicated: true,
 		bindings: []agentHookBinding{
+			{key: "UserPromptSubmit", event: "UserPromptSubmit"},
 			{key: "Stop", event: "Stop"},
-			{key: "PreToolUse", event: "PreToolUse", feed: true},
-			{key: "PostToolUse", event: "PostToolUse", feed: true},
+			{key: "PermissionRequest", event: "PermissionRequest"}, // Copilot's own approval event
+			{key: "SessionStart", event: "SessionStart"},
+			{key: "SessionEnd", event: "SessionEnd"},
 		},
 	},
 	"kiro": {
@@ -232,6 +243,9 @@ func (inst agentInstaller) entry(bin string, b agentHookBinding) map[string]any 
 		}}}
 	case formatKiro:
 		return map[string]any{"command": cmd, "timeout_ms": inst.timeoutFor(b)}
+	case formatCopilot:
+		// Copilot's handler is a flat {type, bash, timeoutSec} — timeout in SECONDS.
+		return map[string]any{"type": "command", "bash": cmd, "timeoutSec": inst.timeoutFor(b) / 1000}
 	default: // formatFlat
 		return map[string]any{"command": cmd}
 	}
@@ -243,11 +257,15 @@ func removeAgentEntries(list []any, format agentHookFormat) []any {
 	if format == formatNested {
 		return removeGtmuxEntries(list) // {"hooks":[{"command":…}]} shape
 	}
-	// flat / kiro: entries are {"command":…[,"timeout_ms":…]}.
+	// flat / kiro carry the command in "command"; copilot carries it in "bash".
+	cmdKey := "command"
+	if format == formatCopilot {
+		cmdKey = "bash"
+	}
 	out := make([]any, 0, len(list))
 	for _, raw := range list {
 		entry, ok := raw.(map[string]any)
-		if ok && isGtmuxHookCommand(asString(entry["command"])) {
+		if ok && isGtmuxHookCommand(asString(entry[cmdKey])) {
 			continue
 		}
 		out = append(out, raw)
@@ -259,7 +277,7 @@ func removeAgentEntries(list []any, format agentHookFormat) []any {
 // hooks map: flat's version, kiro's agent-def fields (only when absent).
 func applyFormatWrapper(inst agentInstaller, m map[string]any, install, haveHooks bool) {
 	switch inst.format {
-	case formatFlat:
+	case formatFlat, formatCopilot:
 		if install && haveHooks {
 			m["version"] = 1
 		} else if !haveHooks {
