@@ -62,9 +62,12 @@ function contextKeys(status: StatusName, lang: string): {label: string; payload:
   return [];
 }
 
-// The only control keys worth a permanent pill: Ctrl-C (interrupt) + Esc. The
-// standalone ⏎ (redundant with Send) and Tab + directional nav were removed.
+// Permanent control-key pills. Tab earns its place: it accepts the agent's
+// highlighted/recommended choice in a prompt (and completes in the shell), which
+// is awkward to reach otherwise from a phone. Ctrl-C interrupts, Esc cancels. The
+// standalone ⏎ (redundant with Send) and the directional nav stay removed.
 const CONTROL_KEYS: {label: string; key: string}[] = [
+  {label: 'Tab', key: 'Tab'},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
 ];
@@ -244,7 +247,7 @@ export function Composer({
   // The key row (context shortcuts + control keys + arrows + snippets). Always
   // visible — when composing it sits just above the input field, so the special
   // keys AND the ▾ dismiss stay reachable while the keyboard is up.
-  // Resting row — decluttered + grouped: ⌨ | (waiting → 1/2/3) | Ctrl-C Esc |
+  // Resting row — decluttered + grouped: ⌨ | (waiting → 1/2/3) | Tab Ctrl-C Esc |
   // 快捷短语▾ 历史. Snippets are a picker (not a flat list); attach/compose/paste
   // live in the input row + attach sheet; directional keypads were removed.
   const ctx = contextKeys(status, lang);
