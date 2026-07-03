@@ -459,6 +459,19 @@ func unattached() []string {
 
 // splitAttached parses an "<attached> <session name>" line, where the name may
 // contain spaces. Returns attached flag, name, ok.
+// keepUnattached returns the sessions from `list` that are still in `unattached`
+// (preserving order) — the last-moment guard against opening a duplicate tab for a
+// session that gained a client since the list was built. Pure; unit-tested.
+func keepUnattached(list []string, unattached map[string]bool) []string {
+	out := make([]string, 0, len(list))
+	for _, s := range list {
+		if unattached[s] {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
 func splitAttached(line string) (att, name string, ok bool) {
 	i := strings.IndexByte(line, ' ')
 	if i < 0 {
@@ -482,6 +495,24 @@ func restoreSessions(list []string, dryRun bool) int {
 	// tab is a fine price for never dropping a session.
 	term := terminal.Active()
 	tn := term.Name()
+	if !dryRun {
+		// Re-check attachment RIGHT BEFORE spawning. Between building `list` (early in
+		// cmdRestore, before the slow ensureServer restore) and now, a session may have
+		// gained a client — classically a terminal tab macOS reopened after a reboot
+		// that re-ran its `tmux attach` and beat us to it. Opening a second tab then
+		// double-attaches one session (the "two identical terminals" bug). Drop any
+		// that are attached now.
+		live := map[string]bool{}
+		for _, s := range unattached() {
+			live[s] = true
+		}
+		list = keepUnattached(list, live)
+		if len(list) == 0 {
+			i18n.Say("Every session already has a tab attached — nothing to open.",
+				"每个 session 都已有 tab 连接，无需新开。")
+			return 0
+		}
+	}
 	script, err := term.SpawnTabs(list, dryRun)
 	if dryRun {
 		i18n.Say(fmt.Sprintf("[dry-run] would open %d %s tab(s) for: %s", len(list), tn, strings.Join(list, " ")),
