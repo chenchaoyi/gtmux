@@ -233,6 +233,25 @@ func TestBrowserPlatform(t *testing.T) {
 	}
 }
 
+// sanitizeClientTag keeps only a short "iOS 17.5"-shaped string, dropping control
+// chars, other scripts, and a wall of text (the tag is untrusted client input).
+func TestSanitizeClientTag(t *testing.T) {
+	cases := map[string]string{
+		"iOS 17.5":                           "iOS 17.5",
+		"Android 14":                         "Android 14",
+		"":                                   "",
+		"  iOS 17.5  ":                       "iOS 17.5",
+		"iOS 17.5\n\x1b[31mHACK":             "iOS 17.531mHACK",          // control/ESC/[ stripped, letters kept
+		"iOS 危险 17.5":                        "iOS  17.5",                // non-ASCII dropped
+		"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA": "AAAAAAAAAAAAAAAAAAAAAAAA", // capped at 24
+	}
+	for in, want := range cases {
+		if got := sanitizeClientTag(in); got != want {
+			t.Errorf("sanitizeClientTag(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 // clientInfo resolves a device token to its enrolled phone (name + kind), and any
 // other token (the shared master secret a browser uses) to an anonymous browser.
 func TestClientInfoIdentity(t *testing.T) {
@@ -241,8 +260,9 @@ func TestClientInfoIdentity(t *testing.T) {
 
 	rp := httptest.NewRequest(http.MethodGet, "/api/events", nil)
 	rp.Header.Set("Authorization", "Bearer tok-phone")
-	if info := s.clientInfo(rp); info.Kind != "phone" || info.Name != "My Phone" {
-		t.Errorf("device token → %+v, want phone 'My Phone'", info)
+	rp.Header.Set("X-Gtmux-Client", "iOS 17.5")
+	if info := s.clientInfo(rp); info.Kind != "phone" || info.Name != "My Phone" || info.Platform != "iOS 17.5" {
+		t.Errorf("device token → %+v, want phone 'My Phone' / 'iOS 17.5'", info)
 	}
 
 	rb := httptest.NewRequest(http.MethodGet, "/api/events", nil)
