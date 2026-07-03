@@ -28,6 +28,9 @@ func TestClassify(t *testing.T) {
 		{"claude post-tool = resume", "claude", "PostToolUse", "ExitPlanMode", resume},
 		{"claude notification = telemetry", "claude", "Notification", "", tele},
 		{"claude unknown event = telemetry", "claude", "Frobnicate", "", tele},
+		// Session lifecycle → dedicated events (the state machine clears markers).
+		{"claude session start", "claude", "SessionStart", "", Class{Lifecycle: "SessionStart"}},
+		{"claude session end", "claude", "SessionEnd", "", Class{Lifecycle: "SessionEnd"}},
 
 		// Codex runs its own approval reviewer → pre-tool/permission are telemetry.
 		{"codex pre-tool bash = telemetry", "codex", "PreToolUse", "Bash", tele},
