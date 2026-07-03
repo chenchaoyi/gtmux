@@ -14,6 +14,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkey: GlobalHotkey?
     private var cancellables = Set<AnyCancellable>()
 
+    // A notification click BOTH activates this accessory app (→ reopen) and delivers
+    // to the notification delegate (→ didReceive, with the specific pane). These two
+    // coordinate so the generic `focus --last` never races (or overrides) the jump to
+    // the exact pane you clicked: didReceive stamps the jump + cancels a pending
+    // reopen focus; reopen skips when a jump just happened, else defers as a fallback.
+    private var pendingReopenFocus: DispatchWorkItem?
+    private var lastNotificationJumpAt: Date?
+
     private var displayMode: DisplayMode { settings.displayMode }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -73,7 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Deliver desktop notifications natively (replaces terminal-notifier): the
         // hook queues requests, we post them and jump on click.
         NotificationManager.shared.start(
-            onJump: { pane in GtmuxCLI.spawn(pane.isEmpty ? ["focus", "--last"] : ["focus", pane]) },
+            onJump: { [weak self] pane in self?.jumpFromNotification(pane) },
             onSend: { [weak self] pane, n in self?.sendText(pane, "\(n)") },
             onSendText: { [weak self] pane, text in self?.sendText(pane, text) })
 
@@ -172,9 +180,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// The notification's didReceive does the real jump (to the SPECIFIC pane you
+    /// clicked). It stamps the time and cancels any pending reopen `focus --last` so
+    /// the generic fallback can't fire on top of it and bounce you to the wrong,
+    /// last-finished pane — the "sometimes jumps nowhere / feels slow" (double focus).
+    private func jumpFromNotification(_ pane: String) {
+        lastNotificationJumpAt = Date()
+        pendingReopenFocus?.cancel()
+        pendingReopenFocus = nil
+        GtmuxCLI.spawn(pane.isEmpty ? ["focus", "--last"] : ["focus", pane])
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        dbg("reopen (notification click) → focus --last")
-        GtmuxCLI.spawn(["focus", "--last"])
+        // Accessory app (no Dock icon) → reopen only fires from a notification click,
+        // which also calls didReceive with the specific pane. If that jump just ran,
+        // do nothing. Otherwise (reopen arrived first) defer `focus --last` briefly as
+        // a fallback so an incoming didReceive can cancel it — the two never race.
+        if let t = lastNotificationJumpAt, Date().timeIntervalSince(t) < 1.0 {
+            dbg("reopen: notification jump just handled it → skip focus --last")
+            return true
+        }
+        dbg("reopen → deferred focus --last (fallback)")
+        let work = DispatchWorkItem { GtmuxCLI.spawn(["focus", "--last"]) }
+        pendingReopenFocus = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
         return true
     }
 }
