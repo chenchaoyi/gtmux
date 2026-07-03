@@ -178,6 +178,33 @@ func TestSplitAttached(t *testing.T) {
 	}
 }
 
+// keepUnattached drops sessions that gained a client since the list was built —
+// the guard against opening a duplicate tab (the "two identical terminals" bug when
+// a reopened terminal re-attached "HSS AI Workspace" between listing and spawning).
+func TestKeepUnattached(t *testing.T) {
+	list := []string{"HSS AI Workspace", "ccy-workspace", "main"}
+	// "HSS AI Workspace" got attached (a reopened tab beat us) → dropped; order kept.
+	live := map[string]bool{"ccy-workspace": true, "main": true}
+	got := keepUnattached(list, live)
+	want := []string{"ccy-workspace", "main"}
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	}
+	// all attached → empty; none attached → unchanged.
+	if len(keepUnattached(list, map[string]bool{})) != 0 {
+		t.Error("all-attached should drop everything")
+	}
+	all := map[string]bool{"HSS AI Workspace": true, "ccy-workspace": true, "main": true}
+	if len(keepUnattached(list, all)) != 3 {
+		t.Error("none-attached should keep everything")
+	}
+}
+
 func TestPaneIDRe(t *testing.T) {
 	match := []string{"%0", "%12", "%3.left"}
 	for _, s := range match {
