@@ -3,7 +3,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import SwiftUI
 
-// "Allow phone access" — produce the pairing QR the gtmux phone app scans
+// "Allow phone access" — produce the pairing QR the gtmux mobile app scans
 // (matching mobileapp/src/pairing/qr.ts). Prefer the SECURE v2 shape
 // {v,url,enrollCode,name}: a short-lived single-use code minted from the local
 // radar, so the QR isn't a lasting credential. Fall back to legacy v1

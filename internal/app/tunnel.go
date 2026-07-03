@@ -405,8 +405,8 @@ func cloudflaredProblem(line string) bool {
 // ensureCloudflared offers to `brew install cloudflared` when it's missing.
 // Returns the resolved path, or "" if the user declined / it couldn't be set up.
 func ensureCloudflared() string {
-	i18n.Say("cloudflared isn't installed — it's the Cloudflare tunnel client (one binary, Mac-side only; the phone app never touches it).",
-		"未检测到 cloudflared，它是 Cloudflare 隧道客户端（一个二进制，只在 Mac 上跑；手机 app 完全不碰它）。")
+	i18n.Say("cloudflared isn't installed — it's the Cloudflare tunnel client (one binary, Mac-side only; the mobile app never touches it).",
+		"未检测到 cloudflared，它是 Cloudflare 隧道客户端（一个二进制，只在 Mac 上跑；手机 App 完全不碰它）。")
 	if _, err := exec.LookPath("brew"); err != nil {
 		i18n.Say("Install it then re-run: https://github.com/cloudflare/cloudflared/releases",
 			"请先安装再重试：https://github.com/cloudflare/cloudflared/releases")
@@ -471,8 +471,8 @@ func printPairingBlock(url, token, name string, port int) {
 		fmt.Printf("    %s/\n", url)
 	}
 	fmt.Println()
-	i18n.Say("Scan in the gtmux phone app (Pair → Scan):",
-		"在 gtmux 手机 app 里扫码（配对 → 扫一扫）：")
+	i18n.Say("Scan this in the gtmux mobile app (Pair → Scan):",
+		"在 gtmux 手机 App 里扫码（配对 → 扫一扫）：")
 	printBrandQR(os.Stdout, string(payload))
 }
 
