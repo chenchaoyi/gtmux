@@ -492,8 +492,8 @@ func gatherAgents() []agentPane {
 			}
 		}
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
-		// "waiting 11m" duration. Hook markers give the turn/wait start; otherwise
-		// fall back to last activity.
+		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish
+		// start; otherwise fall back to last activity.
 		since := activityAt
 		switch status {
 		case "working":
@@ -502,6 +502,14 @@ func gatherAgents() []agentPane {
 			}
 		case "waiting":
 			if mt := fileMtime(state.WaitingPath(id)); mt > 0 {
+				since = mt
+			}
+		case "idle":
+			// Prefer when the turn actually FINISHED (the Stop hook's marker) over
+			// last window activity — a live agent status line keeps redrawing, which
+			// bumps window-activity every couple seconds and would otherwise reset the
+			// idle time to ~0s on every poll.
+			if mt := fileMtime(state.FinishedPath(id)); mt > 0 {
 				since = mt
 			}
 		}

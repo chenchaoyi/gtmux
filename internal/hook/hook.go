@@ -86,6 +86,8 @@ type decision struct {
 	clearWaiting    bool // rm waiting/<pane>
 	setWaiting      bool // touch waiting/<pane>
 	setLastFinished bool // write <pane> to last-finished
+	setFinished     bool // touch finished/<pane> (turn ended → idle; its mtime = now)
+	clearFinished   bool // rm finished/<pane> (no longer idle: working/waiting/voided)
 	notify          bool // fire a desktop notification
 }
 
@@ -107,24 +109,28 @@ type decision struct {
 func decide(event string, activePresent bool) decision {
 	switch event {
 	case "UserPromptSubmit":
-		return decision{setActive: true, clearWaiting: true}
+		return decision{setActive: true, clearWaiting: true, clearFinished: true}
 	case "Stop":
-		return decision{clearActive: true, clearWaiting: true, setLastFinished: true, notify: true}
+		// Turn ended → the pane is now idle; stamp finished/<pane> so its idle
+		// duration is measured from NOW, not from the last TUI redraw.
+		return decision{clearActive: true, clearWaiting: true, setLastFinished: true, setFinished: true, notify: true}
 	case "Notification":
-		return decision{setWaiting: activePresent, setLastFinished: true, notify: true}
+		// A Notification mid-turn marks waiting; the idle nudge (no active turn)
+		// leaves the pane's existing finished stamp intact.
+		return decision{setWaiting: activePresent, clearFinished: activePresent, setLastFinished: true, notify: true}
 	case "Waiting":
-		return decision{setWaiting: true, notify: true}
+		return decision{setWaiting: true, clearFinished: true, notify: true}
 	case "Resumed":
 		// A pending plan/question/approval was answered → the agent is working
 		// again. Clear the wait silently; the turn is still in progress, so don't
 		// touch active or notify.
-		return decision{clearWaiting: true}
+		return decision{clearWaiting: true, clearFinished: true}
 	case "SessionStart", "SessionEnd":
 		// A session (re)starting (startup/resume/clear/compact) or ending voids this
 		// pane's turn state. Clear active + waiting so a marker orphaned by a prior
 		// session — or by a pane id reused across a tmux restart — can't linger as a
 		// phantom "working"/"needs you". No notify; the next UserPromptSubmit re-arms.
-		return decision{clearActive: true, clearWaiting: true}
+		return decision{clearActive: true, clearWaiting: true, clearFinished: true}
 	default:
 		return decision{}
 	}
@@ -169,6 +175,15 @@ func applyState(d decision, pane string) {
 	}
 	if d.setLastFinished {
 		_ = state.WriteLastFinished(pane)
+	}
+	if d.clearFinished {
+		state.Remove(state.FinishedPath(pane))
+	}
+	if d.setFinished {
+		// Remove first so a fresh Touch stamps mtime = NOW (Touch leaves an existing
+		// marker's mtime untouched), making idle duration measured from this Stop.
+		state.Remove(state.FinishedPath(pane))
+		_ = state.Touch(state.FinishedPath(pane))
 	}
 }
 
