@@ -273,7 +273,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
                     <Text style={[styles.collapsedPreview, {fontFamily, fontSize: fontSize - 0.5}]} numberOfLines={2}>
                       {preview || (lang === 'zh' ? '（无文本回复）' : '(no text reply)')}
                     </Text>
-                    <Text style={styles.collapsedHint}>{lang === 'zh' ? '轻点展开 ▸' : 'Tap to expand ▸'}</Text>
+                    <Text style={styles.collapsedHint}>{lang === 'zh' ? '展开 ▸' : 'Expand ▸'}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
