@@ -5,6 +5,7 @@
 //
 //	active/<pane>     marker: a turn is in progress for that tmux pane id
 //	waiting/<pane>    marker: that pane is blocked on the user (permission/approval)
+//	finished/<pane>   marker: mtime = when that pane's turn ended (idle duration)
 //	last-finished     the pane id of the most-recently-finished agent turn
 //	notify-icon.png   cached agent icon, used as the notification's thumbnail
 //	notify/<id>.json  queued desktop-notification requests; the menu-bar app
@@ -31,6 +32,15 @@ func WaitingPath(pane string) string { return filepath.Join(WaitingDir(), pane) 
 
 // LastFinishedPath holds the pane id of the most-recently-finished turn.
 func LastFinishedPath() string { return filepath.Join(Dir(), "last-finished") }
+
+// FinishedDir is the directory of per-pane "turn finished at" markers.
+func FinishedDir() string { return filepath.Join(Dir(), "finished") }
+
+// FinishedPath is the "turn finished at" marker for a pane — its mtime is when
+// the agent's turn ended, i.e. how long the pane has been idle. `gtmux agents`
+// reads it so an idle session's relative time reflects when it FINISHED, not the
+// last time its TUI redrew (a live status line keeps window-activity ticking).
+func FinishedPath(pane string) string { return filepath.Join(FinishedDir(), pane) }
 
 // IconPath is the cached agent icon used as the notification's thumbnail.
 func IconPath() string { return filepath.Join(Dir(), "notify-icon.png") }
