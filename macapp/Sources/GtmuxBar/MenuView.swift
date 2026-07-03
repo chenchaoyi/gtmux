@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum MenuAction {
-    case overview, watch, restore, newSession, preferences, pairPhone, quit
+    case restore, newSession, preferences, pairPhone, quit
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + waiting-only + search +
@@ -199,8 +199,6 @@ struct MenuView: View {
         VStack(spacing: 0) {
             updateBanner(p)
             HStack(spacing: 0) {
-                footerAction("square.grid.2x2", l10n.tr("Overview", "概览")) { onAction(.overview) }
-                footerAction("waveform", l10n.tr("Watch", "实时")) { onAction(.watch) }
                 footerAction("arrow.uturn.backward", l10n.tr("Restore", "接回")) { onAction(.restore) }
                 footerAction("plus", l10n.tr("New", "新建")) { onAction(.newSession) }
                 footerAction("qrcode", l10n.tr("Pair", "配对")) { onAction(.pairPhone) }

@@ -161,8 +161,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func perform(_ action: MenuAction) {
         switch action {
-        case .overview:   openGhosttyWindow(running: GtmuxCLI.shellInvocation(["overview", "--hold"]))
-        case .watch:      openGhosttyWindow(running: GtmuxCLI.shellInvocation(["agents", "--watch"]))
         case .restore:    GtmuxCLI.spawn(["restore"])
         case .newSession: GtmuxCLI.spawn(["new"])
         case .preferences: PreferencesController.shared.show(l10n: l10n)
