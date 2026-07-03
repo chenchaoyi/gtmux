@@ -197,8 +197,8 @@ struct PairingView: View {
                     .interpolation(.none).resizable()
                     .frame(width: 220, height: 220)
                     .background(Color.white).cornerRadius(10)
-                wrap(l10n.tr("Scan in the gtmux phone app → Pair → Scan",
-                             "在 gtmux 手机 app 里：配对 → 扫一扫"), size: 12, color: .secondary)
+                wrap(l10n.tr("Scan in the gtmux mobile app → Pair → Scan",
+                             "在 gtmux 手机 App 里：配对 → 扫一扫"), size: 12, color: .secondary)
                 Text(p.url)
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                     .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
@@ -207,6 +207,10 @@ struct PairingView: View {
                         ? l10n.tr("Reachable from anywhere (a tunnel is up).", "任意网络可达（隧道在运行）。")
                         : l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"),
                      size: 11, color: .tertiary)
+                // The pairing code is short-lived and single-use — if it expired
+                // before the phone scanned it, mint a fresh one right here (no need
+                // to close and reopen the window).
+                refreshButton
             } else if remote.mode == .off {
                 Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
                     .frame(height: 130)
@@ -271,6 +275,21 @@ struct PairingView: View {
         .padding(.horizontal, 8).padding(.vertical, 6)
         .background(Color.orange.opacity(0.12)).cornerRadius(6)
         .frame(width: 290)
+    }
+
+    // A manual "mint a fresh code" control — the pairing code times out, so let the
+    // user regenerate it (and re-probe reachability) without reopening the window.
+    private var refreshButton: some View {
+        Button(action: reload) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise").font(.system(size: 10, weight: .semibold))
+                Text(l10n.tr("Refresh code", "刷新配对码")).font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(Color.accentColor)
+        }
+        .buttonStyle(.plain)
+        .help(l10n.tr("Generate a new pairing code if the QR expired before scanning",
+                      "若二维码在扫描前已过期，点此生成新的配对码"))
     }
 
     private var proHint: some View {
