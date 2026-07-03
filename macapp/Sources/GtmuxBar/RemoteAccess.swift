@@ -48,6 +48,17 @@ struct RemoteClient: Identifiable {
         if h < 24 { return tr("connected \(h)h", "已连接 \(h) 小时") }
         return tr("connected \(Int(s / 86400))d", "已连接 \(Int(s / 86400)) 天")
     }
+
+    /// The row's trailing detail: a phone's OS tag ("iOS 17.5", sent live) plus how
+    /// long it's been connected, joined "iOS 17.5 · connected 5m". A browser already
+    /// shows its platform as the title, so it trails with the duration only.
+    func subtitle(_ tr: (String, String) -> String, now: Double = Date().timeIntervalSince1970) -> String {
+        var parts: [String] = []
+        if isPhone && !platform.isEmpty { parts.append(platform) }
+        let dur = connectedFor(tr, now: now)
+        if !dur.isEmpty { parts.append(dur) }
+        return parts.joined(separator: " · ")
+    }
 }
 
 final class RemoteAccess: ObservableObject {

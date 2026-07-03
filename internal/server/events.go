@@ -498,11 +498,32 @@ func (s *Server) clientInfo(r *http.Request) ClientInfo {
 		if d, ok := s.deps.Enroll.DeviceByToken(bearerToken(r)); ok {
 			info.Kind = "phone"
 			info.Name = d.Name
+			// The phone sends its OS tag (e.g. "iOS 17.5") live per-connection, so
+			// it stays correct after an OS update (unlike the enroll-frozen name).
+			info.Platform = sanitizeClientTag(r.Header.Get("X-Gtmux-Client"))
 			return info
 		}
 	}
 	info.Platform = browserPlatform(r.Header.Get("User-Agent"))
 	return info
+}
+
+// sanitizeClientTag cleans the phone's self-reported "X-Gtmux-Client" tag before
+// it's shown in the Mac's UI: keep only a short, printable "iOS 17.5"-shaped
+// string (letters/digits/dot/space), so a hostile client can't inject control
+// characters or a wall of text into the roster row.
+func sanitizeClientTag(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if b.Len() >= 24 {
+			break
+		}
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '.', r == ' ':
+			b.WriteRune(r)
+		}
+	}
+	return strings.TrimSpace(b.String())
 }
 
 // bearerToken extracts the token from an "Authorization: Bearer <t>" header.

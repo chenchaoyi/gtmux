@@ -129,9 +129,9 @@ struct PreferencesView: View {
                             .font(.system(size: 12)).foregroundStyle(Theme.Status.idle)
                             .frame(width: 16)
                         Text(c.title(l10n.tr)).font(.system(size: 12))
-                        let dur = c.connectedFor(l10n.tr)
-                        if !dur.isEmpty {
-                            Text(dur).font(.system(size: 10)).foregroundStyle(.tertiary)
+                        let sub = c.subtitle(l10n.tr)
+                        if !sub.isEmpty {
+                            Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
                         }
                         Spacer(minLength: 0)
                     }
