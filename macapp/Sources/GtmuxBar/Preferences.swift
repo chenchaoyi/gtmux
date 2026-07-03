@@ -129,9 +129,9 @@ struct PreferencesView: View {
                             .font(.system(size: 12)).foregroundStyle(Theme.Status.idle)
                             .frame(width: 16)
                         Text(c.title(l10n.tr)).font(.system(size: 12))
-                        if !c.ip.isEmpty {
-                            Text(c.ip).font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(.tertiary)
+                        let dur = c.connectedFor(l10n.tr)
+                        if !dur.isEmpty {
+                            Text(dur).font(.system(size: 10)).foregroundStyle(.tertiary)
                         }
                         Spacer(minLength: 0)
                     }
