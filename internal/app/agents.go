@@ -478,14 +478,16 @@ func gatherAgents() []agentPane {
 				state.Remove(state.WaitingPath(id))
 				delete(waiting, id)
 			}
-			// Screen-scan fallback for agents that fire NO waiting hook — only
-			// Claude hook-marks waiting (handled above), so a live approval menu is
-			// the only "needs you" signal for Codex/Cursor/Gemini/etc. Skipping
-			// Claude also avoids a capture per idle Claude pane every poll.
-			// WaitingOptions is strict (bottom-anchored, selector cursor, ≥2
-			// choices) so a numbered list in output doesn't false-alarm; recomputed
-			// each poll, so it self-clears once you answer.
-			if agent != "Claude Code" && len(prompt.WaitingOptions(tmux.CapturePane(id))) > 0 {
+			// Screen-scan fallback: a live approval menu on screen means "needs you".
+			// The hook marks Claude's waiting (handled above), but NOT every prompt
+			// fires Claude's Notification event — a tool-permission "Do you want to
+			// proceed? ❯1/2/3" often doesn't, leaving the pane wrongly "finished". So
+			// scan every agent, not just Codex/Cursor/Gemini. WaitingOptions is strict
+			// (bottom-anchored, ≥2 choices, an actual selector cursor) so a numbered
+			// list in output doesn't false-alarm; recomputed each poll → self-clears
+			// once you answer. Only reached for a NON-working pane (no capture spam on
+			// busy Claude panes).
+			if len(prompt.WaitingOptions(tmux.CapturePane(id))) > 0 {
 				status = "waiting"
 			}
 		}

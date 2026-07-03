@@ -100,8 +100,12 @@ func WaitingOptions(text string) []Option {
 		return nil // a real menu has ≥2 choices; a lone "1." is likely a list item
 	}
 	for _, l := range window {
-		if strings.ContainsAny(l, selectorGlyphs) {
-			return opts // an interactive selector is present → a live menu
+		// The selector cursor must sit ON a numbered choice ("❯ 1. Yes") — that's a
+		// live menu. A bare "❯ " input prompt (Claude idle) also carries the glyph, so
+		// requiring the number too avoids flagging an idle pane whose recent OUTPUT
+		// happens to contain a numbered list above the prompt.
+		if strings.ContainsAny(l, selectorGlyphs) && numbered.MatchString(clean(l)) {
+			return opts
 		}
 	}
 	return nil

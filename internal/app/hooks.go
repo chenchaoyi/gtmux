@@ -22,16 +22,18 @@ type claudeHook struct {
 }
 
 // hookEvents are the Claude Code hooks gtmux registers. Stop/Notification fire
-// notifications; UserPromptSubmit is state-only; PreToolUse/PostToolUse are
-// SCOPED via a matcher to the always-blocking plan/question tools, so they fire
-// only when you're actually asked — not on every (auto-approved) tool call.
-// PreToolUse raises the wait; PostToolUse clears it once you've answered, so a
-// long-running approved plan doesn't keep showing "waiting" until Stop.
-// (Contract — do not rename.)
+// notifications; UserPromptSubmit is state-only; PermissionRequest is the precise
+// "a tool needs your approval" event (a Read/Bash "Do you want to proceed? 1/2/3"),
+// which does NOT come through Notification — without it those prompts wrongly read
+// as "finished". PreToolUse/PostToolUse are SCOPED via a matcher to the always-
+// blocking plan/question tools, so they fire only when you're actually asked — not
+// on every (auto-approved) tool call. The wait clears when the agent resumes
+// working (approved) or on the next UserPromptSubmit/Stop. (Contract — do not rename.)
 var hookEvents = []claudeHook{
 	{event: "Stop"},
 	{event: "Notification"},
 	{event: "UserPromptSubmit"},
+	{event: "PermissionRequest"},
 	{event: "PreToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
 	{event: "PostToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
 }
@@ -122,8 +124,8 @@ func cmdInstallHooks(args []string) int {
 		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败："+err.Error())
 		return 1
 	}
-	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit · plan/question)",
-		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit · 计划/提问)")
+	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit · PermissionRequest · plan/question)",
+		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit · PermissionRequest · 计划/提问)")
 
 	// 3. peon-ping coexistence.
 	handlePeonPing(yes)
