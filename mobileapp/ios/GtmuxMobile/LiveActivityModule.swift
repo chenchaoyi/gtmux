@@ -112,7 +112,7 @@ class LiveActivityModule: RCTEventEmitter {
           GtmuxActivityAttributes.Item(
             title: $0["title"] as? String ?? "",
             status: $0["status"] as? String ?? "",
-            time: $0["time"] as? String ?? "")
+            since: $0["since"] as? Int ?? 0)
         }
       }
       more = obj["more"] as? Int ?? 0

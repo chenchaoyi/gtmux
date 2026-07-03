@@ -5,22 +5,24 @@ import Foundation
 // extension (renders it). The dynamic ContentState is the live agent tally.
 @available(iOS 16.1, *)
 public struct GtmuxActivityAttributes: ActivityAttributes {
-  // One listed session: its name/task, status, and a compact relative time ("2m").
+  // One listed session: its name/task, status, and the epoch its state started.
+  // The widget renders the relative time LOCALLY from `since` (SwiftUI's
+  // auto-updating date Text), so the lock screen stays current without a push.
   public struct Item: Codable, Hashable {
     public var title: String
     public var status: String // waiting | working
-    public var time: String
-    public init(title: String, status: String, time: String) {
+    public var since: Int // epoch seconds the state started; 0 if unknown
+    public init(title: String, status: String, since: Int) {
       self.title = title
       self.status = status
-      self.time = time
+      self.since = since
     }
 
     public init(from decoder: Decoder) throws {
       let c = try decoder.container(keyedBy: CodingKeys.self)
       title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
       status = try c.decodeIfPresent(String.self, forKey: .status) ?? ""
-      time = try c.decodeIfPresent(String.self, forKey: .time) ?? ""
+      since = try c.decodeIfPresent(Int.self, forKey: .since) ?? 0
     }
   }
 

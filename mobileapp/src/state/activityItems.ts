@@ -8,23 +8,14 @@ import {Agent} from '../api/types';
 export interface ActivityItem {
   title: string;
   status: string; // waiting | working
-  time: string; // compact relative time, e.g. "now" / "2m"
+  since: number; // epoch seconds the state started; 0 if unknown. The Live
+  // Activity widget renders the relative time LOCALLY from this (auto-updating on
+  // the lock screen), so a clock tick isn't a change that needs a fresh push.
 }
 
 const MAX_ITEMS = 3;
 
-// relTime → "now" (<60s), "Nm" (<1h), "Nh" (<1d), else "Nd". now/since in epoch
-// SECONDS. "" when since is unknown.
-export function relTime(nowSec: number, since?: number): string {
-  if (!since || since <= 0) return '';
-  const d = Math.max(0, nowSec - since);
-  if (d < 60) return 'now';
-  if (d < 3600) return `${Math.floor(d / 60)}m`;
-  if (d < 86400) return `${Math.floor(d / 3600)}h`;
-  return `${Math.floor(d / 86400)}d`;
-}
-
-export function buildActivityItems(agents: Agent[], nowSec: number): {items: ActivityItem[]; more: number} {
+export function buildActivityItems(agents: Agent[]): {items: ActivityItem[]; more: number} {
   const byRecent = (a: Agent, b: Agent) => (b.since ?? 0) - (a.since ?? 0); // newest first
   const waiters = agents.filter(a => a.status === 'waiting').sort(byRecent);
   const workers = agents.filter(a => a.status === 'working').sort(byRecent);
@@ -32,7 +23,7 @@ export function buildActivityItems(agents: Agent[], nowSec: number): {items: Act
   const items = ordered.slice(0, MAX_ITEMS).map(a => ({
     title: a.task || a.session || a.loc || a.agent,
     status: a.status,
-    time: relTime(nowSec, a.since),
+    since: a.since ?? 0,
   }));
   const more = Math.max(0, waiters.length + workers.length - items.length);
   return {items, more};
