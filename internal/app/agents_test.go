@@ -4,8 +4,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 func TestClassifyAgent(t *testing.T) {
@@ -126,6 +128,44 @@ func TestSortPanes(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("order = %v, want %v", got, want)
 		}
+	}
+}
+
+// waitMarkStale: a waiting mark is obsolete when the pane's activity postdates it by
+// more than the grace (agent resumed, or a reused pane id inherited an orphan mark).
+func TestWaitMarkStale(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.WaitingDir(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	pane := "%13"
+	path := state.WaitingPath(pane)
+	if err := os.WriteFile(path, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	mark := time.Now().Add(-9 * 24 * time.Hour) // 9 days ago
+	if err := os.Chtimes(path, mark, mark); err != nil {
+		t.Fatal(err)
+	}
+	markUnix := mark.Unix()
+
+	// activity long after the mark → stale (the "waiting 9d" orphan case).
+	if !waitMarkStale(pane, time.Now().Unix()) {
+		t.Error("activity 9d after the mark should be stale")
+	}
+	// activity at/near the mark → a real, live wait, not stale.
+	if waitMarkStale(pane, markUnix) {
+		t.Error("activity == mark should not be stale")
+	}
+	if waitMarkStale(pane, markUnix+waitStaleGrace-1) {
+		t.Error("activity within the grace should not be stale")
+	}
+	// unknown activity, or no mark → never stale.
+	if waitMarkStale(pane, 0) {
+		t.Error("unknown activity should not be stale")
+	}
+	if waitMarkStale("%999", time.Now().Unix()) {
+		t.Error("a pane with no mark should not be stale")
 	}
 }
 
