@@ -115,4 +115,23 @@ func TestWaitingOptions(t *testing.T) {
 	if got := WaitingOptions("› 1. Only one\n"); got != nil {
 		t.Errorf("single option → %#v, want nil", got)
 	}
+
+	// Claude's session-startup RESUME picker is a numbered menu with a selector,
+	// but it's pre-task chrome — an old session reopened to it must NOT read as
+	// "needs you" (the "2h-old session stuck waiting" bug).
+	resume := "  This session is 22h 38m old and 166.8k tokens.\n" +
+		"  Resuming the full session will consume a substantial portion of your usage limits.\n" +
+		"  ❯ 1. Resume from summary (recommended)\n" +
+		"    2. Resume full session as-is\n" +
+		"    3. Don't ask me again\n" +
+		"  Enter to confirm · Esc to cancel\n"
+	if got := WaitingOptions(resume); got != nil {
+		t.Errorf("resume picker → %#v, want nil (startup chooser, not a task-wait)", got)
+	}
+
+	// the trust-folder gate is likewise a startup chooser, not a task approval
+	trust := "  Do you trust the files in this folder?\n\n  ❯ 1. Yes, proceed\n    2. No, exit\n"
+	if got := WaitingOptions(trust); got != nil {
+		t.Errorf("trust-folder gate → %#v, want nil", got)
+	}
 }
