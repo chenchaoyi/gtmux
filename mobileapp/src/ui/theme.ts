@@ -77,8 +77,11 @@ export interface Section {
   agents: Agent[];
 }
 
-// Group agents into the four sections in fixed rank order, non-empty only, each
-// sorted by `primary` case-insensitively (mirrors AgentStore.sections).
+// Group agents into the four sections in fixed rank order, non-empty only. The
+// FINISHED (idle) section is ordered most-recently-finished first (`since` desc —
+// stable, since an idle agent's `since` is frozen at its last activity); every
+// other section is by `primary` case-insensitively. Mirrors the server's sortPanes
+// + AgentStore.sections so all surfaces agree.
 export function sections(agents: Agent[], waitingOnly: boolean): Section[] {
   const out: Section[] = [];
   for (const st of SECTION_ORDER) {
@@ -86,7 +89,9 @@ export function sections(agents: Agent[], waitingOnly: boolean): Section[] {
     const rows = agents
       .filter(a => a.status === st)
       .sort((l, r) =>
-        primary(l).toLowerCase().localeCompare(primary(r).toLowerCase()),
+        st === 'idle'
+          ? (r.since ?? 0) - (l.since ?? 0)
+          : primary(l).toLowerCase().localeCompare(primary(r).toLowerCase()),
       );
     if (rows.length) out.push({status: st, agents: rows});
   }
