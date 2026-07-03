@@ -130,14 +130,24 @@ describe('sections', () => {
     expect(out.map(s => s.status)).toEqual(['waiting', 'idle']); // no working/running
   });
 
-  it('sorts each section by primary() case-insensitively', () => {
+  it('sorts a non-idle section by primary() case-insensitively', () => {
     const agents = [
-      mk({status: 'idle', session: 'Zebra'}),
-      mk({status: 'idle', session: 'apple'}),
-      mk({status: 'idle', session: 'Mango'}),
+      mk({status: 'working', session: 'Zebra'}),
+      mk({status: 'working', session: 'apple'}),
+      mk({status: 'working', session: 'Mango'}),
     ];
     const out = sections(agents, false);
     expect(out[0].agents.map(a => a.session)).toEqual(['apple', 'Mango', 'Zebra']);
+  });
+
+  it('sorts the idle (finished) section most-recently-finished first (since desc)', () => {
+    const agents = [
+      mk({status: 'idle', session: 'old', since: 100}),
+      mk({status: 'idle', session: 'newest', since: 300}),
+      mk({status: 'idle', session: 'mid', since: 200}),
+    ];
+    const out = sections(agents, false);
+    expect(out[0].agents.map(a => a.session)).toEqual(['newest', 'mid', 'old']);
   });
 
   it('waitingOnly keeps only the waiting section', () => {
