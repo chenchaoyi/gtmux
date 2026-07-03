@@ -58,7 +58,7 @@ export function AgentsProvider({
           // refresh; the server's silent push covers backgrounded/killed).
           setBadge(waiters.length);
           const top = waiters[0];
-          const {items, more} = buildActivityItems(a, Math.floor(Date.now() / 1000));
+          const {items, more} = buildActivityItems(a);
           LiveActivity.sync(
             waiters.length,
             a.filter(x => x.status === 'working').length,

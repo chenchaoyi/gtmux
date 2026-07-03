@@ -325,47 +325,28 @@ func readEvent(t *testing.T, br *bufio.Reader) string {
 	}
 }
 
-func TestRelTime(t *testing.T) {
-	cases := []struct {
-		now, since int64
-		want       string
-	}{
-		{1000, 0, ""},         // unknown
-		{1000, 1000, "now"},   // 0s
-		{1000, 970, "now"},    // 30s
-		{1000, 880, "2m"},     // 120s
-		{10000, 6400, "1h"},   // 3600s
-		{200000, 27200, "2d"}, // 172800s
-	}
-	for _, c := range cases {
-		if got := relTime(c.now, c.since); got != c.want {
-			t.Errorf("relTime(%d,%d) = %q, want %q", c.now, c.since, got, c.want)
-		}
-	}
-}
-
 func TestTopTallyItems(t *testing.T) {
-	now := int64(1000)
 	waiters := []AgentStatus{
-		{Task: "fix the bug", Status: "waiting", Since: 940}, // 1m
-		{Task: "review PR", Status: "waiting", Since: 880},   // 2m
+		{Task: "fix the bug", Status: "waiting", Since: 940},
+		{Task: "review PR", Status: "waiting", Since: 880},
 	}
 	workers := []AgentStatus{
-		{Task: "run tests", Status: "working", Since: 760}, // 4m
-		{Task: "build", Status: "working", Since: 700},     // 5m
+		{Task: "run tests", Status: "working", Since: 760},
+		{Task: "build", Status: "working", Since: 700},
 	}
-	items, more := topTallyItems(now, waiters, workers)
-	// cap 3: both waiters (newest first) + the newest worker
+	items, more := topTallyItems(waiters, workers)
+	// cap 3: both waiters (newest first) + the newest worker. Since is the epoch
+	// the state started, verbatim (the widget renders the relative time locally).
 	if len(items) != 3 {
 		t.Fatalf("len(items) = %d, want 3", len(items))
 	}
-	if items[0].Title != "fix the bug" || items[0].Status != "waiting" || items[0].Time != "1m" {
+	if items[0].Title != "fix the bug" || items[0].Status != "waiting" || items[0].Since != 940 {
 		t.Errorf("items[0] = %+v", items[0])
 	}
-	if items[1].Title != "review PR" || items[1].Time != "2m" {
+	if items[1].Title != "review PR" || items[1].Since != 880 {
 		t.Errorf("items[1] = %+v", items[1])
 	}
-	if items[2].Status != "working" || items[2].Time != "4m" { // waiters before workers
+	if items[2].Status != "working" || items[2].Since != 760 { // waiters before workers
 		t.Errorf("items[2] = %+v", items[2])
 	}
 	if more != 1 { // 4 active − 3 shown
@@ -374,9 +355,8 @@ func TestTopTallyItems(t *testing.T) {
 }
 
 func TestTopTallyItemsTitleFallback(t *testing.T) {
-	now := int64(1000)
 	// no task → falls back to the session from loc
-	items, _ := topTallyItems(now, []AgentStatus{{Loc: "mysess:1.0", Status: "waiting", Since: 900}}, nil)
+	items, _ := topTallyItems([]AgentStatus{{Loc: "mysess:1.0", Status: "waiting", Since: 900}}, nil)
 	if len(items) != 1 || items[0].Title != "mysess" {
 		t.Fatalf("title fallback = %+v", items)
 	}

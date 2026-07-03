@@ -112,8 +112,12 @@ private struct SessionRow: View {
       Text(item.title.isEmpty ? "—" : item.title)
         .font(.subheadline).foregroundColor(.white.opacity(0.92)).lineLimit(1)
       Spacer(minLength: 6)
-      if !item.time.isEmpty {
-        Text(item.time).font(.caption).foregroundColor(.white.opacity(0.5)).monospacedDigit()
+      if item.since > 0 {
+        // Relative time rendered LOCALLY by SwiftUI — auto-updates on the lock
+        // screen with no push, so the server only pushes on substantive changes.
+        Text(Date(timeIntervalSince1970: TimeInterval(item.since)), style: .relative)
+          .font(.caption).foregroundColor(.white.opacity(0.5)).monospacedDigit()
+          .lineLimit(1)
       }
     }
   }
