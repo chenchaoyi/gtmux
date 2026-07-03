@@ -29,6 +29,15 @@ struct MenuView: View {
     @FocusState private var searchFocused: Bool
     @Environment(\.colorScheme) private var scheme
 
+    // The scrollable agent list grows with the screen: taller on a big display, so
+    // more agents show before scrolling, but always leaving room for the header +
+    // footer + menu bar (reserve ~280pt) so the popover never clips on a small
+    // laptop. Capped so it stays a popover, not a full-height panel.
+    private var listMaxHeight: CGFloat {
+        let visible = NSScreen.main?.visibleFrame.height ?? 900
+        return min(820, max(Theme.Size.listMaxHeight, visible - 280))
+    }
+
     private var query: String { searchActive ? searchText : "" }
     private var sections: [(status: Status, agents: [Agent])] {
         store.sections(waitingOnly: waitingOnly, query: query)
@@ -160,7 +169,7 @@ struct MenuView: View {
                 }
                 .padding(.vertical, 4)
             }
-            .frame(maxHeight: Theme.Size.listMaxHeight)
+            .frame(maxHeight: listMaxHeight)
         }
     }
 
