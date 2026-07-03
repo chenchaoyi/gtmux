@@ -159,6 +159,45 @@ func TestInstallKiroDedicated(t *testing.T) {
 	}
 }
 
+// TestInstallCopilotDedicated: Copilot's ~/.copilot/hooks/gtmux.json shape —
+// {"version":1,"hooks":{"<Event>":[{"type":"command","bash":…,"timeoutSec":N}]}},
+// PascalCase keys, and the wholly-gtmux file removed on uninstall.
+func TestInstallCopilotDedicated(t *testing.T) {
+	inst := agentInstallers["copilot"]
+	path := filepath.Join(t.TempDir(), "gtmux.json")
+	for i := 0; i < 2; i++ { // idempotent
+		if err := updateAgentSettings(inst, path, testBin, true); err != nil {
+			t.Fatalf("install %d: %v", i, err)
+		}
+	}
+	m := readSettings(t, path)
+	if m["version"] != float64(1) {
+		t.Errorf("copilot file must set version:1, got %v", m["version"])
+	}
+	hooks, _ := m["hooks"].(map[string]any)
+	list := asArray(hooks["PermissionRequest"])
+	if len(list) != 1 {
+		t.Fatalf("PermissionRequest should hold one gtmux entry, got %d", len(list))
+	}
+	e := list[0].(map[string]any)
+	if e["type"] != "command" {
+		t.Errorf("copilot entry type = %v, want command", e["type"])
+	}
+	if got := asString(e["bash"]); got != testBin+" hook --agent copilot PermissionRequest" {
+		t.Errorf("copilot bash cmd = %q", got)
+	}
+	if e["timeoutSec"] != float64(5) { // 5000ms / 1000
+		t.Errorf("copilot timeoutSec = %v, want 5", e["timeoutSec"])
+	}
+
+	if err := updateAgentSettings(inst, path, "", false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Error("a dedicated copilot file should be removed entirely on uninstall")
+	}
+}
+
 // TestInstallPreservesForeignHooks: a non-gtmux hook in the same file/event survives.
 func TestInstallPreservesForeignHooks(t *testing.T) {
 	inst := agentInstallers["gemini"]
