@@ -75,6 +75,30 @@ func ParseOptions(text string) []Option {
 // (unlike Claude) fire no waiting hook.
 const selectorGlyphs = "❯›▶▸→"
 
+// startupChoosers are signature phrases from an agent's SESSION-STARTUP menus —
+// the resume picker, the trust-folder gate, the theme picker. They present as a
+// numbered menu with a selector (so they'd pass WaitingOptions' shape test), but
+// they are pre-task chrome the app draws AROUND a session, not the agent blocking
+// on your task — so the radar must not flag them "needs you". (An OLD session
+// reopened to its resume picker was the "2h-old session stuck waiting" bug.)
+var startupChoosers = []string{
+	"Resume from summary",       // Claude resume picker
+	"Resume full session",       // Claude resume picker
+	"Resuming the full session", // Claude resume picker body
+	"Do you trust the files",    // Claude trust-folder gate
+}
+
+// looksLikeStartupChooser reports whether the bottom-of-screen menu is an agent
+// session-startup chooser rather than a task-level approval.
+func looksLikeStartupChooser(window string) bool {
+	for _, sig := range startupChoosers {
+		if strings.Contains(window, sig) {
+			return true
+		}
+	}
+	return false
+}
+
 // WaitingOptions returns the on-screen choice block ONLY when it looks like an
 // ACTIVE approval menu the agent is blocked on: a run of ≥2 numbered options in
 // the bottom of the capture, with a selector cursor present. It's deliberately
@@ -95,7 +119,11 @@ func WaitingOptions(text string) []Option {
 		lo = 0
 	}
 	window := lines[lo:end]
-	opts := ParseOptions(strings.Join(window, "\n"))
+	joined := strings.Join(window, "\n")
+	if looksLikeStartupChooser(joined) {
+		return nil // a session-startup menu, not an agent task-wait
+	}
+	opts := ParseOptions(joined)
 	if len(opts) < 2 {
 		return nil // a real menu has ≥2 choices; a lone "1." is likely a list item
 	}
