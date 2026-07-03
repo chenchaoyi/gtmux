@@ -119,6 +119,12 @@ func decide(event string, activePresent bool) decision {
 		// again. Clear the wait silently; the turn is still in progress, so don't
 		// touch active or notify.
 		return decision{clearWaiting: true}
+	case "SessionStart", "SessionEnd":
+		// A session (re)starting (startup/resume/clear/compact) or ending voids this
+		// pane's turn state. Clear active + waiting so a marker orphaned by a prior
+		// session — or by a pane id reused across a tmux restart — can't linger as a
+		// phantom "working"/"needs you". No notify; the next UserPromptSubmit re-arms.
+		return decision{clearActive: true, clearWaiting: true}
 	default:
 		return decision{}
 	}
@@ -193,10 +199,11 @@ func Run(stdin io.Reader, args []string) int {
 		}
 	}
 	var payload struct {
-		HookEventName string `json:"hook_event_name"`
-		SessionID     string `json:"session_id"` // the agent's session id (Claude); "" otherwise
-		ToolName      string `json:"tool_name"`  // the tool a PreToolUse refers to (Claude)
-		Cwd           string `json:"cwd"`        // the agent's working dir (Claude)
+		HookEventName    string `json:"hook_event_name"`
+		SessionID        string `json:"session_id"`        // the agent's session id (Claude); "" otherwise
+		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
+		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
+		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
 	}
 	_ = json.Unmarshal(raw, &payload)
 	if rawEvent == "" {
@@ -223,12 +230,22 @@ func Run(stdin io.Reader, args []string) int {
 	class := classify(agentKey, rawEvent, payload.ToolName)
 	event := class.Lifecycle
 	waitKind := class.Kind
-	// Claude's Notification is its permission signal — waiting iff mid-turn (a
-	// timing decision the generic classifier marks telemetry). Preserve gtmux's
-	// existing behavior and default the kind to permission.
+	// Claude's Notification carries a notification_type telling us exactly what it
+	// is — so we don't guess from timing. Route the "needs you" kinds to Waiting and
+	// let everything else (idle nudge, auth success, completion) stay telemetry. When
+	// the field is absent (older Claude), fall back to the legacy mid-turn heuristic
+	// (decide() only raises waiting when a turn is active).
 	if agentKey == "claude" && rawEvent == "Notification" {
-		event = "Notification"
-		waitKind = KindPermission
+		switch payload.NotificationType {
+		case "permission_prompt", "agent_needs_input":
+			event, waitKind = "Notification", KindPermission
+		case "elicitation_dialog":
+			event, waitKind = "Notification", KindQuestion
+		case "":
+			event, waitKind = "Notification", KindPermission // no type → legacy heuristic
+		default:
+			event = "" // idle_prompt / auth_success / agent_completed / … → not a wait
+		}
 	}
 	if event == "" {
 		debugf("telemetry no-op: agent=%s raw=%q tool=%q", agentKey, rawEvent, payload.ToolName)

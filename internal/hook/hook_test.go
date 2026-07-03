@@ -31,6 +31,10 @@ func TestDecide(t *testing.T) {
 			decision{clearWaiting: true}},
 		{"Resumed while idle is still just a silent clear", "Resumed", false,
 			decision{clearWaiting: true}},
+		{"SessionEnd clears the pane's markers silently", "SessionEnd", true,
+			decision{clearActive: true, clearWaiting: true}},
+		{"SessionStart clears the pane's markers silently", "SessionStart", true,
+			decision{clearActive: true, clearWaiting: true}},
 		{"unknown event is a no-op", "Frobnicate", true, decision{}},
 		{"empty event is a no-op", "", false, decision{}},
 	}

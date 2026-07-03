@@ -34,6 +34,12 @@ var hookEvents = []claudeHook{
 	{event: "Notification"},
 	{event: "UserPromptSubmit"},
 	{event: "PermissionRequest"},
+	// Session lifecycle: a start (startup/resume/clear/compact) or end voids the
+	// pane's turn state, so gtmux clears its active/waiting markers — a session that
+	// ends cleanly (or a pane id reused across a tmux restart) can't leave a phantom
+	// "working"/"needs you" behind (source-side complement to the staleness guard).
+	{event: "SessionStart"},
+	{event: "SessionEnd"},
 	{event: "PreToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
 	{event: "PostToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
 }
@@ -124,8 +130,8 @@ func cmdInstallHooks(args []string) int {
 		i18n.Sae("failed to update ~/.claude/settings.json: "+err.Error(), "更新 ~/.claude/settings.json 失败："+err.Error())
 		return 1
 	}
-	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit · PermissionRequest · plan/question)",
-		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit · PermissionRequest · 计划/提问)")
+	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit · PermissionRequest · Session start/end · plan/question)",
+		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit · PermissionRequest · Session 开始/结束 · 计划/提问)")
 
 	// 3. peon-ping coexistence.
 	handlePeonPing(yes)

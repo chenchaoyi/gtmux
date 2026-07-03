@@ -91,9 +91,13 @@ func classify(source, event, tool string) Class {
 		// A pending plan/question/approval was just resolved (you answered), so the
 		// agent is working again — clear the wait without notifying.
 		return Class{Lifecycle: "Resumed"}
+	case semSessionStart:
+		return Class{Lifecycle: "SessionStart"}
+	case semSessionEnd:
+		return Class{Lifecycle: "SessionEnd"}
 	default:
-		// toolStart, toolEnd, (pre|post)Compact, subagent*, session*,
-		// statusNotification, unknown → telemetry; no state change, no notify.
+		// toolStart, toolEnd, (pre|post)Compact, subagent*, statusNotification,
+		// unknown → telemetry; no state change, no notify.
 		return Class{}
 	}
 }
