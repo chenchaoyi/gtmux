@@ -144,6 +144,20 @@ type ClientInfo struct {
 	Platform    string `json:"platform,omitempty"` // e.g. "Safari · macOS" (browsers)
 	IP          string `json:"ip,omitempty"`       // best-effort remote address (no port)
 	ConnectedAt int64  `json:"connectedAt"`        // unix seconds the SSE stream opened
+	// DeviceID is the enrolled device's stable id (phones only), used server-side to
+	// collapse a device's multiple/overlapping SSE connections into ONE roster row.
+	// Not serialized — the roster file only reports the deduped identity.
+	DeviceID string `json:"-"`
+}
+
+// dedupKey groups a device's connections so the roster shows one row per device:
+// a phone by its stable enrolled id (a reconnect behind a tunnel can leave the
+// prior connection lingering), a browser by ip+platform.
+func (c ClientInfo) dedupKey() string {
+	if c.Kind == "phone" && c.DeviceID != "" {
+		return "p|" + c.DeviceID
+	}
+	return c.Kind + "|" + c.Name + "|" + c.Platform + "|" + c.IP
 }
 
 // hub fans agent-status changes out to all connected SSE clients. A single
@@ -239,8 +253,19 @@ func (h *hub) unsubscribe(ch chan sseEvent) {
 // connection first, then by name) so the roster file doesn't churn on map order.
 // Caller must hold h.mu.
 func (h *hub) snapshotLocked() []ClientInfo {
-	out := make([]ClientInfo, 0, len(h.subs))
+	// Collapse a device's multiple/overlapping connections into one entry — a phone
+	// behind a tunnel reconnects (network blips / app resumes) and its prior SSE
+	// connection can linger, so without this the same phone shows up several times.
+	// Keep the most-recent connection's timestamp.
+	best := map[string]ClientInfo{}
 	for _, info := range h.subs {
+		k := info.dedupKey()
+		if cur, ok := best[k]; !ok || info.ConnectedAt > cur.ConnectedAt {
+			best[k] = info
+		}
+	}
+	out := make([]ClientInfo, 0, len(best))
+	for _, info := range best {
 		out = append(out, info)
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -449,7 +474,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 
 	// Immediately sync the just-connected client to the current revision so it
 	// fetches /api/agents without waiting for the next change.
-	writeSSE(w, agentsEvent(s.hub.currentRev()))
+	if writeSSE(w, agentsEvent(s.hub.currentRev())) != nil {
+		return
+	}
 	flusher.Flush()
 
 	ctx := r.Context()
@@ -461,7 +488,13 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			writeSSE(w, ev)
+			// A failed write means the client is gone even if the context wasn't
+			// cancelled (proxy/tunnel keeps the upstream open) — return so the
+			// deferred unsubscribe reaps this connection instead of it lingering as
+			// a duplicate in the roster. The 20s ping is what forces this check.
+			if writeSSE(w, ev) != nil {
+				return
+			}
 			flusher.Flush()
 		}
 	}
@@ -477,6 +510,7 @@ func (s *Server) clientInfo(r *http.Request) ClientInfo {
 		if d, ok := s.deps.Enroll.DeviceByToken(bearerToken(r)); ok {
 			info.Kind = "phone"
 			info.Name = d.Name
+			info.DeviceID = d.ID
 			// The phone sends its OS tag (e.g. "iOS 17.5") live per-connection, so
 			// it stays correct after an OS update (unlike the enroll-frozen name).
 			info.Platform = sanitizeClientTag(r.Header.Get("X-Gtmux-Client"))
@@ -575,7 +609,10 @@ func browserPlatform(ua string) string {
 	}
 }
 
-// writeSSE frames one event in the text/event-stream format.
-func writeSSE(w http.ResponseWriter, ev sseEvent) {
-	fmt.Fprintf(w, "event: %s\ndata: %s\n\n", ev.name, ev.data)
+// writeSSE frames one event in the text/event-stream format. Returns the write
+// error so the handler can drop a dead connection (the client vanished but its
+// context wasn't cancelled — common behind a proxy/tunnel) instead of leaking it.
+func writeSSE(w http.ResponseWriter, ev sseEvent) error {
+	_, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", ev.name, ev.data)
+	return err
 }

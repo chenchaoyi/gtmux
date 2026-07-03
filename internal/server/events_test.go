@@ -57,6 +57,33 @@ func TestHubClientRoster(t *testing.T) {
 	}
 }
 
+// A phone behind a tunnel can leave a prior SSE connection lingering when it
+// reconnects; the roster must collapse a device's connections into ONE entry
+// (keyed by the enrolled device id), keeping the most-recent timestamp.
+func TestHubClientDedup(t *testing.T) {
+	h := newHub(func() []AgentStatus { return nil }, time.Hour, nil)
+	var last []ClientInfo
+	h.onClients = func(list []ClientInfo) { last = list }
+
+	// same device (id "dev1"), two overlapping connections + a real second phone.
+	h.subscribe(ClientInfo{Kind: "phone", Name: "gtmux • iPhone", DeviceID: "dev1", ConnectedAt: 100})
+	h.subscribe(ClientInfo{Kind: "phone", Name: "gtmux • iPhone", DeviceID: "dev1", ConnectedAt: 250})
+	h.subscribe(ClientInfo{Kind: "phone", Name: "Other", DeviceID: "dev2", ConnectedAt: 300})
+
+	if len(last) != 2 {
+		t.Fatalf("roster = %+v, want 2 (dev1 collapsed to one)", last)
+	}
+	var dev1 *ClientInfo
+	for i := range last {
+		if last[i].DeviceID == "dev1" {
+			dev1 = &last[i]
+		}
+	}
+	if dev1 == nil || dev1.ConnectedAt != 250 {
+		t.Errorf("dev1 entry = %+v, want the newest connectedAt 250", dev1)
+	}
+}
+
 func revOf(t *testing.T, ev sseEvent) int {
 	t.Helper()
 	var v struct {
