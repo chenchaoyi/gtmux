@@ -388,8 +388,8 @@ func (s *fixState) stepCloudflared() int {
 	fmt.Printf("\n%s%s%s\n", i18n.Bold,
 		i18n.Tr("cloudflared  (optional — remote phone access)", "cloudflared（可选，手机远程访问）"), i18n.Reset)
 	fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
-		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access — skip if you don't use the phone app away from home.",
-		"  装上它，`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要，\n  不在外面用手机 app 可跳过。"), i18n.Reset)
+		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access — skip if you don't use the mobile app away from home.",
+		"  装上它，`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要，\n  不在外面用手机 App 可跳过。"), i18n.Reset)
 	if _, err := exec.LookPath("brew"); err != nil {
 		i18n.Say("  • brew not found — install from https://github.com/cloudflare/cloudflared/releases",
 			"  • 未找到 brew，从 https://github.com/cloudflare/cloudflared/releases 安装")

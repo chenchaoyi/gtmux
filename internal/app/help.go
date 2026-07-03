@@ -112,7 +112,7 @@ const usageZH = `快速开始：
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
   new [name]              新建一个 tmux session 并为它开一个终端 tab
-  serve [--port N]        给远程手机 app 的只读 HTTP 雷达，放在 VPN/隧道之后：
+  serve [--port N]        给远程手机 App 的只读 HTTP 雷达，放在 VPN/隧道之后：
                           GET /api/agents（即 --json 契约）、/api/pane、
                           /api/events（SSE）、POST /api/focus。--bind ADDR
                           --token TOKEN（首次运行自动生成并持久化 token）；
