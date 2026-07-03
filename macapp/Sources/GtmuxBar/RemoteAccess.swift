@@ -34,6 +34,20 @@ struct RemoteClient: Identifiable {
         if isPhone { return name.isEmpty ? tr("Phone", "手机") : name }
         return platform.isEmpty ? tr("Browser", "浏览器") : platform
     }
+
+    /// A human-readable "how long connected" label from `connectedAt` — far more
+    /// meaningful to a person than the raw client IP the row used to trail with.
+    /// Computed at render (the popover re-reads on open), so it's fresh each time.
+    func connectedFor(_ tr: (String, String) -> String, now: Double = Date().timeIntervalSince1970) -> String {
+        guard connectedAt > 0 else { return "" }
+        let s = max(0, now - connectedAt)
+        if s < 60 { return tr("just now", "刚刚") }
+        let m = Int(s / 60)
+        if m < 60 { return tr("connected \(m)m", "已连接 \(m) 分钟") }
+        let h = Int(s / 3600)
+        if h < 24 { return tr("connected \(h)h", "已连接 \(h) 小时") }
+        return tr("connected \(Int(s / 86400))d", "已连接 \(Int(s / 86400)) 天")
+    }
 }
 
 final class RemoteAccess: ObservableObject {
