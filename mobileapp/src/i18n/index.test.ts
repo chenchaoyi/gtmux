@@ -39,13 +39,25 @@ describe('deviceLang', () => {
     expect(deviceLang()).toBe('en');
   });
 
-  it('defaults to en when native modules are missing/throw', () => {
+  it('falls back to Intl locale when SettingsManager is absent (bridgeless new arch)', () => {
+    (Platform as any).OS = 'ios';
+    NativeModules.SettingsManager = undefined; // bridgeless RN 0.86 populates no legacy module
+    const origIntl = (globalThis as any).Intl;
+    (globalThis as any).Intl = {DateTimeFormat: () => ({resolvedOptions: () => ({locale: 'zh-Hans-CN'})})};
+    expect(deviceLang()).toBe('zh');
+    (globalThis as any).Intl = origIntl;
+  });
+
+  it('defaults to en when native modules AND Intl are missing', () => {
     (Platform as any).OS = 'ios';
     NativeModules.SettingsManager = undefined;
+    const origIntl = (globalThis as any).Intl;
+    (globalThis as any).Intl = undefined;
     expect(deviceLang()).toBe('en');
     (Platform as any).OS = 'android';
     NativeModules.I18nManager = undefined;
     expect(deviceLang()).toBe('en');
+    (globalThis as any).Intl = origIntl;
   });
 
   it('is case-insensitive on the zh prefix', () => {

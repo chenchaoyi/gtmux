@@ -6,19 +6,33 @@ import {NativeModules, Platform} from 'react-native';
 export type Lang = 'en' | 'zh';
 export type LangPref = Lang | 'system';
 
+const isZh = (s?: string | null): boolean => !!s && s.toLowerCase().startsWith('zh');
+
 export function deviceLang(): Lang {
-  let locale = 'en';
+  // Legacy bridge (and the unit tests) expose the locale via NativeModules.
   try {
     if (Platform.OS === 'ios') {
       const s = NativeModules.SettingsManager?.settings;
-      locale = s?.AppleLocale || s?.AppleLanguages?.[0] || 'en';
+      const l = s?.AppleLocale || s?.AppleLanguages?.[0];
+      if (l) return isZh(l) ? 'zh' : 'en';
     } else {
-      locale = NativeModules.I18nManager?.localeIdentifier || 'en';
+      const l = NativeModules.I18nManager?.localeIdentifier;
+      if (l) return isZh(l) ? 'zh' : 'en';
     }
   } catch {
-    locale = 'en';
+    // fall through to the Intl probe
   }
-  return locale.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  // Bridgeless (new architecture, RN 0.86) does NOT populate
+  // NativeModules.SettingsManager, so the read above is undefined and we would
+  // wrongly default to English on a Chinese device. Hermes' Intl reflects the real
+  // device locale in that runtime, so use it as the reliable fallback.
+  try {
+    const loc = (globalThis as {Intl?: typeof Intl}).Intl?.DateTimeFormat?.().resolvedOptions?.().locale;
+    if (loc) return isZh(loc) ? 'zh' : 'en';
+  } catch {
+    // no Intl → default below
+  }
+  return 'en';
 }
 
 export function resolveLang(pref: LangPref): Lang {
