@@ -107,6 +107,10 @@ type agentPane struct {
 	activityAt int64  // epoch seconds of last activity (relative time)
 	since      int64  // epoch seconds the current state began (for a duration)
 	icon       string // identity icon hint (.app path or image path); "" = monogram
+	// native (source=="native") only: the agent session id (adopt key) + whether
+	// the agent can be resumed into tmux (so surfaces can hide Adopt otherwise).
+	sessionID string
+	adoptable bool
 }
 
 // agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
@@ -132,6 +136,10 @@ type agentJSON struct {
 	ActivityAt int64  `json:"activity_at,omitempty"`
 	Since      int64  `json:"since,omitempty"` // epoch the current state began (duration)
 	Icon       string `json:"icon,omitempty"`  // identity icon hint (.app/image path)
+	// native rows only: the agent session id (the `gtmux adopt <id>` key) + whether
+	// it can be adopted into tmux (resumable). Absent/false for tmux rows.
+	SessionID string `json:"session_id,omitempty"`
+	Adoptable bool   `json:"adoptable,omitempty"`
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -606,6 +614,7 @@ func nativePanes(tmuxPanes []agentPane, profiles []agentProfile, now int64) []ag
 			agent: name, status: r.State, source: "native",
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, since: since,
+			sessionID: r.SessionID, adoptable: resume.Resumable(r.Agent),
 		})
 	}
 	return out
@@ -773,6 +782,7 @@ func agentsJSONBytes() ([]byte, error) {
 			Latest: p.latest, Activity: p.activity,
 			Source: src, Project: p.project, Branch: p.branch, Terminal: p.terminal, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.since, Icon: p.icon,
+			SessionID: p.sessionID, Adoptable: p.adoptable,
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")

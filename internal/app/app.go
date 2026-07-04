@@ -72,6 +72,8 @@ func Run(argv []string) int {
 		return cmdOptions(args)
 	case "new", "n":
 		return cmdNew(args)
+	case "adopt":
+		return cmdAdopt(args)
 	case "serve":
 		return cmdServe(args)
 	case "tunnel":

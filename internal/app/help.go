@@ -36,6 +36,7 @@ Commands:
                           (%N) lands on that exact window+pane
     focus --last|-l       jump to the most-recently-finished agent pane
   new [name]              create a tmux session and open a terminal tab for it
+  adopt <session_id>…     resume a sensed non-tmux (native) agent session in tmux
   serve [--port N]        read-only HTTP radar for the remote mobile app, behind
                           a VPN/tunnel: GET /api/agents (the --json contract),
                           /api/pane, /api/events (SSE), POST /api/focus. --bind
@@ -112,6 +113,7 @@ const usageZH = `快速开始：
                           则精确落到那个 window+pane
     focus --last|-l       跳到最近完成的 agent pane
   new [name]              新建一个 tmux session 并为它开一个终端 tab
+  adopt <session_id>…     把感知到的非 tmux（native）agent 会话在 tmux 里恢复接管
   serve [--port N]        给远程手机 App 的只读 HTTP 雷达，放在 VPN/隧道之后：
                           GET /api/agents（即 --json 契约）、/api/pane、
                           /api/events（SSE）、POST /api/focus。--bind ADDR
