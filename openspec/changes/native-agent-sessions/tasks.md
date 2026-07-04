@@ -24,10 +24,10 @@
 
 ## 5. Adopt-into-tmux (CLI/core)
 
-- [ ] 5.1 Add a core action to adopt a native session: resolve its resume command (`internal/resume`) and spawn a fresh tmux session/window running it (reuse the `new`/`restore` spawn path).
-- [ ] 5.2 Gate adoption on `resume.Resumable(agent)` + a captured `session_id`; expose eligibility so surfaces can hide Adopt for ineligible rows.
-- [ ] 5.3 On adopt, mark the native record adopted so it drops from the native category once the tmux pane represents it.
-- [ ] 5.4 Support adopting multiple sessions (each into its own window/session).
+- [x] 5.1 Add a core action to adopt a native session: resolve its resume command (`internal/resume`) and spawn a fresh tmux session/window running it (reuse the `new`/`restore` spawn path).
+- [x] 5.2 Gate adoption on `resume.Resumable(agent)` + a captured `session_id`; expose eligibility so surfaces can hide Adopt for ineligible rows.
+- [x] 5.3 On adopt, mark the native record adopted so it drops from the native category once the tmux pane represents it.
+- [x] 5.4 Support adopting multiple sessions (each into its own window/session).
 - [ ] 5.5 Tests: eligible adopt spawns the resume command; ineligible is refused; adopted record de-dupes/drops.
 
 ## 6. Menu-bar app: native category + Adopt action
