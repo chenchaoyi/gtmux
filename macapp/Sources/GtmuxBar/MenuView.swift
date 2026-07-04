@@ -17,6 +17,7 @@ struct MenuView: View {
     @ObservedObject private var collapse = SectionCollapse.shared
     var onJump: (Agent) -> Void
     var onAction: (MenuAction) -> Void
+    var onAdopt: (Agent) -> Void = { _ in }
     var onSend: (Agent, Int) -> Void = { _, _ in }
     var onClose: () -> Void = {}
 
@@ -164,6 +165,12 @@ struct MenuView: View {
                                                      onJump: { onJump(agent) })
                                 }
                             }
+                        case let .nativeHeader(count):
+                            NativeHeader(count: count, l10n: l10n)
+                        case let .native(agent):
+                            // Sense-only: no jump on tap, no reply. Adoptable ones can
+                            // be resumed into tmux.
+                            NativeRowView(agent: agent, l10n: l10n, onAdopt: { onAdopt(agent) })
                         }
                     }
                 }
@@ -178,12 +185,16 @@ struct MenuView: View {
     private enum ListItem: Identifiable {
         case header(Status, Int)
         case agent(Agent, Int) // agent + its flat index (for keyboard selection)
+        case nativeHeader(Int) // the "Elsewhere / 不在 tmux" category header
+        case native(Agent)     // a sensed non-tmux session (sense-only + Adopt)
         var id: String {
             switch self {
             case let .header(s, _): return "h:" + s.rawValue
             // status is part of the identity → a status change rebuilds the row,
             // so the badge can never go stale (defends the working/waiting bug).
             case let .agent(a, _): return "a:" + a.id + ":" + a.status
+            case .nativeHeader: return "h:native"
+            case let .native(a): return "n:" + a.id + ":" + a.status
             }
         }
     }
@@ -198,6 +209,13 @@ struct MenuView: View {
                 items.append(.agent(a, idx))
                 idx += 1
             }
+        }
+        // Sensed non-tmux sessions as their own trailing category (not keyboard-
+        // navigable — sense-only). Hidden entirely when there are none.
+        let natives = store.nativeSessions(query: query)
+        if !natives.isEmpty {
+            items.append(.nativeHeader(natives.count))
+            for a in natives { items.append(.native(a)) }
         }
         return items
     }
@@ -439,6 +457,61 @@ final class SectionCollapse: ObservableObject {
     func toggle(_ s: Status) {
         if collapsed.contains(s.rawValue) { collapsed.remove(s.rawValue) } else { collapsed.insert(s.rawValue) }
         UserDefaults.standard.set(collapsed.sorted().joined(separator: ","), forKey: key)
+    }
+}
+
+// MARK: - Native (non-tmux) category
+
+/// Header for the sensed non-tmux sessions — visually quieter than the status
+/// groups (these are informational, not actionable in place).
+private struct NativeHeader: View {
+    let count: Int
+    @ObservedObject var l10n: L10n
+    @Environment(\.colorScheme) private var scheme
+    var body: some View {
+        let p = Theme.Palette.of(scheme)
+        HStack(spacing: 6) {
+            Text(l10n.tr("ELSEWHERE", "不在 TMUX")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
+            Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
+            Spacer()
+            Text(l10n.tr("sensed · not in tmux", "已感知 · 不在 tmux")).font(Theme.Font.footer).foregroundStyle(p.fg3)
+        }
+        .padding(.horizontal, 12).padding(.top, 9).padding(.bottom, 2)
+    }
+}
+
+/// A sensed non-tmux session: identity + state + idle time, and (when resumable)
+/// an Adopt button that pulls it into tmux. Sense-only — no jump, no reply.
+private struct NativeRowView: View {
+    let agent: Agent
+    @ObservedObject var l10n: L10n
+    var onAdopt: () -> Void
+    @Environment(\.colorScheme) private var scheme
+    var body: some View {
+        let p = Theme.Palette.of(scheme)
+        HStack(spacing: Theme.Size.gap) {
+            AgentAvatar(agent: agent)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(agent.primary.isEmpty ? agent.agent : agent.primary)
+                    .font(Theme.Font.session).foregroundStyle(p.fg).lineLimit(1).truncationMode(.tail)
+                Text(agent.agent).font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
+            }
+            Spacer(minLength: 6)
+            Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
+            if agent.adoptable {
+                Button(action: onAdopt) {
+                    Text(l10n.tr("Adopt", "收编"))
+                        .font(Theme.Font.footer).fontWeight(.semibold)
+                        .foregroundStyle(Theme.Status.working)
+                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(Theme.Status.working.opacity(0.14)))
+                        .contentShape(Rectangle())
+                }.buttonStyle(.plain).help(l10n.tr("Resume this session in tmux", "在 tmux 里恢复此会话"))
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .frame(minHeight: Theme.Size.rowHeight)
+        .opacity(0.94)
     }
 }
 
