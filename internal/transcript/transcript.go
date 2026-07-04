@@ -12,9 +12,54 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
+
+// tsField matches a log line's "timestamp":"<RFC3339>" — the wall-clock the agent
+// stamped that message with.
+var tsField = regexp.MustCompile(`"timestamp":"([^"]+)"`)
+
+// LastMessageTime returns the wall-clock (unix seconds) of the LAST message logged
+// in an agent's session — when it most recently did anything, i.e. ~when its turn
+// ended. It reads the log's TAIL and parses the last "timestamp" field, so it
+// reflects real activity — unlike the file mtime, which a resume/rewrite bumps
+// without adding messages. 0 when the log or a timestamp can't be found.
+func LastMessageTime(agent, sessionID string) int64 {
+	path, _ := resolveLog(agent, sessionID)
+	if path == "" {
+		return 0
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return 0
+	}
+	const tail = 64 << 10
+	start := int64(0)
+	if fi.Size() > tail {
+		start = fi.Size() - tail
+	}
+	buf := make([]byte, fi.Size()-start)
+	if _, err := f.ReadAt(buf, start); err != nil && err != io.EOF {
+		return 0
+	}
+	m := tsField.FindAllStringSubmatch(string(buf), -1)
+	if len(m) == 0 {
+		return 0
+	}
+	ts := m[len(m)-1][1]
+	if t, err := time.Parse(time.RFC3339Nano, ts); err == nil {
+		return t.Unix()
+	}
+	return 0
+}
 
 // Step is one collapsed middle action in a turn (a tool call). The chat view
 // shows turns as prompt → (N steps, collapsed) → final response.

@@ -58,30 +58,6 @@ func claudeProjectsDir() string {
 	return filepath.Join(os.Getenv("HOME"), ".claude", "projects")
 }
 
-// LastActivityForCwd returns the newest Claude session-log mtime (unix seconds)
-// for a working directory — the last time the agent actually WROTE to its
-// transcript, i.e. ~when its turn ended. Unlike tmux window-activity, it's immune
-// to TUI status-line redraws (a spinner/cost bar repaint doesn't touch the log),
-// so it's the accurate "finished N ago" for an idle pane. 0 when no log matches
-// (cwd not a Claude project, or a path shape the dir encoding doesn't cover).
-func LastActivityForCwd(cwd string) int64 {
-	if cwd == "" {
-		return 0
-	}
-	// Claude names each project dir by the cwd with '/' turned into '-'.
-	enc := strings.ReplaceAll(cwd, "/", "-")
-	matches, _ := filepath.Glob(filepath.Join(claudeProjectsDir(), enc, "*.jsonl"))
-	var newest int64 // unix SECONDS (fileMtime returns nanos — wrong unit here)
-	for _, m := range matches {
-		if fi, err := os.Stat(m); err == nil {
-			if t := fi.ModTime().Unix(); t > newest {
-				newest = t
-			}
-		}
-	}
-	return newest
-}
-
 // claudeStep folds one Claude log line into the parse state: a real user prompt
 // opens a turn; tool_result-only user events are skipped; assistant text/tool_use
 // extend the open turn (latest text wins → the final reply).
