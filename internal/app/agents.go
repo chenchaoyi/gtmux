@@ -16,6 +16,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // Claude Code's foreground process reports its command as its version (e.g.
@@ -510,14 +511,24 @@ func gatherAgents() []agentPane {
 			// every couple seconds and would otherwise reset the idle time to ~0s on
 			// every poll. The Stop hook stamps finished/<pane> at the real finish; if
 			// it's absent (the agent fired no Stop, or finished before this shipped),
-			// materialize one NOW so the duration is at least stable from first sight.
-			// Only ever CREATED here (never removed — the hook clears it on the next
-			// turn), so an idle↔working flap from a redraw can't keep resetting it.
+			// materialize one from the agent's transcript-log mtime (last real write ≈
+			// when it finished, immune to redraws), else last window activity. Only ever
+			// CREATED here (the hook clears it on the next turn), so an idle↔working flap
+			// from a redraw can't keep resetting it, and each pane keeps its own time.
 			fp := state.FinishedPath(id)
 			mt := fileMtime(fp)
 			if mt == 0 {
+				finishedAt := activityAt
+				if len(f) >= 10 {
+					if t := transcript.LastActivityForCwd(f[9]); t > 0 {
+						finishedAt = t
+					}
+				}
 				_ = state.Touch(fp)
-				mt = fileMtime(fp)
+				if finishedAt > 0 {
+					_ = os.Chtimes(fp, time.Unix(finishedAt, 0), time.Unix(finishedAt, 0))
+				}
+				mt = finishedAt
 			}
 			if mt > 0 {
 				since = mt
