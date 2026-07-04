@@ -505,11 +505,21 @@ func gatherAgents() []agentPane {
 				since = mt
 			}
 		case "idle":
-			// Prefer when the turn actually FINISHED (the Stop hook's marker) over
-			// last window activity — a live agent status line keeps redrawing, which
-			// bumps window-activity every couple seconds and would otherwise reset the
-			// idle time to ~0s on every poll.
-			if mt := fileMtime(state.FinishedPath(id)); mt > 0 {
+			// Prefer when the turn actually FINISHED over last window activity — a
+			// live agent status line keeps redrawing, which bumps window-activity
+			// every couple seconds and would otherwise reset the idle time to ~0s on
+			// every poll. The Stop hook stamps finished/<pane> at the real finish; if
+			// it's absent (the agent fired no Stop, or finished before this shipped),
+			// materialize one NOW so the duration is at least stable from first sight.
+			// Only ever CREATED here (never removed — the hook clears it on the next
+			// turn), so an idle↔working flap from a redraw can't keep resetting it.
+			fp := state.FinishedPath(id)
+			mt := fileMtime(fp)
+			if mt == 0 {
+				_ = state.Touch(fp)
+				mt = fileMtime(fp)
+			}
+			if mt > 0 {
 				since = mt
 			}
 		}
