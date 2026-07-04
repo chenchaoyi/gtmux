@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -134,6 +135,25 @@ func decide(event string, activePresent bool) decision {
 	default:
 		return decision{}
 	}
+}
+
+// nativeStateFor maps a canonical lifecycle event to the state stored for a
+// non-tmux (native) session. remove=true drops the record (the session ended).
+// "" state = no change (an event that doesn't move a native session's state).
+func nativeStateFor(event string) (st string, remove bool) {
+	switch event {
+	case "SessionEnd":
+		return "", true
+	case "Stop":
+		return "idle", false
+	case "Waiting", "Notification": // Notification only reaches here as a wait
+		return "waiting", false
+	case "UserPromptSubmit", "Resumed":
+		return "working", false
+	case "SessionStart":
+		return "idle", false
+	}
+	return "", false
 }
 
 // waitBody is the notification body for a "needs you" event, tailored to the
@@ -297,6 +317,21 @@ func Run(stdin io.Reader, args []string) int {
 					Agent: agentKey, SessionID: sid, Cwd: cwd, UpdatedAt: time.Now().Unix(),
 				})
 			}
+		}
+	}
+
+	// Outside tmux (no pane) we can't key pane state, but the hook still carries a
+	// session_id + cwd — so record the session so the radar can SENSE it as a
+	// `source: "native"` row (sense-only: no view/jump/send). Keyed by session, not
+	// pane. SessionEnd removes it; other lifecycle events set working/waiting/idle.
+	if pane == "" && agentSession != "" {
+		if st, remove := nativeStateFor(event); remove {
+			native.Remove(agentSession)
+		} else if st != "" {
+			_ = native.Save(native.Record{
+				Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
+				State: st, UpdatedAt: time.Now().Unix(),
+			})
 		}
 	}
 

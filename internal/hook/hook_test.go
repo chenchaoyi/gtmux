@@ -117,3 +117,28 @@ func TestNotificationWhileIdle(t *testing.T) {
 		t.Errorf("idle Notification should still record last-finished; got %q", got)
 	}
 }
+
+// nativeStateFor maps a canonical lifecycle event to a non-tmux session's state
+// (or removal). It mirrors the tmux state transitions, keyed by session instead.
+func TestNativeStateFor(t *testing.T) {
+	cases := []struct {
+		event  string
+		wantSt string
+		wantRm bool
+	}{
+		{"UserPromptSubmit", "working", false},
+		{"Resumed", "working", false},
+		{"Stop", "idle", false},
+		{"Waiting", "waiting", false},
+		{"Notification", "waiting", false},
+		{"SessionStart", "idle", false},
+		{"SessionEnd", "", true},
+		{"Frobnicate", "", false}, // unknown → no change
+	}
+	for _, c := range cases {
+		st, rm := nativeStateFor(c.event)
+		if st != c.wantSt || rm != c.wantRm {
+			t.Errorf("nativeStateFor(%q) = (%q,%v), want (%q,%v)", c.event, st, rm, c.wantSt, c.wantRm)
+		}
+	}
+}

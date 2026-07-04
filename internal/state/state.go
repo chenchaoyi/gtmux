@@ -6,6 +6,7 @@
 //	active/<pane>     marker: a turn is in progress for that tmux pane id
 //	waiting/<pane>    marker: that pane is blocked on the user (permission/approval)
 //	finished/<pane>   marker: mtime = when that pane's turn ended (idle duration)
+//	native/<session>  record: an agent session sensed OUTSIDE tmux (internal/native)
 //	last-finished     the pane id of the most-recently-finished agent turn
 //	notify-icon.png   cached agent icon, used as the notification's thumbnail
 //	notify/<id>.json  queued desktop-notification requests; the menu-bar app

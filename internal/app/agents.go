@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -565,8 +566,62 @@ func gatherAgents() []agentPane {
 			since:      since,
 		})
 	}
+	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
+	panes = append(panes, nativePanes(panes, profiles, now)...)
 	sortPanes(panes)
 	return panes
+}
+
+// nativePanes turns the native-session store into `source:"native"` radar rows —
+// sensed agents running outside tmux (no pane, so no focus/jump/send). A native
+// session that's ALSO live in tmux (its session id matches a tmux pane's resume
+// record — e.g. it was adopted) is suppressed; the tmux row wins.
+func nativePanes(tmuxPanes []agentPane, profiles []agentProfile, now int64) []agentPane {
+	recs := native.Live(now)
+	if len(recs) == 0 {
+		return nil
+	}
+	inTmux := map[string]bool{}
+	for _, p := range tmuxPanes {
+		if rec, ok := resume.Load(p.loc); ok && rec.SessionID != "" {
+			inTmux[rec.SessionID] = true
+		}
+	}
+	var out []agentPane
+	for _, r := range recs {
+		if inTmux[r.SessionID] {
+			continue
+		}
+		name, icon := displayForKey(r.Agent, profiles)
+		project, branch := gitInfo(r.Cwd)
+		// idle "finished N ago" from the session's own last message (tmux-free),
+		// like tmux idle rows; working/waiting date from the last hook update.
+		since := r.UpdatedAt
+		if r.State == "idle" {
+			if t := transcript.LastMessageTime(r.Agent, r.SessionID); t > 0 {
+				since = t
+			}
+		}
+		out = append(out, agentPane{
+			agent: name, status: r.State, source: "native",
+			project: project, branch: branch, icon: icon,
+			activityAt: r.UpdatedAt, since: since,
+		})
+	}
+	return out
+}
+
+// displayForKey maps a hook agent key (claude/codex/…) to its profile display
+// name + icon (matching on the profile's command list), else the raw key.
+func displayForKey(key string, profiles []agentProfile) (name, icon string) {
+	for _, p := range profiles {
+		for _, c := range p.Commands {
+			if c == key {
+				return p.Name, p.Icon
+			}
+		}
+	}
+	return key, ""
 }
 
 // sortPanes orders the radar: status groups first (waiting → working → idle/running),
