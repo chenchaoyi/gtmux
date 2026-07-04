@@ -430,32 +430,27 @@ func TestLoadUnknownAgentOrMissing(t *testing.T) {
 	}
 }
 
-// TestLastActivityForCwd: the newest session-log mtime for a cwd, in unix
-// SECONDS (not nanoseconds), with the '/'→'-' project-dir encoding.
-func TestLastActivityForCwd(t *testing.T) {
+// TestLastMessageTime: the wall-clock of the LAST logged message (unix SECONDS),
+// parsed from the log CONTENT — not the file mtime (which a resume bumps without
+// adding messages).
+func TestLastMessageTime(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	cwd := "/Users/x/proj"
-	dir := filepath.Join(home, ".claude", "projects", "-Users-x-proj")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	old := filepath.Join(dir, "old.jsonl")
-	newer := filepath.Join(dir, "new.jsonl")
-	for _, p := range []string{old, newer} {
-		if err := os.WriteFile(p, []byte("{}\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	want := time.Unix(1700000000, 0)
-	os.Chtimes(old, time.Unix(1600000000, 0), time.Unix(1600000000, 0))
-	os.Chtimes(newer, want, want)
+	sid := "aaaa1111-bbbb-cccc-dddd-eeeeeeeeeeee"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","timestamp":"2026-07-03T15:30:00.000Z","message":{"role":"user","content":"hi"}}`,
+		`{"type":"assistant","timestamp":"2026-07-03T15:33:53.950Z","message":{"role":"assistant","content":[{"type":"text","text":"done"}]}}`,
+	})
+	// Bump the FILE mtime far past the last message — LastMessageTime must ignore it.
+	log := filepath.Join(home, ".claude", "projects", "-some-project", sid+".jsonl")
+	future := time.Unix(1800000000, 0)
+	os.Chtimes(log, future, future)
 
-	got := LastActivityForCwd(cwd)
-	if got != want.Unix() {
-		t.Errorf("LastActivityForCwd = %d, want the newest log's mtime in SECONDS %d", got, want.Unix())
+	want, _ := time.Parse(time.RFC3339Nano, "2026-07-03T15:33:53.950Z")
+	if got := LastMessageTime("claude", sid); got != want.Unix() {
+		t.Errorf("LastMessageTime = %d, want the last message's timestamp %d (not the file mtime)", got, want.Unix())
 	}
-	if LastActivityForCwd("/no/such/cwd") != 0 {
-		t.Error("unknown cwd should return 0")
+	if LastMessageTime("claude", "no-such-session") != 0 {
+		t.Error("unknown session should return 0")
 	}
 }

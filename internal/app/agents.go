@@ -14,6 +14,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -519,8 +520,13 @@ func gatherAgents() []agentPane {
 			mt := fileMtime(fp)
 			if mt == 0 {
 				finishedAt := activityAt
-				if len(f) >= 10 {
-					if t := transcript.LastActivityForCwd(f[9]); t > 0 {
+				// This pane's OWN session (resume.Load maps loc→sessionId) → the last
+				// message it logged, which is the real finish time. NOT the log FILE
+				// mtime (a resume rewrites the file without new messages) nor the
+				// newest log in the cwd (a different session may have run there since).
+				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+				if rec, ok := resume.Load(loc); ok {
+					if t := transcript.LastMessageTime(rec.Agent, rec.SessionID); t > 0 {
 						finishedAt = t
 					}
 				}
