@@ -6,7 +6,7 @@ import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Alert as AlertType, StatusName} from '../api/types';
+import {Alert as AlertType, SectionKey} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
@@ -32,18 +32,18 @@ export function RadarScreen({navigation}: any) {
   const [waitingOnly, setWaitingOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // Collapsed sections persist across launches (MOBILE §3).
-  const [collapsed, setCollapsed] = useState<Set<StatusName>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
 
   useEffect(() => {
     AsyncStorage.getItem(COLLAPSED_KEY).then(raw => {
       if (!raw) return;
       try {
-        setCollapsed(new Set(JSON.parse(raw) as StatusName[]));
+        setCollapsed(new Set(JSON.parse(raw) as SectionKey[]));
       } catch {}
     });
   }, []);
 
-  const onToggle = (st: StatusName) => {
+  const onToggle = (st: SectionKey) => {
     setCollapsed(prev => {
       const next = new Set(prev);
       next.has(st) ? next.delete(st) : next.add(st);
@@ -135,7 +135,7 @@ export function RadarScreen({navigation}: any) {
         waitingOnly={waitingOnly}
         pal={pal}
         lang={lang}
-        onPressAgent={a => navigation.navigate('Detail', {agent: a})}
+        onPressAgent={a => { if (a.source !== 'native') navigation.navigate('Detail', {agent: a}); }}
         refreshing={refreshing}
         onRefresh={onRefresh}
         collapsed={collapsed}
