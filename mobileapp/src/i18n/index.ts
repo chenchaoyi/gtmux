@@ -46,6 +46,7 @@ const S: Dict = {
   working: {en: 'working', zh: '运行中'},
   idle: {en: 'idle', zh: '空闲'},
   running: {en: 'running', zh: '待命'},
+  native: {en: 'Elsewhere', zh: '不在 tmux'},
   agents: {en: 'agents', zh: 'agents'},
   needsYou: {en: 'NEEDS YOU', zh: '需要你'},
   // pairing

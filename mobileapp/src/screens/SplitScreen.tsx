@@ -12,7 +12,7 @@ import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, Alert as AlertType, StatusName, agentId} from '../api/types';
+import {Agent, Alert as AlertType, SectionKey, agentId} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
@@ -39,14 +39,14 @@ export function SplitScreen({navigation, route}: any) {
   const {t, pal, lang, mac} = useApp();
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [waitingOnly, setWaitingOnly] = useState(false);
-  const [collapsed, setCollapsed] = useState<Set<StatusName>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(COLLAPSED_KEY).then(raw => {
       if (!raw) return;
       try {
-        setCollapsed(new Set(JSON.parse(raw) as StatusName[]));
+        setCollapsed(new Set(JSON.parse(raw) as SectionKey[]));
       } catch {}
     });
   }, []);
@@ -70,7 +70,7 @@ export function SplitScreen({navigation, route}: any) {
     if (!c.waiting && waitingOnly) setWaitingOnly(false);
   }, [c.waiting, waitingOnly]);
 
-  const onToggle = (st: StatusName) =>
+  const onToggle = (st: SectionKey) =>
     setCollapsed(prev => {
       const next = new Set(prev);
       next.has(st) ? next.delete(st) : next.add(st);
@@ -140,7 +140,7 @@ export function SplitScreen({navigation, route}: any) {
             waitingOnly={waitingOnly}
             pal={pal}
             lang={lang}
-            onPressAgent={a => setSelectedId(agentId(a))}
+            onPressAgent={a => { if (a.source !== 'native') setSelectedId(agentId(a)); }}
             refreshing={refreshing}
             onRefresh={onRefresh}
             collapsed={collapsed}

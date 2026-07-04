@@ -1,7 +1,7 @@
 // Design tokens — mirrors macapp/.../Theme.swift. Status colors are the
 // AUTHORITATIVE hex (DESIGN §1/§9); keep identical across all three surfaces.
 
-import {Agent, StatusName, primary} from '../api/types';
+import {Agent, SectionKey, StatusName, primary} from '../api/types';
 
 export const StatusColor: Record<StatusName, string> = {
   waiting: '#EF4444', // red
@@ -73,7 +73,7 @@ export const paletteFor = (scheme?: string | null): Palette =>
   scheme === 'light' ? light : dark;
 
 export interface Section {
-  status: StatusName;
+  status: SectionKey;
   agents: Agent[];
 }
 
@@ -86,14 +86,22 @@ export function sections(agents: Agent[], waitingOnly: boolean): Section[] {
   const out: Section[] = [];
   for (const st of SECTION_ORDER) {
     if (waitingOnly && st !== 'waiting') continue;
+    // Native (non-tmux) sessions are their own trailing category, not mixed in.
     const rows = agents
-      .filter(a => a.status === st)
+      .filter(a => a.status === st && a.source !== 'native')
       .sort((l, r) =>
         st === 'idle'
           ? (r.since ?? 0) - (l.since ?? 0)
           : primary(l).toLowerCase().localeCompare(primary(r).toLowerCase()),
       );
     if (rows.length) out.push({status: st, agents: rows});
+  }
+  // "Elsewhere": sensed agents running outside tmux (sense-only, no jump/send).
+  if (!waitingOnly) {
+    const natives = agents
+      .filter(a => a.source === 'native')
+      .sort((l, r) => (r.since ?? 0) - (l.since ?? 0));
+    if (natives.length) out.push({status: 'native', agents: natives});
   }
   return out;
 }

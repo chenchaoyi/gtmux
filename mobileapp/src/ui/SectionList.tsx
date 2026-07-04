@@ -13,13 +13,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import {Agent, StatusName, agentId} from '../api/types';
+import {Agent, SectionKey, agentId} from '../api/types';
 import {Lang, statusLabel} from '../i18n';
 import {AgentRow} from './AgentRow';
 import {Palette, Size, StatusColor, sections} from './theme';
 
 interface Sec {
-  status: StatusName;
+  status: SectionKey;
   count: number;
   first: boolean;
   data: Agent[];
@@ -46,8 +46,8 @@ export function SectionList({
   onPressAgent: (a: Agent) => void;
   refreshing: boolean;
   onRefresh: () => void;
-  collapsed: Set<StatusName>;
-  onToggle: (s: StatusName) => void;
+  collapsed: Set<SectionKey>;
+  onToggle: (s: SectionKey) => void;
   selectedId?: string;
   ListHeaderComponent?: React.ReactElement;
   ListEmptyComponent?: React.ReactElement;
@@ -103,7 +103,7 @@ function CollapseBar({
   lang,
   onPress,
 }: {
-  status: StatusName;
+  status: SectionKey;
   count: number;
   first: boolean;
   collapsed: boolean;

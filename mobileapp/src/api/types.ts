@@ -3,6 +3,8 @@
 // Tolerate missing fields: default status "running", source "tmux".
 
 export type StatusName = 'waiting' | 'working' | 'idle' | 'running';
+// Section grouping key: the four statuses plus the non-tmux ("Elsewhere") category.
+export type SectionKey = StatusName | 'native';
 
 export interface Agent {
   pane_id: string;
@@ -68,7 +70,7 @@ export const primary = (a: Agent): string => {
 
 // Row line 2 (dim): where it lives — "session · %pane", or the native terminal.
 export const secondary = (a: Agent): string => {
-  if (isNative(a)) return a.terminal || '';
+  if (isNative(a)) return a.terminal || a.agent; // no terminal locator → the agent name
   const base = a.session || a.loc;
   return a.pane_id ? `${base} · ${a.pane_id}` : base;
 };

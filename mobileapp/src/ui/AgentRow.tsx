@@ -73,6 +73,11 @@ export function AgentRow({
           <Text style={[styles.primary, {color: pal.fg}]} numberOfLines={1}>
             {primary(agent)}
           </Text>
+          {agent.source === 'native' && (
+            <View style={[styles.branchChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              <Text style={[styles.branchText, {color: pal.fg3}]} numberOfLines={1}>native</Text>
+            </View>
+          )}
           {agent.latest && (
             <Text style={[styles.latest, {color: StatusColor.idle}]} numberOfLines={1}>
               {lang === 'zh' ? '最近完成' : 'latest'}
@@ -93,10 +98,10 @@ export function AgentRow({
         </View>
       </View>
 
-      {/* right column: time + chevron */}
+      {/* right column: time + chevron (native rows aren't jump targets → no chevron) */}
       <View style={styles.right}>
         {!!time && <Text style={[styles.time, {color: pal.fg3}]}>{time}</Text>}
-        <Text style={[styles.chev, {color: pal.fg3}]}>›</Text>
+        {agent.source !== 'native' && <Text style={[styles.chev, {color: pal.fg3}]}>›</Text>}
       </View>
     </TouchableOpacity>
   );

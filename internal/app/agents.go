@@ -602,19 +602,20 @@ func nativePanes(tmuxPanes []agentPane, profiles []agentProfile, now int64) []ag
 		}
 		name, icon := displayForKey(r.Agent, profiles)
 		project, branch := gitInfo(r.Cwd)
-		// idle "finished N ago" from the session's own last message (tmux-free),
-		// like tmux idle rows; working/waiting date from the last hook update.
+		// The session's own last logged message (tmux-free); 0 when nothing is
+		// persisted yet. Drives the idle "finished N ago" AND gates Adopt: a session
+		// with no on-disk conversation can't be resumed ("No conversation found"), so
+		// don't offer Adopt for it.
+		lastMsg := transcript.LastMessageTime(r.Agent, r.SessionID)
 		since := r.UpdatedAt
-		if r.State == "idle" {
-			if t := transcript.LastMessageTime(r.Agent, r.SessionID); t > 0 {
-				since = t
-			}
+		if r.State == "idle" && lastMsg > 0 {
+			since = lastMsg
 		}
 		out = append(out, agentPane{
 			agent: name, status: r.State, source: "native",
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, since: since,
-			sessionID: r.SessionID, adoptable: resume.Resumable(r.Agent),
+			sessionID: r.SessionID, adoptable: resume.Resumable(r.Agent) && lastMsg > 0,
 		})
 	}
 	return out
