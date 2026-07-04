@@ -83,13 +83,19 @@ env-doctor, session-restore, remote-access, push-notifications, mobile-app).
   `NotificationManager` drains & posts) is the notification channel — there is no
   terminal-notifier/osascript fallback (notifications need the app running).
 - **i18n:** every user-facing string is en+zh via `internal/i18n` and `GTMUX_LANG`.
-- **Scope (decided):** gtmux focuses on the **tmux + agent** workflow — it only
-  detects agents running **inside tmux** (`agents` scans `tmux list-panes`).
-  Agents started directly in a terminal tab (no tmux) are intentionally **out of
-  scope** for now. The `source/project/terminal/tab` fields + `focus
-  --terminal/--tab` are latent groundwork kept for a possible future expansion —
-  do NOT build the native-detection scanner without an explicit decision to widen
-  scope (status + jump both need per-terminal tab-title reading).
+- **Scope (decided):** gtmux focuses on the **tmux + agent** workflow. Its rich
+  view/control surface is **tmux-only** (`agents` scans `tmux list-panes`; focus &
+  send need a pane). **Non-tmux ("native") agent sessions are now SENSED**
+  (read-only): a hook that fires with no `$TMUX_PANE` records the session by id in
+  `internal/native`, and the radar shows it as a `source:"native"` row — sense-only
+  (no view/jump/send), in the menu-bar's "Elsewhere / 不在 tmux" category. Resumable
+  ones can be **adopted into tmux** (`gtmux adopt <session_id>` resumes the
+  conversation in a fresh tmux session). See `openspec/changes/native-agent-sessions`
+  + memory `native-agent-sessions`. Still OUT of scope: a live screen/preview or
+  in-place input for native sessions, and detecting agents that install **no** gtmux
+  hook (no hook = no signal). The per-terminal tab-title scanner (needed for native
+  *jump*) remains deferred — `source/terminal/tab` + `focus --terminal/--tab` are
+  latent groundwork for it.
 - **Terminal coupling** goes through the `internal/terminal.Terminal` interface
   (`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`); `internal/ghostty.Driver`
   and `terminal.iterm2` are the two impls. `terminal.Active()` resolves the host

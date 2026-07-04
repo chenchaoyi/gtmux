@@ -39,6 +39,6 @@
 
 ## 7. Docs, specs, gate
 
-- [ ] 7.1 Update `docs/design` + CLAUDE.md Scope note (native detection now IN scope as read-only sense + adopt; live view/input still out).
+- [x] 7.1 Update `docs/design` + CLAUDE.md Scope note (native detection now IN scope as read-only sense + adopt; live view/input still out).
 - [x] 7.2 `make check` + `swift build -c release`; then `openspec validate --specs --strict` after sync/archive.
 - [ ] 7.3 Sync/archive the change into `openspec/specs/` when landed.
