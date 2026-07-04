@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 store: store, l10n: l10n,
                 onJump: { [weak self] in self?.jump($0) },
                 onAction: { [weak self] in self?.perform($0) },
+                onAdopt: { [weak self] in self?.adopt($0) },
                 onSend: { [weak self] in self?.sendReply($0, $1) },
                 onClose: { [weak self] in self?.popover.performClose(nil) }))
 
@@ -154,6 +155,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func jump(_ agent: Agent) {
         popover.performClose(nil)
         GtmuxCLI.spawn(agent.jumpArgs())
+    }
+
+    /// Adopt a sensed non-tmux session into tmux: confirm the duplicate-instance
+    /// caveat, then `gtmux adopt <session_id>` (resumes the conversation in a fresh
+    /// tmux session + terminal tab). The original process is left running.
+    private func adopt(_ agent: Agent) {
+        guard agent.adoptable, !agent.sessionID.isEmpty else { return }
+        let a = NSAlert()
+        a.messageText = l10n.tr("Adopt into tmux?", "收编进 tmux？")
+        a.informativeText = l10n.tr(
+            "This resumes the conversation in a new tmux session. Close the original terminal afterwards — the resumed session takes over.",
+            "这会在新的 tmux session 里恢复该对话。之后请关闭原终端 —— 恢复的会话会接管。")
+        a.addButton(withTitle: l10n.tr("Adopt", "收编"))
+        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
+        if a.runModal() == .alertFirstButtonReturn {
+            GtmuxCLI.spawn(["adopt", agent.sessionID])
+            popover.performClose(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.store.refresh() }
+        }
     }
 
     /// In-place reply (A1/A3): send the chosen option to the pane and re-poll soon

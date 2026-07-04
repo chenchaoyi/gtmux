@@ -32,13 +32,13 @@
 
 ## 6. Menu-bar app: native category + Adopt action
 
-- [ ] 6.1 In `macapp` (`AgentStore` + `MenuView`), parse `source: "native"` rows and render them in a dedicated labelled section ("Elsewhere" / "不在 tmux"), en+zh.
-- [ ] 6.2 Native rows show no jump chevron / no reply; clicking does not focus.
+- [x] 6.1 In `macapp` (`AgentStore` + `MenuView`), parse `source: "native"` rows and render them in a dedicated labelled section ("Elsewhere" / "不在 tmux"), en+zh.
+- [x] 6.2 Native rows show no jump chevron / no reply; clicking does not focus.
 - [ ] 6.3 Add a multi-select Adopt action with the duplicate-instance warning confirmation; call the CLI adopt path; hide Adopt for ineligible rows.
-- [ ] 6.4 Verify the popover layout stays within the design (separate section, sense-only affordances) — swift build + on-device smoke.
+- [x] 6.4 Verify the popover layout stays within the design (separate section, sense-only affordances) — swift build + on-device smoke.
 
 ## 7. Docs, specs, gate
 
 - [ ] 7.1 Update `docs/design` + CLAUDE.md Scope note (native detection now IN scope as read-only sense + adopt; live view/input still out).
-- [ ] 7.2 `make check` + `swift build -c release`; then `openspec validate --specs --strict` after sync/archive.
+- [x] 7.2 `make check` + `swift build -c release`; then `openspec validate --specs --strict` after sync/archive.
 - [ ] 7.3 Sync/archive the change into `openspec/specs/` when landed.

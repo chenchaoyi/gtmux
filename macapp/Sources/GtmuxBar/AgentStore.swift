@@ -56,9 +56,15 @@ struct Agent: Identifiable, Equatable {
     var activityAt = 0 // epoch seconds of last activity (for relative time); 0 = unknown
     var since = 0      // epoch seconds the current state began (for a "working 7m" duration)
     var icon = ""      // identity icon hint: a .app path (→ that app's real icon) or an image path
+    // native (source=="native") only: the agent session id (adopt key) + whether
+    // it can be adopted into tmux (resumable).
+    var sessionID = ""
+    var adoptable = false
 
     var id: String {
-        paneID.isEmpty ? "\(source):\(terminal):\(tab):\(project):\(agent)" : paneID
+        if !paneID.isEmpty { return paneID }
+        if isNative && !sessionID.isEmpty { return "native:\(sessionID)" }
+        return "\(source):\(terminal):\(tab):\(project):\(agent)"
     }
     var state: Status { Status(rawValue: status) ?? .running }
     var isNative: Bool { source == "native" }
@@ -102,12 +108,14 @@ extension Agent: Decodable {
         activityAt = (try? c.decode(Int.self, forKey: .activityAt)) ?? 0
         since = (try? c.decode(Int.self, forKey: .since)) ?? 0
         icon = s(.icon)
+        sessionID = s(.sessionID); adoptable = b(.adoptable)
     }
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity
-        case source, project, terminal, tab, icon, since
+        case source, project, terminal, tab, icon, since, adoptable
         case activityAt = "activity_at"
+        case sessionID = "session_id"
     }
 }
 
@@ -161,7 +169,9 @@ final class AgentStore: ObservableObject {
         var out: [(Status, [Agent])] = []
         for st in [Status.waiting, .working, .idle, .running] {
             if waitingOnly && st != .waiting { continue }
-            let group = agents.filter { $0.state == st && matches($0, query) }
+            // Native (non-tmux) sessions are their own category, not mixed into the
+            // tmux status groups.
+            let group = agents.filter { $0.state == st && !$0.isNative && matches($0, query) }
             // Finished (idle): most-recently-finished first (its `since` is frozen at
             // last activity, so order stays stable). Other sections: by name.
             let rows = st == .idle
@@ -170,6 +180,13 @@ final class AgentStore: ObservableObject {
             if !rows.isEmpty { out.append((st, rows)) }
         }
         return out
+    }
+
+    /// Sensed non-tmux (native) sessions — their own category, most-recent first.
+    /// Sense-only: no jump/reply; adoptable ones can be pulled into tmux.
+    func nativeSessions(query: String) -> [Agent] {
+        agents.filter { $0.isNative && matches($0, query) }
+            .sorted { $0.since > $1.since }
     }
 
     /// Flattened, ordered agent list (for keyboard navigation).
