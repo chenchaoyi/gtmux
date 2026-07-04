@@ -429,3 +429,33 @@ func TestLoadUnknownAgentOrMissing(t *testing.T) {
 		t.Fatalf("empty sessionID should be (nil,nil), got %v %v", turns, err)
 	}
 }
+
+// TestLastActivityForCwd: the newest session-log mtime for a cwd, in unix
+// SECONDS (not nanoseconds), with the '/'→'-' project-dir encoding.
+func TestLastActivityForCwd(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cwd := "/Users/x/proj"
+	dir := filepath.Join(home, ".claude", "projects", "-Users-x-proj")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := filepath.Join(dir, "old.jsonl")
+	newer := filepath.Join(dir, "new.jsonl")
+	for _, p := range []string{old, newer} {
+		if err := os.WriteFile(p, []byte("{}\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := time.Unix(1700000000, 0)
+	os.Chtimes(old, time.Unix(1600000000, 0), time.Unix(1600000000, 0))
+	os.Chtimes(newer, want, want)
+
+	got := LastActivityForCwd(cwd)
+	if got != want.Unix() {
+		t.Errorf("LastActivityForCwd = %d, want the newest log's mtime in SECONDS %d", got, want.Unix())
+	}
+	if LastActivityForCwd("/no/such/cwd") != 0 {
+		t.Error("unknown cwd should return 0")
+	}
+}
