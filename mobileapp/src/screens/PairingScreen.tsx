@@ -116,12 +116,13 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
           <TouchableOpacity
             testID={TestIds.pairing.scan}
             accessibilityLabel={TestIds.pairing.scan}
-            style={[styles.qrBtn, {borderColor: pal.divider, backgroundColor: pal.surface}]}
+            activeOpacity={0.85}
+            style={styles.qrBtn}
             onPress={() => {
               setError('');
               setScanning(true);
             }}>
-            <Text style={[styles.qrText, {color: pal.fg2}]}>▦  {t('scanQR')}</Text>
+            <Text style={styles.qrText}>◉  {t('scanQR')}</Text>
           </TouchableOpacity>
 
           <Text style={[styles.or, {color: pal.fg3}]}>—— {t('manualEntry')} ——</Text>
@@ -190,13 +191,14 @@ const styles = StyleSheet.create({
   brand: {fontSize: 15, fontWeight: '700', opacity: 0.6, marginTop: 14, marginBottom: 4},
   title: {fontSize: 28, fontWeight: '700', marginBottom: 10},
   subtitle: {fontSize: 13.5, lineHeight: 19, marginBottom: 26},
+  // The primary path — a filled accent button so it clearly reads as tappable.
   qrBtn: {
-    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: '#06B6D4',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  qrText: {fontSize: 16, fontWeight: '600'},
+  qrText: {fontSize: 16, fontWeight: '700', color: '#fff'},
   or: {textAlign: 'center', marginVertical: 22, fontSize: 12},
   label: {fontSize: 12, fontWeight: '600', marginBottom: 6},
   input: {
