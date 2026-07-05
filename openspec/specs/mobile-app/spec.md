@@ -6,9 +6,7 @@ A phone app (the third surface) to monitor your tmux coding agents remotely, get
 lock-screen push when one needs you, and — gated only by the pairing bearer token —
 type back into a pane to unstick or steer an agent. Its look mirrors the menu-bar
 app, so all three surfaces read as one product.
-
 ## Requirements
-
 ### Requirement: Pair with a Mac
 
 The system SHALL let the user pair a Mac by host+token (and, later, a scanned
@@ -94,3 +92,15 @@ effect of their input quickly; it MAY optimistically echo a sent prompt.
 
 - **WHEN** a pane is waiting on a numbered prompt and the user taps a choice
 - **THEN** that choice is sent via `/api/send` and the pane refreshes promptly
+
+### Requirement: Mobile shows native sessions in an "Elsewhere" section
+The mobile app SHALL group `source: "native"` sessions into their own "Elsewhere / 不在 tmux" section, separate from the tmux status groups. These rows are sense-only: they carry a `native` tag, no jump chevron, and tapping one SHALL NOT open a terminal mirror (there is none). Moving a native session into tmux stays a menu-bar/CLI action; the mobile app is display-only for the native category.
+
+#### Scenario: Native section on mobile
+- **WHEN** the phone polls the radar and native sessions are present
+- **THEN** they SHALL appear in a dedicated "Elsewhere" section, marked non-tappable (no terminal), distinct from the tmux groups
+
+#### Scenario: Tapping a native row does nothing
+- **WHEN** the user taps a native row on mobile
+- **THEN** the app SHALL NOT navigate to a terminal/detail view for it
+

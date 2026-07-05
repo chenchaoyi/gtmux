@@ -1,5 +1,8 @@
-## ADDED Requirements
+# native-agent-sessions Specification
 
+## Purpose
+TBD - created by archiving change native-agent-sessions. Update Purpose after archive.
+## Requirements
 ### Requirement: Sense agent sessions running outside tmux
 The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}`, where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes.
 
@@ -37,21 +40,22 @@ The system SHALL remove a native-session record when the agent signals session e
 - **WHEN** a native record has not been updated within the staleness grace and no live signal exists
 - **THEN** the radar SHALL omit it
 
-### Requirement: Adopt a native session into tmux
-The system SHALL provide an action to "adopt" a native session into tmux by spawning a fresh tmux session/window that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. Adoption SHALL be offered only for sessions that are resumable and whose `session_id` was captured; other native sessions SHALL be detect-only. Adoption SHALL NOT reparent or kill the original native process.
+### Requirement: Move a native session into tmux
+The system SHALL provide a "Move to tmux" action that brings a native session under tmux by spawning a fresh tmux session — named after the agent's project (cwd basename) — that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. It SHALL be offered ONLY for an **idle** native session that is resumable and whose `session_id` was captured AND whose conversation exists on disk; others SHALL be detect-only. After the resumed session is up, the system SHALL exit the ORIGINAL agent process (best-effort, guarded against pid reuse) so there is one live instance; it does not reparent the process or close the original terminal tab.
 
-#### Scenario: Adopt a resumable native session
-- **WHEN** the user adopts a native session whose agent is resumable and whose `session_id` is known
-- **THEN** the system SHALL open a new tmux session/window running the agent's resume command for that `session_id`, and the adopted session SHALL thereafter be represented by the tmux row (its native row drops out)
+#### Scenario: Move an idle resumable native session
+- **WHEN** the user moves an idle native session whose agent is resumable, whose `session_id` is known, and whose conversation is on disk
+- **THEN** the system SHALL open a new tmux session (named after the project) running the agent's resume command, SHALL exit the original agent process, and the session SHALL thereafter be represented by the tmux row (its native row drops out)
 
-#### Scenario: Adopt is unavailable for non-resumable sessions
-- **WHEN** a native session's agent is not resumable or its `session_id` was not captured
-- **THEN** the system SHALL NOT offer Adopt for it and SHALL still list it as sense-only
+#### Scenario: Move is unavailable for working / non-resumable / unpersisted sessions
+- **WHEN** a native session is mid-turn (working), or its agent isn't resumable, or it has no on-disk conversation
+- **THEN** the system SHALL NOT offer Move for it and SHALL still list it as sense-only
 
-#### Scenario: Multi-select adoption
-- **WHEN** the user selects multiple native sessions and adopts them
-- **THEN** the system SHALL resume each into its own tmux window/session
+#### Scenario: The CLI accepts multiple sessions
+- **WHEN** `gtmux adopt` is invoked with multiple session ids
+- **THEN** it SHALL move each into its own tmux session
 
-#### Scenario: Duplicate-instance hazard is surfaced
-- **WHEN** the user initiates adoption
-- **THEN** the system SHALL warn that the original terminal should be closed because the resumed tmux session takes over the same conversation, and SHALL NOT terminate the original process on the user's behalf
+#### Scenario: The original process is exited, not the terminal
+- **WHEN** a move completes
+- **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it), leaving the now-empty original terminal tab for the user to close
+
