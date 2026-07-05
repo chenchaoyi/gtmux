@@ -2,6 +2,7 @@ package app
 
 import (
 	"runtime"
+	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -27,6 +28,9 @@ func cmdNew(args []string) int {
 		}
 	}
 
+	// tmux uses '.' and ':' as target separators (session:window.pane), so a name
+	// carrying them can't be addressed — swap them for '-'.
+	name = strings.NewReplacer(".", "-", ":", "-").Replace(strings.TrimSpace(name))
 	// -P -F prints the created session's name (so we know tmux's auto-name).
 	create := []string{"new-session", "-d", "-P", "-F", "#{session_name}"}
 	if name != "" {
