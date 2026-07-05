@@ -190,13 +190,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func perform(_ action: MenuAction) {
         switch action {
         case .restore:    GtmuxCLI.spawn(["restore"])
-        case .newSession: GtmuxCLI.spawn(["new"])
+        case .newSession: newSession() // manages its own popover close + prompt
         case .preferences: PreferencesController.shared.show(l10n: l10n)
         case .pairPhone:  PairingController.shared.show(l10n: l10n)
         case .quit:       NSApp.terminate(nil)
         }
-        if action != .quit && action != .preferences && action != .pairPhone {
+        if action != .quit && action != .preferences && action != .pairPhone && action != .newSession {
             popover.performClose(nil)
+        }
+    }
+
+    /// New session with a name prompt: close the (transient) popover first, then ask
+    /// for an optional session name and run `gtmux new [name]` (blank → tmux
+    /// auto-names). The name is sanitized server-side to tmux's rules.
+    private func newSession() {
+        popover.performClose(nil)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            let a = NSAlert()
+            a.messageText = self.l10n.tr("New tmux session", "新建 tmux session")
+            a.informativeText = self.l10n.tr("Name it, or leave blank to auto-name.",
+                                             "取个名字，留空则自动命名。")
+            let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+            field.placeholderString = self.l10n.tr("session name (optional)", "session 名（可选）")
+            a.accessoryView = field
+            a.addButton(withTitle: self.l10n.tr("Create", "创建"))
+            a.addButton(withTitle: self.l10n.tr("Cancel", "取消"))
+            NSApp.activate(ignoringOtherApps: true)
+            a.window.initialFirstResponder = field
+            if a.runModal() == .alertFirstButtonReturn {
+                let name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                GtmuxCLI.spawn(name.isEmpty ? ["new"] : ["new", name])
+            }
         }
     }
 
