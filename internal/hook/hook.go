@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -135,6 +137,47 @@ func decide(event string, activePresent bool) decision {
 	default:
 		return decision{}
 	}
+}
+
+// agentAncestorPID walks up from this hook process to the agent process that
+// spawned it — skipping shells + gtmux itself — so a later "move to tmux" can
+// exit the original once its conversation is resumed under tmux. Returns
+// (pid, comm); (0, "") when it can't tell (then we don't touch any process).
+func agentAncestorPID() (int, string) {
+	pid := os.Getpid()
+	for i := 0; i < 8; i++ {
+		ppid, comm := psInfo(pid)
+		if i > 0 && comm != "" && !isShellComm(comm) {
+			return pid, comm // an ancestor that isn't a shell/gtmux → the agent
+		}
+		if ppid <= 1 {
+			return 0, ""
+		}
+		pid = ppid
+	}
+	return 0, ""
+}
+
+// psInfo returns a pid's parent pid + short command name (macOS/Linux `ps`).
+func psInfo(pid int) (ppid int, comm string) {
+	out, err := exec.Command("ps", "-o", "ppid=,comm=", "-p", strconv.Itoa(pid)).Output()
+	if err != nil {
+		return 0, ""
+	}
+	f := strings.Fields(strings.TrimSpace(string(out)))
+	if len(f) < 2 {
+		return 0, ""
+	}
+	ppid, _ = strconv.Atoi(f[0])
+	return ppid, filepath.Base(f[len(f)-1])
+}
+
+func isShellComm(comm string) bool {
+	switch strings.TrimPrefix(comm, "-") {
+	case "sh", "bash", "zsh", "dash", "fish", "gtmux", "login", "env", "tmux":
+		return true
+	}
+	return false
 }
 
 // nativeStateFor maps a canonical lifecycle event to the state stored for a
@@ -328,9 +371,10 @@ func Run(stdin io.Reader, args []string) int {
 		if st, remove := nativeStateFor(event); remove {
 			native.Remove(agentSession)
 		} else if st != "" {
+			pid, comm := agentAncestorPID()
 			_ = native.Save(native.Record{
 				Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
-				State: st, UpdatedAt: time.Now().Unix(),
+				State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
 			})
 		}
 	}

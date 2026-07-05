@@ -163,11 +163,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func adopt(_ agent: Agent) {
         guard agent.adoptable, !agent.sessionID.isEmpty else { return }
         let a = NSAlert()
-        a.messageText = l10n.tr("Adopt into tmux?", "收编进 tmux？")
+        a.messageText = l10n.tr("Move into tmux?", "转入 tmux？")
         a.informativeText = l10n.tr(
-            "This resumes the conversation in a new tmux session. Close the original terminal afterwards — the resumed session takes over.",
-            "这会在新的 tmux session 里恢复该对话。之后请关闭原终端 —— 恢复的会话会接管。")
-        a.addButton(withTitle: l10n.tr("Adopt", "收编"))
+            "Resumes the conversation in a new tmux session and exits the original process. The original terminal tab stays open (empty).",
+            "会在新的 tmux session 里恢复该对话，并退出原来的进程。原终端标签页会留着（空的）。")
+        a.addButton(withTitle: l10n.tr("Move to tmux", "转入 tmux"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {
             GtmuxCLI.spawn(["adopt", agent.sessionID])

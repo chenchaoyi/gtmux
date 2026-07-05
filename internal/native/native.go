@@ -30,6 +30,11 @@ type Record struct {
 	Cwd       string `json:"cwd,omitempty"`
 	State     string `json:"state"`     // working | waiting | idle
 	UpdatedAt int64  `json:"updatedAt"` // unix seconds, last hook update
+	// PID/Comm identify the agent PROCESS that fired the hook, so a "move to tmux"
+	// can exit the original once the resumed session is up. Comm guards against PID
+	// reuse (kill only if the pid is still that command). 0 = unknown (don't kill).
+	PID  int    `json:"pid,omitempty"`
+	Comm string `json:"comm,omitempty"`
 }
 
 // Dir is where per-session native records live.
