@@ -41,16 +41,23 @@ function SwipeRow({
     open.current = to;
     Animated.spring(tx, {toValue: to, useNativeDriver: true, bounciness: 0, speed: 20}).start();
   };
+  const settle = (dx: number) => spring(open.current + dx < -DELETE_W / 2 ? -DELETE_W : 0);
   const pan = useRef(
     PanResponder.create({
+      // Claim as soon as the drag is clearly horizontal…
       onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
+      // …and DON'T let the enclosing ScrollView steal it mid-swipe (that was the
+      // "slides half-out then snaps back" jitter).
+      onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (_, g) => {
         const next = Math.min(0, Math.max(-DELETE_W, open.current + g.dx));
         tx.setValue(next);
       },
-      onPanResponderRelease: (_, g) => spring(open.current + g.dx < -DELETE_W / 2 ? -DELETE_W : 0),
-      onPanResponderTerminate: () => spring(open.current),
+      onPanResponderRelease: (_, g) => settle(g.dx),
+      onPanResponderTerminate: (_, g) => settle(g.dx),
     }),
   ).current;
   return (

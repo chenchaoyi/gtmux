@@ -74,10 +74,13 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   // bottom. `collapse` 0 = shown, 1 = hidden; `headerH` is measured once for the
   // height animation. Driven by ChatView/NativeTerm's onLiveEdge.
   const collapse = useRef(new Animated.Value(0)).current;
+  const lastEdge = useRef(true); // last atBottom → animate only on a real change
   const [headerH, setHeaderH] = useState(0);
   const onLiveEdge = useCallback(
     (atBottom: boolean) => {
-      Animated.timing(collapse, {toValue: atBottom ? 0 : 1, duration: 160, useNativeDriver: false}).start();
+      if (atBottom === lastEdge.current) return; // fires every scroll frame — dedupe so
+      lastEdge.current = atBottom; // one clean animation runs (no restart-creep)
+      Animated.timing(collapse, {toValue: atBottom ? 0 : 1, duration: 200, useNativeDriver: false}).start();
     },
     [collapse],
   );
@@ -111,6 +114,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
     if (mode === 'chat') setSeenChat(true);
     else setSeenTerm(true);
     collapse.setValue(0); // reveal the header when switching Chat↔Terminal
+    lastEdge.current = true;
   }, [mode, collapse]);
 
   useEffect(() => {
@@ -303,8 +307,11 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           }}>
         <View
           onLayout={e => {
+            // Measure ONCE at natural height (collapse starts at 0=shown). Never
+            // re-measure — a layout during collapse would clobber it with a shrunken
+            // value and the header would only re-expand partway.
             const h = e.nativeEvent.layout.height;
-            if (h > 0 && h !== headerH) setHeaderH(h);
+            if (headerH === 0 && h > 0) setHeaderH(h);
           }}
           style={[styles.header, {borderBottomColor: pal.divider}]}>
           {onBack && (
