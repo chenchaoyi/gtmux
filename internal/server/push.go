@@ -217,14 +217,20 @@ func (p *PushManager) pushBadge(waiting int) {
 	}
 }
 
-// Test sends a test notification to every registered device (ignores kind prefs).
-// Returns the number of devices it tried.
-func (p *PushManager) Test(title, body string) int {
+// Test sends a REALISTIC sample notification to every registered device so the
+// settings screen shows the ACTUAL banner — same kind ("waiting" → the "needs you"
+// style + kind badge via the Notification Service Extension), server-name subtitle,
+// and localized title/body as a genuine alert — not a bare "test" banner. Ignores
+// kind prefs. Returns the number of devices it tried.
+func (p *PushManager) Test() int {
+	a := Alert{Kind: "waiting", Agent: "Claude Code", Task: "npm test · Bash", Pane: "gtmux-test"}
+	title, body := p.copy(a)
 	toks := p.Tokens()
 	for _, d := range toks {
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform,
-			Title: title, Body: body, Subtitle: p.serverName, Pane: "", Kind: "test",
+			Title: title, Body: body, Subtitle: p.serverName,
+			Pane: a.Pane, Kind: a.Kind, CollapseID: a.Pane,
 		})
 	}
 	return len(toks)

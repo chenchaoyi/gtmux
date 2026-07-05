@@ -486,7 +486,7 @@ func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
 		return
 	}
-	n := s.deps.Push.Test("gtmux", "Test notification ✅")
+	n := s.deps.Push.Test()
 	writeJSON(w, http.StatusOK, map[string]int{"sent": n})
 }
 
