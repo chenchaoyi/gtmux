@@ -6,6 +6,7 @@
 
 import React, {useRef} from 'react';
 import {
+  Alert,
   Animated,
   Modal,
   PanResponder,
@@ -20,6 +21,18 @@ import {Palette} from './theme';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 const DELETE_W = 78; // revealed delete-button width
+
+// Clearing ALL history is destructive → confirm first.
+function confirmClear(lang: Lang, onClear: () => void) {
+  Alert.alert(
+    lang === 'zh' ? '清空全部历史？' : 'Clear all history?',
+    lang === 'zh' ? '此操作不可撤销。' : 'This cannot be undone.',
+    [
+      {text: lang === 'zh' ? '取消' : 'Cancel', style: 'cancel'},
+      {text: lang === 'zh' ? '清空' : 'Clear', style: 'destructive', onPress: onClear},
+    ],
+  );
+}
 
 // SwipeRow: horizontal drag reveals a Delete action; a tap still passes through to
 // the row (onMoveShouldSet only claims clearly-horizontal gestures, so vertical
@@ -102,7 +115,7 @@ export function HistoryModal({
           <View style={styles.head}>
             <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '历史' : 'History'}</Text>
             {history.length > 0 && (
-              <TouchableOpacity onPress={onClear} hitSlop={hit}>
+              <TouchableOpacity onPress={() => confirmClear(lang, onClear)} hitSlop={hit}>
                 <Text style={[styles.clear, {color: pal.fg3}]}>{lang === 'zh' ? '清空' : 'Clear'}</Text>
               </TouchableOpacity>
             )}
