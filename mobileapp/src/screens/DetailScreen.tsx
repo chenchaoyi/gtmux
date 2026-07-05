@@ -5,8 +5,9 @@
 // wrap↔scroll toggle, and a jump-to-bottom FAB. "Focus on Mac" lives in the top
 // bar (POST /api/focus), not the input area.
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -68,6 +69,18 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
   const [loading, setLoading] = useState(true);
+  // Auto-hide the header info block to reclaim space while you browse history /
+  // scrollback (i.e. away from the live tail); reveal it when you flick back to the
+  // bottom. `collapse` 0 = shown, 1 = hidden; `headerH` is measured once for the
+  // height animation. Driven by ChatView/NativeTerm's onLiveEdge.
+  const collapse = useRef(new Animated.Value(0)).current;
+  const [headerH, setHeaderH] = useState(0);
+  const onLiveEdge = useCallback(
+    (atBottom: boolean) => {
+      Animated.timing(collapse, {toValue: atBottom ? 0 : 1, duration: 160, useNativeDriver: false}).start();
+    },
+    [collapse],
+  );
   const [fontIdx, setFontIdx] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
@@ -97,7 +110,8 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   useEffect(() => {
     if (mode === 'chat') setSeenChat(true);
     else setSeenTerm(true);
-  }, [mode]);
+    collapse.setValue(0); // reveal the header when switching Chat↔Terminal
+  }, [mode, collapse]);
 
   useEffect(() => {
     let alive = true;
@@ -260,13 +274,13 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
     ),
-    [live, lines, fontSize, pal, lang, turns, chatLoaded, pendingPrompt, fontPref],
+    [live, lines, fontSize, pal, lang, turns, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
   );
   const termEl = useMemo(
-    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} />,
-    [text, fontSize, cursor, theme, fontPref],
+    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} onLiveEdge={onLiveEdge} />,
+    [text, fontSize, cursor, theme, fontPref, onLiveEdge],
   );
 
   return (
@@ -278,9 +292,21 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       {/* keep the top safe-area inset even in full-screen so the floating control
           isn't hidden under the notch / Dynamic Island */}
       <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* header: back · badge · title/sub · Focus on Mac (hidden in full-screen) */}
+      {/* header: back · badge · title/sub. Auto-collapses to reclaim space while you
+          browse history/scrollback; reveals on flicking back to the live tail. */}
       {!fullscreen && (
-        <View style={[styles.header, {borderBottomColor: pal.divider}]}>
+        <Animated.View
+          style={{
+            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+            height: headerH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [headerH, 0]}) : undefined,
+            overflow: 'hidden',
+          }}>
+        <View
+          onLayout={e => {
+            const h = e.nativeEvent.layout.height;
+            if (h > 0 && h !== headerH) setHeaderH(h);
+          }}
+          style={[styles.header, {borderBottomColor: pal.divider}]}>
           {onBack && (
             <TouchableOpacity
               testID={TestIds.detail.back}
@@ -306,6 +332,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             </Text>
           </View>
         </View>
+        </Animated.View>
       )}
 
       {/* B1: 对话 ↔ 终端 segmented (remembered per pane) */}

@@ -40,6 +40,7 @@ interface Props {
   cursor?: PaneCursor;
   theme?: TermTheme;
   fontPref?: string; // accepted for API-parity with XtermView; native uses Menlo
+  onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 
 const DEF_BG = '#17171a';
@@ -58,7 +59,7 @@ const MAX_LINES = 350; // dual-layer (color + selectable overlay) makes each lin
 // a mode switch (full history lives in Chat mode). The bottom is preserved so the
 // bottom-anchored cursor still maps.
 
-export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
@@ -157,12 +158,14 @@ export function NativeTerm({text, fontSize = 12, cursor, theme}: Props) {
     const bottom = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
     stick.current = bottom;
     setAtBottom(bottom);
+    onLiveEdge?.(bottom);
   };
   // Snap back to the live tail: resume following, flush any frozen snapshot (so you
   // land on the newest output, not a stale frame), and scroll down.
   const jumpToBottom = () => {
     stick.current = true;
     setAtBottom(true);
+    onLiveEdge?.(true);
     flushPending();
     ref.current?.scrollToEnd({animated: true});
   };
