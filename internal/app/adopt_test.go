@@ -5,10 +5,10 @@ import "testing"
 func TestAdoptSessionName(t *testing.T) {
 	cases := map[string]string{
 		"/Users/ccy/meituan/chenchaoyi/diting-mobile": "diting-mobile",
-		"/Users/ccy/my.proj":                          "my-proj",  // '.' → '-'
-		"/Users/ccy/a b":                              "a-b",      // space → '-'
-		"/tmp/":                                       "tmp",      // trailing slash
-		"/":                                           "",         // nothing usable
+		"/Users/ccy/my.proj":                          "my-proj", // '.' → '-'
+		"/Users/ccy/a b":                              "a-b",     // space → '-'
+		"/tmp/":                                       "tmp",     // trailing slash
+		"/":                                           "",        // nothing usable
 		"":                                            "",
 	}
 	for cwd, want := range cases {
