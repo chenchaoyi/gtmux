@@ -42,6 +42,7 @@ interface Props {
   // Font-family config (same value the terminal uses), so chat text matches the
   // terminal font — resolved via the shared nativeFontFamily().
   fontPref?: string;
+  onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -78,7 +79,7 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt, fontPref}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt, fontPref, onLiveEdge}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -86,11 +87,14 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   const [atBottom, setAtBottom] = React.useState(true);
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
-    setAtBottom(contentSize.height - contentOffset.y - layoutMeasurement.height < 60);
+    const b = contentSize.height - contentOffset.y - layoutMeasurement.height < 60;
+    setAtBottom(b);
+    onLiveEdge?.(b);
   };
   const jumpToBottom = () => {
     scrollRef.current?.scrollToEnd({animated: true});
     setAtBottom(true);
+    onLiveEdge?.(true);
   };
 
   // Collapse/expand all agent replies — so you can scan prompts to find a turn, then
