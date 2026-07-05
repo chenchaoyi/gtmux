@@ -615,7 +615,9 @@ func nativePanes(tmuxPanes []agentPane, profiles []agentProfile, now int64) []ag
 			agent: name, status: r.State, source: "native",
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, since: since,
-			sessionID: r.SessionID, adoptable: resume.Resumable(r.Agent) && lastMsg > 0,
+			// Adopt only an IDLE, resumable session with a real on-disk conversation —
+			// never one mid-turn (working): resuming it would fight the live instance.
+			sessionID: r.SessionID, adoptable: r.State == "idle" && resume.Resumable(r.Agent) && lastMsg > 0,
 		})
 	}
 	return out

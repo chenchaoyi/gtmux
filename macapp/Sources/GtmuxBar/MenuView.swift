@@ -500,13 +500,13 @@ private struct NativeRowView: View {
             Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
             if agent.adoptable {
                 Button(action: onAdopt) {
-                    Text(l10n.tr("Adopt", "收编"))
+                    Text(l10n.tr("Move to tmux", "转入 tmux"))
                         .font(Theme.Font.footer).fontWeight(.semibold)
                         .foregroundStyle(Theme.Status.working)
                         .padding(.horizontal, 7).padding(.vertical, 3)
                         .background(RoundedRectangle(cornerRadius: 5).fill(Theme.Status.working.opacity(0.14)))
                         .contentShape(Rectangle())
-                }.buttonStyle(.plain).help(l10n.tr("Resume this session in tmux", "在 tmux 里恢复此会话"))
+                }.buttonStyle(.plain).help(l10n.tr("Resume this session in a new tmux session", "在新的 tmux session 里恢复此会话"))
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 6)
