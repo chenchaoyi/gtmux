@@ -1,13 +1,73 @@
 // HistoryModal — pick a previously-sent message (MOBILE §10 toolbar "↑ 历史").
 // A light bottom sheet listing recent inputs (newest first); tap to load it back
-// into the composer for editing/resending. The parent owns the list + clearing.
+// into the composer, or SWIPE a row left to reveal a Delete button (iOS-style).
+// The parent owns the list + persistence. Swipe is done with RN's own
+// PanResponder/Animated — no react-native-gesture-handler (bare RN, no new deps).
 
-import React from 'react';
-import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import React, {useRef} from 'react';
+import {
+  Animated,
+  Modal,
+  PanResponder,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {Lang} from '../i18n';
 import {Palette} from './theme';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
+const DELETE_W = 78; // revealed delete-button width
+
+// SwipeRow: horizontal drag reveals a Delete action; a tap still passes through to
+// the row (onMoveShouldSet only claims clearly-horizontal gestures, so vertical
+// ScrollView scrolls and taps are untouched).
+function SwipeRow({
+  pal,
+  lang,
+  onDelete,
+  children,
+}: {
+  pal: Palette;
+  lang: Lang;
+  onDelete: () => void;
+  children: React.ReactNode;
+}) {
+  const tx = useRef(new Animated.Value(0)).current;
+  const open = useRef(0); // last settled offset (0 or -DELETE_W)
+  const spring = (to: number) => {
+    open.current = to;
+    Animated.spring(tx, {toValue: to, useNativeDriver: true, bounciness: 0, speed: 20}).start();
+  };
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+      onPanResponderMove: (_, g) => {
+        const next = Math.min(0, Math.max(-DELETE_W, open.current + g.dx));
+        tx.setValue(next);
+      },
+      onPanResponderRelease: (_, g) => spring(open.current + g.dx < -DELETE_W / 2 ? -DELETE_W : 0),
+      onPanResponderTerminate: () => spring(open.current),
+    }),
+  ).current;
+  return (
+    <View>
+      <View style={styles.deleteBg}>
+        <TouchableOpacity onPress={onDelete} hitSlop={hit} style={styles.deleteBtn}>
+          <Text style={styles.deleteText}>{lang === 'zh' ? '删除' : 'Delete'}</Text>
+        </TouchableOpacity>
+      </View>
+      <Animated.View
+        style={{transform: [{translateX: tx}], backgroundColor: pal.bg}}
+        {...pan.panHandlers}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
 
 export function HistoryModal({
   visible,
@@ -15,6 +75,7 @@ export function HistoryModal({
   pal,
   lang,
   onPick,
+  onDelete,
   onClear,
   onClose,
 }: {
@@ -23,6 +84,7 @@ export function HistoryModal({
   pal: Palette;
   lang: Lang;
   onPick: (text: string) => void;
+  onDelete: (index: number) => void;
   onClear: () => void;
   onClose: () => void;
 }) {
@@ -45,14 +107,15 @@ export function HistoryModal({
           ) : (
             <ScrollView style={styles.list} keyboardShouldPersistTaps="always">
               {history.map((h, i) => (
-                <TouchableOpacity
-                  key={`${i}-${h}`}
-                  onPress={() => onPick(h)}
-                  style={[styles.row, {borderBottomColor: pal.divider}]}>
-                  <Text style={[styles.rowText, {color: pal.fg}]} numberOfLines={2}>
-                    {h}
-                  </Text>
-                </TouchableOpacity>
+                <SwipeRow key={`${i}-${h}`} pal={pal} lang={lang} onDelete={() => onDelete(i)}>
+                  <TouchableOpacity
+                    onPress={() => onPick(h)}
+                    style={[styles.row, {borderBottomColor: pal.divider}]}>
+                    <Text style={[styles.rowText, {color: pal.fg}]} numberOfLines={2}>
+                      {h}
+                    </Text>
+                  </TouchableOpacity>
+                </SwipeRow>
               ))}
             </ScrollView>
           )}
@@ -72,4 +135,8 @@ const styles = StyleSheet.create({
   list: {marginTop: 2},
   row: {paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth},
   rowText: {fontSize: 14, lineHeight: 19},
+  // delete action sits BEHIND the row, revealed as it slides left.
+  deleteBg: {position: 'absolute', top: 0, bottom: 0, right: 0, width: DELETE_W, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EF4444'},
+  deleteBtn: {flex: 1, width: DELETE_W, alignItems: 'center', justifyContent: 'center'},
+  deleteText: {color: '#fff', fontSize: 13, fontWeight: '700'},
 });

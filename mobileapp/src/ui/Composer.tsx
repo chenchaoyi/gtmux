@@ -385,6 +385,13 @@ export function Composer({
           setHistoryOpen(false);
           openCompose();
         }}
+        onDelete={i => {
+          setHistory(h => {
+            const next = h.filter((_, idx) => idx !== i);
+            saveHistory(next);
+            return next;
+          });
+        }}
         onClear={() => {
           setHistory([]);
           saveHistory([]);
