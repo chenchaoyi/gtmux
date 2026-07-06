@@ -50,3 +50,22 @@ func TestTunnelRegSecretFallsBackToBaked(t *testing.T) {
 		t.Fatalf("tunnelRegSecret() = %q, want baked default %q", got, TunnelRegSecret)
 	}
 }
+
+// cloudflaredProtocol: default http2 (QUIC is blocked on many corp nets), env override wins.
+func TestCloudflaredProtocolDefault(t *testing.T) {
+	t.Setenv("GTMUX_TUNNEL_PROTOCOL", "")
+	if got := cloudflaredProtocol(); got != "http2" {
+		t.Fatalf("cloudflaredProtocol() = %q, want default http2", got)
+	}
+}
+
+func TestCloudflaredProtocolEnvOverride(t *testing.T) {
+	t.Setenv("GTMUX_TUNNEL_PROTOCOL", "quic")
+	if got := cloudflaredProtocol(); got != "quic" {
+		t.Fatalf("cloudflaredProtocol() = %q, want the env override quic", got)
+	}
+	t.Setenv("GTMUX_TUNNEL_PROTOCOL", "  auto  ")
+	if got := cloudflaredProtocol(); got != "auto" {
+		t.Fatalf("cloudflaredProtocol() = %q, want trimmed auto", got)
+	}
+}

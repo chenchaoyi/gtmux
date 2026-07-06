@@ -95,7 +95,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	}
 	// cloudflared with the connector token (0600 — the plist holds the token).
 	if err := writeLaunchAgent(tunnelAgentPath(), tunnelAgentLabel,
-		[]string{bin, "tunnel", "run", "--token", prov.Token},
+		[]string{bin, "tunnel", "run", "--protocol", cloudflaredProtocol(), "--token", prov.Token},
 		filepath.Join(logDir, "tunnel.log")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
