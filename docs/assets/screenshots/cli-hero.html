@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  * { margin:0; box-sizing:border-box; }
+  html,body { width:612px; height:760px; }
+  body { background:linear-gradient(135deg,#eef1f4,#e2e6ea);
+    font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif; overflow:hidden; }
+  .label { text-align:center; padding-top:46px; font-size:26px; font-weight:800; color:#17181a; letter-spacing:-.4px; }
+  .dot { display:inline-block; width:11px; height:11px; border-radius:50%; background:#06B6D4; vertical-align:middle; margin-right:11px; position:relative; top:-2px; }
+  .card { position:absolute; left:28px; right:28px; top:250px; background:#16181d; border-radius:13px;
+    box-shadow:0 24px 60px -12px rgba(20,24,33,.34),0 6px 16px rgba(0,0,0,.14); overflow:hidden; }
+  .bar { height:42px; display:flex; align-items:center; padding:0 16px; border-bottom:1px solid #24272e; }
+  .tl { width:12px; height:12px; border-radius:50%; margin-right:8px; }
+  .title { flex:1; text-align:center; color:#8b929e; font-size:12.5px; font-weight:600; margin-left:-52px; }
+  pre { margin:0; padding:22px 22px 26px; color:#c8ccd4; font:12px/1.9 'SF Mono',Menlo,monospace; white-space:pre; }
+  .g{color:#6b7280;} .r{color:#f0605f;} .c{color:#25c3d6;} .n{color:#3fce7a;} .w{color:#e6e8ec;font-weight:600;}
+</style></head><body>
+  <div class="label"><span class="dot"></span>CLI</div>
+  <div class="card">
+    <div class="bar">
+      <span class="tl" style="background:#ff5f57"></span><span class="tl" style="background:#febc2e"></span><span class="tl" style="background:#28c840"></span>
+      <span class="title">gtmux — agents</span>
+    </div>
+<pre><span class="w">gtmux agents</span> <span class="g">— 6 agents · 1 waiting · 1 working · 4 idle</span>
+
+<span class="r">⏸ waiting</span>  <span class="w">Claude Code</span>  api:0.0     permission to run tests   <span class="g">%7</span>
+<span class="c">⠿ working</span>  <span class="w">Claude Code</span>  web:0.0     refactor auth middleware  <span class="g">%11</span>
+<span class="n">✳ idle</span>     <span class="w">Claude Code</span>  worker:0.0  add retry backoff   <span class="g">%8</span>  <span class="n">✓ latest</span>
+<span class="n">✳ idle</span>     <span class="w">Codex</span>        docs:0.0    —                   <span class="g">%1</span>
+
+<span class="g">jump: gtmux focus %7</span></pre>
+  </div>
+</body></html>
