@@ -51,22 +51,67 @@ export function parsePairingQR(raw: string): PairResult {
   throw new Error('Unsupported pairing-code version.');
 }
 
+// EnrollFailure names WHY enrollment failed, so the UI can point at the right fix
+// instead of always blaming an "expired code":
+//   unreachable — the request never reached an HTTP responder (DNS/TLS/offline/
+//                 wrong address). Nothing answered.
+//   tunnelDown  — an edge/proxy answered 5xx (Cloudflare 530/1033 "tunnel error",
+//                 or 502/503/504): we reached Cloudflare but NOT the gtmux serve
+//                 behind it — the Mac's serve or tunnel is offline, code is fine.
+//   codeInvalid — the gtmux serve itself rejected the code (4xx): expired/used/typo.
+//   noToken     — serve accepted the code but the response carried no token.
+export type EnrollFailure = 'unreachable' | 'tunnelDown' | 'codeInvalid' | 'noToken';
+
+// EnrollError carries the classified failure so the screen can localize a precise,
+// actionable message (see PairingScreen). The .message stays a plain-English detail
+// (with the HTTP status) for logs.
+export class EnrollError extends Error {
+  kind: EnrollFailure;
+  constructor(kind: EnrollFailure, message: string) {
+    super(message);
+    this.kind = kind;
+    this.name = 'EnrollError';
+  }
+}
+
 // enrollDevice redeems a v2 one-time code for this device's own per-device token
 // (POST /api/enroll — unauthenticated; the code is the credential). name labels
-// this phone in the Mac's device roster.
+// this phone in the Mac's device roster. On failure it throws an EnrollError whose
+// .kind distinguishes a dead link/tunnel from a genuinely expired code, so the user
+// gets a troubleshooting direction rather than a misleading "expired".
 export async function enrollDevice(
   base: string,
   enrollCode: string,
   name: string,
 ): Promise<string> {
-  const r = await fetch(`${base}/api/enroll`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({enrollCode, name}),
-  });
-  if (!r.ok) throw new Error('Pairing code expired — get a fresh one and rescan.');
-  const j: any = await r.json();
-  if (!j?.token) throw new Error('Enrollment returned no token.');
+  let r: Response;
+  try {
+    r = await fetch(`${base}/api/enroll`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({enrollCode, name}),
+    });
+  } catch {
+    // fetch rejects only when NOTHING answered — DNS/TLS failure, no route, offline,
+    // or the address/port is wrong. Never an expired code.
+    throw new EnrollError('unreachable', 'Could not reach the server (no response).');
+  }
+  if (!r.ok) {
+    // 5xx means a proxy/edge answered but the gtmux serve behind it did not — the
+    // Mac's serve or tunnel is down (Cloudflare surfaces a dead tunnel as HTTP 530 /
+    // error 1033, gateways as 502/503/504). 4xx is the serve rejecting the code.
+    if (r.status >= 500) {
+      throw new EnrollError('tunnelDown', `Server or tunnel offline (HTTP ${r.status}).`);
+    }
+    throw new EnrollError('codeInvalid', `Pairing code rejected (HTTP ${r.status}).`);
+  }
+  let j: any;
+  try {
+    j = await r.json();
+  } catch {
+    throw new EnrollError('noToken', 'Enrollment response was not valid JSON.');
+  }
+  if (!j?.token) throw new EnrollError('noToken', 'Enrollment returned no token.');
   return String(j.token);
 }
 
