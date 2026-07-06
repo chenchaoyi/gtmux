@@ -24,6 +24,16 @@ describe('toAgent', () => {
     expect(toAgent(raw)).toEqual(raw);
   });
 
+  it('decodes the errored-idle modifier', () => {
+    const a = toAgent({pane_id: '%1', status: 'idle', error: true, error_text: 'Internal server error'});
+    expect(a.error).toBe(true);
+    expect(a.error_text).toBe('Internal server error');
+    // absent → undefined (not surfaced), status unchanged
+    const b = toAgent({pane_id: '%2', status: 'idle'});
+    expect(b.error).toBeUndefined();
+    expect(b.error_text).toBeUndefined();
+  });
+
   it('applies defaults for an empty object', () => {
     expect(toAgent({})).toEqual({
       pane_id: '',

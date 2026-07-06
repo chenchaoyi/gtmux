@@ -10,6 +10,7 @@ package transcript
 
 import (
 	"bufio"
+	"encoding/json"
 	"io"
 	"os"
 	"regexp"
@@ -59,6 +60,86 @@ func LastMessageTime(agent, sessionID string) int64 {
 		return t.Unix()
 	}
 	return 0
+}
+
+// LastMessageError reports whether an agent's session ENDED on an API/tool error —
+// i.e. the LAST real message in its Claude Code transcript is an entry flagged
+// `isApiErrorMessage:true` (e.g. "API Error: Unable to connect to API"). It returns
+// a short summary for display. Mid-turn retry errors that recovered are NOT flagged
+// (their last message is a normal assistant/user entry). Non-Claude or unreadable
+// logs → (false, ""). Reads the same tail as LastMessageTime.
+func LastMessageError(agent, sessionID string) (bool, string) {
+	path, _ := resolveLog(agent, sessionID)
+	if path == "" {
+		return false, ""
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return false, ""
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return false, ""
+	}
+	const tail = 64 << 10
+	start := int64(0)
+	if fi.Size() > tail {
+		start = fi.Size() - tail
+	}
+	buf := make([]byte, fi.Size()-start)
+	if _, err := f.ReadAt(buf, start); err != nil && err != io.EOF {
+		return false, ""
+	}
+	lines := strings.Split(string(buf), "\n")
+	if start > 0 && len(lines) > 0 {
+		lines = lines[1:] // drop the partial first line (tail began mid-line)
+	}
+	// Scan backward to the last REAL message (skip blanks, meta, sidechain, and
+	// non-message events). That message decides how the session ended.
+	for i := len(lines) - 1; i >= 0; i-- {
+		s := strings.TrimSpace(lines[i])
+		if s == "" {
+			continue
+		}
+		var e claudeLine
+		if json.Unmarshal([]byte(s), &e) != nil || e.IsMeta || e.IsSidechain || e.Message == nil {
+			continue
+		}
+		if e.IsAPIError {
+			return true, errorSummary(e.Message.Content)
+		}
+		return false, "" // the last real message was normal → completed
+	}
+	return false, ""
+}
+
+// errorSummary pulls a short, one-line error string out of a Claude error entry's
+// content (a bare string, or a text block), trimmed of the "API Error:" prefix and
+// truncated for a radar row.
+func errorSummary(content json.RawMessage) string {
+	var s string
+	if json.Unmarshal(content, &s) != nil {
+		var blocks []claudeBlock
+		if json.Unmarshal(content, &blocks) == nil {
+			for _, b := range blocks {
+				if b.Text != "" {
+					s = b.Text
+					break
+				}
+			}
+		}
+	}
+	s = strings.TrimSpace(s)
+	s = strings.TrimSpace(strings.TrimPrefix(s, "API Error:"))
+	if i := strings.IndexAny(s, "\r\n"); i >= 0 {
+		s = s[:i]
+	}
+	const max = 80
+	if len(s) > max {
+		s = strings.TrimSpace(s[:max]) + "…"
+	}
+	return s
 }
 
 // Step is one collapsed middle action in a turn (a tool call). The chat view

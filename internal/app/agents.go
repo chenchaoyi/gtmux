@@ -111,6 +111,9 @@ type agentPane struct {
 	// the agent can be resumed into tmux (so surfaces can hide Adopt otherwise).
 	sessionID string
 	adoptable bool
+	// errored-idle modifier: this idle session ended on an API/tool error.
+	errored   bool
+	errorText string
 }
 
 // agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
@@ -140,6 +143,11 @@ type agentJSON struct {
 	// it can be adopted into tmux (resumable). Absent/false for tmux rows.
 	SessionID string `json:"session_id,omitempty"`
 	Adoptable bool   `json:"adoptable,omitempty"`
+	// errored-idle modifier: an idle session whose LAST transcript message was an
+	// API/tool error (it ended on a failure, not a clean finish). Surfaces mark it
+	// with an amber ⚠ (NOT red — red is `waiting`). Absent/false = finished normally.
+	Error     bool   `json:"error,omitempty"`
+	ErrorText string `json:"error_text,omitempty"` // short summary for the row
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -506,6 +514,8 @@ func gatherAgents() []agentPane {
 		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish
 		// start; otherwise fall back to last activity.
 		since := activityAt
+		var errored bool
+		var errorText string
 		switch status {
 		case "working":
 			if mt := fileMtime(state.ActivePath(id)); mt > 0 {
@@ -548,6 +558,14 @@ func gatherAgents() []agentPane {
 			if mt > 0 {
 				since = mt
 			}
+			// errored-idle: did this session END on an API/tool error (last transcript
+			// message is isApiErrorMessage)? Mark it so surfaces show ⚠ not ✓.
+			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+			if rec, ok := resume.Load(loc); ok {
+				if e, txt := transcript.LastMessageError(rec.Agent, rec.SessionID); e {
+					errored, errorText = true, txt
+				}
+			}
 		}
 		// radar++ : the pane's cwd → git repo root basename (project) + branch,
 		// read straight from .git (no git subprocess; cgo-free). "" if not a repo.
@@ -572,6 +590,8 @@ func gatherAgents() []agentPane {
 			icon:       iconFor(agent, profiles),
 			activityAt: activityAt,
 			since:      since,
+			errored:    errored,
+			errorText:  errorText,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -747,6 +767,14 @@ func cmdAgents(args []string) int {
 		if task == "" {
 			task = i18n.Dim + "—" + i18n.Reset
 		}
+		// errored idle: an amber ⚠ modifier (NOT red — red is waiting), and surface
+		// the failure summary as the task so "ended on an error" is visible at a glance.
+		if p.errored {
+			glyph, color, label = "⚠", i18n.Amber, i18n.Tr("errored", "报错")
+			if p.errorText != "" {
+				task = i18n.Amber + p.errorText + i18n.Reset
+			}
+		}
 		dot := ""
 		if p.activity {
 			dot = i18n.Yellow + " •" + i18n.Reset
@@ -786,6 +814,7 @@ func agentsJSONBytes() ([]byte, error) {
 			Source: src, Project: p.project, Branch: p.branch, Terminal: p.terminal, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.since, Icon: p.icon,
 			SessionID: p.sessionID, Adoptable: p.adoptable,
+			Error: p.errored, ErrorText: p.errorText,
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")

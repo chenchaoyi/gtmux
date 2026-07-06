@@ -44,7 +44,10 @@ const (
 	Green  = "\033[32m"
 	Yellow = "\033[33m"
 	Cyan   = "\033[36m"
-	Reset  = "\033[0m"
+	// Amber (256-color ~#F59E0B) is a MODIFIER color, not a state color — used only
+	// for the errored-idle ⚠ marker so it can't be mistaken for waiting (red/yellow).
+	Amber = "\033[38;5;214m"
+	Reset = "\033[0m"
 )
 
 // Pl pluralizes a tmux-jargon noun: "1 window" / "3 windows" in en; no plural in zh.

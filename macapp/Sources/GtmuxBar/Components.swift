@@ -25,6 +25,9 @@ func agentMonogram(_ name: String) -> String {
 struct StatusBadge: View {
     let status: Status
     var size: CGFloat = Theme.Size.badge
+    // errored-idle: an amber ⚠ modifier replacing the green ✓ (the idle session
+    // ended on an error). Never for non-idle states.
+    var errored = false
 
     var body: some View {
         ZStack {
@@ -35,7 +38,9 @@ struct StatusBadge: View {
     }
 
     @ViewBuilder private var base: some View {
-        if status == .waiting {
+        if errored {
+            Circle().fill(Theme.Status.errored)
+        } else if status == .waiting {
             RoundedRectangle(cornerRadius: size * 0.24, style: .continuous).fill(status.color)
         } else {
             Circle().fill(status.color)
@@ -43,22 +48,27 @@ struct StatusBadge: View {
     }
 
     @ViewBuilder private var glyph: some View {
-        switch status {
-        case .waiting:
-            HStack(spacing: size * 0.13) {
-                Capsule().fill(.white).frame(width: size * 0.12, height: size * 0.42)
-                Capsule().fill(.white).frame(width: size * 0.12, height: size * 0.42)
+        if errored {
+            Image(systemName: "exclamationmark")
+                .font(.system(size: size * 0.56, weight: .bold)).foregroundStyle(.white)
+        } else {
+            switch status {
+            case .waiting:
+                HStack(spacing: size * 0.13) {
+                    Capsule().fill(.white).frame(width: size * 0.12, height: size * 0.42)
+                    Capsule().fill(.white).frame(width: size * 0.12, height: size * 0.42)
+                }
+            case .idle:
+                Image(systemName: "checkmark")
+                    .font(.system(size: size * 0.52, weight: .bold)).foregroundStyle(.white)
+            case .working:
+                Circle().trim(from: 0.08, to: 0.92)
+                    .stroke(.white, style: StrokeStyle(lineWidth: size * 0.12, lineCap: .round))
+                    .frame(width: size * 0.56, height: size * 0.56)
+                    .rotationEffect(.degrees(-80)) // static gap; never animates
+            case .running:
+                Circle().fill(.white).frame(width: size * 0.3, height: size * 0.3)
             }
-        case .idle:
-            Image(systemName: "checkmark")
-                .font(.system(size: size * 0.52, weight: .bold)).foregroundStyle(.white)
-        case .working:
-            Circle().trim(from: 0.08, to: 0.92)
-                .stroke(.white, style: StrokeStyle(lineWidth: size * 0.12, lineCap: .round))
-                .frame(width: size * 0.56, height: size * 0.56)
-                .rotationEffect(.degrees(-80)) // static gap; never animates
-        case .running:
-            Circle().fill(.white).frame(width: size * 0.3, height: size * 0.3)
         }
     }
 }
@@ -104,7 +114,7 @@ struct AgentAvatar: View {
         avatar
             .frame(width: Theme.Size.avatar, height: Theme.Size.avatar)
             .overlay(alignment: .bottomTrailing) {
-                StatusBadge(status: agent.state)
+                StatusBadge(status: agent.state, errored: agent.errored)
                     .overlay(badgeRing)
                     .offset(x: 4, y: 4)
             }

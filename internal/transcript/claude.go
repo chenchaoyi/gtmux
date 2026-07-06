@@ -25,11 +25,15 @@ import (
 //   - unknown `type` values (ai-title/queue-operation/attachment/…) are ignored.
 
 type claudeLine struct {
-	Type        string         `json:"type"`
-	IsMeta      bool           `json:"isMeta"`
-	IsSidechain bool           `json:"isSidechain"`
-	Timestamp   string         `json:"timestamp"`
-	Message     *claudeMessage `json:"message"`
+	Type        string `json:"type"`
+	IsMeta      bool   `json:"isMeta"`
+	IsSidechain bool   `json:"isSidechain"`
+	// isApiErrorMessage marks an assistant entry that IS an API/tool error (Claude
+	// Code writes one per failed attempt, e.g. "API Error: Unable to connect to
+	// API"). Only meaningful as the LAST message — mid-turn ones usually recovered.
+	IsAPIError bool           `json:"isApiErrorMessage"`
+	Timestamp  string         `json:"timestamp"`
+	Message    *claudeMessage `json:"message"`
 }
 
 type claudeMessage struct {

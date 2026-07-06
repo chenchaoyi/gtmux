@@ -9,12 +9,32 @@
 import React from 'react';
 import Svg, {Circle, Path, Rect} from 'react-native-svg';
 import {StatusName} from '../api/types';
-import {StatusColor} from './theme';
+import {ERRORED_COLOR, StatusColor} from './theme';
 
 const WHITE = '#FFFFFF';
 
-export function StatusBadge({status, size = 16}: {status: StatusName; size?: number}) {
-  const color = StatusColor[status];
+// errored: an amber ⚠ modifier replacing the green ✓ (the idle session ended on an
+// API/tool error). NOT red — red is waiting. Only meaningful on an idle badge.
+export function StatusBadge({
+  status,
+  size = 16,
+  errored = false,
+}: {
+  status: StatusName;
+  size?: number;
+  errored?: boolean;
+}) {
+  const color = errored ? ERRORED_COLOR : StatusColor[status];
+  if (errored) {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 16 16">
+        <Circle cx={8} cy={8} r={7} fill={color} />
+        {/* exclamation mark */}
+        <Rect x={7.15} y={3.7} width={1.7} height={5.2} rx={0.85} fill={WHITE} />
+        <Circle cx={8} cy={11.4} r={1} fill={WHITE} />
+      </Svg>
+    );
+  }
   return (
     <Svg width={size} height={size} viewBox="0 0 16 16">
       {/* shape: square for waiting, circle otherwise */}
