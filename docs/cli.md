@@ -17,10 +17,10 @@ explicitly — no shell hooks, works with any shell.
 ```
 gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
 
-⏸ waiting  Claude Code  Pica:0.0          permission to run tests    %7
-⠿ working  Claude Code  ccy-workspace:0.0 Auto-attach tmux sessions  %11
-✳ idle     Claude Code  Rodi:0.0          Rodi feature dev    %8  ✓ latest
-✳ idle     Claude Code  Diting:0.0        —                   %1
+⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
+⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
+✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
+✳ idle     Codex        docs:0.0    —                     %1
 
 jump: gtmux focus %7
 ```
@@ -94,9 +94,9 @@ set -g history-limit 50000                     # how much scrollback to keep/res
 ```
 gtmux overview — 2 sessions · 3 windows · 5 panes
 
-▶ ccy-workspace        1 window · 1 pane
-    0: ccy-workspace *  (1 pane)
-● Pica                 2 windows · 4 panes
+▶ web-api              1 window · 1 pane
+    0: web-api *  (1 pane)
+● worker               2 windows · 4 panes
     0: editor  (1 pane)
     1: claude *  (3 panes)
 
@@ -110,7 +110,7 @@ program without interrupting it.
 ## `gtmux focus`
 
 ```sh
-gtmux focus Pica         # bring the terminal tab showing session "Pica" to front
+gtmux focus web          # bring the terminal tab showing session "web" to front
 gtmux focus %11          # jump to that exact window+pane, then focus its tab
 ```
 
