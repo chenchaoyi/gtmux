@@ -10,7 +10,7 @@ import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
-import {Palette, Size, StatusColor} from './theme';
+import {ERRORED_COLOR, Palette, Size, StatusColor} from './theme';
 import {StatusBadge} from './StatusBadge';
 import {TestIds} from '../constants/testIds';
 
@@ -63,7 +63,7 @@ export function AgentRow({
           border={pal.divider}
         />
         <View style={styles.badge}>
-          <StatusBadge status={agent.status} size={Size.badge} />
+          <StatusBadge status={agent.status} size={Size.badge} errored={!!agent.error} />
         </View>
       </View>
 
@@ -78,15 +78,23 @@ export function AgentRow({
               <Text style={[styles.branchText, {color: pal.fg3}]} numberOfLines={1}>native</Text>
             </View>
           )}
-          {agent.latest && (
-            <Text style={[styles.latest, {color: StatusColor.idle}]} numberOfLines={1}>
-              {lang === 'zh' ? '最近完成' : 'latest'}
+          {agent.error ? (
+            <Text style={[styles.latest, {color: ERRORED_COLOR}]} numberOfLines={1}>
+              {lang === 'zh' ? '报错' : 'errored'}
             </Text>
+          ) : (
+            agent.latest && (
+              <Text style={[styles.latest, {color: StatusColor.idle}]} numberOfLines={1}>
+                {lang === 'zh' ? '最近完成' : 'latest'}
+              </Text>
+            )
           )}
         </View>
         <View style={styles.line2}>
-          <Text style={[styles.secondary, {color: pal.fg3}]} numberOfLines={1}>
-            {secondary(agent)}
+          <Text
+            style={[styles.secondary, {color: agent.error ? ERRORED_COLOR : pal.fg3}]}
+            numberOfLines={1}>
+            {agent.error && agent.error_text ? agent.error_text : secondary(agent)}
           </Text>
           {!!agent.branch && (
             <View style={[styles.branchChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>

@@ -3,6 +3,7 @@ package transcript
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -452,5 +453,59 @@ func TestLastMessageTime(t *testing.T) {
 	}
 	if LastMessageTime("claude", "no-such-session") != 0 {
 		t.Error("unknown session should return 0")
+	}
+}
+
+// LastMessageError: a session ENDED on an error iff its last real message is an
+// isApiErrorMessage entry; mid-turn errors that recovered don't count.
+func TestLastMessageError(t *testing.T) {
+	errLine := `{"type":"assistant","isApiErrorMessage":true,"message":{"role":"assistant","content":"API Error: Unable to connect to API (UNKNOWN_CERTIFICATE_VERIFICATION_ERROR)"}}`
+	userLine := `{"type":"user","message":{"role":"user","content":"go on"}}`
+	okLine := `{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"All green."}]}}`
+
+	cases := []struct {
+		name    string
+		lines   []string
+		errored bool
+		text    string
+	}{
+		{"ends on error", []string{userLine, errLine}, true,
+			"Unable to connect to API (UNKNOWN_CERTIFICATE_VERIFICATION_ERROR)"},
+		{"recovered mid-turn error", []string{errLine, okLine}, false, ""},
+		{"normal end_turn", []string{userLine, okLine}, false, ""},
+		{"error then meta-only tail (still errored)", []string{errLine,
+			`{"type":"user","isMeta":true,"message":{"role":"user","content":"<command-name>/clear</command-name>"}}`}, true,
+			"Unable to connect to API (UNKNOWN_CERTIFICATE_VERIFICATION_ERROR)"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			sid := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+			writeClaudeLog(t, home, sid, c.lines)
+			got, txt := LastMessageError("Claude Code", sid)
+			if got != c.errored {
+				t.Fatalf("errored = %v, want %v", got, c.errored)
+			}
+			if got && txt != c.text {
+				t.Fatalf("text = %q, want %q", txt, c.text)
+			}
+		})
+	}
+}
+
+func TestLastMessageErrorMissingLog(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if got, _ := LastMessageError("Claude Code", "no-such-session"); got {
+		t.Fatal("missing log must not be errored")
+	}
+}
+
+func TestErrorSummaryTruncates(t *testing.T) {
+	long := "API Error: " + strings.Repeat("x", 200)
+	got := errorSummary([]byte(`"` + long + `"`))
+	if len([]rune(got)) > 90 || got[len(got)-3:] != "\xe2\x80\xa6" { // ends with …
+		t.Fatalf("summary not truncated: %q (len=%d)", got, len(got))
 	}
 }

@@ -60,6 +60,10 @@ struct Agent: Identifiable, Equatable {
     // it can be adopted into tmux (resumable).
     var sessionID = ""
     var adoptable = false
+    // errored-idle modifier: this idle session ended on an API/tool error. Surfaces
+    // mark it with an amber ⚠ (NOT red — red is waiting). false = finished normally.
+    var errored = false
+    var errorText = ""
 
     var id: String {
         if !paneID.isEmpty { return paneID }
@@ -109,6 +113,7 @@ extension Agent: Decodable {
         since = (try? c.decode(Int.self, forKey: .since)) ?? 0
         icon = s(.icon)
         sessionID = s(.sessionID); adoptable = b(.adoptable)
+        errored = b(.errored); errorText = s(.errorText)
     }
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
@@ -116,6 +121,8 @@ extension Agent: Decodable {
         case source, project, terminal, tab, icon, since, adoptable
         case activityAt = "activity_at"
         case sessionID = "session_id"
+        case errored = "error"
+        case errorText = "error_text"
     }
 }
 

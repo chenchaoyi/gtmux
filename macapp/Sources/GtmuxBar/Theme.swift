@@ -11,6 +11,9 @@ enum Theme {
         static let working = Color(hex: 0x06B6D4) // cyan
         static let idle    = Color(hex: 0x22C55E) // green
         static let none    = Color(hex: 0x8E8E93) // gray (none / running)
+        // MODIFIER color (not a state): the errored-idle ⚠ marker. Amber, distinct
+        // from the state palette so it can't be mistaken for waiting (red).
+        static let errored = Color(hex: 0xF59E0B) // amber
 
         // NSColor variants for the (AppKit) status-bar glyph rendering.
         static let waitingNS = NSColor(srgbRed: 0xEF/255, green: 0x44/255, blue: 0x44/255, alpha: 1)

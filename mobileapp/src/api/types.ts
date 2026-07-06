@@ -25,6 +25,10 @@ export interface Agent {
   activity_at?: number;
   since?: number;
   icon?: string;
+  // errored-idle modifier: this idle session ended on an API/tool error. Surfaces
+  // mark it with an amber ⚠ (NOT red — red is waiting). false/absent = finished ok.
+  error?: boolean;
+  error_text?: string;
 }
 
 // Decode one agent from raw JSON, applying the same defaults as the Swift decoder.
@@ -52,6 +56,8 @@ export function toAgent(raw: any): Agent {
     activity_at: n('activity_at'),
     since: n('since'),
     icon: s('icon') || undefined,
+    error: b('error') || undefined,
+    error_text: s('error_text') || undefined,
   };
 }
 

@@ -536,12 +536,19 @@ private struct AgentRowView: View {
                     Text(agent.primary).font(Theme.Font.session).foregroundStyle(p.fg)
                         .lineLimit(1).truncationMode(.tail).help(agent.primary)
                     if agent.isNative { tag(l10n.tr("native", "native"), p) }
-                    if agent.latest { latestPill(p) }
+                    if agent.errored { erroredPill(p) } else if agent.latest { latestPill(p) }
                     Spacer(minLength: 0)
                 }
-                // line 2: where it lives — tmux session · pane (dim context).
-                Text(agent.secondary)
-                    .font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
+                // line 2: the failure summary (amber) for an errored session, else
+                // where it lives — tmux session · pane (dim context).
+                if agent.errored, !agent.errorText.isEmpty {
+                    Text(agent.errorText)
+                        .font(Theme.Font.window).foregroundStyle(Theme.Status.errored)
+                        .lineLimit(1).truncationMode(.tail).help(agent.errorText)
+                } else {
+                    Text(agent.secondary)
+                        .font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
+                }
             }
             VStack(alignment: .trailing, spacing: 3) {
                 Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
@@ -585,6 +592,13 @@ private struct AgentRowView: View {
         Text(text).font(.system(size: 8.5, weight: .medium)).foregroundStyle(p.fg3)
             .padding(.horizontal, 4).padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 3).fill(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)))
+    }
+
+    private func erroredPill(_ p: Theme.Palette) -> some View {
+        Text(l10n.tr("errored", "报错")).font(.system(size: 8.5, weight: .semibold))
+            .foregroundStyle(Theme.Status.errored)
+            .padding(.horizontal, 4).padding(.vertical, 1)
+            .background(RoundedRectangle(cornerRadius: 3).fill(Theme.Status.errored.opacity(0.16)))
     }
 
     private func latestPill(_ p: Theme.Palette) -> some View {

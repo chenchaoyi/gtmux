@@ -31,6 +31,10 @@ Each row is **status · agent · location · task · pane id**, sorted by urgenc
 - **⏸ waiting** — blocked on **you** for a permission/approval, mid-task; sorts
   to the very top.
 - **✳ idle** — finished its turn, your move when ready (not urgent).
+- **⚠ errored** (amber) — an idle session that ended on an API/tool error (e.g.
+  `Unable to connect to API`), not a clean finish. It's still idle (your move), just
+  marked how it ended; the row shows the error summary. In `--json`: `error: true`
+  + `error_text`.
 
 `gtmux agents --watch` is a live, auto-refreshing dashboard (built with
 [bubbletea](https://github.com/charmbracelet/bubbletea)): polls ~1.5s, **↑/↓**

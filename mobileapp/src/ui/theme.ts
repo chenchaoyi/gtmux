@@ -10,6 +10,10 @@ export const StatusColor: Record<StatusName, string> = {
   running: '#8E8E93', // gray (none / running)
 };
 
+// MODIFIER color (not a state): the errored-idle ⚠ marker. Amber, distinct from
+// the state palette so it can't be mistaken for waiting (red). Mirrors Theme.swift.
+export const ERRORED_COLOR = '#F59E0B'; // amber
+
 // Section + sort order: needs-you → working → idle → running (DESIGN §3).
 export const statusRank: Record<StatusName, number> = {
   waiting: 0,
