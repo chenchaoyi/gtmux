@@ -50,9 +50,11 @@ gated('readme screenshots', () => {
     await new Promise(r => setTimeout(r, 1200)); // let icons + rows settle
     shot('radar');
 
-    // Detail (the live colored pane)
+    // Detail — switch to the Terminal tab so the shot shows the live screen in
+    // color (Chat is empty without a session log).
     if (!(await openFirstAgentDetail())) throw new Error('could not open an agent Detail');
-    await new Promise(r => setTimeout(r, 1500)); // let the pane content load
+    await driver.$(`~${TestIds.detail.modeTerminal}`).click();
+    await new Promise(r => setTimeout(r, 1800)); // let the pane content render
     shot('detail');
     await driver.$(`~${TestIds.detail.back}`).click();
     await radar.waitForDisplayed({timeout: 10_000});

@@ -1,0 +1,76 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  * { margin:0; box-sizing:border-box; }
+  html,body { width:612px; height:760px; }
+  body { background:linear-gradient(135deg,#eef1f4,#e2e6ea);
+    font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif; overflow:hidden; }
+  .label { text-align:center; padding-top:46px; font-size:26px; font-weight:800; color:#17181a; letter-spacing:-.4px; }
+  .dot { display:inline-block; width:11px; height:11px; border-radius:50%; background:#EF4444; vertical-align:middle; margin-right:11px; position:relative; top:-2px; }
+  /* menu-bar strip with the status item */
+  .strip { position:absolute; top:150px; right:44px; background:#fff; border-radius:8px; padding:7px 12px;
+    box-shadow:0 4px 14px rgba(0,0,0,.10); font-size:13px; color:#3a3f47; display:flex; align-items:center; gap:9px; }
+  .strip .kbd{ color:#6b7280; font-weight:600; } .strip .sq{ width:9px;height:9px;border-radius:2px;background:#EF4444;display:inline-block;}
+  .pop { position:absolute; left:150px; top:196px; width:312px; background:#1c1f26; border-radius:15px;
+    box-shadow:0 26px 64px -12px rgba(15,18,26,.42),0 8px 20px rgba(0,0,0,.22); overflow:hidden; color:#e7e9ee; }
+  .head { padding:14px 16px 10px; }
+  .h1 { display:flex; align-items:center; font-size:14px; font-weight:700; }
+  .h1 .g6{ width:15px;height:15px;border-radius:4px;background:linear-gradient(135deg,#3ac,#29b);margin-right:8px;}
+  .h1 .sp{ flex:1; } .h1 .mut{ color:#8890a0; font-weight:500; font-size:12px; }
+  .sub { color:#8890a0; font-size:12px; margin-top:3px; }
+  .sec { color:#8890a0; font-size:10.5px; font-weight:700; letter-spacing:.6px; padding:9px 16px 5px; text-transform:uppercase; display:flex; align-items:center; gap:7px;}
+  .sec.red{ color:#f0605f; } .cnt{ background:#2b2f38; border-radius:9px; padding:0 7px; font-size:10px; color:#c3c8d2; }
+  .row { display:flex; align-items:center; padding:7px 16px; gap:11px; }
+  .row.hot{ background:rgba(240,96,95,.11); }
+  .av { width:30px;height:30px;border-radius:7px;background:#2a2e37; color:#aeb4c0; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; position:relative; flex:0 0 auto;}
+  .badge{ position:absolute; right:-3px; bottom:-3px; width:14px;height:14px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:8px;}
+  .b-wait{ background:#EF4444;} .b-work{ background:#06B6D4;} .b-idle{ background:#22C55E; color:#0b3d1e; font-weight:900; font-size:9px;}
+  .b-wait .p{ width:6px;height:6px; border-left:2px solid #fff;border-right:2px solid #fff; }
+  .col{ flex:1; min-width:0; } .t1{ font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .t1 .tag{ font-weight:600; font-size:9.5px; color:#7f8798; background:#262a33; border-radius:4px; padding:1px 5px; margin-left:6px;}
+  .t1 .latest{ color:#22C55E; background:rgba(34,197,94,.14); }
+  .t2{ font-size:11px; color:#8890a0; margin-top:1px; }
+  .rt{ color:#7f8798; font-size:11px; flex:0 0 auto; } .chev{ color:#5a6070; font-size:12px; margin-left:2px;}
+  .foot{ display:flex; align-items:center; padding:10px 16px 12px; border-top:1px solid #262a33; margin-top:5px; font-size:11px; color:#8890a0; }
+  .foot .sp{ flex:1; }
+</style></head><body>
+  <div class="label"><span class="dot"></span>Menu bar</div>
+  <div class="strip"><span class="kbd">⌘⌥G</span><span class="sq"></span><span>2</span></div>
+  <div class="pop">
+    <div class="head">
+      <div class="h1"><span class="g6"></span>gtmux<span class="sp"></span><span class="mut">▾ Waiting only&nbsp;&nbsp;⌕</span></div>
+      <div class="sub">5 agents · 1 waiting · 2 working · 2 idle</div>
+    </div>
+
+    <div class="sec red">NEEDS YOU <span class="cnt">1</span></div>
+    <div class="row hot">
+      <div class="av">CC<span class="badge b-wait"><span class="p"></span></span></div>
+      <div class="col"><div class="t1">permission to run tests</div><div class="t2">api · %7 · now</div></div>
+      <span class="chev">↵</span>
+    </div>
+
+    <div class="sec">WORKING <span class="cnt">2</span></div>
+    <div class="row">
+      <div class="av">CC<span class="badge b-work"></span></div>
+      <div class="col"><div class="t1">refactor auth middleware</div><div class="t2">web · %11</div></div>
+      <span class="rt">1m</span><span class="chev">›</span>
+    </div>
+    <div class="row">
+      <div class="av">Cx<span class="badge b-work"></span></div>
+      <div class="col"><div class="t1">add retry backoff</div><div class="t2">worker · %3</div></div>
+      <span class="rt">3m</span><span class="chev">›</span>
+    </div>
+
+    <div class="sec">IDLE <span class="cnt">2</span></div>
+    <div class="row">
+      <div class="av">CC<span class="badge b-idle">✓</span></div>
+      <div class="col"><div class="t1">update API reference <span class="tag latest">latest</span></div><div class="t2">docs · %8</div></div>
+      <span class="rt">6m</span><span class="chev">›</span>
+    </div>
+    <div class="row">
+      <div class="av">G<span class="badge b-idle">✓</span></div>
+      <div class="col"><div class="t1">fix flaky test</div><div class="t2">cli · %1</div></div>
+      <span class="rt">22m</span><span class="chev">›</span>
+    </div>
+
+    <div class="foot">⚙ Preferences<span class="sp"></span>gtmux __VERSION__</div>
+  </div>
+</body></html>
