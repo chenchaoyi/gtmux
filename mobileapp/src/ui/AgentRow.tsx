@@ -6,7 +6,7 @@
 // NOT bundle third-party logos (DESIGN §6); color is never used for identity.
 
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -39,12 +39,24 @@ export function AgentRow({
   const isWaiting = agent.status === 'waiting';
   const time = relTime(agent.since || agent.activity_at);
 
+  // Line 1 (task) is clamped to one line for density; long-press reveals the FULL
+  // task (and error summary) in an alert so nothing on the row is unreachable.
+  const showFull = () => {
+    const body =
+      agent.error && agent.error_text
+        ? `${primary(agent)}\n\n⚠ ${agent.error_text}`
+        : primary(agent);
+    Alert.alert(agent.agent || 'Agent', body, [{text: lang === 'zh' ? '关闭' : 'Close'}]);
+  };
+
   return (
     <TouchableOpacity
       testID={`${TestIds.agent.row}-${agent.pane_id}`}
       accessibilityLabel={`${TestIds.agent.row}-${agent.pane_id}`}
       activeOpacity={0.6}
       onPress={onPress}
+      onLongPress={showFull}
+      delayLongPress={350}
       style={[
         styles.row,
         {borderBottomColor: pal.divider},
