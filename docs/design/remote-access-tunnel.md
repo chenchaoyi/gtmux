@@ -166,6 +166,25 @@ public exposure should be a conscious choice and stay visible:
 - **Menu-bar "Allow phone access"** — produce the pairing QR from the app, fed by
   the tunnel address.
 
+## Debug runbook (pairing / reachability)
+
+Consolidated in `docs/TROUBLESHOOTING.md`; the essentials for this subsystem:
+
+1. **"Pairing code expired" that won't clear → duplicate serve on :8765.** The
+   menubar mints via `127.0.0.1:8765` (IPv4) but the tunnel's `localhost:8765`
+   resolves to `::1` (IPv6); if a second `gtmux serve` binds `*:8765`, mint and
+   redeem hit different processes and enroll codes (in-memory) don't match. Check:
+   `lsof -nP -iTCP:8765 -sTCP:LISTEN` must show exactly ONE PID (the app's
+   `com.gtmux.serve`). Kill any bare `gtmux serve` squatting `*:8765`.
+2. **Don't restart serve between mint and scan** — codes are in-memory (TTL 5 min);
+   `launchctl kickstart`/`unload+load` wipes them → "expired".
+3. **Tunnel offline on corp net = QUIC blocked.** `tunnel.log` loops `failed to dial
+   to edge with quic`; phone gets CF 1033/530. Fix = `--protocol http2` (now the
+   default; `GTMUX_TUNNEL_PROTOCOL` overrides). An old service plist keeps QUIC —
+   re-run `gtmux tunnel --service` after `gtmux update`.
+4. **Corp-DNS hijack** rewrites `ccy.dev` to `172.19.x` → the Mac's own probe fails
+   on a healthy tunnel; verify from a **phone on cellular**.
+
 ## Code map
 
 | Piece | Where |
