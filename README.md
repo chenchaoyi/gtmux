@@ -52,10 +52,10 @@ including agents other tools started — and never gets in the way.
 ```
 gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
 
-⏸ waiting  Claude Code  Pica:0.0          permission to run tests    %7
-⠿ working  Claude Code  ccy-workspace:0.0 Auto-attach tmux sessions  %11
-✳ idle     Claude Code  Rodi:0.0          Rodi feature dev    %8  ✓ latest
-✳ idle     Claude Code  Diting:0.0        —                   %1
+⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
+⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
+✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
+✳ idle     Codex        docs:0.0    —                     %1
 
 jump: gtmux focus %7
 ```
