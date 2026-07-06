@@ -1,4 +1,4 @@
-import {labelFromUrl, normalizeHost, parsePairingQR} from './qr';
+import {EnrollError, enrollDevice, labelFromUrl, normalizeHost, parsePairingQR} from './qr';
 
 describe('parsePairingQR', () => {
   it('parses a valid v1 pairing code (token in QR)', () => {
@@ -56,6 +56,59 @@ describe('parsePairingQR', () => {
 
   it('rejects a missing token', () => {
     expect(() => parsePairingQR(JSON.stringify({v: 1, url: 'http://h:1'}))).toThrow(/token/i);
+  });
+});
+
+describe('enrollDevice — failure classification', () => {
+  const orig = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = orig;
+  });
+  const mockFetch = (impl: () => any) => {
+    globalThis.fetch = jest.fn(impl) as any;
+  };
+  const kindOf = async (): Promise<string> => {
+    try {
+      await enrollDevice('https://h:8765', 'c0de', 'phone');
+      return 'NO_THROW';
+    } catch (e: any) {
+      return e instanceof EnrollError ? e.kind : `OTHER:${e?.message}`;
+    }
+  };
+
+  it('classifies a rejected fetch (no response) as unreachable', async () => {
+    mockFetch(() => Promise.reject(new TypeError('Network request failed')));
+    expect(await kindOf()).toBe('unreachable');
+  });
+
+  it('classifies a Cloudflare 530 (dead tunnel) as tunnelDown', async () => {
+    mockFetch(() => Promise.resolve({ok: false, status: 530}));
+    expect(await kindOf()).toBe('tunnelDown');
+  });
+
+  it('classifies a 502/503/504 gateway error as tunnelDown', async () => {
+    mockFetch(() => Promise.resolve({ok: false, status: 503}));
+    expect(await kindOf()).toBe('tunnelDown');
+  });
+
+  it('classifies a serve 4xx as codeInvalid (expired/used code)', async () => {
+    mockFetch(() => Promise.resolve({ok: false, status: 400}));
+    expect(await kindOf()).toBe('codeInvalid');
+  });
+
+  it('classifies a 404 as codeInvalid', async () => {
+    mockFetch(() => Promise.resolve({ok: false, status: 404}));
+    expect(await kindOf()).toBe('codeInvalid');
+  });
+
+  it('classifies an ok response missing a token as noToken', async () => {
+    mockFetch(() => Promise.resolve({ok: true, json: () => Promise.resolve({})}));
+    expect(await kindOf()).toBe('noToken');
+  });
+
+  it('returns the token on success', async () => {
+    mockFetch(() => Promise.resolve({ok: true, json: () => Promise.resolve({token: 'dev-tok'})}));
+    await expect(enrollDevice('https://h:8765', 'c0de', 'phone')).resolves.toBe('dev-tok');
   });
 });
 

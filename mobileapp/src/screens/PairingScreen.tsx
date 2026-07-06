@@ -17,7 +17,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {enrollDevice, normalizeHost, parsePairingQR} from '../pairing/qr';
+import {EnrollError, enrollDevice, normalizeHost, parsePairingQR} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
@@ -89,7 +89,23 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
       await connectWith(res.url, deviceToken, res.name);
     } catch (e: any) {
       setBusy(false);
-      setError(e?.message || t('badToken'));
+      // Map the classified enroll failure to a precise, actionable message — a dead
+      // link/tunnel is NOT an expired code, so point at the right thing to check.
+      if (e instanceof EnrollError) {
+        setError(
+          t(
+            e.kind === 'unreachable'
+              ? 'enrollUnreachable'
+              : e.kind === 'tunnelDown'
+                ? 'enrollTunnelDown'
+                : e.kind === 'noToken'
+                  ? 'enrollNoToken'
+                  : 'enrollCodeInvalid',
+          ),
+        );
+      } else {
+        setError(e?.message || t('badToken'));
+      }
     }
   };
 

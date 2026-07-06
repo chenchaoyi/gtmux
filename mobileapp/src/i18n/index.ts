@@ -61,6 +61,23 @@ const S: Dict = {
     zh: '连不上这台服务器，手机和它在同一个 VPN / Wi-Fi / Tailscale 上吗？',
   },
   badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
+  // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
+  enrollUnreachable: {
+    en: "Couldn't reach the server — nothing answered. Check: the address is right, and your phone shares its network (same Wi‑Fi/VPN for a LAN address; the Mac's tunnel is running for a *.ccy.dev address).",
+    zh: '连不上服务器，没有任何响应。排查：地址是否正确；局域网地址需手机与 Mac 在同一 Wi‑Fi/VPN；*.ccy.dev 地址需 Mac 上的隧道正在运行。',
+  },
+  enrollTunnelDown: {
+    en: "Reached Cloudflare but not your Mac — the tunnel is offline. On the Mac, check `gtmux serve` and the tunnel (cloudflared) are running; a corporate network can block the tunnel (try `--protocol http2`). The code is fine.",
+    zh: '到了 Cloudflare 但没到你的 Mac —— 隧道离线。在 Mac 上确认 `gtmux serve` 和隧道(cloudflared)在运行；公司网可能挡了隧道(可试 `--protocol http2`)。配对码本身没问题。',
+  },
+  enrollCodeInvalid: {
+    en: 'Pairing code expired or already used — refresh it in the Mac menu bar and rescan.',
+    zh: '配对码已过期或已被使用 —— 在 Mac 菜单栏刷新配对码后重新扫。',
+  },
+  enrollNoToken: {
+    en: 'The server accepted the code but returned no token — try refreshing the code and rescanning.',
+    zh: '服务器收下了配对码却没返回 token —— 刷新配对码后重试。',
+  },
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired server, switch / add / remove)
   servers: {en: 'Servers', zh: '服务器'},
