@@ -39,6 +39,16 @@ over one Go core (gtmux-core is the single data source):
   for "drive tmux / control arbitrary terminals"). Ship **Developer ID + notarized
   direct distribution**; MAS would require a sandbox-compatible rearchitect.
 - Workflow: branch → PR → CI green → squash-merge → tag. Don't commit to `main`.
+- **git-ops footgun:** never build a `gh pr create` / `git commit` body via
+  `--body "$(cat <<'EOF' … EOF)"` or `-m "$(…)"` when the text contains backticks —
+  the `"$(…)"` re-enables command substitution, so `` `gtmux serve` `` in prose gets
+  **executed** (this once spawned a rogue serve that squatted :8765). Use
+  `--body-file <path>` / `git commit -F <path>` instead. After a PR-create that
+  warned/errored, `ps aux | grep 'gtmux serve'` and kill strays.
+- **Debug/release pitfalls live in `docs/TROUBLESHOOTING.md`** — a living checklist
+  (duplicate-serve pairing bug, QUIC-blocked tunnel, relay-redeploy, etc.). Consult
+  it when pairing/push/release misbehaves, and **append a new entry whenever a
+  footgun costs real time** (symptom → root cause → must-check).
 
 ## Deploy — where each artifact ships (DON'T FORGET)
 
