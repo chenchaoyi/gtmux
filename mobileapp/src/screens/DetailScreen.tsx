@@ -7,6 +7,7 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  Alert,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -327,17 +328,27 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           <View style={styles.avatarWrap}>
             <AgentAvatar agent={live} size={26} radius={7} bg={pal.surface} fg={pal.fg2} border={pal.divider} />
             <View style={styles.headerBadge}>
-              <StatusBadge status={live.status} size={15} />
+              <StatusBadge status={live.status} size={15} errored={!!live.error} />
             </View>
           </View>
-          <View style={styles.headerText}>
+          {/* The title is 1-line for space; tap it to read the FULL task (and error)
+              in an alert — the row/header stay compact but nothing is unreachable. */}
+          <TouchableOpacity
+            activeOpacity={0.6}
+            style={styles.headerText}
+            onPress={() => {
+              const body = live.error && live.error_text
+                ? `${primary(live)}\n\n⚠ ${live.error_text}`
+                : primary(live);
+              Alert.alert(live.agent || 'Agent', body, [{text: lang === 'zh' ? '关闭' : 'Close'}]);
+            }}>
             <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
               {primary(live)}
             </Text>
             <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
               {live.agent} · {statusLabel(live.status, lang)} · {secondary(live)}
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
         </Animated.View>
       )}
