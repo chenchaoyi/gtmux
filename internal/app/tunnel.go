@@ -180,7 +180,7 @@ func tunnelHosted(port int, name string) int {
 		defer func() { _ = os.Remove(tunnelURLPath()) }()
 	}
 	i18n.Say("Starting your tunnel…", "正在启动隧道…")
-	return runCloudflared(bin, []string{"tunnel", "run", "--token", prov.Token}, registeredRe, func(string) {
+	return runCloudflared(bin, []string{"tunnel", "run", "--protocol", cloudflaredProtocol(), "--token", prov.Token}, registeredRe, func(string) {
 		printTunnelPairing(prov.URL, token, name, port, true)
 	})
 }
@@ -316,13 +316,27 @@ func tunnelQuick(port int, name string) int {
 	token := startLocalRadar(port)
 	i18n.Say("Opening a Cloudflare quick tunnel (no account, ephemeral URL)…",
 		"正在打开 Cloudflare quick tunnel（免账号、临时地址）…")
-	args := []string{"tunnel", "--no-autoupdate", "--url", fmt.Sprintf("http://localhost:%d", port)}
+	args := []string{"tunnel", "--no-autoupdate", "--protocol", cloudflaredProtocol(), "--url", fmt.Sprintf("http://localhost:%d", port)}
 	return runCloudflared(bin, args, tryCloudflareRe, func(line string) {
 		printTunnelPairing(tryCloudflareRe.FindString(line), token, name, port, false)
 	})
 }
 
 // --- shared cloudflared runner -------------------------------------------------
+
+// cloudflaredProtocol picks the transport cloudflared uses to reach Cloudflare's
+// edge. Default "http2" (TCP/443) instead of cloudflared's own QUIC default:
+// QUIC rides UDP/7844, which corporate/campus networks routinely block, and when
+// it's blocked the tunnel dies silently ("failed to dial to edge with quic:
+// timeout") — the phone then can't reach the Mac at all. http2 works wherever
+// HTTPS does, and gtmux's SSE/JSON traffic is far too light for QUIC's latency
+// edge to matter. Override with GTMUX_TUNNEL_PROTOCOL (e.g. "quic" or "auto").
+func cloudflaredProtocol() string {
+	if p := strings.TrimSpace(os.Getenv("GTMUX_TUNNEL_PROTOCOL")); p != "" {
+		return p
+	}
+	return "http2"
+}
 
 // startLocalRadar makes sure something read-only answers on the port: if `gtmux
 // serve` is already up we tunnel to it (token matches — same file); otherwise we
