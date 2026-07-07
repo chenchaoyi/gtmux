@@ -59,8 +59,9 @@ Commands:
   update [--check]        self-update to the latest release — CLI + menu-bar app
                           (--check only reports; --cli-only skips the app)
   install-hooks [--yes]   register the Claude hook directly (doctor --fix also
-                          does this); --agent <cursor|gemini|copilot|kiro> wires
-                          another agent; --agent codex prints its notify snippet
+                          does this); --agent <codex|cursor|gemini|copilot|kiro>
+                          wires another agent (codex via its additive hooks system,
+                          coexisting with any existing notify)
   uninstall-hooks         reverse install-hooks; --agent <key> for another agent
   app                     launch the menu-bar app (Gtmux.app) — the status dot
                           appears in the top-right menu bar (also: menubar)
@@ -135,8 +136,8 @@ const usageZH = `快速开始：
   update [--check]        自我更新到最新版，含 CLI + 菜单栏 app（--check 只检查；
                           --cli-only 只更新 CLI 不动 app）
   install-hooks [--yes]   直接注册 Claude hook（doctor --fix 也会做这件事）；
-                          --agent <cursor|gemini|copilot|kiro> 接入其他 agent；
-                          --agent codex 打印 Codex 的 notify 接法
+                          --agent <codex|cursor|gemini|copilot|kiro> 接入其他
+                          agent（codex 走追加式 hooks 系统，与已有 notify 并存）
   uninstall-hooks         撤销 install-hooks；--agent <key> 注销其他 agent
   app                     启动菜单栏 app（Gtmux.app）—— 状态点出现在右上角
                           菜单栏（别名：menubar）

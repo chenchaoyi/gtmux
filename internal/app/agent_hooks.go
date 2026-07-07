@@ -37,6 +37,13 @@ const (
 	// "timeoutSec":N}]}} in ~/.copilot/hooks/<file>.json (one file per tool) — Copilot
 	// CLI. Distinct from formatNested: flat entries keyed on `bash`/`timeoutSec`.
 	formatCopilot
+	// formatCodex: Codex's hooks.json — SAME outer/inner nesting as formatNested
+	// ({"hooks":{"<Event>":[{"hooks":[{type,command}]}]}}, verified against Codex's
+	// HooksFile: events MUST sit under a top-level "hooks" object, root-level event
+	// keys are rejected). Two differences from formatNested: Codex's `timeout` is in
+	// SECONDS (not ms), and we set `async:true` so `gtmux hook` never blocks the turn
+	// boundary. Enabled by `features.hooks = true` in ~/.codex/config.toml.
+	formatCodex
 )
 
 // feedTimeoutMs is the long timeout for tool feed events (they can block on you).
@@ -66,6 +73,22 @@ type agentInstaller struct {
 
 // agentInstallers are the non-Claude agents `install-hooks --agent <key>` can wire.
 var agentInstallers = map[string]agentInstaller{
+	"codex": {
+		// Codex's hooks system (~/.codex/hooks.json + features.hooks=true) — the
+		// additive path that COEXISTS with an existing `notify` (e.g. computer-use),
+		// unlike the single-slot legacy notify. hooks.json is the nested shape:
+		//   "<Event>": [ { "hooks": [ { "type":"command", "command":… } ] } ].
+		// The features.hooks toml flag is handled separately (installCodexHooks).
+		key: "codex", display: "Codex", relDir: ".codex", file: "hooks.json",
+		envDir: "CODEX_HOME", format: formatCodex, timeoutMs: 10000,
+		bindings: []agentHookBinding{
+			{key: "UserPromptSubmit", event: "UserPromptSubmit"},
+			{key: "PermissionRequest", event: "PermissionRequest"}, // needs-you approval
+			{key: "Stop", event: "Stop"},
+			{key: "SessionStart", event: "SessionStart"},
+			{key: "SessionEnd", event: "SessionEnd"},
+		},
+	},
 	"cursor": {
 		key: "cursor", display: "Cursor", relDir: ".cursor", file: "hooks.json",
 		envDir: "CURSOR_HOME", format: formatFlat,
@@ -241,6 +264,12 @@ func (inst agentInstaller) entry(bin string, b agentHookBinding) map[string]any 
 		return map[string]any{"hooks": []any{map[string]any{
 			"type": "command", "command": cmd, "timeout": inst.timeoutFor(b),
 		}}}
+	case formatCodex:
+		// Same nesting as formatNested, but Codex's `timeout` is in SECONDS, and
+		// async:true keeps the fire-and-forget `gtmux hook` off the turn's critical path.
+		return map[string]any{"hooks": []any{map[string]any{
+			"type": "command", "command": cmd, "timeout": inst.timeoutFor(b) / 1000, "async": true,
+		}}}
 	case formatKiro:
 		return map[string]any{"command": cmd, "timeout_ms": inst.timeoutFor(b)}
 	case formatCopilot:
@@ -254,7 +283,7 @@ func (inst agentInstaller) entry(bin string, b agentHookBinding) map[string]any 
 // removeAgentEntries strips gtmux commands from one event's entry list, dropping
 // emptied entries and keeping everything foreign — in the given format's shape.
 func removeAgentEntries(list []any, format agentHookFormat) []any {
-	if format == formatNested {
+	if format == formatNested || format == formatCodex {
 		return removeGtmuxEntries(list) // {"hooks":[{"command":…}]} shape
 	}
 	// flat / kiro carry the command in "command"; copilot carries it in "bash".

@@ -276,8 +276,12 @@ func rowClaudeHook() dcheck {
 
 func rowCodexHook() dcheck {
 	label := i18n.Tr("Codex hook", "Codex hook")
+	// Wired via the preferred hooks system (precise state), or the legacy notify.
+	if codexHooksWired() {
+		return dcheck{stOK, label, i18n.Tr("wired", "已接"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
+	}
 	if codexNotifyIsGtmux() {
-		return dcheck{stOK, label, i18n.Tr("wired", "已接"), i18n.Tr("turn-done notifications", "turn 结束通知")}
+		return dcheck{stOK, label, i18n.Tr("wired (notify)", "已接（notify）"), i18n.Tr("turn-done notifications", "turn 结束通知")}
 	}
 	return dcheck{stInfo, label, i18n.Tr("not wired", "未接"), i18n.Tr("optional — detection works anyway", "可选，检测不依赖它")}
 }
