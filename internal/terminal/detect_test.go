@@ -53,3 +53,19 @@ func TestResolveNameOverride(t *testing.T) {
 		t.Errorf("resolveName() with override = %q, want iterm2", got)
 	}
 }
+
+// resolveNameForSession also honors the explicit override, ahead of any
+// per-session client lookup (the deterministic, tmux-free part of the ordering).
+func TestResolveNameForSessionOverride(t *testing.T) {
+	t.Setenv("GTMUX_TERMINAL", "ghostty")
+	if got := resolveNameForSession("whatever"); got != "ghostty" {
+		t.Errorf("resolveNameForSession override = %q, want ghostty", got)
+	}
+}
+
+// An empty session name can't resolve a client → no panic, falls through to "".
+func TestTerminalFromSessionClientsEmpty(t *testing.T) {
+	if got := terminalFromSessionClients(""); got != "" {
+		t.Errorf("terminalFromSessionClients(\"\") = %q, want \"\"", got)
+	}
+}

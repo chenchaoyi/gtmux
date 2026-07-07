@@ -35,6 +35,10 @@ builds:
       # Push-relay token, injected from the GTMUX_RELAY_TOKEN CI secret (empty →
       # serve simply doesn't forward push).
       - -X github.com/chenchaoyi/gtmux/internal/app.RelayToken={{ .Env.GTMUX_RELAY_TOKEN }}
+      # "Direct" tunnel server (the second gtmux-provided tunnel), injected from the
+      # GTMUX_SELFTUNNEL_URL/SECRET CI secrets (empty → Direct needs a user's own conf).
+      - -X github.com/chenchaoyi/gtmux/internal/app.SelfTunnelURL={{ .Env.GTMUX_SELFTUNNEL_URL }}
+      - -X github.com/chenchaoyi/gtmux/internal/app.SelfTunnelSecret={{ .Env.GTMUX_SELFTUNNEL_SECRET }}
 
 archives:
   - id: gtmux

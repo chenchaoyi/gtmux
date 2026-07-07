@@ -51,6 +51,43 @@ func TestTunnelRegSecretFallsBackToBaked(t *testing.T) {
 	}
 }
 
+// selfTunnelConfig resolves the "Direct" server: env > user conf > the baked-in
+// gtmux-provided default. A user's own settings must win over the baked one.
+func TestSelfTunnelConfigBakedFallback(t *testing.T) {
+	t.Setenv("GTMUX_SELFTUNNEL_URL", "")
+	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "")
+	t.Setenv("HOME", t.TempDir()) // no ~/.config/gtmux/selftunnel.conf there
+
+	oldURL, oldSecret := SelfTunnelURL, SelfTunnelSecret
+	defer func() { SelfTunnelURL, SelfTunnelSecret = oldURL, oldSecret }()
+	SelfTunnelURL, SelfTunnelSecret = "https://direct.example.com", "user:pass"
+
+	url, secret, ok := selfTunnelConfig()
+	if !ok || url != "https://direct.example.com" || secret != "user:pass" {
+		t.Fatalf("baked fallback: ok=%v url=%q secret=%q", ok, url, secret)
+	}
+
+	// The user's own env must OVERRIDE the baked default.
+	t.Setenv("GTMUX_SELFTUNNEL_URL", "https://mine.example.com")
+	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "me:secret")
+	if url, _, _ := selfTunnelConfig(); url != "https://mine.example.com" {
+		t.Errorf("env must override baked default, got %q", url)
+	}
+}
+
+// With no env, no conf, and no baked default, Direct is unconfigured → ok=false.
+func TestSelfTunnelConfigUnconfigured(t *testing.T) {
+	t.Setenv("GTMUX_SELFTUNNEL_URL", "")
+	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "")
+	t.Setenv("HOME", t.TempDir())
+	oldURL, oldSecret := SelfTunnelURL, SelfTunnelSecret
+	defer func() { SelfTunnelURL, SelfTunnelSecret = oldURL, oldSecret }()
+	SelfTunnelURL, SelfTunnelSecret = "", ""
+	if _, _, ok := selfTunnelConfig(); ok {
+		t.Error("unconfigured Direct should return ok=false")
+	}
+}
+
 // cloudflaredProtocol: default http2 (QUIC is blocked on many corp nets), env override wins.
 func TestCloudflaredProtocolDefault(t *testing.T) {
 	t.Setenv("GTMUX_TUNNEL_PROTOCOL", "")

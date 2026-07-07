@@ -17,6 +17,15 @@ var (
 	// the same Worker via its workers.dev route.
 	TunnelAPIFallback = "https://gtmux-tunnel.ccy-chenchaoyi.workers.dev"
 	TunnelRegSecret   = ""
+	// SelfTunnelURL / SelfTunnelSecret bake gtmux's "Direct" tunnel server (a chisel
+	// endpoint on a gtmux-run VPS + TLS reverse proxy) so a user can pick Direct with
+	// ZERO config — it's the second of the two gtmux-provided tunnels ("Standard" =
+	// Cloudflare, "Direct" = this). Like TunnelRegSecret they necessarily ship in the
+	// binary; empty in source, injected at release build via -ldflags from
+	// GTMUX_SELFTUNNEL_URL / GTMUX_SELFTUNNEL_SECRET, and overridable at runtime by
+	// those env vars or ~/.config/gtmux/selftunnel.conf (a user's own server wins).
+	SelfTunnelURL    = ""
+	SelfTunnelSecret = ""
 )
 
 func tunnelAPI() string {
