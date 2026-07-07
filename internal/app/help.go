@@ -62,6 +62,8 @@ Commands:
                           does this); --agent <cursor|gemini|copilot|kiro> wires
                           another agent; --agent codex prints its notify snippet
   uninstall-hooks         reverse install-hooks; --agent <key> for another agent
+  app                     launch the menu-bar app (Gtmux.app) — the status dot
+                          appears in the top-right menu bar (also: menubar)
   uninstall-app           remove the menu-bar app (Gtmux.app) + its login item
                           (install it via the curl installer or macapp/build.sh)
   hook                    internal: run BY Claude Code as a hook (reads stdin);
@@ -136,6 +138,8 @@ const usageZH = `快速开始：
                           --agent <cursor|gemini|copilot|kiro> 接入其他 agent；
                           --agent codex 打印 Codex 的 notify 接法
   uninstall-hooks         撤销 install-hooks；--agent <key> 注销其他 agent
+  app                     启动菜单栏 app（Gtmux.app）—— 状态点出现在右上角
+                          菜单栏（别名：menubar）
   uninstall-app           删除菜单栏 app（Gtmux.app）及登录项
                           （安装请用 curl 安装脚本或 macapp/build.sh）
   hook                    内部命令：由 Claude Code 作为 hook 调用（读 stdin）；
