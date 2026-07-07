@@ -77,11 +77,17 @@ jump: gtmux focus %7
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```
 
-把 CLI 装到 `~/.local/bin/gtmux`，并装上菜单栏 app。然后：
+把 CLI 装到 `~/.local/bin/gtmux`，并装上菜单栏 app。跑一次 `gtmux install-hooks`
+（让 agent 能上报「在等你」）后，**基本就不用管了**：
+
+- **菜单栏状态点**常驻（红 / 青 / 绿），扫一眼就知道有没有 agent 在等你，不用切窗口；
+- agent 需要你拍板的那一刻会有**桌面通知**，点一下直接跳到对应 pane（或用手机回复）；
+- 随时按 **`⌘⌥G`** 唤起面板，跳到在等你的那个。
+
+命令行和 tmux 里的按键绑定想用就用，但只是附加：
 
 ```sh
-gtmux install-hooks          # 让 agent 能上报「在等你」（一次性）
-gtmux agents --watch         # 实时看板；回车跳到对应 pane
+gtmux agents --watch         # 终端里的实时看板；回车跳到对应 pane
 ```
 
 想用手机看，跑 `gtmux serve`（同一网络）或 `gtmux tunnel`（任意网络），再配对 iOS app。

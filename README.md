@@ -97,10 +97,18 @@ gtmux doctor --fix           # one-stop setup: the agent hook, set-titles (focus
                              # restore need it), restore-after-reboot, the app
 ```
 
-**3. Use it:**
+**3. Use it — mostly you don't have to.** Once set up, gtmux is passive:
+
+- The **menu-bar dot** is always there (red / cyan / green) — a glance tells you if
+  anyone needs you, without switching windows.
+- You get a **desktop notification** the moment an agent needs a decision — click it
+  to jump straight to that pane (or reply from your phone).
+- Press **`⌘⌥G`** anytime to summon the palette and jump to whoever's waiting.
+
+The CLI and in-tmux bindings are there when you want them, but they're extra:
 
 ```sh
-gtmux agents --watch         # the live dashboard; Enter jumps to a pane
+gtmux agents --watch         # a live dashboard in the terminal; Enter jumps to a pane
 ```
 
 > Just want notifications and nothing else? `gtmux install-hooks` registers only
