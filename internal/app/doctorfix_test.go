@@ -99,19 +99,38 @@ func TestAnswerYes(t *testing.T) {
 	}
 }
 
-func TestFindTomlNotify(t *testing.T) {
-	cases := []struct{ in, want string }{
-		{"", ""},
-		{"model = \"x\"\n", ""},
-		{"notify = [\"a\"]\n", "notify = [\"a\"]"},
-		{"# c\nnotify = [\"a\"]\nmodel=\"x\"\n", "notify = [\"a\"]"},
-		// a notify UNDER a table is not Codex's top-level notify → ignored
-		{"[mcp.x]\nnotify = [\"a\"]\n", ""},
+func TestCodexHooksFeatureEnabled(t *testing.T) {
+	cases := []struct {
+		in   string
+		want bool
+	}{
+		{"", false},
+		{"model = \"x\"\n", false},
+		{"features.hooks = true\n", true},
+		{"features.hooks=true\n", true},
+		{"features.hooks = false\n", false},
+		{"[features]\nhooks = true\n", true},
+		{"[features]\nother = 1\nhooks = true\n", true},
+		// hooks=true under a DIFFERENT table doesn't count.
+		{"[other]\nhooks = true\n", false},
+		{"[features]\nhooks = false\n", false},
 	}
 	for _, c := range cases {
-		if got := findTomlNotify(c.in); got != c.want {
-			t.Errorf("findTomlNotify(%q) = %q, want %q", c.in, got, c.want)
+		if got := codexHooksFeatureEnabled(c.in); got != c.want {
+			t.Errorf("codexHooksFeatureEnabled(%q) = %v, want %v", c.in, got, c.want)
 		}
+	}
+}
+
+func TestTomlHasTable(t *testing.T) {
+	if !tomlHasTable("[features]\nx = 1\n", "features") {
+		t.Error("should find [features]")
+	}
+	if tomlHasTable("features.hooks = true\n", "features") {
+		t.Error("dotted key is not a [features] table")
+	}
+	if tomlHasTable("[features.sub]\n", "features") {
+		t.Error("[features.sub] is a different table")
 	}
 }
 

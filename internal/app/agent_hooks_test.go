@@ -198,6 +198,67 @@ func TestInstallCopilotDedicated(t *testing.T) {
 	}
 }
 
+// TestInstallCodexHooks: Codex's hooks.json shape — events under a top-level "hooks"
+// object (root-level event keys are REJECTED by Codex's HooksFile), each handler
+// {type:"command",command,timeout(SECONDS),async:true}. Verifies the mapping,
+// idempotency, and that a foreign hook + the file's `description` survive.
+func TestInstallCodexHooks(t *testing.T) {
+	inst := agentInstallers["codex"]
+	path := filepath.Join(t.TempDir(), "hooks.json")
+	// Seed with a description + a foreign PreToolUse hook (both must survive).
+	seed := `{"description":"my gate","hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"/bin/echo hi"}]}]}}`
+	if err := os.WriteFile(path, []byte(seed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ { // idempotent
+		if err := updateAgentSettings(inst, path, testBin, true); err != nil {
+			t.Fatalf("install %d: %v", i, err)
+		}
+	}
+	m := readSettings(t, path)
+	// Events MUST live under a top-level "hooks" object — nothing at the root.
+	if _, ok := m["hooks"].(map[string]any); !ok {
+		t.Fatal("codex events must sit under a top-level \"hooks\" object")
+	}
+	if _, rooted := m["UserPromptSubmit"]; rooted {
+		t.Error("codex must NOT put event keys at the JSON root (Codex rejects that)")
+	}
+	if m["description"] != "my gate" {
+		t.Errorf("codex file's description must survive, got %v", m["description"])
+	}
+	if got := firstCommand(t, m, "PermissionRequest"); got != testBin+" hook --agent codex PermissionRequest" {
+		t.Errorf("PermissionRequest cmd = %q", got)
+	}
+	// timeout is in SECONDS (10000ms / 1000 = 10), and async:true keeps it off the
+	// turn's critical path.
+	if to := nestedTimeout(t, m, "Stop"); to != 10 {
+		t.Errorf("codex Stop timeout = %d, want 10 (SECONDS)", to)
+	}
+	hooks, _ := m["hooks"].(map[string]any)
+	e := asArray(hooks["Stop"])[0].(map[string]any)["hooks"].([]any)[0].(map[string]any)
+	if e["async"] != true {
+		t.Errorf("codex handler must set async:true, got %v", e["async"])
+	}
+	if n := countAgentHooks(t, m, "PreToolUse"); n != 1 {
+		t.Errorf("foreign PreToolUse hook must survive, got %d", n)
+	}
+	if n := countAgentHooks(t, m, "Stop"); n != 1 {
+		t.Errorf("reinstall left %d Stop entries, want 1 (idempotent)", n)
+	}
+
+	// Uninstall: gtmux entries gone, foreign hook + description survive.
+	if err := updateAgentSettings(inst, path, "", false); err != nil {
+		t.Fatal(err)
+	}
+	m = readSettings(t, path)
+	if got := firstCommand(t, m, "PreToolUse"); !strings.Contains(got, "echo hi") {
+		t.Errorf("foreign hook should survive uninstall, got %q", got)
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		t.Error("codex file has a foreign hook — it must NOT be removed on uninstall")
+	}
+}
+
 // TestInstallPreservesForeignHooks: a non-gtmux hook in the same file/event survives.
 func TestInstallPreservesForeignHooks(t *testing.T) {
 	inst := agentInstallers["gemini"]
