@@ -173,14 +173,20 @@ func serviceRemoveAll() int {
 
 // tunnelServiceRemove unloads + deletes the always-on agents.
 func tunnelServiceRemove() int {
-	if !serviceInstalled() {
+	// Clean up whichever backend's agents exist (Cloudflare: com.gtmux.tunnel;
+	// self-hosted: com.gtmux.selftunnel), plus the shared serve agent.
+	any := false
+	for _, p := range []string{serveAgentPath(), tunnelAgentPath(), selfTunnelAgentPath()} {
+		if fileExists(p) {
+			any = true
+			launchctl("unload", p)
+			_ = os.Remove(p)
+		}
+	}
+	if !any {
 		i18n.Say("Always-on is not enabled.", "Always-on 未开启。")
 		return 0
 	}
-	launchctl("unload", serveAgentPath())
-	launchctl("unload", tunnelAgentPath())
-	_ = os.Remove(serveAgentPath())
-	_ = os.Remove(tunnelAgentPath())
 	_ = os.Remove(tunnelURLPath())
 	i18n.Say("Always-on disabled — the background tunnel + serve are stopped and removed.",
 		"Always-on 已关闭，后台隧道与 serve 已停止并移除。")

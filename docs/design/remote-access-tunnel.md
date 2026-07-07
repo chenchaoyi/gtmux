@@ -166,6 +166,26 @@ public exposure should be a conscious choice and stay visible:
 - **Menu-bar "Allow phone access"** — produce the pairing QR from the app, fed by
   the tunnel address.
 
+## Providers: Cloudflare (default) vs self-hosted (P1)
+
+`gtmux tunnel` has a pluggable backend (`--backend cloudflare|self`, or
+`GTMUX_TUNNEL_BACKEND`):
+
+- **`cloudflare`** (default) — the zero-config hosted address above. Works on most
+  networks, but a hostile network can DNS-hijack Cloudflare's edge (`*.argotunnel.com`)
+  and kill it on every protocol (see the debug runbook).
+- **`self`** — a WebSocket-over-443 tunnel (Chisel) to **your own VPS + domain**,
+  indistinguishable from ordinary HTTPS, so it survives that hijack. You run the
+  server side (chisel + a TLS reverse proxy, coexisting with anything already on 443
+  via an SNI router) — see **`deploy/self-tunnel/`** for the versioned config +
+  install/migration scripts. Config is manual (your own server):
+  `GTMUX_SELFTUNNEL_URL` (`https://tunnel.example.com`) + `GTMUX_SELFTUNNEL_SECRET`
+  (chisel `user:pass`). gtmux fetches the chisel client itself. The phone pairs to
+  `{url, token}` exactly as with Cloudflare. `--service` registers it always-on.
+
+P1 is manual selection; auto-failover Cloudflare→self and a dual-URL pairing QR are
+P2 (see `openspec/changes/.../self-hosted-tunnel`). The tunnel is the intended paid tier.
+
 ## Debug runbook (pairing / reachability)
 
 Consolidated in `docs/TROUBLESHOOTING.md`; the essentials for this subsystem:
