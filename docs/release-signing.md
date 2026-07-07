@@ -7,7 +7,7 @@ ID signing + notarization** once and every tagged release opens cleanly on any M
 `brew install --cask` and go, TCC grants persist across updates.
 
 CI (`release.yml`, the "menu-bar app (macOS)" job) already does the signing +
-`notarytool submit --wait` + `stapler staple` — it just needs six repo secrets.
+`notarytool submit --wait` + `stapler staple` — it just needs five repo secrets.
 Without them the release falls back to ad-hoc (nothing breaks).
 
 ## 1. Developer ID Application certificate → `MACOS_CERT_P12` + password
@@ -25,11 +25,11 @@ Needs a paid Apple Developer Program membership (team `2337SY8FRT`).
    base64 -i DeveloperID.p12 | pbcopy   # → paste into MACOS_CERT_P12
    ```
    - `MACOS_CERT_P12` = that base64
-   - `MACOS_CERT_PASSWORD` = the .p12 export password
-   - `MACOS_SIGN_IDENTITY` = the identity string, from:
-     ```sh
-     security find-identity -v -p codesigning   # e.g. "Developer ID Application: Chaoyi Chen (2337SY8FRT)"
-     ```
+   - `MACOS_CERT_PASSWORD` = the .p12 export password (set a simple one; an
+     empty-password .p12 is flaky on the CI runner)
+
+   The signing identity string is **auto-derived** from the cert in CI — no separate
+   secret. (Locally you'd read it with `security find-identity -v -p codesigning`.)
 
 ## 2. App Store Connect API key (for notarytool) → `MACOS_NOTARY_*`
 
@@ -45,12 +45,12 @@ Needs a paid Apple Developer Program membership (team `2337SY8FRT`).
    - `MACOS_NOTARY_KEY_ID` = the Key ID
    - `MACOS_NOTARY_ISSUER` = the Issuer ID
 
-## 3. Add the six secrets
+## 3. Add the five secrets
 
 **GitHub → the gtmux repo → Settings → Secrets and variables → Actions → New
 repository secret**, for each of:
-`MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`,
-`MACOS_NOTARY_KEY_P8`, `MACOS_NOTARY_KEY_ID`, `MACOS_NOTARY_ISSUER`.
+`MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_NOTARY_KEY_P8`,
+`MACOS_NOTARY_KEY_ID`, `MACOS_NOTARY_ISSUER`.
 
 ## 4. Verify
 

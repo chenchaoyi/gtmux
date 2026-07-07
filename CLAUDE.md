@@ -34,8 +34,8 @@ over one Go core (gtmux-core is the single data source):
   **notarize + staple** — then it opens on any Mac with no quarantine dance. **CI
   does this automatically when the release secrets are set** (`release.yml` app job
   imports the cert into a throwaway keychain): `MACOS_CERT_P12` (base64 .p12),
-  `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`, `MACOS_NOTARY_KEY_P8` (base64 .p8),
-  `MACOS_NOTARY_KEY_ID`, `MACOS_NOTARY_ISSUER`. Without them the release stays
+  `MACOS_CERT_PASSWORD`, `MACOS_NOTARY_KEY_P8` (base64 .p8), `MACOS_NOTARY_KEY_ID`,
+  `MACOS_NOTARY_ISSUER` (the signing identity is auto-derived from the cert). Without them the release stays
   ad-hoc. One-time setup: `docs/release-signing.md`.
 - **Mac App Store is NOT a viable target as built:** the app shells out to
   `gtmux`/`tmux`/`osascript` and reads `~/.local/share/gtmux`, `~/.tmux/…` etc.,
