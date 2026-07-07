@@ -92,6 +92,8 @@ func Run(argv []string) int {
 		return cmdInstallHooks(args)
 	case "uninstall-hooks":
 		return cmdUninstallHooks(args)
+	case "app", "menubar":
+		return cmdApp(args)
 	case "uninstall-app":
 		return cmdUninstallApp(args)
 	default:
