@@ -21,13 +21,33 @@ PROFILE="${GTMUX_NOTARY_PROFILE:-gtmux-notary}"
 SIGN_ID="${GTMUX_SIGN_ID:-$(security find-identity -v -p codesigning | grep -o '"Developer ID Application:[^"]*"' | head -1 | tr -d '"')}"
 [ -n "$SIGN_ID" ] || { echo "no 'Developer ID Application' identity in your keychain — see docs/release-signing.md" >&2; exit 1; }
 
+# Bake the hosted-tunnel + push-relay secrets into the BUNDLED CLI (build.sh reads
+# them from the env). They're soft anti-abuse gates that NECESSARILY ship in the
+# binary — kept out of git, in macapp/.release.env (gitignored). Without the reg,
+# the shipped app's Anywhere is DEAD for anyone who installs only the cask: their
+# app has no ~/.local/bin/gtmux to prefer, so it falls back to the empty-reg bundled
+# CLI. So we hard-require it here — a local release must never silently ship broken.
+if [ -f macapp/.release.env ]; then
+  set -a; . macapp/.release.env; set +a
+fi
+[ -n "${GTMUX_TUNNEL_REG:-}" ] || {
+  echo "GTMUX_TUNNEL_REG is empty — the shipped app's Anywhere would be dead for teammates who" >&2
+  echo "install only the cask. Put it in macapp/.release.env (gitignored) or export it, then re-run." >&2
+  echo "See docs/release-signing.md → 'Baking the tunnel/relay secrets'." >&2
+  exit 1
+}
+[ -n "${GTMUX_RELAY_TOKEN:-}" ] || echo "WARNING: GTMUX_RELAY_TOKEN empty — push notifications will be OFF in this build." >&2
+
 echo "==> releasing $TAG"
 echo "    identity: $SIGN_ID"
 echo "    notary profile: $PROFILE"
+echo "    tunnel reg: baked (${#GTMUX_TUNNEL_REG} chars)"
 gh release view "$TAG" >/dev/null 2>&1 || { echo "release $TAG not found — push the tag first (git push origin $TAG)" >&2; exit 1; }
 
-# 1. Build (Developer ID sign + notarize + staple, via build.sh).
-GTMUX_UNIVERSAL=1 GTMUX_VERSION="$TAG" GTMUX_SIGN_ID="$SIGN_ID" GTMUX_NOTARY_PROFILE="$PROFILE" macapp/build.sh
+# 1. Build (Developer ID sign + notarize + staple, via build.sh). The reg/relay env
+#    exported above flows into build.sh's ldflags.
+GTMUX_UNIVERSAL=1 GTMUX_VERSION="$TAG" GTMUX_SIGN_ID="$SIGN_ID" GTMUX_NOTARY_PROFILE="$PROFILE" \
+  GTMUX_TUNNEL_REG="$GTMUX_TUNNEL_REG" GTMUX_RELAY_TOKEN="${GTMUX_RELAY_TOKEN:-}" macapp/build.sh
 
 # 2. Zip the stapled bundle.
 ZIP="Gtmux-${VERSION}-macos.zip"

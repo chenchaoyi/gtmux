@@ -26,6 +26,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         dbg("launched")
+        // Single-instance, newest-wins: terminate any OTHER running GtmuxBar (same
+        // bundle id) so a reinstall/update/manual reopen — or a stray copy at
+        // /Applications alongside ~/Applications — can never leave two status items in
+        // the menu bar. This one is the freshly-launched (newest) bundle, so it stays
+        // and the older process goes. The updater's pkill is belt; this is suspenders.
+        terminateOtherInstances()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
@@ -234,6 +240,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pendingReopenFocus?.cancel()
         pendingReopenFocus = nil
         GtmuxCLI.spawn(pane.isEmpty ? ["focus", "--last"] : ["focus", pane])
+    }
+
+    /// Terminate every OTHER running instance of this app (matched by bundle id),
+    /// leaving only this newest one — so the menu bar never shows duplicate status
+    /// items after an update/reinstall or a second copy on disk. `.terminate()` asks
+    /// politely; a still-alive straggler after a short grace is force-killed so we
+    /// never linger with two icons.
+    private func terminateOtherInstances() {
+        let me = NSRunningApplication.current
+        guard let bundleID = me.bundleIdentifier else { return }
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .filter { $0.processIdentifier != me.processIdentifier }
+        guard !others.isEmpty else { return }
+        dbg("single-instance: terminating \(others.count) older instance(s)")
+        for other in others { other.terminate() }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 1.5) {
+            for other in others where !other.isTerminated { other.forceTerminate() }
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

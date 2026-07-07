@@ -50,7 +50,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	}
 	bin, err := exec.LookPath("cloudflared")
 	if err != nil {
-		if bin = ensureCloudflared(); bin == "" {
+		if bin = ensureCloudflared(yes); bin == "" {
 			return 1
 		}
 	}
