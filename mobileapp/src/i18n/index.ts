@@ -63,12 +63,12 @@ const S: Dict = {
   badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Couldn't reach the server — nothing answered. Check: the address is right, and your phone shares its network (same Wi‑Fi/VPN for a LAN address; the Mac's tunnel is running for a *.ccy.dev address).",
-    zh: '连不上服务器，没有任何响应。排查：地址是否正确；局域网地址需手机与 Mac 在同一 Wi‑Fi/VPN；*.ccy.dev 地址需 Mac 上的隧道正在运行。',
+    en: "Couldn't reach the server — nothing answered. Check the address is right and your phone can reach the Mac: same Wi‑Fi/VPN for a local address, or `gtmux tunnel` running for an internet address.",
+    zh: '连不上服务器，没有任何响应。检查地址是否正确，以及手机能否到达这台 Mac：局域网地址需在同一 Wi‑Fi/VPN；公网地址需 Mac 上的 `gtmux tunnel` 正在运行。',
   },
   enrollTunnelDown: {
-    en: "Reached Cloudflare but not your Mac — the tunnel is offline. On the Mac, check `gtmux serve` and the tunnel (cloudflared) are running; a corporate network can block the tunnel (try `--protocol http2`). The code is fine.",
-    zh: '到了 Cloudflare 但没到你的 Mac —— 隧道离线。在 Mac 上确认 `gtmux serve` 和隧道(cloudflared)在运行；公司网可能挡了隧道(可试 `--protocol http2`)。配对码本身没问题。',
+    en: "Reached the network but not your Mac — gtmux may have stopped. Make sure it's still running on the Mac (`gtmux serve` or `gtmux tunnel`), then try again. The pairing code is fine.",
+    zh: '连到了网络但没到你的 Mac —— gtmux 可能停了。确认 Mac 上的 gtmux 还在运行（`gtmux serve` 或 `gtmux tunnel`），然后重试。配对码没问题。',
   },
   enrollCodeInvalid: {
     en: 'Pairing code expired or already used — refresh it in the Mac menu bar and rescan.',
