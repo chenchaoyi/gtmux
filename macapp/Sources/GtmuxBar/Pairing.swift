@@ -179,6 +179,7 @@ struct PairingView: View {
     @State private var info: PairingInfo?
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
     @State private var dnsBlocked = false // reach failed because the host resolves to a private IP (corp-DNS interception)
+    @State private var tunnelDown = false // the tunnel itself can't reach the edge → NO device connects (not even cellular)
     @State private var enrollCode: String? // minted short-lived code (v2 QR)
     @State private var codeReady = false // mint attempt finished (success or fallback)
     @State private var showPaywall = false
@@ -313,10 +314,18 @@ struct PairingView: View {
         switch reachable {
         case .some(true):
             label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
+        case .some(false) where tunnelDown:
+            // The tunnel CLIENT can't reach the edge from this network (DNS-hijacked
+            // to a dead-end proxy that drops the tunnel handshake) → the tunnel is
+            // OFFLINE, so NO device connects, not even on cellular. A real problem you
+            // must act on (orange), with the actual fix.
+            label("exclamationmark.triangle.fill", .orange,
+                  l10n.tr("This network is blocking the tunnel — no device can connect (not even on cellular). Switch the Mac to another network, or pair on the same Wi-Fi.",
+                          "本机网络挡住了隧道 —— 现在任何设备（包括蜂窝）都连不上。给 Mac 换个网络，或让手机连同一 Wi-Fi 直连。"))
         case .some(false) where dnsBlocked:
             // The tunnel host resolves to a private IP → this network is hijacking
-            // DNS (common on corporate Wi-Fi). The tunnel itself is fine; a phone on
-            // cellular reaches it. Inform calmly (blue), don't alarm (orange).
+            // DNS (common on corporate Wi-Fi), BUT the tunnel itself is up (edge
+            // registered): a phone on cellular reaches it. Inform calmly (blue).
             label("wifi.exclamationmark", .blue,
                   l10n.tr("This network blocks the address · a phone on cellular connects fine",
                           "本机网络拦截了该地址 · 手机用蜂窝可正常连接"))
@@ -353,6 +362,7 @@ struct PairingView: View {
         info = i
         reachable = nil
         dnsBlocked = false
+        tunnelDown = false
         enrollCode = nil
         codeReady = false
         if let i = i {
@@ -392,10 +402,38 @@ struct PairingView: View {
             let ok = (resp as? HTTPURLResponse)?.statusCode == 200
             // On failure, check whether the host resolves to a private (RFC1918) IP —
             // i.e. this network is intercepting DNS (the tunnel host should map to a
-            // public Cloudflare edge). If so we surface the calmer "blocked" message.
+            // public edge). If so it's either (a) a healthy tunnel the Mac just can't
+            // self-probe, or (b) the tunnel is genuinely offline because the client
+            // can't reach the edge. The tunnel log tells them apart: (b) → no device
+            // connects, so DON'T say "cellular works".
             let blocked = !ok && (host.map(PairingView.resolvesToPrivateIP) ?? false)
-            DispatchQueue.main.async { reachable = ok; dnsBlocked = blocked }
+            let down = blocked && PairingView.tunnelEdgeBlocked()
+            DispatchQueue.main.async { reachable = ok; dnsBlocked = blocked; tunnelDown = down }
         }.resume()
+    }
+
+    // tunnelEdgeBlocked reports whether the tunnel client currently CAN'T reach the
+    // edge — i.e. the most recent edge event in its log is a failure, not a
+    // registration. True → the tunnel is offline (no device connects); false → it's
+    // registered (a healthy tunnel the local network just can't self-probe). Only the
+    // always-on service writes this log; foreground `gtmux tunnel` → false (no log).
+    private static func tunnelEdgeBlocked() -> Bool {
+        let path = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/share/gtmux/tunnel.log")
+        guard let h = try? FileHandle(forReadingFrom: path) else { return false }
+        defer { try? h.close() }
+        let size = (try? h.seekToEnd()) ?? 0
+        let tail: UInt64 = 16 * 1024
+        if size > tail { try? h.seek(toOffset: size - tail) } else { try? h.seek(toOffset: 0) }
+        guard let data = try? h.readToEnd(), let s = String(data: data, encoding: .utf8) else { return false }
+        var lastReg = -1, lastErr = -1
+        for (i, line) in s.split(separator: "\n").enumerated() {
+            if line.contains("Registered tunnel connection") { lastReg = i }
+            if line.contains("Unable to establish connection with")
+                || line.contains("no free edge addresses")
+                || line.contains("TLS handshake with edge error") { lastErr = i }
+        }
+        return lastErr >= 0 && lastErr > lastReg
     }
 
     // resolvesToPrivateIP — true if `host` resolves (IPv4) to an RFC1918 / loopback
