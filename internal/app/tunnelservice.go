@@ -102,6 +102,11 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	}
 	_ = os.WriteFile(tunnelURLPath(), []byte(prov.URL+"\n"), 0o600)
 
+	// Backends are mutually exclusive — retire a self-hosted tunnel agent if present.
+	if fileExists(selfTunnelAgentPath()) {
+		launchctl("unload", selfTunnelAgentPath())
+		_ = os.Remove(selfTunnelAgentPath())
+	}
 	launchctl("unload", serveAgentPath())
 	launchctl("unload", tunnelAgentPath())
 	if err := launchctl("load", serveAgentPath()); err != nil {

@@ -183,10 +183,12 @@ struct PairingView: View {
     @State private var enrollCode: String? // minted short-lived code (v2 QR)
     @State private var codeReady = false // mint attempt finished (success or fallback)
     @State private var showPaywall = false
+    @State private var wantSelfHosted = false // which backend the Anywhere toggle uses
 
     var body: some View {
         VStack(spacing: 13) {
             modeChooser
+            if remote.mode == .anywhere && remote.selfTunnelConfigured { backendChooser }
             if !ent.isPro { proHint }
             if let err = remote.lastError { errorLine(err) }
 
@@ -400,8 +402,33 @@ struct PairingView: View {
         a.addButton(withTitle: l10n.tr("Enable", "开启"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {
-            remote.enableAnywhere()
+            // Prefer the self-hosted backend when the user has configured one (that's
+            // why they set it up); they can switch with the backend chooser.
+            wantSelfHosted = remote.selfTunnelConfigured
+            remote.enableAnywhere(selfHosted: wantSelfHosted)
         }
+    }
+
+    // backendChooser — pick which tunnel carries "Anywhere": the zero-config hosted
+    // Cloudflare tunnel, or the self-hosted one on your own VPS+domain. Only shown
+    // when a self-hosted backend is configured. Switching re-runs the install (the
+    // backends are mutually exclusive, so the other is retired).
+    @ViewBuilder private var backendChooser: some View {
+        Picker("", selection: Binding(
+            get: { remote.backend == .selfHosted },
+            set: { self_ in
+                wantSelfHosted = self_
+                remote.enableAnywhere(selfHosted: self_)
+            })) {
+            Text(l10n.tr("Hosted", "托管")).tag(false)
+            Text(l10n.tr("Self-hosted", "自建")).tag(true)
+        }
+        .labelsHidden()
+        .pickerStyle(.segmented)
+        .frame(width: 290)
+        .disabled(remote.busy)
+        .help(l10n.tr("Hosted = zero-config Cloudflare. Self-hosted = your own VPS+domain (survives networks that block the hosted edge).",
+                      "托管 = 零配置 Cloudflare。自建 = 你自己的 VPS+域名（在屏蔽托管边缘的网络下仍可用）。"))
     }
 
     private func probe(_ url: String) {

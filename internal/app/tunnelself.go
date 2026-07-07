@@ -41,19 +41,57 @@ func selfTunnelAgentPath() string {
 	return filepath.Join(launchAgentsDir(), selfTunnelAgentLabel+".plist")
 }
 
-// selfTunnelConfig reads the user's self-hosted server config, or explains what to
-// set and returns ok=false.
+// selfTunnelConfPath is the shared config the CLI reads and the menu-bar writes so
+// both agree on the self-hosted server (URL + chisel secret). 0600 (holds the secret).
+// Format: `url=…` / `secret=…` lines.
+func selfTunnelConfPath() string {
+	return filepath.Join(homeDir(), ".config", "gtmux", "selftunnel.conf")
+}
+
+// selfTunnelConfig reads the user's self-hosted server config from the env, falling
+// back to the shared config file, or explains what to set and returns ok=false.
 func selfTunnelConfig() (url, secret string, ok bool) {
 	url = strings.TrimSpace(os.Getenv("GTMUX_SELFTUNNEL_URL"))
 	secret = strings.TrimSpace(os.Getenv("GTMUX_SELFTUNNEL_SECRET"))
 	if url == "" || secret == "" {
+		fu, fs := readSelfTunnelConf()
+		if url == "" {
+			url = fu
+		}
+		if secret == "" {
+			secret = fs
+		}
+	}
+	if url == "" || secret == "" {
 		i18n.Sae("gtmux tunnel --backend self needs YOUR server: set GTMUX_SELFTUNNEL_URL"+
-			" (e.g. https://tunnel.example.com) and GTMUX_SELFTUNNEL_SECRET (chisel auth user:pass). See deploy/self-tunnel/README.md.",
+			" (e.g. https://tunnel.example.com) and GTMUX_SELFTUNNEL_SECRET (chisel auth user:pass), or write "+
+			selfTunnelConfPath()+". See deploy/self-tunnel/README.md.",
 			"gtmux tunnel --backend self 需要你自己的服务器：设置 GTMUX_SELFTUNNEL_URL"+
-				"（如 https://tunnel.example.com）和 GTMUX_SELFTUNNEL_SECRET（chisel 认证 user:pass）。见 deploy/self-tunnel/README.md。")
+				"（如 https://tunnel.example.com）和 GTMUX_SELFTUNNEL_SECRET（chisel 认证 user:pass），或写入 "+
+				selfTunnelConfPath()+"。见 deploy/self-tunnel/README.md。")
 		return "", "", false
 	}
 	return url, secret, true
+}
+
+// readSelfTunnelConf parses url= / secret= from the shared config file ("" when absent).
+func readSelfTunnelConf() (url, secret string) {
+	b, err := os.ReadFile(selfTunnelConfPath())
+	if err != nil {
+		return "", ""
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if k, v, found := strings.Cut(line, "="); found {
+			switch strings.TrimSpace(k) {
+			case "url":
+				url = strings.TrimSpace(v)
+			case "secret":
+				secret = strings.TrimSpace(v)
+			}
+		}
+	}
+	return url, secret
 }
 
 // tunnelSelf runs the self-hosted tunnel in the foreground: it ensures chisel, starts
@@ -121,6 +159,12 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	}
 	_ = os.WriteFile(tunnelURLPath(), []byte(url+"\n"), 0o600)
 
+	// Backends are mutually exclusive — retire a Cloudflare tunnel agent if present
+	// so switching self↔cloudflare never leaves two tunnels fighting for the serve.
+	if fileExists(tunnelAgentPath()) {
+		launchctl("unload", tunnelAgentPath())
+		_ = os.Remove(tunnelAgentPath())
+	}
 	launchctl("unload", serveAgentPath())
 	launchctl("unload", selfTunnelAgentPath())
 	if err := launchctl("load", serveAgentPath()); err != nil {
