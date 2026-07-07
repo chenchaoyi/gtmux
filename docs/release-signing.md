@@ -6,9 +6,33 @@ that built it, but on any OTHER Mac Gatekeeper blocks it (a teammate must
 ID signing + notarization** once and every tagged release opens cleanly on any Mac —
 `brew install --cask` and go, TCC grants persist across updates.
 
-CI (`release.yml`, the "menu-bar app (macOS)" job) already does the signing +
-`notarytool submit --wait` + `stapler staple` — it just needs five repo secrets.
-Without them the release falls back to ad-hoc (nothing breaks).
+Two ways to do it. Both need the same one-time credentials (§1 cert + §2 API key):
+
+- **Local (default here):** notarize from your Mac — no GitHub secrets. Store the
+  notary key once in a keychain profile, then each release is `make app-release`.
+  When CI has no signing secrets it skips the app upload/cask, so local owns it.
+- **CI:** add five repo secrets and every tagged release auto-notarizes (§4).
+
+## Local release — the path in use
+
+One-time, after making the cert (§1) and API key (§2):
+
+```sh
+# store the notary key in a keychain profile named gtmux-notary (no GitHub secrets)
+xcrun notarytool store-credentials gtmux-notary \
+  --key ~/Desktop/AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --issuer <issuer-id>
+```
+
+Then per release (the tag must be pushed first so goreleaser made the release):
+
+```sh
+git tag v0.12.40 && git push origin v0.12.40   # ships the CLI via CI
+make app-release                                # builds notarized Gtmux.app → release + cask
+```
+
+`make app-release` auto-derives the signing identity, builds + notarizes + staples,
+uploads the zip (clobbering any ad-hoc CI build), and updates the `gtmux-app` cask.
+Run it after the release CI is green.
 
 ## 1. Developer ID Application certificate → `MACOS_CERT_P12` + password
 

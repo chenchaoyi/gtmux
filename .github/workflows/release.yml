@@ -108,6 +108,7 @@ jobs:
       # MACOS_NOTARY_ISSUER. The signing identity is auto-derived from the cert.
       # See docs/release-signing.md.
       - name: set up Developer ID signing + notarization (when configured)
+        id: signing
         env:
           MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
           MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
@@ -143,6 +144,7 @@ jobs:
             echo "GTMUX_NOTARY_KEY_ID=$MACOS_NOTARY_KEY_ID" >> "$GITHUB_ENV"
             echo "GTMUX_NOTARY_ISSUER=$MACOS_NOTARY_ISSUER" >> "$GITHUB_ENV"
           fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
           echo "Developer ID signing configured"
 
       # macapp/build.sh compiles the Swift app (universal), builds the cgo-free gtmux
@@ -161,8 +163,11 @@ jobs:
           ditto -c -k --keepParent macapp/build/Gtmux.app "$ZIP"
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
+      # Only CI publishes the app when it can sign+notarize (secrets set). Otherwise
+      # the macOS app is released from a Mac via `make app-release` (notarized) — CI
+      # skips upload+cask so the two never fight over the release asset / cask sha.
       - name: attach Gtmux.app to the release (tag)
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && steps.signing.outputs.configured == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${GITHUB_REF_NAME}" "$ZIP" --clobber
@@ -171,7 +176,7 @@ jobs:
       # here, outside GoReleaser, so publish its cask (gtmux-app) by hand to the
       # same tap. Needs the cross-repo PAT (HOMEBREW_TAP_TOKEN).
       - name: publish Gtmux.app cask to the tap (tag)
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') && steps.signing.outputs.configured == 'true'
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |

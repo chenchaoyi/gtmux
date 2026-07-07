@@ -1,5 +1,5 @@
 # Developer shortcuts. `make check` runs the same gate as CI (.github/workflows/ci.yml).
-.PHONY: build app install test cover fmt vet lint check clean
+.PHONY: build app app-release install test cover fmt vet lint check clean
 
 BIN      ?= gtmux
 PKG       = ./cmd/gtmux
@@ -13,6 +13,9 @@ build: ## Build the gtmux CLI (cgo-free) into ./$(BIN)
 
 app: ## Build the native menu-bar app (Gtmux.app) — Swift + the bundled CLI
 	cd macapp && GTMUX_VERSION=$(VERSION) ./build.sh
+
+app-release: ## Build a signed+notarized Gtmux.app and publish it to the release + cask (local path; see docs/release-signing.md)
+	macapp/release.sh
 
 install: ## Install gtmux into $GOBIN / $GOPATH/bin
 	go install -ldflags "$(LDFLAGS)" $(PKG)
