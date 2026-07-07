@@ -23,16 +23,26 @@ xcrun notarytool store-credentials gtmux-notary \
   --key ~/Desktop/AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --issuer <issuer-id>
 ```
 
-Then per release (the tag must be pushed first so goreleaser made the release):
+Then per release, **in this order**:
 
 ```sh
-git tag v0.12.40 && git push origin v0.12.40   # ships the CLI via CI
-make app-release                                # builds notarized Gtmux.app → release + cask
+# 1. Push the tag — CI (goreleaser) builds+publishes the CLI and CREATES the release.
+git tag v0.12.40 && git push origin v0.12.40
+
+# 2. WAIT until goreleaser has CREATED the release (~1 min) before step 3 —
+#    make app-release uploads the app INTO that release, so it must exist first.
+#    (No cask race: on the local path CI has no signing secrets, so it skips the app
+#    upload + cask entirely — make app-release is the only thing that touches them.)
+until gh release view "v0.12.40" >/dev/null 2>&1; do sleep 5; done
+
+# 3. Build + notarize the app and publish it to the release + cask.
+make app-release
 ```
 
 `make app-release` auto-derives the signing identity, builds + notarizes + staples,
-uploads the zip (clobbering any ad-hoc CI build), and updates the `gtmux-app` cask.
-Run it after the release CI is green.
+uploads the zip, and updates the `gtmux-app` cask. It refuses to run (with a clear
+error) if the release doesn't exist yet, so running step 3 too early is harmless —
+just wait for the release and re-run.
 
 ## 1. Developer ID Application certificate → `MACOS_CERT_P12` + password
 
