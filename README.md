@@ -28,6 +28,13 @@ an agent needs a decision — in the menu bar, on the desktop, or on your phone.
 It does **not** run your agents. It watches whatever you already have in tmux —
 including agents other tools started — and never gets in the way.
 
+**Built on tmux — that's the premise.** You run each agent in a tmux pane; gtmux is
+the radar and remote over them. Running several agents in tmux — named, one per
+pane, persistent across disconnects and reboots — is, we think, the best way to keep
+them all in reach, and it's what gtmux's view/jump/reply features are built on.
+The setup we recommend: **[Ghostty](https://ghostty.org) + tmux + gtmux** — a fast
+native terminal, tmux holding the agents, gtmux to see and reach them from anywhere.
+
 **Three surfaces, one source of truth:**
 
 - **CLI** — `gtmux agents` lists every agent and where to jump; `--watch` is a live dashboard.
