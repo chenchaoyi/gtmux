@@ -1,0 +1,19 @@
+[Unit]
+Description=gtmux self-hosted tunnel — chisel server (reverse tunnel endpoint)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Plain-HTTP WebSocket on loopback; Caddy fronts it with TLS. --reverse lets the
+# Mac client create the reverse forward (VPS 127.0.0.1:9000 -> Mac serve:8765).
+# The shared secret (AUTH=user:pass) lives in /etc/gtmux-tunnel/chisel.env (0600,
+# systemd reads it as root then drops to a DynamicUser), NOT in the repo.
+EnvironmentFile=/etc/gtmux-tunnel/chisel.env
+ExecStart=/usr/local/bin/chisel server --host 127.0.0.1 --port 8080 --reverse --keepalive 25s
+Restart=always
+RestartSec=3
+DynamicUser=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

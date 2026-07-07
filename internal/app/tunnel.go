@@ -38,6 +38,10 @@ func cmdTunnel(args []string) int {
 	}
 	quick := false
 	yes := false
+	// backend: "cloudflare" (default, zero-config hosted) or "self" (a WebSocket-
+	// over-443 tunnel to YOUR OWN VPS + domain — survives networks that block
+	// Cloudflare's edge). Env default, --backend overrides.
+	backend := strings.TrimSpace(os.Getenv("GTMUX_TUNNEL_BACKEND"))
 	var service string // "install" | "remove" | "status"
 
 	for i := 0; i < len(args); i++ {
@@ -53,6 +57,14 @@ func cmdTunnel(args []string) int {
 		case a == "-h" || a == "--help":
 			tunnelUsage()
 			return 0
+		case a == "--backend":
+			v, ok := next()
+			if !ok {
+				return tunnelUsageErr()
+			}
+			backend = v
+		case strings.HasPrefix(a, "--backend="):
+			backend = strings.TrimPrefix(a, "--backend=")
 		case a == "--quick":
 			quick = true
 		case a == "--service":
@@ -95,13 +107,23 @@ func cmdTunnel(args []string) int {
 		}
 	}
 
+	if backend != "" && backend != "cloudflare" && backend != "self" {
+		i18n.Sae("gtmux tunnel: --backend must be 'cloudflare' or 'self'", "gtmux tunnel: --backend 只能是 'cloudflare' 或 'self'")
+		return 2
+	}
 	switch service {
 	case "install":
+		if backend == "self" {
+			return tunnelSelfServiceInstall(port, name, yes)
+		}
 		return tunnelServiceInstall(port, name, yes)
 	case "remove":
 		return tunnelServiceRemove()
 	case "status":
 		return tunnelServiceStatus()
+	}
+	if backend == "self" {
+		return tunnelSelf(port, name)
 	}
 	// Dual-tunnel guard: if the always-on tunnel (the menu-bar's "Anywhere" mode)
 	// is already running, a foreground `gtmux tunnel` would start a SECOND,
@@ -564,12 +586,16 @@ func printTunnelPairing(url, token, name string, port int, stable bool) {
 }
 
 func tunnelUsage() {
-	i18n.Say("usage: gtmux tunnel [--quick] [--service|--unservice|--status] [--port N] [--name LABEL]",
-		"用法：gtmux tunnel [--quick] [--service|--unservice|--status] [--port N] [--name 标签]")
+	i18n.Say("usage: gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--port N] [--name LABEL]",
+		"用法：gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--port N] [--name 标签]")
 	i18n.Say("  Expose the read-only radar from anywhere via an outbound tunnel, then print a pairing QR.",
 		"  通过出站隧道把只读雷达暴露到任何地方，并打印配对二维码。")
 	i18n.Say("  default: a stable hosted address (pair once), foreground. --quick: an account-less ephemeral URL.",
 		"  默认：固定的托管地址（配一次即可），前台运行。--quick：免账号的临时地址。")
+	i18n.Say("  --backend self: tunnel to YOUR OWN VPS+domain over 443 (survives networks that block the hosted edge);",
+		"  --backend self：走 443 隧道到你自己的 VPS+域名（在屏蔽托管边缘的网络下仍可用）；")
+	i18n.Say("    set GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET. See deploy/self-tunnel/README.md.",
+		"    需设置 GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET。见 deploy/self-tunnel/README.md。")
 	i18n.Say("  --service: keep it ON across reboots (launchd); --unservice: turn off; --status: show state.",
 		"  --service：重启也保持开启（launchd）；--unservice：关闭；--status：查看状态。")
 }

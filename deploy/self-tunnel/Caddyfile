@@ -1,0 +1,28 @@
+# gtmux self-hosted tunnel — Caddy: terminates TLS for tunnel.ccy.dev (behind the
+# nginx SNI router) and routes to the chisel tunnel.
+#   - WebSocket upgrades  -> chisel server (the Mac's tunnel control channel)
+#   - everything else     -> the port chisel reverse-forwards from the Mac's serve:8765
+# Caddy serves HTTPS on :4443 (nginx passes tunnel.ccy.dev SNI here) and does ACME
+# HTTP-01 on :80 (needs tunnel.ccy.dev -> this VPS in DNS, DNS-only). Auto Let's Encrypt.
+
+{
+    http_port 80
+    https_port 4443
+}
+
+tunnel.ccy.dev {
+    # The chisel client's control channel is a WebSocket upgrade → send those to chisel.
+    @ws {
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    handle @ws {
+        reverse_proxy 127.0.0.1:8080
+    }
+    # Everything else is the phone hitting the Mac's read-only radar, tunneled by
+    # chisel's reverse-forward (VPS 127.0.0.1:9000 -> Mac localhost:8765).
+    handle {
+        reverse_proxy 127.0.0.1:9000
+    }
+    encode zstd gzip
+}

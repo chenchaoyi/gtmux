@@ -70,6 +70,9 @@ offers to `brew install` it.)
 - **`--quick`** needs no infrastructure but the `trycloudflare.com` URL **rotates
   each run** (re-pair every time) — fine for a quick look, not for "leave it
   running and check later".
+- **Own VPS (`--backend self`):** tunnel over 443 to your OWN domain+VPS —
+  survives networks that block the hosted edge. `gtmux tunnel --backend self` with
+  `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET`; server setup in `deploy/self-tunnel/`.
 - **Self-host:** point `gtmux tunnel` at your own control-plane Worker with
   `GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG`. See
   `design/remote-access-tunnel.md` and `../tunnel-worker/`.
