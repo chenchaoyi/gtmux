@@ -69,7 +69,8 @@ func cmdUpdate(args []string) int {
 	}
 
 	cur := strings.TrimPrefix(Version, "v")
-	latest := strings.TrimPrefix(fetchLatestTag(), "v")
+	latestTag := fetchLatestTag() // "vX.Y.Z" (with the v), "" if unreachable
+	latest := strings.TrimPrefix(latestTag, "v")
 
 	if jsonOut {
 		// Machine-readable check for the menu-bar app's "check for updates".
@@ -103,13 +104,16 @@ func cmdUpdate(args []string) int {
 		i18n.Say("Updating gtmux to the latest release…", "正在更新 gtmux 到最新版…")
 	}
 
-	return runInstaller(cliOnly)
+	return runInstaller(cliOnly, latestTag)
 }
 
 // runInstaller fetches the official install.sh and runs it in place (over the
-// running binary's dir), installing the CLI + menu-bar app unless cliOnly. Returns
-// 0 on success. Shared by `gtmux update` and `doctor --fix`'s app step.
-func runInstaller(cliOnly bool) int {
+// running binary's dir), installing the CLI + menu-bar app unless cliOnly. When
+// `version` is a resolved tag (e.g. "v0.12.40"), it's handed to install.sh as
+// GTMUX_VERSION so the script skips its OWN release resolution — which otherwise
+// re-does (and can re-fail) the api.github.com/mirror lookup we already did in Go.
+// Returns 0 on success. Shared by `gtmux update` and `doctor --fix`'s app step.
+func runInstaller(cliOnly bool, version string) int {
 	script := fetchInstallScript()
 	if script == nil {
 		// Every mirror failed → almost always the network can't reach GitHub/the CDN
@@ -137,6 +141,14 @@ func runInstaller(cliOnly bool) int {
 	cmd := exec.Command("bash", tmp.Name())
 	cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 	env := os.Environ()
+	// Hand install.sh the version we already resolved so it doesn't re-resolve it
+	// (and re-fail if the release API blips) — but never override a version the user
+	// pinned themselves via the environment.
+	if version != "" {
+		if _, ok := os.LookupEnv("GTMUX_VERSION"); !ok {
+			env = append(env, "GTMUX_VERSION="+version)
+		}
+	}
 	// Install IN PLACE: over the binary that's running (its dir), unless the user
 	// already pinned a dir.
 	if _, ok := os.LookupEnv("GTMUX_BIN_DIR"); !ok {
@@ -205,18 +217,32 @@ func fetchInstallScript() []byte {
 }
 
 // fetchLatestTag returns the latest release tag (e.g. "v0.6.0"), or "" on failure.
+// It tries the GitHub API first, then jsdelivr's data API — which stays reachable on
+// corp/CN networks that block api.github.com, so a `gtmux update` there can still
+// resolve the version (and hand it to install.sh) instead of dead-ending.
 func fetchLatestTag() string {
-	b := httpGetBytes("https://api.github.com/repos/chenchaoyi/gtmux/releases/latest", 10*time.Second)
-	if b == nil {
-		return ""
+	if b := httpGetBytes("https://api.github.com/repos/chenchaoyi/gtmux/releases/latest", 10*time.Second); b != nil {
+		if tag := parseTagName(string(b)); tag != "" {
+			return tag
+		}
 	}
-	// Minimal parse: find "tag_name":"vX.Y.Z" without pulling in a JSON struct.
+	if b := httpGetBytes("https://data.jsdelivr.com/v1/packages/gh/chenchaoyi/gtmux", 10*time.Second); b != nil {
+		if tag := parseJsdelivrLatest(string(b)); tag != "" {
+			return tag
+		}
+	}
+	return ""
+}
+
+// parseTagName pulls "tag_name":"vX.Y.Z" out of the GitHub releases/latest JSON
+// (a minimal scan — no struct). "" if absent.
+func parseTagName(body string) string {
 	const key = `"tag_name":`
-	i := strings.Index(string(b), key)
+	i := strings.Index(body, key)
 	if i < 0 {
 		return ""
 	}
-	rest := string(b)[i+len(key):]
+	rest := body[i+len(key):]
 	q1 := strings.Index(rest, `"`)
 	if q1 < 0 {
 		return ""
@@ -227,6 +253,27 @@ func fetchLatestTag() string {
 		return ""
 	}
 	return rest[:q2]
+}
+
+// parseJsdelivrLatest reads the newest version from jsdelivr's package data API,
+// whose `versions` list is sorted newest-first. Returns it tag-shaped ("vX.Y.Z").
+func parseJsdelivrLatest(body string) string {
+	var d struct {
+		Versions []struct {
+			Version string `json:"version"`
+		} `json:"versions"`
+	}
+	if json.Unmarshal([]byte(body), &d) != nil || len(d.Versions) == 0 {
+		return ""
+	}
+	v := strings.TrimSpace(d.Versions[0].Version)
+	if v == "" {
+		return ""
+	}
+	if !strings.HasPrefix(v, "v") {
+		v = "v" + v
+	}
+	return v
 }
 
 func httpGetBytes(url string, timeout time.Duration) []byte {

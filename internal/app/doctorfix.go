@@ -373,7 +373,7 @@ func (s *fixState) stepAppInstall() int {
 	if !s.ask(i18n.Tr("menu-bar app  (for desktop notifications)", "菜单栏 app（桌面通知需要）"), detail) {
 		return 0
 	}
-	if runInstaller(false) != 0 {
+	if runInstaller(false, fetchLatestTag()) != 0 {
 		s.rc = 1
 		return 0
 	}
