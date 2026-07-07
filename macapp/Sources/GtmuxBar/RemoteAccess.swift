@@ -167,9 +167,23 @@ final class RemoteAccess: ObservableObject {
     /// Enable LAN (same Wi-Fi) access — the free mode. Removes the tunnel if any.
     func enableLan() { run(["serve", "--service"], expect: .lan) }
 
-    /// Enable the always-on tunnel (Pro). The UI confirms the standing exposure
-    /// first; `--yes` skips the CLI's own prompt.
-    func enableAnywhere() { run(["tunnel", "--service", "--yes"], expect: .anywhere) }
+    /// Enable the always-on tunnel (Pro), choosing the backend: the zero-config
+    /// hosted Cloudflare tunnel, or a self-hosted one (your own VPS+domain, config in
+    /// ~/.config/gtmux/selftunnel.conf). The UI confirms the standing exposure first.
+    func enableAnywhere(selfHosted: Bool = false) {
+        let args = selfHosted
+            ? ["tunnel", "--backend", "self", "--service", "--yes"]
+            : ["tunnel", "--service", "--yes"]
+        run(args, expect: .anywhere)
+    }
+
+    /// Whether the self-hosted backend is configured (so it can be offered as a
+    /// choice). Reads the shared config the CLI uses.
+    var selfTunnelConfigured: Bool {
+        let p = "\(NSHomeDirectory())/.config/gtmux/selftunnel.conf"
+        guard let s = try? String(contentsOfFile: p, encoding: .utf8) else { return false }
+        return s.contains("url=") && s.contains("secret=")
+    }
 
     /// Turn remote access off from any mode (removes whichever agents exist).
     func turnOff() { run(["serve", "--unservice"], expect: .off) }
