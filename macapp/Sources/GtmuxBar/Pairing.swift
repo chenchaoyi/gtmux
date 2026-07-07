@@ -228,6 +228,9 @@ struct PairingView: View {
         .frame(width: 340)
         .onAppear { remote.refresh(); reload() }
         .onChange(of: remote.mode) { _ in reload() }
+        // Switching the tunnel BACKEND (self↔hosted) keeps mode == .anywhere but
+        // changes the URL — reload so the QR/URL/reachability follow the new backend.
+        .onChange(of: remote.backend) { _ in reload() }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
