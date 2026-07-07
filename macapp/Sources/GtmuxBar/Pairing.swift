@@ -204,9 +204,7 @@ struct PairingView: View {
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                     .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
                 reachLine
-                wrap(p.anywhere
-                        ? l10n.tr("Reachable from anywhere (a tunnel is up).", "任意网络可达（隧道在运行）。")
-                        : l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"),
+                wrap(p.anywhere ? anywhereBackendNote : l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"),
                      size: 11, color: .tertiary)
                 // The pairing code is short-lived and single-use — if it expired
                 // before the phone scanned it, mint a fresh one right here (no need
@@ -308,6 +306,19 @@ struct PairingView: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         }
         .frame(width: 220, height: 220)
+    }
+
+    // Which tunnel is providing "anywhere" reachability — self-hosted (your own
+    // VPS+domain) or the hosted Cloudflare tunnel.
+    private var anywhereBackendNote: String {
+        switch remote.backend {
+        case .selfHosted:
+            return l10n.tr("Reachable from anywhere · self-hosted tunnel.", "任意网络可达 · 自建隧道。")
+        case .cloudflare:
+            return l10n.tr("Reachable from anywhere · hosted tunnel.", "任意网络可达 · 托管隧道。")
+        case .none:
+            return l10n.tr("Reachable from anywhere (a tunnel is up).", "任意网络可达（隧道在运行）。")
+        }
     }
 
     @ViewBuilder private var reachLine: some View {

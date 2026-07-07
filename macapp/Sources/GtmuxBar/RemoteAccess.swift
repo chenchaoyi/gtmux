@@ -13,6 +13,11 @@ enum RemoteMode {
     case off, lan, anywhere
 }
 
+/// The tunnel backend behind "anywhere" mode (see RemoteAccess.backend).
+enum TunnelBackend {
+    case none, cloudflare, selfHosted
+}
+
 /// One live remote viewer, mirrored from the serve's `remote-clients.json`
 /// roster: a paired phone (`kind == "phone"`, `name` from the enroll roster) or
 /// an anonymous browser mirror (`kind == "browser"`, `platform` sniffed from the
@@ -65,6 +70,10 @@ final class RemoteAccess: ObservableObject {
     static let shared = RemoteAccess()
 
     @Published private(set) var mode: RemoteMode = .off
+    /// Which tunnel backend is providing "anywhere" access, when mode == .anywhere:
+    /// the zero-config hosted Cloudflare tunnel, or a self-hosted one on the user's
+    /// own VPS+domain (`gtmux tunnel --backend self`). Inferred from which agent exists.
+    @Published private(set) var backend: TunnelBackend = .none
     @Published private(set) var busy = false
     /// A human-readable reason the last switch didn't take (e.g. "Anywhere" needs
     /// a hosted build), or nil. Surfaced by the UI so a failed enable explains
@@ -89,6 +98,7 @@ final class RemoteAccess: ObservableObject {
     private var agentsDir: String { "\(NSHomeDirectory())/Library/LaunchAgents" }
     private var servePlist: String { "\(agentsDir)/com.gtmux.serve.plist" }
     private var tunnelPlist: String { "\(agentsDir)/com.gtmux.tunnel.plist" }
+    private var selfTunnelPlist: String { "\(agentsDir)/com.gtmux.selftunnel.plist" }
     private var urlPath: String { "\(NSHomeDirectory())/.config/gtmux/tunnel-url" }
     private var clientsPath: String { "\(NSHomeDirectory())/.local/share/gtmux/remote-clients.json" }
     /// remote-clients.json older than this is treated as stale (serve gone) → 0.
@@ -102,12 +112,22 @@ final class RemoteAccess: ObservableObject {
     }
 
     func refresh() {
+        let (m, b) = groundTruth()
+        DispatchQueue.main.async { self.mode = m; self.backend = b }
+        refreshClients()
+    }
+
+    /// The current remote mode + tunnel backend, derived from which LaunchAgents
+    /// exist. "anywhere" is either tunnel backend; a self-hosted agent implies the
+    /// self backend, else Cloudflare.
+    private func groundTruth() -> (RemoteMode, TunnelBackend) {
         let fm = FileManager.default
         let serveOn = fm.fileExists(atPath: servePlist)
-        let tunnelOn = fm.fileExists(atPath: tunnelPlist)
-        let m: RemoteMode = tunnelOn ? .anywhere : (serveOn ? .lan : .off)
-        DispatchQueue.main.async { self.mode = m }
-        refreshClients()
+        let cfOn = fm.fileExists(atPath: tunnelPlist)
+        let selfOn = fm.fileExists(atPath: selfTunnelPlist)
+        let mode: RemoteMode = (cfOn || selfOn) ? .anywhere : (serveOn ? .lan : .off)
+        let backend: TunnelBackend = selfOn ? .selfHosted : (cfOn ? .cloudflare : .none)
+        return (mode, backend)
     }
 
     /// Re-read the live remote-viewer count from `remote-clients.json`, honoring
@@ -167,12 +187,10 @@ final class RemoteAccess: ObservableObject {
         lastError = nil
         DispatchQueue.global().async {
             let res = GtmuxCLI.captureResult(args)
-            let fm = FileManager.default
-            let serveOn = fm.fileExists(atPath: self.servePlist)
-            let tunnelOn = fm.fileExists(atPath: self.tunnelPlist)
-            let m: RemoteMode = tunnelOn ? .anywhere : (serveOn ? .lan : .off)
+            let (m, b) = self.groundTruth()
             DispatchQueue.main.async {
                 self.mode = m
+                self.backend = b
                 self.busy = false
                 if m != expect {
                     self.lastError = res.stderr.isEmpty
