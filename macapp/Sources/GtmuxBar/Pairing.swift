@@ -318,9 +318,9 @@ struct PairingView: View {
     private var anywhereBackendNote: String {
         switch remote.backend {
         case .selfHosted:
-            return l10n.tr("Reachable from anywhere · self-hosted tunnel.", "任意网络可达 · 自建隧道。")
+            return l10n.tr("Reachable from anywhere · direct tunnel.", "任意网络可达 · 直连隧道。")
         case .cloudflare:
-            return l10n.tr("Reachable from anywhere · hosted tunnel.", "任意网络可达 · 托管隧道。")
+            return l10n.tr("Reachable from anywhere · standard tunnel.", "任意网络可达 · 标准隧道。")
         case .none:
             return l10n.tr("Reachable from anywhere (a tunnel is up).", "任意网络可达（隧道在运行）。")
         }
@@ -423,15 +423,15 @@ struct PairingView: View {
                 wantSelfHosted = self_
                 remote.enableAnywhere(selfHosted: self_)
             })) {
-            Text(l10n.tr("Hosted", "托管")).tag(false)
-            Text(l10n.tr("Self-hosted", "自建")).tag(true)
+            Text(l10n.tr("Standard", "标准")).tag(false)
+            Text(l10n.tr("Direct", "直连")).tag(true)
         }
         .labelsHidden()
         .pickerStyle(.segmented)
         .frame(width: 290)
         .disabled(remote.busy)
-        .help(l10n.tr("Hosted = zero-config Cloudflare. Self-hosted = your own VPS+domain (survives networks that block the hosted edge).",
-                      "托管 = 零配置 Cloudflare。自建 = 你自己的 VPS+域名（在屏蔽托管边缘的网络下仍可用）。"))
+        .help(l10n.tr("Two gtmux tunnels: Standard works on most networks; Direct also gets through restrictive networks that block the standard one.",
+                      "两条 gtmux 隧道：标准隧道在大多数网络可用；直连隧道在屏蔽标准隧道的受限网络下也能穿透。"))
     }
 
     private func probe(_ url: String) {
