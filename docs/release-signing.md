@@ -44,6 +44,32 @@ uploads the zip, and updates the `gtmux-app` cask. It refuses to run (with a cle
 error) if the release doesn't exist yet, so running step 3 too early is harmless —
 just wait for the release and re-run.
 
+## Baking the tunnel/relay secrets (REQUIRED for the local path)
+
+`make app-release` bundles a `gtmux` CLI *inside* `Gtmux.app`. Two soft gates must be
+baked into that CLI at build time — WITHOUT them the shipped app is broken for anyone
+who installs only the cask (their app has no `~/.local/bin/gtmux` to prefer, so it
+falls back to the bundled CLI):
+
+- **`GTMUX_TUNNEL_REG`** — the hosted-tunnel registration gate. Empty → "Anywhere"
+  fails with "hosted mode isn't configured in this build".
+- **`GTMUX_RELAY_TOKEN`** — the push-relay bearer. Empty → push notifications are off.
+
+Neither is a *real* secret (both necessarily ship in every released binary — they're
+in the goreleaser CLI and the CI app build too), so we keep them out of git but on
+disk in **`macapp/.release.env`** (gitignored):
+
+```sh
+# macapp/.release.env
+GTMUX_TUNNEL_REG=<the value, also GitHub secret GTMUX_TUNNEL_REG / Worker REG_SECRET>
+GTMUX_RELAY_TOKEN=<the value, also GitHub secret GTMUX_RELAY_TOKEN>
+```
+
+`release.sh` sources this and **hard-refuses to build** if `GTMUX_TUNNEL_REG` is empty,
+so a local release can never silently ship a broken Anywhere again. Lost the values?
+They're recoverable from any reg-baked binary: `strings ~/.local/bin/gtmux | grep -oE
+'\b[0-9a-f]{48}\b'` (the tunnel reg is the one sent as the `x-gtmux-reg` header).
+
 ## 1. Developer ID Application certificate → `MACOS_CERT_P12` + password
 
 Needs a paid Apple Developer Program membership (team `2337SY8FRT`).

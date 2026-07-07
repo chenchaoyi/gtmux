@@ -132,9 +132,9 @@ func cmdTunnel(args []string) int {
 		return reuseRunningTunnel(name, port)
 	}
 	if quick {
-		return tunnelQuick(port, name)
+		return tunnelQuick(port, name, yes)
 	}
-	return tunnelHosted(port, name)
+	return tunnelHosted(port, name, yes)
 }
 
 // alreadyServingTunnel reports whether the always-on tunnel LaunchAgent is both
@@ -169,7 +169,7 @@ func reuseRunningTunnel(name string, port int) int {
 
 var registeredRe = regexp.MustCompile(`Registered tunnel connection`)
 
-func tunnelHosted(port int, name string) int {
+func tunnelHosted(port int, name string, yes bool) int {
 	reg := tunnelRegSecret()
 	if reg == "" {
 		i18n.Sae("gtmux tunnel: hosted mode isn't configured in this build. Use `gtmux tunnel --quick` for an ephemeral tunnel, or set GTMUX_TUNNEL_REG.",
@@ -178,7 +178,7 @@ func tunnelHosted(port int, name string) int {
 	}
 	bin, err := exec.LookPath("cloudflared")
 	if err != nil {
-		if bin = ensureCloudflared(); bin == "" {
+		if bin = ensureCloudflared(yes); bin == "" {
 			return 1
 		}
 	}
@@ -328,10 +328,10 @@ func resolveDeviceID() string {
 // tryCloudflareRe matches the public URL cloudflared prints for a quick tunnel.
 var tryCloudflareRe = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
 
-func tunnelQuick(port int, name string) int {
+func tunnelQuick(port int, name string, yes bool) int {
 	bin, err := exec.LookPath("cloudflared")
 	if err != nil {
-		if bin = ensureCloudflared(); bin == "" {
+		if bin = ensureCloudflared(yes); bin == "" {
 			return 1
 		}
 	}
@@ -438,31 +438,38 @@ func cloudflaredProblem(line string) bool {
 		strings.Contains(strings.ToLower(line), "error")
 }
 
-// ensureCloudflared offers to `brew install cloudflared` when it's missing.
-// Returns the resolved path, or "" if the user declined / it couldn't be set up.
-func ensureCloudflared() string {
+// ensureCloudflared installs the Cloudflare tunnel client when it's missing.
+// Returns the resolved path, or "" if it couldn't be set up. `yes` means
+// non-interactive consent to install (the menu-bar "Anywhere" toggle runs
+// `tunnel --service --yes` with NO TTY — without this, `confirm` would always
+// decline and Anywhere could never come up on a fresh Mac). Failure reasons go to
+// STDERR so the app can surface them (it maps the CLI's stderr to its error banner).
+func ensureCloudflared(yes bool) string {
 	i18n.Say("cloudflared isn't installed — it's the Cloudflare tunnel client (one binary, Mac-side only; the mobile app never touches it).",
 		"未检测到 cloudflared，它是 Cloudflare 隧道客户端（一个二进制，只在 Mac 上跑；手机 App 完全不碰它）。")
 	if _, err := exec.LookPath("brew"); err != nil {
-		i18n.Say("Install it then re-run: https://github.com/cloudflare/cloudflared/releases",
-			"请先安装再重试：https://github.com/cloudflare/cloudflared/releases")
+		i18n.Sae("Anywhere needs cloudflared, and Homebrew isn't installed to fetch it. Install cloudflared, then retry: https://github.com/cloudflare/cloudflared/releases",
+			"任意网络访问需要 cloudflared，但未安装 Homebrew 来获取它。请手动安装 cloudflared 后重试：https://github.com/cloudflare/cloudflared/releases")
 		return ""
 	}
-	if !confirm(i18n.Tr("Install it now with `brew install cloudflared`? [Y/n] ",
+	if !yes && !confirm(i18n.Tr("Install it now with `brew install cloudflared`? [Y/n] ",
 		"现在用 `brew install cloudflared` 安装？[Y/n] ")) {
 		i18n.Say("Skipped. Install it yourself, then re-run `gtmux tunnel`.",
 			"已跳过。自行安装后重试 `gtmux tunnel`。")
 		return ""
 	}
+	i18n.Say("Installing cloudflared (brew install cloudflared)…", "正在安装 cloudflared（brew install cloudflared）…")
 	c := exec.Command("brew", "install", "cloudflared")
 	c.Stdout, c.Stderr, c.Stdin = os.Stdout, os.Stderr, os.Stdin
 	if err := c.Run(); err != nil {
-		i18n.Sae("gtmux tunnel: brew install failed: "+err.Error(),
-			"gtmux tunnel: brew 安装失败："+err.Error())
+		i18n.Sae("gtmux tunnel: `brew install cloudflared` failed: "+err.Error(),
+			"gtmux tunnel: `brew install cloudflared` 失败："+err.Error())
 		return ""
 	}
 	bin, err := exec.LookPath("cloudflared")
 	if err != nil {
+		i18n.Sae("gtmux tunnel: cloudflared still not found after install.",
+			"gtmux tunnel: 安装后仍未找到 cloudflared。")
 		return ""
 	}
 	return bin

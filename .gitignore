@@ -9,3 +9,6 @@ coverage.out
 /macapp/build/
 /relay-bin
 .playwright-mcp/
+
+# Local release secrets (soft tunnel/relay gates baked at make app-release) — never commit
+macapp/.release.env
