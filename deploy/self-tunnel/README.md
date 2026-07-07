@@ -15,7 +15,7 @@ public :443 ─► nginx (stream + ssl_preread, SNI router, TLS passthrough — 
                  │                                          └─ else      ─► 127.0.0.1:9000  (chisel reverse-forward → Mac serve:8765)
                  └─ SNI else / www.ivi.tv ─► 127.0.0.1:8443  xray VLESS-REALITY (your proxy)
 public :80  ─► Caddy (ACME HTTP-01 only)
-Mac ─► chisel client  wss://tunnel.ccy.dev  R:127.0.0.1:9000:localhost:8765
+Mac ─► chisel client  https://tunnel.ccy.dev  R:127.0.0.1:9000:localhost:8765
 mail 25/110/143/993/995 (postfix/dovecot) and SSH 22 — UNTOUCHED
 ```
 
@@ -50,7 +50,7 @@ below) once its config is fixed.
 
 ```sh
 AUTH=<user:pass> chisel client --keepalive 25s \
-  wss://tunnel.ccy.dev R:127.0.0.1:9000:localhost:8765
+  https://tunnel.ccy.dev R:127.0.0.1:9000:localhost:8765
 ```
 
 Then pair the phone to `https://tunnel.ccy.dev` + the serve token.
