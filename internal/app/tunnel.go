@@ -314,8 +314,8 @@ func tunnelQuick(port int, name string) int {
 		}
 	}
 	token := startLocalRadar(port)
-	i18n.Say("Opening a Cloudflare quick tunnel (no account, ephemeral URL)…",
-		"正在打开 Cloudflare quick tunnel（免账号、临时地址）…")
+	i18n.Say("Opening a quick tunnel (no account, ephemeral URL)…",
+		"正在打开临时隧道（免账号、临时地址）…")
 	args := []string{"tunnel", "--no-autoupdate", "--protocol", cloudflaredProtocol(), "--url", fmt.Sprintf("http://localhost:%d", port)}
 	return runCloudflared(bin, args, tryCloudflareRe, func(line string) {
 		printTunnelPairing(tryCloudflareRe.FindString(line), token, name, port, false)
@@ -367,8 +367,8 @@ func runCloudflared(bin string, args []string, readyRe *regexp.Regexp, onReady f
 		return 1
 	}
 	if err := cmd.Start(); err != nil {
-		i18n.Sae("gtmux tunnel: failed to start cloudflared: "+err.Error(),
-			"gtmux tunnel: 启动 cloudflared 失败："+err.Error())
+		i18n.Sae("gtmux tunnel: failed to start the tunnel client: "+err.Error(),
+			"gtmux tunnel: 启动隧道客户端失败："+err.Error())
 		return 1
 	}
 
@@ -402,8 +402,8 @@ func runCloudflared(bin string, args []string, readyRe *regexp.Regexp, onReady f
 	signal.Stop(sigc)
 	close(sigc)
 	if err != nil && !ready {
-		i18n.Sae("gtmux tunnel: cloudflared exited: "+err.Error(),
-			"gtmux tunnel: cloudflared 退出："+err.Error())
+		i18n.Sae("gtmux tunnel: the tunnel client exited: "+err.Error(),
+			"gtmux tunnel: 隧道客户端退出："+err.Error())
 		return 1
 	}
 	return 0

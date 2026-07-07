@@ -59,8 +59,8 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	if !yes {
 		i18n.Say(i18n.Bold+"Keep remote access ON across reboots?"+i18n.Reset,
 			i18n.Bold+"让远程访问重启后也保持开启？"+i18n.Reset)
-		i18n.Say(i18n.Dim+"  This registers two background services (cloudflared + gtmux serve) that start"+i18n.Reset,
-			i18n.Dim+"  这会注册两个后台服务（cloudflared + gtmux serve），开机自启、"+i18n.Reset)
+		i18n.Say(i18n.Dim+"  This registers two background services (the tunnel client + gtmux serve) that start"+i18n.Reset,
+			i18n.Dim+"  这会注册两个后台服务（隧道客户端 + gtmux serve），开机自启、"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  at login and keep your Mac reachable at a public URL (token-gated) until you"+i18n.Reset,
 			i18n.Dim+"  让你的 Mac 持续在一个公网地址可达（有 token 把关），直到你跑"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  run `gtmux tunnel --unservice`. It is a standing exposure — enable consciously."+i18n.Reset,
