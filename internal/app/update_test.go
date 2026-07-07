@@ -6,6 +6,35 @@ import (
 	"testing"
 )
 
+// parseTagName pulls the tag out of GitHub's releases/latest JSON; parseJsdelivrLatest
+// out of jsdelivr's newest-first versions list (the CN-reachable fallback). Both
+// normalize to a "vX.Y.Z" tag (jsdelivr adds the missing "v").
+func TestParseTagName(t *testing.T) {
+	if got := parseTagName(`{"url":"x","tag_name":"v0.12.40","draft":false}`); got != "v0.12.40" {
+		t.Errorf("parseTagName = %q, want v0.12.40", got)
+	}
+	if got := parseTagName(`{"message":"Not Found"}`); got != "" {
+		t.Errorf("parseTagName(no tag) = %q, want empty", got)
+	}
+}
+
+func TestParseJsdelivrLatest(t *testing.T) {
+	body := `{"type":"github","name":"gtmux","versions":[{"version":"0.12.40"},{"version":"0.12.39"}]}`
+	if got := parseJsdelivrLatest(body); got != "v0.12.40" {
+		t.Errorf("parseJsdelivrLatest = %q, want v0.12.40 (v prepended)", got)
+	}
+	// Already tag-shaped → unchanged; empty list → "".
+	if got := parseJsdelivrLatest(`{"versions":[{"version":"v1.2.3"}]}`); got != "v1.2.3" {
+		t.Errorf("parseJsdelivrLatest(v-prefixed) = %q, want v1.2.3", got)
+	}
+	if got := parseJsdelivrLatest(`{"versions":[]}`); got != "" {
+		t.Errorf("parseJsdelivrLatest(empty) = %q, want empty", got)
+	}
+	if got := parseJsdelivrLatest(`not json`); got != "" {
+		t.Errorf("parseJsdelivrLatest(garbage) = %q, want empty", got)
+	}
+}
+
 // updateCheckPayload feeds the menu-bar app's "check for updates": `update` is
 // true ONLY when a real newer tag exists; an unreachable API reports an error and
 // never claims an update (so the app can't prompt on a failed check).
