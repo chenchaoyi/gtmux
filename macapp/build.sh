@@ -66,10 +66,28 @@ if [ -n "$SIGN_ID" ]; then
   codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/${APP_BIN}"
   codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE"
   codesign --verify --strict --verbose=2 "$BUNDLE" || { echo "codesign verify failed" >&2; exit 1; }
-  echo "   signed. Notarize the zipped bundle next, e.g.:"
-  echo "     ditto -c -k --keepParent \"$BUNDLE\" Gtmux.zip"
-  echo "     xcrun notarytool submit Gtmux.zip --keychain-profile \"\$GTMUX_NOTARY_PROFILE\" --wait"
-  echo "     xcrun stapler staple \"$BUNDLE\""
+  echo "   signed."
+  # Notarize + staple when notary credentials are present, so the app opens on OTHER
+  # Macs without Gatekeeper friction (no `xattr`/right-click dance). Two credential
+  # styles: a keychain profile (local dev) or an App Store Connect API key (CI).
+  NOTARY_ARGS=""
+  if [ -n "${GTMUX_NOTARY_PROFILE:-}" ]; then
+    NOTARY_ARGS="--keychain-profile ${GTMUX_NOTARY_PROFILE}"
+  elif [ -n "${GTMUX_NOTARY_KEY:-}" ] && [ -n "${GTMUX_NOTARY_KEY_ID:-}" ] && [ -n "${GTMUX_NOTARY_ISSUER:-}" ]; then
+    NOTARY_ARGS="--key ${GTMUX_NOTARY_KEY} --key-id ${GTMUX_NOTARY_KEY_ID} --issuer ${GTMUX_NOTARY_ISSUER}"
+  fi
+  if [ -n "$NOTARY_ARGS" ]; then
+    echo "==> notarizing (submit + wait, then staple)…"
+    ditto -c -k --keepParent "$BUNDLE" Gtmux-notarize.zip
+    # shellcheck disable=SC2086
+    xcrun notarytool submit Gtmux-notarize.zip $NOTARY_ARGS --wait
+    xcrun stapler staple "$BUNDLE"
+    xcrun stapler validate "$BUNDLE"
+    rm -f Gtmux-notarize.zip
+    echo "   notarized + stapled."
+  else
+    echo "   NOT notarized — set GTMUX_NOTARY_PROFILE, or GTMUX_NOTARY_KEY/_ID/_ISSUER, to notarize."
+  fi
 else
   echo "==> ad-hoc code signing (set GTMUX_SIGN_ID='Developer ID Application: …' for a stable signature)"
   codesign --force --deep --sign - "$BUNDLE"

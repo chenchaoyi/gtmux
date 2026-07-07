@@ -1,0 +1,71 @@
+# Release signing & notarization (macOS app) — one-time setup
+
+By default the release ships an **ad-hoc-signed** `Gtmux.app`: it opens on the Mac
+that built it, but on any OTHER Mac Gatekeeper blocks it (a teammate must
+`xattr -dr com.apple.quarantine ~/Applications/Gtmux.app` first). Set up **Developer
+ID signing + notarization** once and every tagged release opens cleanly on any Mac —
+`brew install --cask` and go, TCC grants persist across updates.
+
+CI (`release.yml`, the "menu-bar app (macOS)" job) already does the signing +
+`notarytool submit --wait` + `stapler staple` — it just needs six repo secrets.
+Without them the release falls back to ad-hoc (nothing breaks).
+
+## 1. Developer ID Application certificate → `MACOS_CERT_P12` + password
+
+Needs a paid Apple Developer Program membership (team `2337SY8FRT`).
+
+1. Create the cert: **Xcode → Settings → Accounts → (your team) → Manage
+   Certificates → + → Developer ID Application** (or developer.apple.com →
+   Certificates → + → Developer ID Application).
+2. Export it WITH its private key: **Keychain Access → My Certificates →** the
+   "Developer ID Application: …" entry → right-click → **Export → .p12**, set an
+   export password.
+3. Base64 it for the secret:
+   ```sh
+   base64 -i DeveloperID.p12 | pbcopy   # → paste into MACOS_CERT_P12
+   ```
+   - `MACOS_CERT_P12` = that base64
+   - `MACOS_CERT_PASSWORD` = the .p12 export password
+   - `MACOS_SIGN_IDENTITY` = the identity string, from:
+     ```sh
+     security find-identity -v -p codesigning   # e.g. "Developer ID Application: Chaoyi Chen (2337SY8FRT)"
+     ```
+
+## 2. App Store Connect API key (for notarytool) → `MACOS_NOTARY_*`
+
+1. **App Store Connect → Users and Access → Integrations → App Store Connect API →
+   Team Keys → +**. Role: **Developer** (or App Manager). Name it e.g. `gtmux-notary`.
+2. **Download the `.p8` once** (you can't re-download it). Note the **Key ID** and,
+   at the top of the Keys page, the **Issuer ID**.
+3. Base64 the .p8:
+   ```sh
+   base64 -i AuthKey_XXXXXXXXXX.p8 | pbcopy   # → paste into MACOS_NOTARY_KEY_P8
+   ```
+   - `MACOS_NOTARY_KEY_P8` = that base64
+   - `MACOS_NOTARY_KEY_ID` = the Key ID
+   - `MACOS_NOTARY_ISSUER` = the Issuer ID
+
+## 3. Add the six secrets
+
+**GitHub → the gtmux repo → Settings → Secrets and variables → Actions → New
+repository secret**, for each of:
+`MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`,
+`MACOS_NOTARY_KEY_P8`, `MACOS_NOTARY_KEY_ID`, `MACOS_NOTARY_ISSUER`.
+
+## 4. Verify
+
+Cut a release tag. In the app job log you should see `code signing (Developer ID …)`
+then `notarizing (submit + wait, then staple)… notarized + stapled`. Then on a
+teammate's Mac:
+
+```sh
+brew install --cask chenchaoyi/tap/gtmux-app
+open ~/Applications/Gtmux.app        # opens directly — no xattr/right-click
+spctl -a -vvv ~/Applications/Gtmux.app   # → "accepted", source "Notarized Developer ID"
+```
+
+## Local signing (optional)
+
+`GTMUX_SIGN_ID="Developer ID Application: …" GTMUX_NOTARY_PROFILE=<profile> macapp/build.sh`
+signs + notarizes locally too (store the profile once with
+`xcrun notarytool store-credentials`).

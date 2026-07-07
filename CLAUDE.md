@@ -26,13 +26,17 @@ over one Go core (gtmux-core is the single data source):
 - Release: push a tag `vX.Y.Z` → goreleaser ships the CLI tarballs and a macOS
   job runs `macapp/build.sh` to ship `Gtmux-<v>-macos.zip`. CI builds the app
   but **can't see the menu bar** — smoke-test on real macOS before trusting a tag.
-- **Signing & notarization:** `build.sh` signs ad-hoc by default; set
-  `GTMUX_SIGN_ID="Developer ID Application: …"` for a STABLE signature (hardened
-  runtime) so TCC grants persist across updates (ad-hoc changes identity every
-  build → macOS re-prompts). It signs the bundled `gtmux` CLI then the bundle
-  (no `--deep`) and prints the `notarytool`/`stapler` steps. To sign in CI, add
-  the cert + `GTMUX_SIGN_ID` (+ a notarytool keychain profile) as secrets and
-  pass them to the macOS release job — until then releases stay ad-hoc.
+- **Signing & notarization:** `build.sh` signs ad-hoc by default (Gatekeeper-blocked
+  on other Macs → needs `xattr -dr com.apple.quarantine`). Set `GTMUX_SIGN_ID=
+  "Developer ID Application: …"` for a STABLE Developer ID signature (hardened
+  runtime; TCC grants then persist across updates), and `GTMUX_NOTARY_KEY`/`_ID`/
+  `_ISSUER` (App Store Connect API key) OR `GTMUX_NOTARY_PROFILE` (keychain) to
+  **notarize + staple** — then it opens on any Mac with no quarantine dance. **CI
+  does this automatically when the release secrets are set** (`release.yml` app job
+  imports the cert into a throwaway keychain): `MACOS_CERT_P12` (base64 .p12),
+  `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`, `MACOS_NOTARY_KEY_P8` (base64 .p8),
+  `MACOS_NOTARY_KEY_ID`, `MACOS_NOTARY_ISSUER`. Without them the release stays
+  ad-hoc. One-time setup: `docs/release-signing.md`.
 - **Mac App Store is NOT a viable target as built:** the app shells out to
   `gtmux`/`tmux`/`osascript` and reads `~/.local/share/gtmux`, `~/.tmux/…` etc.,
   none of which survive the App Sandbox MAS mandates (and there's no entitlement

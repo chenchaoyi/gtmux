@@ -100,8 +100,52 @@ jobs:
           go-version: '1.25'
           cache: true
 
-      # macapp/build.sh compiles the Swift app (universal), builds the cgo-free
-      # gtmux CLI to bundle alongside it, assembles Gtmux.app, and ad-hoc-signs.
+      # Import the Developer ID cert into a throwaway keychain and wire up
+      # notarization — ONLY when the signing secrets are set. Without them the build
+      # falls back to ad-hoc (still works, but Gatekeeper-blocked on other Macs).
+      # Required repo secrets (see docs/design/remote-access-tunnel.md? no — README/
+      # CLAUDE.md "Signing"): MACOS_CERT_P12 (base64 .p12), MACOS_CERT_PASSWORD,
+      # MACOS_SIGN_IDENTITY ("Developer ID Application: Name (TEAMID)"),
+      # MACOS_NOTARY_KEY_P8 (base64 App Store Connect API key), MACOS_NOTARY_KEY_ID,
+      # MACOS_NOTARY_ISSUER.
+      - name: set up Developer ID signing + notarization (when configured)
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          MACOS_NOTARY_KEY_P8: ${{ secrets.MACOS_NOTARY_KEY_P8 }}
+          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          MACOS_NOTARY_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MACOS_CERT_P12:-}" ]; then
+            echo "no MACOS_CERT_P12 secret → ad-hoc build (Gatekeeper-blocked on other Macs)"
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/gtmux-signing.keychain-db"
+          KPW="$(openssl rand -hex 20)"
+          security create-keychain -p "$KPW" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KPW" "$KEYCHAIN"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          # Make the new keychain searchable (keep the login one) + allow codesign to
+          # use the key without an interactive prompt.
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | sed s/\"//g)
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KPW" "$KEYCHAIN" >/dev/null
+          echo "GTMUX_SIGN_ID=$MACOS_SIGN_IDENTITY" >> "$GITHUB_ENV"
+          if [ -n "${MACOS_NOTARY_KEY_P8:-}" ]; then
+            echo "$MACOS_NOTARY_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+            echo "GTMUX_NOTARY_KEY=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"
+            echo "GTMUX_NOTARY_KEY_ID=$MACOS_NOTARY_KEY_ID" >> "$GITHUB_ENV"
+            echo "GTMUX_NOTARY_ISSUER=$MACOS_NOTARY_ISSUER" >> "$GITHUB_ENV"
+          fi
+          echo "Developer ID signing configured"
+
+      # macapp/build.sh compiles the Swift app (universal), builds the cgo-free gtmux
+      # CLI to bundle alongside it, assembles Gtmux.app, and signs it — Developer ID
+      # + notarize + staple when GTMUX_SIGN_ID/GTMUX_NOTARY_* are set (above), else ad-hoc.
       - name: build Gtmux.app (universal, signed)
         run: GTMUX_UNIVERSAL=1 GTMUX_VERSION="${GITHUB_REF_NAME}" macapp/build.sh
         env:
