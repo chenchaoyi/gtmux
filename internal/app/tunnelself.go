@@ -62,6 +62,14 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 			secret = fs
 		}
 	}
+	// Fall back to the baked-in "Direct" server (gtmux-provided) so Direct works out
+	// of the box — not only when the user configured their own. A user's env/conf wins.
+	if url == "" {
+		url = strings.TrimSpace(SelfTunnelURL)
+	}
+	if secret == "" {
+		secret = strings.TrimSpace(SelfTunnelSecret)
+	}
 	if url == "" || secret == "" {
 		i18n.Sae("gtmux tunnel --backend self needs YOUR server: set GTMUX_SELFTUNNEL_URL"+
 			" (e.g. https://tunnel.example.com) and GTMUX_SELFTUNNEL_SECRET (chisel auth user:pass), or write "+

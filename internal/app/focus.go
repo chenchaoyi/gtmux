@@ -25,7 +25,9 @@ func jumpPane(paneID string) {
 	}
 	tmux.OK("select-pane", "-t", paneID)
 	if sess != "" {
-		terminal.Active().FocusTab(sess)
+		// Resolve the terminal that hosts THIS session (not a global guess), so a
+		// session in iTerm2 focuses iTerm2 even when other sessions are in Ghostty.
+		terminal.ForSession(sess).FocusTab(sess)
 	}
 }
 
@@ -123,7 +125,10 @@ func cmdFocus(args []string) int {
 		return 1
 	}
 
-	term := terminal.Active()
+	// Resolve the terminal hosting THIS session, so focus lands on the right app
+	// when sessions span multiple terminals (Ghostty + iTerm2). Active() would pick
+	// whichever terminal hosts the first tmux client — wrong for a session elsewhere.
+	term := terminal.ForSession(target)
 	tn := term.Name()
 	res, err := term.FocusTab(target)
 	switch {

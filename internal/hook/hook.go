@@ -418,7 +418,7 @@ func Run(stdin io.Reader, args []string) int {
 	if !d.notify {
 		return 0
 	}
-	if session != "" && terminal.Active().IsViewing(session) {
+	if session != "" && terminal.ForSession(session).IsViewing(session) {
 		debugf("suppressed: already viewing session=%q", session)
 		return 0
 	}

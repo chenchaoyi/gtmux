@@ -59,10 +59,19 @@ Neither is a *real* secret (both necessarily ship in every released binary — t
 in the goreleaser CLI and the CI app build too), so we keep them out of git but on
 disk in **`macapp/.release.env`** (gitignored):
 
+A third pair bakes the **"Direct" tunnel** (the second gtmux-provided tunnel behind
+Anywhere; Standard = Cloudflare). Empty → the Anywhere→Direct choice only works if the
+user wrote their own `~/.config/gtmux/selftunnel.conf`:
+
+- **`GTMUX_SELFTUNNEL_URL`** / **`GTMUX_SELFTUNNEL_SECRET`** — the Direct server's URL
+  and chisel auth (`user:pass`). Never put these in source — the repo is public.
+
 ```sh
-# macapp/.release.env
-GTMUX_TUNNEL_REG=<the value, also GitHub secret GTMUX_TUNNEL_REG / Worker REG_SECRET>
-GTMUX_RELAY_TOKEN=<the value, also GitHub secret GTMUX_RELAY_TOKEN>
+# macapp/.release.env  (gitignored)
+GTMUX_TUNNEL_REG=<value, also GitHub secret GTMUX_TUNNEL_REG / Worker REG_SECRET>
+GTMUX_RELAY_TOKEN=<value, also GitHub secret GTMUX_RELAY_TOKEN>
+GTMUX_SELFTUNNEL_URL=<value, also GitHub secret GTMUX_SELFTUNNEL_URL>
+GTMUX_SELFTUNNEL_SECRET=<value, also GitHub secret GTMUX_SELFTUNNEL_SECRET>
 ```
 
 `release.sh` sources this and **hard-refuses to build** if `GTMUX_TUNNEL_REG` is empty,

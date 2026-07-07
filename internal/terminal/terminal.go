@@ -52,6 +52,17 @@ func Active() Terminal {
 	return fallback
 }
 
+// ForSession returns the driver for the terminal hosting a SPECIFIC tmux session
+// (resolved from the client attached to it), so `focus`/`IsViewing` land on the
+// right app when sessions span multiple terminals. Falls back to the global
+// resolution (then the fallback driver) when the session's host can't be resolved.
+func ForSession(session string) Terminal {
+	if t, ok := registry[resolveNameForSession(session)]; ok {
+		return t
+	}
+	return fallback
+}
+
 // DetectedName returns the resolved host-terminal name, which may not have a
 // driver yet (see HasDriver). For diagnostics (gtmux doctor).
 func DetectedName() string { return resolveName() }

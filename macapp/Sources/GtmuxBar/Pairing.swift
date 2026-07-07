@@ -188,7 +188,10 @@ struct PairingView: View {
     var body: some View {
         VStack(spacing: 13) {
             modeChooser
-            if remote.mode == .anywhere && remote.selfTunnelConfigured { backendChooser }
+            // Both tunnels are gtmux-provided, so Direct is ALWAYS selectable in
+            // Anywhere mode — not gated on a personal self-hosted config (the CLI
+            // has a baked-in Direct server). The chooser drives `--backend self`.
+            if remote.mode == .anywhere { backendChooser }
             if !ent.isPro { proHint }
             if let err = remote.lastError { errorLine(err) }
 
@@ -412,10 +415,11 @@ struct PairingView: View {
         }
     }
 
-    // backendChooser — pick which tunnel carries "Anywhere": the zero-config hosted
-    // Cloudflare tunnel, or the self-hosted one on your own VPS+domain. Only shown
-    // when a self-hosted backend is configured. Switching re-runs the install (the
-    // backends are mutually exclusive, so the other is retired).
+    // backendChooser — pick which gtmux tunnel carries "Anywhere": Standard (the
+    // zero-config Cloudflare tunnel) or Direct (a chisel tunnel to a gtmux-run VPS,
+    // baked into the CLI; a user's own selftunnel.conf overrides it). Always offered
+    // in Anywhere mode. Switching re-runs the install (backends are mutually
+    // exclusive, so the other is retired).
     @ViewBuilder private var backendChooser: some View {
         Picker("", selection: Binding(
             get: { remote.backend == .selfHosted },

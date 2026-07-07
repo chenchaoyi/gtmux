@@ -29,6 +29,42 @@ func resolveName() string {
 	return "ghostty"
 }
 
+// resolveNameForSession picks the driver name for the terminal hosting a SPECIFIC
+// tmux session — the client attached to it, walked up to its terminal app. This is
+// what lets `focus` land on the right app when sessions live across DIFFERENT
+// terminals (e.g. most sessions in Ghostty, one in iTerm2): the global resolveName
+// would return whichever terminal happens to host the FIRST tmux client, focusing
+// the wrong app for a session elsewhere. Order: explicit GTMUX_TERMINAL override →
+// this session's own client → the global resolution (env / first client / ghostty).
+func resolveNameForSession(session string) string {
+	if v := os.Getenv("GTMUX_TERMINAL"); v != "" {
+		return strings.ToLower(strings.TrimSpace(v))
+	}
+	if n := terminalFromSessionClients(session); n != "" {
+		return n
+	}
+	return resolveName()
+}
+
+// terminalFromSessionClients walks the ancestry of each tmux client attached to
+// `session` and returns the first recognized terminal app's driver name. "" when
+// the session has no attached client (detached) or its host isn't recognized.
+func terminalFromSessionClients(session string) string {
+	if session == "" {
+		return ""
+	}
+	for _, line := range tmux.Lines("list-clients", "-t", session, "-F", "#{client_pid}") {
+		pid, err := strconv.Atoi(strings.TrimSpace(line))
+		if err != nil {
+			continue
+		}
+		if n := terminalFromAncestry(pid); n != "" {
+			return n
+		}
+	}
+	return ""
+}
+
 // fromTermEnv maps this process's terminal environment to a driver name.
 func fromTermEnv() string {
 	switch os.Getenv("TERM_PROGRAM") {
