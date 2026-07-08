@@ -443,6 +443,18 @@ func gatherAgents() []agentPane {
 			continue
 		}
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
+		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
+		// OR its process subtree is burning CPU (a local tool running quietly), else
+		// idle. Both are sampled every poll to keep their baselines fresh.
+		hookFreeStatus := func(paneID string, panePid int) string {
+			frameW := state.PaneFrameWorking(paneID, tmux.CapturePane(paneID), now)
+			cpuW := state.PaneCPUWorking(paneID, subtreeCPU(panePid, procs, children), now)
+			if frameW || cpuW {
+				return "working"
+			}
+			return "idle"
+		}
 		// The title/command can leave a pane unidentified (idle Codex as `node`,
 		// no glyph) OR identified-but-unnamed (a WORKING Codex: a spinner title set
 		// the status, but cmd=node + no name in the title → generic "agent"). The
@@ -454,18 +466,7 @@ func gatherAgents() []agentPane {
 					if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
 						agent = name
 						if !isAgent {
-							// Process-tree agent with no title spinner (e.g. Codex sets
-							// no title): tell working from idle with two hook-free
-							// signals OR'd together — the screen is changing (frame),
-							// or its process subtree is burning CPU (a local tool
-							// running quietly). Both are sampled every poll to keep
-							// their baselines fresh.
-							frameW := state.PaneFrameWorking(f[0], tmux.CapturePane(f[0]), now)
-							cpuW := state.PaneCPUWorking(f[0], subtreeCPU(panePid, procs, children), now)
-							status = "idle"
-							if frameW || cpuW {
-								status = "working"
-							}
+							status = hookFreeStatus(f[0], panePid)
 							isAgent, task = true, strings.TrimSpace(f[4])
 						}
 					}
@@ -474,6 +475,15 @@ func gatherAgents() []agentPane {
 		}
 		if !isAgent {
 			continue
+		}
+		// A live but glyph-less agent (Codex) that we DID identify comes back as bare
+		// "running" — classifyAgent can't tell idle from working without an idle glyph.
+		// Refine it the same hook-free way, so a FINISHED Codex shows idle (✓) rather
+		// than a grey "running" dot. (Claude's ✳ already resolves this upstream.)
+		if status == "running" && len(f) >= 9 {
+			if panePid, err := strconv.Atoi(f[8]); err == nil {
+				status = hookFreeStatus(f[0], panePid)
+			}
 		}
 		id := f[0]
 		var activityAt int64
