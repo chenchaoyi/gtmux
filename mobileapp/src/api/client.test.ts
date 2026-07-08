@@ -1,4 +1,4 @@
-import {GtmuxClient} from './client';
+import {GtmuxClient, isAuthError} from './client';
 
 const BASE = 'http://mac.local:8765';
 const TOKEN = 'sekret-token';
@@ -81,6 +81,14 @@ describe('agents', () => {
   it('throws on a non-ok response', async () => {
     fetchMock.mockResolvedValueOnce(okJson(null, false, 401));
     await expect(client().agents()).rejects.toThrow(/agents: HTTP 401/);
+  });
+
+  it('a 401/403 is an auth error (→ re-pair, not "offline"); a 500 is not', async () => {
+    for (const {status, auth} of [{status: 401, auth: true}, {status: 403, auth: true}, {status: 500, auth: false}]) {
+      fetchMock.mockResolvedValueOnce(okJson(null, false, status));
+      const err = await client().agents().then(() => null, e => e);
+      expect(isAuthError(err)).toBe(auth);
+    }
   });
 });
 

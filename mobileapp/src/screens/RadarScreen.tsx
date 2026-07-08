@@ -80,7 +80,7 @@ export function RadarScreen({navigation}: any) {
           <Text style={[styles.switchGlyph, {color: pal.fg3}]}>⇄</Text>
         </TouchableOpacity>
         <View style={styles.headerRight}>
-          <ConnDot conn={conn} t={t} pal={pal} />
+          <ConnDot conn={conn} t={t} pal={pal} lang={lang} />
           <TouchableOpacity
             testID={TestIds.radar.settings}
             accessibilityLabel={TestIds.radar.settings}
@@ -130,6 +130,20 @@ export function RadarScreen({navigation}: any) {
       {conn === 'offline' && (
         <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} onRetry={refresh} pal={pal} />
       )}
+      {conn === 'unauthorized' && (
+        <TouchableOpacity
+          style={[styles.authBanner, {backgroundColor: '#3a1720', borderColor: StatusColor.waiting}]}
+          onPress={() => navigation.navigate('Servers')}
+          accessibilityRole="button"
+          accessibilityLabel={lang === 'zh' ? '访问被拒，重新配对' : 'Access rejected, re-pair'}>
+          <View style={[styles.connDot, {backgroundColor: StatusColor.waiting}]} />
+          <Text style={styles.authBannerText}>
+            {lang === 'zh'
+              ? '访问被拒 —— 这台服务器的 token 已吊销或更改。点此重新配对。'
+              : 'Access rejected — this server’s token was revoked or changed. Tap to re-pair.'}
+          </Text>
+        </TouchableOpacity>
+      )}
       <SectionList
         agents={agents}
         waitingOnly={waitingOnly}
@@ -147,13 +161,24 @@ export function RadarScreen({navigation}: any) {
   );
 }
 
-function ConnDot({conn, t, pal}: any) {
+function ConnDot({conn, t, pal, lang}: any) {
   // D9: server name (shown in the chip) + a status dot — no "live" word; only an
-  // abnormal state adds text (amber reconnecting / red offline).
-  const color = conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B';
-  const label = conn === 'live' ? '' : conn === 'offline' ? t('offline') : t('reconnecting');
+  // abnormal state adds text (amber reconnecting / red offline / red rejected).
+  const isRed = conn === 'offline' || conn === 'unauthorized';
+  const color = conn === 'live' ? StatusColor.idle : isRed ? StatusColor.waiting : '#F59E0B';
+  const label =
+    conn === 'live' ? '' :
+    conn === 'unauthorized' ? (lang === 'zh' ? '访问被拒' : 'rejected') :
+    conn === 'offline' ? t('offline') : t('reconnecting');
+  // A meaningful VoiceOver label for the status dot (the coloured dot alone is
+  // invisible to screen readers).
+  const a11y =
+    conn === 'live' ? (lang === 'zh' ? '已连接' : 'connected') :
+    conn === 'unauthorized' ? (lang === 'zh' ? '访问被拒' : 'access rejected') :
+    conn === 'offline' ? (lang === 'zh' ? '离线' : 'offline') :
+    (lang === 'zh' ? '重连中' : 'reconnecting');
   return (
-    <View style={styles.conn}>
+    <View style={styles.conn} accessibilityRole="text" accessibilityLabel={(lang === 'zh' ? '连接：' : 'Connection: ') + a11y}>
       <View style={[styles.connDot, {backgroundColor: color}]} />
       {label ? <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text> : null}
     </View>
@@ -191,6 +216,9 @@ const styles = StyleSheet.create({
   conn: {flexDirection: 'row', alignItems: 'center'},
   connDot: {width: 7, height: 7, borderRadius: 3.5, marginRight: 5},
   connText: {fontSize: 11},
+  // Always-dark banner → FIXED light text (never pal.fg, which is near-black in light mode).
+  authBanner: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 2, gap: 4},
+  authBannerText: {flex: 1, fontSize: 12, color: '#F3D9DE', fontWeight: '600'},
   headerBottom: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6},
   summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
   filter: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 10},
