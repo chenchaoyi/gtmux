@@ -10,5 +10,23 @@ coverage.out
 /relay-bin
 .playwright-mcp/
 
-# Local release secrets (soft tunnel/relay gates baked at make app-release) — never commit
+# --- Secrets & credentials: NEVER commit (belt-and-suspenders) -----------------
+# Real secrets live in Cloudflare Worker secrets / KV, the VPS's EnvironmentFile,
+# ~/.appstoreconnect + the keychain, GitHub Actions secrets, and macapp/.release.env
+# — NOT in the repo. See SECURITY.md for the full inventory + rotation steps.
+# NB: .gitignore has NO inline comments — each pattern MUST be alone on its line.
 macapp/.release.env
+# wrangler's local secret file (any worker dir)
+.dev.vars
+# local env files (a stray .release.env / .env), but keep templates + RN's base
+*.env
+!*.env.example
+!.xcode.env
+# private keys & signing material
+*.p8
+*.p12
+*.pem
+*.key
+# App Store Connect API keys (default name) + SSH private keys
+AuthKey_*
+id_rsa*
