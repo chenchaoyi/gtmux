@@ -50,6 +50,23 @@ async function tfetch(url: string, init?: RequestInit): Promise<Response> {
   }
 }
 
+// ApiError carries the HTTP status so callers can tell an AUTH rejection (401/403 —
+// the token was revoked or is wrong → re-pair) from a plain network/offline failure.
+export class ApiError extends Error {
+  constructor(public status: number, where: string) {
+    super(`${where}: HTTP ${status}`);
+    this.name = 'ApiError';
+  }
+  get isAuth(): boolean {
+    return this.status === 401 || this.status === 403;
+  }
+}
+
+// isAuthError reports whether a caught error is an auth rejection (revoked/wrong token).
+export function isAuthError(e: unknown): boolean {
+  return e instanceof ApiError && e.isAuth;
+}
+
 export class GtmuxClient {
   constructor(
     public base: string,
@@ -72,7 +89,7 @@ export class GtmuxClient {
 
   async agents(): Promise<Agent[]> {
     const r = await tfetch(`${this.base}/api/agents`, {headers: this.h()});
-    if (!r.ok) throw new Error(`agents: HTTP ${r.status}`);
+    if (!r.ok) throw new ApiError(r.status, 'agents');
     const raw = await r.json();
     return Array.isArray(raw) ? raw.map(toAgent) : [];
   }

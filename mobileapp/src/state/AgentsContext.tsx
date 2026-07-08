@@ -3,14 +3,14 @@
 // data source; SSE just triggers a refetch (per the contract).
 
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {GtmuxClient} from '../api/client';
+import {GtmuxClient, isAuthError} from '../api/client';
 import {subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity} from '../native/liveActivity';
 import {setBadge} from '../push';
 import {buildActivityItems} from './activityItems';
 
-export type ConnState = 'connecting' | 'live' | 'offline';
+export type ConnState = 'connecting' | 'live' | 'offline' | 'unauthorized';
 
 interface AgentsContextValue {
   client: GtmuxClient;
@@ -70,7 +70,10 @@ export function AgentsProvider({
             name,
           );
         })
-        .catch(() => setConn('offline'));
+        // An AUTH rejection (401/403 — token revoked from the Mac's devices page, or
+        // wrong) is NOT "offline": the network is fine, this server refused us. Surface
+        // it distinctly so the user re-pairs instead of chasing a network ghost.
+        .catch(e => setConn(isAuthError(e) ? 'unauthorized' : 'offline'));
     },
     [client, name],
   );
