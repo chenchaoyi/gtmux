@@ -20,12 +20,16 @@ import {BrandMark} from '../ui/BrandMark';
 import {ContentColumn} from '../ui/ContentColumn';
 import {StatusColor} from '../ui/theme';
 import {PairingScreen} from './PairingScreen';
+import {DemoScreen} from './DemoScreen';
 import {TestIds} from '../constants/testIds';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
   const {t, pal, servers, activeUrl, selectServer, removeServer, disconnect} = useApp();
   // First run (no servers) opens the add sheet straight away — same as before.
   const [adding, setAdding] = useState(servers.length === 0);
+  // The read-only demo tour (from the pairing screen's "See a demo"). Only ever
+  // shown on this no-server connection page — a paired user never reaches it.
+  const [demo, setDemo] = useState(false);
 
   const onPick = async (url: string) => {
     if (url === activeUrl) {
@@ -127,7 +131,13 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         {/* Fresh provider: inside a RN Modal, safe-area insets are otherwise zero,
             so PairingScreen's Cancel collided with the status-bar clock (REVIEW P0). */}
         <SafeAreaProvider>
-          <PairingScreen onCancel={() => setAdding(false)} />
+          <PairingScreen onCancel={() => setAdding(false)} onDemo={() => { setAdding(false); setDemo(true); }} />
+        </SafeAreaProvider>
+      </Modal>
+
+      <Modal visible={demo} animationType="slide" onRequestClose={() => setDemo(false)}>
+        <SafeAreaProvider>
+          <DemoScreen onExit={() => setDemo(false)} onPair={() => { setDemo(false); setAdding(true); }} />
         </SafeAreaProvider>
       </Modal>
     </SafeAreaView>
