@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"net/http"
 	"os"
@@ -30,9 +31,32 @@ import (
 
 const (
 	chiselVersion        = "1.10.1"
-	selfRemotePort       = 9000 // the VPS-side loopback port the reverse tunnel exposes → the reverse proxy fronts it
 	selfTunnelAgentLabel = "com.gtmux.selftunnel"
+	// Per-device reverse-tunnel port band on the shared VPS. Each Mac derives a
+	// STABLE port in [selfPortBase, selfPortBase+selfPortSpan) from its device id, so
+	// multiple Macs on the SAME gtmux Direct server never collide on one fixed port
+	// (the old fixed 9000 was single-tenant). The VPS reverse proxy routes
+	// <base>/p<port>/… → 127.0.0.1:<port>, giving each Mac its own pairing URL.
+	// The band stays inside 20000–59999 so the proxy's port matcher can reject a
+	// crafted path that would otherwise reach a system service.
+	selfPortBase = 20000
+	selfPortSpan = 40000
 )
+
+// selfTunnelPort is this Mac's stable VPS-side reverse-tunnel port, derived from the
+// device id so it's the same across restarts but differs between Macs.
+func selfTunnelPort() int {
+	return selfPortBase + int(crc32.ChecksumIEEE([]byte(resolveDeviceID()))%selfPortSpan)
+}
+
+// selfTunnelPairURL turns the tunnel base ("https://tunnel.ccy.dev") into THIS
+// device's pairing URL ("https://tunnel.ccy.dev/p<port>") — the path the VPS routes
+// to this Mac's reverse port. The QR/phone use it as the base for every /api call
+// (the app just string-concats "/api/…", so the prefix is preserved). The chisel
+// DIAL target stays the bare base; only the pairing URL carries the /p<port> path.
+func selfTunnelPairURL(base string) string {
+	return strings.TrimRight(base, "/") + "/p" + strconv.Itoa(selfTunnelPort())
+}
 
 // connectedRe matches chisel's "Connected (Latency …)" line → the tunnel is up.
 var connectedRe = regexp.MustCompile(`client: Connected`)
@@ -115,15 +139,17 @@ func tunnelSelf(port int, name string) int {
 		return 1
 	}
 	token := startLocalRadar(port)
-	_ = os.WriteFile(tunnelURLPath(), []byte(url+"\n"), 0o600)
+	pairURL := selfTunnelPairURL(url) // per-device path so multiple Macs don't collide
+	_ = os.WriteFile(tunnelURLPath(), []byte(pairURL+"\n"), 0o600)
 	if !serviceInstalled() {
 		defer func() { _ = os.Remove(tunnelURLPath()) }()
 	}
 	i18n.Say("Starting your self-hosted tunnel…", "正在启动自建隧道…")
+	// Dial the bare base; reverse-forward this device's own VPS port → local serve.
 	args := []string{"client", "--keepalive", "25s", url,
-		fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfRemotePort, port)}
+		fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfTunnelPort(), port)}
 	return runChiselClient(bin, args, secret, func() {
-		printTunnelPairing(url, token, name, port, true)
+		printTunnelPairing(pairURL, token, name, port, true)
 	})
 }
 
@@ -165,7 +191,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
-	_ = os.WriteFile(tunnelURLPath(), []byte(url+"\n"), 0o600)
+	_ = os.WriteFile(tunnelURLPath(), []byte(selfTunnelPairURL(url)+"\n"), 0o600)
 
 	// Backends are mutually exclusive — retire a Cloudflare tunnel agent if present
 	// so switching self↔cloudflare never leaves two tunnels fighting for the serve.
@@ -181,7 +207,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	if err := launchctl("load", selfTunnelAgentPath()); err != nil {
 		i18n.Sae("gtmux tunnel: launchctl load selftunnel: "+err.Error(), "gtmux tunnel: launchctl load selftunnel: "+err.Error())
 	}
-	printPairingBlock(url, resolveServeToken(""), name, port)
+	printPairingBlock(selfTunnelPairURL(url), resolveServeToken(""), name, port)
 	i18n.Say(i18n.Dim+"Always-on (self-hosted) enabled. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
 		i18n.Dim+"Always-on（自建）已开启。关闭：`gtmux tunnel --unservice`。"+i18n.Reset)
 	return 0
@@ -190,7 +216,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 // writeChiselAgent writes a launchd plist for the chisel client, carrying the auth
 // secret in EnvironmentVariables (so it isn't visible in `ps`). 0600.
 func writeChiselAgent(path, bin, url, secret string, port int, logPath string) error {
-	remote := fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfRemotePort, port)
+	remote := fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfTunnelPort(), port)
 	plist := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>

@@ -1,7 +1,8 @@
 # gtmux self-hosted tunnel — Caddy: terminates TLS for tunnel.ccy.dev (behind the
-# nginx SNI router) and routes to the chisel tunnel.
-#   - WebSocket upgrades  -> chisel server (the Mac's tunnel control channel)
-#   - everything else     -> the port chisel reverse-forwards from the Mac's serve:8765
+# nginx SNI router) and routes to the chisel tunnels.
+#   - WebSocket upgrades       -> chisel server (each Mac's tunnel control channel)
+#   - /p<port>/…  (per Mac)    -> that Mac's reverse-forwarded serve (multi-tenant)
+#   - everything else (legacy) -> 127.0.0.1:9000 (a single-tenant / personal client)
 # Caddy serves HTTPS on :4443 (nginx passes tunnel.ccy.dev SNI here) and does ACME
 # HTTP-01 on :80 (needs tunnel.ccy.dev -> this VPS in DNS, DNS-only). Auto Let's Encrypt.
 
@@ -19,8 +20,21 @@ tunnel.ccy.dev {
     handle @ws {
         reverse_proxy 127.0.0.1:8080
     }
-    # Everything else is the phone hitting the Mac's read-only radar, tunneled by
-    # chisel's reverse-forward (VPS 127.0.0.1:9000 -> Mac localhost:8765).
+
+    # MULTI-TENANT: each Mac derives a STABLE per-device reverse port in 20000–59999
+    # and pairs at https://tunnel.ccy.dev/p<port>. Strip the /p<port> prefix and proxy
+    # to that loopback port (which chisel reverse-forwards to that Mac's serve:8765).
+    # The [2-5]\d{4} matcher confines routing to the chisel band, so a crafted
+    # /p<lowport> can't reach a system service; each serve is bearer-token-gated too.
+    @tenant path_regexp tnt ^/p([2-5][0-9]{4})(/.*)?$
+    handle @tenant {
+        # rewrite to the remaining path ("" for a bare /p<port> → normalized to "/")
+        rewrite * {re.tnt.2}
+        reverse_proxy 127.0.0.1:{re.tnt.1}
+    }
+
+    # Legacy single-tenant fallback (a personal one-Mac server, or a pre-multi-tenant
+    # client that still reverse-forwards the fixed 9000).
     handle {
         reverse_proxy 127.0.0.1:9000
     }
