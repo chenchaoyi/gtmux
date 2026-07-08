@@ -15,6 +15,10 @@ export interface Env {
 interface PushIntent {
   token: string;
   platform?: string;
+  // The APNs environment THIS token belongs to ("sandbox" for a dev-signed build,
+  // "production" for App Store / TestFlight). Lets ONE relay serve both — the Mac
+  // forwards the env the device reported at registration. Falls back to APNS_ENV.
+  env?: 'sandbox' | 'production';
   title?: string;
   body?: string;
   pane?: string;
@@ -52,7 +56,10 @@ export default {
     if (!intent.token) return json({error: 'no token'}, 400);
 
     const jwt = await providerJWT(env);
-    const base = env.APNS_ENV === 'sandbox'
+    // Per-token env wins (the device told us at registration); APNS_ENV is the
+    // fallback for older tokens registered before the app reported an env.
+    const apnsEnv = intent.env || env.APNS_ENV;
+    const base = apnsEnv === 'sandbox'
       ? 'https://api.sandbox.push.apple.com'
       : 'https://api.push.apple.com';
 

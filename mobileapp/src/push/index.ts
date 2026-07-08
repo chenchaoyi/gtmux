@@ -10,6 +10,7 @@
 import {Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import {GtmuxClient} from '../api/client';
+import {apnsEnv} from '../native/liveActivity';
 
 export type Teardown = () => void;
 
@@ -33,7 +34,7 @@ let lastToken: string | null = null;
 // reregisterKinds updates the device's per-kind push filter on the server, using
 // the cached APNs token. No-op until the token has arrived.
 export function reregisterKinds(client: GtmuxClient, kinds: string[]): void {
-  if (lastToken) client.registerPush(lastToken, kinds).catch(() => {});
+  if (lastToken) client.registerPush(lastToken, kinds, apnsEnv()).catch(() => {});
 }
 
 // setBadge sets the app-icon badge to the live waiting count. The server's silent
@@ -63,7 +64,7 @@ export async function setupPush(
 
   const onRegister = (token: string) => {
     lastToken = token;
-    client.registerPush(token, getKinds()).catch(() => {});
+    client.registerPush(token, getKinds(), apnsEnv()).catch(() => {});
   };
 
   const onNotification = (notification: any) => {

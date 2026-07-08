@@ -199,22 +199,22 @@ export class GtmuxClient {
 
   // registerPush registers the APNs token + which alert kinds the device wants
   // ([] = all). serve filters per-device, so you can opt out of e.g. "done".
-  async registerPush(deviceToken: string, kinds?: string[]): Promise<boolean> {
+  async registerPush(deviceToken: string, kinds?: string[], env?: string): Promise<boolean> {
     const r = await tfetch(`${this.base}/api/push/register`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? []}),
+      body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? [], env}),
     });
     return r.ok;
   }
 
   // registerActivityToken hands the Mac a Live Activity push token so the relay
   // can push-to-update the lock-screen tally even when the app is closed.
-  async registerActivityToken(token: string): Promise<boolean> {
+  async registerActivityToken(token: string, env?: string): Promise<boolean> {
     const r = await tfetch(`${this.base}/api/push/activity`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({token}),
+      body: JSON.stringify({token, env}),
     });
     return r.ok;
   }
