@@ -15,6 +15,10 @@ import (
 type DeviceToken struct {
 	Token    string `json:"token"`
 	Platform string `json:"platform"` // "ios" | "android" | "harmony"
+	// APNs environment this token belongs to: "sandbox" (dev-signed build) or
+	// "production" (App Store / TestFlight). Forwarded on each intent so ONE relay
+	// serves both. Empty = let the relay fall back to its default.
+	Env string `json:"env,omitempty"`
 	// Kinds the device wants ("waiting"/"done"). Empty = all (backward compat),
 	// so a device can opt out of e.g. "done" notifications.
 	Kinds []string `json:"kinds,omitempty"`
@@ -39,6 +43,7 @@ func (d DeviceToken) wants(kind string) bool {
 type PushIntent struct {
 	Token    string `json:"token"`
 	Platform string `json:"platform"`
+	Env      string `json:"env,omitempty"` // APNs env of this token — relay routes on it
 	Title    string `json:"title"`
 	Body     string `json:"body"`
 	Pane     string `json:"pane"`               // jump target for the notification tap
@@ -70,8 +75,8 @@ type PushManager struct {
 	mu     sync.Mutex
 	tokens map[string]DeviceToken
 	// activity push tokens for Live Activity push-to-update (in-memory; the app
-	// re-registers on each launch / activity start).
-	activityTokens map[string]struct{}
+	// re-registers on each launch / activity start). token → APNs env (for routing).
+	activityTokens map[string]string
 	relay          Relay
 	save           func([]DeviceToken)              // optional persistence hook
 	format         func(Alert) (title, body string) // optional copy formatter (i18n lives in app)
@@ -81,7 +86,7 @@ type PushManager struct {
 // NewPushManager builds a manager seeded with any persisted tokens. relay may be
 // a no-op (empty relay URL) — registration still works, forwarding is just off.
 func NewPushManager(relay Relay, initial []DeviceToken, save func([]DeviceToken), serverName string, format func(Alert) (string, string)) *PushManager {
-	m := &PushManager{tokens: map[string]DeviceToken{}, activityTokens: map[string]struct{}{}, relay: relay, save: save, format: format, serverName: serverName}
+	m := &PushManager{tokens: map[string]DeviceToken{}, activityTokens: map[string]string{}, relay: relay, save: save, format: format, serverName: serverName}
 	for _, d := range initial {
 		if d.Token != "" {
 			m.tokens[d.Token] = d
@@ -124,15 +129,15 @@ func (p *PushManager) Tokens() []DeviceToken {
 
 // RegisterActivity records a Live Activity push token so the tally can be pushed
 // to the lock screen even when the app is closed.
-func (p *PushManager) RegisterActivity(token string) {
+func (p *PushManager) RegisterActivity(token, env string) {
 	if token == "" {
 		return
 	}
 	p.mu.Lock()
 	if p.activityTokens == nil {
-		p.activityTokens = map[string]struct{}{}
+		p.activityTokens = map[string]string{}
 	}
-	p.activityTokens[token] = struct{}{}
+	p.activityTokens[token] = env
 	p.mu.Unlock()
 }
 
@@ -143,10 +148,11 @@ func (p *PushManager) PushLiveActivity(t Tally) {
 	if p == nil || p.relay == nil {
 		return
 	}
+	type actTok struct{ token, env string }
 	p.mu.Lock()
-	toks := make([]string, 0, len(p.activityTokens))
-	for tok := range p.activityTokens {
-		toks = append(toks, tok)
+	toks := make([]actTok, 0, len(p.activityTokens))
+	for tok, env := range p.activityTokens {
+		toks = append(toks, actTok{tok, env})
 	}
 	p.mu.Unlock()
 	if len(toks) == 0 {
@@ -162,8 +168,8 @@ func (p *PushManager) PushLiveActivity(t Tally) {
 		"items": items, "more": t.More,
 	}
 	go func() {
-		for _, tok := range toks {
-			_ = p.relay.Send(PushIntent{Token: tok, LiveActivity: true, Event: "update", ContentState: cs})
+		for _, tk := range toks {
+			_ = p.relay.Send(PushIntent{Token: tk.token, Env: tk.env, LiveActivity: true, Event: "update", ContentState: cs})
 		}
 	}()
 }
@@ -187,7 +193,7 @@ func (p *PushManager) dispatch(a Alert) {
 			continue
 		}
 		_ = p.relay.Send(PushIntent{
-			Token: d.Token, Platform: d.Platform,
+			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName, Pane: a.Pane, Kind: a.Kind,
 			// Collapse an agent's banners into one: a re-nudge (#89) replaces the
 			// prior "needs you" instead of stacking a second banner per agent.
@@ -212,7 +218,7 @@ func (p *PushManager) pushBadge(waiting int) {
 	n := waiting
 	for _, d := range p.Tokens() {
 		_ = p.relay.Send(PushIntent{
-			Token: d.Token, Platform: d.Platform, Silent: true, Badge: &n,
+			Token: d.Token, Platform: d.Platform, Env: d.Env, Silent: true, Badge: &n,
 		})
 	}
 }
@@ -228,7 +234,7 @@ func (p *PushManager) Test() int {
 	toks := p.Tokens()
 	for _, d := range toks {
 		_ = p.relay.Send(PushIntent{
-			Token: d.Token, Platform: d.Platform,
+			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName,
 			Pane: a.Pane, Kind: a.Kind, CollapseID: a.Pane,
 		})
@@ -288,12 +294,13 @@ func (s *Server) handleActivityRegister(w http.ResponseWriter, r *http.Request) 
 	}
 	var body struct {
 		Token string `json:"token"`
+		Env   string `json:"env"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Token == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
 		return
 	}
-	s.deps.Push.RegisterActivity(body.Token)
+	s.deps.Push.RegisterActivity(body.Token, body.Env)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

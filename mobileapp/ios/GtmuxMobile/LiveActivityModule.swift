@@ -13,6 +13,15 @@ class LiveActivityModule: RCTEventEmitter {
   override static func requiresMainQueueSetup() -> Bool { false }
   override func supportedEvents() -> [String]! { ["onActivityPushToken"] }
 
+  // Expose this build's APNs environment to JS so it can tell the Mac which APNs
+  // endpoint its push token belongs to (sandbox for a dev-signed build, production
+  // for App Store / TestFlight). Mirrors the `aps-environment` entitlement — both
+  // are the `$(APS_ENVIRONMENT)` build setting, so they always agree.
+  override func constantsToExport() -> [AnyHashable: Any]! {
+    let env = Bundle.main.object(forInfoDictionaryKey: "APNS_ENV") as? String
+    return ["apnsEnv": (env?.isEmpty == false ? env! : "development")]
+  }
+
   @objc(areEnabled:rejecter:)
   func areEnabled(_ resolve: @escaping RCTPromiseResolveBlock, rejecter _: @escaping RCTPromiseRejectBlock) {
     if #available(iOS 16.1, *) {

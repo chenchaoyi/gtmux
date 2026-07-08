@@ -31,6 +31,41 @@ func (f *fakeRelay) intents() []PushIntent {
 	return append([]PushIntent(nil), f.sent...)
 }
 
+// A device's APNs env (sandbox for dev builds, production for App Store) rides on
+// every intent so ONE relay can route to the right APNs endpoint per token.
+func TestPushEnvForwarded(t *testing.T) {
+	relay := &fakeRelay{}
+	pm := NewPushManager(relay, nil, nil, "Mac", nil)
+	pm.Register(DeviceToken{Token: "prod-tok", Platform: "ios", Env: "production"})
+	pm.Register(DeviceToken{Token: "dev-tok", Platform: "ios", Env: "sandbox"})
+
+	pm.dispatch(Alert{Pane: "%1", Kind: "waiting", Agent: "Codex"})
+	pm.pushBadge(1)
+	byTok := map[string]string{}
+	for _, in := range relay.intents() {
+		byTok[in.Token] = in.Env // both the alert and the silent-badge intent per token
+	}
+	if byTok["prod-tok"] != "production" || byTok["dev-tok"] != "sandbox" {
+		t.Fatalf("env not forwarded per token: %+v", byTok)
+	}
+
+	// Live Activity tokens carry their env too.
+	relay2 := &fakeRelay{}
+	pm2 := NewPushManager(relay2, nil, nil, "Mac", nil)
+	pm2.RegisterActivity("act-prod", "production")
+	pm2.PushLiveActivity(Tally{Waiting: 1})
+	var got []PushIntent
+	for i := 0; i < 200; i++ {
+		if got = relay2.intents(); len(got) >= 1 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if len(got) != 1 || got[0].Env != "production" || !got[0].LiveActivity {
+		t.Fatalf("activity intent env = %+v", got)
+	}
+}
+
 func TestPushManagerDispatch(t *testing.T) {
 	relay := &fakeRelay{}
 	var saved [][]DeviceToken
@@ -80,9 +115,9 @@ func TestPushLiveActivity(t *testing.T) {
 		t.Fatalf("intents with no activity = %d, want 0", got)
 	}
 
-	pm.RegisterActivity("act-tok-1")
-	pm.RegisterActivity("act-tok-2")
-	pm.RegisterActivity("") // ignored
+	pm.RegisterActivity("act-tok-1", "production")
+	pm.RegisterActivity("act-tok-2", "sandbox")
+	pm.RegisterActivity("", "") // ignored
 
 	pm.PushLiveActivity(Tally{Waiting: 2, Working: 1, Idle: 3, WaitingTitle: "refactor api"})
 

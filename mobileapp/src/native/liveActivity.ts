@@ -20,6 +20,17 @@ type Mod = {
 const M: Mod | undefined = NativeModules.LiveActivityModule;
 const ok = Platform.OS === 'ios' && !!M;
 
+// The APNs environment this BUILD targets — 'sandbox' for a dev-signed build,
+// 'production' for App Store / TestFlight. Read from a native constant that mirrors
+// the `aps-environment` entitlement (both are the $(APS_ENVIRONMENT) build setting),
+// so the Mac routes each push token to the right APNs endpoint. Falls back to __DEV__
+// if the native constant is missing (an older build).
+export function apnsEnv(): 'sandbox' | 'production' {
+  const e = (NativeModules.LiveActivityModule as {apnsEnv?: string} | undefined)?.apnsEnv;
+  if (e === 'production' || e === 'sandbox') return e;
+  return __DEV__ ? 'sandbox' : 'production';
+}
+
 let started = false;
 
 export const LiveActivity = {

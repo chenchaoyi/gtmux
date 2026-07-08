@@ -6,7 +6,7 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState} 
 import {GtmuxClient, isAuthError} from '../api/client';
 import {subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
-import {LiveActivity} from '../native/liveActivity';
+import {LiveActivity, apnsEnv} from '../native/liveActivity';
 import {setBadge} from '../push';
 import {buildActivityItems} from './activityItems';
 
@@ -131,7 +131,7 @@ export function AgentsProvider({
     const unsub = LiveActivity.onPushToken(tok => {
       if (tok === lastActivityToken.current) return;
       lastActivityToken.current = tok;
-      client.registerActivityToken(tok).catch(() => {});
+      client.registerActivityToken(tok, apnsEnv()).catch(() => {});
     });
     return unsub;
   }, [client]);
