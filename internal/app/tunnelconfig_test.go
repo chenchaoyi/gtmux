@@ -51,40 +51,37 @@ func TestTunnelRegSecretFallsBackToBaked(t *testing.T) {
 	}
 }
 
-// selfTunnelConfig resolves the "Direct" server: env > user conf > the baked-in
-// gtmux-provided default. A user's own settings must win over the baked one.
-func TestSelfTunnelConfigBakedFallback(t *testing.T) {
-	t.Setenv("GTMUX_SELFTUNNEL_URL", "")
-	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "")
-	t.Setenv("HOME", t.TempDir()) // no ~/.config/gtmux/selftunnel.conf there
-
-	oldURL, oldSecret := SelfTunnelURL, SelfTunnelSecret
-	defer func() { SelfTunnelURL, SelfTunnelSecret = oldURL, oldSecret }()
-	SelfTunnelURL, SelfTunnelSecret = "https://direct.example.com", "user:pass"
-
-	url, secret, ok := selfTunnelConfig()
-	if !ok || url != "https://direct.example.com" || secret != "user:pass" {
-		t.Fatalf("baked fallback: ok=%v url=%q secret=%q", ok, url, secret)
-	}
-
-	// The user's own env must OVERRIDE the baked default.
+// selfTunnelConfig resolves the "Direct" server from env or the redeemed conf file
+// (the server config is NOT baked into the binary). Env wins; the conf is the fallback.
+func TestSelfTunnelConfigEnvAndConf(t *testing.T) {
+	// env wins.
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("GTMUX_SELFTUNNEL_URL", "https://mine.example.com")
 	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "me:secret")
-	if url, _, _ := selfTunnelConfig(); url != "https://mine.example.com" {
-		t.Errorf("env must override baked default, got %q", url)
+	if url, secret, ok := selfTunnelConfig(); !ok || url != "https://mine.example.com" || secret != "me:secret" {
+		t.Fatalf("env: ok=%v url=%q secret=%q", ok, url, secret)
+	}
+
+	// no env → the redeemed selftunnel.conf is used (what `--redeem` writes).
+	t.Setenv("GTMUX_SELFTUNNEL_URL", "")
+	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "")
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := writeSelfTunnelConf("https://direct.example.com", "user:pass"); err != nil {
+		t.Fatal(err)
+	}
+	if url, secret, ok := selfTunnelConfig(); !ok || url != "https://direct.example.com" || secret != "user:pass" {
+		t.Fatalf("conf: ok=%v url=%q secret=%q", ok, url, secret)
 	}
 }
 
-// With no env, no conf, and no baked default, Direct is unconfigured → ok=false.
+// With no env and no conf, Direct is locked → ok=false (the user must --redeem a code).
 func TestSelfTunnelConfigUnconfigured(t *testing.T) {
 	t.Setenv("GTMUX_SELFTUNNEL_URL", "")
 	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "")
 	t.Setenv("HOME", t.TempDir())
-	oldURL, oldSecret := SelfTunnelURL, SelfTunnelSecret
-	defer func() { SelfTunnelURL, SelfTunnelSecret = oldURL, oldSecret }()
-	SelfTunnelURL, SelfTunnelSecret = "", ""
 	if _, _, ok := selfTunnelConfig(); ok {
-		t.Error("unconfigured Direct should return ok=false")
+		t.Error("locked Direct should return ok=false until a code is redeemed")
 	}
 }
 
