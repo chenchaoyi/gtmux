@@ -30,7 +30,7 @@ function deviceLabel(): string {
 
 // onCancel, when provided, renders a Cancel control — set when PairingScreen is
 // presented as the "Add a Mac" sheet from ServersScreen (vs. the bare first run).
-export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
+export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo?: () => void} = {}) {
   const {t, pal, pair, lang} = useApp();
   const [host, setHost] = useState('');
   const [token, setToken] = useState('');
@@ -187,6 +187,17 @@ export function PairingScreen({onCancel}: {onCancel?: () => void} = {}) {
               <Text style={styles.connectText}>{t('connect')}</Text>
             )}
           </TouchableOpacity>
+
+          {/* Escape hatch for someone without a Mac handy (e.g. an App Store
+              reviewer): a read-only tour with sample data. */}
+          {onDemo && (
+            <TouchableOpacity onPress={onDemo} style={styles.demoLink}
+              accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a demo'}>
+              <Text style={[styles.demoLinkText, {color: pal.fg3}]}>
+                {lang === 'zh' ? '没有 Mac？看看演示 →' : 'No Mac handy? See a demo →'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
       <Modal visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
@@ -235,4 +246,6 @@ const styles = StyleSheet.create({
   },
   connectBusy: {opacity: 0.7},
   connectText: {color: '#fff', fontSize: 16, fontWeight: '700'},
+  demoLink: {alignItems: 'center', paddingVertical: 16},
+  demoLinkText: {fontSize: 13},
 });
