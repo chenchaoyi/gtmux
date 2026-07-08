@@ -11,13 +11,22 @@ be rebuilt / migrated from scratch.
 ```
 public :443 ─► nginx (stream + ssl_preread, SNI router, TLS passthrough — no decrypt)
                  ├─ SNI tunnel.ccy.dev ─► 127.0.0.1:4443  Caddy (Let's Encrypt TLS)
-                 │                                          ├─ WebSocket ─► 127.0.0.1:8080  chisel server
-                 │                                          └─ else      ─► 127.0.0.1:9000  (chisel reverse-forward → Mac serve:8765)
+                 │                                          ├─ WebSocket   ─► 127.0.0.1:8080  chisel server
+                 │                                          ├─ /p<port>/…  ─► 127.0.0.1:<port> (per-Mac reverse-forward → that Mac's serve:8765)
+                 │                                          └─ else (legacy)─► 127.0.0.1:9000  (single-tenant / personal client)
                  └─ SNI else / www.ivi.tv ─► 127.0.0.1:8443  xray VLESS-REALITY (your proxy)
 public :80  ─► Caddy (ACME HTTP-01 only)
-Mac ─► chisel client  https://tunnel.ccy.dev  R:127.0.0.1:9000:localhost:8765
+Mac ─► chisel client  https://tunnel.ccy.dev  R:127.0.0.1:<port>:localhost:8765   (port derived from device id)
 mail 25/110/143/993/995 (postfix/dovecot) and SSH 22 — UNTOUCHED
 ```
+
+**Multi-tenant.** Each Mac derives a STABLE per-device port in 20000–59999 (crc32 of
+its device id) and pairs at `https://tunnel.ccy.dev/p<port>`; Caddy strips the
+`/p<port>` prefix and proxies to that loopback port. So several Macs share ONE gtmux
+Direct server without colliding on a fixed port — a phone always reaches the Mac whose
+`/p<port>` it scanned. The port matcher is confined to the chisel band (`[2-5]\d{4}`),
+and every serve is bearer-token-gated. The bare `/…` (no `/p<port>`) still routes to
+the legacy fixed 9000 for a pre-multi-tenant client or a one-Mac personal server.
 
 Both TLS services terminate their OWN TLS; nginx only peeks the SNI and splices the
 raw TCP, so xray's REALITY camouflage is preserved and Caddy gets a real cert.
