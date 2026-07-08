@@ -2,7 +2,9 @@ package app
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -72,8 +74,12 @@ func selfTunnelConfPath() string {
 	return filepath.Join(homeDir(), ".config", "gtmux", "selftunnel.conf")
 }
 
-// selfTunnelConfig reads the user's self-hosted server config from the env, falling
-// back to the shared config file, or explains what to set and returns ok=false.
+// selfTunnelConfig reads the Direct server config from the env, else the shared
+// config file (written by `gtmux tunnel --redeem <code>` or by a user who runs their
+// OWN server), or explains how to get it and returns ok=false. The config is NEVER
+// baked into the binary — Direct is gtmux's paid tunnel, so the server + its chisel
+// secret are handed out ONLY on a valid access code (validated server-side), which
+// lets the repo stay fully public.
 func selfTunnelConfig() (url, secret string, ok bool) {
 	url = strings.TrimSpace(os.Getenv("GTMUX_SELFTUNNEL_URL"))
 	secret = strings.TrimSpace(os.Getenv("GTMUX_SELFTUNNEL_SECRET"))
@@ -86,24 +92,112 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 			secret = fs
 		}
 	}
-	// Fall back to the baked-in "Direct" server (gtmux-provided) so Direct works out
-	// of the box — not only when the user configured their own. A user's env/conf wins.
-	if url == "" {
-		url = strings.TrimSpace(SelfTunnelURL)
-	}
-	if secret == "" {
-		secret = strings.TrimSpace(SelfTunnelSecret)
-	}
 	if url == "" || secret == "" {
-		i18n.Sae("gtmux tunnel --backend self needs YOUR server: set GTMUX_SELFTUNNEL_URL"+
-			" (e.g. https://tunnel.example.com) and GTMUX_SELFTUNNEL_SECRET (chisel auth user:pass), or write "+
-			selfTunnelConfPath()+". See deploy/self-tunnel/README.md.",
-			"gtmux tunnel --backend self 需要你自己的服务器：设置 GTMUX_SELFTUNNEL_URL"+
-				"（如 https://tunnel.example.com）和 GTMUX_SELFTUNNEL_SECRET（chisel 认证 user:pass），或写入 "+
-				selfTunnelConfPath()+"。见 deploy/self-tunnel/README.md。")
+		i18n.Sae("Direct isn't unlocked on this Mac. Redeem your access code:  gtmux tunnel --redeem <code>",
+			"这台 Mac 还没解锁 Direct。用你的访问码解锁：  gtmux tunnel --redeem <码>")
+		i18n.Sae("  (or point at your OWN server via GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+" — see deploy/self-tunnel/README.md)",
+			"  （或用 GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+" 指向你自己的服务器 —— 见 deploy/self-tunnel/README.md）")
 		return "", "", false
 	}
 	return url, secret, true
+}
+
+// writeSelfTunnelConf saves the Direct server config (0600 — it holds the secret) so
+// selfTunnelConfig picks it up on the normal path. Written by `--redeem`.
+func writeSelfTunnelConf(url, secret string) error {
+	p := selfTunnelConfPath()
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(p, []byte("url="+url+"\nsecret="+secret+"\n"), 0o600)
+}
+
+// redeemDirectCode validates a paid Direct access code with the control-plane Worker
+// and, on success, writes the returned server config to selftunnel.conf — so Direct
+// then works via the normal self-tunnel path. The server + its chisel secret are
+// NEVER in the binary; the Worker hands them out only for a valid code.
+func redeemDirectCode(code string) int {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		i18n.Sae("usage: gtmux tunnel --redeem <code>", "用法：gtmux tunnel --redeem <码>")
+		return 2
+	}
+	url, secret, err := redeemDirect(code)
+	if err != nil {
+		if err == errInvalidCode {
+			i18n.Sae("gtmux tunnel: that Direct code is invalid or has been revoked.",
+				"gtmux tunnel: 这个 Direct 码无效或已被吊销。")
+		} else {
+			i18n.Sae("gtmux tunnel: couldn't reach the unlock service (network?): "+err.Error(),
+				"gtmux tunnel: 连不上解锁服务（网络？）："+err.Error())
+		}
+		return 1
+	}
+	if err := writeSelfTunnelConf(url, secret); err != nil {
+		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
+		return 1
+	}
+	i18n.Say("✓ Direct unlocked on this Mac. Turn it on: the menu bar's Anywhere → Direct, or `gtmux tunnel --backend self`.",
+		"✓ 这台 Mac 已解锁 Direct。开启：菜单栏 Anywhere → Direct，或 `gtmux tunnel --backend self`。")
+	return 0
+}
+
+// errInvalidCode marks a 403 from the unlock service (bad/revoked code) so the caller
+// can say so precisely instead of blaming the network.
+var errInvalidCode = fmt.Errorf("invalid or revoked code")
+
+// redeemDirect POSTs the code to the control-plane Worker's /direct/redeem and returns
+// the Direct server config on success. Retries transient network/5xx across the
+// primary + fallback bases (same resilience as provisionTunnel).
+func redeemDirect(code string) (url, secret string, err error) {
+	api := tunnelAPI()
+	bases := []string{api}
+	if fb := tunnelAPIFallback(); fb != "" && fb != api {
+		bases = append(bases, fb)
+	}
+	body, _ := json.Marshal(map[string]string{"code": code, "deviceId": resolveDeviceID()})
+	var lastErr error
+	for attempt := 0; attempt < 3; attempt++ {
+		for _, base := range bases {
+			req, e := http.NewRequest("POST", strings.TrimRight(base, "/")+"/direct/redeem", bytes.NewReader(body))
+			if e != nil {
+				lastErr = e
+				continue
+			}
+			req.Header.Set("Content-Type", "application/json")
+			res, e := (&http.Client{Timeout: 20 * time.Second}).Do(req)
+			if e != nil {
+				lastErr = e
+				continue // network → retry
+			}
+			data, _ := io.ReadAll(io.LimitReader(res.Body, 1<<16))
+			_ = res.Body.Close()
+			if res.StatusCode == 403 {
+				return "", "", errInvalidCode
+			}
+			if res.StatusCode != 200 {
+				lastErr = fmt.Errorf("HTTP %d", res.StatusCode)
+				if res.StatusCode < 500 {
+					return "", "", lastErr // 4xx won't improve
+				}
+				continue
+			}
+			var r struct {
+				URL    string `json:"url"`
+				Secret string `json:"secret"`
+			}
+			if e := json.Unmarshal(data, &r); e != nil {
+				lastErr = e
+				continue
+			}
+			if r.URL == "" || r.Secret == "" {
+				return "", "", fmt.Errorf("incomplete redeem response")
+			}
+			return r.URL, r.Secret, nil
+		}
+		time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
+	}
+	return "", "", lastErr
 }
 
 // readSelfTunnelConf parses url= / secret= from the shared config file ("" when absent).

@@ -6,10 +6,18 @@
 # with. Cloudflare carries the data plane (free); this Worker is the only piece
 # gtmux operates.
 #
+# It ALSO gates the paid "Direct" tunnel: POST /direct/redeem validates an access code
+# against the DIRECT_CODES KV and, only on a hit, returns the Direct server config
+# ({url, secret}) — so that secret is NEVER in the (public) client binary. Mint codes
+# with ./issue-direct-code.sh; revoke by deleting the KV key.
+#
 # Deploy:  wrangler deploy
 # Secrets: wrangler secret put CF_API_TOKEN   (zone ccy.dev DNS:Edit + account Cloudflare Tunnel:Edit)
 #          wrangler secret put REG_SECRET      (soft anti-abuse gate baked into the CLI build)
-# KV:      wrangler kv namespace create TUNNELS   → paste the id below
+#          wrangler secret put DIRECT_URL      (the Direct server base, e.g. https://tunnel.ccy.dev)
+#          wrangler secret put DIRECT_SECRET   (the Direct chisel auth, user:pass)
+# KV:      wrangler kv namespace create TUNNELS        → paste the id below
+#          wrangler kv namespace create DIRECT_CODES   → paste the id below
 
 name = "gtmux-tunnel"
 main = "src/index.ts"
@@ -20,7 +28,11 @@ workers_dev = true
 routes = [{ pattern = "api.gtmux.ccy.dev", custom_domain = true }]
 
 # deviceId -> { tunnelId, label, hostname } so re-runs reuse the same tunnel.
-kv_namespaces = [{ binding = "TUNNELS", id = "bd42c0b0a0734850bf42def27b14b98b" }]
+# DIRECT_CODES: code -> {label, redemptions…}; membership = a valid paid Direct code.
+kv_namespaces = [
+  { binding = "TUNNELS", id = "bd42c0b0a0734850bf42def27b14b98b" },
+  { binding = "DIRECT_CODES", id = "3be897460ff24a37915d30e5fa4ebb52" },
+]
 
 [vars]
 # The zone tunnels live in. Hosts are single-level `gtmux-<id>.ccy.dev` so the

@@ -43,6 +43,7 @@ func cmdTunnel(args []string) int {
 	// Cloudflare's edge). Env default, --backend overrides.
 	backend := strings.TrimSpace(os.Getenv("GTMUX_TUNNEL_BACKEND"))
 	var service string // "install" | "remove" | "status"
+	var redeem string  // Direct access code to unlock (writes selftunnel.conf)
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -57,6 +58,14 @@ func cmdTunnel(args []string) int {
 		case a == "-h" || a == "--help":
 			tunnelUsage()
 			return 0
+		case a == "--redeem":
+			v, ok := next()
+			if !ok {
+				return tunnelUsageErr()
+			}
+			redeem = v
+		case strings.HasPrefix(a, "--redeem="):
+			redeem = strings.TrimPrefix(a, "--redeem=")
 		case a == "--backend":
 			v, ok := next()
 			if !ok {
@@ -105,6 +114,12 @@ func cmdTunnel(args []string) int {
 			i18n.Sae("gtmux tunnel: unknown option '"+a+"'", "gtmux tunnel: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+
+	// Unlock Direct: validate the access code server-side, write the config it hands
+	// back, then exit (the user enables Direct from the menu bar or --backend self).
+	if redeem != "" {
+		return redeemDirectCode(redeem)
 	}
 
 	if backend != "" && backend != "cloudflare" && backend != "self" {
@@ -599,10 +614,12 @@ func tunnelUsage() {
 		"  通过出站隧道把只读雷达暴露到任何地方，并打印配对二维码。")
 	i18n.Say("  default: a stable hosted address (pair once), foreground. --quick: an account-less ephemeral URL.",
 		"  默认：固定的托管地址（配一次即可），前台运行。--quick：免账号的临时地址。")
-	i18n.Say("  --backend self: tunnel to YOUR OWN VPS+domain over 443 (survives networks that block the hosted edge);",
-		"  --backend self：走 443 隧道到你自己的 VPS+域名（在屏蔽托管边缘的网络下仍可用）；")
-	i18n.Say("    set GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET. See deploy/self-tunnel/README.md.",
-		"    需设置 GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET。见 deploy/self-tunnel/README.md。")
+	i18n.Say("  --backend self (\"Direct\"): tunnel over 443 (survives networks that block the hosted edge).",
+		"  --backend self（即 \"Direct\"）：走 443 隧道（在屏蔽托管边缘的网络下仍可用）。")
+	i18n.Say("  --redeem <code>: unlock Direct with an access code (or run your OWN server via",
+		"  --redeem <码>：用访问码解锁 Direct（或用")
+	i18n.Say("    GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET — see deploy/self-tunnel/README.md).",
+		"    GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET 指向你自己的服务器 —— 见 deploy/self-tunnel/README.md）。")
 	i18n.Say("  --service: keep it ON across reboots (launchd); --unservice: turn off; --status: show state.",
 		"  --service：重启也保持开启（launchd）；--unservice：关闭；--status：查看状态。")
 }

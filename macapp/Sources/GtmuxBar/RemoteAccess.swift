@@ -177,12 +177,31 @@ final class RemoteAccess: ObservableObject {
         run(args, expect: .anywhere)
     }
 
-    /// Whether the self-hosted backend is configured (so it can be offered as a
-    /// choice). Reads the shared config the CLI uses.
+    /// Whether Direct is unlocked on this Mac (its server config is present — written
+    /// by `--redeem` or by a user pointing at their own server). Reads the shared conf.
     var selfTunnelConfigured: Bool {
         let p = "\(NSHomeDirectory())/.config/gtmux/selftunnel.conf"
         guard let s = try? String(contentsOfFile: p, encoding: .utf8) else { return false }
         return s.contains("url=") && s.contains("secret=")
+    }
+
+    /// Redeem a paid Direct access code: the CLI validates it server-side and, on
+    /// success, writes selftunnel.conf (→ selfTunnelConfigured flips true). completion
+    /// gets nil on success, else a short error. Direct's server + secret are never in
+    /// the binary — only a valid code fetches them.
+    func redeemDirect(_ code: String, completion: @escaping (String?) -> Void) {
+        let c = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !c.isEmpty else { completion("Enter your Direct code. / 请输入 Direct 访问码。"); return }
+        DispatchQueue.global().async {
+            let res = GtmuxCLI.captureResult(["tunnel", "--redeem", c])
+            DispatchQueue.main.async {
+                if res.status == 0 {
+                    completion(nil)
+                } else {
+                    completion(res.stderr.isEmpty ? "Couldn't unlock Direct. / 无法解锁 Direct。" : res.stderr)
+                }
+            }
+        }
     }
 
     /// Turn remote access off from any mode (removes whichever agents exist).

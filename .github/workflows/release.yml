@@ -56,8 +56,6 @@ jobs:
           # secret is unset → hosted `gtmux tunnel` falls back to --quick.
           GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
           GTMUX_RELAY_TOKEN: ${{ secrets.GTMUX_RELAY_TOKEN }}
-          GTMUX_SELFTUNNEL_URL: ${{ secrets.GTMUX_SELFTUNNEL_URL }}
-          GTMUX_SELFTUNNEL_SECRET: ${{ secrets.GTMUX_SELFTUNNEL_SECRET }}
 
       - name: GoReleaser (snapshot dry-run on dispatch)
         if: github.event_name == 'workflow_dispatch'
@@ -69,8 +67,6 @@ jobs:
           HOMEBREW_TAP_TOKEN: ""
           GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
           GTMUX_RELAY_TOKEN: ${{ secrets.GTMUX_RELAY_TOKEN }}
-          GTMUX_SELFTUNNEL_URL: ${{ secrets.GTMUX_SELFTUNNEL_URL }}
-          GTMUX_SELFTUNNEL_SECRET: ${{ secrets.GTMUX_SELFTUNNEL_SECRET }}
 
       - name: Upload snapshot artifacts (dispatch only)
         if: github.event_name == 'workflow_dispatch'
@@ -159,8 +155,6 @@ jobs:
         env:
           GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
           GTMUX_RELAY_TOKEN: ${{ secrets.GTMUX_RELAY_TOKEN }}
-          GTMUX_SELFTUNNEL_URL: ${{ secrets.GTMUX_SELFTUNNEL_URL }}
-          GTMUX_SELFTUNNEL_SECRET: ${{ secrets.GTMUX_SELFTUNNEL_SECRET }}
 
       - name: zip the bundle
         run: |

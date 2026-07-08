@@ -1,10 +1,18 @@
 # gtmux self-hosted tunnel — server setup (VPS)
 
-The self-hosted "anywhere" tunnel backend: a Mac dials out over **443 / WebSocket**
-to **your own VPS + domain**, indistinguishable from ordinary HTTPS, so hostile
+The self-hosted "anywhere" tunnel backend ("Direct"): a Mac dials out over **443 /
+WebSocket** to a **VPS + domain**, indistinguishable from ordinary HTTPS, so hostile
 networks that DNS-hijack Cloudflare's tunnel edge (`*.argotunnel.com`) can't block
 it. This directory is everything that runs on the VPS, versioned so the server can
 be rebuilt / migrated from scratch.
+
+> **Two ways to get Direct.** (1) **gtmux's paid Direct** — a hosted server; the app/CLI
+> unlocks it with an access code (`gtmux tunnel --redeem <code>`), which the control-plane
+> Worker validates server-side and hands back the config. The server + secret are **never**
+> baked into the (public) binary — that's what keeps this repo fully open-source. (2) **Your
+> OWN server** — stand up this directory on any VPS, then point the client at it via
+> `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET` (or `~/.config/gtmux/selftunnel.conf`).
+> The steps below are for (2); they're also how gtmux runs the server behind (1).
 
 ## Architecture (443 shared with an existing VLESS-REALITY proxy)
 
