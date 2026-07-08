@@ -4,9 +4,17 @@
 | --- | --- |
 | `agents [--watch\|--json]` | coding agents across your panes: who's waiting / working / idle, where, and the pane id to jump to |
 | `overview [--popup]` | sessions / windows / panes summary; `--popup` fits a tmux popup |
-| `restore [--pick\|--one\|<name>\|--dry-run]` | one terminal tab per session, attach all |
-| `focus <name\|pane-id>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane |
+| `restore [--pick\|--one\|<name>\|--dry-run] [--resume-agents=auto\|type\|off]` | one terminal tab per session, attach all; optionally relaunch captured agent conversations |
+| `focus <name\|pane-id\|--last>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane; `--last` = the most-recently-finished agent |
 | `new [name]` | start a new tmux session in a fresh terminal tab |
+| `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
+| `doctor [--fix [--yes]]` | health check grouped by concern; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
+| `install-hooks [--agent <key>]` | register the notification hook — Claude by default; `--agent codex\|cursor\|gemini\|copilot\|kiro` for others |
+| `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
+| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (paid); see [phone.md](phone.md) |
+| `devices [revoke <id>]` | list / revoke phones paired via per-device tokens |
+| `app` (alias `menubar`) | launch the menu-bar app (`Gtmux.app`) |
+| `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
 
 Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
 follows `--lang=en|zh` (default `en`) or `$GTMUX_LANG`. Everything is invoked
@@ -53,6 +61,10 @@ the same data for scripts and the menu-bar app.
 - A pane is listed only if the agent **process is actually running**. A leftover
   agent title over a plain shell (e.g. a resurrect-restored session never
   relaunched) is **not** counted.
+- Agents running **outside tmux** (a bare `codex`/`claude` in a terminal) are
+  **sensed** read-only via the same hook — listed under **Elsewhere** with
+  `source:"native"`. They have no pane (no jump/reply); a resumable one can be
+  pulled into tmux with `gtmux adopt <session_id>`.
 
 `⏸ waiting` and `✓ latest` come from state files written by the
 [notification hook](#notification-hook). Without it, agents never show `⏸`;
@@ -146,8 +158,9 @@ state files under `~/.local/share/gtmux/`. gtmux ships that hook built in — no
 external script needed:
 
 ```sh
-gtmux install-hooks          # one-time setup (macOS)
-gtmux uninstall-hooks        # reverse it
+gtmux install-hooks                 # Claude, one-time setup (macOS)
+gtmux install-hooks --agent codex   # or cursor|gemini|copilot|kiro
+gtmux uninstall-hooks [--agent …]   # reverse it
 ```
 
 `install-hooks` registers `gtmux hook` in `~/.claude/settings.json` on the
@@ -155,6 +168,12 @@ gtmux uninstall-hooks        # reverse it
 other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
 runs it, you don't — and writes state purely by event **timing**, telling a
 permission request from an idle nudge without reading message text.
+
+**Other agents:** `--agent codex|cursor|gemini|copilot|kiro` wires that agent's
+own hooks file instead. **Codex** uses its additive hooks system
+(`~/.codex/hooks.json` + `features.hooks`), so it **coexists with any existing
+`notify`** (e.g. computer-use) rather than replacing it. `gtmux doctor --fix`
+offers to wire whatever agents it detects.
 
 Notifications are delivered by the menu-bar app — no `terminal-notifier` needed.
 The hook queues a request under `~/.local/share/gtmux/notify/` and `Gtmux.app`

@@ -48,11 +48,11 @@ Rejected alternatives:
 gtmux tunnel (Mac)            api.gtmux.ccy.dev (Worker)          Cloudflare API
   │ POST /provision {deviceId} ─────▶ create cfd_tunnel ────────────▶ tunnel
   │   header x-gtmux-reg               set ingress → localhost:8765
-  │                                    create DNS gtmux-<id>.ccy.dev
+  │                                    create DNS <id>.gtmux.ccy.dev
   │ ◀── { url, token } ────────────────┘
-  │ cloudflared tunnel run --token <token>     (outbound, QUIC)
+  │ cloudflared tunnel run --token <token>     (outbound, http2 — QUIC is often blocked)
   ▼
-https://gtmux-<id>.ccy.dev ─CF edge─▶ tunnel ─▶ Mac's gtmux serve :8765
+https://<id>.gtmux.ccy.dev ─CF edge─▶ tunnel ─▶ Mac's gtmux serve :8765
                                                  ▲ phone pairs to this URL, ONCE
 ```
 

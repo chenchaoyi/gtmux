@@ -26,10 +26,12 @@ import (
 // Mac. The tunnel client (cloudflared) lives only here; the phone app just gets a
 // `{url, token}` pairing, so the transport never touches the app.
 //
-// Default = HOSTED: the gtmux control-plane Worker provisions a STABLE
-// `gtmux-<id>.ccy.dev` named tunnel for this Mac, so the phone pairs ONCE and
-// keeps reaching the Mac across restarts (the address never changes). `--quick`
-// uses an account-less Cloudflare quick tunnel whose URL rotates each run.
+// Default = HOSTED ("Standard"): the gtmux control-plane Worker provisions a STABLE
+// `<id>.gtmux.ccy.dev` named tunnel for this Mac, so the phone pairs ONCE and keeps
+// reaching the Mac across restarts (the address never changes). `--quick` uses an
+// account-less Cloudflare quick tunnel whose URL rotates each run. `--backend self`
+// ("Direct") tunnels through gtmux's own VPS over 443 instead (a paid unlock —
+// `--redeem <code>`), for networks that block Cloudflare's edge.
 func cmdTunnel(args []string) int {
 	port := defaultServePort
 	name, _ := os.Hostname()

@@ -26,7 +26,8 @@ you, and jumps you to the exact pane. When you step away, it tells you the momen
 an agent needs a decision — in the menu bar, on the desktop, or on your phone.
 
 It does **not** run your agents. It watches whatever you already have in tmux —
-including agents other tools started — and never gets in the way.
+including agents other tools started — and even **senses agents running outside
+tmux** (read-only), which `gtmux adopt` can pull into tmux. It never gets in the way.
 
 **Built on tmux — that's the premise.** You run each agent in a tmux pane; gtmux is
 the radar and remote over them. Running several agents in tmux — named, one per
@@ -73,6 +74,9 @@ Each row is **status · agent · location · task · pane id**, sorted by urgenc
 - **⠿ working** — busy; leave it alone.
 - **✳ idle** — finished its turn; your move when ready.
 
+Agents running **outside tmux** (say a bare `codex` in a terminal) are sensed too —
+listed read-only under **Elsewhere**, and `gtmux adopt <id>` pulls one into tmux.
+
 Detection is by event *timing*, not keyword guessing, and works with any agent
 that animates a spinner — not just Claude Code.
 
@@ -109,14 +113,22 @@ The CLI and in-tmux bindings are there when you want them, but they're extra:
 
 ```sh
 gtmux agents --watch         # a live dashboard in the terminal; Enter jumps to a pane
+gtmux app                    # launch the menu-bar app (alias: menubar)
+gtmux update                 # self-update the CLI + menu-bar app (the app also
+                             # offers one-click "check for updates")
 ```
 
 > Just want notifications and nothing else? `gtmux install-hooks` registers only
 > the agent hook — but `gtmux doctor --fix` is the recommended path (it does that
-> **and** the set-titles focus/restore depend on).
+> **and** the set-titles focus/restore depend on). For non-Claude agents, add
+> `--agent codex|cursor|gemini|copilot|kiro` (Codex wires via its own hooks system,
+> coexisting with any existing `notify`).
 
-To watch from your phone, run `gtmux serve` (same network) or `gtmux tunnel`
-(anywhere) and pair the iOS app. See **[docs/phone.md](docs/phone.md)**.
+To watch from your phone, run `gtmux serve` (same Wi-Fi) or `gtmux tunnel`
+(anywhere) and pair the iOS app. **Anywhere** comes in two flavors: **Standard**
+(zero-config, free) and **Direct** — through gtmux's own server over 443, for
+networks that block Cloudflare's edge; a paid unlock via
+`gtmux tunnel --redeem <code>`. See **[docs/phone.md](docs/phone.md)**.
 
 > **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+ **or** iTerm2 for the
 > jump features (`focus` / `restore` / `new`); `agents` / `overview` work under
@@ -125,8 +137,8 @@ To watch from your phone, run `gtmux serve` (same network) or `gtmux tunnel`
 
 ## Docs
 
-- **[CLI & commands](docs/cli.md)** — `agents` / `overview` / `focus` / `restore` / `new`, detection, the notification hook, tmux key bindings, and permissions.
-- **[Mobile & remote access](docs/phone.md)** — the iOS app, `gtmux serve`, and reaching your Mac from anywhere with Tailscale or `gtmux tunnel`.
+- **[CLI & commands](docs/cli.md)** — `agents` / `overview` / `focus` / `restore` / `new` / `adopt` / `app` / `update`, detection, the notification hook (Claude + `--agent`), tmux key bindings, and permissions.
+- **[Mobile & remote access](docs/phone.md)** — the iOS app, `gtmux serve`, and reaching your Mac from anywhere: Standard vs Direct tunnels (and Tailscale), the always-on toggle, and the browser mirror.
 - **[Install notes](docs/install.md)** — pinning a version, building from source, and the China / mirror fallback.
 - **Design specs** — `docs/design/` (menu-bar `DESIGN.md`, mobile `MOBILE.md`) and `openspec/` for in-flight changes.
 

@@ -23,7 +23,8 @@
 gtmux 就是盯着它们的那台雷达。它读出你 tmux 里的 agent，告诉你谁需要你，并把你直接送到
 那个 pane。你离开座位时，它会在 agent 需要你做决定的那一刻提醒你 —— 菜单栏、桌面，或手机。
 
-它**不运行**你的 agent，只盯着你 tmux 里已有的（包括别的工具起的 agent），从不挡你的路。
+它**不运行**你的 agent，只盯着你 tmux 里已有的（包括别的工具起的 agent），甚至能**感知
+tmux 之外运行的 agent**（只读）—— 可用 `gtmux adopt` 把它转入 tmux。它从不挡你的路。
 
 **以 tmux 为前提 —— 这是它的根基。** 你把每个 agent 跑在一个 tmux pane 里，gtmux 就是这些
 agent 之上的雷达和遥控。用 tmux 管理多个 agent（各自命名、一 pane 一个、断连和重启都不丢）
@@ -69,6 +70,9 @@ jump: gtmux focus %7
 - **⠿ working**：正忙，别打扰。
 - **✳ idle**：这一轮跑完了，你想接手时再说。
 
+tmux **之外**运行的 agent（比如终端里裸跑的 `codex`）也会被感知 —— 只读地列在 **Elsewhere
+（不在 tmux）** 分区，`gtmux adopt <id>` 可把它转入 tmux。
+
 判定靠的是事件**时序**而不是猜关键词，凡是会转加载动画的 agent 都能识别，不止 Claude Code。
 
 ## 快速上手
@@ -88,9 +92,16 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 
 ```sh
 gtmux agents --watch         # 终端里的实时看板；回车跳到对应 pane
+gtmux app                    # 启动菜单栏 app（别名：menubar）
+gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持一键「检查更新」）
 ```
 
-想用手机看，跑 `gtmux serve`（同一网络）或 `gtmux tunnel`（任意网络），再配对 iOS app。
+> 非 Claude 的 agent：`gtmux install-hooks --agent codex|cursor|gemini|copilot|kiro`
+> 接入（Codex 走它自己的 hooks 系统，与已有的 `notify` 并存）。
+
+想用手机看，跑 `gtmux serve`（同一 Wi-Fi）或 `gtmux tunnel`（任意网络），再配对 iOS app。
+**任意网络**分两档：**Standard**（零配置、免费）与 **Direct**（走 gtmux 自己的服务器、443，
+穿透屏蔽 Cloudflare 边缘的网络 —— 付费解锁，`gtmux tunnel --redeem <码>`）。
 见 **[docs/phone.md](docs/phone.md)**。
 
 > **需要** macOS + [Ghostty](https://ghostty.org) 1.3+ **或** iTerm2 才能用跳转功能
@@ -99,8 +110,8 @@ gtmux agents --watch         # 终端里的实时看板；回车跳到对应 pan
 
 ## 文档
 
-- **[CLI 与命令](docs/cli.md)**：`agents` / `overview` / `focus` / `restore` / `new`、识别原理、通知 hook、tmux 按键绑定、权限。
-- **[移动端与远程访问](docs/phone.md)**：iOS app、`gtmux serve`，以及用 Tailscale 或 `gtmux tunnel` 从任意网络连回 Mac。
+- **[CLI 与命令](docs/cli.md)**：`agents` / `overview` / `focus` / `restore` / `new` / `adopt` / `app` / `update`、识别原理、通知 hook（Claude + `--agent`）、tmux 按键绑定、权限。
+- **[移动端与远程访问](docs/phone.md)**：iOS app、`gtmux serve`，以及从任意网络连回 Mac：Standard 与 Direct 两种隧道（还有 Tailscale）、always-on 开关、浏览器镜像。
 - **[安装说明](docs/install.md)**：锁版本、从源码装、中国大陆 / 镜像兜底。
 - **设计规范**：`docs/design/`（菜单栏 `DESIGN.md`、移动端 `MOBILE.md`），在途变更看 `openspec/`。
 
