@@ -30,3 +30,7 @@ macapp/.release.env
 # App Store Connect API keys (default name) + SSH private keys
 AuthKey_*
 id_rsa*
+# Operator-only ops notes + tooling (runbooks tied to THIS hosted instance — not a
+# product feature; kept private, no secret values but operator-specific). See SECURITY.md.
+ops/
+tunnel-worker/issue-direct-code.sh
