@@ -62,8 +62,10 @@ below) once its config is fixed.
 
 ## The Mac side
 
-`gtmux tunnel --backend self` (once P1 ships) reads `GTMUX_SELFTUNNEL_URL` +
-`GTMUX_SELFTUNNEL_SECRET` and runs the chisel client. To test manually before that:
+`gtmux tunnel --backend self` reads the Direct config (from `--redeem <code>`, or
+`GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET` for your own server) and runs the
+chisel client, reverse-forwarding this Mac's **per-device port** (see multi-tenant
+above). To test manually — using the LEGACY fixed `:9000` (single-tenant) path:
 
 ```sh
 AUTH=<user:pass> chisel client --keepalive 25s \
