@@ -68,8 +68,17 @@
   var CONN_TITLE = {live: '已连接 / connected', retry: '重连中 / reconnecting…', off: '离线 / offline'};
   function renderConn(el, st) { el.className = 'conn ' + st; el.textContent = serverLabel(); el.title = CONN_TITLE[st] || ''; }
   function setConn(ok) { renderConn($('conn'), connStateFor(ok)); }
-  function primary(a) { return a.task || a.session || a.loc || a.pane_id || ''; }
-  function secondary(a) { var b = a.session || a.loc || ''; return a.pane_id ? b + ' · ' + a.pane_id : b; }
+  function isNative(a) { return a.source === 'native'; }
+  function primary(a) {
+    if (a.task) return a.task;
+    if (isNative(a)) return a.project || a.terminal || '';
+    return a.session || a.loc || a.pane_id || '';
+  }
+  function secondary(a) {
+    if (isNative(a)) return a.terminal || a.agent || ''; // sensed agent, no pane locator
+    var b = a.session || a.loc || '';
+    return a.pane_id ? b + ' · ' + a.pane_id : b;
+  }
 
   function agentMark(name) {
     var k = (name || '').trim().toLowerCase();
@@ -163,27 +172,42 @@
     var t = relTime(a.since || a.activity_at);
     if (t) { var tm = document.createElement('span'); tm.className = 'time'; tm.textContent = t; right.appendChild(tm); }
     var ag = document.createElement('span'); ag.className = 'agent'; ag.textContent = a.agent || ''; right.appendChild(ag);
-    var ch = document.createElement('span'); ch.className = 'chev'; ch.textContent = '›'; right.appendChild(ch);
+    // Native (non-tmux) agents are SENSED read-only: no pane to open → a "native" tag
+    // instead of the chevron, and no click target (mirrors the app/menu-bar).
+    if (isNative(a)) {
+      var nt = document.createElement('span'); nt.className = 'native-tag'; nt.textContent = 'native'; right.appendChild(nt);
+      row.classList.add('native');
+    } else {
+      var ch = document.createElement('span'); ch.className = 'chev'; ch.textContent = '›'; right.appendChild(ch);
+      row.onclick = function () { openAgent(a); };
+    }
 
     row.appendChild(av); row.appendChild(text); row.appendChild(right);
-    row.onclick = function () { openAgent(a); };
     return row;
   }
 
   function renderRadar(agents) {
     // only repaint when something actually changed (avoids list flicker every poll)
-    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.status, a.task, a.since, a.icon]; }));
+    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.project, a.terminal, a.status, a.task, a.since, a.icon]; }));
     if (sig === lastSig) return;
     lastSig = sig;
+    // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
+    // they get their own "Elsewhere" section at the end (mirrors the app / menu-bar).
     var by = {waiting: [], working: [], idle: [], running: []};
-    agents.forEach(function (a) { (by[a.status] || by.running).push(a); });
-    var root = $('radar'); root.innerHTML = '';
-    ORDER.forEach(function (st) {
-      var list = by[st]; if (!list.length) return;
-      var lbl = document.createElement('div'); lbl.className = 'group-label';
-      lbl.textContent = LABEL[st] + '  ' + list.length; root.appendChild(lbl);
-      list.forEach(function (a) { root.appendChild(rowEl(a)); });
+    var natives = [];
+    agents.forEach(function (a) {
+      if (isNative(a)) { natives.push(a); return; }
+      (by[a.status] || by.running).push(a);
     });
+    var root = $('radar'); root.innerHTML = '';
+    function section(label, list) {
+      if (!list.length) return;
+      var lbl = document.createElement('div'); lbl.className = 'group-label';
+      lbl.textContent = label + '  ' + list.length; root.appendChild(lbl);
+      list.forEach(function (a) { root.appendChild(rowEl(a)); });
+    }
+    ORDER.forEach(function (st) { section(LABEL[st], by[st]); });
+    section('Elsewhere', natives);
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = 'no agents'; root.appendChild(e); }
     if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
   }
