@@ -27,14 +27,20 @@
   var paneMode = lsGet('gtmux.paneMode', 'term');          // pane view tab: 'term' | 'chat'
 
   // ---- auth -------------------------------------------------------------
+  // BASE is the path prefix this mirror is served under. The multi-tenant Direct
+  // tunnel routes each Mac at https://host/p<port>/…, so the page loads at /p<port>/
+  // and every /api/… call must carry that prefix — an absolute /api/… would hit the
+  // VPS's legacy fallback (the WRONG Mac) and pairing would fail. Empty for a plain
+  // serve/Cloudflare tunnel served at the root.
+  var BASE = (location.pathname || '/').replace(/\/+$/, '');
   function authHeaders() { return token ? {Authorization: 'Bearer ' + token} : {}; }
   function api(path, opts) {
     opts = opts || {};
     opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
-    return fetch(path, opts);
+    return fetch(BASE + path, opts);
   }
   function pair(code) {
-    return fetch('/api/enroll', {
+    return fetch(BASE + '/api/enroll', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({enrollCode: code, name: 'browser'}),
     }).then(function (r) { if (!r.ok) throw new Error('pair'); return r.json(); })
