@@ -41,11 +41,12 @@ export function AgentRow({
 
   // Line 1 (task) is clamped to one line for density; long-press reveals the FULL
   // task (and error summary) in an alert so nothing on the row is unreachable.
+  const bgLabel = (lang === 'zh' ? '后台运行中' : 'background running');
+  const bgMark = `⧗${agent.bg_count && agent.bg_count > 1 ? agent.bg_count : ''} ${bgLabel}`;
   const showFull = () => {
-    const body =
-      agent.error && agent.error_text
-        ? `${primary(agent)}\n\n⚠ ${agent.error_text}`
-        : primary(agent);
+    let body = primary(agent);
+    if (agent.error && agent.error_text) body = `${primary(agent)}\n\n⚠ ${agent.error_text}`;
+    else if (agent.bg && agent.bg_text) body = `${primary(agent)}\n\n⧗ ${agent.bg_text}`;
     Alert.alert(agent.agent || 'Agent', body, [{text: lang === 'zh' ? '关闭' : 'Close'}]);
   };
 
@@ -94,6 +95,10 @@ export function AgentRow({
             <Text style={[styles.latest, {color: ERRORED_COLOR}]} numberOfLines={1}>
               {lang === 'zh' ? '报错' : 'errored'}
             </Text>
+          ) : agent.bg ? (
+            <Text style={[styles.latest, {color: ERRORED_COLOR}]} numberOfLines={1}>
+              {bgMark}
+            </Text>
           ) : (
             agent.latest && (
               <Text style={[styles.latest, {color: StatusColor.idle}]} numberOfLines={1}>
@@ -104,9 +109,13 @@ export function AgentRow({
         </View>
         <View style={styles.line2}>
           <Text
-            style={[styles.secondary, {color: agent.error ? ERRORED_COLOR : pal.fg3}]}
+            style={[styles.secondary, {color: agent.error || agent.bg ? ERRORED_COLOR : pal.fg3}]}
             numberOfLines={1}>
-            {agent.error && agent.error_text ? agent.error_text : secondary(agent)}
+            {agent.error && agent.error_text
+              ? agent.error_text
+              : agent.bg && agent.bg_text
+                ? agent.bg_text
+                : secondary(agent)}
           </Text>
           {!!agent.branch && (
             <View style={[styles.branchChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>

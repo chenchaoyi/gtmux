@@ -166,6 +166,18 @@
     if (a.task && primary(a) !== a.task) {
       var tk = document.createElement('span'); tk.className = 'task'; tk.textContent = '  ' + a.task; s.appendChild(tk);
     }
+    // Idle modifiers (amber, NEVER red — red is `waiting`): errored ⚠ (ended on an
+    // error) and background-running ⧗ (idle but bg work still in flight). Mutually
+    // exclusive; errored wins. The status badge/section stay idle.
+    var AMBER = '#F59E0B';
+    if (a.error) {
+      var em = document.createElement('span'); em.className = 'task'; em.style.color = AMBER;
+      em.textContent = '  ⚠ ' + (a.error_text || 'errored'); s.appendChild(em);
+    } else if (a.bg) {
+      var bn = (a.bg_count && a.bg_count > 1) ? a.bg_count : '';
+      var bm = document.createElement('span'); bm.className = 'task'; bm.style.color = AMBER;
+      bm.textContent = '  ⧗' + bn + ' ' + (a.bg_text || 'background running'); s.appendChild(bm);
+    }
     text.appendChild(p); text.appendChild(s);
 
     var right = document.createElement('div'); right.className = 'right';
@@ -188,7 +200,7 @@
 
   function renderRadar(agents) {
     // only repaint when something actually changed (avoids list flicker every poll)
-    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.project, a.terminal, a.status, a.task, a.since, a.icon]; }));
+    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.project, a.terminal, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
     if (sig === lastSig) return;
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so

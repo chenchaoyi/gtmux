@@ -114,6 +114,12 @@ type agentPane struct {
 	// errored-idle modifier: this idle session ended on an API/tool error.
 	errored   bool
 	errorText string
+	// background-running modifier: this idle session's turn ended with background
+	// work (a run_in_background shell, …) still in flight — "paused waiting for
+	// background work", not truly done. count + a short label.
+	bg      bool
+	bgCount int
+	bgText  string
 }
 
 // agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
@@ -148,6 +154,12 @@ type agentJSON struct {
 	// with an amber ⚠ (NOT red — red is `waiting`). Absent/false = finished normally.
 	Error     bool   `json:"error,omitempty"`
 	ErrorText string `json:"error_text,omitempty"` // short summary for the row
+	// background-running modifier: an idle session whose turn ended with background
+	// work still in flight (Claude's Stop-payload background_tasks). Surfaces mark it
+	// with an amber ⧗ (NOT red). Absent/false = truly finished. bg_count = how many.
+	Bg      bool   `json:"bg,omitempty"`
+	BgCount int    `json:"bg_count,omitempty"`
+	BgText  string `json:"bg_text,omitempty"` // short label (e.g. the shell command)
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -526,6 +538,9 @@ func gatherAgents() []agentPane {
 		since := activityAt
 		var errored bool
 		var errorText string
+		var bg bool
+		var bgCount int
+		var bgText string
 		switch status {
 		case "working":
 			if mt := fileMtime(state.ActivePath(id)); mt > 0 {
@@ -576,6 +591,11 @@ func gatherAgents() []agentPane {
 					errored, errorText = true, txt
 				}
 			}
+			// background-running: the Stop hook stamped bg/<pane> because the turn
+			// ended with background work still in flight → mark the idle row ⧗ (not ✓).
+			if n, label := state.ReadBackground(id); n > 0 {
+				bg, bgCount, bgText = true, n, label
+			}
 		}
 		// radar++ : the pane's cwd → git repo root basename (project) + branch,
 		// read straight from .git (no git subprocess; cgo-free). "" if not a repo.
@@ -602,6 +622,9 @@ func gatherAgents() []agentPane {
 			since:      since,
 			errored:    errored,
 			errorText:  errorText,
+			bg:         bg,
+			bgCount:    bgCount,
+			bgText:     bgText,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -785,6 +808,20 @@ func cmdAgents(args []string) int {
 				task = i18n.Amber + p.errorText + i18n.Reset
 			}
 		}
+		// background-running idle: keep the green ✓ idle glyph (it IS idle), but flag
+		// with an amber ⧗ modifier (NOT red) that background work is still in flight.
+		if p.bg && !p.errored {
+			n := ""
+			if p.bgCount > 1 {
+				n = fmt.Sprintf("%d", p.bgCount)
+			}
+			mark := i18n.Amber + "⧗" + n + " " + i18n.Tr("background running", "后台运行中") + i18n.Reset
+			if p.bgText != "" {
+				task = mark + i18n.Dim + " · " + p.bgText + i18n.Reset
+			} else {
+				task = mark
+			}
+		}
 		dot := ""
 		if p.activity {
 			dot = i18n.Yellow + " •" + i18n.Reset
@@ -825,6 +862,7 @@ func agentsJSONBytes() ([]byte, error) {
 			ActivityAt: p.activityAt, Since: p.since, Icon: p.icon,
 			SessionID: p.sessionID, Adoptable: p.adoptable,
 			Error: p.errored, ErrorText: p.errorText,
+			Bg: p.bg, BgCount: p.bgCount, BgText: p.bgText,
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")

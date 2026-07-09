@@ -29,6 +29,11 @@ export interface Agent {
   // mark it with an amber ⚠ (NOT red — red is waiting). false/absent = finished ok.
   error?: boolean;
   error_text?: string;
+  // background-running modifier: this idle session's turn ended with background
+  // work still in flight. Marked with an amber ⧗ (NOT red). false/absent = done.
+  bg?: boolean;
+  bg_count?: number;
+  bg_text?: string;
 }
 
 // Decode one agent from raw JSON, applying the same defaults as the Swift decoder.
@@ -58,6 +63,9 @@ export function toAgent(raw: any): Agent {
     icon: s('icon') || undefined,
     error: b('error') || undefined,
     error_text: s('error_text') || undefined,
+    bg: b('bg') || undefined,
+    bg_count: n('bg_count'),
+    bg_text: s('bg_text') || undefined,
   };
 }
 
