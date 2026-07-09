@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  The app drives the host terminal (Ghostty/iTerm2) with AppleScript to raise the
+	  right tab on `gtmux focus`. Under the Hardened Runtime (required to notarize), a
+	  process is BLOCKED from sending Apple Events unless it carries this entitlement —
+	  without it, tccd logs "requires entitlement com.apple.security.automation.apple-
+	  events but it is missing" and the jump silently no-ops. Ad-hoc (non-hardened)
+	  builds weren't restricted, which is why this only surfaced on the notarized build.
+	-->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+</dict>
+</plist>

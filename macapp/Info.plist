@@ -22,5 +22,7 @@
 	<true/>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Gtmux brings the right terminal tab to the front when you jump to a session.</string>
 </dict>
 </plist>

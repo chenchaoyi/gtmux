@@ -62,12 +62,18 @@ fi
 # re-prompting every reinstall — the ad-hoc fallback changes identity each build)
 # and Hardened Runtime (required for notarization). Falls back to ad-hoc.
 # Sign nested code (the bundled CLI) BEFORE the outer bundle; avoid --deep.
+# Entitlements: the Hardened Runtime BLOCKS Apple Events unless the app carries
+# com.apple.security.automation.apple-events — without it `gtmux focus` can't raise
+# the terminal tab (tccd: "requires entitlement … but it is missing"). Sign the app
+# binary (the responsible process) AND the bundled CLI with it. build.sh runs from
+# macapp/, so the path is relative.
+ENT="Gtmux.entitlements"
 SIGN_ID="${GTMUX_SIGN_ID:-}"
 if [ -n "$SIGN_ID" ]; then
-  echo "==> code signing (Developer ID, hardened runtime): $SIGN_ID"
-  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/gtmux"
-  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/${APP_BIN}"
-  codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$BUNDLE"
+  echo "==> code signing (Developer ID, hardened runtime, automation entitlement): $SIGN_ID"
+  codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/gtmux"
+  codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE/Contents/MacOS/${APP_BIN}"
+  codesign --force --options runtime --entitlements "$ENT" --timestamp --sign "$SIGN_ID" "$BUNDLE"
   codesign --verify --strict --verbose=2 "$BUNDLE" || { echo "codesign verify failed" >&2; exit 1; }
   echo "   signed."
   # Notarize + staple when notary credentials are present, so the app opens on OTHER
@@ -93,7 +99,9 @@ if [ -n "$SIGN_ID" ]; then
   fi
 else
   echo "==> ad-hoc code signing (set GTMUX_SIGN_ID='Developer ID Application: …' for a stable signature)"
-  codesign --force --deep --sign - "$BUNDLE"
+  # Ad-hoc isn't hardened, so Apple Events aren't blocked — but carry the same
+  # entitlement so a local `make app` behaves identically to the shipped build.
+  codesign --force --deep --entitlements "$ENT" --sign - "$BUNDLE"
 fi
 
 echo
