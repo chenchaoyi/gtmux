@@ -44,6 +44,13 @@ type Deps struct {
 	// ok is false when the pane no longer exists.
 	PaneText func(id string) (text string, ok bool)
 
+	// IsWaiting reports whether the pane is blocked on the user per the HOOK marker
+	// (never inferred from screen text). handleOptions consults it so the approval
+	// card's 1/2/3 choices are only ever parsed for a genuinely-waiting pane — a
+	// numbered list in ordinary output must never surface as an approval menu.
+	// Optional: nil → no gate (the parse runs unconditionally, legacy behavior).
+	IsWaiting func(id string) bool
+
 	// PaneCursor returns the pane's text cursor: column x (0-based) and Up = rows
 	// above the last captured line, plus whether it's visible. Optional: nil → the
 	// pane response omits the cursor (the renderer then shows none / its own).
@@ -263,6 +270,13 @@ func (s *Server) handleOptions(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	// Options belong to a HOOK-confirmed waiting pane only — never derive an approval
+	// menu from arbitrary screen text (a "1. … 2. …" list in an agent's own message
+	// would otherwise read as one). Not waiting → empty, without even parsing.
+	if s.deps.IsWaiting != nil && !s.deps.IsWaiting(id) {
+		writeJSON(w, http.StatusOK, map[string]any{"options": []prompt.Option{}})
 		return
 	}
 	text, ok := s.deps.PaneText(id)

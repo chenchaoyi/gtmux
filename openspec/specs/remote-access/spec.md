@@ -67,8 +67,16 @@ session; `/api/options` returns `{"options":[]}` when nothing parses.
 
 #### Scenario: Options parse a waiting prompt
 
-- **WHEN** a client GETs `/api/options` for a pane waiting on a numbered prompt
+- **WHEN** a client GETs `/api/options` for a pane the hook marks as waiting on a
+  numbered prompt
 - **THEN** the response lists the `{n,label}` choices the parser found
+
+#### Scenario: Options are gated on the hook waiting state
+
+- **WHEN** a client GETs `/api/options` for a pane that is NOT hook-waiting, even if
+  its screen text looks like a numbered menu
+- **THEN** the response is `{"options":[]}` — options are only parsed for a
+  hook-confirmed waiting pane, never inferred from arbitrary output
 
 ### Requirement: Per-device enrollment so the master token isn't shared
 
