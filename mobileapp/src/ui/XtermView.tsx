@@ -3,7 +3,7 @@
 // of the lightweight native ANSI parser (src/ui/ansi.ts). xterm handles full-screen
 // TUIs, true color, and correct CJK widths. The terminal document is inlined
 // (src/ui/xtermAsset.ts) so it loads offline. Read-only: key input still goes
-// through the existing Composer/FloatingKeys → POST /api/send path.
+// through the existing Composer → POST /api/send path.
 
 import React, {useEffect, useRef} from 'react';
 import {StyleSheet, View} from 'react-native';
