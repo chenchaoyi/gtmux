@@ -62,12 +62,15 @@ function contextKeys(status: StatusName, lang: string): {label: string; payload:
   return [];
 }
 
-// Permanent control-key pills. Tab earns its place: it accepts the agent's
-// highlighted/recommended choice in a prompt (and completes in the shell), which
-// is awkward to reach otherwise from a phone. Ctrl-C interrupts, Esc cancels. The
-// standalone ⏎ (redundant with Send) and the directional nav stay removed.
+// Permanent control-key pills. Tab accepts the agent's highlighted/recommended
+// choice or completes its ghost suggestion; ⏎ then SUBMITS that line — a bare
+// Enter to the pane, NOT the same as Send (↑), which only submits text typed into
+// the composer field. Tab→⏎ sit adjacent so "accept the suggestion, then send it"
+// is two taps in the resting row, with no detour through the input box. Ctrl-C
+// interrupts, Esc cancels. Directional nav stays removed.
 const CONTROL_KEYS: {label: string; key: string}[] = [
   {label: 'Tab', key: 'Tab'},
+  {label: '⏎', key: 'Enter'},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
 ];
