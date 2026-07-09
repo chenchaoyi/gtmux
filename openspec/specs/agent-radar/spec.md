@@ -48,6 +48,13 @@ or `running`, where `waiting` means blocked on the user (permission/approval).
   hook) and the agent is not currently working
 - **THEN** the agent's status is `waiting` and sorts to the top
 
+#### Scenario: Waiting is never inferred from screen output
+
+- **WHEN** a pane has NO hook waiting marker but its visible content contains a
+  numbered list (e.g. a `1. … 2. …` list in the agent's own message)
+- **THEN** the agent's status is NOT `waiting` — the waiting state comes from the
+  hook/session only, never from parsing terminal output
+
 ### Requirement: Stable JSON contract
 
 The system SHALL expose the radar as `gtmux agents --json`: a byte-identical,

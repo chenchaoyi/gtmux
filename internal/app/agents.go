@@ -14,7 +14,6 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
-	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -519,18 +518,12 @@ func gatherAgents() []agentPane {
 				state.Remove(state.WaitingPath(id))
 				delete(waiting, id)
 			}
-			// Screen-scan fallback: a live approval menu on screen means "needs you".
-			// The hook marks Claude's waiting (handled above), but NOT every prompt
-			// fires Claude's Notification event — a tool-permission "Do you want to
-			// proceed? ❯1/2/3" often doesn't, leaving the pane wrongly "finished". So
-			// scan every agent, not just Codex/Cursor/Gemini. WaitingOptions is strict
-			// (bottom-anchored, ≥2 choices, an actual selector cursor) so a numbered
-			// list in output doesn't false-alarm; recomputed each poll → self-clears
-			// once you answer. Only reached for a NON-working pane (no capture spam on
-			// busy Claude panes).
-			if len(prompt.WaitingOptions(tmux.CapturePane(id))) > 0 {
-				status = "waiting"
-			}
+			// "Waiting" is HOOK-DRIVEN ONLY (the marker set above), never inferred from
+			// screen output. A screen-scan fallback used to promote a pane to waiting
+			// when a numbered menu appeared on screen — but it false-alarmed on ordinary
+			// prose (a "1. … 2. …" list in an agent's own message read as an approval
+			// menu), popping a bogus approval card on an idle session. The waiting state
+			// belongs to the hook/session, not to whatever text is on the terminal.
 		}
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
 		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish

@@ -150,6 +150,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return tmux.CapturePaneColor(id), true
 		},
+		// The approval card's options are gated on the hook waiting marker, not screen
+		// text (an idle pane showing a numbered list must not surface an approval menu).
+		IsWaiting:  func(id string) bool { return state.Exists(state.WaitingPath(id)) },
 		PaneCursor: paneCursor,
 		Focus:      func(id string) error { return focusPaneByID(id) },
 		Send:       sendToPane,

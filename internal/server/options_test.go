@@ -64,3 +64,43 @@ func TestOptionsEndpoint(t *testing.T) {
 		t.Error("missing token should be 401")
 	}
 }
+
+// TestOptionsGatedByHookWaiting: when IsWaiting is wired, a pane that is NOT
+// hook-waiting returns NO options even if its screen text looks like a menu — the
+// approval card must come from the hook, not from parsing arbitrary output.
+func TestOptionsGatedByHookWaiting(t *testing.T) {
+	// Screen shows a numbered list (like an agent's own "1. … 2. …" prose).
+	paneText := "Steps:\n ❯ 1. Yes\n   2. No, tell Claude what to do"
+	waiting := map[string]bool{"%waiting": true} // only this pane is hook-waiting
+	s := New(Config{Addr: "x", Token: "tok"}, Deps{
+		PaneText:  func(string) (string, bool) { return paneText, true },
+		IsWaiting: func(id string) bool { return waiting[id] },
+	})
+	h := s.Handler()
+	get := func(id string) []struct {
+		N     int    `json:"n"`
+		Label string `json:"label"`
+	} {
+		req := httptest.NewRequest(http.MethodGet, "/api/options?id="+url.QueryEscape(id), nil)
+		req.Header.Set("Authorization", "Bearer tok")
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		var body struct {
+			Options []struct {
+				N     int    `json:"n"`
+				Label string `json:"label"`
+			} `json:"options"`
+		}
+		_ = json.Unmarshal(rr.Body.Bytes(), &body)
+		return body.Options
+	}
+
+	// Not hook-waiting → empty, despite the menu-looking screen text.
+	if opts := get("%idle"); len(opts) != 0 {
+		t.Errorf("non-waiting pane returned options from screen text: %#v", opts)
+	}
+	// Hook-waiting → the real choices are parsed.
+	if opts := get("%waiting"); len(opts) != 2 || opts[0].Label != "Yes" {
+		t.Errorf("waiting pane options = %#v, want 2 with first 'Yes'", opts)
+	}
+}
