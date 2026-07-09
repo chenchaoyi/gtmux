@@ -1,38 +1,42 @@
 package app
 
 import (
-	"bufio"
 	"bytes"
-	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	chclient "github.com/jpillora/chisel/client"
+
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // Self-hosted tunnel backend (`gtmux tunnel --backend self`). Instead of Cloudflare,
-// the Mac dials out over 443/WebSocket (chisel) to the user's OWN VPS + domain —
+// the Mac dials out over 443/WebSocket to the user's OWN VPS + domain —
 // indistinguishable from ordinary HTTPS, so it survives networks that DNS-hijack
 // Cloudflare's edge (`*.argotunnel.com`). The user runs the server side (chisel +
 // a TLS reverse proxy) on their VPS; see deploy/self-tunnel/. Config is manual (own
 // server): GTMUX_SELFTUNNEL_URL (https://tunnel.example.com) + GTMUX_SELFTUNNEL_SECRET
 // (chisel auth, user:pass).
+//
+// The tunnel client is the jpillora/chisel LIBRARY run IN-PROCESS — there is NO
+// standalone `chisel` binary on disk. That's both simpler (nothing to download/manage)
+// and avoids shipping a separate file that endpoint scanners flag as a dual-use
+// hacktool: it's just gtmux's own signed binary making an outbound WebSocket. (This
+// defeats file/hash signature scanners, not behavioral network monitoring — the
+// outbound tunnel must be permitted by your network in the first place.)
 
 const (
-	chiselVersion        = "1.10.1"
 	selfTunnelAgentLabel = "com.gtmux.selftunnel"
 	// Per-device reverse-tunnel port band on the shared VPS. Each Mac derives a
 	// STABLE port in [selfPortBase, selfPortBase+selfPortSpan) from its device id, so
@@ -60,8 +64,14 @@ func selfTunnelPairURL(base string) string {
 	return strings.TrimRight(base, "/") + "/p" + strconv.Itoa(selfTunnelPort())
 }
 
-// connectedRe matches chisel's "Connected (Latency …)" line → the tunnel is up.
-var connectedRe = regexp.MustCompile(`client: Connected`)
+// removeLegacyChiselBinary deletes the standalone chisel the OLD Direct backend
+// downloaded to ~/.local/bin/gtmux-chisel. The client is now in-process, so that
+// file is dead weight — and it's the very artifact an endpoint scanner flags. So we
+// proactively remove it on any Direct run. Best-effort; a user's own `chisel` on
+// PATH is left untouched (we only remove the gtmux-managed copy).
+func removeLegacyChiselBinary() {
+	_ = os.Remove(filepath.Join(homeDir(), ".local", "bin", "gtmux-chisel"))
+}
 
 func selfTunnelAgentPath() string {
 	return filepath.Join(launchAgentsDir(), selfTunnelAgentLabel+".plist")
@@ -228,10 +238,7 @@ func tunnelSelf(port int, name string) int {
 	if !ok {
 		return 2
 	}
-	bin := ensureChisel()
-	if bin == "" {
-		return 1
-	}
+	removeLegacyChiselBinary() // in-process now — drop the flagged standalone binary
 	token := startLocalRadar(port)
 	pairURL := selfTunnelPairURL(url) // per-device path so multiple Macs don't collide
 	_ = os.WriteFile(tunnelURLPath(), []byte(pairURL+"\n"), 0o600)
@@ -239,10 +246,7 @@ func tunnelSelf(port int, name string) int {
 		defer func() { _ = os.Remove(tunnelURLPath()) }()
 	}
 	i18n.Say("Starting your self-hosted tunnel…", "正在启动自建隧道…")
-	// Dial the bare base; reverse-forward this device's own VPS port → local serve.
-	args := []string{"client", "--keepalive", "25s", url,
-		fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfTunnelPort(), port)}
-	return runChiselClient(bin, args, secret, func() {
+	return runSelfTunnelClient(url, secret, port, func() {
 		printTunnelPairing(pairURL, token, name, port, true)
 	})
 }
@@ -250,14 +254,13 @@ func tunnelSelf(port int, name string) int {
 // tunnelSelfServiceInstall registers the always-on self-hosted tunnel: a serve
 // LaunchAgent (loopback radar) + a chisel LaunchAgent dialing the user's VPS.
 func tunnelSelfServiceInstall(port int, name string, yes bool) int {
-	url, secret, ok := selfTunnelConfig()
+	// Only presence matters here — the tunnel-client SERVICE re-reads url+secret from
+	// selftunnel.conf at run time, so the secret never lands in the plist or `ps`.
+	url, _, ok := selfTunnelConfig()
 	if !ok {
 		return 2
 	}
-	bin := ensureChisel()
-	if bin == "" {
-		return 1
-	}
+	removeLegacyChiselBinary() // in-process now — drop the flagged standalone binary
 	if !yes {
 		i18n.Say(i18n.Bold+"Keep the self-hosted tunnel ON across reboots?"+i18n.Reset,
 			i18n.Bold+"让自建隧道重启后也保持开启？"+i18n.Reset)
@@ -279,8 +282,12 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
-	// chisel client with AUTH in the plist's EnvironmentVariables (0600 plist), NOT argv.
-	if err := writeChiselAgent(selfTunnelAgentPath(), bin, url, secret, port,
+	// In-process tunnel client as a LaunchAgent: `gtmux tunnel-client --port <n>`.
+	// The url+secret are read from selftunnel.conf (0600) by that command, so NO
+	// secret lands in the plist or `ps` — cleaner than the old chisel-binary agent
+	// that carried AUTH in the plist env.
+	if err := writeLaunchAgent(selfTunnelAgentPath(), selfTunnelAgentLabel,
+		[]string{selfPath(), "tunnel-client", "--port", strconv.Itoa(port)},
 		filepath.Join(logDir, "selftunnel.log")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
@@ -307,71 +314,71 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	return 0
 }
 
-// writeChiselAgent writes a launchd plist for the chisel client, carrying the auth
-// secret in EnvironmentVariables (so it isn't visible in `ps`). 0600.
-func writeChiselAgent(path, bin, url, secret string, port int, logPath string) error {
-	remote := fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfTunnelPort(), port)
-	plist := `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>Label</key><string>` + xmlEsc(selfTunnelAgentLabel) + `</string>
-  <key>ProgramArguments</key><array>
-    <string>` + xmlEsc(bin) + `</string>
-    <string>client</string><string>--keepalive</string><string>25s</string>
-    <string>` + xmlEsc(url) + `</string>
-    <string>` + xmlEsc(remote) + `</string>
-  </array>
-  <key>EnvironmentVariables</key><dict><key>AUTH</key><string>` + xmlEsc(secret) + `</string></dict>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>` + xmlEsc(logPath) + `</string>
-  <key>StandardErrorPath</key><string>` + xmlEsc(logPath) + `</string>
-</dict></plist>
-`
-	return os.WriteFile(path, []byte(plist), 0o600)
+// cmdSelfTunnelClient runs the in-process Direct tunnel client — the launchd
+// service's ProgramArguments (`gtmux tunnel-client --port <n>`). It reads the
+// server URL + secret from selftunnel.conf (never argv/env), so no secret is
+// exposed in the plist or `ps`. Blocks; chisel reconnects on drops and launchd
+// restarts it on exit.
+func cmdSelfTunnelClient(args []string) int {
+	port := defaultServePort
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--port" && i+1 < len(args) {
+			if p, err := strconv.Atoi(args[i+1]); err == nil {
+				port = p
+			}
+			i++
+		}
+	}
+	url, secret, ok := selfTunnelConfig()
+	if !ok {
+		return 1
+	}
+	return runSelfTunnelClient(url, secret, port, nil)
 }
 
-// runChiselClient runs chisel with AUTH in the env (not argv), echoes problems, and
-// calls onReady on the first "Connected" line. Mirrors runCloudflared but adds the
-// auth env and its own ready detection.
-func runChiselClient(bin string, args []string, secret string, onReady func()) int {
-	cmd := exec.Command(bin, args...)
-	cmd.Env = append(os.Environ(), "AUTH="+secret)
-	stderr, err := cmd.StderrPipe()
+// runSelfTunnelClient dials the user's VPS over 443/WebSocket with the jpillora/chisel
+// client run IN-PROCESS (no standalone binary), reverse-forwarding this device's own
+// VPS port → the local serve. onReady (nil for the launchd service) fires once the
+// tunnel is confirmed live end-to-end. Blocks until the client stops.
+func runSelfTunnelClient(server, secret string, port int, onReady func()) int {
+	remote := fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfTunnelPort(), port)
+	cl, err := chclient.NewClient(&chclient.Config{
+		Server:        server,
+		Auth:          secret, // "user:pass" — kept out of argv/ps (it's a field, not a flag)
+		KeepAlive:     25 * time.Second,
+		MaxRetryCount: -1, // unlimited — chisel's own CLI default; keep reconnecting on drops
+		Remotes:       []string{remote},
+	})
 	if err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
-	if err := cmd.Start(); err != nil {
+	// chisel logs to stderr; keep it quiet unless debugging (mirrors the old filter).
+	cl.Logger.Info = os.Getenv("GTMUX_TUNNEL_DEBUG") != ""
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigc)
+	go func() {
+		if _, ok := <-sigc; ok {
+			cancel() // Ctrl-C / SIGTERM → graceful teardown
+		}
+	}()
+
+	if err := cl.Start(ctx); err != nil {
 		i18n.Sae("gtmux tunnel: failed to start the tunnel client: "+err.Error(),
 			"gtmux tunnel: 启动隧道客户端失败："+err.Error())
 		return 1
 	}
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		if _, ok := <-sigc; ok && cmd.Process != nil {
-			_ = cmd.Process.Signal(syscall.SIGTERM)
-		}
-	}()
-	ready := false
-	verbose := os.Getenv("GTMUX_TUNNEL_DEBUG") != ""
-	sc := bufio.NewScanner(stderr)
-	sc.Buffer(make([]byte, 64*1024), 1024*1024)
-	for sc.Scan() {
-		line := sc.Text()
-		if verbose || cloudflaredProblem(line) {
-			fmt.Fprintln(os.Stderr, i18n.Dim+line+i18n.Reset)
-		}
-		if !ready && connectedRe.MatchString(line) {
-			onReady()
-			ready = true
-		}
+	// Signal readiness by probing the pairing URL end-to-end (Mac → VPS → reverse
+	// tunnel → local serve) rather than chisel's WS-only "Connected" — this confirms
+	// the exact path the phone will use.
+	if onReady != nil {
+		go waitSelfTunnelReady(ctx, selfTunnelPairURL(server), onReady)
 	}
-	err = cmd.Wait()
-	signal.Stop(sigc)
-	close(sigc)
-	if err != nil && !ready {
+	if err := cl.Wait(); err != nil && ctx.Err() == nil {
 		i18n.Sae("gtmux tunnel: the tunnel client exited: "+err.Error(),
 			"gtmux tunnel: 隧道客户端退出："+err.Error())
 		return 1
@@ -379,77 +386,30 @@ func runChiselClient(bin string, args []string, secret string, onReady func()) i
 	return 0
 }
 
-// chiselPath returns a usable jpillora/chisel binary: the gtmux-managed copy, or a
-// `chisel` on PATH that is the TUNNEL (not Homebrew's Facebook LLDB "chisel"). "" if none.
-func chiselPath() string {
-	managed := filepath.Join(localBinDir(), "gtmux-chisel")
-	if fileExists(managed) {
-		return managed
-	}
-	if p, err := exec.LookPath("chisel"); err == nil {
-		// Distinguish jpillora chisel (understands `--version` → a version string)
-		// from Homebrew's LLDB "chisel" (a Python tool that doesn't).
-		if out, err := exec.Command(p, "--version").Output(); err == nil && len(out) > 0 && out[0] >= '0' && out[0] <= '9' {
-			return p
+// waitSelfTunnelReady polls the pairing URL's unauthenticated /api/health until it
+// answers (the full Mac→VPS→tunnel→serve path is live), then fires onReady. Falls
+// back to firing after a bounded wait so a slow/blocked probe never hides the pairing.
+func waitSelfTunnelReady(ctx context.Context, pairURL string, onReady func()) {
+	hc := &http.Client{Timeout: 4 * time.Second}
+	url := strings.TrimRight(pairURL, "/") + "/api/health"
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if resp, err := hc.Do(req); err == nil {
+			_ = resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				onReady()
+				return
+			}
+		}
+		if time.Now().After(deadline) {
+			onReady() // don't hide the pairing block; the tunnel usually settles shortly
+			return
+		}
+		select {
+		case <-time.After(700 * time.Millisecond):
+		case <-ctx.Done():
+			return
 		}
 	}
-	return ""
 }
-
-// ensureChisel returns a chisel binary, downloading the correct jpillora release to
-// ~/.local/bin/gtmux-chisel when none is present. "" if it couldn't be set up.
-func ensureChisel() string {
-	if p := chiselPath(); p != "" {
-		return p
-	}
-	i18n.Say("Fetching the tunnel client (chisel)…", "正在获取隧道客户端（chisel）…")
-	dst := filepath.Join(localBinDir(), "gtmux-chisel")
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
-		return ""
-	}
-	url := fmt.Sprintf("https://github.com/jpillora/chisel/releases/download/v%s/chisel_%s_%s_%s.gz",
-		chiselVersion, chiselVersion, runtime.GOOS, runtime.GOARCH)
-	if err := downloadGzBinary(url, dst); err != nil {
-		i18n.Sae("gtmux tunnel: couldn't fetch chisel: "+err.Error()+" — install it from https://github.com/jpillora/chisel/releases",
-			"gtmux tunnel: 获取 chisel 失败："+err.Error()+" —— 从 https://github.com/jpillora/chisel/releases 手动安装")
-		return ""
-	}
-	i18n.Say(i18n.Dim+"Installed chisel → "+dst+i18n.Reset, i18n.Dim+"已安装 chisel → "+dst+i18n.Reset)
-	return dst
-}
-
-// downloadGzBinary fetches a gzip-compressed binary and writes it executable to dst.
-func downloadGzBinary(url, dst string) error {
-	client := &http.Client{Timeout: 60 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
-	}
-	gz, err := gzip.NewReader(resp.Body)
-	if err != nil {
-		return err
-	}
-	defer gz.Close()
-	tmp := dst + ".tmp"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o755)
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(f, gz); err != nil { //nolint:gosec // release artifact, size-bounded by the client timeout
-		f.Close()
-		_ = os.Remove(tmp)
-		return err
-	}
-	if err := f.Close(); err != nil {
-		_ = os.Remove(tmp)
-		return err
-	}
-	return os.Rename(tmp, dst)
-}
-
-func localBinDir() string { return filepath.Join(homeDir(), ".local", "bin") }

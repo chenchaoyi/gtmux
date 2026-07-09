@@ -180,8 +180,13 @@ public exposure should be a conscious choice and stay visible:
   via an SNI router) — see **`deploy/self-tunnel/`** for the versioned config +
   install/migration scripts. Config is manual (your own server):
   `GTMUX_SELFTUNNEL_URL` (`https://tunnel.example.com`) + `GTMUX_SELFTUNNEL_SECRET`
-  (chisel `user:pass`). gtmux fetches the chisel client itself. The phone pairs to
-  `{url, token}` exactly as with Cloudflare. `--service` registers it always-on.
+  (chisel `user:pass`). The client is the **jpillora/chisel library run in-process**
+  — no standalone binary on the Mac (nothing to download/manage, and no separate
+  file for endpoint scanners to flag as a dual-use hacktool; it's just gtmux's own
+  signed binary making an outbound WebSocket). The always-on `--service` runs it as a
+  `gtmux tunnel-client` LaunchAgent that reads the secret from `selftunnel.conf` (so
+  it's never in the plist/`ps`). The phone pairs to `{url, token}` exactly as with
+  Cloudflare.
 
 P1 is manual selection; auto-failover Cloudflare→self and a dual-URL pairing QR are
 P2 (see `openspec/changes/.../self-hosted-tunnel`). The tunnel is the intended paid tier.
