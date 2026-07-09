@@ -90,6 +90,12 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
   const [diffOpen, setDiffOpen] = useState(false);
   const [options, setOptions] = useState<ReplyOption[]>([]);
+  // When an approval choice was just tapped (epoch ms). For a short settle window
+  // after, the options poll ignores what it parses: the pane is mid-transition, so a
+  // capture catches transient/redrawing frames (the just-answered menu lingering, or
+  // a half-rendered "1234") that would flicker the card back up. Once the window
+  // passes, polling resumes and a genuinely new menu shows normally.
+  const answeredAt = useRef(0);
   const [slow, setSlow] = useState(false); // D8: pane taking >3s to first paint
   // Chat transcript lives HERE (DetailScreen stays mounted across mode switches) so
   // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
@@ -242,7 +248,12 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       return;
     }
     let alive = true;
-    const load = () => client.options(agent.pane_id).then(o => alive && setOptions(o));
+    // Ignore poll results inside the post-answer settle window (see answeredAt) so a
+    // mid-transition capture can't flicker the card back with stale/partial options.
+    const load = () =>
+      client.options(agent.pane_id).then(o => {
+        if (alive && Date.now() - answeredAt.current > 1500) setOptions(o);
+      });
     load();
     const id = setInterval(load, 2000);
     return () => {
@@ -474,8 +485,9 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           // NEXT menu and auto-confirms its default — the "second choice gets
           // skipped / auto-selected" bug. An Enter-required menu (rare) still has
           // the ⏎ key in the composer's resting row.
+          answeredAt.current = Date.now(); // open the settle window (see the poll)
+          setOptions([]); // hide the card immediately, don't wait for the next poll
           sendPane({text: String(n)});
-          setOptions([]);
         }}
       />
 

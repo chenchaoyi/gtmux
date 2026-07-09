@@ -38,15 +38,29 @@ fi
 }
 [ -n "${GTMUX_RELAY_TOKEN:-}" ] || echo "WARNING: GTMUX_RELAY_TOKEN empty — push notifications will be OFF in this build." >&2
 
+# Notary credentials: prefer an App Store Connect API key (GTMUX_NOTARY_KEY/_ID/
+# _ISSUER) when set — it works in a NON-INTERACTIVE shell. A keychain profile needs
+# an unlocked login keychain (notarytool prompts → "User interaction is not allowed"
+# under a headless/agent shell), so it's the fallback. Export so build.sh inherits
+# them (an array-expansion env prefix isn't treated as assignments by bash).
+if [ -n "${GTMUX_NOTARY_KEY:-}" ] && [ -n "${GTMUX_NOTARY_KEY_ID:-}" ] && [ -n "${GTMUX_NOTARY_ISSUER:-}" ]; then
+  export GTMUX_NOTARY_KEY GTMUX_NOTARY_KEY_ID GTMUX_NOTARY_ISSUER
+  unset GTMUX_NOTARY_PROFILE
+  NOTARY_DESC="API key ${GTMUX_NOTARY_KEY_ID}"
+else
+  export GTMUX_NOTARY_PROFILE="$PROFILE"
+  NOTARY_DESC="keychain profile $PROFILE"
+fi
+
 echo "==> releasing $TAG"
 echo "    identity: $SIGN_ID"
-echo "    notary profile: $PROFILE"
+echo "    notary: $NOTARY_DESC"
 echo "    tunnel reg: baked (${#GTMUX_TUNNEL_REG} chars)"
 gh release view "$TAG" >/dev/null 2>&1 || { echo "release $TAG not found — push the tag first (git push origin $TAG)" >&2; exit 1; }
 
-# 1. Build (Developer ID sign + notarize + staple, via build.sh). The reg/relay env
-#    exported above flows into build.sh's ldflags.
-GTMUX_UNIVERSAL=1 GTMUX_VERSION="$TAG" GTMUX_SIGN_ID="$SIGN_ID" GTMUX_NOTARY_PROFILE="$PROFILE" \
+# 1. Build (Developer ID sign + notarize + staple, via build.sh). The reg/relay +
+#    notary env exported above flows into build.sh (ldflags + notarytool).
+GTMUX_UNIVERSAL=1 GTMUX_VERSION="$TAG" GTMUX_SIGN_ID="$SIGN_ID" \
   GTMUX_TUNNEL_REG="$GTMUX_TUNNEL_REG" GTMUX_RELAY_TOKEN="${GTMUX_RELAY_TOKEN:-}" macapp/build.sh
 
 # 2. Zip the stapled bundle.
