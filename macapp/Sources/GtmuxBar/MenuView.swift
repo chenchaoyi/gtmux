@@ -536,15 +536,21 @@ private struct AgentRowView: View {
                     Text(agent.primary).font(Theme.Font.session).foregroundStyle(p.fg)
                         .lineLimit(1).truncationMode(.tail).help(agent.primary)
                     if agent.isNative { tag(l10n.tr("native", "native"), p) }
-                    if agent.errored { erroredPill(p) } else if agent.latest { latestPill(p) }
+                    // Modifiers on line 1 (mutually exclusive, errored wins): errored
+                    // ⚠, background-running ⧗ (idle but bg work still in flight), latest.
+                    if agent.errored { erroredPill(p) } else if agent.bg { bgPill(p) } else if agent.latest { latestPill(p) }
                     Spacer(minLength: 0)
                 }
-                // line 2: the failure summary (amber) for an errored session, else
-                // where it lives — tmux session · pane (dim context).
+                // line 2: the failure summary (amber) for an errored session, the
+                // background-work label for a bg session, else where it lives (dim).
                 if agent.errored, !agent.errorText.isEmpty {
                     Text(agent.errorText)
                         .font(Theme.Font.window).foregroundStyle(Theme.Status.errored)
                         .lineLimit(1).truncationMode(.tail).help(agent.errorText)
+                } else if agent.bg, !agent.bgText.isEmpty {
+                    Text(agent.bgText)
+                        .font(Theme.Font.window).foregroundStyle(Theme.Status.errored)
+                        .lineLimit(1).truncationMode(.tail).help(agent.bgText)
                 } else {
                     Text(agent.secondary)
                         .font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
@@ -596,6 +602,17 @@ private struct AgentRowView: View {
 
     private func erroredPill(_ p: Theme.Palette) -> some View {
         Text(l10n.tr("errored", "报错")).font(.system(size: 8.5, weight: .semibold))
+            .foregroundStyle(Theme.Status.errored)
+            .padding(.horizontal, 4).padding(.vertical, 1)
+            .background(RoundedRectangle(cornerRadius: 3).fill(Theme.Status.errored.opacity(0.16)))
+    }
+
+    // background-running modifier: an amber ⧗ pill (idle stays green ✓) telling the
+    // reader this session is paused waiting for background work, not truly done.
+    private func bgPill(_ p: Theme.Palette) -> some View {
+        let n = agent.bgCount > 1 ? "\(agent.bgCount) " : ""
+        return Text("⧗ " + n + l10n.tr("background running", "后台运行中"))
+            .font(.system(size: 8.5, weight: .semibold))
             .foregroundStyle(Theme.Status.errored)
             .padding(.horizontal, 4).padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 3).fill(Theme.Status.errored.opacity(0.16)))

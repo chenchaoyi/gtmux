@@ -64,6 +64,12 @@ struct Agent: Identifiable, Equatable {
     // mark it with an amber ⚠ (NOT red — red is waiting). false = finished normally.
     var errored = false
     var errorText = ""
+    // background-running modifier: this idle session's turn ended with background
+    // work (a run_in_background shell, …) still in flight. Marked with an amber ⧗
+    // (NOT red). false = truly finished. bgCount = how many; bgText = a short label.
+    var bg = false
+    var bgCount = 0
+    var bgText = ""
 
     var id: String {
         if !paneID.isEmpty { return paneID }
@@ -114,15 +120,18 @@ extension Agent: Decodable {
         icon = s(.icon)
         sessionID = s(.sessionID); adoptable = b(.adoptable)
         errored = b(.errored); errorText = s(.errorText)
+        bg = b(.bg); bgCount = (try? c.decode(Int.self, forKey: .bgCount)) ?? 0; bgText = s(.bgText)
     }
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity
-        case source, project, terminal, tab, icon, since, adoptable
+        case source, project, terminal, tab, icon, since, adoptable, bg
         case activityAt = "activity_at"
         case sessionID = "session_id"
         case errored = "error"
         case errorText = "error_text"
+        case bgCount = "bg_count"
+        case bgText = "bg_text"
     }
 }
 

@@ -180,6 +180,66 @@ func isShellComm(comm string) bool {
 	return false
 }
 
+// backgroundTask is one entry of Claude's Stop-payload `background_tasks` array:
+// in-flight background work registered in the session. `Type` is a label like
+// "shell"/"subagent"/"monitor"/"workflow"; `Command` is present only for shells.
+type backgroundTask struct {
+	Type        string `json:"type"`
+	Status      string `json:"status"`
+	Description string `json:"description"`
+	Command     string `json:"command"`
+}
+
+// bgLabelMax caps the one-line label stored in the bg marker (a display hint).
+const bgLabelMax = 80
+
+// terminalBGStatus reports whether a background task's status means it's no longer
+// in flight. Claude's array is documented to hold only running/pending/backgrounded
+// work, but we filter defensively so a lingering finished entry can't keep a pane
+// marked. Unknown statuses count as in-flight (fail toward showing the modifier).
+func terminalBGStatus(s string) bool {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "completed", "complete", "done", "finished", "succeeded",
+		"failed", "error", "errored", "killed", "exited", "cancelled",
+		"canceled", "stopped", "terminated":
+		return true
+	}
+	return false
+}
+
+// summarizeBackground returns how many background tasks are still in flight and a
+// short label for them — the first shell's command line if any, else the first
+// task's description (or type). Empty/nil input → (0, "").
+func summarizeBackground(tasks []backgroundTask) (count int, label string) {
+	inFlight := tasks[:0:0]
+	for _, t := range tasks {
+		if !terminalBGStatus(t.Status) {
+			inFlight = append(inFlight, t)
+		}
+	}
+	if len(inFlight) == 0 {
+		return 0, ""
+	}
+	for _, t := range inFlight {
+		if c := strings.TrimSpace(t.Command); c != "" {
+			label = c
+			break
+		}
+	}
+	if label == "" {
+		first := inFlight[0]
+		if d := strings.TrimSpace(first.Description); d != "" {
+			label = d
+		} else {
+			label = strings.TrimSpace(first.Type)
+		}
+	}
+	if len(label) > bgLabelMax {
+		label = strings.TrimSpace(label[:bgLabelMax]) + "…"
+	}
+	return len(inFlight), label
+}
+
 // nativeStateFor maps a canonical lifecycle event to the state stored for a
 // non-tmux (native) session. remove=true drops the record (the session ended).
 // "" state = no change (an event that doesn't move a native session's state).
@@ -282,6 +342,11 @@ func Run(stdin io.Reader, args []string) int {
 		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
+		// Claude's Stop/SubagentStop payload lists in-flight background work still
+		// registered in the session ("running/pending + backgrounded"), so a hook can
+		// tell "session is done" from "session is paused waiting for background work".
+		// Optional + best-effort: absent/renamed → empty, never an error.
+		BackgroundTasks []backgroundTask `json:"background_tasks"`
 	}
 	_ = json.Unmarshal(raw, &payload)
 	if rawEvent == "" {
@@ -405,6 +470,19 @@ func Run(stdin io.Reader, args []string) int {
 		// radar + notification can say what's actually needed.
 		if d.setWaiting {
 			_ = state.WriteMarker(state.WaitingPath(pane), string(waitKind))
+		}
+		// Background-work modifier: on Stop, record whether the settled turn still
+		// has in-flight background work (Claude's background_tasks) so the radar can
+		// mark the idle row "background running"; an empty array clears it. Any
+		// transition that leaves the pane not-idle (clearFinished) drops the marker
+		// too — it only annotates idle sessions. Non-Claude agents send no such
+		// field, so their Stop simply clears it (v1 is Claude-only, by construction).
+		switch {
+		case event == "Stop":
+			count, label := summarizeBackground(payload.BackgroundTasks)
+			_ = state.WriteBackground(pane, count, label)
+		case d.clearFinished:
+			state.ClearBackground(pane)
 		}
 	}
 	// Don't re-notify a Waiting already flagged with the same kind — a generic

@@ -37,4 +37,20 @@ func TestAgentJSONContractFields(t *testing.T) {
 	if strings.Contains(string(b), `"project"`) || strings.Contains(string(b), `"terminal"`) {
 		t.Errorf("tmux agent JSON should omit native-only fields: %s", b)
 	}
+
+	// An idle row with background work still running carries the bg modifier.
+	gb, _ := json.Marshal(agentJSON{
+		PaneID: "%6", Status: "idle", Source: "tmux",
+		Bg: true, BgCount: 2, BgText: "npm run dev",
+	})
+	for _, key := range []string{`"bg":true`, `"bg_count":2`, `"bg_text":"npm run dev"`} {
+		if !strings.Contains(string(gb), key) {
+			t.Errorf("bg agents --json missing %s in %s", key, gb)
+		}
+	}
+	// A plain idle row omits the bg fields (omitempty), so a bg-unaware consumer is
+	// unaffected.
+	if strings.Contains(string(b), `"bg"`) || strings.Contains(string(b), `"bg_count"`) {
+		t.Errorf("non-bg agent JSON should omit the bg fields: %s", b)
+	}
 }

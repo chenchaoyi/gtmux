@@ -6,6 +6,9 @@
 //	active/<pane>     marker: a turn is in progress for that tmux pane id
 //	waiting/<pane>    marker: that pane is blocked on the user (permission/approval)
 //	finished/<pane>   marker: mtime = when that pane's turn ended (idle duration)
+//	bg/<pane>         marker: an idle pane whose turn ended with background work still
+//	                  running (content: "<count>\t<label>"); the radar reads it to mark
+//	                  the row "background running" — a modifier on idle, never a status
 //	native/<session>  record: an agent session sensed OUTSIDE tmux (internal/native)
 //	last-finished     the pane id of the most-recently-finished agent turn
 //	notify-icon.png   cached agent icon, used as the notification's thumbnail
@@ -16,6 +19,7 @@ package state
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -42,6 +46,46 @@ func FinishedDir() string { return filepath.Join(Dir(), "finished") }
 // reads it so an idle session's relative time reflects when it FINISHED, not the
 // last time its TUI redrew (a live status line keeps window-activity ticking).
 func FinishedPath(pane string) string { return filepath.Join(FinishedDir(), pane) }
+
+// BackgroundDir is the directory of per-pane "background work still running" markers.
+func BackgroundDir() string { return filepath.Join(Dir(), "bg") }
+
+// BackgroundPath is the "background work still running" marker for a pane. Its
+// content is "<count>\t<label>" — the number of in-flight background tasks the
+// agent reported when its turn ended, plus a short label (e.g. the shell command).
+func BackgroundPath(pane string) string { return filepath.Join(BackgroundDir(), pane) }
+
+// WriteBackground records that pane's turn ended with count background tasks still
+// in flight, plus a short label. A count <= 0 clears the marker instead.
+func WriteBackground(pane string, count int, label string) error {
+	if count <= 0 {
+		Remove(BackgroundPath(pane))
+		return nil
+	}
+	label = strings.ReplaceAll(strings.TrimSpace(label), "\t", " ")
+	return WriteMarker(BackgroundPath(pane), strconv.Itoa(count)+"\t"+label)
+}
+
+// ReadBackground returns the pane's background-work count and label (0, "" when the
+// marker is missing or malformed).
+func ReadBackground(pane string) (count int, label string) {
+	s := ReadMarker(BackgroundPath(pane))
+	if s == "" {
+		return 0, ""
+	}
+	c, rest, found := strings.Cut(s, "\t")
+	n, err := strconv.Atoi(strings.TrimSpace(c))
+	if err != nil || n <= 0 {
+		return 0, ""
+	}
+	if !found {
+		return n, ""
+	}
+	return n, strings.TrimSpace(rest)
+}
+
+// ClearBackground removes a pane's background-work marker.
+func ClearBackground(pane string) { Remove(BackgroundPath(pane)) }
 
 // IconPath is the cached agent icon used as the notification's thumbnail.
 func IconPath() string { return filepath.Join(Dir(), "notify-icon.png") }

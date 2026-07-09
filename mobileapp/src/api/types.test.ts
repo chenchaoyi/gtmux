@@ -34,6 +34,18 @@ describe('toAgent', () => {
     expect(b.error_text).toBeUndefined();
   });
 
+  it('decodes the background-running modifier', () => {
+    const a = toAgent({pane_id: '%1', status: 'idle', bg: true, bg_count: 2, bg_text: 'npm run dev'});
+    expect(a.bg).toBe(true);
+    expect(a.bg_count).toBe(2);
+    expect(a.bg_text).toBe('npm run dev');
+    // absent → undefined (a bg-unaware row is unaffected)
+    const b = toAgent({pane_id: '%2', status: 'idle'});
+    expect(b.bg).toBeUndefined();
+    expect(b.bg_count).toBeUndefined();
+    expect(b.bg_text).toBeUndefined();
+  });
+
   it('applies defaults for an empty object', () => {
     expect(toAgent({})).toEqual({
       pane_id: '',
