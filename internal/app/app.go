@@ -78,6 +78,8 @@ func Run(argv []string) int {
 		return cmdServe(args)
 	case "tunnel":
 		return cmdTunnel(args)
+	case "tunnel-client": // hidden: the always-on Direct tunnel client (launchd service)
+		return cmdSelfTunnelClient(args)
 	case "devices":
 		return cmdDevices(args)
 	case "save-tab-order":

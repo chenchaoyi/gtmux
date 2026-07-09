@@ -56,3 +56,15 @@ func TestSelfTunnelPairURL(t *testing.T) {
 		t.Errorf("trailing-slash base = %q, want %q (no //)", got2, got)
 	}
 }
+
+// cmdSelfTunnelClient is the launchd service's entry (`gtmux tunnel-client`). With
+// no Direct config it must exit non-zero and NOT block (selfTunnelConfig gates it),
+// so a stray service invocation can't hang. Hermetic: an empty temp HOME + no env.
+func TestSelfTunnelClientNoConfig(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GTMUX_SELFTUNNEL_URL", "")
+	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "")
+	if got := cmdSelfTunnelClient([]string{"--port", "8765"}); got != 1 {
+		t.Errorf("cmdSelfTunnelClient with no config = %d, want 1", got)
+	}
+}
