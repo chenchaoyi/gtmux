@@ -51,12 +51,16 @@ const ACCENT = '#06B6D4';
 // Agent-context keys: ONLY the waiting approval (1/2/3) — the one genuinely useful
 // context action. The old non-waiting "继续/停止" pair was redundant (继续=Enter is
 // noise; 停止 duplicates Ctrl-C below) and is removed.
+//
+// Send just the digit, NO Enter: Claude's numbered menus commit on the digit; a
+// trailing Enter leaks onto the next prompt on consecutive selections (see
+// ApprovalCard / DetailScreen). The standalone ⏎ key covers Enter-required menus.
 function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
   if (status === 'waiting') {
     return [
-      {label: lang === 'zh' ? '1 · 是' : '1 · Yes', payload: {text: '1', enter: true}},
-      {label: lang === 'zh' ? '2 · 总是' : '2 · Always', payload: {text: '2', enter: true}},
-      {label: lang === 'zh' ? '3 · 否' : '3 · No', payload: {text: '3', enter: true}},
+      {label: lang === 'zh' ? '1 · 是' : '1 · Yes', payload: {text: '1'}},
+      {label: lang === 'zh' ? '2 · 总是' : '2 · Always', payload: {text: '2'}},
+      {label: lang === 'zh' ? '3 · 否' : '3 · No', payload: {text: '3'}},
     ];
   }
   return [];

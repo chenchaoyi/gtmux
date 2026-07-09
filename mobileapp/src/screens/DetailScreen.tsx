@@ -462,13 +462,19 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
       )}
       </View>
 
-      {/* approval card (B1): waiting → the agent's own 1/2/3 as big buttons */}
+      {/* approval card (B1): waiting → the agent's choices as number chips (1..N) */}
       <ApprovalCard
         options={options}
         pal={pal}
         lang={lang}
         onSend={n => {
-          sendPane({text: String(n), enter: true});
+          // Send JUST the digit, no Enter. Claude's numbered menus commit on the
+          // digit alone; a trailing Enter is harmless for a single choice (it lands
+          // on the now-empty input) but on CONSECUTIVE prompts it leaks onto the
+          // NEXT menu and auto-confirms its default — the "second choice gets
+          // skipped / auto-selected" bug. An Enter-required menu (rare) still has
+          // the ⏎ key in the composer's resting row.
+          sendPane({text: String(n)});
           setOptions([]);
         }}
       />

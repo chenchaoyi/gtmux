@@ -91,7 +91,12 @@ effect of their input quickly; it MAY optimistically echo a sent prompt.
 #### Scenario: Answer an approval
 
 - **WHEN** a pane is waiting on a numbered prompt and the user taps a choice
-- **THEN** that choice is sent via `/api/send` and the pane refreshes promptly
+- **THEN** the bare digit is sent via `/api/send` **without a trailing Enter** (the
+  agent's numbered menus commit on the digit alone; a trailing Enter would leak onto
+  the next prompt and auto-confirm it on consecutive selections) and the pane
+  refreshes promptly
+- **AND** the choices are presented as a compact row of number chips (`1..N`), not
+  re-sketched label rows — the labels are already visible in the terminal/chat
 
 ### Requirement: Mobile shows native sessions in an "Elsewhere" section
 The mobile app SHALL group `source: "native"` sessions into their own "Elsewhere / 不在 tmux" section, separate from the tmux status groups. These rows are sense-only: they carry a `native` tag, no jump chevron, and tapping one SHALL NOT open a terminal mirror (there is none). Moving a native session into tmux stays a menu-bar/CLI action; the mobile app is display-only for the native category.

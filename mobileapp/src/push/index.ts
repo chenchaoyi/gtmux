@@ -14,8 +14,10 @@ import {apnsEnv} from '../native/liveActivity';
 
 export type Teardown = () => void;
 
-// Notification action id → the text answer typed into the waiting pane (+ Enter).
-// Mirrors the in-app waiting context keys (1·Yes / 2·Always / 3·No).
+// Notification action id → the digit typed into the waiting pane. Mirrors the
+// in-app waiting context keys (1·Yes / 2·Always / 3·No). Sent WITHOUT Enter: the
+// agent's numbered menu commits on the digit (see ApprovalCard); a trailing Enter
+// leaks onto the next prompt on consecutive selections.
 const QUICK_REPLY: Record<string, string> = {yes: '1', always: '2', no: '3'};
 
 const WAITING_CATEGORY = {
@@ -75,7 +77,7 @@ export async function setupPush(
     // A quick-reply action button was tapped: answer the waiting pane in the
     // background (no deep-link, no app foreground).
     if (pane && action && QUICK_REPLY[action] !== undefined) {
-      client.send(pane, {text: QUICK_REPLY[action], enter: true}).catch(() => {});
+      client.send(pane, {text: QUICK_REPLY[action]}).catch(() => {});
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
     }
