@@ -35,7 +35,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
-            button.action = #selector(togglePopover)
+            button.action = #selector(statusItemClicked)
+            // Left-click → popover; right-click (or ctrl-click) → context menu with
+            // Quit. Without this an LSUIElement app is unquittable except via pkill.
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
         popover.behavior = .transient
@@ -140,6 +143,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.title = badge.isEmpty ? "" : " \(badge)"
         button.imagePosition = badge.isEmpty ? .imageOnly : .imageLeft
     }
+
+    /// Route the status-item click by mouse button: right-click (or ctrl-click, the
+    /// macOS convention) opens a small context menu — Quit lives there, since an
+    /// LSUIElement app has no Dock icon or app menu to quit from — and a plain
+    /// left-click toggles the popover as before.
+    @objc private func statusItemClicked() {
+        let ev = NSApp.currentEvent
+        let ctrlClick = ev?.type == .leftMouseUp && ev?.modifierFlags.contains(.control) == true
+        if ev?.type == .rightMouseUp || ctrlClick {
+            showContextMenu()
+        } else {
+            togglePopover()
+        }
+    }
+
+    /// Show the right-click menu. NSStatusItem shows an attached `menu` on ANY
+    /// click, which would eat the left-click popover — so attach it only for this
+    /// click, pop it via performClick, then detach.
+    private func showContextMenu() {
+        if popover.isShown { popover.performClose(nil) }
+        let menu = NSMenu()
+        let quit = NSMenuItem(title: l10n.tr("Quit gtmux", "退出 gtmux"),
+                              action: #selector(quitApp), keyEquivalent: "q")
+        quit.target = self
+        menu.addItem(quit)
+        statusItem.menu = menu
+        statusItem.button?.performClick(nil)
+        statusItem.menu = nil // left-click must keep opening the popover
+    }
+
+    @objc private func quitApp() { NSApp.terminate(nil) }
 
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
