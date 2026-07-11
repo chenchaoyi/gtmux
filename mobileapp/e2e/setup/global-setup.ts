@@ -11,7 +11,31 @@ import {writeDebugFlags} from './app';
  * webdriverio session against the booted iOS sim. Handles + artifacts dir are
  * stashed on globalThis for the tests and teardown to find.
  */
+/**
+ * Make the loopback Appium connection bypass any HTTP proxy. On a machine with a
+ * local proxy configured (e.g. a Clash `HTTP_PROXY=http://127.0.0.1:7897`) and no
+ * NO_PROXY, webdriverio's undici client routes even the POST to Appium's
+ * 127.0.0.1:4723 through the proxy, which resets it → `UND_ERR_SOCKET` on
+ * `/session` (while a plain GET /status, not proxied, still works — the confusing
+ * part). Adding loopback to NO_PROXY fixes it; no-op when no proxy is set.
+ */
+function ensureLoopbackNoProxy(): void {
+  const proxied = ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy'].some(
+    k => (process.env[k] || '').trim() !== '',
+  );
+  if (!proxied) return;
+  for (const key of ['NO_PROXY', 'no_proxy']) {
+    const cur = process.env[key] || '';
+    const has = cur
+      .split(',')
+      .map(s => s.trim())
+      .some(h => h === '127.0.0.1' || h === 'localhost');
+    if (!has) process.env[key] = [cur, '127.0.0.1', 'localhost'].filter(Boolean).join(',');
+  }
+}
+
 export default async function globalSetup(): Promise<void> {
+  ensureLoopbackNoProxy();
   const appRoot = resolve(__dirname, '../..'); // mobileapp/
   const artifactsRoot = join(appRoot, '.e2e-artifacts');
   const runStamp = new Date().toISOString().replace(/[-:T]/g, '').replace(/\..+$/, '');
@@ -53,14 +77,27 @@ export default async function globalSetup(): Promise<void> {
     /* app not installed yet — tests will surface it */
   }
 
-  const driver = await remote({
-    hostname: '127.0.0.1',
-    port: appiumPort,
-    path: '/',
-    capabilities: iosCapabilities,
-    logLevel: 'warn',
-    connectionRetryTimeout: 180_000, // first run builds WebDriverAgent (slow)
-  });
+  let driver;
+  try {
+    driver = await remote({
+      hostname: '127.0.0.1',
+      port: appiumPort,
+      path: '/',
+      capabilities: iosCapabilities,
+      logLevel: 'warn',
+      connectionRetryTimeout: 180_000, // first run builds WebDriverAgent (slow)
+    });
+  } catch (err) {
+    // If opening the session fails, jest SKIPS globalTeardown — so the Appium
+    // server we just spawned would leak and hold :4723, breaking the next run.
+    // Kill its process group before rethrowing.
+    try {
+      if (server.pid) process.kill(-server.pid, 'SIGKILL');
+    } catch {
+      /* already gone */
+    }
+    throw err;
+  }
   globalThis.__E2E_DRIVER__ = driver;
   // eslint-disable-next-line no-console
   console.log('[e2e] Session ready:', driver.sessionId);
