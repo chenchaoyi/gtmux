@@ -73,6 +73,7 @@ func autoResumeEnabled() bool {
 func resumeAgents() {
 	mode := effectiveResumeMode()
 	if mode == resumeOff {
+		restoreLogf("resumeAgents: mode=off — not touching panes")
 		return
 	}
 	type shellPane struct{ id, loc, cwd string }
@@ -88,6 +89,7 @@ func resumeAgents() {
 		}
 		panes = append(panes, shellPane{id: f[0], loc: f[2], cwd: f[3]})
 	}
+	restoreLogf("resumeAgents: mode=%d shellPanes=%d", mode, len(panes))
 
 	used := map[string]bool{} // session ids already resumed — never resume one twice
 	n := 0
@@ -110,28 +112,50 @@ func resumeAgents() {
 	var pending []shellPane
 	for _, p := range panes {
 		if rec, ok := resume.Load(p.loc); ok {
-			if run(p.id, rec) {
+			ran := run(p.id, rec)
+			restoreLogf("resume[exact] pane=%s loc=%s cwd=%s → session=%s ran=%v", p.id, p.loc, p.cwd, rec.SessionID, ran)
+			if ran {
 				n++
 			}
 		} else {
 			pending = append(pending, p)
 		}
 	}
-	// Pass 2 — CWD fallback for panes whose locator didn't match a record.
+	// Pass 2 — CWD fallback for panes whose locator didn't match a record. This is a
+	// HEURISTIC: when several sessions share a cwd it can resume the WRONG one into a
+	// pane. It's logged with the candidate count so an AMBIGUOUS match (>1) — the prime
+	// suspect for a "window came back on the wrong conversation" report — is traceable.
 	if len(pending) > 0 {
 		all := resume.All() // most-recent first
 		for _, p := range pending {
-			for _, rec := range all {
-				if rec.Cwd != "" && rec.Cwd == p.cwd && !used[rec.SessionID] {
-					if run(p.id, rec) {
-						n++
+			var chosen *resume.Record
+			cands := 0
+			for i := range all {
+				if all[i].Cwd != "" && all[i].Cwd == p.cwd && !used[all[i].SessionID] {
+					cands++
+					if chosen == nil {
+						chosen = &all[i]
 					}
-					break
 				}
+			}
+			if chosen == nil {
+				restoreLogf("resume[no-match] pane=%s loc=%s cwd=%s (no exact record, no cwd candidate)", p.id, p.loc, p.cwd)
+				continue
+			}
+			ran := run(p.id, *chosen)
+			amb := ""
+			if cands > 1 {
+				amb = fmt.Sprintf(" AMBIGUOUS(%d cwd candidates — may be the wrong conversation)", cands)
+			}
+			restoreLogf("resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v%s",
+				p.id, p.loc, p.cwd, chosen.SessionID, ran, amb)
+			if ran {
+				n++
 			}
 		}
 	}
 
+	restoreLogf("resumeAgents: done resumed=%d", n)
 	reportResume(mode, n)
 }
 

@@ -9,9 +9,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -76,9 +79,12 @@ func Load(sessionID string) (Record, bool) {
 // Remove drops a native session record (e.g. on SessionEnd or after adoption).
 func Remove(sessionID string) { _ = os.Remove(fileFor(sessionID)) }
 
-// Live returns every native record that isn't stale, most-recently-updated first.
-// A record older than StaleAfter is deleted as a side effect (we've stopped
-// hearing from it) so the store self-prunes.
+// Live returns every native record whose agent process is still running, most-
+// recently-updated first. A record is deleted (self-pruning) when either the
+// process is GONE — the primary signal, so a native session that exited, was
+// killed, or died in a reboot stops showing as a phantom "elsewhere" row the
+// instant it's gone rather than lingering for StaleAfter — or, as a backstop for
+// records we can't PID-check, when it's older than StaleAfter.
 func Live(now int64) []Record {
 	entries, err := os.ReadDir(Dir())
 	if err != nil {
@@ -98,7 +104,7 @@ func Live(now int64) []Record {
 		if json.Unmarshal(b, &r) != nil {
 			continue
 		}
-		if now-r.UpdatedAt > int64(StaleAfter/time.Second) {
+		if !processLive(r.PID, r.Comm) || now-r.UpdatedAt > int64(StaleAfter/time.Second) {
 			_ = os.Remove(p)
 			continue
 		}
@@ -106,4 +112,40 @@ func Live(now int64) []Record {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].UpdatedAt > out[j].UpdatedAt })
 	return out
+}
+
+// processLive reports whether the agent process a record was written for is still
+// running. It guards against PID reuse — very common right after a reboot, when
+// the OS hands a dead session's pid to an unrelated process: a pid that's alive
+// but whose command no longer matches the recorded comm counts as GONE.
+//
+//   - pid <= 0 (unknown, e.g. an old record) → treated as live; the StaleAfter
+//     backstop still reaps it, so we never delete a record we genuinely can't check.
+//   - kill(pid, 0) == ESRCH → no such process → gone.
+//   - alive but comm recorded AND the live pid's comm differs → pid reused → gone.
+//   - a failed/empty comm read is inconclusive → keep (don't drop a live session on
+//     a transient ps hiccup; a real mismatch self-heals on the session's next hook).
+func processLive(pid int, comm string) bool {
+	if pid <= 0 {
+		return true
+	}
+	if err := syscall.Kill(pid, 0); err == syscall.ESRCH {
+		return false
+	}
+	if comm != "" {
+		if c := procComm(pid); c != "" && c != comm {
+			return false
+		}
+	}
+	return true
+}
+
+// procComm returns a live pid's short command name (macOS/Linux `ps`), base-named
+// to match how the hook records Comm. "" when it can't be read.
+func procComm(pid int) string {
+	out, err := exec.Command("ps", "-o", "comm=", "-p", strconv.Itoa(pid)).Output()
+	if err != nil {
+		return ""
+	}
+	return filepath.Base(strings.TrimSpace(string(out)))
 }

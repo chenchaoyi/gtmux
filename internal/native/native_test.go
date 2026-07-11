@@ -1,6 +1,8 @@
 package native
 
 import (
+	"os"
+	"os/exec"
 	"testing"
 	"time"
 )
@@ -34,6 +36,44 @@ func TestLivePrunesStale(t *testing.T) {
 	}
 	if _, ok := Load("stale"); ok {
 		t.Error("stale record should be pruned from disk by Live")
+	}
+}
+
+// Live prunes a record whose process has EXITED (the phantom "elsewhere" bug) even
+// when the record is otherwise fresh; a record for a live process is kept.
+func TestLivePrunesDeadProcess(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(1_000_000)
+
+	// A reaped child → its pid is dead (kill → ESRCH; if the OS reused it, its comm
+	// won't be "claude" → still pruned).
+	c := exec.Command("true")
+	if err := c.Run(); err != nil {
+		t.Skipf("cannot run a throwaway process: %v", err)
+	}
+	deadPID := c.Process.Pid
+
+	_ = Save(Record{SessionID: "dead", Agent: "claude", State: "working", UpdatedAt: now, PID: deadPID, Comm: "claude"})
+	_ = Save(Record{SessionID: "alive", Agent: "claude", State: "idle", UpdatedAt: now, PID: os.Getpid()}) // no comm → kept
+
+	live := Live(now)
+	if len(live) != 1 || live[0].SessionID != "alive" {
+		t.Fatalf("Live = %+v, want just the alive record", live)
+	}
+	if _, ok := Load("dead"); ok {
+		t.Error("record for a dead process should be pruned by Live")
+	}
+}
+
+// A pid that's alive but whose command no longer matches the recorded comm (pid
+// reuse — common right after a reboot) is treated as gone and pruned.
+func TestLivePrunesReusedPID(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(1_000_000)
+	_ = Save(Record{SessionID: "reused", Agent: "claude", State: "idle", UpdatedAt: now,
+		PID: os.Getpid(), Comm: "definitely-not-this-process"})
+	if live := Live(now); len(live) != 0 {
+		t.Fatalf("Live = %+v, want empty (pid reused → comm mismatch → pruned)", live)
 	}
 }
 

@@ -25,6 +25,31 @@ func isTTY() bool {
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
+// restoreLogf appends a timestamped trace line to <state.Dir>/restore.log. Unlike
+// the hook's opt-in GTMUX_HOOK_DEBUG log this is ALWAYS on: restore runs rarely (at
+// boot) but is exactly where post-reboot "my sessions came back wrong" bugs happen,
+// and you can't rerun a boot to reproduce — so the trace has to already be there.
+// It records every decision (the save picked, whether it had a layout, the resurrect
+// outcome) and, critically, which conversation each pane was matched to and how
+// (exact locator vs the CWD fallback, which can cross-wire sessions that share a dir).
+func restoreLogf(format string, a ...any) {
+	dir := state.Dir()
+	if os.MkdirAll(dir, 0o755) != nil {
+		return
+	}
+	p := filepath.Join(dir, "restore.log")
+	// Bounded: restore is infrequent, but never let a boot loop grow it without limit.
+	if fi, err := os.Stat(p); err == nil && fi.Size() > 512*1024 {
+		_ = os.Truncate(p, 0)
+	}
+	f, err := os.OpenFile(p, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	fmt.Fprintf(f, "%s "+format+"\n", append([]any{time.Now().Format(time.RFC3339)}, a...)...)
+}
+
 // execTmuxAttach replaces this process with `tmux attach -t <name>` (like bash exec).
 func execTmuxAttach(name string) int {
 	// Set the tab title NOW, before attaching, to match tmux's set-titles-string
@@ -64,6 +89,7 @@ func execTmuxAttach(name string) int {
 // impossible: if a saved layout exists but didn't restore, we warn loudly and
 // point at the save instead of pretending success.
 func ensureServer() {
+	restoreLogf("ensureServer: begin serverUp=%v", tmux.ServerUp())
 	if tmux.ServerUp() {
 		// A server is already up. The classic post-reboot trap: a reopened
 		// terminal tab (or anything) started an EMPTY server before `gtmux
@@ -85,12 +111,17 @@ func ensureServer() {
 
 	save := resurrectLastSave()
 	hadLayout := save != "" && saveHasLayout(save)
+	script := resurrectRestoreScript()
+	restoreLogf("ensureServer: boot=%s save=%q hadLayout=%v restoreScript=%q savedSessions=%v",
+		boot, save, hadLayout, script, savedSessionNames(save))
 
-	if script := resurrectRestoreScript(); script != "" {
+	if script != "" {
 		i18n.Say("tmux server not running — restoring your saved sessions via tmux-resurrect (may take a moment)...",
 			"tmux server 未运行，正在用 tmux-resurrect 恢复你的存档 session（可能要等一会）...")
 		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
-		if waitForRestoredSessions(boot, 120*time.Second) {
+		restored := waitForRestoredSessions(boot, 120*time.Second)
+		restoreLogf("ensureServer: driven-restore restored=%v liveSessions=%v", restored, sessionNamesList())
+		if restored {
 			tmux.OK("kill-session", "-t", boot)
 			i18n.Say("Restored layout, dirs and screen text — bringing your agent conversations back…",
 				"已恢复布局 / 目录 / 屏幕文本 —— 正在接回你的 agent 会话…")
@@ -102,7 +133,9 @@ func ensureServer() {
 		// for continuum's auto-restore hook (best effort, longer than the old 10s).
 		i18n.Say("tmux server not running — waiting for continuum to restore the last save...",
 			"tmux server 未运行，正在等待 continuum 恢复最近一次存档...")
-		if waitForRestoredSessions(boot, 60*time.Second) {
+		restored := waitForRestoredSessions(boot, 60*time.Second)
+		restoreLogf("ensureServer: continuum-fallback restored=%v liveSessions=%v", restored, sessionNamesList())
+		if restored {
 			tmux.OK("kill-session", "-t", boot)
 			i18n.Say("Restored saved sessions.", "已恢复存档 session。")
 			resumeAgents()
@@ -113,6 +146,7 @@ func ensureServer() {
 	// Nothing restored. If a real layout was saved, do NOT silently keep a bare
 	// 'main' as if all is well — continuum would autosave it over the good save.
 	// resurrect keeps timestamped saves, so the data is still there; tell the user.
+	restoreLogf("ensureServer: NOTHING RESTORED (hadLayout=%v) → renaming boot to 'main'", hadLayout)
 	tmux.OK("rename-session", "-t", boot, "main")
 	if hadLayout {
 		i18n.Sae("⚠ A saved layout exists but could NOT be restored — it was NOT overwritten. Save: "+save,
@@ -170,10 +204,8 @@ func driveResurrectRestore(script string) {
 	env = append(env, "PATH="+restorePATH())
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
-	if dir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux"); dir != "" {
-		_ = os.WriteFile(filepath.Join(dir, "restore.log"),
-			[]byte(fmt.Sprintf("restore.sh exit=%v\nPATH=%s\nTMUX=%s\n---\n%s", err, restorePATH(), socket, out)), 0o644)
-	}
+	restoreLogf("driveResurrectRestore: script=%s exit=%v socket=%s\n--- restore.sh output ---\n%s--- end ---",
+		script, err, socket, string(out))
 }
 
 // restorePATH builds a PATH robust enough for restore.sh even when gtmux was
@@ -341,6 +373,17 @@ func liveSessionNames() map[string]bool {
 	return m
 }
 
+// sessionNamesList is the running server's session names as a slice, for logging.
+func sessionNamesList() []string {
+	var out []string
+	for _, s := range tmux.Lines("list-sessions", "-F", "#{session_name}") {
+		if n := strings.TrimSpace(s); n != "" {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
 // shouldRecover decides whether to drive a resurrect restore into a RUNNING
 // server: yes only when the save has sessions AND none of them are live (the
 // server is a fresh/empty post-reboot one). If any saved session is already live
@@ -364,12 +407,16 @@ func shouldRecover(saved []string, live map[string]bool) bool {
 func recoverMissingSavedSessions() {
 	save := resurrectLastSave()
 	if save == "" || !saveHasLayout(save) {
+		restoreLogf("recover: skip (save=%q hasLayout=%v)", save, save != "" && saveHasLayout(save))
 		return
 	}
 	saved := savedSessionNames(save)
-	if !shouldRecover(saved, liveSessionNames()) {
+	live := liveSessionNames()
+	if !shouldRecover(saved, live) {
+		restoreLogf("recover: skip — some saved session already live (saved=%v live=%v)", saved, sessionNamesList())
 		return
 	}
+	restoreLogf("recover: driving restore into running server (saved=%v missing-all)", saved)
 	script := resurrectRestoreScript()
 	if script == "" {
 		i18n.Sae("⚠ This tmux server is missing your saved sessions, but tmux-resurrect isn't installed to restore them. Save: "+save,
