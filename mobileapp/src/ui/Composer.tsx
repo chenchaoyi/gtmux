@@ -13,7 +13,6 @@
 
 import React, {useEffect, useRef, useState} from 'react';
 import {
-  ActionSheetIOS,
   ActivityIndicator,
   InputAccessoryView,
   KeyboardAvoidingView,
@@ -38,6 +37,7 @@ import {Palette} from './theme';
 import {ImageMarkup} from './ImageMarkup';
 import {SnippetsModal} from './SnippetsModal';
 import {SnippetsPicker} from './SnippetsPicker';
+import {AttachSheet} from './AttachSheet';
 import {HistoryModal} from './HistoryModal';
 import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon} from './Icons';
 import {loadSnippets, saveSnippets} from '../state/snippets';
@@ -105,6 +105,7 @@ export function Composer({
   const [snippetsOpen, setSnippetsOpen] = useState(false); // the picker sheet
   const [manageSnippets, setManageSnippets] = useState(false);
   const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
+  const [attachOpen, setAttachOpen] = useState(false); // the branded attach bottom sheet
   const [history, setHistory] = useState<string[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   // Moshi-style: the composer rests as a single key row; the text field +
@@ -177,37 +178,34 @@ export function Composer({
     }
   };
 
-  // Attach → photo library / camera / file / clipboard (iOS action sheet). Paste
-  // lives here now (no top-level pill) — it still handles a clipboard IMAGE
-  // (→ annotate → upload) as well as text.
-  const attach = () => {
-    const labels =
-      lang === 'zh'
-        ? ['相册', '拍照', '文件', '粘贴', '取消']
-        : ['Photo Library', 'Take Photo', 'File', 'Paste', 'Cancel'];
-    ActionSheetIOS.showActionSheetWithOptions(
-      {options: labels, cancelButtonIndex: 4},
-      async idx => {
-        try {
-          if (idx === 0) {
-            const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
-            const a = r.assets?.[0];
-            if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
-          } else if (idx === 1) {
-            const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
-            const a = r.assets?.[0];
-            if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
-          } else if (idx === 2) {
-            const [f]: any = await pick();
-            if (f?.uri) await doUpload(f.uri, f.name ?? 'file', f.type ?? 'application/octet-stream');
-          } else if (idx === 3) {
-            await paste();
-          }
-        } catch {
-          // cancelled or unsupported — ignore.
-        }
-      },
-    );
+  // Attach → a branded bottom sheet (AttachSheet) with photo library / camera / file
+  // / paste rows, each icon + label. Paste lives here (no top-level pill) — it still
+  // handles a clipboard IMAGE (→ annotate → upload) as well as text.
+  const pickPhoto = async () => {
+    try {
+      const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
+      const a = r.assets?.[0];
+      if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
+    } catch {
+      // cancelled or unsupported — ignore.
+    }
+  };
+  const takePhoto = async () => {
+    try {
+      const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
+      const a = r.assets?.[0];
+      if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
+    } catch {
+      // cancelled or unsupported — ignore.
+    }
+  };
+  const pickFile = async () => {
+    try {
+      const [f]: any = await pick();
+      if (f?.uri) await doUpload(f.uri, f.name ?? 'file', f.type ?? 'application/octet-stream');
+    } catch {
+      // cancelled or unsupported — ignore.
+    }
   };
 
   // A pill in the key row. `glyph` keys are square-ish single symbols; `text` keys
@@ -300,7 +298,7 @@ export function Composer({
   const renderInputRow = () => (
     <View style={styles.inputRow}>
       <TouchableOpacity
-        onPress={attach}
+        onPress={() => setAttachOpen(true)}
         disabled={!enabled || uploading || !onUpload}
         style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
         {uploading ? (
@@ -405,6 +403,18 @@ export function Composer({
           saveHistory([]);
         }}
         onClose={() => setHistoryOpen(false)}
+      />
+
+      {/* attach → photo / camera / file / paste — branded bottom sheet (icon + label) */}
+      <AttachSheet
+        visible={attachOpen}
+        pal={pal}
+        lang={lang}
+        onClose={() => setAttachOpen(false)}
+        onPhoto={pickPhoto}
+        onCamera={takePhoto}
+        onFile={pickFile}
+        onPaste={paste}
       />
 
       {/* pick a snippet to send (or jump to manage) — branded bottom sheet */}
