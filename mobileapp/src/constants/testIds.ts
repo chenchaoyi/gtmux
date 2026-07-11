@@ -47,5 +47,8 @@ export const TestIds = {
     snippets: 'composer-snippets',
     snippetSheet: 'composer-snippet-sheet',
     history: 'composer-history',
+    attach: 'composer-attach',
+    expand: 'composer-expand',
+    attachSheet: 'composer-attach-sheet',
   },
 } as const;

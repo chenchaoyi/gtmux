@@ -298,6 +298,8 @@ export function Composer({
   const renderInputRow = () => (
     <View style={styles.inputRow}>
       <TouchableOpacity
+        testID={TestIds.composer.attach}
+        accessibilityLabel={TestIds.composer.attach}
         onPress={() => setAttachOpen(true)}
         disabled={!enabled || uploading || !onUpload}
         style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
@@ -341,7 +343,8 @@ export function Composer({
       {/* expand to the full-screen editor for long messages */}
       <TouchableOpacity
         onPress={() => setFullCompose(true)}
-        accessibilityLabel="composer-expand"
+        testID={TestIds.composer.expand}
+        accessibilityLabel={TestIds.composer.expand}
         style={[styles.expand, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
         <ExpandIcon size={20} color={pal.fg2} />
       </TouchableOpacity>

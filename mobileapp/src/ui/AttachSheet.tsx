@@ -6,6 +6,7 @@
 import React from 'react';
 import {Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Lang} from '../i18n';
+import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
 import {PhotoLibraryIcon, CameraIcon, FileIcon, PasteIcon} from './Icons';
 
@@ -45,7 +46,11 @@ export function AttachSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+        <TouchableOpacity
+          testID={TestIds.composer.attachSheet}
+          accessibilityLabel={TestIds.composer.attachSheet}
+          activeOpacity={1}
+          style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
           <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
           <Text style={[styles.title, {color: pal.fg}]}>{zh ? '添加附件' : 'Add attachment'}</Text>
           {rows.map((r, i) => (

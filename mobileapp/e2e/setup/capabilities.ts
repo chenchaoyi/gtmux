@@ -20,6 +20,12 @@ export const iosCapabilities = {
   'appium:noReset': true,
   // Default 60s; bump so a long-running test step doesn't reset the session.
   'appium:newCommandTimeout': 120,
+  // Auto-dismiss stray SYSTEM alerts (tap the cancel/first button) so a run isn't
+  // wedged by one. On a dev sim with OTHER apps installed, typing/handling a URL can
+  // pop iOS's "Open in <app>?" (a colliding URL scheme — e.g. a sibling MultiPilot
+  // build) — a modal that blocks every later Appium command until dismissed, failing
+  // the whole suite. App-level UI prompts (push) are handled by GTMUX_DEBUG_NO_PUSH.
+  'appium:autoDismissAlerts': true,
 } as const;
 
 export const appiumPort = 4723;
