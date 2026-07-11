@@ -44,11 +44,11 @@ gated('terminal cursor', () => {
     await rows[idx].click();
     await driver.$(`~${TestIds.detail.back}`).waitForDisplayed({timeout: 8_000});
 
-    // switch to the TERMINAL (xterm) mode
+    // switch to the TERMINAL mode (native <Text> renderer)
     const term = driver.$(`~${TestIds.detail.modeTerminal}`);
     await term.waitForDisplayed({timeout: 8_000});
     await term.click();
-    await settle(3500); // let the webview pane render + cursor place
+    await settle(3500); // let the terminal pane render + cursor place
 
     execFileSync('xcrun', ['simctl', 'io', UDID, 'screenshot', join(OUT, `${TAG}.png`)], {stdio: 'ignore'});
     // eslint-disable-next-line no-console

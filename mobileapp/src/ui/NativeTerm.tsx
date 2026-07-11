@@ -39,7 +39,7 @@ interface Props {
   fontSize?: number;
   cursor?: PaneCursor;
   theme?: TermTheme;
-  fontPref?: string; // accepted for API-parity with XtermView; native uses Menlo
+  fontPref?: string; // accepted for config-parity with the font picker; native uses Menlo
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 

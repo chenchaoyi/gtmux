@@ -1,8 +1,8 @@
 # gtmux mobile — test plan (simulator)
 
 Comprehensive test design for the gtmux iOS app, driven from the **iOS simulator**
-with the real app (real WKWebView, real `gtmux serve` over the same Mac). The
-emphasis is the in-app **terminal** (the xterm.js renderer) — render, wrap,
+with the real app and a real `gtmux serve` over the same Mac. The emphasis is the
+in-app **terminal** (the native `<Text>` renderer — `NativeTerm`) — render, wrap,
 horizontal/vertical scroll, live updates, font, fullscreen — plus the surrounding
 flows (radar, pairing, settings, detail actions).
 
@@ -18,35 +18,34 @@ execution pass (`✅ pass` / `❌ defect #NNN` / `➖ n/a`).
 xcrun simctl boot "iPhone 17 Pro"
 # 2. build + install the app fresh on the sim
 cd mobileapp && npm run e2e:build
-# 3. (terminal cases) force the xterm renderer on for the session:
-#    write {"gtmux.xterm":"true"} into the app's RCTAsyncLocalStorage_V1/manifest.json
-# 4. run the suite against the live serve
+# 3. run the suite against the live serve
+#    (terminal cases just switch Detail to Terminal mode — the native renderer is
+#     always on now; there is no xterm toggle to set up)
 GTMUX_E2E_URL=http://127.0.0.1:8765 \
 GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
 npm run test:e2e
 ```
 
 Notes / harness facts:
-- Appium **native context** can't read the WebView DOM (react-native-webview isn't
-  built inspectable), so terminal scroll is verified by **screenshot diff** +
-  **gesture drives**, not by reading `scrollLeft`. Where exact bounds matter, the
-  Playwright/WebKit measurement (`maxScrollLeft = scrollWidth − clientWidth`) backs
-  it up.
+- The terminal is native RN `<Text>`, so Appium's native context can read the
+  rendered lines directly. Scroll/offset behaviour is still best verified by
+  **screenshot diff** + **gesture drives** (there's no DOM `scrollLeft`); the
+  native `ScrollView` clamps content, and `NativeTerm` measures its own columns.
 - Terminal content depends on the live panes; for **wide-line** cases use a pane
   whose output has lines ≥ ~120 cols (code/listings), or inject one into a throwaway
   agent pane (never into the dev's working panes).
 
 ---
 
-## TERM — terminal (xterm.js) rendering
+## TERM — terminal (native `<Text>`) rendering
 
 | id | title | steps | expected | method | status |
 |----|-------|-------|----------|--------|--------|
-| TERM-01 | renders with ANSI color | open a colored pane, xterm on | text shows true terminal colors (fg/bg/bold), matching the pane | visual | |
-| TERM-02 | CJK / wide-glyph width | view a pane with 中文/emoji | wide glyphs occupy 2 cells; columns stay aligned (unicode11) | visual | |
+| TERM-01 | renders with ANSI color | open a colored pane, Terminal mode | text shows true terminal colors (fg/bg/bold), matching the pane | visual | |
+| TERM-02 | CJK / wide-glyph width | view a pane with 中文/emoji | wide glyphs occupy 2 cells; columns stay aligned | visual | |
 | TERM-03 | full-screen TUI content | view a pane running a TUI snapshot | grid renders without overlap/corruption | visual | |
 | TERM-04 | empty / short pane | view a near-empty pane | renders cleanly, no error, no stray scroll | visual | |
-| TERM-05 | classic vs xterm parity | toggle renderer off→on on the same pane | same text content both ways; xterm adds full color/alignment | visual | |
+| TERM-05 | glyph normalization | view a pane emitting ⏺/⏸/⚠ | record dot → ●, bare text-default symbols render as text (not color emoji), matching the terminal | visual | |
 
 ## TERM-WRAP — wrap toggle
 
@@ -115,7 +114,7 @@ Notes / harness facts:
 | PAIR-02 | manual host+token | enter host+token | connects | appium | |
 | PAIR-03 | remove server confirms | Settings → Remove | confirmation alert before removal | appium | |
 | SET-01 | language en/zh/system | switch language | UI strings switch immediately | appium | |
-| SET-02 | xterm toggle | Settings → Terminal toggle | detail uses xterm when on, classic when off | appium | |
+| SET-02 | default detail mode | Settings → Terminal → Default mode | Detail opens in the chosen mode (Terminal/Chat) next time | appium | |
 | SET-03 | push toggle | toggle push | persists | appium | |
 
 ---
