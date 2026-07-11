@@ -180,6 +180,14 @@ func isShellComm(comm string) bool {
 	return false
 }
 
+// isSpareProcess reports whether comm names an agent's internal warm-spare/pool
+// process rather than a real user-facing session. Claude pre-warms subprocesses
+// named "bg-spare"; one can fire a hook (with a session id but no conversation),
+// which must NOT be sensed as a native session.
+func isSpareProcess(comm string) bool {
+	return comm == "bg-spare"
+}
+
 // backgroundTask is one entry of Claude's Stop-payload `background_tasks` array:
 // in-flight background work registered in the session. `Type` is a label like
 // "shell"/"subagent"/"monitor"/"workflow"; `Command` is present only for shells.
@@ -437,10 +445,15 @@ func Run(stdin io.Reader, args []string) int {
 			native.Remove(agentSession)
 		} else if st != "" {
 			pid, comm := agentAncestorPID()
-			_ = native.Save(native.Record{
-				Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
-				State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
-			})
+			// Skip an agent's internal warm-spare/pool process (Claude's "bg-spare"):
+			// it fires hooks with a session id but is never a real user-facing session
+			// (no conversation), so recording it would pop a phantom "native" radar row.
+			if !isSpareProcess(comm) {
+				_ = native.Save(native.Record{
+					Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
+					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
+				})
+			}
 		}
 	}
 
