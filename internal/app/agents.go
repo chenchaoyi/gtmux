@@ -458,7 +458,9 @@ func gatherAgents() []agentPane {
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
 		// OR its process subtree is burning CPU (a local tool running quietly), else
 		// idle. Both are sampled every poll to keep their baselines fresh.
+		hfsCalled := false // whether the frame/CPU signal was sampled for this pane
 		hookFreeStatus := func(paneID string, panePid int) string {
+			hfsCalled = true
 			frameW := state.PaneFrameWorking(paneID, tmux.CapturePane(paneID), now)
 			cpuW := state.PaneCPUWorking(paneID, subtreeCPU(panePid, procs, children), now)
 			if frameW || cpuW {
@@ -497,33 +499,31 @@ func gatherAgents() []agentPane {
 			}
 		}
 		id := f[0]
+		panePid := 0
+		if len(f) >= 9 {
+			panePid, _ = strconv.Atoi(f[8])
+		}
 		var activityAt int64
 		if len(f) >= 8 {
 			activityAt, _ = strconv.ParseInt(f[7], 10, 64)
 		}
-		switch {
-		case status == "working":
-			if waiting[id] { // resumed working → clear the stale waiting mark
-				state.Remove(state.WaitingPath(id))
-				delete(waiting, id)
+		// liveWorking reports whether the pane is DEMONSTRABLY working right now (screen
+		// changing / subtree burning CPU) — the reliable signal, unlike the pane TITLE's
+		// braille spinner, which stays frozen on its last frame while the agent is BLOCKED
+		// on a prompt. Reuse the frame/CPU sample if it was already taken this pane
+		// (glyph-less agents); otherwise sample it here — lazily, so the capture cost is
+		// paid only when a fresh mark actually needs disambiguating.
+		liveWorking := func() bool {
+			if hfsCalled {
+				return status == "working"
 			}
-		case waiting[id] && !waitMarkStale(id, activityAt):
-			status = "waiting" // blocked on the user (hook-marked, e.g. Claude)
-		default:
-			// A waiting mark survives on disk across a tmux restart; when pane ids
-			// reset and a new session reuses this id, it inherits a days-old orphan
-			// mark (the "waiting 9d" bug). Clear any mark on a non-working pane whose
-			// activity postdates it — the agent has clearly moved on.
-			if waiting[id] {
-				state.Remove(state.WaitingPath(id))
-				delete(waiting, id)
-			}
-			// "Waiting" is HOOK-DRIVEN ONLY (the marker set above), never inferred from
-			// screen output. A screen-scan fallback used to promote a pane to waiting
-			// when a numbered menu appeared on screen — but it false-alarmed on ordinary
-			// prose (a "1. … 2. …" list in an agent's own message read as an approval
-			// menu), popping a bogus approval card on an idle session. The waiting state
-			// belongs to the hook/session, not to whatever text is on the terminal.
+			return hookFreeStatus(id, panePid) == "working"
+		}
+		var clearMark bool
+		status, clearMark = resolveWaiting(status, waiting[id], waitMarkStale(id, activityAt), liveWorking)
+		if clearMark {
+			state.Remove(state.WaitingPath(id))
+			delete(waiting, id)
 		}
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
 		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish
@@ -713,6 +713,40 @@ func waitMarkStale(id string, activityAt int64) bool {
 	}
 	mt := fileMtime(state.WaitingPath(id))
 	return mt > 0 && activityAt > mt+waitStaleGrace
+}
+
+// resolveWaiting decides a pane's DISPLAYED status from its raw (title/frame) status
+// and its hook waiting mark, returning the resolved status and whether the caller
+// should delete the mark. "Waiting is HOOK-DRIVEN": a fresh mark is authoritative.
+//
+//   - Fresh mark (hasMark && !stale): the pane is blocked on you — show "waiting"
+//     even if its title read "working" (a spinner TITLE freezes on its last frame
+//     while the agent is blocked on a prompt, so it can't be trusted). The ONE
+//     exception is a pane that is DEMONSTRABLY live-working (screen changing / CPU
+//     burning): the user just answered and the approved tool is running, so show
+//     "working" and let the agent's own PostToolUse→Resumed hook (or staleness)
+//     clear the mark — never clear it here (the first poll after a prompt appears
+//     also reads live-working, and clearing then drops the mark before the approval
+//     card shows). liveWorking is a thunk so the frame/CPU sample is taken only when
+//     it can matter (a working title over a fresh mark).
+//   - Stale mark (hasMark && stale): a genuine orphan — a resumed turn whose Resumed
+//     hook was missed, or a mark inherited when a tmux restart reused this pane id
+//     (the "waiting 9d" bug). Keep the raw status and tell the caller to clear it.
+//   - No mark: keep the raw status untouched. "Waiting" is never inferred from screen
+//     output (a numbered "1. … 2. …" list in an agent's own prose must not pop a
+//     bogus approval card) — it belongs to the hook, not the terminal.
+func resolveWaiting(status string, hasMark, stale bool, liveWorking func() bool) (out string, clearMark bool) {
+	switch {
+	case hasMark && !stale:
+		if status == "working" && liveWorking() {
+			return status, false
+		}
+		return "waiting", false
+	case hasMark:
+		return status, true
+	default:
+		return status, false
+	}
 }
 
 func statusRank(s string) int {

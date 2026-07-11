@@ -169,6 +169,55 @@ func TestWaitMarkStale(t *testing.T) {
 	}
 }
 
+func TestResolveWaiting(t *testing.T) {
+	// live is a thunk that records whether it was consulted (the frame/CPU sample
+	// must be taken ONLY when a working title sits over a fresh mark).
+	live := func(working bool, consulted *bool) func() bool {
+		return func() bool { *consulted = true; return working }
+	}
+	cases := []struct {
+		name       string
+		status     string
+		hasMark    bool
+		stale      bool
+		liveWork   bool
+		wantStatus string
+		wantClear  bool
+		wantConsul bool // whether liveWorking should have been called
+	}{
+		// The bug: a real permission prompt whose pane TITLE still shows a (frozen)
+		// spinner. Fresh mark + NOT live-working → waiting, mark kept (card shows).
+		{"frozen-spinner prompt", "working", true, false, false, "waiting", false, true},
+		// Answered → the approved tool is running (pane demonstrably live-working).
+		// Show working; the mark is left for PostToolUse→Resumed / staleness to clear.
+		{"answered, tool running", "working", true, false, true, "working", false, true},
+		// A Claude idle/ready pane with a fresh mark → waiting without sampling frames.
+		{"idle with fresh mark", "idle", true, false, false, "waiting", false, false},
+		{"running with fresh mark", "running", true, false, false, "waiting", false, false},
+		// Stale orphan mark → keep the raw status, clear the mark. Never sample frames.
+		{"stale orphan, working", "working", true, true, false, "working", true, false},
+		{"stale orphan, idle", "idle", true, true, false, "idle", true, false},
+		// No mark → status untouched, nothing cleared, frames never sampled.
+		{"no mark, working", "working", false, false, false, "working", false, false},
+		{"no mark, idle", "idle", false, false, false, "idle", false, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			consulted := false
+			got, clear := resolveWaiting(c.status, c.hasMark, c.stale, live(c.liveWork, &consulted))
+			if got != c.wantStatus {
+				t.Errorf("status = %q, want %q", got, c.wantStatus)
+			}
+			if clear != c.wantClear {
+				t.Errorf("clearMark = %v, want %v", clear, c.wantClear)
+			}
+			if consulted != c.wantConsul {
+				t.Errorf("liveWorking consulted = %v, want %v", consulted, c.wantConsul)
+			}
+		})
+	}
+}
+
 func TestFirstNonEmpty(t *testing.T) {
 	if got := firstNonEmpty("", "", "third"); got != "third" {
 		t.Errorf("firstNonEmpty = %q, want %q", got, "third")
