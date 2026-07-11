@@ -77,7 +77,11 @@ export function RadarScreen({navigation}: any) {
           <Text style={[styles.brand, {color: pal.fg}]} numberOfLines={1}>
             {mac?.name || 'gtmux'}
           </Text>
-          <Text style={[styles.switchGlyph, {color: pal.fg3}]}>⇄</Text>
+          {/* a bordered ⇄ chip reads as a tappable control (the bare glyph looked like
+              a decoration next to the title, so switching went unnoticed). */}
+          <Text style={[styles.switchGlyph, {color: pal.fg2, borderColor: pal.divider, backgroundColor: pal.surface}]}>
+            ⇄
+          </Text>
         </TouchableOpacity>
         <View style={styles.headerRight}>
           <ConnDot conn={conn} t={t} pal={pal} lang={lang} />
@@ -210,7 +214,16 @@ const styles = StyleSheet.create({
   headerTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   serverChip: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8},
   brand: {fontSize: 22, fontWeight: '800', flexShrink: 1},
-  switchGlyph: {fontSize: 15, marginLeft: 7, marginTop: 2},
+  switchGlyph: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 9,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
   headerRight: {flexDirection: 'row', alignItems: 'center'},
   gear: {marginLeft: 14},
   conn: {flexDirection: 'row', alignItems: 'center'},

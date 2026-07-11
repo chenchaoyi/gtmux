@@ -3,6 +3,7 @@
 // data source; SSE just triggers a refetch (per the contract).
 
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {AppState} from 'react-native';
 import {GtmuxClient, isAuthError} from '../api/client';
 import {subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
@@ -95,6 +96,18 @@ export function AgentsProvider({
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
     };
   }, [base, token, refresh]);
+
+  // Refetch the moment the app returns to the foreground. iOS suspends the SSE
+  // stream while backgrounded, and on reconnect the server only re-pushes on the
+  // NEXT change — so the cached agents go stale and the session list showed the
+  // last-known state until a manual pull-to-refresh. An immediate HTTP refresh on
+  // 'active' makes the list current every time you come back, independent of SSE.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', s => {
+      if (s === 'active') refresh();
+    });
+    return () => sub.remove();
+  }, [refresh]);
 
   // End the Live Activity when this Mac is unpaired (the provider unmounts).
   useEffect(() => () => LiveActivity.stop(), []);

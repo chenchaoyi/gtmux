@@ -140,7 +140,7 @@ function CollapseBar({
           <Text
             style={[
               styles.arrow,
-              {color: pal.fg3, transform: [{rotate: collapsed ? '-90deg' : '0deg'}]},
+              {color: pal.fg2, transform: [{rotate: collapsed ? '-90deg' : '0deg'}]},
             ]}>
             ▾
           </Text>
@@ -175,12 +175,12 @@ const styles = StyleSheet.create({
   line: {flex: 1, height: StyleSheet.hairlineWidth, marginHorizontal: 10},
   hideShow: {fontSize: 11, fontWeight: '600', marginRight: 6},
   arrowCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  arrow: {fontSize: 9, lineHeight: 11},
+  arrow: {fontSize: 13, lineHeight: 16, fontWeight: '700'},
 });
