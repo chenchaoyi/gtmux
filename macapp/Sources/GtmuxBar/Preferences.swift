@@ -160,6 +160,20 @@ struct PreferencesView: View {
                 Text(l10n.tr("Updating… the app will relaunch when done", "正在更新…完成后会自动重启"))
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             }
+        case .updateFailed:
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.Status.waiting)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l10n.tr("Update failed", "更新失败")).font(.system(size: 12))
+                    if let e = updater.lastError, !e.isEmpty {
+                        Text(e).font(.system(size: 10)).foregroundStyle(.tertiary)
+                            .lineLimit(1).truncationMode(.tail)
+                    }
+                }
+                Spacer()
+                Button(l10n.tr("Retry", "重试")) { updater.install() }
+                    .buttonStyle(.borderedProminent)
+            }
         default:
             HStack(spacing: 8) {
                 Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }

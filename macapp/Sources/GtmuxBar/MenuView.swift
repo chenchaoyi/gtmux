@@ -313,6 +313,30 @@ struct MenuView: View {
             .padding(.horizontal, 12).padding(.vertical, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.Status.working.opacity(0.12))
+        case .updateFailed:
+            // The install didn't go through (a network blip / SHA mismatch). Say so
+            // and make the whole banner a one-tap retry, instead of a stuck spinner.
+            Button { updater.install() } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 12))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(l10n.tr("Update failed — click to retry", "更新失败 · 点此重试"))
+                            .font(.system(size: 11.5, weight: .semibold))
+                        if let e = updater.lastError, !e.isEmpty {
+                            Text(e).font(.system(size: 10)).foregroundStyle(.white.opacity(0.85))
+                                .lineLimit(1).truncationMode(.tail)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "arrow.clockwise").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12).padding(.vertical, 7)
+                .frame(maxWidth: .infinity)
+                .background(Theme.Status.waiting)
+                .contentShape(Rectangle())
+            }.buttonStyle(.plain)
+                .help(l10n.tr("Retry updating gtmux (CLI + app)", "重试更新 gtmux（CLI + app）"))
         default:
             EmptyView()
         }
