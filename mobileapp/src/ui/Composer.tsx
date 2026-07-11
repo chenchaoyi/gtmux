@@ -236,6 +236,7 @@ export function Composer({
       activeOpacity={0.7}
       style={[
         styles.key,
+        icon && styles.keyIcon, // tighter padding so the (bigger) glyph isn't dwarfed
         {
           backgroundColor: activeBg ? ACCENT : pal.surface,
           borderColor: activeBg ? ACCENT : pal.divider,
@@ -266,9 +267,9 @@ export function Composer({
       contentContainerStyle={styles.keys}>
       <Key onPress={() => setComposing(c => !c)} icon activeBg={composing} testID={TestIds.composer.keyboard}>
         {composing ? (
-          <KeyboardDismissIcon size={24} color="#fff" />
+          <KeyboardDismissIcon size={28} color="#fff" />
         ) : (
-          <KeyboardIcon size={24} color={pal.fg2} />
+          <KeyboardIcon size={28} color={pal.fg2} />
         )}
       </Key>
       {ctx.length > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
@@ -288,7 +289,7 @@ export function Composer({
         {lang === 'zh' ? '快捷短语 ▾' : 'Snippets ▾'}
       </Key>
       <Key onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}>
-        <HistoryIcon size={24} color={pal.fg2} />
+        <HistoryIcon size={28} color={pal.fg2} />
       </Key>
     </ScrollView>
   );
@@ -503,6 +504,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  keyIcon: {paddingHorizontal: 6}, // icon keys (⌨/history): tight box around the glyph
   keyText: {fontSize: 14, fontWeight: '600'},
   keyGlyph: {fontSize: 17, fontWeight: '600'},
   sep: {width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 6},
