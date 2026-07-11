@@ -22,6 +22,25 @@ describe('normalizeGlyphs', () => {
     const s = 'no record glyph here';
     expect(normalizeGlyphs(s)).toBe(s);
   });
+
+  it('forces text presentation on a BARE text-default symbol (⏸ manual mode)', () => {
+    // U+23F8 alone → append U+FE0E so Core Text renders the text pause, like a terminal.
+    expect(normalizeGlyphs('⏸ manual mode')).toBe('⏸\uFE0E manual mode');
+  });
+
+  it('leaves an agent-requested emoji (…U+FE0F) as color', () => {
+    // the agent asked for the emoji explicitly → don't force text.
+    expect(normalizeGlyphs('⏸\uFE0F done')).toBe('⏸\uFE0F done');
+  });
+
+  it('leaves a default-presentation emoji (✅) as color', () => {
+    // ✅ (Emoji_Presentation=Yes) is not in the set → untouched.
+    expect(normalizeGlyphs('✅ ok')).toBe('✅ ok');
+  });
+
+  it("doesn't double the selector if one is already present", () => {
+    expect(normalizeGlyphs('⏸\uFE0E x')).toBe('⏸\uFE0E x');
+  });
 });
 
 const CUR = '#bbc1ff';
