@@ -13,13 +13,18 @@ class LiveActivityModule: RCTEventEmitter {
   override static func requiresMainQueueSetup() -> Bool { false }
   override func supportedEvents() -> [String]! { ["onActivityPushToken"] }
 
-  // Expose this build's APNs environment to JS so it can tell the Mac which APNs
-  // endpoint its push token belongs to (sandbox for a dev-signed build, production
-  // for App Store / TestFlight). Mirrors the `aps-environment` entitlement — both
-  // are the `$(APS_ENVIRONMENT)` build setting, so they always agree.
+  // Expose this build's APNs ENDPOINT to JS so it can tell the Mac which APNs host
+  // the token belongs to. APNS_ENV mirrors the `aps-environment` entitlement (both
+  // are `$(APS_ENVIRONMENT)`), whose values are Apple's "development"/"production" —
+  // but the push contract (and the relay) speaks "sandbox"/"production". A
+  // dev-signed build ("development") uses the APNs SANDBOX host, so MAP it here.
+  // Returning the raw "development" made the JS fall through to a __DEV__ default,
+  // which is false in a Release-configuration dev build → it mis-reported
+  // "production" and every backgrounded push / Live Activity update was routed to
+  // the wrong host and silently dropped.
   override func constantsToExport() -> [AnyHashable: Any]! {
-    let env = Bundle.main.object(forInfoDictionaryKey: "APNS_ENV") as? String
-    return ["apnsEnv": (env?.isEmpty == false ? env! : "development")]
+    let raw = (Bundle.main.object(forInfoDictionaryKey: "APNS_ENV") as? String) ?? ""
+    return ["apnsEnv": (raw == "production") ? "production" : "sandbox"]
   }
 
   @objc(areEnabled:rejecter:)

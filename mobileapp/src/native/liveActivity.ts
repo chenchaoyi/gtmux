@@ -27,7 +27,13 @@ const ok = Platform.OS === 'ios' && !!M;
 // if the native constant is missing (an older build).
 export function apnsEnv(): 'sandbox' | 'production' {
   const e = (NativeModules.LiveActivityModule as {apnsEnv?: string} | undefined)?.apnsEnv;
-  if (e === 'production' || e === 'sandbox') return e;
+  if (e === 'production') return 'production';
+  // The native constant now returns the endpoint contract directly, but tolerate the
+  // raw entitlement value too: Apple's aps-environment 'development' → APNs SANDBOX.
+  // (Without this, a Release-configuration DEV build — __DEV__ is false — reporting
+  // 'development' fell through to 'production' and its sandbox token was routed to the
+  // wrong APNs host, so backgrounded pushes / Live Activity updates never landed.)
+  if (e === 'sandbox' || e === 'development') return 'sandbox';
   return __DEV__ ? 'sandbox' : 'production';
 }
 
