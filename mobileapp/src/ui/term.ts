@@ -14,16 +14,48 @@ export function nativeFontFamily(_fontPref?: string): string {
   return 'Menlo';
 }
 
-// iOS Core Text renders U+23FA "⏺ BLACK CIRCLE FOR RECORD" (Claude Code's tool-call
-// marker) as the glossy RED record-button COLOR EMOJI, ignoring the ANSI color.
-// Swap it for U+25CF "● BLACK CIRCLE" (no emoji presentation) so it renders as a
-// clean text glyph tinted by the surrounding SGR color — same fix as the xterm
-// path (gen-xterm-asset.mjs normalizeGlyphs).
+// GOAL: the terminal view in the app must look exactly like the real terminal.
+// iOS Core Text draws some symbols as a COLOR emoji where a terminal renders a plain
+// monospace TEXT glyph. Unicode's rule (which terminals follow): a "text-default"
+// symbol (Emoji_Presentation=No, e.g. ⏸ ⏹ ⚠) is TEXT when bare and only becomes an
+// emoji with a trailing U+FE0F; a "default emoji" (✅) stays color. Core Text ignores
+// that for BARE text-default symbols and emojifies them. So normalizeGlyphs:
+//   • bare text-default symbol → append U+FE0E (force text) to match the terminal;
+//   • a symbol the AGENT explicitly made an emoji (…U+FE0F) → leave it (stays color);
+//   • default-presentation emoji (✅, no selector) → leave it (stays color).
+// U+23FA (record dot ⏺) has no reliable monospace text glyph, so it's SWAPPED to the
+// always-text U+25CF ● instead of relying on U+FE0E.
 export const DOT_REC = '⏺';
 export const DOT_CIRCLE = '●';
 
+const VS15 = '\uFE0E'; // text-presentation variation selector
+const VS16 = '\uFE0F'; // emoji-presentation variation selector
+
+// Common Emoji_Presentation=No symbols coding agents emit as text (⏸ ⏹, media
+// skip/step ⏭ ⏮ ⏯, timers ⏱ ⏲, ⚠ warning, ℹ info, ▶ ◀ play, ✔ ✖ check/cross,
+// ❤). Extend as more surface. (U+23FA record dot is handled by the swap above.)
+const TEXT_DEFAULT = new Set(
+  [0x23cf, 0x23ed, 0x23ee, 0x23ef, 0x23f1, 0x23f2, 0x23f8, 0x23f9, 0x2139, 0x25b6, 0x25c0, 0x26a0, 0x2714, 0x2716, 0x2764].map(
+    c => String.fromCodePoint(c),
+  ),
+);
+
 export function normalizeGlyphs(t: string): string {
-  return t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE);
+  const s = t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE);
+  let out = '';
+  let changed = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    out += ch;
+    if (TEXT_DEFAULT.has(ch)) {
+      const nx = s[i + 1];
+      if (nx !== VS16 && nx !== VS15) {
+        out += VS15; // bare → force text presentation
+        changed = true;
+      }
+    }
+  }
+  return changed ? out : s;
 }
 
 // cursorSpans rewrites one line's spans to paint a reverse-video block at column x
