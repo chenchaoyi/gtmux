@@ -107,7 +107,7 @@ export interface ReplyOption {
 export interface PaneResponse {
   id: string;
   text: string;
-  // the pane's text cursor (xterm renderer positions it): column x, Up = rows above
+  // the pane's text cursor (the terminal renderer positions it): column x, Up = rows above
   // the last captured line, visible = false in alt-screen TUIs that hide the cursor.
   cursor?: {x: number; up: number; visible: boolean};
 }

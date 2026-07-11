@@ -26,7 +26,7 @@ Bare RN (not Expo) so Phase 4 can reach HarmonyOS via RNOH. TypeScript.
 |---|---|---|
 | navigation | `@react-navigation/native` + `@react-navigation/native-stack` | stack: Pairing → Radar → Detail → Settings |
 | live updates | `react-native-sse` | EventSource for `GET /api/events` (pure JS, no native link) |
-| terminal view | `react-native-webview` | hosts xterm.js to render a pane's screen |
+| terminal view | native RN `<Text>` (`NativeTerm` + `ui/ansi.ts`) | renders `capture-pane -e` spans as colored, selectable text — no webview/xterm.js |
 | secure storage | `react-native-keychain` | store paired Mac `{url, token}` (a secret) |
 | QR pairing | `react-native-vision-camera` (+ its code scanner) | scan the menu-bar app's pairing QR |
 | push (iOS) | `@react-native-community/push-notification-ios` | get the **raw APNs device token** + handle taps. iOS needs **no** Firebase |
@@ -76,6 +76,7 @@ mobileapp/
       StatusBadge.tsx  # the color+shape+glyph badge (the crux — see §4)
       AgentRow.tsx     # avatar + badge + primary/secondary + time
       SectionList.tsx  # waiting→working→idle→running sections
+      NativeTerm.tsx   # native <Text> terminal renderer (+ term.ts / ansi.ts)
       theme.ts         # design tokens (status colors etc. — exact hex below)
     screens/
       PairingScreen.tsx
@@ -84,8 +85,6 @@ mobileapp/
       SettingsScreen.tsx
     i18n/
       index.ts         # en/zh, follows device locale
-    webview/
-      xterm.html       # bundled xterm.js page the WebView loads
     App.tsx
   index.js
 ```
@@ -210,10 +209,11 @@ waiting section header is red; others neutral. Header summary line:
   SSE-driven refetch). Pull-to-refresh. Tap a row → Detail. A "waiting-only"
   filter toggle (mirror the menu-bar app). Tapping a row's focus action calls
   `focus(pane_id)` ("when you're back at your desk, you're already on it").
-- **DetailScreen** — a WebView loading `webview/xterm.html`; the screen fetches
-  `pane(pane_id)` (poll every ~1.5s, or refetch on the `agents` SSE event) and
-  posts the text into xterm.js via `injectJavaScript`/`postMessage`. Read-only:
-  no keyboard input wired (Phase 2). Show agent name, status badge, loc.
+- **DetailScreen** — renders the pane's screen with `NativeTerm` (native RN
+  `<Text>`, no webview); the screen fetches `pane(pane_id)` (poll every ~1.5s, or
+  refetch on the `agents` SSE event) and feeds the `capture-pane -e` text through
+  `ansi.ts` → colored, selectable spans. Terminal + Chat modes; keyboard input is
+  wired (`POST /api/send`). Show agent name, status badge, loc.
 - **SettingsScreen** — language (en/zh/system), the paired Mac (+ remove),
   push on/off, relay status, app version.
 
@@ -274,7 +274,7 @@ the parser tolerant of unknown fields.)
    **same color/shape/glyph and section order as the menu-bar app**.
 4. Change an agent's state (let one finish / hit a permission prompt) → the row
    updates live (SSE), and a `waiting`/`done` in-app banner appears.
-5. Open a row → Detail shows that pane's screen text (xterm.js).
+5. Open a row → Detail shows that pane's screen text (native `<Text>` renderer).
 6. On a real device with the relay + Apple key configured: background the app,
    trigger an alert → lock-screen push; tap → app opens to that agent. Confirm it
    arrives with the phone **off** the VPN.
