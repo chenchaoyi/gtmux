@@ -39,6 +39,53 @@ export function KeyboardDismissIcon({size = 24, color = '#fff'}: {size?: number;
   );
 }
 
+// Photo library: a picture frame with a sun + a mountain ridge (the standard
+// "photos" glyph). For the attach sheet.
+export function PhotoLibraryIcon({size = 22, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={5} width={18} height={14} rx={2.4} stroke={color} strokeWidth={1.6} />
+      <Circle cx={8.3} cy={9.4} r={1.5} stroke={color} strokeWidth={1.4} />
+      <Path d="M3.6 17.2 L9.4 11.8 L12.6 14.6 L15.6 12 L20.4 16.2" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+// Camera: a body with a top viewfinder bump + a lens. For "take photo".
+export function CameraIcon({size = 22, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={7.5} width={18} height={12} rx={2.4} stroke={color} strokeWidth={1.6} />
+      <Path d="M8 7.5 L9.3 5.4 H14.7 L16 7.5" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Circle cx={12} cy={13.5} r={3.1} stroke={color} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
+// Document with a folded corner. For "file".
+export function FileIcon({size = 22, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Path d="M6.8 3.2 H14 L18.6 7.8 V19.4 A1.6 1.6 0 0 1 17 21 H6.8 A1.6 1.6 0 0 1 5.2 19.4 V4.8 A1.6 1.6 0 0 1 6.8 3.2 Z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
+      <Path d="M13.8 3.4 V8 H18.4" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+// Clipboard. For "paste".
+export function PasteIcon({size = 22, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Rect x={4.8} y={4.6} width={14.4} height={16} rx={2.4} stroke={color} strokeWidth={1.6} />
+      <Rect x={8.8} y={2.8} width={6.4} height={3.6} rx={1.4} stroke={color} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
 // A "history" clock: a clock face + hands + a counterclockwise back-arrow over the
 // top — the standard recall-the-past glyph (replaces the "历史/History" word).
 export function HistoryIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
