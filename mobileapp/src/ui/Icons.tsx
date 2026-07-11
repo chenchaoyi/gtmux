@@ -86,6 +86,23 @@ export function PasteIcon({size = 22, color = '#fff'}: {size?: number; color?: s
   );
 }
 
+// Diagonal expand arrows (↗ ↙) — "open the full-screen compose editor". A crisp
+// line icon in the composer's icon family (replaces the tiny, thin ⤢ glyph that
+// read as an afterthought next to the + / ↑ buttons).
+export function ExpandIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      {/* top-right corner arrowhead */}
+      <Path d="M14 5.5 H18.5 V10" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+      {/* bottom-left corner arrowhead */}
+      <Path d="M10 18.5 H5.5 V14" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+      {/* the diagonal connecting the two corners */}
+      <Path d="M17.8 6.2 L6.2 17.8" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 // A "history" clock: a clock face + hands + a counterclockwise back-arrow over the
 // top — the standard recall-the-past glyph (replaces the "历史/History" word).
 export function HistoryIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {

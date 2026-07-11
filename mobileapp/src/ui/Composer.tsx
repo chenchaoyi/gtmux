@@ -39,7 +39,7 @@ import {SnippetsModal} from './SnippetsModal';
 import {SnippetsPicker} from './SnippetsPicker';
 import {AttachSheet} from './AttachSheet';
 import {HistoryModal} from './HistoryModal';
-import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon} from './Icons';
+import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon, ExpandIcon} from './Icons';
 import {loadSnippets, saveSnippets} from '../state/snippets';
 import {loadHistory, saveHistory, pushHistory} from '../state/history';
 
@@ -341,8 +341,9 @@ export function Composer({
       {/* expand to the full-screen editor for long messages */}
       <TouchableOpacity
         onPress={() => setFullCompose(true)}
-        style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-        <Text style={[styles.attachText, {color: pal.fg2, fontSize: 17}]}>⤢</Text>
+        accessibilityLabel="composer-expand"
+        style={[styles.expand, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+        <ExpandIcon size={20} color={pal.fg2} />
       </TouchableOpacity>
       <TouchableOpacity
         testID={TestIds.composer.send}
@@ -523,6 +524,10 @@ const styles = StyleSheet.create({
   attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
   attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
   input: {flex: 1, minHeight: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 11, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
+  // Full-screen-compose button: its own style (not `attach`) so its gaps stay EVEN —
+  // owns the 8pt gap to its left (the input) and lets `send`'s marginLeft own the gap
+  // to its right, so + · input · ⤢ · ↑ are all 8pt apart (was 8 · 0 · 16).
+  expand: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
   fcWrap: {flex: 1},
   fcBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth},
   fcTitle: {fontSize: 13, fontWeight: '600'},
