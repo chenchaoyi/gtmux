@@ -263,8 +263,8 @@ struct CommandPaletteView: View {
         switch st {
         case .waiting: return l10n.tr("Needs input", "需要输入")
         case .working: return l10n.tr("Working", "运行中")
-        case .idle:    return l10n.tr("Completed", "已完成")
-        case .running: return l10n.tr("Idle", "空闲")
+        case .idle:    return l10n.tr("Idle", "空闲")
+        case .running: return l10n.tr("Running", "待命")
         }
     }
 
