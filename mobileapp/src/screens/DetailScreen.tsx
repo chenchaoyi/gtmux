@@ -417,7 +417,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
-            <Ctl pal={pal} label="⛶" onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
+            <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
           </View>
         </View>
       )}
@@ -546,10 +546,10 @@ function Seg({
   );
 }
 
-function Ctl({pal, label, onPress, testID}: {pal: any; label: string; onPress: () => void; testID?: string}) {
+function Ctl({pal, label, onPress, testID, glyph}: {pal: any; label: string; onPress: () => void; testID?: string; glyph?: boolean}) {
   return (
-    <TouchableOpacity testID={testID} accessibilityLabel={testID} onPress={onPress} style={[styles.ctl, {borderColor: pal.divider}]}>
-      <Text style={[styles.ctlText, {color: pal.fg2}]}>{label}</Text>
+    <TouchableOpacity testID={testID} accessibilityLabel={testID} onPress={onPress} style={[styles.ctl, glyph && styles.ctlGlyphBtn, {borderColor: pal.divider}]}>
+      <Text style={[glyph ? styles.ctlGlyphText : styles.ctlText, {color: pal.fg2}]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -599,6 +599,10 @@ const styles = StyleSheet.create({
   ctlRight: {flexDirection: 'row', alignItems: 'center'},
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
   ctlText: {fontSize: 11.5, fontWeight: '600'},
+  // Fullscreen ⛶ is a glyph, not text — render it bigger + in a tighter box so it
+  // doesn't look dwarfed next to the A−/A+ text buttons.
+  ctlGlyphBtn: {paddingHorizontal: 6, paddingVertical: 1},
+  ctlGlyphText: {fontSize: 18, fontWeight: '400', lineHeight: 20},
   body: {flex: 1},
   // Stacked, always-laid-out mode layers (see the body comment). Toggling opacity/
   // zIndex never relayouts — that's what makes switching instant after first mount.

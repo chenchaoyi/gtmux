@@ -202,7 +202,18 @@ const bootstrap = `
   // real terminal. Swap them for U+25CF "BLACK CIRCLE" (no emoji presentation), so
   // the dot renders as a text glyph tinted by the surrounding SGR color (1:1 width).
   var DOT_REC = String.fromCodePoint(0x23fa), DOT_CIRCLE = String.fromCodePoint(0x25cf);
-  function normalizeGlyphs(t) { return t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE); }
+  var VS16 = String.fromCharCode(0xfe0f);   // emoji variation selector (requests emoji presentation)
+  function normalizeGlyphs(t) {
+    if (t.indexOf(DOT_REC) !== -1) t = t.split(DOT_REC).join(DOT_CIRCLE);
+    // Strip U+FE0F. Symbol codepoints that request emoji presentation with it (the
+    // media controls ⏸️ ⏯️ ⏹️ ⏺️ ⏭️, ⚠️, ▶️ …) otherwise render on the canvas as a text
+    // glyph forced into an emoji-width cell — boxed, misaligned, ugly. Without the
+    // selector they render as clean, ANSI-colorable, 1-cell text glyphs (same spirit
+    // as the U+23FA→U+25CF fix above). Default-presentation emoji (✅, no selector) are
+    // untouched and still render in color.
+    if (t.indexOf(VS16) !== -1) t = t.split(VS16).join('');
+    return t;
+  }
 
   window.gtmuxWrite = function (rawText) {
     if (!term) return;
@@ -265,9 +276,9 @@ const bootstrap = `
       // ends every row with "\n", so after the write xterm's cursor is one row
       // BELOW the pane's bottom line → it's (up + 1) rows below the cursor's row.
       var off = -((c.up | 0) + 1);
-      // WRAP CORRECTION (best-effort): `up` counts SOURCE lines, but in wrap mode one
+      // WRAP CORRECTION (best-effort): 'up' counts SOURCE lines, but in wrap mode one
       // long source line spans several buffer rows, so the constant offset drifts.
-      // Walk up `up` LOGICAL lines (skipping isWrapped continuations) for the true
+      // Walk up 'up' LOGICAL lines (skipping isWrapped continuations) for the true
       // buffer-row offset. ONLY adopt it when it stays within the viewport — an
       // off-screen marker decoration blanks the canvas base layer (the #200 black
       // screen); the clamp + fallback make this regression impossible.
