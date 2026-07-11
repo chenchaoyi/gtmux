@@ -1,6 +1,7 @@
 // AttachSheet — the composer's "+" attach picker, as a branded bottom sheet
-// (mirrors SnippetsPicker/HistoryModal) with an icon + label per row, replacing the
-// bare native iOS action sheet (a plain stack of gray text pills).
+// (mirrors SnippetsPicker/HistoryModal) replacing the bare native iOS action sheet.
+// Grabber + big title + one CARD per action: an icon tile, a bold title, and a dim
+// one-line description.
 
 import React from 'react';
 import {Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -8,7 +9,12 @@ import {Lang} from '../i18n';
 import {Palette} from './theme';
 import {PhotoLibraryIcon, CameraIcon, FileIcon, PasteIcon} from './Icons';
 
-type Row = {icon: React.ComponentType<{size?: number; color?: string}>; label: string; onPress: () => void};
+type Row = {
+  icon: React.ComponentType<{size?: number; color?: string}>;
+  title: string;
+  sub: string;
+  onPress: () => void;
+};
 
 export function AttachSheet({
   visible,
@@ -31,29 +37,36 @@ export function AttachSheet({
 }) {
   const zh = lang === 'zh';
   const rows: Row[] = [
-    {icon: PhotoLibraryIcon, label: zh ? '相册' : 'Photo Library', onPress: onPhoto},
-    {icon: CameraIcon, label: zh ? '拍照' : 'Take Photo', onPress: onCamera},
-    {icon: FileIcon, label: zh ? '文件' : 'File', onPress: onFile},
-    {icon: PasteIcon, label: zh ? '粘贴' : 'Paste', onPress: onPaste},
+    {icon: CameraIcon, title: zh ? '拍照' : 'Camera', sub: zh ? '拍一张新照片' : 'Take a new photo', onPress: onCamera},
+    {icon: PhotoLibraryIcon, title: zh ? '相册' : 'Photo Library', sub: zh ? '从相册选择照片' : 'Choose from your library', onPress: onPhoto},
+    {icon: FileIcon, title: zh ? '文件' : 'File', sub: zh ? '上传文件到主机' : 'Upload a file to the host', onPress: onFile},
+    {icon: PasteIcon, title: zh ? '粘贴' : 'Paste', sub: zh ? '粘贴剪贴板的内容' : 'Paste from the clipboard', onPress: onPaste},
   ];
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
-          <Text style={[styles.title, {color: pal.fg}]}>{zh ? '添加' : 'Attach'}</Text>
+          <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
+          <Text style={[styles.title, {color: pal.fg}]}>{zh ? '添加附件' : 'Add attachment'}</Text>
           {rows.map((r, i) => (
             <TouchableOpacity
-              key={r.label}
+              key={r.title}
               accessibilityLabel={`attach-${i}`}
+              activeOpacity={0.6}
               onPress={() => {
                 onClose();
                 r.onPress();
               }}
-              style={[styles.row, {borderTopColor: pal.divider}, i === 0 && styles.firstRow]}>
-              <View style={[styles.iconWrap, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-                <r.icon size={20} color={pal.fg2} />
+              style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              <View style={[styles.tile, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+                <r.icon size={22} color={pal.fg2} />
               </View>
-              <Text style={[styles.rowText, {color: pal.fg}]}>{r.label}</Text>
+              <View style={styles.textCol}>
+                <Text style={[styles.cardTitle, {color: pal.fg}]}>{r.title}</Text>
+                <Text style={[styles.cardSub, {color: pal.fg3}]} numberOfLines={1}>
+                  {r.sub}
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
         </TouchableOpacity>
@@ -63,11 +76,13 @@ export function AttachSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
-  sheet: {borderTopLeftRadius: 16, borderTopRightRadius: 16, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 28},
-  title: {fontSize: 16, fontWeight: '700', marginBottom: 6},
-  row: {flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth},
-  firstRow: {borderTopWidth: 0},
-  iconWrap: {width: 38, height: 38, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 14},
-  rowText: {fontSize: 16, fontWeight: '500'},
+  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end'},
+  sheet: {borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 30},
+  grabber: {width: 38, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 14, opacity: 0.9},
+  title: {fontSize: 22, fontWeight: '700', marginBottom: 14, marginLeft: 2},
+  card: {flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, marginBottom: 10},
+  tile: {width: 46, height: 46, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 14},
+  textCol: {flex: 1},
+  cardTitle: {fontSize: 16.5, fontWeight: '600'},
+  cardSub: {fontSize: 13, marginTop: 2},
 });
