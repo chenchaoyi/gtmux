@@ -89,7 +89,13 @@ it's **asking**, all assembled deterministically from the transcript (zero LLM
 tokens). `gtmux hq` then opens the **supervisor (中控)**: your coding agent in a
 dedicated session that reads the digest, watches the fleet, drives panes on your
 behalf (`gtmux send`), and gets nudged the moment any agent starts waiting — so
-you converse with ONE agent about all the others. See [docs/cli.md](docs/cli.md).
+you converse with ONE agent about all the others.
+
+The supervisor can be **any CLI agent**, not just Claude: the playbook is seeded
+as `AGENTS.md` (the cross-agent convention Codex/Cursor/Amp read natively) with
+`CLAUDE.md` as an `@AGENTS.md` import — pick yours with `gtmux hq --agent codex`
+(or `GTMUX_HQ_AGENT`). Edit `~/.config/gtmux/hq/AGENTS.md` to change its policy;
+notes it keeps there persist across its sessions. See [docs/cli.md](docs/cli.md).
 
 ## Quickstart
 
