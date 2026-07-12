@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -125,7 +126,7 @@ func save(r Report) {
 // runAndParse executes the command (via the login shell so an env-prefixed
 // string like `HTTPS_PROXY=… claude -p /usage` works) and parses its stdout.
 func runAndParse(command string) ([]Window, error) {
-	cmd := exec.Command("/bin/sh", "-lc", command)
+	cmd := exec.Command("/bin/sh", "-lc", agentenv.Wrap(command))
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err

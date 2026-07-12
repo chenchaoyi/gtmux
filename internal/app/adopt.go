@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -122,7 +123,7 @@ func cmdAdopt(args []string) int {
 		// Type the resume command into the new session's shell (the same mechanism
 		// `restore` uses).
 		if pane := tmux.Display(name, "#{pane_id}"); pane != "" {
-			_ = tmux.SendText(pane, cmd, true)
+			_ = tmux.SendText(pane, agentenv.Wrap(cmd), true)
 		}
 		// Exit the ORIGINAL agent process so there aren't two live instances on one
 		// conversation (the user's choice). Best-effort + PID-reuse guarded — skipped
