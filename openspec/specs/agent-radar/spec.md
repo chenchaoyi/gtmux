@@ -68,7 +68,9 @@ contract (see `internal/app/agents.go` `agentJSON`).
   `session`, `window`, `pane`, `loc`, `agent`, `status`, `task`, `latest`,
   `activity`, `source`, and optional
   `icon`/`since`/`activity_at`/`error`/`error_text`/`bg`/`bg_count`/`bg_text`
-- **AND** an empty array when no tmux server is running
+- **AND** an empty array only when there are neither tmux agent panes NOR any live
+  `source:"native"` session (a sensed native agent still appears with no tmux server
+  running, since `gatherAgents` appends native rows after the tmux scan)
 
 #### Scenario: Errored-idle fields are backward compatible
 

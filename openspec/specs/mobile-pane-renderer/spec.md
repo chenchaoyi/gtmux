@@ -17,7 +17,7 @@ The system SHALL render the pane from `capture-pane -e` snapshots (an
 already-resolved flat colored grid, NOT a live VT stream — so no terminal emulator
 is needed) using native `<Text>` and the shared ANSI/SGR parser, mapping foreground
 + background, bold/dim, and 256-color / truecolor. It SHALL NOT use a webview or
-xterm.js. It SHALL cap rendering to the last N lines of the capture (currently 500)
+xterm.js. It SHALL cap rendering to the last N lines of the capture (currently 350)
 for scroll performance.
 
 #### Scenario: Colored screen renders

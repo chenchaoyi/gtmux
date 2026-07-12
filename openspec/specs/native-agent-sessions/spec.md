@@ -4,11 +4,15 @@
 TBD - created by archiving change native-agent-sessions. Update Purpose after archive.
 ## Requirements
 ### Requirement: Sense agent sessions running outside tmux
-The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}`, where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes.
+The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}` — plus the agent process's pid and command name, used by the liveness reap below — where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes. The system SHALL NOT record an agent's internal warm-spare/pool process (e.g. Claude's `bg-spare`), which fires a hook but is never a real user-facing session.
 
 #### Scenario: Hook fires with no tmux pane
 - **WHEN** `gtmux hook` runs with an empty `$TMUX_PANE` and a payload carrying `session_id` and `cwd`
 - **THEN** the system SHALL write/update a native-session record keyed by `session_id` (instead of degrading to a stateless notify) reflecting the event's derived state
+
+#### Scenario: Warm-spare process is not sensed
+- **WHEN** a hook fires (no `$TMUX_PANE`, with a `session_id`) but the agent process is an internal warm-spare (its command name is `bg-spare`)
+- **THEN** the system SHALL NOT create a native record for it
 
 #### Scenario: Lifecycle transitions update state
 - **WHEN** successive hooks fire for the same `session_id` (e.g. UserPromptSubmit then Stop)
@@ -30,11 +34,15 @@ The system SHALL record the existence and state of an agent session that invokes
 - **THEN** its "finished N ago" SHALL be computed from the session's own last logged message (the same session-keyed source used for tmux idle rows), not from tmux window activity
 
 ### Requirement: Native session lifecycle and reaping
-The system SHALL remove a native-session record when the agent signals session end, and SHALL treat a record as stale after a grace period past its last update so a dead native session does not linger indefinitely. An idle-but-alive native session SHALL persist (it is not reaped merely for being idle).
+The system SHALL remove a native-session record when the agent signals session end; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle).
 
 #### Scenario: Session end removes the record
 - **WHEN** a `SessionEnd` (or equivalent end) hook fires for a native `session_id`
 - **THEN** its native record SHALL be removed and it SHALL no longer appear in the radar
+
+#### Scenario: Dead process is reaped immediately
+- **WHEN** a native record's recorded process id no longer exists, or is alive but a different command (the pid was reused)
+- **THEN** the record SHALL be removed at once, independent of the staleness grace — so a native agent that exited, was killed, or died in a reboot stops appearing immediately (not up to the grace later)
 
 #### Scenario: Stale record is not shown
 - **WHEN** a native record has not been updated within the staleness grace and no live signal exists

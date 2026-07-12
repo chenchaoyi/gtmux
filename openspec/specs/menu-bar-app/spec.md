@@ -96,3 +96,40 @@ red `waiting`/needs-you color.
 - **WHEN** an agent row has `status: idle` without `error`
 - **THEN** the popover renders it exactly as today (green ✓)
 
+
+### Requirement: Check for updates + one-click self-update
+
+The app SHALL check for a newer release (reusing the CLI's own `gtmux update --check`)
+and offer a one-click update that reuses `gtmux update` (CLI + app), spawned DETACHED
+so it survives the installer pkill'ing + relaunching the app. A failed or wedged
+download SHALL NOT sit on the "Updating…" spinner forever: a watchdog surfaces an
+`updateFailed` state with a retry (the detached job records its exit code; a non-zero
+exit or a timeout flips to failed), so the user can retry rather than force-quit.
+
+#### Scenario: Update fails and offers retry
+
+- **WHEN** a one-click update's download fails (network blip / SHA mismatch)
+- **THEN** the app flips to an "update failed — retry" banner (not a stuck spinner),
+  and tapping it re-runs the update
+
+### Requirement: Right-click to quit
+
+The status item SHALL expose a right-click (secondary-click) context menu with a Quit
+action, so the app can be quit without going through the popover.
+
+#### Scenario: Right-click Quit
+
+- **WHEN** the user right-clicks the status item and chooses Quit
+- **THEN** the app terminates
+
+### Requirement: Background-running idle modifier in the popover
+
+An idle row whose settled turn left in-flight background work SHALL carry a
+background-running modifier in the popover (matching the radar/`agents --json` `bg`
+fields), so a "done but a background task is still running" session is distinguishable
+from a fully-finished one.
+
+#### Scenario: Idle row with background work
+
+- **WHEN** an idle agent's `agents --json` row carries the `bg` marker
+- **THEN** its popover row shows the background-running modifier alongside the idle badge

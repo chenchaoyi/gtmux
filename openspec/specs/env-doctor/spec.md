@@ -87,3 +87,17 @@ can't safely automate: installing tmux.
 - **THEN** `doctor --fix` installs it (via the same installer as `gtmux update`)
 - **AND** if tmux is missing, it only PRINTS how to install it (never runs a package
   manager), since that isn't safe to automate
+
+### Requirement: Remote-access readiness check
+
+The system SHALL include a "Remote access" section in the doctor report that checks
+whether `cloudflared` (the default anywhere-tunnel client) is installed, and via
+`--fix` SHALL offer to install it (`brew install cloudflared`) or otherwise point at
+the manual install — so `gtmux tunnel` is one consent away, consistent with the other
+fixers. This is advisory: a missing `cloudflared` does not block LAN/self-hosted use.
+
+#### Scenario: cloudflared missing
+
+- **WHEN** `doctor` runs and `cloudflared` is not installed
+- **THEN** the "Remote access" row flags it, and `--fix` offers to install it (with
+  consent) or prints the manual install command
