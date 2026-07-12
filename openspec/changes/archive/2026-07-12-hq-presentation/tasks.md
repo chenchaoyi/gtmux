@@ -20,12 +20,12 @@
 
 - [x] 3.1 DESIGN.md §3: add the HQ card to the popover structure; MOBILE.md §3:
       add it to the radar layout (per the design-sync rule).
-- [ ] 3.2 On merge: sync-specs + archive this change.
+- [x] 3.2 On merge: sync-specs + archive this change.
 
 ## 4. Gate
 
-- [ ] 4.1 make check + swift build -c release + npm run check green.
-- [ ] 4.2 Dogfood: live HQ shows as the card on menu-bar; mobile card opens chat.
+- [x] 4.1 make check + swift build -c release + npm run check green.
+- [x] 4.2 Dogfood: live HQ shows as the card on menu-bar; mobile card opens chat.
 
 ## 5. Deferred (P2 — NOT built here)
 
