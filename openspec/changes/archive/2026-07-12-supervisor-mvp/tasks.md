@@ -40,12 +40,12 @@
 
 - [x] 4.1 README(.zh) + docs/cli.md: `gtmux digest` + `gtmux hq` sections.
 - [x] 4.2 CLAUDE.md contracts line: add `/api/digest` + `role` field notes if needed.
-- [ ] 4.3 On merge: sync-specs + archive this change (specs/ = built truth).
+- [x] 4.3 On merge: sync-specs + archive this change (specs/ = built truth).
 
 ## 5. Gate
 
-- [ ] 5.1 `make check` green; mobile untouched (no `npm run check` delta expected).
-- [ ] 5.2 Dogfood: run `gtmux hq` against the user's live fleet; verify digest rows
+- [x] 5.1 `make check` green; mobile untouched (no `npm run check` delta expected).
+- [x] 5.2 Dogfood: run `gtmux hq` against the user's live fleet; verify digest rows
       for ≥8 real sessions and a waiting session's ask text; supervisor answers
       "现状?" usefully from `digest --json` alone.
 
