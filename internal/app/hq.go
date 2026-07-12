@@ -1,6 +1,7 @@
 // `gtmux hq` — the supervisor (中控) session. Spawns (or focuses, when live) a
 // dedicated tmux session running the user's coding agent in the persistent hq
-// home (state.HQHome()), whose seeded CLAUDE.md teaches the supervisor loop:
+// home (state.HQHome()), whose seeded playbook (AGENTS.md, with CLAUDE.md as an
+// @-import for Claude) teaches the supervisor loop:
 // read `gtmux digest --json` → judge → drill into a pane (tmux capture-pane)
 // only when warranted → drive via `gtmux send` → report. The home doubles as
 // the supervisor's cross-session memory: the instructions file is generated
@@ -27,8 +28,9 @@ import (
 // detection is by cwd, not name, so the name is cosmetic).
 const hqSessionName = "HQ"
 
-// hqAgentCommand is what gets typed into the fresh hq pane. GTMUX_HQ_AGENT
-// overrides (e.g. "codex") for users whose supervisor isn't Claude.
+// hqAgentCommand is what gets typed into the fresh hq pane when --agent is not
+// given. GTMUX_HQ_AGENT overrides the default (e.g. "codex", or a command with
+// env prefixes like the home-VPN proxy); the --agent flag beats both.
 func hqAgentCommand() string {
 	if c := strings.TrimSpace(os.Getenv("GTMUX_HQ_AGENT")); c != "" {
 		return c
@@ -36,22 +38,47 @@ func hqAgentCommand() string {
 	return "claude"
 }
 
-// hqInstructionsPath is the seeded instructions file inside the hq home.
-func hqInstructionsPath() string { return filepath.Join(state.HQHome(), "CLAUDE.md") }
+// hqInstructionsPath is the CANONICAL seeded playbook inside the hq home:
+// AGENTS.md — the cross-agent instructions convention Codex/Cursor/Amp read
+// natively, so a non-Claude supervisor gets the playbook too.
+func hqInstructionsPath() string { return filepath.Join(state.HQHome(), "AGENTS.md") }
 
-// seedHQHome creates the hq home and writes the instructions file IF ABSENT.
-// Never overwrites: the file is the user's to edit and the supervisor's place to
-// accumulate knowledge. Returns whether this call seeded it.
+// hqClaudePointerPath is the Claude-side entry: Claude Code reads CLAUDE.md, so
+// it gets a one-line `@AGENTS.md` import — SAME content, single source of truth,
+// no two-file drift.
+func hqClaudePointerPath() string { return filepath.Join(state.HQHome(), "CLAUDE.md") }
+
+// hqClaudePointer is CLAUDE.md's content: Claude Code's @-import pulls the
+// canonical AGENTS.md so both agent families read ONE playbook.
+const hqClaudePointer = `@AGENTS.md
+`
+
+// seedHQHome creates the hq home and writes each instructions file IF ABSENT —
+// AGENTS.md (the canonical playbook) and CLAUDE.md (the @AGENTS.md import).
+// Never overwrites either: they are the user's to edit and the supervisor's
+// place to accumulate knowledge. Returns whether this call seeded anything.
+//
+// Back-compat: a home seeded before AGENTS.md existed has a FULL CLAUDE.md
+// (possibly user-edited) — it is left untouched (never clobbered into a
+// pointer), and AGENTS.md is added alongside for non-Claude supervisors.
 func seedHQHome() (seeded bool, err error) {
 	home := state.HQHome()
 	if err := os.MkdirAll(home, 0o755); err != nil {
 		return false, err
 	}
-	path := hqInstructionsPath()
-	if _, err := os.Stat(path); err == nil {
-		return false, nil
+	if _, statErr := os.Stat(hqInstructionsPath()); statErr != nil {
+		if err := os.WriteFile(hqInstructionsPath(), []byte(hqInstructions), 0o644); err != nil {
+			return false, err
+		}
+		seeded = true
 	}
-	return true, os.WriteFile(path, []byte(hqInstructions), 0o644)
+	if _, statErr := os.Stat(hqClaudePointerPath()); statErr != nil {
+		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
+			return seeded, err
+		}
+		seeded = true
+	}
+	return seeded, nil
 }
 
 // findHQPane returns the pane id of a live supervisor pane ("" when none):
@@ -70,15 +97,28 @@ func findHQPane() string {
 
 // cmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
 func cmdHQ(args []string) int {
-	for _, a := range args {
-		switch a {
-		case "-h", "--help":
-			i18n.Say("usage: gtmux hq", "用法：gtmux hq")
+	agentCmd := ""
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "-h" || a == "--help":
+			i18n.Say("usage: gtmux hq [--agent CMD]", "用法：gtmux hq [--agent 命令]")
 			i18n.Say("  Open (or focus) the supervisor (中控) agent — one session that watches,",
 				"  打开（或跳到）中控 agent —— 一个替你盯全部 agent、汇报并代为驱动的会话。")
 			i18n.Say("  reports on, and drives all your other agents. Home: ~/.config/gtmux/hq/",
-				"  常驻目录：~/.config/gtmux/hq/（指令文件可自行编辑，知识随会话沉淀）")
+				"  常驻目录：~/.config/gtmux/hq/（AGENTS.md 守则可自行编辑，知识随会话沉淀）")
+			i18n.Say("  --agent CMD: which agent to run (default claude; e.g. --agent codex).",
+				"  --agent 命令：用哪个 agent 当中控（默认 claude；如 --agent codex）。")
 			return 0
+		case a == "--agent":
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux hq: --agent needs a command", "gtmux hq: --agent 需要一个命令")
+				return 2
+			}
+			i++
+			agentCmd = args[i]
+		case strings.HasPrefix(a, "--agent="):
+			agentCmd = strings.TrimPrefix(a, "--agent=")
 		default:
 			i18n.Sae("gtmux hq: unknown option '"+a+"'", "gtmux hq: 未知选项 '"+a+"'")
 			return 2
@@ -120,8 +160,12 @@ func cmdHQ(args []string) int {
 		i18n.Sae("failed to create the supervisor tmux session", "创建中控 tmux session 失败")
 		return 1
 	}
+	cmd := agentCmd
+	if cmd == "" {
+		cmd = hqAgentCommand()
+	}
 	if pane := tmux.Display(name, "#{pane_id}"); pane != "" {
-		_ = tmux.SendText(pane, hqAgentCommand(), true)
+		_ = tmux.SendText(pane, cmd, true)
 	}
 	i18n.Say("Supervisor started in tmux session '"+name+"'.", "中控已在 tmux session '"+name+"' 启动。")
 	if runtime.GOOS == "darwin" {

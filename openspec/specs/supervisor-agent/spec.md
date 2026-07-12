@@ -9,7 +9,10 @@ The system SHALL provide `gtmux hq` (中控): it creates — or focuses, when on
 already runs — a dedicated tmux session running the user's coding agent (Claude
 by default, per existing agent profiles) with its working directory set to the
 persistent supervisor home (`~/.config/gtmux/hq/`). On first run the home SHALL
-be seeded with a generated instructions file (CLAUDE.md) teaching the supervisor
+be seeded with a generated playbook teaching the supervisor — written as
+AGENTS.md (the cross-agent convention Codex/Cursor/Amp read natively) plus a
+CLAUDE.md containing an `@AGENTS.md` import for Claude, so ONE canonical file
+serves any supervisor agent (`--agent`/`GTMUX_HQ_AGENT` pick which runs) —
 loop — read `gtmux digest --json`, judge, drill into a pane
 (`tmux capture-pane`) only when warranted, drive via `gtmux send`, report to the
 user — and SHALL never be overwritten once present, so the user can edit it and
@@ -17,15 +20,16 @@ the supervisor's accumulated knowledge persists across sessions.
 
 #### Scenario: First launch seeds the home
 
-- **WHEN** `gtmux hq` runs and `~/.config/gtmux/hq/` has no instructions file
-- **THEN** the home is created, the instructions file is generated, and a tmux
+- **WHEN** `gtmux hq` runs and `~/.config/gtmux/hq/` has no playbook files
+- **THEN** the home is created, AGENTS.md + the CLAUDE.md import are generated, and a tmux
   session starts the agent there
 
 #### Scenario: Relaunch reuses, never clobbers
 
 - **WHEN** `gtmux hq` runs while a supervisor session is already live
 - **THEN** it focuses the existing session instead of spawning a second, and an
-  existing (possibly user-edited) instructions file is left untouched
+  existing (possibly user-edited) playbook file is left untouched (each file is
+  seeded only when absent — an older full CLAUDE.md is never clobbered)
 
 ### Requirement: Supervisor visibility in the radar
 

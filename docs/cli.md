@@ -94,7 +94,10 @@ cooperate.
 agent running in a dedicated tmux session at `~/.config/gtmux/hq/`, seeded once
 with instructions that teach it the loop — read `gtmux digest --json`, judge,
 drill into a pane (`tmux capture-pane`) only when warranted, drive via
-`gtmux send`, report to you. Edit the seeded `CLAUDE.md` to change its policy;
+`gtmux send`, report to you. The playbook is seeded as `AGENTS.md` (the
+cross-agent convention) with `CLAUDE.md` as an `@AGENTS.md` import — so the
+supervisor can be ANY CLI agent: `gtmux hq --agent codex` (or `GTMUX_HQ_AGENT`).
+Edit `AGENTS.md` to change its policy;
 notes it keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 

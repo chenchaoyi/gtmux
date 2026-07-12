@@ -2,12 +2,14 @@ package app
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// seedHQHome creates the home + instructions once, then NEVER overwrites — the
-// file is the user's to edit and the supervisor's accumulated knowledge.
+// seedHQHome creates the home + BOTH instruction entries once (AGENTS.md the
+// canonical playbook, CLAUDE.md the @AGENTS.md import), then NEVER overwrites —
+// they're the user's to edit and the supervisor's accumulated knowledge.
 func TestSeedHQHomeIdempotent(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
@@ -17,20 +19,51 @@ func TestSeedHQHomeIdempotent(t *testing.T) {
 	}
 	b, err := os.ReadFile(hqInstructionsPath())
 	if err != nil || !strings.Contains(string(b), "gtmux digest --json") {
-		t.Fatalf("seeded instructions should teach the digest toolbox: %v %q", err, b)
+		t.Fatalf("AGENTS.md should teach the digest toolbox: %v %q", err, b)
+	}
+	cb, err := os.ReadFile(hqClaudePointerPath())
+	if err != nil || !strings.Contains(string(cb), "@AGENTS.md") {
+		t.Fatalf("CLAUDE.md should be the @AGENTS.md import: %v %q", err, cb)
 	}
 
-	// User edits it — a re-run must keep the edit.
+	// User edits both — a re-run must keep the edits.
 	if err := os.WriteFile(hqInstructionsPath(), []byte("MY EDITS"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(hqClaudePointerPath(), []byte("MY CLAUDE EDITS"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	seeded, err = seedHQHome()
 	if err != nil || seeded {
 		t.Fatalf("second seed = (%v, %v), want (false, nil)", seeded, err)
 	}
-	b, _ = os.ReadFile(hqInstructionsPath())
-	if string(b) != "MY EDITS" {
-		t.Errorf("re-seed clobbered the user's edits: %q", b)
+	if b2, _ := os.ReadFile(hqInstructionsPath()); string(b2) != "MY EDITS" {
+		t.Errorf("re-seed clobbered AGENTS.md: %q", b2)
+	}
+	if cb2, _ := os.ReadFile(hqClaudePointerPath()); string(cb2) != "MY CLAUDE EDITS" {
+		t.Errorf("re-seed clobbered CLAUDE.md: %q", cb2)
+	}
+}
+
+// Back-compat: a pre-AGENTS.md home has a FULL (possibly edited) CLAUDE.md —
+// seeding must leave it untouched and only ADD the canonical AGENTS.md.
+func TestSeedHQHomeBackCompat(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(filepath.Dir(hqClaudePointerPath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(hqClaudePointerPath(), []byte("FULL OLD PLAYBOOK + user notes"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	seeded, err := seedHQHome()
+	if err != nil || !seeded {
+		t.Fatalf("seed over old home = (%v, %v), want (true, nil) — AGENTS.md added", seeded, err)
+	}
+	if cb, _ := os.ReadFile(hqClaudePointerPath()); string(cb) != "FULL OLD PLAYBOOK + user notes" {
+		t.Errorf("old CLAUDE.md must never be clobbered into a pointer: %q", cb)
+	}
+	if b, _ := os.ReadFile(hqInstructionsPath()); !strings.Contains(string(b), "gtmux digest --json") {
+		t.Errorf("AGENTS.md should be added alongside: %q", b)
 	}
 }
 
