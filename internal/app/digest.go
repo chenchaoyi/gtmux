@@ -206,7 +206,7 @@ func printDigestRow(r digestRow) {
 	}
 	tag := ""
 	if r.Role == "supervisor" {
-		tag = " ⌂" + i18n.Tr("HQ", "中控")
+		tag = " ⌂gtmux HQ"
 	}
 	fmt.Printf("● %s · %s · %s%s%s\n", head, r.Agent, status, tag, meta)
 	if r.Goal != "" {
