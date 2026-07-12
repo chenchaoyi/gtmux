@@ -120,6 +120,16 @@ describe('paletteFor', () => {
 });
 
 describe('sections', () => {
+  it('excludes the supervisor (role) — it renders as the HQ card, not a row', () => {
+    const out = sections(
+      [mk({status: 'working', session: 'a'}), mk({status: 'working', session: 'HQ', role: 'supervisor'})],
+      false,
+    );
+    const rows = out.flatMap(s2 => s2.agents);
+    expect(rows.some(a => a.role === 'supervisor')).toBe(false);
+    expect(rows.length).toBe(1);
+  });
+
   it('groups into fixed rank order, drops empty sections', () => {
     const agents = [
       mk({status: 'idle', session: 'b'}),

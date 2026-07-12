@@ -50,10 +50,10 @@ const FONT_IDX_KEY = 'detail.fontIdx';
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
 export function DetailScreen({route, navigation}: any) {
-  return <DetailView agent={route.params.agent} onBack={() => navigation.goBack()} />;
+  return <DetailView agent={route.params.agent} initialMode={route.params.mode} onBack={() => navigation.goBack()} />;
 }
 
-export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
+export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?: () => void; initialMode?: DetailMode}) {
   const {client, agents, conn} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
   // ≥768 means we're embedded in the iPad split-view's main pane (never a narrow
@@ -106,15 +106,17 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
   // 终端 — preserves the established read-the-pane behavior; 对话 is a visible-
   // screen glance, not a full transcript), overridden by this pane's own
   // remembered choice if it has one.
-  const [mode, setMode] = useState<DetailMode>(defaultDetailMode);
+  // An explicit route mode (the HQ card opens CHAT — talking to the supervisor is
+  // the point) beats the global default.
+  const [mode, setMode] = useState<DetailMode>(initialMode ?? defaultDetailMode);
   // Each view (terminal = hundreds of dual-layer <Text> rows; chat = many markdown
   // turns) is expensive to MOUNT, so we keep BOTH mounted once visited and just
   // toggle visibility with display:none — a switch is then instant (no re-mount, no
   // re-parse) and even preserves each view's scroll position. `seen{Chat,Term}`
   // lazily mounts a view the first time its mode is opened (no upfront cost for a
   // mode you never visit); the spinner below only covers that one first mount.
-  const [seenChat, setSeenChat] = useState(defaultDetailMode === 'chat');
-  const [seenTerm, setSeenTerm] = useState(defaultDetailMode === 'terminal');
+  const [seenChat, setSeenChat] = useState((initialMode ?? defaultDetailMode) === 'chat');
+  const [seenTerm, setSeenTerm] = useState((initialMode ?? defaultDetailMode) === 'terminal');
   const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
