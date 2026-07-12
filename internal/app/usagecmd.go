@@ -10,7 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"path/filepath"
+
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/limits"
+	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
 )
 
@@ -40,6 +45,7 @@ type usageRollup struct {
 type usageReport struct {
 	Sessions []usageRow    `json:"sessions"`
 	Types    []usageRollup `json:"types"`
+	Limits   limits.Report `json:"limits"` // real subscription windows (limits-watch)
 }
 
 // gatherUsage assembles rows over the current radar (radar ordering) + rollups.
@@ -77,7 +83,30 @@ func gatherUsage() usageReport {
 		rep.Types = append(rep.Types, *a)
 	}
 	sort.Slice(rep.Types, func(i, j int) bool { return rep.Types[i].AgentKey < rep.Types[j].AgentKey })
+	// Real subscription-window remaining (cached; never spawns per call unless stale).
+	rep.Limits, _ = limits.Get(limits.LoadConfig(), false, now)
+	maybeNudgeLimits(rep.Limits)
 	return rep
+}
+
+// maybeNudgeLimits informs a live HQ once when the subscription-limits warn state
+// CHANGES (a weekly window crossed the threshold, or cleared). Deduped via a
+// state marker so repeated usage gathers (serve polls) don't re-nudge. Uses the
+// same channel as the waiting/usage nudges.
+func maybeNudgeLimits(r limits.Report) {
+	marker := filepath.Join(state.Dir(), "limitswarn")
+	prior := state.ReadMarker(marker)
+	if r.Warn == prior {
+		return
+	}
+	if r.Warn == "" {
+		state.Remove(marker)
+		return
+	}
+	_ = state.WriteMarker(marker, r.Warn)
+	if pane := findHQPane(); pane != "" {
+		_ = tmux.SendText(pane, "[gtmux] limits·warn "+r.Warn, true)
+	}
 }
 
 // usageJSONBytes serves the CLI --json and GET /api/usage identically.
@@ -137,6 +166,14 @@ func cmdUsage(args []string) int {
 			line += "   ⚠ " + t.UsageWarn
 		}
 		fmt.Println(line)
+	}
+	// Subscription windows (real remaining) — the headline "how much room is left".
+	if len(rep.Limits.Windows) > 0 {
+		parts := make([]string, 0, len(rep.Limits.Windows))
+		for _, w := range rep.Limits.Windows {
+			parts = append(parts, fmt.Sprintf("%s %d%%", w.Label, w.PctUsed))
+		}
+		fmt.Println(i18n.Tr("Plan  ", "额度  ") + strings.Join(parts, " · "))
 	}
 	return 0
 }

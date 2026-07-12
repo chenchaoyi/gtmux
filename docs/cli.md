@@ -138,6 +138,33 @@ usage yet); the hook evaluates on every lifecycle event — near-real-time durin
 tool-driven work; a long silent generation settles at its next event (P2: serve
 tick).
 
+## `gtmux limits` — real subscription-window remaining
+
+```
+● session               16% used   resets Jul 13 at 1:29am
+● week (all models)     60% used   resets Jul 17 at 10:59pm
+● week (fable)          90% used   resets Jul 17 at 10:59pm
+⚠ near the weekly cap: week (fable) 90%
+```
+
+The one number local estimation can't give you: **how much of your plan is
+left**. gtmux gets it from the agent's OWN `/usage` command run headlessly
+(`claude -p "/usage"`) — real server data, the user's sanctioned command, not a
+reverse-engineered endpoint. Because that spawns a process, results are **cached**
+(`state/limits.json`) with a 15-minute TTL, shortened to 5 minutes once any
+window is near its cap; `--refresh` forces one. Configure in
+`~/.config/gtmux/usage.json`:
+
+```json
+{"limitsCommand": "claude -p /usage", "limitsTTLMin": 15,
+ "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85}
+```
+
+Set `limitsCommand` with an env prefix if your network needs it
+(`"HTTPS_PROXY=… claude -p /usage"`), or `""` to disable. A weekly window at/over
+`limitsWarnPct` marks amber and nudges a live HQ once (`[gtmux] limits·warn …`).
+The `limits` block also rides `gtmux usage` and `GET /api/usage`.
+
 ## `gtmux restore`
 
 Quitting your terminal leaves the tmux server and all sessions alive — only the

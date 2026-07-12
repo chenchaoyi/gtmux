@@ -4,7 +4,7 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
-  `digest`, `hq`, `usage`, `overview`, `restore`, `focus`, `new`, `adopt`, `send`, `hook`,
+  `digest`, `hq`, `usage`, `limits`, `overview`, `restore`, `focus`, `new`, `adopt`, `send`, `hook`,
   `serve`, `tunnel`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
   `uninstall-app`. Logic lives in `internal/`. `digest`+`hq` = the supervisor
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;

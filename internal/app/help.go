@@ -29,6 +29,8 @@ Commands:
                           session that watches, reports on, and drives the rest
   usage [--json]          token usage per session + per-type rollup, with
                           layered thresholds and ahead-of-time warnings
+  limits [--json]         real subscription-window remaining (5h session +
+                          weekly), from the agent's own /usage (cached)
   restore                 one terminal tab per session, attach all
     restore --pick|-p     list & choose (numbers / Enter=all / q=cancel)
     restore <name>        attach that session by name in THIS tab
@@ -116,6 +118,8 @@ const usageZH = `快速开始：
                           汇报并代为驱动的会话
   usage [--json]          每会话 token 用量 + 按类型汇总；分层阈值 + 按速率
                           提前预警（撞墙前告诉你）
+  limits [--json]         真实订阅窗口余量（5 小时会话 + 周额度），来自 agent
+                          自己的 /usage（有缓存）
   restore                 每个 session 一个终端 tab，全部接回
     restore --pick|-p     列出来选（编号 / 回车=全部 / q=取消）
     restore <名字>         按名字把当前 tab 接回指定 session
