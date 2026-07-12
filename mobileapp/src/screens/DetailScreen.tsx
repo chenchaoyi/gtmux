@@ -493,7 +493,6 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
 
       {/* input — types into the pane via POST /api/send (MOBILE §4) */}
       <Composer
-        status={live.status}
         pal={pal}
         lang={lang}
         returnSends={returnSends}

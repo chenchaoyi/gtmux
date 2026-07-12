@@ -29,7 +29,6 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
-import {StatusName} from '../api/types';
 import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
@@ -48,23 +47,11 @@ import {loadHistory, saveHistory, pushHistory} from '../state/history';
 const ACCESSORY_ID = 'gtmux-composer-keys';
 const ACCENT = '#06B6D4';
 
-// Agent-context keys: ONLY the waiting approval (1/2/3) — the one genuinely useful
-// context action. The old non-waiting "继续/停止" pair was redundant (继续=Enter is
-// noise; 停止 duplicates Ctrl-C below) and is removed.
-//
-// Send just the digit, NO Enter: Claude's numbered menus commit on the digit; a
-// trailing Enter leaks onto the next prompt on consecutive selections (see
-// ApprovalCard / DetailScreen). The standalone ⏎ key covers Enter-required menus.
-function contextKeys(status: StatusName, lang: string): {label: string; payload: SendPayload}[] {
-  if (status === 'waiting') {
-    return [
-      {label: lang === 'zh' ? '1 · 是' : '1 · Yes', payload: {text: '1'}},
-      {label: lang === 'zh' ? '2 · 总是' : '2 · Always', payload: {text: '2'}},
-      {label: lang === 'zh' ? '3 · 否' : '3 · No', payload: {text: '3'}},
-    ];
-  }
-  return [];
-}
+// A waiting prompt's reply is NOT offered here: the ApprovalCard (shown above the
+// composer whenever waiting, from GET /api/options) already renders the agent's
+// ACTUAL choices as number chips 1..N. The old hardcoded "1·Yes / 2·Always / 3·No"
+// triad here was redundant with that card AND wrong for a plan/question with a
+// different option set — so it's removed; the card is the single, accurate reply UI.
 
 // Permanent control-key pills. Tab accepts the agent's highlighted/recommended
 // choice or completes its ghost suggestion; ⏎ then SUBMITS that line — a bare
@@ -80,7 +67,6 @@ const CONTROL_KEYS: {label: string; key: string}[] = [
 ];
 
 export function Composer({
-  status,
   pal,
   lang,
   enabled = true,
@@ -88,7 +74,6 @@ export function Composer({
   onSend,
   onUpload,
 }: {
-  status: StatusName;
   pal: Palette;
   lang: Lang;
   enabled?: boolean;
@@ -256,7 +241,6 @@ export function Composer({
   // Resting row — decluttered + grouped: ⌨ | (waiting → 1/2/3) | Tab Ctrl-C Esc |
   // 快捷短语▾ 历史. Snippets are a picker (not a flat list); attach/compose/paste
   // live in the input row + attach sheet; directional keypads were removed.
-  const ctx = contextKeys(status, lang);
   const renderKeys = () => (
     <ScrollView
       horizontal
@@ -270,12 +254,6 @@ export function Composer({
           <KeyboardIcon size={28} color={pal.fg2} />
         )}
       </Key>
-      {ctx.length > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
-      {ctx.map(k => (
-        <Key key={k.label} onPress={() => send(k.payload)}>
-          {k.label}
-        </Key>
-      ))}
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
       {CONTROL_KEYS.map(k => (
         <Key key={k.label} onPress={() => send({key: k.key})}>
