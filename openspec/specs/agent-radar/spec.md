@@ -59,7 +59,10 @@ or `running`, where `waiting` means blocked on the user (permission/approval).
 
 The system SHALL expose the radar as `gtmux agents --json`: a byte-identical,
 stable-shaped array consumed by all surfaces. Fields and their meaning are a
-contract (see `internal/app/agents.go` `agentJSON`).
+contract (see `internal/app/agents.go` `agentJSON`). Rows MAY carry an additive,
+optional `role` field — currently the only value is `"supervisor"`, marking a
+supervisor (中控) session detected by its pane cwd being the supervisor home; the
+field is absent for normal agents so existing consumers are unaffected.
 
 #### Scenario: Structured output
 
@@ -67,26 +70,15 @@ contract (see `internal/app/agents.go` `agentJSON`).
 - **THEN** it receives a JSON array where each item carries at least `pane_id`,
   `session`, `window`, `pane`, `loc`, `agent`, `status`, `task`, `latest`,
   `activity`, `source`, and optional
-  `icon`/`since`/`activity_at`/`error`/`error_text`/`bg`/`bg_count`/`bg_text`
+  `icon`/`since`/`activity_at`/`error`/`error_text`/`bg`/`bg_count`/`bg_text`/`role`
 - **AND** an empty array only when there are neither tmux agent panes NOR any live
   `source:"native"` session (a sensed native agent still appears with no tmux server
   running, since `gatherAgents` appends native rows after the tmux scan)
 
-#### Scenario: Errored-idle fields are backward compatible
+#### Scenario: Supervisor row carries role
 
-- **WHEN** an idle session ended on an error
-- **THEN** its item additionally carries `error: true` and `error_text`
-- **AND** for every other row `error` is absent/false, so a consumer that does not
-  know the field behaves exactly as before
-
-#### Scenario: Background-running fields are backward compatible
-
-- **WHEN** an idle session still has in-flight background work
-- **THEN** its item additionally carries `bg: true`, `bg_count` (the number of
-  in-flight background tasks), and `bg_text` (a short summary, e.g. the shell
-  command line)
-- **AND** for every other row `bg` is absent/false, so a consumer that does not
-  know the field behaves exactly as before
+- **WHEN** a supervisor session (see `supervisor-agent`) is live
+- **THEN** its row includes `role:"supervisor"` and all other rows omit `role`
 
 ### Requirement: Agent-agnostic profiles
 
