@@ -35,13 +35,21 @@ fixed section order waiting→working→idle→running.
 ### Requirement: Live radar via SSE
 
 The system SHALL load agents from `/api/agents` and refetch on the `agents` SSE
-event, show an in-app banner on a foreground `alert`, and reflect connection
-state. `/api/agents` is the only data source.
+event, refetch immediately when the app returns to the FOREGROUND (iOS suspends the
+SSE stream while backgrounded, so the cached list would otherwise be stale until a
+manual pull-to-refresh), show an in-app banner on a foreground `alert`, and reflect
+connection state. `/api/agents` is the only data source.
 
 #### Scenario: Live update
 
 - **WHEN** an agent's status changes on the Mac
 - **THEN** the Radar updates via the SSE-triggered refetch
+
+#### Scenario: Refresh on foreground
+
+- **WHEN** the app returns to the foreground after being backgrounded
+- **THEN** it immediately refetches `/api/agents` so the list is current, independent
+  of the (suspended) SSE stream
 
 ### Requirement: Detail with terminal + chat views
 

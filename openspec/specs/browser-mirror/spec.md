@@ -125,3 +125,31 @@ with no change to the `/api/*` contract.
 - **WHEN** `gtmux tunnel` is running and a browser opens the public HTTPS URL with a
   valid pairing link
 - **THEN** the web UI pairs and mirrors panes over the tunnel
+
+### Requirement: Desktop "workbench" mode
+
+On a wide screen the served UI SHALL offer a "workbench" mode: a left session/agent
+rail plus a freeform board of draggable, resizable pane tiles (multiple panes visible
+at once), with layout presets, snap-to-grid, a ⌘K command palette, and an option to
+auto-surface a pane the moment it starts waiting on the user. It remains VIEW-ONLY and
+uses the same authed `/api/pane` + `/api/transcript` data as the single-pane mirror.
+
+#### Scenario: Arrange multiple panes
+
+- **WHEN** the user is on a wide screen and adds panes to the workbench board
+- **THEN** each pane renders live and view-only, and can be dragged/resized/arranged,
+  with the arrangement applied via presets or manual placement
+
+### Requirement: Radar parity with the native surfaces
+
+The browser radar SHALL reflect the same status vocabulary as the CLI/menu-bar: it
+SHALL show sensed non-tmux sessions as a `source:"native"` "Elsewhere" category and
+SHALL render the background-running idle modifier on an idle row whose settled turn
+left in-flight background work.
+
+#### Scenario: Native + background-running shown
+
+- **WHEN** `/api/agents` includes a `source:"native"` row and/or an idle row carrying
+  the background-running marker
+- **THEN** the browser radar surfaces the "Elsewhere" category and the background
+  modifier, matching the menu-bar/mobile presentation

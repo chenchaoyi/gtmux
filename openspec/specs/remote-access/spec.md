@@ -238,3 +238,23 @@ variables for self-hosting.
 - **WHEN** a self-hoster sets the control-plane URL + registration override env vars
 - **THEN** `gtmux tunnel` provisions against their own Worker instead of gtmux's
 
+
+### Requirement: Paid "Direct" tier via redeemable code
+
+The system SHALL provide a paid "Direct" tier layered on the self-hosted (443)
+backend: `gtmux tunnel --redeem <code>` exchanges a purchased code at the tunnel
+provisioner (`POST /direct/redeem`, validated against a `DIRECT_CODES` store) for the
+Direct server URL + shared secret, which are persisted to the local self-tunnel config
+so subsequent `gtmux tunnel --backend self` runs need no manual `GTMUX_SELFTUNNEL_URL`/
+`SECRET`. The in-process Chisel client (no external binary) carries the transport.
+
+#### Scenario: Redeem a Direct code
+
+- **WHEN** the user runs `gtmux tunnel --redeem <code>` with a valid code
+- **THEN** the provisioner returns the Direct URL + secret, they are written to the
+  self-tunnel config, and later `--backend self` runs connect with no manual env
+
+#### Scenario: Invalid or spent code
+
+- **WHEN** the redeemed code is unknown/expired
+- **THEN** the command reports it clearly and writes no config (no opaque failure)
