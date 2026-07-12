@@ -2,8 +2,8 @@
 // COLOR. It polls /api/pane (now `tmux capture-pane -e`) every ~1.5s and renders
 // the ANSI output with a native SGR parser into colored <Text> spans — offline
 // over VPN, no webview/xterm needed. Narrow-screen controls: A−/A+ font size, a
-// wrap↔scroll toggle, and a jump-to-bottom FAB. "Focus on Mac" lives in the top
-// bar (POST /api/focus), not the input area.
+// wrap↔scroll toggle, and a jump-to-bottom FAB. (The phone-side "Focus on Mac"
+// action was removed in #85 — little value when you're remote.)
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {

@@ -43,13 +43,14 @@ state. `/api/agents` is the only data source.
 - **WHEN** an agent's status changes on the Mac
 - **THEN** the Radar updates via the SSE-triggered refetch
 
-### Requirement: Detail with terminal + chat views and focus
+### Requirement: Detail with terminal + chat views
 
 The system SHALL show a selected agent's Detail in two switchable views kept fresh:
 a "终端/terminal" view rendering the pane's live screen via the native pane renderer
 (see `mobile-pane-renderer`), and a "对话/chat" view rendering the parsed transcript
-(see `mobile-chat-view`, fed by `/api/transcript`). It SHALL offer a "focus on Mac"
-action that calls `/api/focus`.
+(see `mobile-chat-view`, fed by `/api/transcript`). (A phone-side "focus on Mac"
+action was removed in #85 — it has little value when you are remote; the `/api/focus`
+endpoint stays for the browser mirror + as a stable contract.)
 
 #### Scenario: Terminal view
 
