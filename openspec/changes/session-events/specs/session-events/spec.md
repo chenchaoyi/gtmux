@@ -10,9 +10,9 @@ fed by the SAME hook that writes the state markers and the notify queue (additiv
 those are unchanged). Each record SHALL carry at least a timestamp, the event, the
 derived state, and the session's identity (pane/loc/session/agent) plus the
 waiting kind when applicable. The log SHALL ROTATE at a size cap — the active file
-renamed to a numbered generation and a fresh one started, keeping a bounded number
-of generations — so total on-disk size is bounded and it can never single-point-
-explode.
+renamed to `events.1.jsonl` (overwriting any prior) and a fresh one started,
+keeping one rotated generation — so total on-disk size is bounded (active + 1
+rotated; default 20 MB cap → ≈ 40 MB ceiling) and it can never single-point-explode.
 
 #### Scenario: Every event is logged
 

@@ -1,7 +1,8 @@
 # Tasks — session-events
 
 - [ ] 1.1 `internal/events`: Append(record) with SIZE-TRIGGERED ROTATION (rename
-      active→events.1.jsonl at a cap, keep K generations, total bounded; rename is
+      active→events.1.jsonl at eventsCapMB (default 20 MB), keep 1 rotated gen
+      (≈40 MB ceiling); rename is
       atomic-ish, O_APPEND single-line writes). Record = {ts,event,state,pane,loc,
       session,agent,kind}. Unit tests: append, rotate-at-cap, generation-pruning,
       concurrent-append integrity.

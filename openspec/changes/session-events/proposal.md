@@ -20,7 +20,8 @@ mechanism so it can get any session's execution status.)
   `{ts, event, state, pane, loc, session, agent, kind?}`. The log ROTATES so it can
   never single-point-explode: when the active file passes a size cap it is renamed
   to `events.1.jsonl` (overwriting the prior one) and a fresh file starts, keeping
-  a bounded number of generations (total ≈ (K+1)×cap). Rotation is a rename (cheap,
+  ONE rotated generation (`events.1.jsonl`) — active 20 MB + 1 rotated ≈ a **40 MB
+  on-disk ceiling** (config `eventsCapMB`, default 20). Rotation is a rename (cheap,
   atomic-ish); concurrent hook appends are O_APPEND single-line writes (no interleave
   corruption).
 - **`gtmux events [--follow] [--json] [--since <dur>]`**: read (or follow) the
