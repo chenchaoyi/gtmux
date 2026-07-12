@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
@@ -506,6 +507,17 @@ func Run(stdin io.Reader, args []string) int {
 	debugf("agent=%s raw=%q event=%s kind=%q pane=%q session=%q agent-session=%q active=%v notify=%v",
 		agentKey, rawEvent, event, waitKind, pane, session, agentSession, activePresent, d.notify)
 
+	// Session-events (session-events change): append this lifecycle event to the
+	// rotated events.jsonl — the same source feeding the markers/notify/nudge —
+	// so gtmux HQ (and any consumer) can SUBSCRIBE to all sessions' execution by
+	// tailing `gtmux events`. Best-effort; never blocks the hook.
+	if event != "" {
+		events.Append(events.Record{
+			Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
+			Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
+		})
+	}
+
 	// Supervisor nudge (P1): a FRESH waiting transition (same d.notify dedup as the
 	// banner) also informs a live hq pane. Placed BEFORE the viewing suppression —
 	// that gate is about the USER's eyes; the supervisor should learn regardless.
@@ -552,6 +564,21 @@ func Run(stdin io.Reader, args []string) int {
 		IconPath: icon,
 	})
 	return 0
+}
+
+// decisionState maps a hook decision to the derived radar state string for the
+// event log (working | waiting | idle | ""), mirroring what the markers encode.
+func decisionState(d decision, event string) string {
+	switch {
+	case d.setWaiting:
+		return "waiting"
+	case d.setActive:
+		return "working"
+	case event == "Stop" || d.setLastFinished:
+		return "idle"
+	default:
+		return ""
+	}
 }
 
 // debugf appends a timestamped trace line when GTMUX_HOOK_DEBUG is set, so

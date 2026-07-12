@@ -259,6 +259,10 @@ tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的
 - ` + "`gtmux send <pane_id> <text>`" + ` — type into a pane (+Enter). ` + "`--key <name>`" + ` for a
   control key. This DRIVES another agent — use it deliberately. 代用户驱动。
 - ` + "`gtmux focus <pane_id>`" + ` — jump the user's terminal to that pane.
+- ` + "`gtmux events --follow`" + ` — SUBSCRIBE to the live stream of EVERY session's
+  lifecycle events (start / finish / waiting / …) — your continuous awareness feed,
+  cheaper than re-polling digest. Tail it; snapshot with digest when you need detail.
+  订阅全 session 事件流(比反复拉 digest 省)。
 
 ## Nudges 事件通知
 
