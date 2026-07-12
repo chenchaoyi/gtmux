@@ -80,6 +80,17 @@ listed read-only under **Elsewhere**, and `gtmux adopt <id>` pulls one into tmux
 Detection is by event *timing*, not keyword guessing, and works with any agent
 that animates a spinner — not just Claude Code.
 
+
+### The supervisor — `gtmux digest` + `gtmux hq`
+
+`gtmux digest` upgrades the glance from STATUS to MEANING: per agent, its
+**goal** (last prompt), **last** reply tail, and — when waiting — exactly what
+it's **asking**, all assembled deterministically from the transcript (zero LLM
+tokens). `gtmux hq` then opens the **supervisor (中控)**: your coding agent in a
+dedicated session that reads the digest, watches the fleet, drives panes on your
+behalf (`gtmux send`), and gets nudged the moment any agent starts waiting — so
+you converse with ONE agent about all the others. See [docs/cli.md](docs/cli.md).
+
 ## Quickstart
 
 **1. Install** — the script gets you the CLI *and* the menu-bar app in one shot

@@ -26,6 +26,14 @@ import (
 // Dir is ~/.local/share/gtmux (the root of the state contract).
 func Dir() string { return filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux") }
 
+// HQHome is the supervisor (中控) agent's persistent working directory — where
+// `gtmux hq` runs the agent and seeds its instructions file, and the cwd the
+// radar/hook use to RECOGNIZE a supervisor pane (`role:"supervisor"`, the waiting
+// nudge). Under ~/.config (user-editable instructions + accumulated knowledge,
+// not machine state). Shared here because both `internal/app` (hq/agents) and
+// `internal/hook` (nudge) need the same path without an import cycle.
+func HQHome() string { return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "hq") }
+
 // ActivePath is the in-progress marker file for a pane.
 func ActivePath(pane string) string { return filepath.Join(Dir(), "active", pane) }
 

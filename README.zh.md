@@ -75,6 +75,15 @@ tmux **之外**运行的 agent（比如终端里裸跑的 `codex`）也会被感
 
 判定靠的是事件**时序**而不是猜关键词，凡是会转加载动画的 agent 都能识别，不止 Claude Code。
 
+
+### 中控 —— `gtmux digest` + `gtmux hq`
+
+`gtmux digest` 把「一眼看状态」升级为「一眼看在干嘛」：每个 agent 的**目标**
+（最后一条指令）、**最新**回复尾部、等待时它到底在**问什么**——全部从 transcript
+确定性拼装（零 LLM token）。`gtmux hq` 再打开**中控**：一个跑在专属 session 里的
+coding agent，读 digest、替你盯全部 agent、代你驱动（`gtmux send`），任何 agent
+开始等待时会立刻被点一下——你只需要跟这一个 agent 对话。详见 [docs/cli.md](docs/cli.md)。
+
 ## 快速上手
 
 ```sh

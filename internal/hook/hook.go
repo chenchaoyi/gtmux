@@ -506,6 +506,13 @@ func Run(stdin io.Reader, args []string) int {
 	debugf("agent=%s raw=%q event=%s kind=%q pane=%q session=%q agent-session=%q active=%v notify=%v",
 		agentKey, rawEvent, event, waitKind, pane, session, agentSession, activePresent, d.notify)
 
+	// Supervisor nudge (P1): a FRESH waiting transition (same d.notify dedup as the
+	// banner) also informs a live hq pane. Placed BEFORE the viewing suppression —
+	// that gate is about the USER's eyes; the supervisor should learn regardless.
+	if d.notify && d.setWaiting {
+		nudgeSupervisor(pane, string(waitKind))
+	}
+
 	if !d.notify {
 		return 0
 	}

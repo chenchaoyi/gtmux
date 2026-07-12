@@ -38,6 +38,15 @@ func TestAgentJSONContractFields(t *testing.T) {
 		t.Errorf("tmux agent JSON should omit native-only fields: %s", b)
 	}
 
+	// The supervisor (中控) session carries role:"supervisor"; normal rows omit it.
+	sb, _ := json.Marshal(agentJSON{PaneID: "%9", Status: "idle", Source: "tmux", Role: "supervisor"})
+	if !strings.Contains(string(sb), `"role":"supervisor"`) {
+		t.Errorf("supervisor row missing role field: %s", sb)
+	}
+	if strings.Contains(string(b), `"role"`) {
+		t.Errorf("normal agent JSON should omit role: %s", b)
+	}
+
 	// An idle row with background work still running carries the bg modifier.
 	gb, _ := json.Marshal(agentJSON{
 		PaneID: "%6", Status: "idle", Source: "tmux",

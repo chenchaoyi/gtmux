@@ -70,6 +70,42 @@ the same data for scripts and the menu-bar app.
 [notification hook](#notification-hook). Without it, agents never show `⏸`;
 everything else still works.
 
+## `gtmux digest` + `gtmux hq` — the supervisor (中控)
+
+`gtmux digest` is the fleet at a glance, with MEANING instead of just status —
+one block per agent:
+
+```
+● api:0.0 · Claude Code · waiting·permission  [api · main]
+  goal: fix the login-token refresh bug
+  last: Found it — the refresh path drops the exp claim. Patching now…
+  asks: 1.Yes · 2.Yes, don't ask again · 3.No
+```
+
+Every field is assembled deterministically (zero LLM tokens) from what gtmux
+already knows: **goal** = the session's last user prompt, **last** = the tail of
+its last reply (both from the agent's own transcript), **asks** = a waiting
+prompt's parsed options, plus the errored/background modifiers. `--json` emits
+the machine form (also served as `GET /api/digest`). A session gtmux has no
+transcript for still renders from radar signals alone — agents don't need to
+cooperate.
+
+`gtmux hq` opens (or focuses — never duplicates) the **supervisor**: your coding
+agent running in a dedicated tmux session at `~/.config/gtmux/hq/`, seeded once
+with instructions that teach it the loop — read `gtmux digest --json`, judge,
+drill into a pane (`tmux capture-pane`) only when warranted, drive via
+`gtmux send`, report to you. Edit the seeded `CLAUDE.md` to change its policy;
+notes it keeps in that directory persist across its sessions. In the radar its
+row carries `role:"supervisor"`.
+
+When another agent starts **waiting** and an hq session is live, the hook types
+one event line into it — `[gtmux] waiting·permission api:0.0 (%7) — <title>` —
+so the supervisor learns of blockers without polling (same dedup as
+notifications; never about itself; `"hqNudge": false` in
+`~/.config/gtmux/config.json` disables). The nudge only informs: gtmux never
+answers another agent's prompt, and the default policy tells the supervisor to
+surface decisions to you, not take them.
+
 ## `gtmux restore`
 
 Quitting your terminal leaves the tmux server and all sessions alive — only the

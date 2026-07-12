@@ -4,8 +4,13 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
-  `overview`, `restore`, `focus`, `new`, `hook`, `install-hooks`,
-  `uninstall-hooks`, `uninstall-app`. Logic lives in `internal/`.
+  `digest`, `hq`, `overview`, `restore`, `focus`, `new`, `adopt`, `send`, `hook`,
+  `serve`, `tunnel`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
+  `uninstall-app`. Logic lives in `internal/`. `digest`+`hq` = the supervisor
+  (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
+  also `GET /api/digest`) + a supervisor agent session at `~/.config/gtmux/hq/`
+  (radar rows carry `role:"supervisor"`; the hook nudges it on waiting events —
+  `hqNudge:false` disables). See `openspec/changes/supervisor-mvp`.
 - **Native menu-bar app** — `macapp/` (Swift / AppKit + `NSStatusItem` +
   `NSPopover` + SwiftUI). A pure **consumer** of the CLI: polls
   `gtmux agents --json` and shells out to `gtmux focus`. It's also the
@@ -119,7 +124,9 @@ spec-matches-code and archive-hygiene points above are a **review-gate checklist
 
 ## Conventions / invariants
 
-- **Contracts (don't break):** the `gtmux agents --json` schema; state paths
+- **Contracts (don't break):** the `gtmux agents --json` schema (incl. the
+  additive optional `role` field) + the `gtmux digest --json`/`GET /api/digest`
+  shape; state paths
   `~/.local/share/gtmux/{active/<pane>, waiting/<pane>, last-finished,
   notify-icon.png, notify/<id>.json}`; hook events
   `Stop`/`Notification`/`UserPromptSubmit`; bundle id `com.gtmux.menubar`. The
