@@ -154,7 +154,7 @@ final class ModelTests: XCTestCase {
 
     func testSectionsOrderAndNonEmpty() {
         let s = store([("d", "idle"), ("a", "waiting"), ("b", "working")])
-        let secs = s.sections(waitingOnly: false, query: "")
+        let secs = s.sections(query: "")
         XCTAssertEqual(secs.map { $0.status }, [.waiting, .working, .idle])
     }
 
@@ -164,17 +164,10 @@ final class ModelTests: XCTestCase {
         let s = AgentStore()
         s.setForTesting(try JSONDecoder().decode([Agent].self, from: Data(json.utf8)))
         // The supervisor renders as the HQ card, never inside the sections.
-        let rows = s.sections(waitingOnly: false, query: "").flatMap { $0.agents }
+        let rows = s.sections(query: "").flatMap { $0.agents }
         XCTAssertFalse(rows.contains { $0.isSupervisor })
         XCTAssertEqual(rows.count, 1)
         XCTAssertEqual(s.supervisor?.paneID, "%9")
-    }
-
-    func testWaitingOnlyFilter() {
-        let s = store([("a", "waiting"), ("b", "working"), ("c", "idle")])
-        let secs = s.sections(waitingOnly: true, query: "")
-        XCTAssertEqual(secs.count, 1)
-        XCTAssertEqual(secs[0].status, .waiting)
     }
 
     func testFuzzySearch() {
@@ -222,7 +215,7 @@ final class ModelTests: XCTestCase {
         """
         let s = AgentStore()
         s.setForTesting(try JSONDecoder().decode([Agent].self, from: Data(json.utf8)))
-        let hit = s.ordered(waitingOnly: false, query: "ccy")
+        let hit = s.ordered(query: "ccy")
         XCTAssertEqual(hit.map { $0.session }, ["ccy_dev", "ccy-workspace"]) // both idle, sorted
         XCTAssertFalse(hit.contains { $0.session == "HSS Eval Framework" })  // non-match excluded
     }

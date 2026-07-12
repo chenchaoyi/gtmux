@@ -185,11 +185,10 @@ final class AgentStore: ObservableObject {
     }
 
     /// Agents grouped into the four sections, in fixed rank order, each non-empty
-    /// section only. Applies the waiting-only filter and fuzzy search.
-    func sections(waitingOnly: Bool, query: String) -> [(status: Status, agents: [Agent])] {
+    /// section only. Applies fuzzy search.
+    func sections(query: String) -> [(status: Status, agents: [Agent])] {
         var out: [(Status, [Agent])] = []
         for st in [Status.waiting, .working, .idle, .running] {
-            if waitingOnly && st != .waiting { continue }
             // Native (non-tmux) sessions are their own category, not mixed into the
             // tmux status groups.
             // The supervisor renders as its own HQ card, never inside the sections.
@@ -216,8 +215,8 @@ final class AgentStore: ObservableObject {
     }
 
     /// Flattened, ordered agent list (for keyboard navigation).
-    func ordered(waitingOnly: Bool, query: String) -> [Agent] {
-        sections(waitingOnly: waitingOnly, query: query).flatMap { $0.agents }
+    func ordered(query: String) -> [Agent] {
+        sections(query: query).flatMap { $0.agents }
     }
 
     /// Fuzzy match over session/project/window/task/agent/pane (DESIGN §4).

@@ -206,9 +206,9 @@ waiting section header is red; others neutral. Header summary line:
   `health()` check → save to Keychain → go to Radar. On failure give a plain
   diagnosis ("Can't reach this Mac — are you both on the same VPN/Tailscale?").
 - **RadarScreen** — the agent list via `AgentsContext` (initial `agents()` +
-  SSE-driven refetch). Pull-to-refresh. Tap a row → Detail. A "waiting-only"
-  filter toggle (mirror the menu-bar app). Tapping a row's focus action calls
-  `focus(pane_id)` ("when you're back at your desk, you're already on it").
+  SSE-driven refetch). Pull-to-refresh. Tap a row → Detail. Tapping a row's focus
+  action calls `focus(pane_id)` ("when you're back at your desk, you're already on
+  it").
 - **DetailScreen** — renders the pane's screen with `NativeTerm` (native RN
   `<Text>`, no webview); the screen fetches `pane(pane_id)` (poll every ~1.5s, or
   refetch on the `agents` SSE event) and feeds the `capture-pane -e` text through

@@ -1,6 +1,6 @@
 // RadarScreen — the agent list. Initial fetch + SSE-driven refetch (via
-// AgentsContext), pull-to-refresh, a waiting-only filter, and an in-app alert
-// banner. Tap a row → Detail. Status language mirrors the menu-bar app.
+// AgentsContext), pull-to-refresh, and an in-app alert banner. Tap a row →
+// Detail. Status language mirrors the menu-bar app.
 
 import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -29,7 +29,6 @@ function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
 export function RadarScreen({navigation}: any) {
   const {agents, conn, lastUpdated, banner, dismissBanner, refresh} = useAgents();
   const {t, pal, lang, mac} = useApp();
-  const [waitingOnly, setWaitingOnly] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // Collapsed sections persist across launches (MOBILE §3).
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
@@ -53,10 +52,6 @@ export function RadarScreen({navigation}: any) {
   };
 
   const c = counts(agents);
-  // Don't get stuck filtered on an empty list when the last waiter clears (REVIEW #6).
-  useEffect(() => {
-    if (!c.waiting && waitingOnly) setWaitingOnly(false);
-  }, [c.waiting, waitingOnly]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -103,22 +98,6 @@ export function RadarScreen({navigation}: any) {
         <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
           {summary(c, t('agents'))}
         </Text>
-        <TouchableOpacity
-          testID={TestIds.radar.filter}
-          accessibilityLabel={TestIds.radar.filter}
-          disabled={!c.waiting}
-          onPress={() => setWaitingOnly(v => !v)}
-          style={[
-            styles.filter,
-            {borderColor: pal.divider},
-            !c.waiting && styles.filterDisabled, // greyed at 0 (REVIEW #6: no empty-state tap)
-            waitingOnly && {backgroundColor: StatusColor.waiting, borderColor: StatusColor.waiting},
-          ]}>
-          <Text style={[styles.filterText, {color: waitingOnly ? '#fff' : pal.fg2}]}>
-            {/* show the count at 0 so it reads "Waiting 0" instead of inviting a tap */}
-            {c.waiting ? t('waitingOnly') : `${t('waitingOnly')} 0`}
-          </Text>
-        </TouchableOpacity>
       </View>
       {hq && (
         <TouchableOpacity
@@ -175,7 +154,6 @@ export function RadarScreen({navigation}: any) {
       )}
       <SectionList
         agents={agents}
-        waitingOnly={waitingOnly}
         pal={pal}
         lang={lang}
         onPressAgent={a => { if (a.source !== 'native') navigation.navigate('Detail', {agent: a}); }}
@@ -257,11 +235,8 @@ const styles = StyleSheet.create({
   // Always-dark banner → FIXED light text (never pal.fg, which is near-black in light mode).
   authBanner: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 2, gap: 4},
   authBannerText: {flex: 1, fontSize: 12, color: '#F3D9DE', fontWeight: '600'},
-  headerBottom: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6},
+  headerBottom: {flexDirection: 'row', alignItems: 'center', marginTop: 6},
   summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
-  filter: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 10},
-  filterDisabled: {opacity: 0.4},
-  filterText: {fontSize: 11.5, fontWeight: '600'},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 70, paddingHorizontal: 40},
   emptyText: {fontSize: 15, fontWeight: '600', marginTop: 16},
   emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},

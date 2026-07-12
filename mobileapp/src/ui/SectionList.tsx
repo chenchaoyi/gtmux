@@ -27,7 +27,6 @@ interface Sec {
 
 export function SectionList({
   agents,
-  waitingOnly,
   pal,
   lang,
   onPressAgent,
@@ -40,7 +39,6 @@ export function SectionList({
   ListEmptyComponent,
 }: {
   agents: Agent[];
-  waitingOnly: boolean;
   pal: Palette;
   lang: Lang;
   onPressAgent: (a: Agent) => void;
@@ -52,7 +50,7 @@ export function SectionList({
   ListHeaderComponent?: React.ReactElement;
   ListEmptyComponent?: React.ReactElement;
 }) {
-  const secs: Sec[] = sections(agents, waitingOnly).map((s, i) => ({
+  const secs: Sec[] = sections(agents).map((s, i) => ({
     status: s.status,
     count: s.agents.length,
     first: i === 0,
