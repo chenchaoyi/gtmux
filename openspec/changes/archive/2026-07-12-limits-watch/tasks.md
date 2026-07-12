@@ -11,6 +11,6 @@
 - [x] 2.2 Warn: per-window threshold (limitsWarnPct, default 85) → amber marker
       + HQ `[gtmux] limits·warn …` nudge, deduped per window.
 - [x] 3.1 HQ playbook: status reports include the subscription-window line.
-- [ ] 3.2 Docs (cli.md/README) + CLAUDE.md contract note; sync-specs + archive.
-- [ ] 4.1 make check green; dogfood: real windows shown; forced-low threshold warns HQ.
+- [x] 3.2 Docs (cli.md/README) + CLAUDE.md contract note; sync-specs + archive.
+- [x] 4.1 make check green; dogfood: real windows shown; forced-low threshold warns HQ.
 - [ ] 5.1 (P2 deferred) pace projection; Codex/other plans; menu-bar/mobile pill.
