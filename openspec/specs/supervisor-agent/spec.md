@@ -46,6 +46,24 @@ agents.
 - **WHEN** the supervisor session is live and `gtmux agents --json` runs
 - **THEN** its row carries `role:"supervisor"`; all other rows are unchanged
 
+### Requirement: Network-aware agent launch (no manual proxy toggling)
+
+The system SHALL apply the environment a network needs when it LAUNCHES a
+coding-agent process (the supervisor via `gtmux hq`, and likewise `gtmux adopt` /
+restore's resume), so the user does not hand-edit a proxy when switching
+networks. It is controlled by `agentProxy` in `~/.config/gtmux/config.json`:
+`"auto"` (default)
+prepends a local proxy (`http://127.0.0.1:<agentProxyPort, default 7897>`) IFF
+that port is listening (the proxy tool is running — the home-VPN case) and adds
+nothing otherwise (the intranet case); an explicit URL forces it; `"off"`
+disables. A command that already sets a proxy SHALL NOT be doubled.
+
+#### Scenario: Proxy applied only when its port is live
+
+- **WHEN** `agentProxy` is "auto" and the proxy port is listening
+- **THEN** the launched agent command is prefixed with that proxy; when the port
+  is not listening, nothing is prefixed
+
 ### Requirement: The supervisor curates a persistent knowledge base
 
 The supervisor's primary long-term value SHALL be curating a living, cross-cutting

@@ -18,6 +18,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -121,6 +122,7 @@ pointers to where a secret lives.
 - workflows.md — release / device build / spec-consistency / other repeatable procedures.
 - best-practices.md — testing (iOS Appium/e2e), research methodology, what worked.
 - pitfalls.md — footguns already paid for, and how to avoid them.
+- environment.md — network/env rules affecting agent launches (proxy per network).
 
 Add topic files as needed. 主动学习、持续更新、用时调取。
 `,
@@ -128,6 +130,7 @@ Add topic files as needed. 主动学习、持续更新、用时调取。
 	"workflows.md":      "# Workflows (repeatable procedures)\n\n_Release flow, device build, the spec⇄code⇄test consistency workflow (propose → implement → sync-specs → archive), etc._\n",
 	"best-practices.md": "# Best practices\n\n_iOS Appium/e2e automation, research methodology, and other approaches that worked._\n",
 	"pitfalls.md":       "# Pitfalls (footguns already paid for)\n\n_Each entry: symptom → root cause → how to avoid. Keep it current._\n",
+	"environment.md":    "# Environment / network\n\n_How this machine's network affects agent launches. gtmux auto-applies a proxy when launching agents (config `agentProxy` in ~/.config/gtmux/config.json: \"auto\" applies http://127.0.0.1:<agentProxyPort,7897> when that port is LISTENING — i.e. the proxy tool is running — else nothing). Record the per-network rules here (home VPN vs office intranet, SSIDs, ports)._\n",
 }
 
 // findHQPane returns the pane id of a live supervisor pane ("" when none):
@@ -213,6 +216,9 @@ func cmdHQ(args []string) int {
 	if cmd == "" {
 		cmd = hqAgentCommand()
 	}
+	// Auto-apply the network proxy so the agent starts correctly on whatever
+	// network the user is on (home VPN vs office intranet) — no manual toggling.
+	cmd = agentenv.Wrap(cmd)
 	if pane := tmux.Display(name, "#{pane_id}"); pane != "" {
 		_ = tmux.SendText(pane, cmd, true)
 	}

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -101,7 +102,7 @@ func resumeAgents() {
 		if !ok {
 			return false
 		}
-		if tmux.SendText(paneID, cmd, mode == resumeAuto) == nil {
+		if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
 			used[rec.SessionID] = true
 			return true
 		}

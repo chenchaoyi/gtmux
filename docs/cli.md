@@ -138,6 +138,13 @@ usage yet); the hook evaluates on every lifecycle event — near-real-time durin
 tool-driven work; a long silent generation settles at its next event (P2: serve
 tick).
 
+> **Network-aware launch:** gtmux prefixes agent launches (`gtmux hq` / `adopt` /
+> restore / the limits command) with a proxy when needed, so you never hand-toggle
+> one across networks. `~/.config/gtmux/config.json` → `"agentProxy": "auto"`
+> (default) applies `http://127.0.0.1:<agentProxyPort, 7897>` **iff that port is
+> listening** (your proxy tool is running — the home-VPN case) and nothing
+> otherwise (intranet); an explicit URL forces it, `"off"` disables.
+
 ## `gtmux limits` — real subscription-window remaining
 
 ```
