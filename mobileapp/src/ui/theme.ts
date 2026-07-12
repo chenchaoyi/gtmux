@@ -86,10 +86,9 @@ export interface Section {
 // stable, since an idle agent's `since` is frozen at its last activity); every
 // other section is by `primary` case-insensitively. Mirrors the server's sortPanes
 // + AgentStore.sections so all surfaces agree.
-export function sections(agents: Agent[], waitingOnly: boolean): Section[] {
+export function sections(agents: Agent[]): Section[] {
   const out: Section[] = [];
   for (const st of SECTION_ORDER) {
-    if (waitingOnly && st !== 'waiting') continue;
     // Native (non-tmux) sessions are their own trailing category, not mixed in;
     // the supervisor (role) renders as the HQ card above the list, never a row.
     const rows = agents
@@ -102,12 +101,10 @@ export function sections(agents: Agent[], waitingOnly: boolean): Section[] {
     if (rows.length) out.push({status: st, agents: rows});
   }
   // "Elsewhere": sensed agents running outside tmux (sense-only, no jump/send).
-  if (!waitingOnly) {
-    const natives = agents
-      .filter(a => a.source === 'native')
-      .sort((l, r) => (r.since ?? 0) - (l.since ?? 0));
-    if (natives.length) out.push({status: 'native', agents: natives});
-  }
+  const natives = agents
+    .filter(a => a.source === 'native')
+    .sort((l, r) => (r.since ?? 0) - (l.since ?? 0));
+  if (natives.length) out.push({status: 'native', agents: natives});
   return out;
 }
 

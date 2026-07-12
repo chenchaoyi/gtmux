@@ -5,8 +5,8 @@ enum MenuAction {
     case restore, newSession, preferences, pairPhone, quit, startHQ
 }
 
-/// MenuView is the popover (DESIGN §3): a header (logo + waiting-only + search +
-/// summary), the agents grouped Needs-you → Working → Idle → Running, and an
+/// MenuView is the popover (DESIGN §3): a header (logo + search + summary), the
+/// agents grouped Needs-you → Working → Idle → Running, and an
 /// actions footer. A custom view (not NSMenu) so it can group, emphasize "needs
 /// you", and stay calm elsewhere.
 struct MenuView: View {
@@ -21,7 +21,6 @@ struct MenuView: View {
     var onSend: (Agent, Int) -> Void = { _, _ in }
     var onClose: () -> Void = {}
 
-    @State private var waitingOnly = false
     @State private var searchActive = false
     @State private var searchText = ""
     @State private var selected = 0
@@ -41,7 +40,7 @@ struct MenuView: View {
 
     private var query: String { searchActive ? searchText : "" }
     private var sections: [(status: Status, agents: [Agent])] {
-        store.sections(waitingOnly: waitingOnly, query: query)
+        store.sections(query: query)
     }
     // Keyboard navigation only walks rows in EXPANDED sections (A4): a collapsed
     // section's agents are hidden, so ↑/↓ skip them.
@@ -92,7 +91,6 @@ struct MenuView: View {
                 GtmuxLogo(size: 15)
                 Text("gtmux").font(.system(size: 13, weight: .semibold)).foregroundStyle(p.fg)
                 Spacer()
-                waitingOnlyButton(p)
                 Button { toggleSearch() } label: {
                     Image(systemName: "magnifyingglass").font(.system(size: 11))
                         .foregroundStyle(searchActive ? Theme.Status.working : p.fg2)
@@ -107,16 +105,6 @@ struct MenuView: View {
             }
         }
         .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 7)
-    }
-
-    private func waitingOnlyButton(_ p: Theme.Palette) -> some View {
-        Button { withAnimation(nil) { waitingOnly.toggle() } } label: {
-            HStack(spacing: 3) {
-                Image(systemName: waitingOnly ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 10)).foregroundStyle(waitingOnly ? Theme.Status.waiting : p.fg3)
-                Text(l10n.tr("Waiting only", "仅等待")).font(.system(size: 11)).foregroundStyle(p.fg2)
-            }
-        }.buttonStyle(.plain)
     }
 
     private var summaryText: String {

@@ -98,7 +98,7 @@
 
 ### 结构（自上而下）
 
-1. **Header**：gtmux 标记（pane 网格，见 §15）+ 「仅等待」过滤开关 + 搜索按钮；下一行是
+1. **Header**：gtmux 标记（pane 网格，见 §15）+ 搜索按钮；下一行是
    摘要 `5 agents · 1 waiting · 2 working · 2 idle`（本地化，见 `Summary`）。搜索模式下摘要
    行换成搜索输入框。
 2. **HQ 卡（中控，hq-presentation）**：header 与分组列表之间的常驻层。中控是元层会话
@@ -134,7 +134,6 @@
 - **键盘**：`↑/↓` 移动、`⏎` 跳转（`gtmux focus <target>`）、`⎋` 退出搜索/关闭。
 - 选行点击或 `⏎` → 调 `gtmux focus`（tmux 用 pane id，native 见 §7）。
 - 超过 max-height 滚动；分区标题可考虑吸顶。
-- 「仅等待」开关：过滤到只剩 waiting。
 
 ---
 
@@ -309,7 +308,7 @@ divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
 | 0 agent | 灰空心环 / 可隐藏 | 空状态卡 + 启动命令；不报错 |
 | 1 waiting | 红方块 + 计数 + 脉冲一次 | 单行直接落在「需要你」，已选中，⏎ 即跳 |
 | ~5 mixed | 取最紧急（红优先） | 三分区；waiting 高亮、idle 安静；标 latest |
-| 15+ | 仅显示待办计数，不爆栏宽 | 360pt 后滚动；可「仅等待」收窄 |
+| 15+ | 仅显示待办计数，不爆栏宽 | 360pt 后滚动；分区折叠收窄 |
 | 超长 task | 不受影响 | 单行省略号截断，tooltip 给全文；session 永不被挤断 |
 | CJK 中文 | 计数为数字，宽度稳定 | 固定行高 + 弹性中列 + 省略号，不换行/溢出 |
 | native 终端 | 同上 | 主标识用 project、次用 terminal、带 `native` 标记 |

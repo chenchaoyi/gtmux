@@ -121,10 +121,10 @@ describe('paletteFor', () => {
 
 describe('sections', () => {
   it('excludes the supervisor (role) — it renders as the HQ card, not a row', () => {
-    const out = sections(
-      [mk({status: 'working', session: 'a'}), mk({status: 'working', session: 'HQ', role: 'supervisor'})],
-      false,
-    );
+    const out = sections([
+      mk({status: 'working', session: 'a'}),
+      mk({status: 'working', session: 'HQ', role: 'supervisor'}),
+    ]);
     const rows = out.flatMap(s2 => s2.agents);
     expect(rows.some(a => a.role === 'supervisor')).toBe(false);
     expect(rows.length).toBe(1);
@@ -136,7 +136,7 @@ describe('sections', () => {
       mk({status: 'waiting', session: 'a'}),
       mk({status: 'idle', session: 'a'}),
     ];
-    const out = sections(agents, false);
+    const out = sections(agents);
     expect(out.map(s => s.status)).toEqual(['waiting', 'idle']); // no working/running
   });
 
@@ -146,7 +146,7 @@ describe('sections', () => {
       mk({status: 'working', session: 'apple'}),
       mk({status: 'working', session: 'Mango'}),
     ];
-    const out = sections(agents, false);
+    const out = sections(agents);
     expect(out[0].agents.map(a => a.session)).toEqual(['apple', 'Mango', 'Zebra']);
   });
 
@@ -156,23 +156,12 @@ describe('sections', () => {
       mk({status: 'idle', session: 'newest', since: 300}),
       mk({status: 'idle', session: 'mid', since: 200}),
     ];
-    const out = sections(agents, false);
+    const out = sections(agents);
     expect(out[0].agents.map(a => a.session)).toEqual(['newest', 'mid', 'old']);
   });
 
-  it('waitingOnly keeps only the waiting section', () => {
-    const agents = [
-      mk({status: 'waiting', session: 'a'}),
-      mk({status: 'working', session: 'b'}),
-      mk({status: 'idle', session: 'c'}),
-    ];
-    const out = sections(agents, true);
-    expect(out.map(s => s.status)).toEqual(['waiting']);
-    expect(out[0].agents).toHaveLength(1);
-  });
-
   it('returns an empty array when there are no agents', () => {
-    expect(sections([], false)).toEqual([]);
+    expect(sections([])).toEqual([]);
   });
 });
 

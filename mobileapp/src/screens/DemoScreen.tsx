@@ -58,7 +58,6 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
 
       <SectionList
         agents={agents}
-        waitingOnly={false}
         pal={pal}
         lang={lang}
         onPressAgent={explain}

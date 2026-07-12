@@ -98,7 +98,6 @@ const S: Dict = {
   removeServerQ: {en: 'Remove this server?', zh: '移除这台服务器？'},
   // radar
   noAgents: {en: 'No coding agents running.', zh: '没有在跑的 coding agent。'},
-  waitingOnly: {en: 'Waiting only', zh: '只看等输入'},
   reconnecting: {en: 'reconnecting…', zh: '重连中…'},
   offline: {en: 'offline', zh: '离线'},
   live: {en: 'live', zh: '实时'},

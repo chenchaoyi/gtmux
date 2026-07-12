@@ -9,7 +9,7 @@
 | §0 设计原则（安静/层级/三重编码/克制/动效最小） | 全局 | L3 架构不变量 | 整体观感、克制度 | 🟡 |
 | §1 状态模型（色+形+字形） | `AgentStore.Status`,`Theme.Status`,`StatusBadge`,`StatusItemGlyph` | L2 `testStatusColorsMatchDesignHex`/`testStatusRankOrder`/`testEveryStatusHasColor`；L3 调色板 | 徽章三重编码一致性 | ✅ 逻辑 / 🟡 视觉 |
 | §2 状态项（shape-shift + 3 模式 + 着色适配） | `StatusItemGlyph`,`AppDelegate.renderIcon` | L3 调色板 | shape-shift、浅/深/**着色**菜单栏、3 模式、刘海 | 🟡（已渲染验证运行；视觉待验收） |
-| §3 Popover（尺寸/分组/行/交互/footer） | `MenuView`,`Components`,`Theme.Size` | L2 `sections*`/`testWaitingOnlyFilter`/`testFuzzySearch`/`testRelativeTime` | 布局/材质/键盘/滚动对照 mockup | 🟡 |
+| §3 Popover（尺寸/分组/行/交互/footer） | `MenuView`,`Components`,`Theme.Size` | L2 `sections*`/`testFuzzySearch`/`testRelativeTime` | 布局/材质/键盘/滚动对照 mockup | 🟡 |
 | §4 快速切换器（热键） | A: popover 搜索；**B: `CommandPalette.swift` 独立命令面板**（⌘⌥G 唤起，⌘1–9 直达）；`GlobalHotkey` | L2 `testFuzzySearch`/`testPaletteWrapNavigation`；运行时验证面板尺寸/可见（`GTMUXBAR_SHOW_PALETTE` 测试种子） | 热键唤起面板、搜索、⏎/⌘1–9 跳转、**视觉对照 mockup §4 B** | ✅（A+B 完成，面板视觉已按 `docs/design/mockup/gtmux-menubar.dc.html` §4 B 重写——logo+搜索+⌘⌥G keycap、分组、状态前置 32pt 图标、⏎ jump 行内胶囊、底栏。**默认热键 ⌘⌥G** 覆盖 DESIGN 的 ⌥⇧G。截图权限受限，最终视觉由产品真机验收） |
 | §5 空状态 & 首次运行 | `States.swift`（Empty/FirstRun） | — | 文案平实无营销腔；权限卡 | 🟡（视图就绪；首次运行**触发时机/权限探测未接线** ⏳） |
 | §6 Agent 身份（中性单字标、不画 logo） | `agentMonogram`,`AgentAvatar` | L2 `testAgentMonogram`；L3「不自探测」 | 头像中性、不抢状态色 | 🟡（profile `icon` 官方图标字段 ⏳） |

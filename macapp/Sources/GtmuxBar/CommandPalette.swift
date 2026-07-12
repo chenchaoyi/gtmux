@@ -22,8 +22,8 @@ final class PaletteModel: ObservableObject {
         cancellable = store.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
     }
 
-    var results: [Agent] { store.ordered(waitingOnly: false, query: query) }
-    var sections: [(status: Status, agents: [Agent])] { store.sections(waitingOnly: false, query: query) }
+    var results: [Agent] { store.ordered(query: query) }
+    var sections: [(status: Status, agents: [Agent])] { store.sections(query: query) }
 
     func move(_ delta: Int) {
         let n = results.count

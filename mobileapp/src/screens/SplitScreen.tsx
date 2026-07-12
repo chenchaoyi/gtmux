@@ -4,8 +4,8 @@
 // width ≥ 768; the narrow layout falls back to the stacked RadarScreen.
 //
 // Mirrors RadarScreen's polish so the iPad isn't a second-class surface: the same
-// connection dot, offline/alert banners, waiting-only filter, persisted collapse
-// and i18n summary — but laid out as a master/detail split. A push deep-link on a
+// connection dot, offline/alert banners, persisted collapse and i18n summary — but
+// laid out as a master/detail split. A push deep-link on a
 // wide screen selects the pane here (route param) instead of stacking Detail.
 
 import React, {useEffect, useState} from 'react';
@@ -38,7 +38,6 @@ export function SplitScreen({navigation, route}: any) {
   const {agents, conn, lastUpdated, banner, dismissBanner, refresh} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const [waitingOnly, setWaitingOnly] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
@@ -66,9 +65,6 @@ export function SplitScreen({navigation, route}: any) {
   }, [agents, selectedId]);
 
   const c = counts(agents);
-  useEffect(() => {
-    if (!c.waiting && waitingOnly) setWaitingOnly(false);
-  }, [c.waiting, waitingOnly]);
 
   const onToggle = (st: SectionKey) =>
     setCollapsed(prev => {
@@ -109,20 +105,6 @@ export function SplitScreen({navigation, route}: any) {
         <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
           {summary(c, t('agents'))}
         </Text>
-        <TouchableOpacity
-          testID={TestIds.radar.filter}
-          disabled={!c.waiting}
-          onPress={() => setWaitingOnly(v => !v)}
-          style={[
-            styles.filter,
-            {borderColor: pal.divider},
-            !c.waiting && styles.filterDisabled,
-            waitingOnly && {backgroundColor: StatusColor.waiting, borderColor: StatusColor.waiting},
-          ]}>
-          <Text style={[styles.filterText, {color: waitingOnly ? '#fff' : pal.fg2}]}>
-            {c.waiting ? t('waitingOnly') : `${t('waitingOnly')} 0`}
-          </Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -137,7 +119,6 @@ export function SplitScreen({navigation, route}: any) {
         <View style={[styles.sidebar, {borderRightColor: pal.divider}]}>
           <SectionList
             agents={agents}
-            waitingOnly={waitingOnly}
             pal={pal}
             lang={lang}
             onPressAgent={a => { if (a.source !== 'native') setSelectedId(agentId(a)); }}
@@ -215,11 +196,8 @@ const styles = StyleSheet.create({
   conn: {flexDirection: 'row', alignItems: 'center'},
   connDot: {width: 7, height: 7, borderRadius: 3.5, marginRight: 5},
   connText: {fontSize: 11},
-  sideBottom: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6},
+  sideBottom: {flexDirection: 'row', alignItems: 'center', marginTop: 6},
   summary: {fontSize: 12, fontWeight: '600', flex: 1},
-  filter: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 10},
-  filterDisabled: {opacity: 0.4},
-  filterText: {fontSize: 11.5, fontWeight: '600'},
   sideEmpty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60},
   mainEmpty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40},
   mainEmptyText: {fontSize: 15, fontWeight: '600', marginTop: 14},
