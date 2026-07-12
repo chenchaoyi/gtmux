@@ -60,3 +60,16 @@ func TestNudgeSupervisorNoop(t *testing.T) {
 		t.Errorf("no hq session → findSupervisorPane = %q, want empty", pane)
 	}
 }
+
+// layerOf collapses warn strings to their layer identity (the nudge dedup key).
+func TestLayerOf(t *testing.T) {
+	for _, tc := range [][2]string{
+		{"ctx 86%", "ctx"}, {"ctx→80% in ~9m", "ctx"},
+		{"burn 5.3M", "burn"}, {"burn→20M in ~12m", "burn"},
+		{"", ""},
+	} {
+		if got := layerOf(tc[0]); got != tc[1] {
+			t.Errorf("layerOf(%q) = %q, want %q", tc[0], got, tc[1])
+		}
+	}
+}

@@ -121,6 +121,9 @@ type agentPane struct {
 	bg      bool
 	bgCount int
 	bgText  string
+	// usage-watch modifier: this session breached (or projects into) a usage
+	// layer — content of the usagewarn marker, e.g. "ctx 86%". Amber, like bg.
+	usageWarn string
 }
 
 // agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
@@ -165,6 +168,9 @@ type agentJSON struct {
 	Bg      bool   `json:"bg,omitempty"`
 	BgCount int    `json:"bg_count,omitempty"`
 	BgText  string `json:"bg_text,omitempty"` // short label (e.g. the shell command)
+	// usage-watch modifier (usage-watch change): a breached/projected usage layer,
+	// e.g. "ctx 86%" / "burn→5M in ~12m". Amber modifier, never a status.
+	UsageWarn string `json:"usage_warn,omitempty"`
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -603,6 +609,7 @@ func gatherAgents() []agentPane {
 			cwd = f[9]
 			project, branch = gitInfo(cwd)
 		}
+		usageWarn := state.ReadMarker(state.UsageWarnPath(id))
 		panes = append(panes, agentPane{
 			paneID:     id,
 			session:    f[1],
@@ -627,6 +634,7 @@ func gatherAgents() []agentPane {
 			bg:         bg,
 			bgCount:    bgCount,
 			bgText:     bgText,
+			usageWarn:  usageWarn,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -910,6 +918,7 @@ func agentsJSONBytes() ([]byte, error) {
 			SessionID: p.sessionID, Adoptable: p.adoptable,
 			Error: p.errored, ErrorText: p.errorText,
 			Bg: p.bg, BgCount: p.bgCount, BgText: p.bgText,
+			UsageWarn: p.usageWarn,
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")

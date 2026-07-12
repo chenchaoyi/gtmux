@@ -198,6 +198,14 @@ func Load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 type stepFn func(line string, st *parseState)
 
 // resolveLog maps an agent + session id to its on-disk log path and parser.
+// LogPath exposes a session's on-disk log location ("" when the agent has no
+// known log layout) for consumers that read raw log facts the turn parser
+// doesn't surface — e.g. internal/usage extracting per-message token usage.
+func LogPath(agent, sessionID string) string {
+	p, _ := resolveLog(agent, sessionID)
+	return p
+}
+
 func resolveLog(agent, sessionID string) (string, stepFn) {
 	switch normalizeAgent(agent) {
 	case "claude":

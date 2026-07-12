@@ -95,6 +95,14 @@ func ReadBackground(pane string) (count int, label string) {
 // ClearBackground removes a pane's background-work marker.
 func ClearBackground(pane string) { Remove(BackgroundPath(pane)) }
 
+// UsageWarnDir is the directory of per-pane usage-warning markers (usage-watch):
+// content = the compact warn string (e.g. "ctx 86%"). Written/cleared by the
+// hook's evaluation; the radar reads it as an amber MODIFIER (like errored/bg).
+func UsageWarnDir() string { return filepath.Join(Dir(), "usagewarn") }
+
+// UsageWarnPath is a pane's usage-warning marker.
+func UsageWarnPath(pane string) string { return filepath.Join(UsageWarnDir(), pane) }
+
 // IconPath is the cached agent icon used as the notification's thumbnail.
 func IconPath() string { return filepath.Join(Dir(), "notify-icon.png") }
 

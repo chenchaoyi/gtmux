@@ -109,6 +109,35 @@ notifications; never about itself; `"hqNudge": false` in
 answers another agent's prompt, and the default policy tells the supervisor to
 surface decisions to you, not take them.
 
+## `gtmux usage` — token watch
+
+```
+● api:0.0        2.1M out · ctx 85% ·  7k/m   ⚠ ctx 85%
+● web:0.0         830k out · ctx 60% · 391/m
+Σ claude          2.9M out ·  7k/m · 2 sessions
+```
+
+Per-session token accounting parsed deterministically from the agent's own log
+(zero LLM calls): cumulative output/input, the LIVE context footprint (the last
+message's input + cache tokens, judged against an evidence-inferred window),
+and a 10-minute spend rate. **Layered thresholds** per agent type in
+`~/.config/gtmux/usage.json`:
+
+```json
+{"claude": {"ctxWarn": 0.8, "sessionOutWarn": 20000000,
+            "typeRatePerMinWarn": 30000},
+ "horizonMin": 30}
+```
+
+The evaluator also **projects** (`current + rate × horizon`) so you're warned
+BEFORE a wall — `ctx→80% in ~9m` — not at it. Warnings surface as an amber
+`usage_warn` on the radar row (`agents --json` / digest), in `gtmux usage`, and
+as a one-per-layer `[gtmux] usage·warn …` nudge into a live HQ session. `--json`
+is also served as `GET /api/usage`. Claude-first (other agents' logs don't carry
+usage yet); the hook evaluates on every lifecycle event — near-real-time during
+tool-driven work; a long silent generation settles at its next event (P2: serve
+tick).
+
 ## `gtmux restore`
 
 Quitting your terminal leaves the tmux server and all sessions alive — only the
