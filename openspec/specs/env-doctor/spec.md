@@ -68,13 +68,22 @@ off a TTY it skips rather than mutating silently).
 
 ### Requirement: Folds in hook + plugin setup
 
-The system SHALL, via `--fix`, also install the Claude hook, clone missing tmux
-plugins (TPM/resurrect/continuum), and offer to wire Codex's notify — so
-`doctor --fix` is the one-stop setup. It SHALL print guidance for what it cannot
-safely do (install tmux, install the app).
+The system SHALL, via `--fix`, also install the Claude hook, wire Codex via its
+ADDITIVE hooks system (`~/.codex/hooks.json` + `features.hooks`), clone missing tmux
+plugins (TPM/resurrect/continuum), and — after consent — install the menu-bar app —
+so `doctor --fix` is the one-stop setup. It SHALL print guidance for the one thing it
+can't safely automate: installing tmux.
 
-#### Scenario: Codex notify is single-slot
+#### Scenario: Codex wired additively, notify untouched
 
-- **WHEN** a non-gtmux `notify` already exists in `~/.codex/config.toml`
-- **THEN** the system warns and asks before replacing it (default no), and never
-  replaces it under `--yes`
+- **WHEN** `doctor --fix` wires Codex
+- **THEN** it adds gtmux to Codex's hooks system (`hooks.json` + `features.hooks`) and
+  NEVER writes or replaces `notify` in `~/.codex/config.toml` (the old
+  single-slot notify-replace step was removed in #317)
+
+#### Scenario: Installs the app, guides for tmux
+
+- **WHEN** the menu-bar app is missing and the user consents
+- **THEN** `doctor --fix` installs it (via the same installer as `gtmux update`)
+- **AND** if tmux is missing, it only PRINTS how to install it (never runs a package
+  manager), since that isn't safe to automate

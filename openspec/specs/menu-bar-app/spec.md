@@ -10,14 +10,16 @@ target for notifications.
 ### Requirement: Ambient status item
 
 The system SHALL render an `NSStatusItem` whose glyph encodes the most-urgent
-state by color + shape (waiting → working → idle → calm), with a count badge of
-the most-urgent actionable count.
+state by COLOR — the brand-grid mark tinted to the state's palette color
+(waiting → working → idle → calm) — with a count badge of the most-urgent
+actionable count. (Since the 2026-06 UI overhaul, #160, the glyph is color-only:
+one tinted brand mark for every state, NOT a per-state shape.)
 
 #### Scenario: Most-urgent wins
 
 - **WHEN** at least one agent is waiting
-- **THEN** the status item shows the waiting glyph (red square + pause) with the
-  waiting count
+- **THEN** the status item's brand mark is tinted the waiting (red) color and shows
+  the waiting count badge
 
 ### Requirement: Grouped popover
 
