@@ -38,8 +38,21 @@ if command -v go >/dev/null 2>&1; then
   fi
 fi
 
+# 5. Spec validity: the OpenSpec capability specs must stay well-formed, so a
+#    behaviour change can't land with a broken/missing spec. This is the automated
+#    half of CLAUDE.md's "spec ⇄ code ⇄ test consistency" rule (the spec-matches-code
+#    and archive-hygiene halves are a review-gate checklist item). Needs node; both
+#    CI runners (ubuntu + macOS) have it preinstalled, so a missing npx = a real gap.
+if command -v npx >/dev/null 2>&1; then
+  if npx --yes @fission-ai/openspec validate --specs --strict >/tmp/openspec-check.log 2>&1; then :; else
+    note "openspec spec validation FAILED (specs malformed / drifted):"; cat /tmp/openspec-check.log; fail=1
+  fi
+else
+  note "npx not found — skipping openspec validation (install node to enforce it)"
+fi
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid"
 else
   exit 1
 fi
