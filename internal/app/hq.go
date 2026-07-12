@@ -195,6 +195,8 @@ tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的
   (tail of its last reply), ask (a waiting prompt's numbered options), error/bg.
   这是你的主要信息源；平时只读它，别去逐个翻窗口。
 - ` + "`gtmux agents --json`" + ` — raw radar rows (states only, no digest fields).
+- ` + "`gtmux usage --json`" + ` — token usage: per-session totals, live context %,
+  spend rate, and threshold warnings, plus per-agent-type rollups. 用量与预警。
 - ` + "`tmux capture-pane -p -t <pane_id>`" + ` — drill into ONE pane's live screen, only
   when the digest says it's worth it (waiting/errored/stuck). 需要细节才下钻。
 - ` + "`gtmux send <pane_id> <text>`" + ` — type into a pane (+Enter). ` + "`--key <name>`" + ` for a
@@ -212,6 +214,10 @@ user request: check its digest row, then follow the policy below.
 
 1. When asked "现状/status", answer from ` + "`digest --json`" + ` — one line per agent:
    who needs the user, who's working on what, who finished. Lead with needs-you.
+   ALWAYS include a token-usage section: the per-type rollup (Σ tokens · rate)
+   and any session whose usage_warn is set (ctx pressure / burn / rate), from
+   ` + "`gtmux usage --json`" + ` or the digest rows' tok/ctx/rate fields.
+   汇报现状必须带 token 用量与预警。
 2. NEVER answer another agent's permission/plan/question prompt yourself — surface
    it to the user with your recommendation. 绝不代替用户回答权限/方案选择。
 3. Driving (send) is fine for routine, reversible follow-ups the user asked for in
