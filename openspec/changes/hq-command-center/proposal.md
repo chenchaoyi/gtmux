@@ -26,8 +26,10 @@ briefing view" (supervisor-mvp P2) upgraded into a full command console.
      a prominent command bar: free text → HQ, plus quick-command chips
      (`现状` · `谁在等我` · `用量/额度`; when a fleet row is selected:
      `让它继续` · `看它在干嘛` · `帮我回复它`). ALL commands route through HQ
-     (the supervisor decides + drives); a direct pane jump stays as the
-     long-press escape hatch.
+     (the supervisor decides + drives) — the HQ screen has NO direct-send input
+     (decided 2026-07-12): direct control already exists in each worker's own
+     session detail, so a long-press on a fleet row jumps there instead of
+     duplicating a bypass入口 inside HQ.
 - **Mobile client**: add `digest()` (+ reuse for usage/limits) over the existing
   authed API. No new server endpoints — `/api/digest` + `/api/usage` already ship.
 - **P2 (deferred)**: a menu-bar HQ command popover (lighter — the phone is the
@@ -47,4 +49,5 @@ briefing view" (supervisor-mvp P2) upgraded into a full command console.
   DigestBoard component over a new `client.digest()`.
 - No server/CLI change (the digest + usage contracts already exist).
 - The command model is HQ-mediated (you command HQ; HQ commands the fleet),
-  matching "所有命令均来自于 HQ"; direct control stays available via long-press.
+  matching "所有命令均来自于 HQ". No direct-send input inside HQ — direct control
+  lives in each worker's own session detail (reached by long-pressing a fleet row).

@@ -9,8 +9,9 @@ board listing every agent from `/api/digest` (needs-you first; each row shows
 state, location, agent, goal, and — when waiting — its ask), and a command
 console (a conversation with the supervisor plus a command bar with free text
 and quick-command chips). Commands are HQ-mediated: the command bar addresses the
-supervisor, which drives the fleet; a direct jump to a worker's own detail SHALL
-remain available (long-press on a fleet row).
+supervisor, which drives the fleet; the HQ screen has NO
+direct-send input; direct control lives in each worker's own detail, reached by
+long-pressing a fleet row.
 
 #### Scenario: Open the supervisor
 
