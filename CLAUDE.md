@@ -87,6 +87,36 @@ Keep specs aligned with the code: when behavior changes, update the relevant
 existing features (agent-radar, terminal-jump, notifications, menu-bar-app,
 env-doctor, session-restore, remote-access, push-notifications, mobile-app).
 
+### RULE — spec ⇄ code ⇄ test consistency (REQUIRED; part of "done")
+
+A 2026-07-12 audit found docs/specs/tests drifting from the code (e.g. the
+`self-hosted-tunnel` change was fully implemented — `internal/app/tunnelself.go` —
+yet its `tasks.md` sat at 0/14 and it was never archived). To stop that drift, a PR
+that changes the **observable behavior of a spec'd capability is NOT done** until,
+in the **same PR**:
+
+1. **Spec updated** — edit the relevant `openspec/specs/<capability>/spec.md` (small
+   change) or land it via an `openspec/changes/<id>` proposal (non-trivial). A
+   behavior change with no spec delta is incomplete.
+2. **Tests updated** — add/adjust the test(s) that pin the new behavior (Go
+   `*_test.go` / mobile jest / e2e). "It builds" is not coverage.
+3. **Docs/memory corrected** — any doc, memory, or `CLAUDE.md` line that cites the
+   changed file / flag / behavior is fixed in the same PR. No stale references.
+
+**Historical consistency (the spec lifecycle is not optional).** propose →
+implement → **sync-specs + archive-change**. The moment a change in
+`openspec/changes/` is implemented + merged, ARCHIVE it (same PR, or the very next),
+and keep its `tasks.md` checkboxes truthful as you go. Invariant: `specs/` = what IS
+built · `changes/` = ONLY truly in-flight work · `changes/archive/` = the audit
+trail. An implemented change left in `changes/` (or unchecked tasks over shipped
+code) is exactly the drift we are eliminating.
+
+**Enforced:** `scripts/check-design.sh` (CI's "design + architecture conformance"
+step) runs `openspec validate --specs --strict` — a malformed/broken spec fails the
+build like a red test. Validation only proves the spec is well-formed; the
+spec-matches-code and archive-hygiene points above are a **review-gate checklist**
+(a reviewer confirms all three before squash-merge — they can't be fully automated).
+
 ## Conventions / invariants
 
 - **Contracts (don't break):** the `gtmux agents --json` schema; state paths
