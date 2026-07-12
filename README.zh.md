@@ -82,7 +82,12 @@ tmux **之外**运行的 agent（比如终端里裸跑的 `codex`）也会被感
 （最后一条指令）、**最新**回复尾部、等待时它到底在**问什么**——全部从 transcript
 确定性拼装（零 LLM token）。`gtmux hq` 再打开**中控**：一个跑在专属 session 里的
 coding agent，读 digest、替你盯全部 agent、代你驱动（`gtmux send`），任何 agent
-开始等待时会立刻被点一下——你只需要跟这一个 agent 对话。详见 [docs/cli.md](docs/cli.md)。
+开始等待时会立刻被点一下——你只需要跟这一个 agent 对话。
+
+中控可以是**任意 CLI agent**,不限于 Claude:守则以 `AGENTS.md` 播种(Codex/Cursor/Amp
+原生读的跨 agent 约定),`CLAUDE.md` 只是一行 `@AGENTS.md` 导入——用 `gtmux hq --agent codex`
+(或 `GTMUX_HQ_AGENT`)选你的中控。编辑 `~/.config/gtmux/hq/AGENTS.md` 调整它的守则;
+它沉淀在该目录的笔记跨会话保留。详见 [docs/cli.md](docs/cli.md)。
 
 ## 快速上手
 
