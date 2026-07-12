@@ -126,7 +126,7 @@ export function RadarScreen({navigation}: any) {
           testID="radar-hq-card"
           activeOpacity={0.7}
           style={[styles.hqCard, {backgroundColor: pal.surface, borderColor: pal.divider}]}
-          onPress={() => navigation.navigate('Detail', {agent: hq, mode: 'chat'})}>
+          onPress={() => navigation.navigate('HQ', {agent: hq})}>
           <BrandMark size={26} neutral={pal.fg3} />
           <View style={styles.hqText}>
             <View style={styles.hqTitleRow}>

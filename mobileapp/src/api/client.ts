@@ -11,6 +11,42 @@ export interface SendPayload {
   enter?: boolean;
 }
 
+// DigestRow mirrors internal/app digestRow (GET /api/digest) — the fleet's
+// cognitive digest for the gtmux HQ command center.
+export interface DigestRow {
+  pane_id?: string;
+  loc?: string;
+  agent: string;
+  source: string;
+  status: string; // working | waiting | idle | running
+  kind?: string; // waiting only: permission | plan | question
+  role?: string; // "supervisor"
+  project?: string;
+  branch?: string;
+  goal?: string;
+  last?: string;
+  ask?: string;
+  error?: string;
+  bg?: string;
+  since?: number;
+  tok?: number;
+  ctx?: number;
+  rate?: number;
+  usage_warn?: string;
+}
+
+// UsageReport mirrors internal/app usageReport (GET /api/usage).
+export interface UsageWindow {
+  label: string;
+  pct_used: number;
+  reset_at: string;
+}
+export interface UsageReport {
+  sessions?: {agent_key: string; tok: number; rate: number; usage_warn?: string}[];
+  types?: {agent_key: string; sessions: number; tok: number; rate: number; usage_warn?: string}[];
+  limits?: {windows?: UsageWindow[]; warn?: string; at?: number};
+}
+
 // A chat-history turn (GET /api/transcript): one user instruction, the agent's
 // final text reply, and the intermediate tool calls folded into collapsible steps.
 export interface TranscriptStep {
@@ -156,6 +192,24 @@ export class GtmuxClient {
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
     return Array.isArray(j) ? j : [];
+  }
+
+  // digest: the fleet's cognitive digest (GET /api/digest) — one row per agent
+  // with goal/last/ask + state, the gtmux HQ command center's situational-
+  // awareness source. [] on failure (the board just shows empty).
+  async digest(): Promise<DigestRow[]> {
+    const r = await tfetch(`${this.base}/api/digest`, {headers: this.h()});
+    if (!r.ok) return [];
+    const j = await r.json().catch(() => null);
+    return Array.isArray(j) ? j : [];
+  }
+
+  // usage: token accounting + real subscription-window limits (GET /api/usage) —
+  // HQ shows the week/plan % in its status strip. null on failure.
+  async usage(): Promise<UsageReport | null> {
+    const r = await tfetch(`${this.base}/api/usage`, {headers: this.h()});
+    if (!r.ok) return null;
+    return (await r.json().catch(() => null)) as UsageReport | null;
   }
 
   // send types into a pane (a WRITE): a named control key, or literal text (+Enter).
