@@ -153,6 +153,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// The supervisor's fleet view (goal/last/ask per agent) — same bytes as
 		// `gtmux digest --json`; includes native rows even with no tmux server.
 		DigestJSON: digestJSONBytes,
+		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
+		UsageJSON: usageJSONBytes,
 		// The approval card's options are gated on the hook waiting marker, not screen
 		// text (an idle pane showing a numbered list must not surface an approval menu).
 		IsWaiting:  func(id string) bool { return state.Exists(state.WaitingPath(id)) },

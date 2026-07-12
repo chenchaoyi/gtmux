@@ -121,6 +121,10 @@ type Deps struct {
 	// `gtmux digest --json` (the supervisor's fleet view: goal/last/ask per row).
 	// Additive to AgentsJSON. Optional: nil → GET /api/digest is 503.
 	DigestJSON func() ([]byte, error)
+
+	// UsageJSON returns the marshaled usage report — byte-identical to
+	// `gtmux usage --json` (usage-watch). Optional: nil → GET /api/usage is 503.
+	UsageJSON func() ([]byte, error)
 }
 
 // Config configures the listener and auth token.
@@ -173,6 +177,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
+	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
@@ -226,6 +231,22 @@ func (s *Server) handleAgents(w http.ResponseWriter, _ *http.Request) {
 	b, err := s.deps.AgentsJSON()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, errBody("agents error"))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(b)
+}
+
+// handleUsage serves the usage-watch report (GET /api/usage), byte-identical to
+// `gtmux usage --json`.
+func (s *Server) handleUsage(w http.ResponseWriter, _ *http.Request) {
+	if s.deps.UsageJSON == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("usage unavailable"))
+		return
+	}
+	b, err := s.deps.UsageJSON()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("usage error"))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

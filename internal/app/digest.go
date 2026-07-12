@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
@@ -23,6 +24,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
+	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
 )
 
 // digestRow is one agent's digest — the JSON contract for `gtmux digest --json`
@@ -43,6 +45,12 @@ type digestRow struct {
 	Error   string `json:"error,omitempty"` // errored-idle modifier text
 	Bg      string `json:"bg,omitempty"`    // background-running modifier label
 	Since   int64  `json:"since,omitempty"` // epoch the current state began
+	// usage-watch (usage-watch change): the session's token snapshot + the first
+	// breached/projected layer. Zero/empty when no usage data (non-Claude).
+	Tok       int64   `json:"tok,omitempty"`  // cumulative output tokens
+	Ctx       float64 `json:"ctx,omitempty"`  // live context fraction 0–1
+	Rate      int64   `json:"rate,omitempty"` // output tokens/min (recent window)
+	UsageWarn string  `json:"usage_warn,omitempty"`
 }
 
 // Truncation caps: digest rows are the "短状态" tier — tens of tokens each. Deep
@@ -125,6 +133,10 @@ func gatherDigest() []digestRow {
 		if agentKey, sessionID := sessionRef(p); sessionID != "" {
 			if turns, err := transcript.Load(agentKey, sessionID, 1); err == nil {
 				row.Goal, row.Last = turnDigest(turns)
+			}
+			if u, ok := uwatch.ForSession(agentKey, sessionID, time.Now()); ok {
+				row.Tok, row.Ctx, row.Rate = u.OutTok, u.CtxFrac, u.RatePerMin
+				row.UsageWarn = uwatch.EvaluateSession(u)
 			}
 		}
 		out = append(out, row)
@@ -211,5 +223,8 @@ func printDigestRow(r digestRow) {
 	}
 	if r.Bg != "" {
 		fmt.Printf("  %s %s\n", i18n.Tr("bg:", "后台:"), snip(r.Bg, lastMax))
+	}
+	if r.UsageWarn != "" {
+		fmt.Printf("  %s %s\n", i18n.Tr("usage:", "用量:"), r.UsageWarn)
 	}
 }

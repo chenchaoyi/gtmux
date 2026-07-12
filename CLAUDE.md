@@ -4,7 +4,7 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
-  `digest`, `hq`, `overview`, `restore`, `focus`, `new`, `adopt`, `send`, `hook`,
+  `digest`, `hq`, `usage`, `overview`, `restore`, `focus`, `new`, `adopt`, `send`, `hook`,
   `serve`, `tunnel`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
   `uninstall-app`. Logic lives in `internal/`. `digest`+`hq` = the supervisor
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
@@ -126,7 +126,7 @@ spec-matches-code and archive-hygiene points above are a **review-gate checklist
 
 - **Contracts (don't break):** the `gtmux agents --json` schema (incl. the
   additive optional `role` field) + the `gtmux digest --json`/`GET /api/digest`
-  shape; state paths
+  shape + `gtmux usage --json`/`GET /api/usage` (usage-watch); state paths
   `~/.local/share/gtmux/{active/<pane>, waiting/<pane>, last-finished,
   notify-icon.png, notify/<id>.json}`; hook events
   `Stop`/`Notification`/`UserPromptSubmit`; bundle id `com.gtmux.menubar`. The

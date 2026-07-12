@@ -513,6 +513,11 @@ func Run(stdin io.Reader, args []string) int {
 		nudgeSupervisor(pane, string(waitKind))
 	}
 
+	// Usage-watch (usage-watch change): every event refreshes this session's token
+	// counters and evaluates the session layers → amber marker + a once-per-layer
+	// hq nudge. Tool-call-driven hooks make this near-real-time during real burn.
+	watchUsage(agentKey, agentSession, pane)
+
 	if !d.notify {
 		return 0
 	}

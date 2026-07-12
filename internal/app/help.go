@@ -27,6 +27,8 @@ Commands:
                           fleet view (and the supervisor's read surface)
   hq                      open (or focus) the supervisor (中控) agent — one
                           session that watches, reports on, and drives the rest
+  usage [--json]          token usage per session + per-type rollup, with
+                          layered thresholds and ahead-of-time warnings
   restore                 one terminal tab per session, attach all
     restore --pick|-p     list & choose (numbers / Enter=all / q=cancel)
     restore <name>        attach that session by name in THIS tab
@@ -112,6 +114,8 @@ const usageZH = `快速开始：
                           —— 一眼看清全部 agent（也是中控的主要信息源）
   hq                      打开（或跳到）中控 agent —— 一个替你盯全部 agent、
                           汇报并代为驱动的会话
+  usage [--json]          每会话 token 用量 + 按类型汇总；分层阈值 + 按速率
+                          提前预警（撞墙前告诉你）
   restore                 每个 session 一个终端 tab，全部接回
     restore --pick|-p     列出来选（编号 / 回车=全部 / q=取消）
     restore <名字>         按名字把当前 tab 接回指定 session

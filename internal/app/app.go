@@ -66,6 +66,8 @@ func Run(argv []string) int {
 		return cmdAgents(args)
 	case "digest", "dg":
 		return cmdDigest(args)
+	case "usage":
+		return cmdUsage(args)
 	case "hq":
 		return cmdHQ(args)
 	case "status", "st":
