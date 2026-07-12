@@ -502,7 +502,7 @@ export function DetailView({agent, onBack}: {agent: Agent; onBack?: () => void})
           // pending bubble until the transcript refetch confirms it.
           if (p.text) setPendingPrompt(p.text);
         }}
-        onUpload={(uri, name, type) => client.upload(uri, name, type)}
+        onUpload={(uri, name, type, onProgress) => client.upload(uri, name, type, onProgress)}
       />
 
       {/* "what did the agent change" — git diff of the pane's cwd */}

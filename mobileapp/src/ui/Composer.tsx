@@ -14,6 +14,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  Image,
   InputAccessoryView,
   KeyboardAvoidingView,
   Modal,
@@ -32,13 +33,13 @@ import {pick} from '@react-native-documents/picker';
 import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
-import {Palette} from './theme';
+import {Palette, StatusColor} from './theme';
 import {ImageMarkup} from './ImageMarkup';
 import {SnippetsModal} from './SnippetsModal';
 import {SnippetsPicker} from './SnippetsPicker';
 import {AttachSheet} from './AttachSheet';
 import {HistoryModal} from './HistoryModal';
-import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon, ExpandIcon} from './Icons';
+import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon, ExpandIcon, FileIcon} from './Icons';
 import {loadSnippets, saveSnippets} from '../state/snippets';
 import {loadHistory, saveHistory, pushHistory} from '../state/history';
 
@@ -46,6 +47,10 @@ import {loadHistory, saveHistory, pushHistory} from '../state/history';
 // default assistant bar instead of stacking another sparse row above it).
 const ACCESSORY_ID = 'gtmux-composer-keys';
 const ACCENT = '#06B6D4';
+
+// A staged attachment — picked (and, for images, edited) but not yet uploaded. It
+// uploads on SEND. `isImage` drives thumbnail vs file-chip rendering.
+type Attachment = {id: string; uri: string; name: string; type: string; isImage: boolean};
 
 // A waiting prompt's reply is NOT offered here: the ApprovalCard (shown above the
 // composer whenever waiting, from GET /api/options) already renders the agent's
@@ -79,12 +84,25 @@ export function Composer({
   enabled?: boolean;
   returnSends?: boolean; // D7: when off (default) Return = newline; send via ↑ only
   onSend?: (p: SendPayload) => void;
-  onUpload?: (uri: string, name: string, type: string) => Promise<string | null>;
+  onUpload?: (
+    uri: string,
+    name: string,
+    type: string,
+    onProgress?: (fraction: number) => void,
+  ) => Promise<string | null>;
 }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
   const [inputH, setInputH] = useState(0); // measured content height, for 1→6 line auto-grow
-  const [uploading, setUploading] = useState(false);
+  // Staged attachments (iMessage-style): picked/edited but NOT uploaded yet. They
+  // upload on SEND, together with the typed text — never on pick. `sending` guards
+  // the upload; `progress` is the per-attachment fraction; `sendError` surfaces a
+  // failure so nothing is lost and the user can retry.
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState<Record<string, number>>({});
+  const [sendError, setSendError] = useState<string | null>(null);
+  const attachId = useRef(0);
   const [markupUri, setMarkupUri] = useState<string | null>(null);
   const [snippets, setSnippets] = useState<string[]>([]);
   const [snippetsOpen, setSnippetsOpen] = useState(false); // the picker sheet
@@ -115,18 +133,54 @@ export function Composer({
   const send = (p: SendPayload) => {
     if (enabled && onSend) onSend(p);
   };
-  const sendText = () => {
-    if (!text) return;
+  // Send = upload every staged attachment (with progress), THEN send one message
+  // combining the uploaded paths + the typed text. On an upload failure nothing is
+  // cleared — the text + attachments stay staged and `sendError` invites a retry.
+  const sendText = async () => {
+    if (sending) return;
+    const body = text.trim();
+    if (!body && attachments.length === 0) return;
     const now = Date.now();
     if (now - lastSubmit.current < 600) return;
     lastSubmit.current = now;
-    send({text, enter: true});
-    setHistory(h => {
-      const next = pushHistory(h, text);
-      saveHistory(next);
-      return next;
-    });
+
+    let paths: string[] = [];
+    if (attachments.length > 0) {
+      if (!onUpload) return;
+      setSending(true);
+      setSendError(null);
+      setProgress({});
+      const uploaded: string[] = [];
+      for (const att of attachments) {
+        const path = await onUpload(att.uri, att.name, att.type, f =>
+          setProgress(p => ({...p, [att.id]: f})),
+        );
+        if (!path) {
+          setSending(false);
+          setSendError(lang === 'zh' ? '上传失败，点发送重试' : 'Upload failed — tap send to retry');
+          return; // keep text + attachments staged
+        }
+        uploaded.push(path);
+      }
+      paths = uploaded;
+      setSending(false);
+    }
+
+    const parts: string[] = [];
+    if (body) parts.push(body);
+    if (paths.length) parts.push(paths.join('\n'));
+    send({text: parts.join('\n'), enter: true});
+    if (body) {
+      setHistory(h => {
+        const next = pushHistory(h, body);
+        saveHistory(next);
+        return next;
+      });
+    }
     setText('');
+    setAttachments([]);
+    setProgress({});
+    setSendError(null);
   };
 
   // Paste is image-aware: if the clipboard holds an image, open the markup editor
@@ -150,27 +204,30 @@ export function Composer({
     }
   };
 
-  // Upload a picked file to the Mac and drop its path into the input, so the
-  // agent can read it (e.g. "look at /…/screenshot.png").
-  const doUpload = async (uri: string, name: string, type: string) => {
-    if (!onUpload || uploading) return;
-    setUploading(true);
-    const path = await onUpload(uri, name, type);
-    setUploading(false);
-    if (path) {
-      setText(t => (t ? t + ' ' + path : path));
-      openCompose();
-    }
+  // Stage a picked/edited item WITHOUT uploading (upload happens on send). Reveal the
+  // input so the thumbnail + field appear together, ready for a caption.
+  const addAttachment = (uri: string, name: string, type: string, isImage: boolean) => {
+    setAttachments(a => [...a, {id: String(attachId.current++), uri, name, type, isImage}]);
+    setSendError(null);
+    openCompose();
+  };
+  const removeAttachment = (id: string) => {
+    setAttachments(a => a.filter(x => x.id !== id));
+    setProgress(p => {
+      const next = {...p};
+      delete next[id];
+      return next;
+    });
   };
 
-  // Attach → a branded bottom sheet (AttachSheet) with photo library / camera / file
-  // / paste rows, each icon + label. Paste lives here (no top-level pill) — it still
-  // handles a clipboard IMAGE (→ annotate → upload) as well as text.
+  // Attach → a branded bottom sheet (AttachSheet). Photos (camera/library/paste)
+  // route through the markup EDITOR first (annotate → stage a thumbnail); files stage
+  // directly. Nothing uploads until send.
   const pickPhoto = async () => {
     try {
       const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
       const a = r.assets?.[0];
-      if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
+      if (a?.uri) setMarkupUri(a.uri); // edit first → onDone stages the thumbnail
     } catch {
       // cancelled or unsupported — ignore.
     }
@@ -179,7 +236,7 @@ export function Composer({
     try {
       const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
       const a = r.assets?.[0];
-      if (a?.uri) await doUpload(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg');
+      if (a?.uri) setMarkupUri(a.uri); // edit first → onDone stages the thumbnail
     } catch {
       // cancelled or unsupported — ignore.
     }
@@ -187,7 +244,7 @@ export function Composer({
   const pickFile = async () => {
     try {
       const [f]: any = await pick();
-      if (f?.uri) await doUpload(f.uri, f.name ?? 'file', f.type ?? 'application/octet-stream');
+      if (f?.uri) addAttachment(f.uri, f.name ?? 'file', f.type ?? 'application/octet-stream', false);
     } catch {
       // cancelled or unsupported — ignore.
     }
@@ -272,22 +329,60 @@ export function Composer({
 
   // attach + free input + send — shown while composing (tap ⌨ to reveal). The
   // TextInput auto-focuses on mount so the keyboard rises exactly then; on iOS the
-  // key row rides up docked to the keyboard (inputAccessoryViewID).
+  // key row rides up docked to the keyboard (inputAccessoryViewID). Staged
+  // attachments show as a thumbnail strip ABOVE the input (the field wraps below),
+  // with a per-thumbnail upload % overlay during send and a × to remove before it.
+  const canSend = text.trim().length > 0 || attachments.length > 0;
   const renderInputRow = () => (
-    <View style={styles.inputRow}>
-      <TouchableOpacity
-        testID={TestIds.composer.attach}
-        accessibilityLabel={TestIds.composer.attach}
-        onPress={() => setAttachOpen(true)}
-        disabled={!enabled || uploading || !onUpload}
-        style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-        {uploading ? (
-          <ActivityIndicator size="small" color={pal.fg3} />
-        ) : (
+    <View>
+      {attachments.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          contentContainerStyle={styles.thumbStrip}>
+          {attachments.map(att => (
+            <View key={att.id} style={[styles.thumbWrap, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+              {att.isImage ? (
+                <Image source={{uri: att.uri}} style={styles.thumbImg} resizeMode="cover" />
+              ) : (
+                <View style={styles.thumbFile}>
+                  <FileIcon size={20} color={pal.fg2} />
+                  <Text numberOfLines={1} style={[styles.thumbName, {color: pal.fg2}]}>
+                    {att.name}
+                  </Text>
+                </View>
+              )}
+              {sending && progress[att.id] != null ? (
+                <View style={styles.thumbOverlay}>
+                  <Text style={styles.thumbPct}>{Math.round((progress[att.id] || 0) * 100)}%</Text>
+                </View>
+              ) : (
+                !sending && (
+                  <TouchableOpacity
+                    onPress={() => removeAttachment(att.id)}
+                    accessibilityLabel={`attach-remove-${att.id}`}
+                    hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+                    style={styles.thumbRemove}>
+                    <Text style={styles.thumbRemoveX}>×</Text>
+                  </TouchableOpacity>
+                )
+              )}
+            </View>
+          ))}
+        </ScrollView>
+      )}
+      {sendError && <Text style={[styles.sendError, {color: StatusColor.waiting}]}>{sendError}</Text>}
+      <View style={styles.inputRow}>
+        <TouchableOpacity
+          testID={TestIds.composer.attach}
+          accessibilityLabel={TestIds.composer.attach}
+          onPress={() => setAttachOpen(true)}
+          disabled={!enabled || sending || !onUpload}
+          style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
           <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
-        )}
-      </TouchableOpacity>
-      <TextInput
+        </TouchableOpacity>
+        <TextInput
         testID={TestIds.composer.input}
         value={text}
         onChangeText={setText}
@@ -330,10 +425,15 @@ export function Composer({
         testID={TestIds.composer.send}
         accessibilityLabel={TestIds.composer.send}
         onPress={sendText}
-        disabled={!enabled || !text}
-        style={[styles.send, {backgroundColor: text ? ACCENT : pal.surface, borderColor: text ? ACCENT : pal.divider}]}>
-        <Text style={[styles.sendText, {color: text ? '#fff' : pal.fg3}]}>↑</Text>
+        disabled={!enabled || sending || !canSend}
+        style={[styles.send, {backgroundColor: canSend ? ACCENT : pal.surface, borderColor: canSend ? ACCENT : pal.divider}]}>
+        {sending ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={[styles.sendText, {color: canSend ? '#fff' : pal.fg3}]}>↑</Text>
+        )}
       </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -473,7 +573,7 @@ export function Composer({
         onCancel={() => setMarkupUri(null)}
         onDone={fileUri => {
           setMarkupUri(null);
-          doUpload(fileUri, 'markup.png', 'image/png');
+          addAttachment(fileUri, 'markup.png', 'image/png', true);
         }}
       />
     </View>
@@ -516,4 +616,17 @@ const styles = StyleSheet.create({
   fcInput: {flex: 1, fontSize: 16, lineHeight: 22, padding: 16, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
   send: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
   sendText: {fontSize: 19, fontWeight: '700'},
+  // Staged-attachment thumbnail strip (above the input, so the field wraps below).
+  thumbStrip: {flexDirection: 'row', alignItems: 'center', paddingTop: 8, paddingRight: 8},
+  thumbWrap: {width: 60, height: 60, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, marginRight: 8, overflow: 'hidden'},
+  thumbImg: {width: '100%', height: '100%'},
+  thumbFile: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4},
+  thumbName: {fontSize: 8, marginTop: 3, maxWidth: 54},
+  // dim overlay with the live upload %, shown per thumbnail during send.
+  thumbOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center'},
+  thumbPct: {color: '#fff', fontSize: 13, fontWeight: '800'},
+  // the × remove chip, top-right of a thumbnail (hidden while uploading).
+  thumbRemove: {position: 'absolute', top: 2, right: 2, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center'},
+  thumbRemoveX: {color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 17},
+  sendError: {fontSize: 12, fontWeight: '600', marginTop: 8, marginLeft: 2},
 });

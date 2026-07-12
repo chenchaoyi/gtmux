@@ -178,17 +178,43 @@ export class GtmuxClient {
 
   // upload sends a file to the Mac and returns the saved path (to reference to an
   // agent), or null. Multipart — don't set Content-Type (RN adds the boundary).
-  async upload(uri: string, name: string, type: string): Promise<string | null> {
-    const form = new FormData();
-    form.append('file', {uri, name, type} as any);
-    try {
-      const r = await tfetch(`${this.base}/api/upload`, {method: 'POST', headers: this.h(), body: form});
-      if (!r.ok) return null;
-      const j = await r.json();
-      return typeof j?.path === 'string' ? j.path : null;
-    } catch {
-      return null;
-    }
+  // Uses XMLHttpRequest (not fetch) so `onProgress` can report the upload fraction
+  // (0..1) — fetch+FormData exposes NO upload progress in RN, and a large photo needs
+  // real feedback. Returns null on any failure (network, non-2xx, bad body) so the
+  // caller can keep the attachment staged and offer a retry.
+  upload(
+    uri: string,
+    name: string,
+    type: string,
+    onProgress?: (fraction: number) => void,
+  ): Promise<string | null> {
+    return new Promise(resolve => {
+      const form = new FormData();
+      form.append('file', {uri, name, type} as any);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${this.base}/api/upload`);
+      for (const [k, v] of Object.entries(this.h())) xhr.setRequestHeader(k, v);
+      if (onProgress && xhr.upload) {
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+        };
+      }
+      xhr.onload = () => {
+        try {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const j = JSON.parse(xhr.responseText);
+            resolve(typeof j?.path === 'string' ? j.path : null);
+          } else {
+            resolve(null);
+          }
+        } catch {
+          resolve(null);
+        }
+      };
+      xhr.onerror = () => resolve(null);
+      xhr.ontimeout = () => resolve(null);
+      xhr.send(form);
+    });
   }
 
   // iconUri is an authed <Image> source for an agent's official icon (served from

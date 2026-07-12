@@ -14,14 +14,46 @@ const okJson = (body: any, ok = true, status = 200) =>
     json: async () => body,
   } as unknown as Response);
 
+// upload() uses XMLHttpRequest (for progress), which jest's node env lacks. A
+// minimal fake records the request and lets a test drive the outcome (onload with a
+// status/body, or onerror). send() pushes the instance so the test can grab it.
+class MockXHR {
+  static instances: MockXHR[] = [];
+  method = '';
+  url = '';
+  headers: Record<string, string> = {};
+  status = 0;
+  responseText = '';
+  body: any = null;
+  upload: {onprogress?: (e: {lengthComputable: boolean; loaded: number; total: number}) => void} = {};
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  ontimeout: (() => void) | null = null;
+  open(m: string, u: string) {
+    this.method = m;
+    this.url = u;
+  }
+  setRequestHeader(k: string, v: string) {
+    this.headers[k] = v;
+  }
+  send(b: any) {
+    this.body = b;
+    MockXHR.instances.push(this);
+  }
+}
+const lastXHR = () => MockXHR.instances[MockXHR.instances.length - 1];
+
 beforeEach(() => {
   fetchMock = jest.fn();
   (globalThis as any).fetch = fetchMock;
+  MockXHR.instances = [];
+  (globalThis as any).XMLHttpRequest = MockXHR;
 });
 
 afterEach(() => {
   jest.restoreAllMocks();
   delete (globalThis as any).fetch;
+  delete (globalThis as any).XMLHttpRequest;
 });
 
 const client = () => new GtmuxClient(BASE, TOKEN);
@@ -179,33 +211,47 @@ describe('send', () => {
 });
 
 describe('upload', () => {
-  it('POSTs multipart FormData with bearer and returns the saved path', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({path: '/tmp/saved.png'}, true));
-    const path = await client().upload('file:///x.png', 'x.png', 'image/png');
-    expect(path).toBe('/tmp/saved.png');
-
-    const [url, init] = call();
-    expect(url).toBe(`${BASE}/api/upload`);
-    expect(init?.method).toBe('POST');
-    expect((init?.headers as any).Authorization).toBe(AUTH);
+  it('POSTs multipart FormData with bearer, reports progress, returns the saved path', async () => {
+    const fracs: number[] = [];
+    const p = client().upload('file:///x.png', 'x.png', 'image/png', f => fracs.push(f));
+    const xhr = lastXHR();
+    expect(xhr.method).toBe('POST');
+    expect(xhr.url).toBe(`${BASE}/api/upload`);
+    expect(xhr.headers.Authorization).toBe(AUTH);
     // Multipart: must NOT set Content-Type (RN adds the boundary).
-    expect((init?.headers as any)['Content-Type']).toBeUndefined();
-    expect(init?.body).toBeInstanceOf(FormData);
+    expect(xhr.headers['Content-Type']).toBeUndefined();
+    expect(xhr.body).toBeInstanceOf(FormData);
+
+    xhr.upload.onprogress?.({lengthComputable: true, loaded: 5, total: 10});
+    xhr.status = 200;
+    xhr.responseText = JSON.stringify({path: '/tmp/saved.png'});
+    xhr.onload?.();
+    expect(await p).toBe('/tmp/saved.png');
+    expect(fracs).toEqual([0.5]);
   });
 
   it('returns null when the response is not ok', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({path: '/x'}, false, 413));
-    expect(await client().upload('file:///x', 'x', 'image/png')).toBeNull();
+    const p = client().upload('file:///x', 'x', 'image/png');
+    const xhr = lastXHR();
+    xhr.status = 413;
+    xhr.responseText = JSON.stringify({path: '/x'});
+    xhr.onload?.();
+    expect(await p).toBeNull();
   });
 
   it('returns null when the body has no string path', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({path: 123}, true));
-    expect(await client().upload('file:///x', 'x', 'image/png')).toBeNull();
+    const p = client().upload('file:///x', 'x', 'image/png');
+    const xhr = lastXHR();
+    xhr.status = 200;
+    xhr.responseText = JSON.stringify({path: 123});
+    xhr.onload?.();
+    expect(await p).toBeNull();
   });
 
-  it('returns null (swallows) when fetch rejects', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('boom'));
-    expect(await client().upload('file:///x', 'x', 'image/png')).toBeNull();
+  it('returns null (swallows) when the request errors', async () => {
+    const p = client().upload('file:///x', 'x', 'image/png');
+    lastXHR().onerror?.();
+    expect(await p).toBeNull();
   });
 });
 
