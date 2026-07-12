@@ -95,3 +95,8 @@ func Wrap(command string) string {
 	}
 	return Prefix() + command
 }
+
+// Active returns the proxy URL a launch WOULD apply on this network ("" = none) —
+// the resolved value the `gtmux spawn` pre-flight reports so a dispatcher can see
+// whether the launch is proxied (a bare, un-proxied launch is the incident-① 403).
+func Active() string { return proxyURL() }

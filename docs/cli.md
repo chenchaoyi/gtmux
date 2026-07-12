@@ -105,9 +105,61 @@ When another agent starts **waiting** and an hq session is live, the hook types
 one event line into it — `[gtmux] waiting·permission api:0.0 (%7) — <title>` —
 so the supervisor learns of blockers without polling (same dedup as
 notifications; never about itself; `"hqNudge": false` in
-`~/.config/gtmux/config.json` disables). The nudge only informs: gtmux never
-answers another agent's prompt, and the default policy tells the supervisor to
+`~/.config/gtmux/config.json` disables). The channel is two-sided and covers more
+than menu waits: `[gtmux] resolved …` when a wait CLEARS (the user answered
+in-pane, or the agent resumed — so hq drops any stale chase), `[gtmux] asks … "…"`
+when a turn-end REPLY asks a question with no menu (the case a menu-only sensor
+misses), `[gtmux] done …` when a dispatched task finishes, and
+`[gtmux] reap-suggest … · gtmux reap <id>` when a dispatch looks reclaimable.
+Ordinary progress turns stay pull-only on `gtmux events --follow` (hq isn't
+flooded). The nudge only informs: gtmux never answers another agent's prompt, never
+sends navigation keys into a TUI, and the default policy tells the supervisor to
 surface decisions to you, not take them.
+
+## `gtmux spawn` / `gtmux tasks` / `gtmux reap` — verified dispatch
+
+`gtmux spawn <goal>` dispatches new work to a coding agent and confirms it actually
+LANDED — the supervisor's (and your) reliable way to start a task without hand-rolled
+tmux choreography:
+
+```
+gtmux spawn "add a --dry-run flag to the deploy script"
+gtmux spawn --worktree feat/dry-run --model opus "add a --dry-run flag"
+gtmux spawn --pane %14 "keep going, then run the tests"
+gtmux spawn --json "…"   # → {task_id, pane_id, session, delivered, state, evidence}
+```
+
+It launches the agent (a fresh detached session by default, or `--pane <id>` to reuse
+one, or `--worktree <branch>` to run in an isolated git worktree), **through the
+network proxy by construction** (never a bare, un-proxied launch that would 403),
+waits for the agent to come up, then delivers the task via a tmux **paste buffer** and
+**verifies** it landed. Verification is layered: for a hook-equipped agent (Claude
+Code, …) it prefers the deterministic `UserPromptSubmit` event on the #388
+session-events stream (no screen-scraping); otherwise it falls back to a hardened,
+two-frame screen-read that locates the input box structurally. The ONLY success is a
+confirmed landing — a swallowed Enter is re-sent with backoff, a fragment paste is
+retried, and a timeout reports `delivered:false` with on-screen evidence, never a
+silent success. A queued submission is reported as `state:"queued"`. A **re-send
+interlock** refuses an identical payload to the same pane within a window (so a nervous
+duplicate `/compact` can't double-fire); `--force` overrides it. Pre-flight checks
+(proxy, machine resource, subscription window) are advisory and never block.
+
+`gtmux send <pane> <text>` uses the SAME land-verification by DEFAULT now (returns as
+soon as it confirms, so a healthy send stays fast); `--no-verify` opts out, `--force`
+overrides the interlock, `--key` and the mobile `POST /api/send` path are unchanged
+(the API stays fast).
+
+`gtmux tasks [--json]` is the **dispatch / needs-you ledger**: every task you spawned
+with its live status (waiting / done / working / gone), needs-you first.
+
+`gtmux reap <pane|task_id>` safely reclaims a finished dispatch — it runs a safety gate
+FIRST (the worktree must be clean and the branch merged) and only then kills the
+session, removes the worktree, and deletes the merged branch; when the gate fails it
+reports exactly what blocks it and touches nothing (`--abandon` overrides,
+`--keep-branch` keeps the branch). `--snooze [--for <dur>]` silences a reap suggestion
+for a dispatch you're keeping. When a tracked dispatch looks reclaimable, a live hq
+gets a `[gtmux] reap-suggest … · gtmux reap <id>` nudge — reclaim is always
+suggest → approve → execute, never automatic.
 
 ## `gtmux usage` — token watch
 

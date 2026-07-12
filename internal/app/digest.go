@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
@@ -39,12 +40,16 @@ type digestRow struct {
 	Role    string `json:"role,omitempty"` // "supervisor" for the hq session
 	Project string `json:"project,omitempty"`
 	Branch  string `json:"branch,omitempty"`
-	Goal    string `json:"goal,omitempty"`  // the session's last user prompt
-	Last    string `json:"last,omitempty"`  // tail of the last assistant reply
-	Ask     string `json:"ask,omitempty"`   // waiting only: the parsed prompt options
-	Error   string `json:"error,omitempty"` // errored-idle modifier text
-	Bg      string `json:"bg,omitempty"`    // background-running modifier label
-	Since   int64  `json:"since,omitempty"` // epoch the current state began
+	Goal    string `json:"goal,omitempty"` // the session's last user prompt
+	Last    string `json:"last,omitempty"` // tail of the last assistant reply
+	Ask     string `json:"ask,omitempty"`  // waiting only: the parsed prompt options
+	// Dispatch ledger (hq-dispatch): a pane dispatched by `gtmux spawn` carries its
+	// task goal + lifecycle status. Additive + omitempty — absent for untracked panes.
+	Task       string `json:"task,omitempty"`
+	TaskStatus string `json:"task_status,omitempty"` // waiting | done | working | gone
+	Error      string `json:"error,omitempty"`       // errored-idle modifier text
+	Bg         string `json:"bg,omitempty"`          // background-running modifier label
+	Since      int64  `json:"since,omitempty"`       // epoch the current state began
 	// usage-watch (usage-watch change): the session's token snapshot + the first
 	// breached/projected layer. Zero/empty when no usage data (non-Claude).
 	Tok       int64   `json:"tok,omitempty"`  // cumulative output tokens
@@ -139,6 +144,14 @@ func gatherDigest() []digestRow {
 				row.UsageWarn = uwatch.EvaluateSession(u)
 			}
 		}
+		// Dispatch ledger join: if this pane was dispatched by spawn, surface its
+		// tracked goal + derived lifecycle status (additive).
+		if p.paneID != "" {
+			if tsk, ok := dispatch.TaskForPane(p.paneID); ok {
+				row.Task = tsk.Goal
+				row.TaskStatus = taskStatusFor(p.status)
+			}
+		}
 		out = append(out, row)
 	}
 	return out
@@ -217,6 +230,9 @@ func printDigestRow(r digestRow) {
 	}
 	if r.Ask != "" {
 		fmt.Printf("  %s %s\n", i18n.Tr("asks:", "问你:"), r.Ask)
+	}
+	if r.Task != "" {
+		fmt.Printf("  %s %s (%s)\n", i18n.Tr("task:", "派活:"), r.Task, r.TaskStatus)
 	}
 	if r.Error != "" {
 		fmt.Printf("  %s %s\n", i18n.Tr("error:", "错误:"), snip(r.Error, lastMax))

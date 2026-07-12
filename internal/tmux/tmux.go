@@ -6,7 +6,9 @@ package tmux
 import (
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 // Bin is the resolved path to the tmux binary (may be "" if not found).
@@ -112,6 +114,16 @@ func CapturePaneColor(pane string) string {
 	return out
 }
 
+// CaptureFull returns a pane's visible screen PLUS a bounded scrollback margin as
+// PLAIN text (no ANSI escapes) — the delivery verifier reads it to locate the input
+// box and find a landed message that may have scrolled just above the fold. `-S
+// -200` bounds the scrollback (render/parse cost); no `-e`, so box-drawing/text
+// parsing stays clean. Read-only.
+func CaptureFull(pane string) string {
+	out, _ := runRaw("capture-pane", "-p", "-S", "-200", "-t", pane)
+	return out
+}
+
 // SendText types literal text into a pane (`send-keys -l`, so the text is never
 // interpreted as tmux key names), optionally followed by Enter. This is a WRITE.
 func SendText(pane, text string, enter bool) error {
@@ -131,6 +143,32 @@ func SendText(pane, text string, enter bool) error {
 // pane. Callers MUST validate `key` against an allowlist — it is a tmux key name.
 func SendKey(pane, key string) error {
 	_, err := Run("send-keys", "-t", pane, key)
+	return err
+}
+
+// pasteSeq disambiguates concurrent paste buffers within one process.
+var pasteSeq uint64
+
+// Paste delivers text into a pane WITHOUT interpreting it as keys and WITHOUT an
+// auto-Enter: it stages the bytes on a private tmux paste buffer (`load-buffer -`,
+// byte-exact from stdin) then `paste-buffer -d` (deletes the buffer afterward).
+// This is the delivery path for dispatched task text — `send-keys -l` of a long
+// string mid-TUI errored "not in a mode" and was the vector for both the fragment
+// and the swallowed-Enter failures. Submission (Enter) is a SEPARATE step
+// (SendKey/SendText) so verification can sit between paste and submit and re-send
+// Enter on its own. This is a WRITE.
+func Paste(pane, text string) error {
+	if Bin == "" {
+		return exec.ErrNotFound
+	}
+	buf := "gtmux-dispatch-" + strconv.Itoa(os.Getpid()) + "-" +
+		strconv.FormatUint(atomic.AddUint64(&pasteSeq, 1), 10)
+	load := command("load-buffer", "-b", buf, "-")
+	load.Stdin = strings.NewReader(text)
+	if err := load.Run(); err != nil {
+		return err
+	}
+	_, err := Run("paste-buffer", "-d", "-b", buf, "-t", pane)
 	return err
 }
 

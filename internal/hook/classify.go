@@ -87,6 +87,10 @@ func classify(source, event, tool string) Class {
 		return Class{Lifecycle: "UserPromptSubmit"}
 	case semResponse:
 		return Class{Lifecycle: "Stop"}
+	case semPreCompact:
+		// State-neutral: compaction started. Emitted to the event stream (so a
+		// `/compact` is confirmable) but changes no marker (decide has no case → noop).
+		return Class{Lifecycle: "PreCompact"}
 	case semToolEndResume:
 		// A pending plan/question/approval was just resolved (you answered), so the
 		// agent is working again — clear the wait without notifying.
@@ -96,7 +100,7 @@ func classify(source, event, tool string) Class {
 	case semSessionEnd:
 		return Class{Lifecycle: "SessionEnd"}
 	default:
-		// toolStart, toolEnd, (pre|post)Compact, subagent*, statusNotification,
+		// toolStart, toolEnd, postCompact, subagent*, statusNotification,
 		// unknown → telemetry; no state change, no notify.
 		return Class{}
 	}

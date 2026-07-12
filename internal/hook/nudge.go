@@ -15,7 +15,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -86,4 +88,112 @@ func nudgeSupervisor(waitingPane, kind string) {
 	if tmux.SendText(target, msg, true) == nil {
 		debugf("nudged supervisor pane=%s about=%s kind=%s", target, waitingPane, kind)
 	}
+}
+
+// nudgeHQ types one compact line into a live supervisor pane about aboutPane,
+// gated on hqNudge + a live HQ (that isn't aboutPane itself). The shared path for
+// every non-waiting nudge (resolved / done / asks / reap-suggest).
+func nudgeHQ(aboutPane, msg string) {
+	if aboutPane == "" || !hqNudgeEnabled() {
+		return
+	}
+	target := findSupervisorPane(aboutPane)
+	if target == "" {
+		return
+	}
+	if tmux.SendText(target, msg, true) == nil {
+		debugf("nudged HQ pane=%s: %s", target, msg)
+	}
+}
+
+// nudgeResolved tells HQ that a wait CLEARED (incident ⑤): the user answered in the
+// pane's own window, or the agent resumed — so HQ can drop any pending chase.
+func nudgeResolved(pane, kind string) {
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	msg := "[gtmux] resolved"
+	if loc != "" {
+		msg += " " + loc
+	}
+	msg += " (" + pane + ")"
+	if kind != "" {
+		msg += " — was " + kind
+	}
+	nudgeHQ(pane, msg)
+}
+
+// nudgeDone tells HQ a tracked dispatch finished (its pane went idle after work).
+func nudgeDone(pane, goal string) {
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	msg := "[gtmux] done"
+	if loc != "" {
+		msg += " " + loc
+	}
+	msg += " (" + pane + ")"
+	if goal = strings.TrimSpace(goal); goal != "" {
+		msg += " — " + goal
+	}
+	nudgeHQ(pane, msg)
+}
+
+// nudgeAsking tells HQ that a turn-END reply asked the user a question with NO menu
+// (incident ⑥) — the case the waiting path can't see.
+func nudgeAsking(pane, summary string) {
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	msg := "[gtmux] asks"
+	if loc != "" {
+		msg += " " + loc
+	}
+	msg += " (" + pane + ")"
+	if summary = strings.TrimSpace(summary); summary != "" {
+		msg += ` — "` + summary + `"`
+	}
+	nudgeHQ(pane, msg)
+}
+
+// sweepReapSuggestions scans tracked dispatches for reap CANDIDATES (idle-after-work
+// past the threshold, branch merged or absent, not snoozed, not already suggested)
+// and nudges HQ once per candidate with the exact `gtmux reap` command (incident ⑦).
+// Runs on Stop only when a live HQ exists, so the git checks touch only rare
+// candidates. Suggests only — never reclaims (that stays suggest→approve→execute).
+func sweepReapSuggestions() {
+	if !hqNudgeEnabled() || findSupervisorPane("") == "" {
+		return
+	}
+	now := time.Now().Unix()
+	tune := dispatch.LoadTuning()
+	for _, t := range dispatch.ListTasks() {
+		if t.Pane == "" || t.Snoozed(now) || dispatch.ReapSuggested(t.ID) {
+			continue
+		}
+		since := paneIdleSince(t.Pane)
+		if since == 0 || now-since < tune.ReapIdleThreshold {
+			continue // not idle, or not idle long enough
+		}
+		if t.Branch != "" && t.Worktree != "" {
+			if merged, err := dispatch.BranchMerged(t.Worktree, t.Branch); err != nil || !merged {
+				continue // only suggest a merged (safely reclaimable) dispatch
+			}
+		}
+		loc := tmux.Display(t.Pane, "#{session_name}:#{window_index}.#{pane_index}")
+		msg := "[gtmux] reap-suggest " + loc + " (" + t.Pane + ")"
+		if t.Goal != "" {
+			msg += " — " + t.Goal
+		}
+		msg += "  ·  gtmux reap " + t.ID
+		nudgeHQ(t.Pane, msg)
+		dispatch.MarkReapSuggested(t.ID)
+	}
+}
+
+// paneIdleSince returns when a pane's turn finished (its finished marker mtime), or
+// 0 when it is not idle (no finished marker, or an active/waiting marker present).
+func paneIdleSince(pane string) int64 {
+	if state.Exists(state.ActivePath(pane)) || state.Exists(state.WaitingPath(pane)) {
+		return 0
+	}
+	fi, err := os.Stat(state.FinishedPath(pane))
+	if err != nil {
+		return 0
+	}
+	return fi.ModTime().Unix()
 }
