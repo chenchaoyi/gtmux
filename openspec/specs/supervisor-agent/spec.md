@@ -15,7 +15,9 @@ CLAUDE.md containing an `@AGENTS.md` import for Claude, so ONE canonical file
 serves any supervisor agent (`--agent`/`GTMUX_HQ_AGENT` pick which runs) —
 loop — read `gtmux digest --json`, judge, drill into a pane
 (`tmux capture-pane`) only when warranted, drive via `gtmux send`, report to the
-user — and SHALL never be overwritten once present, so the user can edit it and
+user with a token-usage section ALWAYS included in status reports (the per-type
+rollup + any `usage_warn` sessions, via `gtmux usage --json`) — and SHALL never
+be overwritten once present, so the user can edit it and
 the supervisor's accumulated knowledge persists across sessions.
 
 #### Scenario: First launch seeds the home
