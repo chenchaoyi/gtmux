@@ -145,6 +145,22 @@ tick).
 > listening** (your proxy tool is running — the home-VPN case) and nothing
 > otherwise (intranet); an explicit URL forces it, `"off"` disables.
 
+## `gtmux events` — the session event stream (subscription)
+
+```
+22:50:40  working          api:0.0        Claude Code (%7)
+22:51:02  waiting·permission  api:0.0     Claude Code (%7)
+22:53:19  idle             web:1.0        Codex (%11)
+```
+
+The hook appends every session's lifecycle event (start / finish / waiting /
+background) to a ROTATED log (`~/.local/share/gtmux/events.jsonl`, active 20 MB +
+1 rotated ≈ 40 MB ceiling, `eventsCapMB` config; `0` disables). `gtmux events`
+prints the last hour; `--since 10m|2h` a window; `--follow` streams live and is
+rotation-aware (never silently stops). This is the terminal-native SUBSCRIPTION
+to the same events the apps get over SSE — gtmux HQ tails it to stay aware of any
+session's execution without re-polling.
+
 ## `gtmux limits` — real subscription-window remaining
 
 ```

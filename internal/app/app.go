@@ -68,6 +68,8 @@ func Run(argv []string) int {
 		return cmdDigest(args)
 	case "usage":
 		return cmdUsage(args)
+	case "events":
+		return cmdEvents(args)
 	case "limits":
 		return cmdLimits(args)
 	case "hq":
