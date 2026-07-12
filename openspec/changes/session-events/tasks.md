@@ -1,9 +1,14 @@
 # Tasks — session-events
 
-- [ ] 1.1 `internal/events`: Append(record) with bounded front-truncate (size cap
-      like restore.log); Read(since) + Follow (tail). Record = {ts,event,state,
-      pane,loc,session,agent,kind}. Unit tests (append/rotate/since parse).
-- [ ] 1.2 hook: append one record per event after decide()/applyState — additive,
+- [ ] 1.1 `internal/events`: Append(record) with SIZE-TRIGGERED ROTATION (rename
+      active→events.1.jsonl at a cap, keep K generations, total bounded; rename is
+      atomic-ish, O_APPEND single-line writes). Record = {ts,event,state,pane,loc,
+      session,agent,kind}. Unit tests: append, rotate-at-cap, generation-pruning,
+      concurrent-append integrity.
+- [ ] 1.2b Read(since) across generations + Follow with tail -F semantics
+      (re-open on rotation/inode-change so following never stops). Test rotation
+      mid-follow.
+- [ ] 1.3 hook: append one record per event after decide()/applyState — additive,
       never blocks the hook; native (no pane) events included.
 - [ ] 2.1 `gtmux events [--follow] [--json] [--since <dur>]`.
 - [ ] 3.1 HQ playbook + knowledge: `gtmux events --follow` as the subscription

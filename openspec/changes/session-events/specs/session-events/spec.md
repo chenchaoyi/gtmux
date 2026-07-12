@@ -9,8 +9,10 @@ session, tmux or native — to a bounded log at `~/.local/share/gtmux/events.jso
 fed by the SAME hook that writes the state markers and the notify queue (additive;
 those are unchanged). Each record SHALL carry at least a timestamp, the event, the
 derived state, and the session's identity (pane/loc/session/agent) plus the
-waiting kind when applicable. The log SHALL be size-bounded (older lines dropped
-past a cap) so it never grows without limit.
+waiting kind when applicable. The log SHALL ROTATE at a size cap — the active file
+renamed to a numbered generation and a fresh one started, keeping a bounded number
+of generations — so total on-disk size is bounded and it can never single-point-
+explode.
 
 #### Scenario: Every event is logged
 
@@ -18,10 +20,17 @@ past a cap) so it never grows without limit.
 - **THEN** a JSON line for it is appended to events.jsonl, with ts/event/state/
   identity, without altering the existing markers or notify queue
 
-#### Scenario: The log is bounded
+#### Scenario: The log rotates and stays bounded
 
-- **WHEN** the log exceeds its size cap
-- **THEN** the oldest lines are dropped so it stays within the cap
+- **WHEN** the active log exceeds its size cap
+- **THEN** it is rotated to a numbered generation and a fresh file starts; old
+  generations beyond the retained count are removed, so total size stays bounded
+
+#### Scenario: Follow survives rotation
+
+- **WHEN** `gtmux events --follow` is running and the log rotates
+- **THEN** the follower re-opens the new file and keeps emitting new events (it
+  does not silently stop)
 
 ### Requirement: Events reader and subscription
 
