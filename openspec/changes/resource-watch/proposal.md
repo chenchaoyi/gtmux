@@ -19,10 +19,12 @@ free, load 7.9/14 cores.)
   - **Per-agent attribution (the differentiator)**: for each radar pane, walk the
     process tree from its pane PID and sum RSS + CPU% — resource use attributed to
     a specific agent, isomorphic to token accounting. Surfaced per digest/usage row.
-  - **Reclaim candidates (actionable)**: heavy processes NOT owned by any live
-    pane — the orphans a session left behind (a leftover iOS Simulator runtime, a
-    still-listening dev server on :8899, …) — named with pid + how to reclaim, so
-    the advice is executable, not vague.
+  - **Reclaim candidates (actionable) — heuristic + whitelist (decided)**: the
+    general rule is a heavy process NOT under any live pane's tree AND not in a
+    gtmux/system whitelist → an orphan candidate; a curated pattern set (iOS
+    Simulator/CoreSimulator runtimes, dev servers still listening on a port,
+    stray tmux servers, …) raises confidence + a specific reclaim hint. Each named
+    with pid + how to reclaim, so the advice is executable, not vague.
   - **Thresholds/tiers** (config, defaults sane): disk amber/red on free %/GB,
     load ratio (load÷ncpu), memory from the memory_pressure tier. Evaluated on the
     **serve tick** (resources drift continuously, not per agent event).
