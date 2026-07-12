@@ -70,6 +70,8 @@ func Run(argv []string) int {
 		return cmdUsage(args)
 	case "events":
 		return cmdEvents(args)
+	case "resource", "res":
+		return cmdResource(args)
 	case "limits":
 		return cmdLimits(args)
 	case "hq":

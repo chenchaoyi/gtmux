@@ -26,6 +26,10 @@ const pingInterval = 20 * time.Second
 // you're away doesn't go unnoticed. Re-nudges repeat every interval until you act.
 const renudgeInterval = 5 * time.Minute
 
+// slowTickInterval paces the resource/limits evaluator (df/ps/memory sampling +
+// the resource·warn/limits·warn nudge) — much slower than the SSE tick.
+const slowTickInterval = 20 * time.Second
+
 // AgentStatus is the lean per-pane snapshot the events loop diffs — a subset of
 // the full `agents --json` contract. The REST GET /api/agents remains the one
 // authoritative payload; SSE only signals "something changed, refetch".
@@ -167,13 +171,14 @@ func (c ClientInfo) dedupKey() string {
 // waiting/done transition. onAlert (optional) lets a push manager hook the same
 // transitions without re-deriving them.
 type hub struct {
-	statuses  func() []AgentStatus
-	onAlert   func(Alert)
-	onTally   func(Tally)        // fired when the status tally changes (Live Activity push)
-	onClients func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
-	interval  time.Duration
-	renudge   time.Duration    // re-alert a still-waiting pane after this long
-	now       func() time.Time // injectable clock (tests)
+	statuses   func() []AgentStatus
+	onAlert    func(Alert)
+	onTally    func(Tally)        // fired when the status tally changes (Live Activity push)
+	onClients  func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
+	interval   time.Duration
+	onSlowTick func()           // resource/limits evaluator, single-goroutine (no nudge race)
+	renudge    time.Duration    // re-alert a still-waiting pane after this long
+	now        func() time.Time // injectable clock (tests)
 
 	mu   sync.Mutex
 	subs map[chan sseEvent]ClientInfo
@@ -443,8 +448,13 @@ func (h *hub) run(ctx context.Context) {
 	h.tick() // publish an initial snapshot immediately
 	t := time.NewTicker(h.interval)
 	ping := time.NewTicker(pingInterval)
+	slow := time.NewTicker(slowTickInterval)
 	defer t.Stop()
 	defer ping.Stop()
+	defer slow.Stop()
+	if h.onSlowTick != nil {
+		h.onSlowTick() // an initial evaluation right away
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -453,6 +463,10 @@ func (h *hub) run(ctx context.Context) {
 			h.tick()
 		case <-ping.C:
 			h.broadcast(sseEvent{name: "ping", data: []byte("{}")})
+		case <-slow.C:
+			if h.onSlowTick != nil {
+				h.onSlowTick()
+			}
 		}
 	}
 }

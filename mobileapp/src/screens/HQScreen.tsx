@@ -41,6 +41,7 @@ export function HQScreen({route, navigation}: any) {
 
   const [digest, setDigest] = useState<DigestRow[]>([]);
   const [week, setWeek] = useState<{label: string; pct: number}[]>([]);
+  const [res, setRes] = useState<{warn?: string; diskGB?: number; memTier?: string} | null>(null);
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [pending, setPending] = useState<string | undefined>();
@@ -62,6 +63,8 @@ export function HQScreen({route, navigation}: any) {
         if (!alive) return;
         const w = (u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used}));
         setWeek(w);
+        const m = u?.resource?.machine;
+        setRes(m ? {warn: m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier} : null);
       });
     };
     load();
@@ -156,6 +159,13 @@ export function HQScreen({route, navigation}: any) {
             )}
             {week.length > 0 && '  ·  ' + week.map(w => `${planLabel(w.label, lang)} ${w.pct}%`).join(' · ')}
           </Text>
+          {res && (res.warn || res.diskGB != null) && (
+            <Text style={[styles.sub, {color: res.warn ? '#F59E0B' : pal.fg3}]} numberOfLines={1}>
+              {res.warn
+                ? '⚠ ' + res.warn
+                : `${lang === 'zh' ? '磁盘' : 'disk'} ${res.diskGB}GB · ${lang === 'zh' ? '内存' : 'mem'} ${res.memTier}`}
+            </Text>
+          )}
         </View>
       </View>
 

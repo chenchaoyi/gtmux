@@ -181,6 +181,7 @@ func cmdHQ(args []string) int {
 		return 1
 	}
 
+	preflightResource() // warn (not block) if a machine resource is at its red line
 	seeded, err := seedHQHome()
 	if err != nil {
 		i18n.Sae("gtmux hq: "+err.Error(), "gtmux hq: "+err.Error())
@@ -254,6 +255,9 @@ tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的
   spend rate, and threshold warnings, plus per-agent-type rollups. 用量与预警。
 - ` + "`gtmux limits --json`" + ` — REAL subscription-window remaining (5h session +
   weekly %, with reset times), from the plan itself. 订阅额度真实余量。
+- ` + "`gtmux resource --json`" + ` — local disk/memory/CPU, per-agent RSS/CPU, and
+  RECLAIM CANDIDATES (heavy orphan processes no live agent owns, named with pid +
+  how to reclaim). 本机资源 + 可回收孤儿进程。
 - ` + "`tmux capture-pane -p -t <pane_id>`" + ` — drill into ONE pane's live screen, only
   when the digest says it's worth it (waiting/errored/stuck). 需要细节才下钻。
 - ` + "`gtmux send <pane_id> <text>`" + ` — type into a pane (+Enter). ` + "`--key <name>`" + ` for a
@@ -284,7 +288,11 @@ user request: check its digest row, then follow the policy below.
    it to the user with your recommendation. 绝不代替用户回答权限/方案选择。
 3. Driving (send) is fine for routine, reversible follow-ups the user asked for in
    conversation ("让它继续", "让它跑测试"). Say what you sent and to whom.
-4. Be terse. The user reads you on a phone half the time.
+4. WEIGH RESOURCES when dispatching (` + "`gtmux resource`" + `): if disk/memory/CPU
+   is at amber/red, do NOT pile on — recommend reclaiming a named orphan (give the
+   exact command from the reclaim hint) or holding new sessions until it clears.
+   派活前看资源;紧张时先给可执行的回收建议或建议暂缓新 session,别硬上。
+5. Be terse. The user reads you on a phone half the time.
 
 ## Knowledge base — YOUR SINGLE MOST IMPORTANT JOB · 知识库(你最大的用途)
 

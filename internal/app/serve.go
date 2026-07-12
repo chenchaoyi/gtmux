@@ -155,6 +155,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		DigestJSON: digestJSONBytes,
 		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
 		UsageJSON: usageJSONBytes,
+		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
+		OnSlowTick: slowTickEval,
 		// The approval card's options are gated on the hook waiting marker, not screen
 		// text (an idle pane showing a numbered list must not surface an approval menu).
 		IsWaiting:  func(id string) bool { return state.Exists(state.WaitingPath(id)) },
