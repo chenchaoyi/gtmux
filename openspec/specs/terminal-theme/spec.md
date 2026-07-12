@@ -2,11 +2,15 @@
 
 ## Purpose
 
-Make the mobile + browser terminal mirror AUTO-MATCH the user's real host
-terminal (Ghostty/iTerm2/default) — colors, 16-color palette, cursor, and font —
-resolved server-side and served over the API, with a mobile font picker (Match
-terminal / System / a bundled monospace set) for manual override. The radar
-status-language colors are semantic and are never themed.
+Make the terminal mirror AUTO-MATCH the user's real host terminal
+(Ghostty/iTerm2/default) — resolved server-side and served over the API. The BROWSER
+mirror matches colors, 16-color palette, cursor, AND font (a font picker + bundled
+fonts). The MOBILE app (native `<Text>` renderer) matches colors, palette, and cursor,
+and renders text in the SYSTEM monospace — font-bundling/selection is browser-only;
+mobile font SIZE is a local per-pane control. The radar status-language colors are
+semantic and are never themed. (The mobile side once bundled fonts + had a picker back
+when it used xterm-in-a-webview; that renderer was removed in #346 and the native
+renderer never regained font-bundling — the spec below matches today's reality.)
 
 ## Requirements
 
@@ -50,54 +54,49 @@ reflected. Existing `/api/*` contracts SHALL be unchanged.
 - **WHEN** an authenticated client GETs `/api/theme`
 - **THEN** it receives the resolved Theme JSON (`source`, colors, palette, font)
 
-### Requirement: Apply the terminal theme on the mobile and browser surfaces
+### Requirement: Apply the terminal theme on the pane surfaces
 
-Both the mobile xterm view and the browser mirror SHALL, by default ("match my
-terminal" ON), fetch `/api/theme` and apply it to the pane render — background,
-foreground, cursor, selection, and the 16-color palette — replacing the previously
-hard-coded values. The terminal's `fontFamily` SHALL map to a bundled font when it
-matches; otherwise the default bundled font is used (colors still apply). The radar
-status-language colors SHALL NOT be themed.
+Both the mobile native-`<Text>` renderer and the browser mirror SHALL fetch
+`/api/theme` and apply it to the pane render — background, foreground, cursor,
+selection, and the 16-color palette — replacing the previously hard-coded values. On
+the BROWSER mirror, the terminal's `fontFamily` SHALL additionally map to a bundled
+font when it matches (else the default bundled font). The MOBILE renderer applies only
+the colors/palette/cursor and always uses the system monospace (font-family mapping is
+browser-only). The radar status-language colors SHALL NOT be themed.
 
-#### Scenario: Pane matches the terminal by default
+#### Scenario: Pane matches the terminal's colors
 
-- **WHEN** a paired client opens a pane with "match my terminal" on
-- **THEN** the terminal renders in the resolved theme's colors/palette (and the
-  mapped font when bundled), while the radar status colors are unchanged
+- **WHEN** a paired client opens a pane
+- **THEN** the terminal renders in the resolved theme's colors/palette/cursor, while
+  the radar status colors are unchanged
 
-#### Scenario: Unbundled font falls back, colors still apply
+#### Scenario: Font mapping is browser-only
 
-- **WHEN** the resolved `fontFamily` is not in the bundled set
-- **THEN** the pane uses the default bundled font but still applies the theme colors
+- **WHEN** the browser mirror resolves a `fontFamily` in its bundled set
+- **THEN** the browser pane renders in that font; the mobile pane renders in the
+  system monospace regardless (it does not bundle or select fonts)
 
-### Requirement: Appearance settings panel (mobile)
+### Requirement: Mobile font-size control
 
-The mobile app SHALL provide an appearance settings panel (en+zh) with: a "Match my
-terminal" toggle (default ON) vs. manual; a font-size control (8–20pt) plus
-pinch-to-zoom; and a font picker over a curated BUNDLED set (System via
-`ui-monospace` plus several latin-subset woff2 monospace fonts). Font size SHALL
-always be a local override; manual selections SHALL persist locally.
+The mobile app SHALL provide a local, per-pane font-SIZE control in the Detail toolbar
+(stepped A−/A+ over a small preset range), independent of the terminal's point size.
+The mobile app does NOT offer a font-family picker or pinch-to-zoom — text always uses
+the system monospace.
 
-#### Scenario: Turn off matching and pick a font + size
+#### Scenario: Adjust the pane font size
 
-- **WHEN** the user turns "Match my terminal" off and picks a bundled font + size
-- **THEN** the pane renders in the chosen font/size and the choice persists across
-  launches
+- **WHEN** the user taps A− / A+ in a pane's Detail toolbar
+- **THEN** the pane font size steps to the next preset, a local choice that does not
+  follow the terminal's point size
 
-#### Scenario: Font size is always local
+### Requirement: Bundled fonts (browser mirror)
 
-- **WHEN** "Match my terminal" is ON
-- **THEN** colors follow the terminal but the font SIZE follows the local control /
-  pinch, not the terminal's point size
+The curated monospace fonts SHALL be bundled for the BROWSER mirror (vendored woff2 via
+`@font-face`) so it renders them with no network. SF Mono/Menlo SHALL be offered only
+via the CSS `ui-monospace` generic (not bundled/redistributed). The mobile app bundles
+no terminal fonts — it uses the system monospace — so this is browser-only.
 
-### Requirement: Bundled fonts work offline
+#### Scenario: Bundled font renders offline (browser)
 
-The curated monospace fonts SHALL be bundled (base64 woff2 via `@font-face` in the
-generated asset for mobile; vendored for the browser) so they render with no
-network and on phones that don't have them installed. SF Mono/Menlo SHALL be
-offered only via the CSS `ui-monospace` generic (not bundled/redistributed).
-
-#### Scenario: Bundled font renders offline
-
-- **WHEN** a bundled font is selected with no network
-- **THEN** the terminal renders in that font
+- **WHEN** the browser mirror resolves/uses a bundled font with no network
+- **THEN** the browser terminal renders in that font

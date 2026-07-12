@@ -14,10 +14,10 @@ import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet} from '../ui/SettingsRow';
 import {ContentColumn} from '../ui/ContentColumn';
 
-type PickerKind = 'lang' | 'theme' | 'font' | 'mode' | null;
+type PickerKind = 'lang' | 'theme' | 'mode' | null;
 
 export function SettingsScreen({navigation}: any) {
-  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, fontPref, setFontPref, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
+  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
   const {client} = useAgents();
   const [testing, setTesting] = useState(false);
@@ -32,14 +32,6 @@ export function SettingsScreen({navigation}: any) {
     {key: 'system', label: t('system')},
     {key: 'light', label: lang === 'zh' ? '浅色' : 'Light'},
     {key: 'dark', label: lang === 'zh' ? '深色' : 'Dark'},
-  ];
-  const fonts: {key: string; label: string}[] = [
-    {key: 'auto', label: t('fontAuto')},
-    {key: 'system', label: t('fontSystem')},
-    {key: 'Hack', label: 'Hack'},
-    {key: 'JetBrains Mono', label: 'JetBrains Mono'},
-    {key: 'Fira Code', label: 'Fira Code'},
-    {key: 'IBM Plex Mono', label: 'IBM Plex Mono'},
   ];
   const detailModes: {key: 'chat' | 'terminal'; label: string; sub?: string}[] = [
     {key: 'terminal', label: lang === 'zh' ? '终端' : 'Terminal', sub: lang === 'zh' ? '完整 TUI' : 'Full TUI'},
@@ -106,7 +98,6 @@ export function SettingsScreen({navigation}: any) {
         {/* TERMINAL */}
         <SettingsGroup title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
           <SettingsRow icon="palette" label={lang === 'zh' ? '外观' : 'Appearance'} value={labelOf(themes, themePref)} pal={pal} chevron divider onPress={() => setPicker('theme')} />
-          <SettingsRow icon="font" label={lang === 'zh' ? '字体' : 'Font'} value={labelOf(fonts, fontPref)} pal={pal} chevron divider onPress={() => setPicker('font')} />
           <SettingsRow icon="layout" label={lang === 'zh' ? '默认模式' : 'Default mode'} value={labelOf(detailModes, defaultDetailMode)} pal={pal} chevron divider onPress={() => setPicker('mode')} />
           <SettingsRow icon="return" label={lang === 'zh' ? '回车直接发送' : 'Return sends'} sub={lang === 'zh' ? '关闭时回车为换行，用 ↑ 发送' : 'Off: Return = newline; send with ↑'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
         </SettingsGroup>
@@ -154,7 +145,6 @@ export function SettingsScreen({navigation}: any) {
 
       <PickerSheet visible={picker === 'lang'} title={t('language')} options={langs} selected={langPref} pal={pal} onSelect={setLangPref} onClose={() => setPicker(null)} />
       <PickerSheet visible={picker === 'theme'} title={lang === 'zh' ? '外观' : 'Appearance'} options={themes} selected={themePref} pal={pal} onSelect={setThemePref} onClose={() => setPicker(null)} />
-      <PickerSheet visible={picker === 'font'} title={lang === 'zh' ? '字体' : 'Font'} options={fonts} selected={fontPref} pal={pal} onSelect={setFontPref} onClose={() => setPicker(null)} />
       <PickerSheet visible={picker === 'mode'} title={lang === 'zh' ? '默认模式' : 'Default mode'} options={detailModes} selected={defaultDetailMode} pal={pal} onSelect={setDefaultDetailMode} onClose={() => setPicker(null)} />
     </SafeAreaView>
   );
