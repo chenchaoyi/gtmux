@@ -99,6 +99,8 @@ type agentPane struct {
 	latest   bool // the most-recently-finished pane (claude-notify last-finished)
 	// terminal generalization (DESIGN §7)
 	source     string // "tmux" | "native"
+	cwd        string // the pane's working dir (drives project/branch + supervisor detection)
+	role       string // "supervisor" when this is the hq (中控) session, else ""
 	project    string
 	branch     string // git branch of the pane's cwd (radar++), "" if not a repo
 	terminal   string
@@ -136,7 +138,11 @@ type agentJSON struct {
 	Activity bool   `json:"activity"`
 	// terminal generalization (DESIGN §7): tmux agents carry session/window/pane;
 	// native agents (run directly in a terminal) carry project/terminal/tab.
-	Source     string `json:"source"`             // "tmux" | "native"
+	Source string `json:"source"` // "tmux" | "native"
+	// Role marks special sessions; the only value today is "supervisor" — the hq
+	// (中控) session, detected by its pane cwd being the hq home (rename-proof).
+	// Additive + omitempty: absent for normal agents, so consumers are unaffected.
+	Role       string `json:"role,omitempty"`
 	Project    string `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
 	Branch     string `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
 	Terminal   string `json:"terminal,omitempty"` // native: terminal app
@@ -592,9 +598,10 @@ func gatherAgents() []agentPane {
 		}
 		// radar++ : the pane's cwd → git repo root basename (project) + branch,
 		// read straight from .git (no git subprocess; cgo-free). "" if not a repo.
-		var project, branch string
+		var cwd, project, branch string
 		if len(f) >= 10 {
-			project, branch = gitInfo(f[9])
+			cwd = f[9]
+			project, branch = gitInfo(cwd)
 		}
 		panes = append(panes, agentPane{
 			paneID:     id,
@@ -608,6 +615,8 @@ func gatherAgents() []agentPane {
 			activity:   f[6] == "1",
 			latest:     id == lastFinished && status != "working" && status != "waiting",
 			source:     "tmux",
+			cwd:        cwd,
+			role:       roleForCwd(cwd),
 			project:    project,
 			branch:     branch,
 			icon:       iconFor(agent, profiles),
@@ -659,6 +668,7 @@ func nativePanes(tmuxPanes []agentPane, profiles []agentProfile, now int64) []ag
 		}
 		out = append(out, agentPane{
 			agent: name, status: r.State, source: "native",
+			cwd: r.Cwd, role: roleForCwd(r.Cwd),
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, since: since,
 			// Adopt only an IDLE, resumable session with a real on-disk conversation —
@@ -747,6 +757,16 @@ func resolveWaiting(status string, hasMark, stale bool, liveWorking func() bool)
 	default:
 		return status, false
 	}
+}
+
+// roleForCwd marks the supervisor (中控) session: any pane whose working dir is
+// the hq home (see `gtmux hq`) carries role:"supervisor" so surfaces can pin or
+// badge it. Cwd-keyed on purpose — robust to tmux session renames.
+func roleForCwd(cwd string) string {
+	if cwd != "" && cwd == state.HQHome() {
+		return "supervisor"
+	}
+	return ""
 }
 
 func statusRank(s string) int {
@@ -885,7 +905,7 @@ func agentsJSONBytes() ([]byte, error) {
 			PaneID: p.paneID, Session: p.session, Window: p.window, Pane: p.pane,
 			Loc: p.loc, Agent: p.agent, Status: p.status, Task: p.task,
 			Latest: p.latest, Activity: p.activity,
-			Source: src, Project: p.project, Branch: p.branch, Terminal: p.terminal, Tab: p.tab,
+			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.since, Icon: p.icon,
 			SessionID: p.sessionID, Adoptable: p.adoptable,
 			Error: p.errored, ErrorText: p.errorText,

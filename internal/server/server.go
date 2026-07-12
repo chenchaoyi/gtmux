@@ -116,6 +116,11 @@ type Deps struct {
 	// for its own per-device token, which auth then accepts alongside the master
 	// token. Optional: when nil, /api/enroll is 503 and only the master token works.
 	Enroll *EnrollManager
+
+	// DigestJSON returns the marshaled agent-digest array — byte-identical to
+	// `gtmux digest --json` (the supervisor's fleet view: goal/last/ask per row).
+	// Additive to AgentsJSON. Optional: nil → GET /api/digest is 503.
+	DigestJSON func() ([]byte, error)
 }
 
 // Config configures the listener and auth token.
@@ -167,6 +172,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/devices", s.auth(http.HandlerFunc(s.handleDevices)))
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
+	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
@@ -220,6 +226,22 @@ func (s *Server) handleAgents(w http.ResponseWriter, _ *http.Request) {
 	b, err := s.deps.AgentsJSON()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, errBody("agents error"))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(b)
+}
+
+// handleDigest serves the agent-digest array (GET /api/digest) — the supervisor's
+// fleet view, byte-identical to `gtmux digest --json`.
+func (s *Server) handleDigest(w http.ResponseWriter, _ *http.Request) {
+	if s.deps.DigestJSON == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("digest unavailable"))
+		return
+	}
+	b, err := s.deps.DigestJSON()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("digest error"))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
