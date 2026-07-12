@@ -78,7 +78,56 @@ func seedHQHome() (seeded bool, err error) {
 		}
 		seeded = true
 	}
+	if seedHQKnowledge() {
+		seeded = true
+	}
 	return seeded, nil
+}
+
+// hqKnowledgeDir is the supervisor's living knowledge base (its primary long-term
+// value — see the playbook). Topic files persist across sessions.
+func hqKnowledgeDir() string { return filepath.Join(state.HQHome(), "knowledge") }
+
+// seedHQKnowledge lays down the knowledge-base scaffold (README + empty topic
+// files) IF ABSENT — each file only when missing, so the supervisor's curated
+// content is never overwritten. Returns whether it created anything.
+func seedHQKnowledge() (created bool) {
+	dir := hqKnowledgeDir()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return false
+	}
+	for name, body := range hqKnowledgeSeeds {
+		p := filepath.Join(dir, name)
+		if _, err := os.Stat(p); err != nil {
+			if os.WriteFile(p, []byte(body), 0o644) == nil {
+				created = true
+			}
+		}
+	}
+	return created
+}
+
+// hqKnowledgeSeeds is the starter scaffold — an index + one file per topic, each
+// explaining what belongs there. The supervisor fills them in over time.
+var hqKnowledgeSeeds = map[string]string{
+	"README.md": `# gtmux HQ knowledge base
+
+The supervisor's living cross-cutting memory (its most important job). One file
+per topic; capture durable, reusable facts ONCE, keep them current, consult them
+before advising/driving. NEVER store secrets — only IDs, methods, procedures, and
+pointers to where a secret lives.
+
+- accounts.md — service accounts (Apple developer, Cloudflare, …): IDs + how to reach them.
+- workflows.md — release / device build / spec-consistency / other repeatable procedures.
+- best-practices.md — testing (iOS Appium/e2e), research methodology, what worked.
+- pitfalls.md — footguns already paid for, and how to avoid them.
+
+Add topic files as needed. 主动学习、持续更新、用时调取。
+`,
+	"accounts.md":       "# Accounts (IDs + access procedures — NEVER secrets)\n\n_Record the Apple developer team/account, Cloudflare account + dashboard access, and other services here: identifiers and how to reach them, with pointers (keychain / password manager) for anything secret._\n",
+	"workflows.md":      "# Workflows (repeatable procedures)\n\n_Release flow, device build, the spec⇄code⇄test consistency workflow (propose → implement → sync-specs → archive), etc._\n",
+	"best-practices.md": "# Best practices\n\n_iOS Appium/e2e automation, research methodology, and other approaches that worked._\n",
+	"pitfalls.md":       "# Pitfalls (footguns already paid for)\n\n_Each entry: symptom → root cause → how to avoid. Keep it current._\n",
 }
 
 // findHQPane returns the pane id of a live supervisor pane ("" when none):
@@ -225,8 +274,37 @@ user request: check its digest row, then follow the policy below.
    it to the user with your recommendation. 绝不代替用户回答权限/方案选择。
 3. Driving (send) is fine for routine, reversible follow-ups the user asked for in
    conversation ("让它继续", "让它跑测试"). Say what you sent and to whom.
-4. Keep notes: record durable, cross-project knowledge you learn (release steps,
-   test harnesses, footguns) in files under this directory — it persists across
-   your sessions. 把横向知识沉淀在本目录。
-5. Be terse. The user reads you on a phone half the time.
+4. Be terse. The user reads you on a phone half the time.
+
+## Knowledge base — YOUR SINGLE MOST IMPORTANT JOB · 知识库(你最大的用途)
+
+Driving agents is the day job; CURATING A LIVING KNOWLEDGE BASE is why you exist.
+Every session on this machine keeps re-discovering the same cross-cutting facts —
+account IDs, login procedures, testing best-practices, workflows, the footguns
+already paid for. You are the machine's long-term memory: capture it ONCE, keep
+it CURRENT, and bring it to bear.
+
+It lives in ` + "`~/.config/gtmux/hq/knowledge/`" + ` (see its README). Topics, e.g.:
+- **accounts.md** — the Apple developer team/account, Cloudflare account + how to
+  reach its dashboard, other service accounts: IDs, procedures, where things live.
+- **workflows.md** — the release flow, device build, the spec⇄code⇄test
+  consistency workflow (propose → implement → sync-specs → archive), etc.
+- **best-practices.md** — iOS Appium/e2e automation, research methodology, what
+  worked.
+- **pitfalls.md** — footguns already hit and how to avoid them.
+
+Discipline:
+- **Capture:** the moment you (or a session you observe) learn something durable
+  and reusable, write/UPDATE the right topic file. Prefer updating over appending
+  duplicates; keep entries tight.
+- **Consult:** before advising or driving a task, check the relevant topic first.
+- **Iterate:** periodically review — correct what's stale, prune what's dead,
+  merge duplicates. Treat the base as code that rots if untended.
+- **NEVER store secrets** — no passwords, API tokens, private keys, or seed
+  phrases. Record only IDs, methods, procedures, and POINTERS to where a secret
+  lives (keychain / password manager / a file path). Secrets stay out of these
+  files.
+
+一句话:主动学习并沉淀横向知识、持续更新、用时调取 —— 这是 HQ 存在的根本理由;绝不
+写入任何密钥/密码(只记 ID、方法、指引与存放位置)。
 `

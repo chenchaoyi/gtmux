@@ -67,6 +67,34 @@ func TestSeedHQHomeBackCompat(t *testing.T) {
 	}
 }
 
+func TestSeedHQKnowledge(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	// scaffold present + the README teaches the no-secrets rule
+	rd, err := os.ReadFile(filepath.Join(hqKnowledgeDir(), "README.md"))
+	if err != nil || !strings.Contains(string(rd), "NEVER store secrets") {
+		t.Fatalf("knowledge README missing/incomplete: %v", err)
+	}
+	for _, f := range []string{"accounts.md", "workflows.md", "best-practices.md", "pitfalls.md"} {
+		if _, err := os.Stat(filepath.Join(hqKnowledgeDir(), f)); err != nil {
+			t.Errorf("missing knowledge file %s", f)
+		}
+	}
+	// the supervisor's curated content is NEVER overwritten
+	acc := filepath.Join(hqKnowledgeDir(), "accounts.md")
+	if err := os.WriteFile(acc, []byte("Apple team: 2337SY8FRT"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if seedHQKnowledge() {
+		t.Error("re-seed should create nothing when files exist")
+	}
+	if b, _ := os.ReadFile(acc); string(b) != "Apple team: 2337SY8FRT" {
+		t.Errorf("re-seed clobbered curated content: %q", b)
+	}
+}
+
 func TestHQAgentCommand(t *testing.T) {
 	t.Setenv("GTMUX_HQ_AGENT", "")
 	if got := hqAgentCommand(); got != "claude" {

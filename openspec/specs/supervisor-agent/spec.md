@@ -46,6 +46,30 @@ agents.
 - **WHEN** the supervisor session is live and `gtmux agents --json` runs
 - **THEN** its row carries `role:"supervisor"`; all other rows are unchanged
 
+### Requirement: The supervisor curates a persistent knowledge base
+
+The supervisor's primary long-term value SHALL be curating a living, cross-cutting
+knowledge base under its home (`~/.config/gtmux/hq/knowledge/`). On first run the
+system SHALL seed a scaffold — an index README plus topic files (accounts,
+workflows, best-practices, pitfalls) — each written only when ABSENT so the
+supervisor's curated content is never overwritten. The playbook SHALL direct the
+supervisor to capture durable, reusable facts once, keep them current, consult
+them before advising or driving, and iterate on them — and SHALL forbid storing
+secrets (passwords, tokens, keys), recording only IDs, methods, procedures, and
+pointers to where a secret lives.
+
+#### Scenario: Knowledge scaffold seeded, never clobbered
+
+- **WHEN** `gtmux hq` first runs (no `knowledge/` yet)
+- **THEN** the scaffold (README + topic files) is created; a subsequent run adds
+  only missing files and leaves the supervisor's curated content untouched
+
+#### Scenario: No secrets in the knowledge base
+
+- **WHEN** the supervisor records account or service knowledge
+- **THEN** its playbook requires IDs/methods/pointers only — never passwords,
+  tokens, or private keys
+
 ### Requirement: Waiting-event nudge into the supervisor
 
 The system SHALL, when a tmux agent enters waiting and a supervisor session is
