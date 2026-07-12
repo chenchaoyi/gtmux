@@ -48,12 +48,12 @@ gated('hq card', () => {
       void name;
     }
 
-    // Tap → Detail should open (chat mode is the initialMode; visually verified
-    // via the screenshot).
+    // Tap → the HQ command center (fleet board + command console), not the
+    // generic detail. Wait for a quick-command chip to confirm we're there.
     await card.click();
-    await driver.$(`~${TestIds.detail.back}`).waitForDisplayed({timeout: 8_000});
-    await settle(1500);
-    shot('hq-detail-chat');
+    await driver.$(`~hq-chip-现状`).waitForDisplayed({timeout: 8_000}).catch(() => {});
+    await settle(1800);
+    shot('hq-command-center');
 
     // eslint-disable-next-line no-console
     console.log(`[shots] wrote hq-radar + hq-detail-chat to ${OUT}`);

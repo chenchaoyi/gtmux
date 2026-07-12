@@ -93,6 +93,8 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
 
 ## 3. Radar 交互（列表）
 
+> **gtmux HQ 司令部（hq-command-center）**：点 HQ 卡进的是**专属司令部**（非通用 Chat/Terminal 详情）。三区自上而下：①状态条 = 舰队计数 + 订阅窗口 %；②**舰队板** = `/api/digest` 全 agent 列表（needs-you→working→idle，行显示 状态点·loc·agent·goal/ask，含用量压力琥珀标），点选=绑定命令目标、长按=跳到该 worker 自己的详情；③**命令控制台** = 跟 gtmux HQ 的对话（ChatView）+ 快捷 chip（现状/谁在等我/用量额度；选中目标后出 让它继续/看它在干嘛/帮我回复）+ 命令输入栏。**所有命令经 HQ**（HQ 判断并驱动舰队）；HQ 内不设直发入口——直发走各 worker 自己的 session 详情。
+
 > **HQ 卡（中控，hq-presentation）**：server chip 之下、列表之上的常驻卡 —— 品牌网格标 +
 > 「中控 HQ」+ task 一行 + 状态点；**点击直接进 Detail 对话模式**（手机问管家 = 主路径）。
 > 中控行从分区列表剔除（`role:"supervisor"`）；未运行时不显示（手机上无法启动它，不留死控件）。
