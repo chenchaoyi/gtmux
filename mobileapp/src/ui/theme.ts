@@ -119,7 +119,11 @@ export interface Counts {
 }
 
 export function counts(agents: Agent[]): Counts {
-  const waiting = agents.filter(a => a.status === 'waiting').length;
-  const working = agents.filter(a => a.status === 'working').length;
-  return {total: agents.length, waiting, working, idle: agents.length - waiting - working};
+  // Per-status counts DESCRIBE the sections below, which exclude the supervisor
+  // (it renders as the HQ card) — so exclude it here too or the summary reads
+  // "10 idle" over an IDLE-9 section. The TOTAL keeps every agent incl. HQ.
+  const rows = agents.filter(a => a.role !== 'supervisor');
+  const waiting = rows.filter(a => a.status === 'waiting').length;
+  const working = rows.filter(a => a.status === 'working').length;
+  return {total: agents.length, waiting, working, idle: rows.length - waiting - working};
 }
