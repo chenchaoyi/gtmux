@@ -234,6 +234,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .preferences: PreferencesController.shared.show(l10n: l10n)
         case .pairPhone:  PairingController.shared.show(l10n: l10n)
         case .quit:       NSApp.terminate(nil)
+        case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }
         if action != .quit && action != .preferences && action != .pairPhone && action != .newSession {
             popover.performClose(nil)

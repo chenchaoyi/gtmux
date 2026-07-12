@@ -101,9 +101,13 @@
 1. **Header**：gtmux 标记（pane 网格，见 §15）+ 「仅等待」过滤开关 + 搜索按钮；下一行是
    摘要 `5 agents · 1 waiting · 2 working · 2 idle`（本地化，见 `Summary`）。搜索模式下摘要
    行换成搜索输入框。
-2. **分组列表**：分区顺序固定 **需要你（waiting）→ 运行中（working）→ 空闲（idle）→ 待命（running）**。
+2. **HQ 卡（中控，hq-presentation）**：header 与分组列表之间的常驻层。中控是元层会话
+   （看管者），**绝不**混进分区行。运行中 = 品牌网格标（§12，非 agent 头像）+ 状态徽章 +
+   task 一行 + 相对时间，点击跳转；未运行 = 虚线幽灵位「中控未运行 · 点击启动」（shell
+   `gtmux hq`）。搜索态与真空态下隐藏。
+3. **分组列表**：分区顺序固定 **需要你（waiting）→ 运行中（working）→ 空闲（idle）→ 待命（running）**。
    每个分区一个小标题（全大写、字重 700、+0.5 字距）+ 计数；**waiting 分区标题用红色**，其余中性。
-3. **Footer**：四个动作按钮 **Overview · Live watch · Restore · New session**（图标+文字）；分隔线；
+4. **Footer**：四个动作按钮 **Overview · Live watch · Restore · New session**（图标+文字）；分隔线；
    左侧齿轮 **偏好设置**，右侧版本行 `gtmux 0.1.0 · designed by ccy`。
 
 ### 行（Row）模型

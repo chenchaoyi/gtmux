@@ -18,6 +18,8 @@ export interface Agent {
   latest: boolean;
   activity: boolean;
   source: string; // "tmux" | "native"
+  // "supervisor" marks the hq (中控) session — its own HQ card, never a section row.
+  role?: string;
   project?: string;
   branch?: string; // git branch of the pane's cwd (radar++)
   terminal?: string;
@@ -54,6 +56,7 @@ export function toAgent(raw: any): Agent {
     latest: b('latest'),
     activity: b('activity'),
     source: s('source') || 'tmux',
+    role: s('role') || undefined,
     project: s('project') || undefined,
     branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,

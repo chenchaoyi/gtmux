@@ -90,9 +90,10 @@ export function sections(agents: Agent[], waitingOnly: boolean): Section[] {
   const out: Section[] = [];
   for (const st of SECTION_ORDER) {
     if (waitingOnly && st !== 'waiting') continue;
-    // Native (non-tmux) sessions are their own trailing category, not mixed in.
+    // Native (non-tmux) sessions are their own trailing category, not mixed in;
+    // the supervisor (role) renders as the HQ card above the list, never a row.
     const rows = agents
-      .filter(a => a.status === st && a.source !== 'native')
+      .filter(a => a.status === st && a.source !== 'native' && a.role !== 'supervisor')
       .sort((l, r) =>
         st === 'idle'
           ? (r.since ?? 0) - (l.since ?? 0)

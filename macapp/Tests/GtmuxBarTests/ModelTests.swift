@@ -158,6 +158,18 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(secs.map { $0.status }, [.waiting, .working, .idle])
     }
 
+    func testSupervisorExcludedFromSections() throws {
+        let json = #"[{"pane_id":"%1","session":"a","status":"working"},"#
+            + #"{"pane_id":"%9","session":"HQ","status":"working","role":"supervisor"}]"#
+        let s = AgentStore()
+        s.setForTesting(try JSONDecoder().decode([Agent].self, from: Data(json.utf8)))
+        // The supervisor renders as the HQ card, never inside the sections.
+        let rows = s.sections(waitingOnly: false, query: "").flatMap { $0.agents }
+        XCTAssertFalse(rows.contains { $0.isSupervisor })
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertEqual(s.supervisor?.paneID, "%9")
+    }
+
     func testWaitingOnlyFilter() {
         let s = store([("a", "waiting"), ("b", "working"), ("c", "idle")])
         let secs = s.sections(waitingOnly: true, query: "")

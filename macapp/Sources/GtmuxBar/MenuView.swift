@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum MenuAction {
-    case restore, newSession, preferences, pairPhone, quit
+    case restore, newSession, preferences, pairPhone, quit, startHQ
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + waiting-only + search +
@@ -54,6 +54,7 @@ struct MenuView: View {
         VStack(spacing: 0) {
             header(p)
             Divider().overlay(p.divider)
+            hqCard(p)
             content(p)
             Divider().overlay(p.divider)
             footer(p)
@@ -127,6 +128,67 @@ struct MenuView: View {
         parts.append(l10n.tr("\(store.idleCount) idle", "\(store.idleCount) 空闲"))
         let agents = l10n.tr("\(n) agent\(n == 1 ? "" : "s")", "\(n) 个 agent")
         return agents + " · " + parts.joined(separator: " · ")
+    }
+
+    // MARK: HQ card (hq-presentation change)
+
+    // The supervisor (中控) is a META session — it watches the others, so it gets
+    // its OWN layer between the summary and the sections (never a section row).
+    // Running → brand grid avatar + status badge + its task line, click = focus.
+    // Absent → a quiet ghost affordance that shells `gtmux hq`. Hidden while
+    // searching and on the true empty state (first-run keeps its own UX).
+    @ViewBuilder private func hqCard(_ p: Theme.Palette) -> some View {
+        if !searchActive && store.total > 0 {
+            Group {
+                if let hq = store.supervisor {
+                    Button { onJump(hq) } label: {
+                        HStack(spacing: 11) {
+                            ZStack(alignment: .bottomTrailing) {
+                                GtmuxLogo(size: 26)
+                                StatusBadge(status: hq.state, size: 13, errored: hq.errored)
+                                    .offset(x: 3, y: 3)
+                            }
+                            VStack(alignment: .leading, spacing: 1) {
+                                HStack(spacing: 5) {
+                                    Text(l10n.tr("HQ · supervisor", "中控 HQ"))
+                                        .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
+                                    Text(hq.agent).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                                }
+                                Text(hq.task.isEmpty ? "—" : hq.task)
+                                    .font(.system(size: 11)).foregroundStyle(p.fg2)
+                                    .lineLimit(1).truncationMode(.tail)
+                            }
+                            Spacer(minLength: 6)
+                            Text(hq.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
+                            Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(p.fg3)
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 7)
+                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(p.rowSelected.opacity(0.5)))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(l10n.tr("Jump to the supervisor", "跳到中控"))
+                } else {
+                    Button { onAction(.startHQ) } label: {
+                        HStack(spacing: 11) {
+                            GtmuxLogo(size: 26).opacity(0.45)
+                            Text(l10n.tr("HQ not running — click to start", "中控未运行 · 点击启动"))
+                                .font(.system(size: 11)).foregroundStyle(p.fg3)
+                            Spacer(minLength: 6)
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(p.divider, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(l10n.tr("Start the supervisor (gtmux hq)", "启动中控（gtmux hq）"))
+                }
+            }
+            .padding(.horizontal, 8).padding(.top, 6)
+        }
     }
 
     // MARK: content

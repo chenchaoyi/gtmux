@@ -64,6 +64,11 @@ export function RadarScreen({navigation}: any) {
     setTimeout(() => setRefreshing(false), 600);
   };
 
+  // The supervisor (中控) renders as its OWN card below the header — never a
+  // section row (theme.sections excludes role rows). Tap → its Detail in CHAT
+  // mode; absent → no card (starting one needs the Mac; no dead control).
+  const hq = agents.find(a => a.role === 'supervisor');
+
   const Header = (
     <View style={styles.header}>
       <View style={styles.headerTop}>
@@ -115,6 +120,26 @@ export function RadarScreen({navigation}: any) {
           </Text>
         </TouchableOpacity>
       </View>
+      {hq && (
+        <TouchableOpacity
+          accessibilityLabel="radar-hq-card"
+          testID="radar-hq-card"
+          activeOpacity={0.7}
+          style={[styles.hqCard, {backgroundColor: pal.surface, borderColor: pal.divider}]}
+          onPress={() => navigation.navigate('Detail', {agent: hq, mode: 'chat'})}>
+          <BrandMark size={26} neutral={pal.fg3} />
+          <View style={styles.hqText}>
+            <View style={styles.hqTitleRow}>
+              <Text style={[styles.hqTitle, {color: pal.fg}]}>{lang === 'zh' ? '中控 HQ' : 'HQ · supervisor'}</Text>
+              <View style={[styles.hqDot, {backgroundColor: StatusColor[hq.status] ?? StatusColor.running}]} />
+            </View>
+            <Text style={[styles.hqTask, {color: pal.fg2}]} numberOfLines={1}>
+              {hq.task || (lang === 'zh' ? '问它:现状?' : 'Ask it: status?')}
+            </Text>
+          </View>
+          <Text style={[styles.hqChevron, {color: pal.fg3}]}>›</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -242,4 +267,11 @@ const styles = StyleSheet.create({
   emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
   banner: {paddingHorizontal: 14, paddingVertical: 10},
   bannerText: {color: '#fff', fontSize: 13, fontWeight: '600'},
+  hqCard: {flexDirection: 'row', alignItems: 'center', marginTop: 10, padding: 10, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth},
+  hqText: {flex: 1, marginLeft: 10},
+  hqTitleRow: {flexDirection: 'row', alignItems: 'center'},
+  hqTitle: {fontSize: 13, fontWeight: '700'},
+  hqDot: {width: 8, height: 8, borderRadius: 4, marginLeft: 7},
+  hqTask: {fontSize: 11.5, marginTop: 1},
+  hqChevron: {fontSize: 18, fontWeight: '300', marginLeft: 8},
 });

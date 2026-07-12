@@ -50,6 +50,9 @@ struct Agent: Identifiable, Equatable {
     var activity = false
     // native-terminal generalization (DESIGN §7)
     var source = "tmux"
+    // "supervisor" marks the hq (中控) session — rendered as its OWN layer (the HQ
+    // card above the sections), never stacked inside the status groups. "" = normal.
+    var role = ""
     var project = ""
     var terminal = ""
     var tab = ""
@@ -78,6 +81,7 @@ struct Agent: Identifiable, Equatable {
     }
     var state: Status { Status(rawValue: status) ?? .running }
     var isNative: Bool { source == "native" }
+    var isSupervisor: Bool { role == "supervisor" }
 
     /// Row line 1 (bold): the coding agent's OWN session name — the title it sets
     /// on its pane (what you see as the terminal title), NOT the tmux session or a
@@ -114,6 +118,7 @@ extension Agent: Decodable {
         status = (try? c.decode(String.self, forKey: .status)) ?? "running"
         latest = b(.latest); activity = b(.activity)
         source = (try? c.decode(String.self, forKey: .source)) ?? "tmux"
+        role = s(.role)
         project = s(.project); terminal = s(.terminal); tab = s(.tab)
         activityAt = (try? c.decode(Int.self, forKey: .activityAt)) ?? 0
         since = (try? c.decode(Int.self, forKey: .since)) ?? 0
@@ -125,7 +130,7 @@ extension Agent: Decodable {
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity
-        case source, project, terminal, tab, icon, since, adoptable, bg
+        case source, role, project, terminal, tab, icon, since, adoptable, bg
         case activityAt = "activity_at"
         case sessionID = "session_id"
         case errored = "error"
@@ -187,7 +192,8 @@ final class AgentStore: ObservableObject {
             if waitingOnly && st != .waiting { continue }
             // Native (non-tmux) sessions are their own category, not mixed into the
             // tmux status groups.
-            let group = agents.filter { $0.state == st && !$0.isNative && matches($0, query) }
+            // The supervisor renders as its own HQ card, never inside the sections.
+            let group = agents.filter { $0.state == st && !$0.isNative && !$0.isSupervisor && matches($0, query) }
             // Finished (idle): most-recently-finished first (its `since` is frozen at
             // last activity, so order stays stable). Other sections: by name.
             let rows = st == .idle
@@ -197,6 +203,10 @@ final class AgentStore: ObservableObject {
         }
         return out
     }
+
+    /// The live supervisor (中控) session, if any — rendered as the HQ card above
+    /// the sections (its own layer, per the hq-presentation change).
+    var supervisor: Agent? { agents.first { $0.isSupervisor } }
 
     /// Sensed non-tmux (native) sessions — their own category, most-recent first.
     /// Sense-only: no jump/reply; adoptable ones can be pulled into tmux.
