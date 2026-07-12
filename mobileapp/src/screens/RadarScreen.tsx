@@ -130,7 +130,7 @@ export function RadarScreen({navigation}: any) {
           <BrandMark size={26} neutral={pal.fg3} />
           <View style={styles.hqText}>
             <View style={styles.hqTitleRow}>
-              <Text style={[styles.hqTitle, {color: pal.fg}]}>{lang === 'zh' ? '中控 HQ' : 'HQ · supervisor'}</Text>
+              <Text style={[styles.hqTitle, {color: pal.fg}]}>gtmux HQ</Text>
               <View style={[styles.hqDot, {backgroundColor: StatusColor[hq.status] ?? StatusColor.running}]} />
             </View>
             <Text style={[styles.hqTask, {color: pal.fg2}]} numberOfLines={1}>

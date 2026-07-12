@@ -159,7 +159,7 @@ struct MenuView: View {
                             }
                             VStack(alignment: .leading, spacing: 1) {
                                 HStack(spacing: 5) {
-                                    Text(l10n.tr("HQ · supervisor", "中控 HQ"))
+                                    Text("gtmux HQ")
                                         .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
                                     Text(hq.agent).font(.system(size: 10.5)).foregroundStyle(p.fg3)
                                 }
