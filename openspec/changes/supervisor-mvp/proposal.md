@@ -40,10 +40,16 @@ not a worktree-launcher GUI.
   the supervisor's persistent memory — the 横向知识沉淀 lands there for free.
   Supervisor rows are marked `role:"supervisor"` in `agents --json` (detected by
   cwd, rename-proof) so surfaces can pin/badge them.
-- **P1 explicitly excludes** (spec'd as deferred, NOT built here): auto-nudging
-  the supervisor on waiting events; parallel-worktree orchestration (一句话拆
-  多 worktree); cross-model dispatch; a dedicated 中控 view on menu-bar/mobile;
-  any auto-answering of permission prompts (user: not a required ability).
+- **Waiting-event nudge (P1, user-promoted)** — when another agent enters
+  waiting, the hook injects one compact line into the live hq pane (via
+  `tmux send-keys`, same dedup as notifications, never about the supervisor
+  itself, config-off-able) so the supervisor learns of blockers without polling.
+  What it DOES on a nudge is governed by its editable instructions — the default
+  is assess + report, never auto-answer another agent's permission prompt.
+- **P1 explicitly excludes** (spec'd as deferred, NOT built here):
+  parallel-worktree orchestration (一句话拆多 worktree); cross-model dispatch;
+  a dedicated 中控 view on menu-bar/mobile; any auto-answering of permission
+  prompts (user: not a required ability).
 
 ## Capabilities
 

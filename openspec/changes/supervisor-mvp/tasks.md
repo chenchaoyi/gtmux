@@ -30,6 +30,11 @@
       additive omitempty field; JSON contract test.
 - [ ] 3.4 Unit tests: seeding idempotence, reuse-not-duplicate decision (pure parts),
       role detection.
+- [ ] 3.5 Waiting nudge (P1, user-promoted): on a Waiting decision in the hook, find
+      a live hq pane (cwd == hq home, not the waiting pane itself) and send-keys one
+      `[gtmux] waiting·<kind> <loc> — <title>` line + Enter; rides the existing
+      notify dedup; `hqNudge:false` config disables; no hq → no-op. Tests for the
+      pure decision (self-exclusion / dedup / config-off).
 
 ## 4. Docs + spec hygiene (per the consistency rule)
 
@@ -46,7 +51,6 @@
 
 ## 6. Deferred (P2/P3 — spec'd context, NOT built in this change)
 
-- [ ] 6.1 P2: waiting-event nudge into the hq pane (needs mid-turn interrupt care).
-- [ ] 6.2 P2: 中控 card on menu-bar/mobile fed by `/api/digest`.
-- [ ] 6.3 P2: optional STATUS-block convention for cooperating agents.
-- [ ] 6.4 P3: parallel-worktree orchestration; cross-model dispatch; multi-host mesh.
+- [ ] 6.1 P2: 中控 card on menu-bar/mobile fed by `/api/digest`.
+- [ ] 6.2 P2: optional STATUS-block convention for cooperating agents.
+- [ ] 6.3 P3: parallel-worktree orchestration; cross-model dispatch; multi-host mesh.

@@ -59,9 +59,23 @@ the supervisor touches goes through gtmux/tmux CLI today; if multi-host mesh
 lands later, digest/send already have HTTP twins, so the supervisor prompt—not
 its architecture—changes.
 
+## Nudge mechanics (P1, promoted by the user)
+
+The hook is the natural injection point — it already fires exactly at the
+waiting transition and already dedups re-notifies (same pane + same kind →
+`d.notify=false`); the nudge rides that same gate, so it inherits the dedup for
+free. On a Waiting decision for a tmux pane: find a live hq pane (any pane whose
+cwd == the hq home; skip when the WAITING pane is itself the supervisor), then
+`tmux send-keys` one compact line — `[gtmux] waiting·<kind> <loc> — <title>` —
+plus Enter. Claude Code queues typed input while mid-turn, so a busy supervisor
+receives it as its next user message rather than being corrupted; an idle one
+starts a turn. Config: `hqNudge:false` in `~/.config/gtmux/config.json` disables
+(default on). No hq session live → no-op, zero cost. The BOUNDARY stays: gtmux
+only informs; acting on a nudge is governed by the hq instructions file, whose
+default is assess + report and never auto-answer another agent's permission
+prompt.
+
 ## Open questions deliberately deferred
 
-- P2 nudge: waiting-event → inject a short "[gtmux] %N waiting…" turn into the
-  hq pane (re-uses send). Needs care re: interrupting mid-turn.
 - P2 surfaces: 中控 card in menu-bar/mobile fed by `/api/digest`.
 - P3 worktree parallelism, cross-model dispatch, shared STATUS convention.

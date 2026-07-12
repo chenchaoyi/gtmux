@@ -39,18 +39,40 @@ agents.
 - **WHEN** the supervisor session is live and `gtmux agents --json` runs
 - **THEN** its row carries `role:"supervisor"`; all other rows are unchanged
 
+### Requirement: Waiting-event nudge into the supervisor
+
+The system SHALL, when a tmux agent enters waiting and a supervisor session is
+live, inject ONE compact line — the location, waiting kind, and title — into the
+supervisor's pane (send-keys + Enter), riding the notification pipeline's
+existing dedup so an unchanged waiting state is not re-nudged. It SHALL never
+nudge the supervisor about its own waiting states, SHALL be a no-op when no
+supervisor session is live, and SHALL be disableable via configuration
+(`hqNudge: false`, default on).
+
+#### Scenario: Agent blocks, supervisor learns
+
+- **WHEN** another agent enters waiting (permission/plan/question) while an hq
+  session is live
+- **THEN** one `[gtmux] waiting·<kind> <loc> — <title>` line is typed into the
+  hq pane, at most once per waiting transition
+
+#### Scenario: Never about itself, off when absent or disabled
+
+- **WHEN** the supervisor itself is the waiting pane, or no hq session is live,
+  or `hqNudge` is false
+- **THEN** nothing is injected
+
 ### Requirement: Human-in-the-loop boundary (P1)
 
-The supervisor MUST NOT be granted automatic behaviors by gtmux in P1: gtmux
-SHALL NOT auto-inject fleet events into the supervisor's pane, SHALL NOT let it
-auto-answer other agents' permission prompts on the user's behalf, and ships no
-orchestration (worktree spawning, cross-model dispatch). It reads and drives
-through the same local CLI surface the user already has, when the user converses
-with it. (Event nudging and orchestration are spec'd follow-ups, not P1.)
+Beyond the nudge (inform-only), the supervisor MUST NOT be granted automatic
+behaviors by gtmux in P1: gtmux SHALL NOT let it auto-answer other agents'
+permission prompts on the user's behalf, and ships no orchestration (worktree
+spawning, cross-model dispatch). What the supervisor DOES upon a nudge is
+governed by its editable instructions file, whose generated default is assess +
+report — driving stays a conversational act.
 
-#### Scenario: No auto-drive without the user
+#### Scenario: Nudge informs, does not answer
 
-- **WHEN** another agent enters waiting while the user is not conversing with
-  the supervisor
-- **THEN** gtmux delivers its normal notification pipeline only; nothing is
-  injected into the supervisor pane
+- **WHEN** a nudge lands for another agent's permission prompt
+- **THEN** gtmux itself sends nothing to the WAITING pane; any follow-up action
+  is the supervisor's turn under its instructions
