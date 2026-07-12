@@ -18,7 +18,7 @@ Absent/unparuseable output SHALL yield no limits (the rest of usage still works)
 
 ### Requirement: Limits are cached, not run per call
 
-The system SHALL cache the parsed limits with a TTL (default 10 minutes) because
+The system SHALL cache the parsed limits with a TTL (default 15 minutes, shortened to 5 minutes when any window is near its cap) because
 obtaining them spawns a process; it SHALL refresh at most once per TTL on demand
 (a `--refresh` flag forces one), and it SHALL NEVER spawn the command once per
 `gtmux usage` invocation.

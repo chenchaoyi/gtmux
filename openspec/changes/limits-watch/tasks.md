@@ -4,7 +4,7 @@
       "/usage"`; env-prefix supported), PURE parser of the window lines →
       [{label,pctUsed,resetAt}]. Table tests over captured fixtures (session +
       2 weekly lines, and a garbled line).
-- [ ] 1.2 Cache to state/limits.json with TTL (default 10m); refresh-if-stale;
+- [ ] 1.2 Cache to state/limits.json with TTL (default 15m; 5m when any window ≥ limitsNearPct=70); refresh-if-stale;
       `--refresh` forces; `limitsCommand:""` disables. Never per-call spawn.
 - [ ] 2.1 `gtmux limits [--json|--refresh]` + a `limits` block on `gtmux usage`
       and the usage report (→ GET /api/usage).

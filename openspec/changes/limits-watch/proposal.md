@@ -25,9 +25,8 @@ estimation of subscription windows": we can show the real remaining %.
   - `internal/limits`: run a configurable command (default `claude -p /usage`,
     env-prefixable like `GTMUX_HQ_AGENT` for the home-proxy case) and parse the
     windows into `[{label, pctUsed, resetAt}]`. Runs are **cached** to
-    `state/limits.json` with a TTL (default 10 min) — it spawns a process, so it
-    is NEVER called per `gtmux usage`; a stale cache triggers a refresh at most
-    once per TTL, and `--refresh` forces one.
+    `state/limits.json` with a TTL (default 15 min, shortened to 5 min when a window is near its cap) — it spawns a process, so it
+    is NEVER called per `gtmux usage`; a stale cache triggers a refresh at most once per TTL, and `--refresh` forces one.
   - Surfacing: a `limits` block on `gtmux usage` (and `--json` / `GET /api/usage`)
     — `Session 11% · Week 58% (resets Jul 17) · Week/Fable 88%`; a bare
     `gtmux limits [--json|--refresh]`.
