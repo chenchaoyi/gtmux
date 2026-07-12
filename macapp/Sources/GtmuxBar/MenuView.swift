@@ -122,10 +122,19 @@ struct MenuView: View {
     private var summaryText: String {
         let n = store.total
         if n == 0 { return l10n.tr("no agents", "没有 agent") }
+        // Per-status counts describe the SECTIONS below, which exclude the
+        // supervisor (it renders as the HQ card) — exclude it here too so the
+        // summary and section headers agree. The total keeps every agent; the
+        // status-item tint/badge (store.waiting/…) still include HQ on purpose
+        // (a waiting supervisor NEEDS you no less than any agent).
+        let rows = store.agents.filter { !$0.isSupervisor }
+        let waiting = rows.filter { $0.state == .waiting }.count
+        let working = rows.filter { $0.state == .working }.count
+        let idle = rows.filter { $0.state == .idle }.count
         var parts: [String] = []
-        if store.waiting > 0 { parts.append(l10n.tr("\(store.waiting) awaiting input", "\(store.waiting) 待输入")) }
-        parts.append(l10n.tr("\(store.working) working", "\(store.working) 运行中"))
-        parts.append(l10n.tr("\(store.idleCount) idle", "\(store.idleCount) 空闲"))
+        if waiting > 0 { parts.append(l10n.tr("\(waiting) awaiting input", "\(waiting) 待输入")) }
+        parts.append(l10n.tr("\(working) working", "\(working) 运行中"))
+        parts.append(l10n.tr("\(idle) idle", "\(idle) 空闲"))
         let agents = l10n.tr("\(n) agent\(n == 1 ? "" : "s")", "\(n) 个 agent")
         return agents + " · " + parts.joined(separator: " · ")
     }
