@@ -52,7 +52,7 @@ func attribute(procs []proc, panePIDs map[string]int, cfg config) (map[string]Ag
 	var orphans []Orphan
 	var simRSS, simCPU, simCount, simPID int
 	for _, p := range procs {
-		if owned[p.pid] || isWhitelisted(p.comm) || isAgentProcess(p.comm) {
+		if owned[p.pid] || !validComm(p.comm) || isWhitelisted(p.comm) || isAgentProcess(p.comm) {
 			continue
 		}
 		mb := p.rssKB / 1024
@@ -157,6 +157,15 @@ func classifyReclaim(comm string) (kind, hint string) {
 }
 
 // baseComm shortens a full command path to its basename for display.
+// validComm sanity-filters a process command before it can become a reclaim
+// candidate: reject empty, and reject a leading '-' — that marks a LOGIN SHELL
+// ("-zsh", "-bash", "-/bin/bash") or junk argv[0] (e.g. a process whose comm ps
+// reports as "-PPID"), none of which is a meaningful thing to suggest killing.
+func validComm(comm string) bool {
+	c := strings.TrimSpace(comm)
+	return c != "" && !strings.HasPrefix(c, "-")
+}
+
 func baseComm(comm string) string {
 	comm = strings.TrimSpace(comm)
 	if i := strings.LastIndexByte(strings.Fields(comm)[0], '/'); i >= 0 {

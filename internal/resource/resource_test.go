@@ -80,3 +80,29 @@ func TestClassifyReclaim(t *testing.T) {
 		t.Errorf("generic should have empty kind, got %q", k)
 	}
 }
+
+// A heavy process whose comm is a login-shell marker or junk argv[0] (leading
+// '-', e.g. "-PPID"/"-bash") must NOT become a reclaim candidate — regression
+// for the "reclaim: -PPID" bug.
+func TestReclaimSanityFilter(t *testing.T) {
+	for _, c := range []string{"-PPID", "-bash", "-/bin/bash", "", "  "} {
+		if validComm(c) {
+			t.Errorf("validComm(%q) = true, want false (must not be a reclaim target)", c)
+		}
+	}
+	for _, c := range []string{"node", "/Applications/Foo.app/Contents/MacOS/Foo", "launchd_sim"} {
+		if !validComm(c) {
+			t.Errorf("validComm(%q) = false, want true", c)
+		}
+	}
+	// end-to-end: a 500 MB "-PPID" orphan candidate is filtered out entirely.
+	procs := []proc{{pid: 999, ppid: 1, rssKB: 500 * 1024, cpu: 5, comm: "-PPID"}}
+	cfg := defaultConfig
+	cfg.OrphanRSSMB = 100 // low, so a 500MB proc WOULD be an orphan if not filtered
+	_, orphans := attribute(procs, map[string]int{}, cfg)
+	for _, o := range orphans {
+		if o.Comm == "-PPID" || o.PID == 999 {
+			t.Errorf("junk-comm proc leaked into reclaim: %+v", o)
+		}
+	}
+}
