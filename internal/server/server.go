@@ -125,6 +125,12 @@ type Deps struct {
 	// UsageJSON returns the marshaled usage report — byte-identical to
 	// `gtmux usage --json` (usage-watch). Optional: nil → GET /api/usage is 503.
 	UsageJSON func() ([]byte, error)
+
+	// OnSlowTick, if set, is called on a slow cadence (~20s) from the hub's single
+	// goroutine — the SINGLE-WRITER place to sample resources + evaluate limits and
+	// emit resource·warn / limits·warn nudges without the read-check-write race a
+	// getter-invoked-by-many-callers has. Optional.
+	OnSlowTick func()
 }
 
 // Config configures the listener and auth token.
@@ -154,7 +160,8 @@ func New(cfg Config, deps Deps) *Server {
 	if deps.Push != nil { // on every tally change: Live Activity update + silent badge sync
 		s.hub.onTally = deps.Push.OnTally
 	}
-	s.hub.onClients = deps.OnClients // remote-viewer indicator (count of live SSE clients)
+	s.hub.onClients = deps.OnClients   // remote-viewer indicator (count of live SSE clients)
+	s.hub.onSlowTick = deps.OnSlowTick // single-writer resource/limits evaluator + nudge
 	return s
 }
 

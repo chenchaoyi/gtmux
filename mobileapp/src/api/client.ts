@@ -41,10 +41,15 @@ export interface UsageWindow {
   pct_used: number;
   reset_at: string;
 }
+export interface ResourceReport {
+  machine?: {disk_free_gb?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string};
+  orphans?: {pid: number; rss_mb: number; comm: string; kind?: string; hint?: string}[];
+}
 export interface UsageReport {
   sessions?: {agent_key: string; tok: number; rate: number; usage_warn?: string}[];
   types?: {agent_key: string; sessions: number; tok: number; rate: number; usage_warn?: string}[];
   limits?: {windows?: UsageWindow[]; warn?: string; at?: number};
+  resource?: ResourceReport;
 }
 
 // A chat-history turn (GET /api/transcript): one user instruction, the agent's

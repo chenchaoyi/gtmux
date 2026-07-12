@@ -27,6 +27,7 @@ func cmdNew(args []string) int {
 			name = a
 		}
 	}
+	preflightResource() // warn (not block) if a machine resource is at its red line
 
 	// tmux uses '.' and ':' as target separators (session:window.pane), so a name
 	// carrying them can't be addressed — swap them for '-'.

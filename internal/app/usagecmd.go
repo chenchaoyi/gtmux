@@ -10,12 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"path/filepath"
-
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
-	"github.com/chenchaoyi/gtmux/internal/state"
-	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/resource"
 	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
 )
 
@@ -43,9 +40,10 @@ type usageRollup struct {
 }
 
 type usageReport struct {
-	Sessions []usageRow    `json:"sessions"`
-	Types    []usageRollup `json:"types"`
-	Limits   limits.Report `json:"limits"` // real subscription windows (limits-watch)
+	Sessions []usageRow      `json:"sessions"`
+	Types    []usageRollup   `json:"types"`
+	Limits   limits.Report   `json:"limits"`   // real subscription windows (limits-watch)
+	Resource resource.Report `json:"resource"` // local machine resources (resource-watch)
 }
 
 // gatherUsage assembles rows over the current radar (radar ordering) + rollups.
@@ -85,28 +83,10 @@ func gatherUsage() usageReport {
 	sort.Slice(rep.Types, func(i, j int) bool { return rep.Types[i].AgentKey < rep.Types[j].AgentKey })
 	// Real subscription-window remaining (cached; never spawns per call unless stale).
 	rep.Limits, _ = limits.Get(limits.LoadConfig(), false, now)
-	maybeNudgeLimits(rep.Limits)
+	// Local machine resources (cheap sampling; the warn NUDGE is emitted only from
+	// the serve tick, not here — see slowTickEval — so no read-check-write race).
+	rep.Resource = currentResource()
 	return rep
-}
-
-// maybeNudgeLimits informs a live HQ once when the subscription-limits warn state
-// CHANGES (a weekly window crossed the threshold, or cleared). Deduped via a
-// state marker so repeated usage gathers (serve polls) don't re-nudge. Uses the
-// same channel as the waiting/usage nudges.
-func maybeNudgeLimits(r limits.Report) {
-	marker := filepath.Join(state.Dir(), "limitswarn")
-	prior := state.ReadMarker(marker)
-	if r.Warn == prior {
-		return
-	}
-	if r.Warn == "" {
-		state.Remove(marker)
-		return
-	}
-	_ = state.WriteMarker(marker, r.Warn)
-	if pane := findHQPane(); pane != "" {
-		_ = tmux.SendText(pane, "[gtmux] limits·warn "+r.Warn, true)
-	}
 }
 
 // usageJSONBytes serves the CLI --json and GET /api/usage identically.

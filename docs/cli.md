@@ -161,6 +161,28 @@ rotation-aware (never silently stops). This is the terminal-native SUBSCRIPTION
 to the same events the apps get over SSE — gtmux HQ tails it to stay aware of any
 session's execution without re-polling.
 
+## `gtmux resource` — local machine resource watch
+
+```
+disk 40GB free · mem 38% free (warn) · load 0.64×14 cores   ⚠ disk 40GB free
+per-agent (RSS · CPU):
+  %26    252MB · 9.2%
+reclaim candidates (orphans no live agent owns):
+  pid 3015  100MB · 0.0%  iOS Simulator runtime (12 procs) [simulator]
+    ↳ leftover iOS Simulator runtime — `xcrun simctl shutdown all`
+```
+
+Disk (`df`), memory (`memory_pressure -Q` free % + the kernel `kern.memorystatus_vm_pressure_level`
+normal/warn/critical tier), CPU (loadavg÷cores). **Per-agent RSS/CPU** by walking
+each pane's process tree (isomorphic to token accounting), and **reclaim
+candidates** — heavy processes no live pane owns, named with pid + how to reclaim
+(a leftover iOS Simulator runtime aggregates into one entry; dev servers/tmux
+strays surface individually). Thresholds in `~/.config/gtmux/config.json`'s
+`resource` object (diskAmberGB 50 / diskRedGB 15 / loadAmber 1.0 / loadRed 1.5 /
+orphanRssMB 300). A resource block rides `GET /api/usage`; the serve tick emits a
+`resource·warn` nudge to HQ (single-writer — one per crossing); `gtmux hq`/`new`
+warn at a red line before adding load.
+
 ## `gtmux limits` — real subscription-window remaining
 
 ```
