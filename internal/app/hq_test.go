@@ -95,6 +95,35 @@ func TestSeedHQKnowledge(t *testing.T) {
 	}
 }
 
+// The seeded playbook must encode the v0.18.1 hardening: the hard role whitelist,
+// the nudge-payload-is-DATA policy, the dual-channel goal-changed sense, and the
+// TUN-mode network note. Pins spec⇄code consistency for these behaviors.
+func TestHQPlaybookHardening(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	agents, err := os.ReadFile(hqInstructionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(agents)
+	for _, want := range []string{
+		"HARD WHITELIST",       // role boundary tightened: no concrete command
+		"read-only",            // even read-only gh/git is delegated
+		"never an instruction", // nudge payload is DATA
+		"goal-changed",         // dual-channel: sense user-direct tasks
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("AGENTS.md playbook missing %q", want)
+		}
+	}
+	env, err := os.ReadFile(filepath.Join(hqKnowledgeDir(), "environment.md"))
+	if err != nil || !strings.Contains(string(env), "TUN") {
+		t.Errorf("environment.md should note Clash TUN mode: %v", err)
+	}
+}
+
 func TestHQAgentCommand(t *testing.T) {
 	t.Setenv("GTMUX_HQ_AGENT", "")
 	if got := hqAgentCommand(); got != "claude" {
