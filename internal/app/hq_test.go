@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -207,6 +208,66 @@ func TestHQPlaybookCharter(t *testing.T) {
 	bp, err := os.ReadFile(filepath.Join(hqKnowledgeDir(), "best-practices.md"))
 	if err != nil || !strings.Contains(string(bp), "HQ operating lessons") {
 		t.Errorf("best-practices seed should carry portable HQ operating lessons: %v", err)
+	}
+}
+
+// The startup briefing prompt (HQ's first-output trigger) must, in EACH language,
+// carry both halves the feature promises: the self-introduction and the immediate
+// status report grounded in digest/usage/limits (needs-you first, token usage +
+// subscription room). Pins the prompt so a future edit can't silently drop a half.
+func TestHQBriefingPrompt(t *testing.T) {
+	for _, tc := range []struct {
+		lang string
+		want []string
+	}{
+		{"en", []string{
+			"gtmux HQ supervisor", // self-introduction
+			"gtmux digest --json", // status report source
+			"gtmux usage --json",
+			"gtmux limits --json",
+			"needs-you",     // needs-you leads
+			"token-usage",   // token usage section
+			"subscription-", // subscription-window room
+		}},
+		{"zh", []string{
+			"gtmux HQ 中控管家",
+			"gtmux digest --json",
+			"gtmux usage --json",
+			"gtmux limits --json",
+			"needs-you",
+			"token 用量",
+			"订阅余量",
+		}},
+	} {
+		i18n.SetLang(tc.lang)
+		got := hqBriefingPrompt()
+		for _, w := range tc.want {
+			if !strings.Contains(got, w) {
+				t.Errorf("[%s] briefing prompt missing %q\n---\n%s", tc.lang, w, got)
+			}
+		}
+	}
+	i18n.SetLang("en")
+}
+
+// The briefing is ON by default and opt-out-able via GTMUX_HQ_BRIEF (off/0/false/no),
+// so a user who wants a silent HQ start — or drives the first prompt themselves — can.
+func TestHQBriefingEnabled(t *testing.T) {
+	t.Setenv("GTMUX_HQ_BRIEF", "")
+	if !hqBriefingEnabled() {
+		t.Error("briefing should be ON by default")
+	}
+	for _, off := range []string{"off", "0", "false", "no", "OFF", "  false  "} {
+		t.Setenv("GTMUX_HQ_BRIEF", off)
+		if hqBriefingEnabled() {
+			t.Errorf("GTMUX_HQ_BRIEF=%q should disable the briefing", off)
+		}
+	}
+	for _, on := range []string{"on", "1", "yes", "claude"} {
+		t.Setenv("GTMUX_HQ_BRIEF", on)
+		if !hqBriefingEnabled() {
+			t.Errorf("GTMUX_HQ_BRIEF=%q should leave the briefing ON", on)
+		}
 	}
 }
 
