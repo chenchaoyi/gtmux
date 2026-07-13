@@ -28,4 +28,4 @@
 - [x] `menu-bar-app` spec: ADD "Shared-input control surface" requirement + scenarios
 - [x] `remote-access` spec: MODIFY the guest requirement (menu-bar surface now exists; `share --json` contract)
 - [x] `make check` + `cd macapp && swift build -c release` + `scripts/check-design.sh` green
-- [ ] Archive `web-shared-input-menubar` once merged
+- [x] Archive `web-shared-input-menubar` once merged
