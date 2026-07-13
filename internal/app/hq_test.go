@@ -177,8 +177,8 @@ func TestHQPlaybookHardening(t *testing.T) {
 		}
 	}
 	env, err := os.ReadFile(filepath.Join(hqKnowledgeDir(), "environment.md"))
-	if err != nil || !strings.Contains(string(env), "TUN") {
-		t.Errorf("environment.md should note Clash TUN mode: %v", err)
+	if err != nil || !strings.Contains(string(env), "gtmux config agent-proxy") {
+		t.Errorf("environment.md should explain the explicit, generic proxy config: %v", err)
 	}
 }
 

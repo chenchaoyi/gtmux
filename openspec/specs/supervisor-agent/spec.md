@@ -72,29 +72,28 @@ agents.
 
 The system SHALL apply an EXPLICITLY-configured proxy when it LAUNCHES a
 coding-agent process (the supervisor via `gtmux hq`, and likewise `gtmux adopt` /
-restore's resume / `gtmux spawn`), and SHALL NEVER probe the network to guess it.
-Whether a network needs the proxy (a double-VPN whose direct path 403s) or not (an
-office intranet, or Clash in transparent TUN mode) CANNOT be told apart by any
-reliable local signal — the proxy port listens either way, a direct request 403s
-either way, traffic routes through a `utun` either way — so the old port-probing
-`"auto"` is REMOVED (under TUN the port still listens, which wrongly proxied an
-office launch). The choice is resolved in order: the `GTMUX_AGENT_PROXY` env var,
-then `agentProxy` in `~/.config/gtmux/config.json`, else `"off"`. Values: `"off"`
-(no proxy — the default), `"on"` (`http://127.0.0.1:<agentProxyPort, default 7897>`),
-or an explicit URL. `gtmux config agent-proxy off|on|<url>` sets it; the env var
-overrides for a per-network switch. A command that already sets a proxy SHALL NOT be
-doubled.
+restore's resume / `gtmux spawn`), SHALL NEVER probe the network to guess it, and
+SHALL hard-code nothing about any particular proxy tool, host, or port — being a
+general tool, what proxy (if any) a network needs is the user's to configure.
+(The old port-probing `"auto"` is REMOVED: it wrongly proxied a direct-capable
+network whose local proxy port happened to be listening.) The choice is resolved in
+order, first non-empty wins: the `GTMUX_AGENT_PROXY` env var, then `agentProxy` in
+`~/.config/gtmux/config.json`, else none. A value is an HTTP(S) proxy URL to apply,
+or `"off"`/empty for no proxy (any non-URL value means none). `gtmux config
+agent-proxy <url>|off` sets it; the env var overrides for a per-network switch. A
+command that already sets a proxy SHALL NOT be doubled.
 
-#### Scenario: Off (the default) launches bare
+#### Scenario: No proxy (the default) launches bare
 
-- **WHEN** no `GTMUX_AGENT_PROXY` env and no `agentProxy` config (or it is `"off"`)
+- **WHEN** no `GTMUX_AGENT_PROXY` env and no `agentProxy` config (or it is `"off"` or
+  any non-URL value)
 - **THEN** nothing is prefixed — the agent launches with no proxy
 
-#### Scenario: On applies the local proxy explicitly
+#### Scenario: A configured URL is applied verbatim
 
-- **WHEN** `agentProxy` (or `GTMUX_AGENT_PROXY`) is `"on"`
-- **THEN** the launch is prefixed with `http://127.0.0.1:<port>` unconditionally, with
-  no port probe
+- **WHEN** `agentProxy` (or `GTMUX_AGENT_PROXY`) is a proxy URL
+- **THEN** the launch is prefixed with exactly that URL, with no probing and no
+  tool/host/port assumed by gtmux
 
 #### Scenario: Env overrides config for the network switch
 

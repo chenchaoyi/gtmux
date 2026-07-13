@@ -36,10 +36,13 @@ func configAgentProxy(args []string) int {
 		i18n.Say("agent-proxy (launch) = "+shownProxy(), "起 agent 代理 = "+shownProxy())
 		return 0
 	}
+	if args[0] == "-h" || args[0] == "--help" {
+		return configUsage()
+	}
 	v := strings.TrimSpace(args[0])
-	if v != "off" && v != "on" && !strings.Contains(v, "://") {
-		i18n.Sae("gtmux config agent-proxy: value must be off | on | <url>",
-			"gtmux config agent-proxy: 取值须为 off | on | <url>")
+	if v != "off" && !strings.Contains(v, "://") {
+		i18n.Sae("gtmux config agent-proxy: value must be a proxy URL or 'off'",
+			"gtmux config agent-proxy: 取值须为代理 URL 或 off")
 		return 2
 	}
 	if err := setConfigKey("agentProxy", v); err != nil {
@@ -78,15 +81,13 @@ func setConfigKey(key string, value any) error {
 
 func configUsage() int {
 	i18n.Sae(
-		"usage: gtmux config agent-proxy [off|on|<url>]\n"+
-			"  off  launch agents bare (office / Clash TUN — direct works)\n"+
-			"  on   proxy via 127.0.0.1:7897 (home / double-VPN — direct 403s)\n"+
-			"  <url>  an explicit proxy URL\n"+
+		"usage: gtmux config agent-proxy [<url>|off]\n"+
+			"  <url>  HTTP(S) proxy to apply when gtmux launches an agent (e.g. http://127.0.0.1:PORT)\n"+
+			"  off    no proxy — launch bare (the default when unset)\n"+
 			"  (no value shows the current resolved proxy; env GTMUX_AGENT_PROXY overrides)",
-		"用法：gtmux config agent-proxy [off|on|<url>]\n"+
-			"  off   裸起 agent（办公网 / Clash TUN —— 直连可达）\n"+
-			"  on    经 127.0.0.1:7897 代理（家里 / 双层VPN —— 直连 403）\n"+
-			"  <url> 显式代理 URL\n"+
+		"用法：gtmux config agent-proxy [<url>|off]\n"+
+			"  <url>  起 agent 时应用的 HTTP(S) 代理（如 http://127.0.0.1:端口）\n"+
+			"  off    不加代理，裸起（未设时的默认）\n"+
 			"  （不带值则显示当前生效值;环境变量 GTMUX_AGENT_PROXY 优先）")
 	return 0
 }

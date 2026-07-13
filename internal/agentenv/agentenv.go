@@ -1,21 +1,14 @@
-// Package agentenv decides the proxy environment a coding-agent process needs at
-// LAUNCH. Some networks reach the model API DIRECTLY (a plain office intranet, or
-// Clash in transparent TUN mode) and need NO proxy; others (a double-VPN at home)
-// block the direct path and need the local proxy. These CANNOT be told apart by any
-// reliable local probe — the proxy port listens either way, a direct request 403s
-// either way, and traffic routes through a utun either way — so the choice is
-// EXPLICIT. gtmux never guesses (the old "auto" port-probe is removed: under Clash
-// TUN 7897 still listens, which wrongly proxied an office launch).
+// Package agentenv decides the proxy environment a coding-agent process gets at
+// LAUNCH. Some networks reach the model API directly; others need an HTTP proxy.
+// Which is which cannot be told apart reliably from inside the tool, so the choice
+// is EXPLICIT and generic: gtmux applies a proxy ONLY when one is configured, and
+// never probes or guesses. What proxy (if any) each network needs is the user's to
+// configure — gtmux hard-codes nothing about any particular proxy tool or network.
 //
-// Resolved in order: the GTMUX_AGENT_PROXY env var, then agentProxy in
-// ~/.config/gtmux/config.json, else "off". Values:
-//
-//	"off"               → no proxy (DEFAULT; office / TUN — launch bare)
-//	"on"                → http://127.0.0.1:<agentProxyPort, default 7897> (home VPN)
-//	"http://host:port"  → that explicit URL
-//
-// Set it per network with `gtmux config agent-proxy off|on|<url>` (writes the config)
-// or the GTMUX_AGENT_PROXY env var (wire it to your network switch).
+// Resolved in order, first non-empty wins: the GTMUX_AGENT_PROXY env var, then
+// agentProxy in ~/.config/gtmux/config.json, else none. A value is either an HTTP(S)
+// proxy URL to apply, or "off" (equivalently empty) for no proxy. Set it with
+// `gtmux config agent-proxy <url>|off`; the env var overrides for a per-network switch.
 package agentenv
 
 import (
@@ -26,12 +19,8 @@ import (
 	"strings"
 )
 
-// DefaultProxyPort is the local proxy port `on` uses when none is configured.
-const DefaultProxyPort = 7897
-
 type config struct {
-	AgentProxy     *string `json:"agentProxy"`
-	AgentProxyPort *int    `json:"agentProxyPort"`
+	AgentProxy *string `json:"agentProxy"`
 }
 
 func loadConfig() config {
@@ -43,42 +32,28 @@ func loadConfig() config {
 	return c
 }
 
-// mode resolves the configured proxy mode: env override, then config, else "off".
-func mode(c config) string {
+// value resolves the configured proxy value: env override, then config, else "".
+func value() string {
 	if v := strings.TrimSpace(os.Getenv("GTMUX_AGENT_PROXY")); v != "" {
 		return v
 	}
-	if c.AgentProxy != nil {
+	if c := loadConfig(); c.AgentProxy != nil {
 		return strings.TrimSpace(*c.AgentProxy)
 	}
-	return "off"
+	return ""
 }
 
-// proxyURL resolves the proxy to apply ("" = none) — EXPLICIT, never probed.
-//   - "on"              → http://127.0.0.1:<port>
-//   - an explicit URL   → that URL
-//   - "off" / unset / anything else (incl. the removed "auto") → "" (no proxy)
+// proxyURL resolves the proxy to apply ("" = none) — EXPLICIT, never probed. A value
+// that is a URL is applied; "off"/empty/anything-not-a-URL means no proxy.
 func proxyURL() string {
-	c := loadConfig()
-	switch m := mode(c); {
-	case m == "on":
-		return fmt.Sprintf("http://127.0.0.1:%d", proxyPort(c))
-	case strings.Contains(m, "://"):
-		return m
-	default:
-		return ""
+	if v := value(); strings.Contains(v, "://") {
+		return v
 	}
-}
-
-func proxyPort(c config) int {
-	if c.AgentProxyPort != nil && *c.AgentProxyPort > 0 {
-		return *c.AgentProxyPort
-	}
-	return DefaultProxyPort
+	return ""
 }
 
 // Prefix returns the shell env prefix to prepend to an agent launch command
-// ("" = nothing needed), e.g. `HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897 `.
+// ("" = nothing needed), e.g. `HTTPS_PROXY=<url> HTTP_PROXY=<url> `.
 func Prefix() string {
 	u := proxyURL()
 	if u == "" {

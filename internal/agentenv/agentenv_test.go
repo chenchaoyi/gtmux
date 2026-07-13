@@ -17,8 +17,8 @@ func writeCfg(t *testing.T, home, json string) {
 	}
 }
 
-// Unset (no config, no env) defaults to OFF — never guess a proxy.
-func TestDefaultOff(t *testing.T) {
+// Unset (no config, no env) → no proxy. gtmux never guesses.
+func TestDefaultNone(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("GTMUX_AGENT_PROXY", "")
 	if Prefix() != "" {
@@ -36,31 +36,28 @@ func TestOff(t *testing.T) {
 	}
 }
 
-// "on" applies the local proxy port EXPLICITLY (no probe).
-func TestOn(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("GTMUX_AGENT_PROXY", "")
-	writeCfg(t, home, `{"agentProxy":"on"}`)
-	want := "HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897 "
-	if Prefix() != want {
-		t.Errorf("on = %q, want %q", Prefix(), want)
-	}
-	// A custom port.
-	writeCfg(t, home, `{"agentProxy":"on","agentProxyPort":1080}`)
-	if got := Prefix(); got != "HTTPS_PROXY=http://127.0.0.1:1080 HTTP_PROXY=http://127.0.0.1:1080 " {
-		t.Errorf("on custom port = %q", got)
-	}
-}
-
+// A configured proxy URL is applied verbatim (the tool hard-codes no port/host).
 func TestExplicitURL(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("GTMUX_AGENT_PROXY", "")
-	writeCfg(t, home, `{"agentProxy":"http://10.0.0.1:8888"}`)
-	want := "HTTPS_PROXY=http://10.0.0.1:8888 HTTP_PROXY=http://10.0.0.1:8888 "
+	writeCfg(t, home, `{"agentProxy":"http://127.0.0.1:7897"}`)
+	want := "HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897 "
 	if Prefix() != want {
 		t.Errorf("explicit = %q, want %q", Prefix(), want)
+	}
+}
+
+// A non-URL value (incl. the removed "on"/"auto" keywords) means no proxy.
+func TestNonURLIsNone(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("GTMUX_AGENT_PROXY", "")
+	for _, v := range []string{`"on"`, `"auto"`, `"true"`, `""`} {
+		writeCfg(t, home, `{"agentProxy":`+v+`}`)
+		if Prefix() != "" {
+			t.Errorf("agentProxy=%s must be no proxy (only a URL applies), got %q", v, Prefix())
+		}
 	}
 }
 
@@ -68,26 +65,15 @@ func TestExplicitURL(t *testing.T) {
 func TestEnvOverride(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	writeCfg(t, home, `{"agentProxy":"off"}`) // config says off…
-	t.Setenv("GTMUX_AGENT_PROXY", "on")       // …but env says on → on wins
-	if Active() != "http://127.0.0.1:7897" {
+	writeCfg(t, home, `{"agentProxy":"off"}`)   // config says off…
+	t.Setenv("GTMUX_AGENT_PROXY", "http://p:1") // …but env supplies a URL → it wins
+	if Active() != "http://p:1" {
 		t.Errorf("env should override config, got %q", Active())
 	}
 	t.Setenv("GTMUX_AGENT_PROXY", "off")
-	writeCfg(t, home, `{"agentProxy":"on"}`) // config on, env off → off wins
+	writeCfg(t, home, `{"agentProxy":"http://p:1"}`) // config URL, env off → off wins
 	if Active() != "" {
-		t.Errorf("env off should override config on, got %q", Active())
-	}
-}
-
-// The removed "auto" (a legacy config value) degrades to OFF — never the old probe.
-func TestLegacyAutoIsOff(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("GTMUX_AGENT_PROXY", "")
-	writeCfg(t, home, `{"agentProxy":"auto"}`)
-	if Prefix() != "" {
-		t.Errorf("legacy 'auto' must degrade to off (no probe), got %q", Prefix())
+		t.Errorf("env off should override config URL, got %q", Active())
 	}
 }
 
