@@ -37,15 +37,17 @@ worktree by convention.
 - **THEN** the window/pane title is the task slug (`--title`, else worktree/branch, else
   goal head)
 
-### Requirement: Headless dispatch for heavy work
+### Requirement: Headless dispatch for background heavy work
 
-`gtmux spawn --headless` SHALL run the dispatched agent detached with NO tmux window —
-proxied by construction and tracked via the events/ledger path — so HQ can dispatch
-heavy or batch work (a build, a bulk edit) without parking its main input loop or
-cluttering tmux with a window the user did not ask to watch.
+`gtmux spawn --headless` SHALL dispatch heavy or batch work (a build, a bulk edit)
+WITHOUT popping a terminal tab, and SHALL mark its window as background so a glance at
+tmux distinguishes it from windows the user should watch — while keeping the dispatch
+fully proxied, land-verified, tracked, and reapable (its pane still exists; "headless"
+means no terminal tab and out of the way, not untracked). This lets HQ offload heavy
+work without parking its main input loop.
 
-#### Scenario: Heavy work runs without a window
+#### Scenario: Heavy work runs without a terminal tab
 
 - **WHEN** `gtmux spawn --headless <goal>` runs
-- **THEN** the agent runs detached with no tmux window, and the dispatch is tracked like
-  any other
+- **THEN** no terminal tab is opened, the window is marked background, and the dispatch
+  is proxied, verified, tracked, and reapable like any other

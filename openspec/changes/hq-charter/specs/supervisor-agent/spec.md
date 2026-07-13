@@ -29,22 +29,23 @@ network, concrete footgun instances) SHALL stay in the local `knowledge/`, not t
 - **THEN** it directs dispatching them as SEPARATE self-reporting subagents so the fast
   op's completion is visible without waiting on the slow one
 
-### Requirement: Lifecycle watchdog surfaces reclaimable and stuck sessions
+### Requirement: Lifecycle watchdog escalates a pane stuck waiting
 
-The system SHALL, from the single-writer serve tick, surface two lifecycle conditions
-to a live HQ as deduped, snoozeable, suggest-only nudges: a finished dispatch OR a
-lingering window whose worktree is merged and clean (a `reap-suggest`, covering
-manually-created windows via reap-by-pane), and a pane that is stuck (working with no
-output past a threshold, or waiting/errored past a timeout) (an escalation). It SHALL
-never auto-reclaim and never auto-answer — it only surfaces.
+The system SHALL, from the single-writer serve tick, escalate to a live HQ a pane that
+has been WAITING (needs the user) past a timeout without being resolved — a
+suggest-only nudge, fired at most ONCE per waiting episode (a marker dedups within the
+episode and is cleared when the pane leaves waiting, so a fresh wait re-arms), and never
+about the HQ pane itself. This complements the reclaim suggestion for a finished
+dispatch (see "Reclaim suggestion when a dispatch looks done"); the watchdog only
+surfaces — it never auto-reclaims or auto-answers.
 
-#### Scenario: A lingering merged window is suggested for reclaim
+#### Scenario: A long-unresolved wait escalates
 
-- **WHEN** a window's worktree is merged and clean and its work is done
-- **THEN** HQ receives one `reap-suggest` (deduped), and nothing is reclaimed automatically
+- **WHEN** a pane has been waiting past the timeout without being resolved and an HQ
+  pane is live
+- **THEN** HQ receives one escalation nudge for that pane, deduped per waiting episode
 
-#### Scenario: A stuck pane escalates
+#### Scenario: Leaving waiting re-arms the escalation
 
-- **WHEN** a pane is working with no output past the threshold, or waiting/errored past
-  the timeout
-- **THEN** HQ receives one escalation nudge, deduped and snoozeable
+- **WHEN** the pane leaves waiting and later enters a new waiting episode
+- **THEN** a fresh escalation may fire (the prior episode's dedup does not suppress it)

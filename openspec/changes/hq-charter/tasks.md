@@ -14,9 +14,9 @@
 - [x] `gtmux reap <pane_id>` not in the ledger → derive worktree/branch from pane cwd (`dispatch.WorktreeContext`); same safety gate; kills the WINDOW not a session
 - [x] Tests: `barePaneTask` synthesis, window-not-session kill, dirty report-only, window-only (main checkout), `WorktreeContext` linked-detection (real git)
 
-## PR 3 — window titles (M3)  ·  headless spawn (M2) DEFERRED
+## PR 3 — window titles (M3)  ·  PR 6 — headless spawn (M2)
 - [x] `gtmux spawn` names the window+pane after a task slug (`--title` → worktree/branch leaf → goal head); pins `automatic-rename off` so it sticks; `--title` flag + tests
-- [ ] M2 `spawn --headless` — DEFERRED: "no tmux window" conflicts with land-verify (which needs a pane). Needs one design nod (windowless-tracked model) before building; surfaced to the user.
+- [x] M2 `spawn --headless` (user chose: no terminal TAB, tracked): forces no-open, marks the window background (`⌁ `), still proxied/verified/tracked/reapable; seed references it; `windowName` test
 
 ## PR 4 — copy-mode injection guard (M4, G)
 - [x] `internal/hqnudge`: `#{pane_in_mode}` short-circuits `boxEmpty` (treated like a non-empty draft) → queue, never inject; delivers on mode-exit/next drain
@@ -30,11 +30,13 @@
   extension is a small follow-up)
 - [ ] working-with-no-output stuck detection — DEFERRED (needs last-activity tracking)
 
-## Still open before archive
-- [ ] M2 `spawn --headless` — design nod needed (windowless vs land-verify). Surfaced.
-- [ ] Reconcile the `agent-dispatch` "Headless dispatch" + `supervisor-agent` watchdog
-  spec deltas with what shipped before archiving (implement or narrow).
+## Deferred to small follow-ups (NOT blocking archive)
+- reap-suggest on the slow-tick for lingering/bare panes (the Stop-time sweep covers
+  ledgered dispatches today)
+- stuck-*working* detection (needs last-activity tracking)
 
 ## Close-out
 - [x] Each shipped PR: make check + check-design green; spec+tests+docs same PR
-- [ ] Archive `hq-charter` once M2 + the remaining watchdog scope are resolved
+- [x] M2 resolved (user: no-tab tracked) + spec deltas reconciled with what shipped
+- [ ] Archive `hq-charter` (all six mechanisms landed; the two deferred items become
+  their own future change)
