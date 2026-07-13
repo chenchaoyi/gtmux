@@ -129,6 +129,24 @@ func TestShareAdmin_MasterOnly(t *testing.T) {
 	}
 }
 
+// GET /api/share/config returns the full policy to the master (for `gtmux share
+// status`), and 403s a guest/device.
+func TestShareConfigGet_MasterOnly(t *testing.T) {
+	h, share, _, device, guest := shareServer(t)
+	on := true
+	share.SetConfig(&on, &[]string{"%1", "%2"})
+	var st ShareState
+	json.Unmarshal(do(t, h, http.MethodGet, "/api/share/config", testToken).Body.Bytes(), &st)
+	if !st.Enabled || len(st.Panes) != 2 {
+		t.Fatalf("master GET config = %+v, want enabled + 2 panes", st)
+	}
+	for _, tok := range []string{guest, device} {
+		if rr := do(t, h, http.MethodGet, "/api/share/config", tok); rr.Code != http.StatusForbidden {
+			t.Errorf("non-master GET config = %d, want 403", rr.Code)
+		}
+	}
+}
+
 func TestShareManager_Allowed(t *testing.T) {
 	m := NewShareManager(ShareState{}, nil)
 	if m.Allowed("%1") {

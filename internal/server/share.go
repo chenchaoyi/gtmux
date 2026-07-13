@@ -104,14 +104,19 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, cap)
 }
 
-// handleShareConfig implements POST /api/share/config — MASTER only. Sets consent
-// and/or the allowlist. Guests and devices cannot enable sharing or edit the list.
+// handleShareConfig implements GET/POST /api/share/config — MASTER only. GET returns
+// the current policy ({enabled, panes}); POST sets consent and/or the allowlist.
+// Guests and devices cannot read the full policy, enable sharing, or edit the list.
 func (s *Server) handleShareConfig(w http.ResponseWriter, r *http.Request) {
 	if !s.masterOnly(w, r) {
 		return
 	}
 	if s.deps.Share == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("sharing not configured"))
+		return
+	}
+	if r.Method == http.MethodGet {
+		writeJSON(w, http.StatusOK, s.deps.Share.State())
 		return
 	}
 	var body struct {

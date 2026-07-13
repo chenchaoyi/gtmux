@@ -65,12 +65,14 @@ func cmdDevices(args []string) int {
 	return listDevices(base, token)
 }
 
-// deviceListEntry mirrors the GET /api/devices shape (no tokens).
+// deviceListEntry mirrors the GET /api/devices shape (no tokens). Scope is "" for a
+// paired device or "guest" for a share link.
 type deviceListEntry struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen"`
+	Scope      string `json:"scope,omitempty"`
 }
 
 func listDevices(base, token string) int {

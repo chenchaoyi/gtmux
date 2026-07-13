@@ -7,9 +7,9 @@
 - [x] `POST /api/share/config` + `POST /api/share/new` (master-only) + `GET /api/share` ({input, panes/all}); revoke reuses `/api/devices/revoke` (guests share the roster)
 - [x] Tests: guest blocked off / not-allowlisted / allowed when both; owner unrestricted; capability per scope; master-only admin; `ShareManager.Allowed`
 
-## PR 2 — `gtmux share` CLI
-- [ ] `gtmux share status|on|off|add <pane…>|remove <pane…>|new [--label]|revoke <id>` over the serve API (master token)
-- [ ] `new` prints the share URL + QR (like pairing); tests
+## PR 2 — `gtmux share` CLI  ✅
+- [x] `gtmux share status|on|off|add|remove|new [--label]|revoke` over the serve master API; `handleShareConfig` gains GET (master state)
+- [x] `new` prints the guest share link (`<tunnel|serve>/#t=<token>`) + QR; guests filtered from the roster by scope; GET-config master-only test
 
 ## PR 3 — web mirror input (`web/app.js`)
 - [ ] Fetch `/api/share`; show a minimal input row (text + Enter + control keys) ONLY for allowed panes → `POST /api/send`
