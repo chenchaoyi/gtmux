@@ -106,6 +106,16 @@
       <span class="rb-spacer"></span>
       <span id="reply-size" class="rb-size"></span>
     </div>
+    <!-- shared input: shown ONLY for panes the host consented + allowlisted (GET /api/share) -->
+    <div id="pane-input" hidden>
+      <input id="pin" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="type into this pane…" />
+      <button id="pin-send" title="Enter">↵</button>
+      <button class="pin-k" data-key="C-c" title="Ctrl-C">^C</button>
+      <button class="pin-k" data-key="Escape" title="Esc">esc</button>
+      <button class="pin-k" data-key="Tab" title="Tab">⇥</button>
+      <button class="pin-k" data-key="Up" title="Up">↑</button>
+      <button class="pin-k" data-key="Down" title="Down">↓</button>
+    </div>
   </section>
 
   <!-- chat history (对话 mode) -->

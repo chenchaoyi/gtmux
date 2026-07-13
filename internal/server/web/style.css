@@ -423,6 +423,24 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   border-top: 1px solid var(--divider); background: var(--waiting-tint);
   font-size: 11.5px; color: var(--fg2);
 }
+/* shared-input row (web-shared-input): shown only for host-allowlisted panes */
+#pane-input {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 16;
+  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+  border-top: 1px solid var(--divider); background: var(--bg2, var(--bg));
+}
+#pane-input #pin {
+  flex: 1; min-width: 0; padding: 8px 10px; font: inherit; font-size: 13px;
+  color: var(--fg); background: var(--bg); border: 1px solid var(--divider);
+  border-radius: 8px; outline: none;
+}
+#pane-input #pin:focus { border-color: var(--accent, #06b6d4); }
+#pane-input button {
+  flex: none; padding: 8px 10px; font-size: 12px; color: var(--fg2);
+  background: var(--bg); border: 1px solid var(--divider); border-radius: 8px; cursor: pointer;
+}
+#pane-input button:hover { color: var(--fg); border-color: var(--fg3, var(--fg2)); }
+#pane-input #pin-send { color: var(--fg); font-weight: 600; }
 #pane.has-reply #term { bottom: 44px; }
 .rb-lead { color: var(--fg2); }
 .rb-opts { display: inline-flex; gap: 6px; }

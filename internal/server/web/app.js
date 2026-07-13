@@ -421,6 +421,37 @@
   }
   function hideChatLoader() { var e = $('chat-load'); if (e) e.remove(); }
 
+  // --- shared input (web-shared-input) -----------------------------------
+  // The server gate is authoritative; this only mirrors it. GET /api/share tells us,
+  // for THIS caller, whether input is on and which panes are allowed (or all, for the
+  // owner). We show the input bar ONLY for an allowed pane; a blocked send still 403s.
+  var SHARE = {input: false, all: false, panes: {}};
+  function fetchShare() {
+    api('/api/share').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
+      if (!j) return;
+      SHARE = {input: !!j.input, all: !!j.all, panes: {}};
+      (j.panes || []).forEach(function (p) { SHARE.panes[p] = true; });
+      updateInputBar();
+    }).catch(function () {});
+  }
+  function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
+  function updateInputBar() {
+    var bar = $('pane-input'); if (!bar) return;
+    bar.hidden = !(!$('pane').hidden && paneMode === 'term' && paneCanInput(curPane));
+  }
+  function sendPane(body) {
+    body.id = curPane;
+    var pin = $('pin');
+    return api('/api/send', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+      .then(function (r) {
+        if (!r) return;
+        if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = 'input not shared for this pane'; } return; }
+        if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('Session expired — open a fresh link.'); return; }
+        if (!r.ok) return;
+        return r.json();
+      }).then(function (j) { if (j && typeof j.text === 'string') { writePane(j.text); hidePaneLoader(); } });
+  }
+
   function pollPane() {
     if (!curPane) return;
     api('/api/pane?id=' + encodeURIComponent(curPane)).then(function (r) {
@@ -455,6 +486,7 @@
       try { fit.fit(); } catch (e) {}
       showFocusChrome(true);
       pollPane(); clearInterval(paneTimer); paneTimer = setInterval(pollPane, 1200);
+      updateInputBar(); // show the input row iff this caller may type into this pane
     }
   }
   function setMode(m) {
@@ -1116,6 +1148,17 @@
     $('copy-screen').onclick = copyScreen;
     $('pane-prev').onclick = function () { cyclePane(-1); };
     $('pane-next').onclick = function () { cyclePane(1); };
+    // Shared-input row: text+Enter and the allowlisted control keys → POST /api/send.
+    var pin = $('pin');
+    if (pin) {
+      pin.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); var t = pin.value; pin.value = ''; pin.placeholder = 'type into this pane…'; sendPane({text: t, enter: true}); }
+      });
+    }
+    if ($('pin-send')) $('pin-send').onclick = function () { var t = pin ? pin.value : ''; if (pin) pin.value = ''; sendPane({text: t, enter: true}); };
+    Array.prototype.forEach.call(document.querySelectorAll('.pin-k'), function (b) {
+      b.onclick = function () { sendPane({key: b.getAttribute('data-key')}); if (pin) pin.focus(); };
+    });
     $('jump').onclick = function () { if (term) term.scrollToBottom(); updateJump(false); };
   }
 
@@ -1289,6 +1332,10 @@
       home();
     });
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
+    // A GUEST share link carries its token directly (#t=<token>) — use it as-is (a
+    // lasting, revocable credential), unlike the one-time pairing code (#c=).
+    var mt = /(?:^|[#&])t=([a-f0-9]{16,})/i.exec(location.hash || '');
+    if (mt && mt[1]) { token = mt[1]; try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
     var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(location.hash || '');
     var code = m && m[1];
     if (code) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
@@ -1296,6 +1343,7 @@
     ready.then(function () {
       if (!token) return gate('Open the pairing link from `gtmux serve` / `gtmux tunnel`, or from the phone app ("open on computer").');
       fetchTheme(); // match the user's real terminal (async; the pane picks it up)
+      fetchShare(); // learn which panes (if any) this caller may type into
       setupSettings();
       home();
     });
