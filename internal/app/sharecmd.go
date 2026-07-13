@@ -27,10 +27,13 @@ func cmdShare(args []string) int {
 	port := defaultServePort
 	var rest []string
 	label := ""
+	jsonOut := false
 	for i := 0; i < len(args); i++ {
 		switch a := args[i]; {
 		case a == "-h" || a == "--help":
 			return shareUsage()
+		case a == "--json":
+			jsonOut = true
 		case a == "--port" || a == "-p":
 			if i+1 < len(args) {
 				port = atoiOr(args[i+1], port)
@@ -57,7 +60,7 @@ func cmdShare(args []string) int {
 	}
 	switch sub {
 	case "status":
-		return shareStatus(base, token)
+		return shareStatus(base, token, jsonOut)
 	case "on":
 		return shareSetEnabled(base, token, true)
 	case "off":
@@ -67,7 +70,7 @@ func cmdShare(args []string) int {
 	case "remove", "rm":
 		return shareEditPanes(base, token, rest, false)
 	case "new":
-		return shareNew(base, token, label, port)
+		return shareNew(base, token, label, port, jsonOut)
 	case "revoke":
 		if len(rest) == 0 {
 			i18n.Sae("gtmux share revoke: missing <id>", "gtmux share revoke: 缺少 <id>")
@@ -85,10 +88,49 @@ type shareStateJSON struct {
 	Panes   []string `json:"panes"`
 }
 
-func shareStatus(base, token string) int {
+// shareStatusOut is the `gtmux share status --json` contract: the consent state,
+// the allowlist, the guest links, and the base URL a link is built on — carrying
+// NO token (a consumer never needs to read the token roster).
+type shareStatusOut struct {
+	Enabled bool         `json:"enabled"`
+	Panes   []string     `json:"panes"`
+	Guests  []shareGuest `json:"guests"`
+	Base    string       `json:"base,omitempty"`
+}
+
+type shareGuest struct {
+	ID         string `json:"id"`
+	Label      string `json:"label"`
+	EnrolledAt int64  `json:"enrolled_at"`
+}
+
+// buildShareStatus is the pure mapper (state + roster + base → the --json shape),
+// unit-tested without a live serve.
+func buildShareStatus(st shareStateJSON, guests []deviceListEntry, base string) shareStatusOut {
+	out := shareStatusOut{Enabled: st.Enabled, Panes: st.Panes, Base: base, Guests: []shareGuest{}}
+	if out.Panes == nil {
+		out.Panes = []string{}
+	}
+	for _, g := range guests {
+		out.Guests = append(out.Guests, shareGuest{ID: g.ID, Label: g.Name, EnrolledAt: g.EnrolledAt})
+	}
+	return out
+}
+
+func shareStatus(base, token string, jsonOut bool) int {
 	st, ok := getShareState(base, token)
 	if !ok {
 		return 1
+	}
+	if jsonOut {
+		guests := listGuests(base, token)
+		shareBase := readTunnelURL()
+		if shareBase == "" {
+			shareBase = base
+		}
+		b, _ := json.MarshalIndent(buildShareStatus(st, guests, shareBase), "", "  ")
+		fmt.Println(string(b))
+		return 0
 	}
 	if st.Enabled {
 		i18n.Say("shared web input: ON", "分享输入：已开启")
@@ -118,7 +160,7 @@ func shareSetEnabled(base, token string, on bool) int {
 	if _, ok := postShareConfig(base, token, body); !ok {
 		return 1
 	}
-	return shareStatus(base, token)
+	return shareStatus(base, token, false)
 }
 
 func shareEditPanes(base, token string, panes []string, add bool) int {
@@ -149,10 +191,25 @@ func shareEditPanes(base, token string, panes []string, add bool) int {
 	if _, ok := postShareConfig(base, token, body); !ok {
 		return 1
 	}
-	return shareStatus(base, token)
+	return shareStatus(base, token, false)
 }
 
-func shareNew(base, token, label string, port int) int {
+// shareNewOut is the `gtmux share new --json` contract: the minted link's id,
+// label, and full URL. NO bare token — the URL carries the `#t=` token, so the
+// secret lives in exactly one field a consumer already treats as sensitive.
+type shareNewOut struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	URL   string `json:"url"`
+}
+
+// buildShareNew is the pure link assembler (base + minted token → the --json
+// shape), unit-tested without a live serve.
+func buildShareNew(id, label, token, base string) shareNewOut {
+	return shareNewOut{ID: id, Label: label, URL: base + "/#t=" + token}
+}
+
+func shareNew(base, token, label string, port int, jsonOut bool) int {
 	body, _ := json.Marshal(map[string]string{"label": label})
 	req, _ := http.NewRequest(http.MethodPost, base+"/api/share/new", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -174,6 +231,11 @@ func shareNew(base, token, label string, port int) int {
 	local := shareBase == ""
 	if local {
 		shareBase = base
+	}
+	if jsonOut {
+		b, _ := json.MarshalIndent(buildShareNew(out.ID, out.Name, out.Token, shareBase), "", "  ")
+		fmt.Println(string(b))
+		return 0
 	}
 	link := shareBase + "/#t=" + out.Token
 	fmt.Println()
@@ -281,11 +343,13 @@ func atoiOr(s string, def int) int {
 
 func shareUsage() int {
 	i18n.Sae(
-		"usage: gtmux share [on|off | add <pane…> | remove <pane…> | new [--label <name>] | revoke <id>]\n"+
+		"usage: gtmux share [on|off | add <pane…> | remove <pane…> | new [--label <name>] | revoke <id>] [--json]\n"+
 			"  Let a collaborator on the shared web page type into the terminal — ONLY with your\n"+
-			"  consent (share on) and ONLY into panes you allow (share add %N). Default: off, none.",
-		"用法：gtmux share [on|off | add <pane…> | remove <pane…> | new [--label <名>] | revoke <id>]\n"+
+			"  consent (share on) and ONLY into panes you allow (share add %N). Default: off, none.\n"+
+			"  --json makes `status` and `new` emit machine-readable output (no token).",
+		"用法：gtmux share [on|off | add <pane…> | remove <pane…> | new [--label <名>] | revoke <id>] [--json]\n"+
 			"  让协作者在分享的 web 页面里往终端输入 —— 仅在你同意（share on）且仅限你允许的\n"+
-			"  pane（share add %N）。默认：关闭、无 pane。")
+			"  pane（share add %N）。默认：关闭、无 pane。\n"+
+			"  --json 让 `status` / `new` 输出机器可读格式（不含 token）。")
 	return 0
 }
