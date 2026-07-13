@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // seedHQHome creates the home + BOTH instruction entries once (AGENTS.md the
@@ -45,9 +47,9 @@ func TestSeedHQHomeIdempotent(t *testing.T) {
 	}
 }
 
-// Back-compat: a pre-AGENTS.md home has a FULL (possibly edited) CLAUDE.md —
-// seeding must leave it untouched and only ADD the canonical AGENTS.md.
-func TestSeedHQHomeBackCompat(t *testing.T) {
+// A legacy full CLAUDE.md (pre-AGENTS.md) is authoritative: seeding must leave it
+// untouched and NOT drop a zombie AGENTS.md beside it (the bug this fixes).
+func TestSeedHQHome_LegacyClaudeNoZombie(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	if err := os.MkdirAll(filepath.Dir(hqClaudePointerPath()), 0o755); err != nil {
 		t.Fatal(err)
@@ -55,15 +57,71 @@ func TestSeedHQHomeBackCompat(t *testing.T) {
 	if err := os.WriteFile(hqClaudePointerPath(), []byte("FULL OLD PLAYBOOK + user notes"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	seeded, err := seedHQHome()
-	if err != nil || !seeded {
-		t.Fatalf("seed over old home = (%v, %v), want (true, nil) — AGENTS.md added", seeded, err)
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
 	}
 	if cb, _ := os.ReadFile(hqClaudePointerPath()); string(cb) != "FULL OLD PLAYBOOK + user notes" {
-		t.Errorf("old CLAUDE.md must never be clobbered into a pointer: %q", cb)
+		t.Errorf("legacy CLAUDE.md must never be clobbered: %q", cb)
 	}
-	if b, _ := os.ReadFile(hqInstructionsPath()); !strings.Contains(string(b), "gtmux digest --json") {
-		t.Errorf("AGENTS.md should be added alongside: %q", b)
+	if fileExists(hqInstructionsPath()) {
+		t.Error("a zombie AGENTS.md must NOT be created beside a full CLAUDE.md")
+	}
+	// A lone full CLAUDE.md is a valid layout → no nag.
+	if en, _ := hqPolicyWarning(); en != "" {
+		t.Errorf("lone full CLAUDE.md should not warn: %q", en)
+	}
+}
+
+// A home with only AGENTS.md (e.g. a prior Codex seed) gains ONLY the cheap CLAUDE.md
+// import — never a second full copy — so Claude reads the same canonical file.
+func TestSeedHQHome_AgentsOnlyAddsPointer(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(hqInstructionsPath(), []byte(hqInstructions), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	cb, _ := os.ReadFile(hqClaudePointerPath())
+	if !isClaudePointer(string(cb)) {
+		t.Errorf("CLAUDE.md should be the @AGENTS.md import, got %q", cb)
+	}
+	if en, _ := hqPolicyWarning(); en != "" {
+		t.Errorf("canonical + pointer is clean, should not warn: %q", en)
+	}
+}
+
+// The redundant/broken layouts must WARN so `gtmux hq` surfaces them.
+func TestHQPolicyWarning(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write := func(name, body string) {
+		if err := os.WriteFile(filepath.Join(state.HQHome(), name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Two full docs → warn.
+	write("AGENTS.md", hqInstructions)
+	write("CLAUDE.md", "# my full playbook\n...")
+	if en, zh := hqPolicyWarning(); en == "" || zh == "" {
+		t.Error("full CLAUDE.md + AGENTS.md should warn (redundant/drift)")
+	}
+	// Clean single source (pointer + canonical) → no warn.
+	write("CLAUDE.md", hqClaudePointer)
+	if en, _ := hqPolicyWarning(); en != "" {
+		t.Errorf("pointer + canonical is clean: %q", en)
+	}
+	// Dangling import (pointer but no AGENTS.md) → warn.
+	if err := os.Remove(hqInstructionsPath()); err != nil {
+		t.Fatal(err)
+	}
+	if en, _ := hqPolicyWarning(); en == "" {
+		t.Error("a CLAUDE.md @import with no AGENTS.md should warn (dangling)")
 	}
 }
 
