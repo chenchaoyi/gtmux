@@ -14,6 +14,7 @@ type spyOps struct {
 	merged     bool
 	mergedErr  error
 	killed     bool
+	winKilled  bool
 	removed    bool
 	branchGone bool
 }
@@ -23,6 +24,7 @@ func (s *spyOps) ops() reapOps {
 		worktreeDirty:  func(string) (bool, error) { return s.dirty, s.dirtyErr },
 		branchMerged:   func(string, string) (bool, error) { return s.merged, s.mergedErr },
 		killSession:    func(string) error { s.killed = true; return nil },
+		killWindow:     func(string) error { s.winKilled = true; return nil },
 		removeWorktree: func(string, bool) error { s.removed = true; return nil },
 		deleteBranch:   func(string, string, bool) error { s.branchGone = true; return nil },
 	}
@@ -118,5 +120,62 @@ func TestReap_ReusedPane_DoesNotKillSession(t *testing.T) {
 	}
 	if s.killed {
 		t.Fatalf("must NOT kill a session spawn did not create")
+	}
+}
+
+// barePaneTask: a linked worktree is reclaimed; the main checkout / detached HEAD is
+// window-only.
+func TestBarePaneTask(t *testing.T) {
+	linked := barePaneTask("%9", "/wt/feat-y", "feat/y", true)
+	if linked.Pane != "%9" || linked.Worktree != "/wt/feat-y" || linked.Branch != "feat/y" || linked.Session != "" {
+		t.Fatalf("linked worktree task = %+v", linked)
+	}
+	main := barePaneTask("%9", "/repo", "main", false)
+	if main.Worktree != "" || main.Branch != "" || main.Pane != "%9" {
+		t.Fatalf("main-checkout pane should be window-only: %+v", main)
+	}
+	det := barePaneTask("%9", "/wt/x", "HEAD", true)
+	if det.Branch != "" {
+		t.Fatalf("detached HEAD must not delete a branch: %+v", det)
+	}
+}
+
+// A bare-pane reap of a MANUAL window kills the WINDOW (never a session) under the same
+// gate, and reclaims its worktree/branch.
+func TestReap_BarePane_KillsWindowNotSession(t *testing.T) {
+	s := &spyOps{dirty: false, merged: true}
+	task := barePaneTask("%28", "/wt/menubar-width", "feat/menubar-width", true)
+	res := planAndReap(task, false, false, s.ops())
+	if !res.Reaped {
+		t.Fatalf("clean+merged bare pane should reap, blocked=%v", res.BlockedBy)
+	}
+	if s.killed {
+		t.Fatalf("bare-pane reap must NOT kill a session")
+	}
+	if !s.winKilled || !s.removed || !s.branchGone {
+		t.Fatalf("bare-pane reap should kill window + remove worktree + delete branch: %+v", s)
+	}
+}
+
+func TestReap_BarePane_DirtyReportOnly(t *testing.T) {
+	s := &spyOps{dirty: true, merged: true}
+	task := barePaneTask("%28", "/wt/x", "feat/x", true)
+	res := planAndReap(task, false, false, s.ops())
+	if res.Reaped || s.winKilled || s.removed {
+		t.Fatalf("a dirty bare-pane worktree must be report-only: reaped=%v %+v", res.Reaped, s)
+	}
+}
+
+// A live pane not inside a worktree (main checkout) → the window is reclaimed, nothing
+// git-side is touched.
+func TestReap_BarePane_WindowOnly(t *testing.T) {
+	s := &spyOps{}
+	task := barePaneTask("%5", "/repo", "main", false)
+	res := planAndReap(task, false, false, s.ops())
+	if !res.Reaped || !s.winKilled {
+		t.Fatalf("window-only bare pane should reap the window")
+	}
+	if s.removed || s.branchGone || s.killed {
+		t.Fatalf("window-only reap must touch no worktree/branch/session: %+v", s)
 	}
 }

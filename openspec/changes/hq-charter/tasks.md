@@ -11,8 +11,8 @@
 - [x] Tests: `TestHQPlaybookCharter` pins the charter markers; toward the in-flight change's supervisor-agent requirement
 
 ## PR 2 — reap-by-bare-pane (M1, D)
-- [ ] `gtmux reap <pane_id>` resolves repo context from pane cwd when not in the ledger; same safety gate
-- [ ] Tests: manual-window reclaim gated on clean+merged; dirty/unmerged report-only; `--json`
+- [x] `gtmux reap <pane_id>` not in the ledger → derive worktree/branch from pane cwd (`dispatch.WorktreeContext`); same safety gate; kills the WINDOW not a session
+- [x] Tests: `barePaneTask` synthesis, window-not-session kill, dirty report-only, window-only (main checkout), `WorktreeContext` linked-detection (real git)
 
 ## PR 3 — window titles + headless spawn (M3, M2)
 - [ ] `gtmux spawn` sets pane/window title (slug: `--title` → worktree/branch → goal head)
