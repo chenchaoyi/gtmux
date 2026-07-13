@@ -11,9 +11,9 @@
 - [x] `gtmux share status|on|off|add|remove|new [--label]|revoke` over the serve master API; `handleShareConfig` gains GET (master state)
 - [x] `new` prints the guest share link (`<tunnel|serve>/#t=<token>`) + QR; guests filtered from the roster by scope; GET-config master-only test
 
-## PR 3 — web mirror input (`web/app.js`)
-- [ ] Fetch `/api/share`; show a minimal input row (text + Enter + control keys) ONLY for allowed panes → `POST /api/send`
-- [ ] Read-only unchanged when input is off; webui_test coverage
+## PR 3 — web mirror input (`web/app.js`)  ✅
+- [x] boot reads a guest `#t=<token>`; `fetchShare()` learns `{input, panes, all}`; `paneCanInput` + `updateInputBar`
+- [x] `#pane-input` row (text+Enter + allowlisted control keys) shown ONLY for allowed panes → `POST /api/send` (403 → "not shared"); read-only otherwise
 
 ## PR 4 — menu-bar app UI (Swift)
 - [ ] Consent toggle + per-pane picker + "new share link" / revoke, reading/writing the serve share API
