@@ -6,9 +6,9 @@
 - [x] Spec deltas drafted (supervisor-agent seed playbook + watchdog; agent-dispatch reap-by-pane / titles / headless)
 
 ## PR 1 — seed promotion (M6, PROMPT-side)
-- [ ] `hqInstructions` rewritten to carry A–H + B2 as agent-neutral policy (single-source)
-- [ ] `hqKnowledgeSeeds` best-practices seeded with GENERIC operating lessons (F6a)
-- [ ] Tests: seed contains the charter policy markers; spec + docs
+- [x] `hqInstructions` carries B (responsiveness) + B2 (granularity) + C (window naming) + A (reclaim-is-HQ's-job), agent-neutral single-source
+- [x] `hqKnowledgeSeeds` best-practices seeded with GENERIC operating lessons (F6a); concrete instances stay local
+- [x] Tests: `TestHQPlaybookCharter` pins the charter markers; toward the in-flight change's supervisor-agent requirement
 
 ## PR 2 — reap-by-bare-pane (M1, D)
 - [ ] `gtmux reap <pane_id>` resolves repo context from pane cwd when not in the ledger; same safety gate

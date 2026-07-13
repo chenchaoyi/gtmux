@@ -182,6 +182,33 @@ func TestHQPlaybookHardening(t *testing.T) {
 	}
 }
 
+// The seed must carry the promoted charter: main-session responsiveness (B), dispatch
+// granularity (B2), reclaim-is-HQ's-job (A), and the portable operating lessons (F6).
+func TestHQPlaybookCharter(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	agents, err := os.ReadFile(hqInstructionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(agents)
+	for _, want := range []string{
+		"RESPONSIVENESS",          // B: main session stays the fast input receiver
+		"GRANULARITY",             // B2: one self-reporting subagent per independent step
+		"reclamation IS YOUR JOB", // A: reclaim via reap/subagent, not hand-typed
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("charter seed missing %q", want)
+		}
+	}
+	bp, err := os.ReadFile(filepath.Join(hqKnowledgeDir(), "best-practices.md"))
+	if err != nil || !strings.Contains(string(bp), "HQ operating lessons") {
+		t.Errorf("best-practices seed should carry portable HQ operating lessons: %v", err)
+	}
+}
+
 func TestHQAgentCommand(t *testing.T) {
 	t.Setenv("GTMUX_HQ_AGENT", "")
 	if got := hqAgentCommand(); got != "claude" {
