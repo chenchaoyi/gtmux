@@ -19,6 +19,19 @@ func TestSlugify(t *testing.T) {
 	}
 }
 
+// windowName marks a headless (background) dispatch distinctly from a watch window.
+func TestWindowName(t *testing.T) {
+	if got := windowName("menubar-width", false); got != "menubar-width" {
+		t.Errorf("normal dispatch window = %q", got)
+	}
+	if got := windowName("menubar-width", true); got != headlessMarker+"menubar-width" {
+		t.Errorf("headless dispatch should be marked: %q", got)
+	}
+	if got := windowName("", true); got != "" {
+		t.Errorf("empty slug stays empty even headless: %q", got)
+	}
+}
+
 // spawnSlug prefers --title, then the branch leaf, then a normalized goal head.
 func TestSpawnSlug(t *testing.T) {
 	if got := spawnSlug("My Title", "feat/x", "some goal"); got != "my-title" {

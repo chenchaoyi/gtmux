@@ -33,7 +33,7 @@ type spawnJSON struct {
 func cmdSpawn(args []string) int {
 	var (
 		paneFlag, worktree, model, agent, cwd, title string
-		noOpen, force, asJSON                        bool
+		noOpen, headless, force, asJSON              bool
 		timeout                                      time.Duration
 		goalParts                                    []string
 	)
@@ -64,6 +64,11 @@ func cmdSpawn(args []string) int {
 			title = next()
 		case a == "--no-open":
 			noOpen = true
+		case a == "--headless":
+			// Background heavy work (B/B2): no terminal tab pops, the window is marked
+			// background — but the pane still exists, so it stays proxied, land-verified,
+			// tracked, and reapable like any dispatch.
+			headless, noOpen = true, true
 		case a == "--force":
 			force = true
 		case a == "--json":
@@ -99,7 +104,7 @@ func cmdSpawn(args []string) int {
 	}
 
 	// Target a pane: reuse --pane, or create a fresh session (optionally in a worktree).
-	pane, session, ownSession, wtPath, branch, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, asJSON)
+	pane, session, ownSession, wtPath, branch, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, asJSON)
 	if rc != 0 {
 		return rc
 	}
@@ -131,7 +136,7 @@ func cmdSpawn(args []string) int {
 // spawnTarget resolves the destination pane, creating a session/worktree as needed
 // and launching the agent through the proxy. Returns the pane, session, whether we
 // created the session, the worktree path/branch, and a non-zero rc on failure.
-func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
+func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
 	// Reuse an existing pane.
 	if paneFlag != "" {
 		if tmux.Display(paneFlag, "#{pane_id}") == "" {
@@ -144,7 +149,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		if shellCommands[tmux.Display(pane, "#{pane_current_command}")] {
 			launchAgent(pane, agent, model)
 		}
-		nameDispatchWindow(pane, spawnSlug(title, "", goal)) // task-named for a readable fleet
+		nameDispatchWindow(pane, spawnSlug(title, "", goal), headless) // task-named for a readable fleet
 		return pane, session, false, "", "", 0
 	}
 
@@ -183,7 +188,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	}
 	pane = tmux.Display(created, "#{pane_id}")
 	launchAgent(pane, agent, model)
-	nameDispatchWindow(pane, spawnSlug(title, branch, goal)) // task-named for a readable fleet
+	nameDispatchWindow(pane, spawnSlug(title, branch, goal), headless) // task-named for a readable fleet
 
 	// Open an UNFOCUSED terminal tab (never steal focus) unless --no-open.
 	if !noOpen && runtime.GOOS == "darwin" {
@@ -197,13 +202,26 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 // at tmux reads what the fleet is doing (charter C). It pins the window name (turns OFF
 // automatic-rename, which would otherwise track the running command) and sets the pane
 // title. Best-effort — a naming failure never fails the dispatch.
-func nameDispatchWindow(pane, slug string) {
+func nameDispatchWindow(pane, slug string, headless bool) {
 	if slug == "" || pane == "" {
 		return
 	}
 	_, _ = tmux.Run("set-window-option", "-t", pane, "automatic-rename", "off")
-	_, _ = tmux.Run("rename-window", "-t", pane, slug)
+	_, _ = tmux.Run("rename-window", "-t", pane, windowName(slug, headless))
 	_, _ = tmux.Run("select-pane", "-t", pane, "-T", slug)
+}
+
+// headlessMarker prefixes a background (`--headless`) dispatch's window name so a glance
+// at tmux distinguishes windows the user should WATCH from background work (charter C).
+const headlessMarker = "⌁ "
+
+// windowName is the window title for a dispatch: the task slug, prefixed with the
+// background marker for a headless dispatch.
+func windowName(slug string, headless bool) string {
+	if headless && slug != "" {
+		return headlessMarker + slug
+	}
+	return slug
 }
 
 // spawnSlug derives a short, tmux-friendly task slug for the window/pane title: an
@@ -334,7 +352,7 @@ func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) i
 }
 
 func spawnUsage() int {
-	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--no-open] [--force] [--json] <goal…>",
-		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--no-open] [--force] [--json] <任务…>")
+	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--no-open] [--force] [--json] <goal…>",
+		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--no-open] [--force] [--json] <任务…>")
 	return 2
 }

@@ -198,6 +198,7 @@ func TestHQPlaybookCharter(t *testing.T) {
 		"RESPONSIVENESS",          // B: main session stays the fast input receiver
 		"GRANULARITY",             // B2: one self-reporting subagent per independent step
 		"reclamation IS YOUR JOB", // A: reclaim via reap/subagent, not hand-typed
+		"--headless",              // M2: heavy/background work reference (now shipped)
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("charter seed missing %q", want)
