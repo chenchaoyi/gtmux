@@ -24,6 +24,9 @@ type EnrolledDevice struct {
 	Token      string `json:"token"`
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen,omitempty"`
+	// Scope is "" (a paired device — the owner's own surface, unrestricted input) or
+	// "guest" (a share link — input-restricted by the share gate). Additive/back-compat.
+	Scope string `json:"scope,omitempty"`
 }
 
 // EnrollManager holds the device roster plus short-lived, single-use enroll codes.
@@ -90,6 +93,49 @@ func (m *EnrollManager) Redeem(code, name string) (EnrolledDevice, bool) {
 		m.save(snap)
 	}
 	return d, true
+}
+
+// MintGuest creates a GUEST share token (scope "guest") directly — the owner hands
+// this out in a share link. It is input-restricted by the share gate (consent + the
+// per-pane allowlist), persisted, and individually revocable by ID like any roster
+// entry. No enroll code is involved: the owner is the one minting it.
+func (m *EnrollManager) MintGuest(label string) EnrolledDevice {
+	m.mu.Lock()
+	d := EnrolledDevice{
+		ID:         randHex(8),
+		Name:       sanitizeDeviceName(label),
+		Token:      randHex(32),
+		EnrolledAt: m.now().Unix(),
+		Scope:      "guest",
+	}
+	m.devices[d.Token] = d
+	snap := m.devicesLocked()
+	m.mu.Unlock()
+	if m.save != nil {
+		m.save(snap)
+	}
+	return d
+}
+
+// TokenScope returns an enrolled token's scope — "guest" for a share link, "device"
+// for a paired device (scope "") — updating LastSeen, and ok=false for an unknown
+// token. auth() uses it to authorize per scope.
+func (m *EnrollManager) TokenScope(tok string) (scope string, ok bool) {
+	if tok == "" {
+		return "", false
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	d, ok := m.devices[tok]
+	if !ok {
+		return "", false
+	}
+	d.LastSeen = m.now().Unix()
+	m.devices[tok] = d
+	if d.Scope == "guest" {
+		return "guest", true
+	}
+	return "device", true
 }
 
 // DeviceByToken returns the enrolled device a token belongs to (for showing WHO
@@ -210,12 +256,14 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID})
 }
 
-// deviceInfo is a device roster entry WITHOUT its token (safe to list).
+// deviceInfo is a device roster entry WITHOUT its token (safe to list). Scope is ""
+// for a paired device or "guest" for a share link, so a lister can tell them apart.
 type deviceInfo struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen,omitempty"`
+	Scope      string `json:"scope,omitempty"`
 }
 
 // handleDevices implements GET /api/devices — AUTHENTICATED. Lists the enrolled
@@ -227,7 +275,7 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]deviceInfo, 0)
 	for _, d := range s.deps.Enroll.Devices() {
-		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen})
+		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Scope: d.Scope})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"devices": out})
 }

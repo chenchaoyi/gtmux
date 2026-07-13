@@ -201,6 +201,10 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	// token keeps working, so existing pairings are unaffected.
 	deps.Enroll = server.NewEnrollManager(loadDevices(), saveDevices)
 
+	// Shared-input policy (web-shared-input): the host's consent + per-pane allowlist
+	// that gates a GUEST share link's input. Default off; persisted like the roster.
+	deps.Share = server.NewShareManager(loadShareState(), saveShareState)
+
 	return server.New(server.Config{Addr: addr, Token: token}, deps)
 }
 
@@ -270,6 +274,28 @@ func savePushTokens(toks []server.DeviceToken) {
 // devicesPath is where the enrolled-device roster persists (per-device tokens).
 func devicesPath() string {
 	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "devices.json")
+}
+
+func sharePath() string {
+	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "share.json")
+}
+
+func loadShareState() server.ShareState {
+	var st server.ShareState
+	if b, err := os.ReadFile(sharePath()); err == nil {
+		_ = json.Unmarshal(b, &st)
+	}
+	return st
+}
+
+func saveShareState(st server.ShareState) {
+	path := sharePath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return
+	}
+	if b, err := json.Marshal(st); err == nil {
+		_ = os.WriteFile(path, b, 0o600)
+	}
 }
 
 func loadDevices() []server.EnrolledDevice {
