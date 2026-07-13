@@ -55,6 +55,24 @@ func AddWorktree(dir, branch string) (string, string, error) {
 	return path, branch, nil
 }
 
+// WorktreeContext resolves, from a directory, the enclosing git worktree root, its
+// branch, and whether it is a LINKED worktree (safe to `git worktree remove`) vs the
+// main checkout. ok is false when dir is not inside a git repo. Used by `gtmux reap`
+// to reclaim a manually-created window that has no ledger entry — from just its pane.
+func WorktreeContext(dir string) (worktree, branch string, isLinked, ok bool) {
+	top, err := gitOutput(dir, "rev-parse", "--show-toplevel")
+	if err != nil || top == "" {
+		return "", "", false, false
+	}
+	branch, _ = gitOutput(dir, "rev-parse", "--abbrev-ref", "HEAD")
+	gitDir, _ := gitOutput(dir, "rev-parse", "--path-format=absolute", "--git-dir")
+	commonDir, _ := gitOutput(dir, "rev-parse", "--path-format=absolute", "--git-common-dir")
+	// A linked worktree's git-dir (…/.git/worktrees/<name>) differs from the shared
+	// common dir (…/.git); the main checkout's are identical.
+	isLinked = gitDir != "" && commonDir != "" && gitDir != commonDir
+	return top, branch, isLinked, true
+}
+
 // WorktreeDirty reports whether a worktree has uncommitted changes.
 func WorktreeDirty(wt string) (bool, error) {
 	out, err := gitOutput(wt, "status", "--porcelain")
