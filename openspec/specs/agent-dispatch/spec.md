@@ -9,8 +9,9 @@ The system SHALL provide `gtmux spawn [flags] <goal…>`, which atomically launc
 a coding agent and delivers a task to it with verification. It SHALL: target a
 pane (create a fresh detached tmux session by default, or reuse `--pane <id>`);
 optionally create an isolated git worktree with `--worktree <branch>` and run
-there; launch the agent through the network-aware launch path so the proxy is
-applied by construction (never a bare, un-proxied launch); accept `--model` to
+there; launch the agent through the shared launch path so the CONFIGURED proxy
+(when set — the choice is explicit, never probed) is applied by construction;
+accept `--model` to
 select the agent's model and `--agent` to select the agent; wait until the agent
 is actually live at its prompt before delivering; deliver the task text; and
 report the outcome. `--json` SHALL emit `{task_id, pane_id, session, delivered,
@@ -18,11 +19,12 @@ state, evidence}` where `state ∈ landed | queued | failed | refused-duplicate`
 `delivered` is true only for `landed`. When delivery is not verified, `spawn` SHALL
 exit non-zero.
 
-#### Scenario: Launch is proxied by construction
+#### Scenario: Launch applies the configured proxy by construction
 
-- **WHEN** `gtmux spawn` launches an agent
-- **THEN** the launch command is wrapped with the network-aware proxy env (same
-  rule as `gtmux hq`/`adopt`), so it never 403s from an un-proxied launch
+- **WHEN** `gtmux spawn` launches an agent and a proxy is configured (`on`/`<url>`)
+- **THEN** the launch command is wrapped with that proxy env (same rule as
+  `gtmux hq`/`adopt`), so a proxy-needing network never 403s from an un-proxied
+  launch; when the proxy is `off` the launch is bare
 
 #### Scenario: Reuse an existing pane
 
