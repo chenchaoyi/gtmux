@@ -24,7 +24,15 @@ const replyTailMax = 200
 func eventSummary(event, prompt, pane, agentSession, agentKey string) (summary, class string) {
 	switch event {
 	case "UserPromptSubmit":
-		return dispatch.NormalizeHead(prompt), ""
+		// A "UserPromptSubmit" can carry harness-injected content (a task-notification,
+		// a system-reminder) or our OWN nudge echoed back — never a real goal. Filter it
+		// with the SAME sanitizer the transcript uses so it doesn't become a goal or a
+		// goal-changed nudge.
+		clean, ok := transcript.CleanUserPrompt(prompt)
+		if !ok {
+			return "", ""
+		}
+		return dispatch.NormalizeHead(clean), ""
 	case "Stop":
 		reply := lastReply(pane, agentSession, agentKey)
 		if reply == "" {
