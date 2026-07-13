@@ -54,35 +54,78 @@ func hqClaudePointerPath() string { return filepath.Join(state.HQHome(), "CLAUDE
 const hqClaudePointer = `@AGENTS.md
 `
 
-// seedHQHome creates the hq home and writes each instructions file IF ABSENT —
-// AGENTS.md (the canonical playbook) and CLAUDE.md (the @AGENTS.md import).
-// Never overwrites either: they are the user's to edit and the supervisor's
-// place to accumulate knowledge. Returns whether this call seeded anything.
+// seedHQHome creates the hq home and seeds ONE authoritative policy file — never a
+// second. SINGLE-SOURCE model: AGENTS.md is the canonical full playbook (the
+// cross-agent convention Codex/Cursor/Amp read); CLAUDE.md is a one-line
+// `@AGENTS.md` import so Claude reads the SAME content, no two-doc drift.
 //
-// Back-compat: a home seeded before AGENTS.md existed has a FULL CLAUDE.md
-// (possibly user-edited) — it is left untouched (never clobbered into a
-// pointer), and AGENTS.md is added alongside for non-Claude supervisors.
+// A home that ALREADY has a policy file is "already seeded": we never add a second
+// FULL policy doc and never overwrite the user's edits. In particular a legacy full
+// CLAUDE.md (from before the AGENTS.md convention) is the authoritative doc — we do
+// NOT drop a zombie AGENTS.md beside it (the bug this fixes). `gtmux hq` separately
+// WARNS (see hqPolicyWarning) when it finds a redundant/broken layout.
+// Returns whether this call seeded anything.
 func seedHQHome() (seeded bool, err error) {
 	home := state.HQHome()
 	if err := os.MkdirAll(home, 0o755); err != nil {
 		return false, err
 	}
-	if _, statErr := os.Stat(hqInstructionsPath()); statErr != nil {
+	hasAgents := fileExists(hqInstructionsPath())
+	hasClaude := fileExists(hqClaudePointerPath())
+	switch {
+	case !hasAgents && !hasClaude:
+		// Fresh home → single source: the full AGENTS.md plus the CLAUDE.md import.
 		if err := os.WriteFile(hqInstructionsPath(), []byte(hqInstructions), 0o644); err != nil {
 			return false, err
 		}
-		seeded = true
-	}
-	if _, statErr := os.Stat(hqClaudePointerPath()); statErr != nil {
 		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
-			return seeded, err
+			return true, err
 		}
 		seeded = true
+	case hasAgents && !hasClaude:
+		// Canonical playbook exists but Claude's entry is missing → add ONLY the cheap
+		// import so Claude reads the SAME canonical file (single source, not a copy).
+		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
+			return false, err
+		}
+		seeded = true
+	case !hasAgents && hasClaude:
+		// A CLAUDE.md exists (legacy full playbook, or the user's own) and is
+		// authoritative → do NOT add a zombie AGENTS.md alongside it. Left untouched.
+	case hasAgents && hasClaude:
+		// Both present → already seeded; add nothing.
 	}
 	if seedHQKnowledge() {
 		seeded = true
 	}
 	return seeded, nil
+}
+
+// isClaudePointer reports whether CLAUDE.md is just the `@AGENTS.md` import (the
+// single-source pointer) rather than a full standalone playbook.
+func isClaudePointer(body string) bool {
+	return strings.TrimSpace(body) == strings.TrimSpace(hqClaudePointer)
+}
+
+// hqPolicyWarning returns a non-empty advisory (en, zh) when the home's policy layout
+// is redundant or broken, so `gtmux hq` surfaces it instead of silently living with a
+// zombie/dangling doc. "" when the layout is clean (single source, or a lone doc).
+func hqPolicyWarning() (en, zh string) {
+	hasAgents := fileExists(hqInstructionsPath())
+	body, readErr := os.ReadFile(hqClaudePointerPath())
+	hasClaude := readErr == nil
+	switch {
+	case hasAgents && hasClaude && !isClaudePointer(string(body)):
+		// A full CLAUDE.md + AGENTS.md: Claude reads only CLAUDE.md, so AGENTS.md is a
+		// redundant copy that drifts.
+		return "hq home has TWO policy docs — a full CLAUDE.md and AGENTS.md. Claude reads only CLAUDE.md; AGENTS.md is redundant and will drift. Remove AGENTS.md, or replace CLAUDE.md with a one-line `@AGENTS.md` import.",
+			"HQ home 有两份政策文档:全文 CLAUDE.md 和 AGENTS.md。Claude 只读 CLAUDE.md,AGENTS.md 冗余且会漂移。删掉 AGENTS.md,或把 CLAUDE.md 换成一行 `@AGENTS.md` 引用。"
+	case hasClaude && isClaudePointer(string(body)) && !hasAgents:
+		// CLAUDE.md imports @AGENTS.md but AGENTS.md is gone → dangling import.
+		return "hq CLAUDE.md imports `@AGENTS.md` but AGENTS.md is missing — Claude will load no playbook. Restore AGENTS.md, or put the playbook directly in CLAUDE.md.",
+			"HQ CLAUDE.md 引用了 `@AGENTS.md` 但 AGENTS.md 不存在 —— Claude 读不到守则。恢复 AGENTS.md,或把守则直接写进 CLAUDE.md。"
+	}
+	return "", ""
 }
 
 // hqKnowledgeDir is the supervisor's living knowledge base (its primary long-term
@@ -190,6 +233,10 @@ func cmdHQ(args []string) int {
 	if seeded {
 		i18n.Say("Seeded the supervisor home: "+hqInstructionsPath(),
 			"已初始化中控目录："+hqInstructionsPath())
+	}
+	// ④ Surface a redundant/broken policy layout instead of silently living with it.
+	if en, zh := hqPolicyWarning(); en != "" {
+		i18n.Sae("gtmux hq: "+en, "gtmux hq: "+zh)
 	}
 
 	// Already live → focus it, never spawn a second.
