@@ -23,9 +23,18 @@
 - [x] Test: in copy-mode → queued not sent; leaves mode → delivered
 
 ## PR 5 — dead-session / lifecycle watchdog (M5, D/G)
-- [ ] serve slow-tick: finished/lingering (incl. bare panes) → reap-suggest; stuck/timed-out → escalate
-- [ ] Deduped/snoozeable; suggest-only; tests
+- [x] serve slow-tick: a pane stuck WAITING past the timeout → escalate to HQ, once per
+  episode (presence marker, re-armed on leave), suggest-only, never about HQ itself
+- [ ] finished/lingering-on-slow-tick incl. bare panes → reap-suggest — DEFERRED (the
+  Stop-time reap-suggest sweep already covers ledgered dispatches; slow-tick + bare-pane
+  extension is a small follow-up)
+- [ ] working-with-no-output stuck detection — DEFERRED (needs last-activity tracking)
+
+## Still open before archive
+- [ ] M2 `spawn --headless` — design nod needed (windowless vs land-verify). Surfaced.
+- [ ] Reconcile the `agent-dispatch` "Headless dispatch" + `supervisor-agent` watchdog
+  spec deltas with what shipped before archiving (implement or narrow).
 
 ## Close-out
-- [ ] Each PR: make check + check-design green; spec+tests+docs same PR
-- [ ] Archive `hq-charter` after the last PR
+- [x] Each shipped PR: make check + check-design green; spec+tests+docs same PR
+- [ ] Archive `hq-charter` once M2 + the remaining watchdog scope are resolved

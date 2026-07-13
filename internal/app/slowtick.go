@@ -36,6 +36,8 @@ func slowTickEval() {
 	// (93→94→95%) doesn't re-nudge.
 	lr, _ := limits.Get(limits.LoadConfig(), false, time.Now())
 	nudgeOnChange("limitswarn", limitsTierKey(lr.Warn), "[gtmux] limits·warn "+lr.Warn, "")
+	// Lifecycle watchdog (charter M5): escalate a pane stuck waiting past the timeout.
+	watchdogSweep(time.Now().Unix())
 }
 
 // resourceTierKey is the dedup key for a machine warning: the tier (amber/red), or
