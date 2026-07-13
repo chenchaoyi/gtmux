@@ -75,14 +75,35 @@ rejection with no feedback as a turn of its own.
 
 ### Requirement: Strip harness/meta noise
 
-The system SHALL omit harness-injected and meta content (e.g. system reminders,
-command wrappers, meta-prompts the agent harness inserts) from prompts and replies
-so the chat shows only human-meaningful conversation.
+The system SHALL omit harness-injected and meta content from prompts and replies so
+the chat shows only human-meaningful conversation, and SHALL expose one shared
+sanitizer so the SAME filtering applies wherever a "last user prompt" is read (the
+transcript AND the hook's `UserPromptSubmit`), so an injected block never surfaces as
+a session goal or a goal-changed nudge. The filter SHALL drop: `<system-reminder>` and
+`<task-notification>` blocks — whether properly closed OR truncated/unclosed (a
+streamed fragment such as `<task-notification> <task-id>…</` must not survive);
+command wrappers and meta-prompts; `[SYSTEM NOTIFICATION …]` notices; and gtmux's own
+`[gtmux] …` nudge lines echoed back into a pane (its own event lines must never read
+back as a user goal). A prompt that is ONLY injected content collapses to empty and is
+dropped; injected content appended to a real prompt is trimmed off, leaving the real
+prompt.
 
 #### Scenario: Meta prompt hidden
 
 - **WHEN** a log line is a harness/meta prompt rather than a real user instruction
 - **THEN** it is not shown as a user turn
+
+#### Scenario: A truncated task-notification is not a goal
+
+- **WHEN** a "user" prompt is an unclosed/streamed `<task-notification>` fragment (no
+  close tag), a `[SYSTEM NOTIFICATION …]` notice, or a `[gtmux] …` nudge echoed back
+- **THEN** the sanitizer yields no real prompt, so it becomes neither a session goal
+  nor a goal-changed nudge
+
+#### Scenario: Injected content trailing a real prompt is trimmed
+
+- **WHEN** a real user prompt has an injected block or `[gtmux]` line appended
+- **THEN** only the real prompt text remains
 
 ### Requirement: Incremental tail cache
 

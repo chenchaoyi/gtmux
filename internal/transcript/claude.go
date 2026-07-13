@@ -153,13 +153,42 @@ func toolResultFeedback(content json.RawMessage) string {
 // injects INTO user content — context reminders and background-task notices. They
 // are not typed by the user, so they must never surface as chat prompts (a turn
 // that is ONLY such a block collapses to empty and is dropped; one appended to a
-// real prompt is just trimmed off).
-var harnessBlockRe = regexp.MustCompile(`(?s)<(system-reminder|task-notification)>.*?</(system-reminder|task-notification)>`)
+// real prompt is just trimmed off). `\b[^>]*>` tolerates attributes on the open tag.
+var harnessBlockRe = regexp.MustCompile(`(?s)<(system-reminder|task-notification)\b[^>]*>.*?</(system-reminder|task-notification)>`)
 
-// cleanPrompt strips harness-injected blocks then rejects empty/meta wrappers,
+// harnessOpenRe strips a DANGLING open block — a `<task-notification>`/`<system-reminder>`
+// whose close tag is absent (truncated/streamed content). Without this a fragment like
+// `<task-notification> <task-id>b50xphl27</` survives and is read back as a goal.
+var harnessOpenRe = regexp.MustCompile(`(?s)<(system-reminder|task-notification)\b[^>]*>.*`)
+
+// CleanUserPrompt strips system-injected content (harness reminder/task-notification
+// blocks — closed OR truncated, `[SYSTEM NOTIFICATION …]` notices, and gtmux's own
+// `[gtmux] …` nudges echoed back into a pane) from a raw prompt, and reports whether a
+// real user-typed prompt remains. Shared by the transcript parser AND the hook's
+// UserPromptSubmit path, so a system injection never surfaces as a goal or a nudge.
+func CleanUserPrompt(s string) (string, bool) { return cleanPrompt(s) }
+
+// stripInjected removes non-user-typed content: harness XML blocks (closed then any
+// dangling open one), then any LINE that is a `[SYSTEM NOTIFICATION …]` notice or a
+// `[gtmux] …` nudge (our own event lines must never read back as a user goal).
+func stripInjected(s string) string {
+	s = harnessBlockRe.ReplaceAllString(s, "")
+	s = harnessOpenRe.ReplaceAllString(s, "")
+	var kept []string
+	for _, ln := range strings.Split(s, "\n") {
+		t := strings.TrimSpace(ln)
+		if strings.HasPrefix(t, "[SYSTEM NOTIFICATION") || strings.HasPrefix(t, "[gtmux]") {
+			continue
+		}
+		kept = append(kept, ln)
+	}
+	return strings.TrimSpace(strings.Join(kept, "\n"))
+}
+
+// cleanPrompt strips harness/system-injected content then rejects empty/meta wrappers,
 // returning the displayable prompt and whether it's a real typed prompt.
 func cleanPrompt(s string) (string, bool) {
-	s = strings.TrimSpace(harnessBlockRe.ReplaceAllString(s, ""))
+	s = stripInjected(s)
 	if s == "" || isClaudeMetaPrompt(s) {
 		return "", false
 	}

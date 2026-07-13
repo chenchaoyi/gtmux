@@ -52,6 +52,21 @@ func TestEventSummary_PromptHead(t *testing.T) {
 	}
 }
 
+// A UserPromptSubmit carrying a system-injected block (task-notification, our own
+// nudge) must yield NO summary — so it never becomes a goal or a goal-changed nudge.
+func TestEventSummary_DropsInjectedPrompt(t *testing.T) {
+	for _, in := range []string{
+		"<task-notification> <task-id>b50xphl27</",
+		"<system-reminder>context low</system-reminder>",
+		"[SYSTEM NOTIFICATION] background task done",
+		`[gtmux] goal-changed gtmux:0 (%20) — goal:"x"`,
+	} {
+		if sum, _ := eventSummary("UserPromptSubmit", in, "", "", "claude"); sum != "" {
+			t.Errorf("injected prompt %q should yield no summary, got %q", in, sum)
+		}
+	}
+}
+
 func TestClassify_PreCompactIsStateNeutralLifecycle(t *testing.T) {
 	// PreCompact must be a lifecycle event (so it reaches the event stream) that
 	// changes NO marker (decide has an empty decision for it).
