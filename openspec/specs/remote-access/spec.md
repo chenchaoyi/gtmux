@@ -276,8 +276,14 @@ individually). Guest tokens SHALL live in the same revocable roster as devices
 (persisted), so revoking one share stops exactly that link. `GET /api/share` SHALL
 return the CALLER's input capability (`{input, panes}`) so a surface can show input only
 where allowed. The default SHALL be no consent and no panes — shared input is strictly
-opt-in, per pane. (A menu-bar control surface mirroring `gtmux share` is a planned
-follow-up, not required by this capability.)
+opt-in, per pane.
+
+`gtmux share status` and `gtmux share new` SHALL each support additive `--json` output —
+`status --json` returns `{enabled, panes, guests:[{id, label, enrolled_at}], base}` and
+`new --json` returns `{id, label, url}` — carrying NO bare token (the URL carries the
+`#t=` token), so a non-CLI consumer can read the guest list and the minted link without
+ever reading the token roster. The menu-bar app SHALL provide a control surface mirroring
+`gtmux share` (see the `menu-bar-app` capability), consuming this `--json` contract.
 
 #### Scenario: A guest is blocked until consent AND allowlist
 
@@ -300,4 +306,10 @@ follow-up, not required by this capability.)
 - **WHEN** the host revokes one guest share link
 - **THEN** exactly that link's token stops working; other guests and the owner's own
   devices are unaffected
+
+#### Scenario: The `--json` contract carries no token
+
+- **WHEN** a consumer runs `gtmux share status --json` or `gtmux share new --json`
+- **THEN** the output is machine-readable and includes the guest list / minted URL but no
+  bare token field, so the guest roster's secrets are never surfaced
 
