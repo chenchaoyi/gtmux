@@ -438,18 +438,34 @@
   function updateInputBar() {
     var bar = $('pane-input'); if (!bar) return;
     bar.hidden = !(!$('pane').hidden && paneMode === 'term' && paneCanInput(curPane));
+    if (WB && WB.tiles) WB.tiles.forEach(tileInputSync); // the workbench tiles too
+  }
+  // postSend is the shared /api/send call used by BOTH the single-pane bar and the
+  // workbench tiles. The server gate (guest consent + allowlist) is authoritative.
+  function postSend(id, body) {
+    body.id = id;
+    return api('/api/send', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
   }
   function sendPane(body) {
-    body.id = curPane;
     var pin = $('pin');
-    return api('/api/send', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
-      .then(function (r) {
-        if (!r) return;
-        if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = 'input not shared for this pane'; } return; }
-        if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('Session expired — open a fresh link.'); return; }
-        if (!r.ok) return;
-        return r.json();
-      }).then(function (j) { if (j && typeof j.text === 'string') { writePane(j.text); hidePaneLoader(); } });
+    return postSend(curPane, body).then(function (r) {
+      if (!r) return;
+      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = 'input not shared for this pane'; } return; }
+      if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('Session expired — open a fresh link.'); return; }
+      if (!r.ok) return;
+      return r.json();
+    }).then(function (j) { if (j && typeof j.text === 'string') { writePane(j.text); hidePaneLoader(); } });
+  }
+  // tileInputSync shows a tile's input row iff it is in term mode and the host allowed
+  // this pane; tileSendThen renders the post-send echo into the tile's own terminal.
+  function tileInputSync(t) { if (t && t.inputEl) t.inputEl.hidden = !(t.mode === 'term' && paneCanInput(t.id)); }
+  function tileSendThen(t, pin) {
+    return function (r) {
+      if (!r) return;
+      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = 'not shared'; } return; }
+      if (!r.ok) return;
+      r.json().then(function (j) { if (j && typeof j.text === 'string' && t.term) tileWrite(t, j.text); });
+    };
   }
 
   function pollPane() {
@@ -966,6 +982,17 @@
     var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = '关闭'; cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; head.appendChild(cl);
     el.appendChild(head);
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
+    // shared-input row (web-shared-input): shown for a term-mode tile the host allowed.
+    var tin = document.createElement('div'); tin.className = 'tile-input'; tin.hidden = true; t.inputEl = tin;
+    var tpin = document.createElement('input'); tpin.type = 'text'; tpin.placeholder = 'type…'; tpin.autocomplete = 'off'; tpin.spellcheck = false;
+    tpin.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var v = tpin.value; tpin.value = ''; tpin.placeholder = 'type…'; postSend(t.id, {text: v, enter: true}).then(tileSendThen(t, tpin)); } });
+    tin.appendChild(tpin);
+    [['C-c', '^C'], ['Escape', 'esc'], ['Tab', '⇥'], ['Up', '↑'], ['Down', '↓']].forEach(function (k) {
+      var b = document.createElement('button'); b.textContent = k[1]; b.title = k[0];
+      b.onclick = function (e) { e.stopPropagation(); postSend(t.id, {key: k[0]}).then(tileSendThen(t, tpin)); tpin.focus(); };
+      tin.appendChild(b);
+    });
+    el.appendChild(tin);
     var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
@@ -989,6 +1016,7 @@
     if (m === 'term') { tileTermStart(t); }
     else if (m === 'chat') { t.chatSig = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
     else { tilePollDiff(t); t.timer = setInterval(function () { tilePollDiff(t); }, 3000); }
+    tileInputSync(t); // show the input row only in term mode for an allowed pane
     wbSave();
   }
 
