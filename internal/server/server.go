@@ -15,6 +15,13 @@
 // compared in constant time. /api/send WRITES to a terminal (tmux send-keys), so
 // the token now also gates terminal input — a leaked token allows running
 // commands on the Mac. Keep the token secret and the tunnel deliberate.
+//
+// Caller SCOPE (web-shared-input): auth() resolves each token to a scope — master,
+// device (a paired phone), or guest (a share link) — and carries it in the request
+// context. master/device have full input; a GUEST's /api/send is gated by the share
+// policy (host consent + a per-pane allowlist, POST /api/share/config, master-only),
+// so a shared link can type only into the panes the host chose. GET /api/share returns
+// the caller's own input capability so a UI mirrors (never widens) the server gate.
 package server
 
 import (
@@ -116,6 +123,9 @@ type Deps struct {
 	// for its own per-device token, which auth then accepts alongside the master
 	// token. Optional: when nil, /api/enroll is 503 and only the master token works.
 	Enroll *EnrollManager
+	// Share, if set, holds the shared-input policy (consent + per-pane allowlist) that
+	// gates a GUEST token's /api/send. Optional: nil → guests can never type.
+	Share *ShareManager
 
 	// DigestJSON returns the marshaled agent-digest array — byte-identical to
 	// `gtmux digest --json` (the supervisor's fleet view: goal/last/ask per row).
@@ -182,6 +192,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/enroll/mint", s.auth(http.HandlerFunc(s.handleEnrollMint)))
 	mux.Handle("/api/devices", s.auth(http.HandlerFunc(s.handleDevices)))
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
+	mux.Handle("/api/share", s.auth(http.HandlerFunc(s.handleShare)))              // any: the caller's capability
+	mux.Handle("/api/share/config", s.auth(http.HandlerFunc(s.handleShareConfig))) // master: consent + allowlist
+	mux.Handle("/api/share/new", s.auth(http.HandlerFunc(s.handleShareNew)))       // master: mint a guest link
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
@@ -213,6 +226,25 @@ func (s *Server) ListenAndServe() error {
 }
 
 // auth wraps next with constant-time Bearer-token verification.
+// Caller scopes carried in the request context by auth(): the host's own master
+// token, a paired device (the owner's phone — full input), or a guest share link
+// (input-restricted by the share gate).
+const (
+	scopeMaster = "master"
+	scopeDevice = "device"
+	scopeGuest  = "guest"
+)
+
+type ctxKey int
+
+const scopeCtxKey ctxKey = 0
+
+// callerScope returns the authenticated caller's scope ("" if unset).
+func callerScope(ctx context.Context) string {
+	s, _ := ctx.Value(scopeCtxKey).(string)
+	return s
+}
+
 func (s *Server) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const prefix = "Bearer "
@@ -221,12 +253,19 @@ func (s *Server) auth(next http.Handler) http.Handler {
 		if strings.HasPrefix(h, prefix) {
 			tok = strings.TrimPrefix(h, prefix)
 		}
-		master := subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) == 1
-		if !master && !(s.deps.Enroll != nil && s.deps.Enroll.ValidToken(tok)) {
-			writeJSON(w, http.StatusUnauthorized, errBody("unauthorized"))
-			return
+		scope := scopeMaster
+		if subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) != 1 {
+			sc, ok := "", false
+			if s.deps.Enroll != nil {
+				sc, ok = s.deps.Enroll.TokenScope(tok)
+			}
+			if !ok {
+				writeJSON(w, http.StatusUnauthorized, errBody("unauthorized"))
+				return
+			}
+			scope = sc // scopeDevice | scopeGuest
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), scopeCtxKey, scope)))
 	})
 }
 
@@ -384,6 +423,15 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 	if req.ID == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
+	}
+	// Guest gate: a share-link caller may type ONLY into a pane the host consented +
+	// allowlisted. The owner (master/device) is unrestricted. This is the authoritative
+	// server-side check — the web UI only mirrors it.
+	if callerScope(r.Context()) == scopeGuest {
+		if s.deps.Share == nil || !s.deps.Share.Allowed(req.ID) {
+			writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
+			return
+		}
 	}
 	if req.Key == "" && req.Text == "" && !req.Enter {
 		writeJSON(w, http.StatusBadRequest, errBody("nothing to send"))

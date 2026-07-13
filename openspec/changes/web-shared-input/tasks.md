@@ -1,11 +1,11 @@
 # Tasks — web-shared input (guest tokens + consent + per-pane allowlist)
 
-## PR 1 — server core (the security gate)
-- [ ] `EnrolledDevice.Scope` (`""`⇒full / `guest`); `auth()` resolves scope → request context
-- [ ] `ShareState{Enabled, Panes}` persisted beside the roster; load/save in `serve.go`
-- [ ] `handleSend` gate: guest → allowed only if `Enabled && pane ∈ Panes`, else 403; full unchanged
-- [ ] Guest mint/revoke endpoints (master-authed); `GET /api/share` returns the caller's `{input, panes}`
-- [ ] Tests: guest blocked when off / not-allowlisted / allowed when both; full unrestricted; `/api/share` per scope
+## PR 1 — server core (the security gate)  ✅
+- [x] `EnrolledDevice.Scope` (`""`⇒device / `guest`) + `MintGuest` + `TokenScope`; `auth()` resolves master/device/guest → request context
+- [x] `ShareState{Enabled, Panes}` + `ShareManager` (share.go), persisted (`share.json`); wired in `serve.go`
+- [x] `handleSend` gate: guest → allowed only if `Enabled && pane ∈ Panes`, else 403; master/device unchanged
+- [x] `POST /api/share/config` + `POST /api/share/new` (master-only) + `GET /api/share` ({input, panes/all}); revoke reuses `/api/devices/revoke` (guests share the roster)
+- [x] Tests: guest blocked off / not-allowlisted / allowed when both; owner unrestricted; capability per scope; master-only admin; `ShareManager.Allowed`
 
 ## PR 2 — `gtmux share` CLI
 - [ ] `gtmux share status|on|off|add <pane…>|remove <pane…>|new [--label]|revoke <id>` over the serve API (master token)
