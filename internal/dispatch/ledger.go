@@ -28,12 +28,34 @@ type Task struct {
 	Goal      string `json:"goal"`
 	CreatedAt int64  `json:"created_at"`
 	Delivered bool   `json:"delivered"`
+	// Source records which dispatch CHANNEL created the entry (dual-channel awareness):
+	// SourceHQDispatched (gtmux spawn — the tracked path), SourceUserDirect (the user
+	// typed a prompt straight into an agent window; HQ back-fills this), or
+	// SourceAgentSelf (the agent started work on its own). Additive/optional — an entry
+	// without it reads as hq-dispatched (Source() applies that default).
+	Source string `json:"source,omitempty"`
 	// OwnSession is true when spawn CREATED the tmux session (a fresh dispatch), false
 	// when it reused an existing --pane. reap only kills a session spawn owns.
 	OwnSession bool `json:"own_session,omitempty"`
 	// SnoozeUntil silences reap suggestions for this task until this unix time
 	// (incident ⑧). 0 = not snoozed.
 	SnoozeUntil int64 `json:"snooze_until,omitempty"`
+}
+
+// Dispatch-channel sources for Task.Source (dual-channel awareness).
+const (
+	SourceHQDispatched = "hq-dispatched" // gtmux spawn — the tracked dispatch path
+	SourceUserDirect   = "user-direct"   // user typed a prompt straight into an agent window
+	SourceAgentSelf    = "agent-self"    // the agent started work on its own
+)
+
+// SourceOrDefault returns the task's dispatch channel, defaulting a legacy entry
+// (written before the field existed) to hq-dispatched.
+func (t Task) SourceOrDefault() string {
+	if t.Source == "" {
+		return SourceHQDispatched
+	}
+	return t.Source
 }
 
 // tasksDir is where ledger entries live.

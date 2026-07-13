@@ -68,14 +68,21 @@ func replyTail(reply string) string {
 	return resp
 }
 
-// classifyReply is the deterministic turn-end classifier: "asking" when the reply's
-// last prose line is a question directed at the user (ends with ?/？), else "report".
-// Code fences, block quotes, and headings are skipped so a "?" inside a code sample
-// or a rhetorical heading doesn't false-positive.
+// questionScanLines is how many TRAILING prose lines classifyReply inspects for a
+// question. A question posed to the user is frequently followed by a short status /
+// sign-off line (or a usage footer), so checking only the final line misses it — the
+// real dogfood bug. Six lines covers that tail without scanning the whole reply.
+const questionScanLines = 6
+
+// classifyReply is the deterministic turn-end classifier: "asking" when a question
+// directed at the user appears in the reply's TRAILING BLOCK (any of the last
+// questionScanLines prose lines ends with ?/？), else "report". Code fences, block
+// quotes, and headings are skipped so a "?" inside a code sample or a rhetorical
+// heading doesn't false-positive.
 func classifyReply(reply string) string {
 	lines := strings.Split(reply, "\n")
 	inFence := false
-	lastProse := ""
+	var prose []string
 	for _, raw := range lines {
 		ln := strings.TrimSpace(raw)
 		if strings.HasPrefix(ln, "```") || strings.HasPrefix(ln, "~~~") {
@@ -85,11 +92,17 @@ func classifyReply(reply string) string {
 		if inFence || ln == "" || strings.HasPrefix(ln, ">") || strings.HasPrefix(ln, "#") {
 			continue
 		}
-		lastProse = ln
+		prose = append(prose, ln)
 	}
-	lastProse = strings.TrimRight(lastProse, "`*_ )")
-	if strings.HasSuffix(lastProse, "?") || strings.HasSuffix(lastProse, "？") {
-		return "asking"
+	start := len(prose) - questionScanLines
+	if start < 0 {
+		start = 0
+	}
+	for _, ln := range prose[start:] {
+		ln = strings.TrimRight(ln, "`*_ )")
+		if strings.HasSuffix(ln, "?") || strings.HasSuffix(ln, "？") {
+			return "asking"
+		}
 	}
 	return "report"
 }

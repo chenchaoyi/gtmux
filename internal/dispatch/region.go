@@ -11,6 +11,17 @@ import (
 	"unicode/utf8"
 )
 
+// DraftOf returns the input-box draft text of a full-screen capture and whether a
+// structured input region (a box or recognized prompt) was located. It reuses the
+// #393 region detector — the same primitive Deliver's screen-read fallback uses — so
+// the HQ-nudge draft-guard shares ONE definition of "what is a draft". `structured`
+// is false when no input box is locatable (a plain shell, a full-screen view): the
+// caller then cannot confirm the box is empty and MUST NOT type into it.
+func DraftOf(capture string) (draft string, structured bool) {
+	_, draft, structured = splitInputRegion(capture)
+	return draft, structured
+}
+
 // splitInputRegion divides a full-screen capture into the HISTORY region (the
 // conversation transcript, above the input box) and the DRAFT region (what sits in
 // the input box, not yet submitted). Most agent TUIs (Claude Code, Codex) draw a

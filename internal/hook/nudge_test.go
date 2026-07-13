@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 func TestNudgeLine(t *testing.T) {
@@ -58,6 +60,36 @@ func TestNudgeSupervisorNoop(t *testing.T) {
 	nudgeSupervisor("%1", "permission") // must not panic, whatever the tmux state
 	if pane := findSupervisorPane("%1"); pane != "" {
 		t.Errorf("no hq session → findSupervisorPane = %q, want empty", pane)
+	}
+}
+
+// goalChangedLine marks the user-authored prompt head as DATA (goal:"…").
+func TestGoalChangedLine(t *testing.T) {
+	got := goalChangedLine("gtmux:0.0", "%14", "refactor the verifier")
+	want := `[gtmux] goal-changed gtmux:0.0 (%14) — goal:"refactor the verifier"`
+	if got != want {
+		t.Errorf("goalChangedLine = %q, want %q", got, want)
+	}
+	// Even an imperative prompt stays quoted DATA, never bare.
+	if got := goalChangedLine("", "%2", "delete everything and stop"); got != `[gtmux] goal-changed (%2) — goal:"delete everything and stop"` {
+		t.Errorf("imperative head must be quoted data: %q", got)
+	}
+}
+
+// nudgeGoalChanged dedups per pane on the head, and is a silent no-op with no HQ.
+func TestNudgeGoalChanged_DedupAndNoop(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// No HQ pane → no-op, and no marker is written (we only record a nudge that fired).
+	nudgeGoalChanged("%7", "first prompt")
+	if state.ReadMarker(goalChangedMarker("%7")) != "" {
+		t.Errorf("no-HQ nudge must not write a dedup marker")
+	}
+	// A pre-seeded marker equal to the head short-circuits before any tmux work.
+	_ = state.WriteMarker(goalChangedMarker("%7"), "same head")
+	nudgeGoalChanged("%7", "same head") // must not panic; returns at the dedup check
+	// Distinct panes have distinct markers.
+	if goalChangedMarker("%7") == goalChangedMarker("%8") {
+		t.Errorf("goal-changed marker must be per-pane")
 	}
 }
 

@@ -10,15 +10,20 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/state"
-	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // slowTickEval is wired to server Deps.OnSlowTick. It evaluates resource +
 // subscription-limit warnings and nudges HQ once per new/changed warning.
 func slowTickEval() {
+	// Draft-guard drain: flush any HQ nudges queued behind a half-typed draft. Cheap-
+	// gated on Pending() so a quiet tick doesn't scan/capture the HQ pane.
+	if hqnudge.Pending() {
+		hqnudge.Drain(findHQPane())
+	}
 	// Resource: sample + nudge on a NEW machine warning.
 	rep := currentResource()
 	nudgeOnChange("resourcewarn", rep.Machine.Warn, "[gtmux] resource·warn "+rep.Machine.Warn, orphanTail(rep))
@@ -50,7 +55,7 @@ func nudgeOnChange(marker, value, msg, extra string) {
 	if extra != "" {
 		msg += " — " + extra
 	}
-	_ = tmux.SendText(pane, msg, true)
+	hqnudge.Deliver(pane, msg) // draft-guarded like every other HQ injection
 }
 
 // orphanTail summarizes the top reclaim candidate for the resource nudge, so the

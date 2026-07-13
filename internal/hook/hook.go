@@ -18,6 +18,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
@@ -546,6 +547,13 @@ func Run(stdin io.Reader, args []string) int {
 			(event == "UserPromptSubmit" || event == "Resumed" || event == "Stop") {
 			nudgeResolved(pane, priorWaitKind)
 		}
+		// Dual-channel awareness: the user submitted a NEW prompt directly into a pane
+		// (not via HQ). Tell a live HQ so it senses this user-direct task rather than
+		// working from a stale ledger. On UserPromptSubmit `summary` is the prompt head;
+		// nudgeGoalChanged dedups per pane and excludes HQ's own prompts.
+		if event == "UserPromptSubmit" {
+			nudgeGoalChanged(pane, summary)
+		}
 		if event == "Stop" {
 			// A tracked dispatch finished → HQ should review/close it. The dispatch
 			// ledger status is DERIVED live (nothing to persist-clear here — it settles
@@ -562,6 +570,14 @@ func Run(stdin io.Reader, args []string) int {
 			// safely reclaimable. Runs only with a live HQ; git checks touch rare candidates.
 			sweepReapSuggestions()
 		}
+	}
+
+	// Draft-guard drain: a turn-end (any pane's Stop, but HQ's own especially) is a
+	// natural empty-box moment — flush any nudges queued behind a half-typed HQ draft.
+	// Cheap-gated: Pending() is a dir scan, so we only compute the HQ pane / capture it
+	// when something is actually waiting.
+	if event == "Stop" && hqnudge.Pending() {
+		hqnudge.Drain(findSupervisorPane(""))
 	}
 
 	// Usage-watch (usage-watch change): every event refreshes this session's token
