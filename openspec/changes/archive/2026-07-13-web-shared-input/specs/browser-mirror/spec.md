@@ -1,6 +1,14 @@
 # browser-mirror Specification
 
-## MODIFIED Requirements
+## REMOVED Requirements
+
+### Requirement: View-only web UI served by `gtmux serve`
+
+Replaced by "Web UI served by `gtmux serve` — view, plus consented per-pane input":
+the web UI is no longer strictly view-only — it may expose a terminal-input affordance
+for panes the host consented + allowlisted (server-gated).
+
+## ADDED Requirements
 
 ### Requirement: Web UI served by `gtmux serve` — view, plus consented per-pane input
 

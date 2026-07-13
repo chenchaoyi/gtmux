@@ -16,11 +16,12 @@ web UI only mirrors it.
 
 The host SHALL control this via `gtmux share` (status; on/off consent; add/remove
 allowlist panes; mint a guest share link with a URL + QR; revoke a guest link
-individually) AND a menu-bar surface (consent toggle + pane picker + share link). Guest
-tokens SHALL live in the same revocable roster as devices (persisted), so revoking one
-share stops exactly that link. `GET /api/share` SHALL return the CALLER's input
-capability (`{input, panes}`) so a surface can show input only where allowed. The
-default SHALL be no consent and no panes — shared input is strictly opt-in, per pane.
+individually). Guest tokens SHALL live in the same revocable roster as devices
+(persisted), so revoking one share stops exactly that link. `GET /api/share` SHALL
+return the CALLER's input capability (`{input, panes}`) so a surface can show input only
+where allowed. The default SHALL be no consent and no panes — shared input is strictly
+opt-in, per pane. (A menu-bar control surface mirroring `gtmux share` is a planned
+follow-up, not required by this capability.)
 
 #### Scenario: A guest is blocked until consent AND allowlist
 

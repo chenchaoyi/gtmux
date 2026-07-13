@@ -15,10 +15,12 @@
 - [x] boot reads a guest `#t=<token>`; `fetchShare()` learns `{input, panes, all}`; `paneCanInput` + `updateInputBar`
 - [x] `#pane-input` row (text+Enter + allowlisted control keys) shown ONLY for allowed panes → `POST /api/send` (403 → "not shared"); read-only otherwise
 
-## PR 4 — menu-bar app UI (Swift)
-- [ ] Consent toggle + per-pane picker + "new share link" / revoke, reading/writing the serve share API
-- [ ] `swift build -c release` green
+## PR 4 — menu-bar app UI (Swift)  — DEFERRED (user, v1 = CLI)
+- Consent toggle + per-pane picker + "new share link" / revoke in the menu-bar app.
+  Deferred to a future change; v1 ships the CLI as the control surface. The
+  `remote-access` spec delta notes the menu-bar surface as a planned follow-up.
 
 ## Close-out
-- [ ] Specs: `remote-access` (scope + send gate + `gtmux share` + guest links), `browser-mirror` (`/api/share` + web input)
-- [ ] Each PR: make check + check-design green (+ swift build for PR4); archive `web-shared-input`
+- [x] Specs: `remote-access` (scope + send gate + `gtmux share` + guest links), `browser-mirror` (`/api/share` + web input)
+- [x] Each shipped PR: make check + check-design green
+- [ ] Archive `web-shared-input` (PR1-3 shipped; menu-bar UI its own future change)

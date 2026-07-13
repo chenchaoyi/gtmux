@@ -7,28 +7,7 @@ browser, with zero install — a view-only mirror of the agent radar and live pa
 served by `gtmux serve` / `gtmux tunnel` and reachable over LAN or the hosted
 tunnel. Pairing is by a one-time link (from the serve/tunnel banner or handed off
 from an already-paired phone), never the master token in a URL.
-
 ## Requirements
-
-### Requirement: View-only web UI served by `gtmux serve`
-
-`gtmux serve` SHALL serve a self-contained, view-only web UI at `GET /`, embedded
-in the binary (`//go:embed`, no build step, offline-safe, cgo-free) and served
-same-origin as the existing `/api/*`. The UI SHALL present the agent radar and a
-pane mirror, using the shared status language (color+shape+glyph; section order
-waiting→working→idle→running) identical to the other surfaces. The UI SHALL expose
-NO input, send-keys, or focus affordances in v1.
-
-#### Scenario: Browser loads the web UI
-
-- **WHEN** a browser requests `GET /` from a running `gtmux serve`
-- **THEN** the embedded web UI is returned and renders the agent radar after pairing
-
-#### Scenario: No write affordances
-
-- **WHEN** the web UI is displayed
-- **THEN** there is no control to type into, send keys to, or focus a pane (view-only)
-
 ### Requirement: Browser pairing via a one-time enroll code
 
 The web UI SHALL authenticate by redeeming a short-lived, single-use enroll code
@@ -153,3 +132,33 @@ left in-flight background work.
   the background-running marker
 - **THEN** the browser radar surfaces the "Elsewhere" category and the background
   modifier, matching the menu-bar/mobile presentation
+
+### Requirement: Web UI served by `gtmux serve` — view, plus consented per-pane input
+
+`gtmux serve` SHALL serve a self-contained web UI at `GET /`, embedded in the binary
+(`//go:embed`, no build step, offline-safe, cgo-free) and served same-origin as the
+existing `/api/*`. The UI SHALL present the agent radar and a pane mirror, using the
+shared status language (color+shape+glyph; section order waiting→working→idle→running)
+identical to the other surfaces. The UI is READ-ONLY BY DEFAULT. It MAY additionally
+expose a terminal-input affordance, but ONLY for panes the caller is authorized to type
+into, which it SHALL learn from `GET /api/share` (`{input, panes}` for the caller) and
+NEVER assume: no input control is shown for a pane the server does not authorize, and
+any typing goes through `POST /api/send`, whose server-side gate is authoritative. A
+guest whose host has not consented, or a disallowed pane, shows no input control.
+
+#### Scenario: Browser loads the web UI
+
+- **WHEN** a browser requests `GET /` from a running `gtmux serve`
+- **THEN** the embedded web UI is returned and renders the agent radar after pairing
+
+#### Scenario: Input shown only for authorized panes
+
+- **WHEN** the UI has fetched `GET /api/share` for the caller
+- **THEN** an input affordance is shown ONLY for the panes it lists; other panes stay
+  view-only, and a guest with input off sees no input control anywhere
+
+#### Scenario: The server gate, not the UI, is authoritative
+
+- **WHEN** a guest `POST`s `/api/send` for a pane not in its authorized set
+- **THEN** the send is refused server-side regardless of the UI state
+
