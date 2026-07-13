@@ -76,6 +76,8 @@ func Run(argv []string) int {
 		return cmdLimits(args)
 	case "config":
 		return cmdConfig(args)
+	case "share":
+		return cmdShare(args)
 	case "hq":
 		return cmdHQ(args)
 	case "status", "st":
