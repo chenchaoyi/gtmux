@@ -235,6 +235,46 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(m.selected, 0)
     }
 
+    // MARK: self-update — exit:0 self-heal (no stuck "Updating…" spinner)
+
+    /// Within the grace window, keep waiting to be killed regardless of versions —
+    /// a real relaunch kills us in ~1–2s, so we mustn't jump the gun.
+    func testPostExitZeroWaitsWithinGrace() {
+        XCTAssertEqual(
+            postExitZeroAction(secondsSinceExitZero: 5, grace: 12,
+                               runningVersion: "0.18.1", installedVersion: "0.18.2"), .wait)
+        // Even if on-disk already looks equal, still wait — the kill may be in flight.
+        XCTAssertEqual(
+            postExitZeroAction(secondsSinceExitZero: 11.9, grace: 12,
+                               runningVersion: "0.18.1", installedVersion: "0.18.1"), .wait)
+    }
+
+    /// Grace elapsed + on-disk bundle differs (⇒ newer) → the swap landed but the
+    /// relaunch was missed: relaunch the installed bundle ourselves.
+    func testPostExitZeroRelaunchesWhenNewerOnDisk() {
+        XCTAssertEqual(
+            postExitZeroAction(secondsSinceExitZero: 13, grace: 12,
+                               runningVersion: "0.18.1", installedVersion: "0.18.2"), .relaunch)
+    }
+
+    /// Grace elapsed + on-disk equals running → the app step was skipped (defect 2):
+    /// offer a retry rather than "relaunch" the same version or spin forever.
+    func testPostExitZeroFailsWhenSameVersion() {
+        XCTAssertEqual(
+            postExitZeroAction(secondsSinceExitZero: 20, grace: 12,
+                               runningVersion: "0.18.1", installedVersion: "0.18.1"), .fail)
+    }
+
+    /// Grace elapsed + on-disk version unreadable/absent → treat as no swap: retry.
+    func testPostExitZeroFailsWhenInstalledUnreadable() {
+        XCTAssertEqual(
+            postExitZeroAction(secondsSinceExitZero: 20, grace: 12,
+                               runningVersion: "0.18.1", installedVersion: nil), .fail)
+        XCTAssertEqual(
+            postExitZeroAction(secondsSinceExitZero: 20, grace: 12,
+                               runningVersion: "0.18.1", installedVersion: ""), .fail)
+    }
+
     // MARK: helpers
 
     private func hex(_ c: NSColor) -> String {

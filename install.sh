@@ -272,7 +272,12 @@ PLIST
       launchctl unload "$LA" 2>/dev/null || true
       launchctl load -w "$LA" 2>/dev/null || true
     fi
-    open "${APP_DIR}/Gtmux.app" 2>/dev/null || true
+    # Force a NEW instance (open -n): the pkill above only SENT SIGTERM and returns at
+    # once, so the old GtmuxBar may not have exited yet — a bare `open` would then just
+    # re-activate the dying old instance instead of launching the freshly-swapped
+    # binary, leaving the app stuck on "Updating…". `-n` always starts the swapped
+    # bundle; the app's newest-wins single-instance guard terminates any older one.
+    open -n "${APP_DIR}/Gtmux.app" 2>/dev/null || true
     step 5 "Menu bar" "${APP_DIR}/Gtmux.app"
   else
     note "menu-bar app: download/unzip failed — CLI is installed; retry or skip with GTMUX_NO_APP=1"

@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 )
@@ -103,6 +104,27 @@ func TestInstallScriptMirrorsShape(t *testing.T) {
 		if !strings.HasSuffix(u, "install.sh") {
 			t.Errorf("mirror must fetch install.sh: %q", u)
 		}
+	}
+}
+
+// The menu-bar app self-update wedged forever on "Updating…" because install.sh
+// relaunched the swapped app with a bare `open`, which re-activates a not-yet-exited
+// old instance instead of launching the new binary. The relaunch MUST use `open -n`
+// (force a new instance); the app's single-instance guard terminates the old one.
+// This pins that so a future edit can't regress to the stuck-spinner behavior.
+func TestInstallScriptRelaunchesAppWithOpenN(t *testing.T) {
+	b, err := os.ReadFile("../../install.sh")
+	if err != nil {
+		t.Fatalf("read install.sh: %v", err)
+	}
+	s := string(b)
+	if !strings.Contains(s, `open -n "${APP_DIR}/Gtmux.app"`) {
+		t.Errorf("install.sh must relaunch the menu-bar app with `open -n` (force a new instance), " +
+			"else a lingering old instance is re-activated and the app hangs on \"Updating…\"")
+	}
+	// And it must NOT relaunch with a bare `open "${APP_DIR}/Gtmux.app"` (the bug).
+	if strings.Contains(s, `open "${APP_DIR}/Gtmux.app"`) {
+		t.Errorf("install.sh still relaunches the app with a bare `open` — must be `open -n`")
 	}
 }
 
