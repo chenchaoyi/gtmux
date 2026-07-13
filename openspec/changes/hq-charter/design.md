@@ -66,21 +66,20 @@ in local `knowledge/`.
 4. **copy-mode guard** (M4) — small, robustness.
 5. **watchdog** (M5) — the largest; may sub-split (finished-lingering vs stuck-timeout).
 
-## Forks (decide before implementation)
+## Forks — RESOLVED (user, 2026-07-13; all per recommendation)
 
-- **F1 · Reclaim of manual windows:** (a) reap-by-bare-pane with the same safety gate
-  [rec]; (b) push "everything via spawn" (adopt manual windows into the ledger); (c) both.
-- **F2 · Headless heavy work:** (a) reap-by-pane covers teardown + add `spawn --headless`
-  for agent-needing heavy ops [rec]; (b) a separate `gtmux exec` runner; (c) HQ uses its
-  own subagent tool (rejected — blocks the main loop, blurs the role boundary).
-- **F3 · Copy-mode guard:** (a) `send-keys -X cancel` then deliver (immediate, but yanks
-  the user out of their scroll); (b) queue like a draft, deliver when they exit copy-mode
-  [rec — respects the user, consistent with draft-guard].
-- **F4 · Watchdog scope for v1:** (a) finished/lingering → reap-suggest only; (b) also
-  stuck-working / timed-out-waiting → escalate [rec a+b]; (c) full needs-you ledger with
-  age+timeout (bigger — maybe its own change).
-- **F5 · Title enforcement:** (a) `gtmux spawn` auto-sets titles + playbook convention
-  [rec]; (b) playbook advice only, no code.
-- **F6 · Lesson promotion scope:** (a) promote GENERIC operating lessons into the seed
-  best-practices, keep concrete instances local [rec — matches the criterion]; (b) seed
-  only the A–H rules, keep all lessons local.
+- **F1 · Reclaim of manual windows → reap-by-bare-pane** (M1). reap resolves repo
+  context from the pane cwd + same safety gate; no ledger required. (A later
+  `adopt-dispatch` to backfill the ledger is deferred, not in this change.)
+- **F2 · Headless heavy work → reap-by-pane covers teardown (no LLM) + `spawn --headless`**
+  (M2) for agent-needing heavy/batch ops, detached, no tmux window, tracked. HQ never uses
+  its own subagent tool for this (would block the main loop / blur the boundary).
+- **F3 · Copy-mode guard → QUEUE like a draft** (M4). On `#{pane_in_mode}`, do not
+  inject; queue and deliver when the pane leaves copy-mode (or next drain). Never yanks
+  the user out of their scroll. Consistent with the draft-guard.
+- **F4 · Watchdog scope v1 → finished/lingering (reap-suggest, incl. bare panes) AND
+  stuck/timed-out (escalate)** (M5). Deduped, snoozeable, suggest-only. The full
+  needs-you ledger with age+timeout is deferred to its own change.
+- **F5 · Titles → `gtmux spawn` auto-sets titles + playbook convention** (M3).
+- **F6 · Lessons → promote GENERIC operating lessons into the seed best-practices; keep
+  concrete instances (accounts/paths/network/the exact incidents) local.**

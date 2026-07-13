@@ -2,8 +2,8 @@
 
 ## Design (this change)
 - [x] Proposal + promotion taxonomy + per-mechanism design + fork list
-- [ ] Resolve forks F1–F6 with the user
-- [ ] Spec deltas finalized (supervisor-agent seed playbook; agent-dispatch reap-by-pane / titles / headless)
+- [x] Resolve forks F1–F6 with the user (all per recommendation, 2026-07-13)
+- [x] Spec deltas drafted (supervisor-agent seed playbook + watchdog; agent-dispatch reap-by-pane / titles / headless)
 
 ## PR 1 — seed promotion (M6, PROMPT-side)
 - [ ] `hqInstructions` rewritten to carry A–H + B2 as agent-neutral policy (single-source)
