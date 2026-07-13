@@ -6,5 +6,5 @@
 - [x] 4. `hqBriefingEnabled`: opt-out via `GTMUX_HQ_BRIEF` (off/0/false/no), default on
 - [x] 5. Tests: prompt carries both halves in en+zh; opt-out toggle parsing
 - [x] 6. Spec delta: `supervisor-agent` new requirement + 4 scenarios
-- [ ] 7. `make check` + `check-design` green; PR
-- [ ] 8. Archive after merge (sync-specs → archive)
+- [x] 7. `make check` + `check-design` green; PR (#419, merged)
+- [x] 8. Archive after merge (sync-specs → archive)
