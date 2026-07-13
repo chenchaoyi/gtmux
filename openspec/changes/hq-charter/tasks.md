@@ -14,10 +14,9 @@
 - [x] `gtmux reap <pane_id>` not in the ledger → derive worktree/branch from pane cwd (`dispatch.WorktreeContext`); same safety gate; kills the WINDOW not a session
 - [x] Tests: `barePaneTask` synthesis, window-not-session kill, dirty report-only, window-only (main checkout), `WorktreeContext` linked-detection (real git)
 
-## PR 3 — window titles + headless spawn (M3, M2)
-- [ ] `gtmux spawn` sets pane/window title (slug: `--title` → worktree/branch → goal head)
-- [ ] `gtmux spawn --headless` (detached, no tmux window, proxied + tracked)
-- [ ] Tests + naming convention in the seed
+## PR 3 — window titles (M3)  ·  headless spawn (M2) DEFERRED
+- [x] `gtmux spawn` names the window+pane after a task slug (`--title` → worktree/branch leaf → goal head); pins `automatic-rename off` so it sticks; `--title` flag + tests
+- [ ] M2 `spawn --headless` — DEFERRED: "no tmux window" conflicts with land-verify (which needs a pane). Needs one design nod (windowless-tracked model) before building; surfaced to the user.
 
 ## PR 4 — copy-mode injection guard (M4, G)
 - [ ] `internal/hqnudge`: treat `#{pane_in_mode}` like a non-empty draft (queue, deliver on exit)

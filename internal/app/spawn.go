@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -31,10 +32,10 @@ type spawnJSON struct {
 // and records the dispatch in the ledger. See openspec agent-dispatch.
 func cmdSpawn(args []string) int {
 	var (
-		paneFlag, worktree, model, agent, cwd string
-		noOpen, force, asJSON                 bool
-		timeout                               time.Duration
-		goalParts                             []string
+		paneFlag, worktree, model, agent, cwd, title string
+		noOpen, force, asJSON                        bool
+		timeout                                      time.Duration
+		goalParts                                    []string
 	)
 	agent = "claude"
 	for i := 0; i < len(args); i++ {
@@ -59,6 +60,8 @@ func cmdSpawn(args []string) int {
 			agent = next()
 		case a == "--cwd":
 			cwd = next()
+		case a == "--title":
+			title = next()
 		case a == "--no-open":
 			noOpen = true
 		case a == "--force":
@@ -96,7 +99,7 @@ func cmdSpawn(args []string) int {
 	}
 
 	// Target a pane: reuse --pane, or create a fresh session (optionally in a worktree).
-	pane, session, ownSession, wtPath, branch, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, noOpen, asJSON)
+	pane, session, ownSession, wtPath, branch, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, asJSON)
 	if rc != 0 {
 		return rc
 	}
@@ -128,7 +131,7 @@ func cmdSpawn(args []string) int {
 // spawnTarget resolves the destination pane, creating a session/worktree as needed
 // and launching the agent through the proxy. Returns the pane, session, whether we
 // created the session, the worktree path/branch, and a non-zero rc on failure.
-func spawnTarget(paneFlag, worktree, cwd, goal, agent, model string, noOpen, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
+func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
 	// Reuse an existing pane.
 	if paneFlag != "" {
 		if tmux.Display(paneFlag, "#{pane_id}") == "" {
@@ -141,6 +144,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model string, noOpen, asJ
 		if shellCommands[tmux.Display(pane, "#{pane_current_command}")] {
 			launchAgent(pane, agent, model)
 		}
+		nameDispatchWindow(pane, spawnSlug(title, "", goal)) // task-named for a readable fleet
 		return pane, session, false, "", "", 0
 	}
 
@@ -179,6 +183,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model string, noOpen, asJ
 	}
 	pane = tmux.Display(created, "#{pane_id}")
 	launchAgent(pane, agent, model)
+	nameDispatchWindow(pane, spawnSlug(title, branch, goal)) // task-named for a readable fleet
 
 	// Open an UNFOCUSED terminal tab (never steal focus) unless --no-open.
 	if !noOpen && runtime.GOOS == "darwin" {
@@ -186,6 +191,64 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model string, noOpen, asJ
 		_, _ = term.SpawnTabs([]string{created}, false)
 	}
 	return pane, created, true, wtPath, branch, 0
+}
+
+// nameDispatchWindow names the dispatch's window + pane after the task slug so a glance
+// at tmux reads what the fleet is doing (charter C). It pins the window name (turns OFF
+// automatic-rename, which would otherwise track the running command) and sets the pane
+// title. Best-effort — a naming failure never fails the dispatch.
+func nameDispatchWindow(pane, slug string) {
+	if slug == "" || pane == "" {
+		return
+	}
+	_, _ = tmux.Run("set-window-option", "-t", pane, "automatic-rename", "off")
+	_, _ = tmux.Run("rename-window", "-t", pane, slug)
+	_, _ = tmux.Run("select-pane", "-t", pane, "-T", slug)
+}
+
+// spawnSlug derives a short, tmux-friendly task slug for the window/pane title: an
+// explicit --title, else the worktree branch's leaf (feat/menubar-width → menubar-width),
+// else a normalized head of the goal.
+func spawnSlug(title, branch, goal string) string {
+	if s := slugify(title); s != "" {
+		return s
+	}
+	if branch != "" {
+		if s := slugify(path.Base(branch)); s != "" {
+			return s
+		}
+	}
+	return slugify(firstWords(goal, 4))
+}
+
+// slugify lowercases, collapses any run of non-alphanumeric characters to a single '-',
+// trims stray '-', and caps the length — a safe, readable tmux window name.
+func slugify(s string) string {
+	var b strings.Builder
+	prevDash := false
+	for _, r := range strings.ToLower(strings.TrimSpace(s)) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			prevDash = false
+		} else if !prevDash && b.Len() > 0 {
+			b.WriteByte('-')
+			prevDash = true
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if len(out) > 24 {
+		out = strings.Trim(out[:24], "-")
+	}
+	return out
+}
+
+// firstWords returns the first n whitespace-separated words of s.
+func firstWords(s string, n int) string {
+	f := strings.Fields(s)
+	if len(f) > n {
+		f = f[:n]
+	}
+	return strings.Join(f, " ")
 }
 
 // launchAgent types the proxy-wrapped agent launch command into a pane's shell —
@@ -271,7 +334,7 @@ func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) i
 }
 
 func spawnUsage() int {
-	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--no-open] [--force] [--json] <goal…>",
-		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--no-open] [--force] [--json] <任务…>")
+	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--no-open] [--force] [--json] <goal…>",
+		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--no-open] [--force] [--json] <任务…>")
 	return 2
 }
