@@ -1,5 +1,34 @@
+import AppKit
 import Combine
 import Foundation
+
+/// What a still-`.updating` app should do once the detached installer has recorded
+/// exit code 0. The installer's job is to pkill + relaunch us; on success we're
+/// already dead and this never runs. Still `.updating` past the grace ⇒ the relaunch
+/// did NOT take (a bare-`open` re-activate of the dying old instance, or the app step
+/// silently skipped) — decide by comparing the on-disk bundle version to ours. Pure +
+/// unit-tested, mirroring the single-instance guard's testable decision.
+enum PostExitZeroAction: Equatable {
+    case wait      // within grace — the relaunch is imminent; keep waiting to be killed
+    case relaunch  // grace elapsed, on-disk bundle differs (⇒ newer) — swap ok, relaunch missed
+    case fail      // grace elapsed, on-disk == running (or unreadable) — the swap never happened
+}
+
+/// `installedVersion != runningVersion` ⇒ newer here: a user-triggered update only ever
+/// installs the LATEST release, so the only way the on-disk bundle differs from the
+/// running one after `exit:0` is that the swap landed the new version but we weren't
+/// relaunched. Equal (or unreadable) ⇒ the app was never swapped → offer a retry.
+func postExitZeroAction(
+    secondsSinceExitZero: TimeInterval,
+    grace: TimeInterval,
+    runningVersion: String,
+    installedVersion: String?
+) -> PostExitZeroAction {
+    if secondsSinceExitZero < grace { return .wait }
+    guard let installed = installedVersion, !installed.isEmpty, installed != runningVersion
+    else { return .fail }
+    return .relaunch
+}
 
 /// Updater backs the menu-bar "check for updates". It reuses the CLI's OWN updater
 /// so a menu-bar update is the same as the user typing `gtmux update`: fetch +
@@ -11,7 +40,11 @@ import Foundation
 /// when it finishes. Because it's detached we can't wait on it, so the installer
 /// records its exit code to a status file and a watchdog polls it: a FAILED update
 /// (non-zero — a network blip, a SHA mismatch) flips to `.updateFailed` with a
-/// retry, instead of sitting on the "Updating…" spinner forever.
+/// retry, instead of sitting on the "Updating…" spinner forever. A recorded exit:0
+/// that DOESN'T kill us within a short grace (the installer's relaunch was missed —
+/// a bare-`open` re-activate, or the app step skipped) self-heals: if the on-disk
+/// bundle is the newer version we `open -n` it and quit; if not, we flip to
+/// `.updateFailed`. Net: no path can sit on "Updating…" forever.
 final class Updater: ObservableObject {
     static let shared = Updater()
 
@@ -34,8 +67,15 @@ final class Updater: ObservableObject {
     // flight. On success the installer kills us before the timeout, so it never fires.
     private var watchdog: DispatchSourceTimer?
     private var updateStartedAt: Date?
+    // When the installer first recorded exit:0. On success it pkills + relaunches us
+    // within ~1–2s of this; still `.updating` past `graceAfterExit` ⇒ the relaunch was
+    // missed, and we self-heal rather than spin forever (see pollUpdate).
+    private var exitZeroAt: Date?
     private static let statusPath = NSTemporaryDirectory() + "gtmux-update.status"
     private static let logPath = NSTemporaryDirectory() + "gtmux-update.log"
+    // Grace after a recorded exit:0 before we conclude the relaunch didn't take. A
+    // real relaunch kills us in ~1–2s; kept short so a stuck spinner self-heals fast.
+    private static let graceAfterExit: TimeInterval = 12
     // A successful update kills+relaunches us in well under this; still alive past it
     // means the installer wedged (a stalled download with no progress) — surface it.
     // Real failures (no network, DNS/refused, SHA mismatch) exit non-zero and are
@@ -86,6 +126,7 @@ final class Updater: ObservableObject {
     func install() {
         if case .updating = state { return }
         lastError = nil
+        exitZeroAt = nil // fresh attempt (incl. a retry) restarts the exit:0 grace clock
         // Drop any status from a prior attempt so the watchdog can't read a stale
         // non-zero as this run's result and fail us instantly.
         try? FileManager.default.removeItem(atPath: Self.statusPath)
@@ -119,16 +160,79 @@ final class Updater: ObservableObject {
         guard case .updating = state else { stopWatchdog(); return }
         // The installer recorded its exit code → the detached `gtmux update` finished.
         if let code = Self.recordedExit() {
-            if code != 0 { failInstall(Self.failureReason()) }
-            // exit 0 → it succeeded and is pkill'ing us; wait to be killed.
+            if code != 0 { failInstall(Self.failureReason()); return }
+            // exit 0 → it should be pkill'ing + relaunching us. Give the relaunch a
+            // short grace; if we're STILL alive past it, the relaunch was missed — a
+            // bare-`open` re-activate of the dying old instance, or the app step
+            // silently skipped. Decide via the on-disk bundle version so we never spin
+            // forever on "Updating…".
+            if exitZeroAt == nil { exitZeroAt = Date() }
+            switch postExitZeroAction(
+                secondsSinceExitZero: Date().timeIntervalSince(exitZeroAt!),
+                grace: Self.graceAfterExit,
+                runningVersion: Self.runningVersion(),
+                installedVersion: Self.installedAppVersion()) {
+            case .wait:
+                return // relaunch imminent — keep waiting to be killed
+            case .relaunch:
+                relaunchInstalledApp() // swap landed the new version; we just weren't relaunched
+            case .fail:
+                failInstall(Self.failureReason() ?? Self.appNotInstalledReason())
+            }
             return
         }
         // No result yet. A successful update kills us well within the timeout; still
-        // alive past it → the installer wedged. Surface it (the detached job may still
-        // finish and relaunch us — that just supersedes this failed state).
+        // alive past it → the installer wedged before it even recorded an exit. Surface
+        // it (the detached job may still finish and relaunch us — that just supersedes
+        // this failed state).
         if let started = updateStartedAt, Date().timeIntervalSince(started) > Self.updateTimeout {
             failInstall(nil)
         }
+    }
+
+    /// Self-heal a missed relaunch (see pollUpdate): force-launch the freshly-swapped
+    /// bundle as a NEW instance (`open -n`) and terminate ourselves. The new (newer)
+    /// instance's single-instance guard finishes the handover; terminating is the belt.
+    private func relaunchInstalledApp() {
+        stopWatchdog()
+        let app = Self.installedAppPath()
+        guard !app.isEmpty else { failInstall(Self.appNotInstalledReason()); return }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        p.arguments = ["-n", app]
+        try? p.run()
+        // Give the new instance a beat to come up (and its guard to fire), then exit.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { NSApp.terminate(nil) }
+    }
+
+    private static func appNotInstalledReason() -> String {
+        L10n.shared.tr("the app update didn't install — retry", "app 更新未安装成功 —— 请重试")
+    }
+
+    /// Where the installed menu-bar bundle lives — install.sh targets ~/Applications;
+    /// the Homebrew-cask default /Applications is the fallback. "" if neither exists.
+    private static func installedAppPath() -> String {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser.path
+        for p in ["\(home)/Applications/Gtmux.app", "/Applications/Gtmux.app"]
+        where fm.fileExists(atPath: p) { return p }
+        return ""
+    }
+
+    /// The on-disk installed bundle's version, read straight from its Info.plist — NOT
+    /// Bundle.main, which keeps the OLD version in memory after a swap. nil if the
+    /// bundle or the key is unreadable.
+    private static func installedAppVersion() -> String? {
+        let app = installedAppPath()
+        guard !app.isEmpty,
+              let info = NSDictionary(contentsOfFile: app + "/Contents/Info.plist"),
+              let v = info["CFBundleShortVersionString"] as? String, !v.isEmpty
+        else { return nil }
+        return v
+    }
+
+    private static func runningVersion() -> String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
     private func failInstall(_ reason: String?) {
