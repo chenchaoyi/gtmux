@@ -6,13 +6,13 @@ final class PreferencesController {
     static let shared = PreferencesController()
     private var window: NSWindow?
 
-    func show(l10n: L10n) {
+    func show(l10n: L10n, store: AgentStore) {
         if window == nil {
             let w = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 460, height: 560),
                 styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.contentViewController = NSHostingController(
-                rootView: PreferencesView(l10n: l10n, settings: AppSettings.shared))
+                rootView: PreferencesView(l10n: l10n, settings: AppSettings.shared, store: store))
             w.isReleasedWhenClosed = false
             w.center()
             window = w
@@ -31,6 +31,8 @@ struct PreferencesView: View {
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject var ent = Entitlements.shared
     @ObservedObject var updater = Updater.shared
+    @ObservedObject var share = ShareStore.shared
+    @ObservedObject var store: AgentStore
     @State private var showPaywall = false
 
     private var appVersion: String {
@@ -95,6 +97,25 @@ struct PreferencesView: View {
                 connectedDevices
             }
 
+            Section(l10n.tr("Shared input", "分享输入")) {
+                // Consent to let a collaborator on the shared web page type into the
+                // terminal — default OFF, scoped per pane. Sits beside Remote access
+                // because guests arrive over the same serve/tunnel.
+                Toggle(isOn: shareEnabledBinding) {
+                    Text(l10n.tr("Let a collaborator type into the terminal",
+                                 "允许协作者向终端输入"))
+                }.disabled(share.busy)
+                Text(shareSubtitle)
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if share.enabled {
+                    sharePanePicker
+                    Divider()
+                    shareGuestLinks
+                }
+            }
+
             Section(l10n.tr("Software update", "软件更新")) {
                 LabeledContent(l10n.tr("Current version", "当前版本")) {
                     Text(appVersion).font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
@@ -104,7 +125,7 @@ struct PreferencesView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 640)
-        .onAppear { remote.refresh(); updater.autoCheck() }
+        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); updater.autoCheck() }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
@@ -219,6 +240,110 @@ struct PreferencesView: View {
         case .anywhere:
             return remote.url ?? l10n.tr("Reachable from anywhere (always-on).", "任意网络可达（常驻）。")
         }
+    }
+
+    // MARK: shared input (web-shared input host controls — mirrors `gtmux share`)
+
+    private var shareEnabledBinding: Binding<Bool> {
+        Binding(get: { share.enabled }, set: { share.setEnabled($0) })
+    }
+
+    private var shareSubtitle: String {
+        if !share.enabled {
+            return l10n.tr("Off — anyone with a share link is view-only.",
+                           "已关闭 —— 持分享链接的访客只读。")
+        }
+        if share.allowedPanes.isEmpty {
+            return l10n.tr("On, but no panes are allowed yet — tick a pane below.",
+                           "已开启，但还没允许任何 pane —— 在下方勾选。")
+        }
+        return l10n.tr("On — a guest with a share link can type into the ticked panes.",
+                       "已开启 —— 持分享链接的访客可向勾选的 pane 输入。")
+    }
+
+    // The allowlist, rendered from the LIVE agent list (tmux panes only — a guest
+    // types via tmux send-keys, so native/hook-less rows can't be targets). The host
+    // ticks panes by the agent they recognize, not a raw `%N`.
+    @ViewBuilder private var sharePanePicker: some View {
+        let panes = store.agents.filter { !$0.isNative && !$0.paneID.isEmpty }
+        if panes.isEmpty {
+            Text(l10n.tr("No tmux panes to share right now.", "当前没有可分享的 tmux pane。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+        } else {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l10n.tr("Panes a guest may type into", "允许访客输入的 pane"))
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                ForEach(panes) { a in
+                    Toggle(isOn: paneBinding(a.paneID)) {
+                        HStack(spacing: 6) {
+                            Text(a.agent.isEmpty ? a.paneID : a.agent).font(.system(size: 12))
+                            Text(a.paneID).font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .toggleStyle(.checkbox).disabled(share.busy)
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func paneBinding(_ pane: String) -> Binding<Bool> {
+        Binding(get: { share.allowedPanes.contains(pane) },
+                set: { share.setPane(pane, allowed: $0) })
+    }
+
+    // Existing guest links (revocable), a "New link" button (mints + copies the URL),
+    // and — right after minting — the fresh link, shown + selectable so the host can
+    // re-copy it to send to a collaborator.
+    @ViewBuilder private var shareGuestLinks: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(l10n.tr("Share links", "分享链接"))
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Spacer()
+                Button(l10n.tr("New link", "新链接")) { share.newLink(label: "") }
+                    .disabled(share.busy)
+            }
+            if share.guests.isEmpty {
+                Text(l10n.tr("No links yet. Create one to invite a collaborator.",
+                             "还没有链接。新建一个邀请协作者。"))
+                    .font(.system(size: 11)).foregroundStyle(.tertiary)
+            } else {
+                ForEach(share.guests) { g in
+                    HStack(spacing: 8) {
+                        Image(systemName: "link").font(.system(size: 11))
+                            .foregroundStyle(.secondary).frame(width: 14)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
+                                .font(.system(size: 12))
+                            Text(shareLinkAge(g.enrolledAt))
+                                .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        }
+                        Spacer(minLength: 0)
+                        Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
+                            .disabled(share.busy)
+                    }
+                }
+            }
+            if let link = share.lastMintedLink, !link.isEmpty {
+                Divider()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(l10n.tr("New link — copied to clipboard:", "新链接 —— 已复制到剪贴板："))
+                        .font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text(link).font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.secondary).textSelection(.enabled)
+                        .lineLimit(2).truncationMode(.middle)
+                }
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // "created 5m ago" from the link's enroll time (relativeTime is the shared
+    // formatter used across the popover).
+    private func shareLinkAge(_ enrolledAt: Int) -> String {
+        guard enrolledAt > 0 else { return "" }
+        let ago = relativeTime(enrolledAt, now: Int(Date().timeIntervalSince1970))
+        return l10n.tr("created \(ago) ago", "\(ago)前创建")
     }
 
     // confirmAnywhere shows the standing-exposure warning before enabling the

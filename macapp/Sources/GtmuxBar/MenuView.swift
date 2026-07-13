@@ -13,6 +13,7 @@ struct MenuView: View {
     @ObservedObject var store: AgentStore
     @ObservedObject var l10n: L10n
     @ObservedObject var remote = RemoteAccess.shared
+    @ObservedObject var share = ShareStore.shared
     @ObservedObject private var updater = Updater.shared
     @ObservedObject private var collapse = SectionCollapse.shared
     var onJump: (Agent) -> Void
@@ -324,6 +325,20 @@ struct MenuView: View {
                         .foregroundStyle(remote.remoteClients > 0 ? Theme.Status.idle : p.fg2)
                     }.buttonStyle(.plain)
                         .help(remoteViewersHelp)
+                        .fixedSize()
+                    Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
+                }
+                if share.isLive {
+                    // Shared input is LIVE (consent on + a pane allowed + a guest link):
+                    // a type-into-terminal exposure that must not be silent. Icon-only
+                    // (color stays a status-only channel — DESIGN §1 — so this uses the
+                    // neutral interactive tone, not a status color) + fixedSize so it
+                    // can't clip the version. Tap opens Preferences to manage it.
+                    Button { onAction(.preferences) } label: {
+                        Image(systemName: "keyboard").font(.system(size: 9)).foregroundStyle(p.fg2)
+                    }.buttonStyle(.plain)
+                        .help(l10n.tr("Shared input is on — a guest can type into allowed panes",
+                                      "分享输入已开 —— 访客可向允许的 pane 输入"))
                         .fixedSize()
                     Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }

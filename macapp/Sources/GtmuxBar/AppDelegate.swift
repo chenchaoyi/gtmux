@@ -117,6 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: settings.refreshInterval, repeats: true) { [weak self] _ in
             self?.store.refresh()
             RemoteAccess.shared.refreshClients() // keep the remote-viewer indicator live
+            ShareStore.shared.refresh()          // keep the shared-input exposure indicator live
         }
     }
 
@@ -231,7 +232,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch action {
         case .restore:    GtmuxCLI.spawn(["restore"])
         case .newSession: newSession() // manages its own popover close + prompt
-        case .preferences: PreferencesController.shared.show(l10n: l10n)
+        case .preferences: PreferencesController.shared.show(l10n: l10n, store: store)
         case .pairPhone:  PairingController.shared.show(l10n: l10n)
         case .quit:       NSApp.terminate(nil)
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
