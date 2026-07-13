@@ -272,6 +272,15 @@ acceptance-verify and report to the user; anything else → record without distu
 the user. This closes the gap where a question embedded in reply text (raising no
 menu) left HQ blind.
 
+The playbook SHALL instruct that a relayed question is presented as NON-BLOCKING
+text (the question plus HQ's recommendation), NEVER through a blocking interactive
+prompt (e.g. `AskUserQuestion`) that stalls HQ's own turn awaiting a reply. On a
+dual-channel machine the user's fastest path is often to answer directly in the
+source agent's own pane; a blocking relay would then wait indefinitely for a reply
+that never arrives through HQ, manufacturing an artificial stall. HQ SHALL instead
+sense that the source pane was answered directly via the `resolved`/`goal-changed`
+nudge and retract the pending relay.
+
 #### Scenario: A reply-text question is triaged to the user
 
 - **WHEN** an agent's turn-end reply asks a question (no menu raised) and HQ is nudged
@@ -283,6 +292,21 @@ menu) left HQ blind.
 - **WHEN** a turn-end reply reports completion versus mere progress
 - **THEN** the playbook has HQ acceptance-verify + report the former, and merely
   record the latter without disturbing the user
+
+#### Scenario: A relayed question never blocks HQ's own turn
+
+- **WHEN** the playbook instructs HQ to relay an agent's question to the user
+- **THEN** it directs HQ to post the question and its recommendation as plain
+  non-blocking text — never a blocking prompt like `AskUserQuestion` — so HQ's own
+  turn is never stalled awaiting a reply that may instead arrive as the user
+  answering directly in the source pane
+
+#### Scenario: A direct in-pane answer retracts the relay, not a blocked wait
+
+- **WHEN** HQ has relayed a question and the user instead answers directly in the
+  source agent's own pane
+- **THEN** a `resolved` (or `goal-changed`) nudge tells HQ the pane moved on, and the
+  playbook has HQ retract the pending relay instead of waiting on it
 
 ### Requirement: Reclaim is suggest → approve → execute
 
