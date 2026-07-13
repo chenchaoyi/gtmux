@@ -19,6 +19,7 @@ type taskJSON struct {
 	Model     string `json:"model,omitempty"`
 	Goal      string `json:"goal,omitempty"`
 	Status    string `json:"status"` // waiting | done | working | gone
+	Source    string `json:"source"` // hq-dispatched | user-direct | agent-self
 	Worktree  string `json:"worktree,omitempty"`
 	Branch    string `json:"branch,omitempty"`
 	Snoozed   bool   `json:"snoozed,omitempty"`
@@ -73,7 +74,8 @@ func gatherTasks() []taskJSON {
 	for _, t := range tasks {
 		out = append(out, taskJSON{
 			ID: t.ID, Pane: t.Pane, Session: t.Session, Agent: t.Agent, Model: t.Model,
-			Goal: t.Goal, Status: taskStatus(t, live), Worktree: t.Worktree, Branch: t.Branch,
+			Goal: t.Goal, Status: taskStatus(t, live), Source: t.SourceOrDefault(),
+			Worktree: t.Worktree, Branch: t.Branch,
 			Snoozed: t.Snoozed(now), CreatedAt: t.CreatedAt,
 		})
 	}
@@ -123,7 +125,11 @@ func cmdTasks(args []string) int {
 		if r.Session != "" {
 			loc = r.Session + " " + r.Pane
 		}
-		fmt.Printf("%s %s  %s  %s%s\n", glyph, i18n.PadRight(label, 8), i18n.PadRight(loc, 22), r.Goal, snooze)
+		src := ""
+		if r.Source != dispatch.SourceHQDispatched { // only tag the notable channels
+			src = i18n.Dim + " [" + r.Source + "]" + i18n.Reset
+		}
+		fmt.Printf("%s %s  %s  %s%s%s\n", glyph, i18n.PadRight(label, 8), i18n.PadRight(loc, 22), r.Goal, src, snooze)
 		if r.Worktree != "" {
 			fmt.Printf("    %s %s (%s)\n", i18n.Dim+i18n.Tr("wt:", "worktree:"), r.Worktree, r.Branch+i18n.Reset)
 		}

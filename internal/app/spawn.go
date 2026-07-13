@@ -118,6 +118,7 @@ func cmdSpawn(args []string) int {
 			ID: taskID, Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: snip(goal, 200),
 			CreatedAt: time.Now().Unix(), Delivered: res.Delivered, OwnSession: ownSession,
+			Source: dispatch.SourceHQDispatched,
 		})
 	}
 

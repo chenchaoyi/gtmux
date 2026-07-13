@@ -14,6 +14,14 @@ func TestClassifyReply(t *testing.T) {
 		{"question in code only", "Here is the fix:\n```\nif ok? {}\n```\nApplied it.", "report"},
 		{"trailing emphasis", "Ready to merge — go ahead?**", "asking"},
 		{"heading not counted", "Summary\n# Next steps?", "report"},
+		// The dogfood bug: a question to the user followed by a status footer + sign-off.
+		// The final prose line isn't a question, but the trailing block still asks.
+		{"question then footer signoff",
+			"这里有个不一致要你确认?\n\n## Token usage\n- session 5%\n- week 65%\n\n待命。", "asking"},
+		{"question then short signoff", "公司网直连是不是指另一张网?\n说\"开工\"我就起分支。待命。", "asking"},
+		// Over-fire bound: a question far ABOVE the trailing block stays a report.
+		{"question far above tail",
+			"Do you want A or B?\n1\n2\n3\n4\n5\n6\n7\nAll done, shipped.", "report"},
 	}
 	for _, c := range cases {
 		if got := classifyReply(c.reply); got != c.want {

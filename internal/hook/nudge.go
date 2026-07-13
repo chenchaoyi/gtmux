@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -85,9 +86,8 @@ func nudgeSupervisor(waitingPane, kind string) {
 	loc := tmux.Display(waitingPane, "#{session_name}:#{window_index}.#{pane_index}")
 	title := tmux.Display(waitingPane, "#{pane_title}")
 	msg := nudgeLine(kind, loc, waitingPane, title)
-	if tmux.SendText(target, msg, true) == nil {
-		debugf("nudged supervisor pane=%s about=%s kind=%s", target, waitingPane, kind)
-	}
+	hqnudge.Deliver(target, msg) // draft-guarded: never clobbers a half-typed HQ draft
+	debugf("nudged supervisor pane=%s about=%s kind=%s", target, waitingPane, kind)
 }
 
 // nudgeHQ types one compact line into a live supervisor pane about aboutPane,
@@ -101,9 +101,8 @@ func nudgeHQ(aboutPane, msg string) {
 	if target == "" {
 		return
 	}
-	if tmux.SendText(target, msg, true) == nil {
-		debugf("nudged HQ pane=%s: %s", target, msg)
-	}
+	hqnudge.Deliver(target, msg) // draft-guarded: queues behind a half-typed HQ draft
+	debugf("nudged HQ pane=%s: %s", target, msg)
 }
 
 // nudgeResolved tells HQ that a wait CLEARED (incident ⑤): the user answered in the
@@ -148,6 +147,45 @@ func nudgeAsking(pane, summary string) {
 		msg += ` — "` + summary + `"`
 	}
 	nudgeHQ(pane, msg)
+}
+
+// goalChangedMarker dedups the goal-changed nudge per pane on the prompt head.
+func goalChangedMarker(pane string) string {
+	return filepath.Join(state.Dir(), "goalchanged", pane)
+}
+
+// nudgeGoalChanged tells HQ the user submitted a NEW prompt DIRECTLY into a non-HQ
+// pane (dual-channel dispatch): the user dispatches via HQ OR straight into an agent
+// window, and HQ must sense the latter so it records a user-direct task instead of
+// chasing a stale ledger. Deduped per pane on the prompt head so a resubmit of the
+// same prompt does not spam; the head is user text → delivered as DATA (goal:"…").
+// Gated on a live HQ + hqNudge; never about HQ's own prompts (findSupervisorPane
+// returns "" when the submitting pane IS the supervisor).
+func nudgeGoalChanged(pane, head string) {
+	head = strings.TrimSpace(head)
+	if pane == "" || head == "" || !hqNudgeEnabled() {
+		return
+	}
+	if state.ReadMarker(goalChangedMarker(pane)) == head {
+		return // same prompt head already nudged
+	}
+	target := findSupervisorPane(pane)
+	if target == "" {
+		return
+	}
+	_ = state.WriteMarker(goalChangedMarker(pane), head)
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	hqnudge.Deliver(target, goalChangedLine(loc, pane, head))
+}
+
+// goalChangedLine builds the dual-channel nudge, marking the user-authored prompt
+// head as DATA (`goal:"…"`) so it can't read to HQ as an instruction.
+func goalChangedLine(loc, pane, head string) string {
+	msg := "[gtmux] goal-changed"
+	if loc != "" {
+		msg += " " + loc
+	}
+	return msg + " (" + pane + `) — goal:"` + head + `"`
 }
 
 // sweepReapSuggestions scans tracked dispatches for reap CANDIDATES (idle-after-work

@@ -57,6 +57,28 @@ func TestLedger_Snooze(t *testing.T) {
 	}
 }
 
+func TestLedger_Source(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// A stamped source round-trips.
+	a := Task{ID: NewID(4000), Pane: "%4", Goal: "x", CreatedAt: 40, Source: SourceUserDirect}
+	if err := AddTask(a); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := LoadTask(a.ID)
+	if got.Source != SourceUserDirect || got.SourceOrDefault() != SourceUserDirect {
+		t.Fatalf("source round-trip: %q / %q", got.Source, got.SourceOrDefault())
+	}
+	// A legacy entry (no source) defaults to hq-dispatched.
+	b := Task{ID: NewID(5000), Pane: "%5", Goal: "y", CreatedAt: 50}
+	if err := AddTask(b); err != nil {
+		t.Fatal(err)
+	}
+	gb, _ := LoadTask(b.ID)
+	if gb.Source != "" || gb.SourceOrDefault() != SourceHQDispatched {
+		t.Fatalf("legacy default: source=%q effective=%q", gb.Source, gb.SourceOrDefault())
+	}
+}
+
 func TestNewID_Unique(t *testing.T) {
 	if NewID(1) == NewID(2) {
 		t.Fatalf("distinct timestamps should yield distinct ids")
