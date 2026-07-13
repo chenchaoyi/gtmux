@@ -15,10 +15,11 @@ const (
 )
 
 type fake struct {
-	box   func() string // what capture returns on each call
-	sent  []string
-	slept int
-	nano  int64
+	box    func() string // what capture returns on each call
+	inMode bool          // pane is in tmux copy-mode
+	sent   []string
+	slept  int
+	nano   int64
 }
 
 func (f *fake) io() io {
@@ -27,6 +28,7 @@ func (f *fake) io() io {
 		send:    func(_, t string) error { f.sent = append(f.sent, t); return nil },
 		sleep:   func() { f.slept++ },
 		nowNano: func() int64 { f.nano++; return 1_700_000_000_000_000_000 + f.nano },
+		inMode:  func(string) bool { return f.inMode },
 	}
 }
 
@@ -128,6 +130,26 @@ func TestBoxEmpty_TwoFrameRace(t *testing.T) {
 	}
 	if queuedCount(t) != 1 {
 		t.Fatalf("nudge should be queued after the aborted delivery; queued=%d", queuedCount(t))
+	}
+}
+
+// Copy-mode (the user is scrolling) is treated like a non-empty draft: the nudge is
+// queued, never injected — so its keys can't be eaten as copy-mode nav commands.
+func TestDeliver_CopyMode_Queues(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{box: fixed(emptyCap), inMode: true} // box empty, but pane in copy-mode
+	deliver(f.io(), "%hq", "[gtmux] waiting %1")
+	if len(f.sent) != 0 {
+		t.Fatalf("copy-mode must not be injected into; sent=%v", f.sent)
+	}
+	if queuedCount(t) != 1 {
+		t.Fatalf("nudge should be queued while in copy-mode; queued=%d", queuedCount(t))
+	}
+	// User exits copy-mode → box empty → drain delivers.
+	f.inMode = false
+	drain(f.io(), "%hq")
+	if len(f.sent) != 1 || f.sent[0] != "[gtmux] waiting %1" {
+		t.Fatalf("leaving copy-mode should deliver the queued nudge; sent=%v", f.sent)
 	}
 }
 

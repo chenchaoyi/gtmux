@@ -19,8 +19,8 @@
 - [ ] M2 `spawn --headless` — DEFERRED: "no tmux window" conflicts with land-verify (which needs a pane). Needs one design nod (windowless-tracked model) before building; surfaced to the user.
 
 ## PR 4 — copy-mode injection guard (M4, G)
-- [ ] `internal/hqnudge`: treat `#{pane_in_mode}` like a non-empty draft (queue, deliver on exit)
-- [ ] Tests: in-mode → queued not sent; exits mode → delivered
+- [x] `internal/hqnudge`: `#{pane_in_mode}` short-circuits `boxEmpty` (treated like a non-empty draft) → queue, never inject; delivers on mode-exit/next drain
+- [x] Test: in copy-mode → queued not sent; leaves mode → delivered
 
 ## PR 5 — dead-session / lifecycle watchdog (M5, D/G)
 - [ ] serve slow-tick: finished/lingering (incl. bare panes) → reap-suggest; stuck/timed-out → escalate

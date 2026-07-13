@@ -6,10 +6,11 @@
 // the trailing Enter submitted the user's half-written command. Data loss.
 //
 // The guard: before typing, read the HQ input box (reusing the #393 dispatch region
-// detector via dispatch.DraftOf). Deliver ONLY when the box is confirmed empty over
-// TWO frames a short interval apart; otherwise the nudge is queued to disk and NOTHING
-// is typed. A queued nudge is flushed (coalesced) on the next empty box — the next
-// injection attempt, HQ's own turn-end (Stop, box reliably empty), or the serve tick.
+// detector via dispatch.DraftOf) and check the pane isn't in tmux copy-mode. Deliver
+// ONLY when the box is confirmed empty over TWO frames a short interval apart and the
+// pane is not scrolling; otherwise the nudge is queued to disk and NOTHING is typed. A
+// queued nudge is flushed (coalesced) on the next empty box — the next injection
+// attempt, HQ's own turn-end (Stop, box reliably empty), or the serve tick.
 //
 // INVARIANT: no code path here sends Enter into a non-empty HQ input box.
 //
@@ -44,6 +45,7 @@ type io struct {
 	send    func(pane, text string) error
 	sleep   func() // wait the two-frame interval
 	nowNano func() int64
+	inMode  func(pane string) bool // pane is in tmux copy/view-mode (scrolling)
 }
 
 var prod = io{
@@ -51,6 +53,7 @@ var prod = io{
 	send:    func(pane, text string) error { return tmux.SendText(pane, text, true) },
 	sleep:   func() { time.Sleep(twoFrameGap) },
 	nowNano: func() int64 { return time.Now().UnixNano() },
+	inMode:  func(pane string) bool { return tmux.Display(pane, "#{pane_in_mode}") == "1" },
 }
 
 // Deliver types msg into the HQ pane, guarding a half-typed draft. msg is queued to
@@ -102,6 +105,12 @@ func hasPending() bool {
 // no locatable input region (structured == false) is treated as NOT empty — we only
 // ever type into a confirmed-empty, structured box.
 func boxEmpty(x io, pane string) bool {
+	// Copy/view-mode: the user is scrolling, and injected keys are eaten as copy-mode
+	// NAV commands (`f` → jump-forward, yellow residue) instead of reaching the box.
+	// Treat it exactly like a non-empty draft — do not inject; queue, deliver on exit.
+	if x.inMode != nil && x.inMode(pane) {
+		return false
+	}
 	if draft, structured := dispatch.DraftOf(x.capture(pane)); !structured || strings.TrimSpace(draft) != "" {
 		return false
 	}
