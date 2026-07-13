@@ -21,7 +21,7 @@ exit non-zero.
 
 #### Scenario: Launch applies the configured proxy by construction
 
-- **WHEN** `gtmux spawn` launches an agent and a proxy is configured (`on`/`<url>`)
+- **WHEN** `gtmux spawn` launches an agent and a proxy URL is configured
 - **THEN** the launch command is wrapped with that proxy env (same rule as
   `gtmux hq`/`adopt`), so a proxy-needing network never 403s from an un-proxied
   launch; when the proxy is `off` the launch is bare
