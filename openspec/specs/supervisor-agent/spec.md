@@ -68,23 +68,38 @@ agents.
 - **WHEN** the supervisor session is live and `gtmux agents --json` runs
 - **THEN** its row carries `role:"supervisor"`; all other rows are unchanged
 
-### Requirement: Network-aware agent launch (no manual proxy toggling)
+### Requirement: Explicit proxy for agent launch
 
-The system SHALL apply the environment a network needs when it LAUNCHES a
+The system SHALL apply an EXPLICITLY-configured proxy when it LAUNCHES a
 coding-agent process (the supervisor via `gtmux hq`, and likewise `gtmux adopt` /
-restore's resume), so the user does not hand-edit a proxy when switching
-networks. It is controlled by `agentProxy` in `~/.config/gtmux/config.json`:
-`"auto"` (default)
-prepends a local proxy (`http://127.0.0.1:<agentProxyPort, default 7897>`) IFF
-that port is listening (the proxy tool is running — the home-VPN case) and adds
-nothing otherwise (the intranet case); an explicit URL forces it; `"off"`
-disables. A command that already sets a proxy SHALL NOT be doubled.
+restore's resume / `gtmux spawn`), and SHALL NEVER probe the network to guess it.
+Whether a network needs the proxy (a double-VPN whose direct path 403s) or not (an
+office intranet, or Clash in transparent TUN mode) CANNOT be told apart by any
+reliable local signal — the proxy port listens either way, a direct request 403s
+either way, traffic routes through a `utun` either way — so the old port-probing
+`"auto"` is REMOVED (under TUN the port still listens, which wrongly proxied an
+office launch). The choice is resolved in order: the `GTMUX_AGENT_PROXY` env var,
+then `agentProxy` in `~/.config/gtmux/config.json`, else `"off"`. Values: `"off"`
+(no proxy — the default), `"on"` (`http://127.0.0.1:<agentProxyPort, default 7897>`),
+or an explicit URL. `gtmux config agent-proxy off|on|<url>` sets it; the env var
+overrides for a per-network switch. A command that already sets a proxy SHALL NOT be
+doubled.
 
-#### Scenario: Proxy applied only when its port is live
+#### Scenario: Off (the default) launches bare
 
-- **WHEN** `agentProxy` is "auto" and the proxy port is listening
-- **THEN** the launched agent command is prefixed with that proxy; when the port
-  is not listening, nothing is prefixed
+- **WHEN** no `GTMUX_AGENT_PROXY` env and no `agentProxy` config (or it is `"off"`)
+- **THEN** nothing is prefixed — the agent launches with no proxy
+
+#### Scenario: On applies the local proxy explicitly
+
+- **WHEN** `agentProxy` (or `GTMUX_AGENT_PROXY`) is `"on"`
+- **THEN** the launch is prefixed with `http://127.0.0.1:<port>` unconditionally, with
+  no port probe
+
+#### Scenario: Env overrides config for the network switch
+
+- **WHEN** `GTMUX_AGENT_PROXY` is set
+- **THEN** it takes precedence over the `agentProxy` config value
 
 ### Requirement: The supervisor curates a persistent knowledge base
 
@@ -186,10 +201,11 @@ DEFAULT policy, not an enforced lock.
 ### Requirement: HQ dispatches through the verified path, never a raw launch
 
 The HQ playbook SHALL direct the supervisor to dispatch new work through
-`gtmux spawn` (which applies the proxy by construction and verifies delivery),
-never a hand-rolled `send-keys` launch that would bypass the network-aware proxy
-and 403. The `environment.md` knowledge seed SHALL state that the auto-proxy
-covers ONLY gtmux's own launch path.
+`gtmux spawn` (which applies the CONFIGURED proxy by construction and verifies
+delivery), never a hand-rolled `send-keys` launch that would bypass the configured
+proxy and 403 on a proxy-needing network. The `environment.md` knowledge seed SHALL
+state that the configured proxy covers ONLY gtmux's own launch path, and that the
+choice is explicit (`gtmux config agent-proxy` / `GTMUX_AGENT_PROXY`).
 
 #### Scenario: Playbook points dispatch at `gtmux spawn`
 
