@@ -17,8 +17,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -204,6 +206,10 @@ func cmdHQ(args []string) int {
 				"  常驻目录：~/.config/gtmux/hq/（AGENTS.md 守则可自行编辑，知识随会话沉淀）")
 			i18n.Say("  --agent CMD: which agent to run (default claude; e.g. --agent codex).",
 				"  --agent 命令：用哪个 agent 当中控（默认 claude；如 --agent codex）。")
+			i18n.Say("  On a fresh spawn HQ opens with a self-intro + status briefing;",
+				"  首次启动时 HQ 会自动自我介绍并汇报一次现状；")
+			i18n.Say("  set GTMUX_HQ_BRIEF=off to spawn silently.",
+				"  设 GTMUX_HQ_BRIEF=off 可静默启动。")
 			return 0
 		case a == "--agent":
 			if i+1 >= len(args) {
@@ -260,14 +266,15 @@ func cmdHQ(args []string) int {
 		i18n.Sae("failed to create the supervisor tmux session", "创建中控 tmux session 失败")
 		return 1
 	}
-	cmd := agentCmd
-	if cmd == "" {
-		cmd = hqAgentCommand()
+	rawCmd := agentCmd
+	if rawCmd == "" {
+		rawCmd = hqAgentCommand()
 	}
 	// Auto-apply the network proxy so the agent starts correctly on whatever
 	// network the user is on (home VPN vs office intranet) — no manual toggling.
-	cmd = agentenv.Wrap(cmd)
-	if pane := tmux.Display(name, "#{pane_id}"); pane != "" {
+	cmd := agentenv.Wrap(rawCmd)
+	pane := tmux.Display(name, "#{pane_id}")
+	if pane != "" {
 		_ = tmux.SendText(pane, cmd, true)
 	}
 	i18n.Say("Supervisor started in tmux session '"+name+"'.", "中控已在 tmux session '"+name+"' 启动。")
@@ -280,7 +287,56 @@ func cmdHQ(args []string) int {
 	} else {
 		i18n.Say("attach with:  tmux attach -t "+name, "接回：  tmux attach -t "+name)
 	}
+	// Kick off the supervisor's FIRST turn: a self-introduction + fleet status report.
+	// Runs only on a fresh spawn (a focused live HQ returned above), reuses the verified
+	// dispatch path, and never fails `gtmux hq` if it can't land. (rawCmd, not the
+	// proxy-wrapped cmd, so hook detection sees the bare agent name.)
+	deliverHQBriefing(pane, rawCmd)
 	return 0
+}
+
+// hqBriefingEnabled reports whether the startup briefing is on (the default). Set
+// GTMUX_HQ_BRIEF to off/0/false/no to spawn HQ silently — for a user who prefers a
+// quiet start, or who drives the first prompt themselves.
+func hqBriefingEnabled() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("GTMUX_HQ_BRIEF"))) {
+	case "off", "0", "false", "no":
+		return false
+	}
+	return true
+}
+
+// hqBriefingPrompt is the one-shot startup prompt typed into a freshly-spawned HQ pane
+// so the supervisor's FIRST output does two things: (1) introduce itself and its job,
+// and (2) produce an immediate status report. The report shape mirrors the seeded
+// playbook's policy #1 (needs-you first, token usage + subscription room), so the
+// prompt stays a concise TRIGGER rather than re-specifying the whole format.
+func hqBriefingPrompt() string {
+	return i18n.Tr(
+		"Startup briefing — make this your very first output, in two parts:\n"+
+			"1) Introduce yourself in a sentence or two — \"I am the gtmux HQ supervisor\" — and state your job: overseeing every coding agent on this machine (sense · decide · dispatch · supervise · report) and curating the knowledge base.\n"+
+			"2) Then produce ONE status report from `gtmux digest --json`, `gtmux usage --json`, and `gtmux limits --json`: lead with who needs the user (needs-you), then who is working on what and who finished, and ALWAYS include the token-usage rollup (per-type Σ · rate + any usage_warn sessions) and the subscription-window line (5h + weekly % + reset). Be terse.",
+		"启动简报 —— 作为你的第一条输出，分两部分：\n"+
+			"1) 用一两句话表明身份 ——「我是 gtmux HQ 中控管家」—— 并说明职责：监管本机每一个 coding agent（感知 · 决策 · 派活 · 监督 · 汇报），并维护知识库。\n"+
+			"2) 然后基于 `gtmux digest --json`、`gtmux usage --json`、`gtmux limits --json` 产出一次现状汇报：needs-you（谁在等你）优先，再说谁在做什么、谁已完成，并务必带上 token 用量汇总（按类型 Σ · 速率 + 任何 usage_warn 的会话）与订阅余量（5h + 周 % + 重置时间）。简洁。",
+	)
+}
+
+// deliverHQBriefing types the startup briefing into a freshly-spawned HQ pane so its
+// first turn is a self-introduction + fleet status report. It reuses the verified
+// dispatch path (wait-for-ready, then a land-verified deliver) — the same one
+// `gtmux spawn` uses. Best-effort and non-fatal: a no-op when the pane is empty or the
+// briefing is disabled, and a delivery that doesn't land never fails `gtmux hq` (the
+// session is already up and usable — the user can simply type to it).
+func deliverHQBriefing(pane, agentCmd string) {
+	if pane == "" || !hqBriefingEnabled() {
+		return
+	}
+	tune := dispatch.LoadTuning()
+	if !waitAgentReady(pane, time.Duration(tune.ReadyTimeout)*time.Second) {
+		return
+	}
+	_ = dispatch.Deliver(dispatchIO(pane), deliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
 }
 
 // hqInstructions is the generated-once supervisor playbook (bilingual). It is
