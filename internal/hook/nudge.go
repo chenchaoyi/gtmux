@@ -51,7 +51,7 @@ func nudgeLine(kind, loc, pane, title string) string {
 	}
 	msg += " (" + pane + ")"
 	if title = strings.TrimSpace(title); title != "" {
-		msg += " — " + title
+		msg += ` — title:"` + title + `"` // agent-authored → marked DATA, not an instruction
 	}
 	return msg
 }
@@ -129,7 +129,7 @@ func nudgeDone(pane, goal string) {
 	}
 	msg += " (" + pane + ")"
 	if goal = strings.TrimSpace(goal); goal != "" {
-		msg += " — " + goal
+		msg += ` — goal:"` + goal + `"` // agent-authored → marked DATA
 	}
 	nudgeHQ(pane, msg)
 }
@@ -144,7 +144,7 @@ func nudgeAsking(pane, summary string) {
 	}
 	msg += " (" + pane + ")"
 	if summary = strings.TrimSpace(summary); summary != "" {
-		msg += ` — "` + summary + `"`
+		msg += ` — ask:"` + summary + `"` // reply text → marked DATA
 	}
 	nudgeHQ(pane, msg)
 }
@@ -215,7 +215,7 @@ func sweepReapSuggestions() {
 		loc := tmux.Display(t.Pane, "#{session_name}:#{window_index}.#{pane_index}")
 		msg := "[gtmux] reap-suggest " + loc + " (" + t.Pane + ")"
 		if t.Goal != "" {
-			msg += " — " + t.Goal
+			msg += ` — goal:"` + t.Goal + `"` // agent-authored → marked DATA
 		}
 		msg += "  ·  gtmux reap " + t.ID
 		nudgeHQ(t.Pane, msg)

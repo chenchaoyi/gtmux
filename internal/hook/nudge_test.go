@@ -10,7 +10,7 @@ import (
 
 func TestNudgeLine(t *testing.T) {
 	got := nudgeLine("permission", "gtmux:0.0", "%14", "⠙ fix the login bug")
-	want := "[gtmux] waiting·permission gtmux:0.0 (%14) — ⠙ fix the login bug"
+	want := `[gtmux] waiting·permission gtmux:0.0 (%14) — title:"⠙ fix the login bug"`
 	if got != want {
 		t.Errorf("nudgeLine = %q, want %q", got, want)
 	}
