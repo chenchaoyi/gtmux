@@ -78,6 +78,12 @@ func Run(argv []string) int {
 		return cmdHQ(args)
 	case "status", "st":
 		return cmdStatus(args)
+	case "spawn":
+		return cmdSpawn(args)
+	case "tasks":
+		return cmdTasks(args)
+	case "reap":
+		return cmdReap(args)
 	case "send":
 		return cmdSend(args)
 	case "options", "opts":

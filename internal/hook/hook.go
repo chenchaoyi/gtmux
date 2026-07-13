@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
@@ -135,6 +136,11 @@ func decide(event string, activePresent bool) decision {
 		// session — or by a pane id reused across a tmux restart — can't linger as a
 		// phantom "working"/"needs you". No notify; the next UserPromptSubmit re-arms.
 		return decision{clearActive: true, clearWaiting: true, clearFinished: true}
+	case "PreCompact":
+		// State-neutral: recorded to the event stream (so a `/compact` is confirmable
+		// by a dispatcher) but touches NO marker — the turn's working/idle state is
+		// unchanged by compaction starting.
+		return decision{}
 	default:
 		return decision{}
 	}
@@ -351,6 +357,7 @@ func Run(stdin io.Reader, args []string) int {
 		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
+		Prompt           string `json:"prompt"`            // the submitted prompt text (Claude UserPromptSubmit) — for the dispatch-verify head
 		// Claude's Stop/SubagentStop payload lists in-flight background work still
 		// registered in the session ("running/pending + backgrounded"), so a hook can
 		// tell "session is done" from "session is paused waiting for background work".
@@ -469,8 +476,10 @@ func Run(stdin io.Reader, args []string) int {
 
 	activePresent := pane != "" && state.Exists(state.ActivePath(pane))
 	priorWaitKind := ""
+	hadWaiting := false
 	if pane != "" {
 		priorWaitKind = state.ReadMarker(state.WaitingPath(pane))
+		hadWaiting = state.Exists(state.WaitingPath(pane))
 	}
 	d := decide(event, activePresent)
 	if pane != "" {
@@ -511,18 +520,48 @@ func Run(stdin io.Reader, args []string) int {
 	// rotated events.jsonl — the same source feeding the markers/notify/nudge —
 	// so gtmux HQ (and any consumer) can SUBSCRIBE to all sessions' execution by
 	// tailing `gtmux events`. Best-effort; never blocks the hook.
+	// Additive summary/class (hq-dispatch): on a prompt submission, record the
+	// prompt's normalized head so a dispatcher can confirm delivery from the stream
+	// (not by screen-reading); on a turn end, record the reply tail + asking/report.
+	summary, evClass := "", ""
 	if event != "" {
+		summary, evClass = eventSummary(event, payload.Prompt, pane, agentSession, agentKey)
 		events.Append(events.Record{
 			Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
 			Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
+			Summary: summary, Class: evClass,
 		})
 	}
 
-	// Supervisor nudge (P1): a FRESH waiting transition (same d.notify dedup as the
-	// banner) also informs a live hq pane. Placed BEFORE the viewing suppression —
-	// that gate is about the USER's eyes; the supervisor should learn regardless.
-	if d.notify && d.setWaiting {
-		nudgeSupervisor(pane, string(waitKind))
+	// Supervisor nudges. All gated on a live HQ pane (no HQ → zero cost) + hqNudge.
+	if pane != "" {
+		// Enter-waiting (P1): a FRESH waiting transition informs a live hq pane. Before
+		// the viewing suppression — that gate is the USER's eyes; HQ learns regardless.
+		if d.notify && d.setWaiting {
+			nudgeSupervisor(pane, string(waitKind))
+		}
+		// Resolved edge (incident ⑤): a wait that EXISTED is now cleared (the user
+		// answered in-pane, or the agent resumed) → tell HQ so it drops any stale chase.
+		if d.clearWaiting && hadWaiting &&
+			(event == "UserPromptSubmit" || event == "Resumed" || event == "Stop") {
+			nudgeResolved(pane, priorWaitKind)
+		}
+		if event == "Stop" {
+			// A tracked dispatch finished → HQ should review/close it. The dispatch
+			// ledger status is DERIVED live (nothing to persist-clear here — it settles
+			// to "done" by itself); this just tells HQ the closure happened.
+			if t, ok := dispatch.TaskForPane(pane); ok {
+				nudgeDone(pane, t.Goal)
+			}
+			// Turn-end awareness (incident ⑥): a reply that ASKED the user a question
+			// (no menu raised) pushes an `asks` nudge; plain reports stay pull-only.
+			if evClass == "asking" {
+				nudgeAsking(pane, summary)
+			}
+			// Reclaim-suggest sweep (incident ⑦): surface any dispatch that now looks
+			// safely reclaimable. Runs only with a live HQ; git checks touch rare candidates.
+			sweepReapSuggestions()
+		}
 	}
 
 	// Usage-watch (usage-watch change): every event refreshes this session's token

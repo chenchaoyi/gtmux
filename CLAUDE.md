@@ -4,13 +4,21 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
-  `digest`, `hq`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `send`, `hook`,
+  `digest`, `hq`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `hook`,
   `serve`, `tunnel`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
   `uninstall-app`. Logic lives in `internal/`. `digest`+`hq` = the supervisor
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
   also `GET /api/digest`) + a supervisor agent session at `~/.config/gtmux/hq/`
   (radar rows carry `role:"supervisor"`; the hook nudges it on waiting events —
   `hqNudge:false` disables). See `openspec/changes/supervisor-mvp`.
+  `spawn`+`tasks`+`reap` = **verified dispatch** (`internal/dispatch`): `spawn`
+  launches an agent (new session / `--pane` / `--worktree`), proxied by construction,
+  and delivers a task with LAND-VERIFICATION (hook-event first via the #388 stream,
+  hardened two-frame screen-read as fallback; a re-send interlock refuses a duplicate
+  payload, `--force` overrides). `gtmux send` verifies by default (`--no-verify` opts
+  out); `POST /api/send` stays fast/unverified. `tasks` is the dispatch/needs-you
+  ledger; `reap` safely reclaims a finished dispatch (worktree-clean + branch-merged
+  gate, else report-only; `--snooze` to keep). See `openspec/changes/hq-dispatch`.
 - **Native menu-bar app** — `macapp/` (Swift / AppKit + `NSStatusItem` +
   `NSPopover` + SwiftUI). A pure **consumer** of the CLI: polls
   `gtmux agents --json` and shells out to `gtmux focus`. It's also the

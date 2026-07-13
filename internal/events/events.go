@@ -23,13 +23,20 @@ import (
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
 	Ts      int64  `json:"ts"`             // unix seconds
-	Event   string `json:"event"`          // Stop | Waiting | Notification | UserPromptSubmit | …
+	Event   string `json:"event"`          // Stop | Waiting | Notification | UserPromptSubmit | PreCompact | …
 	State   string `json:"state"`          // derived: working | waiting | idle | …
 	Pane    string `json:"pane,omitempty"` // tmux pane id ("" for native)
 	Loc     string `json:"loc,omitempty"`
 	Session string `json:"session,omitempty"`
 	Agent   string `json:"agent,omitempty"`
 	Kind    string `json:"kind,omitempty"` // waiting kind: permission | plan | question
+	// Additive (hq-dispatch): a short content summary — the reply tail on Stop, the
+	// prompt's normalized head on UserPromptSubmit (so dispatch verify can match a
+	// submission deterministically from the stream, not by screen-reading).
+	Summary string `json:"summary,omitempty"`
+	// Additive (hq-dispatch): a deterministic turn-end classification on Stop —
+	// "asking" (the reply ends on a question to the user) or "report". Empty otherwise.
+	Class string `json:"class,omitempty"`
 }
 
 // Path is the active event log.

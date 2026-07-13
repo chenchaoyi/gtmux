@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -12,11 +13,15 @@ import (
 
 // cmdSend types into a tmux pane (a WRITE) — it backs the menu-bar / notification
 // in-place reply (A1/A2) and any scripted input. `gtmux send <pane> <text…>`
-// sends the text then Enter; `--no-enter` skips Enter; `--key NAME` sends a single
-// whitelisted control key (Enter/Escape/C-c/…) instead of literal text. Same
-// whitelist + tmux helpers as POST /api/send, so the two stay consistent.
+// delivers the text then Enter and, by DEFAULT, VERIFIES it landed (the same
+// layered deliver-verify as `gtmux spawn`); `--no-verify` skips verification;
+// `--force` overrides the re-send interlock; `--no-enter` skips Enter (implies
+// no-verify); `--key NAME` sends a single whitelisted control key. `--key` and the
+// server's POST /api/send path are UNCHANGED (the API stays fast — mobile latency).
 func cmdSend(args []string) int {
 	enter := true
+	verify := true
+	force := false
 	key := ""
 	var rest []string
 	for i := 0; i < len(args); i++ {
@@ -24,8 +29,13 @@ func cmdSend(args []string) int {
 		switch {
 		case a == "--no-enter":
 			enter = false
+			verify = false // nothing was submitted to verify
 		case a == "--enter":
 			enter = true
+		case a == "--no-verify":
+			verify = false
+		case a == "--force":
+			force = true
 		case a == "--key":
 			if i+1 >= len(args) {
 				return sendUsage()
@@ -61,6 +71,30 @@ func cmdSend(args []string) int {
 		}
 		return 0
 	}
+	// Verified text delivery (default). Returns as soon as landing is confirmed, so a
+	// healthy send stays fast.
+	if verify && enter {
+		paneID := tmux.Display(pane, "#{pane_id}")
+		agentCmd := tmux.Display(paneID, "#{pane_current_command}")
+		tune := dispatch.LoadTuning()
+		res := dispatch.Deliver(dispatchIO(paneID), deliverOpts(paneID, agentCmd, force, tune), text)
+		switch res.State {
+		case dispatch.StateLanded:
+			return 0
+		case dispatch.StateQueued:
+			i18n.Say("• queued — it will run after the current turn", "• 已排队 —— 当前这轮结束后执行")
+			return 0
+		case dispatch.StateRefusedDup:
+			i18n.Sae("gtmux send: refused (identical payload re-sent within the window; use --force)",
+				"gtmux send: 已拒发（时间窗内重复相同内容，要重发用 --force）")
+			return 1
+		default:
+			i18n.Sae("gtmux send: NOT delivered — evidence:\n"+res.Evidence,
+				"gtmux send: 未送达 —— 证据：\n"+res.Evidence)
+			return 1
+		}
+	}
+	// Plain (unverified) path: --no-verify or --no-enter.
 	if err := tmux.SendText(pane, text, enter); err != nil {
 		i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 		return 1
@@ -69,8 +103,8 @@ func cmdSend(args []string) int {
 }
 
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> <text…> [--no-enter] [--key NAME]",
-		"用法：gtmux send <pane> <text…> [--no-enter] [--key 键名]")
+	i18n.Sae("usage: gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--key NAME]",
+		"用法：gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--key 键名]")
 	return 2
 }
 
