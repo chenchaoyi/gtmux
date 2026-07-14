@@ -262,23 +262,33 @@ struct PreferencesView: View {
     }
 
     // The allowlist, rendered from the LIVE agent list (tmux panes only — a guest
-    // types via tmux send-keys, so native/hook-less rows can't be targets). The host
-    // ticks panes by the agent they recognize, not a raw `%N`.
+    // types via tmux send-keys, so native/hook-less rows can't be targets). Each
+    // row mirrors the session-list identity — the same AgentAvatar (icon + state)
+    // + the agent's own session title (`primary`) + dim `session · %pane` — so the
+    // host ticks the pane they RECOGNISE from the popover, not an indistinguishable
+    // "Claude Code · %N".
     @ViewBuilder private var sharePanePicker: some View {
-        let panes = store.agents.filter { !$0.isNative && !$0.paneID.isEmpty }
+        let panes = store.shareablePanes
         if panes.isEmpty {
             Text(l10n.tr("No tmux panes to share right now.", "当前没有可分享的 tmux pane。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(l10n.tr("Panes a guest may type into", "允许访客输入的 pane"))
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 ForEach(panes) { a in
                     Toggle(isOn: paneBinding(a.paneID)) {
-                        HStack(spacing: 6) {
-                            Text(a.agent.isEmpty ? a.paneID : a.agent).font(.system(size: 12))
-                            Text(a.paneID).font(.system(size: 10, design: .monospaced))
-                                .foregroundStyle(.tertiary)
+                        HStack(spacing: 8) {
+                            AgentAvatar(agent: a)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(a.primary.isEmpty ? (a.agent.isEmpty ? a.paneID : a.agent) : a.primary)
+                                    .font(Theme.Font.session).lineLimit(1).truncationMode(.tail)
+                                    .help(a.primary)
+                                Text(a.secondary)
+                                    .font(Theme.Font.window).foregroundStyle(.secondary)
+                                    .lineLimit(1).truncationMode(.tail)
+                            }
+                            Spacer(minLength: 0)
                         }
                     }
                     .toggleStyle(.checkbox).disabled(share.busy)

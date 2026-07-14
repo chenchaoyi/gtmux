@@ -205,7 +205,11 @@ Preferences, beside Remote access (guests arrive over the same serve/tunnel):
   which turns shared input on/off;
 - a **per-pane allowlist** rendered from the live agent list — each tmux pane
   (`source == "tmux"`, a real `%N`) a checkbox the host ticks to allow guest input
-  into that pane, so panes are chosen by the agent the host recognizes;
+  into that pane. Each row SHALL carry the SAME identity the session list shows —
+  the agent avatar (official icon + state), the agent's own session title
+  (`primary`), and a dim `session · %pane` line — and be ordered like the radar
+  (state rank → session title), so the host ticks the pane they RECOGNISE from the
+  popover, never an indistinguishable generic agent name repeated down the list;
 - **guest share links**: existing links listed with a per-link revoke, and a
   "new share link" action that mints a link and copies its URL to the clipboard.
 
@@ -224,6 +228,11 @@ indicator.
 
 - **WHEN** the host turns the Shared-input toggle on and ticks a tmux pane in the allowlist
 - **THEN** the app invokes `gtmux share on` and `gtmux share add %N`, and the section reflects the new state (that pane is now guest-typable while consent is on)
+
+#### Scenario: Allowlist rows carry the session-list identity
+
+- **WHEN** the host opens the Shared-input allowlist while several same-agent (e.g. all Claude Code) tmux panes are live
+- **THEN** each row shows that pane's own session title (`primary`) with the agent avatar and a dim `session · %pane`, matching the popover's session list — the rows are distinguishable by session, not a generic agent name repeated with only a raw `%N` to tell them apart
 
 #### Scenario: Minting a share link copies it
 

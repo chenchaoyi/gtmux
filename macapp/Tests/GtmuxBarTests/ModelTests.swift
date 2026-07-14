@@ -164,6 +164,33 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(secs.map { $0.status }, [.waiting, .working, .idle])
     }
 
+    // The Shared-input allowlist (Preferences) renders from `shareablePanes`: real
+    // tmux panes only (native/hook-less rows can't be typed into), ordered like the
+    // radar (state rank → session title), and identified by the SAME `primary`
+    // session name shown in the popover — not an indistinguishable "Claude Code · %N".
+    func testShareablePanesFilterOrderAndIdentity() throws {
+        let json = """
+        [{"pane_id":"%45","session":"gtmux","agent":"Claude Code","status":"idle","task":"reap gate"},
+         {"pane_id":"%37","session":"gtmux","agent":"Claude Code","status":"waiting","task":"share picker"},
+         {"pane_id":"%14","session":"gtmux","agent":"Claude Code","status":"working","task":"digest tables"},
+         {"pane_id":"%20","session":"gtmux","agent":"Claude Code","status":"working","task":"apple briefing"},
+         {"pane_id":"%9","session":"mob","agent":"Claude Code","status":"working","source":"native","task":"native one"},
+         {"session":"nopane","agent":"Claude Code","status":"working","task":"ghost"}]
+        """
+        let s = AgentStore()
+        s.setForTesting(try JSONDecoder().decode([Agent].self, from: Data(json.utf8)))
+        let panes = s.shareablePanes
+        // native (%9) and the no-pane row are excluded.
+        XCTAssertEqual(panes.count, 4)
+        XCTAssertFalse(panes.contains { $0.isNative || $0.paneID.isEmpty })
+        // ordered by state rank (waiting → working → idle), ties by session title.
+        XCTAssertEqual(panes.map { $0.paneID }, ["%37", "%20", "%14", "%45"])
+        // each row carries the agent's OWN session name, not the generic agent label.
+        XCTAssertEqual(panes.first?.primary, "share picker")
+        XCTAssertEqual(panes.first?.secondary, "gtmux · %37")
+        XCTAssertNotEqual(panes.first?.primary, "Claude Code")
+    }
+
     func testSupervisorExcludedFromSections() throws {
         let json = #"[{"pane_id":"%1","session":"a","status":"working"},"#
             + #"{"pane_id":"%9","session":"HQ","status":"working","role":"supervisor"}]"#
