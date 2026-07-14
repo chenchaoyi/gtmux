@@ -53,7 +53,7 @@ func TestGuestSend_BlockedWhenOff(t *testing.T) {
 func TestGuestSend_BlockedWhenNotAllowlisted(t *testing.T) {
 	h, share, sent, _, guest := shareServer(t)
 	on := true
-	share.SetConfig(&on, &[]string{"%2"}) // consent on, but only %2 allowed
+	share.SetConfig(&on, &[]string{"%2"}, nil) // consent on, but only %2 allowed
 	if rr := post(t, h, "/api/send", guest, `{"id":"%1","text":"ls"}`); rr.Code != http.StatusForbidden {
 		t.Fatalf("guest send to a non-allowlisted pane = %d, want 403", rr.Code)
 	}
@@ -65,7 +65,7 @@ func TestGuestSend_BlockedWhenNotAllowlisted(t *testing.T) {
 func TestGuestSend_AllowedWhenConsentedAndAllowlisted(t *testing.T) {
 	h, share, sent, _, guest := shareServer(t)
 	on := true
-	share.SetConfig(&on, &[]string{"%1"})
+	share.SetConfig(&on, &[]string{"%1"}, nil)
 	if rr := post(t, h, "/api/send", guest, `{"id":"%1","text":"ls"}`); rr.Code != http.StatusOK {
 		t.Fatalf("consented+allowlisted guest send = %d, want 200 (%s)", rr.Code, rr.Body.String())
 	}
@@ -98,7 +98,7 @@ func TestShareCapability_ByScope(t *testing.T) {
 	}
 	// Guest, sharing on with %1 → input true, panes [%1].
 	on := true
-	share.SetConfig(&on, &[]string{"%1"})
+	share.SetConfig(&on, &[]string{"%1"}, nil)
 	json.Unmarshal(do(t, h, http.MethodGet, "/api/share", guest).Body.Bytes(), &gcap)
 	if !gcap.Input || len(gcap.Panes) != 1 || gcap.Panes[0] != "%1" {
 		t.Fatalf("guest with sharing on: %+v, want input=true panes=[%%1]", gcap)
@@ -134,7 +134,7 @@ func TestShareAdmin_MasterOnly(t *testing.T) {
 func TestShareConfigGet_MasterOnly(t *testing.T) {
 	h, share, _, device, guest := shareServer(t)
 	on := true
-	share.SetConfig(&on, &[]string{"%1", "%2"})
+	share.SetConfig(&on, &[]string{"%1", "%2"}, nil)
 	var st ShareState
 	json.Unmarshal(do(t, h, http.MethodGet, "/api/share/config", testToken).Body.Bytes(), &st)
 	if !st.Enabled || len(st.Panes) != 2 {
@@ -153,7 +153,7 @@ func TestShareManager_Allowed(t *testing.T) {
 		t.Error("off → not allowed")
 	}
 	on := true
-	m.SetConfig(&on, &[]string{"%1"})
+	m.SetConfig(&on, &[]string{"%1"}, nil)
 	if !m.Allowed("%1") {
 		t.Error("on + allowlisted → allowed")
 	}
@@ -161,7 +161,7 @@ func TestShareManager_Allowed(t *testing.T) {
 		t.Error("on + not allowlisted → not allowed")
 	}
 	off := false
-	m.SetConfig(&off, nil)
+	m.SetConfig(&off, nil, nil)
 	if m.Allowed("%1") {
 		t.Error("consent off → not allowed even if still listed")
 	}

@@ -273,19 +273,57 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "gtmux"})
 }
 
-func (s *Server) handleAgents(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 	b, err := s.deps.AgentsJSON()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, errBody("agents error"))
 		return
 	}
+	// A guest sees ONLY the panes on its view allowlist; a full caller (master /
+	// paired device) gets the byte-identical radar unfiltered.
+	if callerScope(r.Context()) == scopeGuest {
+		b = filterAgentsForGuest(b, s.deps.Share)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(b)
 }
 
+// filterAgentsForGuest drops every agent row whose pane is not on the guest's view
+// allowlist, preserving each surviving row byte-for-byte. A nil Share (sharing not
+// configured) yields an empty radar — a guest can never see more than nothing.
+func filterAgentsForGuest(raw []byte, share *ShareManager) []byte {
+	if share == nil {
+		return []byte("[]")
+	}
+	var rows []json.RawMessage
+	if err := json.Unmarshal(raw, &rows); err != nil {
+		return []byte("[]")
+	}
+	kept := make([]json.RawMessage, 0, len(rows))
+	for _, row := range rows {
+		var id struct {
+			PaneID string `json:"pane_id"`
+		}
+		if json.Unmarshal(row, &id) == nil && id.PaneID != "" && share.CanView(id.PaneID) {
+			kept = append(kept, row)
+		}
+	}
+	out, err := json.Marshal(kept)
+	if err != nil {
+		return []byte("[]")
+	}
+	return out
+}
+
 // handleUsage serves the usage-watch report (GET /api/usage), byte-identical to
 // `gtmux usage --json`.
-func (s *Server) handleUsage(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
+	// Usage exposes the whole fleet + token budgets — an owner/HQ surface, not part
+	// of a scoped guest's shared view.
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
 	if s.deps.UsageJSON == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("usage unavailable"))
 		return
@@ -301,7 +339,13 @@ func (s *Server) handleUsage(w http.ResponseWriter, _ *http.Request) {
 
 // handleDigest serves the agent-digest array (GET /api/digest) — the supervisor's
 // fleet view, byte-identical to `gtmux digest --json`.
-func (s *Server) handleDigest(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) handleDigest(w http.ResponseWriter, r *http.Request) {
+	// The digest is the supervisor's whole-fleet view — an owner/HQ surface, never
+	// exposed to a scoped guest.
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
 	if s.deps.DigestJSON == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("digest unavailable"))
 		return
@@ -336,6 +380,11 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	// A guest may read a pane's screen ONLY if it is on the view allowlist.
+	if callerScope(r.Context()) == scopeGuest && (s.deps.Share == nil || !s.deps.Share.CanView(id)) {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
 		return
 	}
 	text, ok := s.deps.PaneText(id)

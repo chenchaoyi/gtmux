@@ -10,7 +10,7 @@ import (
 // guest roster to the token-free {id,label,enrolled_at} shape, preserve the
 // allowlist, carry the base, and NEVER emit a token field.
 func TestBuildShareStatus(t *testing.T) {
-	st := shareStateJSON{Enabled: true, Panes: []string{"%37", "%5"}}
+	st := shareStateJSON{Enabled: true, Panes: []string{"%37", "%5"}, ViewPanes: []string{"%37", "%5", "%9"}}
 	guests := []deviceListEntry{
 		{ID: "g1", Name: "alice", EnrolledAt: 1783956522, Scope: "guest"},
 		{ID: "g2", Name: "bob", EnrolledAt: 1783934731, Scope: "guest"},
@@ -19,6 +19,11 @@ func TestBuildShareStatus(t *testing.T) {
 
 	if !out.Enabled || len(out.Panes) != 2 || out.Panes[0] != "%37" {
 		t.Fatalf("state/allowlist not preserved: %+v", out)
+	}
+	// The VIEW allowlist is carried separately (here it's a superset of input — %9
+	// is view-only), so a consumer can render see-vs-type independently.
+	if len(out.ViewPanes) != 3 || out.ViewPanes[2] != "%9" {
+		t.Fatalf("view_panes not preserved: %+v", out.ViewPanes)
 	}
 	if out.Base != "https://gtmux-x.ccy.dev" {
 		t.Errorf("base = %q", out.Base)
@@ -36,8 +41,9 @@ func TestBuildShareStatus(t *testing.T) {
 	// A nil allowlist marshals as [] (a stable array for the consumer), not null.
 	empty := buildShareStatus(shareStateJSON{Enabled: false, Panes: nil}, nil, "")
 	eb, _ := json.Marshal(empty)
-	if !strings.Contains(string(eb), `"panes":[]`) || !strings.Contains(string(eb), `"guests":[]`) {
-		t.Errorf("empty panes/guests should be [] not null: %s", eb)
+	if !strings.Contains(string(eb), `"panes":[]`) || !strings.Contains(string(eb), `"guests":[]`) ||
+		!strings.Contains(string(eb), `"view_panes":[]`) {
+		t.Errorf("empty panes/view_panes/guests should be [] not null: %s", eb)
 	}
 }
 
