@@ -42,5 +42,5 @@
 - [x] 5.2 Update the memory notes that flagged "seed-once won't auto-update"
   ([[hq-attention-system]], [[hq-nudge-hardening-followups]], [[hq-chief-of-staff]]) to
   point at the new versioned mechanism; add a `versioned-hq-playbook` memory.
-- [ ] 5.3 `make check` green; `openspec validate versioned-hq-playbook --strict` valid.
+- [x] 5.3 `make check` green; `openspec validate versioned-hq-playbook --strict` valid.
   Sync-specs + archive when merged.
