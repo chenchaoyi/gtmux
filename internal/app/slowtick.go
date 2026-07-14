@@ -8,9 +8,12 @@ package app
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/resource"
@@ -38,6 +41,53 @@ func slowTickEval() {
 	nudgeOnChange("limitswarn", limitsTierKey(lr.Warn), "[gtmux] limits·warn "+lr.Warn, "")
 	// Lifecycle watchdog (charter M5): escalate a pane stuck waiting past the timeout.
 	watchdogSweep(time.Now().Unix())
+	// Perception-feed watchdog (hq-attention-system): keep the silent feed daemon
+	// alive while an HQ is live; mechanically self-heal, escalate CRITICAL only after
+	// self-heal fails twice.
+	feedWatchdog(time.Now().Unix())
+}
+
+// feedFailCountPath stores the consecutive restart-failure counter (text int).
+func feedFailCountPath() string { return filepath.Join(state.Dir(), "hq-feed", "restart-fails") }
+
+func readFeedFailCount() int {
+	n, _ := strconv.Atoi(state.ReadMarker(feedFailCountPath()))
+	return n
+}
+
+func writeFeedFailCount(n int) { _ = state.WriteMarker(feedFailCountPath(), strconv.Itoa(n)) }
+
+// feedWatchdog is the no-LLM perception-feed supervisor (design §1.2.2 / §6.4). It
+// runs from the single-writer serve slow-tick, so its markers have no race. Only
+// while an HQ pane is live: it ensures the daemon is up and beating, mechanically
+// restarts a dead/stale one (SILENTLY), and — only after two consecutive failed
+// restarts — surfaces a CRITICAL degradation (a feed-degraded control record + one
+// visible HQ nudge), deduped so recovery doesn't re-alert. This is the ONE place
+// the feed watchdog is allowed to be visible: a perception outage must not stay
+// silent (the commander's #1 requirement).
+func feedWatchdog(now int64) {
+	hqLive := findHQPane() != ""
+	h := hqfeed.Health{HQLive: hqLive, PidAlive: hqfeed.Running(), HbStale: hqfeed.Stale(now)}
+	if hqfeed.NeedsRestart(h) {
+		_ = spawnFeedDaemon() // detached; the singleton guard makes a redundant spawn safe
+	}
+	next := hqfeed.NextFailureCount(readFeedFailCount(), h)
+	writeFeedFailCount(next)
+
+	// Escalate once on the transition into degraded; clear on recovery (empty key)
+	// without re-alerting. markerChanged is the by-tier dedup core.
+	key := ""
+	if hqfeed.ShouldEscalate(next) {
+		key = "down"
+	}
+	if markerChanged("hqfeeddegraded", key) {
+		hqfeed.EmitControl(hqfeed.ControlFeedDegraded,
+			"⚠ perception feed down — mechanical self-heal failed; on the 5-min polling backstop",
+			events.SevImportant, now)
+		if pane := findHQPane(); pane != "" {
+			hqnudge.Deliver(pane, "[gtmux] ⚠ perception feed degraded — self-heal failed, on polling backstop. Re-attach `gtmux hq-feed --tail`.")
+		}
+	}
 }
 
 // resourceTierKey is the dedup key for a machine warning: the tier (amber/red), or

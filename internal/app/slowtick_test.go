@@ -52,3 +52,46 @@ func TestResourceTierKey(t *testing.T) {
 		t.Errorf("warn set → tier key %q (MachineTier=%q)", got, resource.MachineTier(m).String())
 	}
 }
+
+// TestFeedFailCountRoundTrip confirms the perception-feed restart-failure counter
+// persists across ticks (the state.marker glue behind the pure NextFailureCount).
+func TestFeedFailCountRoundTrip(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if readFeedFailCount() != 0 {
+		t.Fatalf("fresh fail count = %d, want 0", readFeedFailCount())
+	}
+	writeFeedFailCount(2)
+	if readFeedFailCount() != 2 {
+		t.Fatalf("fail count = %d, want 2", readFeedFailCount())
+	}
+	writeFeedFailCount(0)
+	if readFeedFailCount() != 0 {
+		t.Fatalf("reset fail count = %d, want 0", readFeedFailCount())
+	}
+}
+
+// TestFeedDegradedDedup confirms the degraded escalation fires once on the
+// transition into degraded and clears on recovery without re-alerting — the same
+// by-tier dedup the resource/limits nudges use.
+func TestFeedDegradedDedup(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// Not degraded → key "" → no fire.
+	if markerChanged("hqfeeddegraded", "") {
+		t.Fatal("healthy feed must not alert")
+	}
+	// Transition into degraded fires once.
+	if !markerChanged("hqfeeddegraded", "down") {
+		t.Fatal("first degradation should alert")
+	}
+	if markerChanged("hqfeeddegraded", "down") {
+		t.Fatal("still-degraded must not re-alert")
+	}
+	// Recovery clears without alerting.
+	if markerChanged("hqfeeddegraded", "") {
+		t.Fatal("recovery must not alert")
+	}
+	// A fresh outage after recovery alerts again.
+	if !markerChanged("hqfeeddegraded", "down") {
+		t.Fatal("re-degradation after recovery should alert again")
+	}
+}
