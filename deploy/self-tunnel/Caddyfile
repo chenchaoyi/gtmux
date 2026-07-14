@@ -12,25 +12,33 @@
 }
 
 tunnel.ccy.dev {
-    # The chisel client's control channel is a WebSocket upgrade → send those to chisel.
+    # MULTI-TENANT: each Mac derives a STABLE per-device reverse port in 20000–59999
+    # and pairs at https://tunnel.ccy.dev/p<port>. Strip the /p<port> prefix and proxy
+    # to that loopback port (which chisel reverse-forwards to that Mac's serve:8765).
+    # The [2-5]\d{4} matcher confines routing to the chisel band, so a crafted
+    # /p<lowport> can't reach a system service; each serve is bearer-token-gated too.
+    #
+    # MUST come BEFORE the @ws chisel-control matcher below: a tenant path can carry a
+    # WebSocket upgrade of its own (`GET /p<port>/api/attach` — the `gtmux attach`
+    # remote-terminal stream). If @ws were checked first it would swallow that upgrade
+    # and hand it to the chisel server, which 404s the unknown path. Caddy's
+    # reverse_proxy forwards the WS upgrade to the Mac's serve natively.
+    @tenant path_regexp tnt ^/p([2-5][0-9]{4})(/.*)?$
+    handle @tenant {
+        # rewrite to the remaining path ("" for a bare /p<port> → normalized to "/")
+        rewrite * {re.tnt.2}
+        reverse_proxy 127.0.0.1:{re.tnt.1}
+    }
+
+    # The chisel client's OWN control channel is a ROOT WebSocket upgrade → send those
+    # to chisel. Checked AFTER @tenant so it only catches root-level WS (not a tenant's
+    # /api/attach WS, which already matched @tenant above).
     @ws {
         header Connection *Upgrade*
         header Upgrade websocket
     }
     handle @ws {
         reverse_proxy 127.0.0.1:8080
-    }
-
-    # MULTI-TENANT: each Mac derives a STABLE per-device reverse port in 20000–59999
-    # and pairs at https://tunnel.ccy.dev/p<port>. Strip the /p<port> prefix and proxy
-    # to that loopback port (which chisel reverse-forwards to that Mac's serve:8765).
-    # The [2-5]\d{4} matcher confines routing to the chisel band, so a crafted
-    # /p<lowport> can't reach a system service; each serve is bearer-token-gated too.
-    @tenant path_regexp tnt ^/p([2-5][0-9]{4})(/.*)?$
-    handle @tenant {
-        # rewrite to the remaining path ("" for a bare /p<port> → normalized to "/")
-        rewrite * {re.tnt.2}
-        reverse_proxy 127.0.0.1:{re.tnt.1}
     }
 
     # Legacy single-tenant fallback (a personal one-Mac server, or a pre-multi-tenant
