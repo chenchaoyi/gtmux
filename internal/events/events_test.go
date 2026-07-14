@@ -188,3 +188,29 @@ func itoaTest(n int) string {
 	}
 	return string(b)
 }
+
+// TestOverCeiling: the active log growing past ~2× cap (rotation not firing) is the
+// self-check sensor's LLM-free "log broken" probe.
+func TestOverCeiling(t *testing.T) {
+	tinyCap(t, 1) // 1 MB cap → ceiling ~2 MB
+	now := time.Now().Unix()
+	if OverCeiling() {
+		t.Error("empty log should not be over ceiling")
+	}
+	// A normal append (rotation keeps the active file small) stays under ceiling.
+	Append(Record{Ts: now, Event: "Stop", State: "idle", Loc: "a:0.0"})
+	if OverCeiling() {
+		t.Error("a small active log should not be over ceiling")
+	}
+	// Simulate rotation failing: write a >2MB active file directly.
+	big := make([]byte, 3<<20)
+	for i := range big {
+		big[i] = 'x'
+	}
+	if err := os.WriteFile(Path(), big, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !OverCeiling() {
+		t.Error("a 3MB active file over a 1MB cap should be over ceiling")
+	}
+}

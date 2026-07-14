@@ -68,29 +68,29 @@
 
 ## 6. Phase ④ — Self-check triggers + HQ self-maintenance
 
-- [ ] 6.1 Slow-tick self-check sensor (no LLM): raise a `self-check` control record to the
+- [x] 6.1 Slow-tick self-check sensor (no LLM): raise a `self-check` control record to the
   feed when idle ≥ ~2 h with nothing surfaced AND ≥ ~12 h since last self-check; OR a
   threshold trips (open ledger > cap / journal over ceiling / cursor gap); OR ≥ 24 h daily
   floor. Rate-limit ≤ 1/h via a marker. Pure decision function unit-tested.
-- [ ] 6.2 Persist last-self-check + last-surface timestamps the sensor needs (state
+- [x] 6.2 Persist last-self-check + last-surface timestamps the sensor needs (state
   markers). Unit-test the rate-limit + idle/threshold/daily branches.
 
 ## 7. HQ seed playbook (behavior — single source)
 
-- [ ] 7.1 Update `internal/app/hq.go` `hqInstructions` (AGENTS.md): teach HQ to (a)
+- [x] 7.1 Update `internal/app/hq.go` `hqInstructions` (AGENTS.md): teach HQ to (a)
   background-subscribe to `gtmux hq-feed --tail` as the silent feed, (b) gate its OWN
   output by surfacing tier / the resolved `gtmux quiet` threshold (print CRITICAL/NORMAL,
   ledger-only QUIET), (c) on a `feed-degraded` control record always surface CRITICAL, and
   (d) on a `self-check` control record run the §8 self-maintenance and brief only on real
   action. Keep bilingual, terse.
-- [ ] 7.2 Note in tasks + a memory that the LIVE hq home is seed-once — the commander's
+- [x] 7.2 Note in tasks + a memory that the LIVE hq home is seed-once — the commander's
   existing HQ needs a deliberate re-seed to pick up 7.1 (fresh homes get it automatically).
 
 ## 8. Gate, specs, docs
 
-- [ ] 8.1 `make check` green (gofmt + vet + staticcheck + `go test -race`);
+- [x] 8.1 `make check` green (gofmt + vet + staticcheck + `go test -race`);
   `CGO_ENABLED=0 go build ./cmd/gtmux` passes.
-- [ ] 8.2 `npx @fission-ai/openspec validate hq-attention-system --strict` passes; keep
+- [x] 8.2 `npx @fission-ai/openspec validate hq-attention-system --strict` passes; keep
   `tasks.md` checkboxes truthful as phases land.
 - [ ] 8.3 Update `CLAUDE.md` (command list + a one-liner on the attention system) and
   `docs/TROUBLESHOOTING.md` (a feed-degraded entry: symptom → check heartbeat/pidfile →

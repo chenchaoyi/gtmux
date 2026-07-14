@@ -4,7 +4,7 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
-  `digest`, `hq`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `hook`,
+  `digest`, `hq`, `hq-feed`, `quiet`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `hook`,
   `serve`, `tunnel`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
   `uninstall-app`. Logic lives in `internal/`. `digest`+`hq` = the supervisor
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
@@ -18,6 +18,18 @@ over one Go core (gtmux-core is the single data source):
   low-risk∧in-discussed-scope → HQ decides+dispatches; else escalate), graded escalation
   + reconcile-before-relay (kills stale needs-you), and a correction→charter learning
   loop (`knowledge/corrections.md`). See `openspec/changes/hq-chief-of-staff`.
+  `hq-feed`+`quiet` = the **attention system** (`internal/hqfeed`, see
+  `openspec/changes/hq-attention-system`): it SPLITS feeding-HQ from showing-user —
+  `hq-feed` is a gtmux-managed, LLM-free daemon that tails the event journal (now with a
+  monotonic `seq` + a consumed cursor for zero-loss catch-up) into a rotated spool HQ
+  backgrounds (`hq-feed --tail`) as a SILENT feed, so gtmux stops force-typing low-value
+  receipt nudges into the pane. A no-LLM watchdog in the serve slow-tick keeps the daemon
+  alive (heartbeat 30s / stale 90s / self-heal 2 failures → CRITICAL `feed-degraded`),
+  and a self-check sensor raises a `self-check` trigger (idle/threshold/daily, ≤1/h) HQ
+  acts on. `gtmux tasks` doubles as the **attention ledger** (tier/priority/surfaced/
+  disposition/archive, `--verbose`); `gtmux quiet [on|off|status]` tunes the surfacing
+  threshold (a `feed-degraded` CRITICAL is never quieted). HQ gates its OWN prints by the
+  tier — CRITICAL/NORMAL print, QUIET is ledger-only.
   `spawn`+`tasks`+`reap` = **verified dispatch** (`internal/dispatch`): `spawn`
   launches an agent (new session / `--pane` / `--worktree`), proxied by construction,
   and delivers a task with LAND-VERIFICATION (hook-event first via the #388 stream,

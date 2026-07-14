@@ -45,6 +45,9 @@ func slowTickEval() {
 	// alive while an HQ is live; mechanically self-heal, escalate CRITICAL only after
 	// self-heal fails twice.
 	feedWatchdog(time.Now().Unix())
+	// Self-check sensor (hq-attention-system §8): raise a self-check trigger to HQ when
+	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here — HQ does the pass.
+	selfCheckSensor(time.Now().Unix())
 }
 
 // feedFailCountPath stores the consecutive restart-failure counter (text int).
