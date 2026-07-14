@@ -79,15 +79,76 @@ func WorktreeDirty(wt string) (bool, error) {
 	return out != "", err
 }
 
-// BranchMerged reports whether branch is merged into the repo's default branch
-// (an ancestor of it). Errors when the default branch can't be determined, so a
-// caller can fail SAFE (treat unknown as not-merged).
+// BranchMerged reports whether branch is merged into the repo's default branch.
+// A regular merge makes the branch tip an ANCESTOR of the base — checked first.
+// A SQUASH merge (GitHub's default, and what this repo uses) does NOT: GitHub
+// rewrites the branch's commits into one new commit on the base, so the branch
+// tip is never an ancestor even though the work landed — the ancestor-only check
+// used to misreport a squash-merged branch as "not merged" and block a safe
+// reap (incident: PR #420 landed as 58c2bef, reap still refused it). Two more
+// checks catch that case; either one is sufficient: (1) a commit on the base
+// since branch's merge-base whose TREE is identical to the branch tip's — that's
+// exactly what a clean squash-merge commit produces; (2) if `gh` is available
+// and resolves a PR for this branch, its MERGED state is authoritative
+// regardless of local history (catches a squash onto a base commit the branch
+// didn't fork from cleanly). Errors only when the default branch itself can't
+// be determined, so a caller can fail SAFE (treat unknown as not-merged).
 func BranchMerged(wt, branch string) (bool, error) {
 	base := defaultBranch(wt)
 	if base == "" {
 		return false, fmt.Errorf("cannot determine the default branch")
 	}
-	return gitRun(wt, "merge-base", "--is-ancestor", branch, base) == nil, nil
+	if gitRun(wt, "merge-base", "--is-ancestor", branch, base) == nil {
+		return true, nil
+	}
+	if squashMerged(wt, branch, base) {
+		return true, nil
+	}
+	if prMerged(wt, branch) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// squashMerged reports whether branch was squash-merged into base: some commit
+// reachable from base (since branch's merge-base) has a tree identical to the
+// branch tip's tree — the content a clean squash-merge commit produces.
+func squashMerged(wt, branch, base string) bool {
+	tip, err := gitOutput(wt, "rev-parse", branch+"^{tree}")
+	if err != nil || tip == "" {
+		return false
+	}
+	mergeBase, err := gitOutput(wt, "merge-base", branch, base)
+	if err != nil || mergeBase == "" {
+		return false
+	}
+	trees, err := gitOutput(wt, "log", "--format=%T", mergeBase+".."+base)
+	if err != nil {
+		return false
+	}
+	for _, tree := range strings.Split(trees, "\n") {
+		if tree != "" && tree == tip {
+			return true
+		}
+	}
+	return false
+}
+
+// ghOutput runs `gh` in dir and returns trimmed stdout.
+func ghOutput(dir string, args ...string) (string, error) {
+	cmd := exec.Command("gh", args...)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	return strings.TrimSpace(string(out)), err
+}
+
+// prMerged asks GitHub CLI whether branch's associated PR has state MERGED.
+// false (not an error) whenever `gh` isn't installed, isn't authenticated, or
+// finds no PR for the branch — those are all "inconclusive", not "not merged",
+// and BranchMerged already has a safe false default for that case.
+func prMerged(wt, branch string) bool {
+	state, err := ghOutput(wt, "pr", "view", branch, "--json", "state", "-q", ".state")
+	return err == nil && state == "MERGED"
 }
 
 // RemoveWorktree removes a linked worktree (from the main repo).
