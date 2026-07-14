@@ -75,12 +75,16 @@ func Run(argv []string) int {
 		return cmdResource(args)
 	case "limits":
 		return cmdLimits(args)
+	case "quiet":
+		return cmdQuiet(args)
 	case "config":
 		return cmdConfig(args)
 	case "share":
 		return cmdShare(args)
 	case "hq":
 		return cmdHQ(args)
+	case "hq-feed":
+		return cmdHQFeed(args)
 	case "status", "st":
 		return cmdStatus(args)
 	case "spawn":

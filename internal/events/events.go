@@ -22,7 +22,12 @@ import (
 
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
-	Ts      int64  `json:"ts"`             // unix seconds
+	Ts int64 `json:"ts"` // unix seconds
+	// Seq is a strictly increasing sequence number assigned at the single append
+	// path (hq-attention-system): it gives consumers a total order and a durable
+	// cursor position that survives rotation (byte offsets do not). Additive — a
+	// legacy record without it reads as sequence-unknown (0) and is ordered by ts.
+	Seq     int64  `json:"seq,omitempty"`
 	Event   string `json:"event"`          // Stop | Waiting | Notification | UserPromptSubmit | PreCompact | …
 	State   string `json:"state"`          // derived: working | waiting | idle | …
 	Pane    string `json:"pane,omitempty"` // tmux pane id ("" for native)
@@ -128,6 +133,13 @@ func Append(r Record) {
 	if r.Severity == "" {
 		r.Severity = Severity(r)
 	}
+	// Assign the monotonic sequence at the source (hq-attention-system) so every
+	// event carries a durable, rotation-independent cursor position. Leave an
+	// explicitly-set value untouched. A 0 (counter unavailable) reads as
+	// sequence-unknown downstream — never fatal.
+	if r.Seq == 0 {
+		r.Seq = nextSeq()
+	}
 	rotateIfNeeded(cap)
 	line, err := json.Marshal(r)
 	if err != nil {
@@ -152,6 +164,22 @@ func rotateIfNeeded(cap int64) {
 		return
 	}
 	_ = os.Rename(Path(), rotatedPath()) // overwrites any prior generation
+}
+
+// OverCeiling reports whether the active log has grown past ~2× its rotation cap —
+// a sign rotation is NOT firing (it should keep the active file under the cap). It is
+// a cheap, LLM-free health probe for the self-check sensor. False when the log is
+// absent or the cap is disabled.
+func OverCeiling() bool {
+	cap := capBytes()
+	if cap <= 0 {
+		return false
+	}
+	fi, err := os.Stat(Path())
+	if err != nil {
+		return false
+	}
+	return fi.Size() > 2*cap
 }
 
 // Read returns records from the last `sinceSecs` seconds (0 = all retained),
