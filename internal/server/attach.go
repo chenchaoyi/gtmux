@@ -1,0 +1,122 @@
+package server
+
+import (
+	"net/http"
+	"os/exec"
+
+	"github.com/chenchaoyi/gtmux/internal/connect"
+	"github.com/creack/pty"
+	"github.com/gorilla/websocket"
+)
+
+// attachUpgrader upgrades /api/attach to a WebSocket. The bearer token (checked by
+// auth() before we get here) is the security boundary, so Origin is not gated.
+var attachUpgrader = websocket.Upgrader{
+	ReadBufferSize:  32 * 1024,
+	WriteBufferSize: 32 * 1024,
+	CheckOrigin:     func(*http.Request) bool { return true },
+}
+
+// handleAttach bridges a tmux pane's PTY to a WebSocket (the `gtmux attach` client).
+// Scope is enforced HERE, before any PTY is spawned: an owner may attach any pane; a
+// guest may attach ONLY a view-allowed pane, and INPUT/RESIZE frames are dropped for a
+// pane it may not type into (a view-only pane is read-only). The pane→tmux-client
+// command is injected (AttachCommand) so this stays decoupled from tmux.
+func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	scope := callerScope(r.Context())
+	// A guest may attach ONLY a pane it may VIEW; refuse the upgrade otherwise (no PTY
+	// is ever spawned for a pane outside the guest's scope).
+	if scope == scopeGuest && (s.deps.Share == nil || !s.deps.Share.CanView(id)) {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
+		return
+	}
+	if s.deps.AttachCommand == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("attach not configured"))
+		return
+	}
+	argv, ok := s.deps.AttachCommand(id)
+	if !ok || len(argv) == 0 {
+		writeJSON(w, http.StatusNotFound, errBody("pane not found"))
+		return
+	}
+	// canType: an owner types anywhere; a guest only into an input-allowed pane (a
+	// view-only pane is read-only — we drop its write frames below).
+	canType := scope != scopeGuest || (s.deps.Share != nil && s.deps.Share.Allowed(id))
+
+	conn, err := attachUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return // Upgrade already wrote the error
+	}
+	defer conn.Close()
+
+	ptmx, err := pty.Start(exec.Command(argv[0], argv[1:]...))
+	if err != nil {
+		_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] attach failed: "+err.Error()+"\r\n")))
+		return
+	}
+	// Killing the tmux client detaches (the session lives on); close the pty so both
+	// bridge goroutines unwind.
+	defer func() { _ = ptmx.Close() }()
+
+	done := make(chan struct{})
+
+	// PTY → WS: read raw pane bytes and send OUTPUT frames. WriteMessage is
+	// synchronous, so a slow client backpressures this read (TCP → pty → tmux),
+	// bounding memory without an explicit queue. Ends when the pty closes (detach/exit).
+	go func() {
+		defer close(done)
+		buf := make([]byte, 32*1024)
+		for {
+			n, err := ptmx.Read(buf)
+			if n > 0 {
+				if werr := conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, buf[:n])); werr != nil {
+					return
+				}
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	// WS → PTY: input + resize (dropped for a read-only pane). Runs in its own
+	// goroutine so input (e.g. Ctrl-C) is never blocked behind output backpressure.
+	go func() {
+		for {
+			mt, data, err := conn.ReadMessage()
+			if err != nil {
+				_ = ptmx.Close() // unblock the reader
+				return
+			}
+			if mt != websocket.BinaryMessage {
+				continue
+			}
+			op, payload, ok := connect.Decode(data)
+			if !ok {
+				continue
+			}
+			switch op {
+			case connect.OpInput:
+				if canType {
+					_, _ = ptmx.Write(payload)
+				}
+			case connect.OpResize:
+				if canType {
+					if cols, rows, ok := connect.DecodeResize(payload); ok {
+						_ = pty.Setsize(ptmx, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
+					}
+				}
+				// PAUSE/RESUME: natural backpressure (synchronous WriteMessage) already
+				// bounds memory for a raw-terminal client, so the MVP treats them as
+				// no-ops; a future async client can drive explicit flow control here.
+			}
+		}
+	}()
+
+	<-done
+}
