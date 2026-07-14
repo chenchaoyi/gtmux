@@ -31,7 +31,7 @@ When shared input is LIVE (consent on AND at least one input-allowed pane AND at
 guest link), the popover SHALL show a quiet exposure indicator — a type-into-terminal
 exposure is never silent, the same ethos as the "Remote on" indicator.
 
-#### Scenario: Host allows a pane to be seen, then typed into
+#### Scenario: Host consents and allows a pane from the menu bar
 
 - **WHEN** the host ticks 👁 can-see on a tmux pane row, then ticks ⌨️ can-type on it
 - **THEN** the app invokes `gtmux share view add %N` then `gtmux share add %N`, and the row reflects both — that pane is now guest-viewable and (with consent on) guest-typable

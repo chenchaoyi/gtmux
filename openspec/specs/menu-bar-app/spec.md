@@ -196,38 +196,44 @@ stays a CLI consumer).
 
 ### Requirement: Shared-input control surface
 
-The menu-bar app SHALL provide a host control surface for web-shared input that
-mirrors `gtmux share`, so the host can consent to and scope guest typing without
-dropping to a terminal. The controls SHALL live in a "Shared input" section of
-Preferences, beside Remote access (guests arrive over the same serve/tunnel):
+The menu-bar app SHALL provide a host control surface for web-shared VIEW and INPUT that
+mirrors `gtmux share`, so the host can consent to and scope both what a guest SEES and
+what a guest TYPES into without dropping to a terminal. The controls SHALL live in a
+"Shared input" section of Preferences, beside Remote access (guests arrive over the same
+serve/tunnel):
 
-- a **consent toggle** (default reflecting the current state; OFF by default),
-  which turns shared input on/off;
+- a **consent toggle** (default reflecting the current state; OFF by default), which
+  turns shared input on/off;
 - a **per-pane allowlist** rendered from the live agent list — each tmux pane
-  (`source == "tmux"`, a real `%N`) a checkbox the host ticks to allow guest input
-  into that pane. Each row SHALL carry the SAME identity the session list shows —
-  the agent avatar (official icon + state), the agent's own session title
-  (`primary`), and a dim `session · %pane` line — and be ordered like the radar
-  (state rank → session title), so the host ticks the pane they RECOGNISE from the
-  popover, never an indistinguishable generic agent name repeated down the list;
-- **guest share links**: existing links listed with a per-link revoke, and a
-  "new share link" action that mints a link and copies its URL to the clipboard.
+  (`source == "tmux"`, a real `%N`) a row with TWO independent controls: 👁 **can-see**
+  (adds the pane to the guest VIEW allowlist) and ⌨️ **can-type** (adds it to the INPUT
+  allowlist). The can-type control SHALL be DISABLED unless can-see is on for that pane
+  (input ⊆ view). Each row SHALL carry the SAME identity the session list shows — the
+  agent avatar (official icon + state), the agent's own session title (`primary`), and a
+  dim `session · %pane` line — ordered like the radar (state rank → session title), so
+  the host controls the pane they RECOGNISE from the popover;
+- **guest share links**: existing links listed with a per-link revoke, and a "new share
+  link" action that mints a link and copies its URL to the clipboard.
 
-The app SHALL remain a pure CLI consumer: it MAY read the local `share.json` for
-the consent/allowlist state, but SHALL perform every mutation by invoking
-`gtmux share …`, and SHALL obtain the guest list and minted URL from the CLI's
-token-free `--json` output (never by reading the token roster). The server gate
+The app SHALL remain a pure CLI consumer: it MAY read the local `share.json` for the
+consent/view/input state, but SHALL perform every mutation by invoking `gtmux share …`
+(including `gtmux share view add/remove %N` for the view controls), and SHALL obtain the
+guest list and minted URL from the CLI's token-free `--json` output. The server gate
 stays authoritative; the app only reflects and drives it.
 
-When shared input is LIVE (consent on AND at least one allowed pane AND at least
-one guest link), the popover SHALL show a quiet exposure indicator — a
-type-into-terminal exposure is never silent, the same ethos as the "Remote on"
-indicator.
+When shared input is LIVE (consent on AND at least one input-allowed pane AND at least one
+guest link), the popover SHALL show a quiet exposure indicator — a type-into-terminal
+exposure is never silent, the same ethos as the "Remote on" indicator.
 
 #### Scenario: Host consents and allows a pane from the menu bar
 
-- **WHEN** the host turns the Shared-input toggle on and ticks a tmux pane in the allowlist
-- **THEN** the app invokes `gtmux share on` and `gtmux share add %N`, and the section reflects the new state (that pane is now guest-typable while consent is on)
+- **WHEN** the host ticks 👁 can-see on a tmux pane row, then ticks ⌨️ can-type on it
+- **THEN** the app invokes `gtmux share view add %N` then `gtmux share add %N`, and the row reflects both — that pane is now guest-viewable and (with consent on) guest-typable
+
+#### Scenario: Can-type is gated by can-see
+
+- **WHEN** a pane's 👁 can-see is off
+- **THEN** its ⌨️ can-type control is disabled; turning can-see off on a pane that was typable also clears its can-type (input ⊆ view)
 
 #### Scenario: Allowlist rows carry the session-list identity
 
@@ -246,6 +252,6 @@ indicator.
 
 #### Scenario: Live shared input is not silent
 
-- **WHEN** consent is on, at least one pane is allowed, and at least one guest link exists
+- **WHEN** consent is on, at least one pane is input-allowed, and at least one guest link exists
 - **THEN** the popover shows a compact shared-input exposure indicator that opens Preferences when tapped
 

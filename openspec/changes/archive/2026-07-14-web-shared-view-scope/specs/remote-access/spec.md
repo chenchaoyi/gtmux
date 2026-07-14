@@ -33,7 +33,7 @@ support additive `--json`: `status --json` returns `{enabled, panes, view_panes,
 guests:[{id, label, enrolled_at}], base}` and `new --json` returns `{id, label, url}`,
 carrying NO bare token.
 
-#### Scenario: A guest is blocked until consent AND input allowlist
+#### Scenario: A guest is blocked until consent AND allowlist
 
 - **WHEN** a `guest` token `POST`s `/api/send` for a pane while consent is off, or for a
   pane not on the input allowlist
@@ -52,7 +52,7 @@ carrying NO bare token.
 - **THEN** adding input marks the pane viewable, and removing view drops the pane from the
   input allowlist too, so a guest can never type into a pane it cannot see
 
-#### Scenario: The owner keeps full view and input
+#### Scenario: The owner keeps full input
 
 - **WHEN** the master token or a paired device reads or sends to any pane
 - **THEN** it is unrestricted, regardless of the consent toggle or either allowlist
