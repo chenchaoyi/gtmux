@@ -55,8 +55,10 @@ over one Go core (gtmux-core is the single data source):
   does this automatically when the release secrets are set** (`release.yml` app job
   imports the cert into a throwaway keychain): `MACOS_CERT_P12` (base64 .p12),
   `MACOS_CERT_PASSWORD`, `MACOS_NOTARY_KEY_P8` (base64 .p8), `MACOS_NOTARY_KEY_ID`,
-  `MACOS_NOTARY_ISSUER` (the signing identity is auto-derived from the cert). Without them the release stays
-  ad-hoc. One-time setup: `docs/release-signing.md`.
+  `MACOS_NOTARY_ISSUER` (the signing identity is auto-derived from the cert). **This
+  is the primary path** — a **tag push with the secrets missing FAILS the app job**
+  (it won't silently ship ad-hoc or drop the app). `make app-release` from a Mac is a
+  manual fallback only. One-time setup: `docs/release-signing.md`.
 - **Mac App Store is NOT a viable target as built:** the app shells out to
   `gtmux`/`tmux`/`osascript` and reads `~/.local/share/gtmux`, `~/.tmux/…` etc.,
   none of which survive the App Sandbox MAS mandates (and there's no entitlement
@@ -82,7 +84,7 @@ until the right one runs:
 | Artifact | Ships via | Command / notes |
 |---|---|---|
 | **CLI** (`gtmux`) | git tag `vX.Y.Z` → `release.yml` (goreleaser) | tarballs + Homebrew. Users get it with `gtmux update` / curl `install.sh`. |
-| **macOS app** (`Gtmux.app`) | git tag → `release.yml` builds it; the **notarized** app is published by **`make app-release`** from a Mac (CI ships it only when the 5 signing secrets are set — see Signing below) | `Gtmux-<v>-macos.zip` + Homebrew cask → `~/Applications`. |
+| **macOS app** (`Gtmux.app`) | git tag → `release.yml`'s **app job** signs+notarizes+uploads+casks it in CI (the primary path, once the 5 signing secrets are set — see Signing below; a tag with the secrets missing now **fails the job** rather than shipping ad-hoc). `make app-release` from a Mac is a **manual fallback** (CI outage/hotfix). | `Gtmux-<v>-macos.zip` + Homebrew cask → `~/Applications`. |
 | **Mobile app** (`com.gtmux.app`) | **NOT a git tag** — manual device build | `cd mobileapp && bash scripts/set-version.sh` then `xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile -configuration Release -destination 'id=00008130-001C75142290013A' -derivedDataPath ios/build/dd DEVELOPMENT_TEAM=2337SY8FRT CODE_SIGN_STYLE=Automatic MARKETING_VERSION=<v> APS_ENVIRONMENT=development -allowProvisioningUpdates build` → `xcrun devicectl device install app --device 1BBBCF4D-4207-516C-AB87-B17F911F753B <app>`. Embeds the `GtmuxWidget` + `GtmuxNotificationService` app-extension targets (wired by the `ios/add_*.rb` xcodeproj scripts). **`APS_ENVIRONMENT` controls the aps-environment entitlement AND the reported push env: a dev device build MUST pass `=development` (→ sandbox APNs, matching the dev signing); an App Store/TestFlight ARCHIVE leaves it at the Release default `production`. The app reads it back (LiveActivityModule `apnsEnv` constant from `Info.plist APNS_ENV`) and reports it at push-register so ONE relay routes per token.** |
 | **Push relay** (`gtmux-relay.ccy.dev`) | **the LIVE relay is the Cloudflare Worker `relay-worker/` (TS)** — NOT the Go `relay/` (that's the self-host reference impl) | `cd relay-worker && npx wrangler deploy` (wrangler is OAuth-logged-in). **Per-token APNs env:** each push intent carries `env` (`sandbox`/`production`) that the device reported at register (via serve's `DeviceToken.Env`/`PushIntent.Env`), so ONE relay serves dev + App Store; `APNS_ENV` is only the fallback for env-less (old) tokens. (The Go `relay/` reference is single-env — a self-host simplification.) **Keep `relay-worker/src/index.ts` and `relay/apns.go` in sync on payload SHAPE, and REDEPLOY the Worker** — editing only the Go one changes nothing live. |
 | **Tunnel provisioner** (`api.gtmux.ccy.dev`) | Cloudflare Worker `tunnel-worker/` | `cd tunnel-worker && npx wrangler deploy`. See [[hosted-tunnel-a1]] / `docs/design/remote-access-tunnel.md`. |
