@@ -166,6 +166,22 @@ func rotateIfNeeded(cap int64) {
 	_ = os.Rename(Path(), rotatedPath()) // overwrites any prior generation
 }
 
+// OverCeiling reports whether the active log has grown past ~2× its rotation cap —
+// a sign rotation is NOT firing (it should keep the active file under the cap). It is
+// a cheap, LLM-free health probe for the self-check sensor. False when the log is
+// absent or the cap is disabled.
+func OverCeiling() bool {
+	cap := capBytes()
+	if cap <= 0 {
+		return false
+	}
+	fi, err := os.Stat(Path())
+	if err != nil {
+		return false
+	}
+	return fi.Size() > 2*cap
+}
+
 // Read returns records from the last `sinceSecs` seconds (0 = all retained),
 // oldest-first, spanning the rotated generation so a recent window isn't cut at
 // a rotation boundary. now is the reference time in unix seconds.
