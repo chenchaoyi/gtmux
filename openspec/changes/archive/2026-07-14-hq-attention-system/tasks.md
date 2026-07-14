@@ -92,6 +92,6 @@
   `CGO_ENABLED=0 go build ./cmd/gtmux` passes.
 - [x] 8.2 `npx @fission-ai/openspec validate hq-attention-system --strict` passes; keep
   `tasks.md` checkboxes truthful as phases land.
-- [ ] 8.3 Update `CLAUDE.md` (command list + a one-liner on the attention system) and
+- [x] 8.3 Update `CLAUDE.md` (command list + a one-liner on the attention system) and
   `docs/TROUBLESHOOTING.md` (a feed-degraded entry: symptom → check heartbeat/pidfile →
   restart). Sync-specs + archive this change when all phases merge.
