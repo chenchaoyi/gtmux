@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"os"
 	"os/exec"
 
 	"github.com/chenchaoyi/gtmux/internal/connect"
@@ -54,7 +55,9 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	ptmx, err := pty.Start(exec.Command(argv[0], argv[1:]...))
+	cmd := exec.Command(argv[0], argv[1:]...)
+	cmd.Env = attachEnv()
+	ptmx, err := pty.Start(cmd)
 	if err != nil {
 		_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] attach failed: "+err.Error()+"\r\n")))
 		return
@@ -119,4 +122,13 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	<-done
+}
+
+// attachEnv is the environment for the tmux client spawned in the PTY. The serve is
+// launched by launchd / the app with a minimal env that usually has NO TERM, so tmux
+// dies with "terminal does not support clear"; force a widely-supported terminfo. The
+// CLIENT's real terminal renders the bytes — tmux only needs a valid TERM for its own
+// capability lookups. (Passing through the client's exact $TERM is a later refinement.)
+func attachEnv() []string {
+	return append(os.Environ(), "TERM=xterm-256color")
 }
