@@ -223,14 +223,21 @@ optional — an entry without it is treated as `hq-dispatched`.
 ### Requirement: Safe, approval-gated reclamation (`gtmux reap`)
 
 The system SHALL provide `gtmux reap <pane|task_id>` to reclaim what a dispatch
-created. It SHALL run a safety gate FIRST: the worktree must be clean and the branch
-merged, unless `--abandon` explicitly overrides. When the gate fails, `reap` SHALL
-report exactly what blocks it (uncommitted changes / unmerged commits) and make NO
-changes. When the gate passes, it SHALL kill the dispatch's tmux session/window,
-`git worktree remove` the worktree, and delete the branch only when merged (or
-`--abandon`) and not `--keep-branch`, then clear the ledger entry. `reap` SHALL
-never run automatically — only when invoked. `--json` SHALL report the outcome
-(`reaped`, plus any `blocked_by`).
+created. It SHALL run a safety gate FIRST: the worktree must be clean and, unless
+`--keep-branch` is given, the branch merged — unless `--abandon` explicitly overrides.
+"Merged" SHALL NOT be limited to the branch tip being a literal git ancestor of the
+default branch (true only for a fast-forward/regular merge): a SQUASH merge (e.g.
+GitHub's default) rewrites the branch's commits into one new commit on the default
+branch, so it SHALL also be recognized as merged, either via a commit on the default
+branch with a tree identical to the branch tip's, or via the branch's associated PR
+reporting a MERGED state (through `gh`, when available). When `--keep-branch` is
+given, the branch is never deleted, so its merge state SHALL NOT gate the reclaim —
+only the worktree-clean check still applies. When the gate fails, `reap` SHALL report
+exactly what blocks it (uncommitted changes / unmerged commits) and make NO changes.
+When the gate passes, it SHALL kill the dispatch's tmux session/window, `git worktree
+remove` the worktree, and delete the branch only when merged (or `--abandon`) and not
+`--keep-branch`, then clear the ledger entry. `reap` SHALL never run automatically —
+only when invoked. `--json` SHALL report the outcome (`reaped`, plus any `blocked_by`).
 
 #### Scenario: Dirty worktree is report-only
 
@@ -240,8 +247,8 @@ never run automatically — only when invoked. `--json` SHALL report the outcome
 
 #### Scenario: Unmerged branch is report-only
 
-- **WHEN** `gtmux reap` targets a dispatch whose branch is not merged (and
-  `--abandon` is not given)
+- **WHEN** `gtmux reap` targets a dispatch whose branch is not merged (and neither
+  `--abandon` nor `--keep-branch` is given)
 - **THEN** it reports the unmerged state and reclaims nothing
 
 #### Scenario: Clean and merged reaps safely
@@ -249,6 +256,20 @@ never run automatically — only when invoked. `--json` SHALL report the outcome
 - **WHEN** `gtmux reap` targets a dispatch whose worktree is clean and branch merged
 - **THEN** it kills the session, removes the worktree, deletes the merged branch
   (unless `--keep-branch`), and clears the ledger entry
+
+#### Scenario: A squash-merged branch is recognized as merged
+
+- **WHEN** a dispatch's branch was squash-merged into the default branch (its tip is
+  not an ancestor, but the content landed as one new commit — or the branch's PR
+  reports MERGED via `gh`)
+- **THEN** `gtmux reap` still recognizes the branch as merged and reaps it
+
+#### Scenario: `--keep-branch` is not blocked by an unmerged branch
+
+- **WHEN** `gtmux reap --keep-branch` targets a dispatch whose worktree is clean but
+  whose branch is not merged
+- **THEN** it removes the worktree and clears the ledger entry, keeping the branch —
+  the merge-state gate does not apply since the branch is not being deleted
 
 ### Requirement: Reclaim suggestion when a dispatch looks done
 

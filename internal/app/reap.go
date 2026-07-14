@@ -40,7 +40,10 @@ func planAndReap(t dispatch.Task, abandon, keepBranch bool, ops reapOps) reapRes
 		} else if dirty {
 			blocked = append(blocked, "worktree has uncommitted changes")
 		}
-		if t.Branch != "" {
+		// --keep-branch never deletes the branch, only the worktree — so an
+		// unmerged branch poses no data-loss risk here (its commits stay
+		// reachable via the kept branch ref) and shouldn't block the reap.
+		if t.Branch != "" && !keepBranch {
 			if merged, err := ops.branchMerged(t.Worktree, t.Branch); err != nil {
 				blocked = append(blocked, "merge state unknown: "+err.Error())
 			} else if !merged {

@@ -97,6 +97,33 @@ func TestReap_KeepBranch(t *testing.T) {
 	}
 }
 
+// --keep-branch never deletes the branch, so an unmerged branch's commits stay
+// reachable via the kept ref — the merge gate must not block the worktree
+// reclaim in that case (only a dirty worktree should still block it).
+func TestReap_KeepBranch_SkipsMergeGate(t *testing.T) {
+	s := &spyOps{dirty: false, merged: false}
+	res := planAndReap(worktreeTask(), false, true, s.ops())
+	if !res.Reaped {
+		t.Fatalf("--keep-branch should reap an unmerged branch's worktree, blocked=%v", res.BlockedBy)
+	}
+	if !s.removed {
+		t.Fatalf("--keep-branch should still remove the worktree: %+v", s)
+	}
+	if s.branchGone {
+		t.Fatalf("--keep-branch must not delete the branch: %+v", s)
+	}
+}
+
+// A dirty worktree must still block the reap even with --keep-branch — that
+// gate is about uncommitted work, not the branch's merge state.
+func TestReap_KeepBranch_StillBlocksOnDirty(t *testing.T) {
+	s := &spyOps{dirty: true, merged: false}
+	res := planAndReap(worktreeTask(), false, true, s.ops())
+	if res.Reaped {
+		t.Fatalf("--keep-branch must not bypass the dirty-worktree gate")
+	}
+}
+
 func TestReap_NoWorktree_JustSession(t *testing.T) {
 	// A plain --pane dispatch (no worktree) reaps by killing only an owned session.
 	s := &spyOps{}
