@@ -26,6 +26,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         dbg("launched")
+        // An LSUIElement app has NO main menu, so AppKit has no standard Edit menu to
+        // route ⌘C/⌘V/⌘X/⌘A to the first responder — text fields (e.g. the Direct
+        // access-code input) then can't paste. Installing a hidden Edit menu with the
+        // standard editing selectors fixes copy/paste in EVERY text field, app-wide.
+        // (The menu never shows — an agent app has no visible menu bar.)
+        installEditMenu()
         // Single-instance, newest-wins: terminate any OTHER running GtmuxBar (same
         // bundle id) so a reinstall/update/manual reopen — or a stray copy at
         // /Applications alongside ~/Applications — can never leave two status items in
@@ -143,6 +149,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let badge = displayMode == .dot ? "" : store.badge
         button.title = badge.isEmpty ? "" : " \(badge)"
         button.imagePosition = badge.isEmpty ? .imageOnly : .imageLeft
+    }
+
+    /// Install a minimal main menu with a standard Edit submenu so ⌘X/⌘C/⌘V/⌘A route
+    /// to the first responder's cut:/copy:/paste:/selectAll: (an LSUIElement app has no
+    /// main menu otherwise, so text fields can't paste). The menu never renders — an
+    /// agent app shows no menu bar — it exists purely for keyboard-shortcut routing.
+    private func installEditMenu() {
+        let mainMenu = NSMenu()
+        let editItem = NSMenuItem()
+        mainMenu.addItem(editItem)
+        let edit = NSMenu(title: "Edit")
+        editItem.submenu = edit
+        let items: [(String, String, String)] = [
+            ("Undo", "undo:", "z"),
+            ("Redo", "redo:", "Z"),
+            ("", "", ""), // separator
+            ("Cut", "cut:", "x"),
+            ("Copy", "copy:", "c"),
+            ("Paste", "paste:", "v"),
+            ("Select All", "selectAll:", "a"),
+        ]
+        for (title, sel, key) in items {
+            if sel.isEmpty {
+                edit.addItem(.separator())
+            } else {
+                edit.addItem(NSMenuItem(title: title, action: NSSelectorFromString(sel), keyEquivalent: key))
+            }
+        }
+        NSApp.mainMenu = mainMenu
     }
 
     /// Route the status-item click by mouse button: right-click (or ctrl-click, the
