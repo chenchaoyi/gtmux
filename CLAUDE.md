@@ -10,7 +10,14 @@ over one Go core (gtmux-core is the single data source):
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
   also `GET /api/digest`) + a supervisor agent session at `~/.config/gtmux/hq/`
   (radar rows carry `role:"supervisor"`; the hook nudges it on waiting events —
-  `hqNudge:false` disables). See `openspec/changes/supervisor-mvp`.
+  `hqNudge:false` disables). See `openspec/changes/supervisor-mvp`. The HQ is a
+  **chief-of-staff** (参谋长), not just an event forwarder: its seed teaches a persistent
+  situation board (`notes/board.md`, survives context resets), a severity-tagged event
+  ledger (`events.jsonl` records carry `routine|notable|important`; `gtmux events
+  --severity important` = the attention stream), decision-authority tiers (reversible∧
+  low-risk∧in-discussed-scope → HQ decides+dispatches; else escalate), graded escalation
+  + reconcile-before-relay (kills stale needs-you), and a correction→charter learning
+  loop (`knowledge/corrections.md`). See `openspec/changes/hq-chief-of-staff`.
   `spawn`+`tasks`+`reap` = **verified dispatch** (`internal/dispatch`): `spawn`
   launches an agent (new session / `--pane` / `--worktree`), proxied by construction,
   and delivers a task with LAND-VERIFICATION (hook-event first via the #388 stream,

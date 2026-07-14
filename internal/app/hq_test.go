@@ -136,10 +136,14 @@ func TestSeedHQKnowledge(t *testing.T) {
 	if err != nil || !strings.Contains(string(rd), "NEVER store secrets") {
 		t.Fatalf("knowledge README missing/incomplete: %v", err)
 	}
-	for _, f := range []string{"accounts.md", "workflows.md", "best-practices.md", "pitfalls.md"} {
+	for _, f := range []string{"accounts.md", "workflows.md", "best-practices.md", "pitfalls.md", "corrections.md"} {
 		if _, err := os.Stat(filepath.Join(hqKnowledgeDir(), f)); err != nil {
 			t.Errorf("missing knowledge file %s", f)
 		}
+	}
+	// the README lists the corrections topic (the learning-loop landing place)
+	if !strings.Contains(string(rd), "corrections.md") {
+		t.Error("knowledge README should list corrections.md")
 	}
 	// the supervisor's curated content is NEVER overwritten
 	acc := filepath.Join(hqKnowledgeDir(), "accounts.md")
@@ -270,6 +274,75 @@ func TestHQBriefingEnabled(t *testing.T) {
 		t.Setenv("GTMUX_HQ_BRIEF", on)
 		if !hqBriefingEnabled() {
 			t.Errorf("GTMUX_HQ_BRIEF=%q should leave the briefing ON", on)
+		}
+	}
+}
+
+// The situation board (HQ's durable posture) is seeded write-when-absent and never
+// clobbered on re-seed — the same discipline as the knowledge scaffold.
+func TestSeedHQNotesBoard(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	board := filepath.Join(hqNotesDir(), "board.md")
+	b, err := os.ReadFile(board)
+	if err != nil || !strings.Contains(string(b), "situation board") {
+		t.Fatalf("board.md missing/incomplete: %v %q", err, b)
+	}
+	// curated content is never overwritten
+	if err := os.WriteFile(board, []byte("MY FLEET POSTURE"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if seedHQNotes() {
+		t.Error("re-seed should create nothing when board.md exists")
+	}
+	if b2, _ := os.ReadFile(board); string(b2) != "MY FLEET POSTURE" {
+		t.Errorf("re-seed clobbered the curated board: %q", b2)
+	}
+}
+
+// The chief-of-staff upgrade must be encoded in the seed: the persistent situation
+// board, the severity-filtered attention stream, the decision-authority tiers, graded
+// escalation + reconcile, and the correction→charter learning loop. Pins spec⇄code.
+func TestHQPlaybookChiefOfStaff(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	agents, err := os.ReadFile(hqInstructionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(agents)
+	for _, want := range []string{
+		"Situation board",        // §1: persistent posture
+		"board.md",               // the board file HQ maintains
+		"--severity important",   // §1: read the attention stream, not raw lines
+		"DECISION AUTHORITY",     // §2: the autonomy matrix
+		"REVERSIBLE",             // §2: the may-decide condition
+		"ESCALATE",               // §2: the must-escalate condition
+		"GRADED ESCALATION",      // §3: graded channels
+		"RECONCILE before",       // §3: reconcile-before-relay
+		"CRITICAL",               // §3: only critical rings
+		"LEARN FROM CORRECTIONS", // §4: the learning loop
+		"corrections.md",         // §4: the landing place
+		"CHARTER-LEVEL",          // §4: flag charter-level lessons for a seed/spec update
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("chief-of-staff seed missing %q", want)
+		}
+	}
+	// bilingual: the zh anchors are present too
+	for _, wantZH := range []string{
+		"态势板",       // situation board
+		"授权分层",      // decision-authority tiers
+		"分级升级",      // graded escalation
+		"对账核销",      // reconcile
+		"纠正→守则学习闭环", // learning loop
+	} {
+		if !strings.Contains(s, wantZH) {
+			t.Errorf("chief-of-staff seed missing zh anchor %q", wantZH)
 		}
 	}
 }

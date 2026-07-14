@@ -37,6 +37,54 @@ type Record struct {
 	// Additive (hq-dispatch): a deterministic turn-end classification on Stop —
 	// "asking" (the reply ends on a question to the user) or "report". Empty otherwise.
 	Class string `json:"class,omitempty"`
+	// Additive (hq-chief-of-staff): a deterministic attention tier —
+	// "routine" | "notable" | "important" — stamped at the source (Append) so a
+	// supervisor can read the attention stream without the raw full text. Absent on
+	// a legacy record, which reads as "routine".
+	Severity string `json:"severity,omitempty"`
+}
+
+// Severity levels (attention tiers), lowest → highest.
+const (
+	SevRoutine   = "routine"
+	SevNotable   = "notable"
+	SevImportant = "important"
+)
+
+// SeverityRank orders the tiers for "this level and above" filtering; an
+// unrecognized/empty level ranks as routine (0).
+func SeverityRank(level string) int {
+	switch level {
+	case SevNotable:
+		return 1
+	case SevImportant:
+		return 2
+	default:
+		return 0 // routine, and any legacy/empty value
+	}
+}
+
+// Severity classifies a record's attention tier deterministically (no LLM) from
+// fields the record already carries. A Waiting (the pane needs the user) and an
+// "asking" turn-end are important; a "report" turn-end and the session lifecycle
+// events are notable; prompt submissions and ordinary ticks are routine.
+func Severity(r Record) string {
+	switch r.Event {
+	case "Waiting":
+		if r.Kind != "" {
+			return SevImportant
+		}
+		return SevNotable
+	case "Stop":
+		if r.Class == "asking" {
+			return SevImportant
+		}
+		return SevNotable
+	case "SessionStart", "SessionEnd", "Resumed", "PreCompact":
+		return SevNotable
+	default:
+		return SevRoutine
+	}
 }
 
 // Path is the active event log.
@@ -74,6 +122,11 @@ func Append(r Record) {
 	}
 	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
 		return
+	}
+	// Stamp the attention tier at the source so it is persisted and queryable
+	// without recompute; leave an explicitly-set value untouched (future-proofing).
+	if r.Severity == "" {
+		r.Severity = Severity(r)
 	}
 	rotateIfNeeded(cap)
 	line, err := json.Marshal(r)
