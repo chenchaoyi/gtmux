@@ -40,10 +40,20 @@ func parseSince(s string) int64 {
 	return int64(n) * mult
 }
 
-// cmdEvents implements `gtmux events [--follow] [--json] [--since <dur>]`.
+// validSeverity reports whether a --severity value is one of the known tiers.
+func validSeverity(level string) bool {
+	switch level {
+	case events.SevRoutine, events.SevNotable, events.SevImportant:
+		return true
+	}
+	return false
+}
+
+// cmdEvents implements `gtmux events [--follow] [--json] [--since <dur>] [--severity <level>]`.
 func cmdEvents(args []string) int {
 	follow, jsonOut := false, false
 	since := int64(0)
+	minSeverity := "" // "" = no filter
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
@@ -59,6 +69,21 @@ func cmdEvents(args []string) int {
 			since = parseSince(args[i])
 		case strings.HasPrefix(a, "--since="):
 			since = parseSince(strings.TrimPrefix(a, "--since="))
+		case a == "--severity":
+			if i+1 >= len(args) {
+				return eventsUsage()
+			}
+			i++
+			if !validSeverity(args[i]) {
+				return eventsUsage()
+			}
+			minSeverity = args[i]
+		case strings.HasPrefix(a, "--severity="):
+			v := strings.TrimPrefix(a, "--severity=")
+			if !validSeverity(v) {
+				return eventsUsage()
+			}
+			minSeverity = v
 		case a == "-h" || a == "--help":
 			return eventsUsage()
 		default:
@@ -67,7 +92,13 @@ func cmdEvents(args []string) int {
 		}
 	}
 
+	// Filter to "this level and above" so a supervisor reads the attention stream,
+	// not every raw line (an absent severity on a legacy record ranks as routine).
+	minRank := events.SeverityRank(minSeverity)
 	print := func(r events.Record) {
+		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
+			return
+		}
 		if jsonOut {
 			b, _ := json.Marshal(r)
 			fmt.Println(string(b))
@@ -99,11 +130,13 @@ func cmdEvents(args []string) int {
 }
 
 func eventsUsage() int {
-	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--since 10m|2h|90s]",
-		"用法：gtmux events [--follow|-f] [--json] [--since 10m|2h|90s]")
+	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--severity routine|notable|important]",
+		"用法：gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--severity routine|notable|important]")
 	i18n.Say("  The live stream of every session's lifecycle events — the subscription",
 		"  每个 session 生命周期事件的实时流 —— gtmux HQ 及脚本的订阅入口。")
 	i18n.Say("  gtmux HQ and scripts tail it. Bare form shows the last hour.",
 		"  裸命令显示最近一小时;--follow 持续跟随(跨 rotation)。")
+	i18n.Say("  --severity filters to that tier and above (the attention stream).",
+		"  --severity 过滤到该等级及以上(只看需要关注的事件)。")
 	return 0
 }

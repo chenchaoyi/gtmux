@@ -108,6 +108,66 @@ func TestFollowStreamsNewAndSurvivesRotation(t *testing.T) {
 	close(stop)
 }
 
+// Severity is a deterministic tier over lifecycle records: a wait and an "asking"
+// turn-end are important; a "report" turn-end and session lifecycle are notable;
+// prompt submissions and ticks are routine.
+func TestSeverity(t *testing.T) {
+	cases := []struct {
+		name string
+		r    Record
+		want string
+	}{
+		{"waiting-needs-user", Record{Event: "Waiting", Kind: "permission"}, SevImportant},
+		{"asking-turn-end", Record{Event: "Stop", Class: "asking"}, SevImportant},
+		{"report-turn-end", Record{Event: "Stop", Class: "report"}, SevNotable},
+		{"stop-no-class", Record{Event: "Stop"}, SevNotable},
+		{"session-start", Record{Event: "SessionStart"}, SevNotable},
+		{"precompact", Record{Event: "PreCompact"}, SevNotable},
+		{"prompt-submit", Record{Event: "UserPromptSubmit"}, SevRoutine},
+		{"notification", Record{Event: "Notification"}, SevRoutine},
+		{"waiting-no-kind", Record{Event: "Waiting"}, SevNotable},
+	}
+	for _, c := range cases {
+		if got := Severity(c.r); got != c.want {
+			t.Errorf("%s: Severity = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// Rank orders the tiers for "this level and above"; an empty/legacy value ranks routine.
+func TestSeverityRank(t *testing.T) {
+	if !(SeverityRank(SevRoutine) < SeverityRank(SevNotable) &&
+		SeverityRank(SevNotable) < SeverityRank(SevImportant)) {
+		t.Error("severity ranks must be routine < notable < important")
+	}
+	if SeverityRank("") != 0 || SeverityRank("bogus") != 0 {
+		t.Error("an empty/unknown severity must rank as routine (0)")
+	}
+}
+
+// Append stamps the tier at the source and round-trips it; an explicit value is kept.
+func TestAppendStampsSeverity(t *testing.T) {
+	tinyCap(t, 20)
+	now := time.Now().Unix()
+	Append(Record{Ts: now, Event: "Waiting", State: "waiting", Kind: "plan", Loc: "a:0.0"})
+	Append(Record{Ts: now, Event: "UserPromptSubmit", State: "working", Loc: "b:0.0"})
+	Append(Record{Ts: now, Event: "Stop", State: "idle", Loc: "c:0.0", Severity: SevImportant}) // explicit kept
+
+	all := Read(0, now)
+	if len(all) != 3 {
+		t.Fatalf("read = %d, want 3", len(all))
+	}
+	if all[0].Severity != SevImportant {
+		t.Errorf("waiting stamped %q, want important", all[0].Severity)
+	}
+	if all[1].Severity != SevRoutine {
+		t.Errorf("prompt stamped %q, want routine", all[1].Severity)
+	}
+	if all[2].Severity != SevImportant {
+		t.Errorf("explicit severity clobbered: %q", all[2].Severity)
+	}
+}
+
 func TestParseHelpers(t *testing.T) {
 	if clock(0) != "--:--:--" {
 		t.Error("clock(0)")
