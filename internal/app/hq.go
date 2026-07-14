@@ -13,9 +13,12 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +29,55 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
+
+// hqPlaybookVersion is the SHIPPED version of the managed HQ playbook (AGENTS.md).
+// BUMP THIS on any change to hqInstructions so `gtmux hq` upgrades an existing home's
+// playbook (versioned-hq-playbook): the seed is no longer generate-once — a newer
+// shipped version regenerates AGENTS.md (backing up the prior), while user
+// personalization lives in the never-overwritten LOCAL.md. History:
+//
+//	v1 — first versioned playbook (attention-system seed cutover era).
+const hqPlaybookVersion = 1
+
+// playbookMarker is the machine-parseable managed-marker line prepended to the
+// generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
+func playbookMarker(v int) string {
+	return fmt.Sprintf("<!-- gtmux-hq-playbook v%d · managed by gtmux — DO NOT EDIT; put your own instructions in LOCAL.md -->", v)
+}
+
+var playbookVersionRe = regexp.MustCompile(`gtmux-hq-playbook v(\d+)`)
+
+// parsePlaybookVersion reads the version from an AGENTS.md body's marker. A body
+// with no marker (a legacy or hand-edited playbook) parses as 0, so it is treated as
+// the oldest possible version and migrated on the next upgrade.
+func parsePlaybookVersion(body string) int {
+	if m := playbookVersionRe.FindStringSubmatch(body); len(m) == 2 {
+		n, _ := strconv.Atoi(m[1])
+		return n
+	}
+	return 0
+}
+
+// generatedPlaybook is the full managed AGENTS.md content at the current version:
+// the version marker, the playbook body, and the LOCAL.md import (LAST, so a user's
+// LOCAL.md extends/overrides the managed guidance).
+func generatedPlaybook() string {
+	return playbookMarker(hqPlaybookVersion) + "\n\n" + hqInstructions + "\n@LOCAL.md\n"
+}
+
+// hqLocalPath is the user's personalization file — seed-once, NEVER overwritten.
+func hqLocalPath() string { return filepath.Join(state.HQHome(), "LOCAL.md") }
+
+// hqLocalTemplate is LOCAL.md's one-time content: it explains the split so the user
+// knows THIS is where their edits belong (AGENTS.md is regenerated on upgrades).
+const hqLocalTemplate = `# Your HQ instructions (LOCAL.md)
+
+gtmux NEVER overwrites this file. The managed playbook (AGENTS.md) is regenerated when
+gtmux ships a newer version; YOUR customizations live here and are imported LAST, so
+anything you write here extends or overrides the managed playbook.
+
+<!-- Add your own standing instructions, preferences, and overrides below. -->
+`
 
 // hqSessionName is the preferred tmux session name (auto-named on collision —
 // detection is by cwd, not name, so the name is cosmetic).
@@ -66,44 +118,127 @@ const hqClaudePointer = `@AGENTS.md
 // CLAUDE.md (from before the AGENTS.md convention) is the authoritative doc — we do
 // NOT drop a zombie AGENTS.md beside it (the bug this fixes). `gtmux hq` separately
 // WARNS (see hqPolicyWarning) when it finds a redundant/broken layout.
-// Returns whether this call seeded anything.
-func seedHQHome() (seeded bool, err error) {
+// Returns a seedResult describing what happened (seeded / upgraded / migrated).
+func seedHQHome() (seedResult, error) {
+	var r seedResult
 	home := state.HQHome()
 	if err := os.MkdirAll(home, 0o755); err != nil {
-		return false, err
+		return r, err
 	}
 	hasAgents := fileExists(hqInstructionsPath())
 	hasClaude := fileExists(hqClaudePointerPath())
 	switch {
 	case !hasAgents && !hasClaude:
-		// Fresh home → single source: the full AGENTS.md plus the CLAUDE.md import.
-		if err := os.WriteFile(hqInstructionsPath(), []byte(hqInstructions), 0o644); err != nil {
-			return false, err
+		// Fresh home → single source: the managed AGENTS.md plus the CLAUDE.md import.
+		if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+			return r, err
 		}
 		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
-			return true, err
+			return r, err
 		}
-		seeded = true
-	case hasAgents && !hasClaude:
-		// Canonical playbook exists but Claude's entry is missing → add ONLY the cheap
-		// import so Claude reads the SAME canonical file (single source, not a copy).
-		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
-			return false, err
+		r.Seeded, r.ToVersion = true, hqPlaybookVersion
+	case hasAgents:
+		// A managed (or legacy-unversioned) AGENTS.md exists → upgrade it if the shipped
+		// playbook is newer (versioned-hq-playbook), and ensure the CLAUDE.md import.
+		if err := upgradePlaybookIfNewer(&r); err != nil {
+			return r, err
 		}
-		seeded = true
-	case !hasAgents && hasClaude:
+		if !hasClaude {
+			if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
+				return r, err
+			}
+			r.Seeded = true
+		}
+	default: // !hasAgents && hasClaude
 		// A CLAUDE.md exists (legacy full playbook, or the user's own) and is
-		// authoritative → do NOT add a zombie AGENTS.md alongside it. Left untouched.
-	case hasAgents && hasClaude:
-		// Both present → already seeded; add nothing.
+		// authoritative → do NOT add a zombie AGENTS.md alongside it. Left untouched, and
+		// no managed playbook means no LOCAL.md either.
+	}
+	// LOCAL.md (user personalization) lives only alongside a managed AGENTS.md; seed it
+	// once, never overwrite (versioned-hq-playbook).
+	if fileExists(hqInstructionsPath()) {
+		if seedHQLocal() {
+			r.Seeded = true
+		}
 	}
 	if seedHQKnowledge() {
-		seeded = true
+		r.Seeded = true
 	}
 	if seedHQNotes() {
-		seeded = true
+		r.Seeded = true
 	}
-	return seeded, nil
+	return r, nil
+}
+
+// seedResult reports what seedHQHome did, so `gtmux hq` can print the right notice:
+// a fresh seed, a version UPGRADE (with the prior backed up), or a legacy MIGRATION.
+type seedResult struct {
+	Seeded      bool   // created at least one file in a fresh/incomplete home
+	Upgraded    bool   // regenerated a managed AGENTS.md at a newer version
+	Migrated    bool   // the upgraded file had no version marker (legacy → managed)
+	FromVersion int    // the installed version before an upgrade
+	ToVersion   int    // the shipped version written
+	BackupPath  string // where the prior AGENTS.md was backed up (on upgrade)
+}
+
+// upgradePlaybookIfNewer regenerates the managed AGENTS.md when the shipped
+// hqPlaybookVersion is newer than the installed one — backing up the prior file
+// FIRST (never destroy content) — and records the outcome in r. An installed version
+// equal to (or newer than) the shipped one is a no-op (idempotent). A file with no
+// version marker parses as version 0 and is migrated once.
+func upgradePlaybookIfNewer(r *seedResult) error {
+	body, err := os.ReadFile(hqInstructionsPath())
+	if err != nil {
+		return err
+	}
+	installed := parsePlaybookVersion(string(body))
+	if installed >= hqPlaybookVersion {
+		return nil // up to date (or a dev home ahead of this binary) → leave it
+	}
+	// Back up the prior playbook before overwriting, keyed by its version so no upgrade
+	// ever clobbers an earlier backup.
+	bak := hqInstructionsPath() + fmt.Sprintf(".bak-v%d", installed)
+	if err := os.WriteFile(bak, body, 0o644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+		return err
+	}
+	r.Upgraded = true
+	r.FromVersion, r.ToVersion = installed, hqPlaybookVersion
+	r.BackupPath = bak
+	r.Migrated = installed == 0
+	return nil
+}
+
+// seedHQLocal writes the LOCAL.md personalization template IF ABSENT (seed-once,
+// never overwritten — the user's edits live here). Returns whether it created it.
+func seedHQLocal() bool {
+	if fileExists(hqLocalPath()) {
+		return false
+	}
+	return os.WriteFile(hqLocalPath(), []byte(hqLocalTemplate), 0o644) == nil
+}
+
+// printSeedNotice reports the outcome of seedHQHome (versioned-hq-playbook): a
+// migration from a legacy/hand-edited playbook, a version upgrade, or a fresh seed.
+// A no-op (up-to-date) prints nothing.
+func printSeedNotice(r seedResult) {
+	switch {
+	case r.Migrated:
+		i18n.Say(fmt.Sprintf("Migrated the HQ playbook to managed v%d — your previous AGENTS.md is backed up at %s. Move any personal edits into %s (gtmux never overwrites it).",
+			r.ToVersion, r.BackupPath, hqLocalPath()),
+			fmt.Sprintf("已将 HQ 守则迁移为受管 v%d —— 你原来的 AGENTS.md 已备份到 %s。请把个人定制移入 %s（gtmux 永不覆盖它）。",
+				r.ToVersion, r.BackupPath, hqLocalPath()))
+	case r.Upgraded:
+		i18n.Say(fmt.Sprintf("Upgraded the HQ playbook v%d → v%d (previous backed up at %s). Your %s is untouched.",
+			r.FromVersion, r.ToVersion, r.BackupPath, filepath.Base(hqLocalPath())),
+			fmt.Sprintf("已升级 HQ 守则 v%d → v%d（旧版备份在 %s）。你的 %s 未改动。",
+				r.FromVersion, r.ToVersion, r.BackupPath, filepath.Base(hqLocalPath())))
+	case r.Seeded:
+		i18n.Say("Seeded the supervisor home: "+hqInstructionsPath(),
+			"已初始化中控目录："+hqInstructionsPath())
+	}
 }
 
 // hqNotesDir is HQ's private working area (its situation board + any scratch notes).
@@ -282,15 +417,12 @@ func cmdHQ(args []string) int {
 	}
 
 	preflightResource() // warn (not block) if a machine resource is at its red line
-	seeded, err := seedHQHome()
+	res, err := seedHQHome()
 	if err != nil {
 		i18n.Sae("gtmux hq: "+err.Error(), "gtmux hq: "+err.Error())
 		return 1
 	}
-	if seeded {
-		i18n.Say("Seeded the supervisor home: "+hqInstructionsPath(),
-			"已初始化中控目录："+hqInstructionsPath())
-	}
+	printSeedNotice(res)
 	// ④ Surface a redundant/broken policy layout instead of silently living with it.
 	if en, zh := hqPolicyWarning(); en != "" {
 		i18n.Sae("gtmux hq: "+en, "gtmux hq: "+zh)

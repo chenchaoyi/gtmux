@@ -30,6 +30,14 @@ over one Go core (gtmux-core is the single data source):
   disposition/archive, `--verbose`); `gtmux quiet [on|off|status]` tunes the surfacing
   threshold (a `feed-degraded` CRITICAL is never quieted). HQ gates its OWN prints by the
   tier — CRITICAL/NORMAL print, QUIET is ledger-only.
+  **HQ playbook is VERSION-TRACKED** (`openspec/changes/versioned-hq-playbook`): the seeded
+  `AGENTS.md` is gtmux-OWNED, carries a `<!-- gtmux-hq-playbook vN -->` marker, and `gtmux
+  hq` REGENERATES it (backing up the prior to `AGENTS.md.bak-v<old>`) when the shipped
+  `hqPlaybookVersion` (in `hq.go`) is newer — so `gtmux update` + next `gtmux hq` upgrades
+  the charter, no manual re-seed. **Any change to `hqInstructions` MUST bump
+  `hqPlaybookVersion`** or it won't reach existing homes. User personalization lives in a
+  seed-once, never-overwritten `LOCAL.md` (imported by AGENTS.md); the situation board +
+  knowledge base stay untouched by upgrades.
   `spawn`+`tasks`+`reap` = **verified dispatch** (`internal/dispatch`): `spawn`
   launches an agent (new session / `--pane` / `--worktree`), proxied by construction,
   and delivers a task with LAND-VERIFICATION (hook-event first via the #388 stream,

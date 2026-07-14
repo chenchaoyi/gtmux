@@ -10,41 +10,138 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// seedHQHome creates the home + BOTH instruction entries once (AGENTS.md the
-// canonical playbook, CLAUDE.md the @AGENTS.md import), then NEVER overwrites —
-// they're the user's to edit and the supervisor's accumulated knowledge.
+// A fresh seed writes a VERSIONED, managed AGENTS.md (the marker + playbook + LOCAL
+// import), the CLAUDE.md import, and a seed-once LOCAL.md; a re-run at the SAME
+// version is idempotent (no rewrite, no backup) — versioned-hq-playbook.
 func TestSeedHQHomeIdempotent(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
-	seeded, err := seedHQHome()
-	if err != nil || !seeded {
-		t.Fatalf("first seed = (%v, %v), want (true, nil)", seeded, err)
+	res, err := seedHQHome()
+	if err != nil || !res.Seeded {
+		t.Fatalf("first seed = (%+v, %v), want Seeded", res, err)
 	}
 	b, err := os.ReadFile(hqInstructionsPath())
 	if err != nil || !strings.Contains(string(b), "gtmux digest --json") {
 		t.Fatalf("AGENTS.md should teach the digest toolbox: %v %q", err, b)
 	}
+	if v := parsePlaybookVersion(string(b)); v != hqPlaybookVersion {
+		t.Fatalf("fresh AGENTS.md version = %d, want %d", v, hqPlaybookVersion)
+	}
+	if !strings.Contains(string(b), "@LOCAL.md") {
+		t.Error("managed AGENTS.md should import @LOCAL.md")
+	}
 	cb, err := os.ReadFile(hqClaudePointerPath())
 	if err != nil || !strings.Contains(string(cb), "@AGENTS.md") {
 		t.Fatalf("CLAUDE.md should be the @AGENTS.md import: %v %q", err, cb)
 	}
+	if !fileExists(hqLocalPath()) {
+		t.Fatal("LOCAL.md should be seeded")
+	}
 
-	// User edits both — a re-run must keep the edits.
-	if err := os.WriteFile(hqInstructionsPath(), []byte("MY EDITS"), 0o644); err != nil {
+	// A re-run at the same version changes nothing and reports no upgrade.
+	res, err = seedHQHome()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(hqClaudePointerPath(), []byte("MY CLAUDE EDITS"), 0o644); err != nil {
+	if res.Upgraded || res.Seeded {
+		t.Errorf("re-seed at same version should be a no-op, got %+v", res)
+	}
+	if _, err := os.Stat(hqInstructionsPath() + ".bak-v" + itoa(hqPlaybookVersion)); err == nil {
+		t.Error("an idempotent re-seed must not create a backup")
+	}
+}
+
+// itoa is a tiny helper so the test doesn't import strconv just for one call.
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	var b []byte
+	for n > 0 {
+		b = append([]byte{byte('0' + n%10)}, b...)
+		n /= 10
+	}
+	if neg {
+		b = append([]byte{'-'}, b...)
+	}
+	return string(b)
+}
+
+// A newer shipped version UPGRADES an installed playbook: the prior is backed up, the
+// file is regenerated at the new version, and LOCAL.md is left untouched.
+func TestSeedHQHome_UpgradesOnNewerVersion(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
 		t.Fatal(err)
 	}
-	seeded, err = seedHQHome()
-	if err != nil || seeded {
-		t.Fatalf("second seed = (%v, %v), want (false, nil)", seeded, err)
+	// Simulate an OLDER installed playbook (version 0 — e.g. a legacy hand-edited one)
+	// carrying user content, plus a personalized LOCAL.md.
+	if err := os.WriteFile(hqInstructionsPath(), []byte("OLD UNVERSIONED PLAYBOOK + my edits"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	if b2, _ := os.ReadFile(hqInstructionsPath()); string(b2) != "MY EDITS" {
-		t.Errorf("re-seed clobbered AGENTS.md: %q", b2)
+	if err := os.WriteFile(hqLocalPath(), []byte("MY LOCAL OVERRIDES"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	if cb2, _ := os.ReadFile(hqClaudePointerPath()); string(cb2) != "MY CLAUDE EDITS" {
-		t.Errorf("re-seed clobbered CLAUDE.md: %q", cb2)
+	res, err := seedHQHome()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Upgraded || !res.Migrated || res.FromVersion != 0 || res.ToVersion != hqPlaybookVersion {
+		t.Fatalf("expected a v0→v%d migration, got %+v", hqPlaybookVersion, res)
+	}
+	// The prior content is backed up, not destroyed.
+	bak, err := os.ReadFile(hqInstructionsPath() + ".bak-v0")
+	if err != nil || string(bak) != "OLD UNVERSIONED PLAYBOOK + my edits" {
+		t.Fatalf("prior playbook must be backed up verbatim: %v %q", err, bak)
+	}
+	// AGENTS.md is regenerated at the shipped version.
+	if b, _ := os.ReadFile(hqInstructionsPath()); parsePlaybookVersion(string(b)) != hqPlaybookVersion {
+		t.Errorf("AGENTS.md not regenerated to v%d", hqPlaybookVersion)
+	}
+	// LOCAL.md (the user's personalization) is NEVER overwritten.
+	if lb, _ := os.ReadFile(hqLocalPath()); string(lb) != "MY LOCAL OVERRIDES" {
+		t.Errorf("LOCAL.md must never be overwritten, got %q", lb)
+	}
+}
+
+// An upgrade must NOT touch the situation board or the knowledge base.
+func TestSeedHQHome_UpgradeLeavesMemoryUntouched(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	board := filepath.Join(hqNotesDir(), "board.md")
+	if err := os.WriteFile(board, []byte("MY CURATED BOARD"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Force an upgrade by rolling the installed version back.
+	if err := os.WriteFile(hqInstructionsPath(), []byte("unversioned"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	if bb, _ := os.ReadFile(board); string(bb) != "MY CURATED BOARD" {
+		t.Errorf("upgrade clobbered the situation board: %q", bb)
+	}
+}
+
+func TestParsePlaybookVersion(t *testing.T) {
+	cases := map[string]int{
+		playbookMarker(3) + "\n\nbody":      3,
+		playbookMarker(1):                   1,
+		"no marker here":                    0,
+		"<!-- gtmux-hq-playbook vX -->":     0, // malformed → 0
+		"prefix gtmux-hq-playbook v12 rest": 12,
+	}
+	for body, want := range cases {
+		if got := parsePlaybookVersion(body); got != want {
+			t.Errorf("parsePlaybookVersion(%q) = %d, want %d", body, got, want)
+		}
 	}
 }
 
