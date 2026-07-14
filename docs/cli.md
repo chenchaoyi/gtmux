@@ -73,16 +73,28 @@ everything else still works.
 ## `gtmux digest` + `gtmux hq` — the supervisor (中控)
 
 `gtmux digest` is the fleet at a glance, with MEANING instead of just status —
-one block per agent:
+a formatted, column-aligned table, not a wall of prose:
 
 ```
-● api:0.0 · Claude Code · waiting·permission  [api · main]
-  goal: fix the login-token refresh bug
-  last: Found it — the refresh path drops the exp claim. Patching now…
-  asks: 1.Yes · 2.Yes, don't ask again · 3.No
+1 needs input · 2 working · 1 completed
+
+needs input (1)
+  ⏸ api:0.0        1.Yes · 2.Yes, don't ask again · 3.No             3 opts   4m
+
+working (2)
+  ⠿ web:2.0        fix the login-token refresh bug                 working   1m
+  ● hq:0.0 ⌂       ctx 92% — approaching limit                          ⚠   3h
+
+completed (1)
+  ✳ mobile:1.0     done, tests pass                                          2d
 ```
 
-Every field is assembled deterministically (zero LLM tokens) from what gtmux
+A one-line summary of counts by state leads, then a section per state
+(needs-you first, then working, then completed, then errored if any) —
+each row is status glyph · name · goal/last/ask (truncated to the terminal
+width) · a right badge (dispatch status / ask-option count / usage warning) ·
+a right-aligned relative time. Every field is assembled deterministically
+(zero LLM tokens) from what gtmux
 already knows: **goal** = the session's last user prompt, **last** = the tail of
 its last reply (both from the agent's own transcript), **asks** = a waiting
 prompt's parsed options, plus the errored/background modifiers. `--json` emits

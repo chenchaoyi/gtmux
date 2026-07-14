@@ -450,10 +450,14 @@ verified dispatch path (wait-for-ready, then a land-verified deliver, the same p
 introduces itself and its role (overseeing every coding agent on the machine —
 sense · decide · dispatch · supervise · report — and curating the knowledge base),
 and (b) it produces an immediate status report grounded in `gtmux digest --json`,
-`gtmux usage --json`, and `gtmux limits --json`, leading with who needs the user
-(needs-you), then who is working on what and who finished, and ALWAYS including the
-token-usage rollup and the subscription-window room (the same report shape the
-seeded playbook's status policy requires). The briefing SHALL run ONLY on a fresh
+`gtmux usage --json`, and `gtmux limits --json`, formatted as a COLUMN-ALIGNED
+TABLE — never a prose paragraph (`gtmux digest`'s own text output renders this
+shape; the supervisor matches its layout): a one-line summary of counts by
+state, then a section per state (needs-you leads, then working, then
+completed, then errored if any) with one aligned row per agent, and ALWAYS
+including the token-usage rollup and the subscription-window room laid out the
+same aligned way (the same report shape the seeded playbook's status policy
+requires). The briefing SHALL run ONLY on a fresh
 spawn: a `gtmux hq` that focuses an already-live supervisor SHALL NOT re-deliver it.
 It SHALL be best-effort and non-fatal — a delivery that does not land SHALL NOT fail
 `gtmux hq`, since the session is already up and usable. The prompt SHALL be bilingual

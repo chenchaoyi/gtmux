@@ -91,3 +91,33 @@ func PadRight(s string, width int) string {
 	}
 	return s
 }
+
+// PadLeft right-aligns s in a field of at least width display columns —
+// PadRight's mirror, for right-aligned columns like relative time or %.
+func PadLeft(s string, width int) string {
+	if pad := width - DispWidth(s); pad > 0 {
+		return strings.Repeat(" ", pad) + s
+	}
+	return s
+}
+
+// TruncDisp truncates s to at most width display columns, "…"-suffixed when
+// cut (CJK-aware — snip()/rune-count truncation misjudges width for wide runes).
+func TruncDisp(s string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	if DispWidth(s) <= width {
+		return s
+	}
+	r := []rune(s)
+	w, i := 0, 0
+	for ; i < len(r); i++ {
+		cw := DispWidth(string(r[i]))
+		if w+cw > width-1 {
+			break
+		}
+		w += cw
+	}
+	return strings.TrimRight(string(r[:i]), " ") + "…"
+}

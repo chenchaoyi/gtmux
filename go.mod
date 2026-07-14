@@ -6,6 +6,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/jpillora/chisel v1.10.1
+	golang.org/x/term v0.15.0
 	howett.net/plist v1.0.1
 	rsc.io/qr v0.2.0
 )
