@@ -59,12 +59,12 @@
 
 ## 5. Phase ③ — Surfacing config + `gtmux quiet`
 
-- [ ] 5.1 `config.json`: `surfaceTier` (`critical|normal|quiet`, default `normal`) + a
+- [x] 5.1 `config.json`: `surfaceTier` (`critical|normal|quiet`, default `normal`) + a
   `quiet` bool; a resolver (env-overridable, like `agentProxy`) returning the effective
   threshold. Unit-test resolution + default.
-- [ ] 5.2 `gtmux quiet [on|off|status]` command (front door to `surfaceTier`), registered
+- [x] 5.2 `gtmux quiet [on|off|status]` command (front door to `surfaceTier`), registered
   in `app.Run` with bilingual help. Expose the resolved threshold for HQ to read.
-- [ ] 5.3 Guarantee a degradation CRITICAL is never suppressed by the threshold (test).
+- [x] 5.3 Guarantee a degradation CRITICAL is never suppressed by the threshold (test).
 
 ## 6. Phase ④ — Self-check triggers + HQ self-maintenance
 

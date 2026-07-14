@@ -74,6 +74,8 @@ func Run(argv []string) int {
 		return cmdResource(args)
 	case "limits":
 		return cmdLimits(args)
+	case "quiet":
+		return cmdQuiet(args)
 	case "config":
 		return cmdConfig(args)
 	case "share":
