@@ -54,7 +54,7 @@ export function DetailScreen({route, navigation}: any) {
 }
 
 export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?: () => void; initialMode?: DetailMode}) {
-  const {client, agents, conn} = useAgents();
+  const {client, agents, conn, isGuest, inputPanes} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
   // ≥768 means we're embedded in the iPad split-view's main pane (never a narrow
   // phone). Constrain content so the chat/segmented don't stretch across ~1000pt,
@@ -493,10 +493,13 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
         }}
       />
 
-      {/* input — types into the pane via POST /api/send (MOBILE §4) */}
+      {/* input — types into the pane via POST /api/send (MOBILE §4). A guest may type
+          only into a pane on the host's input allowlist; a view-only pane is read-only
+          (the server would 403 the send anyway — this just makes it visible). */}
       <Composer
         pal={pal}
         lang={lang}
+        enabled={!isGuest || inputPanes.includes(agent.pane_id)}
         returnSends={returnSends}
         onSend={p => {
           sendPane(p);

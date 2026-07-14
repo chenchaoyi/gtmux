@@ -1,4 +1,4 @@
-import {EnrollError, enrollDevice, labelFromUrl, normalizeHost, parsePairingQR} from './qr';
+import {EnrollError, enrollDevice, labelFromUrl, normalizeHost, parsePairingQR, parseShareLink} from './qr';
 
 describe('parsePairingQR', () => {
   it('parses a valid v1 pairing code (token in QR)', () => {
@@ -119,6 +119,31 @@ describe('labelFromUrl', () => {
   });
   it('keeps the whole IP for a LAN address', () => {
     expect(labelFromUrl('http://192.168.1.5:8765')).toBe('192.168.1.5');
+  });
+});
+
+describe('parseShareLink (guest)', () => {
+  it('parses a gtmux share guest link into a guest token', () => {
+    const g = parseShareLink('https://gtmux-7a3f.ccy.dev/#t=SECRET');
+    expect(g).toEqual({kind: 'guest', url: 'https://gtmux-7a3f.ccy.dev', token: 'SECRET', name: 'gtmux-7a3f'});
+  });
+  it('url-decodes the token and strips a trailing slash before the fragment', () => {
+    const g = parseShareLink('http://1.2.3.4:8765/#t=a%2Fb');
+    expect(g?.token).toBe('a/b');
+    expect(g?.url).toBe('http://1.2.3.4:8765');
+  });
+  it('is null for a non-share link (no t= token) — e.g. the #c= enroll handoff', () => {
+    expect(parseShareLink('https://h:8765/#c=CODE')).toBeNull();
+    expect(parseShareLink('not a url')).toBeNull();
+    expect(parseShareLink('{"v":1,"url":"http://h:1","token":"t"}')).toBeNull();
+  });
+  it('parsePairingQR routes a guest link to kind:guest (not JSON)', () => {
+    expect(parsePairingQR('https://h:8765/#t=TOK')).toEqual({
+      kind: 'guest',
+      url: 'https://h:8765',
+      token: 'TOK',
+      name: 'h',
+    });
   });
 });
 

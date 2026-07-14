@@ -1,11 +1,18 @@
 import {sanitize, serverForPush, upsertServer} from './store';
 
-const a = {url: 'http://a:8765', token: 'ta', name: 'A'};
-const b = {url: 'http://b:8765', token: 'tb', name: 'B'};
+const a = {url: 'http://a:8765', token: 'ta', name: 'A', scope: 'owner' as const};
+const b = {url: 'http://b:8765', token: 'tb', name: 'B', scope: 'owner' as const};
 
 describe('sanitize', () => {
   it('keeps valid servers and a matching activeUrl', () => {
     expect(sanitize({servers: [a, b], activeUrl: b.url})).toEqual({servers: [a, b], activeUrl: b.url});
+  });
+  it('preserves a guest scope and defaults a missing scope to owner', () => {
+    const guest = {url: 'http://g:8765', token: 'tg', name: 'G', scope: 'guest' as const};
+    const noScope = {url: 'http://n:8765', token: 'tn', name: 'N'}; // pre-guest-mode blob
+    const out = sanitize({servers: [guest, noScope], activeUrl: null});
+    expect(out.servers[0].scope).toBe('guest');
+    expect(out.servers[1].scope).toBe('owner');
   });
   it('drops an activeUrl not present in the list', () => {
     expect(sanitize({servers: [a], activeUrl: 'http://gone:8765'})).toEqual({servers: [a], activeUrl: null});

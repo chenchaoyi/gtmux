@@ -19,7 +19,7 @@ type PickerKind = 'lang' | 'theme' | 'mode' | null;
 export function SettingsScreen({navigation}: any) {
   const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
-  const {client} = useAgents();
+  const {client, isGuest} = useAgents();
   const [testing, setTesting] = useState(false);
   const [picker, setPicker] = useState<PickerKind>(null);
 
@@ -91,7 +91,11 @@ export function SettingsScreen({navigation}: any) {
         {/* CONNECTION */}
         <SettingsGroup title={lang === 'zh' ? '连接' : 'Connection'} pal={pal}>
           <SettingsRow icon="server" label={mac?.name || '—'} sub={mac?.url} pal={pal} chevron divider onPress={() => navigation.navigate('Servers')} />
-          <SettingsRow icon="share" label={t('openOnComputer')} sub={t('openOnComputerSub')} pal={pal} chevron divider onPress={openOnComputer} />
+          {/* Handing the Mac off to a computer browser mints an OWNER device code —
+              never available to a guest. */}
+          {!isGuest && (
+            <SettingsRow icon="share" label={t('openOnComputer')} sub={t('openOnComputerSub')} pal={pal} chevron divider onPress={openOnComputer} />
+          )}
           <SettingsRow icon="trash" label={t('removeMac')} danger pal={pal} onPress={confirmRemove} />
         </SettingsGroup>
 
@@ -102,7 +106,8 @@ export function SettingsScreen({navigation}: any) {
           <SettingsRow icon="return" label={lang === 'zh' ? '回车直接发送' : 'Return sends'} sub={lang === 'zh' ? '关闭时回车为换行，用 ↑ 发送' : 'Off: Return = newline; send with ↑'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
         </SettingsGroup>
 
-        {/* NOTIFICATIONS */}
+        {/* NOTIFICATIONS — owner-only: a guest doesn't receive the host's alerts. */}
+        {!isGuest && (
         <SettingsGroup title={t('push')} pal={pal}>
           <SettingsRow icon="bell" label={t('push')} pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
           <SettingsRow
@@ -130,6 +135,7 @@ export function SettingsScreen({navigation}: any) {
             right={testing ? <ActivityIndicator color={pal.fg3} /> : <Text style={[styles.action, {color: pushEnabled ? '#06B6D4' : pal.fg3}]}>›</Text>}
           />
         </SettingsGroup>
+        )}
 
         {/* GENERAL */}
         <SettingsGroup title={lang === 'zh' ? '通用' : 'General'} pal={pal}>

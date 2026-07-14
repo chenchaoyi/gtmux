@@ -21,6 +21,12 @@ interface AgentsContextValue {
   banner: Alert | null;
   dismissBanner: () => void;
   refresh: () => void;
+  // Scope (web-shared-view-scope): a GUEST connection is restricted to the host's
+  // view/input allowlists. `isGuest` gates owner-only surfaces; `inputPanes` is the
+  // set of pane ids this guest may TYPE into (empty for a pane it can only view).
+  // An owner (device/master token) has isGuest=false and types anywhere.
+  isGuest: boolean;
+  inputPanes: string[];
 }
 
 const Ctx = createContext<AgentsContextValue | null>(null);
@@ -29,16 +35,22 @@ export function AgentsProvider({
   base,
   token,
   name = '',
+  scope = 'owner',
   children,
 }: {
   base: string;
   token: string;
   name?: string; // the paired Mac's display name → the Live Activity's server label
+  scope?: 'owner' | 'guest'; // how this Mac was paired; confirmed via GET /api/share
   children: React.ReactNode;
 }) {
   const client = useMemo(() => new GtmuxClient(base, token), [base, token]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [conn, setConn] = useState<ConnState>('connecting');
+  // Seed from the pairing hint so the UI never flashes owner-only surfaces before
+  // GET /api/share resolves; then confirm authoritatively (all:true ⇒ owner).
+  const [isGuest, setIsGuest] = useState(scope === 'guest');
+  const [inputPanes, setInputPanes] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [banner, setBanner] = useState<Alert | null>(null);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,6 +161,25 @@ export function AgentsProvider({
     return unsub;
   }, [client]);
 
+  // Resolve the caller's scope authoritatively from GET /api/share (all:true ⇒
+  // owner). Re-reads when the client changes and on every successful agents refresh
+  // (lastUpdated) so a mid-session widen/narrow of the host's allowlist tracks. A
+  // failed read keeps the current (hint-seeded) value — never widens on error.
+  useEffect(() => {
+    let alive = true;
+    client
+      .share()
+      .then(cap => {
+        if (!alive) return;
+        setIsGuest(!cap.all);
+        setInputPanes(cap.panes);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [client, lastUpdated]);
+
   const value: AgentsContextValue = {
     client,
     agents,
@@ -157,6 +188,8 @@ export function AgentsProvider({
     banner,
     dismissBanner: () => setBanner(null),
     refresh,
+    isGuest,
+    inputPanes,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

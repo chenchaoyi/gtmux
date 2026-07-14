@@ -17,7 +17,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {EnrollError, enrollDevice, normalizeHost, parsePairingQR} from '../pairing/qr';
+import {EnrollError, enrollDevice, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
@@ -40,7 +40,12 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
 
   // connectWith validates reachability + token, then pairs. Shared by manual
   // entry and the QR scanner.
-  const connectWith = async (base: string, tok: string, name: string) => {
+  const connectWith = async (
+    base: string,
+    tok: string,
+    name: string,
+    scope: 'owner' | 'guest' = 'owner',
+  ) => {
     if (!base || !tok) {
       setError(t('cantReach'));
       return;
@@ -53,8 +58,8 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
         setError(t('cantReach'));
         return;
       }
-      await client.agents(); // validate the token with a real authed call
-      await pair({url: base, token: tok, name});
+      await client.agents(); // validate the token with a real authed call (a guest token is accepted too)
+      await pair({url: base, token: tok, name, scope});
     } catch {
       setError(t('badToken'));
     } finally {
@@ -63,6 +68,12 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
   };
 
   const connect = () => {
+    // A pasted guest link (`<base>/#t=<token>`) → connect as a scope-restricted guest.
+    const guest = parseShareLink(host.trim());
+    if (guest) {
+      connectWith(guest.url, guest.token, guest.name, 'guest');
+      return;
+    }
     const base = normalizeHost(host);
     connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
   };
@@ -78,6 +89,11 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     }
     if (res.kind === 'paired') {
       connectWith(res.url, res.token, res.name); // v1: token in the QR
+      return;
+    }
+    if (res.kind === 'guest') {
+      // A `gtmux share` guest link/QR → connect as a scope-restricted guest (no enroll).
+      connectWith(res.url, res.token, res.name, 'guest');
       return;
     }
     // v2: redeem the one-time code for this device's own token, then connect.
