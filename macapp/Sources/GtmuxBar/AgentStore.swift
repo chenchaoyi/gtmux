@@ -214,6 +214,21 @@ final class AgentStore: ObservableObject {
             .sorted { $0.since > $1.since }
     }
 
+    /// Panes eligible for the web-shared-input allowlist (Preferences → Shared
+    /// input). Real tmux panes only — a guest types via `tmux send-keys`, so
+    /// native/hook-less rows can't be targets. Ordered like the radar (state
+    /// rank → session title) so the host recognises each pane by the SAME
+    /// identity (avatar + `primary` session name) shown in the session list,
+    /// not an indistinguishable "Claude Code · %N".
+    var shareablePanes: [Agent] {
+        agents
+            .filter { !$0.isNative && !$0.paneID.isEmpty }
+            .sorted { l, r in
+                if l.state.rank != r.state.rank { return l.state.rank < r.state.rank }
+                return l.primary.localizedCaseInsensitiveCompare(r.primary) == .orderedAscending
+            }
+    }
+
     /// Flattened, ordered agent list (for keyboard navigation).
     func ordered(query: String) -> [Agent] {
         sections(query: query).flatMap { $0.agents }
