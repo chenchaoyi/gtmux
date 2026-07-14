@@ -172,6 +172,26 @@ func Paste(pane, text string) error {
 	return err
 }
 
+// InMode reports whether a pane is in a tmux mode (copy-mode / view-mode — i.e. the
+// user is scrolling the scrollback). While a pane is in a mode, keys are interpreted
+// as mode navigation commands and NEVER reach the running program: `send-keys -l`,
+// `paste-buffer`, and Enter are all silently swallowed. Callers that must guarantee
+// input lands (dispatch delivery, `gtmux send`, POST /api/send) should ExitCopyMode
+// first. Read-only.
+func InMode(pane string) bool { return Display(pane, "#{pane_in_mode}") == "1" }
+
+// ExitCopyMode drops a pane out of copy/view-mode (`send-keys -X cancel`) so that
+// subsequent input actually reaches the program. It is a no-op (nil) when the pane
+// is NOT in a mode — `-X cancel` errors "not in a mode" otherwise, so we gate on
+// InMode. This is a WRITE.
+func ExitCopyMode(pane string) error {
+	if !InMode(pane) {
+		return nil
+	}
+	_, err := Run("send-keys", "-t", pane, "-X", "cancel")
+	return err
+}
+
 // Display returns `tmux display-message -p <fmt>` for the given (optional) target.
 func Display(target, format string) string {
 	args := []string{"display-message", "-p"}

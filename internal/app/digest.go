@@ -50,6 +50,10 @@ type digestRow struct {
 	Error      string `json:"error,omitempty"`       // errored-idle modifier text
 	Bg         string `json:"bg,omitempty"`          // background-running modifier label
 	Since      int64  `json:"since,omitempty"`       // epoch the current state began
+	// input-lock modifier: the pane is in tmux copy/view-mode, so typed input is
+	// swallowed until it exits (send/spawn auto-exit before delivering). Flags which
+	// pane is input-locked so the supervisor sees it. Absent = not in a mode.
+	InMode bool `json:"in_mode,omitempty"`
 	// usage-watch (usage-watch change): the session's token snapshot + the first
 	// breached/projected layer. Zero/empty when no usage data (non-Claude).
 	Tok       int64   `json:"tok,omitempty"`  // cumulative output tokens
@@ -129,7 +133,7 @@ func gatherDigest() []digestRow {
 		row := digestRow{
 			PaneID: p.paneID, Loc: p.loc, Agent: p.agent, Source: p.source,
 			Status: p.status, Role: p.role, Project: p.project, Branch: p.branch,
-			Error: p.errorText, Bg: p.bgText, Since: p.since,
+			Error: p.errorText, Bg: p.bgText, Since: p.since, InMode: p.inMode,
 		}
 		if p.status == "waiting" && p.paneID != "" {
 			row.Kind = state.ReadMarker(state.WaitingPath(p.paneID))

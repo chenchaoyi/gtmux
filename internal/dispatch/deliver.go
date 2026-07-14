@@ -45,6 +45,8 @@ type IO struct {
 	Paste      func(text string) error  // load-buffer + paste-buffer (no Enter)
 	Enter      func() error             // submit
 	ClearDraft func() error             // clear the input draft (C-u); optional
+	InMode     func() bool              // pane is in tmux copy/view-mode (input swallowed); optional
+	ExitMode   func() error             // drop out of copy/view-mode before typing; optional
 	Events     func(sinceTs int64) []Ev // recent lifecycle events for this pane; optional
 	Now        func() int64             // unix seconds (injectable clock)
 	Sleep      func()                   // wait one poll interval (prod sleeps; test advances)
@@ -170,6 +172,10 @@ func Deliver(io IO, opts Opts, text string) Result {
 // post-submit verification decide.
 func pasteWithGuard(io IO, opts Opts, text string) bool {
 	for i := 0; i <= opts.PasteRetries; i++ {
+		// Copy/view-mode swallows paste-buffer (and the later Enter) as mode-nav
+		// commands (incident: a scrolled pane silently ate a whole dispatch). Drop out
+		// of the mode BEFORE pasting so the payload actually reaches the input box.
+		exitCopyMode(io)
 		if err := io.Paste(text); err != nil {
 			return false
 		}
@@ -185,6 +191,16 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 		}
 	}
 	return false
+}
+
+// exitCopyMode drops the pane out of tmux copy/view-mode before a write, but only
+// when the injected IO can both sense and exit it (optional fields). A pane in a mode
+// eats paste-buffer/Enter as navigation, so an un-cancelled scroll silently swallows
+// a whole delivery — this makes the write land instead.
+func exitCopyMode(io IO) {
+	if io.InMode != nil && io.ExitMode != nil && io.InMode() {
+		_ = io.ExitMode()
+	}
 }
 
 // draftHasDelivery reports whether the draft holds the full delivery — either the

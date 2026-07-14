@@ -536,6 +536,9 @@ func sendToPane(id, text, key string, enter bool) error {
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
 		return fmt.Errorf("pane not found")
 	}
+	// A pane in copy/view-mode swallows input as mode-nav commands; drop out first so
+	// the phone's key/text actually reaches the agent (matches the CLI send path).
+	_ = tmux.ExitCopyMode(id)
 	if key != "" {
 		if !allowedSendKeys[key] {
 			return fmt.Errorf("key not allowed")

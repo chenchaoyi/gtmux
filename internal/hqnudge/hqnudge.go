@@ -53,7 +53,7 @@ var prod = io{
 	send:    func(pane, text string) error { return tmux.SendText(pane, text, true) },
 	sleep:   func() { time.Sleep(twoFrameGap) },
 	nowNano: func() int64 { return time.Now().UnixNano() },
-	inMode:  func(pane string) bool { return tmux.Display(pane, "#{pane_in_mode}") == "1" },
+	inMode:  tmux.InMode,
 }
 
 // Deliver types msg into the HQ pane, guarding a half-typed draft. msg is queued to

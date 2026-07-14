@@ -108,6 +108,10 @@ type agentPane struct {
 	activityAt int64  // epoch seconds of last activity (relative time)
 	since      int64  // epoch seconds the current state began (for a duration)
 	icon       string // identity icon hint (.app path or image path); "" = monogram
+	// input-lock modifier: the pane is in tmux copy/view-mode (the user is scrolling
+	// the scrollback), so typed input — manual OR gtmux send/spawn — is swallowed as
+	// mode-nav until it exits. Surfaces flag which pane is input-locked. tmux rows only.
+	inMode bool
 	// native (source=="native") only: the agent session id (adopt key) + whether
 	// the agent can be resumed into tmux (so surfaces can hide Adopt otherwise).
 	sessionID string
@@ -171,6 +175,10 @@ type agentJSON struct {
 	// usage-watch modifier (usage-watch change): a breached/projected usage layer,
 	// e.g. "ctx 86%" / "burn→5M in ~12m". Amber modifier, never a status.
 	UsageWarn string `json:"usage_warn,omitempty"`
+	// input-lock modifier: the pane is in tmux copy/view-mode, so typed input is
+	// swallowed until it exits. `gtmux send`/`spawn` auto-exit before delivering;
+	// this flag lets surfaces show WHICH pane is input-locked. Absent = not in a mode.
+	InMode bool `json:"in_mode,omitempty"`
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -458,10 +466,10 @@ func gatherAgents() []agentPane {
 	}
 
 	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}"
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}\t#{pane_in_mode}"
 	var panes []agentPane
 	for _, line := range tmux.Lines("list-panes", "-a", "-F", fields) {
-		f := strings.SplitN(line, "\t", 10)
+		f := strings.SplitN(line, "\t", 11)
 		if len(f) < 7 {
 			continue
 		}
@@ -610,6 +618,7 @@ func gatherAgents() []agentPane {
 			project, branch = gitInfo(cwd)
 		}
 		usageWarn := state.ReadMarker(state.UsageWarnPath(id))
+		inMode := len(f) >= 11 && f[10] == "1"
 		panes = append(panes, agentPane{
 			paneID:     id,
 			session:    f[1],
@@ -635,6 +644,7 @@ func gatherAgents() []agentPane {
 			bgCount:    bgCount,
 			bgText:     bgText,
 			usageWarn:  usageWarn,
+			inMode:     inMode,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -919,6 +929,7 @@ func agentsJSONBytes() ([]byte, error) {
 			Error: p.errored, ErrorText: p.errorText,
 			Bg: p.bg, BgCount: p.bgCount, BgText: p.bgText,
 			UsageWarn: p.usageWarn,
+			InMode:    p.inMode,
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")

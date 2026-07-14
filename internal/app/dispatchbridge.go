@@ -67,6 +67,8 @@ func dispatchIO(pane string) dispatch.IO {
 		Paste:      func(text string) error { return tmux.Paste(pane, text) },
 		Enter:      func() error { return tmux.SendKey(pane, "Enter") },
 		ClearDraft: func() error { return tmux.SendKey(pane, "C-u") },
+		InMode:     func() bool { return tmux.InMode(pane) },
+		ExitMode:   func() error { return tmux.ExitCopyMode(pane) },
 		Events:     func(since int64) []dispatch.Ev { return eventsForPane(pane, since) },
 		Now:        func() int64 { return time.Now().Unix() },
 		Sleep:      func() { time.Sleep(pollInterval) },
