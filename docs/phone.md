@@ -94,6 +94,24 @@ toggle) registers it as a background LaunchAgent; `--unservice` turns it off,
 `GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG`. See `design/remote-access-tunnel.md` and
 `../tunnel-worker/`.
 
+## From another computer's terminal — `gtmux attach`
+
+The phone app watches + drives; from another **Mac/Linux terminal** you can go
+further and truly *attach* to a remote session and work in it:
+
+```sh
+gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner (LAN or tunnel)
+gtmux attach 'https://<mac>.example/#t=<token>' %12        # scoped guest (share link)
+```
+
+Your local Ghostty / iTerm2 / Terminal becomes the remote tmux session — raw,
+interactive, full TUI fidelity — over the same serve/tunnel (a WebSocket, `GET
+/api/attach`). It honors the SAME owner/guest scope as the web + phone: a guest is
+restricted to the host's view/input allowlists (a view-only pane is read-only), set up
+in the menu bar's **Shared input** or with `gtmux share`. Detach with tmux `<prefix> d`
+or `Ctrl-]`. Full reference: [`cli.md` → `gtmux attach`](cli.md) and
+[`design/remote-attach-research.md`](design/remote-attach-research.md).
+
 ## Security
 
 The remote surface is read-only **except `POST /api/send`** (terminal input via

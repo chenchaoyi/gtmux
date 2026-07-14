@@ -57,6 +57,11 @@ Commands:
                           token, and a scannable pairing QR. Default is a STABLE
                           hosted address (pair once); --quick for an account-less
                           ephemeral URL. --port N --name LABEL
+  attach <target> [%N]    attach to a remote pane in THIS terminal (raw, over a
+                          WebSocket) — the local terminal becomes the remote tmux
+                          session. A share link (…/#t=<token>) connects as a scoped
+                          guest; host + --token as the owner. --read-only to watch;
+                          Ctrl-] or tmux prefix-d detaches
   devices [revoke <id>]   list phones paired via per-device tokens (from a short-
                           lived QR code), and revoke one (effective immediately).
                           Talks to the local radar — run while serve/tunnel is up
@@ -144,6 +149,10 @@ const usageZH = `快速开始：
                           Cloudflare 隧道，打印公网 URL、token 和可扫的配对
                           二维码。默认给固定的托管地址（配一次即可），--quick 走
                           免账号的临时地址。--port N --name 标签
+  attach <target> [%N]    在当前终端里附着到远程的某个 pane（原生、走 WebSocket）——
+                          本地终端变成远程 tmux 会话。分享链接（…/#t=<token>）以
+                          受限访客接入；host + --token 以本人接入。--read-only 只看；
+                          Ctrl-] 或 tmux 前缀键 + d 退出
   devices [revoke <id>]   列出用一次性 QR 码配对的手机（每设备独立 token），
                           并可吊销某台（即刻生效）。需在 serve/tunnel 运行时使用
   doctor [--fix [--yes]]  体检，按主题分组：tmux / 恢复 / 终端 / agent+通知。

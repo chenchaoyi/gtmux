@@ -343,6 +343,39 @@ is — which is how a notification click drops you on the agent that just finish
 > the format `focus` matches. If another tool also writes the tab title, disable
 > that so titles stay authoritative.
 
+## `gtmux attach` — work in a remote session from another machine's terminal
+
+Where `focus` jumps to a LOCAL tab, `attach` opens a REMOTE pane in your current
+terminal (Ghostty / iTerm2 / Terminal) as a raw, interactive passthrough — the local
+terminal becomes the remote tmux session, over the same `gtmux serve` surface (a
+WebSocket, `GET /api/attach`), honoring the owner/guest token scope.
+
+```sh
+# owner — full access with the serve token:
+gtmux attach http://<mac>:8765 --token <serve-token> %12
+
+# guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
+# "Shared input" → New link); attach exactly what the host allowed:
+gtmux attach 'https://<mac>.example/#t=<token>' %12
+
+gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
+gtmux attach <target> --read-only  # watch only, never send input
+```
+
+- **`<target>`** is a host (+ `--token`, → **owner**, full) or a `…/#t=<token>` share
+  link (→ **guest**, restricted to the host's view/input allowlists — a view-only pane
+  is read-only, and a non-viewable pane is refused).
+- **`%N`** (optional) is the tmux pane id to attach — it selects the SESSION that pane
+  is in. Omit it to auto-attach when there's a single session, or get a chooser.
+- **Detach** with tmux's own `<prefix> d`, or **`Ctrl-]`** (the local escape hatch).
+- Scope is enforced server-side; `--read-only` is a convenience, not the security
+  boundary. See `docs/design/remote-attach-research.md` for the design + trade-offs
+  (raw passthrough over WS/TCP, flow control, resize, latency).
+
+> Needs the host reachable: on the LAN directly, or from anywhere via `gtmux tunnel`
+> (the WebSocket rides the same tunnel as the radar). The guest side is set up entirely
+> in the menu bar (per-pane 👁 See / ⌨️ Type + New link) or with `gtmux share`.
+
 ## tmux integration
 
 gtmux is just a CLI — bind whatever keys you like in `tmux.conf`. Suggested:
