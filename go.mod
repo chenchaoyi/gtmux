@@ -1,12 +1,14 @@
 module github.com/chenchaoyi/gtmux
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/creack/pty v1.1.24
+	github.com/gorilla/websocket v1.5.3
 	github.com/jpillora/chisel v1.10.1
-	golang.org/x/term v0.15.0
+	golang.org/x/term v0.45.0
 	howett.net/plist v1.0.1
 	rsc.io/qr v0.2.0
 )
@@ -20,7 +22,6 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/jpillora/sizestr v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
@@ -35,6 +36,6 @@ require (
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )

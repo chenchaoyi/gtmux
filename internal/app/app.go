@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/connect"
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
@@ -96,6 +97,8 @@ func Run(argv []string) int {
 		return cmdNew(args)
 	case "adopt":
 		return cmdAdopt(args)
+	case "attach":
+		return connect.Run(args)
 	case "serve":
 		return cmdServe(args)
 	case "tunnel":

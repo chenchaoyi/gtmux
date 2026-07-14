@@ -213,6 +213,29 @@ The server re-snapshots agents every ~1500ms (in step with the watch TUI).
 SSE only signals *that* something changed; `/api/agents` stays the one
 authoritative payload (no second data shape on the wire).
 
+### `GET /api/attach?id=%N` — attach a pane's PTY (WebSocket, WRITE)
+
+Upgrades to a **WebSocket** that bridges a tmux pane's PTY to the caller — the
+`gtmux attach` client puts the local terminal in raw mode and passes bytes through
+both ways. **Authed + scope-gated**: an owner may attach any pane; a `guest` token
+may attach ONLY a view-allowed pane (else the upgrade is **refused 403**), and
+`INPUT`/`RESIZE` frames are **dropped server-side** for a pane it may not type into
+(a view-only pane is read-only). Scope enforcement is server-side; a client flag
+never widens it.
+
+Wire format: **binary** frames, first byte an opcode, payload from index 1 (no
+base64 — raw PTY bytes):
+
+| dir | opcode | payload |
+|---|---|---|
+| client→server | `i` INPUT | raw key bytes → the pane |
+| client→server | `r` RESIZE | `{"cols":C,"rows":R}` → `pty.Setsize` |
+| client→server | `p` PAUSE / `R` RESUME | flow control (reserved; MVP relies on natural WS backpressure) |
+| server→client | `o` OUTPUT | raw PTY bytes → the local screen |
+
+The server spawns `tmux attach-session` for the pane inside a `creack/pty` PTY and
+streams the master byte-for-byte. See `docs/design/remote-attach-research.md`.
+
 ### `POST /api/push/register` — register a device for push
 
 Stores a device push token so the server can forward `alert`s (waiting/done) as

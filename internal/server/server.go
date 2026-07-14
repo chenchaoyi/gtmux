@@ -67,6 +67,13 @@ type Deps struct {
 	// it" action. It injects no input. err is non-nil if the pane is gone.
 	Focus func(id string) error
 
+	// AttachCommand returns the argv of a tmux CLIENT to spawn in a server-side PTY
+	// for `GET /api/attach` (e.g. `tmux attach-session -t <session-of-pane>`), so the
+	// handler can bridge that PTY to the WebSocket. ok=false when the pane is gone.
+	// Optional: nil → /api/attach returns 503. Injected so the server stays decoupled
+	// from tmux (the pane→session resolution lives in the wiring).
+	AttachCommand func(paneID string) (argv []string, ok bool)
+
 	// Send types into a pane (WRITE). Exactly one of text/key is used: a non-empty
 	// key sends that NAMED key (validated against an allowlist by the impl); else
 	// text is typed literally, plus Enter when enter is true. err if the pane is
@@ -199,6 +206,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
+	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
