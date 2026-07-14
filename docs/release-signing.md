@@ -8,14 +8,19 @@ ID signing + notarization** once and every tagged release opens cleanly on any M
 
 Two ways to do it. Both need the same one-time credentials (§1 cert + §2 API key):
 
-- **Local (default here):** notarize from your Mac — no GitHub secrets. Store the
-  notary key once in a keychain profile, then each release is `make app-release`.
-  When CI has no signing secrets it skips the app upload/cask, so local owns it.
-- **CI:** add five repo secrets and every tagged release auto-notarizes (§4).
+- **CI (the path in use):** add five repo secrets (§3) and every tagged release
+  auto-signs+notarizes the app, uploads it, and updates the cask — no Mac in the
+  loop. The app job **fails the release** if a tag is pushed without the secrets, so
+  a release can never silently ship without the notarized app.
+- **Local (manual fallback):** notarize from your Mac with `make app-release` (see
+  "Local release" below) — for a CI outage or a hotfix. Needs the notary key in a
+  keychain profile; note it can stall if the login keychain is locked in a
+  non-interactive shell (as happened on v0.23.0 — CI avoids that failure mode).
 
-## Local release — the path in use
+## Local release — manual fallback
 
-One-time, after making the cert (§1) and API key (§2):
+The normal path is CI (§3–§4). Use this only when CI can't (outage, hotfix from a
+Mac). One-time, after making the cert (§1) and API key (§2):
 
 ```sh
 # store the notary key in a keychain profile named gtmux-notary (no GitHub secrets)
