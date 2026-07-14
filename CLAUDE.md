@@ -4,8 +4,8 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
-  `digest`, `hq`, `hq-feed`, `quiet`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `attach`, `hook`,
-  `serve`, `tunnel`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
+  `digest`, `hq`, `hq-feed`, `quiet`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `attach`, `status`, `config`, `hook`,
+  `serve`, `tunnel`, `devices`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
   `uninstall-app`. `attach` = the remote terminal client: `gtmux attach <host|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
   (`GET /api/attach`, scope-gated), raw passthrough; owner or guest. See
@@ -147,6 +147,14 @@ in the **same PR**:
    `*_test.go` / mobile jest / e2e). "It builds" is not coverage.
 3. **Docs/memory corrected** — any doc, memory, or `CLAUDE.md` line that cites the
    changed file / flag / behavior is fixed in the same PR. No stale references.
+4. **CLI surface documented (usage/docs drift)** — a NEW or RENAMED command must be
+   reflected everywhere a user or reader looks, in the same PR: the CLAUDE.md command
+   list (**enforced** — `check-design.sh` fails a dispatched command that isn't listed;
+   add genuinely-internal ones to its `HIDDEN` allowlist), the top-level `gtmux --help`
+   usage (`internal/app/help.go`, en+zh) when it's a user-facing command, a
+   `## gtmux <cmd>` section in `docs/cli.md`, and — if it adds/changes an HTTP surface —
+   `api/contract.md`. (This rule exists because `attach` once shipped absent from the
+   usage + `docs/cli.md`.)
 
 **Historical consistency (the spec lifecycle is not optional).** propose →
 implement → **sync-specs + archive-change**. The moment a change in
@@ -157,10 +165,14 @@ trail. An implemented change left in `changes/` (or unchecked tasks over shipped
 code) is exactly the drift we are eliminating.
 
 **Enforced:** `scripts/check-design.sh` (CI's "design + architecture conformance"
-step) runs `openspec validate --specs --strict` — a malformed/broken spec fails the
-build like a red test. Validation only proves the spec is well-formed; the
-spec-matches-code and archive-hygiene points above are a **review-gate checklist**
-(a reviewer confirms all three before squash-merge — they can't be fully automated).
+step) runs `openspec validate --specs --strict` (a malformed/broken spec fails the
+build like a red test) AND the **command-docs drift check** — every command dispatched
+in `internal/app/app.go` must appear in the CLAUDE.md command list (minus the `HIDDEN`
+allowlist), and `docs/cli.md` must not document a command that no longer exists.
+Validation only proves the spec is well-formed and the command registry is complete;
+the spec-matches-behavior, "worth a curated usage/cli.md entry", and archive-hygiene
+judgments above stay a **review-gate checklist** (a reviewer confirms them before
+squash-merge — they can't be fully automated).
 
 ## Conventions / invariants
 

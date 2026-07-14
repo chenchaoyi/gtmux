@@ -51,8 +51,36 @@ else
   note "npx not found — skipping openspec validation (install node to enforce it)"
 fi
 
+# 6. CLI command ↔ docs drift. Every user-facing command wired into the dispatch
+#    (internal/app/app.go) MUST be listed in CLAUDE.md's command registry — this is the
+#    exhaustive reference, so a new/renamed command that isn't there is a drift (exactly
+#    how `attach` once shipped undocumented). Internal/plumbing commands are exempt via
+#    HIDDEN. The curated `gtmux --help` usage + docs/cli.md are a deliberate SUBSET, so
+#    we can't require completeness there — instead we check them in REVERSE (a doc must
+#    not reference a command that no longer exists). Spec↔behavior + "is this command
+#    worth documenting in the curated usage/cli.md" stay REVIEW-GATE items (see below).
+APP=internal/app/app.go
+HIDDEN=" tunnel-client save-tab-order options app "   # internal plumbing, not user commands
+cmds=$(grep -oE 'case "[a-z][a-z0-9-]*"' "$APP" | sed 's/case "//;s/"$//' | sort -u)
+# The command list is "Commands: `a`, `b`, … `uninstall-app`." — grab exactly that,
+# truncating the prose that follows `uninstall-app` on the same line (else a command
+# named in the description would falsely count as "listed").
+listblock=$(awk '/Commands:/{f=1} f{print} /uninstall-app`\./{exit}' CLAUDE.md | sed -E 's/`uninstall-app`\..*/`uninstall-app`./')
+for cmd in $cmds; do
+  case "$HIDDEN" in *" $cmd "*) continue ;; esac
+  needle=$(printf '`%s`' "$cmd")
+  printf '%s\n' "$listblock" | grep -qF "$needle" || {
+    note "CLI command '$cmd' (dispatched in $APP) is NOT in the CLAUDE.md command list — add it there (and weigh 'gtmux --help' usage + a docs/cli.md section)"; fail=1
+  }
+done
+for cmd in $(grep -oE '^## `gtmux [a-z][a-z0-9-]*`' docs/cli.md | sed -E 's/^## `gtmux ([a-z0-9-]+)`/\1/'); do
+  printf '%s\n' "$cmds" | grep -qxF "$cmd" || {
+    note "docs/cli.md documents 'gtmux $cmd' but it is not a dispatched command (renamed/removed → stale doc)"; fail=1
+  }
+done
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented"
 else
   exit 1
 fi
