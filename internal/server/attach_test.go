@@ -40,3 +40,19 @@ func TestAttach_MissingID(t *testing.T) {
 		t.Fatalf("attach missing id = %d, want 400", rr.Code)
 	}
 }
+
+// The tmux client spawned in the PTY MUST get a valid TERM, else it dies with
+// "terminal does not support clear" (the serve's launchd env has none). Regression
+// guard for that fix.
+func TestAttachEnv_SetsTERM(t *testing.T) {
+	env := attachEnv()
+	found := false
+	for _, e := range env {
+		if e == "TERM=xterm-256color" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("attachEnv() must set TERM=xterm-256color; got %v", env)
+	}
+}

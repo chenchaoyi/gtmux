@@ -87,7 +87,7 @@ func Run(args []string) int {
 	if readOnly {
 		mode = i18n.Tr(" · read-only", " · 只读")
 	}
-	fmt.Fprintf(os.Stderr, "%s %s %s%s%s\n",
+	fmt.Fprintf(os.Stderr, "%s %s %s %s%s\n",
 		i18n.Tr("attaching", "正在附着"), pane,
 		i18n.Tr("as", "以"), who, mode)
 	i18n.Sae("(detach: tmux prefix + d, or Ctrl-])", "（退出：tmux 前缀键 + d，或 Ctrl-]）")
