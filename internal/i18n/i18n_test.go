@@ -77,3 +77,48 @@ func TestPl(t *testing.T) {
 		t.Errorf("zh Pl(3) = %q, want %q (no pluralization)", got, "3 window")
 	}
 }
+
+func TestPadLeft(t *testing.T) {
+	cases := []struct {
+		in    string
+		width int
+		want  string
+	}{
+		{"ab", 5, "   ab"},
+		{"你好", 5, " 你好"},
+		{"abcdef", 3, "abcdef"}, // already wider than the field → unchanged
+		{"", 2, "  "},
+	}
+	for _, c := range cases {
+		got := PadLeft(c.in, c.width)
+		if got != c.want {
+			t.Errorf("PadLeft(%q, %d) = %q, want %q", c.in, c.width, got, c.want)
+		}
+		if DispWidth(c.in) < c.width && DispWidth(got) != c.width {
+			t.Errorf("PadLeft(%q, %d) display width = %d, want %d", c.in, c.width, DispWidth(got), c.width)
+		}
+	}
+}
+
+func TestTruncDisp(t *testing.T) {
+	cases := []struct {
+		in    string
+		width int
+		want  string
+	}{
+		{"", 5, ""},
+		{"abc", 5, "abc"},      // fits, unchanged
+		{"abcdef", 5, "abcd…"}, // cut + ellipsis, total width 5
+		{"你好世界", 5, "你好…"},     // wide runes: 2+2 fits in 4, +… = 5
+		{"abcdef", 0, ""},      // no room at all
+	}
+	for _, c := range cases {
+		got := TruncDisp(c.in, c.width)
+		if got != c.want {
+			t.Errorf("TruncDisp(%q, %d) = %q, want %q", c.in, c.width, got, c.want)
+		}
+		if got != c.in && DispWidth(got) > c.width {
+			t.Errorf("TruncDisp(%q, %d) display width = %d, exceeds %d", c.in, c.width, DispWidth(got), c.width)
+		}
+	}
+}

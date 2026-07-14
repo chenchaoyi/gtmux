@@ -200,6 +200,7 @@ func TestHQPlaybookCharter(t *testing.T) {
 		"GRANULARITY",             // B2: one self-reporting subagent per independent step
 		"reclamation IS YOUR JOB", // A: reclaim via reap/subagent, not hand-typed
 		"--headless",              // M2: heavy/background work reference (now shipped)
+		"COLUMN-ALIGNED TABLE",    // status reports are a scannable table, not prose
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("charter seed missing %q", want)
@@ -225,9 +226,10 @@ func TestHQBriefingPrompt(t *testing.T) {
 			"gtmux digest --json", // status report source
 			"gtmux usage --json",
 			"gtmux limits --json",
-			"needs-you",     // needs-you leads
-			"token-usage",   // token usage section
-			"subscription-", // subscription-window room
+			"needs-you",            // needs-you leads
+			"token-usage",          // token usage section
+			"subscription-",        // subscription-window room
+			"COLUMN-ALIGNED TABLE", // format: table, not prose
 		}},
 		{"zh", []string{
 			"gtmux HQ 中控管家",
@@ -237,6 +239,7 @@ func TestHQBriefingPrompt(t *testing.T) {
 			"needs-you",
 			"token 用量",
 			"订阅余量",
+			"列对齐表格",
 		}},
 	} {
 		i18n.SetLang(tc.lang)

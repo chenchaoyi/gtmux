@@ -34,15 +34,27 @@ The CLI SHALL remain cgo-free.
 
 ### Requirement: Digest CLI
 
-The system SHALL provide `gtmux digest` printing one compact human-readable
-block per agent (bilingual labels per `GTMUX_LANG`), and `gtmux digest --json`
-emitting a machine-readable array — the supervisor's primary read surface.
+The system SHALL provide `gtmux digest` printing a FORMATTED, COLUMN-ALIGNED
+table (bilingual labels per `GTMUX_LANG`) — never a prose paragraph — and
+`gtmux digest --json` emitting a machine-readable array; together these are
+the supervisor's primary read surface. The text form SHALL render: a one-line
+summary of counts by state, then one section per state (needs-you first, then
+working, then completed, then errored — the last only when non-empty) with
+one aligned row per agent (status glyph · name · goal/last/ask, truncated to
+the terminal width · a right-side badge · a right-aligned relative time).
 
 #### Scenario: Fleet at a glance
 
 - **WHEN** the user (or the supervisor agent) runs `gtmux digest --json`
 - **THEN** every radar row appears with the digest fields, ordered like the
   radar (needs-you first)
+
+#### Scenario: Scannable table, not prose
+
+- **WHEN** the user runs `gtmux digest` (no `--json`) with live agents
+- **THEN** the output opens with a one-line count-by-state summary, followed
+  by a section per non-empty state, each row column-aligned and truncated to
+  fit the terminal width — no free-form paragraphs
 
 ### Requirement: Digest over the API
 

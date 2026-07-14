@@ -127,21 +127,41 @@ func cmdUsage(args []string) int {
 		i18n.Say("No sessions with usage data.", "没有带用量数据的会话。")
 		return 0
 	}
+	// CJK-safe, display-width-aware column alignment (i18n.PadRight/PadLeft) —
+	// same alignment primitives the digest table uses, so every gtmux surface
+	// reads as one column-aligned system rather than ad hoc printf columns.
+	nameWidth := 8
 	for _, r := range rep.Sessions {
 		head := r.Loc
 		if head == "" {
 			head = r.Agent
 		}
-		line := fmt.Sprintf("● %-24s %8s out · ctx %3d%% · %6s/m", head,
-			compact(r.Tok), int(r.Ctx*100), compact(r.Rate))
+		if w := i18n.DispWidth(head); w > nameWidth {
+			nameWidth = w
+		}
+	}
+	if nameWidth > 24 {
+		nameWidth = 24
+	}
+	for _, r := range rep.Sessions {
+		head := r.Loc
+		if head == "" {
+			head = r.Agent
+		}
+		glyph, color, _ := statusStyle(r.Status)
+		line := fmt.Sprintf("%s%s%s %s  %s out · ctx %s · %s/m",
+			color, glyph, i18n.Reset, i18n.PadRight(i18n.TruncDisp(head, nameWidth), nameWidth),
+			i18n.PadLeft(compact(r.Tok), 7), i18n.PadLeft(fmt.Sprintf("%d%%", int(r.Ctx*100)), 4),
+			i18n.PadLeft(compact(r.Rate), 6))
 		if r.UsageWarn != "" {
 			line += "   ⚠ " + r.UsageWarn
 		}
 		fmt.Println(line)
 	}
 	for _, t := range rep.Types {
-		line := fmt.Sprintf("Σ %-24s %8s out · %6s/m · %d %s", t.AgentKey,
-			compact(t.Tok), compact(t.Rate), t.Sessions, i18n.Tr("sessions", "个会话"))
+		line := fmt.Sprintf("Σ %s  %s out · %s/m · %s", i18n.PadRight(i18n.TruncDisp(t.AgentKey, nameWidth), nameWidth),
+			i18n.PadLeft(compact(t.Tok), 7), i18n.PadLeft(compact(t.Rate), 6),
+			i18n.Pl(t.Sessions, i18n.Tr("session", "个会话")))
 		if t.UsageWarn != "" {
 			line += "   ⚠ " + t.UsageWarn
 		}

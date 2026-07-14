@@ -193,54 +193,175 @@ func cmdDigest(args []string) int {
 		i18n.Say("No live agents.", "当前没有 agent。")
 		return 0
 	}
-	for _, r := range rows {
-		printDigestRow(r)
-	}
+	renderDigestTable(rows)
 	return 0
 }
 
-// printDigestRow renders one human block (en+zh labels via i18n).
-func printDigestRow(r digestRow) {
-	head := r.Loc
-	if head == "" {
-		head = i18n.Tr("elsewhere", "不在 tmux")
+// digestSectionSpec is one of the report's fixed sections, in display order.
+// needs-you leads (it's the loudest signal); errored is appended only when
+// non-empty — it's a modifier on an otherwise-idle row, not a base state.
+var digestSectionSpec = []struct{ key, en, zh string }{
+	{"needs_input", "needs input", "需要你"},
+	{"working", "working", "进行中"},
+	{"completed", "completed", "已完成"},
+	{"errored", "errored", "出错"},
+}
+
+// digestBucket sorts a row into one report section. A row carrying an error
+// marker is pulled into "errored" regardless of its underlying status; among
+// the rest, waiting leads, idle means done, and "running" (the hookless
+// can't-tell-idle-from-working fallback status) folds into "working" — it's
+// still an active agent, just a less certain signal — its own grey glyph
+// (via statusStyle) keeps that distinction visible on the row itself.
+func digestBucket(r digestRow) string {
+	switch {
+	case r.Error != "":
+		return "errored"
+	case r.Status == "waiting":
+		return "needs_input"
+	case r.Status == "idle":
+		return "completed"
+	default:
+		return "working"
 	}
-	status := r.Status
-	if r.Kind != "" {
-		status += "·" + r.Kind
+}
+
+// digestBadge is the row's right-side badge: the dispatch task's lifecycle
+// status takes priority (it's the most actionable signal), then how many
+// options a waiting prompt offers, then a usage warning or background marker.
+func digestBadge(r digestRow) string {
+	switch {
+	case r.Task != "" && r.TaskStatus != "":
+		return r.TaskStatus
+	case r.Ask != "":
+		return fmt.Sprintf(i18n.Tr("%d opts", "%d 项"), strings.Count(r.Ask, " · ")+1)
+	case r.UsageWarn != "":
+		return "⚠"
+	case r.Bg != "":
+		return i18n.Tr("bg", "后台")
+	default:
+		return ""
 	}
-	meta := ""
-	if r.Project != "" {
-		meta = "  [" + r.Project
-		if r.Branch != "" {
-			meta += " · " + r.Branch
-		}
-		meta += "]"
+}
+
+// digestLabel is a row's name-column identity: its tmux location (or
+// "elsewhere" for a sensed native session), tagged for the HQ supervisor row.
+func digestLabel(r digestRow) string {
+	name := r.Loc
+	if name == "" {
+		name = i18n.Tr("elsewhere", "不在 tmux")
 	}
-	tag := ""
 	if r.Role == "supervisor" {
-		tag = " ⌂gtmux HQ"
+		name += " ⌂"
 	}
-	fmt.Printf("● %s · %s · %s%s%s\n", head, r.Agent, status, tag, meta)
-	if r.Goal != "" {
-		fmt.Printf("  %s %s\n", i18n.Tr("goal:", "目标:"), r.Goal)
+	return name
+}
+
+// renderDigestTable prints the formatted, column-aligned status report: a
+// one-line summary of counts by state, then a section per state with one
+// aligned row per agent — status glyph · name · goal/last (truncated to the
+// terminal width) · a right badge · a right-aligned relative time. This is
+// gtmux's scannable "fleet at a glance" — no prose paragraphs.
+func renderDigestTable(rows []digestRow) {
+	buckets := map[string][]digestRow{}
+	for _, r := range rows {
+		k := digestBucket(r)
+		buckets[k] = append(buckets[k], r)
 	}
-	if r.Last != "" {
-		fmt.Printf("  %s %s\n", i18n.Tr("last:", "最新:"), r.Last)
+
+	summary := make([]string, 0, 4)
+	for _, s := range digestSectionSpec {
+		n := len(buckets[s.key])
+		if s.key == "errored" && n == 0 {
+			continue // an exceptional bucket — only surface it when non-empty
+		}
+		summary = append(summary, fmt.Sprintf("%d %s", n, i18n.Tr(s.en, s.zh)))
 	}
-	if r.Ask != "" {
-		fmt.Printf("  %s %s\n", i18n.Tr("asks:", "问你:"), r.Ask)
+	fmt.Println(strings.Join(summary, " · "))
+
+	nameWidth := 8
+	for _, r := range rows {
+		if w := i18n.DispWidth(digestLabel(r)); w > nameWidth {
+			nameWidth = w
+		}
 	}
-	if r.Task != "" {
-		fmt.Printf("  %s %s (%s)\n", i18n.Tr("task:", "派活:"), r.Task, r.TaskStatus)
+	if nameWidth > 24 {
+		nameWidth = 24
 	}
-	if r.Error != "" {
-		fmt.Printf("  %s %s\n", i18n.Tr("error:", "错误:"), snip(r.Error, lastMax))
+	tw := termWidth()
+
+	for _, s := range digestSectionSpec {
+		rs := buckets[s.key]
+		if len(rs) == 0 {
+			continue
+		}
+		fmt.Printf("\n%s%s (%d)%s\n", i18n.Bold, i18n.Tr(s.en, s.zh), len(rs), i18n.Reset)
+		for _, r := range rs {
+			printDigestTableRow(r, nameWidth, tw)
+		}
 	}
-	if r.Bg != "" {
-		fmt.Printf("  %s %s\n", i18n.Tr("bg:", "后台:"), snip(r.Bg, lastMax))
+}
+
+// digestBadgeWidth/digestTimeWidth are fixed column widths for the report's
+// two right-hand columns — small and stable enough not to need dynamic sizing.
+const (
+	digestBadgeWidth = 10
+	digestTimeWidth  = 6
+)
+
+// fmtAgoShort renders a unix time as a compact "Ns/Nm/Nh/Nd" — tighter than
+// devices.go's fmtAgo ("just now" / "Nm ago") so it fits the report's narrow
+// right-aligned time column.
+func fmtAgoShort(unix int64) string {
+	if unix == 0 {
+		return "?"
 	}
-	if r.UsageWarn != "" {
-		fmt.Printf("  %s %s\n", i18n.Tr("usage:", "用量:"), r.UsageWarn)
+	d := time.Since(time.Unix(unix, 0))
+	switch {
+	case d < time.Minute:
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	case d < time.Hour:
+		return fmt.Sprintf("%dm", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	default:
+		return fmt.Sprintf("%dd", int(d.Hours()/24))
 	}
+}
+
+// printDigestTableRow prints one aligned row within its section.
+func printDigestTableRow(r digestRow, nameWidth, tw int) {
+	// errored-idle gets its own amber ⚠ marker (never a status color) — same
+	// convention as `gtmux agents`, so the glyph itself flags "look here" even
+	// outside the errored section's heading.
+	glyph, color := "⚠", i18n.Amber
+	if r.Error == "" {
+		glyph, color, _ = statusStyle(r.Status)
+	}
+	name := i18n.TruncDisp(digestLabel(r), nameWidth)
+
+	fixed := 2 + 2 + nameWidth + 2 + 2 + digestBadgeWidth + 1 + digestTimeWidth
+	midWidth := tw - fixed
+	if midWidth < 8 {
+		midWidth = 8
+	}
+	// Priority: an error is why the row is in this section at all, so it wins;
+	// then a waiting prompt's ask, the latest reply, the original goal, and
+	// finally whatever background/usage text is available — so the middle
+	// column is rarely blank even for a headless/no-transcript-yet row.
+	mid := r.Error
+	for _, cand := range []string{r.Ask, r.Last, r.Goal, r.Bg, r.UsageWarn} {
+		if mid != "" {
+			break
+		}
+		mid = cand
+	}
+	mid = i18n.TruncDisp(mid, midWidth)
+
+	fmt.Printf("  %s%s%s %s%s%s  %s  %s  %s\n",
+		color, glyph, i18n.Reset,
+		i18n.Bold, i18n.PadRight(name, nameWidth), i18n.Reset,
+		i18n.PadRight(mid, midWidth),
+		i18n.PadLeft(digestBadge(r), digestBadgeWidth),
+		i18n.PadLeft(fmtAgoShort(r.Since), digestTimeWidth))
 }

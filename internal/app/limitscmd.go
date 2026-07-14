@@ -50,8 +50,17 @@ func cmdLimits(args []string) int {
 			"没有订阅窗口数据（`claude -p /usage` 能跑通吗？见 usage.json 的 limitsCommand）。")
 		return 0
 	}
+	// CJK-safe, display-width-aware alignment — same primitives the digest
+	// table uses, so every gtmux surface reads as one column-aligned system.
+	labelWidth := 8
 	for _, w := range r.Windows {
-		line := fmt.Sprintf("● %-20s %3d%% used", w.Label, w.PctUsed)
+		if lw := i18n.DispWidth(w.Label); lw > labelWidth {
+			labelWidth = lw
+		}
+	}
+	for _, w := range r.Windows {
+		line := fmt.Sprintf("● %s  %s %s", i18n.PadRight(w.Label, labelWidth),
+			i18n.PadLeft(fmt.Sprintf("%d%%", w.PctUsed), 4), i18n.Tr("used", "已用"))
 		if w.ResetAt != "" {
 			line += "   " + i18n.Tr("resets ", "重置 ") + w.ResetAt
 		}
