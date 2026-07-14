@@ -65,6 +65,8 @@ func cmdSend(args []string) int {
 			i18n.Sae("gtmux send: key not allowed", "gtmux send: 不允许的按键")
 			return 2
 		}
+		// A pane in copy/view-mode eats the key as a mode-nav command; drop out first.
+		_ = tmux.ExitCopyMode(pane)
 		if err := tmux.SendKey(pane, key); err != nil {
 			i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 			return 1
@@ -94,7 +96,9 @@ func cmdSend(args []string) int {
 			return 1
 		}
 	}
-	// Plain (unverified) path: --no-verify or --no-enter.
+	// Plain (unverified) path: --no-verify or --no-enter. Drop out of copy/view-mode
+	// first — otherwise the pane swallows the text (and Enter) as mode-nav commands.
+	_ = tmux.ExitCopyMode(pane)
 	if err := tmux.SendText(pane, text, enter); err != nil {
 		i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 		return 1

@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -185,5 +186,18 @@ func TestDigestBadge(t *testing.T) {
 	}
 	if got := digestBadge(digestRow{}); got != "" {
 		t.Errorf("empty row badge = %q, want empty", got)
+	}
+}
+
+// The digest --json / GET /api/digest contract carries in_mode so the supervisor
+// sees which pane is input-locked (copy/view-mode); a normal pane omits it.
+func TestDigestInModeContract(t *testing.T) {
+	mb, _ := json.Marshal(digestRow{PaneID: "%3", Status: "waiting", Source: "tmux", InMode: true})
+	if !strings.Contains(string(mb), `"in_mode":true`) {
+		t.Errorf("input-locked digest row missing in_mode: %s", mb)
+	}
+	nb, _ := json.Marshal(digestRow{PaneID: "%4", Status: "idle", Source: "tmux"})
+	if strings.Contains(string(nb), `"in_mode"`) {
+		t.Errorf("non-locked digest row should omit in_mode: %s", nb)
 	}
 }

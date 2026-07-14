@@ -34,6 +34,9 @@ type fakeIO struct {
 	recentHash                                   string
 	recentTs                                     int64
 	recorded                                     []string
+	inMode                                       bool // pane starts in copy/view-mode
+	exitCalls                                    int  // ExitMode invocations
+	exitBeforePaste                              bool // ExitMode ran before the first Paste
 }
 
 func (f *fakeIO) io() IO {
@@ -50,6 +53,15 @@ func (f *fakeIO) io() IO {
 		Paste:      func(string) error { f.pasteCalls++; return nil },
 		Enter:      func() error { f.enterCalls++; return nil },
 		ClearDraft: func() error { f.clearCalls++; return nil },
+		InMode:     func() bool { return f.inMode },
+		ExitMode: func() error {
+			f.exitCalls++
+			if f.pasteCalls == 0 {
+				f.exitBeforePaste = true
+			}
+			f.inMode = false // cancelling copy-mode drops the pane out of it
+			return nil
+		},
 		Events: func(since int64) []Ev {
 			var out []Ev
 			for _, e := range f.evs {
@@ -240,6 +252,49 @@ func TestDeliver_Interlock_ForceOverrides(t *testing.T) {
 	}
 	if f.pasteCalls == 0 {
 		t.Fatalf("forced delivery should paste")
+	}
+}
+
+func TestDeliver_CopyMode_ExitedBeforePaste(t *testing.T) {
+	// A pane scrolled into copy/view-mode eats paste-buffer + Enter as mode-nav, so a
+	// delivery silently vanishes. Deliver must ExitMode BEFORE the first Paste, then
+	// the payload lands normally.
+	f := &fakeIO{
+		inMode: true,
+		caps: []string{
+			boxDraft(taskText),          // paste guard: full text (mode already exited)
+			boxEmpty("me: " + taskText), // verify 1: landed
+			boxEmpty("me: " + taskText), // verify 2: landed (two-frame agree)
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10}, taskText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("want landed after exiting copy-mode, got %+v", r)
+	}
+	if f.exitCalls == 0 || !f.exitBeforePaste {
+		t.Fatalf("copy-mode must be exited before pasting; exitCalls=%d before=%v", f.exitCalls, f.exitBeforePaste)
+	}
+	if f.pasteCalls == 0 {
+		t.Fatalf("delivery should still paste after exiting the mode")
+	}
+}
+
+func TestDeliver_NotInMode_NoCancel(t *testing.T) {
+	// The common case: pane not in a mode → no spurious `-X cancel` (which would error
+	// "not in a mode" and could disturb a non-scrolled pane).
+	f := &fakeIO{
+		caps: []string{
+			boxDraft(taskText),
+			boxEmpty("me: " + taskText),
+			boxEmpty("me: " + taskText),
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10}, taskText)
+	if !r.Delivered {
+		t.Fatalf("want landed, got %+v", r)
+	}
+	if f.exitCalls != 0 {
+		t.Fatalf("must not cancel a pane that is not in a mode; exitCalls=%d", f.exitCalls)
 	}
 }
 

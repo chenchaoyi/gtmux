@@ -62,4 +62,14 @@ func TestAgentJSONContractFields(t *testing.T) {
 	if strings.Contains(string(b), `"bg"`) || strings.Contains(string(b), `"bg_count"`) {
 		t.Errorf("non-bg agent JSON should omit the bg fields: %s", b)
 	}
+
+	// A pane scrolled into tmux copy/view-mode (input-locked) carries in_mode:true.
+	mb, _ := json.Marshal(agentJSON{PaneID: "%7", Status: "waiting", Source: "tmux", InMode: true})
+	if !strings.Contains(string(mb), `"in_mode":true`) {
+		t.Errorf("input-locked agents --json missing in_mode field: %s", mb)
+	}
+	// A pane not in a mode omits in_mode (omitempty).
+	if strings.Contains(string(b), `"in_mode"`) {
+		t.Errorf("non-locked agent JSON should omit in_mode: %s", b)
+	}
 }
