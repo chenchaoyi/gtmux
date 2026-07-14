@@ -46,15 +46,15 @@
 
 ## 4. Phase ② — Severity → surfacing map + attention ledger
 
-- [ ] 4.1 Add a surfacing-tier mapping (`important`→CRITICAL, `notable`→NORMAL,
+- [x] 4.1 Add a surfacing-tier mapping (`important`→CRITICAL, `notable`→NORMAL,
   `routine`→QUIET) in a small pure helper; unit-test it against representative records.
-- [ ] 4.2 Extend `dispatch.Task` with additive `Tier`, `Priority`, `Surfaced`+`SurfacedAt`,
+- [x] 4.2 Extend `dispatch.Task` with additive `Tier`, `Priority`, `Surfaced`+`SurfacedAt`,
   `Disposition`, `FirstSeen`, `LastUpdate`, `Archived`+`ArchivedAt` (all omitempty; legacy
   entries still load). Unit-test round-trip + legacy-load.
-- [ ] 4.3 Ledger ops: set/raise priority (re-order), promote (late promotion, no
+- [x] 4.3 Ledger ops: set/raise priority (re-order), promote (late promotion, no
   duplicate), mark surfaced/disposition, archive a closed entry (move under
   `tasks/archive/`). Unit-test each.
-- [ ] 4.4 `gtmux tasks --verbose`: show archived entries + surfaced/disposition columns;
+- [x] 4.4 `gtmux tasks --verbose`: show archived entries + surfaced/disposition columns;
   keep the default view to live entries, needs-you-first. Bilingual help. Adjust tests.
 
 ## 5. Phase ③ — Surfacing config + `gtmux quiet`
