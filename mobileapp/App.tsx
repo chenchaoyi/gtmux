@@ -38,7 +38,7 @@ function RadarRoute(props: any) {
 // PushBridge wires APNs registration + tap deep-link once we have a client.
 // Renders nothing.
 function PushBridge({navRef}: {navRef: any}) {
-  const {client, agents} = useAgents();
+  const {client, agents, isGuest} = useAgents();
   const {pushEnabled, pushKinds, servers, activeUrl, selectServer, pendingPane, setPendingPane} = useApp();
   const {width} = useWindowDimensions();
   const wideRef = useRef(width >= 768);
@@ -106,7 +106,8 @@ function PushBridge({navRef}: {navRef: any}) {
   }, [pendingPane]);
 
   useEffect(() => {
-    if (!pushEnabled || Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
+    // A guest never registers for the host's push alerts (owner-only surface).
+    if (!pushEnabled || Debug.noPush || isGuest) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
     setupPush(client, onTap, () => kindsRef.current)
       .then(t => {
@@ -120,13 +121,13 @@ function PushBridge({navRef}: {navRef: any}) {
     // agents/onTap intentionally omitted: re-subscribing on every refetch would
     // churn the native listeners; the handler reads live state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, pushEnabled, navRef]);
+  }, [client, pushEnabled, navRef, isGuest]);
 
   // When the per-kind prefs change (and push is on), re-register the cached token
   // so the server's filter updates without re-running the setup effect.
   useEffect(() => {
-    if (pushEnabled && !Debug.noPush) reregisterKinds(client, kindsList(pushKinds));
-  }, [client, pushEnabled, pushKinds]);
+    if (pushEnabled && !Debug.noPush && !isGuest) reregisterKinds(client, kindsList(pushKinds));
+  }, [client, pushEnabled, pushKinds, isGuest]);
   return null;
 }
 
@@ -148,7 +149,7 @@ function Root() {
   // key={mac.url}: switching to another Mac fully remounts the agent store +
   // navigator with the new base/token (no stale SSE / selection bleed-over).
   return (
-    <AgentsProvider key={mac.url} base={mac.url} token={mac.token} name={mac.name}>
+    <AgentsProvider key={mac.url} base={mac.url} token={mac.token} name={mac.name} scope={mac.scope}>
       <PushBridge navRef={navRef} />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>

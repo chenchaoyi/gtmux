@@ -42,7 +42,15 @@ export async function loadServers(): Promise<ServerStore> {
 // sanitize defends against a malformed/old blob and drops a stale activeUrl.
 export function sanitize(raw: any): ServerStore {
   const servers: PairedMac[] = Array.isArray(raw?.servers)
-    ? raw.servers.filter((s: any) => s && typeof s.url === 'string' && typeof s.token === 'string')
+    ? raw.servers
+        .filter((s: any) => s && typeof s.url === 'string' && typeof s.token === 'string')
+        .map((s: any) => ({
+          url: s.url,
+          token: s.token,
+          name: typeof s.name === 'string' ? s.name : '',
+          // A stored blob without `scope` predates guest mode → it's an owner pairing.
+          scope: s.scope === 'guest' ? 'guest' : 'owner',
+        }))
     : [];
   const activeUrl: string | null =
     typeof raw?.activeUrl === 'string' && servers.some(s => s.url === raw.activeUrl)

@@ -11,6 +11,16 @@ export interface SendPayload {
   enter?: boolean;
 }
 
+// ShareCapability mirrors GET /api/share — the CALLER's own scope. `all:true` ⇒ a
+// full caller (owner: master token or paired device) that sees + types everywhere.
+// Otherwise it's a GUEST, scoped to `view_panes` (viewable) and `panes` (typable).
+export interface ShareCapability {
+  input: boolean; // may this caller type at all
+  all?: boolean; // owner: any pane (view + input)
+  panes: string[]; // guest: input-allowed panes
+  view_panes: string[]; // guest: view-allowed panes
+}
+
 // DigestRow mirrors internal/app digestRow (GET /api/digest) — the fleet's
 // cognitive digest for the gtmux HQ command center.
 export interface DigestRow {
@@ -133,6 +143,21 @@ export class GtmuxClient {
     if (!r.ok) throw new ApiError(r.status, 'agents');
     const raw = await r.json();
     return Array.isArray(raw) ? raw.map(toAgent) : [];
+  }
+
+  // share reads the caller's own scope (GET /api/share): `all:true` ⇒ owner (full),
+  // else a guest scoped to view_panes/panes. Used to decide guest-vs-owner UI. Throws
+  // ApiError on a non-OK (an auth rejection surfaces like any other authed call).
+  async share(): Promise<ShareCapability> {
+    const r = await tfetch(`${this.base}/api/share`, {headers: this.h()});
+    if (!r.ok) throw new ApiError(r.status, 'share');
+    const j = await r.json().catch(() => null);
+    return {
+      input: !!j?.input,
+      all: !!j?.all,
+      panes: Array.isArray(j?.panes) ? j.panes : [],
+      view_panes: Array.isArray(j?.view_panes) ? j.view_panes : [],
+    };
   }
 
   // id is a pane id like "%12"; encodeURIComponent turns "%" into "%25".

@@ -27,7 +27,7 @@ function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
 }
 
 export function RadarScreen({navigation}: any) {
-  const {agents, conn, lastUpdated, banner, dismissBanner, refresh} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [refreshing, setRefreshing] = useState(false);
   // Collapsed sections persist across launches (MOBILE §3).
@@ -99,7 +99,7 @@ export function RadarScreen({navigation}: any) {
           {summary(c, t('agents'))}
         </Text>
       </View>
-      {hq && (
+      {hq && !isGuest && (
         <TouchableOpacity
           accessibilityLabel="radar-hq-card"
           testID="radar-hq-card"
@@ -151,6 +151,18 @@ export function RadarScreen({navigation}: any) {
               : 'Access rejected — this server’s token was revoked or changed. Tap to re-pair.'}
           </Text>
         </TouchableOpacity>
+      )}
+      {isGuest && (
+        <View
+          testID="radar-guest-banner"
+          accessibilityLabel="radar-guest-banner"
+          style={[styles.guestBanner, {backgroundColor: pal.surface, borderBottomColor: pal.divider}]}>
+          <Text style={[styles.guestBannerText, {color: pal.fg2}]} numberOfLines={1}>
+            {lang === 'zh'
+              ? `以访客身份连到 ${mac?.name || '服务器'} · ${agents.length} 个会话`
+              : `Guest on ${mac?.name || 'server'} · ${agents.length} session${agents.length === 1 ? '' : 's'}`}
+          </Text>
+        </View>
       )}
       <SectionList
         agents={agents}
@@ -235,6 +247,8 @@ const styles = StyleSheet.create({
   // Always-dark banner → FIXED light text (never pal.fg, which is near-black in light mode).
   authBanner: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 2, gap: 4},
   authBannerText: {flex: 1, fontSize: 12, color: '#F3D9DE', fontWeight: '600'},
+  guestBanner: {paddingHorizontal: 16, paddingVertical: 7, borderBottomWidth: 1},
+  guestBannerText: {fontSize: 12, fontWeight: '600'},
   headerBottom: {flexDirection: 'row', alignItems: 'center', marginTop: 6},
   summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 70, paddingHorizontal: 40},
