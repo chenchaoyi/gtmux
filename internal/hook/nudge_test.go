@@ -4,7 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -103,5 +105,28 @@ func TestLayerOf(t *testing.T) {
 		if got := layerOf(tc[0]); got != tc[1] {
 			t.Errorf("layerOf(%q) = %q, want %q", tc[0], got, tc[1])
 		}
+	}
+}
+
+// feedSupersedesReceipts suppresses the QUIET receipt nudges only when the silent
+// perception feed is live and beating; a down/stale feed keeps them as a fallback.
+func TestFeedSupersedesReceipts(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// No feed running → receipts are NOT superseded (fallback keeps them).
+	if feedSupersedesReceipts() {
+		t.Fatal("with no feed daemon, receipts must not be superseded")
+	}
+	// A live daemon with a fresh heartbeat supersedes the receipts.
+	if err := hqfeed.WritePid(os.Getpid()); err != nil { // our own pid = a live process
+		t.Fatal(err)
+	}
+	hqfeed.Beat(time.Now().Unix())
+	if !feedSupersedesReceipts() {
+		t.Fatal("a live, beating feed should supersede the QUIET receipts")
+	}
+	// A stale heartbeat drops back to the fallback (receipts kept).
+	hqfeed.Beat(time.Now().Unix() - 120)
+	if feedSupersedesReceipts() {
+		t.Fatal("a stale feed must not supersede — receipts are the fallback")
 	}
 }

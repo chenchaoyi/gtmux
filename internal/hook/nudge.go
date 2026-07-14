@@ -18,10 +18,21 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
+
+// feedSupersedesReceipts reports whether the silent perception feed (hq-feed) is
+// live and beating — in which case HQ receives the full event stream silently and
+// gtmux should NOT ALSO type the low-value QUIET receipt lines (resolved /
+// goal-changed) into the pane (the hq-attention-system split: feed HQ everything,
+// show the user only what HQ prints). When the feed is DOWN, the receipts are kept
+// as a belt-and-suspenders fallback so a feedless HQ still senses these edges.
+func feedSupersedesReceipts() bool {
+	return hqfeed.Running() && !hqfeed.Stale(time.Now().Unix())
+}
 
 // hqNudgeEnabled reads ~/.config/gtmux/config.json's optional `hqNudge` key.
 // Absent file/key/unreadable → true (on by default; the hq-pane check below is
@@ -108,6 +119,9 @@ func nudgeHQ(aboutPane, msg string) {
 // nudgeResolved tells HQ that a wait CLEARED (incident ⑤): the user answered in the
 // pane's own window, or the agent resumed — so HQ can drop any pending chase.
 func nudgeResolved(pane, kind string) {
+	if feedSupersedesReceipts() {
+		return // QUIET receipt — HQ senses the cleared wait from the silent feed
+	}
 	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
 	msg := "[gtmux] resolved"
 	if loc != "" {
@@ -165,6 +179,9 @@ func nudgeGoalChanged(pane, head string) {
 	head = strings.TrimSpace(head)
 	if pane == "" || head == "" || !hqNudgeEnabled() {
 		return
+	}
+	if feedSupersedesReceipts() {
+		return // QUIET receipt — HQ senses the user-direct prompt from the silent feed
 	}
 	if state.ReadMarker(goalChangedMarker(pane)) == head {
 		return // same prompt head already nudged
