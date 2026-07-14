@@ -22,7 +22,11 @@ final class ShareStore: ObservableObject {
     static let shared = ShareStore()
 
     @Published private(set) var enabled = false
+    /// Panes a guest may TYPE into (the input allowlist; ⊆ viewPanes).
     @Published private(set) var allowedPanes: Set<String> = []
+    /// Panes a guest may SEE (the view allowlist). Independent of `enabled` (which
+    /// gates typing): a host can let a guest watch a pane without letting them type.
+    @Published private(set) var viewPanes: Set<String> = []
     @Published private(set) var guests: [GuestLink] = []
     /// The base a share link is built on (tunnel URL when up, else the local
     /// address) — shown so the host knows whether a minted link is publicly
@@ -50,13 +54,16 @@ final class ShareStore: ObservableObject {
     func refresh() {
         var on = false
         var panes: Set<String> = []
+        var view: Set<String> = []
         if let data = try? Data(contentsOf: URL(fileURLWithPath: sharePath)),
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             on = obj["enabled"] as? Bool ?? false
             if let ps = obj["panes"] as? [String] { panes = Set(ps) }
+            if let vs = obj["view_panes"] as? [String] { view = Set(vs) }
         }
         if on != enabled { DispatchQueue.main.async { self.enabled = on } }
         if panes != allowedPanes { DispatchQueue.main.async { self.allowedPanes = panes } }
+        if view != viewPanes { DispatchQueue.main.async { self.viewPanes = view } }
     }
 
     /// Load the full detail (guest links + base) via the CLI's token-free `--json`.
@@ -70,6 +77,7 @@ final class ShareStore: ObservableObject {
             DispatchQueue.main.async {
                 self.enabled = parsed.enabled
                 self.allowedPanes = parsed.panes
+                self.viewPanes = parsed.viewPanes
                 self.guests = parsed.guests
                 self.base = parsed.base
             }
@@ -79,17 +87,18 @@ final class ShareStore: ObservableObject {
     /// Pure parser for `gtmux share status --json` — unit-tested against the wire
     /// shape so a contract drift fails the build.
     static func parseStatus(_ data: Data)
-        -> (enabled: Bool, panes: Set<String>, guests: [GuestLink], base: String)? {
+        -> (enabled: Bool, panes: Set<String>, viewPanes: Set<String>, guests: [GuestLink], base: String)? {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         let enabled = obj["enabled"] as? Bool ?? false
         let panes = Set(obj["panes"] as? [String] ?? [])
+        let viewPanes = Set(obj["view_panes"] as? [String] ?? [])
         let base = obj["base"] as? String ?? ""
         let guests: [GuestLink] = (obj["guests"] as? [[String: Any]] ?? []).map {
             GuestLink(id: $0["id"] as? String ?? "",
                       label: $0["label"] as? String ?? "",
                       enrolledAt: $0["enrolled_at"] as? Int ?? 0)
         }
-        return (enabled, panes, guests, base)
+        return (enabled, panes, viewPanes, guests, base)
     }
 
     // MARK: mutations (shell out to the CLI, then reload detail)
@@ -99,6 +108,14 @@ final class ShareStore: ObservableObject {
     func setPane(_ pane: String, allowed: Bool) {
         guard !pane.isEmpty else { return }
         run(["share", allowed ? "add" : "remove", pane])
+    }
+
+    /// Toggle a pane on the VIEW allowlist. `gtmux share view remove` also drops the
+    /// pane from the input allowlist (input ⊆ view), so a guest can never type into a
+    /// pane it can't see.
+    func setView(_ pane: String, visible: Bool) {
+        guard !pane.isEmpty else { return }
+        run(["share", "view", visible ? "add" : "remove", pane])
     }
 
     func revoke(_ id: String) { run(["share", "revoke", id]) }

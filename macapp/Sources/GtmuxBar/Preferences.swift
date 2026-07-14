@@ -262,11 +262,12 @@ struct PreferencesView: View {
     }
 
     // The allowlist, rendered from the LIVE agent list (tmux panes only — a guest
-    // types via tmux send-keys, so native/hook-less rows can't be targets). Each
-    // row mirrors the session-list identity — the same AgentAvatar (icon + state)
-    // + the agent's own session title (`primary`) + dim `session · %pane` — so the
-    // host ticks the pane they RECOGNISE from the popover, not an indistinguishable
-    // "Claude Code · %N".
+    // types via tmux send-keys, so native/hook-less rows can't be targets). Each row
+    // mirrors the session-list identity — AgentAvatar (icon + state) + the agent's own
+    // session title (`primary`) + dim `session · %pane` — and carries TWO independent
+    // controls: 👁 See (the guest may VIEW the pane) and ⌨️ Type (the guest may type
+    // into it). Type is disabled unless See is on, since input ⊆ view — a guest can
+    // never type into a pane it can't see.
     @ViewBuilder private var sharePanePicker: some View {
         let panes = store.shareablePanes
         if panes.isEmpty {
@@ -274,24 +275,37 @@ struct PreferencesView: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Text(l10n.tr("Panes a guest may type into", "允许访客输入的 pane"))
+                Text(l10n.tr("What a guest may see and type into", "访客可见 / 可输入的 pane"))
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 ForEach(panes) { a in
-                    Toggle(isOn: paneBinding(a.paneID)) {
-                        HStack(spacing: 8) {
-                            AgentAvatar(agent: a)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(a.primary.isEmpty ? (a.agent.isEmpty ? a.paneID : a.agent) : a.primary)
-                                    .font(Theme.Font.session).lineLimit(1).truncationMode(.tail)
-                                    .help(a.primary)
-                                Text(a.secondary)
-                                    .font(Theme.Font.window).foregroundStyle(.secondary)
-                                    .lineLimit(1).truncationMode(.tail)
-                            }
-                            Spacer(minLength: 0)
+                    HStack(spacing: 8) {
+                        AgentAvatar(agent: a)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(a.primary.isEmpty ? (a.agent.isEmpty ? a.paneID : a.agent) : a.primary)
+                                .font(Theme.Font.session).lineLimit(1).truncationMode(.tail)
+                                .help(a.primary)
+                            Text(a.secondary)
+                                .font(Theme.Font.window).foregroundStyle(.secondary)
+                                .lineLimit(1).truncationMode(.tail)
                         }
+                        Spacer(minLength: 8)
+                        Toggle(isOn: viewBinding(a.paneID)) {
+                            Label(l10n.tr("See", "可见"), systemImage: "eye")
+                                .labelStyle(.titleAndIcon).font(.system(size: 11))
+                        }
+                        .toggleStyle(.checkbox)
+                        .help(l10n.tr("Let a guest see this pane's screen",
+                                      "让访客看到此 pane 的画面"))
+                        Toggle(isOn: paneBinding(a.paneID)) {
+                            Label(l10n.tr("Type", "输入"), systemImage: "keyboard")
+                                .labelStyle(.titleAndIcon).font(.system(size: 11))
+                        }
+                        .toggleStyle(.checkbox)
+                        .disabled(!share.viewPanes.contains(a.paneID))
+                        .help(l10n.tr("Let a guest type into this pane (needs See + consent on)",
+                                      "让访客向此 pane 输入（需可见 + 已开启同意）"))
                     }
-                    .toggleStyle(.checkbox).disabled(share.busy)
+                    .disabled(share.busy)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -300,6 +314,11 @@ struct PreferencesView: View {
     private func paneBinding(_ pane: String) -> Binding<Bool> {
         Binding(get: { share.allowedPanes.contains(pane) },
                 set: { share.setPane(pane, allowed: $0) })
+    }
+
+    private func viewBinding(_ pane: String) -> Binding<Bool> {
+        Binding(get: { share.viewPanes.contains(pane) },
+                set: { share.setView(pane, visible: $0) })
     }
 
     // Existing guest links (revocable), a "New link" button (mints + copies the URL),

@@ -11,6 +11,7 @@ final class ShareStoreTests: XCTestCase {
         {
           "enabled": true,
           "panes": ["%37", "%5"],
+          "view_panes": ["%37", "%5", "%9"],
           "guests": [
             {"id": "g1", "label": "alice", "enrolled_at": 1783956522},
             {"id": "g2", "label": "", "enrolled_at": 1783934731}
@@ -21,6 +22,9 @@ final class ShareStoreTests: XCTestCase {
         let parsed = try XCTUnwrap(ShareStore.parseStatus(Data(json.utf8)))
         XCTAssertTrue(parsed.enabled)
         XCTAssertEqual(parsed.panes, ["%37", "%5"])
+        // The view allowlist is carried separately and is a superset of input (%9 is
+        // view-only), so the picker can render see-vs-type independently.
+        XCTAssertEqual(parsed.viewPanes, ["%37", "%5", "%9"])
         XCTAssertEqual(parsed.base, "https://gtmux-x.ccy.dev")
         XCTAssertEqual(parsed.guests.count, 2)
         XCTAssertEqual(parsed.guests[0].id, "g1")
@@ -35,6 +39,7 @@ final class ShareStoreTests: XCTestCase {
         let parsed = try XCTUnwrap(ShareStore.parseStatus(Data(#"{"enabled":false,"panes":[],"guests":[]}"#.utf8)))
         XCTAssertFalse(parsed.enabled)
         XCTAssertTrue(parsed.panes.isEmpty)
+        XCTAssertTrue(parsed.viewPanes.isEmpty) // absent view_panes → empty, guest sees nothing
         XCTAssertTrue(parsed.guests.isEmpty)
         XCTAssertEqual(parsed.base, "")
     }

@@ -486,6 +486,12 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	ch := s.hub.subscribe(s.clientInfo(r))
 	defer s.hub.unsubscribe(ch)
 
+	// A guest is a SCOPED viewer, not the owner's notification surface: `alert`
+	// events carry a pane's session/agent/task, which would leak sessions outside
+	// the guest's view allowlist. Guests still get `agents` (a rev bump → they
+	// re-fetch the FILTERED /api/agents) and `ping`.
+	guest := callerScope(r.Context()) == scopeGuest
+
 	// Immediately sync the just-connected client to the current revision so it
 	// fetches /api/agents without waiting for the next change.
 	if writeSSE(w, agentsEvent(s.hub.currentRev())) != nil {
@@ -501,6 +507,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		case ev, ok := <-ch:
 			if !ok {
 				return
+			}
+			if guest && ev.name == "alert" {
+				continue // don't leak non-viewable sessions to a guest
 			}
 			// A failed write means the client is gone even if the context wasn't
 			// cancelled (proxy/tunnel keeps the upstream open) — return so the

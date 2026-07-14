@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -17,10 +18,13 @@ import (
 // AND only into allowlisted panes. It talks to the LOCAL running serve (which owns the
 // policy in memory) over its master-token API, like `gtmux devices`.
 //
-//	gtmux share                       show consent, allowlist, and guest links
-//	gtmux share on | off              turn shared input on/off (consent)
-//	gtmux share add <pane…>           allow a pane (e.g. %3) for guests
-//	gtmux share remove <pane…>        disallow a pane
+//	gtmux share                       show consent, allowlists, and guest links
+//	gtmux share on | off              turn shared INPUT on/off (typing consent)
+//	gtmux share add <pane…>           allow a pane (e.g. %3) for guest INPUT (implies view)
+//	gtmux share remove <pane…>        disallow a pane for input
+//	gtmux share view add <pane…>      let guests SEE a pane
+//	gtmux share view remove <pane…>   stop guests seeing a pane (also removes its input)
+//	gtmux share view clear            guests see nothing again
 //	gtmux share new [--label <name>]  mint a guest share link (URL + QR)
 //	gtmux share revoke <id>           kill one guest link
 func cmdShare(args []string) int {
@@ -69,6 +73,8 @@ func cmdShare(args []string) int {
 		return shareEditPanes(base, token, rest, true)
 	case "remove", "rm":
 		return shareEditPanes(base, token, rest, false)
+	case "view":
+		return shareView(base, token, rest)
 	case "new":
 		return shareNew(base, token, label, port, jsonOut)
 	case "revoke":
@@ -84,18 +90,21 @@ func cmdShare(args []string) int {
 }
 
 type shareStateJSON struct {
-	Enabled bool     `json:"enabled"`
-	Panes   []string `json:"panes"`
+	Enabled   bool     `json:"enabled"`
+	Panes     []string `json:"panes"`
+	ViewPanes []string `json:"view_panes"`
 }
 
 // shareStatusOut is the `gtmux share status --json` contract: the consent state,
-// the allowlist, the guest links, and the base URL a link is built on — carrying
-// NO token (a consumer never needs to read the token roster).
+// both allowlists (input `panes` + `view_panes`), the guest links, and the base URL a
+// link is built on — carrying NO token (a consumer never needs to read the token
+// roster).
 type shareStatusOut struct {
-	Enabled bool         `json:"enabled"`
-	Panes   []string     `json:"panes"`
-	Guests  []shareGuest `json:"guests"`
-	Base    string       `json:"base,omitempty"`
+	Enabled   bool         `json:"enabled"`
+	Panes     []string     `json:"panes"`
+	ViewPanes []string     `json:"view_panes"`
+	Guests    []shareGuest `json:"guests"`
+	Base      string       `json:"base,omitempty"`
 }
 
 type shareGuest struct {
@@ -107,9 +116,12 @@ type shareGuest struct {
 // buildShareStatus is the pure mapper (state + roster + base → the --json shape),
 // unit-tested without a live serve.
 func buildShareStatus(st shareStateJSON, guests []deviceListEntry, base string) shareStatusOut {
-	out := shareStatusOut{Enabled: st.Enabled, Panes: st.Panes, Base: base, Guests: []shareGuest{}}
+	out := shareStatusOut{Enabled: st.Enabled, Panes: st.Panes, ViewPanes: st.ViewPanes, Base: base, Guests: []shareGuest{}}
 	if out.Panes == nil {
 		out.Panes = []string{}
+	}
+	if out.ViewPanes == nil {
+		out.ViewPanes = []string{}
 	}
 	for _, g := range guests {
 		out.Guests = append(out.Guests, shareGuest{ID: g.ID, Label: g.Name, EnrolledAt: g.EnrolledAt})
@@ -135,12 +147,17 @@ func shareStatus(base, token string, jsonOut bool) int {
 	if st.Enabled {
 		i18n.Say("shared web input: ON", "分享输入：已开启")
 	} else {
-		i18n.Say("shared web input: OFF (guests are view-only)", "分享输入：已关闭（访客只读）")
+		i18n.Say("shared web input: OFF (guests can't type)", "分享输入：已关闭（访客不能输入）")
+	}
+	if len(st.ViewPanes) == 0 {
+		i18n.Say("  viewable panes: (none — guests see nothing)", "  可见 pane：（无 —— 访客什么都看不到）")
+	} else {
+		fmt.Printf("  %s %s\n", i18n.Tr("viewable panes:", "可见 pane："), strings.Join(st.ViewPanes, " "))
 	}
 	if len(st.Panes) == 0 {
-		i18n.Say("  allowed panes: (none)", "  允许输入的 pane：（无）")
+		i18n.Say("  typable panes:  (none)", "  可输入 pane：（无）")
 	} else {
-		fmt.Printf("  %s %s\n", i18n.Tr("allowed panes:", "允许输入的 pane："), strings.Join(st.Panes, " "))
+		fmt.Printf("  %s %s\n", i18n.Tr("typable panes: ", "可输入 pane："), strings.Join(st.Panes, " "))
 	}
 	// Guest links = roster entries with scope "guest".
 	if guests := listGuests(base, token); len(guests) > 0 {
@@ -150,9 +167,93 @@ func shareStatus(base, token string, jsonOut bool) int {
 		}
 		i18n.Say("Revoke one: gtmux share revoke <id>", "吊销某个：gtmux share revoke <id>")
 	}
-	i18n.Say("Turn on: gtmux share on   ·   allow a pane: gtmux share add %N   ·   new link: gtmux share new",
-		"开启：gtmux share on   ·   允许某 pane：gtmux share add %N   ·   新链接：gtmux share new")
+	i18n.Say("Let a guest SEE a pane: gtmux share view add %N   ·   let them TYPE: gtmux share on + gtmux share add %N   ·   new link: gtmux share new",
+		"让访客看某 pane：gtmux share view add %N   ·   让其输入：gtmux share on + gtmux share add %N   ·   新链接：gtmux share new")
 	return 0
+}
+
+// shareView handles `gtmux share view <add|remove|clear> [pane…]` — the VIEW
+// allowlist (which panes a guest may SEE), independent of the input consent toggle.
+func shareView(base, token string, rest []string) int {
+	if len(rest) == 0 {
+		i18n.Sae("gtmux share view: need add|remove|clear", "gtmux share view: 需要 add|remove|clear")
+		return 2
+	}
+	op, panes := rest[0], rest[1:]
+	switch op {
+	case "add":
+		return shareEditViewPanes(base, token, panes, true)
+	case "remove", "rm":
+		return shareEditViewPanes(base, token, panes, false)
+	case "clear":
+		return shareClearView(base, token)
+	default:
+		i18n.Sae("gtmux share view: unknown '"+op+"' (want add|remove|clear)",
+			"gtmux share view: 未知 '"+op+"'（应为 add|remove|clear）")
+		return 2
+	}
+}
+
+// shareEditViewPanes adds/removes panes on the VIEW allowlist. Removing a pane from
+// view also removes it from the input allowlist (input ⊆ view): a guest can never
+// type into a pane it cannot see.
+func shareEditViewPanes(base, token string, panes []string, add bool) int {
+	if len(panes) == 0 {
+		i18n.Sae("gtmux share view: name at least one pane (e.g. %3)", "gtmux share view: 至少给一个 pane（如 %3）")
+		return 2
+	}
+	st, ok := getShareState(base, token)
+	if !ok {
+		return 1
+	}
+	view := strSet(st.ViewPanes)
+	input := strSet(st.Panes)
+	for _, p := range panes {
+		if add {
+			view[p] = true
+		} else {
+			delete(view, p)
+			delete(input, p) // removing view removes input
+		}
+	}
+	body := map[string]any{"view_panes": sortedSlice(view)}
+	if !add {
+		body["panes"] = sortedSlice(input)
+	}
+	payload, _ := json.Marshal(body)
+	if _, ok := postShareConfig(base, token, payload); !ok {
+		return 1
+	}
+	return shareStatus(base, token, false)
+}
+
+// shareClearView empties the VIEW allowlist (and thus the input allowlist too) — a
+// guest goes back to seeing nothing.
+func shareClearView(base, token string) int {
+	body, _ := json.Marshal(map[string]any{"view_panes": []string{}, "panes": []string{}})
+	if _, ok := postShareConfig(base, token, body); !ok {
+		return 1
+	}
+	return shareStatus(base, token, false)
+}
+
+func strSet(items []string) map[string]bool {
+	s := map[string]bool{}
+	for _, p := range items {
+		if p != "" {
+			s[p] = true
+		}
+	}
+	return s
+}
+
+func sortedSlice(set map[string]bool) []string {
+	out := make([]string, 0, len(set))
+	for k := range set {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func shareSetEnabled(base, token string, on bool) int {
@@ -343,13 +444,19 @@ func atoiOr(s string, def int) int {
 
 func shareUsage() int {
 	i18n.Sae(
-		"usage: gtmux share [on|off | add <pane…> | remove <pane…> | new [--label <name>] | revoke <id>] [--json]\n"+
-			"  Let a collaborator on the shared web page type into the terminal — ONLY with your\n"+
-			"  consent (share on) and ONLY into panes you allow (share add %N). Default: off, none.\n"+
+		"usage: gtmux share [on|off | add <pane…> | remove <pane…> |\n"+
+			"                    view <add|remove|clear> [pane…] | new [--label <name>] | revoke <id>] [--json]\n"+
+			"  Scope what a collaborator on the shared web page can do, per pane:\n"+
+			"    · SEE a pane:   gtmux share view add %N   (default: guests see NOTHING)\n"+
+			"    · TYPE a pane:  gtmux share on  +  gtmux share add %N   (implies view; consent OFF by default)\n"+
+			"  Removing a pane's view removes its input too (input ⊆ view).\n"+
 			"  --json makes `status` and `new` emit machine-readable output (no token).",
-		"用法：gtmux share [on|off | add <pane…> | remove <pane…> | new [--label <名>] | revoke <id>] [--json]\n"+
-			"  让协作者在分享的 web 页面里往终端输入 —— 仅在你同意（share on）且仅限你允许的\n"+
-			"  pane（share add %N）。默认：关闭、无 pane。\n"+
+		"用法：gtmux share [on|off | add <pane…> | remove <pane…> |\n"+
+			"                  view <add|remove|clear> [pane…] | new [--label <名>] | revoke <id>] [--json]\n"+
+			"  按 pane 控制协作者在分享 web 页面能做什么：\n"+
+			"    · 让其看某 pane：  gtmux share view add %N  （默认访客什么都看不到）\n"+
+			"    · 让其输入某 pane：gtmux share on  +  gtmux share add %N （自动含可见；默认不同意输入）\n"+
+			"  取消某 pane 的可见会连带取消其输入（input ⊆ view）。\n"+
 			"  --json 让 `status` / `new` 输出机器可读格式（不含 token）。")
 	return 0
 }
