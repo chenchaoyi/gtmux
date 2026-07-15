@@ -1,1 +1,1 @@
-tmux,终端,编码agent,claude,codex,ssh,远程,开发,devops,会话,监控,agent,自动化
+tmux,终端,cli,编码agent,claude,codex,agent,雷达,中控,远程,开发,devops

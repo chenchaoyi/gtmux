@@ -1,1 +1,1 @@
-See which of your coding agents is waiting for you, and reply from your phone — without walking back to your Mac.
+See which CLI agent needs you, reply from your phone, and let an HQ triage the rest — your whole terminal fleet, on call.
