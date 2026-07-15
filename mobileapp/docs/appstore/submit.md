@@ -53,7 +53,8 @@ export ASC_KEY_PATH=$HOME/Downloads/AuthKey_XXXXXXXXXX.p8
    Language **English (U.S.)**; Bundle ID **com.gtmux.app** (must already exist in
    the [Developer portal](https://developer.apple.com/account/resources/identifiers/list)
    under team 2337SY8FRT — it does, from the dev device builds); SKU e.g. `gtmux-ios`.
-3. Create. Note the numeric **Apple ID** it assigns (you'll see it on the app page).
+3. Create. The record's numeric **Apple ID is `6791144062`** (shown under App
+   Information; also in the app-page URL). `fastlane` + uploads reference it.
 
 > The three targets (`com.gtmux.app`, `.widget`, `.notificationservice`) each
 > need an App ID in the portal with their capabilities (Push, App Groups). The
