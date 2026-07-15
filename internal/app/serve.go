@@ -175,7 +175,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			if session == "" {
 				return nil, false
 			}
-			return []string{tmux.Bin, "attach-session", "-t", session}, true
+			// `-u` forces UTF-8 so CJK (and other wide chars) render instead of being
+			// substituted with placeholder dashes — the serve's launchd env has no
+			// UTF-8 locale (see the LC_CTYPE the attach handler also sets). Same fix as
+			// internal/tmux uses for the radar.
+			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
 		Upload:     saveUpload,
 		Icon:       agentIconPNG,

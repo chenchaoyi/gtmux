@@ -41,18 +41,47 @@ func TestAttach_MissingID(t *testing.T) {
 	}
 }
 
-// The tmux client spawned in the PTY MUST get a valid TERM, else it dies with
-// "terminal does not support clear" (the serve's launchd env has none). Regression
-// guard for that fix.
-func TestAttachEnv_SetsTERM(t *testing.T) {
-	env := attachEnv()
-	found := false
-	for _, e := range env {
-		if e == "TERM=xterm-256color" {
-			found = true
+// The tmux client spawned in the PTY MUST get a valid TERM (else "does not support
+// clear") AND a UTF-8 locale (else CJK renders as placeholder dashes). Regression guard.
+func TestAttachEnv_SetsTermAndUTF8(t *testing.T) {
+	env := attachEnv("xterm-256color")
+	has := func(want string) bool {
+		for _, e := range env {
+			if e == want {
+				return true
+			}
+		}
+		return false
+	}
+	if !has("TERM=xterm-256color") {
+		t.Errorf("attachEnv must set TERM")
+	}
+	if !has("LC_CTYPE=en_US.UTF-8") {
+		t.Errorf("attachEnv must set a UTF-8 LC_CTYPE (else CJK → dashes)")
+	}
+}
+
+// sanitizeTerm rejects anything that isn't a terminfo-safe name (a client-supplied
+// TERM becomes a spawned process's env var).
+func TestSanitizeTerm(t *testing.T) {
+	for _, ok := range []string{"xterm-256color", "xterm-ghostty", "screen.xterm-256color", "tmux-256color"} {
+		if sanitizeTerm(ok) != ok {
+			t.Errorf("sanitizeTerm(%q) should pass", ok)
 		}
 	}
-	if !found {
-		t.Fatalf("attachEnv() must set TERM=xterm-256color; got %v", env)
+	for _, bad := range []string{"", "xterm; rm -rf", "a b", "évil", "x\n"} {
+		if sanitizeTerm(bad) != "" {
+			t.Errorf("sanitizeTerm(%q) should be rejected", bad)
+		}
+	}
+}
+
+// resolveTerm falls back to a safe terminfo when the client TERM is empty or unknown.
+func TestResolveTerm_Fallback(t *testing.T) {
+	if got := resolveTerm(""); got != "xterm-256color" {
+		t.Errorf("empty client term → %q, want xterm-256color", got)
+	}
+	if got := resolveTerm("definitely-not-a-real-terminfo-xyz"); got != "xterm-256color" {
+		t.Errorf("unknown client term → %q, want xterm-256color fallback", got)
 	}
 }

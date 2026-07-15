@@ -20,7 +20,9 @@ import (
 // and closes the stream; Ctrl-] is the escape hatch for a stuck link.
 const detachKey = 0x1D
 
-// wsURL rewrites an http(s) base into a ws(s) /api/attach URL for a pane id.
+// wsURL rewrites an http(s) base into a ws(s) /api/attach URL for a pane id. It carries
+// the local terminal's $TERM so the remote tmux client can honor it (the server uses it
+// only if the remote has terminfo for it, else a safe fallback).
 func wsURL(base, paneID string) string {
 	u := base
 	if strings.HasPrefix(u, "https://") {
@@ -28,7 +30,8 @@ func wsURL(base, paneID string) string {
 	} else if strings.HasPrefix(u, "http://") {
 		u = "ws://" + strings.TrimPrefix(u, "http://")
 	}
-	return strings.TrimRight(u, "/") + "/api/attach?id=" + url.QueryEscape(paneID)
+	return strings.TrimRight(u, "/") + "/api/attach?id=" + url.QueryEscape(paneID) +
+		"&term=" + url.QueryEscape(os.Getenv("TERM"))
 }
 
 // RunAttach opens the attach WebSocket and passes the local terminal through to the

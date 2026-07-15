@@ -233,8 +233,13 @@ base64 — raw PTY bytes):
 | client→server | `p` PAUSE / `R` RESUME | flow control (reserved; MVP relies on natural WS backpressure) |
 | server→client | `o` OUTPUT | raw PTY bytes → the local screen |
 
-The server spawns `tmux attach-session` for the pane inside a `creack/pty` PTY and
-streams the master byte-for-byte. See `docs/design/remote-attach-research.md`.
+The server spawns `tmux -u attach-session` for the pane inside a `creack/pty` PTY and
+streams the master byte-for-byte. An optional **`&term=<name>`** query carries the
+client's local `$TERM`; the server honors it for the spawned tmux client only when the
+remote has terminfo for it (validated via `infocmp`, name sanitized) and otherwise falls
+back to `xterm-256color`. It also forces a UTF-8 locale (`LC_CTYPE`) on the spawned
+process so CJK / wide glyphs render instead of placeholder dashes (the serve's launchd
+env has no `TERM`/locale). See `docs/design/remote-attach-research.md`.
 
 ### `POST /api/push/register` — register a device for push
 
