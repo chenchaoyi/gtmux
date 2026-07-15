@@ -138,11 +138,17 @@ platform :ios do
     # Screenshots: deliver reads fastlane/screenshots/<locale>/ (drop the PNGs
     # there — see docs/appstore/submit.md "Screenshots"). overwrite replaces
     # the slot with the current set.
+    # skip_metadata: pass `skip_metadata:true` to upload ONLY screenshots. Needed
+    # for the FIRST-ever version: deliver uploads the text fine, then crashes with
+    # "No data" reading the not-yet-existing App Store review detail (a known
+    # fastlane bug for a brand-new app's first version) BEFORE it gets to
+    # screenshots. Rerun with `skip_metadata:true` to push the screenshots.
     upload_to_app_store(
       api_key: key,
       app_identifier: APP_ID,
       app_version: version,
       skip_binary_upload: true,
+      skip_metadata: options[:skip_metadata].to_s == "true",
       submit_for_review: false,
       overwrite_screenshots: true,
       run_precheck_before_submit: false,

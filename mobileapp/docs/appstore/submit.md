@@ -83,6 +83,11 @@ export ASC_KEY_PATH=$HOME/Downloads/AuthKey_XXXXXXXXXX.p8
 5. 🖥️ **Metadata + screenshots** — `cd mobileapp && bundle exec fastlane metadata`
    (needs screenshots staged first — see §5). Pushes en-US + zh-Hans copy +
    screenshots; never auto-submits.
+   > **First version only:** deliver uploads the text, then crashes with
+   > `No data` reading the not-yet-existing App Store review detail (a known
+   > fastlane bug for a brand-new app's first version). The **text still lands** —
+   > just rerun `bundle exec fastlane metadata skip_metadata:true` to push the
+   > screenshots. Later versions upload both in one pass.
 6. 🌐 **In App Store Connect** (Apple won't script these):
    - Wait ~10–30 min for the build to finish *processing*, then **select build N**
      on the 1.0 version.
