@@ -33,12 +33,21 @@ While attached the client SHALL put the local terminal into raw mode and passthr
 bytes both directions: local input → the pane, pane output → the local screen,
 byte-for-byte (full TUI apps, colors, cursor). It SHALL trap `SIGWINCH` and send the
 new size so the remote pane resizes, and it SHALL restore the terminal (cooked mode) on
-every exit path (normal detach, error, or signal).
+every exit path (normal detach, error, or signal). The client SHALL send its local
+`$TERM` to the server; the server SHALL honor it for the spawned tmux client ONLY when
+the remote has terminfo for it (else a safe `xterm-256color` fallback), and SHALL force
+a UTF-8 locale on the spawned process so CJK / wide glyphs render (the serve's launchd
+environment has no `TERM`/locale of its own).
 
 #### Scenario: Interactive TUI works
 
 - **WHEN** the attached pane runs a full-screen TUI (e.g. an editor, or the agent's UI)
 - **THEN** it renders and responds correctly, because bytes pass through unparsed to the real local terminal
+
+#### Scenario: CJK and wide glyphs render (not placeholder dashes)
+
+- **WHEN** the attached pane contains CJK or other wide/multibyte glyphs
+- **THEN** they render as the real characters, because the server forces a UTF-8 locale (`LC_CTYPE`) and passes `-u` to tmux — never the `-` placeholders a locale-less environment produces
 
 #### Scenario: Terminal is restored on exit
 

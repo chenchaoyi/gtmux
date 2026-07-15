@@ -56,7 +56,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	cmd := exec.Command(argv[0], argv[1:]...)
-	cmd.Env = attachEnv()
+	cmd.Env = attachEnv(resolveTerm(r.URL.Query().Get("term")))
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
 		_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] attach failed: "+err.Error()+"\r\n")))
@@ -124,11 +124,43 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	<-done
 }
 
-// attachEnv is the environment for the tmux client spawned in the PTY. The serve is
-// launched by launchd / the app with a minimal env that usually has NO TERM, so tmux
-// dies with "terminal does not support clear"; force a widely-supported terminfo. The
-// CLIENT's real terminal renders the bytes — tmux only needs a valid TERM for its own
-// capability lookups. (Passing through the client's exact $TERM is a later refinement.)
-func attachEnv() []string {
-	return append(os.Environ(), "TERM=xterm-256color")
+// resolveTerm picks the TERM for the tmux client spawned in the PTY. Prefer the
+// CLIENT's own $TERM (sent by `gtmux attach`) so the user's real terminal is honored
+// (truecolor, Ghostty/kitty features, …) — but ONLY when the remote has terminfo for
+// it, else tmux dies with "terminal does not support clear". Fall back to a
+// widely-supported terminfo otherwise. The serve's launchd env has no TERM at all.
+func resolveTerm(clientTerm string) string {
+	clientTerm = sanitizeTerm(clientTerm)
+	if clientTerm != "" && termExists(clientTerm) {
+		return clientTerm
+	}
+	return "xterm-256color"
+}
+
+// termExists reports whether the remote has a terminfo entry for term (via infocmp).
+func termExists(term string) bool {
+	return exec.Command("infocmp", term).Run() == nil
+}
+
+// sanitizeTerm keeps only terminfo-name-safe characters — a client-supplied TERM
+// becomes an env var of a spawned process, so never let arbitrary bytes through.
+func sanitizeTerm(s string) string {
+	if s == "" || len(s) > 64 {
+		return ""
+	}
+	for _, r := range s {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
+			r == '-' || r == '.' || r == '+' || r == '_') {
+			return ""
+		}
+	}
+	return s
+}
+
+// attachEnv is the environment for the tmux client spawned in the PTY: the resolved
+// TERM, plus a UTF-8 locale. The serve's launchd env has NO locale, so without this
+// (and `-u` on the tmux command) CJK / wide chars render as placeholder dashes instead
+// of the actual glyphs. Matches the internal/tmux UTF-8 fix used for the radar.
+func attachEnv(term string) []string {
+	return append(os.Environ(), "TERM="+term, "LANG=en_US.UTF-8", "LC_CTYPE=en_US.UTF-8")
 }
