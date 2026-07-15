@@ -34,6 +34,24 @@ function planLabel(label: string, lang: string): string {
   return label;
 }
 
+// relTime: a compact "since" label (40s / 4m / 1h / 2d), like the radar row.
+function relTime(since?: number): string {
+  if (!since) return '';
+  const s = Math.max(0, Math.floor(Date.now() / 1000) - since);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
+
+// fmtTok: cumulative output tokens as 2.1k / 5k.
+function fmtTok(n?: number): string {
+  if (!n) return '';
+  if (n < 1000) return `${n}`;
+  const k = n / 1000;
+  return `${k < 10 ? k.toFixed(1) : Math.round(k)}k`;
+}
+
 export function HQScreen({route, navigation}: any) {
   const hq: Agent = route.params.agent;
   const {client, agents, conn} = useAgents();
@@ -135,9 +153,10 @@ export function HQScreen({route, navigation}: any) {
         {label: t('reply for me', '帮我回复'), cmd: t(`${selected.loc} is waiting — recommend a reply.`, `${selected.loc} 在等待,给我一个回复建议。`)},
       ]
     : [
-        {label: t('status', '现状'), cmd: t('Status of the whole fleet, needs-you first.', '给我整个舰队的现状,先说需要我的。')},
-        {label: t("who's waiting", '谁在等我'), cmd: t('Which agents are waiting on me?', '哪些 agent 在等我?')},
-        {label: t('usage', '用量额度'), cmd: t('Token usage + subscription window left.', 'token 用量 + 订阅额度还剩多少。')},
+        {label: t('brief', '简报'), cmd: t('Give me a one-line brief of the whole fleet, needs-you first.', '给我一句话的舰队简报,先说需要我的。')},
+        {label: t("who's waiting", '谁在等我'), cmd: t('Which agents are waiting on me, and what for?', '哪些 agent 在等我?分别等什么?')},
+        {label: t("what's important", '要事'), cmd: t('What are the important events I should know about?', '有哪些我该知道的要紧事?')},
+        {label: t('my call', '该我拍板'), cmd: t('What needs my decision right now?', '现在有什么需要我拍板的?')},
       ];
 
   return (
@@ -171,7 +190,7 @@ export function HQScreen({route, navigation}: any) {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Fleet board */}
-        <View style={[styles.board, boardOpen && {maxHeight: 220}, {borderBottomColor: pal.divider}]}>
+        <View style={[styles.board, boardOpen && {maxHeight: 264}, {borderBottomColor: pal.divider}]}>
           <TouchableOpacity style={styles.boardHead} onPress={() => setBoardOpen(o => !o)} hitSlop={hit}>
             <Text style={[styles.boardTitle, {color: pal.fg2}]}>{t('FLEET', '舰队态势')}</Text>
             <Text style={[styles.boardToggle, {color: pal.fg3}]}>{boardOpen ? '▾' : '▸'}</Text>
@@ -181,6 +200,16 @@ export function HQScreen({route, navigation}: any) {
               {sections.map(sec =>
                 sec.rows.map(r => {
                   const sel = selected?.pane_id === r.pane_id;
+                  const sess = (r.loc || '').split(':')[0];
+                  const wp = (r.loc || '').split(':')[1];
+                  const win = wp ? wp.split('.')[0] : '';
+                  const ctxPct = r.ctx ? Math.round(r.ctx * 100) : null;
+                  const meta = [
+                    ctxPct != null ? `${ctxPct}%${r.usage_warn ? '⚠' : ''}` : r.usage_warn ? '⚠' : '',
+                    fmtTok(r.tok),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
                   return (
                     <TouchableOpacity
                       key={r.pane_id || r.loc}
@@ -192,16 +221,32 @@ export function HQScreen({route, navigation}: any) {
                         if (a) navigation.navigate('Detail', {agent: a});
                       }}
                       style={[styles.row, sel && {backgroundColor: pal.surface}]}>
-                      <View style={[styles.rowDot, {backgroundColor: StatusColor[(r.status as StatusName)] ?? StatusColor.running}]} />
-                      <View style={styles.rowMid}>
-                        <Text style={[styles.rowLoc, {color: pal.fg}]} numberOfLines={1}>
-                          {r.loc} <Text style={{color: pal.fg3}}>{r.agent}</Text>
-                          {r.usage_warn ? <Text style={{color: '#F59E0B'}}> · {r.usage_warn}</Text> : null}
+                      {/* line 1: status · window · session · agent · since */}
+                      <View style={styles.rowHead}>
+                        <View style={[styles.rowDot, {backgroundColor: StatusColor[(r.status as StatusName)] ?? StatusColor.running}]} />
+                        {win !== '' && (
+                          <Text style={[styles.win, {color: pal.fg3, borderColor: pal.divider}]}>w{win}</Text>
+                        )}
+                        <Text style={[styles.rowTitle, {color: pal.fg}]} numberOfLines={1}>
+                          {sess || r.loc} <Text style={{color: pal.fg3, fontWeight: '400'}}>{r.agent}</Text>
                         </Text>
-                        <Text style={[styles.rowGoal, {color: pal.fg2}]} numberOfLines={1}>
-                          {r.ask ? '⏸ ' + r.ask : r.goal || '—'}
-                        </Text>
+                        <Text style={[styles.rowSince, {color: pal.fg3}]}>{relTime(r.since)}</Text>
                       </View>
+                      {/* line 2: goal + right-aligned meta (ctx% · tok) */}
+                      <View style={styles.rowSub}>
+                        <Text style={[styles.rowGoal, {color: pal.fg2}]} numberOfLines={1}>
+                          {r.goal ? '↳ ' + r.goal : '—'}
+                        </Text>
+                        {meta ? (
+                          <Text style={[styles.rowMeta, {color: r.usage_warn ? '#F59E0B' : pal.fg3}]}>{meta}</Text>
+                        ) : null}
+                      </View>
+                      {/* line 3 (waiting only): the ask, amber */}
+                      {r.ask ? (
+                        <Text style={[styles.rowAsk, {color: '#F59E0B'}]} numberOfLines={2}>
+                          ⏸ {r.ask}
+                        </Text>
+                      ) : null}
                     </TouchableOpacity>
                   );
                 }),
@@ -272,11 +317,16 @@ const styles = StyleSheet.create({
   boardHead: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   boardTitle: {fontSize: 11, fontWeight: '700', letterSpacing: 0.5},
   boardToggle: {fontSize: 12},
-  row: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7},
-  rowDot: {width: 8, height: 8, borderRadius: 4, marginRight: 10},
-  rowMid: {flex: 1},
-  rowLoc: {fontSize: 13, fontWeight: '600'},
-  rowGoal: {fontSize: 12, marginTop: 1},
+  row: {paddingHorizontal: 14, paddingVertical: 8},
+  rowHead: {flexDirection: 'row', alignItems: 'center'},
+  rowDot: {width: 8, height: 8, borderRadius: 4, marginRight: 8},
+  win: {fontSize: 10, fontWeight: '700', paddingHorizontal: 4, borderWidth: StyleSheet.hairlineWidth, borderRadius: 4, marginRight: 8, overflow: 'hidden'},
+  rowTitle: {flex: 1, fontSize: 13, fontWeight: '600'},
+  rowSince: {fontSize: 11, marginLeft: 8, fontVariant: ['tabular-nums']},
+  rowSub: {flexDirection: 'row', alignItems: 'center', marginTop: 2, marginLeft: 16},
+  rowGoal: {flex: 1, fontSize: 12},
+  rowMeta: {fontSize: 11, marginLeft: 8, fontVariant: ['tabular-nums']},
+  rowAsk: {fontSize: 12, fontWeight: '600', marginTop: 2, marginLeft: 16},
   empty: {fontSize: 12, textAlign: 'center', paddingVertical: 16},
   chips: {paddingHorizontal: 10, paddingVertical: 6, gap: 6},
   selPill: {flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, marginBottom: 6, gap: 8, maxWidth: '70%'},
