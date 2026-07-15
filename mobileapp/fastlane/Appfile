@@ -1,0 +1,5 @@
+app_identifier("com.gtmux.app")
+
+# Auth is via an App Store Connect API key (set ASC_KEY_ID / ASC_ISSUER_ID /
+# ASC_KEY_PATH — see the Fastfile and docs/appstore/submit.md). With the API
+# key, apple_id / team_id are not required here.

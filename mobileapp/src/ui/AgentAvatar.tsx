@@ -11,7 +11,7 @@ import React, {useState} from 'react';
 import {Image, StyleSheet, Text, View} from 'react-native';
 import {Agent} from '../api/types';
 import {agentMark} from './agentMark';
-import {useAgents} from '../state/AgentsContext';
+import {useAgentsOptional} from '../state/AgentsContext';
 
 export function AgentAvatar({
   agent,
@@ -28,7 +28,9 @@ export function AgentAvatar({
   fg: string;
   border?: string; // omit for no border (e.g. the dark chat surface)
 }) {
-  const {client} = useAgents();
+  // Optional: the Demo screen renders this OUTSIDE an AgentsProvider. No client →
+  // no icon fetch → the neutral monogram fallback (which is what Demo wants anyway).
+  const client = useAgentsOptional()?.client ?? null;
   const [failed, setFailed] = useState(false);
   const source = !failed && agent.icon && client ? client.iconUri(agent.agent) : null;
   return (

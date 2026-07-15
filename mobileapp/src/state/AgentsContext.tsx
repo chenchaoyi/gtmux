@@ -199,3 +199,11 @@ export function useAgents(): AgentsContextValue {
   if (!v) throw new Error('useAgents must be used within AgentsProvider');
   return v;
 }
+
+// Optional variant: returns null instead of throwing when there is NO
+// AgentsProvider — e.g. the pre-pairing Demo screen, which reuses the radar row.
+// Callers that only OPTIONALLY need the client (AgentAvatar's icon fetch) use
+// this so they render fine outside a paired session (falling back gracefully).
+export function useAgentsOptional(): AgentsContextValue | null {
+  return useContext(Ctx);
+}
