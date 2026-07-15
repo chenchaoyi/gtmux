@@ -69,6 +69,18 @@ platform :ios do
     # node reachable for the RN bundle phase.
     ENV["PATH"] = "/usr/bin:#{ENV['PATH']}"
 
+    # FOOT-GUN 3: keep Homebrew ruby OUT of xcodebuild's build-script phases.
+    # fastlane needs brew ruby to RUN, but the RN/CocoaPods script phases that
+    # shell out to `ruby`/`bundle` break under brew ruby 4.0.2 (rubygems
+    # `Gem::Resolver::APISet::GemParser` NameError — archive dies in seconds). The
+    # device build works precisely because it runs on the SYSTEM ruby. fastlane is
+    # already loaded, so stripping the brew-ruby bin from PATH affects only the
+    # spawned xcodebuild → its scripts fall back to the system ruby. (node for the
+    # RN bundle phase lives in a different bin dir, so it stays reachable.)
+    ENV["PATH"] = ENV["PATH"].split(File::PATH_SEPARATOR)
+                             .reject { |p| p.match?(%r{/(opt/ruby|Cellar/ruby)/}) }
+                             .join(File::PATH_SEPARATOR)
+
     # FOOT-GUN 2: Headless Automatic signing needs an authenticated account to
     # fetch/create the App Store provisioning profile. gym forwards the ASC API
     # key to the *archive* xcodebuild but NOT to the separate *export*
