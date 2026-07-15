@@ -1,4 +1,4 @@
-gtmux is a radar and command center for the CLI agents running on your Mac — coding agents like Claude and Codex, or any agent that lives in a terminal. Run gtmux serve on your Mac, pair your phone once, and take the whole fleet with you.
+gtmux is a radar and command center for the agents running in tmux on your Mac — coding agents like Claude and Codex, or any agent that lives in a terminal. Run gtmux serve on your Mac, pair your phone once, and take the whole fleet with you.
 
 SEE
 A live radar of every tmux pane and CLI agent, color-coded by state — waiting for you, working, or idle. One glance tells you who needs you.

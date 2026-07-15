@@ -32,7 +32,7 @@ cd mobileapp && bundle install                      # installs fastlane + cocoap
 
 ### 0b. 🖥️ App Store Connect API key (Team key)
 
-The key already exists: `~/Downloads/AuthKey_2FD238TP57.p8`.
+Download your Team key .p8 to, e.g., `~/Downloads/AuthKey_XXXXXXXXXX.p8`.
 **Confirm it is a _Team_ key** at
 <https://appstoreconnect.apple.com/access/integrations/api> (Individual keys hit
 fastlane#26949 → "credentials missing or invalid"). If it's Individual, click
@@ -41,9 +41,9 @@ fastlane#26949 → "credentials missing or invalid"). If it's Individual, click
 Export in your shell profile (never commit the `.p8`):
 
 ```sh
-export ASC_KEY_ID=2FD238TP57
-export ASC_ISSUER_ID=40247853-c007-45d5-a9e1-db62fb4a8727
-export ASC_KEY_PATH=$HOME/Downloads/AuthKey_2FD238TP57.p8
+export ASC_KEY_ID=XXXXXXXXXX
+export ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+export ASC_KEY_PATH=$HOME/Downloads/AuthKey_XXXXXXXXXX.p8
 ```
 
 ### 0c. 🌐 Create the app record (from scratch — gtmux is not on ASC yet)
@@ -193,7 +193,7 @@ localized set — optional; en set is used for both if zh is absent). fastlane
 - [ ] 🌐 `https://ccy.dev/projects/gtmux` **and** `https://ccy.dev/projects/gtmux/privacy`
       resolve (Apple fetches the **privacy URL** — a 404 = metadata reject). Create
       those pages if they don't exist yet.
-- [ ] 🖥️ `AuthKey_2FD238TP57.p8` confirmed a **Team** key.
+- [ ] 🖥️ `AuthKey_XXXXXXXXXX.p8` confirmed a **Team** key.
 - [ ] 🖥️ `fastlane verify` prints a build number (key wiring OK).
 - [ ] 🖥️ `fastlane release` uploaded a build; it finished processing in ASC.
 - [ ] 🖥️ screenshots staged; `fastlane metadata` pushed copy + shots.

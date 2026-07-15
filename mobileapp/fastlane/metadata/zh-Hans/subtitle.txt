@@ -1,1 +1,1 @@
-CLI agent 的雷达与中控
+tmux agent 的中控台

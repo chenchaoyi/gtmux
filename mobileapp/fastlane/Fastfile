@@ -18,9 +18,9 @@
 #      Connect API -> a TEAM key (App Manager role). Download the .p8 ONCE.
 #      (Individual keys hit fastlane#26949 — use a TEAM key.)
 #   3. Export in your shell profile (never commit the .p8):
-#        export ASC_KEY_ID=2FD238TP57
-#        export ASC_ISSUER_ID=40247853-c007-45d5-a9e1-db62fb4a8727
-#        export ASC_KEY_PATH=$HOME/Downloads/AuthKey_2FD238TP57.p8
+#        export ASC_KEY_ID=XXXXXXXXXX
+#        export ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+#        export ASC_KEY_PATH=$HOME/Downloads/AuthKey_XXXXXXXXXX.p8
 #
 # Per release:
 #   bundle exec fastlane verify       # prove the key wiring, no build

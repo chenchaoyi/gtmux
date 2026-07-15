@@ -1,4 +1,4 @@
-gtmux 是你 Mac 上 CLI agent 的雷达与指挥中心——既包括 Claude、Codex 这样的编码 agent，也包括任何跑在终端里的 agent。在 Mac 上运行 gtmux serve，手机配对一次，就能把整支舰队随身带走。
+gtmux 是你 Mac 上 tmux 里 agent 的雷达与指挥中心——既包括 Claude、Codex 这样的编码 agent，也包括任何跑在终端里的 agent。在 Mac 上运行 gtmux serve，手机配对一次，就能把整支舰队随身带走。
 
 看见（SEE）
 把每个 tmux 窗格和 CLI agent 汇成一张实时雷达，用颜色区分状态——等你输入、正在工作、空闲。一眼就知道谁在等你。
