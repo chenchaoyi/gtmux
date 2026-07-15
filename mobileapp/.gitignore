@@ -37,3 +37,5 @@ ios/build-device/
 ios/build-device.log
 ios/build-sim/
 ios/build-sim.log
+vendor/
+fastlane/report.xml
