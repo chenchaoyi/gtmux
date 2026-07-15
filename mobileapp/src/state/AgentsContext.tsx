@@ -27,6 +27,9 @@ interface AgentsContextValue {
   // An owner (device/master token) has isGuest=false and types anywhere.
   isGuest: boolean;
   inputPanes: string[];
+  // Demo tour: true when this store is the fake, no-server Demo client. Screens
+  // show a persistent DEMO chip and the composer routes to a scripted responder.
+  demo?: boolean;
 }
 
 const Ctx = createContext<AgentsContextValue | null>(null);
@@ -206,4 +209,36 @@ export function useAgents(): AgentsContextValue {
 // this so they render fine outside a paired session (falling back gracefully).
 export function useAgentsOptional(): AgentsContextValue | null {
   return useContext(Ctx);
+}
+
+// DemoAgentsProvider feeds the Demo tour a FAKE client + sample agents through the
+// SAME context, so DetailView / ChatView / NativeTerm / Composer render the real
+// UI with canned data and no server (the App Review path + a new-user tour). No
+// SSE/polling — the fake client answers instantly. `demo:true` lets screens show a
+// DEMO chip; input goes to the fake client's scripted responder (never /api/send).
+export function DemoAgentsProvider({
+  client,
+  agents,
+  children,
+}: {
+  client: GtmuxClient;
+  agents: Agent[];
+  children: React.ReactNode;
+}) {
+  const value: AgentsContextValue = useMemo(
+    () => ({
+      client,
+      agents,
+      conn: 'live',
+      lastUpdated: Date.now(),
+      banner: null,
+      dismissBanner: () => {},
+      refresh: () => {},
+      isGuest: false,
+      inputPanes: agents.map(a => a.pane_id).filter(Boolean) as string[],
+      demo: true,
+    }),
+    [client, agents],
+  );
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

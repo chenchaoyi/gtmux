@@ -5,7 +5,7 @@
 // app falls back to Pairing automatically.
 
 import React, {useState} from 'react';
-import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Share, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
@@ -20,7 +20,6 @@ export function SettingsScreen({navigation}: any) {
   const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
   const {client, isGuest} = useAgents();
-  const [testing, setTesting] = useState(false);
   const [picker, setPicker] = useState<PickerKind>(null);
 
   const langs: {key: LangPref; label: string}[] = [
@@ -49,25 +48,6 @@ export function SettingsScreen({navigation}: any) {
     } catch {
       Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
     }
-  };
-
-  // Ask the Mac to send a test push so you can confirm pushes actually arrive.
-  const sendTest = async () => {
-    if (!client || testing) return;
-    setTesting(true);
-    let ok = false;
-    try {
-      ok = await client.testPush();
-    } catch {
-      ok = false;
-    }
-    setTesting(false);
-    Alert.alert(
-      lang === 'zh' ? '测试通知' : 'Test notification',
-      ok
-        ? lang === 'zh' ? '已发送 —— 请留意锁屏 / 通知中心。' : 'Sent — check your lock screen / Notification Center.'
-        : lang === 'zh' ? '发送失败（推送未配置，或 Mac 不可达）。' : 'Failed (push not configured, or the Mac is unreachable).',
-    );
   };
 
   const confirmRemove = () =>
@@ -126,13 +106,6 @@ export function SettingsScreen({navigation}: any) {
             toggle={pushEnabled && pushKinds.done}
             toggleDisabled={!pushEnabled}
             onToggle={v => setPushKinds({...pushKinds, done: v})}
-            divider
-          />
-          <SettingsRow
-            label={lang === 'zh' ? '发送测试通知' : 'Send a test notification'}
-            pal={pal}
-            onPress={pushEnabled && !testing ? sendTest : undefined}
-            right={testing ? <ActivityIndicator color={pal.fg3} /> : <Text style={[styles.action, {color: pushEnabled ? '#06B6D4' : pal.fg3}]}>›</Text>}
           />
         </SettingsGroup>
         )}

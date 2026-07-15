@@ -296,21 +296,3 @@ describe('registerPush', () => {
     expect(await client().registerPush('tok')).toBe(false);
   });
 });
-
-describe('testPush', () => {
-  it('POSTs /api/push/test with bearer and returns r.ok', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({}, true));
-    const ok = await client().testPush();
-    expect(ok).toBe(true);
-
-    const [url, init] = call();
-    expect(url).toBe(`${BASE}/api/push/test`);
-    expect(init?.method).toBe('POST');
-    expect((init?.headers as any).Authorization).toBe(AUTH);
-  });
-
-  it('returns false when not ok', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({}, false, 500));
-    expect(await client().testPush()).toBe(false);
-  });
-});

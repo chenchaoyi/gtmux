@@ -54,7 +54,7 @@ export function DetailScreen({route, navigation}: any) {
 }
 
 export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?: () => void; initialMode?: DetailMode}) {
-  const {client, agents, conn, isGuest, inputPanes} = useAgents();
+  const {client, agents, conn, isGuest, inputPanes, demo} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
   // ≥768 means we're embedded in the iPad split-view's main pane (never a narrow
   // phone). Constrain content so the chat/segmented don't stretch across ~1000pt,
@@ -394,7 +394,18 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
           {/* D9: server name + status dot (no "live" text); only abnormal states add a
               word. Hidden on iPad (isWide): the split-view sidebar already shows the
               connection, so repeating it in the main pane is redundant noise. */}
-          {isWide ? (
+          {demo ? (
+            // Demo tour: no real connection — a persistent DEMO chip so canned
+            // output is never mistaken for a live Mac (research: label follows you in).
+            <View style={styles.live}>
+              <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
+                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+              </View>
+              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
+                {lang === 'zh' ? ' 样例数据' : ' sample data'}
+              </Text>
+            </View>
+          ) : isWide ? (
             <View style={styles.live} />
           ) : (
             <View style={styles.live}>
@@ -600,6 +611,8 @@ const styles = StyleSheet.create({
   segText: {fontSize: 13, fontWeight: '600'},
   live: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0, marginRight: 8},
   liveDot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
+  demoPill: {borderWidth: 1, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 0},
+  demoPillText: {fontSize: 9.5, fontWeight: '700', letterSpacing: 0.06},
   ctlRight: {flexDirection: 'row', alignItems: 'center'},
   ctl: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, marginLeft: 7},
   ctlText: {fontSize: 11.5, fontWeight: '600'},

@@ -328,10 +328,4 @@ export class GtmuxClient {
     });
     return r.ok;
   }
-
-  // testPush asks the Mac to send a test notification to this device.
-  async testPush(): Promise<boolean> {
-    const r = await tfetch(`${this.base}/api/push/test`, {method: 'POST', headers: this.h()});
-    return r.ok;
-  }
 }
