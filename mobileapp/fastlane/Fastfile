@@ -1,0 +1,153 @@
+# gtmux iOS — App Store release automation. Ported from the Rodi/StreetEye
+# Fastfile (same Apple team 2337SY8FRT, same CocoaPods-workspace + ASC-API-key
+# shape), so the three foot-gun fixes it learned the hard way are carried over.
+#
+# Two lanes, decoupled on purpose:
+#   - `release`  : build + sign + archive + upload the BINARY to App Store
+#                  Connect (auto-picks the next build number). Replaces the
+#                  manual Xcode "Product -> Archive -> Distribute" dance.
+#   - `metadata` : push listing text + screenshots (en-US + zh-Hans). No binary.
+#
+# Run in either order; ASC ties the processed build to the version when you
+# pick it. Submitting for review stays a deliberate manual click in ASC.
+#
+# One-time setup (see docs/appstore/submit.md "Automation"):
+#   1. Homebrew ruby (system 2.6 is too old):  brew install ruby
+#      then with it on PATH:  bundle install
+#   2. App Store Connect -> Users and Access -> Integrations -> App Store
+#      Connect API -> a TEAM key (App Manager role). Download the .p8 ONCE.
+#      (Individual keys hit fastlane#26949 — use a TEAM key.)
+#   3. Export in your shell profile (never commit the .p8):
+#        export ASC_KEY_ID=2FD238TP57
+#        export ASC_ISSUER_ID=40247853-c007-45d5-a9e1-db62fb4a8727
+#        export ASC_KEY_PATH=$HOME/Downloads/AuthKey_2FD238TP57.p8
+#
+# Per release:
+#   bundle exec fastlane verify       # prove the key wiring, no build
+#   bundle exec fastlane release      # build -> ASC (TestFlight processing)
+#   bundle exec fastlane metadata     # listing text + screenshots
+#   # then pick the build + Submit in ASC.
+
+default_platform(:ios)
+
+APP_ID = "com.gtmux.app"
+TEAM_ID = "2337SY8FRT"
+
+# Shared ASC API-key auth (binary upload + metadata both need it).
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV["ASC_ISSUER_ID"],
+    key_filepath: ENV.fetch("ASC_KEY_PATH"),
+    in_house: false,
+  )
+end
+
+platform :ios do
+  desc "Quick ASC auth check — no build. Proves the API key + env are wired."
+  lane :verify do
+    key = asc_api_key
+    n = latest_testflight_build_number(api_key: key, app_identifier: APP_ID, initial_build_number: 0)
+    UI.success("ASC auth OK. Latest TestFlight build for #{APP_ID}: #{n}")
+  end
+
+  desc "Build + sign + archive + upload the binary to App Store Connect (auto build number)"
+  lane :release do |options|
+    key = asc_api_key
+
+    # Next build number = highest on ASC + 1. Unique + increasing is an ASC
+    # HARD requirement (a duplicate CFBundleVersion is rejected at upload).
+    # Passed via xcargs so we never mutate the pbxproj. First upload (record
+    # exists but no builds yet) -> 0 + 1 = 1.
+    build = latest_testflight_build_number(api_key: key, app_identifier: APP_ID, initial_build_number: 0) + 1
+    UI.message("Using build number #{build}")
+
+    # FOOT-GUN 1: Xcode's exportArchive shells out to `rsync`. Homebrew's rsync
+    # 3.4.x (/usr/local/bin) shadows Apple's openrsync and makes the export hang
+    # ~an hour then die with "Copy failed ... [server=3.4.1]". Put /usr/bin
+    # first so Apple's rsync wins. Prepending (not replacing) keeps Homebrew
+    # node reachable for the RN bundle phase.
+    ENV["PATH"] = "/usr/bin:#{ENV['PATH']}"
+
+    # FOOT-GUN 2: Headless Automatic signing needs an authenticated account to
+    # fetch/create the App Store provisioning profile. gym forwards the ASC API
+    # key to the *archive* xcodebuild but NOT to the separate *export*
+    # -exportArchive call (which then fails "No Accounts"). So pass the key
+    # explicitly to BOTH via xcargs/export_xcargs.
+    auth = "-allowProvisioningUpdates " \
+           "-authenticationKeyPath #{ENV.fetch('ASC_KEY_PATH')} " \
+           "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')} " \
+           "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
+
+    # CocoaPods workspace; Release config runs the RN bundle phase, so the JS
+    # bundle is baked into the .app automatically (stale-bundle risk is
+    # Debug-only). Three targets (app + GtmuxWidget + GtmuxNotificationService)
+    # all sign App Store via -allowProvisioningUpdates. Release config's
+    # APS_ENVIRONMENT defaults to `production` (Debug=development), so the
+    # store build gets the production aps-environment automatically — do NOT
+    # pass an APS_ENVIRONMENT override here (that's only for dev device builds).
+    build_app(
+      workspace: "ios/GtmuxMobile.xcworkspace",
+      scheme: "GtmuxMobile",
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "build",
+      output_name: "GtmuxMobile.ipa",
+      xcargs: "#{auth} CURRENT_PROJECT_VERSION=#{build}",
+      export_xcargs: auth,
+      export_options: {
+        signingStyle: "automatic",
+        teamID: TEAM_ID,
+      },
+    )
+
+    # Uploads to ASC (surfaces in TestFlight AND becomes selectable on the App
+    # Store version). Don't block on Apple's processing; don't auto-submit.
+    upload_to_testflight(
+      api_key: key,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+    )
+
+    UI.success("Build #{build} uploaded. Pick it on the version in ASC, then Submit " \
+               "(or run: fastlane metadata && submit in ASC).")
+  end
+
+  desc "Upload an already-built ipa to ASC (no build). Pass ipa:<path> (default build/GtmuxMobile.ipa)."
+  lane :upload do |options|
+    key = asc_api_key
+    upload_to_testflight(
+      api_key: key,
+      ipa: options[:ipa] || "build/GtmuxMobile.ipa",
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+    )
+  end
+
+  desc "Upload App Store listing text + screenshots (en-US + zh-Hans). No binary. Pass version:<x.y.z> to override."
+  lane :metadata do |options|
+    key = asc_api_key
+
+    # Target the version explicitly so deliver CREATES the "Prepare for
+    # Submission" record if it doesn't exist yet (uploading a build does NOT
+    # create the version record). Default = the pbxproj MARKETING_VERSION.
+    version = options[:version] ||
+              File.read(File.expand_path("../ios/GtmuxMobile.xcodeproj/project.pbxproj", __dir__))[/MARKETING_VERSION = ([0-9.]+);/, 1]
+
+    # Screenshots: deliver reads fastlane/screenshots/<locale>/ (drop the PNGs
+    # there — see docs/appstore/submit.md "Screenshots"). overwrite replaces
+    # the slot with the current set.
+    upload_to_app_store(
+      api_key: key,
+      app_identifier: APP_ID,
+      app_version: version,
+      skip_binary_upload: true,
+      submit_for_review: false,
+      overwrite_screenshots: true,
+      run_precheck_before_submit: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+    )
+  end
+end

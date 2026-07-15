@@ -48,6 +48,8 @@
 	<string>Scan a gtmux pairing QR code.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Attach a photo to send to your agent.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>gtmux connects to your Mac running gtmux serve on the same local network.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>

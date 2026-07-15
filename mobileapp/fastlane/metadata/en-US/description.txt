@@ -1,0 +1,15 @@
+gtmux is a command center for the tmux sessions and coding agents running on your Mac. Run gtmux serve on your Mac, pair your phone once, and see every session at a glance — which agent is waiting for you, which is working, which is idle.
+
+WHAT GTMUX DOES
+• Live radar — every tmux pane and coding agent (Claude, Codex, and more) in one list, color-coded by state: waiting for you, working, or idle.
+• Push when it matters — a notification the moment an agent needs your input or finishes, not before.
+• Type back — send a reply or a command straight to the terminal from your phone, so you can unblock an agent without walking to your Mac.
+• Live Activity — keep the current agent's state on your Lock Screen and Dynamic Island.
+• Share, safely — hand a scoped, revocable link to a teammate: they see only the sessions you allow and type only into the panes you allow. Input is off by default.
+• English and 简体中文.
+
+HOW IT WORKS
+gtmux talks to a small server (gtmux serve) on your own Mac, over your own network, VPN, or tunnel. It works like an SSH or terminal client for your own machine — nothing is uploaded to us, there is no account, and no code runs on your phone. Access is gated by a token you control and can revoke at any time.
+
+PRIVACY
+gtmux collects no data. Your sessions and tokens stay on your device and your Mac.
