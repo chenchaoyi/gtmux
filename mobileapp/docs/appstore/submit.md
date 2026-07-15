@@ -77,9 +77,11 @@ export ASC_KEY_PATH=$HOME/Downloads/AuthKey_XXXXXXXXXX.p8
 3. 🖥️ **Pods** (first time / after a dep change) — `cd mobileapp/ios && bundle exec pod install`.
 4. 🖥️ **Build + upload** — `cd mobileapp && bundle exec fastlane release`.
    Builds Release, signs (Distribution), archives, exports an `app-store` ipa,
-   uploads to ASC. ~15 min. Handles the rsync + export-auth foot-guns. If the
-   upload leg fails but `build/GtmuxMobile.ipa` exists, don't rebuild — run
-   `bundle exec fastlane upload`.
+   uploads to ASC. ~15 min. Handles the rsync + export-auth + brew-ruby-4.0.2
+   foot-guns (the archive's ruby script phases must run on the SYSTEM ruby, not
+   Homebrew 4.0.2 — the lane strips brew ruby from PATH for the spawned
+   xcodebuild). If the upload leg fails but `build/GtmuxMobile.ipa` exists, don't
+   rebuild — run `bundle exec fastlane upload`.
 5. 🖥️ **Metadata + screenshots** — `cd mobileapp && bundle exec fastlane metadata`
    (needs screenshots staged first — see §5). Pushes en-US + zh-Hans copy +
    screenshots; never auto-submits.
