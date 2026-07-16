@@ -112,6 +112,46 @@ func (p *PushManager) Register(d DeviceToken) {
 	}
 }
 
+// Unregister drops a device token — the phone has unpaired this Mac (removed the
+// server), so this Mac must stop forwarding alerts and silent-badge pushes to it.
+// Idempotent; persists only when the token was actually present. Each Mac keeps its
+// own token set, so removing one paired server never affects the others.
+func (p *PushManager) Unregister(token string) {
+	if token == "" {
+		return
+	}
+	p.mu.Lock()
+	_, had := p.tokens[token]
+	delete(p.tokens, token)
+	snap := p.snapshotLocked()
+	p.mu.Unlock()
+	if had && p.save != nil {
+		p.save(snap)
+	}
+}
+
+// UnregisterActivity drops a Live Activity push token (the device removed this
+// server) so this Mac stops pushing lock-screen tally updates to it — and, when the
+// token was actually held, best-effort pushes an END so a card this Mac was keeping
+// alive disappears even if the app couldn't end it locally (e.g. it was force-killed).
+// Activity tokens are in-memory (re-registered each launch), so nothing is persisted.
+// Idempotent.
+func (p *PushManager) UnregisterActivity(token string) {
+	if token == "" {
+		return
+	}
+	p.mu.Lock()
+	env, had := p.activityTokens[token]
+	delete(p.activityTokens, token)
+	relay := p.relay
+	p.mu.Unlock()
+	if had && relay != nil {
+		go func() {
+			_ = relay.Send(PushIntent{Token: token, Env: env, LiveActivity: true, Event: "end"})
+		}()
+	}
+}
+
 func (p *PushManager) snapshotLocked() []DeviceToken {
 	out := make([]DeviceToken, 0, len(p.tokens))
 	for _, d := range p.tokens {
@@ -278,6 +318,37 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.deps.Push.Register(d)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// handleUnregister implements POST /api/push/unregister — drop a device's APNs token
+// and/or Live Activity token so this Mac stops pushing (alerts, silent badge, and
+// lock-screen updates) to a phone that has removed it as a server. Idempotent: 200
+// even if a token was never registered (the caller is best-effort on removal). At
+// least one of token / activityToken must be present.
+func (s *Server) handleUnregister(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if s.deps.Push == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
+		return
+	}
+	var d struct {
+		Token         string `json:"token"`
+		ActivityToken string `json:"activityToken"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&d); err != nil || (d.Token == "" && d.ActivityToken == "") {
+		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
+		return
+	}
+	if d.Token != "" {
+		s.deps.Push.Unregister(d.Token) // stop alerts + silent-badge pushes
+	}
+	if d.ActivityToken != "" {
+		s.deps.Push.UnregisterActivity(d.ActivityToken) // stop Live Activity updates + end the card
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

@@ -9,6 +9,9 @@ import {useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
 import {loadServers, saveServers, upsertServer} from '../pairing/store';
+import {GtmuxClient} from '../api/client';
+import {getPushToken} from '../push';
+import {LiveActivity} from '../native/liveActivity';
 import {Palette, paletteFor} from '../ui/theme';
 import {Debug} from '../debug';
 
@@ -165,11 +168,35 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         if (servers.some(s => s.url === url)) await persist(servers, url);
       },
       disconnect: () => persist(servers, null),
-      removeServer: url =>
-        persist(
+      removeServer: url => {
+        // Tell the removed Mac to drop this device's tokens, so it stops pushing to
+        // a phone that has unpaired it — the APNs token (alerts + silent badge) AND
+        // the Live Activity token (lock-screen updates), so the deleted server also
+        // leaves the Live Activity. Multi-server: each Mac keeps its own token set,
+        // so this never touches the others. Best-effort + fire-and-forget — the Mac
+        // may be offline, and removal must not block on it.
+        const gone = servers.find(s => s.url === url);
+        const wasActive = activeUrl === url;
+        if (gone) {
+          const client = new GtmuxClient(gone.url, gone.token);
+          const tok = getPushToken() ?? '';
+          // currentPushToken resolves to the ACTIVE server's activity token (or
+          // null); when removing the active server it matches and gets dropped +
+          // ended, and for a non-active server it's a harmless no-op on that Mac.
+          LiveActivity.currentPushToken()
+            .then(actTok => {
+              if (tok || actTok) client.unregisterPush(tok, actTok ?? undefined).catch(() => {});
+            })
+            .catch(() => {});
+        }
+        // End the local lock-screen card at once if it was tracking the removed
+        // server (the provider unmount does this too, but don't wait on it).
+        if (wasActive) LiveActivity.stop();
+        return persist(
           servers.filter(s => s.url !== url),
-          activeUrl === url ? null : activeUrl,
-        ),
+          wasActive ? null : activeUrl,
+        );
+      },
       pendingPane,
       setPendingPane,
       langPref,

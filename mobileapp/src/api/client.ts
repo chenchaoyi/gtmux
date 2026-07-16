@@ -318,6 +318,20 @@ export class GtmuxClient {
     return r.ok;
   }
 
+  // unregisterPush drops this device's tokens on the Mac (removing a server), so it
+  // stops pushing to a phone that unpaired it: the APNs token stops alerts + silent
+  // badges, and the optional Live Activity token stops lock-screen updates (the Mac
+  // also ends that card). Idempotent server-side; best-effort here (the Mac may be
+  // offline at removal time).
+  async unregisterPush(deviceToken: string, activityToken?: string): Promise<boolean> {
+    const r = await tfetch(`${this.base}/api/push/unregister`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({token: deviceToken, activityToken}),
+    });
+    return r.ok;
+  }
+
   // registerActivityToken hands the Mac a Live Activity push token so the relay
   // can push-to-update the lock-screen tally even when the app is closed.
   async registerActivityToken(token: string, env?: string): Promise<boolean> {

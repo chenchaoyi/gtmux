@@ -33,6 +33,14 @@ const WAITING_CATEGORY = {
 // the same device without re-running setup (which would re-add native listeners).
 let lastToken: string | null = null;
 
+// getPushToken returns the cached APNs device token (null before it has arrived).
+// removeServer uses it to tell the removed Mac to drop this device, so that Mac
+// stops pushing to a phone that has unpaired it. Device-wide → same value across
+// servers, and each Mac only drops its own copy.
+export function getPushToken(): string | null {
+  return lastToken;
+}
+
 // reregisterKinds updates the device's per-kind push filter on the server, using
 // the cached APNs token. No-op until the token has arrived.
 export function reregisterKinds(client: GtmuxClient, kinds: string[]): void {
