@@ -43,18 +43,37 @@ struct PreferencesView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
     }
 
+    // prefLabel mirrors the mobile app's settings rows (SettingsRow's leading outline
+    // icon in the secondary color, fixed-width so titles align) — one settings visual
+    // language across the two surfaces. Neutral color only: per the design 铁律,
+    // color is reserved for agent STATE, so chrome icons stay monochrome secondary.
+    private func prefLabel(_ en: String, _ zh: String, symbol: String) -> some View {
+        Label {
+            Text(l10n.tr(en, zh))
+        } icon: {
+            Image(systemName: symbol)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+        }
+    }
+
     // A grouped Form (macOS System-Settings idiom) — sectioned cards instead of a
     // flat grid, so the preferences read at a glance like Moshi's settings.
     var body: some View {
         Form {
             Section(l10n.tr("General", "通用")) {
-                Picker(l10n.tr("Language", "语言"), selection: $l10n.mode) {
+                Picker(selection: $l10n.mode) {
                     Text(l10n.tr("System", "跟随系统")).tag(LangMode.system)
                     Text("English").tag(LangMode.en)
                     Text("中文").tag(LangMode.zh)
+                } label: {
+                    prefLabel("Language", "语言", symbol: "globe")
                 }
-                Toggle(l10n.tr("Launch at login", "开机自启"), isOn: $settings.launchAtLogin)
-                LabeledContent(l10n.tr("Global hotkey", "全局热键")) {
+                Toggle(isOn: $settings.launchAtLogin) {
+                    prefLabel("Launch at login", "开机自启", symbol: "power")
+                }
+                LabeledContent {
                     HStack(spacing: 8) {
                         Text("⌘⌥G").font(.system(size: 12, weight: .medium))
                             .padding(.horizontal, 8).padding(.vertical, 3)
@@ -62,38 +81,48 @@ struct PreferencesView: View {
                         Text(l10n.tr("opens the popover", "打开 popover"))
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                     }
+                } label: {
+                    prefLabel("Global hotkey", "全局热键", symbol: "command")
                 }
             }
 
             Section(l10n.tr("Status bar", "状态栏")) {
-                Picker(l10n.tr("Display", "显示"), selection: $settings.displayMode) {
+                Picker(selection: $settings.displayMode) {
                     Text(l10n.tr("Dot + count", "点 + 数字")).tag(DisplayMode.dotCount)
                     Text(l10n.tr("Dot only", "仅圆点")).tag(DisplayMode.dot)
                     Text(l10n.tr("Hide when idle", "空闲时隐藏")).tag(DisplayMode.hideWhenIdle)
+                } label: {
+                    prefLabel("Display", "显示", symbol: "menubar.rectangle")
                 }
-                LabeledContent(l10n.tr("Refresh", "刷新间隔")) {
+                LabeledContent {
                     HStack {
                         Slider(value: $settings.refreshInterval, in: 0.5...5.0, step: 0.5).frame(width: 170)
                         Text(String(format: "%.1fs", settings.refreshInterval))
                             .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                     }
+                } label: {
+                    prefLabel("Refresh", "刷新间隔", symbol: "arrow.clockwise")
                 }
             }
 
             Section(l10n.tr("Notifications", "通知")) {
                 Toggle(isOn: $settings.notifications) {
-                    Text(l10n.tr("Notify when an agent waits / finishes", "agent 开始等你 / 完成时提醒"))
+                    prefLabel("Notify when an agent waits / finishes", "agent 开始等你 / 完成时提醒", symbol: "bell")
                 }
             }
 
             Section(l10n.tr("Remote access", "远程访问")) {
                 // Merged Off / Wi-Fi (free LAN) / Anywhere (Pro tunnel) control.
-                Picker("", selection: remoteModeBinding) {
-                    Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
-                    Text(l10n.tr("Wi-Fi", "局域网")).tag(RemoteMode.lan)
-                    Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
+                LabeledContent {
+                    Picker("", selection: remoteModeBinding) {
+                        Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
+                        Text(l10n.tr("Wi-Fi", "局域网")).tag(RemoteMode.lan)
+                        Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
+                    }
+                    .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
+                } label: {
+                    prefLabel("Access", "访问", symbol: "antenna.radiowaves.left.and.right")
                 }
-                .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
                 Text(remoteSubtitle)
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -106,8 +135,8 @@ struct PreferencesView: View {
                 // terminal — default OFF, scoped per pane. Sits beside Remote access
                 // because guests arrive over the same serve/tunnel.
                 Toggle(isOn: shareEnabledBinding) {
-                    Text(l10n.tr("Let a collaborator type into the terminal",
-                                 "允许协作者向终端输入"))
+                    prefLabel("Let a collaborator type into the terminal",
+                              "允许协作者向终端输入", symbol: "keyboard")
                 }.disabled(share.busy)
                 Text(shareSubtitle)
                     .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -121,8 +150,10 @@ struct PreferencesView: View {
             }
 
             Section(l10n.tr("Software update", "软件更新")) {
-                LabeledContent(l10n.tr("Current version", "当前版本")) {
+                LabeledContent {
                     Text(appVersion).font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
+                } label: {
+                    prefLabel("Current version", "当前版本", symbol: "info.circle")
                 }
                 updateRow
             }
