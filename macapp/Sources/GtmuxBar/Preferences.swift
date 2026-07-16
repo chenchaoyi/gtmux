@@ -34,6 +34,10 @@ struct PreferencesView: View {
     @ObservedObject var share = ShareStore.shared
     @ObservedObject var store: AgentStore
     @State private var showPaywall = false
+    // Collapse state for the two long share lists (default expanded; the header
+    // shows a count so a collapsed list still tells you how much is inside).
+    @State private var panesExpanded = true
+    @State private var linksExpanded = true
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
@@ -275,40 +279,77 @@ struct PreferencesView: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Text(l10n.tr("What a guest may see and type into", "访客可见 / 可输入的 pane"))
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                ForEach(panes) { a in
-                    HStack(spacing: 8) {
-                        AgentAvatar(agent: a)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(a.primary.isEmpty ? (a.agent.isEmpty ? a.paneID : a.agent) : a.primary)
-                                .font(Theme.Font.session).lineLimit(1).truncationMode(.tail)
-                                .help(a.primary)
-                            Text(a.secondary)
-                                .font(Theme.Font.window).foregroundStyle(.secondary)
-                                .lineLimit(1).truncationMode(.tail)
+                collapseHeader(l10n.tr("What a guest may see and type into", "访客可见 / 可输入的 pane"),
+                               count: panes.count, expanded: $panesExpanded)
+                if panesExpanded {
+                    ForEach(panes) { a in
+                        HStack(spacing: 8) {
+                            AgentAvatar(agent: a)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(a.primary.isEmpty ? (a.agent.isEmpty ? a.paneID : a.agent) : a.primary)
+                                    .font(Theme.Font.session).lineLimit(1).truncationMode(.tail)
+                                    .help(a.primary)
+                                Text(a.secondary)
+                                    .font(Theme.Font.window).foregroundStyle(.secondary)
+                                    .lineLimit(1).truncationMode(.tail)
+                            }
+                            Spacer(minLength: 10)
+                            // Two clearly-separated permission columns: each is a tight
+                            // [icon · label · checkbox] unit of fixed width, split by a
+                            // divider — so the See checkbox never reads as Type's (the
+                            // old evenly-spaced pair was ambiguous). Type ⊆ See.
+                            permissionCell(icon: "eye", label: l10n.tr("See", "可见"),
+                                           isOn: viewBinding(a.paneID), disabled: false,
+                                           help: l10n.tr("Let a guest see this pane's screen",
+                                                         "让访客看到此 pane 的画面"))
+                            Divider().frame(height: 16)
+                            permissionCell(icon: "keyboard", label: l10n.tr("Type", "输入"),
+                                           isOn: paneBinding(a.paneID),
+                                           disabled: !share.viewPanes.contains(a.paneID),
+                                           help: l10n.tr("Let a guest type into this pane (needs See + consent on)",
+                                                         "让访客向此 pane 输入（需可见 + 已开启同意）"))
                         }
-                        Spacer(minLength: 8)
-                        Toggle(isOn: viewBinding(a.paneID)) {
-                            Label(l10n.tr("See", "可见"), systemImage: "eye")
-                                .labelStyle(.titleAndIcon).font(.system(size: 11))
-                        }
-                        .toggleStyle(.checkbox)
-                        .help(l10n.tr("Let a guest see this pane's screen",
-                                      "让访客看到此 pane 的画面"))
-                        Toggle(isOn: paneBinding(a.paneID)) {
-                            Label(l10n.tr("Type", "输入"), systemImage: "keyboard")
-                                .labelStyle(.titleAndIcon).font(.system(size: 11))
-                        }
-                        .toggleStyle(.checkbox)
-                        .disabled(!share.viewPanes.contains(a.paneID))
-                        .help(l10n.tr("Let a guest type into this pane (needs See + consent on)",
-                                      "让访客向此 pane 输入（需可见 + 已开启同意）"))
+                        .disabled(share.busy)
                     }
-                    .disabled(share.busy)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    // One permission column: icon + word on the left, checkbox pinned right, in a
+    // fixed width so See/Type line up as columns across every row.
+    @ViewBuilder
+    private func permissionCell(icon: String, label: String, isOn: Binding<Bool>,
+                                disabled: Bool, help: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon).font(.system(size: 11)).foregroundStyle(.secondary)
+            Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
+            Spacer(minLength: 6)
+            Toggle("", isOn: isOn).labelsHidden().toggleStyle(.checkbox)
+        }
+        .frame(width: 78)
+        .disabled(disabled)
+        .help(help)
+    }
+
+    // A tappable collapse header: chevron + title + a dim count, so a collapsed
+    // list still says how much it holds. Used by both long share lists.
+    @ViewBuilder
+    private func collapseHeader(_ title: String, count: Int, expanded: Binding<Bool>) -> some View {
+        Button { expanded.wrappedValue.toggle() } label: {
+            HStack(spacing: 4) {
+                Image(systemName: expanded.wrappedValue ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                    .frame(width: 10)
+                Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Text("\(count)").font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(Capsule().fill(Color.secondary.opacity(0.12)))
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func paneBinding(_ pane: String) -> Binding<Bool> {
@@ -326,18 +367,24 @@ struct PreferencesView: View {
     // re-copy it to send to a collaborator.
     @ViewBuilder private var shareGuestLinks: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(l10n.tr("Share links", "分享链接"))
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                Spacer()
-                Button(l10n.tr("New link", "新链接")) { share.newLink(label: "") }
+            HStack(spacing: 6) {
+                if share.guests.isEmpty {
+                    Text(l10n.tr("Share links", "分享链接"))
+                        .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                } else {
+                    collapseHeader(l10n.tr("Share links", "分享链接"),
+                                   count: share.guests.count, expanded: $linksExpanded)
+                }
+                Spacer(minLength: 8)
+                // Prompt for a name so links aren't all the default "phone".
+                Button(l10n.tr("New link", "新链接")) { promptNewLink() }
                     .disabled(share.busy)
             }
             if share.guests.isEmpty {
                 Text(l10n.tr("No links yet. Create one to invite a collaborator.",
                              "还没有链接。新建一个邀请协作者。"))
                     .font(.system(size: 11)).foregroundStyle(.tertiary)
-            } else {
+            } else if linksExpanded {
                 ForEach(share.guests) { g in
                     HStack(spacing: 8) {
                         Image(systemName: "link").font(.system(size: 11))
@@ -365,6 +412,25 @@ struct PreferencesView: View {
                 }
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // Ask for a label before minting, so links read as who they're for instead of a
+    // wall of default "phone" rows. Blank is allowed (the CLI falls back to its
+    // default); Enter in the field confirms.
+    private func promptNewLink() {
+        let a = NSAlert()
+        a.messageText = l10n.tr("Name this share link", "给分享链接起个名字")
+        a.informativeText = l10n.tr("A label to recognize who it's for — e.g. a teammate's name.",
+                                    "用来识别这个链接给谁的 —— 比如同事的名字。")
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
+        field.placeholderString = l10n.tr("e.g. Alex, or leave blank", "例如 张三，可留空")
+        a.accessoryView = field
+        a.addButton(withTitle: l10n.tr("Create", "创建"))
+        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
+        a.window.initialFirstResponder = field
+        if a.runModal() == .alertFirstButtonReturn {
+            share.newLink(label: field.stringValue)
+        }
     }
 
     // "created 5m ago" from the link's enroll time (relativeTime is the shared
