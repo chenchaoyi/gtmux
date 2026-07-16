@@ -379,6 +379,24 @@ gtmux attach <target> --read-only  # watch only, never send input
 > (the WebSocket rides the same tunnel as the radar). The guest side is set up entirely
 > in the menu bar (per-pane 👁 See / ⌨️ Type + New link) or with `gtmux share`.
 
+## `gtmux pair` — enroll your own devices (full control)
+
+```
+gtmux pair                  # mint ONE one-time code, printed three ways:
+                            #   phone QR · browser https://…/#c=<code> · a one-line
+                            #   `gtmux attach '<url>/#c=<code>'` for another terminal
+gtmux pair list             # your paired devices (guests live under `gtmux share`)
+gtmux pair revoke <id>      # cut one device off, effective immediately
+```
+
+PAIR is the owner track of the pair/share model: the enrolled device is **you** —
+full view + input on every session, same as sitting at the Mac. All three media
+redeem the same short-lived code (5 min, single use) into the same revocable
+roster. The terminal medium persists its token in `~/.config/gtmux/remotes.json`
+(0600), so afterwards a bare `gtmux attach <host>` just works; `pair revoke`
+invalidates it instantly. The link carries the tunnel URL when `gtmux tunnel` is
+up, else a LAN address. `gtmux devices` remains as an alias of the roster.
+
 ## `gtmux share` — scoped, revocable access for a collaborator
 
 ```

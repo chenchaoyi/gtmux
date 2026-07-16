@@ -23,10 +23,10 @@
 
 ## 2. S2 — pair command + attach owner flow
 
-- [ ] 2.1 `gtmux pair`: mint one code → print QR + browser URL + attach
+- [x] 2.1 `gtmux pair`: mint one code → print QR + browser URL + attach
       one-liner; `pair list` (owner devices only) / `pair revoke <id>`;
       `gtmux devices` kept as alias. CLAUDE.md command list + help.go + docs/cli.md.
-- [ ] 2.2 attach: `#c=<code>` target → POST /api/enroll (name=hostname) → persist
+- [x] 2.2 attach: `#c=<code>` target → POST /api/enroll (name=hostname) → persist
       `~/.config/gtmux/remotes.json` (0600) → owner attach; bare `attach <host>`
       consults remotes.json. Tests: target parsing, redemption flow (fake server),
       persistence + reuse, revoked token → 401 path.

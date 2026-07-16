@@ -57,14 +57,17 @@ Commands:
                           token, and a scannable pairing QR. Default is a STABLE
                           hosted address (pair once); --quick for an account-less
                           ephemeral URL. --port N --name LABEL
+  pair [list|revoke <id>] pair YOUR OWN devices (full control): one one-time code
+                          printed three ways — phone QR / browser link / a one-line
+                          'gtmux attach' command for another computer's terminal.
+                          Collaborators go through 'share' instead
   attach <target> [%N]    attach to a remote pane in THIS terminal (raw, over a
                           WebSocket) — the local terminal becomes the remote tmux
-                          session. A share link (…/#t=<token>) connects as a scoped
-                          guest; host + --token as the owner. --read-only to watch;
-                          Ctrl-] or tmux prefix-d detaches
-  devices [revoke <id>]   list phones paired via per-device tokens (from a short-
-                          lived QR code), and revoke one (effective immediately).
-                          Talks to the local radar — run while serve/tunnel is up
+                          session. A pair link (…/#c=<code>) enrolls this terminal
+                          as your own device (token persisted); a share link
+                          (…/#t=<token>) connects as a scoped guest; host + --token
+                          also works. --read-only to watch; Ctrl-] detaches
+  devices [revoke <id>]   the device roster (alias of 'pair list' / 'pair revoke')
   doctor [--fix [--yes]]  health check, grouped by concern: tmux / restore /
                           terminal / agents+notifications. --fix sets up the
                           rest — set-titles, plugins, the Claude hook — one step
@@ -149,10 +152,14 @@ const usageZH = `快速开始：
                           Cloudflare 隧道，打印公网 URL、token 和可扫的配对
                           二维码。默认给固定的托管地址（配一次即可），--quick 走
                           免账号的临时地址。--port N --name 标签
+  pair [list|revoke <id>] 配对你自己的设备（全权）：一个一次性配对码,三种用法
+                          一次给全 —— 手机扫码 / 浏览器链接 / 另一台电脑终端的
+                          一行 'gtmux attach' 命令。协作者走 'share',不走 pair
   attach <target> [%N]    在当前终端里附着到远程的某个 pane（原生、走 WebSocket）——
-                          本地终端变成远程 tmux 会话。分享链接（…/#t=<token>）以
-                          受限访客接入；host + --token 以本人接入。--read-only 只看；
-                          Ctrl-] 或 tmux 前缀键 + d 退出
+                          本地终端变成远程 tmux 会话。配对链接（…/#c=<code>）把本
+                          终端登记为你自己的设备（token 会保存）；分享链接
+                          （…/#t=<token>）以受限访客接入；host + --token 亦可。
+                          --read-only 只看；Ctrl-] 退出
   devices [revoke <id>]   列出用一次性 QR 码配对的手机（每设备独立 token），
                           并可吊销某台（即刻生效）。需在 serve/tunnel 运行时使用
   doctor [--fix [--yes]]  体检，按主题分组：tmux / 恢复 / 终端 / agent+通知。

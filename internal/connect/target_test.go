@@ -30,10 +30,48 @@ func TestParseTargetOwnerKeepsSchemeAndPort(t *testing.T) {
 }
 
 func TestParseTargetErrors(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // isolate from a real remotes.json (owner fallback)
 	if _, err := ParseTarget("", ""); err == nil {
 		t.Error("empty target should error")
 	}
 	if _, err := ParseTarget("some-host", ""); err == nil {
-		t.Error("owner host with no --token should error")
+		t.Error("owner host with no credential should error")
+	}
+}
+
+// A pair link (#c=<code>) parses to an OWNER target carrying the enroll code.
+func TestParseTarget_PairLink(t *testing.T) {
+	tgt, err := ParseTarget("https://gtmux-abc.ccy.dev/#c=deadbeef01234567", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tgt.Scope != ScopeOwner || tgt.EnrollCode != "deadbeef01234567" || tgt.Token != "" {
+		t.Fatalf("pair target = %+v", tgt)
+	}
+	if tgt.URL != "https://gtmux-abc.ccy.dev" {
+		t.Fatalf("pair URL = %q", tgt.URL)
+	}
+}
+
+// A bare host with a persisted remote token resolves as owner without --token.
+func TestParseTarget_RemotesFallback(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := ParseTarget("gtmux-abc.ccy.dev:443", ""); err == nil {
+		t.Fatal("no credential anywhere must error")
+	}
+	if err := SaveRemoteToken("http://gtmux-abc.ccy.dev:443", "tok-123"); err != nil {
+		t.Fatal(err)
+	}
+	tgt, err := ParseTarget("gtmux-abc.ccy.dev:443", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tgt.Scope != ScopeOwner || tgt.Token != "tok-123" {
+		t.Fatalf("remotes fallback target = %+v", tgt)
+	}
+	// An explicit --token beats the persisted one.
+	tgt, _ = ParseTarget("gtmux-abc.ccy.dev:443", "explicit")
+	if tgt.Token != "explicit" {
+		t.Fatalf("explicit token must win: %+v", tgt)
 	}
 }
