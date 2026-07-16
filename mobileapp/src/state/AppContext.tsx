@@ -114,7 +114,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       if (Debug.resetServers) {
         svs = [];
         act = null;
-        void saveServers({servers: [], activeUrl: null});
+        saveServers({servers: [], activeUrl: null}).catch(() => {}); // keychain may be absent (unsigned sim build)
       }
       if (Debug.pairUrl && Debug.pairToken) {
         const s = {url: Debug.pairUrl, token: Debug.pairToken, name: Debug.pairName || 'debug'};
