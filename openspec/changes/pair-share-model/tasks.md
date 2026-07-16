@@ -33,10 +33,10 @@
 
 ## 3. S3 — menu-bar two-track Preferences
 
-- [ ] 3.1 Preferences reorg: 远程访问 / 你的设备 Pair (device rows + one pairing
+- [x] 3.1 Preferences reorg: 远程访问 / 你的设备 Pair (device rows + one pairing
       sheet, three media) / 分享 Share (consent + per-link rows with inline
       See/Type editor + New-share sheet with name+scope).
-- [ ] 3.2 ShareStore/PairStore: per-link ops via `share set/new`; parse per-link
+- [x] 3.2 ShareStore/PairStore: per-link ops via `share set/new`; parse per-link
       scope from `share status --json`. Design-conformance test additions.
 
 ## 4. S4 — vocabulary + app/web polish

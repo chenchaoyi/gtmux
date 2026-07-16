@@ -8,6 +8,11 @@ struct GuestLink: Identifiable, Equatable {
     let id: String
     let label: String
     let enrolledAt: Int
+    // Per-link scope (pair-share-model S1): which panes THIS link may see / type
+    // into, plus an optional expiry (unix seconds; 0 = never).
+    var viewPanes: [String] = []
+    var inputPanes: [String] = []
+    var expiresAt: Int = 0
 }
 
 /// ShareStore reflects + drives web-shared input (the CLI's `gtmux share`): the
@@ -96,7 +101,10 @@ final class ShareStore: ObservableObject {
         let guests: [GuestLink] = (obj["guests"] as? [[String: Any]] ?? []).map {
             GuestLink(id: $0["id"] as? String ?? "",
                       label: $0["label"] as? String ?? "",
-                      enrolledAt: $0["enrolled_at"] as? Int ?? 0)
+                      enrolledAt: $0["enrolled_at"] as? Int ?? 0,
+                      viewPanes: $0["view_panes"] as? [String] ?? [],
+                      inputPanes: $0["panes"] as? [String] ?? [],
+                      expiresAt: $0["expires_at"] as? Int ?? 0)
         }
         return (enabled, panes, viewPanes, guests, base)
     }
@@ -120,15 +128,28 @@ final class ShareStore: ObservableObject {
 
     func revoke(_ id: String) { run(["share", "revoke", id]) }
 
+    /// Edit ONE link's scope (pair-share-model S3): per-facet replace via
+    /// `gtmux share set` — never the legacy global (broadcast) forms.
+    func setLinkScope(_ id: String, view: [String], input: [String]) {
+        run(["share", "set", id,
+             "--view", view.joined(separator: ","),
+             "--type", input.joined(separator: ",")])
+    }
+
     /// Mint a new guest link, surface + copy its URL. completion gets the URL on
     /// success, else nil (with lastError set).
-    func newLink(label: String, completion: ((String?) -> Void)? = nil) {
+    func newLink(label: String, view: [String]? = nil, input: [String]? = nil,
+                 completion: ((String?) -> Void)? = nil) {
         guard !busy else { return }
         busy = true
         lastError = nil
         var args = ["share", "new", "--json"]
         let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { args += ["--label", trimmed] }
+        // Per-link scope at creation (pair-share-model): omitted → the CLI applies
+        // the template; an explicit (possibly empty) list is exact.
+        if let view = view { args += ["--view", view.joined(separator: ",")] }
+        if let input = input { args += ["--type", input.joined(separator: ",")] }
         DispatchQueue.global().async {
             let data = GtmuxCLI.capture(args)
             let url = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] })?["url"] as? String

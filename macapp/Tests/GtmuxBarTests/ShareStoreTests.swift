@@ -59,4 +59,27 @@ final class ShareStoreTests: XCTestCase {
         // (state is private(set); this pins the invariant at the empty default —
         // the positive path is covered end-to-end by parseStatus feeding the fields.)
     }
+
+    // Per-link scope fields (pair-share-model S1) decode from the wire shape,
+    // with legacy guests (no scope fields) defaulting to empty.
+    func testParseStatusPerLinkScope() throws {
+        let json = """
+        {"enabled":true,"panes":["%1"],"view_panes":["%1","%2"],
+         "guests":[
+           {"id":"a","label":"Alice","enrolled_at":100,
+            "view_panes":["%1","%2"],"panes":["%1"],"expires_at":9999},
+           {"id":"b","label":"Bob","enrolled_at":200}
+         ],"base":"https://x"}
+        """
+        let parsed = try XCTUnwrap(ShareStore.parseStatus(Data(json.utf8)))
+        XCTAssertEqual(parsed.guests.count, 2)
+        let alice = parsed.guests[0]
+        XCTAssertEqual(alice.viewPanes, ["%1", "%2"])
+        XCTAssertEqual(alice.inputPanes, ["%1"])
+        XCTAssertEqual(alice.expiresAt, 9999)
+        let bob = parsed.guests[1]
+        XCTAssertEqual(bob.viewPanes, [])
+        XCTAssertEqual(bob.inputPanes, [])
+        XCTAssertEqual(bob.expiresAt, 0)
+    }
 }

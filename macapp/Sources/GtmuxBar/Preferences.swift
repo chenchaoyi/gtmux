@@ -33,7 +33,12 @@ struct PreferencesView: View {
     @ObservedObject var updater = Updater.shared
     @ObservedObject var share = ShareStore.shared
     @ObservedObject var store: AgentStore
+    @ObservedObject var pairStore = PairStore.shared
     @State private var showPaywall = false
+    @State private var showPairSheet = false
+    @State private var showNewShareSheet = false
+    // The share link whose per-link scope editor is expanded ("" = none).
+    @State private var expandedLink = ""
     // Collapse state for the two long share lists (default expanded; the header
     // shows a count so a collapsed list still tells you how much is inside).
     @State private var panesExpanded = true
@@ -130,10 +135,13 @@ struct PreferencesView: View {
                 connectedDevices
             }
 
-            Section(l10n.tr("Shared input", "分享输入")) {
-                // Consent to let a collaborator on the shared web page type into the
-                // terminal — default OFF, scoped per pane. Sits beside Remote access
-                // because guests arrive over the same serve/tunnel.
+            // PAIR — your own devices, full control (pair-share-model S3).
+            Section(l10n.tr("Your devices · Pair", "你的设备 · 配对")) {
+                pairSection
+            }
+
+            // SHARE — collaborators, least privilege, per-link scope.
+            Section(l10n.tr("Sharing · Share", "分享 · 协作者")) {
                 Toggle(isOn: shareEnabledBinding) {
                     prefLabel("Let a collaborator type into the terminal",
                               "允许协作者向终端输入", symbol: "keyboard")
@@ -142,11 +150,7 @@ struct PreferencesView: View {
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if share.enabled {
-                    sharePanePicker
-                    Divider()
-                    shareGuestLinks
-                }
+                shareGuestLinks
             }
 
             Section(l10n.tr("Software update", "软件更新")) {
@@ -160,7 +164,13 @@ struct PreferencesView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 640)
-        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); updater.autoCheck() }
+        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck() }
+        .sheet(isPresented: $showPairSheet) {
+            PairDeviceSheet(l10n: l10n) { showPairSheet = false; pairStore.refresh() }
+        }
+        .sheet(isPresented: $showNewShareSheet) {
+            NewShareSheet(l10n: l10n, share: share, store: store) { showNewShareSheet = false }
+        }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
@@ -303,50 +313,6 @@ struct PreferencesView: View {
     // controls: 👁 See (the guest may VIEW the pane) and ⌨️ Type (the guest may type
     // into it). Type is disabled unless See is on, since input ⊆ view — a guest can
     // never type into a pane it can't see.
-    @ViewBuilder private var sharePanePicker: some View {
-        let panes = store.shareablePanes
-        if panes.isEmpty {
-            Text(l10n.tr("No tmux panes to share right now.", "当前没有可分享的 tmux pane。"))
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-        } else {
-            VStack(alignment: .leading, spacing: 6) {
-                collapseHeader(l10n.tr("What a guest may see and type into", "访客可见 / 可输入的 pane"),
-                               count: panes.count, expanded: $panesExpanded)
-                if panesExpanded {
-                    ForEach(panes) { a in
-                        HStack(spacing: 8) {
-                            AgentAvatar(agent: a)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(a.primary.isEmpty ? (a.agent.isEmpty ? a.paneID : a.agent) : a.primary)
-                                    .font(Theme.Font.session).lineLimit(1).truncationMode(.tail)
-                                    .help(a.primary)
-                                Text(a.secondary)
-                                    .font(Theme.Font.window).foregroundStyle(.secondary)
-                                    .lineLimit(1).truncationMode(.tail)
-                            }
-                            Spacer(minLength: 10)
-                            // Two clearly-separated permission columns: each is a tight
-                            // [icon · label · checkbox] unit of fixed width, split by a
-                            // divider — so the See checkbox never reads as Type's (the
-                            // old evenly-spaced pair was ambiguous). Type ⊆ See.
-                            permissionCell(icon: "eye", label: l10n.tr("See", "可见"),
-                                           isOn: viewBinding(a.paneID), disabled: false,
-                                           help: l10n.tr("Let a guest see this pane's screen",
-                                                         "让访客看到此 pane 的画面"))
-                            Divider().frame(height: 16)
-                            permissionCell(icon: "keyboard", label: l10n.tr("Type", "输入"),
-                                           isOn: paneBinding(a.paneID),
-                                           disabled: !share.viewPanes.contains(a.paneID),
-                                           help: l10n.tr("Let a guest type into this pane (needs See + consent on)",
-                                                         "让访客向此 pane 输入（需可见 + 已开启同意）"))
-                        }
-                        .disabled(share.busy)
-                    }
-                }
-            }.frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
     // One permission column: icon + word on the left, checkbox pinned right, in a
     // fixed width so See/Type line up as columns across every row.
     @ViewBuilder
@@ -383,16 +349,6 @@ struct PreferencesView: View {
         .buttonStyle(.plain)
     }
 
-    private func paneBinding(_ pane: String) -> Binding<Bool> {
-        Binding(get: { share.allowedPanes.contains(pane) },
-                set: { share.setPane(pane, allowed: $0) })
-    }
-
-    private func viewBinding(_ pane: String) -> Binding<Bool> {
-        Binding(get: { share.viewPanes.contains(pane) },
-                set: { share.setView(pane, visible: $0) })
-    }
-
     // Existing guest links (revocable), a "New link" button (mints + copies the URL),
     // and — right after minting — the fresh link, shown + selectable so the host can
     // re-copy it to send to a collaborator.
@@ -407,8 +363,8 @@ struct PreferencesView: View {
                                    count: share.guests.count, expanded: $linksExpanded)
                 }
                 Spacer(minLength: 8)
-                // Prompt for a name so links aren't all the default "phone".
-                Button(l10n.tr("New link", "新链接")) { promptNewLink() }
+                // One-step creation: name + per-link scope in the same sheet.
+                Button(l10n.tr("New share…", "新建分享…")) { showNewShareSheet = true }
                     .disabled(share.busy)
             }
             if share.guests.isEmpty {
@@ -417,18 +373,31 @@ struct PreferencesView: View {
                     .font(.system(size: 11)).foregroundStyle(.tertiary)
             } else if linksExpanded {
                 ForEach(share.guests) { g in
-                    HStack(spacing: 8) {
-                        Image(systemName: "link").font(.system(size: 11))
-                            .foregroundStyle(.secondary).frame(width: 14)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
-                                .font(.system(size: 12))
-                            Text(shareLinkAge(g.enrolledAt))
-                                .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Button {
+                                expandedLink = (expandedLink == g.id) ? "" : g.id
+                            } label: {
+                                Image(systemName: expandedLink == g.id ? "chevron.down" : "chevron.right")
+                                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                                    .frame(width: 10)
+                            }.buttonStyle(.plain)
+                            Image(systemName: "link").font(.system(size: 11))
+                                .foregroundStyle(.secondary).frame(width: 14)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
+                                    .font(.system(size: 12))
+                                Text(shareLinkAge(g.enrolledAt) + "  ·  " + linkScopeSummary(g))
+                                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                            }
+                            Spacer(minLength: 0)
+                            Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
+                                .disabled(share.busy)
                         }
-                        Spacer(minLength: 0)
-                        Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
-                            .disabled(share.busy)
+                        if expandedLink == g.id {
+                            linkScopeEditor(g)
+                                .padding(.leading, 24)
+                        }
                     }
                 }
             }
@@ -445,23 +414,114 @@ struct PreferencesView: View {
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // Ask for a label before minting, so links read as who they're for instead of a
-    // wall of default "phone" rows. Blank is allowed (the CLI falls back to its
-    // default); Enter in the field confirms.
-    private func promptNewLink() {
-        let a = NSAlert()
-        a.messageText = l10n.tr("Name this share link", "给分享链接起个名字")
-        a.informativeText = l10n.tr("A label to recognize who it's for — e.g. a teammate's name.",
-                                    "用来识别这个链接给谁的 —— 比如同事的名字。")
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
-        field.placeholderString = l10n.tr("e.g. Alex, or leave blank", "例如 张三，可留空")
-        a.accessoryView = field
-        a.addButton(withTitle: l10n.tr("Create", "创建"))
-        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
-        a.window.initialFirstResponder = field
-        if a.runModal() == .alertFirstButtonReturn {
-            share.newLink(label: field.stringValue)
+    // ── PAIR section (your own devices, full control) ────────────────────────
+
+    @ViewBuilder private var pairSection: some View {
+        if pairStore.devices.isEmpty {
+            Text(l10n.tr("No paired devices yet — pair your phone, a browser, or another computer's terminal.",
+                         "还没有配对设备 —— 配对你的手机、浏览器或另一台电脑的终端。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+        } else {
+            ForEach(pairStore.devices) { d in
+                HStack(spacing: 8) {
+                    Image(systemName: d.kind).font(.system(size: 12))
+                        .foregroundStyle(.secondary).frame(width: 16)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(d.name).font(.system(size: 12))
+                        Text(pairLastSeen(d))
+                            .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    }
+                    Spacer(minLength: 0)
+                    Button(l10n.tr("Revoke", "吊销")) { pairStore.revoke(d.id) }
+                        .disabled(pairStore.busy)
+                }
+            }
         }
+        HStack {
+            Spacer()
+            Button(l10n.tr("Pair a device…", "配对新设备…")) { showPairSheet = true }
+        }
+    }
+
+    private func pairLastSeen(_ d: PairedDevice) -> String {
+        if d.lastSeen > 0 {
+            return l10n.tr("last seen ", "上次连接 ") + relativeTime(d.lastSeen, now: Int(Date().timeIntervalSince1970)) + l10n.tr(" ago", "前")
+        }
+        return l10n.tr("never connected", "从未连接")
+    }
+
+    // ── per-link scope editor (SHARE section) ─────────────────────────────────
+
+    // linkScopeSummary renders a link's grant: "2 See · 1 Type" (+ expiry).
+    private func linkScopeSummary(_ g: GuestLink) -> String {
+        var s = "\(g.viewPanes.count) See · \(g.inputPanes.count) Type"
+        if g.expiresAt > 0 {
+            let left = g.expiresAt - Int(Date().timeIntervalSince1970)
+            s += left <= 0 ? l10n.tr(" · expired", " · 已过期")
+                           : l10n.tr(" · expires in ", " · 剩 ") + relativeTime(Int(Date().timeIntervalSince1970) - left, now: Int(Date().timeIntervalSince1970))
+        }
+        return s
+    }
+
+    // linkScopeEditor edits ONE link's See/Type per session — `share set`, never
+    // the legacy global (broadcast) forms.
+    @ViewBuilder private func linkScopeEditor(_ g: GuestLink) -> some View {
+        let panes = store.shareablePanes
+        if panes.isEmpty {
+            Text(l10n.tr("No tmux panes to share right now.", "当前没有可分享的 tmux pane。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+        } else {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(panes) { a in
+                    HStack(spacing: 8) {
+                        AgentAvatar(agent: a)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(a.primary.isEmpty ? (a.agent.isEmpty ? a.paneID : a.agent) : a.primary)
+                                .font(Theme.Font.session).lineLimit(1).truncationMode(.tail)
+                            Text(a.secondary)
+                                .font(Theme.Font.window).foregroundStyle(.secondary)
+                                .lineLimit(1).truncationMode(.tail)
+                        }
+                        Spacer(minLength: 10)
+                        permissionCell(icon: "eye", label: l10n.tr("See", "可见"),
+                                       isOn: linkViewBinding(g, a.paneID), disabled: false,
+                                       help: l10n.tr("Let this link see the pane", "让这条链接看到此 pane"))
+                        Divider().frame(height: 16)
+                        permissionCell(icon: "keyboard", label: l10n.tr("Type", "输入"),
+                                       isOn: linkTypeBinding(g, a.paneID),
+                                       disabled: !g.viewPanes.contains(a.paneID),
+                                       help: l10n.tr("Let this link type into the pane", "让这条链接向此 pane 输入"))
+                    }
+                    .disabled(share.busy)
+                }
+            }
+        }
+    }
+
+    private func linkViewBinding(_ g: GuestLink, _ pane: String) -> Binding<Bool> {
+        Binding(get: { g.viewPanes.contains(pane) }, set: { on in
+            var view = Set(g.viewPanes)
+            var input = Set(g.inputPanes)
+            if on { view.insert(pane) } else {
+                view.remove(pane)
+                input.remove(pane) // removing See drops Type
+            }
+            share.setLinkScope(g.id, view: view.sorted(), input: input.sorted())
+        })
+    }
+
+    private func linkTypeBinding(_ g: GuestLink, _ pane: String) -> Binding<Bool> {
+        Binding(get: { g.inputPanes.contains(pane) }, set: { on in
+            var view = Set(g.viewPanes)
+            var input = Set(g.inputPanes)
+            if on {
+                input.insert(pane)
+                view.insert(pane) // Type implies See
+            } else {
+                input.remove(pane)
+            }
+            share.setLinkScope(g.id, view: view.sorted(), input: input.sorted())
+        })
     }
 
     // "created 5m ago" from the link's enroll time (relativeTime is the shared
