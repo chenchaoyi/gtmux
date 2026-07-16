@@ -6,6 +6,9 @@
 // Flags:
 //   GTMUX_DEBUG_PAIR_URL / GTMUX_DEBUG_PAIR_TOKEN  auto-pair on launch (skip the
 //                                                  manual pairing screen in tests)
+//   GTMUX_DEBUG_SERVERS='[{url,token,name,scope?}]'  seed the SAVED server list
+//                                                  (no active → root shows the
+//                                                  two-track connection page)
 //   GTMUX_DEBUG_NO_PUSH=1   skip the push-permission prompt (it blocks UI tests)
 //   GTMUX_DEBUG_LOG_NET=1   record every API request/response to the debug log
 //
@@ -33,6 +36,7 @@ export const Debug = {
   pairToken: flag('PAIR_TOKEN'),
   pairName: flag('PAIR_NAME'), // display name for the auto-paired server (else "debug")
   resetServers: flag('RESET_SERVERS') === '1', // clear saved servers on launch (test isolation)
+  seedServers: flag('SERVERS'), // JSON array of PairedMac to seed (pair-share UI tests)
   noPush: flag('NO_PUSH') === '1',
   logNet: flag('LOG_NET') === '1',
 

@@ -114,13 +114,27 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       if (Debug.resetServers) {
         svs = [];
         act = null;
-        void saveServers({servers: [], activeUrl: null});
+        saveServers({servers: [], activeUrl: null}).catch(() => {}); // keychain may be absent (unsigned sim build)
       }
       if (Debug.pairUrl && Debug.pairToken) {
         const s = {url: Debug.pairUrl, token: Debug.pairToken, name: Debug.pairName || 'debug'};
         Debug.record({event: 'auto-pair', url: s.url});
         svs = [s];
         act = s.url;
+      }
+      // Seed a full saved-server list (pair-share UI tests): in-memory only, no
+      // active connection — the root then shows the two-track connection page.
+      if (Debug.seedServers) {
+        try {
+          const parsed = JSON.parse(Debug.seedServers);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            svs = parsed;
+            act = null;
+            Debug.record({event: 'seed-servers', count: parsed.length});
+          }
+        } catch {
+          /* malformed seed — ignore */
+        }
       }
       setServers(svs);
       setActiveUrl(act);

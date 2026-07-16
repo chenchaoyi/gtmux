@@ -59,6 +59,18 @@ export function sanitize(raw: any): ServerStore {
   return {servers, activeUrl};
 }
 
+// splitServers groups the saved connections by the pair/share model: paired Macs
+// (owner scope — my own devices, full control) vs guest connections (share links,
+// least privilege). Old records without a scope field are owner (back-compat).
+export function splitServers(servers: PairedMac[]): {mine: PairedMac[]; guests: PairedMac[]} {
+  const mine: PairedMac[] = [];
+  const guests: PairedMac[] = [];
+  for (const s of servers) {
+    (s.scope === 'guest' ? guests : mine).push(s);
+  }
+  return {mine, guests};
+}
+
 // upsertServer adds or refreshes a server (identity = url), moving it to the
 // front (most-recent first). Pure — unit-tested.
 export function upsertServer(servers: PairedMac[], m: PairedMac): PairedMac[] {

@@ -6,7 +6,7 @@ over one Go core (gtmux-core is the single data source):
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
   `digest`, `hq`, `hq-feed`, `quiet`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
   `serve`, `tunnel`, `devices`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
-  `uninstall-app`. `attach` = the remote terminal client: `gtmux attach <host|share-link>
+  `uninstall-app`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
   (`GET /api/attach`, scope-gated), raw passthrough; owner or guest. See
   `openspec/changes/remote-terminal-client` + `docs/design/remote-attach-research.md`. Logic lives in `internal/`. `digest`+`hq` = the supervisor
