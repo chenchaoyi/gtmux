@@ -277,7 +277,15 @@ PLIST
     # re-activate the dying old instance instead of launching the freshly-swapped
     # binary, leaving the app stuck on "Updating…". `-n` always starts the swapped
     # bundle; the app's newest-wins single-instance guard terminates any older one.
-    open -n "${APP_DIR}/Gtmux.app" 2>/dev/null || true
+    #
+    # `env -u GTMUX_VERSION`: the installer runs with GTMUX_VERSION pinned (from
+    # `gtmux update`, which resolves the target tag in Go), and `open -n` would leak
+    # that pin into the long-lived app process's environment. The app's in-menu
+    # "click to update" then re-runs `gtmux update` inheriting GTMUX_VERSION=<current>,
+    # which Go honors instead of resolving the latest — so the app reinstalls its OWN
+    # version forever and the "new version" banner never clears. Strip it here so the
+    # app always starts with a clean environment and self-update can reach the latest.
+    env -u GTMUX_VERSION open -n "${APP_DIR}/Gtmux.app" 2>/dev/null || true
     step 5 "Menu bar" "${APP_DIR}/Gtmux.app"
   else
     note "menu-bar app: download/unzip failed — CLI is installed; retry or skip with GTMUX_NO_APP=1"

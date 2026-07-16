@@ -41,6 +41,26 @@ Tagging `vX.Y.Z` runs the **full `make check`** (not a weaker `go test`), then
 goreleaser + the macOS app build. CI can't see the menu bar — smoke-test the app on
 real macOS before trusting a tag.
 
+### Menu-bar "click to update" loops — the app reinstalls its OWN version
+**Symptom:** the popover shows `New version X — click to update`; clicking it "finishes"
+(no error), the app relaunches, and the SAME banner reappears. The CLI + app both stay
+on the old version. `~/…/T/gtmux-update.log` shows `Release v<OLD>` / `Installed gtmux
+v<OLD>` even though Go logged `Updating <OLD> → <NEW>`. Running `gtmux update` **by hand
+in a normal shell works** (installs `<NEW>`).
+**Root cause:** `install.sh`'s `open -n "…/Gtmux.app"` used to launch the app with the
+installer's env still set, **leaking `GTMUX_VERSION=<OLD>` into the long-lived app
+process**. The in-menu update runs `gtmux update`, which inherits that pin; Go honors a
+pre-set `GTMUX_VERSION` (`if !LookupEnv(...)`) instead of resolving the latest, so
+install.sh reinstalls `<OLD>` — forever. A manual shell has no `GTMUX_VERSION`, so it
+resolves `<NEW>` and works. (After a re-login the login LaunchAgent starts the app with
+a clean env, which is why a reboot "fixes" it.)
+**Fix:** `install.sh` now strips it (`env -u GTMUX_VERSION open -n …`) so the app never
+inherits the pin, and `Updater.spawnDetachedUpdate` runs `env -u GTMUX_VERSION gtmux
+update` as a belt. **Diagnose** with `ps eww <GtmuxBar-pid> | tr ' ' '\n' | grep GTMUX_`
+— a `GTMUX_VERSION=` there is the smell. **Unstick a machine now:** `gtmux update` from
+a plain terminal, or just click update twice (the first click relaunches with a clean
+env via the fixed install.sh).
+
 ---
 
 ## Remote access / pairing / push
