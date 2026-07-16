@@ -221,9 +221,12 @@ The hook appends every session's lifecycle event (start / finish / waiting /
 background) to a ROTATED log (`~/.local/share/gtmux/events.jsonl`, active 20 MB +
 1 rotated ≈ 40 MB ceiling, `eventsCapMB` config; `0` disables). `gtmux events`
 prints the last hour; `--since 10m|2h` a window; `--follow` streams live and is
-rotation-aware (never silently stops). This is the terminal-native SUBSCRIPTION
-to the same events the apps get over SSE — gtmux HQ tails it to stay aware of any
-session's execution without re-polling.
+rotation-aware (never silently stops). `--since-seq N` is the one-shot DELTA read
+(everything strictly after sequence N, oldest first, combinable with
+`--severity`/`--json`) — the pull-on-wake primitive: gtmux HQ is woken by a
+signal line naming a sequence range and pulls exactly that delta, on any agent
+that can run a CLI command (no background tail required). This is the
+terminal-native SUBSCRIPTION to the same events the apps get over SSE.
 
 ## `gtmux resource` — local machine resource watch
 

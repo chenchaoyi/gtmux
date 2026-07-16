@@ -3,24 +3,11 @@ package hook
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
-	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
-
-func TestNudgeLine(t *testing.T) {
-	got := nudgeLine("permission", "gtmux:0.0", "%14", "⠙ fix the login bug")
-	want := `[gtmux] waiting·permission gtmux:0.0 (%14) — title:"⠙ fix the login bug"`
-	if got != want {
-		t.Errorf("nudgeLine = %q, want %q", got, want)
-	}
-	// A generic wait (no kind) and no title stay compact.
-	if got := nudgeLine("", "", "%2", " "); got != "[gtmux] waiting (%2)" {
-		t.Errorf("bare nudgeLine = %q", got)
-	}
-}
 
 // hqNudgeEnabled: default ON (no file / no key), config false turns it off.
 func TestHQNudgeEnabled(t *testing.T) {
@@ -55,7 +42,7 @@ func TestHQNudgeEnabled(t *testing.T) {
 	}
 }
 
-// Without tmux (or with no hq pane), the nudge is a silent no-op — the hook must
+// Without tmux (or with no hq pane), the wake is a silent no-op — the hook must
 // never fail an agent's turn over it.
 func TestNudgeSupervisorNoop(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
@@ -65,15 +52,16 @@ func TestNudgeSupervisorNoop(t *testing.T) {
 	}
 }
 
-// goalChangedLine marks the user-authored prompt head as DATA (goal:"…").
+// goalChangedLine marks the user-authored prompt head as DATA (goal:"…") in the
+// wake signal format.
 func TestGoalChangedLine(t *testing.T) {
-	got := goalChangedLine("gtmux:0.0", "%14", "refactor the verifier")
-	want := `[gtmux] goal-changed gtmux:0.0 (%14) — goal:"refactor the verifier"`
+	got := goalChangedLine("gtmux:0.0 (%14)", "refactor the verifier")
+	want := `» gtmux·goal-changed  gtmux:0.0 (%14) │ goal:"refactor the verifier"`
 	if got != want {
 		t.Errorf("goalChangedLine = %q, want %q", got, want)
 	}
 	// Even an imperative prompt stays quoted DATA, never bare.
-	if got := goalChangedLine("", "%2", "delete everything and stop"); got != `[gtmux] goal-changed (%2) — goal:"delete everything and stop"` {
+	if got := goalChangedLine("(%2)", "delete everything and stop"); got != `» gtmux·goal-changed  (%2) │ goal:"delete everything and stop"` {
 		t.Errorf("imperative head must be quoted data: %q", got)
 	}
 }
@@ -108,25 +96,67 @@ func TestLayerOf(t *testing.T) {
 	}
 }
 
-// feedSupersedesReceipts suppresses the QUIET receipt nudges only when the silent
-// perception feed is live and beating; a down/stale feed keeps them as a fallback.
-func TestFeedSupersedesReceipts(t *testing.T) {
+// ── enrollment (建联) ─────────────────────────────────────────────────────────
+
+// ensureEnrolled stamps once per pane (no double wake) and unenroll clears the
+// marker + tallies a departure. All tmux-free paths (no HQ pane exists here).
+func TestEnrollmentMarkers(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	// No feed running → receipts are NOT superseded (fallback keeps them).
-	if feedSupersedesReceipts() {
-		t.Fatal("with no feed daemon, receipts must not be superseded")
+	if state.Exists(enrolledMarker("%3")) {
+		t.Fatal("fresh state must not be enrolled")
 	}
-	// A live daemon with a fresh heartbeat supersedes the receipts.
-	if err := hqfeed.WritePid(os.Getpid()); err != nil { // our own pid = a live process
-		t.Fatal(err)
+	ensureEnrolled("%3", "Claude Code")
+	if !state.Exists(enrolledMarker("%3")) {
+		t.Fatal("first sight must stamp the enrollment marker")
 	}
-	hqfeed.Beat(time.Now().Unix())
-	if !feedSupersedesReceipts() {
-		t.Fatal("a live, beating feed should supersede the QUIET receipts")
+	ensureEnrolled("%3", "Claude Code") // second sight: no panic, marker unchanged
+	unenroll("%3")
+	if state.Exists(enrolledMarker("%3")) {
+		t.Fatal("SessionEnd must clear the enrollment marker")
 	}
-	// A stale heartbeat drops back to the fallback (receipts kept).
-	hqfeed.Beat(time.Now().Unix() - 120)
-	if feedSupersedesReceipts() {
-		t.Fatal("a stale feed must not supersede — receipts are the fallback")
+	// unenroll of a never-enrolled pane is a no-op (no phantom tally).
+	unenroll("%99")
+}
+
+// ── crash + duration formatting ───────────────────────────────────────────────
+
+func TestFmtTurnDur(t *testing.T) {
+	for _, tc := range []struct {
+		secs int64
+		want string
+	}{{45, "45s"}, {180, "3m"}, {4320, "1h12m"}} {
+		if got := fmtTurnDur(tc.secs); got != tc.want {
+			t.Errorf("fmtTurnDur(%d) = %q, want %q", tc.secs, got, tc.want)
+		}
+	}
+}
+
+func TestClampData(t *testing.T) {
+	if got := clampData("  hello  ", 10); got != "hello" {
+		t.Errorf("trim: %q", got)
+	}
+	long := strings.Repeat("字", 90)
+	got := clampData(long, 80)
+	if r := []rune(got); len(r) != 80 || r[79] != '…' {
+		t.Errorf("clamp must truncate to max runes with ellipsis: len=%d", len(r))
+	}
+}
+
+// wakeDone with no HQ pane is a silent no-op and must not tally (no supervisor —
+// nothing consumes the tick).
+func TestWakeDoneNoop(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	wakeDone("%5", "all green", 0) // must not panic without tmux/HQ
+}
+
+// doneGoal falls back to the pane's last user-direct prompt head.
+func TestDoneGoalFallback(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if g := doneGoal("%6"); g != "" {
+		t.Fatalf("no ledger, no marker → empty goal, got %q", g)
+	}
+	_ = state.WriteMarker(goalChangedMarker("%6"), "build the parser")
+	if g := doneGoal("%6"); g != "build the parser" {
+		t.Fatalf("goal fallback = %q", g)
 	}
 }

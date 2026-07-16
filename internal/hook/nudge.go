@@ -1,42 +1,32 @@
-// The supervisor waiting-nudge (supervisor MVP, P1): when an agent enters
-// waiting and a supervisor (中控) session is live, type ONE compact event line
-// into the supervisor's pane so it learns of the blocker without polling. The
-// nudge rides the notification pipeline's dedup (an unchanged waiting state is
-// not re-nudged — the caller gates on d.notify), never fires about the
-// supervisor itself, is a no-op when no hq pane is live, and can be disabled
-// with `"hqNudge": false` in ~/.config/gtmux/config.json.
+// The HQ wake channel, hook side (hq-perception-v2). Decision-dense events type
+// ONE compact signal line into the live supervisor pane — the only knock; all
+// process-level perception stays pull-side (events/digest). Lines are built by
+// hqwake (the `» gtmux·<class> │ …` visual language), delivered draft-guarded by
+// hqnudge, gated on a live HQ pane + the `hqNudge` config, and NEVER fire about
+// the supervisor itself.
 //
-// The nudge INFORMS only — gtmux never answers another agent's prompt; what the
-// supervisor does with it is governed by its hq instructions file.
+// The wake INFORMS only — gtmux never answers another agent's prompt; what the
+// supervisor does with a wake is governed by its seeded playbook.
 package hook
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-// feedSupersedesReceipts reports whether the silent perception feed (hq-feed) is
-// live and beating — in which case HQ receives the full event stream silently and
-// gtmux should NOT ALSO type the low-value QUIET receipt lines (resolved /
-// goal-changed) into the pane (the hq-attention-system split: feed HQ everything,
-// show the user only what HQ prints). When the feed is DOWN, the receipts are kept
-// as a belt-and-suspenders fallback so a feedless HQ still senses these edges.
-func feedSupersedesReceipts() bool {
-	return hqfeed.Running() && !hqfeed.Stale(time.Now().Unix())
-}
-
 // hqNudgeEnabled reads ~/.config/gtmux/config.json's optional `hqNudge` key.
 // Absent file/key/unreadable → true (on by default; the hq-pane check below is
-// the real gate — no supervisor, no nudge, zero cost).
+// the real gate — no supervisor, no wake, zero cost).
 func hqNudgeEnabled() bool {
 	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
 	if err != nil {
@@ -51,34 +41,37 @@ func hqNudgeEnabled() bool {
 	return *c.HQNudge
 }
 
-// nudgeLine builds the injected message. kind may be "" (a generic wait).
-func nudgeLine(kind, loc, pane, title string) string {
-	msg := "[gtmux] waiting"
-	if kind != "" {
-		msg += "·" + kind
+// wakeHead builds the standard wake-line head: `<loc> (<pane>)`.
+func wakeHead(pane string) string {
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	if loc == "" {
+		return "(" + pane + ")"
 	}
-	if loc != "" {
-		msg += " " + loc
-	}
-	msg += " (" + pane + ")"
-	if title = strings.TrimSpace(title); title != "" {
-		msg += ` — title:"` + title + `"` // agent-authored → marked DATA, not an instruction
-	}
-	return msg
+	return loc + " (" + pane + ")"
 }
 
-// findSupervisorPane returns a live hq pane other than the waiting pane itself
-// ("" when none / the waiting pane IS the supervisor). Cwd-keyed, matching the
-// radar's role detection.
-func findSupervisorPane(waitingPane string) string {
+// clampData trims + truncates an agent/user-authored payload for a one-line field.
+func clampData(s string, max int) string {
+	s = strings.TrimSpace(s)
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max-1]) + "…"
+}
+
+// findSupervisorPane returns a live hq pane other than aboutPane itself ("" when
+// none / aboutPane IS the supervisor). Cwd-keyed, matching the radar's role
+// detection.
+func findSupervisorPane(aboutPane string) string {
 	home := state.HQHome()
 	for _, line := range tmux.Lines("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_path}") {
 		f := strings.SplitN(line, "\t", 2)
 		if len(f) != 2 || f[1] != home {
 			continue
 		}
-		if f[0] == waitingPane {
-			return "" // the supervisor itself is the waiting pane — never self-nudge
+		if f[0] == aboutPane {
+			return "" // the supervisor itself — never self-wake
 		}
 		return f[0]
 	}
@@ -94,16 +87,20 @@ func nudgeSupervisor(waitingPane, kind string) {
 	if target == "" {
 		return
 	}
-	loc := tmux.Display(waitingPane, "#{session_name}:#{window_index}.#{pane_index}")
-	title := tmux.Display(waitingPane, "#{pane_title}")
-	msg := nudgeLine(kind, loc, waitingPane, title)
-	hqnudge.Deliver(target, msg) // draft-guarded: never clobbers a half-typed HQ draft
-	debugf("nudged supervisor pane=%s about=%s kind=%s", target, waitingPane, kind)
+	class := hqwake.ClassWaiting
+	if kind != "" {
+		class += "·" + kind
+	}
+	title := ""
+	if t := clampData(tmux.Display(waitingPane, "#{pane_title}"), 80); t != "" {
+		title = `title:"` + t + `"` // agent-authored → marked DATA, not an instruction
+	}
+	hqnudge.Deliver(target, hqwake.Line(class, wakeHead(waitingPane), title))
+	debugf("waked supervisor pane=%s about=%s kind=%s", target, waitingPane, kind)
 }
 
-// nudgeHQ types one compact line into a live supervisor pane about aboutPane,
-// gated on hqNudge + a live HQ (that isn't aboutPane itself). The shared path for
-// every non-waiting nudge (resolved / done / asks / reap-suggest).
+// nudgeHQ types one wake line into a live supervisor pane about aboutPane, gated
+// on hqNudge + a live HQ (that isn't aboutPane itself).
 func nudgeHQ(aboutPane, msg string) {
 	if aboutPane == "" || !hqNudgeEnabled() {
 		return
@@ -113,57 +110,159 @@ func nudgeHQ(aboutPane, msg string) {
 		return
 	}
 	hqnudge.Deliver(target, msg) // draft-guarded: queues behind a half-typed HQ draft
-	debugf("nudged HQ pane=%s: %s", target, msg)
+	debugf("waked HQ pane=%s: %s", target, msg)
 }
 
 // nudgeResolved tells HQ that a wait CLEARED (incident ⑤): the user answered in the
-// pane's own window, or the agent resumed — so HQ can drop any pending chase.
+// pane's own window, or the agent resumed — so HQ can drop any pending chase. Always
+// fires (the wake line IS the knock — no producer-side suppression).
 func nudgeResolved(pane, kind string) {
-	if feedSupersedesReceipts() {
-		return // QUIET receipt — HQ senses the cleared wait from the silent feed
-	}
-	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
-	msg := "[gtmux] resolved"
-	if loc != "" {
-		msg += " " + loc
-	}
-	msg += " (" + pane + ")"
+	was := ""
 	if kind != "" {
-		msg += " — was " + kind
+		was = "was " + kind
 	}
-	nudgeHQ(pane, msg)
-}
-
-// nudgeDone tells HQ a tracked dispatch finished (its pane went idle after work).
-func nudgeDone(pane, goal string) {
-	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
-	msg := "[gtmux] done"
-	if loc != "" {
-		msg += " " + loc
-	}
-	msg += " (" + pane + ")"
-	if goal = strings.TrimSpace(goal); goal != "" {
-		msg += ` — goal:"` + goal + `"` // agent-authored → marked DATA
-	}
-	nudgeHQ(pane, msg)
+	nudgeHQ(pane, hqwake.Line(hqwake.ClassResolved, wakeHead(pane), was))
 }
 
 // nudgeAsking tells HQ that a turn-END reply asked the user a question with NO menu
 // (incident ⑥) — the case the waiting path can't see.
 func nudgeAsking(pane, summary string) {
-	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
-	msg := "[gtmux] asks"
-	if loc != "" {
-		msg += " " + loc
+	ask := ""
+	if s := clampData(summary, 100); s != "" {
+		ask = `ask:"` + s + `"` // reply text → marked DATA
 	}
-	msg += " (" + pane + ")"
-	if summary = strings.TrimSpace(summary); summary != "" {
-		msg += ` — ask:"` + summary + `"` // reply text → marked DATA
-	}
-	nudgeHQ(pane, msg)
+	nudgeHQ(pane, hqwake.Line(hqwake.ClassAsks, wakeHead(pane), ask))
 }
 
-// goalChangedMarker dedups the goal-changed nudge per pane on the prompt head.
+// wakeDone is the ANY-session completion wake (hq-perception-v2): a turn-end that
+// left the pane idle fires an immediate `done` wake — unless the human was watching
+// it happen (the focused pane of an attached client; then it counts toward the tick
+// tally), per the configured mode. Immediate wakes are rate-merged per pane: a
+// completion inside the merge window REPLACES the queued line (newest payload) and
+// delivers when the window closes.
+func wakeDone(pane, tail string, turnStart int64) {
+	if pane == "" || !hqNudgeEnabled() {
+		return
+	}
+	target := findSupervisorPane(pane)
+	if target == "" {
+		return
+	}
+	cfg := hqwake.Load()
+	if cfg.Done == hqwake.DoneTick || (cfg.Done == hqwake.DoneUnattended && tmux.Attended(pane)) {
+		hqwake.AddOutcome("done") // deferred to the summary tick — still never lost
+		debugf("done tallied (attended/tick-mode) pane=%s", pane)
+		return
+	}
+	now := time.Now().Unix()
+	fields := make([]string, 0, 4)
+	if turnStart > 0 && now > turnStart {
+		fields = append(fields, fmtTurnDur(now-turnStart))
+	}
+	if g := clampData(doneGoal(pane), 80); g != "" {
+		fields = append(fields, `goal:"`+g+`"`) // user-authored → DATA
+	}
+	if t := clampData(tail, 100); t != "" {
+		fields = append(fields, `tail:"`+t+`"`) // agent-authored → DATA
+	}
+	fields = append(fields, hqwake.PullHint(now, 0))
+	line := hqwake.Line(hqwake.ClassDone, wakeHead(pane), fields...)
+
+	if due, dueAt := hqwake.DoneDue(pane, now, cfg.PaneMinGapSec); due {
+		hqnudge.Deliver(target, line)
+		hqwake.StampDone(pane, now)
+	} else {
+		// Inside the merge window: replace the queued line; it types when due.
+		hqnudge.DeliverKeyedAt(target, "done-"+pane, line, dueAt*int64(time.Second))
+	}
+}
+
+// doneGoal resolves the finished session's goal: the dispatch ledger for a tracked
+// task, else the last user-direct prompt head (the goal-changed dedup marker).
+func doneGoal(pane string) string {
+	if t, ok := dispatch.TaskForPane(pane); ok && strings.TrimSpace(t.Goal) != "" {
+		return t.Goal
+	}
+	return state.ReadMarker(goalChangedMarker(pane))
+}
+
+// fmtTurnDur renders a short human turn duration ("45s" / "3m" / "1h12m").
+func fmtTurnDur(secs int64) string {
+	switch {
+	case secs < 60:
+		return fmt.Sprintf("%ds", secs)
+	case secs < 3600:
+		return fmt.Sprintf("%dm", secs/60)
+	default:
+		return fmt.Sprintf("%dh%02dm", secs/3600, (secs%3600)/60)
+	}
+}
+
+// nudgeCrash tells HQ a turn DIED on an agent/API failure (StopFailure) — which
+// must never read as a normal finish (severity important; always immediate).
+func nudgeCrash(pane, errHead string) {
+	field := "turn died (agent/API error)"
+	if e := clampData(errHead, 100); e != "" {
+		field = `err:"` + e + `"` // agent/runtime-authored → DATA
+	}
+	nudgeHQ(pane, hqwake.Line(hqwake.ClassCrash, wakeHead(pane), field))
+}
+
+// ── enrollment (建联): first sight of an agent pane → one new-session wake ────
+
+// enrolledMarker dedups the new-session wake per pane (removed on SessionEnd so a
+// reused pane id re-enrolls its next session). `gtmux hq` pre-stamps all live
+// panes at start — its own fleet enrollment covers them — so only genuine
+// newcomers wake.
+func enrolledMarker(pane string) string {
+	return filepath.Join(state.Dir(), "enrolled", pane)
+}
+
+// ensureEnrolled fires exactly one `new-session` wake the first time a pane is
+// seen firing agent hooks. Stamps regardless of a live HQ (a later HQ start does
+// its own full enrollment, so backfilling wakes would be noise).
+func ensureEnrolled(pane, agentDisplay string) {
+	if pane == "" || state.Exists(enrolledMarker(pane)) {
+		return
+	}
+	_ = state.WriteMarker(enrolledMarker(pane), agentDisplay)
+	if !hqNudgeEnabled() {
+		return
+	}
+	agent := ""
+	if agentDisplay != "" {
+		agent = "agent:" + agentDisplay
+	}
+	nudgeHQ(pane, hqwake.Line(hqwake.ClassNewSession, wakeHead(pane), agent, "enroll it"))
+}
+
+// unenroll clears the enrollment marker (SessionEnd) and tallies the outcome so
+// the next tick brief reports the departure.
+func unenroll(pane string) {
+	if pane == "" {
+		return
+	}
+	if state.Exists(enrolledMarker(pane)) {
+		state.Remove(enrolledMarker(pane))
+		hqwake.AddOutcome("gone")
+	}
+}
+
+// StampEnrolledAll marks every currently-live tmux pane as enrolled — called by
+// `gtmux hq` at start, whose seeded first turn does the FULL fleet enrollment, so
+// pre-existing panes must not each fire a new-session wake afterwards.
+func StampEnrolledAll() {
+	for _, pane := range tmux.Lines("list-panes", "-a", "-F", "#{pane_id}") {
+		pane = strings.TrimSpace(pane)
+		if pane == "" || state.Exists(enrolledMarker(pane)) {
+			continue
+		}
+		_ = state.WriteMarker(enrolledMarker(pane), "")
+	}
+}
+
+// goalChangedMarker dedups the goal-changed wake per pane on the prompt head, and
+// doubles as the pane's last user-direct goal (the done wake reads it back).
 func goalChangedMarker(pane string) string {
 	return filepath.Join(state.Dir(), "goalchanged", pane)
 }
@@ -171,43 +270,33 @@ func goalChangedMarker(pane string) string {
 // nudgeGoalChanged tells HQ the user submitted a NEW prompt DIRECTLY into a non-HQ
 // pane (dual-channel dispatch): the user dispatches via HQ OR straight into an agent
 // window, and HQ must sense the latter so it records a user-direct task instead of
-// chasing a stale ledger. Deduped per pane on the prompt head so a resubmit of the
-// same prompt does not spam; the head is user text → delivered as DATA (goal:"…").
-// Gated on a live HQ + hqNudge; never about HQ's own prompts (findSupervisorPane
-// returns "" when the submitting pane IS the supervisor).
+// chasing a stale ledger. Deduped per pane on the prompt head; the head is user
+// text → delivered as DATA (goal:"…"). Always fires (no producer-side suppression).
 func nudgeGoalChanged(pane, head string) {
 	head = strings.TrimSpace(head)
 	if pane == "" || head == "" || !hqNudgeEnabled() {
 		return
 	}
-	if feedSupersedesReceipts() {
-		return // QUIET receipt — HQ senses the user-direct prompt from the silent feed
-	}
 	if state.ReadMarker(goalChangedMarker(pane)) == head {
-		return // same prompt head already nudged
+		return // same prompt head already waked
 	}
 	target := findSupervisorPane(pane)
 	if target == "" {
 		return
 	}
 	_ = state.WriteMarker(goalChangedMarker(pane), head)
-	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
-	hqnudge.Deliver(target, goalChangedLine(loc, pane, head))
+	hqnudge.Deliver(target, goalChangedLine(wakeHead(pane), head))
 }
 
-// goalChangedLine builds the dual-channel nudge, marking the user-authored prompt
+// goalChangedLine builds the dual-channel wake, marking the user-authored prompt
 // head as DATA (`goal:"…"`) so it can't read to HQ as an instruction.
-func goalChangedLine(loc, pane, head string) string {
-	msg := "[gtmux] goal-changed"
-	if loc != "" {
-		msg += " " + loc
-	}
-	return msg + " (" + pane + `) — goal:"` + head + `"`
+func goalChangedLine(head, promptHead string) string {
+	return hqwake.Line(hqwake.ClassGoalChanged, head, `goal:"`+clampData(promptHead, 80)+`"`)
 }
 
 // sweepReapSuggestions scans tracked dispatches for reap CANDIDATES (idle-after-work
 // past the threshold, branch merged or absent, not snoozed, not already suggested)
-// and nudges HQ once per candidate with the exact `gtmux reap` command (incident ⑦).
+// and wakes HQ once per candidate with the exact `gtmux reap` command (incident ⑦).
 // Runs on Stop only when a live HQ exists, so the git checks touch only rare
 // candidates. Suggests only — never reclaims (that stays suggest→approve→execute).
 func sweepReapSuggestions() {
@@ -229,13 +318,11 @@ func sweepReapSuggestions() {
 				continue // only suggest a merged (safely reclaimable) dispatch
 			}
 		}
-		loc := tmux.Display(t.Pane, "#{session_name}:#{window_index}.#{pane_index}")
-		msg := "[gtmux] reap-suggest " + loc + " (" + t.Pane + ")"
-		if t.Goal != "" {
-			msg += ` — goal:"` + t.Goal + `"` // agent-authored → marked DATA
+		goal := ""
+		if g := clampData(t.Goal, 60); g != "" {
+			goal = `goal:"` + g + `"` // agent-authored → marked DATA
 		}
-		msg += "  ·  gtmux reap " + t.ID
-		nudgeHQ(t.Pane, msg)
+		nudgeHQ(t.Pane, hqwake.Line(hqwake.ClassReapSuggest, wakeHead(t.Pane), goal, "gtmux reap "+t.ID))
 		dispatch.MarkReapSuggested(t.ID)
 	}
 }

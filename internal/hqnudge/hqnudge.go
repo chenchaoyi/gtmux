@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -69,6 +70,26 @@ func deliver(x io, pane, msg string) {
 	enqueue(x, msg) // to disk; nothing typed yet
 	if boxEmpty(x, pane) {
 		drainInto(x, pane) // one send, coalesced — this is the ONLY place we type
+	}
+}
+
+// DeliverKeyedAt queues msg under a REPLACEABLE key with a due time (unix nanos):
+// a later call with the same key REPLACES the pending payload instead of adding a
+// second line, and the entry is not typed before it is due. This is the per-pane
+// done merge window (hq-perception-v2): rapid-fire completions of one pane collapse
+// to one line carrying the newest payload, delivered when the window closes (by the
+// next Deliver/Drain after dueNano). Same draft-guard invariants as Deliver.
+func DeliverKeyedAt(pane, key, msg string, dueNano int64) {
+	deliverKeyedAt(prod, pane, key, msg, dueNano)
+}
+
+func deliverKeyedAt(x io, pane, key, msg string, dueNano int64) {
+	if pane == "" || strings.TrimSpace(msg) == "" || strings.TrimSpace(key) == "" {
+		return
+	}
+	enqueueKeyed(x, key, msg, dueNano)
+	if boxEmpty(x, pane) {
+		drainInto(x, pane) // flushes whatever is DUE (this entry only once due)
 	}
 }
 
@@ -130,17 +151,69 @@ func enqueue(x io, msg string) {
 	_ = os.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
 }
 
+// enqueueKeyed writes/REPLACES the pending entry for key. The name embeds the due
+// time in the same fixed-width-nanos prefix (so lexical order stays time order and
+// drain's due check can read it back); a replacement keeps the ORIGINAL due (window
+// position) and only swaps the payload for the newest one.
+func enqueueKeyed(x io, key, msg string, dueNano int64) {
+	if err := os.MkdirAll(queueDir(), 0o755); err != nil {
+		return
+	}
+	suffix := ".k-" + sanitizeKey(key) + ".txt"
+	entries, _ := os.ReadDir(queueDir())
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), suffix) {
+			// Replace in place: newest payload, original due position.
+			_ = os.WriteFile(filepath.Join(queueDir(), e.Name()), []byte(msg), 0o644)
+			return
+		}
+	}
+	name := fmt.Sprintf("%019d-0%s", dueNano, suffix)
+	_ = os.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
+}
+
+// sanitizeKey makes a queue-filename-safe key (pane ids like "%14" pass through;
+// path separators cannot).
+func sanitizeKey(key string) string {
+	return strings.Map(func(r rune) rune {
+		switch r {
+		case '/', '\\', 0:
+			return '_'
+		}
+		return r
+	}, key)
+}
+
+// dueOf parses the fixed-width nanos prefix of a queue filename (its due time).
+// Malformed names read as 0 (always due) so a legacy entry can never be stranded.
+func dueOf(name string) int64 {
+	i := strings.IndexByte(name, '-')
+	if i <= 0 {
+		return 0
+	}
+	n, err := strconv.ParseInt(name[:i], 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
 // drainInto delivers the queue as ONE coalesced line. It MUST be called only after
 // boxEmpty confirmed an empty box (the invariant). Each file is claimed by an atomic
 // rename to `.sending` so a concurrent drainer can't re-deliver it; a lost claim just
 // skips that file (at worst a coalesce splits across two lines — never a loss/dup).
 func drainInto(x io, pane string) {
+	now := x.nowNano()
 	entries, _ := os.ReadDir(queueDir())
 	var names []string
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".txt") {
-			names = append(names, e.Name())
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".txt") {
+			continue
 		}
+		if dueOf(e.Name()) > now {
+			continue // a keyed entry still inside its merge window — hold it
+		}
+		names = append(names, e.Name())
 	}
 	sort.Strings(names) // oldest-first (fixed-width nanos prefix)
 

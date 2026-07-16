@@ -15,13 +15,15 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // slowTickEval is wired to server Deps.OnSlowTick. It evaluates resource +
-// subscription-limit warnings and nudges HQ once per new/changed warning.
+// subscription-limit warnings, delivers the HQ summary tick, and nudges HQ once
+// per new/changed warning.
 func slowTickEval() {
 	// Draft-guard drain: flush any HQ nudges queued behind a half-typed draft. Cheap-
 	// gated on Pending() so a quiet tick doesn't scan/capture the HQ pane.
@@ -32,13 +34,15 @@ func slowTickEval() {
 	// (amber/red), NOT the exact warn value — disk-free jittering 40→39→38 GB stays
 	// amber and must NOT re-nudge per GB (the by-tier fix).
 	rep := currentResource()
-	nudgeOnChange("resourcewarn", resourceTierKey(rep.Machine), "[gtmux] resource·warn "+rep.Machine.Warn, orphanTail(rep))
+	nudgeOnChange("resourcewarn", resourceTierKey(rep.Machine),
+		hqwake.Line("resource·warn", "", rep.Machine.Warn), orphanTail(rep))
 	// Limits: cache-gated refresh (spawns claude at most once per TTL), nudge on
 	// a new weekly-window crossing. (Moved here from gatherUsage — the 3× fix.)
 	// Dedup keys on the WINDOW identity, so a % climbing within the same window
 	// (93→94→95%) doesn't re-nudge.
 	lr, _ := limits.Get(limits.LoadConfig(), false, time.Now())
-	nudgeOnChange("limitswarn", limitsTierKey(lr.Warn), "[gtmux] limits·warn "+lr.Warn, "")
+	nudgeOnChange("limitswarn", limitsTierKey(lr.Warn),
+		hqwake.Line("limits·warn", "", lr.Warn), "")
 	// Lifecycle watchdog (charter M5): escalate a pane stuck waiting past the timeout.
 	watchdogSweep(time.Now().Unix())
 	// Perception-feed watchdog (hq-attention-system): keep the silent feed daemon
@@ -48,6 +52,26 @@ func slowTickEval() {
 	// Self-check sensor (hq-attention-system §8): raise a self-check trigger to HQ when
 	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here — HQ does the pass.
 	selfCheckSensor(time.Now().Unix())
+	// Summary tick (hq-perception-v2): deliver the periodic brief wake ONLY when
+	// outcome-level changes accumulated (the zero-change gate — a quiet interval
+	// injects nothing and costs no tokens).
+	hqSummaryTick(time.Now().Unix())
+}
+
+// hqSummaryTick delivers the `tick` wake when due: at least one pending outcome
+// AND (interval elapsed OR burst threshold). Gated on a live HQ; the tally keeps
+// accumulating when HQ is away and the first tick after it returns covers it all.
+func hqSummaryTick(now int64) {
+	if !hqwake.TickDue(now, hqwake.Load()) {
+		return
+	}
+	pane := findHQPane()
+	if pane == "" {
+		return // no HQ to wake — leave the tally accumulating
+	}
+	if line := hqwake.ConsumeTick(now, events.LatestSeq()); line != "" {
+		hqnudge.Deliver(pane, line)
+	}
 }
 
 // feedFailCountPath stores the consecutive restart-failure counter (text int).
@@ -88,7 +112,8 @@ func feedWatchdog(now int64) {
 			"⚠ perception feed down — mechanical self-heal failed; on the 5-min polling backstop",
 			events.SevImportant, now)
 		if pane := findHQPane(); pane != "" {
-			hqnudge.Deliver(pane, "[gtmux] ⚠ perception feed degraded — self-heal failed, on polling backstop. Re-attach `gtmux hq-feed --tail`.")
+			hqnudge.Deliver(pane, hqwake.Line("feed-degraded", "",
+				"⚠ perception daemon down — self-heal failed", "reconcile: gtmux digest --json"))
 		}
 	}
 }

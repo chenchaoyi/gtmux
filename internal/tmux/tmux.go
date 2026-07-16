@@ -218,3 +218,25 @@ func RunInteractive(args ...string) int {
 	}
 	return 0
 }
+
+// Attended reports whether pane is the FOCUSED pane of an attached tmux client —
+// the human is (very likely) looking at it right now. Focused = the pane is active
+// in its window AND that window is active in its session AND the session has at
+// least one attached client. Used by the HQ wake channel (hq-perception-v2): a
+// completion under the user's eyes defers to the summary tick instead of knocking.
+func Attended(pane string) bool {
+	return attendedFrom(Lines("list-panes", "-a", "-F",
+		"#{pane_id}\t#{pane_active}\t#{window_active}\t#{session_attached}"), pane)
+}
+
+// attendedFrom is the pure core of Attended (testable without tmux).
+func attendedFrom(lines []string, pane string) bool {
+	for _, ln := range lines {
+		f := strings.Split(ln, "\t")
+		if len(f) != 4 || f[0] != pane {
+			continue
+		}
+		return f[1] == "1" && f[2] == "1" && f[3] != "0" && f[3] != ""
+	}
+	return false
+}

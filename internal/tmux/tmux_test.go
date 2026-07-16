@@ -189,3 +189,20 @@ func TestUTF8Env(t *testing.T) {
 func unsetenv(key string) error {
 	return os.Unsetenv(key)
 }
+
+func TestAttendedFrom(t *testing.T) {
+	lines := []string{
+		"%1\t1\t1\t1", // focused pane of an attached session → attended
+		"%2\t0\t1\t1", // inactive pane in the active window
+		"%3\t1\t0\t1", // active pane of a BACKGROUND window
+		"%4\t1\t1\t0", // focused, but the session is detached
+		"%5\t1\t1\t2", // two attached clients still counts
+		"malformed line",
+	}
+	cases := map[string]bool{"%1": true, "%2": false, "%3": false, "%4": false, "%5": true, "%9": false}
+	for pane, want := range cases {
+		if got := attendedFrom(lines, pane); got != want {
+			t.Fatalf("attendedFrom(%s) = %v, want %v", pane, got, want)
+		}
+	}
+}

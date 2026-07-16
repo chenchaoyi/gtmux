@@ -70,9 +70,11 @@ func SeverityRank(level string) int {
 }
 
 // Severity classifies a record's attention tier deterministically (no LLM) from
-// fields the record already carries. A Waiting (the pane needs the user) and an
-// "asking" turn-end are important; a "report" turn-end and the session lifecycle
-// events are notable; prompt submissions and ordinary ticks are routine.
+// fields the record already carries. A Waiting (the pane needs the user), an
+// "asking" turn-end, and a crashed turn (StopFailure — the turn died on an
+// agent/API error, which must never read as a finish) are important; a "report"
+// turn-end and the session lifecycle events are notable; prompt submissions and
+// ordinary ticks are routine.
 func Severity(r Record) string {
 	switch r.Event {
 	case "Waiting":
@@ -85,6 +87,8 @@ func Severity(r Record) string {
 			return SevImportant
 		}
 		return SevNotable
+	case "StopFailure":
+		return SevImportant
 	case "SessionStart", "SessionEnd", "Resumed", "PreCompact":
 		return SevNotable
 	default:

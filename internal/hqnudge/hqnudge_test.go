@@ -164,3 +164,55 @@ func TestBoxEmpty_UnstructuredIsNotEmpty(t *testing.T) {
 		t.Fatalf("nudge should be queued; queued=%d", queuedCount(t))
 	}
 }
+
+// ── keyed delivery (the per-pane done merge window, hq-perception-v2) ─────────
+
+func TestDeliverKeyed_ReplacesInsteadOfAdding(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{box: fixed(draftedCap)} // drafted → everything stays queued
+	x := f.io()
+	future := int64(1_800_000_000_000_000_000) // due far in the future
+	deliverKeyedAt(x, "%hq", "done-%14", "» gtmux·done  %14 │ v1", future)
+	deliverKeyedAt(x, "%hq", "done-%14", "» gtmux·done  %14 │ v2", future+999)
+	deliverKeyedAt(x, "%hq", "done-%14", "» gtmux·done  %14 │ v3", future+999)
+	if got := queuedCount(t); got != 1 {
+		t.Fatalf("same key must REPLACE, not add: queued=%d", got)
+	}
+	// A different key queues independently.
+	deliverKeyedAt(x, "%hq", "done-%15", "» gtmux·done  %15 │ v1", future)
+	if got := queuedCount(t); got != 2 {
+		t.Fatalf("distinct keys are independent: queued=%d", got)
+	}
+}
+
+func TestDrain_HoldsUndueKeyedEntry(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{box: fixed(emptyCap)} // box empty — only dueness can hold it
+	x := f.io()
+	nowBase := int64(1_700_000_000_000_000_000)
+	deliverKeyedAt(x, "%hq", "done-%14", "merged done v3", nowBase+int64(120e9))
+	if len(f.sent) != 0 {
+		t.Fatalf("an undue keyed entry must be held; sent=%v", f.sent)
+	}
+	if got := queuedCount(t); got != 1 {
+		t.Fatalf("entry must stay queued; queued=%d", got)
+	}
+	// Once the fake clock passes the due time, a drain flushes it.
+	f.nano = int64(121e9) // nowNano() → nowBase+121e9 > due
+	drain(x, "%hq")
+	if len(f.sent) != 1 || f.sent[0] != "merged done v3" {
+		t.Fatalf("due keyed entry should flush with the NEWEST payload; sent=%v", f.sent)
+	}
+	if got := queuedCount(t); got != 0 {
+		t.Fatalf("flushed entry must be removed; queued=%d", got)
+	}
+}
+
+func TestDeliverKeyed_DueImmediatelyFlushes(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{box: fixed(emptyCap)}
+	deliverKeyedAt(f.io(), "%hq", "done-%14", "immediate done", 1) // due in the distant past
+	if len(f.sent) != 1 || f.sent[0] != "immediate done" {
+		t.Fatalf("a past-due keyed entry delivers at once; sent=%v", f.sent)
+	}
+}

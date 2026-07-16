@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -131,6 +130,12 @@ func decide(event string, activePresent bool) decision {
 		// again. Clear the wait silently; the turn is still in progress, so don't
 		// touch active or notify.
 		return decision{clearWaiting: true, clearFinished: true}
+	case "StopFailure":
+		// The turn DIED on an agent/API failure — over, but NOT a normal finish:
+		// clear the turn state without stamping finished (a crash must never read
+		// as done) and without the finish notification. The crash is recorded to
+		// the event stream (severity important) and wakes HQ.
+		return decision{clearActive: true, clearWaiting: true}
 	case "SessionStart", "SessionEnd":
 		// A session (re)starting (startup/resume/clear/compact) or ending voids this
 		// pane's turn state. Clear active + waiting so a marker orphaned by a prior
@@ -359,6 +364,7 @@ func Run(stdin io.Reader, args []string) int {
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
 		Prompt           string `json:"prompt"`            // the submitted prompt text (Claude UserPromptSubmit) — for the dispatch-verify head
+		Error            string `json:"error"`             // StopFailure's error text (best-effort; absent → generic crash wake)
 		// Claude's Stop/SubagentStop payload lists in-flight background work still
 		// registered in the session ("running/pending + backgrounded"), so a hook can
 		// tell "session is done" from "session is paused waiting for background work".
@@ -478,9 +484,13 @@ func Run(stdin io.Reader, args []string) int {
 	activePresent := pane != "" && state.Exists(state.ActivePath(pane))
 	priorWaitKind := ""
 	hadWaiting := false
+	turnStart := int64(0) // the active marker's mtime = turn start (for the done wake's duration)
 	if pane != "" {
 		priorWaitKind = state.ReadMarker(state.WaitingPath(pane))
 		hadWaiting = state.Exists(state.WaitingPath(pane))
+		if fi, err := os.Stat(state.ActivePath(pane)); err == nil {
+			turnStart = fi.ModTime().Unix()
+		}
 	}
 	d := decide(event, activePresent)
 	if pane != "" {
@@ -527,6 +537,11 @@ func Run(stdin io.Reader, args []string) int {
 	summary, evClass := "", ""
 	if event != "" {
 		summary, evClass = eventSummary(event, payload.Prompt, pane, agentSession, agentKey)
+		// A crash record carries the error head as its summary (DATA) so the wake
+		// line and the pulled delta both name what killed the turn.
+		if event == "StopFailure" && summary == "" {
+			summary = clampData(payload.Error, 100)
+		}
 		events.Append(events.Record{
 			Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
 			Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
@@ -534,8 +549,17 @@ func Run(stdin io.Reader, args []string) int {
 		})
 	}
 
-	// Supervisor nudges. All gated on a live HQ pane (no HQ → zero cost) + hqNudge.
+	// HQ wake channel (hq-perception-v2). All gated on a live HQ pane (no HQ → zero
+	// cost) + hqNudge; every line goes through hqwake's signal format + hqnudge's
+	// draft guard. The wake is the ONLY knock — no producer-side suppression.
 	if pane != "" {
+		// Enrollment (建联): the first hook from a never-seen pane wakes HQ once to
+		// enroll the newcomer; SessionEnd un-enrolls (and tallies the departure).
+		if event == "SessionEnd" {
+			unenroll(pane)
+		} else {
+			ensureEnrolled(pane, display)
+		}
 		// Enter-waiting (P1): a FRESH waiting transition informs a live hq pane. Before
 		// the viewing suppression — that gate is the USER's eyes; HQ learns regardless.
 		if d.notify && d.setWaiting {
@@ -544,7 +568,7 @@ func Run(stdin io.Reader, args []string) int {
 		// Resolved edge (incident ⑤): a wait that EXISTED is now cleared (the user
 		// answered in-pane, or the agent resumed) → tell HQ so it drops any stale chase.
 		if d.clearWaiting && hadWaiting &&
-			(event == "UserPromptSubmit" || event == "Resumed" || event == "Stop") {
+			(event == "UserPromptSubmit" || event == "Resumed" || event == "Stop" || event == "StopFailure") {
 			nudgeResolved(pane, priorWaitKind)
 		}
 		// Dual-channel awareness: the user submitted a NEW prompt directly into a pane
@@ -554,17 +578,20 @@ func Run(stdin io.Reader, args []string) int {
 		if event == "UserPromptSubmit" {
 			nudgeGoalChanged(pane, summary)
 		}
+		// A crashed turn (StopFailure) must never read as a finish — wake HQ as such.
+		if event == "StopFailure" {
+			nudgeCrash(pane, payload.Error)
+		}
 		if event == "Stop" {
-			// A tracked dispatch finished → HQ should review/close it. The dispatch
-			// ledger status is DERIVED live (nothing to persist-clear here — it settles
-			// to "done" by itself); this just tells HQ the closure happened.
-			if t, ok := dispatch.TaskForPane(pane); ok {
-				nudgeDone(pane, t.Goal)
-			}
-			// Turn-end awareness (incident ⑥): a reply that ASKED the user a question
-			// (no menu raised) pushes an `asks` nudge; plain reports stay pull-only.
+			// ANY session's completion — tracked dispatch or user-direct alike — wakes
+			// HQ for a judgment (unattended; attended completions tally into the tick).
+			// The dispatch ledger status is DERIVED live (it settles to "done" itself).
 			if evClass == "asking" {
+				// Turn-end awareness (incident ⑥): a reply that ASKED the user a question
+				// (no menu raised) wakes as `asks`; the done wake would be redundant.
 				nudgeAsking(pane, summary)
+			} else {
+				wakeDone(pane, summary, turnStart)
 			}
 			// Reclaim-suggest sweep (incident ⑦): surface any dispatch that now looks
 			// safely reclaimable. Runs only with a live HQ; git checks touch rare candidates.
@@ -625,6 +652,8 @@ func Run(stdin io.Reader, args []string) int {
 // event log (working | waiting | idle | ""), mirroring what the markers encode.
 func decisionState(d decision, event string) string {
 	switch {
+	case event == "StopFailure":
+		return "crash"
 	case d.setWaiting:
 		return "waiting"
 	case d.setActive:

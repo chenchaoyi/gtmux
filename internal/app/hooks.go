@@ -31,6 +31,9 @@ type claudeHook struct {
 // working (approved) or on the next UserPromptSubmit/Stop. (Contract — do not rename.)
 var hookEvents = []claudeHook{
 	{event: "Stop"},
+	// StopFailure = the turn DIED on an agent/API error (hq-perception-v2): sensed
+	// as a `crash` (severity important) so a dead turn never reads as a finish.
+	{event: "StopFailure"},
 	{event: "Notification"},
 	{event: "UserPromptSubmit"},
 	{event: "PermissionRequest"},
