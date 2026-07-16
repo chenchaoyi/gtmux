@@ -103,6 +103,8 @@ func Run(argv []string) int {
 		return cmdAdopt(args)
 	case "attach":
 		return connect.Run(args)
+	case "pair":
+		return cmdPair(args)
 	case "serve":
 		return cmdServe(args)
 	case "tunnel":

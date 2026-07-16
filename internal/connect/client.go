@@ -1,6 +1,7 @@
 package connect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -96,4 +97,32 @@ func (c *Client) getJSON(ctx context.Context, path string, out any) error {
 		return fmt.Errorf("GET %s: HTTP %d", path, resp.StatusCode)
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+// RedeemEnrollCode exchanges a one-time pair code for THIS terminal's own owner
+// device token (POST /api/enroll — unauthenticated; the code IS the credential).
+// name labels the device in the host's roster (`gtmux pair list`).
+func RedeemEnrollCode(ctx context.Context, base, code, name string) (string, error) {
+	body, _ := json.Marshal(map[string]string{"enrollCode": code, "name": name})
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		strings.TrimRight(base, "/")+"/api/enroll", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	r.Header.Set("Content-Type", "application/json")
+	resp, err := (&http.Client{Timeout: 8 * time.Second}).Do(r)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("enroll: HTTP %d (code expired? mint a fresh one with gtmux pair)", resp.StatusCode)
+	}
+	var out struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil || out.Token == "" {
+		return "", fmt.Errorf("enroll: bad response")
+	}
+	return out.Token, nil
 }

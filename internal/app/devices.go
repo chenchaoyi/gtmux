@@ -79,6 +79,32 @@ type deviceListEntry struct {
 	ExpiresAt  int64    `json:"expiresAt,omitempty"`
 }
 
+// fetchDevices GETs the roster (shared by `gtmux devices` and `gtmux pair list`).
+func fetchDevices(base, token string) ([]deviceListEntry, bool) {
+	req, _ := http.NewRequest(http.MethodGet, base+"/api/devices", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
+	if err != nil {
+		i18n.Sae("gtmux: can't reach the local serve — start it with `gtmux serve` (or `gtmux tunnel`).",
+			"gtmux: 连不上本地 serve —— 先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
+		return nil, false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		i18n.Sae(fmt.Sprintf("gtmux: serve returned %d", resp.StatusCode),
+			fmt.Sprintf("gtmux: 服务返回 %d", resp.StatusCode))
+		return nil, false
+	}
+	var out struct {
+		Devices []deviceListEntry `json:"devices"`
+	}
+	if json.NewDecoder(resp.Body).Decode(&out) != nil {
+		i18n.Sae("gtmux: bad response", "gtmux: 响应解析失败")
+		return nil, false
+	}
+	return out.Devices, true
+}
+
 func listDevices(base, token string) int {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/devices", nil)
 	req.Header.Set("Authorization", "Bearer "+token)

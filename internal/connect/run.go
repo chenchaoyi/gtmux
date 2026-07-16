@@ -51,6 +51,26 @@ func Run(args []string) int {
 	}
 
 	ctx := context.Background()
+
+	// A PAIR link (pair-share-model S2): redeem the one-time code for this
+	// terminal's OWN device token, persist it (remotes.json, 0600), and proceed as
+	// owner — a later bare `gtmux attach <host>` reuses it. Revocation on the host
+	// (`gtmux pair revoke`) kills the persisted token instantly.
+	if tgt.EnrollCode != "" {
+		host, _ := os.Hostname()
+		tok, err := RedeemEnrollCode(ctx, tgt.URL, tgt.EnrollCode, host)
+		if err != nil {
+			i18n.Sae("gtmux attach: pairing failed ("+err.Error()+")",
+				"gtmux attach: 配对失败（"+err.Error()+"）")
+			return 1
+		}
+		tgt.Token = tok
+		if err := SaveRemoteToken(tgt.URL, tok); err == nil {
+			i18n.Sae("paired this terminal with "+tgt.URL+" — next time just: gtmux attach "+tgt.URL,
+				"本终端已与 "+tgt.URL+" 配对 —— 下次直接：gtmux attach "+tgt.URL)
+		}
+	}
+
 	c := NewClient(tgt.URL, tgt.Token)
 	if !c.Health(ctx) {
 		i18n.Sae("gtmux attach: can't reach "+tgt.URL, "gtmux attach: 连不上 "+tgt.URL)
@@ -141,13 +161,17 @@ func contains(s []string, v string) bool {
 
 func usage() int {
 	i18n.Sae(
-		"usage: gtmux attach <host|share-link> [%pane] [--token <tok>] [--read-only]\n"+
+		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>] [--read-only]\n"+
 			"  Attach to a remote gtmux pane in your local terminal (raw, interactive).\n"+
+			"  A pair link (…/#c=<code>, from `gtmux pair`) enrolls THIS terminal as one of\n"+
+			"  your own devices (full control, token persisted — later just `gtmux attach <host>`).\n"+
 			"  A share link (…/#t=<token>) connects as a scope-restricted guest; a host +\n"+
-			"  --token connects as the owner. Detach with tmux `prefix d` or Ctrl-].",
-		"用法：gtmux attach <host|分享链接> [%pane] [--token <tok>] [--read-only]\n"+
+			"  --token also works. Detach with tmux `prefix d` or Ctrl-].",
+		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>] [--read-only]\n"+
 			"  在本地终端里附着到远程 gtmux 的 pane（原生、可交互）。\n"+
-			"  分享链接（…/#t=<token>）以受限访客接入；host + --token 以本人接入。\n"+
+			"  配对链接（…/#c=<code>，来自 `gtmux pair`）把本终端登记为你自己的设备\n"+
+			"  （全权,token 会保存 —— 之后直接 `gtmux attach <host>`）。\n"+
+			"  分享链接（…/#t=<token>）以受限访客接入；host + --token 亦可。\n"+
 			"  退出：tmux 前缀键 + d，或 Ctrl-]。")
 	return 0
 }
