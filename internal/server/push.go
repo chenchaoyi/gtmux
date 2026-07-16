@@ -112,6 +112,24 @@ func (p *PushManager) Register(d DeviceToken) {
 	}
 }
 
+// Unregister drops a device token — the phone has unpaired this Mac (removed the
+// server), so this Mac must stop forwarding alerts and silent-badge pushes to it.
+// Idempotent; persists only when the token was actually present. Each Mac keeps its
+// own token set, so removing one paired server never affects the others.
+func (p *PushManager) Unregister(token string) {
+	if token == "" {
+		return
+	}
+	p.mu.Lock()
+	_, had := p.tokens[token]
+	delete(p.tokens, token)
+	snap := p.snapshotLocked()
+	p.mu.Unlock()
+	if had && p.save != nil {
+		p.save(snap)
+	}
+}
+
 func (p *PushManager) snapshotLocked() []DeviceToken {
 	out := make([]DeviceToken, 0, len(p.tokens))
 	for _, d := range p.tokens {
@@ -278,6 +296,29 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.deps.Push.Register(d)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// handleUnregister implements POST /api/push/unregister — drop a device token so
+// this Mac stops pushing to a phone that has removed it as a server. Idempotent:
+// 200 even if the token was never registered (the caller is best-effort on removal).
+func (s *Server) handleUnregister(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if s.deps.Push == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
+		return
+	}
+	var d struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&d); err != nil || d.Token == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
+		return
+	}
+	s.deps.Push.Unregister(d.Token)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

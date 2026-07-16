@@ -296,3 +296,24 @@ describe('registerPush', () => {
     expect(await client().registerPush('tok')).toBe(false);
   });
 });
+
+describe('unregisterPush', () => {
+  it('POSTs the token to /api/push/unregister', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, true));
+    const ok = await client().unregisterPush('apns-token-abc');
+    expect(ok).toBe(true);
+
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/push/unregister`);
+    expect(init?.method).toBe('POST');
+    const headers = init?.headers as any;
+    expect(headers.Authorization).toBe(AUTH);
+    expect(headers['Content-Type']).toBe('application/json');
+    expect(JSON.parse(init?.body as string)).toEqual({token: 'apns-token-abc'});
+  });
+
+  it('returns false when not ok', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, false, 500));
+    expect(await client().unregisterPush('tok')).toBe(false);
+  });
+});

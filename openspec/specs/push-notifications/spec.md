@@ -19,6 +19,22 @@ forwarded even when the app is closed.
 - **WHEN** the app obtains its APNs device token and POSTs it
 - **THEN** the token is persisted and used for subsequent alerts
 
+### Requirement: Device unregistration on server removal
+
+The system SHALL accept `POST /api/push/unregister` to drop a device's APNs token
+from a Mac, so that Mac stops forwarding alerts and silent-badge pushes to a phone
+that has removed it as a paired server. The endpoint is idempotent (200 even if the
+token was never registered). Each Mac keeps its own token set, so unregistering
+from one paired server SHALL NOT affect push delivery from the others. The app
+calls it best-effort when the user removes a paired Mac.
+
+#### Scenario: Remove one of several paired servers
+
+- **WHEN** a device is paired with servers A and B and the user removes server B
+- **THEN** the app POSTs the device token to B's `/api/push/unregister`
+- **AND** B drops the token and stops pushing that device's alerts
+- **AND** A still has the token and keeps pushing its own alerts
+
 ### Requirement: Server-derived alerts drive push
 
 The system SHALL derive `waiting`/`done` alerts from its own ~1.5s diff loop (not

@@ -9,6 +9,8 @@ import {useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
 import {loadServers, saveServers, upsertServer} from '../pairing/store';
+import {GtmuxClient} from '../api/client';
+import {getPushToken} from '../push';
 import {Palette, paletteFor} from '../ui/theme';
 import {Debug} from '../debug';
 
@@ -165,11 +167,21 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         if (servers.some(s => s.url === url)) await persist(servers, url);
       },
       disconnect: () => persist(servers, null),
-      removeServer: url =>
-        persist(
+      removeServer: url => {
+        // Tell the removed Mac to drop this device's push token, so it stops
+        // pushing to a phone that has unpaired it. Multi-server: each Mac keeps
+        // its own token set, so this never touches the others. Best-effort and
+        // fire-and-forget — the Mac may be offline, and removal must not block.
+        const gone = servers.find(s => s.url === url);
+        const tok = getPushToken();
+        if (gone && tok) {
+          new GtmuxClient(gone.url, gone.token).unregisterPush(tok).catch(() => {});
+        }
+        return persist(
           servers.filter(s => s.url !== url),
           activeUrl === url ? null : activeUrl,
-        ),
+        );
+      },
       pendingPane,
       setPendingPane,
       langPref,

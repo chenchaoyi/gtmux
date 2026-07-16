@@ -217,6 +217,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/theme", s.auth(http.HandlerFunc(s.handleTheme)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
+	mux.Handle("/api/push/unregister", s.auth(http.HandlerFunc(s.handleUnregister)))
 	mux.Handle("/api/push/activity", s.auth(http.HandlerFunc(s.handleActivityRegister)))
 	mux.Handle("/api/push/test", s.auth(http.HandlerFunc(s.handleTest)))
 	// Browser-mirror web UI (view-only, unauthenticated static page). Registered

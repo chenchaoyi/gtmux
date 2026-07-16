@@ -105,6 +105,43 @@ func TestPushManagerDispatch(t *testing.T) {
 	}
 }
 
+func TestPushManagerUnregister(t *testing.T) {
+	relay := &fakeRelay{}
+	var saves int
+	pm := NewPushManager(relay, nil, func([]DeviceToken) { saves++ }, "Mac", nil)
+	pm.Register(DeviceToken{Token: "tok-a", Platform: "ios"})
+	pm.Register(DeviceToken{Token: "tok-b", Platform: "ios"})
+	saves = 0 // count only the unregister-driven persists below
+
+	// Removing a server drops exactly that device's token and persists once.
+	pm.Unregister("tok-a")
+	if got := len(pm.Tokens()); got != 1 {
+		t.Fatalf("tokens after unregister = %d, want 1", got)
+	}
+	if saves != 1 {
+		t.Fatalf("save called %d times on a real unregister, want 1", saves)
+	}
+
+	// The dropped token no longer receives alerts or silent-badge pushes.
+	pm.dispatch(Alert{Pane: "%1", Kind: "waiting", Agent: "Codex"})
+	pm.pushBadge(1)
+	for _, in := range relay.intents() {
+		if in.Token == "tok-a" {
+			t.Fatalf("unregistered token still pushed: %+v", in)
+		}
+	}
+
+	// Idempotent: unknown token and empty token are no-ops (no persist).
+	pm.Unregister("tok-a") // already gone
+	pm.Unregister("")
+	if saves != 1 {
+		t.Fatalf("save called %d times, want 1 (no-op unregisters must not persist)", saves)
+	}
+	if got := len(pm.Tokens()); got != 1 {
+		t.Fatalf("tokens = %d, want 1 (tok-b remains)", got)
+	}
+}
+
 func TestPushLiveActivity(t *testing.T) {
 	relay := &fakeRelay{}
 	pm := NewPushManager(relay, nil, nil, "", nil)
