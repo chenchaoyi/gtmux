@@ -21,18 +21,25 @@ over one Go core (gtmux-core is the single data source):
   low-risk∧in-discussed-scope → HQ decides+dispatches; else escalate), graded escalation
   + reconcile-before-relay (kills stale needs-you), and a correction→charter learning
   loop (`knowledge/corrections.md`). See `openspec/changes/hq-chief-of-staff`.
-  `hq-feed`+`quiet` = the **attention system** (`internal/hqfeed`, see
-  `openspec/changes/hq-attention-system`): it SPLITS feeding-HQ from showing-user —
-  `hq-feed` is a gtmux-managed, LLM-free daemon that tails the event journal (now with a
-  monotonic `seq` + a consumed cursor for zero-loss catch-up) into a rotated spool HQ
-  backgrounds (`hq-feed --tail`) as a SILENT feed, so gtmux stops force-typing low-value
-  receipt nudges into the pane. A no-LLM watchdog in the serve slow-tick keeps the daemon
-  alive (heartbeat 30s / stale 90s / self-heal 2 failures → CRITICAL `feed-degraded`),
-  and a self-check sensor raises a `self-check` trigger (idle/threshold/daily, ≤1/h) HQ
-  acts on. `gtmux tasks` doubles as the **attention ledger** (tier/priority/surfaced/
-  disposition/archive, `--verbose`); `gtmux quiet [on|off|status]` tunes the surfacing
-  threshold (a `feed-degraded` CRITICAL is never quieted). HQ gates its OWN prints by the
-  tier — CRITICAL/NORMAL print, QUIET is ledger-only.
+  **HQ perception = the wake protocol** (`internal/hqwake`, spec `hq-wake-protocol`,
+  change hq-perception-v2): decision-dense events — `waiting·kind / resolved / asks /
+  done(unattended) / crash(StopFailure) / goal-changed / new-session / reap-suggest /
+  feed-degraded / tick` — type ONE `» gtmux·<class> │ …` signal line into the HQ pane
+  (draft-guarded, coalesced; done is rate-merged per pane, and a completion in the
+  FOCUSED pane of an attached client defers to the tick instead — `hqWake.done`
+  config). Everything else is pull-side: HQ wakes → `gtmux events --since-seq N` /
+  `digest` → judges in a short turn, replying in the `⟣` signal register. A summary
+  tick (10 min / burst 5, zero-change gate = zero cost) delivers the periodic brief;
+  playbook v2 teaches enrollment (建联, goal-aware dossiers) and works on any agent
+  (no background tail). `gtmux hq` also MIGRATES legacy CLAUDE.md-only homes now.
+  `hq-feed` remains the LLM-free spool daemon (`internal/hqfeed`; serve slow-tick
+  watchdog: heartbeat 30s / stale 90s / self-heal 2 failures → CRITICAL
+  `feed-degraded`), and a self-check sensor raises a `self-check` trigger
+  (idle/threshold/daily, ≤1/h) HQ acts on. `gtmux tasks` doubles as the **attention
+  ledger** (tier/priority/surfaced/disposition/archive, `--verbose`); `gtmux quiet
+  [on|off|status]` tunes the surfacing threshold (a `feed-degraded` CRITICAL is never
+  quieted). HQ gates its OWN prints by the tier — CRITICAL/NORMAL print, QUIET is
+  ledger-only.
   **HQ playbook is VERSION-TRACKED** (`openspec/changes/versioned-hq-playbook`): the seeded
   `AGENTS.md` is gtmux-OWNED, carries a `<!-- gtmux-hq-playbook vN -->` marker, and `gtmux
   hq` REGENERATES it (backing up the prior to `AGENTS.md.bak-v<old>`) when the shipped

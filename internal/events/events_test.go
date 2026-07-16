@@ -119,6 +119,7 @@ func TestSeverity(t *testing.T) {
 	}{
 		{"waiting-needs-user", Record{Event: "Waiting", Kind: "permission"}, SevImportant},
 		{"asking-turn-end", Record{Event: "Stop", Class: "asking"}, SevImportant},
+		{"crashed-turn", Record{Event: "StopFailure"}, SevImportant},
 		{"report-turn-end", Record{Event: "Stop", Class: "report"}, SevNotable},
 		{"stop-no-class", Record{Event: "Stop"}, SevNotable},
 		{"session-start", Record{Event: "SessionStart"}, SevNotable},

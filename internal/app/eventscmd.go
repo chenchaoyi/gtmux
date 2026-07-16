@@ -15,7 +15,9 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // parseSince turns "10m"/"2h"/"90s"/"45" (bare = seconds) into seconds, 0 on error.
@@ -49,11 +51,13 @@ func validSeverity(level string) bool {
 	return false
 }
 
-// cmdEvents implements `gtmux events [--follow] [--json] [--since <dur>] [--severity <level>]`.
+// cmdEvents implements `gtmux events [--follow] [--json] [--since <dur>]
+// [--since-seq <n>] [--severity <level>]`.
 func cmdEvents(args []string) int {
 	follow, jsonOut := false, false
 	since := int64(0)
-	minSeverity := "" // "" = no filter
+	sinceSeq := int64(-1) // -1 = not given (0 is a valid cursor: "everything retained")
+	minSeverity := ""     // "" = no filter
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
@@ -69,6 +73,22 @@ func cmdEvents(args []string) int {
 			since = parseSince(args[i])
 		case strings.HasPrefix(a, "--since="):
 			since = parseSince(strings.TrimPrefix(a, "--since="))
+		case a == "--since-seq":
+			if i+1 >= len(args) {
+				return eventsUsage()
+			}
+			i++
+			n, err := strconv.ParseInt(strings.TrimSpace(args[i]), 10, 64)
+			if err != nil || n < 0 {
+				return eventsUsage()
+			}
+			sinceSeq = n
+		case strings.HasPrefix(a, "--since-seq="):
+			n, err := strconv.ParseInt(strings.TrimSpace(strings.TrimPrefix(a, "--since-seq=")), 10, 64)
+			if err != nil || n < 0 {
+				return eventsUsage()
+			}
+			sinceSeq = n
 		case a == "--severity":
 			if i+1 >= len(args) {
 				return eventsUsage()
@@ -107,6 +127,19 @@ func cmdEvents(args []string) int {
 		}
 	}
 
+	if sinceSeq >= 0 {
+		// Sequence-filtered delta read (hq-perception-v2): everything retained with
+		// seq strictly greater than the cursor, oldest first — the pull-on-wake
+		// primitive. Combinable with --severity/--json; --follow is ignored (one-shot).
+		for _, r := range events.Read(0, time.Now().Unix()) {
+			if r.Seq > sinceSeq {
+				print(r)
+			}
+		}
+		stampHQPull()
+		return 0
+	}
+
 	if !follow {
 		// A bare `gtmux events` shows a recent window by default so it's useful
 		// without a flag; --since overrides.
@@ -116,6 +149,7 @@ func cmdEvents(args []string) int {
 		for _, r := range events.Read(since, time.Now().Unix()) {
 			print(r)
 		}
+		stampHQPull()
 		return 0
 	}
 
@@ -130,13 +164,26 @@ func cmdEvents(args []string) int {
 }
 
 func eventsUsage() int {
-	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--severity routine|notable|important]",
-		"用法：gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--severity routine|notable|important]")
+	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important]",
+		"用法：gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important]")
 	i18n.Say("  The live stream of every session's lifecycle events — the subscription",
 		"  每个 session 生命周期事件的实时流 —— gtmux HQ 及脚本的订阅入口。")
 	i18n.Say("  gtmux HQ and scripts tail it. Bare form shows the last hour.",
 		"  裸命令显示最近一小时;--follow 持续跟随(跨 rotation)。")
 	i18n.Say("  --severity filters to that tier and above (the attention stream).",
 		"  --severity 过滤到该等级及以上(只看需要关注的事件)。")
+	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
+		"  --since-seq N：一次性读取序号 N 之后的全部事件(唤醒后拉增量用)。")
+	i18n.Say("  (the pull-on-wake primitive — HQ reads exactly the delta a wake covered).",
+		"  (即唤醒线覆盖区间的增量拉取原语)。")
 	return 0
+}
+
+// stampHQPull records HQ's pull freshness when THIS invocation ran from the HQ
+// home (cwd-keyed — the same role rule the radar uses). Any other caller is not
+// the supervisor and must not refresh its consumer stamp.
+func stampHQPull() {
+	if cwd, err := os.Getwd(); err == nil && cwd == state.HQHome() {
+		hqwake.StampPull()
+	}
 }

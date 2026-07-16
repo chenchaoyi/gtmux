@@ -145,9 +145,10 @@ func TestParsePlaybookVersion(t *testing.T) {
 	}
 }
 
-// A legacy full CLAUDE.md (pre-AGENTS.md) is authoritative: seeding must leave it
-// untouched and NOT drop a zombie AGENTS.md beside it (the bug this fixes).
-func TestSeedHQHome_LegacyClaudeNoZombie(t *testing.T) {
+// A legacy home (full playbook in CLAUDE.md, no AGENTS.md) is MIGRATED
+// (hq-perception-v2): backed up — never destroyed — then regenerated as the
+// managed layout, so a live HQ brain can no longer run stale policy forever.
+func TestSeedHQHome_LegacyClaudeMigrates(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	if err := os.MkdirAll(filepath.Dir(hqClaudePointerPath()), 0o755); err != nil {
 		t.Fatal(err)
@@ -155,18 +156,35 @@ func TestSeedHQHome_LegacyClaudeNoZombie(t *testing.T) {
 	if err := os.WriteFile(hqClaudePointerPath(), []byte("FULL OLD PLAYBOOK + user notes"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := seedHQHome(); err != nil {
+	r, err := seedHQHome()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if cb, _ := os.ReadFile(hqClaudePointerPath()); string(cb) != "FULL OLD PLAYBOOK + user notes" {
-		t.Errorf("legacy CLAUDE.md must never be clobbered: %q", cb)
+	if !r.Migrated || r.ToVersion != hqPlaybookVersion || r.BackupPath == "" {
+		t.Fatalf("legacy home must report a migration: %+v", r)
 	}
-	if fileExists(hqInstructionsPath()) {
-		t.Error("a zombie AGENTS.md must NOT be created beside a full CLAUDE.md")
+	// The old content is preserved in the named backup…
+	if bb, _ := os.ReadFile(r.BackupPath); string(bb) != "FULL OLD PLAYBOOK + user notes" {
+		t.Errorf("backup must preserve the legacy playbook verbatim: %q", bb)
 	}
-	// A lone full CLAUDE.md is a valid layout → no nag.
-	if en, _ := hqPolicyWarning(); en != "" {
-		t.Errorf("lone full CLAUDE.md should not warn: %q", en)
+	// …and the home is now the managed layout: versioned AGENTS.md + pointer + LOCAL.md.
+	ab, _ := os.ReadFile(hqInstructionsPath())
+	if parsePlaybookVersion(string(ab)) != hqPlaybookVersion {
+		t.Error("migrated AGENTS.md must carry the shipped version marker")
+	}
+	if cb, _ := os.ReadFile(hqClaudePointerPath()); string(cb) != hqClaudePointer {
+		t.Errorf("CLAUDE.md must become the @AGENTS.md pointer: %q", cb)
+	}
+	if !fileExists(hqLocalPath()) {
+		t.Error("migration must seed LOCAL.md for the user's personalization")
+	}
+	// Idempotent: a second run neither re-migrates nor touches the backup.
+	r2, err := seedHQHome()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r2.Migrated || r2.Upgraded {
+		t.Fatalf("second run must be a no-op: %+v", r2)
 	}
 }
 
@@ -452,5 +470,40 @@ func TestHQAgentCommand(t *testing.T) {
 	t.Setenv("GTMUX_HQ_AGENT", "codex")
 	if got := hqAgentCommand(); got != "codex" {
 		t.Errorf("override hq agent = %q, want codex", got)
+	}
+}
+
+// The v2 seed must carry the wake protocol (hq-perception-v2): pull-on-wake with no
+// background-tail requirement, the signal register, enrollment, graded done
+// judgment, and the tick brief bound.
+func TestHQPlaybookWakeProtocol(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	agents, err := os.ReadFile(hqInstructionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(agents)
+	for _, want := range []string{
+		"» gtmux·",            // the injected signal-line language
+		"WAKE → PULL → JUDGE", // the short-turn loop
+		"--since-seq",         // pull-on-wake primitive
+		"Signal register",     // wakes answer in a distinct register
+		"⟣ ◈",                 // the tick brief glyph
+		"Enrollment 建联",       // goal-aware dossiers at start + per newcomer
+		"DONE JUDGMENT",       // graded done responses
+		"crash",               // a dead turn is never a finish
+		"don't tail",          // no background-tail requirement (agent-agnostic HQ)
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("AGENTS.md v2 playbook missing %q", want)
+		}
+	}
+	// The v1 background-tail REQUIREMENT must be gone (the spool daemon may still
+	// be mentioned, but never as a "run it as a background task" instruction).
+	if strings.Contains(s, "run it as a BACKGROUND") {
+		t.Error("v2 playbook must not require a background hq-feed tail")
 	}
 }
