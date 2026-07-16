@@ -81,6 +81,9 @@ const S: Dict = {
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired server, switch / add / remove)
   servers: {en: 'Servers', zh: '服务器'},
+  myMacs: {en: 'My Macs · paired', zh: '我的 Mac · 配对'},
+  guestConnections: {en: 'Guest access · share links', zh: '访客连接 · 分享链接'},
+  guestRowLabel: {en: 'guest · via a share link', zh: '访客 · 经分享链接'},
   serversHint: {
     en: 'Tap a server to connect. The connected one shows a green dot.',
     zh: '点一个服务器连接，已连接的会显示绿点。',

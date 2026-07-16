@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
+import {splitServers} from '../pairing/store';
+import {PairedMac} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
 import {ContentColumn} from '../ui/ContentColumn';
 import {StatusColor} from '../ui/theme';
@@ -37,6 +39,41 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       return;
     }
     await selectServer(url); // switching active remounts the radar (App key=url)
+  };
+
+  // One connection row; guest rows carry the share-link label under the name.
+  const serverRow = (s: PairedMac, i: number, count: number, guest = false) => {
+    const active = s.url === activeUrl;
+    return (
+      <View
+        key={s.url}
+        style={[
+          styles.row,
+          i < count - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
+        ]}>
+        <TouchableOpacity style={styles.rowMain} onPress={() => onPick(s.url)} hitSlop={hit}>
+          <View
+            style={[
+              styles.dot,
+              {backgroundColor: active ? StatusColor.idle : pal.fg3, opacity: active ? 1 : 0.35},
+            ]}
+          />
+          <View style={styles.rowText}>
+            <Text style={[styles.name, {color: pal.fg}]} numberOfLines={1}>
+              {s.name}
+            </Text>
+            <Text style={[styles.url, {color: pal.fg3}]} numberOfLines={1}>
+              {active ? `${t('connectedLabel')} · ` : ''}
+              {guest ? `${t('guestRowLabel')} · ` : ''}
+              {s.url}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => confirmRemove(s)} hitSlop={hit} style={styles.remove}>
+          <Text style={[styles.removeText, {color: pal.fg3}]}>✕</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const confirmRemove = (m: {url: string; name: string}) =>
@@ -67,40 +104,31 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         ) : (
           <>
             <Text style={[styles.hint, {color: pal.fg3}]}>{t('serversHint')}</Text>
-            <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-              {servers.map((s, i) => {
-                const active = s.url === activeUrl;
-                return (
-                  <View
-                    key={s.url}
-                    style={[
-                      styles.row,
-                      i < servers.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
-                    ]}>
-                    <TouchableOpacity style={styles.rowMain} onPress={() => onPick(s.url)} hitSlop={hit}>
-                      <View
-                        style={[
-                          styles.dot,
-                          {backgroundColor: active ? StatusColor.idle : pal.fg3, opacity: active ? 1 : 0.35},
-                        ]}
-                      />
-                      <View style={styles.rowText}>
-                        <Text style={[styles.name, {color: pal.fg}]} numberOfLines={1}>
-                          {s.name}
-                        </Text>
-                        <Text style={[styles.url, {color: pal.fg3}]} numberOfLines={1}>
-                          {active ? `${t('connectedLabel')} · ` : ''}
-                          {s.url}
-                        </Text>
+            {/* Two-track model (pair-share): my own paired Macs (full control) vs
+                guest connections via share links (least privilege) — never mixed. */}
+            {(() => {
+              const {mine, guests} = splitServers(servers);
+              return (
+                <>
+                  {mine.length > 0 && (
+                    <>
+                      <Text style={[styles.groupTitle, {color: pal.fg3}]}>{t('myMacs')}</Text>
+                      <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+                        {mine.map((s, i) => serverRow(s, i, mine.length))}
                       </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => confirmRemove(s)} hitSlop={hit} style={styles.remove}>
-                      <Text style={[styles.removeText, {color: pal.fg3}]}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
+                    </>
+                  )}
+                  {guests.length > 0 && (
+                    <>
+                      <Text style={[styles.groupTitle, {color: pal.fg3}]}>{t('guestConnections')}</Text>
+                      <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+                        {guests.map((s, i) => serverRow(s, i, guests.length, true))}
+                      </View>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </>
         )}
 
@@ -153,6 +181,7 @@ const styles = StyleSheet.create({
   backText: {fontSize: 30, fontWeight: '300', lineHeight: 30},
   title: {fontSize: 26, fontWeight: '700'},
   body: {padding: 16, paddingTop: 4},
+  groupTitle: {fontSize: 12, fontWeight: '600', marginTop: 14, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4},
   hint: {fontSize: 12.5, lineHeight: 18, marginBottom: 12, marginLeft: 2},
   card: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
   row: {flexDirection: 'row', alignItems: 'center'},

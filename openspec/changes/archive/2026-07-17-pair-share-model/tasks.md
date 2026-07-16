@@ -41,15 +41,15 @@
 
 ## 4. S4 — vocabulary + app/web polish
 
-- [ ] 4.1 Mobile: server list split 我的 Mac / 访客连接; guest scope line; copy
+- [x] 4.1 Mobile: server list split 我的 Mac / 访客连接; guest scope line; copy
       pass (配对 vs 分享). Jest for the list split.
-- [ ] 4.2 Web guest page: "your access" strip from GET /api/share.
-- [ ] 4.3 Cross-surface copy audit (menubar popover Pair button label ok; docs).
+- [x] 4.2 Web guest page: "your access" strip from GET /api/share.
+- [x] 4.3 Cross-surface copy audit (menubar popover Pair button label ok; docs).
 
 ## 5. Consistency + verification
 
-- [ ] 5.1 Fold spec deltas (remote-access, remote-terminal-client, menu-bar-app,
+- [x] 5.1 Fold spec deltas (remote-access, remote-terminal-client, menu-bar-app,
       mobile-app); `openspec validate --specs --strict` green; archive change.
-- [ ] 5.2 make check + CGO_ENABLED=0 + mobile `npm run check` green.
-- [ ] 5.3 Dogfood: pair a second computer's terminal via the one-liner; mint two
+- [x] 5.2 make check + CGO_ENABLED=0 + mobile `npm run check` green.
+- [x] 5.3 Dogfood: pair a second computer's terminal via the one-liner; mint two
       links with different scopes and verify isolation from a browser.

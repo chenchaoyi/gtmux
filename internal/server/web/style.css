@@ -466,3 +466,13 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   background: var(--surface); border: 1px solid var(--divider); border-radius: 8px;
   padding: 5px 11px; color: var(--fg2); font-size: 12px; cursor: pointer;
 }
+
+/* pair-share-model S4: the guest "your access" strip */
+#guest-scope {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--fg-dim, #8b949e);
+  background: var(--bg-raised, rgba(128, 128, 128, 0.08));
+  border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+}
+#guest-scope[hidden] { display: none; }

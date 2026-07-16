@@ -56,3 +56,21 @@ describe('serverForPush', () => {
     expect(serverForPush([a, b], 'B', null)).toBe(b.url);
   });
 });
+
+// splitServers groups by the pair/share model; legacy scope-less records are owner.
+describe('splitServers', () => {
+  const {splitServers} = require('./store');
+  it('separates paired Macs from guest connections', () => {
+    const servers = [
+      {url: 'http://a:1', token: 't1', name: 'work mac'},
+      {url: 'http://b:2', token: 't2', name: 'Alice link', scope: 'guest'},
+      {url: 'http://c:3', token: 't3', name: 'home mac', scope: 'owner'},
+    ];
+    const {mine, guests} = splitServers(servers as any);
+    expect(mine.map((s: any) => s.name)).toEqual(['work mac', 'home mac']);
+    expect(guests.map((s: any) => s.name)).toEqual(['Alice link']);
+  });
+  it('handles empty input', () => {
+    expect(splitServers([])).toEqual({mine: [], guests: []});
+  });
+});

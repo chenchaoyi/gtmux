@@ -425,14 +425,32 @@
   // The server gate is authoritative; this only mirrors it. GET /api/share tells us,
   // for THIS caller, whether input is on and which panes are allowed (or all, for the
   // owner). We show the input bar ONLY for an allowed pane; a blocked send still 403s.
-  var SHARE = {input: false, all: false, panes: {}};
+  var SHARE = {input: false, all: false, panes: {}, viewCount: 0, typeCount: 0};
   function fetchShare() {
     api('/api/share').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
       if (!j) return;
-      SHARE = {input: !!j.input, all: !!j.all, panes: {}};
+      SHARE = {input: !!j.input, all: !!j.all, panes: {},
+               viewCount: (j.view_panes || []).length, typeCount: (j.panes || []).length};
       (j.panes || []).forEach(function (p) { SHARE.panes[p] = true; });
       updateInputBar();
+      updateGuestScopeStrip();
     }).catch(function () {});
+  }
+
+  // "Your access" strip (pair-share-model S4): a GUEST sees what this link grants —
+  // N sessions visible, M typable — so the page never feels arbitrarily empty. The
+  // owner (all:true) shows nothing.
+  function updateGuestScopeStrip() {
+    var el = document.getElementById('guest-scope');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'guest-scope';
+      document.body.insertBefore(el, document.body.firstChild);
+    }
+    if (SHARE.all) { el.hidden = true; return; }
+    el.hidden = false;
+    el.textContent = 'guest access · ' + SHARE.viewCount + ' session' + (SHARE.viewCount === 1 ? '' : 's') +
+      ' visible · ' + SHARE.typeCount + ' typable — shared by the host, revocable any time';
   }
   function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
   function updateInputBar() {
