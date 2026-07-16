@@ -30,9 +30,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	scope := callerScope(r.Context())
-	// A guest may attach ONLY a pane it may VIEW; refuse the upgrade otherwise (no PTY
-	// is ever spawned for a pane outside the guest's scope).
-	if scope == scopeGuest && (s.deps.Share == nil || !s.deps.Share.CanView(id)) {
+	// A guest may attach ONLY a pane ITS OWN link may VIEW (pair-share-model);
+	// refuse the upgrade otherwise (no PTY is ever spawned outside the link's scope).
+	dev, hasDev := callerDevice(r.Context())
+	if scope == scopeGuest && (!hasDev || !dev.MayView(id)) {
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
 		return
 	}
@@ -45,9 +46,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, errBody("pane not found"))
 		return
 	}
-	// canType: an owner types anywhere; a guest only into an input-allowed pane (a
-	// view-only pane is read-only — we drop its write frames below).
-	canType := scope != scopeGuest || (s.deps.Share != nil && s.deps.Share.Allowed(id))
+	// canType: an owner types anywhere; a guest only with host consent AND the pane
+	// on ITS OWN input allowlist (a view-only pane is read-only — write frames drop).
+	canType := scope != scopeGuest ||
+		(hasDev && s.deps.Share != nil && s.deps.Share.InputEnabled() && dev.MayInput(id))
 
 	conn, err := attachUpgrader.Upgrade(w, r, nil)
 	if err != nil {

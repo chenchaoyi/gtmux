@@ -73,6 +73,10 @@ type deviceListEntry struct {
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen"`
 	Scope      string `json:"scope,omitempty"`
+	// Per-link guest scope (pair-share-model); absent on owner devices.
+	ViewPanes  []string `json:"viewPanes,omitempty"`
+	InputPanes []string `json:"inputPanes,omitempty"`
+	ExpiresAt  int64    `json:"expiresAt,omitempty"`
 }
 
 func listDevices(base, token string) int {

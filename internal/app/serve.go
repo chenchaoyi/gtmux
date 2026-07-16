@@ -223,6 +223,13 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	// that gates a GUEST share link's input. Default off; persisted like the roster.
 	deps.Share = server.NewShareManager(loadShareState(), saveShareState)
 
+	// pair-share-model: per-link guest scope. Legacy links (minted before per-link
+	// scope) get a ONE-TIME copy of the global lists so upgrade preserves behavior;
+	// the legacy global mutations keep their meaning by fanning out to every link.
+	st := deps.Share.State()
+	deps.Enroll.MigrateGuestScopes(st.ViewPanes, st.Panes)
+	deps.Share.OnBroadcast(deps.Enroll.BroadcastGuestScopes)
+
 	return server.New(server.Config{Addr: addr, Token: token}, deps)
 }
 

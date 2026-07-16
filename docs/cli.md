@@ -379,6 +379,29 @@ gtmux attach <target> --read-only  # watch only, never send input
 > (the WebSocket rides the same tunnel as the radar). The guest side is set up entirely
 > in the menu bar (per-pane 👁 See / ⌨️ Type + New link) or with `gtmux share`.
 
+## `gtmux share` — scoped, revocable access for a collaborator
+
+```
+gtmux share new --label Alice --view %1,%2 --type %1 --expires 24h
+gtmux share set a1b2c3d4 --type %2            # edit ONE link (omitted flags untouched)
+gtmux share on|off                            # consent master switch for ALL guest typing
+gtmux share status [--json]                   # per-link scope summaries
+gtmux share revoke a1b2c3d4
+```
+
+SHARE is the collaborator track of the pair/share model (PAIR = your own devices,
+full control; SHARE = a guest link, least privilege). **Each link carries its own
+scope**: which panes the guest may SEE (`--view`) and TYPE into (`--type` ⊆ view),
+plus an optional expiry (`--expires 45m|24h|7d`, default never — expired links fail
+auth like revoked ones). Typing additionally needs the host consent (`share on`,
+default off). Everything is enforced server-side; the web page / app only mirror it.
+
+A link minted without `--view/--type` copies the current global lists (the
+template). The legacy global forms (`share add/remove`, `share view add/remove/
+clear`) still work but FAN OUT to every existing link — per-link tailoring should
+use `share set`. `status --json` carries each guest's `view_panes`/`panes`/
+`expires_at` and never a bare token.
+
 ## tmux integration
 
 gtmux is just a CLI — bind whatever keys you like in `tmux.conf`. Suggested:
