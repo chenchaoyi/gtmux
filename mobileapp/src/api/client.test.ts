@@ -298,7 +298,7 @@ describe('registerPush', () => {
 });
 
 describe('unregisterPush', () => {
-  it('POSTs the token to /api/push/unregister', async () => {
+  it('POSTs the token to /api/push/unregister (no activity token by default)', async () => {
     fetchMock.mockResolvedValueOnce(okJson({}, true));
     const ok = await client().unregisterPush('apns-token-abc');
     expect(ok).toBe(true);
@@ -310,6 +310,13 @@ describe('unregisterPush', () => {
     expect(headers.Authorization).toBe(AUTH);
     expect(headers['Content-Type']).toBe('application/json');
     expect(JSON.parse(init?.body as string)).toEqual({token: 'apns-token-abc'});
+  });
+
+  it('includes the Live Activity token when given', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, true));
+    await client().unregisterPush('apns-token-abc', 'act-tok');
+    const [, init] = call();
+    expect(JSON.parse(init?.body as string)).toEqual({token: 'apns-token-abc', activityToken: 'act-tok'});
   });
 
   it('returns false when not ok', async () => {

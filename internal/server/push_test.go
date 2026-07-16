@@ -142,6 +142,45 @@ func TestPushManagerUnregister(t *testing.T) {
 	}
 }
 
+func TestPushManagerUnregisterActivity(t *testing.T) {
+	relay := &fakeRelay{}
+	pm := NewPushManager(relay, nil, nil, "Mac", nil)
+	pm.RegisterActivity("act-tok", "production")
+
+	// Removing the server pushes an END for the held activity token (so a card this
+	// Mac was keeping alive on the lock screen disappears), carrying its env.
+	pm.UnregisterActivity("act-tok")
+	var got []PushIntent
+	for i := 0; i < 200; i++ {
+		if got = relay.intents(); len(got) >= 1 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if len(got) != 1 || got[0].Token != "act-tok" || got[0].Event != "end" ||
+		!got[0].LiveActivity || got[0].Env != "production" {
+		t.Fatalf("end intent = %+v", got)
+	}
+
+	// The dropped token no longer receives tally UPDATES.
+	pm.PushLiveActivity(Tally{Waiting: 1})
+	time.Sleep(30 * time.Millisecond)
+	for _, in := range relay.intents() {
+		if in.Token == "act-tok" && in.Event == "update" {
+			t.Fatalf("unregistered activity token still got a tally update: %+v", in)
+		}
+	}
+
+	// Unknown / empty tokens are no-ops (no END pushed).
+	before := len(relay.intents())
+	pm.UnregisterActivity("nope")
+	pm.UnregisterActivity("")
+	time.Sleep(10 * time.Millisecond)
+	if after := len(relay.intents()); after != before {
+		t.Fatalf("no-op unregister pushed intents: %d -> %d", before, after)
+	}
+}
+
 func TestPushLiveActivity(t *testing.T) {
 	relay := &fakeRelay{}
 	pm := NewPushManager(relay, nil, nil, "", nil)

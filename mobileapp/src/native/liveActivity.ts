@@ -85,6 +85,13 @@ export const LiveActivity = {
     }
   },
 
+  // currentPushToken returns the running activity's push token (null off iOS or when
+  // no activity is live). removeServer sends it to the removed Mac so that Mac drops
+  // the token and stops pushing lock-screen updates for a server you've deleted.
+  currentPushToken(): Promise<string | null> {
+    return ok ? M!.getPushToken().then(t => t || null).catch(() => null) : Promise.resolve(null);
+  },
+
   // onPushToken subscribes to the Live Activity push token (emitted once iOS
   // issues it for the running activity, and again on rotation). Forward it to the
   // Mac so the relay can push-to-update the lock screen with the app closed.

@@ -272,17 +272,21 @@ category + a device build that registers the category.)
 
 ### `POST /api/push/unregister` — stop pushing to a device
 
-Drops a device push token from this Mac, so it stops forwarding alerts and
-silent-badge pushes to a phone that has **removed this server**. The app calls it
+Drops a device's tokens from this Mac, so it stops pushing to a phone that has
+**removed this server**: the APNs `token` stops alerts + silent-badge pushes, and
+the optional `activityToken` stops Live Activity lock-screen updates (the Mac also
+pushes an `end` so a card it was keeping alive disappears). The app calls it
 best-effort when you delete a paired Mac. Each Mac keeps its own token set, so
 removing one paired server never affects push from the others.
 
 ```
-body: {"token":"<device-token>"}
+body: {"token":"<device-token>","activityToken":"<live-activity-token>"}
 200 {"status":"ok"}                  // idempotent: 200 even if never registered
-400 {"error":"invalid token"}        // missing token / bad body
+400 {"error":"invalid token"}        // both token and activityToken empty / bad body
 503 {"error":"push not configured"}  // server started without push support
 ```
+
+At least one of `token` / `activityToken` must be present; either may be omitted.
 
 ### `POST /api/push/test` — send a test notification
 

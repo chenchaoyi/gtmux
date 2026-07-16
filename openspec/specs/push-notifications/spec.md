@@ -21,12 +21,15 @@ forwarded even when the app is closed.
 
 ### Requirement: Device unregistration on server removal
 
-The system SHALL accept `POST /api/push/unregister` to drop a device's APNs token
-from a Mac, so that Mac stops forwarding alerts and silent-badge pushes to a phone
-that has removed it as a paired server. The endpoint is idempotent (200 even if the
-token was never registered). Each Mac keeps its own token set, so unregistering
-from one paired server SHALL NOT affect push delivery from the others. The app
-calls it best-effort when the user removes a paired Mac.
+The system SHALL accept `POST /api/push/unregister` to drop a device's tokens from a
+Mac, so that Mac stops pushing to a phone that has removed it as a paired server: the
+APNs `token` stops alerts and silent-badge pushes, and the optional `activityToken`
+stops Live Activity lock-screen updates, with the Mac pushing a Live Activity `end`
+so a card it was keeping alive disappears. The endpoint is idempotent (200 even if a
+token was never registered) and requires at least one of `token`/`activityToken`.
+Each Mac keeps its own token set, so unregistering from one paired server SHALL NOT
+affect push delivery from the others. The app calls it best-effort when the user
+removes a paired Mac.
 
 #### Scenario: Remove one of several paired servers
 
@@ -34,6 +37,13 @@ calls it best-effort when the user removes a paired Mac.
 - **THEN** the app POSTs the device token to B's `/api/push/unregister`
 - **AND** B drops the token and stops pushing that device's alerts
 - **AND** A still has the token and keeps pushing its own alerts
+
+#### Scenario: Removed server leaves the Live Activity
+
+- **WHEN** the user removes the server the Live Activity is tracking
+- **THEN** the app POSTs its Live Activity token to that server's `/api/push/unregister`
+- **AND** the server drops the activity token and pushes a Live Activity `end`
+- **AND** the server no longer sends lock-screen tally updates for that device
 
 ### Requirement: Server-derived alerts drive push
 
