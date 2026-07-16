@@ -12,6 +12,7 @@ func viewServer(t *testing.T) (h http.Handler, share *ShareManager, guest string
 	t.Helper()
 	enroll := NewEnrollManager(nil, nil)
 	share = NewShareManager(ShareState{}, nil)
+	share.OnBroadcast(enroll.BroadcastGuestScopes)
 	agents := `[{"pane_id":"%1","agent":"Claude Code"},{"pane_id":"%2","agent":"Codex"},{"source":"native"}]`
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
 		Enroll:     enroll,
@@ -21,7 +22,7 @@ func viewServer(t *testing.T) (h http.Handler, share *ShareManager, guest string
 		UsageJSON:  func() ([]byte, error) { return []byte(`{"sessions":[]}`), nil },
 		DigestJSON: func() ([]byte, error) { return []byte(`[]`), nil },
 	})
-	return s.Handler(), share, enroll.MintGuest("g").Token
+	return s.Handler(), share, enroll.MintGuest("g", nil, nil, 0).Token
 }
 
 func paneIDs(t *testing.T, body []byte) []string {

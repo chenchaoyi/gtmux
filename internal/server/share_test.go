@@ -31,13 +31,14 @@ func shareServer(t *testing.T) (h http.Handler, share *ShareManager, sent *[]str
 	var calls []string
 	enroll := NewEnrollManager(nil, nil)
 	share = NewShareManager(ShareState{}, nil)
+	share.OnBroadcast(enroll.BroadcastGuestScopes)
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
 		Enroll: enroll,
 		Share:  share,
 		Send:   func(id, text, key string, enter bool) error { calls = append(calls, id); return nil },
 	})
 	dev, _ := enroll.Redeem(enroll.Mint(), "phone")
-	return s.Handler(), share, &calls, dev.Token, enroll.MintGuest("guest").Token
+	return s.Handler(), share, &calls, dev.Token, enroll.MintGuest("guest", nil, nil, 0).Token
 }
 
 func TestGuestSend_BlockedWhenOff(t *testing.T) {

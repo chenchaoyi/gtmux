@@ -354,3 +354,63 @@ body: {"id":"<deviceId>"}
 405 {"error":"method not allowed"}
 503 {"error":"enrollment not configured"}
 ```
+
+## Sharing (guest links — the SHARE track of pair-share-model)
+
+Every credential carries a SCOPE: the master token and enrolled devices are FULL
+(the owner's own surfaces — the PAIR track); a share link is a GUEST. Each guest
+link carries its OWN per-pane scope — a **view** allowlist and an **input**
+allowlist (input ⊆ view) — plus an optional expiry; an expired link fails auth
+(`401`) exactly like a revoked one. Typing additionally requires the host-level
+consent switch. All gates are server-side and authoritative.
+
+### `GET /api/share` — the caller's own capability (any scope)
+
+```
+200 {"input":true,"all":true,"panes":[],"view_panes":[]}          // full caller
+200 {"input":false,"panes":[],"view_panes":["%1","%2"]}           // guest, view-only
+200 {"input":true,"panes":["%1"],"view_panes":["%1","%2"]}        // guest, may type %1
+```
+
+A guest's reply resolves from ITS OWN link scope. `input` is true only when the
+caller can actually type somewhere (consent on AND a non-empty input list). UIs
+mirror (never widen) this.
+
+### `GET/POST /api/share/config` — the host policy (master only)
+
+```
+GET  200 {"enabled":false,"panes":[],"view_panes":[]}
+POST body: {"enabled":bool?,"panes":[…]?,"view_panes":[…]?}   // partial update
+     200 <the updated state>
+403 {"error":"forbidden: host-only"}                          // device/guest caller
+```
+
+`enabled` is the consent master switch for ALL guest typing. The pane lists are
+the legacy GLOBAL lists, kept with two roles (pair-share-model): the TEMPLATE
+copied into links minted without explicit scope, and a BROADCAST — a POST that
+changes them also replaces every existing link's per-link lists (the pre-per-link
+behavior, preserved for older UIs).
+
+### `POST /api/share/new` — mint a guest link (master only)
+
+```
+body: {"label":"Alice","view":["%1","%2"]?,"input":["%1"]?,"expiresInSec":86400?}
+200 {"token":"<guest-token>","id":"<id>","name":"Alice"}
+```
+
+Omitted `view`/`input` copy the current template; omitted `expiresInSec` = never
+expires. Input is normalized into view (input ⊆ view).
+
+### `POST /api/share/set` — edit ONE link's scope (master only)
+
+```
+body: {"id":"<id>","view":[…]?,"input":[…]?,"expiresInSec":N?,"clearExpiry":true?}
+200 {"id":"…","name":"…","viewPanes":[…],"inputPanes":[…],"expiresAt":<epoch|0>}
+404 {"error":"unknown share link"}
+```
+
+Per-facet replace: an omitted field leaves that facet untouched. Only guest
+entries are editable.
+
+`GET /api/devices` additionally carries each guest entry's `viewPanes`,
+`inputPanes`, and `expiresAt` (additive; absent on owner devices).

@@ -64,3 +64,62 @@ func TestBuildShareNew(t *testing.T) {
 		t.Errorf("new --json must not have a bare token field: %s", b)
 	}
 }
+
+// parseExpires: durations, never, not-given, and garbage.
+func TestParseExpires(t *testing.T) {
+	cases := []struct {
+		in    string
+		secs  int64
+		clear bool
+		ok    bool
+	}{
+		{"", 0, false, true},
+		{"never", 0, true, true},
+		{"45m", 45 * 60, false, true},
+		{"24h", 24 * 3600, false, true},
+		{"7d", 7 * 86400, false, true},
+		{"bogus", 0, false, false},
+		{"-3h", 0, false, false},
+		{"h", 0, false, false},
+	}
+	for _, c := range cases {
+		secs, clear, ok := parseExpires(c.in)
+		if secs != c.secs || clear != c.clear || ok != c.ok {
+			t.Errorf("parseExpires(%q) = (%d,%v,%v), want (%d,%v,%v)", c.in, secs, clear, ok, c.secs, c.clear, c.ok)
+		}
+	}
+}
+
+// The status --json mapper carries each guest's per-link scope (pair-share-model),
+// defaulting nils to empty arrays, and never a token.
+func TestBuildShareStatus_PerLinkScope(t *testing.T) {
+	st := shareStateJSON{Enabled: true, Panes: []string{"%1"}, ViewPanes: []string{"%1", "%2"}}
+	guests := []deviceListEntry{
+		{ID: "a", Name: "Alice", EnrolledAt: 100, ViewPanes: []string{"%1"}, InputPanes: []string{"%1"}, ExpiresAt: 999},
+		{ID: "b", Name: "Bob", EnrolledAt: 200}, // legacy nils → empty arrays
+	}
+	out := buildShareStatus(st, guests, "https://x")
+	if len(out.Guests) != 2 {
+		t.Fatalf("guests = %d", len(out.Guests))
+	}
+	a := out.Guests[0]
+	if len(a.ViewPanes) != 1 || len(a.Panes) != 1 || a.ExpiresAt != 999 {
+		t.Fatalf("alice = %+v", a)
+	}
+	b := out.Guests[1]
+	if b.ViewPanes == nil || b.Panes == nil || len(b.ViewPanes) != 0 {
+		t.Fatalf("bob's nil scope must map to empty arrays: %+v", b)
+	}
+}
+
+// guestScopeSummary renders counts + expiry.
+func TestGuestScopeSummary(t *testing.T) {
+	g := deviceListEntry{ViewPanes: []string{"%1", "%2"}, InputPanes: []string{"%1"}}
+	if s := guestScopeSummary(g); s != "2 view · 1 type" {
+		t.Fatalf("summary = %q", s)
+	}
+	g.ExpiresAt = 1 // long past
+	if s := guestScopeSummary(g); !strings.Contains(s, "expired") && !strings.Contains(s, "已过期") {
+		t.Fatalf("expired summary = %q", s)
+	}
+}

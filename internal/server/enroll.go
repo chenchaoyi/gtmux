@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +28,70 @@ type EnrolledDevice struct {
 	// Scope is "" (a paired device — the owner's own surface, unrestricted input) or
 	// "guest" (a share link — input-restricted by the share gate). Additive/back-compat.
 	Scope string `json:"scope,omitempty"`
+	// Per-link guest scope (pair-share-model): the panes THIS link may see / type
+	// into (input ⊆ view, normalized on every write), and an optional expiry (unix
+	// seconds; 0 = never — past it the token stops authenticating). nil/0 on owner
+	// devices (unrestricted). ScopeSet marks that the per-link lists are
+	// authoritative — it distinguishes an explicitly-emptied scope from a legacy
+	// entry awaiting the one-time global-list migration (empty slices are dropped
+	// by omitempty on persist, so the flag carries the difference).
+	ViewPanes  []string `json:"viewPanes,omitempty"`
+	InputPanes []string `json:"inputPanes,omitempty"`
+	ExpiresAt  int64    `json:"expiresAt,omitempty"`
+	ScopeSet   bool     `json:"scopeSet,omitempty"`
+}
+
+// Expired reports whether the entry has an expiry in the past.
+func (d EnrolledDevice) Expired(now int64) bool {
+	return d.ExpiresAt > 0 && now > d.ExpiresAt
+}
+
+// MayView reports whether THIS link may see pane (per-link view allowlist).
+func (d EnrolledDevice) MayView(pane string) bool {
+	for _, p := range d.ViewPanes {
+		if p == pane {
+			return true
+		}
+	}
+	return false
+}
+
+// MayInput reports whether THIS link may type into pane (per-link input allowlist —
+// the host-level consent gate is checked separately by the ShareManager).
+func (d EnrolledDevice) MayInput(pane string) bool {
+	for _, p := range d.InputPanes {
+		if p == pane {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeScope dedups + sorts both lists and enforces input ⊆ view (every
+// input-allowed pane is unioned into view). Returns non-nil slices.
+func normalizeScope(view, input []string) (v, in []string) {
+	vs, is := map[string]bool{}, map[string]bool{}
+	for _, p := range view {
+		if p != "" {
+			vs[p] = true
+		}
+	}
+	for _, p := range input {
+		if p != "" {
+			is[p] = true
+			vs[p] = true // input implies view
+		}
+	}
+	v, in = make([]string, 0, len(vs)), make([]string, 0, len(is))
+	for p := range vs {
+		v = append(v, p)
+	}
+	for p := range is {
+		in = append(in, p)
+	}
+	sort.Strings(v)
+	sort.Strings(in)
+	return v, in
 }
 
 // EnrollManager holds the device roster plus short-lived, single-use enroll codes.
@@ -96,10 +161,12 @@ func (m *EnrollManager) Redeem(code, name string) (EnrolledDevice, bool) {
 }
 
 // MintGuest creates a GUEST share token (scope "guest") directly — the owner hands
-// this out in a share link. It is input-restricted by the share gate (consent + the
-// per-pane allowlist), persisted, and individually revocable by ID like any roster
-// entry. No enroll code is involved: the owner is the one minting it.
-func (m *EnrollManager) MintGuest(label string) EnrolledDevice {
+// this out in a share link. It carries its OWN per-link scope (pair-share-model):
+// which panes it may see/type into (input ⊆ view, normalized here) and an optional
+// expiry. It is persisted and individually revocable by ID like any roster entry.
+// No enroll code is involved: the owner is the one minting it.
+func (m *EnrollManager) MintGuest(label string, view, input []string, expiresAt int64) EnrolledDevice {
+	v, in := normalizeScope(view, input)
 	m.mu.Lock()
 	d := EnrolledDevice{
 		ID:         randHex(8),
@@ -107,6 +174,10 @@ func (m *EnrollManager) MintGuest(label string) EnrolledDevice {
 		Token:      randHex(32),
 		EnrolledAt: m.now().Unix(),
 		Scope:      "guest",
+		ViewPanes:  v,
+		InputPanes: in,
+		ExpiresAt:  expiresAt,
+		ScopeSet:   true,
 	}
 	m.devices[d.Token] = d
 	snap := m.devicesLocked()
@@ -117,9 +188,93 @@ func (m *EnrollManager) MintGuest(label string) EnrolledDevice {
 	return d
 }
 
+// SetGuestScope edits ONE guest link's scope by id: a nil slice/pointer leaves that
+// facet untouched (per-flag replace semantics). Returns the updated entry;
+// ok=false for an unknown id or a non-guest entry.
+func (m *EnrollManager) SetGuestScope(id string, view, input *[]string, expiresAt *int64) (EnrolledDevice, bool) {
+	m.mu.Lock()
+	var updated EnrolledDevice
+	found := false
+	for tok, d := range m.devices {
+		if d.ID != id || d.Scope != "guest" {
+			continue
+		}
+		v, in := d.ViewPanes, d.InputPanes
+		if view != nil {
+			v = *view
+		}
+		if input != nil {
+			in = *input
+		}
+		d.ViewPanes, d.InputPanes = normalizeScope(v, in)
+		if expiresAt != nil {
+			d.ExpiresAt = *expiresAt
+		}
+		d.ScopeSet = true
+		m.devices[tok] = d
+		updated, found = d, true
+		break
+	}
+	snap := m.devicesLocked()
+	m.mu.Unlock()
+	if found && m.save != nil {
+		m.save(snap)
+	}
+	return updated, found
+}
+
+// BroadcastGuestScopes replaces EVERY guest link's allowlists with the given lists —
+// the legacy global-mutation semantics (pair-share-model: the old global forms fan
+// out, so pre-per-link UIs keep their exact observed behavior).
+func (m *EnrollManager) BroadcastGuestScopes(view, input []string) {
+	v, in := normalizeScope(view, input)
+	m.mu.Lock()
+	changed := false
+	for tok, d := range m.devices {
+		if d.Scope != "guest" {
+			continue
+		}
+		d.ViewPanes, d.InputPanes = append([]string(nil), v...), append([]string(nil), in...)
+		d.ScopeSet = true
+		m.devices[tok] = d
+		changed = true
+	}
+	snap := m.devicesLocked()
+	m.mu.Unlock()
+	if changed && m.save != nil {
+		m.save(snap)
+	}
+}
+
+// MigrateGuestScopes gives every legacy guest entry (minted before per-link scope;
+// ScopeSet false) a ONE-TIME copy of the global lists, preserving pre-upgrade
+// behavior exactly. Explicitly-scoped links are never touched. Called once at serve
+// wiring.
+func (m *EnrollManager) MigrateGuestScopes(view, input []string) {
+	v, in := normalizeScope(view, input)
+	m.mu.Lock()
+	changed := false
+	for tok, d := range m.devices {
+		if d.Scope != "guest" || d.ScopeSet {
+			continue
+		}
+		d.ViewPanes, d.InputPanes = append([]string(nil), v...), append([]string(nil), in...)
+		d.ScopeSet = true
+		m.devices[tok] = d
+		changed = true
+	}
+	snap := m.devicesLocked()
+	m.mu.Unlock()
+	if changed && m.save != nil {
+		m.save(snap)
+	}
+}
+
 // TokenScope returns an enrolled token's scope — "guest" for a share link, "device"
 // for a paired device (scope "") — updating LastSeen, and ok=false for an unknown
-// token. auth() uses it to authorize per scope.
+// token. An EXPIRED guest link reads as unknown (pair-share-model): past its expiry
+// the token stops authenticating exactly like a revoked one. auth() uses it to
+// authorize per scope.
 func (m *EnrollManager) TokenScope(tok string) (scope string, ok bool) {
 	if tok == "" {
 		return "", false
@@ -128,6 +283,9 @@ func (m *EnrollManager) TokenScope(tok string) (scope string, ok bool) {
 	defer m.mu.Unlock()
 	d, ok := m.devices[tok]
 	if !ok {
+		return "", false
+	}
+	if d.Expired(m.now().Unix()) {
 		return "", false
 	}
 	d.LastSeen = m.now().Unix()
@@ -264,6 +422,10 @@ type deviceInfo struct {
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen,omitempty"`
 	Scope      string `json:"scope,omitempty"`
+	// Per-link guest scope (pair-share-model), additive: absent on owner devices.
+	ViewPanes  []string `json:"viewPanes,omitempty"`
+	InputPanes []string `json:"inputPanes,omitempty"`
+	ExpiresAt  int64    `json:"expiresAt,omitempty"`
 }
 
 // handleDevices implements GET /api/devices — AUTHENTICATED. Lists the enrolled
@@ -275,7 +437,8 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]deviceInfo, 0)
 	for _, d := range s.deps.Enroll.Devices() {
-		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Scope: d.Scope})
+		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Scope: d.Scope,
+			ViewPanes: d.ViewPanes, InputPanes: d.InputPanes, ExpiresAt: d.ExpiresAt})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"devices": out})
 }

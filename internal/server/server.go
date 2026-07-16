@@ -202,6 +202,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/share", s.auth(http.HandlerFunc(s.handleShare)))              // any: the caller's capability
 	mux.Handle("/api/share/config", s.auth(http.HandlerFunc(s.handleShareConfig))) // master: consent + allowlist
 	mux.Handle("/api/share/new", s.auth(http.HandlerFunc(s.handleShareNew)))       // master: mint a guest link
+	mux.Handle("/api/share/set", s.auth(http.HandlerFunc(s.handleShareSet)))       // master: edit ONE link's scope
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
@@ -246,12 +247,23 @@ const (
 
 type ctxKey int
 
-const scopeCtxKey ctxKey = 0
+const (
+	scopeCtxKey  ctxKey = 0
+	deviceCtxKey ctxKey = 1
+)
 
 // callerScope returns the authenticated caller's scope ("" if unset).
 func callerScope(ctx context.Context) string {
 	s, _ := ctx.Value(scopeCtxKey).(string)
 	return s
+}
+
+// callerDevice returns the authenticated GUEST caller's roster entry — the link
+// whose per-link scope gates its reads/inputs (pair-share-model). ok=false for
+// master/device callers (unrestricted) and when unset.
+func callerDevice(ctx context.Context) (EnrolledDevice, bool) {
+	d, ok := ctx.Value(deviceCtxKey).(EnrolledDevice)
+	return d, ok
 }
 
 func (s *Server) auth(next http.Handler) http.Handler {
@@ -263,6 +275,7 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			tok = strings.TrimPrefix(h, prefix)
 		}
 		scope := scopeMaster
+		ctx := r.Context()
 		if subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) != 1 {
 			sc, ok := "", false
 			if s.deps.Enroll != nil {
@@ -273,8 +286,15 @@ func (s *Server) auth(next http.Handler) http.Handler {
 				return
 			}
 			scope = sc // scopeDevice | scopeGuest
+			// A guest's request carries ITS link (per-link scope) so every gate
+			// downstream checks the caller's own allowlists, not a global set.
+			if scope == scopeGuest {
+				if d, ok := s.deps.Enroll.DeviceByToken(tok); ok {
+					ctx = context.WithValue(ctx, deviceCtxKey, d)
+				}
+			}
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), scopeCtxKey, scope)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, scopeCtxKey, scope)))
 	})
 }
 
@@ -288,22 +308,24 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, errBody("agents error"))
 		return
 	}
-	// A guest sees ONLY the panes on its view allowlist; a full caller (master /
-	// paired device) gets the byte-identical radar unfiltered.
+	// A guest sees ONLY the panes on ITS OWN link's view allowlist (pair-share-
+	// model); a full caller (master / paired device) gets the byte-identical radar.
 	if callerScope(r.Context()) == scopeGuest {
-		b = filterAgentsForGuest(b, s.deps.Share)
+		dev, ok := callerDevice(r.Context())
+		if !ok {
+			dev = EnrolledDevice{} // no resolvable link → sees nothing
+		}
+		b = filterAgentsForGuest(b, dev)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(b)
 }
 
-// filterAgentsForGuest drops every agent row whose pane is not on the guest's view
-// allowlist, preserving each surviving row byte-for-byte. A nil Share (sharing not
-// configured) yields an empty radar — a guest can never see more than nothing.
-func filterAgentsForGuest(raw []byte, share *ShareManager) []byte {
-	if share == nil {
-		return []byte("[]")
-	}
+// filterAgentsForGuest drops every agent row whose pane is not on THE CALLER
+// LINK's view allowlist (pair-share-model), preserving each surviving row
+// byte-for-byte. An empty scope yields an empty radar — a guest can never see
+// more than nothing.
+func filterAgentsForGuest(raw []byte, dev EnrolledDevice) []byte {
 	var rows []json.RawMessage
 	if err := json.Unmarshal(raw, &rows); err != nil {
 		return []byte("[]")
@@ -313,7 +335,7 @@ func filterAgentsForGuest(raw []byte, share *ShareManager) []byte {
 		var id struct {
 			PaneID string `json:"pane_id"`
 		}
-		if json.Unmarshal(row, &id) == nil && id.PaneID != "" && share.CanView(id.PaneID) {
+		if json.Unmarshal(row, &id) == nil && id.PaneID != "" && dev.MayView(id.PaneID) {
 			kept = append(kept, row)
 		}
 	}
@@ -391,10 +413,12 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	// A guest may read a pane's screen ONLY if it is on the view allowlist.
-	if callerScope(r.Context()) == scopeGuest && (s.deps.Share == nil || !s.deps.Share.CanView(id)) {
-		writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
-		return
+	// A guest may read a pane's screen ONLY if it is on ITS OWN link's view list.
+	if callerScope(r.Context()) == scopeGuest {
+		if dev, ok := callerDevice(r.Context()); !ok || !dev.MayView(id) {
+			writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
+			return
+		}
 	}
 	text, ok := s.deps.PaneText(id)
 	if !ok {
@@ -482,11 +506,13 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	// Guest gate: a share-link caller may type ONLY into a pane the host consented +
-	// allowlisted. The owner (master/device) is unrestricted. This is the authoritative
-	// server-side check — the web UI only mirrors it.
+	// Guest gate: a share-link caller may type ONLY when the host consented AND the
+	// pane is on THAT LINK's input allowlist (pair-share-model). The owner
+	// (master/device) is unrestricted. This is the authoritative server-side check —
+	// the web UI only mirrors it.
 	if callerScope(r.Context()) == scopeGuest {
-		if s.deps.Share == nil || !s.deps.Share.Allowed(req.ID) {
+		dev, ok := callerDevice(r.Context())
+		if !ok || s.deps.Share == nil || !s.deps.Share.InputEnabled() || !dev.MayInput(req.ID) {
 			writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
 			return
 		}
