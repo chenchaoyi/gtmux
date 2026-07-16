@@ -302,6 +302,24 @@ final class ModelTests: XCTestCase {
                                runningVersion: "0.18.1", installedVersion: ""), .fail)
     }
 
+    // MARK: self-update — never forward a leaked GTMUX_VERSION pin
+
+    func testUpdateCommandStripsGtmuxVersion() {
+        // install.sh's `open -n` leaks GTMUX_VERSION into the app's environment; if the
+        // menu-bar self-update forwarded it, Go would reinstall the CURRENT version
+        // forever and the "new version" banner would never clear. The command must
+        // strip it so an update always resolves the latest release.
+        let cmd = Updater.updateCommand(cli: "/Users/x/.local/bin/gtmux", binDir: nil)
+        XCTAssertTrue(cmd.contains("env -u GTMUX_VERSION "), "must strip GTMUX_VERSION: \(cmd)")
+        XCTAssertTrue(cmd.hasSuffix("'/Users/x/.local/bin/gtmux' update"), "runs the resolved CLI: \(cmd)")
+    }
+
+    func testUpdateCommandPinsBinDirWhenGiven() {
+        let cmd = Updater.updateCommand(cli: "/App/Gtmux.app/Contents/MacOS/gtmux", binDir: "/Users/x/.local/bin")
+        XCTAssertTrue(cmd.contains("env -u GTMUX_VERSION "))
+        XCTAssertTrue(cmd.contains("GTMUX_BIN_DIR='/Users/x/.local/bin'"), "pins BIN_DIR: \(cmd)")
+    }
+
     // MARK: helpers
 
     private func hex(_ c: NSColor) -> String {

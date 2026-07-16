@@ -296,12 +296,26 @@ final class Updater: ObservableObject {
         return (GtmuxCLI.path, "\(home)/.local/bin")
     }
 
+    /// Build the `gtmux update` invocation run inside the detached shell. Pure (given
+    /// the resolved CLI + bin dir) so a test can pin its shape.
+    ///
+    /// `env -u GTMUX_VERSION`: installer runs leak GTMUX_VERSION into the app's
+    /// environment (see install.sh's `open -n`), and if the app forwarded that pin to
+    /// `gtmux update`, Go would honor it and reinstall the CURRENT version instead of
+    /// resolving the latest — the self-update loops and the banner never clears. Strip
+    /// it so a menu-bar update always targets the newest release.
+    static func updateCommand(cli: String, binDir: String?) -> String {
+        func shq(_ s: String) -> String { "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'" }
+        var inner = "env -u GTMUX_VERSION "
+        if let binDir = binDir { inner += "GTMUX_BIN_DIR=\(shq(binDir)) " }
+        inner += "\(shq(cli)) update"
+        return inner
+    }
+
     private static func spawnDetachedUpdate() {
         let (cli, binDir) = updateTarget()
         func shq(_ s: String) -> String { "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'" }
-        var inner = ""
-        if let binDir = binDir { inner += "GTMUX_BIN_DIR=\(shq(binDir)) " }
-        inner += "\(shq(cli)) update"
+        let inner = updateCommand(cli: cli, binDir: binDir)
         // Record the installer's exit code so the still-running app can tell a FAILED
         // update (non-zero) from a successful one (which pkills+relaunches us before we
         // ever read it). Written after `gtmux update` returns, whatever the outcome.
