@@ -56,10 +56,15 @@ of bug rather than detecting it, and is worth doing only if A proves the machine
    mirroring §6's `HIDDEN`.
 
 3. **Retired vocabulary must stay retired.** A denylist of tokens that must not reappear
-   in docs: the `[gtmux] ` wake prefix (retired by hq-perception-v2), `internal/menubar/`
-   (deleted in the Swift migration), "the attention stream" as a description of a severity
-   filter (killed by hq-attention-stream). Each entry names the change that retired it, so
-   the list is an audit trail rather than a pile of greps.
+   in the docs that describe CURRENT behavior. Each entry names the change that retired
+   it, so the list is an audit trail rather than a pile of greps.
+
+   Two things the implementation taught: `openspec/changes/**` must be excluded (a
+   proposal has to be able to QUOTE what it retires — this one does), and the CLAUDE.md
+   `代码位置对照` table legitimately names deleted paths on purpose, so entries carry file
+   exemptions. A third lesson went the other way: where a SPEC quoted a retired format to
+   narrate history, the spec was wrong to — a spec says what IS; the archaeology belongs
+   in a change's design.
 
 ### Phase B — generate the factual core (deferred, proposed for judgment)
 
@@ -99,6 +104,12 @@ checker cannot fix that — it is a test-design problem, noted here so it isn't 
   `note`/`fail=1` style), a new doc-example fixture test (Go), `Makefile`
   (`docs-fix`), CLAUDE.md (the rule + the escape hatch, alongside the existing
   spec⇄code⇄test rule).
-- No product-code change; no CLI/HTTP surface change. The only failure mode this
-  introduces is a false RED (a doc region intentionally illustrative rather than exact) —
-  handled by not marking that region.
+- **Product code, because the guard found some.** `internal/hook/usagewatch.go` bypassed
+  the wake channel entirely (`tmux.SendText(target, msg, true)` — no draft guard, so a
+  warning firing mid-sentence appended itself to the user's message and submitted it);
+  `internal/app/watchdog.go` hand-built the retired format, so its escalation could not
+  even be read as a class and queued at default priority. Both now build declared classes
+  (`usage·warn`, `stuck·waiting`) through `hqwake.Line` + `hqnudge`. Playbook v5 teaches
+  them; the class table and three stale specs are corrected.
+- The only failure mode the guard itself introduces is a false RED (a doc region
+  intentionally illustrative rather than exact) — handled by not marking that region.

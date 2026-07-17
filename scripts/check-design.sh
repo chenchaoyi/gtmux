@@ -79,8 +79,49 @@ for cmd in $(grep -oE '^## `gtmux [a-z][a-z0-9-]*`' docs/cli.md | sed -E 's/^## 
   }
 done
 
+# 7. Wake vocabulary ↔ docs drift. Every class the code can emit MUST be taught in BOTH
+#    places a reader learns it: docs/cli.md's class table (the human) and the seeded
+#    playbook (HQ itself). A class missing from the playbook means HQ receives a knock its
+#    own charter never mentions — which is exactly what `usage·warn` and `stuck·waiting`
+#    did for months. The needle is the BACKTICKED form: a bare grep for "done" or "tick"
+#    matches ordinary prose and passes for the wrong reason.
+WAKE=internal/hqwake/wake.go
+PLAYBOOK=internal/app/hq.go
+DOC_HIDDEN=" "   # classes deliberately not surfaced (none today)
+for c in $(grep -oE 'Class[A-Za-z]+ += +"[^"]+"' "$WAKE" | sed -E 's/.*"([^"]+)"/\1/' | sort -u); do
+  case "$DOC_HIDDEN" in *" $c "*) continue ;; esac
+  grep -qE '`'"$c"'(`|·)' docs/cli.md || {
+    note "wake class '$c' is not in docs/cli.md's class table (a reader meets a glyph nothing explains)"; fail=1
+  }
+  grep -qE '`'"$c"'(`|·)' "$PLAYBOOK" || {
+    note "wake class '$c' is not taught in the seeded playbook ($PLAYBOOK) — HQ would get a knock its charter never mentions"; fail=1
+  }
+done
+
+# 8. Retired vocabulary must stay retired. Each entry names the change that retired it, so
+#    the list is an audit trail rather than a pile of greps nobody dares delete from — and
+#    an entry can itself be retired once its change is forgotten. Scoped per entry: the
+#    file that DOCUMENTS a retirement legitimately contains the token (CLAUDE.md's
+#    代码位置对照 table maps the Swift migration's deleted paths on purpose).
+#
+#    token · retired-by · files exempt (space-separated, "" = none)
+#    Searched: the docs that describe CURRENT behavior. openspec/changes/** is excluded on
+#    purpose — a proposal must be able to QUOTE the thing it is retiring (this very change
+#    does), and the same goes for the archive's audit trail.
+DOC_TREE="docs CLAUDE.md README.md README.zh.md api openspec/specs"
+retired_check() {  # $1=token  $2=retired-by  $3=exempt files
+  for f in $(grep -rlF "$1" --include=*.md $DOC_TREE 2>/dev/null | sed 's|^\./||'); do
+    case " $3 " in *" $f "*) continue ;; esac
+    note "$f reintroduces '$1' — retired by $2"; fail=1
+  done
+}
+retired_check '[gtmux] '        'hq-perception-v2 (the wake format is now `» gtmux·<class>`)' \
+  'openspec/specs/chat-transcript/spec.md docs/design/DESIGN.md docs/design/HANDOFF.md docs/design/CLAUDE.snippet.md'
+retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is gone)' \
+  'CLAUDE.md docs/design/DESIGN.md docs/design/HANDOFF.md docs/design/CLAUDE.snippet.md'
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired"
 else
   exit 1
 fi

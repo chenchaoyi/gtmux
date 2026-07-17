@@ -12,6 +12,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -172,6 +173,42 @@ func TestGoalWaked_LegacyMarkerDegrades(t *testing.T) {
 	sum := sha256.Sum256([]byte("build the parser"))
 	if goalWaked("%7", hex.EncodeToString(sum[:]), time.Now().Unix()) {
 		t.Error("an unparseable legacy marker must never suppress a wake")
+	}
+}
+
+// The usage warning goes through the WAKE CHANNEL like every other injection. It used to
+// hand-build `[gtmux] usage·warn …` and SendText it straight into the pane — no draft
+// guard, so a warning firing while the user typed in HQ appended itself to their draft
+// and pressed Enter. It survived two channel rewrites precisely because it went through
+// neither; this pins that it can't drift back out.
+func TestNudgeUsage_GoesThroughTheWakeChannel(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// No HQ resolves and none was ever seen → the wake is a silent no-op. The point is
+	// that it takes the gated path at all: the old code would have typed regardless.
+	nudgeUsage("%14", "ctx 86%")
+	if hqnudge.Pending() {
+		t.Fatal("with no supervisor there is nothing to wake and nothing to queue")
+	}
+	// With an HQ seen recently, the same call HOLDS the wake — proof it is riding
+	// hqnudge's queue rather than a raw SendText.
+	stampHQSeen(t)
+	nudgeUsage("%14", "ctx 86%")
+	if !hqnudge.Pending() {
+		t.Fatal("the usage warning must ride the draft-guarded queue, not a raw send")
+	}
+}
+
+// The line it builds is the signal format, carrying a class the vocabulary declares.
+func TestUsageWarnLine(t *testing.T) {
+	got := hqwake.Line(hqwake.ClassUsageWarn, "api:0.0 (%14)", "ctx 86%")
+	want := "» gtmux·usage·warn  api:0.0 (%14) │ ctx 86%"
+	if got != want {
+		t.Fatalf("usage·warn line = %q, want %q", got, want)
+	}
+	// A standing warning re-fires on its own cadence, so it must never outrank a
+	// decision-dense knock in the delivery queue.
+	if hqwake.PriorityOf(got) != hqwake.PriorityStanding {
+		t.Fatalf("usage·warn must queue as a standing warning; got %d", hqwake.PriorityOf(got))
 	}
 }
 

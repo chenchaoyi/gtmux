@@ -1,5 +1,5 @@
 # Developer shortcuts. `make check` runs the same gate as CI (.github/workflows/ci.yml).
-.PHONY: build app app-release install test cover fmt vet lint check clean
+.PHONY: build app app-release install test cover fmt vet lint check clean docs-fix
 
 BIN      ?= gtmux
 PKG       = ./cmd/gtmux
@@ -36,6 +36,9 @@ vet: ## go vet
 
 lint: ## staticcheck (pinned via go run)
 	go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+
+docs-fix: ## Rewrite the docs' rendered examples from the code (CI only reports)
+	go test ./internal/docs -run TestDocExamples -update
 
 check: fmt vet lint test ## Run the full CI gate locally
 

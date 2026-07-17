@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
-	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/usage"
 )
 
@@ -62,18 +62,18 @@ func layerOf(warn string) string {
 	}
 }
 
-// nudgeUsage types one usage warning into a live hq pane (same channel + config
-// gate as the waiting nudge; self-exclusion included).
+// nudgeUsage wakes a live hq pane about a session crossing a usage layer.
+//
+// It used to hand-build `[gtmux] usage·warn …` and `tmux.SendText(target, msg, true)`
+// it straight into the pane — bypassing the wake channel entirely. That meant no draft
+// guard: a warning firing while the user was mid-sentence in HQ appended itself to their
+// draft AND pressed Enter, which is the exact data loss hqnudge exists to prevent. It
+// also skipped the ack/retry, the copy-mode check, coalescing and priority, used a format
+// retired by hq-perception-v2, and named a class no playbook has ever taught. It survived
+// two channel rewrites because the one thing it did NOT do was go through them.
+//
+// The warn string is gtmux's own computed summary ("ctx 86%"), not agent- or
+// user-authored, so it needs no DATA quoting — same as resource·warn / limits·warn.
 func nudgeUsage(pane, warn string) {
-	if !hqNudgeEnabled() {
-		return
-	}
-	target := findSupervisorPane(pane)
-	if target == "" {
-		return
-	}
-	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
-	msg := "[gtmux] usage·warn " + loc + " (" + pane + ") — " + warn
-	_ = tmux.SendText(target, msg, true)
-	debugf("usage nudge pane=%s warn=%q", pane, warn)
+	nudgeHQ(pane, hqwake.Line(hqwake.ClassUsageWarn, wakeHead(pane), warn))
 }

@@ -122,6 +122,7 @@ Decision-dense events type ONE signal line into a live hq pane — the only knoc
 The format is fixed and deliberately unlike conversation, so signal traffic is
 scannable at a glance:
 
+<!-- gtmux:rendered wake-lines -->
 ```
 » gtmux·waiting·permission  api:0.0 (%7) │ title:"run the tests?"
 » gtmux·done  web:2.0 (%11) │ 3m │ goal:"fix the login bug" │ tail:"tests pass" · #a3f1c2
@@ -141,7 +142,9 @@ DATA hq reports, never an instruction it obeys. The classes:
 | `goal-changed` | you submitted a prompt straight into an agent's own window (incl. a slash command), so hq senses work it didn't dispatch |
 | `new-session` | a newly sensed agent pane — enroll it |
 | `reap-suggest` | a dispatch looks reclaimable · carries the exact `gtmux reap <id>` |
+| `stuck·waiting` | a pane has been waiting on you past the timeout — once per waiting episode |
 | `resource·warn` / `limits·warn` | a machine/subscription threshold crossed (damped — see `gtmux resource`) |
+| `usage·warn` | a session crossed a context/burn layer (see `gtmux usage`) |
 | `feed-degraded` / `wake-degraded` | perception itself broke: the spool daemon died, or wakes stopped landing |
 | `tick` | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
 
@@ -201,7 +204,7 @@ session, removes the worktree, and deletes the merged branch; when the gate fail
 reports exactly what blocks it and touches nothing (`--abandon` overrides,
 `--keep-branch` keeps the branch). `--snooze [--for <dur>]` silences a reap suggestion
 for a dispatch you're keeping. When a tracked dispatch looks reclaimable, a live hq
-gets a `[gtmux] reap-suggest … · gtmux reap <id>` nudge — reclaim is always
+gets a `» gtmux·reap-suggest … │ gtmux reap <id>` wake — reclaim is always
 suggest → approve → execute, never automatic.
 
 ## `gtmux usage` — token watch
@@ -227,7 +230,7 @@ and a 10-minute spend rate. **Layered thresholds** per agent type in
 The evaluator also **projects** (`current + rate × horizon`) so you're warned
 BEFORE a wall — `ctx→80% in ~9m` — not at it. Warnings surface as an amber
 `usage_warn` on the radar row (`agents --json` / digest), in `gtmux usage`, and
-as a one-per-layer `[gtmux] usage·warn …` nudge into a live HQ session. `--json`
+as a one-per-layer `» gtmux·usage·warn …` wake into a live HQ session. `--json`
 is also served as `GET /api/usage`. Claude-first (other agents' logs don't carry
 usage yet); the hook evaluates on every lifecycle event — near-real-time during
 tool-driven work; a long silent generation settles at its next event (P2: serve
@@ -323,7 +326,7 @@ window is near its cap; `--refresh` forces one. Configure in
 
 Set `limitsCommand` with an env prefix if your network needs it
 (`"HTTPS_PROXY=… claude -p /usage"`), or `""` to disable. A weekly window at/over
-`limitsWarnPct` marks amber and nudges a live HQ once (`[gtmux] limits·warn …`).
+`limitsWarnPct` marks amber and wakes a live HQ once (`» gtmux·limits·warn …`).
 The `limits` block also rides `gtmux usage` and `GET /api/usage`.
 
 ## `gtmux restore`

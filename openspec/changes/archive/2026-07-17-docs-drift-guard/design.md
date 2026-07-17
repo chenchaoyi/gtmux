@@ -46,9 +46,14 @@ var docExamples = map[string]func() string{
 ```
 
 The registry is Go, so it cannot compile against a builder that changed shape — which is
-one more link in the chain the doc gets to borrow. The doc side is inert:
-`<!-- gtmux:rendered <id> -->` … `<!-- /gtmux:rendered -->` around the fence, invisible
-when rendered.
+one more link in the chain the doc gets to borrow. The doc side is inert: a single
+`<!-- gtmux:rendered <id> -->` immediately above a fenced block, invisible when rendered.
+
+**Changed during implementation:** this design first called for PAIRED markers wrapping
+the fence. The fence already delimits the block, so a closing marker is a second
+delimiter that can disagree with the first — one more failure mode for zero gain. The
+marker opens; the fence closes. A marker NOT followed by a fence is an error, not a skip:
+it means someone meant to check an example and silently wouldn't have.
 
 **Why a registry rather than parsing the doc's fence and guessing what produced it?** A
 line like `» gtmux·done  …` is ambiguous about which call made it (class? head? which

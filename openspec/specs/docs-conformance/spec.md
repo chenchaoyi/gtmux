@@ -1,6 +1,11 @@
-# docs-conformance — delta
+# docs-conformance Specification
 
-## ADDED Requirements
+## Purpose
+
+The CI gate that keeps documentation's factual claims honest about the code —
+and the explicit boundary of what a gate can and cannot know.
+
+## Requirements
 
 ### Requirement: A documented example of a code-produced format is rendered by that code
 
@@ -59,8 +64,8 @@ audit trail and an entry can be retired in turn.
 
 #### Scenario: A superseded format reappears
 
-- **WHEN** documentation reintroduces a retired token (e.g. the pre-hq-perception-v2
-  `[gtmux] ` wake prefix)
+- **WHEN** documentation reintroduces a retired token (a superseded wake-line prefix, a
+  deleted package path)
 - **THEN** the docs check fails, naming the change that retired it
 
 ### Requirement: The gate states its own boundary

@@ -30,6 +30,12 @@ const (
 	ClassNewSession  = "new-session"
 	ClassReapSuggest = "reap-suggest"
 	ClassTick        = "tick"
+	// ClassStuckWaiting is the lifecycle watchdog's escalation: a pane that has been
+	// waiting on the user past the timeout. Declared late — it was emitted for months as
+	// a hand-built `[gtmux] stuck·waiting …` line, which no playbook taught and PriorityOf
+	// could not even recognize as a wake class (it queued as a default-priority outcome
+	// rather than the escalation it is).
+	ClassStuckWaiting = "stuck·waiting"
 )
 
 // Wake classes raised outside this package's own vocabulary (built by the serve
@@ -37,6 +43,7 @@ const (
 const (
 	ClassResourceWarn = "resource·warn"
 	ClassLimitsWarn   = "limits·warn"
+	ClassUsageWarn    = "usage·warn"
 	ClassFeedDegraded = "feed-degraded"
 	ClassWakeDegraded = "wake-degraded"
 )
@@ -73,8 +80,10 @@ var classPriority = map[string]int{
 	ClassNewSession:   PriorityOutcome,
 	ClassReapSuggest:  PriorityOutcome,
 	ClassTick:         PriorityOutcome,
+	ClassStuckWaiting: PriorityDecision,
 	ClassResourceWarn: PriorityStanding,
 	ClassLimitsWarn:   PriorityStanding,
+	ClassUsageWarn:    PriorityStanding,
 }
 
 // PriorityOf reads a wake line's class out of its own `» gtmux·<class>` prefix and
