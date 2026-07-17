@@ -296,6 +296,20 @@ func (m *EnrollManager) TokenScope(tok string) (scope string, ok bool) {
 	return "device", true
 }
 
+// TokenByID returns a GUEST link's token by its id, so a FULL caller (owner) can
+// re-copy the share URL after minting (owner-remote-admin). Only guest entries are
+// returned — a paired device's token is never handed back.
+func (m *EnrollManager) TokenByID(id string) (token, label string, ok bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, d := range m.devices {
+		if d.ID == id && d.Scope == "guest" {
+			return d.Token, d.Name, true
+		}
+	}
+	return "", "", false
+}
+
 // DeviceByToken returns the enrolled device a token belongs to (for showing WHO
 // is connected). Read-only; ok=false for the master token or any unknown token.
 func (m *EnrollManager) DeviceByToken(tok string) (EnrolledDevice, bool) {
@@ -335,20 +349,35 @@ func (m *EnrollManager) Devices() []EnrolledDevice {
 
 // Revoke removes a device by id, returning whether one was found.
 func (m *EnrollManager) Revoke(id string) bool {
-	m.mu.Lock()
-	found := false
-	for tok, d := range m.devices {
-		if d.ID == id {
-			delete(m.devices, tok)
-			found = true
-		}
-	}
-	snap := m.devicesLocked()
-	m.mu.Unlock()
-	if found && m.save != nil {
-		m.save(snap)
-	}
+	found, _ := m.RevokeBy(id, true)
 	return found
+}
+
+// RevokeBy removes a roster entry by id, honoring the caller's scope
+// (owner-remote-admin, decision B): allowDevice=true (a master) may revoke ANY
+// entry; allowDevice=false (an owner device) may revoke ONLY a `guest` link.
+// Returns (removed, refused): refused=true means the entry exists but is a paired
+// device the caller may not revoke — the handler maps that to 403.
+func (m *EnrollManager) RevokeBy(id string, allowDevice bool) (removed, refused bool) {
+	m.mu.Lock()
+	for tok, d := range m.devices {
+		if d.ID != id {
+			continue
+		}
+		if !allowDevice && d.Scope != "guest" {
+			m.mu.Unlock()
+			return false, true // a paired device — owner may not revoke it
+		}
+		delete(m.devices, tok)
+		snap := m.devicesLocked()
+		m.mu.Unlock()
+		if m.save != nil {
+			m.save(snap)
+		}
+		return true, false
+	}
+	m.mu.Unlock()
+	return false, false // no such id
 }
 
 func (m *EnrollManager) devicesLocked() []EnrolledDevice {
@@ -428,9 +457,14 @@ type deviceInfo struct {
 	ExpiresAt  int64    `json:"expiresAt,omitempty"`
 }
 
-// handleDevices implements GET /api/devices — AUTHENTICATED. Lists the enrolled
-// devices (no tokens) so `gtmux devices` can show + revoke them.
+// handleDevices implements GET /api/devices — FULL callers only (master or owner
+// device; owner-remote-admin). Lists the enrolled devices (no tokens) so the menu
+// bar / `gtmux devices` / the phone's manage screen can show them. A guest is
+// refused (closing the prior unguarded path).
 func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
+	if !s.fullOnly(w, r) {
+		return
+	}
 	if s.deps.Enroll == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("enrollment not configured"))
 		return
@@ -443,11 +477,16 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"devices": out})
 }
 
-// handleRevoke implements POST /api/devices/revoke {id} — AUTHENTICATED. Drops a
-// device from the roster (in-memory + persisted) so its token stops working now.
+// handleRevoke implements POST /api/devices/revoke {id} — scoped (owner-remote-
+// admin, decision B): a guest is refused; an owner device may revoke ONLY a guest
+// share link (never a paired device — that stays Mac/master-only); the master may
+// revoke anything.
 func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if !s.fullOnly(w, r) { // guest refused
 		return
 	}
 	if s.deps.Enroll == nil {
@@ -461,7 +500,13 @@ func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]bool{"revoked": s.deps.Enroll.Revoke(body.ID)})
+	allowDevice := callerScope(r.Context()) == scopeMaster // owner may revoke only guest links
+	removed, refused := s.deps.Enroll.RevokeBy(body.ID, allowDevice)
+	if refused {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: paired devices are managed on the Mac"))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"revoked": removed})
 }
 
 // handleEnrollMint implements POST /api/enroll/mint — AUTHENTICATED (master or an

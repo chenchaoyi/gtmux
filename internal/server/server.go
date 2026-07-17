@@ -202,7 +202,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/share", s.auth(http.HandlerFunc(s.handleShare)))              // any: the caller's capability
 	mux.Handle("/api/share/config", s.auth(http.HandlerFunc(s.handleShareConfig))) // master: consent + allowlist
 	mux.Handle("/api/share/new", s.auth(http.HandlerFunc(s.handleShareNew)))       // master: mint a guest link
-	mux.Handle("/api/share/set", s.auth(http.HandlerFunc(s.handleShareSet)))       // master: edit ONE link's scope
+	mux.Handle("/api/share/set", s.auth(http.HandlerFunc(s.handleShareSet)))       // full: edit ONE link's scope
+	mux.Handle("/api/share/link", s.auth(http.HandlerFunc(s.handleShareLink)))     // full: re-copy a link's URL
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))

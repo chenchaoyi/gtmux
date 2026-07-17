@@ -112,39 +112,44 @@ func TestShareCapability_ByScope(t *testing.T) {
 	}
 }
 
-func TestShareAdmin_MasterOnly(t *testing.T) {
+// SHARE management is FULL-only (owner-remote-admin, decision B): a guest is
+// refused; an owner device is allowed (like the master); the master is allowed.
+func TestShareAdmin_FullOnly(t *testing.T) {
 	h, _, _, device, guest := shareServer(t)
-	for _, tok := range []string{guest, device} { // neither may configure or mint
-		if rr := post(t, h, "/api/share/config", tok, `{"enabled":true}`); rr.Code != http.StatusForbidden {
-			t.Errorf("non-master config = %d, want 403", rr.Code)
-		}
-		if rr := post(t, h, "/api/share/new", tok, `{"label":"x"}`); rr.Code != http.StatusForbidden {
-			t.Errorf("non-master new = %d, want 403", rr.Code)
-		}
+	// A guest may NOT configure or mint.
+	if rr := post(t, h, "/api/share/config", guest, `{"enabled":true}`); rr.Code != http.StatusForbidden {
+		t.Errorf("guest config = %d, want 403", rr.Code)
 	}
-	if rr := post(t, h, "/api/share/config", testToken, `{"enabled":true,"panes":["%1"]}`); rr.Code != http.StatusOK {
-		t.Errorf("master config = %d, want 200 (%s)", rr.Code, rr.Body.String())
+	if rr := post(t, h, "/api/share/new", guest, `{"label":"x"}`); rr.Code != http.StatusForbidden {
+		t.Errorf("guest new = %d, want 403", rr.Code)
 	}
-	if rr := post(t, h, "/api/share/new", testToken, `{"label":"guest2"}`); rr.Code != http.StatusOK {
-		t.Errorf("master new = %d, want 200", rr.Code)
+	// An owner device MAY, exactly like the master.
+	for _, tok := range []string{testToken, device} {
+		if rr := post(t, h, "/api/share/config", tok, `{"enabled":true,"panes":["%1"]}`); rr.Code != http.StatusOK {
+			t.Errorf("full config = %d, want 200 (%s)", rr.Code, rr.Body.String())
+		}
+		if rr := post(t, h, "/api/share/new", tok, `{"label":"g"}`); rr.Code != http.StatusOK {
+			t.Errorf("full new = %d, want 200", rr.Code)
+		}
 	}
 }
 
-// GET /api/share/config returns the full policy to the master (for `gtmux share
-// status`), and 403s a guest/device.
-func TestShareConfigGet_MasterOnly(t *testing.T) {
+// GET /api/share/config returns the full policy to any FULL caller (master or
+// owner device — for `gtmux share status` / the phone's manage screen), and 403s a
+// guest.
+func TestShareConfigGet_FullOnly(t *testing.T) {
 	h, share, _, device, guest := shareServer(t)
 	on := true
 	share.SetConfig(&on, &[]string{"%1", "%2"}, nil)
-	var st ShareState
-	json.Unmarshal(do(t, h, http.MethodGet, "/api/share/config", testToken).Body.Bytes(), &st)
-	if !st.Enabled || len(st.Panes) != 2 {
-		t.Fatalf("master GET config = %+v, want enabled + 2 panes", st)
-	}
-	for _, tok := range []string{guest, device} {
-		if rr := do(t, h, http.MethodGet, "/api/share/config", tok); rr.Code != http.StatusForbidden {
-			t.Errorf("non-master GET config = %d, want 403", rr.Code)
+	for _, tok := range []string{testToken, device} {
+		var st ShareState
+		json.Unmarshal(do(t, h, http.MethodGet, "/api/share/config", tok).Body.Bytes(), &st)
+		if !st.Enabled || len(st.Panes) != 2 {
+			t.Fatalf("full GET config = %+v, want enabled + 2 panes", st)
 		}
+	}
+	if rr := do(t, h, http.MethodGet, "/api/share/config", guest); rr.Code != http.StatusForbidden {
+		t.Errorf("guest GET config = %d, want 403", rr.Code)
 	}
 }
 

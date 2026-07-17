@@ -402,6 +402,7 @@ up, else a LAN address. `gtmux devices` remains as an alias of the roster.
 ```
 gtmux share new --label Alice --view %1,%2 --type %1 --expires 24h
 gtmux share set a1b2c3d4 --type %2            # edit ONE link (omitted flags untouched)
+gtmux share link a1b2c3d4 [--json]            # re-show an existing link's URL (+ QR)
 gtmux share on|off                            # consent master switch for ALL guest typing
 gtmux share status [--json]                   # per-link scope summaries
 gtmux share revoke a1b2c3d4
@@ -418,7 +419,9 @@ A link minted without `--view/--type` copies the current global lists (the
 template). The legacy global forms (`share add/remove`, `share view add/remove/
 clear`) still work but FAN OUT to every existing link — per-link tailoring should
 use `share set`. `status --json` carries each guest's `view_panes`/`panes`/
-`expires_at` and never a bare token.
+`expires_at` and never a bare token. A link's URL is printed at mint time; to copy
+it again later use `gtmux share link <id>` (or the menu-bar row's copy button) —
+it re-hands the same `#t=` URL (full-scope callers only; guests can't).
 
 ## tmux integration
 

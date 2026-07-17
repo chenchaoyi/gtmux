@@ -18,6 +18,7 @@ import {setupPush, reregisterKinds} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
 import {HQScreen} from './src/screens/HQScreen';
+import {ManageMacScreen} from './src/screens/ManageMacScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
 import {ServersScreen} from './src/screens/ServersScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
@@ -158,6 +159,7 @@ function Root() {
           <Stack.Screen name="HQ" component={HQScreen} />
           <Stack.Screen name="Servers" component={ServersScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="ManageMac" component={ManageMacScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </AgentsProvider>
