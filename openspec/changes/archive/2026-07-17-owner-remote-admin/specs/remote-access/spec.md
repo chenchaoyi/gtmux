@@ -20,6 +20,11 @@ door remain restricted:
   SHALL be refused entirely.
 - Toggling the remote-access door (starting/stopping serve or the tunnel) SHALL
   remain a local Mac operation with no remote endpoint.
+- `GET /api/share/link?id=<id>` SHALL re-hand an existing guest link's TOKEN to a
+  `full` caller (master or owner device) and SHALL refuse a `guest` (`403`) and an
+  unknown id (`404`), so a host who didn't copy a link at mint time can copy it
+  again (the CLI `gtmux share link <id>` and the menu-bar row's copy button both use
+  it; the token rides the `#t=` URL fragment, never a bare field).
 
 `GET /api/share` (the caller's own capability) SHALL remain available to any
 authenticated scope, unchanged.
@@ -43,3 +48,11 @@ authenticated scope, unchanged.
 - **WHEN** the same owner device calls it for a paired (`device`) entry
 - **THEN** it is refused (`403`), and only the master token (from the Mac) can
   revoke a paired device
+
+#### Scenario: Re-hand an existing link's URL
+
+- **WHEN** a `full` caller (master or owner device) calls `GET /api/share/link?id=<id>`
+  for a live guest link
+- **THEN** it returns that link's token (for rebuilding the `#t=` URL)
+- **WHEN** a `guest` calls it, or the id is unknown
+- **THEN** it is refused (`403`) or reported not-found (`404`) respectively

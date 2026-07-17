@@ -18,20 +18,23 @@
 
 ## 2. Mobile — the owner management screen
 
-- [ ] 2.1 client.ts: `devices()`, `shareConfig()`, `setShareConfig(...)`,
-      `shareNew(label,view,input)`, `shareSet(id,view,input)`, `revokeShare(id)`
-      (typed wrappers over the endpoints). Jest for request shape.
-- [ ] 2.2 ManageMacScreen (owner-only): consent toggle · per-link See/Type editor ·
-      create-share sheet · revoke-link · read-only device roster + the Mac-only
-      note. i18n (en+zh). Entry gated on `!isGuest` (from AgentsContext).
-- [ ] 2.3 Jest: the screen calls share/set for one link on a toggle; the entry is
-      hidden for a guest.
+- [x] 2.1 client.ts: `devices()`, `shareConfig()`, `setShareEnabled(...)`,
+      `shareNew(label,view,input)`, `shareSet(id,view,input)`, `revokeShare(id)`,
+      `shareLink(id)` (typed wrappers over the endpoints). Jest for request shape.
+- [x] 2.2 ManageMacScreen (owner-only): consent toggle · per-link See/Type editor ·
+      create-share (Alert.prompt name → mint with the global template) · copy-link ·
+      revoke-link · read-only device roster + the Mac-only note. i18n (en+zh). Entry
+      gated on `!isGuest` (from AgentsContext), in Settings › Connection.
+- [x] 2.3 Jest: `nextLinkScope` pins the Type ⊆ See invariant the editor enforces;
+      client.test pins each method's verb/path/body + the guest/device roster split.
+      (The `!isGuest` gate is a one-line conditional, verified by inspection.)
 
 ## 3. Consistency + verification
 
-- [ ] 3.1 Fold spec deltas (remote-access, mobile-app); openspec --strict green;
-      archive change.
-- [ ] 3.2 make check + CGO_ENABLED=0 + mobile npm run check green.
+- [x] 3.1 Fold spec deltas (remote-access, mobile-app); openspec --strict green;
+      archive change. (Also added a `GET /api/share/link` re-view requirement + the
+      `gtmux share link` CLI, documented in cli.md.)
+- [x] 3.2 make check + CGO_ENABLED=0 + mobile npm run check green.
 - [ ] 3.3 Dogfood: from the phone (owner), create a scoped link, edit its See/Type,
       revoke it; confirm a guest connection shows no management entry and the
-      endpoints 403.
+      endpoints 403. (Pending the device build in the release step.)

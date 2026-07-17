@@ -16,6 +16,7 @@ import type {Agent} from '../api/types';
 import type {GuestLink, PairedDevice, ShareConfig} from '../api/client';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
 import {ContentColumn} from '../ui/ContentColumn';
+import {nextLinkScope} from '../state/shareScope';
 
 export function ManageMacScreen({navigation}: any) {
   const {lang, pal, mac} = useApp();
@@ -97,24 +98,11 @@ export function ManageMacScreen({navigation}: any) {
       ],
     );
 
-  // Toggle one pane's See/Type on a link. Type ⊆ See: turning See off drops Type too;
-  // turning Type on implies See. Then persist the whole per-link scope via share/set.
+  // Toggle one pane's See/Type on a link (Type ⊆ See enforced by nextLinkScope),
+  // then persist the whole per-link scope via share/set.
   const toggleScope = (g: GuestLink, pane: string, facet: 'see' | 'type', on: boolean) => {
-    let view = new Set(g.viewPanes);
-    let input = new Set(g.inputPanes);
-    if (facet === 'see') {
-      if (on) view.add(pane);
-      else {
-        view.delete(pane);
-        input.delete(pane);
-      }
-    } else {
-      if (on) {
-        input.add(pane);
-        view.add(pane);
-      } else input.delete(pane);
-    }
-    run(() => client.shareSet(g.id, [...view], [...input]));
+    const {view, input} = nextLinkScope(g.viewPanes, g.inputPanes, pane, facet, on);
+    run(() => client.shareSet(g.id, view, input));
   };
 
   const scopeSummary = (g: GuestLink) => {

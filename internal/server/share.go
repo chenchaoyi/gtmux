@@ -312,15 +312,6 @@ func (s *Server) handleShareLink(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"id": id, "label": label, "token": token})
 }
 
-// masterOnly writes 403 and returns false unless the caller holds the master token.
-func (s *Server) masterOnly(w http.ResponseWriter, r *http.Request) bool {
-	if callerScope(r.Context()) != scopeMaster {
-		writeJSON(w, http.StatusForbidden, errBody("forbidden: host-only"))
-		return false
-	}
-	return true
-}
-
 // fullOnly writes 403 and returns false unless the caller is a FULL surface — the
 // master token OR an owner device (a paired phone/browser/terminal). A guest is
 // refused. This is the gate for SHARE management (owner-remote-admin, decision B):
