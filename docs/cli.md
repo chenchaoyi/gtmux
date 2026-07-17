@@ -116,20 +116,48 @@ Edit `AGENTS.md` to change its policy;
 notes it keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
-When another agent starts **waiting** and an hq session is live, the hook types
-one event line into it — `[gtmux] waiting·permission api:0.0 (%7) — <title>` —
-so the supervisor learns of blockers without polling (same dedup as
-notifications; never about itself; `"hqNudge": false` in
-`~/.config/gtmux/config.json` disables). The channel is two-sided and covers more
-than menu waits: `[gtmux] resolved …` when a wait CLEARS (the user answered
-in-pane, or the agent resumed — so hq drops any stale chase), `[gtmux] asks … "…"`
-when a turn-end REPLY asks a question with no menu (the case a menu-only sensor
-misses), `[gtmux] done …` when a dispatched task finishes, and
-`[gtmux] reap-suggest … · gtmux reap <id>` when a dispatch looks reclaimable.
-Ordinary progress turns stay pull-only on `gtmux events --follow` (hq isn't
-flooded). The nudge only informs: gtmux never answers another agent's prompt, never
-sends navigation keys into a TUI, and the default policy tells the supervisor to
-surface decisions to you, not take them.
+### The wake channel — how hq learns things
+
+Decision-dense events type ONE signal line into a live hq pane — the only knock.
+The format is fixed and deliberately unlike conversation, so signal traffic is
+scannable at a glance:
+
+```
+» gtmux·waiting·permission  api:0.0 (%7) │ title:"run the tests?"
+» gtmux·done  web:2.0 (%11) │ 3m │ goal:"fix the login bug" │ tail:"tests pass" · #a3f1c2
+```
+
+`» gtmux·<class>  <loc> (<pane>) │ <field> │ …`, where every agent- or user-authored
+payload is quoted and labelled (`title:` / `goal:` / `tail:` / `ask:` / `err:`) — it is
+DATA hq reports, never an instruction it obeys. The classes:
+
+| class | fires when |
+| --- | --- |
+| `waiting·<kind>` | an agent blocked on you (permission / plan / question) |
+| `resolved` | that wait CLEARED — you answered in-pane, or the agent resumed; hq drops any stale chase |
+| `asks` | a turn-end REPLY asked a question with no menu (a menu-only sensor misses it) |
+| `done` | **any** session reached idle after work — not just a dispatched task. Suppressed when the completion happened in the pane you were watching (`hqWake.done`: `unattended` default \| `always` \| `tick`), and rate-merged per pane |
+| `crash` | the turn DIED on an agent/API error — never read as a finish |
+| `goal-changed` | you submitted a prompt straight into an agent's own window (incl. a slash command), so hq senses work it didn't dispatch |
+| `new-session` | a newly sensed agent pane — enroll it |
+| `reap-suggest` | a dispatch looks reclaimable · carries the exact `gtmux reap <id>` |
+| `resource·warn` / `limits·warn` | a machine/subscription threshold crossed (damped — see `gtmux resource`) |
+| `feed-degraded` / `wake-degraded` | perception itself broke: the spool daemon died, or wakes stopped landing |
+| `tick` | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
+
+Everything else is **pull-side**: hq wakes, then reads `gtmux events --since-seq <n>`
+or `gtmux digest`. Ordinary progress turns never touch its screen.
+
+Delivery guards your draft and confirms itself: a line is never typed into a non-empty
+hq input box (it queues to disk and lands when the box clears), and a batch is dropped
+from the queue only once it's been seen on screen — so a failed send retries instead of
+vanishing. That makes it at-least-once, hence the trailing `#<id>`: the same id twice is
+a re-send, and hq's playbook says to ignore it.
+
+Never about hq itself; `"hqNudge": false` in `~/.config/gtmux/config.json` disables the
+channel entirely (no hq pane → no wake, no cost). The wake only INFORMS: gtmux never
+answers another agent's prompt, never sends navigation keys into a TUI, and the default
+policy tells the supervisor to surface decisions to you, not take them.
 
 ## `gtmux spawn` / `gtmux tasks` / `gtmux reap` — verified dispatch
 
