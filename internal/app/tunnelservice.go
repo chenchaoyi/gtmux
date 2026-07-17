@@ -130,9 +130,13 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 func serveServiceInstall(port int) int {
 	_ = resolveServeToken("") // ensure the persistent serve-token exists (0600)
 
-	// drop the tunnel layer if present — this mode is LAN-only.
-	launchctl("unload", tunnelAgentPath())
-	_ = os.Remove(tunnelAgentPath())
+	// drop the tunnel layer if present — this mode is LAN-only. BOTH backends:
+	// com.gtmux.tunnel (Cloudflare) AND com.gtmux.selftunnel (Direct), else switching
+	// Wi-Fi while on Direct leaves the self-tunnel up and the mode reads .anywhere.
+	for _, p := range []string{tunnelAgentPath(), selfTunnelAgentPath()} {
+		launchctl("unload", p)
+		_ = os.Remove(p)
+	}
 	_ = os.Remove(tunnelURLPath())
 
 	logDir := filepath.Join(homeDir(), ".local", "share", "gtmux")
@@ -161,11 +165,18 @@ func serveServiceInstall(port int) int {
 // LAN serve and/or the always-on tunnel). It backs both `gtmux serve --unservice`
 // and the menu-bar "Off" choice, so turning remote access off works from any mode.
 func serviceRemoveAll() int {
-	had := fileExists(serveAgentPath()) || fileExists(tunnelAgentPath())
-	launchctl("unload", serveAgentPath())
-	launchctl("unload", tunnelAgentPath())
-	_ = os.Remove(serveAgentPath())
-	_ = os.Remove(tunnelAgentPath())
+	// ALL remote-access agents, including the self-hosted (Direct) tunnel — else
+	// turning "Off" while on the Direct backend left com.gtmux.selftunnel running, so
+	// groundTruth still read .anywhere and the menu-bar picker snapped back.
+	agents := []string{serveAgentPath(), tunnelAgentPath(), selfTunnelAgentPath()}
+	had := false
+	for _, p := range agents {
+		if fileExists(p) {
+			had = true
+		}
+		launchctl("unload", p)
+		_ = os.Remove(p)
+	}
 	_ = os.Remove(tunnelURLPath())
 	if had {
 		i18n.Say("Remote access disabled — background services stopped and removed.",

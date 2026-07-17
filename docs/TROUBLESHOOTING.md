@@ -103,6 +103,19 @@ cask generator now emits `depends_on macos: :ventura`.)
 
 ## Remote access / pairing / push
 
+### Menu-bar Off / Wi-Fi picker "won't change" from Anywhere — on the Direct backend
+**Symptom:** on `Anywhere`, tapping `Off` or `Wi-Fi` in the menu-bar Remote-access picker
+snaps straight back to `Anywhere`. Reproduces only when the tunnel backend is **Direct**
+(self-hosted); on Standard/Cloudflare the picker works.
+**Root cause:** the picker's mode is DERIVED from which LaunchAgents exist
+(`groundTruth()`: `cfOn || selfOn ? .anywhere : …`). `serviceRemoveAll()` (Off) and
+`serveServiceInstall()` (Wi-Fi) tore down `com.gtmux.serve` + `com.gtmux.tunnel`
+(Cloudflare) but **skipped `com.gtmux.selftunnel`** (the Direct agent) — so on Direct it
+stayed loaded, `selfOn` stayed true, and the mode re-derived to `.anywhere`.
+**Fix:** both teardown paths now remove ALL three agents (serve + tunnel +
+**selftunnel**), matching `tunnelServiceRemove` (`gtmux tunnel --unservice`). Pinned by
+`TestServiceRemoveAllDropsSelfTunnel`.
+
 ### "Pairing code expired" that never clears — check for a DUPLICATE serve on :8765
 **Symptom:** menubar "refresh code" → phone scans → *invalid or expired enroll code*,
 no matter how fresh the code, across app reinstalls and `gtmux update`.
