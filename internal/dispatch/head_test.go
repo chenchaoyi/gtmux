@@ -17,7 +17,7 @@ func TestContainsHead_SurvivesReWrap(t *testing.T) {
 	text := "please refactor the delivery verifier to prefer hook evidence"
 	// The TUI re-wrapped the line and padded it; the head must still match.
 	screen := "user asked:\n  please refactor the delivery\n  verifier to prefer hook evidence\n"
-	if !containsHead(screen, text) {
+	if !ContainsHead(screen, text) {
 		t.Fatalf("re-wrapped head should still match")
 	}
 }
@@ -27,13 +27,13 @@ func TestContainsHead_HaystackNotTruncated(t *testing.T) {
 	// match because the haystack is not truncated (regression guard).
 	text := "state machine with layered checks and evidence"
 	screen := "me: implement the verified dispatch " + text
-	if !containsHead(screen, text) {
+	if !ContainsHead(screen, text) {
 		t.Fatalf("head past the 40-rune mark should still match")
 	}
 }
 
 func TestContainsHead_EmptyNeverMatches(t *testing.T) {
-	if containsHead("anything at all", "   ") {
+	if ContainsHead("anything at all", "   ") {
 		t.Fatalf("a blank delivery must match nothing")
 	}
 }

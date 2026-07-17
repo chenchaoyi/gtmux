@@ -32,9 +32,76 @@ const (
 	ClassTick        = "tick"
 )
 
+// Wake classes raised outside this package's own vocabulary (built by the serve
+// tick and the feed/wake watchdogs), listed here so the priority table is complete.
+const (
+	ClassResourceWarn = "resource·warn"
+	ClassLimitsWarn   = "limits·warn"
+	ClassFeedDegraded = "feed-degraded"
+	ClassWakeDegraded = "wake-degraded"
+)
+
 // Sigil opens every injected line. U+00BB — Latin-1-safe, so it survives the
 // hostile-locale class of mangling that once ate ✳ (see tmux-utf8 fix v0.11.3).
 const Sigil = "»"
+
+// Wake priorities (hq-wake-reliability): the delivery queue drains highest priority
+// first, oldest-first within a priority, so a decision-dense knock never waits behind
+// a backlog of standing warnings — and, at the queue cap, a standing warning (which
+// re-fires on the next tick) is evicted rather than a goal-changed (which never does).
+const (
+	PriorityDecision = 0 // the user or an agent is blocked on this being seen
+	PriorityOutcome  = 1 // something finished/appeared/left — judge it, but it keeps
+	PriorityStanding = 2 // a standing condition that re-fires on its own cadence
+)
+
+// PriorityDefault is the priority of a line whose class is unknown — including a queue
+// entry written by an older gtmux, whose filename carries no priority field at all.
+const PriorityDefault = PriorityOutcome
+
+// classPriority is the wake-class → priority table. A class absent from it takes
+// PriorityDefault.
+var classPriority = map[string]int{
+	ClassWaiting:      PriorityDecision,
+	ClassAsks:         PriorityDecision,
+	ClassGoalChanged:  PriorityDecision,
+	ClassCrash:        PriorityDecision,
+	ClassFeedDegraded: PriorityDecision,
+	ClassWakeDegraded: PriorityDecision,
+	ClassDone:         PriorityOutcome,
+	ClassResolved:     PriorityOutcome,
+	ClassNewSession:   PriorityOutcome,
+	ClassReapSuggest:  PriorityOutcome,
+	ClassTick:         PriorityOutcome,
+	ClassResourceWarn: PriorityStanding,
+	ClassLimitsWarn:   PriorityStanding,
+}
+
+// PriorityOf reads a wake line's class out of its own `» gtmux·<class>` prefix and
+// returns that class's delivery priority. Parsing the line (rather than threading a
+// priority through every call site) keeps the wake vocabulary in ONE place — this
+// table — and means a line built anywhere is queued correctly. A `waiting·permission`
+// class matches on its `waiting` stem.
+func PriorityOf(line string) int {
+	head := strings.TrimPrefix(strings.TrimSpace(line), Sigil)
+	head = strings.TrimSpace(head)
+	if !strings.HasPrefix(head, "gtmux·") {
+		return PriorityDefault
+	}
+	class := strings.TrimPrefix(head, "gtmux·")
+	if i := strings.IndexAny(class, " \t"); i >= 0 {
+		class = class[:i]
+	}
+	if p, ok := classPriority[class]; ok {
+		return p
+	}
+	if stem, _, found := strings.Cut(class, "·"); found { // waiting·permission → waiting
+		if p, ok := classPriority[stem]; ok {
+			return p
+		}
+	}
+	return PriorityDefault
+}
 
 // sep separates the columnar fields. U+2502 (box drawing) reads as a column rule
 // and is pinned by the format fixture test.

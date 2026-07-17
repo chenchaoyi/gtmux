@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -386,5 +387,38 @@ func TestTopTallyItemsTitleFallback(t *testing.T) {
 	items, _ := topTallyItems([]AgentStatus{{Loc: "mysess:1.0", Status: "waiting", Since: 900}}, nil)
 	if len(items) != 1 || items[0].Title != "mysess" {
 		t.Fatalf("title fallback = %+v", items)
+	}
+}
+
+// The fast tick (hq-wake-reliability) runs the HQ nudge drain from the hub's single
+// goroutine, well ahead of the resource-sampling slow tick — a knock queued behind a
+// half-typed HQ draft must land in seconds, not on a df/ps cadence.
+func TestHubFastTick(t *testing.T) {
+	if fastTickInterval >= slowTickInterval {
+		t.Fatalf("the drain backstop must be faster than the sampler: fast=%v slow=%v",
+			fastTickInterval, slowTickInterval)
+	}
+	fast, slow := make(chan struct{}, 8), make(chan struct{}, 8)
+	h := newHub(func() []AgentStatus { return nil }, time.Hour, nil)
+	h.fastEvery = 10 * time.Millisecond // the real cadence, without the real wait
+	h.onFastTick = func() { fast <- struct{}{} }
+	h.onSlowTick = func() { slow <- struct{}{} }
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go h.run(ctx)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case <-fast:
+		case <-time.After(2 * time.Second):
+			t.Fatalf("the fast tick should fire repeatedly; got %d of 2", i)
+		}
+	}
+	<-slow // the slow tick's initial evaluation
+	select {
+	case <-slow:
+		t.Fatal("the slow tick must keep its own (much slower) cadence")
+	default:
 	}
 }

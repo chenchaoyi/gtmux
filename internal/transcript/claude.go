@@ -99,7 +99,7 @@ func claudePrompt(raw json.RawMessage) (string, bool) {
 	// content as a bare string (the common typed-prompt case).
 	var s string
 	if json.Unmarshal(raw, &s) == nil {
-		return cleanPrompt(s)
+		return CleanUserPrompt(s)
 	}
 	// content as blocks: collect typed text, plus any user feedback embedded in a
 	// tool_result (a tool REJECTED with "No, and tell Claude what to do" — the typed
@@ -122,7 +122,7 @@ func claudePrompt(raw json.RawMessage) (string, bool) {
 	if len(parts) == 0 {
 		return "", false // tool_result OUTPUT / image only
 	}
-	return cleanPrompt(strings.Join(parts, "\n"))
+	return CleanUserPrompt(strings.Join(parts, "\n"))
 }
 
 // rejectFeedbackMarker precedes the user's typed message inside a tool_result when
@@ -163,21 +163,64 @@ var harnessOpenRe = regexp.MustCompile(`(?s)<(system-reminder|task-notification)
 
 // CleanUserPrompt strips system-injected content (harness reminder/task-notification
 // blocks — closed OR truncated, `[SYSTEM NOTIFICATION …]` notices, and gtmux's own
-// `[gtmux] …` nudges echoed back into a pane) from a raw prompt, and reports whether a
-// real user-typed prompt remains. Shared by the transcript parser AND the hook's
+// wake lines echoed back into a pane) from a raw prompt, and reports whether a real
+// user-TYPED prompt remains. Shared by the transcript parser AND the hook's
 // UserPromptSubmit path, so a system injection never surfaces as a goal or a nudge.
-func CleanUserPrompt(s string) (string, bool) { return cleanPrompt(s) }
+//
+// It answers "does this render as a chat turn". A caller deciding whether the USER
+// ACTED wants ClassifyUserPrompt instead — a slash command is not typed prose, but it
+// is very much the user doing something.
+func CleanUserPrompt(s string) (string, bool) {
+	if text, kind := ClassifyUserPrompt(s); kind == PromptUser {
+		return text, true
+	}
+	return "", false // a slash command's NAME is not a prompt — see ClassifyUserPrompt
+}
+
+// Prompt kinds — what a raw UserPromptSubmit payload actually IS.
+const (
+	PromptUser  = "user"  // prose the user typed; text is the cleaned prompt
+	PromptSlash = "slash" // a slash-command invocation; text is the command name
+	PromptDrop  = "drop"  // not authored by the user (harness, gtmux's own echo) — silent
+)
+
+// ClassifyUserPrompt strips system-injected content and classifies what remains.
+// The distinction PromptSlash makes exists because a slash command (`/compact`,
+// `/model`, a custom `/deploy`) carries no prose and so used to be dropped as "not a
+// user prompt" — reaching HQ as silence, even though it changes what a session is
+// doing. It is a user ACT with a machine-readable name, not a message.
+func ClassifyUserPrompt(s string) (text, kind string) {
+	s = stripInjected(s)
+	switch {
+	case s == "":
+		return "", PromptDrop
+	case isSlashWrapper(s):
+		return slashCommandName(s), PromptSlash
+	case isClaudeMetaPrompt(s):
+		return "", PromptDrop
+	default:
+		return s, PromptUser
+	}
+}
+
+// gtmuxEchoPrefixes are gtmux's own injected lines. Our wake line landing back in a
+// pane's prompt (an echo, a copy-paste) must never read back as a user goal. The `»`
+// form is the current wake format; `[gtmux]` is the retired one, kept for old panes.
+var gtmuxEchoPrefixes = []string{"[gtmux]", Sigil + " gtmux·"}
+
+// Sigil is the rune every gtmux wake line opens with (hqwake.Sigil — duplicated here
+// rather than imported, so the transcript parser stays free of the wake channel).
+const Sigil = "»"
 
 // stripInjected removes non-user-typed content: harness XML blocks (closed then any
-// dangling open one), then any LINE that is a `[SYSTEM NOTIFICATION …]` notice or a
-// `[gtmux] …` nudge (our own event lines must never read back as a user goal).
+// dangling open one), then any LINE that is a `[SYSTEM NOTIFICATION …]` notice or one
+// of gtmux's own injected lines.
 func stripInjected(s string) string {
 	s = harnessBlockRe.ReplaceAllString(s, "")
 	s = harnessOpenRe.ReplaceAllString(s, "")
 	var kept []string
 	for _, ln := range strings.Split(s, "\n") {
-		t := strings.TrimSpace(ln)
-		if strings.HasPrefix(t, "[SYSTEM NOTIFICATION") || strings.HasPrefix(t, "[gtmux]") {
+		if isInjectedLine(strings.TrimSpace(ln)) {
 			continue
 		}
 		kept = append(kept, ln)
@@ -185,22 +228,61 @@ func stripInjected(s string) string {
 	return strings.TrimSpace(strings.Join(kept, "\n"))
 }
 
-// cleanPrompt strips harness/system-injected content then rejects empty/meta wrappers,
-// returning the displayable prompt and whether it's a real typed prompt.
-func cleanPrompt(s string) (string, bool) {
-	s = stripInjected(s)
-	if s == "" || isClaudeMetaPrompt(s) {
-		return "", false
+// isInjectedLine reports whether a line was injected rather than typed.
+func isInjectedLine(t string) bool {
+	if strings.HasPrefix(t, "[SYSTEM NOTIFICATION") {
+		return true
 	}
-	return s, true
+	for _, p := range gtmuxEchoPrefixes {
+		if strings.HasPrefix(t, p) {
+			return true
+		}
+	}
+	return false
 }
 
-// isClaudeMetaPrompt filters the synthetic wrappers Claude injects as "user"
-// content (slash-command echoes, local-command stdout, the local-command caveat).
+// claudeWrapperTags are the exact synthetic tags Claude injects as "user" content.
+// Matching the EXACT tags (not the loose `<command-` prefix this once used) keeps a
+// real prompt that happens to open with an angle bracket out of the filter.
+var claudeWrapperTags = []string{
+	"<command-name>", "<command-message>", "<command-args>",
+	"<local-command-stdout>", "<local-command-stderr>",
+}
+
+// localCommandCaveat opens the wrapper Claude puts around local-command output.
+const localCommandCaveat = "Caveat: The messages below were generated by the user while running local commands"
+
+// isClaudeMetaPrompt filters the synthetic wrappers Claude injects as "user" content
+// (slash-command echoes, local-command stdout, the local-command caveat).
 func isClaudeMetaPrompt(s string) bool {
-	return strings.HasPrefix(s, "<command-") ||
-		strings.HasPrefix(s, "<local-command-") ||
-		strings.HasPrefix(s, "Caveat: The messages below were generated by the user while running local commands")
+	if strings.HasPrefix(s, localCommandCaveat) {
+		return true
+	}
+	for _, tag := range claudeWrapperTags {
+		if strings.HasPrefix(s, tag) {
+			return true
+		}
+	}
+	return false
+}
+
+// isSlashWrapper reports whether the payload is a slash-command invocation — the
+// `<command-name>` wrapper. Command OUTPUT (`<local-command-stdout>`) is not: the
+// user's act was the command, and it already waked on its own submission.
+func isSlashWrapper(s string) bool { return strings.HasPrefix(s, "<command-name>") }
+
+// slashCommandName extracts the invoked command from a `<command-name>` wrapper
+// ("" when it cannot be read — the caller still reports the act, unnamed).
+func slashCommandName(s string) string {
+	_, rest, found := strings.Cut(s, "<command-name>")
+	if !found {
+		return ""
+	}
+	name, _, found := strings.Cut(rest, "</command-name>")
+	if !found {
+		return ""
+	}
+	return strings.TrimSpace(name)
 }
 
 // claudeAssistant returns the concatenated text of an assistant message and its

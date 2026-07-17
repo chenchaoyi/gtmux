@@ -30,6 +30,13 @@ const renudgeInterval = 5 * time.Minute
 // the resource·warn/limits·warn nudge) — much slower than the SSE tick.
 const slowTickInterval = 20 * time.Second
 
+// fastTickInterval paces the HQ nudge drain. A wake queued behind a half-typed HQ
+// draft is flushed on the next empty box, and this ticker is its unconditional
+// backstop — so the wait is ~3s rather than the slow tick's 20s, which is paced by
+// resource sampling the drain has nothing to do with. A quiet queue costs one
+// readdir (the callback is cheap-gated), so the fast cadence is nearly free.
+const fastTickInterval = 3 * time.Second
+
 // AgentStatus is the lean per-pane snapshot the events loop diffs — a subset of
 // the full `agents --json` contract. The REST GET /api/agents remains the one
 // authoritative payload; SSE only signals "something changed, refetch".
@@ -177,6 +184,8 @@ type hub struct {
 	onClients  func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
 	interval   time.Duration
 	onSlowTick func()           // resource/limits evaluator, single-goroutine (no nudge race)
+	onFastTick func()           // HQ nudge drain, same goroutine — cheap-gated, ~3s
+	fastEvery  time.Duration    // onFastTick's cadence (fastTickInterval; tests shorten it)
 	renudge    time.Duration    // re-alert a still-waiting pane after this long
 	now        func() time.Time // injectable clock (tests)
 
@@ -221,6 +230,7 @@ func newHub(statuses func() []AgentStatus, interval time.Duration, onAlert func(
 		statuses:    statuses,
 		onAlert:     onAlert,
 		interval:    interval,
+		fastEvery:   fastTickInterval,
 		renudge:     renudgeInterval,
 		now:         time.Now,
 		subs:        map[chan sseEvent]ClientInfo{},
@@ -449,9 +459,11 @@ func (h *hub) run(ctx context.Context) {
 	t := time.NewTicker(h.interval)
 	ping := time.NewTicker(pingInterval)
 	slow := time.NewTicker(slowTickInterval)
+	fast := time.NewTicker(h.fastEvery)
 	defer t.Stop()
 	defer ping.Stop()
 	defer slow.Stop()
+	defer fast.Stop()
 	if h.onSlowTick != nil {
 		h.onSlowTick() // an initial evaluation right away
 	}
@@ -466,6 +478,10 @@ func (h *hub) run(ctx context.Context) {
 		case <-slow.C:
 			if h.onSlowTick != nil {
 				h.onSlowTick()
+			}
+		case <-fast.C:
+			if h.onFastTick != nil {
+				h.onFastTick()
 			}
 		}
 	}

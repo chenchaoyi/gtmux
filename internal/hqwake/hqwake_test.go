@@ -179,3 +179,44 @@ func TestConfigDefaultsAndParse(t *testing.T) {
 		t.Fatalf("fallback = %+v", got)
 	}
 }
+
+// ── delivery priority (hq-wake-reliability) ──────────────────────────────────
+
+// The queue drains by priority, so every class this package can build must have a
+// deliberate one — an omission would silently demote a wake to the default.
+func TestPriorityOf(t *testing.T) {
+	cases := []struct {
+		line string
+		want int
+	}{
+		{Line(ClassWaiting, "main:1.0 (%14)"), PriorityDecision},
+		{Line(ClassWaiting+"·permission", "main:1.0 (%14)"), PriorityDecision}, // matches on the stem
+		{Line(ClassAsks, "(%14)", `ask:"which one?"`), PriorityDecision},
+		{Line(ClassGoalChanged, "(%14)", `goal:"ship it"`), PriorityDecision},
+		{Line(ClassCrash, "(%14)"), PriorityDecision},
+		{Line(ClassFeedDegraded, ""), PriorityDecision},
+		{Line(ClassWakeDegraded, ""), PriorityDecision},
+		{Line(ClassDone, "(%14)", "3m"), PriorityOutcome},
+		{Line(ClassResolved, "(%14)"), PriorityOutcome},
+		{Line(ClassNewSession, "(%14)"), PriorityOutcome},
+		{Line(ClassReapSuggest, "(%14)"), PriorityOutcome},
+		{Line(ClassTick, ""), PriorityOutcome},
+		{Line(ClassResourceWarn, "", "disk 14GB free"), PriorityStanding},
+		{Line(ClassLimitsWarn, "", "week (fable) 93%"), PriorityStanding},
+	}
+	for _, c := range cases {
+		if got := PriorityOf(c.line); got != c.want {
+			t.Errorf("PriorityOf(%q) = %d, want %d", c.line, got, c.want)
+		}
+	}
+}
+
+// Anything that is not a recognizable wake line takes the default — never a panic,
+// and never priority 0 (an unknown line must not outrank a real decision wake).
+func TestPriorityOf_UnknownLines(t *testing.T) {
+	for _, line := range []string{"", "   ", "plain text", "» not-gtmux  x", Line("invented-class", "x")} {
+		if got := PriorityOf(line); got != PriorityDefault {
+			t.Errorf("PriorityOf(%q) = %d, want the default %d", line, got, PriorityDefault)
+		}
+	}
+}

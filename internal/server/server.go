@@ -148,6 +148,14 @@ type Deps struct {
 	// emit resource·warn / limits·warn nudges without the read-check-write race a
 	// getter-invoked-by-many-callers has. Optional.
 	OnSlowTick func()
+
+	// OnFastTick, if set, is called on a fast cadence (~3s) from the same single
+	// goroutine. It exists for work that must feel immediate and costs ~nothing when
+	// there is none: the HQ nudge drain (a knock queued behind a half-typed draft
+	// must land in seconds, and the slow tick's cadence is paced by df/ps sampling
+	// that has nothing to do with it). Keep whatever runs here cheaply gated.
+	// Optional.
+	OnFastTick func()
 }
 
 // Config configures the listener and auth token.
@@ -179,6 +187,7 @@ func New(cfg Config, deps Deps) *Server {
 	}
 	s.hub.onClients = deps.OnClients   // remote-viewer indicator (count of live SSE clients)
 	s.hub.onSlowTick = deps.OnSlowTick // single-writer resource/limits evaluator + nudge
+	s.hub.onFastTick = deps.OnFastTick // single-writer HQ nudge drain (must feel immediate)
 	return s
 }
 

@@ -13,6 +13,27 @@ import (
 // it just say" for HQ's triage — tens of tokens, not a transcript).
 const replyTailMax = 200
 
+// goalOf resolves what a UserPromptSubmit means for the goal-changed wake: the full
+// cleaned prompt for typed prose, a labelled name for a slash command, "" for content
+// the user did not author.
+//
+// The slash case is the fix for a whole class of silence (hq-wake-reliability): a
+// `/compact`, `/model`, or custom `/deploy` in an agent window IS the user changing
+// what that session is doing, but it carries no prose — so the prompt sanitizer
+// rejected it and the wake was skipped. It is marked as DATA by the caller like any
+// other user text.
+func goalOf(raw string) string {
+	text, kind := transcript.ClassifyUserPrompt(raw)
+	switch kind {
+	case transcript.PromptUser:
+		return text
+	case transcript.PromptSlash:
+		return strings.TrimSpace("(slash-command) " + text)
+	default:
+		return ""
+	}
+}
+
 // eventSummary computes the additive (summary, class) for an event record:
 //   - UserPromptSubmit → the prompt's normalized head, so dispatch verify can match
 //     the submission deterministically from the stream (no class).

@@ -573,10 +573,12 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		// Dual-channel awareness: the user submitted a NEW prompt directly into a pane
 		// (not via HQ). Tell a live HQ so it senses this user-direct task rather than
-		// working from a stale ledger. On UserPromptSubmit `summary` is the prompt head;
+		// working from a stale ledger. goalOf re-reads the RAW prompt rather than the
+		// event summary: the summary is a 40-rune head built for dispatch matching, and
+		// it is empty for a slash command — which is a user act, not silence.
 		// nudgeGoalChanged dedups per pane and excludes HQ's own prompts.
 		if event == "UserPromptSubmit" {
-			nudgeGoalChanged(pane, summary)
+			nudgeGoalChanged(pane, goalOf(payload.Prompt))
 		}
 		// A crashed turn (StopFailure) must never read as a finish — wake HQ as such.
 		if event == "StopFailure" {
