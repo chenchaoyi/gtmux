@@ -39,14 +39,26 @@ exit non-zero.
 ### Requirement: Delivery via paste buffer, not literal send-keys
 
 The system SHALL deliver task text using a tmux paste buffer (`load-buffer` then
-`paste-buffer`), NOT `send-keys -l`. Delivery and submission (Enter) SHALL be
-separate steps so verification can run between them and re-submit independently.
+`paste-buffer`), NOT `send-keys -l`. The paste SHALL be BRACKETED (`paste-buffer
+-p`), so that an agent TUI receives a multi-line payload as one insertion into its
+input box: sent raw, every newline reaches the TUI as a bare Return and submits the
+line then and there, splitting one instruction into several messages. Delivery and
+submission (Enter) SHALL be separate steps so verification can run between them and
+re-submit independently. This applies to EVERY text-into-a-pane path — the verified
+dispatch, `gtmux send` with verification skipped, and `POST /api/send` — which differ
+only in whether they confirm the landing.
 
 #### Scenario: Task text is pasted, then submitted separately
 
 - **WHEN** a task is delivered to a pane
 - **THEN** the text is loaded into a tmux buffer and pasted into the pane, and
   Enter is sent as a distinct, separately-verifiable step
+
+#### Scenario: A multi-line instruction is one message, not one per line
+
+- **WHEN** a delivery whose text contains newlines is pasted into an agent pane
+- **THEN** the whole text lands in the input draft as a single unsubmitted block, and
+  the separate Enter submits it exactly once
 
 ### Requirement: Layered verification — deterministic evidence before screen-reading
 
@@ -91,6 +103,31 @@ together with on-screen evidence (a capture of the pane) and SHALL NOT report su
 - **WHEN** only a prefix of the task text lands in the input draft (e.g. `"cl"`)
 - **THEN** the paste is retried, and if it still cannot place the full text the
   result is `delivered:false` with evidence — never a claimed success
+
+### Requirement: A retry never duplicates a delivery
+
+A delivery SHALL place its text in a pane's input draft AT MOST ONCE. Because a paste
+appends to whatever the box already holds, the system SHALL re-paste only after the
+draft is confirmed EMPTY, and clearing the draft SHALL NOT be assumed to work: the
+clear key empties a single line, so a multi-line draft survives it. When the draft
+cannot be confirmed empty, the system SHALL report `delivered:false` with evidence
+rather than paste again. A paste SHALL be given a settle window to render before the
+draft is judged a fragment (the frame immediately after a paste can still show the
+pre-paste box), and a draft that already holds the delivery SHALL NOT be pasted into
+again.
+
+#### Scenario: A late-rendered paste is not pasted again
+
+- **WHEN** the frame captured right after a paste does not yet show the text, and a
+  later frame within the settle window shows it in full
+- **THEN** the delivery proceeds to submit that one paste — the text is never pasted
+  a second time
+
+#### Scenario: An unclearable draft fails instead of duplicating
+
+- **WHEN** a fragment is in the draft and clearing it leaves text in the box
+- **THEN** no further paste is attempted and the result is `delivered:false` with the
+  box in the evidence
 
 #### Scenario: Swallowed Enter is retried
 

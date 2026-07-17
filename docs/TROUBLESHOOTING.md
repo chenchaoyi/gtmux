@@ -192,3 +192,30 @@ The attention-system behavior lives in the HQ playbook (`hq.go` `hqInstructions`
 home gets it automatically; the commander's EXISTING HQ needs a deliberate re-seed
 (back up and remove/replace AGENTS.md, then `gtmux hq`) to pick up the feed/threshold/
 self-check instructions.
+
+---
+
+## Driving a pane (dispatch / `gtmux send`)
+
+### One instruction pasted 2–3× and submitted in pieces
+**Symptom:** a dispatched message appears in the agent's box twice or three times, is
+submitted line by line (the tail lines land as "queued messages"), the Enter looks
+swallowed and needs a manual re-press — and `gtmux send` still reports `NOT delivered`.
+**Root cause:** two, and they compound.
+1. `paste-buffer` was **not bracketed** (`-p`), so the payload went in raw and every
+   `\n` reached the TUI as a bare Return — submitting each line as its own message.
+2. The fragment retry called `ClearDraft` (C-u) and re-pasted **without checking the
+   clear worked**. C-u kills only the line the cursor is on; against a multi-line draft
+   a second C-u (and Escape) do nothing at all. So the retry pasted onto the leftover
+   and concatenated a copy — `PasteRetries: 2` → up to three copies.
+**Rules:**
+- Any tmux paste into an agent TUI is `paste-buffer -p`. Test with a **multi-line**
+  payload — single-line text hides both bugs completely.
+- Never re-paste into a box you have not SEEN go empty. Clearing a draft is not
+  reliable; failing loudly with evidence beats duplicating an instruction.
+- The frame right after a paste is not evidence — the TUI redraws on its own schedule.
+  Let a paste settle before judging it a fragment (a stale frame read as a fragment is
+  what triggered the destructive retry).
+**Must-check:** reproduce against a real agent pane, not a fake — `tmux new-session -d
+-s lab; tmux send-keys -t lab claude Enter`, then send a 3-line instruction and read
+the box. A unit test with single-line fixtures passes either way.

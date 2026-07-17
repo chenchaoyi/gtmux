@@ -21,7 +21,26 @@ func boxEmpty(history string) string {
 		"╰────────────────────────────────────────╯"
 }
 
+// boxDraftLines renders a MULTI-LINE draft the way an agent TUI does: the prompt
+// marker on the first line only, continuations indented under it.
+func boxDraftLines(lines ...string) string {
+	out := "history line above\n╭────────────────────────────────────────╮\n"
+	for i, l := range lines {
+		mark := "  "
+		if i == 0 {
+			mark = "❯ "
+		}
+		out += "│ " + mark + l + " │\n"
+	}
+	return out + "╰────────────────────────────────────────╯"
+}
+
 const taskText = "implement the verified dispatch state machine with layered checks"
+
+// multiText is a multi-line instruction — the payload shape that exposed the
+// duplicate-paste bug (C-u cannot clear a multi-line draft, so the old retry pasted
+// on top of the leftover).
+const multiText = "step one: run make check\nstep two: confirm it is green\nstep three: tag the release"
 
 // --- fake IO ---
 
@@ -96,21 +115,93 @@ func TestDeliver_HookHappyPath_NoScreenNeeded(t *testing.T) {
 	}
 }
 
-func TestDeliver_Fragment_RetriesThenLands(t *testing.T) {
+func TestDeliver_Fragment_ClearedThenRePastedOnce(t *testing.T) {
 	f := &fakeIO{
 		caps: []string{
-			boxDraft("cl"),              // paste guard #1: fragment
-			boxDraft(taskText),          // paste guard #2: full text (after ClearDraft+retry)
+			boxDraft("cl"),              // paste guard: fragment…
+			boxDraft("cl"),              // …still a fragment after the settle window
+			boxEmpty("history"),         // ClearDraft worked: the box is empty
+			boxEmpty("history"),         // retry re-reads: nothing in the draft to keep
+			boxDraft(taskText),          // paste #2: full text
 			boxEmpty("me: " + taskText), // verify frame 1: landed
 			boxEmpty("me: " + taskText), // verify frame 2: landed (two-frame agree)
 		},
 	}
-	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10, PasteRetries: 2}, taskText)
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 10, PasteRetries: 2, PasteSettle: 1}, taskText)
 	if !r.Delivered || r.State != StateLanded {
 		t.Fatalf("want landed after retry, got %+v", r)
 	}
 	if f.pasteCalls != 2 || f.clearCalls != 1 {
-		t.Fatalf("fragment should ClearDraft + re-paste once; paste=%d clear=%d", f.pasteCalls, f.clearCalls)
+		t.Fatalf("a CONFIRMED-clear fragment should re-paste exactly once; paste=%d clear=%d", f.pasteCalls, f.clearCalls)
+	}
+}
+
+func TestDeliver_LateRenderedPaste_NotPastedTwice(t *testing.T) {
+	// The frame right after a paste can still show the pre-paste box — the TUI redraws
+	// on its own schedule. Reading that stale frame as a fragment (and pasting again)
+	// is what put one instruction on screen two and three times. The paste must settle
+	// first, and one paste must stay one paste.
+	f := &fakeIO{
+		caps: []string{
+			boxEmpty("history"),         // stale frame: the paste has not rendered yet
+			boxDraft(taskText),          // …and now it has
+			boxEmpty("me: " + taskText), // verify frame 1: landed
+			boxEmpty("me: " + taskText), // verify frame 2: landed (two-frame agree)
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 10, PasteRetries: 2, PasteSettle: 2}, taskText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("want landed, got %+v", r)
+	}
+	if f.pasteCalls != 1 {
+		t.Fatalf("a late-rendered paste must NOT be pasted again; pasteCalls=%d", f.pasteCalls)
+	}
+	if f.clearCalls != 0 {
+		t.Fatalf("nothing to clear — the text was in the draft; clearCalls=%d", f.clearCalls)
+	}
+}
+
+func TestDeliver_UnclearableDraft_FailsRatherThanDuplicate(t *testing.T) {
+	// C-u kills one line, so a multi-line draft survives it (verified on a real Claude
+	// Code pane: the 2nd C-u does nothing at all). Pasting onto that leftover is what
+	// concatenated a duplicate. An unclearable draft must FAIL with evidence instead —
+	// one paste, no submit.
+	stuck := boxDraft("step one: run make ch") // a partial paste C-u then refuses to clear
+	f := &fakeIO{caps: []string{stuck}}        // every frame: the box never empties
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 10, PasteRetries: 2, PasteSettle: 1}, multiText)
+	if r.Delivered || r.State != StateFailed {
+		t.Fatalf("want failed, got %+v", r)
+	}
+	if f.pasteCalls != 1 {
+		t.Fatalf("must never paste onto a draft it could not clear; pasteCalls=%d", f.pasteCalls)
+	}
+	if f.enterCalls != 0 {
+		t.Fatalf("must not submit a fragment; enterCalls=%d", f.enterCalls)
+	}
+	if r.Evidence == "" {
+		t.Fatalf("a refused re-paste must carry on-screen evidence")
+	}
+}
+
+func TestDeliver_MultiLineText_LandsWithOneSubmit(t *testing.T) {
+	// A multi-line instruction is ONE delivery: it goes in as one draft (tmux.Paste
+	// brackets it) and is submitted by exactly one Enter — not one per line.
+	f := &fakeIO{
+		caps: []string{
+			boxDraftLines("step one: run make check", "step two: confirm it is green", "step three: tag the release"),
+			boxEmpty("me: " + multiText),
+			boxEmpty("me: " + multiText),
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 10, PasteSettle: 1}, multiText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("want landed, got %+v", r)
+	}
+	if f.pasteCalls != 1 || f.enterCalls != 1 {
+		t.Fatalf("one delivery = one paste + one Enter; paste=%d enter=%d", f.pasteCalls, f.enterCalls)
+	}
+	if r.Attempts != 1 {
+		t.Fatalf("a clean landing should report a single submit attempt; got %d", r.Attempts)
 	}
 }
 

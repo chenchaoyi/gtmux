@@ -151,12 +151,20 @@ var pasteSeq uint64
 
 // Paste delivers text into a pane WITHOUT interpreting it as keys and WITHOUT an
 // auto-Enter: it stages the bytes on a private tmux paste buffer (`load-buffer -`,
-// byte-exact from stdin) then `paste-buffer -d` (deletes the buffer afterward).
-// This is the delivery path for dispatched task text — `send-keys -l` of a long
-// string mid-TUI errored "not in a mode" and was the vector for both the fragment
-// and the swallowed-Enter failures. Submission (Enter) is a SEPARATE step
-// (SendKey/SendText) so verification can sit between paste and submit and re-send
-// Enter on its own. This is a WRITE.
+// byte-exact from stdin) then `paste-buffer -p -d` (bracketed, and deletes the
+// buffer afterward). This is the delivery path for dispatched task text —
+// `send-keys -l` of a long string mid-TUI errored "not in a mode" and was the
+// vector for both the fragment and the swallowed-Enter failures. Submission
+// (Enter) is a SEPARATE step (SendKey/SendText) so verification can sit between
+// paste and submit and re-send Enter on its own. This is a WRITE.
+//
+// `-p` is what makes a MULTI-LINE payload land as one draft. Without it the bytes
+// go raw, so every "\n" reaches the agent TUI as a bare Return and SUBMITS the line
+// then and there: one instruction arrives as several messages (the tail ones
+// "queued"), which is the shape the swallowed-Enter reports actually had. `-p` wraps
+// the payload in bracketed-paste markers when — and only when — the application
+// asked for them, so a TUI inserts the whole block into its input box and a bare
+// shell is unaffected. Verified against a real Claude Code pane.
 func Paste(pane, text string) error {
 	if Bin == "" {
 		return exec.ErrNotFound
@@ -168,7 +176,7 @@ func Paste(pane, text string) error {
 	if err := load.Run(); err != nil {
 		return err
 	}
-	_, err := Run("paste-buffer", "-d", "-b", buf, "-t", pane)
+	_, err := Run("paste-buffer", "-p", "-d", "-b", buf, "-t", pane)
 	return err
 }
 

@@ -63,6 +63,7 @@ type Opts struct {
 	DeliverTimeout int64 // seconds to confirm before giving up
 	HookGrace      int64 // seconds to wait for a submit event before using the screen fallback
 	PasteRetries   int   // extra paste attempts on a fragment
+	PasteSettle    int   // extra frames to let a paste render before calling it a fragment
 	EnterRetries   int   // extra Enter attempts on a swallowed submit
 }
 
@@ -75,6 +76,9 @@ func (o *Opts) fillDefaults() {
 	}
 	if o.PasteRetries < 0 {
 		o.PasteRetries = 0
+	}
+	if o.PasteSettle <= 0 {
+		o.PasteSettle = 3
 	}
 	if o.EnterRetries <= 0 {
 		o.EnterRetries = 3
@@ -162,16 +166,28 @@ func Deliver(io IO, opts Opts, text string) Result {
 	}
 }
 
-// pasteWithGuard pastes text and confirms the FULL text (or a collapsed-paste
-// placeholder) is in the draft, retrying a genuine fragment. Returns false if it
-// cannot place the full text within PasteRetries.
+// pasteWithGuard puts text in the pane's input draft and confirms the FULL text (or
+// a collapsed-paste placeholder) is there, retrying a genuine fragment. Returns
+// false if it cannot place the full text within PasteRetries.
+//
+// The guard is IDEMPOTENT: the same text is never pasted twice into the same draft.
+// It used to be — a stale frame or an unconfirmed clear sent it round the loop, and
+// with PasteRetries=2 one instruction could be pasted three times, concatenated into
+// the box and submitted as that mess. Two rules make a duplicate impossible: a
+// re-paste happens only after the draft is CONFIRMED free of the last attempt's text
+// (see clearedForRetry), and a draft that already holds the delivery is left alone.
 //
 // When the pane has NO locatable input region (structured == false, e.g. a plain
 // shell prompt), it does NOT treat the empty draft as a fragment — clearing the
 // draft (C-u) there would DESTROY the just-pasted text. It proceeds and lets
 // post-submit verification decide.
 func pasteWithGuard(io IO, opts Opts, text string) bool {
-	for i := 0; i <= opts.PasteRetries; i++ {
+	for attempt := 0; ; attempt++ {
+		// A retry re-reads FIRST: if the last attempt's paste is now in the draft (it
+		// only rendered late), it is already delivered and pasting again would duplicate it.
+		if attempt > 0 && draftHolds(io, text) {
+			return true
+		}
 		// Copy/view-mode swallows paste-buffer (and the later Enter) as mode-nav
 		// commands (incident: a scrolled pane silently ate a whole dispatch). Drop out
 		// of the mode BEFORE pasting so the payload actually reaches the input box.
@@ -179,18 +195,81 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 		if err := io.Paste(text); err != nil {
 			return false
 		}
-		_, draft, structured := SplitInputRegion(io.Capture())
-		if draftHasDelivery(draft, text) {
+		switch confirmPaste(io, opts, text) {
+		case pasteInDraft, pasteUnverifiable:
 			return true
 		}
-		if !structured {
-			return true // can't see a draft to validate — don't destroy it; verify post-submit
-		}
-		if io.ClearDraft != nil {
-			_ = io.ClearDraft() // clear the fragment before retrying
+		// A settled fragment. Retry only while a retry can't duplicate anything.
+		if attempt >= opts.PasteRetries || !clearedForRetry(io, opts) {
+			return false
 		}
 	}
-	return false
+}
+
+// pasteVerdict is what confirmPaste concluded about the draft after a paste.
+type pasteVerdict int
+
+const (
+	pasteInDraft      pasteVerdict = iota // the full delivery is in the draft
+	pasteFragment                         // the draft settled on less than the delivery
+	pasteUnverifiable                     // no locatable draft — nothing to validate against
+)
+
+// confirmPaste waits for a paste to RENDER in the draft. paste-buffer returns as soon
+// as tmux has written the bytes to the pty, but the agent TUI redraws on its own
+// schedule and a loaded pane can be a frame behind — so the frame right after a paste
+// is not proof of anything. A positive is trusted as soon as it appears (the common
+// case, and it keeps a healthy send fast); "fragment" is the verdict that authorizes
+// destroying and re-pasting, so it is returned only after the whole settle window has
+// passed with no match.
+func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
+	for i := 0; ; i++ {
+		_, draft, structured := SplitInputRegion(io.Capture())
+		if !structured {
+			return pasteUnverifiable
+		}
+		if draftHasDelivery(draft, text) {
+			return pasteInDraft
+		}
+		if i >= opts.PasteSettle {
+			return pasteFragment
+		}
+		io.Sleep()
+	}
+}
+
+// clearedForRetry clears a fragmented draft and reports whether the box is now
+// demonstrably EMPTY — the only state in which re-pasting cannot duplicate anything,
+// because a paste appends to whatever the box already holds.
+//
+// The bar is this high because ClearDraft (C-u) is not the "empty the box" it was
+// assumed to be. On a real Claude Code pane it kills only the line the cursor sits
+// on: a C-u against a three-line draft leaves two lines, and a second C-u (or
+// Escape) against what's left does nothing at all. The old guard re-pasted without
+// looking — so the retry CONCATENATED the instruction onto the leftover, which is how
+// one dispatched message ended up on screen two and three times. An unclearable draft
+// now fails the delivery, with the box in the evidence for the caller to read.
+func clearedForRetry(io IO, opts Opts) bool {
+	if io.ClearDraft == nil {
+		return false
+	}
+	_ = io.ClearDraft()
+	for i := 0; ; i++ {
+		_, draft, structured := SplitInputRegion(io.Capture())
+		if !structured || normalizeSpace(draft) == "" {
+			return true
+		}
+		if i >= opts.PasteSettle {
+			return false
+		}
+		io.Sleep()
+	}
+}
+
+// draftHolds reports whether the pane's draft already holds the delivery.
+func draftHolds(io IO, text string) bool {
+	_, draft, structured := SplitInputRegion(io.Capture())
+	return structured && draftHasDelivery(draft, text)
 }
 
 // exitCopyMode drops the pane out of tmux copy/view-mode before a write, but only
