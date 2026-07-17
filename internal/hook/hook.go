@@ -534,6 +534,16 @@ func Run(stdin io.Reader, args []string) int {
 	// Additive summary/class (hq-dispatch): on a prompt submission, record the
 	// prompt's normalized head so a dispatcher can confirm delivery from the stream
 	// (not by screen-reading); on a turn end, record the reply tail + asking/report.
+	// goal is the submission's INSTRUCTION ("" when the payload is harness-injected
+	// content or our own wake line echoed back). Computed once and used twice: it stamps
+	// the record's origin (which lifts a real instruction out of `routine` — an HQ that
+	// pulls a filtered stream must be able to SEE what the user told a session to do)
+	// and it is the goal-changed wake's payload. One classifier, so the tier and the
+	// wake can never disagree about what a user act is.
+	goal := ""
+	if event == "UserPromptSubmit" {
+		goal = goalOf(payload.Prompt)
+	}
 	summary, evClass := "", ""
 	if event != "" {
 		summary, evClass = eventSummary(event, payload.Prompt, pane, agentSession, agentKey)
@@ -542,10 +552,14 @@ func Run(stdin io.Reader, args []string) int {
 		if event == "StopFailure" && summary == "" {
 			summary = clampData(payload.Error, 100)
 		}
+		origin := ""
+		if goal != "" {
+			origin = events.OriginInstruction
+		}
 		events.Append(events.Record{
 			Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
 			Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
-			Summary: summary, Class: evClass,
+			Summary: summary, Class: evClass, Origin: origin,
 		})
 	}
 
@@ -573,12 +587,12 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		// Dual-channel awareness: the user submitted a NEW prompt directly into a pane
 		// (not via HQ). Tell a live HQ so it senses this user-direct task rather than
-		// working from a stale ledger. goalOf re-reads the RAW prompt rather than the
-		// event summary: the summary is a 40-rune head built for dispatch matching, and
-		// it is empty for a slash command — which is a user act, not silence.
+		// working from a stale ledger. `goal` is the full instruction, not the event
+		// summary: the summary is a 40-rune head built for dispatch matching, and it is
+		// empty for a slash command — which is a user act, not silence.
 		// nudgeGoalChanged dedups per pane and excludes HQ's own prompts.
 		if event == "UserPromptSubmit" {
-			nudgeGoalChanged(pane, goalOf(payload.Prompt))
+			nudgeGoalChanged(pane, goal)
 		}
 		// A crashed turn (StopFailure) must never read as a finish — wake HQ as such.
 		if event == "StopFailure" {

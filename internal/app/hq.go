@@ -45,7 +45,13 @@ import (
 //	v3 — hq-wake-reliability: delivery is acked + retried, so a wake line can now
 //	     arrive TWICE — every batch ends with `#<id>` and a repeat is a re-send to
 //	     ignore. Adds the `wake-degraded` class and the `(slash-command)` goal.
-const hqPlaybookVersion = 3
+//	v4 — hq-attention-stream: the THREE reads named (unfiltered `--since-seq` delta =
+//	     reconcile · `--severity notable` = fleet-change · `--severity important` =
+//	     escalation SUBSET), plus the rule that a filtered read is a triage shortcut,
+//	     not HQ's model of the world. v3 and earlier called `important` "the attention
+//	     stream" while user instructions sat in `routine` — an HQ obeying its own
+//	     playbook could not see them.
+const hqPlaybookVersion = 4
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -588,10 +594,20 @@ tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的
 - ` + "`gtmux focus <pane_id>`" + ` — jump the user's terminal to that pane.
 - ` + "`gtmux events --since-seq <n> --json`" + ` — PULL the event delta after a wake:
   every session lifecycle event past sequence n, each already carrying a summary +
-  severity, so you never read a raw transcript to triage. ` + "`--severity important`" + `
-  filters to the attention stream. You are WOKEN by injected signal lines — pull,
-  don't tail; no background subscription is required (that keeps any agent able to
-  be HQ). 唤醒后拉增量的主命令;靠唤醒线敲门,不需要常驻 tail,任何 agent 都能当 HQ。
+  severity, so you never read a raw transcript to triage. You are WOKEN by injected
+  signal lines — pull, don't tail; no background subscription is required (that keeps
+  any agent able to be HQ). 唤醒后拉增量的主命令;靠唤醒线敲门,不需要常驻 tail。
+  THREE reads, and they are NOT interchangeable — know which one you are running:
+  - ` + "`--since-seq <n>`" + ` (NO filter) — the DELTA since your cursor. What a wake
+    sends you to run, and what you RECONCILE with whenever you doubt your picture. 增量。
+  - ` + "`--severity notable`" + ` — the FLEET-CHANGE stream: instructions reaching
+    sessions, turn-ends, lifecycle. Use it to catch up after being away. 变化流。
+  - ` + "`--severity important`" + ` — the ESCALATION stream: blocked · asking · crashed.
+    Triage it FIRST, but it is a SUBSET — never your whole picture. 升级流(子集)。
+  **A filtered read is a triage shortcut, NOT your model of the world.** Every filter is
+  a claim about what doesn't matter; if you only ever read one tier you will miss what
+  the user told a session directly. Reconcile with the unfiltered delta or ` + "`digest`" + `.
+  过滤只是分诊捷径,不是你的世界模型;拿不准就用不过滤的增量或 digest 对账。
 - ` + "`gtmux hq-feed`" + ` — the LLM-free spool daemon behind your perception (gtmux's
   serve keeps it alive; a ` + "`feed-degraded`" + ` wake means it broke). You do NOT need
   to tail it — wake lines knock, and you pull deltas with the command above.

@@ -112,8 +112,10 @@ func cmdEvents(args []string) int {
 		}
 	}
 
-	// Filter to "this level and above" so a supervisor reads the attention stream,
-	// not every raw line (an absent severity on a legacy record ranks as routine).
+	// Filter to "this level and above" so a supervisor can triage without reading every
+	// raw line (an absent severity on a legacy record ranks as routine). A filtered read
+	// is a SHORTCUT, not a complete picture: `important` is the escalation subset, and
+	// reconciling is the unfiltered `--since-seq` delta's job.
 	minRank := events.SeverityRank(minSeverity)
 	print := func(r events.Record) {
 		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
@@ -170,8 +172,12 @@ func eventsUsage() int {
 		"  每个 session 生命周期事件的实时流 —— gtmux HQ 及脚本的订阅入口。")
 	i18n.Say("  gtmux HQ and scripts tail it. Bare form shows the last hour.",
 		"  裸命令显示最近一小时;--follow 持续跟随(跨 rotation)。")
-	i18n.Say("  --severity filters to that tier and above (the attention stream).",
-		"  --severity 过滤到该等级及以上(只看需要关注的事件)。")
+	i18n.Say("  --severity filters to that tier and above: `important` = the escalation",
+		"  --severity 过滤到该等级及以上：important = 升级流(阻塞/提问/崩溃),")
+	i18n.Say("  subset (blocked/asking/crashed), `notable` = fleet changes too. A filter",
+		"  notable = 连同变化流(指令、回合结束、生命周期)。过滤是分诊捷径,")
+	i18n.Say("  is a triage shortcut — reconcile with the unfiltered --since-seq delta.",
+		"  不是全貌 —— 对账请用不过滤的 --since-seq 增量。")
 	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
 		"  --since-seq N：一次性读取序号 N 之后的全部事件(唤醒后拉增量用)。")
 	i18n.Say("  (the pull-on-wake primitive — HQ reads exactly the delta a wake covered).",

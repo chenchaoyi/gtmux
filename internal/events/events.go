@@ -42,12 +42,27 @@ type Record struct {
 	// Additive (hq-dispatch): a deterministic turn-end classification on Stop —
 	// "asking" (the reply ends on a question to the user) or "report". Empty otherwise.
 	Class string `json:"class,omitempty"`
+	// Additive (hq-attention-stream): on a prompt submission, whether the payload is a
+	// real INSTRUCTION ("instruction") rather than harness-injected content or gtmux's
+	// own wake line echoed back. Empty otherwise, and on a legacy record.
+	//
+	// It deliberately does NOT say WHO authored the instruction: a task `gtmux spawn`
+	// delivered carries one too, and no reliable signal separates them (the send side
+	// records a payload hash, while the harness appends reminder blocks to the prompt it
+	// reports — so the hash misses exactly when it would matter). An instruction reaching
+	// a session is a fleet change either way, and when in doubt the classifier must guess
+	// "instruction": a duplicate costs a line, a miss costs the user's words.
+	Origin string `json:"origin,omitempty"`
 	// Additive (hq-chief-of-staff): a deterministic attention tier —
 	// "routine" | "notable" | "important" — stamped at the source (Append) so a
-	// supervisor can read the attention stream without the raw full text. Absent on
-	// a legacy record, which reads as "routine".
+	// supervisor can triage without the raw full text. Absent on a legacy record, which
+	// reads as "routine".
 	Severity string `json:"severity,omitempty"`
 }
+
+// OriginInstruction marks a prompt submission whose payload is a real instruction —
+// typed prose or a slash command. See Record.Origin: author-agnostic by design.
+const OriginInstruction = "instruction"
 
 // Severity levels (attention tiers), lowest → highest.
 const (
@@ -70,11 +85,17 @@ func SeverityRank(level string) int {
 }
 
 // Severity classifies a record's attention tier deterministically (no LLM) from
-// fields the record already carries. A Waiting (the pane needs the user), an
-// "asking" turn-end, and a crashed turn (StopFailure — the turn died on an
-// agent/API error, which must never read as a finish) are important; a "report"
-// turn-end and the session lifecycle events are notable; prompt submissions and
-// ordinary ticks are routine.
+// fields the record already carries. It ranks URGENCY — how much someone is waiting on
+// the supervisor — NOT relevance: a Waiting (the pane needs the user), an "asking"
+// turn-end, and a crashed turn (StopFailure — the turn died on an agent/API error, which
+// must never read as a finish) are important. A "report" turn-end, the session lifecycle
+// events, and a submission that carries an INSTRUCTION are notable — they change the
+// picture without anyone being blocked. Everything else is routine.
+//
+// A submitted instruction was routine until hq-attention-stream, while the playbook
+// called `--severity important` "the attention stream" — so an HQ following its own
+// playbook could not see what the user told a session to do. Severity is pure, so the
+// verdict has to arrive on the record (Origin), stamped by the hook's own classifier.
 func Severity(r Record) string {
 	switch r.Event {
 	case "Waiting":
@@ -91,6 +112,11 @@ func Severity(r Record) string {
 		return SevImportant
 	case "SessionStart", "SessionEnd", "Resumed", "PreCompact":
 		return SevNotable
+	case "UserPromptSubmit":
+		if r.Origin == OriginInstruction {
+			return SevNotable // an instruction reached a session — a fleet change
+		}
+		return SevRoutine // harness injection, an echoed wake line: not an act
 	default:
 		return SevRoutine
 	}

@@ -3,6 +3,8 @@ package hook
 import (
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/events"
 )
 
 func TestClassifyReply(t *testing.T) {
@@ -95,6 +97,40 @@ func TestGoalOf_KeepsTheFullPromptForFingerprinting(t *testing.T) {
 	long := strings.Repeat("ship ", 20)
 	if got := goalOf(long); got != strings.TrimSpace(long) {
 		t.Errorf("goalOf must not truncate; got %q", got)
+	}
+}
+
+// goalOf is the ONE classifier behind both the goal-changed wake and the record's
+// `origin` stamp (hq-attention-stream) — so the tier a pull-side HQ reads and the knock
+// a live HQ gets can never disagree about what counts as a user act. This pins that
+// pairing: whatever wakes must also be visible by pull, and whatever is silent must not
+// inflate the stream.
+func TestGoalOf_DecidesBothTheWakeAndTheTier(t *testing.T) {
+	for _, c := range []struct {
+		name, raw string
+		wantSeen  bool
+	}{
+		{"typed prose", "先别动那个分支", true},
+		{"slash command", "<command-name>/compact</command-name>", true},
+		{"harness injection", "<system-reminder>context low</system-reminder>", false},
+		{"our own wake line", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, false},
+	} {
+		goal := goalOf(c.raw)
+		origin := ""
+		if goal != "" {
+			origin = events.OriginInstruction // the stamp hook.go applies
+		}
+		gotSeen := events.SeverityRank(events.Severity(events.Record{
+			Event: "UserPromptSubmit", Origin: origin,
+		})) > events.SeverityRank(events.SevRoutine)
+		if gotSeen != c.wantSeen {
+			t.Errorf("%s: visible above routine = %v, want %v (goal=%q)",
+				c.name, gotSeen, c.wantSeen, goal)
+		}
+		if (goal != "") != c.wantSeen {
+			t.Errorf("%s: the wake and the tier disagree — goal=%q but visible=%v",
+				c.name, goal, gotSeen)
+		}
 	}
 }
 

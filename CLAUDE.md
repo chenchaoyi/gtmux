@@ -16,8 +16,11 @@ over one Go core (gtmux-core is the single data source):
   `hqNudge:false` disables). See `openspec/changes/supervisor-mvp`. The HQ is a
   **chief-of-staff** (参谋长), not just an event forwarder: its seed teaches a persistent
   situation board (`notes/board.md`, survives context resets), a severity-tagged event
-  ledger (`events.jsonl` records carry `routine|notable|important`; `gtmux events
-  --severity important` = the attention stream), decision-authority tiers (reversible∧
+  ledger (`events.jsonl` records carry `routine|notable|important`; THREE reads, not one
+  — unfiltered `--since-seq` = the reconcile delta · `--severity notable` = fleet changes
+  (incl. a user instruction reaching a session, `origin:"instruction"`) · `--severity
+  important` = the escalation SUBSET. A filter is a triage shortcut, never HQ's model of
+  the world — change `hq-attention-stream`), decision-authority tiers (reversible∧
   low-risk∧in-discussed-scope → HQ decides+dispatches; else escalate), graded escalation
   + reconcile-before-relay (kills stale needs-you), and a correction→charter learning
   loop (`knowledge/corrections.md`). See `openspec/changes/hq-chief-of-staff`.
