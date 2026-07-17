@@ -506,6 +506,12 @@ func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: paired devices are managed on the Mac"))
 		return
 	}
+	// A revoked device must also stop receiving push — the roster and the push-token
+	// store are separate, so drop any token bound to this device id (no-op if it never
+	// registered one). This is the fix for a removed device that kept getting alerts.
+	if removed && s.deps.Push != nil {
+		s.deps.Push.UnregisterByDevice(body.ID)
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"revoked": removed})
 }
 

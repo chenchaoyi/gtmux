@@ -258,6 +258,12 @@ body: {"token":"<device-token>","platform":"ios","kinds":["waiting","done"]}
 `done` = finished). Omit or send `[]` for **all** kinds. Lets the phone opt out
 of e.g. completion notifications from the settings screen.
 
+The server BINDS the token to the caller's enrolled device — it stamps `deviceId`
+from the bearer token's roster entry (never the request body), so revoking that
+device drops the token (see `/api/devices/revoke`). A token registered without a
+roster entry (e.g. the master token, or one persisted before this binding existed)
+has an empty `deviceId` and is treated as **unlinked** (legacy).
+
 Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
 key) → APNs → device. The relay's own contract is in `relay/README.md`. APNs is
 delivered by Apple over any network, so push arrives even when the phone is off
@@ -297,6 +303,35 @@ verify notifications end-to-end). No body.
 200 {"sent":N}                       // N = devices the relay accepted
 405 {"error":"method not allowed"}   // non-POST
 503 {"error":"push not configured"}  // server started without push support
+```
+
+### `GET /api/push/tokens` — list the registered push tokens (MASTER only)
+
+Returns the stored push tokens REDACTED (a short `tokenPrefix`, never the full
+secret) with their device binding, so the Mac's own CLI (`gtmux devices --push`) can
+inspect + clean up the store. **Master-only** — a device/guest is `403`.
+
+```
+200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"]}]}
+403 {"error":"forbidden: host-only"} // a device/guest caller
+503 {"error":"push not configured"}
+```
+
+An empty `deviceId` marks an **unlinked** (legacy) token.
+
+### `POST /api/push/forget` — drop push tokens (MASTER only)
+
+Clears tokens by selector — `deviceId` (that device's tokens), `orphans` (only
+unlinked legacy tokens), or `all` (every token) — and persists. Backs
+`gtmux devices --forget-push <id|orphans|all>`. **Master-only** — a device/guest is
+`403`.
+
+```
+body: {"deviceId":"<id>"} | {"orphans":true} | {"all":true}
+200 {"forgotten":N}
+400 {"error":"give deviceId, orphans, or all"}
+403 {"error":"forbidden: host-only"}
+503 {"error":"push not configured"}
 ```
 
 ### `POST /api/push/activity` — register a Live Activity push token
@@ -346,6 +381,9 @@ body: {"enrollCode":"<code>","name":"<device label>"}
 ```
 
 ### `POST /api/devices/revoke` — revoke a device's token now
+
+Also unregisters any push token bound to that device (`deviceId`), so a revoked
+device stops receiving notifications immediately — no separate `/api/push/forget`.
 
 ```
 body: {"id":"<deviceId>"}
