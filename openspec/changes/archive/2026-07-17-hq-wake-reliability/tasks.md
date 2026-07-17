@@ -90,4 +90,4 @@
 - [x] 5.4 `make check` green (gofmt + vet + staticcheck + `go test -race`);
       `npx @fission-ai/openspec validate --specs --strict` passes;
       `scripts/check-design.sh` green.
-- [ ] 5.5 Sync the deltas into `openspec/specs/` and archive this change once merged.
+- [x] 5.5 Sync the deltas into `openspec/specs/` and archive this change once merged.
