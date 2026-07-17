@@ -63,6 +63,23 @@ env via the fixed install.sh).
 
 ---
 
+### `gtmux doctor --fix` / `gtmux update` hangs right after "menu-bar app launched"
+**Symptom:** the app-install step finishes (`[5/5] Menu bar … ✓`, "menu-bar app launched",
+the PATH hint all print), then the command NEVER returns to the prompt — no "Restarted
+the remote serve" / "Done". The app IS installed and running; only the command is stuck.
+**Root cause:** `runInstaller` ends with `restartServeAgents()`, which ran
+`launchctl kickstart -k gui/<uid>/com.gtmux.serve` UNBOUNDED. On some Macs that
+`kickstart -k` blocks indefinitely, freezing the synchronous `doctor --fix` / `update`
+forever. install.sh itself already completed (its final line printed) — the hang is the
+best-effort serve-restart, not the install.
+**Fix:** every `launchctl` call in `restartServeAgents` is now hard-bounded by a 6s
+timeout (`runBounded`); on timeout it skips the restart (the serve refreshes on next
+login) instead of hanging. **Unstick a machine now:** press **Ctrl-C** — the app is
+already installed; only the trailing restart stalled. (Needs a release to reach an old
+`gtmux`.)
+
+---
+
 ### `brew upgrade --cask gtmux-app` fails: "App source '/Applications/Gtmux.app' is not there"
 **Symptom:** `brew install/upgrade --cask chenchaoyi/tap/gtmux-app` downloads + verifies
 the zip, then errors `It seems the App source '/Applications/Gtmux.app' is not there.`

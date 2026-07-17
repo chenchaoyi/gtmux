@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -184,15 +185,35 @@ func restartServeAgents() {
 		return
 	}
 	target := "gui/" + strconv.Itoa(os.Getuid()) + "/com.gtmux.serve"
-	// Only restart if it's actually loaded — otherwise there's nothing persistent
-	// to refresh (a one-off `gtmux serve` is the user's own process to manage).
-	if err := exec.Command("launchctl", "print", target).Run(); err != nil {
-		return
+	// This is a best-effort convenience that runs SYNCHRONOUSLY under `gtmux update` /
+	// `doctor --fix`, so it must NEVER hang the command. A `launchctl kickstart -k` was
+	// seen to block indefinitely on a user's Mac, freezing `gtmux doctor --fix` right
+	// after the app installed — so every launchctl call is hard-bounded by a timeout;
+	// on timeout we just skip the restart (the serve refreshes on next login anyway).
+	if launchctlBounded("print", target) != nil {
+		return // not loaded (or launchctl wedged) → nothing to refresh
 	}
-	if err := exec.Command("launchctl", "kickstart", "-k", target).Run(); err == nil {
+	if launchctlBounded("kickstart", "-k", target) == nil {
 		i18n.Say("Restarted the remote serve so the update takes effect.",
 			"已重启远程 serve，更新即时生效。")
 	}
+}
+
+// launchctlBounded runs `launchctl <args>` with a hard timeout so a wedged launchctl
+// can't hang the caller. A timeout returns a non-nil error, treated like any failure
+// (skip the step). SIGKILL on timeout only kills the launchctl CLIENT — the restart
+// request it already made (if any) still stands.
+func launchctlBounded(args ...string) error {
+	return runBounded(6*time.Second, "launchctl", args...)
+}
+
+// runBounded runs an external command with a hard timeout, returning a non-nil error
+// if it fails OR exceeds the deadline (the process is killed). Used for best-effort
+// maintenance calls that must never hang an interactive command.
+func runBounded(timeout time.Duration, name string, args ...string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return exec.CommandContext(ctx, name, args...).Run()
 }
 
 // installScriptMirrors lists the installer URL GitHub-first, then CN proxies (the
