@@ -31,6 +31,45 @@ final class PairStore: ObservableObject {
     @Published private(set) var devices: [PairedDevice] = []
     @Published var busy = false
 
+    // The pairing sheet's ONE-TIME code lives here (not in the sheet's @State) so it
+    // survives the Preferences view's frequent re-renders (the agent poll re-evaluates
+    // the body every ~1.5s). Kept in a singleton + minted idempotently → the QR/code
+    // stay STABLE while the sheet is open, instead of re-minting (and visibly changing)
+    // on every re-render.
+    @Published var pairInfo: PairingInfo?
+    @Published var pairCode: String?
+    @Published var pairFailed = false
+    private var mintingPair = false
+
+    /// Mint the one-time pair code ONCE per sheet presentation. Idempotent: a repeat
+    /// call (e.g. a re-rendered sheet's onAppear firing again) is a no-op while a code
+    /// is already held or a mint is in flight.
+    func mintPairCodeIfNeeded() {
+        if pairCode != nil || mintingPair { return }
+        guard let p = Pairing.current() else {
+            pairFailed = true
+            return
+        }
+        mintingPair = true
+        pairInfo = p
+        pairFailed = false
+        Pairing.mintEnrollCode(token: p.token) { c in
+            DispatchQueue.main.async {
+                self.mintingPair = false
+                if let c = c, !c.isEmpty { self.pairCode = c } else { self.pairFailed = true }
+            }
+        }
+    }
+
+    /// Clear the held code when the sheet closes, so reopening mints a fresh one (the
+    /// prior code is single-use / may be spent).
+    func clearPairCode() {
+        pairCode = nil
+        pairInfo = nil
+        pairFailed = false
+        mintingPair = false
+    }
+
     private var base: String { "http://127.0.0.1:8765" }
 
     private func token() -> String? {

@@ -138,9 +138,11 @@ struct PreferencesView: View {
                 connectedDevices
 
                 // Your paired devices (full control) — enrolled through the door above.
-                Divider()
+                // No explicit Divider(): a grouped Form already hairlines each row, and
+                // an extra Divider renders as a stray empty row here.
                 Text(l10n.tr("PAIRED DEVICES", "已配对设备"))
                     .font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+                    .padding(.top, 2)
                 pairSection
             }
 
@@ -407,19 +409,24 @@ struct PreferencesView: View {
                                 Text(shareLinkAge(g.enrolledAt) + "  ·  " + linkScopeSummary(g))
                                     .font(.system(size: 10)).foregroundStyle(.tertiary)
                             }
-                            Spacer(minLength: 0)
-                            // Copy the link again later — the token is shown only at
-                            // mint time, so a host who didn't grab it then can here.
-                            Button {
-                                share.copyLink(g.id)
-                            } label: {
-                                Image(systemName: "doc.on.doc").font(.system(size: 11))
-                            }
-                            .buttonStyle(.borderless)
-                            .disabled(share.busy)
-                            .help(l10n.tr("Copy link", "复制链接"))
-                            Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
+                            Spacer(minLength: 8)
+                            // Copy + Revoke as ONE tidy trailing group with matching
+                            // chrome (both bordered) — a bare borderless icon read as a
+                            // floating column next to the bordered Revoke button. Copy
+                            // re-hands the link (its token shows only at mint time).
+                            HStack(spacing: 6) {
+                                Button {
+                                    share.copyLink(g.id)
+                                } label: {
+                                    Image(systemName: "doc.on.doc")
+                                }
+                                .buttonStyle(.bordered)
                                 .disabled(share.busy)
+                                .help(l10n.tr("Copy link", "复制链接"))
+                                Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
+                                    .buttonStyle(.bordered)
+                                    .disabled(share.busy)
+                            }
                         }
                         if expandedLink == g.id {
                             linkScopeEditor(g)
