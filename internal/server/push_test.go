@@ -356,3 +356,133 @@ func TestHTTPRelaySendNon2xx(t *testing.T) {
 		t.Fatalf("non-2xx should error")
 	}
 }
+
+// --- push-token-device-binding ---
+
+// UnregisterByDevice drops EVERY token bound to a device id (a device may register
+// more than once across reinstalls), persists once, and treats an empty id as a no-op
+// so a legacy revoke can't blanket-drop the UNLINKED tokens.
+func TestUnregisterByDevice(t *testing.T) {
+	saves := 0
+	pm := NewPushManager(nil, nil, func([]DeviceToken) { saves++ }, "Mac", nil)
+	pm.Register(DeviceToken{Token: "t1", DeviceID: "dev-A"})
+	pm.Register(DeviceToken{Token: "t2", DeviceID: "dev-A"}) // same device, reinstalled
+	pm.Register(DeviceToken{Token: "t3", DeviceID: "dev-B"})
+	pm.Register(DeviceToken{Token: "legacy"}) // unlinked (empty id)
+	saves = 0
+
+	if n := pm.UnregisterByDevice("dev-A"); n != 2 {
+		t.Fatalf("removed %d, want 2 (both of dev-A's tokens)", n)
+	}
+	if got := len(pm.Tokens()); got != 2 {
+		t.Fatalf("remaining %d, want 2 (dev-B + legacy)", got)
+	}
+	if saves != 1 {
+		t.Fatalf("persisted %d times, want 1", saves)
+	}
+	saves = 0
+	if n := pm.UnregisterByDevice(""); n != 0 || saves != 0 {
+		t.Fatalf("empty-id removed %d / saves %d, want 0/0 (must not touch unlinked)", n, saves)
+	}
+}
+
+// Forget's selectors: orphans drops only unlinked tokens; a deviceId drops that
+// device's; all drops everything.
+func TestPushForgetSelectors(t *testing.T) {
+	mk := func() *PushManager {
+		pm := NewPushManager(nil, nil, nil, "Mac", nil)
+		pm.Register(DeviceToken{Token: "a", DeviceID: "dev-A"})
+		pm.Register(DeviceToken{Token: "b", DeviceID: "dev-B"})
+		pm.Register(DeviceToken{Token: "leg1"})
+		pm.Register(DeviceToken{Token: "leg2"})
+		return pm
+	}
+	pm := mk()
+	if n := pm.Forget("", true, false); n != 2 || len(pm.Tokens()) != 2 {
+		t.Fatalf("orphans removed %d / remaining %d, want 2/2", n, len(pm.Tokens()))
+	}
+	pm = mk()
+	if n := pm.Forget("dev-A", false, false); n != 1 || len(pm.Tokens()) != 3 {
+		t.Fatalf("deviceId removed %d / remaining %d, want 1/3", n, len(pm.Tokens()))
+	}
+	pm = mk()
+	if n := pm.Forget("", false, true); n != 4 || len(pm.Tokens()) != 0 {
+		t.Fatalf("all removed %d / remaining %d, want 4/0", n, len(pm.Tokens()))
+	}
+}
+
+func TestRedactToken(t *testing.T) {
+	full := "0123456789abcdef0123456789abcdef"
+	r := redactToken(full)
+	if r == full {
+		t.Fatal("redactToken returned the FULL token (must never leak it)")
+	}
+	prefix := strings.TrimSuffix(r, "…")
+	if !strings.HasPrefix(full, prefix) || len(prefix) > 12 {
+		t.Fatalf("redacted %q must be a short prefix of the token", r)
+	}
+}
+
+// bindingServer wires Enroll + Push so the handler-level binding + master-only gates
+// can be exercised with real scopes.
+func bindingServer(t *testing.T) (h http.Handler, push *PushManager, devTok, devID, guestTok string) {
+	t.Helper()
+	enroll := NewEnrollManager(nil, nil)
+	push = NewPushManager(nil, nil, nil, "Mac", nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Enroll:     enroll,
+		Push:       push,
+		AgentsJSON: func() ([]byte, error) { return []byte("[]"), nil },
+	})
+	dev, _ := enroll.Redeem(enroll.Mint(), "phone")
+	g := enroll.MintGuest("alice", []string{"%1"}, nil, 0)
+	return s.Handler(), push, dev.Token, dev.ID, g.Token
+}
+
+// Register binds the token to the CALLER's enrolled device (from the bearer token,
+// not the body), and revoking that device drops the token.
+func TestPushRegisterBindsAndRevokeDrops(t *testing.T) {
+	h, push, devTok, devID, _ := bindingServer(t)
+
+	if rr := post(t, h, "/api/push/register", devTok, `{"token":"apns-XYZ","platform":"ios"}`); rr.Code != http.StatusOK {
+		t.Fatalf("register = %d, want 200", rr.Code)
+	}
+	toks := push.Tokens()
+	if len(toks) != 1 || toks[0].DeviceID != devID {
+		t.Fatalf("token not bound to the caller's device: %+v (want deviceId %q)", toks, devID)
+	}
+	// Revoking the device drops its push token.
+	if rr := post(t, h, "/api/devices/revoke", testToken, `{"id":"`+devID+`"}`); rr.Code != http.StatusOK {
+		t.Fatalf("revoke = %d, want 200", rr.Code)
+	}
+	if got := len(push.Tokens()); got != 0 {
+		t.Fatalf("revoke left %d push token(s), want 0", got)
+	}
+}
+
+// The token store is MASTER-only: a device or guest is refused on tokens + forget.
+func TestPushTokensForgetMasterOnly(t *testing.T) {
+	h, _, devTok, _, guestTok := bindingServer(t)
+
+	if rr := do(t, h, http.MethodGet, "/api/push/tokens", testToken); rr.Code != http.StatusOK {
+		t.Fatalf("master GET /api/push/tokens = %d, want 200", rr.Code)
+	}
+	for _, tok := range []string{devTok, guestTok} {
+		if rr := do(t, h, http.MethodGet, "/api/push/tokens", tok); rr.Code != http.StatusForbidden {
+			t.Fatalf("non-master GET /api/push/tokens = %d, want 403", rr.Code)
+		}
+		if rr := post(t, h, "/api/push/forget", tok, `{"all":true}`); rr.Code != http.StatusForbidden {
+			t.Fatalf("non-master POST /api/push/forget = %d, want 403", rr.Code)
+		}
+	}
+}
+
+// GET /api/push/tokens never returns the full token — only a redacted prefix.
+func TestPushTokensRedacted(t *testing.T) {
+	h, _, devTok, _, _ := bindingServer(t)
+	_ = post(t, h, "/api/push/register", devTok, `{"token":"apns-SECRET-FULL-TOKEN-VALUE","platform":"ios"}`)
+	rr := do(t, h, http.MethodGet, "/api/push/tokens", testToken)
+	if strings.Contains(rr.Body.String(), "apns-SECRET-FULL-TOKEN-VALUE") {
+		t.Fatalf("GET /api/push/tokens leaked the full token: %s", rr.Body.String())
+	}
+}

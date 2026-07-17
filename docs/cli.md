@@ -397,6 +397,22 @@ roster. The terminal medium persists its token in `~/.config/gtmux/remotes.json`
 invalidates it instantly. The link carries the tunnel URL when `gtmux tunnel` is
 up, else a LAN address. `gtmux devices` remains as an alias of the roster.
 
+### `gtmux devices --push` / `--forget-push` — inspect + clean up push tokens
+
+```
+gtmux devices --push                       # roster annotated with each device's push
+                                           #   token (✓ env·kinds) + any UNLINKED tokens
+gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
+```
+
+Push tokens are bound to the enrolled device that registered them, so
+`gtmux devices revoke <id>` already stops that device's notifications. `--push`
+shows the binding; `--forget-push` clears tokens by selector — a device `id`,
+`orphans` (only UNLINKED legacy tokens, from before device-binding), or `all`. Use
+`orphans` to clear a stale token stranded from an old app that never unregistered
+(the "a removed phone keeps getting notifications" case). Host-only (the local
+master token); a remote device/guest is refused.
+
 ## `gtmux share` — scoped, revocable access for a collaborator
 
 ```

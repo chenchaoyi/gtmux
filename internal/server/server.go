@@ -222,6 +222,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/push/unregister", s.auth(http.HandlerFunc(s.handleUnregister)))
 	mux.Handle("/api/push/activity", s.auth(http.HandlerFunc(s.handleActivityRegister)))
 	mux.Handle("/api/push/test", s.auth(http.HandlerFunc(s.handleTest)))
+	mux.Handle("/api/push/tokens", s.auth(http.HandlerFunc(s.handleTokens)))
+	mux.Handle("/api/push/forget", s.auth(http.HandlerFunc(s.handleForget)))
 	// Browser-mirror web UI (view-only, unauthenticated static page). Registered
 	// at "/" so the specific /api/* patterns take precedence; this only ever serves
 	// non-API paths (index.html, app.js, style.css, vendor/*).

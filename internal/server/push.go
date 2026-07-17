@@ -22,6 +22,12 @@ type DeviceToken struct {
 	// Kinds the device wants ("waiting"/"done"). Empty = all (backward compat),
 	// so a device can opt out of e.g. "done" notifications.
 	Kinds []string `json:"kinds,omitempty"`
+	// DeviceID is the roster id of the enrolled device that registered this token —
+	// stamped server-side at register from the caller's own bearer token, NEVER the
+	// request body. Revoking that device drops the token (UnregisterByDevice); the
+	// CLI can inspect/clear by it. Empty = UNLINKED: a legacy token persisted before
+	// this field existed (kept working, cleared only via the "orphans" selector).
+	DeviceID string `json:"deviceId,omitempty"`
 }
 
 // wants reports whether this device wants a notification of the given kind.
@@ -128,6 +134,46 @@ func (p *PushManager) Unregister(token string) {
 	if had && p.save != nil {
 		p.save(snap)
 	}
+}
+
+// UnregisterByDevice drops EVERY token bound to an enrolled device id (a device may
+// have registered more than once across reinstalls), so revoking that device stops
+// its notifications without touching the on-disk store by hand. An empty id is a
+// no-op — a legacy revoke must NOT blanket-drop the unlinked (empty-id) tokens.
+// Persists only when something was removed. Returns the count removed.
+func (p *PushManager) UnregisterByDevice(deviceID string) int {
+	if deviceID == "" {
+		return 0
+	}
+	return p.forget(deviceID, false, false)
+}
+
+// Forget drops tokens by selector for the master-token cleanup surface:
+// a non-empty deviceID drops that device's tokens; orphans drops only UNLINKED
+// (empty-id) legacy tokens; all drops every token. Persists once if anything changed;
+// returns the count removed.
+func (p *PushManager) Forget(deviceID string, orphans, all bool) int {
+	return p.forget(deviceID, orphans, all)
+}
+
+func (p *PushManager) forget(deviceID string, orphans, all bool) int {
+	p.mu.Lock()
+	removed := 0
+	for tok, d := range p.tokens {
+		match := all ||
+			(orphans && d.DeviceID == "") ||
+			(deviceID != "" && d.DeviceID == deviceID)
+		if match {
+			delete(p.tokens, tok)
+			removed++
+		}
+	}
+	snap := p.snapshotLocked()
+	p.mu.Unlock()
+	if removed > 0 && p.save != nil {
+		p.save(snap)
+	}
+	return removed
 }
 
 // UnregisterActivity drops a Live Activity push token (the device removed this
@@ -317,6 +363,15 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
 		return
 	}
+	// Bind the token to the caller's OWN enrolled device (from the bearer token, not
+	// the body — a caller can't claim another device's id). Empty when the caller has
+	// no roster entry (e.g. the master token); such a token is treated as unlinked.
+	d.DeviceID = ""
+	if s.deps.Enroll != nil {
+		if dev, ok := s.deps.Enroll.DeviceByToken(bearerToken(r)); ok {
+			d.DeviceID = dev.ID
+		}
+	}
 	s.deps.Push.Register(d)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
@@ -350,6 +405,70 @@ func (s *Server) handleUnregister(w http.ResponseWriter, r *http.Request) {
 		s.deps.Push.UnregisterActivity(d.ActivityToken) // stop Live Activity updates + end the card
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// handleTokens implements GET /api/push/tokens — MASTER only. Returns the registered
+// push tokens REDACTED (a short prefix only, never the full secret) with their device
+// binding, so the Mac's own CLI can inspect + clean up the store. A device/guest is 403.
+func (s *Server) handleTokens(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) != scopeMaster {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: host-only"))
+		return
+	}
+	if s.deps.Push == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
+		return
+	}
+	type row struct {
+		DeviceID    string   `json:"deviceId,omitempty"`
+		TokenPrefix string   `json:"tokenPrefix"`
+		Platform    string   `json:"platform"`
+		Env         string   `json:"env,omitempty"`
+		Kinds       []string `json:"kinds,omitempty"`
+	}
+	out := make([]row, 0)
+	for _, d := range s.deps.Push.Tokens() {
+		out = append(out, row{DeviceID: d.DeviceID, TokenPrefix: redactToken(d.Token), Platform: d.Platform, Env: d.Env, Kinds: d.Kinds})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"tokens": out})
+}
+
+// handleForget implements POST /api/push/forget {deviceId|orphans|all} — MASTER only.
+// Drops the selected push tokens (deviceId → that device's; orphans → only UNLINKED
+// legacy tokens; all → every token) and persists. A device/guest is 403.
+func (s *Server) handleForget(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if callerScope(r.Context()) != scopeMaster {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: host-only"))
+		return
+	}
+	if s.deps.Push == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
+		return
+	}
+	var body struct {
+		DeviceID string `json:"deviceId"`
+		Orphans  bool   `json:"orphans"`
+		All      bool   `json:"all"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || (body.DeviceID == "" && !body.Orphans && !body.All) {
+		writeJSON(w, http.StatusBadRequest, errBody("give deviceId, orphans, or all"))
+		return
+	}
+	n := s.deps.Push.Forget(body.DeviceID, body.Orphans, body.All)
+	writeJSON(w, http.StatusOK, map[string]int{"forgotten": n})
+}
+
+// redactToken keeps only a short prefix of an APNs token — enough for a human to match
+// a row, never enough to push.
+func redactToken(t string) string {
+	if len(t) <= 10 {
+		return t
+	}
+	return t[:10] + "…"
 }
 
 // handleActivityRegister implements POST /api/push/activity — store a Live
