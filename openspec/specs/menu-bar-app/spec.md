@@ -267,11 +267,17 @@ a 远程访问/Remote-access section (the door: Off / Wi-Fi / Anywhere), a
 你的设备/Pair section, and a 分享/Share section — so "my own surfaces" and
 "collaborator access" never mix.
 
+The Remote-access section is the SHARED reachability door: BOTH paired (owner) devices
+AND shared (guest) collaborators reach the Mac through it, so it SHALL be its OWN
+section (not nested under the Pair roster) — its settings govern pair and share alike.
+
 When Anywhere is on, the Remote-access section SHALL surface which TUNNEL BACKEND is
 active (Standard = the zero-config hosted tunnel, vs Direct = the user's own VPS +
 domain), and — when Direct is configured on this Mac — SHALL offer a Standard | Direct
 switch that changes the backend, so the choice the CLI's `gtmux tunnel --backend`
-already exposes is not hidden behind an opaque "Anywhere".
+already exposes is not hidden behind an opaque "Anywhere". The backend governs both
+pair and share URLs (both ride the same tunnel), so it lives in the door section, not
+the Pair section.
 
 The Pair section SHALL list paired (owner-scope) devices — name, a kind icon,
 last-seen, and per-row revoke — plus a single "配对新设备/Pair a device" action

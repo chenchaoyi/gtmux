@@ -116,10 +116,12 @@ struct PreferencesView: View {
                 }
             }
 
-            // REMOTE ACCESS + PAIR are one story: the door (is this Mac reachable,
-            // and how) plus YOUR OWN devices that come through it. Keeping them in one
-            // section (a picker + the paired-device roster) reads as a single idea.
-            Section(l10n.tr("Remote access · your devices", "远程访问 · 我的设备")) {
+            // THE DOOR — is this Mac reachable, and how (mode + tunnel backend). It's a
+            // SHARED reachability layer: BOTH your own paired devices AND shared
+            // collaborators come through it, so it's its own section above Pair and
+            // Sharing — not nested under "your devices" (the tunnel Standard/Direct
+            // choice governs share links' URLs too, not just pair).
+            Section(l10n.tr("Remote access", "远程访问")) {
                 // The door: Off / Wi-Fi (free LAN) / Anywhere (Pro tunnel).
                 LabeledContent {
                     Picker("", selection: remoteModeBinding) {
@@ -137,13 +139,11 @@ struct PreferencesView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 tunnelBackendRow
                 connectedDevices
+            }
 
-                // Your paired devices (full control) — enrolled through the door above.
-                // No explicit Divider(): a grouped Form already hairlines each row, and
-                // an extra Divider renders as a stray empty row here.
-                Text(l10n.tr("PAIRED DEVICES", "已配对设备"))
-                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
-                    .padding(.top, 2)
+            // YOUR DEVICES (PAIR) — your own phone / browser / terminal, full control.
+            // They reach the Mac through the door above.
+            Section(l10n.tr("Your devices · Pair", "我的设备 · 配对")) {
                 pairSection
             }
 
