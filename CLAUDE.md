@@ -178,6 +178,18 @@ in the **same PR**:
    `## gtmux <cmd>` section in `docs/cli.md`, and — if it adds/changes an HTTP surface —
    `api/contract.md`. (This rule exists because `attach` once shipped absent from the
    usage + `docs/cli.md`.)
+5. **Docs conformance (enforced, with a stated boundary)** — `check-design.sh` now also
+   checks the docs claims that HAVE a machine-readable source: every wake class must be
+   taught in BOTH `docs/cli.md`'s class table and the seeded playbook (a class taught in
+   neither is a knock HQ's charter never mentions — `usage·warn` and `stuck·waiting` did
+   exactly that for months); retired tokens must not return (each denylist entry names the
+   change that retired it; `openspec/changes/**` is excluded so a proposal can quote what
+   it retires). Doc examples of code-generated formats are marked
+   `<!-- gtmux:rendered <id> -->` and compared against the real builder by
+   `internal/docs` — `make docs-fix` rewrites them; never hand-copy a rendered line.
+   **The boundary is part of the rule:** none of this checks whether prose is TRUE. "The
+   `done` wake fires for any session" is a sentence no grep can falsify, and a green gate
+   is NOT a reviewed doc — that judgment stays a reviewer's, exactly as before.
 
 **Historical consistency (the spec lifecycle is not optional).** propose →
 implement → **sync-specs + archive-change**. The moment a change in

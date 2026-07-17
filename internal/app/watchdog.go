@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -37,7 +38,12 @@ func watchdogSweep(now int64) {
 		}
 		_ = state.Touch(watchdogMarker(p.paneID))
 		mins := (now - since) / 60
-		msg := fmt.Sprintf("[gtmux] stuck·waiting %s (%s) — waited %dm, still needs you", p.loc, p.paneID, mins)
+		// The line was hand-built in the pre-hq-perception-v2 format for months: the
+		// delivery was always draft-guarded, but HQ received a shape its playbook does
+		// not teach, and PriorityOf could not read a class out of it — so an escalation
+		// queued as a default-priority outcome.
+		msg := hqwake.Line(hqwake.ClassStuckWaiting, fmt.Sprintf("%s (%s)", p.loc, p.paneID),
+			fmt.Sprintf("waited %dm, still needs you", mins))
 		hqnudge.Deliver(hq, msg) // draft/copy-mode-guarded like every HQ injection
 	}
 }

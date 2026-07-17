@@ -16,14 +16,13 @@ the user is shown anything about it.
 - **WHEN** a QUIET-tier event (e.g. a resolved wait, a send-landed confirmation, a
   working tick) occurs and an HQ pane is live
 - **THEN** HQ receives it through the silent feed and gtmux does NOT type a visible
-  `[gtmux] …` line for it into the HQ pane
+  `» gtmux·<class>` wake line for it into the HQ pane
 
 #### Scenario: HQ omniscience is decoupled from user surfacing
 
 - **WHEN** any event occurs while an HQ pane is live
 - **THEN** the event is delivered to HQ regardless of surfacing tier, and only a
   CRITICAL/NORMAL judgment by HQ produces user-visible output
-
 ### Requirement: Perception feed daemon
 
 The system SHALL provide a gtmux-managed, LLM-free perception daemon (`gtmux hq-feed`)

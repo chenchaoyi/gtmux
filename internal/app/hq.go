@@ -51,7 +51,11 @@ import (
 //	     not HQ's model of the world. v3 and earlier called `important` "the attention
 //	     stream" while user instructions sat in `routine` — an HQ obeying its own
 //	     playbook could not see them.
-const hqPlaybookVersion = 4
+//	v5 — docs-drift-guard: `usage·warn` and `stuck·waiting` join the vocabulary. Both
+//	     had been injected all along by paths that hand-built the retired format — one of
+//	     them bypassing the wake channel entirely — so no playbook ever taught the classes
+//	     HQ was already receiving.
+const hqPlaybookVersion = 5
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -635,7 +639,9 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   NEVER read as done; check + escalate) · ` + "`goal-changed`" + ` (user-direct dispatch —
   record ` + "`user-direct`" + `, don't chase with a stale ledger) · ` + "`new-session`" + `
   (enroll it — below) · ` + "`reap-suggest`" + ` (propose ` + "`gtmux reap`" + `, run only if
-  approved) · ` + "`resource·warn` / `limits·warn`" + ` · ` + "`feed-degraded`" + ` (perception
+  approved) · ` + "`stuck·waiting`" + ` (a pane has waited on the user past the timeout —
+  escalate it) · ` + "`resource·warn` / `limits·warn` / `usage·warn`" + ` (a machine,
+  subscription, or session-usage threshold crossed) · ` + "`feed-degraded`" + ` (perception
   outage — surface at once, NEVER quieted) · ` + "`wake-degraded`" + ` (the KNOCK itself is
   not landing — you may have missed wakes; reconcile by PULL, ` + "`gtmux digest --json`" + `
   + the event delta, and surface it) · ` + "`tick`" + ` (summary due — emit ONE brief).
