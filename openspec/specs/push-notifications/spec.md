@@ -43,6 +43,23 @@ removes a paired Mac.
 - **AND** the server drops the activity token and pushes a Live Activity `end`
 - **AND** the server no longer sends lock-screen tally updates for that device
 
+### Requirement: Live Activity survives a serve restart
+
+The app SHALL re-assert its CURRENT Live Activity push token whenever it (re)connects to
+the serve, so lock-screen updates survive a serve restart without relaunching the app.
+The serve keeps Live Activity tokens IN MEMORY (per-activity/ephemeral, not persisted
+like device tokens), so a restart drops them; and the OS fires the push-token callback
+only on a token CHANGE, which a restart is not — so without this re-assert an ongoing
+activity would go stale. A restart drops and reopens the SSE stream, so the connection
+goes offline → live, which is the trigger.
+
+#### Scenario: Serve restart, then reconnect
+
+- **WHEN** the serve restarts (e.g. after `gtmux update`), dropping its in-memory Live
+  Activity token, and the app's connection returns to live
+- **THEN** the app re-POSTs its current Live Activity token to `POST /api/push/activity`,
+  and lock-screen tally updates resume — no app relaunch needed
+
 ### Requirement: Server-derived alerts drive push
 
 The system SHALL derive `waiting`/`done` alerts from its own ~1.5s diff loop (not

@@ -153,7 +153,7 @@ export function AgentsProvider({
   }, [conn]);
 
   // Forward the Live Activity push token to this Mac so the relay can keep the
-  // lock screen live with the app closed. Re-register only on a token change.
+  // lock screen live with the app closed. The OS fires onPushToken on a token CHANGE.
   const lastActivityToken = useRef<string>('');
   useEffect(() => {
     const unsub = LiveActivity.onPushToken(tok => {
@@ -163,6 +163,18 @@ export function AgentsProvider({
     });
     return unsub;
   }, [client]);
+
+  // A serve RESTART drops the serve's in-memory Live Activity token (it isn't
+  // persisted like device push tokens), yet the OS only re-fires onPushToken on a
+  // token CHANGE — which a restart is not — so an ongoing Live Activity would go
+  // stale until the app is relaunched. Re-assert the current token whenever the
+  // connection comes (back) up (a restart drops+reopens the SSE → conn goes
+  // offline→live), so a serve restart auto-recovers. Idempotent server-side.
+  useEffect(() => {
+    if (conn === 'live' && lastActivityToken.current) {
+      client.registerActivityToken(lastActivityToken.current, apnsEnv()).catch(() => {});
+    }
+  }, [conn, client]);
 
   // Resolve the caller's scope authoritatively from GET /api/share (all:true ⇒
   // owner). Re-reads when the client changes and on every successful agents refresh
