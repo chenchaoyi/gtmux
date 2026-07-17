@@ -1,11 +1,17 @@
 package hook
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -52,6 +58,37 @@ func TestNudgeSupervisorNoop(t *testing.T) {
 	}
 }
 
+// An HQ that doesn't resolve RIGHT NOW is not the same as no HQ: if one was seen
+// recently, the wake is HELD for the next drain rather than dropped. Dropping it was
+// how a restarting HQ pane (or any resolution hiccup) silently ate events.
+func TestNudgeHQ_HoldsWhenAnHQWasSeenRecently(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// This machine has never run a supervisor → there is nothing to hold a wake for.
+	nudgeHQ("%1", "» gtmux·done  %1 │ nobody is listening")
+	if hqnudge.Pending() {
+		t.Fatal("with no supervisor ever seen, a wake must not accumulate on disk")
+	}
+	// An HQ resolved a moment ago, and now doesn't → hold it.
+	stampHQSeen(t)
+	if !nudgeHQ("%1", "» gtmux·done  %1 │ hold me") {
+		t.Fatal("a wake for a momentarily unresolvable HQ must be held, not dropped")
+	}
+	if !hqnudge.Pending() {
+		t.Fatal("the held wake should be queued for the next drain")
+	}
+}
+
+// stampHQSeen records a successful HQ resolution, as hqpane does when it finds one.
+func stampHQSeen(t *testing.T) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(hqpane.SeenStampPath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(hqpane.SeenStampPath(), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // goalChangedLine marks the user-authored prompt head as DATA (goal:"…") in the
 // wake signal format.
 func TestGoalChangedLine(t *testing.T) {
@@ -66,20 +103,75 @@ func TestGoalChangedLine(t *testing.T) {
 	}
 }
 
-// nudgeGoalChanged dedups per pane on the head, and is a silent no-op with no HQ.
+// nudgeGoalChanged dedups per pane on a prompt fingerprint, and is a silent no-op
+// with no HQ.
 func TestNudgeGoalChanged_DedupAndNoop(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	// No HQ pane → no-op, and no marker is written (we only record a nudge that fired).
+	// No HQ pane → no-op, and no dedup record is written (we only record a nudge that
+	// fired) — but the pane's GOAL is recorded either way; a done wake reads it back.
 	nudgeGoalChanged("%7", "first prompt")
 	if state.ReadMarker(goalChangedMarker("%7")) != "" {
 		t.Errorf("no-HQ nudge must not write a dedup marker")
 	}
-	// A pre-seeded marker equal to the head short-circuits before any tmux work.
-	_ = state.WriteMarker(goalChangedMarker("%7"), "same head")
-	nudgeGoalChanged("%7", "same head") // must not panic; returns at the dedup check
+	if got := state.ReadMarker(goalMarker("%7")); got != "first prompt" {
+		t.Errorf("the pane's goal is recorded regardless of HQ; got %q", got)
+	}
+	// A pre-seeded record for the same prompt short-circuits before any tmux work.
+	stampGoalWaked(t, "%7", "same prompt", time.Now().Unix())
+	nudgeGoalChanged("%7", "same prompt") // must not panic; returns at the dedup check
 	// Distinct panes have distinct markers.
 	if goalChangedMarker("%7") == goalChangedMarker("%8") {
 		t.Errorf("goal-changed marker must be per-pane")
+	}
+}
+
+// stampGoalWaked writes the dedup record a fired wake would have left.
+func stampGoalWaked(t *testing.T, pane, goal string, ts int64) {
+	t.Helper()
+	sum := sha256.Sum256([]byte(goal))
+	rec, err := json.Marshal(goalRecord{Hash: hex.EncodeToString(sum[:]), TS: ts})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := state.WriteMarker(goalChangedMarker(pane), string(rec)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The dedup absorbs a doubled submission — it must NOT decide that a user who
+// repeats an instruction means nothing. Before the TTL, typing `继续` into a pane a
+// second time (an hour later, a day later) reached HQ as silence, forever.
+func TestGoalWaked_FingerprintWithTTL(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	sum := sha256.Sum256([]byte("继续"))
+	hash := hex.EncodeToString(sum[:])
+
+	stampGoalWaked(t, "%7", "继续", now)
+	if !goalWaked("%7", hash, now) {
+		t.Error("the same prompt inside the window is one submission, not two")
+	}
+	if goalWaked("%7", hash, now+int64(goalDedupTTL.Seconds())+1) {
+		t.Error("past the window the same instruction is a NEW event — it must wake HQ")
+	}
+	// A different prompt sharing the same 40-rune head is a different instruction:
+	// the fingerprint is over the FULL prompt, so it must not be swallowed.
+	long := strings.Repeat("a", 60)
+	stampGoalWaked(t, "%8", long+"one", now)
+	other := sha256.Sum256([]byte(long + "two"))
+	if goalWaked("%8", hex.EncodeToString(other[:]), now) {
+		t.Error("two prompts sharing an opening are two instructions")
+	}
+}
+
+// A legacy plain-text marker (the pre-fingerprint format) must degrade to "not
+// waked" — one extra wake on upgrade, never a swallowed one.
+func TestGoalWaked_LegacyMarkerDegrades(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	_ = state.WriteMarker(goalChangedMarker("%7"), "build the parser")
+	sum := sha256.Sum256([]byte("build the parser"))
+	if goalWaked("%7", hex.EncodeToString(sum[:]), time.Now().Unix()) {
+		t.Error("an unparseable legacy marker must never suppress a wake")
 	}
 }
 
@@ -149,14 +241,20 @@ func TestWakeDoneNoop(t *testing.T) {
 	wakeDone("%5", "all green", 0) // must not panic without tmux/HQ
 }
 
-// doneGoal falls back to the pane's last user-direct prompt head.
+// doneGoal falls back to the pane's last user-direct prompt — from the GOAL marker,
+// not the goal-changed dedup record (whose TTL would otherwise expire the goal too).
 func TestDoneGoalFallback(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	if g := doneGoal("%6"); g != "" {
 		t.Fatalf("no ledger, no marker → empty goal, got %q", g)
 	}
-	_ = state.WriteMarker(goalChangedMarker("%6"), "build the parser")
+	_ = state.WriteMarker(goalMarker("%6"), "build the parser")
 	if g := doneGoal("%6"); g != "build the parser" {
 		t.Fatalf("goal fallback = %q", g)
+	}
+	// The dedup record expiring must not take the goal with it.
+	stampGoalWaked(t, "%6", "build the parser", time.Now().Unix()-int64(goalDedupTTL.Seconds())-1)
+	if g := doneGoal("%6"); g != "build the parser" {
+		t.Fatalf("an expired dedup window must not erase the pane's goal; got %q", g)
 	}
 }

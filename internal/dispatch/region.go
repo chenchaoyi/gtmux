@@ -18,11 +18,11 @@ import (
 // is false when no input box is locatable (a plain shell, a full-screen view): the
 // caller then cannot confirm the box is empty and MUST NOT type into it.
 func DraftOf(capture string) (draft string, structured bool) {
-	_, draft, structured = splitInputRegion(capture)
+	_, draft, structured = SplitInputRegion(capture)
 	return draft, structured
 }
 
-// splitInputRegion divides a full-screen capture into the HISTORY region (the
+// SplitInputRegion divides a full-screen capture into the HISTORY region (the
 // conversation transcript, above the input box) and the DRAFT region (what sits in
 // the input box, not yet submitted). Most agent TUIs (Claude Code, Codex) draw a
 // box around the input; its top/bottom borders are the structural separator, so
@@ -38,7 +38,11 @@ func DraftOf(capture string) (draft string, structured bool) {
 // found. When false, the capture has no locatable draft (e.g. a plain shell prompt),
 // so a caller MUST NOT treat an empty draft as a fragment — there's nothing to
 // destroy-and-retry; post-submit verification decides instead.
-func splitInputRegion(capture string) (history, draft string, structured bool) {
+//
+// Exported because the HQ wake channel's ack needs the same distinction: a batch id
+// found in the DRAFT means the paste landed but the Enter did not — the opposite of
+// delivered.
+func SplitInputRegion(capture string) (history, draft string, structured bool) {
 	lines := strings.Split(capture, "\n")
 	// Find the bottom border: the last box-border line in the capture.
 	bottom := -1

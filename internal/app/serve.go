@@ -157,6 +157,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		UsageJSON: usageJSONBytes,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
 		OnSlowTick: slowTickEval,
+		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
+		// lands within seconds of the box clearing, not on the sampling cadence.
+		OnFastTick: drainHQNudges,
 		// The approval card's options are gated on the hook waiting marker, not screen
 		// text (an idle pane showing a numbered list must not surface an approval menu).
 		IsWaiting:  func(id string) bool { return state.Exists(state.WaitingPath(id)) },

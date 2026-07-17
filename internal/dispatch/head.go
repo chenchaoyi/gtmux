@@ -44,11 +44,15 @@ func NormalizeHead(s string) string {
 	return string(rs)
 }
 
-// containsHead reports whether haystack contains the normalized head of needle.
+// ContainsHead reports whether haystack contains the normalized head of needle.
 // The haystack is space-normalized but NOT truncated (only the needle is reduced to
 // its head), so a fingerprint that would fall past the haystack's own 40-rune cut
 // still matches. An empty head never matches (a blank delivery matches nothing).
-func containsHead(haystack, needle string) bool {
+//
+// Exported because the HQ wake channel acks its own deliveries with it (hqnudge
+// matches the batch id against the pane capture) — one definition of "did this text
+// reach the screen", shared with Deliver's fallback.
+func ContainsHead(haystack, needle string) bool {
 	head := NormalizeHead(needle)
 	if head == "" {
 		return false

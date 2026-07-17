@@ -47,6 +47,11 @@ const (
 const (
 	ControlReconcile    = "gtmux:reconcile"
 	ControlFeedDegraded = "gtmux:feed-degraded"
+	// ControlWakeDegraded reports that the WAKE side is broken — knocks are queued
+	// but never confirmed on HQ's screen. Its twin above covers the pull side going
+	// dark; this covers the push side, and it must reach the pull stream precisely
+	// because the channel that would otherwise announce it is the one that failed.
+	ControlWakeDegraded = "gtmux:wake-degraded"
 	ControlSelfCheck    = "gtmux:self-check"
 )
 

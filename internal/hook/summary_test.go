@@ -1,6 +1,9 @@
 package hook
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestClassifyReply(t *testing.T) {
 	cases := []struct {
@@ -64,6 +67,34 @@ func TestEventSummary_DropsInjectedPrompt(t *testing.T) {
 		if sum, _ := eventSummary("UserPromptSubmit", in, "", "", "claude"); sum != "" {
 			t.Errorf("injected prompt %q should yield no summary, got %q", in, sum)
 		}
+	}
+}
+
+// goalOf decides what a submission MEANS for the goal-changed wake. The slash case is
+// the one the event summary cannot express: no prose, but the user acted.
+func TestGoalOf(t *testing.T) {
+	cases := []struct{ name, in, want string }{
+		{"typed prose", "cut a new release", "cut a new release"},
+		{"slash command", "<command-name>/compact</command-name>", "(slash-command) /compact"},
+		{"slash, unreadable name", "<command-name>", "(slash-command)"},
+		{"harness injection", "<system-reminder>context low</system-reminder>", ""},
+		{"our own wake line", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, ""},
+		{"legacy nudge echo", `[gtmux] goal-changed gtmux:0 (%20) — goal:"x"`, ""},
+		{"empty", "  ", ""},
+	}
+	for _, c := range cases {
+		if got := goalOf(c.in); got != c.want {
+			t.Errorf("%s: goalOf(%q) = %q, want %q", c.name, c.in, got, c.want)
+		}
+	}
+}
+
+// The goal-changed payload is the FULL prompt, not the event summary's 40-rune head:
+// the head exists for dispatch matching, and the wake clamps for display itself.
+func TestGoalOf_KeepsTheFullPromptForFingerprinting(t *testing.T) {
+	long := strings.Repeat("ship ", 20)
+	if got := goalOf(long); got != strings.TrimSpace(long) {
+		t.Errorf("goalOf must not truncate; got %q", got)
 	}
 }
 

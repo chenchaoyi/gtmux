@@ -10,6 +10,8 @@
 package hook
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -61,30 +64,43 @@ func clampData(s string, max int) string {
 }
 
 // findSupervisorPane returns a live hq pane other than aboutPane itself ("" when
-// none / aboutPane IS the supervisor). Cwd-keyed, matching the radar's role
-// detection.
+// none / aboutPane IS the supervisor). The resolution rule lives in hqpane, shared
+// with the serve tick — the `@gtmux_hq_home` stamp, then symlink-normalized
+// cwd/start path.
 func findSupervisorPane(aboutPane string) string {
-	home := state.HQHome()
-	for _, line := range tmux.Lines("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_path}") {
-		f := strings.SplitN(line, "\t", 2)
-		if len(f) != 2 || f[1] != home {
-			continue
-		}
-		if f[0] == aboutPane {
-			return "" // the supervisor itself — never self-wake
-		}
-		return f[0]
+	pane, _ := hqpane.FindOther(aboutPane)
+	return pane
+}
+
+// wakeTarget answers "should a wake about aboutPane be built, and where does it go":
+//
+//   - (pane, true) — deliver it there;
+//   - ("", true)   — HOLD it: no HQ resolves right now, but one was seen within
+//     hqpane.SeenWindow, so it is queued for the next drain that finds one (a
+//     restarting HQ pane, a tmux hiccup, a resolution bug we haven't found);
+//   - ("", false)  — stay silent: the channel is off, the event is about HQ itself,
+//     or this machine has never run a supervisor and so has nothing to hold it for.
+//
+// Callers check `ok` BEFORE building the line: with no HQ, the wake path must cost
+// nothing — not a capture, not a `display-message`.
+func wakeTarget(aboutPane string) (target string, ok bool) {
+	if aboutPane == "" || !hqNudgeEnabled() {
+		return "", false
 	}
-	return ""
+	target, self := hqpane.FindOther(aboutPane)
+	if self {
+		return "", false // never wake HQ about HQ
+	}
+	if target == "" && !hqpane.SeenRecently() {
+		return "", false
+	}
+	return target, true
 }
 
 // nudgeSupervisor is the entry the hook calls on a fresh Waiting decision.
 func nudgeSupervisor(waitingPane, kind string) {
-	if waitingPane == "" || !hqNudgeEnabled() {
-		return
-	}
-	target := findSupervisorPane(waitingPane)
-	if target == "" {
+	target, ok := wakeTarget(waitingPane)
+	if !ok {
 		return
 	}
 	class := hqwake.ClassWaiting
@@ -95,18 +111,29 @@ func nudgeSupervisor(waitingPane, kind string) {
 	if t := clampData(tmux.Display(waitingPane, "#{pane_title}"), 80); t != "" {
 		title = `title:"` + t + `"` // agent-authored → marked DATA, not an instruction
 	}
-	hqnudge.Deliver(target, hqwake.Line(class, wakeHead(waitingPane), title))
-	debugf("waked supervisor pane=%s about=%s kind=%s", target, waitingPane, kind)
+	deliverWake(target, hqwake.Line(class, wakeHead(waitingPane), title))
 }
 
-// nudgeHQ types one wake line into a live supervisor pane about aboutPane, gated
-// on hqNudge + a live HQ (that isn't aboutPane itself).
-func nudgeHQ(aboutPane, msg string) {
-	if aboutPane == "" || !hqNudgeEnabled() {
-		return
+// nudgeHQ types one wake line into a live supervisor pane about aboutPane, gated on
+// hqNudge + an HQ that isn't aboutPane itself. It reports whether the wake went
+// anywhere (delivered or held) — callers with their own dedup state use it to avoid
+// recording a wake that never happened.
+func nudgeHQ(aboutPane, msg string) bool {
+	target, ok := wakeTarget(aboutPane)
+	if !ok {
+		return false
 	}
-	target := findSupervisorPane(aboutPane)
+	deliverWake(target, msg)
+	return true
+}
+
+// deliverWake types msg into an already-resolved supervisor pane, or queues it when
+// the caller's wakeTarget said to hold. For callers that resolved the target
+// themselves (and so must not pay for a second list-panes).
+func deliverWake(target, msg string) {
 	if target == "" {
+		hqnudge.Enqueue(msg)
+		debugf("held wake for an unresolved HQ: %s", msg)
 		return
 	}
 	hqnudge.Deliver(target, msg) // draft-guarded: queues behind a half-typed HQ draft
@@ -141,11 +168,8 @@ func nudgeAsking(pane, summary string) {
 // completion inside the merge window REPLACES the queued line (newest payload) and
 // delivers when the window closes.
 func wakeDone(pane, tail string, turnStart int64) {
-	if pane == "" || !hqNudgeEnabled() {
-		return
-	}
-	target := findSupervisorPane(pane)
-	if target == "" {
+	target, ok := wakeTarget(pane)
+	if !ok {
 		return
 	}
 	cfg := hqwake.Load()
@@ -168,22 +192,26 @@ func wakeDone(pane, tail string, turnStart int64) {
 	fields = append(fields, hqwake.PullHint(now, 0))
 	line := hqwake.Line(hqwake.ClassDone, wakeHead(pane), fields...)
 
-	if due, dueAt := hqwake.DoneDue(pane, now, cfg.PaneMinGapSec); due {
-		hqnudge.Deliver(target, line)
+	switch due, dueAt := hqwake.DoneDue(pane, now, cfg.PaneMinGapSec); {
+	case due:
+		deliverWake(target, line)
 		hqwake.StampDone(pane, now)
-	} else {
+	case target != "":
 		// Inside the merge window: replace the queued line; it types when due.
 		hqnudge.DeliverKeyedAt(target, "done-"+pane, line, dueAt*int64(time.Second))
+	default:
+		hqnudge.Enqueue(line) // no live HQ to merge against — hold the line as-is
 	}
 }
 
 // doneGoal resolves the finished session's goal: the dispatch ledger for a tracked
-// task, else the last user-direct prompt head (the goal-changed dedup marker).
+// task, else the pane's last user-direct prompt (its own marker — NOT the
+// goal-changed dedup record, whose TTL would otherwise expire the goal too).
 func doneGoal(pane string) string {
 	if t, ok := dispatch.TaskForPane(pane); ok && strings.TrimSpace(t.Goal) != "" {
 		return t.Goal
 	}
-	return state.ReadMarker(goalChangedMarker(pane))
+	return state.ReadMarker(goalMarker(pane))
 }
 
 // fmtTurnDur renders a short human turn duration ("45s" / "3m" / "1h12m").
@@ -261,31 +289,70 @@ func StampEnrolledAll() {
 	}
 }
 
-// goalChangedMarker dedups the goal-changed wake per pane on the prompt head, and
-// doubles as the pane's last user-direct goal (the done wake reads it back).
+// goalChangedMarker holds the goal-changed DEDUP record for a pane (a fingerprint of
+// the prompt plus when it was waked) — nothing else reads it.
 func goalChangedMarker(pane string) string {
 	return filepath.Join(state.Dir(), "goalchanged", pane)
+}
+
+// goalMarker holds the pane's last user-direct goal, which the done wake reads back.
+// It is deliberately SEPARATE from the dedup record (hq-wake-reliability): the two
+// were one file, so the dedup could not be given an expiry without churning the goal.
+func goalMarker(pane string) string { return filepath.Join(state.Dir(), "goal", pane) }
+
+// goalDedupTTL is how long an identical prompt is treated as a duplicate submission
+// rather than a new instruction. The dedup exists to absorb a hook firing twice for
+// one submission — NOT to decide that a user who repeats themselves means nothing.
+// Before this window existed the marker never expired, so typing `继续` into a pane a
+// second time (an hour later, a day later) reached HQ as silence.
+const goalDedupTTL = 5 * time.Minute
+
+// goalRecord is the dedup marker's payload.
+type goalRecord struct {
+	Hash string `json:"hash"` // sha256 of the FULL cleaned prompt, hex
+	TS   int64  `json:"ts"`   // when the wake for it fired (unix seconds)
+}
+
+// goalStoreMax bounds the goal text kept on disk (the wake clamps it far shorter).
+const goalStoreMax = 400
+
+// goalWaked reports whether this exact prompt already waked HQ for this pane inside
+// the dedup window. The fingerprint is over the FULL prompt, not the 40-rune head, so
+// two different instructions that happen to share an opening are two wakes. A legacy
+// plain-text marker (the pre-fingerprint format) fails to parse and reads as "not
+// waked" — one extra wake, once, on upgrade.
+func goalWaked(pane, hash string, now int64) bool {
+	var rec goalRecord
+	if json.Unmarshal([]byte(state.ReadMarker(goalChangedMarker(pane))), &rec) != nil {
+		return false
+	}
+	return rec.Hash == hash && now-rec.TS < int64(goalDedupTTL.Seconds())
 }
 
 // nudgeGoalChanged tells HQ the user submitted a NEW prompt DIRECTLY into a non-HQ
 // pane (dual-channel dispatch): the user dispatches via HQ OR straight into an agent
 // window, and HQ must sense the latter so it records a user-direct task instead of
-// chasing a stale ledger. Deduped per pane on the prompt head; the head is user
-// text → delivered as DATA (goal:"…"). Always fires (no producer-side suppression).
-func nudgeGoalChanged(pane, head string) {
-	head = strings.TrimSpace(head)
-	if pane == "" || head == "" || !hqNudgeEnabled() {
+// chasing a stale ledger. Deduped per pane on a prompt fingerprint with a TTL; the
+// goal is user text → delivered as DATA (goal:"…").
+func nudgeGoalChanged(pane, goal string) {
+	goal = strings.TrimSpace(goal)
+	if pane == "" || goal == "" || !hqNudgeEnabled() {
 		return
 	}
-	if state.ReadMarker(goalChangedMarker(pane)) == head {
-		return // same prompt head already waked
+	// The goal is the pane's, whether or not anything is listening: a `done` wake
+	// minutes from now reads it back, and by then an HQ may well be live.
+	_ = state.WriteMarker(goalMarker(pane), clampData(goal, goalStoreMax))
+
+	sum := sha256.Sum256([]byte(goal))
+	hash, now := hex.EncodeToString(sum[:]), time.Now().Unix()
+	if goalWaked(pane, hash, now) {
+		return // the same prompt, again, inside the window — one submission, one wake
 	}
-	target := findSupervisorPane(pane)
-	if target == "" {
-		return
+	if !nudgeHQ(pane, goalChangedLine(wakeHead(pane), goal)) {
+		return // nothing fired — don't record a wake that never happened
 	}
-	_ = state.WriteMarker(goalChangedMarker(pane), head)
-	hqnudge.Deliver(target, goalChangedLine(wakeHead(pane), head))
+	rec, _ := json.Marshal(goalRecord{Hash: hash, TS: now})
+	_ = state.WriteMarker(goalChangedMarker(pane), string(rec))
 }
 
 // goalChangedLine builds the dual-channel wake, marking the user-authored prompt

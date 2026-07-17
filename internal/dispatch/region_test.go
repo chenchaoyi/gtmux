@@ -13,7 +13,7 @@ func TestSplitInputRegion_Box(t *testing.T) {
 		"│ ❯ my draft text here          │",
 		"╰──────────────────────────────╯",
 	}, "\n")
-	history, draft, structured := splitInputRegion(cap)
+	history, draft, structured := SplitInputRegion(cap)
 	if !structured {
 		t.Fatalf("a box input must be structured")
 	}
@@ -32,7 +32,7 @@ func TestSplitInputRegion_EmptyDraftBox(t *testing.T) {
 		"│ ❯                             │",
 		"╰──────────────────────────────╯",
 	}, "\n")
-	history, draft, structured := splitInputRegion(cap)
+	history, draft, structured := SplitInputRegion(cap)
 	if !structured {
 		t.Fatalf("a box input must be structured")
 	}
@@ -46,7 +46,7 @@ func TestSplitInputRegion_EmptyDraftBox(t *testing.T) {
 
 func TestSplitInputRegion_NoBoxDegradesToPrompt(t *testing.T) {
 	cap := "line one\nline two\n❯ typed text"
-	history, draft, structured := splitInputRegion(cap)
+	history, draft, structured := SplitInputRegion(cap)
 	if !structured {
 		t.Fatalf("a ❯ prompt must be structured")
 	}
@@ -62,7 +62,7 @@ func TestSplitInputRegion_PlainShellIsUnstructured(t *testing.T) {
 	// A bare shell prompt has no locatable input region → structured=false, so the
 	// deliver guard won't wipe the pasted text as a "fragment".
 	cap := "user@host project % echo hello world"
-	_, draft, structured := splitInputRegion(cap)
+	_, draft, structured := SplitInputRegion(cap)
 	if structured {
 		t.Fatalf("a plain shell prompt should be unstructured")
 	}

@@ -250,6 +250,16 @@ orphanRssMB 300). A resource block rides `GET /api/usage`; the serve tick emits 
 `resource·warn` nudge to HQ (single-writer — one per crossing); `gtmux hq`/`new`
 warn at a red line before adding load.
 
+The **warning** is damped three ways so a value sitting on a threshold can't
+re-alert (the readout stays raw — `gtmux resource` always reports what it measured):
+
+| key | default | what it does |
+|---|---|---|
+| `diskHysteresisGB` | 2 | GB of headroom above the entry line before a disk tier clears (red at <15 GB clears at ≥17) |
+| `loadHysteresis` | 0.15 | load÷cores below the entry line before a load tier clears (amber at ≥1.0 clears below 0.85) |
+| `confirmSamples` | 3 | consecutive agreeing samples before a tier change is believed |
+| `minRestateMinutes` | 30 | quiet period before the same tier warns again — an escalation to a worse tier is exempt and always warns |
+
 ## `gtmux limits` — real subscription-window remaining
 
 ```

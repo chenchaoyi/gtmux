@@ -139,8 +139,8 @@ func Deliver(io IO, opts Opts, text string) Result {
 		// stayed silent past the grace; the latter also covers a swallowed Enter for a
 		// hook agent, since no submit event will ever arrive for an unsent draft).
 		if !opts.HookEquipped || io.Now()-start >= opts.HookGrace {
-			history, draft, _ := splitInputRegion(screen)
-			landed := !containsHead(draft, text) && containsHead(history, text)
+			history, draft, _ := SplitInputRegion(screen)
+			landed := !ContainsHead(draft, text) && ContainsHead(history, text)
 			inDraft := draftHasDelivery(draft, text)
 			// Only a verdict that AGREES with the previous frame is trusted (defeats the
 			// single-frame ctx%/compact-bar misread, incident ⑩).
@@ -179,7 +179,7 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 		if err := io.Paste(text); err != nil {
 			return false
 		}
-		_, draft, structured := splitInputRegion(io.Capture())
+		_, draft, structured := SplitInputRegion(io.Capture())
 		if draftHasDelivery(draft, text) {
 			return true
 		}
@@ -208,7 +208,7 @@ func exitCopyMode(io IO) {
 // lines]"), which stands in for a large paste the agent folded. A mere prefix (the
 // "cl" fragment) matches neither.
 func draftHasDelivery(draft, text string) bool {
-	return containsHead(draft, text) || looksCollapsedPaste(draft)
+	return ContainsHead(draft, text) || looksCollapsedPaste(draft)
 }
 
 // looksCollapsedPaste reports whether a draft shows a folded large-paste placeholder.

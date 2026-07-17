@@ -25,6 +25,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/hook"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -41,7 +42,10 @@ import (
 //	v2 — hq-perception-v2: wake protocol (pull-on-wake, no background tail),
 //	     signal register, enrollment (建联) dossiers, graded done judgment,
 //	     tick briefs; legacy CLAUDE.md-only homes are now migrated.
-const hqPlaybookVersion = 2
+//	v3 — hq-wake-reliability: delivery is acked + retried, so a wake line can now
+//	     arrive TWICE — every batch ends with `#<id>` and a repeat is a re-send to
+//	     ignore. Adds the `wake-degraded` class and the `(slash-command)` goal.
+const hqPlaybookVersion = 3
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -387,19 +391,11 @@ Add topic files as needed. 主动学习、持续更新、用时调取。
 	"environment.md":    "# Environment / network\n\n_gtmux applies a proxy to an agent launch ONLY when you configure one explicitly — it never probes the network or assumes any proxy tool. Set it with `gtmux config agent-proxy <url>|off`, or the `GTMUX_AGENT_PROXY` env var (overrides config — handy to wire to a network switch)._\n\n- no proxy (the default) — a network that reaches the model API directly.\n- a proxy URL — a network where a direct launch is blocked and must go through an HTTP proxy.\n\n**The proxy (when set) covers ONLY gtmux's OWN launch path** (`gtmux spawn` / `hq` / `adopt` / `restore`). A hand-typed `send-keys` launch bypasses it — ALWAYS dispatch with `gtmux spawn`. 起 agent 是否走代理是显式设置,gtmux 不探测、不内置任何代理工具或端口。\n\n_This is specific to YOUR machine — record YOUR per-network rules below (which network → which proxy URL, or none)._\n",
 }
 
-// findHQPane returns the pane id of a live supervisor pane ("" when none):
-// any tmux pane whose cwd is the hq home. Cwd-keyed — session renames don't
-// break it, and it's the same rule the radar's role field uses.
-func findHQPane() string {
-	home := state.HQHome()
-	for _, line := range tmux.Lines("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_path}") {
-		f := strings.SplitN(line, "\t", 2)
-		if len(f) == 2 && f[1] == home {
-			return f[0]
-		}
-	}
-	return ""
-}
+// findHQPane returns the pane id of a live supervisor pane ("" when none). The rule
+// lives in hqpane, shared with the hook's wake call sites: the `@gtmux_hq_home` stamp,
+// then a symlink-normalized cwd/start-path match on the hq home. It is not a session
+// name, so renames don't break it — the same identity the radar's role field uses.
+func findHQPane() string { return hqpane.Find() }
 
 // cmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
 func cmdHQ(args []string) int {
@@ -485,6 +481,10 @@ func cmdHQ(args []string) int {
 	cmd := agentenv.Wrap(rawCmd)
 	pane := tmux.Display(name, "#{pane_id}")
 	if pane != "" {
+		// Mark the pane as HQ before anything else can look for it: the stamp is the
+		// one identity that survives a `cd` and needs no path comparison at all (a
+		// symlinked config dir used to make every wake resolve "no HQ" silently).
+		hqpane.Stamp(pane)
 		_ = tmux.SendText(pane, cmd, true)
 	}
 	i18n.Say("Supervisor started in tmux session '"+name+"'.", "中控已在 tmux session '"+name+"' 启动。")
@@ -620,7 +620,16 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   record ` + "`user-direct`" + `, don't chase with a stale ledger) · ` + "`new-session`" + `
   (enroll it — below) · ` + "`reap-suggest`" + ` (propose ` + "`gtmux reap`" + `, run only if
   approved) · ` + "`resource·warn` / `limits·warn`" + ` · ` + "`feed-degraded`" + ` (perception
-  outage — surface at once, NEVER quieted) · ` + "`tick`" + ` (summary due — emit ONE brief).
+  outage — surface at once, NEVER quieted) · ` + "`wake-degraded`" + ` (the KNOCK itself is
+  not landing — you may have missed wakes; reconcile by PULL, ` + "`gtmux digest --json`" + `
+  + the event delta, and surface it) · ` + "`tick`" + ` (summary due — emit ONE brief).
+- **A repeated ` + "`#<id>`" + ` is a RE-SEND, not a second event.** Every wake batch ends
+  with a short id (` + "`… · #a3f1c2`" + `). Delivery is confirmed on screen and retried when
+  the confirmation is missed, so the same batch can arrive twice — carrying the SAME id.
+  If you have already acted on that id, ignore the line. 同 id 的行是重发,别重复处理。
+- A ` + "`goal:\"(slash-command) /x\"`" + ` payload is the user running a slash command in
+  that pane (a real act with no prose — e.g. ` + "`/compact`" + `, ` + "`/model`" + `), not an
+  agent message. Record it; it usually explains what happens next in that session.
 - Severity still gates what you PRINT: ` + "`important`→CRITICAL, `notable`→NORMAL," + `
   ` + "`routine`→QUIET" + `, resolved against ` + "`gtmux quiet status`" + `: CRITICAL/NORMAL →
   print (per the bar); QUIET → ledger only, stay silent. 按 tier 与阈值决定出声与否。
