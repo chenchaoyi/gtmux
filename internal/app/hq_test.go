@@ -418,8 +418,8 @@ func TestSeedHQNotesBoard(t *testing.T) {
 }
 
 // The chief-of-staff upgrade must be encoded in the seed: the persistent situation
-// board, the severity-filtered attention stream, the decision-authority tiers, graded
-// escalation + reconcile, and the correction→charter learning loop. Pins spec⇄code.
+// board, the severity-filtered reads, the decision-authority tiers, graded escalation +
+// reconcile, and the correction→charter learning loop. Pins spec⇄code.
 func TestHQPlaybookChiefOfStaff(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	if _, err := seedHQHome(); err != nil {
@@ -433,7 +433,8 @@ func TestHQPlaybookChiefOfStaff(t *testing.T) {
 	for _, want := range []string{
 		"Situation board",        // §1: persistent posture
 		"board.md",               // the board file HQ maintains
-		"--severity important",   // §1: read the attention stream, not raw lines
+		"--severity important",   // §1: triage the escalation subset first…
+		"--severity notable",     // …but fleet changes are a stream of their own
 		"DECISION AUTHORITY",     // §2: the autonomy matrix
 		"REVERSIBLE",             // §2: the may-decide condition
 		"ESCALATE",               // §2: the must-escalate condition
@@ -505,5 +506,40 @@ func TestHQPlaybookWakeProtocol(t *testing.T) {
 	// be mentioned, but never as a "run it as a background task" instruction).
 	if strings.Contains(s, "run it as a BACKGROUND") {
 		t.Error("v2 playbook must not require a background hq-feed tail")
+	}
+}
+
+// The three reads must be named in the seed, and none of them sold as "the attention
+// stream" (hq-attention-stream). This is the half of the fix that actually reaches HQ:
+// raising a user instruction to `notable` changes nothing if the playbook still tells
+// HQ that `--severity important` is the whole picture.
+func TestHQPlaybookThreeReads(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, err := seedHQHome(); err != nil {
+		t.Fatal(err)
+	}
+	agents, err := os.ReadFile(hqInstructionsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(agents)
+	for _, want := range []string{
+		"THREE reads",          // they are not interchangeable
+		"--since-seq",          // the unfiltered delta…
+		"RECONCILE",            // …is what you reconcile with
+		"--severity notable",   // the fleet-change stream
+		"FLEET-CHANGE",         //
+		"--severity important", // the escalation stream…
+		"SUBSET",               // …explicitly not the whole picture
+		"triage shortcut",      // the rule that generalizes past this bug
+		"世界模型",                 // the zh anchor for that rule
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("v4 playbook missing %q", want)
+		}
+	}
+	// The claim this change exists to kill: no filtered read is "the attention stream".
+	if strings.Contains(s, "attention stream") {
+		t.Error("v4 playbook must not present any filtered read as THE attention stream")
 	}
 }

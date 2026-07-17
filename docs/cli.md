@@ -231,6 +231,14 @@ signal line naming a sequence range and pulls exactly that delta, on any agent
 that can run a CLI command (no background tail required). This is the
 terminal-native SUBSCRIPTION to the same events the apps get over SSE.
 
+`--severity <tier>` filters to that tier **and above**, and the tiers rank
+*urgency*, not relevance — so they are three different reads, not one:
+the unfiltered `--since-seq` delta is what you **reconcile** with;
+`--severity notable` is the **fleet-change** stream (an instruction reaching a
+session — `origin:"instruction"` — plus turn-ends and lifecycle);
+`--severity important` is the **escalation** subset (blocked · asking · crashed),
+to triage first. A filter is a triage shortcut, never the whole picture.
+
 ## `gtmux resource` — local machine resource watch
 
 ```

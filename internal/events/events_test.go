@@ -124,14 +124,36 @@ func TestSeverity(t *testing.T) {
 		{"stop-no-class", Record{Event: "Stop"}, SevNotable},
 		{"session-start", Record{Event: "SessionStart"}, SevNotable},
 		{"precompact", Record{Event: "PreCompact"}, SevNotable},
-		{"prompt-submit", Record{Event: "UserPromptSubmit"}, SevRoutine},
 		{"notification", Record{Event: "Notification"}, SevRoutine},
 		{"waiting-no-kind", Record{Event: "Waiting"}, SevNotable},
+		// A submitted INSTRUCTION is a fleet change, not chatter (hq-attention-stream):
+		// it was routine while the playbook called `--severity important` "the attention
+		// stream", so an HQ following its own playbook could not see what the user told
+		// a session to do.
+		{"instruction-submit", Record{Event: "UserPromptSubmit", Origin: OriginInstruction}, SevNotable},
+		// A payload the user did not author (a harness block, our own wake line echoed
+		// back) is not an act — and a legacy record has no origin at all, so it keeps
+		// reading exactly as it did before the field existed.
+		{"injected-submit", Record{Event: "UserPromptSubmit"}, SevRoutine},
 	}
 	for _, c := range cases {
 		if got := Severity(c.r); got != c.want {
 			t.Errorf("%s: Severity = %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+// Severity ranks URGENCY, not relevance: an instruction is maximally relevant and yet
+// nobody is blocked on HQ reading it, so it must NOT reach the escalation tier — that
+// one is triaged first and survives `gtmux quiet`, and burying it buries the pane that
+// is actually blocked.
+func TestSeverity_InstructionIsNotAnEscalation(t *testing.T) {
+	instr := Severity(Record{Event: "UserPromptSubmit", Origin: OriginInstruction})
+	if SeverityRank(instr) >= SeverityRank(SevImportant) {
+		t.Fatalf("an instruction must rank below the escalation tier; got %q", instr)
+	}
+	if SeverityRank(instr) <= SeverityRank(SevRoutine) {
+		t.Fatalf("…and above routine, or a pull-side HQ cannot see it; got %q", instr)
 	}
 }
 
