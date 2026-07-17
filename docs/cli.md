@@ -11,8 +11,11 @@
 | `doctor [--fix [--yes]]` | health check grouped by concern; on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
 | `install-hooks [--agent <key>]` | register the notification hook — Claude by default; `--agent codex\|cursor\|gemini\|copilot\|kiro` for others |
 | `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
-| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (paid); see [phone.md](phone.md) |
-| `devices [revoke <id>]` | list / revoke phones paired via per-device tokens |
+| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); see [phone.md](phone.md) |
+| `pair [list\|revoke <id>]` | enroll YOUR OWN devices (full control): one one-time code as phone QR / browser link / a one-line `gtmux attach` |
+| `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | scoped, revocable links for collaborators — per-link view/type allowlists (see below) |
+| `attach <host\|pair-link\|share-link> [%pane]` | bridge a remote tmux pane's PTY to your local terminal (owner or guest) over the serve WebSocket |
+| `devices [revoke <id>\|--push\|--forget-push <id\|orphans\|all>]` | the paired-device roster (alias of `pair list`/`pair revoke`); `--push` inspects, `--forget-push` clears push tokens |
 | `app` (alias `menubar`) | launch the menu-bar app (`Gtmux.app`) |
 | `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
 
@@ -358,7 +361,7 @@ WebSocket, `GET /api/attach`), honoring the owner/guest token scope.
 gtmux attach http://<mac>:8765 --token <serve-token> %12
 
 # guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
-# "Shared input" → New link); attach exactly what the host allowed:
+# Sharing → New link); attach exactly what the host allowed:
 gtmux attach 'https://<mac>.example/#t=<token>' %12
 
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
