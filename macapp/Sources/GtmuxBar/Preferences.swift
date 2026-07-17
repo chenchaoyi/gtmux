@@ -135,12 +135,15 @@ struct PreferencesView: View {
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                tunnelBackendRow
                 connectedDevices
 
                 // Your paired devices (full control) — enrolled through the door above.
-                Divider()
+                // No explicit Divider(): a grouped Form already hairlines each row, and
+                // an extra Divider renders as a stray empty row here.
                 Text(l10n.tr("PAIRED DEVICES", "已配对设备"))
                     .font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+                    .padding(.top, 2)
                 pairSection
             }
 
@@ -304,6 +307,56 @@ struct PreferencesView: View {
         }
     }
 
+    // TUNNEL BACKEND — "Anywhere" reaches the Mac over a tunnel, and there are two:
+    // Standard (zero-config hosted Cloudflare) and Direct (your own VPS + domain). The
+    // picker was hiding this choice. When Direct is configured on this Mac, offer a
+    // Standard | Direct switch; otherwise show which backend is active (read-only) plus
+    // how to set Direct up — so it's never a mystery which tunnel you're on.
+    @ViewBuilder private var tunnelBackendRow: some View {
+        if remote.mode == .anywhere {
+            if remote.selfTunnelConfigured {
+                LabeledContent {
+                    Picker("", selection: backendBinding) {
+                        Text(l10n.tr("Standard", "标准")).tag(TunnelBackend.cloudflare)
+                        Text(l10n.tr("Direct", "直连")).tag(TunnelBackend.selfHosted)
+                    }
+                    .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
+                } label: {
+                    prefLabel("Tunnel", "隧道", symbol: "point.3.connected.trianglepath.dotted")
+                }
+                Text(backendSubtitle)
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(l10n.tr("Tunnel: Standard (zero-config, hosted). Direct — your own VPS + domain — sets up with `gtmux tunnel --backend self`.",
+                             "隧道：Standard（零配置托管）。Direct —— 你自己的 VPS + 域名 —— 用 `gtmux tunnel --backend self` 配置。"))
+                    .font(.system(size: 11)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    // Switching backend re-runs the tunnel service on the chosen backend (both are the
+    // already-consented "Anywhere" exposure, so no extra confirm — the user picked it).
+    private var backendBinding: Binding<TunnelBackend> {
+        Binding(
+            get: { remote.backend == .selfHosted ? .selfHosted : .cloudflare },
+            set: { b in remote.enableAnywhere(selfHosted: b == .selfHosted) })
+    }
+
+    private var backendSubtitle: String {
+        switch remote.backend {
+        case .selfHosted:
+            return l10n.tr("Direct — reached over your own VPS + domain.", "直连 —— 经你自己的 VPS + 域名可达。")
+        case .cloudflare:
+            return l10n.tr("Standard — a zero-config hosted tunnel.", "标准 —— 零配置托管隧道。")
+        case .none:
+            return l10n.tr("Bringing the tunnel up…", "隧道启动中…")
+        }
+    }
+
     // MARK: shared input (web-shared input host controls — mirrors `gtmux share`)
 
     private var shareEnabledBinding: Binding<Bool> {
@@ -407,19 +460,24 @@ struct PreferencesView: View {
                                 Text(shareLinkAge(g.enrolledAt) + "  ·  " + linkScopeSummary(g))
                                     .font(.system(size: 10)).foregroundStyle(.tertiary)
                             }
-                            Spacer(minLength: 0)
-                            // Copy the link again later — the token is shown only at
-                            // mint time, so a host who didn't grab it then can here.
-                            Button {
-                                share.copyLink(g.id)
-                            } label: {
-                                Image(systemName: "doc.on.doc").font(.system(size: 11))
-                            }
-                            .buttonStyle(.borderless)
-                            .disabled(share.busy)
-                            .help(l10n.tr("Copy link", "复制链接"))
-                            Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
+                            Spacer(minLength: 8)
+                            // Copy + Revoke as ONE tidy trailing group with matching
+                            // chrome (both bordered) — a bare borderless icon read as a
+                            // floating column next to the bordered Revoke button. Copy
+                            // re-hands the link (its token shows only at mint time).
+                            HStack(spacing: 6) {
+                                Button {
+                                    share.copyLink(g.id)
+                                } label: {
+                                    Image(systemName: "doc.on.doc")
+                                }
+                                .buttonStyle(.bordered)
                                 .disabled(share.busy)
+                                .help(l10n.tr("Copy link", "复制链接"))
+                                Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
+                                    .buttonStyle(.bordered)
+                                    .disabled(share.busy)
+                            }
                         }
                         if expandedLink == g.id {
                             linkScopeEditor(g)

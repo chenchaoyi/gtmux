@@ -263,9 +263,15 @@ exposure is never silent, the same ethos as the "Remote on" indicator.
 ### Requirement: Preferences present the two-track pair/share model
 
 The Preferences window SHALL organize remote capability into the two-track model:
-a 远程访问/Remote-access section (the door: Off / Wi-Fi / Anywhere, unchanged), a
+a 远程访问/Remote-access section (the door: Off / Wi-Fi / Anywhere), a
 你的设备/Pair section, and a 分享/Share section — so "my own surfaces" and
 "collaborator access" never mix.
+
+When Anywhere is on, the Remote-access section SHALL surface which TUNNEL BACKEND is
+active (Standard = the zero-config hosted tunnel, vs Direct = the user's own VPS +
+domain), and — when Direct is configured on this Mac — SHALL offer a Standard | Direct
+switch that changes the backend, so the choice the CLI's `gtmux tunnel --backend`
+already exposes is not hidden behind an opaque "Anywhere".
 
 The Pair section SHALL list paired (owner-scope) devices — name, a kind icon,
 last-seen, and per-row revoke — plus a single "配对新设备/Pair a device" action
@@ -284,6 +290,15 @@ that link (the legacy global broadcast forms are not used by this UI).
 - **WHEN** the user opens Preferences with two paired devices and two share links
 - **THEN** the devices appear only under Pair and the links only under Share, each
   with its own list styling and actions
+
+#### Scenario: Anywhere surfaces its tunnel backend
+
+- **WHEN** Anywhere is on and Direct is configured on this Mac
+- **THEN** the Remote-access section shows a Standard | Direct switch reflecting the
+  active backend, and choosing one re-runs the tunnel on that backend
+- **WHEN** Anywhere is on and Direct is NOT configured
+- **THEN** it shows that Standard (hosted) is active and how to set up Direct, rather
+  than hiding the backend entirely
 
 #### Scenario: A share is created with its scope in one step
 

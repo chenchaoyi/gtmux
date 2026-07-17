@@ -10,11 +10,8 @@ import SwiftUI
 /// SAME code exactly once.
 struct PairDeviceSheet: View {
     @ObservedObject var l10n: L10n
+    @ObservedObject var pairStore = PairStore.shared
     let onClose: () -> Void
-
-    @State private var info: PairingInfo?
-    @State private var code: String?
-    @State private var failed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -25,7 +22,7 @@ struct PairDeviceSheet: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let info = info, let code = code {
+            if let info = pairStore.pairInfo, let code = pairStore.pairCode {
                 HStack(alignment: .top, spacing: 16) {
                     VStack(spacing: 6) {
                         if let img = Pairing.qrImage(Pairing.payload(info, enrollCode: code), size: 168) {
@@ -50,7 +47,7 @@ struct PairDeviceSheet: View {
                         }
                     }
                 }
-            } else if failed {
+            } else if pairStore.pairFailed {
                 Text(l10n.tr("Couldn't mint a pairing code — is remote access on? (gtmux serve / gtmux tunnel)",
                              "生成配对码失败 —— 远程访问开了吗？（gtmux serve / gtmux tunnel）"))
                     .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -65,20 +62,9 @@ struct PairDeviceSheet: View {
         }
         .padding(18)
         .frame(width: 480)
-        .onAppear(perform: mint)
-    }
-
-    private func mint() {
-        guard let p = Pairing.current() else {
-            failed = true
-            return
-        }
-        info = p
-        Pairing.mintEnrollCode(token: p.token) { c in
-            DispatchQueue.main.async {
-                if let c = c, !c.isEmpty { code = c } else { failed = true }
-            }
-        }
+        // Mint once (idempotent in the store); clear on close so a reopen mints fresh.
+        .onAppear { pairStore.mintPairCodeIfNeeded() }
+        .onDisappear { pairStore.clearPairCode() }
     }
 
     @ViewBuilder private func mediumRow(icon: String, title: String, value: String) -> some View {
