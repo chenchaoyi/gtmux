@@ -128,6 +128,31 @@ final class ShareStore: ObservableObject {
 
     func revoke(_ id: String) { run(["share", "revoke", id]) }
 
+    /// Re-hand an EXISTING link's URL and copy it to the clipboard (pair-share-model:
+    /// a link's token is shown only at mint time, so this is the "copy it again
+    /// later" path). Shells `gtmux share link <id> --json` — the token roster is read
+    /// by the CLI, never the app. Surfaces the URL via `lastMintedLink` so the row can
+    /// confirm, or `lastError` on failure.
+    func copyLink(_ id: String) {
+        guard !busy else { return }
+        busy = true
+        lastError = nil
+        DispatchQueue.global().async {
+            let data = GtmuxCLI.capture(["share", "link", id, "--json"])
+            let url = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] })?["url"] as? String
+            DispatchQueue.main.async {
+                self.busy = false
+                if let url = url, !url.isEmpty {
+                    self.lastMintedLink = url
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url, forType: .string)
+                } else {
+                    self.lastError = "Couldn't fetch the link. / 无法获取链接。"
+                }
+            }
+        }
+    }
+
     /// Edit ONE link's scope (pair-share-model S3): per-facet replace via
     /// `gtmux share set` — never the legacy global (broadcast) forms.
     func setLinkScope(_ id: String, view: [String], input: [String]) {

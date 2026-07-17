@@ -324,3 +324,83 @@ describe('unregisterPush', () => {
     expect(await client().unregisterPush('tok')).toBe(false);
   });
 });
+
+// owner-remote-admin: the management methods (owner/full callers). The parsing
+// splits + token extraction are what could drift against the server, so pin them.
+describe('owner-remote-admin management', () => {
+  it('shareConfig GETs /api/share/config with bearer and defaults missing fields', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({enabled: true, panes: ['%1'], view_panes: ['%1', '%2']}));
+    const c = await client().shareConfig();
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/share/config`);
+    expect((init?.headers as any).Authorization).toBe(AUTH);
+    expect(c).toEqual({enabled: true, panes: ['%1'], view_panes: ['%1', '%2']});
+  });
+
+  it('setShareEnabled POSTs {enabled} and returns r.ok', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, true));
+    const ok = await client().setShareEnabled(false);
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/share/config`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(init?.body as string)).toEqual({enabled: false});
+    expect(ok).toBe(true);
+  });
+
+  it('devices splits the roster into guest LINKS and paired DEVICES by scope', async () => {
+    fetchMock.mockResolvedValueOnce(
+      okJson({
+        devices: [
+          {id: 'g1', name: 'Alice', scope: 'guest', enrolledAt: 10, viewPanes: ['%1'], inputPanes: ['%1'], expiresAt: 99},
+          {id: 'd1', name: 'iPhone', scope: 'device', enrolledAt: 20, lastSeen: 30},
+          {id: 'm1', name: 'master', scope: 'master', enrolledAt: 1},
+        ],
+      }),
+    );
+    const {guests, devices} = await client().devices();
+    expect(guests).toEqual([
+      {id: 'g1', label: 'Alice', enrolledAt: 10, viewPanes: ['%1'], inputPanes: ['%1'], expiresAt: 99},
+    ]);
+    // Non-guest scopes (device + master) are the read-only roster.
+    expect(devices.map(d => d.id)).toEqual(['d1', 'm1']);
+    expect(devices[0]).toEqual({id: 'd1', name: 'iPhone', enrolledAt: 20, lastSeen: 30});
+  });
+
+  it('shareNew POSTs {label, view, input}', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, true));
+    await client().shareNew('Bob', ['%1', '%2'], ['%1']);
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/share/new`);
+    expect(JSON.parse(init?.body as string)).toEqual({label: 'Bob', view: ['%1', '%2'], input: ['%1']});
+  });
+
+  it('shareSet POSTs {id, view, input} for one link', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, true));
+    await client().shareSet('g1', ['%2'], []);
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/share/set`);
+    expect(JSON.parse(init?.body as string)).toEqual({id: 'g1', view: ['%2'], input: []});
+  });
+
+  it('revokeShare POSTs /api/devices/revoke {id}', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({revoked: true}, true));
+    const ok = await client().revokeShare('g1');
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/devices/revoke`);
+    expect(JSON.parse(init?.body as string)).toEqual({id: 'g1'});
+    expect(ok).toBe(true);
+  });
+
+  it('shareLink GETs the token by id (encoded) and returns just the token', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({id: 'g1', label: 'Alice', token: 'tok-xyz'}));
+    const tok = await client().shareLink('g1');
+    const [url] = call();
+    expect(url).toBe(`${BASE}/api/share/link?id=g1`);
+    expect(tok).toBe('tok-xyz');
+  });
+
+  it('shareLink returns null on a non-ok (e.g. unknown id → 404)', async () => {
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 404));
+    expect(await client().shareLink('nope')).toBeNull();
+  });
+});

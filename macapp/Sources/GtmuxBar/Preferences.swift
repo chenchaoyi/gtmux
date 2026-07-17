@@ -408,6 +408,16 @@ struct PreferencesView: View {
                                     .font(.system(size: 10)).foregroundStyle(.tertiary)
                             }
                             Spacer(minLength: 0)
+                            // Copy the link again later — the token is shown only at
+                            // mint time, so a host who didn't grab it then can here.
+                            Button {
+                                share.copyLink(g.id)
+                            } label: {
+                                Image(systemName: "doc.on.doc").font(.system(size: 11))
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(share.busy)
+                            .help(l10n.tr("Copy link", "复制链接"))
                             Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
                                 .disabled(share.busy)
                         }

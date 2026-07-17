@@ -76,6 +76,19 @@ export function SettingsScreen({navigation}: any) {
           {!isGuest && (
             <SettingsRow icon="share" label={t('openOnComputer')} sub={t('openOnComputerSub')} pal={pal} chevron divider onPress={openOnComputer} />
           )}
+          {/* Manage THIS Mac's sharing (owner-remote-admin, decision B): owner-only,
+              hidden for a guest connection so no control ever 403s. */}
+          {!isGuest && (
+            <SettingsRow
+              icon="share"
+              label={lang === 'zh' ? '管理这台 Mac' : 'Manage this Mac'}
+              sub={lang === 'zh' ? '分享链接与权限' : 'Share links & permissions'}
+              pal={pal}
+              chevron
+              divider
+              onPress={() => navigation.navigate('ManageMac')}
+            />
+          )}
           <SettingsRow icon="trash" label={t('removeMac')} danger pal={pal} onPress={confirmRemove} />
         </SettingsGroup>
 

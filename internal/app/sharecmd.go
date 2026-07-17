@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -26,6 +27,7 @@ import (
 //	gtmux share view remove <pane…>   stop guests seeing a pane (also removes its input)
 //	gtmux share view clear            guests see nothing again
 //	gtmux share new [--label <name>]  mint a guest share link (URL + QR)
+//	gtmux share link <id>             re-show an existing link's URL (+ QR)
 //	gtmux share revoke <id>           kill one guest link
 func cmdShare(args []string) int {
 	port := defaultServePort
@@ -109,6 +111,12 @@ func cmdShare(args []string) int {
 		return shareView(base, token, rest)
 	case "new":
 		return shareNew(base, token, label, port, jsonOut, viewFlag, typeFlag, expires)
+	case "link":
+		if len(rest) == 0 {
+			i18n.Sae("gtmux share link: missing <id>", "gtmux share link: 缺少 <id>")
+			return 2
+		}
+		return shareLink(base, token, rest[0], jsonOut)
 	case "set":
 		if len(rest) == 0 {
 			i18n.Sae("gtmux share set: missing <id>", "gtmux share set: 缺少 <id>")
@@ -528,6 +536,53 @@ func shareNew(base, token, label string, port int, jsonOut bool, view, input *[]
 	return 0
 }
 
+// shareLink re-hands an EXISTING guest link's URL by id. A link's token is shown
+// only at mint time (`share new`), so a host who didn't copy it then had no way to
+// get it back short of revoking + re-minting. This asks the local serve for the
+// token (GET /api/share/link, full-scope only) and rebuilds the same base + `#t=`
+// URL `share new` prints — so a menu-bar/app "Copy link" is one CLI call.
+func shareLink(base, token, id string, jsonOut bool) int {
+	req, _ := http.NewRequest(http.MethodGet, base+"/api/share/link?id="+url.QueryEscape(id), nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
+	if err != nil {
+		return shareUnreachable()
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		i18n.Sae("gtmux share link: no such link '"+id+"'", "gtmux share link: 没有这个链接 '"+id+"'")
+		return 1
+	}
+	if resp.StatusCode != http.StatusOK {
+		i18n.Sae(fmt.Sprintf("gtmux share link: serve returned %d", resp.StatusCode),
+			fmt.Sprintf("gtmux share link: 服务返回 %d", resp.StatusCode))
+		return 1
+	}
+	var out struct{ ID, Label, Token string }
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+
+	shareBase := readTunnelURL()
+	local := shareBase == ""
+	if local {
+		shareBase = base
+	}
+	if jsonOut {
+		b, _ := json.MarshalIndent(buildShareNew(out.ID, out.Label, out.Token, shareBase), "", "  ")
+		fmt.Println(string(b))
+		return 0
+	}
+	link := shareBase + "/#t=" + out.Token
+	fmt.Println()
+	i18n.Say("Share link ("+out.ID+"):", "分享链接（"+out.ID+"）：")
+	fmt.Printf("  %s\n", link)
+	if local {
+		i18n.Say("  (LOCAL address — run `gtmux tunnel` for a link others can open)",
+			"  （本机地址 —— 想让别人能打开,先跑 `gtmux tunnel`）")
+	}
+	printBrandQR(os.Stdout, link)
+	return 0
+}
+
 // --- helpers ---
 
 func getShareState(base, token string) (shareStateJSON, bool) {
@@ -622,7 +677,7 @@ func shareUsage() int {
 	i18n.Sae(
 		"usage: gtmux share [on|off | new [--label <name>] [--view <panes>] [--type <panes>] [--expires 24h] |\n"+
 			"                    set <id> [--view <panes>] [--type <panes>] [--expires 24h|never] |\n"+
-			"                    add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
+			"                    link <id> | add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
 			"  SHARE = a collaborator's scoped access (pair-share-model). Each link has\n"+
 			"  ITS OWN scope: which panes they may SEE (--view) and TYPE into (--type ⊆ view),\n"+
 			"  plus an optional expiry. Typing also needs the host consent: gtmux share on.\n"+
@@ -632,7 +687,7 @@ func shareUsage() int {
 			"  --json makes `status` and `new` emit machine-readable output (no token).",
 		"用法：gtmux share [on|off | new [--label <名>] [--view <panes>] [--type <panes>] [--expires 24h] |\n"+
 			"                  set <id> [--view <panes>] [--type <panes>] [--expires 24h|never] |\n"+
-			"                  add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
+			"                  link <id> | add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
 			"  SHARE = 协作者的受限访问(pair-share 模型)。每个链接有自己的范围：\n"+
 			"  能看哪些 pane(--view)、能输入哪些(--type ⊆ view),外加可选过期;\n"+
 			"  输入还需总闸同意:gtmux share on。\n"+

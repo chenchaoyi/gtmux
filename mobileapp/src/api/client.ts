@@ -21,6 +21,33 @@ export interface ShareCapability {
   view_panes: string[]; // guest: view-allowed panes
 }
 
+// ShareConfig mirrors GET /api/share/config — the HOST's consent state (owner-only,
+// owner-remote-admin): the typing master switch + the global view/input allowlists.
+export interface ShareConfig {
+  enabled: boolean;
+  panes: string[]; // global INPUT allowlist
+  view_panes: string[]; // global VIEW allowlist
+}
+
+// GuestLink is a `scope:"guest"` roster entry (a share link) with its per-link scope.
+export interface GuestLink {
+  id: string;
+  label: string;
+  enrolledAt: number;
+  viewPanes: string[];
+  inputPanes: string[];
+  expiresAt: number;
+}
+
+// PairedDevice is a `scope:"device"` roster entry (a paired phone/browser/terminal),
+// shown READ-ONLY on the phone — revoking a device stays a Mac-only operation.
+export interface PairedDevice {
+  id: string;
+  name: string;
+  enrolledAt: number;
+  lastSeen?: number;
+}
+
 // DigestRow mirrors internal/app digestRow (GET /api/digest) — the fleet's
 // cognitive digest for the gtmux HQ command center.
 export interface DigestRow {
@@ -341,5 +368,96 @@ export class GtmuxClient {
       body: JSON.stringify({token, env}),
     });
     return r.ok;
+  }
+
+  // --- owner-remote-admin: manage THIS Mac's sharing (owner/full callers only;
+  // the server 403s a guest). Mirrors the menu-bar Preferences share section. ---
+
+  // shareConfig reads the host's consent + global allowlists (GET /api/share/config).
+  async shareConfig(): Promise<ShareConfig> {
+    const r = await tfetch(`${this.base}/api/share/config`, {headers: this.h()});
+    if (!r.ok) throw new ApiError(r.status, 'share/config');
+    const j = await r.json().catch(() => null);
+    return {
+      enabled: !!j?.enabled,
+      panes: Array.isArray(j?.panes) ? j.panes : [],
+      view_panes: Array.isArray(j?.view_panes) ? j.view_panes : [],
+    };
+  }
+
+  // setShareEnabled flips the typing master switch (POST /api/share/config {enabled}).
+  async setShareEnabled(on: boolean): Promise<boolean> {
+    const r = await tfetch(`${this.base}/api/share/config`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({enabled: on}),
+    });
+    return r.ok;
+  }
+
+  // devices lists the roster (GET /api/devices), split into guest LINKS (manageable)
+  // and paired DEVICES (read-only on the phone — revoking a device is Mac-only).
+  async devices(): Promise<{guests: GuestLink[]; devices: PairedDevice[]}> {
+    const r = await tfetch(`${this.base}/api/devices`, {headers: this.h()});
+    if (!r.ok) throw new ApiError(r.status, 'devices');
+    const j = await r.json().catch(() => null);
+    const raw: any[] = Array.isArray(j?.devices) ? j.devices : [];
+    const guests: GuestLink[] = [];
+    const devices: PairedDevice[] = [];
+    for (const d of raw) {
+      if (d?.scope === 'guest') {
+        guests.push({
+          id: d.id ?? '',
+          label: d.name ?? '',
+          enrolledAt: d.enrolledAt ?? 0,
+          viewPanes: Array.isArray(d.viewPanes) ? d.viewPanes : [],
+          inputPanes: Array.isArray(d.inputPanes) ? d.inputPanes : [],
+          expiresAt: d.expiresAt ?? 0,
+        });
+      } else {
+        devices.push({id: d.id ?? '', name: d.name ?? '', enrolledAt: d.enrolledAt ?? 0, lastSeen: d.lastSeen});
+      }
+    }
+    return {guests, devices};
+  }
+
+  // shareNew mints a guest link with an explicit per-link scope (POST /api/share/new).
+  async shareNew(label: string, view: string[], input: string[]): Promise<boolean> {
+    const r = await tfetch(`${this.base}/api/share/new`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({label, view, input}),
+    });
+    return r.ok;
+  }
+
+  // shareSet edits ONE link's See/Type (POST /api/share/set); omitted facets untouched.
+  async shareSet(id: string, view: string[], input: string[]): Promise<boolean> {
+    const r = await tfetch(`${this.base}/api/share/set`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({id, view, input}),
+    });
+    return r.ok;
+  }
+
+  // revokeShare kills a guest LINK (POST /api/devices/revoke). An owner may revoke a
+  // guest link but NOT a paired device — the server enforces that (decision B).
+  async revokeShare(id: string): Promise<boolean> {
+    const r = await tfetch(`${this.base}/api/devices/revoke`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({id}),
+    });
+    return r.ok;
+  }
+
+  // shareLink re-hands an existing link's token (GET /api/share/link) so the owner can
+  // re-copy the URL; the caller builds `${base}/#t=${token}`. Null if not found.
+  async shareLink(id: string): Promise<string | null> {
+    const r = await tfetch(`${this.base}/api/share/link?id=${encodeURIComponent(id)}`, {headers: this.h()});
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => null);
+    return typeof j?.token === 'string' ? j.token : null;
   }
 }
