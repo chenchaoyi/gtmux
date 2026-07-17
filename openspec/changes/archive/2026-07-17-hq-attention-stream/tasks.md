@@ -32,4 +32,4 @@
 
 - [x] 3.1 `make check` green; `scripts/check-design.sh` green;
       `npx @fission-ai/openspec validate --strict` green.
-- [ ] 3.2 Sync the deltas into `openspec/specs/` and archive this change once merged.
+- [x] 3.2 Sync the deltas into `openspec/specs/` and archive this change once merged.
