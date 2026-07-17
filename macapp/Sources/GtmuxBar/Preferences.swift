@@ -116,8 +116,11 @@ struct PreferencesView: View {
                 }
             }
 
-            Section(l10n.tr("Remote access", "远程访问")) {
-                // Merged Off / Wi-Fi (free LAN) / Anywhere (Pro tunnel) control.
+            // REMOTE ACCESS + PAIR are one story: the door (is this Mac reachable,
+            // and how) plus YOUR OWN devices that come through it. Keeping them in one
+            // section (a picker + the paired-device roster) reads as a single idea.
+            Section(l10n.tr("Remote access · your devices", "远程访问 · 我的设备")) {
+                // The door: Off / Wi-Fi (free LAN) / Anywhere (Pro tunnel).
                 LabeledContent {
                     Picker("", selection: remoteModeBinding) {
                         Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
@@ -133,10 +136,11 @@ struct PreferencesView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 connectedDevices
-            }
 
-            // PAIR — your own devices, full control (pair-share-model S3).
-            Section(l10n.tr("Your devices · Pair", "你的设备 · 配对")) {
+                // Your paired devices (full control) — enrolled through the door above.
+                Divider()
+                Text(l10n.tr("PAIRED DEVICES", "已配对设备"))
+                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
                 pairSection
             }
 
