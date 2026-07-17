@@ -182,18 +182,25 @@ waits for the agent to come up, then delivers the task via a tmux **paste buffer
 **verifies** it landed. Verification is layered: for a hook-equipped agent (Claude
 Code, …) it prefers the deterministic `UserPromptSubmit` event on the #388
 session-events stream (no screen-scraping); otherwise it falls back to a hardened,
-two-frame screen-read that locates the input box structurally. The ONLY success is a
-confirmed landing — a swallowed Enter is re-sent with backoff, a fragment paste is
-retried, and a timeout reports `delivered:false` with on-screen evidence, never a
-silent success. A queued submission is reported as `state:"queued"`. A **re-send
+two-frame screen-read that locates the input box structurally. The paste is
+**bracketed**, so a multi-line instruction lands as ONE draft and the separate Enter
+submits it once (sent raw, each newline would reach the TUI as a bare Return and
+submit that line on the spot). The ONLY success is a confirmed landing — a swallowed
+Enter is re-sent with backoff, a fragment paste is retried, and a timeout reports
+`delivered:false` with on-screen evidence, never a silent success. A retry can never
+duplicate: the text is pasted at most once, a re-paste happens only into a box
+confirmed empty (the clear key empties one line, so a multi-line draft can survive
+it), and a paste that merely rendered late is left alone rather than pasted again. A queued submission is reported as `state:"queued"`. A **re-send
 interlock** refuses an identical payload to the same pane within a window (so a nervous
 duplicate `/compact` can't double-fire); `--force` overrides it. Pre-flight checks
 (proxy, machine resource, subscription window) are advisory and never block.
 
 `gtmux send <pane> <text>` uses the SAME land-verification by DEFAULT now (returns as
-soon as it confirms, so a healthy send stays fast); `--no-verify` opts out, `--force`
-overrides the interlock, `--key` and the mobile `POST /api/send` path are unchanged
-(the API stays fast).
+soon as it confirms, so a healthy send stays fast); `--no-verify` opts out and
+`--force` overrides the interlock. What `--no-verify` and the mobile `POST /api/send`
+skip is the CONFIRMATION, not the mechanics: every text path pastes and then sends
+Enter as its own key, so an unverified send can't split a multi-line message either.
+`--key` remains a single keystroke.
 
 `gtmux tasks [--json]` is the **dispatch / needs-you ledger**: every task you spawned
 with its live status (waiting / done / working / gone), needs-you first.

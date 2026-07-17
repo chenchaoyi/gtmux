@@ -16,8 +16,10 @@ import (
 // delivers the text then Enter and, by DEFAULT, VERIFIES it landed (the same
 // layered deliver-verify as `gtmux spawn`); `--no-verify` skips verification;
 // `--force` overrides the re-send interlock; `--no-enter` skips Enter (implies
-// no-verify); `--key NAME` sends a single whitelisted control key. `--key` and the
-// server's POST /api/send path are UNCHANGED (the API stays fast — mobile latency).
+// no-verify); `--key NAME` sends a single whitelisted control key. Every text path
+// here — verified or not — pastes and submits the same way; only the confirmation
+// differs. The server's POST /api/send stays UNVERIFIED (the API is on the phone's
+// latency budget), and `--key` is a single keystroke with nothing to verify.
 func cmdSend(args []string) int {
 	enter := true
 	verify := true
@@ -96,12 +98,24 @@ func cmdSend(args []string) int {
 			return 1
 		}
 	}
-	// Plain (unverified) path: --no-verify or --no-enter. Drop out of copy/view-mode
-	// first — otherwise the pane swallows the text (and Enter) as mode-nav commands.
+	// Plain (unverified) path: --no-verify or --no-enter. It skips the CONFIRMATION,
+	// not the delivery mechanics — text still rides a paste buffer and Enter is still
+	// a separate key, exactly as the verified path sends them. (`send-keys -l` here
+	// meant an unverified send handed a multi-line message to the agent as one bare
+	// Return per line, submitting it in pieces.) Drop out of copy/view-mode first —
+	// otherwise the pane swallows the text and the Enter as mode-nav commands.
 	_ = tmux.ExitCopyMode(pane)
-	if err := tmux.SendText(pane, text, enter); err != nil {
-		i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
-		return 1
+	if text != "" {
+		if err := tmux.Paste(pane, text); err != nil {
+			i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
+			return 1
+		}
+	}
+	if enter {
+		if err := tmux.SendKey(pane, "Enter"); err != nil {
+			i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
+			return 1
+		}
 	}
 	return 0
 }
