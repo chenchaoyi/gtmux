@@ -132,12 +132,28 @@ struct MenuView: View {
 
     // The supervisor (中控) is a META session — it watches the others, so it gets
     // its OWN layer between the summary and the sections (never a section row).
-    // Running → brand grid avatar + status badge + its task line, click = focus.
-    // Absent → a quiet ghost affordance that shells `gtmux hq`. Hidden while
-    // searching and on the true empty state (first-run keeps its own UX).
+    // A ROLE BANNER ("参谋长 / CHIEF OF STAFF" + a purpose line) plus a FRAMED,
+    // bordered panel are what set it apart at a glance — agent rows carry neither,
+    // so HQ never reads as one-more-session. Running → brand avatar + status badge
+    // + its task line, click = focus. Absent → a quiet ghost affordance that shells
+    // `gtmux hq`. Hidden while searching and on the true empty state (first-run
+    // keeps its own UX). Chrome stays neutral (DESIGN 铁律: color = status only —
+    // the sole status color here is the badge).
     @ViewBuilder private func hqCard(_ p: Theme.Palette) -> some View {
         if !searchActive && store.total > 0 {
-            Group {
+            VStack(alignment: .leading, spacing: 6) {
+                // Role banner — the "this is the oversight layer, not a session" cue.
+                HStack(spacing: 5) {
+                    Image(systemName: "binoculars.fill").font(.system(size: 9.5))
+                    Text(l10n.tr("CHIEF OF STAFF", "参谋长"))
+                        .font(.system(size: 9.5, weight: .semibold)).tracking(0.9)
+                    Spacer(minLength: 6)
+                    Text(l10n.tr("watches all sessions", "统观全局"))
+                        .font(.system(size: 9))
+                }
+                .foregroundStyle(p.fg3)
+                .padding(.horizontal, 4)
+
                 if let hq = store.supervisor {
                     Button { onJump(hq) } label: {
                         HStack(spacing: 11) {
@@ -161,9 +177,8 @@ struct MenuView: View {
                             Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
                                 .foregroundStyle(p.fg3)
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 7)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(p.rowSelected.opacity(0.5)))
+                        .padding(.horizontal, 11).padding(.vertical, 9)
+                        .background(hqPanel(p))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -175,9 +190,10 @@ struct MenuView: View {
                             Text(l10n.tr("HQ not running — click to start", "中控未运行 · 点击启动"))
                                 .font(.system(size: 11)).foregroundStyle(p.fg3)
                             Spacer(minLength: 6)
+                            Image(systemName: "play.circle").font(.system(size: 13)).foregroundStyle(p.fg3)
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 6)
-                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .padding(.horizontal, 11).padding(.vertical, 9)
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .strokeBorder(p.divider, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
                         .contentShape(Rectangle())
                     }
@@ -185,8 +201,18 @@ struct MenuView: View {
                     .help(l10n.tr("Start the supervisor (gtmux hq)", "启动中控（gtmux hq）"))
                 }
             }
-            .padding(.horizontal, 8).padding(.top, 6)
+            .padding(.horizontal, 8).padding(.top, 8)
         }
+    }
+
+    // A framed, faintly-elevated panel. The 1px border is the primary "not a row"
+    // signal (agent rows have none); the fill stays a whisper so chrome never
+    // competes with the status language.
+    private func hqPanel(_ p: Theme.Palette) -> some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(p.rowSelected.opacity(0.5))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(p.divider, lineWidth: 1))
     }
 
     // MARK: content

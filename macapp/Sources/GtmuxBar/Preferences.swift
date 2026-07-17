@@ -145,7 +145,7 @@ struct PreferencesView: View {
             }
 
             // SHARE — collaborators, least privilege, per-link scope.
-            Section(l10n.tr("Sharing · Share", "分享 · 协作者")) {
+            Section(l10n.tr("Sharing", "分享")) {
                 Toggle(isOn: shareEnabledBinding) {
                     prefLabel("Let a collaborator type into the terminal",
                               "允许协作者向终端输入", symbol: "keyboard")
@@ -158,11 +158,6 @@ struct PreferencesView: View {
             }
 
             Section(l10n.tr("Software update", "软件更新")) {
-                LabeledContent {
-                    Text(appVersion).font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
-                } label: {
-                    prefLabel("Current version", "当前版本", symbol: "info.circle")
-                }
                 updateRow
             }
         }
@@ -211,15 +206,21 @@ struct PreferencesView: View {
         }
     }
 
-    // Explicit check-for-updates row (reuses Updater — same effect as `gtmux
-    // update`): a Check button, or a "new version available → Update now" row, or a
-    // progress line while updating.
+    // ONE row does the whole job (mirrors macOS System Settings › Software Update):
+    // the version + a status word live on the same line, and re-checking is a
+    // borderless ⟳ — no separate "Check for updates" button on its own line. Only a
+    // genuinely actionable state (an update is ready to install, or it failed) earns
+    // its own emphasized row with a prominent button.
     @ViewBuilder private var updateRow: some View {
         switch updater.state {
         case .available(let v):
             HStack(spacing: 8) {
                 Image(systemName: "arrow.down.circle.fill").foregroundStyle(Theme.Status.working)
-                Text(l10n.tr("New version \(v) available", "有新版本 \(v)")).font(.system(size: 12))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l10n.tr("Update available", "有可用更新")).font(.system(size: 12))
+                    Text("\(appVersion) → \(v)")
+                        .font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
+                }
                 Spacer()
                 Button(l10n.tr("Update now", "立即更新")) { updater.install() }
                     .buttonStyle(.borderedProminent)
@@ -245,14 +246,26 @@ struct PreferencesView: View {
                     .buttonStyle(.borderedProminent)
             }
         default:
-            HStack(spacing: 8) {
-                Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
-                    .disabled(isChecking)
-                if isChecking { ProgressView().controlSize(.small) }
-                Spacer()
-                if let s = checkStatusText {
-                    Text(s).font(.system(size: 11)).foregroundStyle(.secondary)
+            // Idle / checking / up-to-date → collapse into the version row.
+            LabeledContent {
+                HStack(spacing: 8) {
+                    Text(appVersion).font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
+                    if let s = checkStatusText {
+                        Text("·").foregroundStyle(.tertiary)
+                        Text(s).font(.system(size: 11)).foregroundStyle(.tertiary)
+                    }
+                    if isChecking {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button { updater.check() } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .buttonStyle(.borderless)
+                        .help(l10n.tr("Check for updates", "检查更新"))
+                    }
                 }
+            } label: {
+                prefLabel("Current version", "当前版本", symbol: "info.circle")
             }
         }
     }

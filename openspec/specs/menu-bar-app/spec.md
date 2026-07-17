@@ -175,12 +175,17 @@ from a fully-finished one.
 The popover SHALL render a supervisor session (`role:"supervisor"`) as a
 persistent compact card between the header summary and the grouped section list
 — NEVER as a row inside the waiting/working/idle/running sections (those rows
-SHALL exclude supervisor rows). The card carries the gtmux brand pane-grid mark
-as its avatar (the supervisor is gtmux's own concept — visually distinct from
-agent avatars), the standard status badge, and the session's task line; clicking
-it focuses the supervisor's pane. When no supervisor is live, the slot SHALL
-show a quiet "not running — start" affordance that launches `gtmux hq` (the app
-stays a CLI consumer).
+SHALL exclude supervisor rows). The card SHALL be visually framed so it does NOT
+read as one more session: a ROLE BANNER above it (a small uppercase
+"CHIEF OF STAFF / 参谋长" label with an oversight glyph and a short purpose line,
+e.g. "watches all sessions / 统观全局") and a BORDERED panel (agent rows carry no
+border — the border is the primary "not a row" cue). The card carries the gtmux
+brand pane-grid mark as its avatar (the supervisor is gtmux's own concept —
+visually distinct from agent avatars), the standard status badge, and the
+session's task line; clicking it focuses the supervisor's pane. Chrome SHALL stay
+neutral (color is reserved for STATE — the card's only status color is the
+badge). When no supervisor is live, the slot SHALL show a quiet "not running —
+start" affordance that launches `gtmux hq` (the app stays a CLI consumer).
 
 #### Scenario: Supervisor live
 
