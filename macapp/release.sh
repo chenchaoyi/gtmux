@@ -89,7 +89,7 @@ cask "gtmux-app" do
   desc "Menu-bar companion for the gtmux session overview"
   homepage "https://github.com/chenchaoyi/gtmux"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "Gtmux.app"
 

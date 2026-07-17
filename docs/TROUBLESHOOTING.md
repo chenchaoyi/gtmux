@@ -63,6 +63,27 @@ env via the fixed install.sh).
 
 ---
 
+### `brew upgrade --cask gtmux-app` fails: "App source '/Applications/Gtmux.app' is not there"
+**Symptom:** `brew install/upgrade --cask chenchaoyi/tap/gtmux-app` downloads + verifies
+the zip, then errors `It seems the App source '/Applications/Gtmux.app' is not there.`
+(often on a machine that previously ran `gtmux update`).
+**Root cause:** the app has **two install channels that targeted different dirs** — the
+Homebrew cask installs to `/Applications/Gtmux.app`, but `install.sh` / `gtmux update`
+installed to `~/Applications/Gtmux.app`. If a user did both, `/Applications/Gtmux.app`
+goes missing (only the `~/Applications` copy is current), and Homebrew's cask uninstall
+step can't find the app it recorded at `/Applications` → the error. NOT a bad zip or
+cask stanza (`ditto --keepParent` + `app "Gtmux.app"` are correct).
+**Fix:** `install.sh` now **co-locates** — if `/Applications/Gtmux.app` exists (a cask
+install) and `~/Applications/Gtmux.app` doesn't, it updates the `/Applications` bundle
+in place instead of making a second copy, so the two channels stay on one app.
+**Unstick a machine now:** `brew uninstall --cask gtmux-app --force` (forgets the broken
+state) then `brew install --cask chenchaoyi/tap/gtmux-app` — or just switch to the curl
+installer: `curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash`.
+(The separate deprecation *warning* `depends_on macos: ">= :ventura"` is cosmetic; the
+cask generator now emits `depends_on macos: :ventura`.)
+
+---
+
 ## Remote access / pairing / push
 
 ### "Pairing code expired" that never clears — check for a DUPLICATE serve on :8765

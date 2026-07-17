@@ -235,6 +235,16 @@ step 4 "Install" "${BIN_DIR}/gtmux"
 # validate the zip structurally rather than by checksum. Opt out with
 # GTMUX_NO_APP=1; start it at login with GTMUX_APP_LOGIN=1.
 APP_DIR="${HOME}/Applications"
+# Co-locate with an existing install so the two app channels don't diverge into two
+# copies: the Homebrew cask installs to /Applications/Gtmux.app, this installer (and
+# `gtmux update`, which runs this script) to ~/Applications. If the app ALREADY lives
+# in /Applications (a `brew install --cask gtmux-app`) and NOT in ~/Applications,
+# update that bundle in place — otherwise `gtmux update` would leave a second copy in
+# ~/Applications while the cask's /Applications one goes stale, which then breaks a
+# later `brew upgrade` ("App source '/Applications/Gtmux.app' is not there").
+if [ -d "/Applications/Gtmux.app" ] && [ ! -d "${HOME}/Applications/Gtmux.app" ] && [ -w "/Applications" ]; then
+  APP_DIR="/Applications"
+fi
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 if [ -z "${GTMUX_NO_APP:-}" ]; then
   APP_ZIP="Gtmux-${NUM_VERSION}-macos.zip"
