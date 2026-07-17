@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // parseTagName pulls the tag out of GitHub's releases/latest JSON; parseJsdelivrLatest
@@ -131,3 +132,22 @@ func TestInstallScriptRelaunchesAppWithOpenN(t *testing.T) {
 // fetchLatestTag is intentionally NOT unit-tested: it does a live HTTP GET to
 // api.github.com and inlines its tag_name parse (no extractable pure helper).
 // Exercising it would require network, which is out of scope for these tests.
+
+// TestRunBounded pins that a wedged external command can't hang the caller — the
+// timeout kills it (this backstops the `launchctl kickstart -k` that froze a user's
+// `gtmux doctor --fix`). A quick command returns cleanly.
+func TestRunBounded(t *testing.T) {
+	// A command that outruns the deadline is killed → non-nil error, and it returns
+	// close to the timeout (not the full sleep).
+	start := time.Now()
+	if err := runBounded(150*time.Millisecond, "sleep", "10"); err == nil {
+		t.Fatal("runBounded should error when the command exceeds the timeout")
+	}
+	if el := time.Since(start); el > 3*time.Second {
+		t.Fatalf("runBounded didn't bound the runtime: took %v", el)
+	}
+	// A fast command completes cleanly within the timeout.
+	if err := runBounded(5*time.Second, "true"); err != nil {
+		t.Fatalf("runBounded(true) = %v, want nil", err)
+	}
+}
