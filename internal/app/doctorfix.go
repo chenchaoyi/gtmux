@@ -297,8 +297,15 @@ func (s *fixState) stepCodexHook() int {
 		return 0
 	}
 	ensureCodexFeaturesHooks(cfgPath)
-	i18n.Say("  ✓ wired Codex via the hooks system — restart Codex to load it",
-		"  ✓ 已用 hooks 系统接入 Codex，重启 Codex 以加载")
+	// Report the ACTUAL end state — the hooks entries are written, but wiring only
+	// counts if features.hooks also got enabled. Don't claim success blindly.
+	if codexHooksWired() {
+		i18n.Say("  ✓ wired Codex via the hooks system — restart Codex to load it",
+			"  ✓ 已用 hooks 系统接入 Codex，重启 Codex 以加载")
+	} else {
+		i18n.Sae("  ⚠ wrote the hooks, but couldn't enable features.hooks — add `hooks = true` under [features] in "+tildeify(cfgPath)+", then restart Codex",
+			"  ⚠ 已写入 hooks，但未能自动启用 features.hooks —— 请在 "+tildeify(cfgPath)+" 的 [features] 下加 `hooks = true`，再重启 Codex")
+	}
 	return 1
 }
 

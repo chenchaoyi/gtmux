@@ -82,8 +82,21 @@ func cmdDoctor(args []string) int {
 		return doctorFix(yes)
 	}
 	if rec > 0 || miss > 0 {
-		i18n.Say("  → run `gtmux doctor --fix` to set up the rest (it explains and asks before each change)",
-			"  → 跑 `gtmux doctor --fix` 把其余项配好（每步都会解释并征求确认）")
+		// Don't make the user re-run from scratch with --fix: if we're on a TTY,
+		// offer to walk the fixes right here (each step still explains + asks).
+		// Off a TTY (piped / CI), just print the hint and keep doctor read-only.
+		if isTTY() {
+			fmt.Println()
+			if confirm(i18n.Tr("  Fix these now? [Y/n] ", "  现在就修复这些？[Y/n] ")) {
+				fmt.Println()
+				return doctorFix(false)
+			}
+			i18n.Say("  → or run `gtmux doctor --fix` anytime (explains + asks before each change)",
+				"  → 也可随时跑 `gtmux doctor --fix`（每步先解释并征求确认）")
+		} else {
+			i18n.Say("  → run `gtmux doctor --fix` to set up the rest (it explains and asks before each change)",
+				"  → 跑 `gtmux doctor --fix` 把其余项配好（每步都会解释并征求确认）")
+		}
 	}
 	if miss > 0 {
 		return 1
@@ -283,7 +296,11 @@ func rowCodexHook() dcheck {
 	if codexNotifyIsGtmux() {
 		return dcheck{stOK, label, i18n.Tr("wired (notify)", "已接（notify）"), i18n.Tr("turn-done notifications", "turn 结束通知")}
 	}
-	return dcheck{stInfo, label, i18n.Tr("not wired", "未接"), i18n.Tr("optional — detection works anyway", "可选，检测不依赖它")}
+	// Only reached when ~/.codex EXISTS (this row isn't added otherwise), so Codex is
+	// in use — an un-wired hook is a real improvement (`--fix` offers it), not a
+	// neutral note. Detection still works without it, but you miss precise per-event
+	// state + notifications.
+	return dcheck{stRec, label, i18n.Tr("not wired", "未接"), i18n.Tr("wire for precise state + notifications", "接入以获精准状态 + 通知")}
 }
 
 // rowCloudflared surfaces the optional tunnel client. It's only needed for

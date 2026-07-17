@@ -8,7 +8,7 @@
 | `focus <name\|pane-id\|--last>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane; `--last` = the most-recently-finished agent |
 | `new [name]` | start a new tmux session in a fresh terminal tab |
 | `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
-| `doctor [--fix [--yes]]` | health check grouped by concern; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
+| `doctor [--fix [--yes]]` | health check grouped by concern; on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
 | `install-hooks [--agent <key>]` | register the notification hook — Claude by default; `--agent codex\|cursor\|gemini\|copilot\|kiro` for others |
 | `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (paid); see [phone.md](phone.md) |

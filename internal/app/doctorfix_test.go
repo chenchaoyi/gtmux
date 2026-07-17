@@ -122,6 +122,39 @@ func TestCodexHooksFeatureEnabled(t *testing.T) {
 	}
 }
 
+// TestEnableHooksUnderFeatures pins the bug the doctor hit: when a [features]
+// table already exists, --fix must actually WRITE `hooks = true` under it (not
+// just print guidance), so a follow-up `doctor` reports wired.
+func TestEnableHooksUnderFeatures(t *testing.T) {
+	cases := []struct {
+		name, in string
+	}{
+		// The exact shape from the field report: a [features] table with an
+		// unrelated key, followed by another table that must survive intact.
+		{"insert under table", "model = \"x\"\n\n[features]\njs_repl = false\n\n[mcp_servers.node_repl]\ncmd = \"node\"\n"},
+		// Flip an explicit hooks = false rather than duplicating the key.
+		{"flip false", "[features]\nhooks = false\nother = 1\n"},
+		// Insert when the [features] table is empty.
+		{"empty table", "[features]\n"},
+		// No table → dotted top-level fallback.
+		{"no table", "model = \"x\"\n"},
+	}
+	for _, c := range cases {
+		out := enableHooksUnderFeatures(c.in)
+		if !codexHooksFeatureEnabled(out) {
+			t.Errorf("%s: features.hooks not enabled after fix:\n%s", c.name, out)
+		}
+		// The foreign table + key must be preserved.
+		if strings.Contains(c.in, "[mcp_servers.node_repl]") && !strings.Contains(out, "[mcp_servers.node_repl]") {
+			t.Errorf("%s: dropped a foreign table:\n%s", c.name, out)
+		}
+		// A flip must not leave a stray `hooks = false` behind.
+		if c.name == "flip false" && strings.Contains(out, "hooks = false") {
+			t.Errorf("%s: left a stale hooks = false:\n%s", c.name, out)
+		}
+	}
+}
+
 func TestTomlHasTable(t *testing.T) {
 	if !tomlHasTable("[features]\nx = 1\n", "features") {
 		t.Error("should find [features]")
