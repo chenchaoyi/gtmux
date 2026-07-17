@@ -12,7 +12,12 @@ without hunting. Read-only by default; opt-in to apply fixes.
 
 The system SHALL, on `gtmux doctor`, run a read-only check grouped by concern
 (tmux, restore, terminal, agents+notifications), each row a status glyph + label
-+ value + a short "why", and a summary tally. It SHALL change nothing.
++ value + a short "why", and a summary tally. The check itself SHALL change
+nothing. When it finds improvable or blocking rows AND is running on an
+interactive terminal (a TTY), it SHALL, after the report, OFFER to apply the
+fixes inline (the same consent-gated per-step flow as `--fix`), so the user does
+not have to re-invoke with `--fix`; declining the offer, or running off a TTY,
+keeps the command read-only and prints the `--fix` hint instead.
 
 #### Scenario: Healthy environment
 
@@ -24,6 +29,19 @@ The system SHALL, on `gtmux doctor`, run a read-only check grouped by concern
 - **WHEN** a required prerequisite is missing (e.g. tmux absent, or set-titles
   not configured for focus/restore)
 - **THEN** that row is marked blocking and the command exits non-zero
+
+#### Scenario: Offer to fix inline on a TTY
+
+- **WHEN** `gtmux doctor` (no `--fix`) finds improvable/blocking rows on an
+  interactive terminal
+- **THEN** after the report it asks whether to fix now, and on assent walks the
+  same consent-gated fix flow; declining keeps it read-only
+
+#### Scenario: Non-interactive stays read-only
+
+- **WHEN** `gtmux doctor` runs off a TTY (piped / CI) with improvable rows
+- **THEN** it does NOT prompt and changes nothing, printing the `gtmux doctor
+  --fix` hint
 
 ### Requirement: Locale / UTF-8 health check and fix
 
@@ -80,6 +98,22 @@ can't safely automate: installing tmux.
 - **THEN** it adds gtmux to Codex's hooks system (`hooks.json` + `features.hooks`) and
   NEVER writes or replaces `notify` in `~/.codex/config.toml` (the old
   single-slot notify-replace step was removed in #317)
+
+#### Scenario: features.hooks enabled under an existing [features] table
+
+- **WHEN** `doctor --fix` wires Codex and `~/.codex/config.toml` already has a
+  `[features]` table (without `hooks = true`)
+- **THEN** it WRITES `hooks = true` under that table (inserting the key, or flipping
+  an existing `hooks = false`), preserving the rest of the file — it does NOT merely
+  print guidance, so a follow-up `gtmux doctor` reports Codex wired
+- **AND** if it still cannot enable `features.hooks`, the fix reports that honestly
+  (it does not claim success)
+
+#### Scenario: Un-wired Codex is a recommended improvement
+
+- **WHEN** `~/.codex` exists (Codex is in use) but the gtmux hook is not wired
+- **THEN** `gtmux doctor` marks the Codex-hook row as a recommended improvement (not
+  a neutral note), so it counts toward "to improve" and the fix flow offers it
 
 #### Scenario: Installs the app, guides for tmux
 

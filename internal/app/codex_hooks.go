@@ -73,13 +73,18 @@ func ensureCodexFeaturesHooks(cfgPath string) {
 			"✓ "+tildeify(cfgPath)+" 已启用 features.hooks")
 		return
 	}
-	if tomlHasTable(content, "features") {
-		i18n.Say("• add `hooks = true` under [features] in "+tildeify(cfgPath)+" to load the hooks system.",
-			"• 请在 "+tildeify(cfgPath)+" 的 [features] 下加 `hooks = true` 以启用 hooks 系统。")
-		return
-	}
 	backupFile(cfgPath)
-	updated := insertTomlTopLevel(content, "features.hooks = true")
+	// A [features] table already exists → insert (or flip) `hooks = true` UNDER it —
+	// adding one key line beneath the header keeps the rest of the table intact.
+	// Otherwise write the dotted top-level `features.hooks = true`. (The old code
+	// only PRINTED guidance when a [features] table existed, so the doctor kept
+	// reporting "not wired" even after --fix claimed success.)
+	var updated string
+	if tomlHasTable(content, "features") {
+		updated = enableHooksUnderFeatures(content)
+	} else {
+		updated = insertTomlTopLevel(content, "features.hooks = true")
+	}
 	if err := os.MkdirAll(filepath.Dir(cfgPath), 0o755); err != nil {
 		i18n.Sae("• could not enable features.hooks: "+err.Error(), "• 启用 features.hooks 失败："+err.Error())
 		return
@@ -94,6 +99,42 @@ func ensureCodexFeaturesHooks(cfgPath string) {
 
 var reFeaturesHooksDotted = regexp.MustCompile(`(?m)^\s*features\.hooks\s*=\s*true\b`)
 var reHooksTrue = regexp.MustCompile(`^hooks\s*=\s*true\b`)
+var reHooksAssign = regexp.MustCompile(`^\s*hooks\s*=`)
+
+// enableHooksUnderFeatures sets `hooks = true` inside an EXISTING [features] table:
+// it flips an existing `hooks = …` line in that table, or inserts the key right
+// after the `[features]` header. Only the [features] table is touched — foreign
+// keys and other tables are preserved byte-for-byte.
+func enableHooksUnderFeatures(content string) string {
+	lines := strings.Split(content, "\n")
+	start := -1
+	for i, ln := range lines {
+		if strings.TrimSpace(ln) == "[features]" {
+			start = i
+			break
+		}
+	}
+	if start == -1 { // no table after all — fall back to the dotted top-level key
+		return insertTomlTopLevel(content, "features.hooks = true")
+	}
+	end := len(lines)
+	for i := start + 1; i < len(lines); i++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[i]), "[") {
+			end = i
+			break
+		}
+	}
+	for i := start + 1; i < end; i++ {
+		if reHooksAssign.MatchString(lines[i]) {
+			lines[i] = "hooks = true"
+			return strings.Join(lines, "\n")
+		}
+	}
+	out := append([]string{}, lines[:start+1]...)
+	out = append(out, "hooks = true")
+	out = append(out, lines[start+1:]...)
+	return strings.Join(out, "\n")
+}
 
 // codexHooksFeatureEnabled reports whether `features.hooks = true` is set, in either
 // the dotted top-level form (`features.hooks = true`) or under a `[features]` table.
