@@ -18,6 +18,12 @@ Then pair the app — scan the menu-bar app's pairing QR, or enter the host + to
 manually. You can save several servers and switch between them from the
 connection page (tap the server name in the radar header).
 
+A **paired (owner) phone can manage sharing remotely** — a **Manage this Mac** screen
+lets you mint, copy, and revoke the same scoped guest links as `gtmux share` (per-pane
+view/type), plus see the paired-device roster, without walking to the Mac. Revoking a
+paired device and toggling the remote-access door stay Mac-only (a lost phone can't
+re-key the machine). A **guest** connection never sees this screen.
+
 <img src="assets/screenshot-servers.png" width="220" alt="gtmux connection page — saved servers, switch / add / remove" />
 
 Two facts decide what you can do from where:
@@ -108,7 +114,7 @@ Your local Ghostty / iTerm2 / Terminal becomes the remote tmux session — raw,
 interactive, full TUI fidelity — over the same serve/tunnel (a WebSocket, `GET
 /api/attach`). It honors the SAME owner/guest scope as the web + phone: a guest is
 restricted to the host's view/input allowlists (a view-only pane is read-only), set up
-in the menu bar's **Shared input** or with `gtmux share`. Detach with tmux `<prefix> d`
+in the menu bar's **Sharing** section or with `gtmux share`. Detach with tmux `<prefix> d`
 or `Ctrl-]`. Full reference: [`cli.md` → `gtmux attach`](cli.md) and
 [`design/remote-attach-research.md`](design/remote-attach-research.md).
 

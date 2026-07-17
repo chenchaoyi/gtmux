@@ -67,7 +67,9 @@ Commands:
                           as your own device (token persisted); a share link
                           (…/#t=<token>) connects as a scoped guest; host + --token
                           also works. --read-only to watch; Ctrl-] detaches
-  devices [revoke <id>]   the device roster (alias of 'pair list' / 'pair revoke')
+  devices [revoke <id>]   the device roster (alias of 'pair list' / 'pair revoke');
+                          --push inspects, --forget-push <id|orphans|all> clears
+                          push tokens (revoking a device also drops its push)
   doctor [--fix [--yes]]  health check, grouped by concern: tmux / restore /
                           terminal / agents+notifications. --fix sets up the
                           rest — set-titles, plugins, the Claude hook — one step
@@ -160,8 +162,9 @@ const usageZH = `快速开始：
                           终端登记为你自己的设备（token 会保存）；分享链接
                           （…/#t=<token>）以受限访客接入；host + --token 亦可。
                           --read-only 只看；Ctrl-] 退出
-  devices [revoke <id>]   列出用一次性 QR 码配对的手机（每设备独立 token），
-                          并可吊销某台（即刻生效）。需在 serve/tunnel 运行时使用
+  devices [revoke <id>]   已配对设备名册（等价于 'pair list' / 'pair revoke'）；
+                          --push 查看，--forget-push <id|orphans|all> 清推送 token
+                          （吊销某设备也会一并删掉它的推送 token）
   doctor [--fix [--yes]]  体检，按主题分组：tmux / 恢复 / 终端 / agent+通知。
                           --fix 把其余项配好（set-titles、插件、Claude hook），
                           逐项进行，每步都先解释并征求确认（--yes 全部应用）。

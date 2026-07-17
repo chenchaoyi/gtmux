@@ -376,9 +376,12 @@ body: {"enrollCode":"<code>","name":"<device label>"}
 ### `GET /api/devices` — list enrolled devices (no tokens)
 
 ```
-200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?}, …]}
+200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?,"scope":"…"?}, …]}
 503 {"error":"enrollment not configured"}
 ```
+
+`scope` is `"guest"` for a share link, absent/empty for an owner device (guest entries
+also carry `viewPanes`/`inputPanes`/`expiresAt`, below).
 
 ### `POST /api/devices/revoke` — revoke a device's token now
 
