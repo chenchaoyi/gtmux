@@ -200,7 +200,14 @@ It SHALL warn that a public URL makes the bearer token the sole gate.
 - **THEN** the self-hosted provider still works if the user's VPS is reachable on 443
   (its traffic is indistinguishable from ordinary HTTPS to the user's own domain)
 
-### Requirement: Hosted stable address by default; quick is opt-in
+#### Scenario: Switching remote mode tears down the ACTIVE backend
+
+- **WHEN** the always-on tunnel is running on the self-hosted (Direct) backend and the
+  user turns remote access Off (or down to Wi-Fi) — via `gtmux serve --unservice` /
+  `--service` or the menu-bar Off/Wi-Fi picker
+- **THEN** the self-hosted tunnel agent (`com.gtmux.selftunnel`) is unloaded + removed
+  along with the serve and Cloudflare agents, so the derived mode actually leaves
+  Anywhere (it does not read `.anywhere` because a backend agent was left behind)
 
 The system SHALL, by default, give each Mac a STABLE hosted address so the phone
 pairs ONCE and keeps reaching the Mac across restarts. A control-plane service
