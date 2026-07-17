@@ -194,3 +194,76 @@ func TestShareNewTemplateAndSet(t *testing.T) {
 		t.Fatalf("guest share/set = %d, want 403", rr.Code)
 	}
 }
+
+// Scoped revoke + the guest-leak fix (owner-remote-admin, decision B):
+// - a guest may NOT list devices or revoke;
+// - an owner device may revoke a GUEST link but NOT a paired device;
+// - the master may revoke anything.
+func TestScopedRevokeAndDeviceGate(t *testing.T) {
+	enroll := NewEnrollManager(nil, nil)
+	share := NewShareManager(ShareState{Enabled: true}, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Enroll: enroll, Share: share})
+	h := s.Handler()
+
+	dev, _ := enroll.Redeem(enroll.Mint(), "my phone") // owner device
+	link := enroll.MintGuest("Alice", []string{"%1"}, nil, 0)
+
+	// Guest is refused on the whole management surface (closes the prior leak).
+	if rr := do(t, h, http.MethodGet, "/api/devices", link.Token); rr.Code != http.StatusForbidden {
+		t.Fatalf("guest GET /api/devices = %d, want 403 (leak)", rr.Code)
+	}
+	if rr := post(t, h, "/api/devices/revoke", link.Token, `{"id":"`+dev.ID+`"}`); rr.Code != http.StatusForbidden {
+		t.Fatalf("guest revoke = %d, want 403", rr.Code)
+	}
+
+	// Owner device may LIST and may revoke a GUEST link…
+	if rr := do(t, h, http.MethodGet, "/api/devices", dev.Token); rr.Code != http.StatusOK {
+		t.Fatalf("owner GET /api/devices = %d, want 200", rr.Code)
+	}
+	if rr := post(t, h, "/api/devices/revoke", dev.Token, `{"id":"`+link.ID+`"}`); rr.Code != http.StatusOK {
+		t.Fatalf("owner revoke guest link = %d, want 200 (%s)", rr.Code, rr.Body.String())
+	}
+	if _, _, ok := enroll.TokenByID(link.ID); ok {
+		t.Fatal("the guest link should be gone")
+	}
+	// …but NOT a paired device.
+	dev2, _ := enroll.Redeem(enroll.Mint(), "other phone")
+	if rr := post(t, h, "/api/devices/revoke", dev.Token, `{"id":"`+dev2.ID+`"}`); rr.Code != http.StatusForbidden {
+		t.Fatalf("owner revoking a paired device = %d, want 403", rr.Code)
+	}
+	if _, ok := enroll.DeviceByToken(dev2.Token); !ok {
+		t.Fatal("the paired device must survive an owner revoke attempt")
+	}
+	// Master may revoke the paired device.
+	if rr := post(t, h, "/api/devices/revoke", testToken, `{"id":"`+dev2.ID+`"}`); rr.Code != http.StatusOK {
+		t.Fatalf("master revoke device = %d, want 200", rr.Code)
+	}
+}
+
+// GET /api/share/link re-hands a guest link's token to a FULL caller (owner can
+// re-copy the URL); guests are refused; only guest ids resolve.
+func TestShareLinkRecopy(t *testing.T) {
+	enroll := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Enroll: enroll, Share: NewShareManager(ShareState{}, nil)})
+	h := s.Handler()
+	dev, _ := enroll.Redeem(enroll.Mint(), "phone")
+	link := enroll.MintGuest("Bob", []string{"%2"}, nil, 0)
+
+	var out struct{ ID, Label, Token string }
+	rr := do(t, h, http.MethodGet, "/api/share/link?id="+link.ID, dev.Token) // owner
+	if rr.Code != http.StatusOK {
+		t.Fatalf("owner GET share/link = %d, want 200", rr.Code)
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &out)
+	if out.Token != link.Token || out.Label != "Bob" {
+		t.Fatalf("share/link = %+v, want Bob's token", out)
+	}
+	// A guest cannot re-read link tokens.
+	if rr := do(t, h, http.MethodGet, "/api/share/link?id="+link.ID, link.Token); rr.Code != http.StatusForbidden {
+		t.Fatalf("guest GET share/link = %d, want 403", rr.Code)
+	}
+	// A paired device's id never resolves (not a guest).
+	if rr := do(t, h, http.MethodGet, "/api/share/link?id="+dev.ID, testToken); rr.Code != http.StatusNotFound {
+		t.Fatalf("share/link for a device id = %d, want 404", rr.Code)
+	}
+}

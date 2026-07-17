@@ -401,7 +401,18 @@ body: {"label":"Alice","view":["%1","%2"]?,"input":["%1"]?,"expiresInSec":86400?
 Omitted `view`/`input` copy the current template; omitted `expiresInSec` = never
 expires. Input is normalized into view (input ⊆ view).
 
-### `POST /api/share/set` — edit ONE link's scope (master only)
+### Authorization (owner-remote-admin)
+
+The SHARE-management endpoints (`/api/share/config`, `/api/share/new`,
+`/api/share/set`, `/api/share/link`) and `GET /api/devices` are **FULL-only**: the
+master token OR an owner device (a paired phone/browser/terminal). A `guest` is
+refused (`403`) — so an owner can manage sharing remotely, and a guest cannot list
+the roster (this closes a prior unguarded path). `POST /api/devices/revoke` is
+SCOPED: a master may revoke any entry; an owner device may revoke ONLY a guest link
+(`403 forbidden: paired devices are managed on the Mac` for a paired device); a
+guest is refused. Toggling the remote-access door stays a local Mac operation.
+
+### `POST /api/share/set` — edit ONE link's scope (full: master or owner device)
 
 ```
 body: {"id":"<id>","view":[…]?,"input":[…]?,"expiresInSec":N?,"clearExpiry":true?}
@@ -414,3 +425,15 @@ entries are editable.
 
 `GET /api/devices` additionally carries each guest entry's `viewPanes`,
 `inputPanes`, and `expiresAt` (additive; absent on owner devices).
+
+### `GET /api/share/link?id=<id>` — re-copy a link's URL (full only)
+
+```
+200 {"id":"…","label":"…","token":"<guest-token>"}   // build <base>/#t=<token>
+403 {"error":"forbidden: not shared"}                // a guest caller
+404 {"error":"unknown share link"}                   // no such guest link
+```
+
+Re-hands a guest link's token so an owner can re-copy the share URL after minting
+(a link is no longer view-once). Only guest links resolve; a paired device's token
+is never returned.

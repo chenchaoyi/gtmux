@@ -182,7 +182,7 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 // the current policy ({enabled, panes}); POST sets consent and/or the allowlist.
 // Guests and devices cannot read the full policy, enable sharing, or edit the list.
 func (s *Server) handleShareConfig(w http.ResponseWriter, r *http.Request) {
-	if !s.masterOnly(w, r) {
+	if !s.fullOnly(w, r) {
 		return
 	}
 	if s.deps.Share == nil {
@@ -210,7 +210,7 @@ func (s *Server) handleShareConfig(w http.ResponseWriter, r *http.Request) {
 // scope (pair-share-model). Omitted scope falls back to the current global lists
 // (the TEMPLATE — preserves the legacy "mint, then tick" flow's semantics).
 func (s *Server) handleShareNew(w http.ResponseWriter, r *http.Request) {
-	if !s.masterOnly(w, r) {
+	if !s.fullOnly(w, r) {
 		return
 	}
 	if s.deps.Enroll == nil {
@@ -249,7 +249,7 @@ func (s *Server) handleShareNew(w http.ResponseWriter, r *http.Request) {
 // an omitted facet is untouched; expiresInSec>0 sets a fresh expiry from now;
 // clearExpiry removes it.
 func (s *Server) handleShareSet(w http.ResponseWriter, r *http.Request) {
-	if !s.masterOnly(w, r) {
+	if !s.fullOnly(w, r) {
 		return
 	}
 	if s.deps.Enroll == nil {
@@ -287,10 +287,49 @@ func (s *Server) handleShareSet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleShareLink implements GET /api/share/link?id=<id> — FULL only. Re-hands the
+// share TOKEN for an existing guest link so an owner can re-copy the URL after
+// minting (owner-remote-admin: a link is no longer view-once). Only guest links;
+// a paired device's token is never returned.
+func (s *Server) handleShareLink(w http.ResponseWriter, r *http.Request) {
+	if !s.fullOnly(w, r) {
+		return
+	}
+	if s.deps.Enroll == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("enrollment not configured"))
+		return
+	}
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	token, label, ok := s.deps.Enroll.TokenByID(id)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errBody("unknown share link"))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "label": label, "token": token})
+}
+
 // masterOnly writes 403 and returns false unless the caller holds the master token.
 func (s *Server) masterOnly(w http.ResponseWriter, r *http.Request) bool {
 	if callerScope(r.Context()) != scopeMaster {
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: host-only"))
+		return false
+	}
+	return true
+}
+
+// fullOnly writes 403 and returns false unless the caller is a FULL surface — the
+// master token OR an owner device (a paired phone/browser/terminal). A guest is
+// refused. This is the gate for SHARE management (owner-remote-admin, decision B):
+// an owner device manages sharing remotely, while the device roster + the door
+// stay Mac-scoped (handled separately). It also closes the prior unguarded
+// device-list path (a guest could list the roster).
+func (s *Server) fullOnly(w http.ResponseWriter, r *http.Request) bool {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
 		return false
 	}
 	return true
