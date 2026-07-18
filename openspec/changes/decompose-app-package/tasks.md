@@ -7,20 +7,23 @@
 
 ## 1. PR 1 — extract `internal/radar` (the pane-data kernel)
 
-- [ ] 1.1 Create `internal/radar`; move `gatherAgents`, `classifyAgent`, `agentPane`
+- [x] 1.1 Create `internal/radar`; move `gatherAgents`, `classifyAgent`, `agentPane`
   (→ exported `Pane`), `roleForCwd`, `resolveWaiting`, `waitMarkStale`, `nativePanes`,
   the CPU/git/project/branch/sort helpers, the `Agent` struct + `agents --json`
   marshaling, `gatherDigest`, `gatherUsage`, and the digest JSON shapes.
-- [ ] 1.2 Export the symbols the consumers use (`GatherAgents`, `GatherDigest`,
+- [x] 1.2 Export the symbols the consumers use (`GatherAgents`, `GatherDigest`,
   `GatherUsage`, `Agent`, …); keep the exported surface MINIMAL.
-- [ ] 1.3 Update the ~10 consumer files (agents, digest, doctor, serve, slowtick, status,
+- [x] 1.3 Update the ~10 consumer files (agents, digest, doctor, serve, slowtick, status,
   taskscmd, usagecmd, watch, watchdog) to call `radar.*`.
-- [ ] 1.4 Confirm `internal/radar` imports ONLY leaf packages (tmux/dispatch/prompt/
+- [x] 1.4 Confirm `internal/radar` imports ONLY leaf packages (tmux/dispatch/prompt/
   resume/state/native/transcript/i18n) — no `hq`/`app`/`dispatchbridge`.
-- [ ] 1.5 Move the kernel's tests (`agents_test.go`, `digest_test.go`, …); add a
-  `paneLister` injection seam and fixture tests for the gather/assemble/ledger-join logic
-  (the coverage lever).
-- [ ] 1.6 Gate: `make check` + `check-design.sh` green; `agents --json` / `digest --json`
+- [x] 1.5a Move the kernel's tests (`agents_test.go`, `digest_test.go`, …) into `radar`
+  (splitting the render-only cases back into `app`).
+- [ ] 1.5b Add a `paneLister` injection seam + fixture tests for the gather/assemble/
+  ledger-join logic (the coverage lever) — a SEPARATE follow-up increment after the pure
+  move lands, so PR1 stays a clean behavior-preserving move (design.md "deferred
+  quality-sweep items land as separate follow-ups").
+- [x] 1.6 Gate: `make check` + `check-design.sh` green; `agents --json` / `digest --json`
   byte-identical on a live fleet (manual smoke).
 
 ## 2. PR 2 — extract `internal/dispatchbridge` (prerequisite for hq)

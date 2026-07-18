@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
 const watchInterval = 1500 * time.Millisecond
@@ -25,7 +26,7 @@ var (
 )
 
 type watchModel struct {
-	panes      []agentPane
+	panes      []radar.Pane
 	sel        int
 	prev       map[string]string // paneID → last status (for transition detection)
 	finished   map[string]bool   // panes that went working→idle during this session
@@ -33,7 +34,7 @@ type watchModel struct {
 }
 
 func runWatch(quitOnJump bool) int {
-	p := gatherAgents()
+	p := radar.GatherAgents()
 	m := watchModel{panes: p, prev: statusMap(p), finished: map[string]bool{}, quitOnJump: quitOnJump}
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		i18n.Sae("watch failed: "+err.Error(), "watch 失败："+err.Error())
@@ -42,10 +43,10 @@ func runWatch(quitOnJump bool) int {
 	return 0
 }
 
-func statusMap(p []agentPane) map[string]string {
+func statusMap(p []radar.Pane) map[string]string {
 	m := make(map[string]string, len(p))
 	for _, a := range p {
-		m[a.paneID] = a.status
+		m[a.PaneID] = a.Status
 	}
 	return m
 }
@@ -74,7 +75,7 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.refresh()
 		case "enter":
 			if m.sel >= 0 && m.sel < len(m.panes) {
-				id := m.panes[m.sel].paneID
+				id := m.panes[m.sel].PaneID
 				delete(m.finished, id) // acknowledged
 				jumpCmd := func() tea.Msg { jumpPane(id); return nil }
 				if m.quitOnJump {
@@ -91,15 +92,15 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *watchModel) refresh() {
-	p := gatherAgents()
+	p := radar.GatherAgents()
 	for _, a := range p {
 		// Flag a row that just finished (working → idle). "waiting" has its own
 		// prominent status, so don't double-flag it as "done".
-		if m.prev[a.paneID] == "working" && a.status == "idle" {
-			m.finished[a.paneID] = true
+		if m.prev[a.PaneID] == "working" && a.Status == "idle" {
+			m.finished[a.PaneID] = true
 		}
-		if a.status == "working" || a.status == "waiting" {
-			delete(m.finished, a.paneID)
+		if a.Status == "working" || a.Status == "waiting" {
+			delete(m.finished, a.PaneID)
 		}
 	}
 	m.prev = statusMap(p)
@@ -123,7 +124,7 @@ func (m watchModel) View() string {
 	for i, p := range m.panes {
 		var st lipgloss.Style
 		var glyph, label string
-		switch p.status {
+		switch p.Status {
 		case "working":
 			st, glyph, label = stWorking, "⠿", i18n.Tr("working", "运行中")
 		case "waiting":
@@ -137,21 +138,21 @@ func (m watchModel) View() string {
 		if i == m.sel {
 			prefix = stSel.Render("❯ ")
 		}
-		task := p.task
+		task := p.Task
 		if task == "" {
 			task = stDimW.Render("—")
 		}
 		tag := ""
-		if p.latest || m.finished[p.paneID] {
+		if p.Latest || m.finished[p.PaneID] {
 			tag = stRun.Render(i18n.Tr("  ✓ done", "  ✓ 完成"))
 		}
 		b.WriteString(fmt.Sprintf("%s%s %s %s %s%s%s\n",
 			prefix,
 			st.Render(glyph+" "+i18n.PadRight(label, 8)),
-			stBoldW.Render(i18n.PadRight(p.agent, 12)),
-			stBoldW.Render(i18n.PadRight(p.loc, 22)),
+			stBoldW.Render(i18n.PadRight(p.Agent, 12)),
+			stBoldW.Render(i18n.PadRight(p.Loc, 22)),
 			task,
-			stDimW.Render(" "+p.paneID),
+			stDimW.Render(" "+p.PaneID),
 			tag))
 	}
 

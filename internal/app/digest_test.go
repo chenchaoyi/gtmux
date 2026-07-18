@@ -5,79 +5,13 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/prompt"
-	"github.com/chenchaoyi/gtmux/internal/state"
-	"github.com/chenchaoyi/gtmux/internal/transcript"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
-func TestSnip(t *testing.T) {
-	if got := snip("", 10); got != "" {
-		t.Errorf("snip empty = %q", got)
-	}
-	if got := snip("a  b\n\tc", 10); got != "a b c" {
-		t.Errorf("snip whitespace = %q, want %q", got, "a b c")
-	}
-	long := strings.Repeat("字", 30)
-	got := snip(long, 10)
-	if !strings.HasSuffix(got, "…") || len([]rune(got)) != 11 {
-		t.Errorf("snip rune truncation = %q (runes %d)", got, len([]rune(got)))
-	}
-}
-
-func TestJoinAsk(t *testing.T) {
-	if got := joinAsk(nil); got != "" {
-		t.Errorf("joinAsk(nil) = %q", got)
-	}
-	got := joinAsk([]prompt.Option{{N: 1, Label: "Yes"}, {N: 2, Label: "No, tell Claude what to do"}})
-	want := "1.Yes · 2.No, tell Claude what to do"
-	if got != want {
-		t.Errorf("joinAsk = %q, want %q", got, want)
-	}
-}
-
-func TestTurnDigest(t *testing.T) {
-	if g, l := turnDigest(nil); g != "" || l != "" {
-		t.Errorf("empty turns = (%q,%q)", g, l)
-	}
-	turns := []transcript.Turn{
-		{Prompt: "old", Response: "old reply"},
-		{Prompt: "fix the login bug", Response: "Found it.\nThe token was expired — patched and tests pass."},
-	}
-	g, l := turnDigest(turns)
-	if g != "fix the login bug" {
-		t.Errorf("goal = %q", g)
-	}
-	if !strings.Contains(l, "tests pass") {
-		t.Errorf("last should carry the reply tail, got %q", l)
-	}
-	// A very long reply keeps its TAIL (the current end), marked with a leading …
-	long := transcript.Turn{Prompt: "p", Response: strings.Repeat("x ", 500) + "THE END"}
-	_, l = turnDigest([]transcript.Turn{long})
-	if !strings.HasPrefix(l, "…") || !strings.HasSuffix(l, "THE END") {
-		t.Errorf("long reply should tail-truncate, got %q…%q", l[:10], l[len(l)-10:])
-	}
-}
-
-// roleForCwd marks ONLY the hq home; "" and other dirs stay unmarked.
-func TestRoleForCwd(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-	if got := roleForCwd(state.HQHome()); got != "supervisor" {
-		t.Errorf("hq home role = %q, want supervisor", got)
-	}
-	if got := roleForCwd(""); got != "" {
-		t.Errorf("empty cwd role = %q", got)
-	}
-	if got := roleForCwd(filepath.Join(os.Getenv("HOME"), "code")); got != "" {
-		t.Errorf("other cwd role = %q", got)
-	}
-}
-
-// captureStdout runs fn with os.Stdout redirected and returns what it printed.
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	r, w, err := os.Pipe()
@@ -103,7 +37,7 @@ func captureStdout(t *testing.T, fn func()) string {
 func TestRenderDigestTable(t *testing.T) {
 	t.Setenv("COLUMNS", "100")
 	now := time.Now()
-	rows := []digestRow{
+	rows := []radar.DigestRow{
 		{Loc: "proj:1.0", Status: "waiting", Ask: "1.Yes · 2.No", Since: now.Add(-30 * time.Second).Unix()},
 		{Loc: "proj:2.0", Status: "working", Goal: "fix the login bug", Task: "fix the login bug", TaskStatus: "working", Since: now.Add(-2 * time.Minute).Unix()},
 		{Loc: "proj:3.0", Status: "idle", Last: "done, tests pass", Since: now.Add(-2 * 24 * time.Hour).Unix()},
@@ -157,15 +91,15 @@ func TestRenderDigestTable(t *testing.T) {
 func TestDigestBucket(t *testing.T) {
 	cases := []struct {
 		name string
-		row  digestRow
+		row  radar.DigestRow
 		want string
 	}{
-		{"waiting", digestRow{Status: "waiting"}, "needs_input"},
-		{"idle", digestRow{Status: "idle"}, "completed"},
-		{"working", digestRow{Status: "working"}, "working"},
-		{"running folds into working", digestRow{Status: "running"}, "working"},
-		{"error wins over idle", digestRow{Status: "idle", Error: "boom"}, "errored"},
-		{"error wins over waiting", digestRow{Status: "waiting", Error: "boom"}, "errored"},
+		{"waiting", radar.DigestRow{Status: "waiting"}, "needs_input"},
+		{"idle", radar.DigestRow{Status: "idle"}, "completed"},
+		{"working", radar.DigestRow{Status: "working"}, "working"},
+		{"running folds into working", radar.DigestRow{Status: "running"}, "working"},
+		{"error wins over idle", radar.DigestRow{Status: "idle", Error: "boom"}, "errored"},
+		{"error wins over waiting", radar.DigestRow{Status: "waiting", Error: "boom"}, "errored"},
 	}
 	for _, c := range cases {
 		if got := digestBucket(c.row); got != c.want {
@@ -175,16 +109,16 @@ func TestDigestBucket(t *testing.T) {
 }
 
 func TestDigestBadge(t *testing.T) {
-	if got := digestBadge(digestRow{Task: "t", TaskStatus: "done"}); got != "done" {
+	if got := digestBadge(radar.DigestRow{Task: "t", TaskStatus: "done"}); got != "done" {
 		t.Errorf("task badge = %q, want %q", got, "done")
 	}
-	if got := digestBadge(digestRow{Ask: "1.Yes · 2.No · 3.Maybe"}); got != "3 opts" {
+	if got := digestBadge(radar.DigestRow{Ask: "1.Yes · 2.No · 3.Maybe"}); got != "3 opts" {
 		t.Errorf("ask badge = %q, want %q", got, "3 opts")
 	}
-	if got := digestBadge(digestRow{UsageWarn: "ctx 92%"}); got != "⚠" {
+	if got := digestBadge(radar.DigestRow{UsageWarn: "ctx 92%"}); got != "⚠" {
 		t.Errorf("usage-warn badge = %q, want %q", got, "⚠")
 	}
-	if got := digestBadge(digestRow{}); got != "" {
+	if got := digestBadge(radar.DigestRow{}); got != "" {
 		t.Errorf("empty row badge = %q, want empty", got)
 	}
 }
@@ -192,11 +126,11 @@ func TestDigestBadge(t *testing.T) {
 // The digest --json / GET /api/digest contract carries in_mode so the supervisor
 // sees which pane is input-locked (copy/view-mode); a normal pane omits it.
 func TestDigestInModeContract(t *testing.T) {
-	mb, _ := json.Marshal(digestRow{PaneID: "%3", Status: "waiting", Source: "tmux", InMode: true})
+	mb, _ := json.Marshal(radar.DigestRow{PaneID: "%3", Status: "waiting", Source: "tmux", InMode: true})
 	if !strings.Contains(string(mb), `"in_mode":true`) {
 		t.Errorf("input-locked digest row missing in_mode: %s", mb)
 	}
-	nb, _ := json.Marshal(digestRow{PaneID: "%4", Status: "idle", Source: "tmux"})
+	nb, _ := json.Marshal(radar.DigestRow{PaneID: "%4", Status: "idle", Source: "tmux"})
 	if strings.Contains(string(nb), `"in_mode"`) {
 		t.Errorf("non-locked digest row should omit in_mode: %s", nb)
 	}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
 // gatherArchivedTasks surfaces archived ledger entries (status "archived") with the
@@ -49,9 +50,9 @@ func TestVerboseTail(t *testing.T) {
 // "waiting", NOT "done". `done` stays reserved for a pane that truly went idle after a
 // turn, so HQ is never told a task finished when not one step ran.
 func TestTaskStatus_StuckIsWaitingNotDone(t *testing.T) {
-	live := map[string]agentPane{
-		"%1": {paneID: "%1", status: "waiting"}, // radar flagged it stuck
-		"%2": {paneID: "%2", status: "idle"},    // genuinely finished a turn
+	live := map[string]radar.Pane{
+		"%1": {PaneID: "%1", Status: "waiting"}, // radar flagged it stuck
+		"%2": {PaneID: "%2", Status: "idle"},    // genuinely finished a turn
 	}
 	if got := taskStatus(dispatch.Task{Pane: "%1"}, live); got != "waiting" {
 		t.Errorf("stuck pane task status = %q, want waiting (never done)", got)
