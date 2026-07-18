@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -561,10 +562,13 @@ func transcriptForPane(id string) ([]byte, error) {
 // sendToPane types into a pane for POST /api/send (a WRITE). A non-empty key must
 // be in the allowlist; otherwise the text is pasted (+ Enter when enter).
 //
-// The API stays FAST — it does not verify the landing the way the CLI's default send
-// does — but it delivers the same way: a paste buffer, then Enter as its own key.
-// `send-keys -l` handed the pane a bare Return for every "\n", so a multi-line
-// message from the phone (a dictated one especially) was submitted line by line.
+// The API stays FAST — it does not verify the LANDING the way the CLI's default send
+// does — but for a text+Enter reply it does confirm the DRAFT before submitting:
+// dispatch.PasteAndSubmit pastes, waits (bounded) for the full payload to render in
+// the input box, THEN sends Enter. A blind paste-then-Enter raced the composer and
+// submitted a multi-line reply truncated (or left an unterminated paste that ate the
+// Enter). The pre-submit confirm removes that race without the CLI's post-submit
+// verify budget, so the phone path stays fast (a healthy paste confirms in a frame).
 func sendToPane(id, text, key string, enter bool) error {
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
 		return fmt.Errorf("pane not found")
@@ -577,6 +581,11 @@ func sendToPane(id, text, key string, enter bool) error {
 			return fmt.Errorf("key not allowed")
 		}
 		return tmux.SendKey(id, key)
+	}
+	if text != "" && enter {
+		// Confirm-then-submit: never race Enter against a still-rendering paste.
+		dispatch.PasteAndSubmit(dispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
+		return nil
 	}
 	if text != "" {
 		if err := tmux.Paste(id, text); err != nil {

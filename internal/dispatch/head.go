@@ -60,6 +60,30 @@ func ContainsHead(haystack, needle string) bool {
 	return strings.Contains(normalizeSpace(haystack), head)
 }
 
+// NormalizeTail returns the LAST headRunes runes of the space-normalized text — the
+// TRAILING fingerprint, mirror of NormalizeHead. Pairing head+tail is what lets the
+// pre-submit check tell a FULLY-rendered draft from a half-rendered one whose head
+// arrived a frame before its tail: a head-only match would submit the payload
+// truncated. For text no longer than headRunes, tail == head (the whole thing).
+func NormalizeTail(s string) string {
+	rs := []rune(normalizeSpace(s))
+	if len(rs) > headRunes {
+		rs = rs[len(rs)-headRunes:]
+	}
+	return string(rs)
+}
+
+// ContainsTail reports whether haystack contains the normalized tail of needle —
+// the counterpart to ContainsHead. Used together they assert the draft holds the
+// WHOLE delivery (head AND tail), not just its leading edge.
+func ContainsTail(haystack, needle string) bool {
+	tail := NormalizeTail(needle)
+	if tail == "" {
+		return false
+	}
+	return strings.Contains(normalizeSpace(haystack), tail)
+}
+
 // queuedMarkers are the on-screen indicators that a submitted message was QUEUED
 // behind the current turn rather than run immediately (Claude Code's "Press up to
 // edit queued messages"). Matched case-insensitively on the normalized capture.
