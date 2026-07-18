@@ -75,23 +75,56 @@ func ParseOptions(text string) []Option {
 // (unlike Claude) fire no waiting hook.
 const selectorGlyphs = "❯›▶▸→"
 
-// startupChoosers are signature phrases from an agent's SESSION-STARTUP menus —
-// the resume picker, the trust-folder gate, the theme picker. They present as a
-// numbered menu with a selector (so they'd pass WaitingOptions' shape test), but
-// they are pre-task chrome the app draws AROUND a session, not the agent blocking
-// on your task — so the radar must not flag them "needs you". (An OLD session
-// reopened to its resume picker was the "2h-old session stuck waiting" bug.)
-var startupChoosers = []string{
+// startupGates are an agent's PRE-TURN BLOCKING gate — it needs a keypress to proceed
+// before any task can run (Claude's trust-folder confirmation, and equivalents). Unlike
+// the resume/theme pickers below, a gate means the worker is STUCK before running a
+// single step, so the radar DOES read it as waiting (needs-you). Keyed by agent name
+// ("" = the default/Claude set); an agent can add its own gate phrases. Extensible for
+// codex/gemini/… whose startup gates differ — NOT hardcoded to one agent.
+var startupGates = map[string][]string{
+	"": {"Do you trust the files"}, // Claude trust-folder gate
+}
+
+// startupPickers are REOPENED-SESSION chrome — the resume picker / theme picker. They
+// present as a numbered menu with a selector (so they'd pass WaitingOptions' shape
+// test), but they are NOT a block: a 2h-old reopened session at its resume picker must
+// never read "waiting" (the original "stuck waiting" false-positive). So they are
+// excluded from waiting detection but are NOT treated as a startup GATE.
+var startupPickers = []string{
 	"Resume from summary",       // Claude resume picker
 	"Resume full session",       // Claude resume picker
 	"Resuming the full session", // Claude resume picker body
-	"Do you trust the files",    // Claude trust-folder gate
 }
 
-// looksLikeStartupChooser reports whether the bottom-of-screen menu is an agent
-// session-startup chooser rather than a task-level approval.
+// IsStartupGate reports whether the capture shows the agent's PRE-TURN BLOCKING gate
+// (needs a keypress to proceed) — the trust-folder confirmation and equivalents —
+// looked up per-agent (agent "" uses the default set only; a named agent also checks
+// its own). It deliberately does NOT match the resume/theme pickers (those are handled
+// by startupPickers / looksLikeStartupChooser).
+func IsStartupGate(capture, agent string) bool {
+	for _, sig := range startupGates[""] {
+		if strings.Contains(capture, sig) {
+			return true
+		}
+	}
+	if agent != "" {
+		for _, sig := range startupGates[agent] {
+			if strings.Contains(capture, sig) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// looksLikeStartupChooser reports whether the bottom-of-screen menu is agent
+// session-startup chrome (a GATE or a PICKER) rather than a task-level approval — so
+// WaitingOptions doesn't flag either as an active task wait.
 func looksLikeStartupChooser(window string) bool {
-	for _, sig := range startupChoosers {
+	if IsStartupGate(window, "") {
+		return true
+	}
+	for _, sig := range startupPickers {
 		if strings.Contains(window, sig) {
 			return true
 		}

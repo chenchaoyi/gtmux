@@ -23,6 +23,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -171,6 +172,22 @@ func wakeDone(pane, tail string, turnStart int64) {
 	target, ok := wakeTarget(pane)
 	if !ok {
 		return
+	}
+	// Defense in depth (stuck-dispatch-waiting): a pane that only LOOKS finished because
+	// it's blocked BEFORE a turn — a startup/permission gate, or a tracked dispatch still
+	// holding its unsubmitted goal in the composer — must NOT wake as `done`. An
+	// incidental Stop (e.g. a trust-gate keypress) can't relabel a stuck worker done; the
+	// radar + slow-tick surface it as waiting instead.
+	cap := tmux.CaptureFull(pane)
+	if prompt.IsStartupGate(cap, "") {
+		debugf("done suppressed (startup gate) pane=%s", pane)
+		return
+	}
+	if _, tracked := dispatch.TaskForPane(pane); tracked {
+		if draft, structured := dispatch.DraftOf(cap); structured && strings.TrimSpace(draft) != "" {
+			debugf("done suppressed (unsubmitted draft) pane=%s", pane)
+			return
+		}
 	}
 	cfg := hqwake.Load()
 	if cfg.Done == hqwake.DoneTick || (cfg.Done == hqwake.DoneUnattended && tmux.Attended(pane)) {

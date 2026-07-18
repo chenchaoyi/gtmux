@@ -12,13 +12,34 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
+
+// stuckDispatchKind reports why a TRACKED dispatch pane is stuck BEFORE running a turn —
+// "startup" (an agent startup/permission gate, per-agent) or "draft" (its goal pasted
+// but left unsubmitted in the composer) — or "" when it isn't. Only tracked dispatches
+// are inspected (a human mid-compose in a normal pane is never flagged). Pure read of a
+// single capture; the caller decides what to do with it.
+func stuckDispatchKind(paneID, agent string) string {
+	if _, ok := dispatch.TaskForPane(paneID); !ok {
+		return ""
+	}
+	cap := tmux.CaptureFull(paneID)
+	if prompt.IsStartupGate(cap, agent) {
+		return "startup"
+	}
+	if draft, structured := dispatch.DraftOf(cap); structured && strings.TrimSpace(draft) != "" {
+		return "draft"
+	}
+	return ""
+}
 
 // Claude Code's foreground process reports its command as its version (e.g.
 // "2.1.177"), which is how we identify a Claude pane that is actively working
@@ -544,6 +565,18 @@ func gatherAgents() []agentPane {
 		if clearMark {
 			state.Remove(state.WaitingPath(id))
 			delete(waiting, id)
+		}
+		// STUCK-DISPATCH GUARD: a dispatched worker blocked BEFORE running a turn (a
+		// startup/permission gate, or its goal left unsubmitted in the composer) fires no
+		// hook, so resolveWaiting left it idle/running — and idle → done in `gtmux tasks`,
+		// wrongly reporting a task that never ran as finished. If this is a TRACKED
+		// dispatch whose screen shows a gate or holds its own undelivered draft, read it
+		// as waiting (needs-you). Narrow, hook-free, DISPLAY-only — the serve slow-tick
+		// (the single writer) owns the marker + the `waiting` wake.
+		if status == "idle" || status == "running" {
+			if stuckDispatchKind(id, agent) != "" {
+				status = "waiting"
+			}
 		}
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
 		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish

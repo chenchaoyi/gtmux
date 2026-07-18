@@ -135,3 +135,24 @@ func TestWaitingOptions(t *testing.T) {
 		t.Errorf("trust-folder gate → %#v, want nil", got)
 	}
 }
+
+// IsStartupGate detects an agent's PRE-TURN blocking gate (trust-folder confirmation) so
+// the radar reads a stuck-before-running dispatch as waiting — but NOT the resume/theme
+// picker (a reopened session must never read waiting forever). Per-agent, default set.
+func TestIsStartupGate(t *testing.T) {
+	trust := "  Do you trust the files in this folder?\n\n  ❯ 1. Yes, proceed\n    2. No, exit\n"
+	if !IsStartupGate(trust, "") {
+		t.Error("trust-folder gate should be a startup gate")
+	}
+	resume := "  ❯ 1. Resume from summary (recommended)\n    2. Resume full session as-is\n"
+	if IsStartupGate(resume, "") {
+		t.Error("resume picker is NOT a gate — a reopened session must not read waiting")
+	}
+	if IsStartupGate("normal idle prompt\n❯ ", "") {
+		t.Error("a normal idle screen is not a gate")
+	}
+	// A named agent still checks the default gate set.
+	if !IsStartupGate(trust, "Claude Code") {
+		t.Error("a named agent should still match the default gate set")
+	}
+}

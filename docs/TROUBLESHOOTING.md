@@ -176,6 +176,22 @@ exiting, so `gtmux hq` treated a stamped-but-dead pane as "running" and focused 
 that same pane instead of focusing a dead prompt (`agentAliveByCmd`, pinned by
 `TestAgentAliveByCmd`).
 
+### A dispatched worker shows `done` in `gtmux tasks` but never ran
+**Symptom:** you `gtmux spawn` a task; `gtmux tasks` (and HQ/the digest) show it `done`,
+but the worker's tmux pane is actually sitting at the "Do you trust the files in this
+folder?" startup gate (or holds the goal UNSUBMITTED in the composer — a long paste
+swallowed the Enter). Not one step ran.
+**Root cause:** `waiting` (needs-you) was HOOK-marker-driven ONLY. The startup gate and
+an unsubmitted composer fire NO gtmux hook, so the radar read the pane `idle`, and
+`taskStatusFor("idle")` mapped idle → `done` unconditionally — no `waiting` wake either.
+**Fix (v0.28.9, stuck-dispatch-waiting):** a narrow screen-content guard — for a TRACKED
+dispatch whose capture shows a startup/permission gate (`prompt.IsStartupGate`, per-agent)
+or a structured non-empty draft (`dispatch.DraftOf`) — reclassifies it `waiting` (kind
+`startup`/`draft`), never `done`. The serve slow-tick writes the marker + fires a
+`waiting` wake so HQ unblocks it; `wakeDone` also skips `done` when the post-Stop screen
+is a gate/draft. All other waiting stays hook-driven. **Unstick now:** answer the gate /
+press Enter in the pane.
+
 ### HQ's startup briefing typed into the input box but never sent
 **Symptom:** `gtmux hq` starts the agent, a long "Startup briefing — make this your very
 first output…" prompt sits in the input box UNSENT, and HQ stalls waiting.
