@@ -257,3 +257,29 @@ swallowed and needs a manual re-press — and `gtmux send` still reports `NOT de
 **Must-check:** reproduce against a real agent pane, not a fake — `tmux new-session -d
 -s lab; tmux send-keys -t lab claude Enter`, then send a 3-line instruction and read
 the box. A unit test with single-line fixtures passes either way.
+
+---
+
+## Disk / storage
+
+### gtmux state dir balloons to GB (disk red line)
+**Symptom:** `~/.local/share/gtmux` grows to hundreds of MB or GB; a disk-space alarm
+fires. `gtmux doctor`'s `Storage` row shows red (`✗ very large`).
+**Root cause:** it is almost never the event log — `events.jsonl` (20 MB) and the HQ
+spool (8 MB) already self-rotate. The culprit is an **unrotated launchd log**:
+`serve.log` / `tunnel.log` / `selftunnel.log` / `restore.log` are plain
+`StandardOutPath`/`StandardErrorPath` redirects launchd never rotates, and the gtmux
+process can't `SetOutput` a redirect it doesn't own. A chatty daemon — classically
+`cloudflared` retrying forever against a **QUIC-blocked** corp network — writes with no
+ceiling. Secondary: the `uploads/` dir (phone images) and the per-pane churn markers
+(`frame/`, `cpu/`, `goalchanged/`, `sends/`) that never cleaned up a dead pane's leftover.
+**Fix / must-check:**
+- `du -ah ~/.local/share/gtmux | sort -rh | head` — find the big file. A multi-hundred-MB
+  `tunnel.log` confirms cloudflared churn (check the tunnel is actually up; see the
+  QUIC-blocked entry).
+- The slow-tick hygiene sweep (`internal/app/diskhygiene.go` `diskHygieneSweep`) caps each
+  log to its recent tail (8 MB → last 2 MB), age-prunes + LRU-trims `uploads/`, and ages
+  out dead-pane churn markers, every 30 min while `gtmux serve` runs. If serve isn't
+  running, nothing trims — start it, or manually `: > ~/.local/share/gtmux/tunnel.log`.
+- `events.seq` is a single monotonic integer — never delete it to reclaim space; a reset
+  would break every consumer's durable cursor.
