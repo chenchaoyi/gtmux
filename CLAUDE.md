@@ -9,7 +9,7 @@ over one Go core (gtmux-core is the single data source):
   `uninstall-app`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
   (`GET /api/attach`, scope-gated), raw passthrough; owner or guest. See
-  `openspec/changes/remote-terminal-client` + `docs/design/remote-attach-research.md`. Logic lives in `internal/`. `digest`+`hq` = the supervisor
+  `openspec/changes/remote-terminal-client` + `docs/design/remote-attach-research.md`. Logic lives in `internal/`: the command layer is `internal/app` (CLI dispatch + thin command shims + spawn/send/serve/tunnel), over the extracted, compiler-enforced clusters — `internal/radar` (the pane-data KERNEL: the `agents`/`digest`/`usage` producers + their JSON shapes + `CurrentResource`/`PreflightResource`), `internal/hq` (the supervisor subsystem — the 10 `hq`/`slowtick`/`selfcheck`/`distill`/`diskhygiene`/`tiergate`/`watchdog`/`tasks`/`events`/`hq-feed` files), `internal/dispatchbridge` (the tmux/events dispatch adapter), and the `internal/panefocus` pane-jump leaf. Import rule is strictly acyclic — `app → hq → {radar, dispatchbridge} → leaves`; **`hq` NEVER imports `app`**, nothing below `app` imports it (see openspec change `decompose-app-package`). `digest`+`hq` = the supervisor
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
   also `GET /api/digest`) + a supervisor agent session at `~/.config/gtmux/hq/`
   (radar rows carry `role:"supervisor"`; the hook nudges it on waiting events —

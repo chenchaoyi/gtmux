@@ -53,13 +53,25 @@
 
 ## 4. PR 4 (optional) — extract `internal/tunnel`
 
-- [ ] 4.1 Move `tunnel.go` + `tunnelself.go` + `tunnelservice.go` (+ tests); update
-  callers. Independent of radar/hq; lowest priority — may be dropped.
-- [ ] 4.2 Gate: `make check` green.
+- [~] 4.1 DROPPED (owner decision, 2026-07-18). The tunnel is tightly coupled to app's
+  serve/pair/enroll machinery (cmdTunnel/launchctl/mintEnrollCode/pairingPayload/
+  serveServiceInstall/serviceRemoveAll/tunnelURLPath cross-refs both directions); the
+  extraction risk/reward is poor and the core god-package decomposition is already done.
+  This step was always marked optional/may-be-dropped.
+- [~] 4.2 n/a (4.1 dropped).
 
 ## 5. Close-out
 
-- [ ] 5.1 After the increments land, confirm `internal/app` is materially smaller and its
-  test coverage rose (the fixture tests 1.5 unblocked).
-- [ ] 5.2 Update any doc/memory that described the old flat `internal/app` layout.
-- [ ] 5.3 Sync/verify this change vs the specs (no deltas expected) and archive it.
+- [x] 5.1 CONFIRMED `internal/app` is materially smaller: from ~51 non-test files to 40,
+  with ~5.7k lines relocated into the compiler-bounded packages `internal/radar` (1758),
+  `internal/hq` (3765), `internal/dispatchbridge` (170), `internal/panefocus` (49). (The
+  coverage-lever rise is gated on 1.5b, deferred below.)
+- [x] 5.2 Docs updated: CLAUDE.md now describes the radar/hq/dispatchbridge/panefocus
+  layout + the acyclic import rule; DESIGN.md / api/contract.md / CLAUDE.md code-position
+  table point `agents.go` → `internal/radar`; TROUBLESHOOTING.md points `diskhygiene.go` →
+  `internal/hq`; check-design.sh PLAYBOOK path → `internal/hq/hq.go`; a memory records the
+  new layout.
+- [ ] 5.3 DEFERRED archive (owner decision): the 3 core move PRs (#494/#495/#496) are
+  merged, but 1.5b (paneLister fixture-test seam — the coverage lever) is an intentional
+  open follow-up, so the change stays in `changes/` rather than archiving with an unchecked
+  task. Archive once 1.5b lands or is formally dropped. No spec deltas expected.
