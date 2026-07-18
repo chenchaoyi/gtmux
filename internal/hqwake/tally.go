@@ -91,7 +91,7 @@ func ConsumeTick(now, latestSeq int64) string {
 		return ""
 	}
 	fromSeq := readSeqMarker()
-	_ = state.WriteMarker(tickSeqPath(), strconv.FormatInt(latestSeq, 10))
+	_ = state.WriteInt64Marker(tickSeqPath(), latestSeq)
 	_ = os.WriteFile(tickTimePath(), nil, 0o644)
 	t := time.Unix(now, 0)
 	_ = os.Chtimes(tickTimePath(), t, t)

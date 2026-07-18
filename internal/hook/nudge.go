@@ -334,7 +334,13 @@ func unenroll(pane string) {
 	if pane == "" {
 		return
 	}
-	dispatch.ClearAwaited(pane) // a departing pane's await is moot — no stale marker
+	// A departing pane's per-pane markers are moot — clear them so a workstation that
+	// sees thousands of panes over its life doesn't accumulate them. `awaited` and the
+	// `goal`/`goal-changed` markers were previously left behind on SessionEnd (the `goal`
+	// marker was never removed anywhere).
+	dispatch.ClearAwaited(pane)
+	state.Remove(goalMarker(pane))
+	state.Remove(goalChangedMarker(pane))
 	if state.Exists(enrolledMarker(pane)) {
 		state.Remove(enrolledMarker(pane))
 		hqwake.AddOutcome("gone")

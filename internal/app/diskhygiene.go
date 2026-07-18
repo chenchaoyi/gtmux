@@ -63,7 +63,7 @@ func diskHygieneSweep(now int64) {
 	if now-last < hygieneInterval {
 		return
 	}
-	_ = state.WriteMarker(hygieneLastPath(), strconv.FormatInt(now, 10))
+	_ = state.WriteInt64Marker(hygieneLastPath(), now)
 
 	base := state.Dir()
 	nowT := time.Unix(now, 0)

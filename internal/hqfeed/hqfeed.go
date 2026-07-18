@@ -81,10 +81,10 @@ func ReadCursor() int64 {
 }
 
 // WriteCursor persists the last-consumed sequence (best-effort).
-func WriteCursor(seq int64) { _ = state.WriteMarker(CursorPath(), strconv.FormatInt(seq, 10)) }
+func WriteCursor(seq int64) { _ = state.WriteInt64Marker(CursorPath(), seq) }
 
 // Beat writes the heartbeat timestamp (best-effort). now is unix seconds.
-func Beat(now int64) { _ = state.WriteMarker(HeartbeatPath(), strconv.FormatInt(now, 10)) }
+func Beat(now int64) { _ = state.WriteInt64Marker(HeartbeatPath(), now) }
 
 // HeartbeatAt returns the last heartbeat's unix seconds (0 if none).
 func HeartbeatAt() int64 {

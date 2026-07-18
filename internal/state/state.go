@@ -165,6 +165,21 @@ func ReadMarker(path string) string {
 	return strings.TrimSpace(string(b))
 }
 
+// ReadInt64Marker reads a marker holding a decimal int64 (0 when missing/empty/malformed)
+// — the "last-run timestamp / counter" shape that half a dozen sensors and watchdogs
+// (selfcheck, distill, disk-hygiene, feed-restart, tally) each hand-rolled as
+// strconv.ParseInt(ReadMarker(path), 10, 64).
+func ReadInt64Marker(path string) int64 {
+	n, _ := strconv.ParseInt(ReadMarker(path), 10, 64)
+	return n
+}
+
+// WriteInt64Marker writes a decimal int64 to a marker file — the counterpart to
+// ReadInt64Marker (was strconv.FormatInt + WriteMarker at each call site).
+func WriteInt64Marker(path string, n int64) error {
+	return WriteMarker(path, strconv.FormatInt(n, 10))
+}
+
 // WriteLastFinished records pane as the most-recently-finished turn.
 func WriteLastFinished(pane string) error {
 	if err := os.MkdirAll(Dir(), 0o755); err != nil {
