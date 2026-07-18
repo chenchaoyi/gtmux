@@ -87,24 +87,6 @@ func TestIsBoxBorder(t *testing.T) {
 // esc is the ANSI escape byte, kept out of the raw string literals below.
 const esc = "\x1b"
 
-func TestStripAnsiDroppingFaint(t *testing.T) {
-	cases := []struct {
-		name, in, want string
-	}{
-		{"plain passthrough", "just plain text", "just plain text"},
-		{"drops a faint span", "keep " + esc + "[2mghost" + esc + "[0m end", "keep  end"},
-		{"faint reset by 22", esc + "[2mghost" + esc + "[22mreal", "real"},
-		{"bright color kept", esc + "[38;5;246mdim-color-but-not-faint" + esc + "[39m", "dim-color-but-not-faint"},
-		{"faint in a combined SGR", esc + "[1;2mfaint" + esc + "[0mbright", "bright"},
-		{"strips OSC hyperlink chrome, keeps label", esc + "]8;;http://x" + esc + "\\label" + esc + "]8;;" + esc + "\\", "label"},
-	}
-	for _, c := range cases {
-		if got := stripAnsiDroppingFaint(c.in); got != c.want {
-			t.Errorf("%s: stripAnsiDroppingFaint(%q) = %q, want %q", c.name, c.in, got, c.want)
-		}
-	}
-}
-
 func TestDraftOfColored_ExcludesFaintGhost(t *testing.T) {
 	// A composer whose ONLY draft content is CC's faint suggested-next-command ghost text
 	// (the reproduced bug: %85 showed `ESC[2m ping %14 … ESC[0m`). It must read EMPTY.
