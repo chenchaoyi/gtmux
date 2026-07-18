@@ -84,6 +84,10 @@ func cmdSend(args []string) int {
 		res := dispatch.Deliver(dispatchIO(paneID), deliverOpts(paneID, agentCmd, force, tune), text)
 		switch res.State {
 		case dispatch.StateLanded:
+			// HQ (or whoever drives `gtmux send`) awaits this pane's completion
+			// (done-wake-keyed-on-awaited): mark it so its next `done` wakes HQ even when
+			// the pane is attended — the send-driven case a plain attended-defer dropped.
+			dispatch.MarkAwaited(paneID)
 			return 0
 		case dispatch.StateQueued:
 			i18n.Say("• queued — it will run after the current turn", "• 已排队 —— 当前这轮结束后执行")

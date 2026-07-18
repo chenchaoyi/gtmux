@@ -43,6 +43,15 @@ func WaitingDir() string { return filepath.Join(Dir(), "waiting") }
 // WaitingPath is the "blocked on the user" marker file for a pane.
 func WaitingPath(pane string) string { return filepath.Join(WaitingDir(), pane) }
 
+// AwaitedDir is the directory of per-pane "HQ is awaiting this dispatch's completion"
+// markers (done-wake-keyed-on-awaited). A pane HQ dispatched work to (spawn or send)
+// gets a marker so its NEXT completion wakes HQ immediately even when the pane is
+// attended — the case a plain attended-defer would drop.
+func AwaitedDir() string { return filepath.Join(Dir(), "awaited") }
+
+// AwaitedPath is the "HQ awaits this pane's completion" marker file for a pane.
+func AwaitedPath(pane string) string { return filepath.Join(AwaitedDir(), pane) }
+
 // LastFinishedPath holds the pane id of the most-recently-finished turn.
 func LastFinishedPath() string { return filepath.Join(Dir(), "last-finished") }
 
