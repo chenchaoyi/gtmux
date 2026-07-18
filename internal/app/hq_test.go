@@ -543,3 +543,21 @@ func TestHQPlaybookThreeReads(t *testing.T) {
 		t.Error("v4 playbook must not present any filtered read as THE attention stream")
 	}
 }
+
+// agentAliveByCmd pins the "is the HQ agent still alive in its pane?" decision that
+// gates focus-vs-relaunch: a shell (or empty) foreground command means the supervisor
+// exited (user quit it) → `gtmux hq` relaunches instead of focusing a dead prompt.
+func TestAgentAliveByCmd(t *testing.T) {
+	dead := []string{"", "  ", "zsh", "-zsh", "bash", "-bash", "fish", "sh", "dash"}
+	for _, c := range dead {
+		if agentAliveByCmd(c) {
+			t.Errorf("agentAliveByCmd(%q) = true, want false (a shell/empty = agent exited)", c)
+		}
+	}
+	alive := []string{"claude", "node", "codex", "python3", "go", "vim"}
+	for _, c := range alive {
+		if !agentAliveByCmd(c) {
+			t.Errorf("agentAliveByCmd(%q) = false, want true (a non-shell foreground = agent running)", c)
+		}
+	}
+}

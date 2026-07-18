@@ -407,6 +407,22 @@ Add topic files as needed. 主动学习、持续更新、用时调取。
 // name, so renames don't break it — the same identity the radar's role field uses.
 func findHQPane() string { return hqpane.Find() }
 
+// hqAgentAlive reports whether a coding agent is actually the FOREGROUND process in the
+// HQ pane. A stamped pane that has dropped back to an interactive shell means the
+// supervisor exited (the user quit it) — so `gtmux hq` should relaunch it, not focus a
+// dead prompt. Missing pane / no command reads as not-alive.
+func hqAgentAlive(pane string) bool {
+	return agentAliveByCmd(tmux.Display(pane, "#{pane_current_command}"))
+}
+
+// agentAliveByCmd is the pure decision: a live agent's foreground command is anything
+// that isn't an interactive shell (or empty). Split out so the "dead HQ pane →
+// relaunch" behavior is unit-tested independent of tmux.
+func agentAliveByCmd(cmd string) bool {
+	cmd = strings.TrimSpace(cmd)
+	return cmd != "" && !isShellCommand(cmd)
+}
+
 // cmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
 func cmdHQ(args []string) int {
 	agentCmd := ""
@@ -461,14 +477,32 @@ func cmdHQ(args []string) int {
 		i18n.Sae("gtmux hq: "+en, "gtmux hq: "+zh)
 	}
 
-	// Already live → focus it, never spawn a second.
+	// A stamped HQ pane exists — but is the supervisor AGENT actually alive in it? If
+	// the user quit the agent and left the tmux window (a bare shell), the stamp
+	// lingers; focusing it would land on a dead prompt and claim "Focused the running
+	// supervisor" — confusing. So check the pane's foreground command: a shell means
+	// the agent exited → relaunch it IN PLACE (reuse the window the user already has),
+	// never a dead-window focus.
 	if pane := findHQPane(); pane != "" {
-		if err := focusPaneByID(pane); err == nil {
-			i18n.Say("Focused the running supervisor.", "已跳到正在运行的中控。")
+		if hqAgentAlive(pane) {
+			if err := focusPaneByID(pane); err == nil {
+				i18n.Say("Focused the running supervisor.", "已跳到正在运行的中控。")
+			} else {
+				i18n.Say("A supervisor is already running (pane "+pane+").",
+					"中控已在运行（pane "+pane+"）。")
+			}
 			return 0
 		}
-		i18n.Say("A supervisor is already running (pane "+pane+").",
-			"中控已在运行（pane "+pane+"）。")
+		// Stamped but dead → relaunch the agent in the same pane, then focus.
+		rawCmd := agentCmd
+		if rawCmd == "" {
+			rawCmd = hqAgentCommand()
+		}
+		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
+		_ = focusPaneByID(pane)
+		i18n.Say("The supervisor had exited — relaunched it in its pane.",
+			"中控此前已退出 —— 已在原 pane 里重新拉起。")
+		deliverHQBriefing(pane, rawCmd)
 		return 0
 	}
 

@@ -165,6 +165,17 @@ section above instead of guessing.
 
 ## HQ attention system / perception feed
 
+### `gtmux hq` "Focused the running supervisor" but the HQ session is dead
+**Symptom:** you quit the HQ agent but left its tmux window open (a bare shell). Later
+`gtmux hq` says "Focused the running supervisor" and jumps to that window — which holds
+only a shell prompt, no agent. Confusing.
+**Root cause:** `findHQPane()` detects HQ by a pane STAMP that survives the agent
+exiting, so `gtmux hq` treated a stamped-but-dead pane as "running" and focused it.
+**Fix:** `gtmux hq` now checks the pane's foreground command (`hqAgentAlive` →
+`pane_current_command`): a shell means the agent exited, so it RELAUNCHES the agent in
+that same pane instead of focusing a dead prompt (`agentAliveByCmd`, pinned by
+`TestAgentAliveByCmd`).
+
 ### `feed-degraded` in HQ — the perception feed is down
 **Symptom:** HQ surfaces `⚠ perception feed down — on the 5-min polling backstop`, or a
 `[CRITICAL gtmux:feed-degraded]` line appears in `gtmux hq-feed --tail`.

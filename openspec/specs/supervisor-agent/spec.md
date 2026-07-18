@@ -32,7 +32,18 @@ The seeded playbook teaches the supervisor to loop — read `gtmux digest --json
 drill into a pane (`tmux capture-pane`) only when warranted, drive via `gtmux send`,
 report to the user with a token-usage section ALWAYS included in status reports (the
 per-type rollup + any `usage_warn` sessions, via `gtmux usage --json`) — and the
-supervisor's accumulated knowledge persists across sessions.
+supervisor's accumulated knowledge persists across sessions. "Already runs" SHALL mean
+the supervisor AGENT is actually alive in its pane: if the HQ pane is still stamped but
+its agent has EXITED (the foreground process is an interactive shell — the user quit it
+and left the window), `gtmux hq` SHALL RELAUNCH the agent in that same pane rather than
+focus a dead prompt while claiming the supervisor is running.
+
+#### Scenario: Stamped HQ pane whose agent has exited
+
+- **WHEN** `gtmux hq` runs and the HQ pane still exists but its foreground process is a
+  shell (the supervisor agent was quit, the tmux window left open)
+- **THEN** it relaunches the supervisor agent in that same pane (not a dead-window
+  focus), and focuses it — so the user never lands on a live-looking but dead HQ
 
 #### Scenario: Fresh home seeds the managed playbook + LOCAL.md
 
