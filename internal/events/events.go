@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
 // Record is one logged lifecycle event (the stable additive contract).
@@ -135,14 +136,11 @@ const defaultCapMB = 20
 // defaulting to 20 MB. A non-positive value disables the log entirely (0 cap).
 func capBytes() int64 {
 	mb := defaultCapMB
-	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
-	if err == nil {
-		var c struct {
-			EventsCapMB *int `json:"eventsCapMB"`
-		}
-		if json.Unmarshal(b, &c) == nil && c.EventsCapMB != nil {
-			mb = *c.EventsCapMB
-		}
+	var c struct {
+		EventsCapMB *int `json:"eventsCapMB"`
+	}
+	if usercfg.Load(&c) == nil && c.EventsCapMB != nil {
+		mb = *c.EventsCapMB
 	}
 	return int64(mb) << 20
 }

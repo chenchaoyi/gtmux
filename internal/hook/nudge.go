@@ -26,20 +26,17 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
 // hqNudgeEnabled reads ~/.config/gtmux/config.json's optional `hqNudge` key.
 // Absent file/key/unreadable → true (on by default; the hq-pane check below is
 // the real gate — no supervisor, no wake, zero cost).
 func hqNudgeEnabled() bool {
-	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
-	if err != nil {
-		return true
-	}
 	var c struct {
 		HQNudge *bool `json:"hqNudge"`
 	}
-	if json.Unmarshal(b, &c) != nil || c.HQNudge == nil {
+	if usercfg.Load(&c) != nil || c.HQNudge == nil {
 		return true
 	}
 	return *c.HQNudge

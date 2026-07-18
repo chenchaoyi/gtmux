@@ -12,11 +12,11 @@
 package agentenv
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
 type config struct {
@@ -25,10 +25,7 @@ type config struct {
 
 func loadConfig() config {
 	var c config
-	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
-	if err == nil {
-		_ = json.Unmarshal(b, &c)
-	}
+	_ = usercfg.Load(&c)
 	return c
 }
 

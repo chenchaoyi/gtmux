@@ -1,10 +1,6 @@
 package resource
 
-import (
-	"encoding/json"
-	"os"
-	"path/filepath"
-)
+import "github.com/chenchaoyi/gtmux/internal/usercfg"
 
 // config holds the resource-watch thresholds (from ~/.config/gtmux/config.json's
 // "resource" object; sensible defaults when absent).
@@ -36,14 +32,10 @@ var defaultConfig = config{
 
 func loadConfig() config {
 	cfg := defaultConfig
-	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
-	if err != nil {
-		return cfg
-	}
 	var wrap struct {
 		Resource *config `json:"resource"`
 	}
-	if json.Unmarshal(b, &wrap) != nil || wrap.Resource == nil {
+	if usercfg.Load(&wrap) != nil || wrap.Resource == nil {
 		return cfg
 	}
 	r := *wrap.Resource
