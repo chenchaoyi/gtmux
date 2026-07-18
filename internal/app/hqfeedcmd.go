@@ -92,7 +92,7 @@ func hqFeedTail() int {
 // event formatter plus a severity tag and any summary tail.
 func formatSpoolLine(r events.Record) string {
 	switch r.Event {
-	case hqfeed.ControlReconcile, hqfeed.ControlFeedDegraded, hqfeed.ControlSelfCheck:
+	case hqfeed.ControlReconcile, hqfeed.ControlFeedDegraded, hqfeed.ControlSelfCheck, hqfeed.ControlDistill:
 		tag := "CONTROL"
 		if r.Event == hqfeed.ControlFeedDegraded {
 			tag = "CRITICAL"

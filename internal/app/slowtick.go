@@ -63,6 +63,10 @@ func slowTickEval() {
 	// Self-check sensor (hq-attention-system §8): raise a self-check trigger to HQ when
 	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here — HQ does the pass.
 	selfCheckSensor(time.Now().Unix())
+	// Distill sensor (hq-knowledge-distillation): raise a periodic knowledge-distillation
+	// trigger when due (weekly floor / event-volume floor, zero-change gated, ≤ 1/day).
+	// No LLM here — HQ distils the fleet delta into the KB and prunes stale.
+	distillSensor(time.Now().Unix())
 	// Summary tick (hq-perception-v2): deliver the periodic brief wake ONLY when
 	// outcome-level changes accumulated (the zero-change gate — a quiet interval
 	// injects nothing and costs no tokens).
