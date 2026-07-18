@@ -94,45 +94,54 @@ func Lines(args ...string) []string {
 	return strings.Split(out, "\n")
 }
 
+// capture is the one `capture-pane` core the four named wrappers below share. `color`
+// adds `-e` (keep ANSI SGR); `scrollback` > 0 adds `-S -<n>` of scrollback margin;
+// `keepBlanks` chooses runRaw (retain the pane's trailing blank rows — needed when a
+// bottom-anchored cursor position is derived from the row count) over Run (trimmed, so
+// frame-diffing stays stable). Read-only.
+func capture(pane string, color bool, scrollback int, keepBlanks bool) string {
+	args := []string{"capture-pane", "-p"}
+	if color {
+		args = append(args, "-e")
+	}
+	if scrollback > 0 {
+		args = append(args, "-S", "-"+strconv.Itoa(scrollback))
+	}
+	args = append(args, "-t", pane)
+	if keepBlanks {
+		out, _ := runRaw(args...)
+		return out
+	}
+	out, _ := Run(args...)
+	return out
+}
+
 // CapturePane returns the visible (current-screen) content of a pane, read-only.
 // Used to tell a working agent (its screen animates) from an idle one (static)
 // when the agent sets no title spinner. "" on error. PLAIN text (no escapes) so
-// frame-diffing stays stable.
-func CapturePane(pane string) string {
-	out, _ := Run("capture-pane", "-p", "-t", pane)
-	return out
-}
+// frame-diffing stays stable (trimmed — no trailing blanks).
+func CapturePane(pane string) string { return capture(pane, false, 0, false) }
 
 // CapturePaneColor returns the pane's screen + scrollback WITH ANSI SGR escapes
 // (`-e`), so the mobile app can render history in color (MOBILE §4). `-S -2000`
-// includes up to 2000 lines of scrollback (bounded for payload/render cost; the
-// real depth is also capped by tmux history-limit). Read-only.
-func CapturePaneColor(pane string) string {
-	// runRaw (not Run): keep the pane's trailing blank rows so the bottom-anchored
-	// text cursor (pane_height-1-cursor_y) lands on the right line in the renderer.
-	out, _ := runRaw("capture-pane", "-e", "-p", "-S", "-2000", "-t", pane)
-	return out
-}
+// includes up to 2000 lines of scrollback (bounded for payload/render cost; the real
+// depth is also capped by tmux history-limit). Trailing blank rows are kept so the
+// bottom-anchored text cursor lands on the right line in the renderer. Read-only.
+func CapturePaneColor(pane string) string { return capture(pane, true, 2000, true) }
 
 // CaptureFull returns a pane's visible screen PLUS a bounded scrollback margin as
 // PLAIN text (no ANSI escapes) — the delivery verifier reads it to locate the input
-// box and find a landed message that may have scrolled just above the fold. `-S
-// -200` bounds the scrollback (render/parse cost); no `-e`, so box-drawing/text
-// parsing stays clean. Read-only.
-func CaptureFull(pane string) string {
-	out, _ := runRaw("capture-pane", "-p", "-S", "-200", "-t", pane)
-	return out
-}
+// box and find a landed message that may have scrolled just above the fold. `-S -200`
+// bounds the scrollback (render/parse cost); no `-e`, so box-drawing/text parsing stays
+// clean. Read-only.
+func CaptureFull(pane string) string { return capture(pane, false, 200, true) }
 
 // CaptureFullColor is the COLOR twin of CaptureFull (`-e`, so ANSI SGR escapes are
 // kept), same `-S -200` bound. The draft detector reads it to tell a real user draft
 // (normal brightness) from an agent's suggested-next-command GHOST text, which Claude
 // Code renders faint (SGR 2) — invisible in the plain CaptureFull and thus misread as a
 // stuck draft. Read-only.
-func CaptureFullColor(pane string) string {
-	out, _ := runRaw("capture-pane", "-e", "-p", "-S", "-200", "-t", pane)
-	return out
-}
+func CaptureFullColor(pane string) string { return capture(pane, true, 200, true) }
 
 // SendText types literal text into a pane (`send-keys -l`, so the text is never
 // interpreted as tmux key names), optionally followed by Enter. This is a WRITE.
