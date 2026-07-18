@@ -224,9 +224,13 @@ them `idle` would let them be reported as `done`:
 - a STRUCTURED, non-empty input draft on a pane that is a TRACKED dispatch (the agent's
   goal was pasted but never submitted).
 
-All OTHER waiting (tool-permission / plan / question) SHALL remain hook-driven and SHALL
-NOT be inferred from the screen. The classification SHALL be pure (it MUST NOT write any
-marker from the read path); the reclassified status carries a kind (`startup` / `draft`).
+The draft state SHALL be judged from a COLOR-aware capture that EXCLUDES the agent's
+suggested-next-command GHOST text — the dim autosuggestion the agent renders faint
+(SGR 2) and that needs a key to accept — because it is NOT user input: only genuinely
+unsubmitted USER input (normal brightness) SHALL count as a draft. All OTHER waiting
+(tool-permission / plan / question) SHALL remain hook-driven and SHALL NOT be inferred
+from the screen. The classification SHALL be pure (it MUST NOT write any marker from
+the read path); the reclassified status carries a kind (`startup` / `draft`).
 
 #### Scenario: A worker stuck at the trust gate reads as waiting
 
@@ -240,6 +244,13 @@ marker from the read path); the reclassified status carries a kind (`startup` / 
 - **WHEN** a TRACKED dispatch pane holds a structured, non-empty input draft (the goal
   was pasted but the Enter was swallowed)
 - **THEN** the radar reports it `waiting` (kind `draft`), not `idle`/`done`
+
+#### Scenario: A dim suggested-next-command is not a draft
+
+- **WHEN** a tracked dispatch pane's composer shows only the agent's faint
+  suggested-next-command ghost text (SGR 2), with no real user input
+- **THEN** the radar does NOT read a draft and does NOT reclassify the pane as
+  `waiting` — the ghost suggestion is excluded from draft detection
 
 #### Scenario: A normal idle pane is unaffected
 

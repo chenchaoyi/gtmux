@@ -184,7 +184,9 @@ func wakeDone(pane, tail string, turnStart int64) {
 		return
 	}
 	if _, tracked := dispatch.TaskForPane(pane); tracked {
-		if draft, structured := dispatch.DraftOf(cap); structured && strings.TrimSpace(draft) != "" {
+		// COLOR-aware: exclude CC's faint suggested-next-command ghost text, which a plain
+		// capture would misread as an unsubmitted draft and wrongly suppress a real `done`.
+		if draft, structured := dispatch.DraftOfColored(tmux.CaptureFullColor(pane)); structured && strings.TrimSpace(draft) != "" {
 			debugf("done suppressed (unsubmitted draft) pane=%s", pane)
 			return
 		}

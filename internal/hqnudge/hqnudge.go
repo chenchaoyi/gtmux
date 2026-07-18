@@ -106,23 +106,25 @@ func failCountPath() string { return filepath.Join(queueDir(), "fail-count") }
 
 // io is the injectable I/O surface — real tmux in production, fakes in tests.
 type io struct {
-	capture     func(pane string) string // visible-screen capture (the input box is at its foot)
-	captureFull func(pane string) string // capture + scrollback margin (the ack read)
-	paste       func(pane, text string) error
-	enter       func(pane string) error
-	sleep       func() // wait the two-frame interval
-	nowNano     func() int64
-	inMode      func(pane string) bool // pane is in tmux copy/view-mode (scrolling)
+	capture      func(pane string) string // visible-screen capture (the input box is at its foot)
+	captureColor func(pane string) string // COLOR capture for the draft-guard (drops CC's faint ghost text); nil → falls back to capture
+	captureFull  func(pane string) string // capture + scrollback margin (the ack read)
+	paste        func(pane, text string) error
+	enter        func(pane string) error
+	sleep        func() // wait the two-frame interval
+	nowNano      func() int64
+	inMode       func(pane string) bool // pane is in tmux copy/view-mode (scrolling)
 }
 
 var prod = io{
-	capture:     tmux.CapturePane,
-	captureFull: tmux.CaptureFull,
-	paste:       tmux.Paste,
-	enter:       func(pane string) error { return tmux.SendKey(pane, "Enter") },
-	sleep:       func() { time.Sleep(twoFrameGap) },
-	nowNano:     func() int64 { return time.Now().UnixNano() },
-	inMode:      tmux.InMode,
+	capture:      tmux.CapturePane,
+	captureColor: tmux.CaptureFullColor,
+	captureFull:  tmux.CaptureFull,
+	paste:        tmux.Paste,
+	enter:        func(pane string) error { return tmux.SendKey(pane, "Enter") },
+	sleep:        func() { time.Sleep(twoFrameGap) },
+	nowNano:      func() int64 { return time.Now().UnixNano() },
+	inMode:       tmux.InMode,
 }
 
 // Deliver types msg into the HQ pane, guarding a half-typed draft. msg is queued to
@@ -278,11 +280,20 @@ func boxEmpty(x io, pane string) bool {
 	if x.inMode != nil && x.inMode(pane) {
 		return false
 	}
-	if draft, structured := dispatch.DraftOf(x.capture(pane)); !structured || strings.TrimSpace(draft) != "" {
+	// COLOR-aware draft read: exclude CC's faint suggested-next-command ghost text, which
+	// a plain capture would misread as a half-typed draft and HOLD the nudge behind a
+	// phantom. DraftOfColored is a safe superset of DraftOf (identity on plain text), so a
+	// test injecting a plain capture is unchanged. Fall back to `capture` when no color
+	// capture is wired.
+	cap := x.captureColor
+	if cap == nil {
+		cap = x.capture
+	}
+	if draft, structured := dispatch.DraftOfColored(cap(pane)); !structured || strings.TrimSpace(draft) != "" {
 		return false
 	}
 	x.sleep()
-	draft, structured := dispatch.DraftOf(x.capture(pane))
+	draft, structured := dispatch.DraftOfColored(cap(pane))
 	return structured && strings.TrimSpace(draft) == ""
 }
 
