@@ -213,24 +213,21 @@ func wakeDone(pane, tail string, turnStart int64) {
 	fields = append(fields, hqwake.PullHint(now, 0))
 	line := hqwake.Line(hqwake.ClassDone, wakeHead(pane), fields...)
 
-	// An AWAITED completion is delivered NOW on the acked/retried wake channel, bypassing
-	// the per-pane merge defer — HQ is explicitly waiting on it. The await is a one-shot:
-	// clear it so a later unrelated completion doesn't re-fire unless HQ re-dispatches.
-	if awaited {
+	due, dueAt := hqwake.DoneDue(pane, now, cfg.PaneMinGapSec)
+	switch routeDone(awaited, due, target) {
+	case routeImmediate:
+		// Now, on the acked/retried channel: an AWAITED pane (HQ waits on it, bypasses the
+		// merge defer) or a pane whose merge window is clear. An awaited wake is a one-shot
+		// — clear it so a later unrelated completion doesn't re-fire unless HQ re-dispatches.
 		deliverWake(target, line)
 		hqwake.StampDone(pane, now)
-		dispatch.ClearAwaited(pane)
-		return
-	}
-
-	switch due, dueAt := hqwake.DoneDue(pane, now, cfg.PaneMinGapSec); {
-	case due:
-		deliverWake(target, line)
-		hqwake.StampDone(pane, now)
-	case target != "":
-		// Inside the merge window: replace the queued line; it types when due.
+		if awaited {
+			dispatch.ClearAwaited(pane)
+		}
+	case routeMerge:
+		// Inside the merge window with a live HQ: replace the queued line; it types when due.
 		hqnudge.DeliverKeyedAt(target, "done-"+pane, line, dueAt*int64(time.Second))
-	default:
+	default: // routeEnqueue
 		hqnudge.Enqueue(line) // no live HQ to merge against — hold the line as-is
 	}
 }
@@ -245,6 +242,30 @@ func deferDone(awaited bool, doneMode string, attended bool) bool {
 		return false
 	}
 	return doneMode == hqwake.DoneTick || (doneMode == hqwake.DoneUnattended && attended)
+}
+
+// doneRoute is how an un-deferred `done` wake reaches HQ.
+type doneRoute int
+
+const (
+	routeImmediate doneRoute = iota // deliver now + stamp (+ clear an await)
+	routeMerge                      // live HQ, inside the per-pane merge window — replace the queued line
+	routeEnqueue                    // no live HQ to merge against — hold the line for the next drain
+)
+
+// routeDone picks the delivery route for a completion that is NOT being deferred to the
+// tick. An AWAITED completion or one whose merge window is clear (`due`) goes out
+// IMMEDIATELY; otherwise, with a live HQ target it merges into the pending line, and
+// with no target it is held. Pure so the routing (the perception-v2 delivery contract)
+// is unit-tested independently of tmux/hqnudge.
+func routeDone(awaited, due bool, target string) doneRoute {
+	if awaited || due {
+		return routeImmediate
+	}
+	if target != "" {
+		return routeMerge
+	}
+	return routeEnqueue
 }
 
 // doneGoal resolves the finished session's goal: the dispatch ledger for a tracked
@@ -417,12 +438,9 @@ func sweepReapSuggestions() {
 	now := time.Now().Unix()
 	tune := dispatch.LoadTuning()
 	for _, t := range dispatch.ListTasks() {
-		if t.Pane == "" || t.Snoozed(now) || dispatch.ReapSuggested(t.ID) {
+		// Cheap gates first (pure, testable); only a survivor pays for the git merge check.
+		if !reapCheapGates(t, now, paneIdleSince(t.Pane), tune.ReapIdleThreshold, dispatch.ReapSuggested(t.ID)) {
 			continue
-		}
-		since := paneIdleSince(t.Pane)
-		if since == 0 || now-since < tune.ReapIdleThreshold {
-			continue // not idle, or not idle long enough
 		}
 		if t.Branch != "" && t.Worktree != "" {
 			if merged, err := dispatch.BranchMerged(t.Worktree, t.Branch); err != nil || !merged {
@@ -436,6 +454,18 @@ func sweepReapSuggestions() {
 		nudgeHQ(t.Pane, hqwake.Line(hqwake.ClassReapSuggest, wakeHead(t.Pane), goal, "gtmux reap "+t.ID))
 		dispatch.MarkReapSuggested(t.ID)
 	}
+}
+
+// reapCheapGates reports whether a tracked dispatch passes the CHEAP reap-suggestion
+// gates — has a pane, isn't snoozed, hasn't already been suggested, and has been
+// idle-after-work past the threshold — i.e. whether it is worth the (git) branch-merged
+// check the caller then does. Pure, so the skip matrix is testable without fs/git;
+// `idleSince` and `alreadySuggested` are the caller's resolved I/O results.
+func reapCheapGates(t dispatch.Task, now, idleSince, reapIdleThreshold int64, alreadySuggested bool) bool {
+	if t.Pane == "" || t.Snoozed(now) || alreadySuggested {
+		return false
+	}
+	return idleSince != 0 && now-idleSince >= reapIdleThreshold
 }
 
 // paneIdleSince returns when a pane's turn finished (its finished marker mtime), or
