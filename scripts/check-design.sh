@@ -69,12 +69,15 @@ listblock=$(awk '/Commands:/{f=1} f{print} /uninstall-app`\./{exit}' CLAUDE.md |
 for cmd in $cmds; do
   case "$HIDDEN" in *" $cmd "*) continue ;; esac
   needle=$(printf '`%s`' "$cmd")
-  printf '%s\n' "$listblock" | grep -qF "$needle" || {
+  # Here-string, not `printf | grep -q`: grep -q closes the pipe on the first match,
+  # SIGPIPE-ing printf ("write error: Broken pipe") — a timing-dependent flake that
+  # failed CI at random. `<<<` feeds grep without a pipe, so there is nothing to break.
+  grep -qF "$needle" <<<"$listblock" || {
     note "CLI command '$cmd' (dispatched in $APP) is NOT in the CLAUDE.md command list — add it there (and weigh 'gtmux --help' usage + a docs/cli.md section)"; fail=1
   }
 done
 for cmd in $(grep -oE '^## `gtmux [a-z][a-z0-9-]*`' docs/cli.md | sed -E 's/^## `gtmux ([a-z0-9-]+)`/\1/'); do
-  printf '%s\n' "$cmds" | grep -qxF "$cmd" || {
+  grep -qxF "$cmd" <<<"$cmds" || {
     note "docs/cli.md documents 'gtmux $cmd' but it is not a dispatched command (renamed/removed → stale doc)"; fail=1
   }
 done
