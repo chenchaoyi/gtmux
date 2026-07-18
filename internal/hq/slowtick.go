@@ -4,7 +4,7 @@
 // OnSlowTick), so its dedup markers have no read-check-write race — this is the
 // fix for the limits·warn 3× bug (its nudge used to live in gatherUsage, which
 // /api/usage + the HQ card + the CLI call concurrently).
-package app
+package hq
 
 import (
 	"path/filepath"
@@ -15,6 +15,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
@@ -24,11 +25,11 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// slowTickEval is wired to server Deps.OnSlowTick. It evaluates resource +
+// SlowTickEval is wired to server Deps.OnSlowTick. It evaluates resource +
 // subscription-limit warnings, delivers the HQ summary tick, and nudges HQ once
 // per new/changed warning.
-func slowTickEval() {
-	drainHQNudges() // also on the 3s fast tick — this covers serve's first evaluation
+func SlowTickEval() {
+	DrainHQNudges() // also on the 3s fast tick — this covers serve's first evaluation
 	// Resource: sample + nudge on a NEW machine warn TIER. Dedup keys on the tier
 	// (amber/red), NOT the exact warn value — disk-free jittering 40→39→38 GB stays
 	// amber and must NOT re-nudge per GB (the by-tier fix) — and the tier itself is
@@ -85,7 +86,7 @@ func hqSummaryTick(now int64) {
 	if !hqwake.TickDue(now, hqwake.Load()) {
 		return
 	}
-	pane := findHQPane()
+	pane := hqpane.Find()
 	if pane == "" {
 		return // no HQ to wake — leave the tally accumulating
 	}
@@ -94,14 +95,14 @@ func hqSummaryTick(now int64) {
 	}
 }
 
-// drainHQNudges flushes any HQ nudges queued behind a half-typed draft (or a pane in
+// DrainHQNudges flushes any HQ nudges queued behind a half-typed draft (or a pane in
 // copy-mode, or a moment with no resolvable HQ). Wired to the 3s fast tick: a knock
 // that arrives while the user is typing must land in seconds, not wait on the
 // resource-sampling cadence. Cheap-gated on Pending() — a dir scan — so a quiet queue
 // costs no tmux at all.
-func drainHQNudges() {
+func DrainHQNudges() {
 	if hqnudge.Pending() {
-		hqnudge.Drain(findHQPane())
+		hqnudge.Drain(hqpane.Find())
 	}
 }
 
@@ -116,7 +117,7 @@ func drainHQNudges() {
 // stay silent.
 func wakeWatchdog(now int64) {
 	key := ""
-	if findHQPane() != "" && hqnudge.Degraded(now) {
+	if hqpane.Find() != "" && hqnudge.Degraded(now) {
 		key = "down"
 	}
 	if !markerChanged("hqwakedegraded", key) {
@@ -125,7 +126,7 @@ func wakeWatchdog(now int64) {
 	const summary = "⚠ HQ wake channel not landing — knocks are queued but unconfirmed; " +
 		"reconcile by pull: gtmux events --since-seq <n>"
 	hqfeed.EmitControl(hqfeed.ControlWakeDegraded, summary, events.SevImportant, now)
-	if pane := findHQPane(); pane != "" {
+	if pane := hqpane.Find(); pane != "" {
 		hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassWakeDegraded, "",
 			"⚠ wake deliveries unconfirmed", "reconcile: gtmux digest --json"))
 	}
@@ -183,7 +184,7 @@ func resetFeedRestartGate() {
 // the feed watchdog is allowed to be visible: a perception outage must not stay
 // silent (the commander's #1 requirement).
 func feedWatchdog(now int64) {
-	hqLive := findHQPane() != ""
+	hqLive := hqpane.Find() != ""
 	h := hqfeed.Health{HQLive: hqLive, PidAlive: hqfeed.Running(), HbStale: hqfeed.Stale(now)}
 	if hqfeed.NeedsRestart(h) {
 		// Gate the respawn: exponential backoff between attempts + a hard cap, so a daemon
@@ -211,7 +212,7 @@ func feedWatchdog(now int64) {
 		hqfeed.EmitControl(hqfeed.ControlFeedDegraded,
 			"⚠ perception feed down — mechanical self-heal failed; on the 5-min polling backstop",
 			events.SevImportant, now)
-		if pane := findHQPane(); pane != "" {
+		if pane := hqpane.Find(); pane != "" {
 			hqnudge.Deliver(pane, hqwake.Line("feed-degraded", "",
 				"⚠ perception daemon down — self-heal failed", "reconcile: gtmux digest --json"))
 		}
@@ -290,7 +291,7 @@ func stuckDispatchSweep() {
 
 // reclaim hint). For an alert whose dedup already decided it should speak.
 func nudgeHQPane(msg, extra string) {
-	pane := findHQPane()
+	pane := hqpane.Find()
 	if pane == "" {
 		return
 	}

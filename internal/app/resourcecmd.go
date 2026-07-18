@@ -10,7 +10,6 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
-	"github.com/chenchaoyi/gtmux/internal/resource"
 )
 
 // cmdResource implements `gtmux resource [--json]`.
@@ -62,18 +61,6 @@ func cmdResource(args []string) int {
 		}
 	}
 	return 0
-}
-
-// preflightResource warns (to stderr) when a machine resource is at its RED line
-// before adding load (gtmux hq / new). Returns true when it warned. Never blocks.
-func preflightResource() bool {
-	m := radar.CurrentResource().Machine
-	if resource.MachineTier(m) < resource.TierRed {
-		return false
-	}
-	i18n.Sae("⚠ resource red line: "+m.Warn+" — consider reclaiming/holding before adding load.",
-		"⚠ 资源红线："+m.Warn+" —— 建议先回收或暂缓,再新增负载。")
-	return true
 }
 
 func memTierLabel(tier string) string {

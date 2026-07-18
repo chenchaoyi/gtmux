@@ -2,7 +2,7 @@
 // the hook appends every lifecycle event of every session to a rotated log, and
 // this is the terminal-native SUBSCRIPTION to it — gtmux HQ tails it to stay
 // aware of any session's execution, the equivalent of the apps' SSE stream.
-package app
+package hq
 
 import (
 	"encoding/json"
@@ -51,9 +51,9 @@ func validSeverity(level string) bool {
 	return false
 }
 
-// cmdEvents implements `gtmux events [--follow] [--json] [--since <dur>]
+// CmdEvents implements `gtmux events [--follow] [--json] [--since <dur>]
 // [--since-seq <n>] [--severity <level>]`.
-func cmdEvents(args []string) int {
+func CmdEvents(args []string) int {
 	follow, jsonOut := false, false
 	since := int64(0)
 	sinceSeq := int64(-1) // -1 = not given (0 is a valid cursor: "everything retained")

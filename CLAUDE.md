@@ -293,7 +293,7 @@ gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一
 | DESIGN.md 引用 | 现状位置 |
 |---|---|
 | `internal/menubar/icon.go`（状态色权威值 `#EF4444/#06B6D4/#22C55E/#8E8E93`） | `macapp/Sources/GtmuxBar/Theme.swift` 的 `Theme.Status.waiting/working/idle/none`——**已用 DESIGN 的精确 hex，且有一致性测试断言其匹配**；`AgentStore.swift` 的 `Status.color`/`nsColor`（枚举名为 `Status`，非 `AgentState`）只是委托给 `Theme.Status.*`。 |
-| `internal/menubar/model.go`（`agents --json` 契约 / Agent shape） | 产出端 `internal/app/agents.go`（`agentJSON`）；消费端 `macapp/Sources/GtmuxBar/AgentStore.swift`（`Agent`）。 |
+| `internal/menubar/model.go`（`agents --json` 契约 / Agent shape） | 产出端 `internal/radar/agents.go`（`agentJSON`）；消费端 `macapp/Sources/GtmuxBar/AgentStore.swift`（`Agent`）。 |
 | `cmd/gtmux-menubar/`（cgo systray 入口） | 已废弃；菜单栏 app 现为 `macapp/`（Swift）。systray 不再使用。 |
 
 `agents.json` 的 `icon` 字段（官方图标）**已实现**（v0.0.22+）：profile 的 `icon`

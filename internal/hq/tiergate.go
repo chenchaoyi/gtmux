@@ -1,4 +1,4 @@
-package app
+package hq
 
 // The tier gate (hq-wake-reliability): the TIMING half of the anti-flap rules, kept
 // deliberately apart from the hysteresis half. Hysteresis is a property of the

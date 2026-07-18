@@ -422,3 +422,33 @@ func codexNotifyIsGtmux() bool {
 	}
 	return false
 }
+
+// treeSize / humanBytes are small local copies of the disk-usage helpers the hq
+// disk-hygiene sweep also uses — a leaf-level primitive duplicated (not shared)
+// so the doctor command need not import the supervisor package.
+func treeSize(dir string) int64 {
+	var total int64
+	_ = filepath.WalkDir(dir, func(_ string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		if fi, err := d.Info(); err == nil {
+			total += fi.Size()
+		}
+		return nil
+	})
+	return total
+}
+
+func humanBytes(n int64) string {
+	switch {
+	case n >= 1<<30:
+		return strconv.FormatFloat(float64(n)/(1<<30), 'f', 1, 64) + " GB"
+	case n >= 1<<20:
+		return strconv.FormatInt(n>>20, 10) + " MB"
+	case n >= 1<<10:
+		return strconv.FormatInt(n>>10, 10) + " KB"
+	default:
+		return strconv.FormatInt(n, 10) + " B"
+	}
+}

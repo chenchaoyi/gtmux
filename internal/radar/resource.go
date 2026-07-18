@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -32,4 +33,16 @@ func livePanePIDs() map[string]int {
 // the serve-tick evaluator).
 func CurrentResource() resource.Report {
 	return resource.Snapshot(livePanePIDs())
+}
+
+// PreflightResource warns (to stderr) when a machine resource is at its RED line
+// before adding load (gtmux hq / new). Returns true when it warned. Never blocks.
+func PreflightResource() bool {
+	m := CurrentResource().Machine
+	if resource.MachineTier(m) < resource.TierRed {
+		return false
+	}
+	i18n.Sae("⚠ resource red line: "+m.Warn+" — consider reclaiming/holding before adding load.",
+		"⚠ 资源红线："+m.Warn+" —— 建议先回收或暂缓,再新增负载。")
+	return true
 }

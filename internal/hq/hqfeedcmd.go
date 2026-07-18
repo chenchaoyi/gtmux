@@ -4,7 +4,7 @@
 // background. This is the SILENT channel that feeds HQ everything, so gtmux no
 // longer types low-value nudge lines into the HQ pane. The gtmux-side watchdog
 // (serve slow-tick) keeps the daemon alive; HQ reads the spool via `--tail`.
-package app
+package hq
 
 import (
 	"fmt"
@@ -19,8 +19,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
-// cmdHQFeed implements `gtmux hq-feed [--daemon|--tail|--status]`.
-func cmdHQFeed(args []string) int {
+// CmdHQFeed implements `gtmux hq-feed [--daemon|--tail|--status]`.
+func CmdHQFeed(args []string) int {
 	mode := ""
 	for _, a := range args {
 		switch a {

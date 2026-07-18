@@ -10,7 +10,7 @@
 // The supervisor is deliberately "just an agent": it appears in the radar
 // (marked role:"supervisor" via its cwd), jump/notifications work, and the
 // phone can converse with it — no new machinery.
-package app
+package hq
 
 import (
 	"fmt"
@@ -28,6 +28,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/panefocus"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -413,12 +415,6 @@ Add topic files as needed. 主动学习、持续更新、用时调取。
 	"environment.md":    "# Environment / network\n\n_gtmux applies a proxy to an agent launch ONLY when you configure one explicitly — it never probes the network or assumes any proxy tool. Set it with `gtmux config agent-proxy <url>|off`, or the `GTMUX_AGENT_PROXY` env var (overrides config — handy to wire to a network switch)._\n\n- no proxy (the default) — a network that reaches the model API directly.\n- a proxy URL — a network where a direct launch is blocked and must go through an HTTP proxy.\n\n**The proxy (when set) covers ONLY gtmux's OWN launch path** (`gtmux spawn` / `hq` / `adopt` / `restore`). A hand-typed `send-keys` launch bypasses it — ALWAYS dispatch with `gtmux spawn`. 起 agent 是否走代理是显式设置,gtmux 不探测、不内置任何代理工具或端口。\n\n_This is specific to YOUR machine — record YOUR per-network rules below (which network → which proxy URL, or none)._\n",
 }
 
-// findHQPane returns the pane id of a live supervisor pane ("" when none). The rule
-// lives in hqpane, shared with the hook's wake call sites: the `@gtmux_hq_home` stamp,
-// then a symlink-normalized cwd/start-path match on the hq home. It is not a session
-// name, so renames don't break it — the same identity the radar's role field uses.
-func findHQPane() string { return hqpane.Find() }
-
 // hqAgentAlive reports whether a coding agent is actually the FOREGROUND process in the
 // HQ pane. A stamped pane that has dropped back to an interactive shell means the
 // supervisor exited (the user quit it) — so `gtmux hq` should relaunch it, not focus a
@@ -435,8 +431,8 @@ func agentAliveByCmd(cmd string) bool {
 	return cmd != "" && !isShellCommand(cmd)
 }
 
-// cmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
-func cmdHQ(args []string) int {
+// CmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
+func CmdHQ(args []string) int {
 	agentCmd := ""
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -473,7 +469,7 @@ func cmdHQ(args []string) int {
 		return 1
 	}
 
-	preflightResource() // warn (not block) if a machine resource is at its red line
+	radar.PreflightResource() // warn (not block) if a machine resource is at its red line
 	res, err := seedHQHome()
 	if err != nil {
 		i18n.Sae("gtmux hq: "+err.Error(), "gtmux hq: "+err.Error())
@@ -495,9 +491,9 @@ func cmdHQ(args []string) int {
 	// supervisor" — confusing. So check the pane's foreground command: a shell means
 	// the agent exited → relaunch it IN PLACE (reuse the window the user already has),
 	// never a dead-window focus.
-	if pane := findHQPane(); pane != "" {
+	if pane := hqpane.Find(); pane != "" {
 		if hqAgentAlive(pane) {
-			if err := focusPaneByID(pane); err == nil {
+			if err := panefocus.FocusPaneByID(pane); err == nil {
 				i18n.Say("Focused the running supervisor.", "已跳到正在运行的中控。")
 			} else {
 				i18n.Say("A supervisor is already running (pane "+pane+").",
@@ -511,7 +507,7 @@ func cmdHQ(args []string) int {
 			rawCmd = hqAgentCommand()
 		}
 		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
-		_ = focusPaneByID(pane)
+		_ = panefocus.FocusPaneByID(pane)
 		i18n.Say("The supervisor had exited — relaunched it in its pane.",
 			"中控此前已退出 —— 已在原 pane 里重新拉起。")
 		deliverHQBriefing(pane, rawCmd)

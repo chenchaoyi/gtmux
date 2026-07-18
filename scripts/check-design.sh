@@ -89,7 +89,7 @@ done
 #    did for months. The needle is the BACKTICKED form: a bare grep for "done" or "tick"
 #    matches ordinary prose and passes for the wrong reason.
 WAKE=internal/hqwake/wake.go
-PLAYBOOK=internal/app/hq.go
+PLAYBOOK=internal/hq/hq.go
 DOC_HIDDEN=" "   # classes deliberately not surfaced (none today)
 for c in $(grep -oE 'Class[A-Za-z]+ += +"[^"]+"' "$WAKE" | sed -E 's/.*"([^"]+)"/\1/' | sort -u); do
   case "$DOC_HIDDEN" in *" $c "*) continue ;; esac

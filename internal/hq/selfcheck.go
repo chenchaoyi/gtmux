@@ -5,7 +5,7 @@
 // cleanup itself (no LLM in the timing loop; the split of §5). Deliberately
 // infrequent: rate-limited to ≤ 1/h, and the expensive condition reads happen only
 // after the cheap rate-limit gate passes.
-package app
+package hq
 
 import (
 	"path/filepath"
@@ -14,6 +14,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqfeed"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -73,7 +74,7 @@ func recentAttentionEvent(now int64) bool {
 // slow-tick; only with a live HQ (nothing to trigger otherwise), and the expensive
 // condition reads run only after the cheap rate-limit gate passes.
 func selfCheckSensor(now int64) {
-	if findHQPane() == "" {
+	if hqpane.Find() == "" {
 		return
 	}
 	lastCheck := readSelfCheckAt()

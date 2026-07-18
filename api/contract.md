@@ -40,7 +40,7 @@ app, and mobile app share one shape. Empty array when no tmux server is running.
 401 {"error":"unauthorized"}
 ```
 
-`agent` object (stable fields; see `internal/app/agents.go` `agentJSON`):
+`agent` object (stable fields; see `internal/radar/agents.go` `agentJSON`):
 
 | field | type | meaning |
 |---|---|---|

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -27,7 +28,7 @@ func cmdNew(args []string) int {
 			name = a
 		}
 	}
-	preflightResource() // warn (not block) if a machine resource is at its red line
+	radar.PreflightResource() // warn (not block) if a machine resource is at its red line
 
 	// tmux uses '.' and ':' as target separators (session:window.pane), so a name
 	// carrying them can't be addressed — swap them for '-'.

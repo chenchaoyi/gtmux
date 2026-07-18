@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/connect"
 	"github.com/chenchaoyi/gtmux/internal/hook"
+	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -70,7 +71,7 @@ func Run(argv []string) int {
 	case "usage":
 		return cmdUsage(args)
 	case "events":
-		return cmdEvents(args)
+		return hq.CmdEvents(args)
 	case "resource", "res":
 		return cmdResource(args)
 	case "limits":
@@ -82,15 +83,15 @@ func Run(argv []string) int {
 	case "share":
 		return cmdShare(args)
 	case "hq":
-		return cmdHQ(args)
+		return hq.CmdHQ(args)
 	case "hq-feed":
-		return cmdHQFeed(args)
+		return hq.CmdHQFeed(args)
 	case "status", "st":
 		return cmdStatus(args)
 	case "spawn":
 		return cmdSpawn(args)
 	case "tasks":
-		return cmdTasks(args)
+		return hq.CmdTasks(args)
 	case "reap":
 		return cmdReap(args)
 	case "send":

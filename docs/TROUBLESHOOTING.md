@@ -277,7 +277,7 @@ ceiling. Secondary: the `uploads/` dir (phone images) and the per-pane churn mar
 - `du -ah ~/.local/share/gtmux | sort -rh | head` — find the big file. A multi-hundred-MB
   `tunnel.log` confirms cloudflared churn (check the tunnel is actually up; see the
   QUIC-blocked entry).
-- The slow-tick hygiene sweep (`internal/app/diskhygiene.go` `diskHygieneSweep`) caps each
+- The slow-tick hygiene sweep (`internal/hq/diskhygiene.go` `diskHygieneSweep`) caps each
   log to its recent tail (8 MB → last 2 MB), age-prunes + LRU-trims `uploads/`, and ages
   out dead-pane churn markers, every 30 min while `gtmux serve` runs. If serve isn't
   running, nothing trims — start it, or manually `: > ~/.local/share/gtmux/tunnel.log`.
