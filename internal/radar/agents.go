@@ -490,6 +490,22 @@ func headBranch(gitPath string, isDir bool) string {
 // waiting → working → idle, then by location. Shared by static + watch.
 // A pane is "waiting" (blocked on your input) when claude-notify recorded a
 // Notification for it (~/.local/share/gtmux/waiting/<pane>) and it isn't working.
+// paneSource lists the raw tmux pane field-lines GatherAgents assembles into radar
+// rows — one tab-separated line per pane, in the field order the parser below reads
+// (pane_id, session, window, pane, title, command, activity_flag, activity, pane_pid,
+// current_path, in_mode). A package var (not a direct tmux call) so fixture tests can
+// inject canned panes and drive the whole assemble/join/sort path with no live server.
+var paneSource = func() []string {
+	const fields = "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}\t#{pane_in_mode}"
+	return tmux.Lines("list-panes", "-a", "-F", fields)
+}
+
+// procSnapshot is the per-gather process table (pid → {ppid, cpu, argv}). A package
+// var so fixture tests can supply a fixed map instead of the live `ps`, keeping the
+// glyph-less-agent subtree path deterministic.
+var procSnapshot = snapshotProcs
+
 func GatherAgents() []Pane {
 	profiles := LoadProfiles()
 	lastFinished := state.ReadLastFinished()
@@ -498,16 +514,14 @@ func GatherAgents() []Pane {
 
 	// One process snapshot per gather, so we can look inside a pane's tree to
 	// catch agents that run as `node …/codex` (comm=node, no title glyph).
-	procs := snapshotProcs()
+	procs := procSnapshot()
 	children := map[int][]int{}
 	for pid, info := range procs {
 		children[info.ppid] = append(children[info.ppid], pid)
 	}
 
-	fields := "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}\t#{pane_in_mode}"
 	var panes []Pane
-	for _, line := range tmux.Lines("list-panes", "-a", "-F", fields) {
+	for _, line := range paneSource() {
 		f := strings.SplitN(line, "\t", 11)
 		if len(f) < 7 {
 			continue
