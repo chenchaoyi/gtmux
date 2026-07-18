@@ -19,6 +19,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/notify"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -33,7 +34,7 @@ func slowTickEval() {
 	// amber and must NOT re-nudge per GB (the by-tier fix) — and the tier itself is
 	// damped three ways (hysteresis + confirmation + restate interval) so a value
 	// dithering ON a threshold can't re-alert either.
-	rep := currentResource()
+	rep := radar.CurrentResource()
 	if resourceTierGate(rep.Machine, time.Now().Unix()) {
 		nudgeHQPane(hqwake.Line(hqwake.ClassResourceWarn, "", rep.Machine.Warn), orphanTail(rep))
 	}
@@ -270,18 +271,18 @@ func tierFromString(s string) resource.Tier {
 // the marker-existence check dedups (one wake per stuck episode). It clears when the pane
 // un-sticks — `resolveWaiting` removes a stale marker once the pane is genuinely idle.
 func stuckDispatchSweep() {
-	for _, p := range gatherAgents() {
+	for _, p := range radar.GatherAgents() {
 		// Only a hook-FREE waiting (my radar guard set status but no hook wrote a
 		// marker) is a stuck dispatch; a genuine hook wait already owns the marker.
-		if p.status != "waiting" || state.Exists(state.WaitingPath(p.paneID)) {
+		if p.Status != "waiting" || state.Exists(state.WaitingPath(p.PaneID)) {
 			continue
 		}
-		kind := stuckDispatchKind(p.paneID, p.agent)
+		kind := radar.StuckDispatchKind(p.PaneID, p.Agent)
 		if kind == "" {
 			continue
 		}
-		if state.WriteMarker(state.WaitingPath(p.paneID), kind) == nil {
-			nudgeHQPane(hqwake.Line(hqwake.ClassWaiting, p.loc+" ("+p.paneID+")",
+		if state.WriteMarker(state.WaitingPath(p.PaneID), kind) == nil {
+			nudgeHQPane(hqwake.Line(hqwake.ClassWaiting, p.Loc+" ("+p.PaneID+")",
 				"stuck before running — "+kind), "")
 		}
 	}

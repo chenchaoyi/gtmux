@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
 // taskJSON is the `gtmux tasks --json` contract: a tracked dispatch with its LIVE
@@ -33,27 +34,14 @@ type taskJSON struct {
 	Archived    bool   `json:"archived,omitempty"`
 }
 
-// taskStatusFor maps a pane's radar status to the ledger lifecycle string:
-// waiting (needs you) → done (idle-after-work, review me) → working.
-func taskStatusFor(paneStatus string) string {
-	switch paneStatus {
-	case "waiting":
-		return "waiting"
-	case "idle":
-		return "done"
-	default:
-		return "working"
-	}
-}
-
 // taskStatus maps a tracked pane's live radar status to the ledger lifecycle,
 // "gone" when the pane is no longer live. The "needs-you first" ordering follows.
-func taskStatus(t dispatch.Task, live map[string]agentPane) string {
+func taskStatus(t dispatch.Task, live map[string]radar.Pane) string {
 	p, ok := live[t.Pane]
 	if !ok {
 		return "gone"
 	}
-	return taskStatusFor(p.status)
+	return radar.TaskStatusFor(p.Status)
 }
 
 func taskRank(status string) int {
@@ -83,9 +71,9 @@ func rowFor(t dispatch.Task, status string, now int64) taskJSON {
 
 // gatherTasks joins the LIVE ledger with the radar and orders needs-you first.
 func gatherTasks() []taskJSON {
-	live := map[string]agentPane{}
-	for _, p := range gatherAgents() {
-		live[p.paneID] = p
+	live := map[string]radar.Pane{}
+	for _, p := range radar.GatherAgents() {
+		live[p.PaneID] = p
 	}
 	now := time.Now().Unix()
 	tasks := dispatch.ListTasks()

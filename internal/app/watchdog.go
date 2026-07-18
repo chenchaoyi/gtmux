@@ -7,6 +7,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -23,26 +24,26 @@ func watchdogMarker(pane string) string { return filepath.Join(state.Dir(), "wat
 // escalates about the HQ pane itself.
 func watchdogSweep(now int64) {
 	hq := findHQPane()
-	for _, p := range gatherAgents() {
-		if p.status != "waiting" || p.paneID == hq {
-			state.Remove(watchdogMarker(p.paneID)) // episode over / self → re-arm
+	for _, p := range radar.GatherAgents() {
+		if p.Status != "waiting" || p.PaneID == hq {
+			state.Remove(watchdogMarker(p.PaneID)) // episode over / self → re-arm
 			continue
 		}
 		if hq == "" {
 			continue // nowhere to escalate; don't arm (so HQ, once live, can surface it)
 		}
-		since := waitingSince(p.paneID)
-		fired := state.Exists(watchdogMarker(p.paneID))
-		if !shouldEscalate(p.status, since, now, watchdogWaitTimeout, fired) {
+		since := waitingSince(p.PaneID)
+		fired := state.Exists(watchdogMarker(p.PaneID))
+		if !shouldEscalate(p.Status, since, now, watchdogWaitTimeout, fired) {
 			continue
 		}
-		_ = state.Touch(watchdogMarker(p.paneID))
+		_ = state.Touch(watchdogMarker(p.PaneID))
 		mins := (now - since) / 60
 		// The line was hand-built in the pre-hq-perception-v2 format for months: the
 		// delivery was always draft-guarded, but HQ received a shape its playbook does
 		// not teach, and PriorityOf could not read a class out of it — so an escalation
 		// queued as a default-priority outcome.
-		msg := hqwake.Line(hqwake.ClassStuckWaiting, fmt.Sprintf("%s (%s)", p.loc, p.paneID),
+		msg := hqwake.Line(hqwake.ClassStuckWaiting, fmt.Sprintf("%s (%s)", p.Loc, p.PaneID),
 			fmt.Sprintf("waited %dm, still needs you", mins))
 		hqnudge.Deliver(hq, msg) // draft/copy-mode-guarded like every HQ injection
 	}

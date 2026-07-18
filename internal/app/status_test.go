@@ -3,12 +3,14 @@ package app
 import (
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
-func panesWith(statuses ...string) []agentPane {
-	var p []agentPane
+func panesWith(statuses ...string) []radar.Pane {
+	var p []radar.Pane
 	for _, s := range statuses {
-		p = append(p, agentPane{status: s})
+		p = append(p, radar.Pane{Status: s})
 	}
 	return p
 }

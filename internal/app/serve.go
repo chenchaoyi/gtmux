@@ -16,6 +16,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -143,7 +144,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			if !tmux.ServerUp() { // no tmux → empty array, same as `agents --json`
 				return []byte("[]"), nil
 			}
-			return agentsJSONBytes()
+			return radar.AgentsJSONBytes()
 		},
 		PaneText: func(id string) (string, bool) {
 			if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
@@ -153,9 +154,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		},
 		// The supervisor's fleet view (goal/last/ask per agent) — same bytes as
 		// `gtmux digest --json`; includes native rows even with no tmux server.
-		DigestJSON: digestJSONBytes,
+		DigestJSON: radar.DigestJSONBytes,
 		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
-		UsageJSON: usageJSONBytes,
+		UsageJSON: radar.UsageJSONBytes,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
 		OnSlowTick: slowTickEval,
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
@@ -195,12 +196,12 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			if !tmux.ServerUp() {
 				return nil
 			}
-			panes := gatherAgents()
+			panes := radar.GatherAgents()
 			out := make([]server.AgentStatus, 0, len(panes))
 			for _, p := range panes {
 				out = append(out, server.AgentStatus{
-					PaneID: p.paneID, Agent: p.agent, Loc: p.loc, Task: p.task, Status: p.status,
-					Since: p.since,
+					PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
+					Since: p.Since,
 				})
 			}
 			return out
@@ -642,7 +643,7 @@ func sanitizeFilename(name string) string {
 // installed .app via sips (cached by app mtime), or nil. Read-only; uses the
 // user's installed app — nothing third-party is bundled (DESIGN §6).
 func agentIconPNG(name string) []byte {
-	hint := iconFor(name, loadProfiles())
+	hint := radar.IconFor(name, radar.LoadProfiles())
 	if hint == "" {
 		return nil
 	}
@@ -652,7 +653,7 @@ func agentIconPNG(name string) []byte {
 	}
 	cacheDir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "icon-cache")
 	_ = os.MkdirAll(cacheDir, 0o755)
-	cache := filepath.Join(cacheDir, sanitizeFilename(name)+"-"+strconv.FormatInt(fileMtime(hint), 10)+".png")
+	cache := filepath.Join(cacheDir, sanitizeFilename(name)+"-"+strconv.FormatInt(radar.FileMtime(hint), 10)+".png")
 	if b, err := os.ReadFile(cache); err == nil {
 		return b
 	}

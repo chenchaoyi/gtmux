@@ -12,6 +12,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -130,7 +131,7 @@ func cmdSpawn(args []string) int {
 		taskID = dispatch.NewID(time.Now().UnixNano())
 		_ = dispatch.AddTask(dispatch.Task{
 			ID: taskID, Pane: pane, Session: session, Agent: agent, Model: model,
-			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: snip(goal, 200),
+			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
 			CreatedAt: time.Now().Unix(), Delivered: res.Delivered, OwnSession: ownSession,
 			Source: dispatch.SourceHQDispatched,
 		})

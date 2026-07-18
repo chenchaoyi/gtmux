@@ -1,170 +1,17 @@
-// The agent-digest layer (supervisor MVP): a DETERMINISTIC, zero-LLM-token
-// cognitive digest per radar row, assembled entirely from stores gtmux already
-// owns — radar identity/state, the transcript (goal = the session's last user
-// prompt, last = the tail of its last reply), the waiting marker's kind, the
-// live prompt options (ask) for a waiting pane, and the errored/background
-// modifiers. It is the supervisor's (`gtmux hq`) primary read surface and a
-// human "fleet at a glance" on its own: `gtmux digest [--json]`, GET /api/digest.
-//
-// Design rule: every field degrades to "" when its source is absent (a session
-// with no transcript still renders from radar signals alone) — agents need not
-// cooperate, and the CLI stays cgo-free with zero new dependencies.
+// The `gtmux digest` CLI rendering: the scannable, column-aligned "fleet at a
+// glance" report over the radar-assembled digest rows (radar.GatherDigest).
+// The digest PRODUCER (the deterministic joins) lives in internal/radar; this
+// file is the human-facing table + the command dispatch only.
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
-	"github.com/chenchaoyi/gtmux/internal/native"
-	"github.com/chenchaoyi/gtmux/internal/prompt"
-	"github.com/chenchaoyi/gtmux/internal/resume"
-	"github.com/chenchaoyi/gtmux/internal/state"
-	"github.com/chenchaoyi/gtmux/internal/tmux"
-	"github.com/chenchaoyi/gtmux/internal/transcript"
-	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 )
-
-// digestRow is one agent's digest — the JSON contract for `gtmux digest --json`
-// and GET /api/digest. Additive to (not a replacement for) `agents --json`.
-type digestRow struct {
-	PaneID  string `json:"pane_id,omitempty"` // tmux rows only
-	Loc     string `json:"loc,omitempty"`
-	Agent   string `json:"agent"`
-	Source  string `json:"source"`         // "tmux" | "native"
-	Status  string `json:"status"`         // working | waiting | idle | running
-	Kind    string `json:"kind,omitempty"` // waiting only: permission | plan | question
-	Role    string `json:"role,omitempty"` // "supervisor" for the hq session
-	Project string `json:"project,omitempty"`
-	Branch  string `json:"branch,omitempty"`
-	Goal    string `json:"goal,omitempty"` // the session's last user prompt
-	Last    string `json:"last,omitempty"` // tail of the last assistant reply
-	Ask     string `json:"ask,omitempty"`  // waiting only: the parsed prompt options
-	// Dispatch ledger (hq-dispatch): a pane dispatched by `gtmux spawn` carries its
-	// task goal + lifecycle status. Additive + omitempty — absent for untracked panes.
-	Task       string `json:"task,omitempty"`
-	TaskStatus string `json:"task_status,omitempty"` // waiting | done | working | gone
-	Error      string `json:"error,omitempty"`       // errored-idle modifier text
-	Bg         string `json:"bg,omitempty"`          // background-running modifier label
-	Since      int64  `json:"since,omitempty"`       // epoch the current state began
-	// input-lock modifier: the pane is in tmux copy/view-mode, so typed input is
-	// swallowed until it exits (send/spawn auto-exit before delivering). Flags which
-	// pane is input-locked so the supervisor sees it. Absent = not in a mode.
-	InMode bool `json:"in_mode,omitempty"`
-	// usage-watch (usage-watch change): the session's token snapshot + the first
-	// breached/projected layer. Zero/empty when no usage data (non-Claude).
-	Tok       int64   `json:"tok,omitempty"`  // cumulative output tokens
-	Ctx       float64 `json:"ctx,omitempty"`  // live context fraction 0–1
-	Rate      int64   `json:"rate,omitempty"` // output tokens/min (recent window)
-	UsageWarn string  `json:"usage_warn,omitempty"`
-}
-
-// Truncation caps: digest rows are the "短状态" tier — tens of tokens each. Deep
-// context is the supervisor drilling into the pane, not a bigger digest.
-const (
-	goalMax = 200
-	lastMax = 280
-	askMax  = 240
-)
-
-// snip collapses whitespace runs to single spaces and truncates to max runes
-// (rune-safe, "…"-suffixed). "" in → "" out.
-func snip(s string, max int) string {
-	s = strings.Join(strings.Fields(s), " ")
-	r := []rune(s)
-	if len(r) <= max {
-		return s
-	}
-	return strings.TrimSpace(string(r[:max])) + "…"
-}
-
-// joinAsk renders parsed prompt options as one compact line: "1.Yes · 2.No…".
-func joinAsk(opts []prompt.Option) string {
-	if len(opts) == 0 {
-		return ""
-	}
-	parts := make([]string, 0, len(opts))
-	for _, o := range opts {
-		parts = append(parts, fmt.Sprintf("%d.%s", o.N, o.Label))
-	}
-	return snip(strings.Join(parts, " · "), askMax)
-}
-
-// turnDigest extracts (goal, last) from a session's most-recent turn. Empty
-// slice → both "" (a just-started session degrades gracefully).
-func turnDigest(turns []transcript.Turn) (goal, last string) {
-	if len(turns) == 0 {
-		return "", ""
-	}
-	t := turns[len(turns)-1]
-	goal = snip(t.Prompt, goalMax)
-	// The reply TAIL is what's most current; snip from the end, not the start.
-	resp := strings.Join(strings.Fields(t.Response), " ")
-	if r := []rune(resp); len(r) > lastMax {
-		resp = "…" + strings.TrimSpace(string(r[len(r)-lastMax:]))
-	}
-	return goal, resp
-}
-
-// sessionRef resolves a row's (agentKey, sessionID) for the transcript lookup:
-// tmux rows via the pane's resume record, native rows via the native store.
-func sessionRef(p agentPane) (agentKey, sessionID string) {
-	if p.source == "native" {
-		if rec, ok := native.Load(p.sessionID); ok {
-			return rec.Agent, rec.SessionID
-		}
-		return "", ""
-	}
-	if rec, ok := resume.Load(p.loc); ok && rec.SessionID != "" {
-		return rec.Agent, rec.SessionID
-	}
-	return "", ""
-}
-
-// gatherDigest assembles the digest rows over the current radar (same ordering:
-// needs-you first). Pure joins; no LLM, no new persistence.
-func gatherDigest() []digestRow {
-	panes := gatherAgents()
-	out := make([]digestRow, 0, len(panes))
-	for _, p := range panes {
-		row := digestRow{
-			PaneID: p.paneID, Loc: p.loc, Agent: p.agent, Source: p.source,
-			Status: p.status, Role: p.role, Project: p.project, Branch: p.branch,
-			Error: p.errorText, Bg: p.bgText, Since: p.since, InMode: p.inMode,
-		}
-		if p.status == "waiting" && p.paneID != "" {
-			row.Kind = state.ReadMarker(state.WaitingPath(p.paneID))
-			row.Ask = joinAsk(prompt.ParseOptions(tmux.CapturePane(p.paneID)))
-		}
-		if agentKey, sessionID := sessionRef(p); sessionID != "" {
-			if turns, err := transcript.Load(agentKey, sessionID, 1); err == nil {
-				row.Goal, row.Last = turnDigest(turns)
-			}
-			if u, ok := uwatch.ForSession(agentKey, sessionID, time.Now()); ok {
-				row.Tok, row.Ctx, row.Rate = u.OutTok, u.CtxFrac, u.RatePerMin
-				row.UsageWarn = uwatch.EvaluateSession(u)
-			}
-		}
-		// Dispatch ledger join: if this pane was dispatched by spawn, surface its
-		// tracked goal + derived lifecycle status (additive).
-		if p.paneID != "" {
-			if tsk, ok := dispatch.TaskForPane(p.paneID); ok {
-				row.Task = tsk.Goal
-				row.TaskStatus = taskStatusFor(p.status)
-			}
-		}
-		out = append(out, row)
-	}
-	return out
-}
-
-// digestJSONBytes is the machine form (CLI --json and GET /api/digest share it).
-func digestJSONBytes() ([]byte, error) {
-	return json.MarshalIndent(gatherDigest(), "", "  ")
-}
 
 // cmdDigest implements `gtmux digest [--json]`.
 func cmdDigest(args []string) int {
@@ -184,7 +31,7 @@ func cmdDigest(args []string) int {
 		}
 	}
 	if jsonOut {
-		b, err := digestJSONBytes()
+		b, err := radar.DigestJSONBytes()
 		if err != nil {
 			i18n.Sae("gtmux: "+err.Error(), "gtmux: "+err.Error())
 			return 1
@@ -192,7 +39,7 @@ func cmdDigest(args []string) int {
 		fmt.Println(string(b))
 		return 0
 	}
-	rows := gatherDigest()
+	rows := radar.GatherDigest()
 	if len(rows) == 0 {
 		i18n.Say("No live agents.", "当前没有 agent。")
 		return 0
@@ -217,7 +64,7 @@ var digestSectionSpec = []struct{ key, en, zh string }{
 // can't-tell-idle-from-working fallback status) folds into "working" — it's
 // still an active agent, just a less certain signal — its own grey glyph
 // (via statusStyle) keeps that distinction visible on the row itself.
-func digestBucket(r digestRow) string {
+func digestBucket(r radar.DigestRow) string {
 	switch {
 	case r.Error != "":
 		return "errored"
@@ -233,7 +80,7 @@ func digestBucket(r digestRow) string {
 // digestBadge is the row's right-side badge: the dispatch task's lifecycle
 // status takes priority (it's the most actionable signal), then how many
 // options a waiting prompt offers, then a usage warning or background marker.
-func digestBadge(r digestRow) string {
+func digestBadge(r radar.DigestRow) string {
 	switch {
 	case r.Task != "" && r.TaskStatus != "":
 		return r.TaskStatus
@@ -250,7 +97,7 @@ func digestBadge(r digestRow) string {
 
 // digestLabel is a row's name-column identity: its tmux location (or
 // "elsewhere" for a sensed native session), tagged for the HQ supervisor row.
-func digestLabel(r digestRow) string {
+func digestLabel(r radar.DigestRow) string {
 	name := r.Loc
 	if name == "" {
 		name = i18n.Tr("elsewhere", "不在 tmux")
@@ -266,8 +113,8 @@ func digestLabel(r digestRow) string {
 // aligned row per agent — status glyph · name · goal/last (truncated to the
 // terminal width) · a right badge · a right-aligned relative time. This is
 // gtmux's scannable "fleet at a glance" — no prose paragraphs.
-func renderDigestTable(rows []digestRow) {
-	buckets := map[string][]digestRow{}
+func renderDigestTable(rows []radar.DigestRow) {
+	buckets := map[string][]radar.DigestRow{}
 	for _, r := range rows {
 		k := digestBucket(r)
 		buckets[k] = append(buckets[k], r)
@@ -334,7 +181,7 @@ func fmtAgoShort(unix int64) string {
 }
 
 // printDigestTableRow prints one aligned row within its section.
-func printDigestTableRow(r digestRow, nameWidth, tw int) {
+func printDigestTableRow(r radar.DigestRow, nameWidth, tw int) {
 	// errored-idle gets its own amber ⚠ marker (never a status color) — same
 	// convention as `gtmux agents`, so the glyph itself flags "look here" even
 	// outside the errored section's heading.

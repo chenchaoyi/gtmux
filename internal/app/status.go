@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -37,7 +38,7 @@ func cmdStatus(args []string) int {
 	if !tmux.ServerUp() {
 		return 0 // nothing running → empty segment
 	}
-	if s := statusLine(gatherAgents(), plain); s != "" {
+	if s := statusLine(radar.GatherAgents(), plain); s != "" {
 		fmt.Print(s)
 	}
 	return 0
@@ -47,10 +48,10 @@ func cmdStatus(args []string) int {
 // so it's unit-testable. Order matches the radar's priority: waiting → working →
 // idle; `running` (started but not demanding attention) is intentionally omitted
 // to keep the segment glanceable. Colors are the authoritative status hex.
-func statusLine(panes []agentPane, plain bool) string {
+func statusLine(panes []radar.Pane, plain bool) string {
 	var waiting, working, idle int
 	for _, p := range panes {
-		switch p.status {
+		switch p.Status {
 		case "waiting":
 			waiting++
 		case "working":
