@@ -508,38 +508,44 @@ surfaces — it never auto-reclaims or auto-answers.
 
 ### Requirement: HQ opens with a self-introduction and status briefing
 
-When `gtmux hq` FRESH-spawns a supervisor session, the system SHALL deliver a
-one-shot startup prompt into the new pane — after the agent comes up, via the
-verified dispatch path (wait-for-ready, then a land-verified deliver, the same path
-`gtmux spawn` uses) — so the supervisor's FIRST output does two things: (a) it
-introduces itself and its role (overseeing every coding agent on the machine —
-sense · decide · dispatch · supervise · report — and curating the knowledge base),
-and (b) it produces an immediate status report grounded in `gtmux digest --json`,
-`gtmux usage --json`, and `gtmux limits --json`, formatted as a COLUMN-ALIGNED
-TABLE — never a prose paragraph (`gtmux digest`'s own text output renders this
-shape; the supervisor matches its layout): a one-line summary of counts by
-state, then a section per state (needs-you leads, then working, then
-completed, then errored if any) with one aligned row per agent, and ALWAYS
-including the token-usage rollup and the subscription-window room laid out the
-same aligned way (the same report shape the seeded playbook's status policy
-requires). The briefing SHALL run ONLY on a fresh
-spawn: a `gtmux hq` that focuses an already-live supervisor SHALL NOT re-deliver it.
-It SHALL be best-effort and non-fatal — a delivery that does not land SHALL NOT fail
-`gtmux hq`, since the session is already up and usable. The prompt SHALL be bilingual
-(follows `GTMUX_LANG`) and SHALL be opt-out-able via `GTMUX_HQ_BRIEF`
-(`off`/`0`/`false`/`no`), defaulting on.
+The system SHALL, on the supervisor's FIRST turn (a fresh spawn, OR a relaunch of a
+stamped-but-dead HQ pane), deliver a MINIMAL, agent-agnostic TRIGGER — a single
+`» gtmux·startup` signal line, NOT a large multi-line prompt — after the agent comes up
+(via the verified dispatch path: wait-for-ready, then a land-verified deliver, the same
+`gtmux spawn` uses). The briefing's CONTENT and format SHALL live in
+the seeded playbook (AGENTS.md's "## First turn" section, which every agent reads
+through its own convention file — Claude via CLAUDE.md→AGENTS.md, Codex/Cursor/Amp
+natively), defining the two-part first output: (a) a one/two-sentence self-introduction
+of the supervisor role (sense · decide · dispatch · supervise · report + curate the
+knowledge base), and (b) an immediate status report EXACTLY per the playbook's status
+policy — a COLUMN-ALIGNED TABLE from `gtmux digest --json` / `gtmux usage --json` /
+`gtmux limits --json` (needs-you first, token-usage rollup + subscription-window room),
+never a prose paragraph. Keeping the content in the playbook and the injected text a
+one-line trigger makes it ROBUST (a one-liner submits reliably where a big multi-line
+paste was flaky — typed-but-not-submitted) and AGENT-AGNOSTIC (not Claude-Code-specific).
+
+The trigger SHALL NOT be re-delivered when `gtmux hq` merely focuses an ALREADY-LIVE
+supervisor (agent still running). It SHALL be best-effort and non-fatal (a delivery
+that does not land SHALL NOT fail `gtmux hq`), bilingual (follows `GTMUX_LANG`), and
+opt-out-able via `GTMUX_HQ_BRIEF` (`off`/`0`/`false`/`no`), defaulting on.
 
 #### Scenario: A fresh spawn briefs on the first turn
 
 - **WHEN** `gtmux hq` spawns a new supervisor session and the agent comes up
-- **THEN** a startup prompt is delivered into its pane so the supervisor's first
-  output introduces itself and reports the fleet status (needs-you first, who's
-  working, token usage + subscription room)
+- **THEN** a single `» gtmux·startup` trigger is delivered into its pane, and the
+  supervisor's first output — per its playbook's "First turn" section — introduces
+  itself and reports the fleet status (needs-you first, token usage + subscription room)
+
+#### Scenario: A relaunched dead pane briefs too
+
+- **WHEN** `gtmux hq` relaunches the agent in a stamped-but-dead HQ pane
+- **THEN** the same `» gtmux·startup` trigger is delivered, so the revived supervisor
+  briefs just like a fresh spawn
 
 #### Scenario: A focused live supervisor is not re-briefed
 
-- **WHEN** `gtmux hq` runs while a supervisor session is already live
-- **THEN** it focuses the existing session and NO startup briefing is delivered
+- **WHEN** `gtmux hq` runs while a supervisor session is already live (agent running)
+- **THEN** it focuses the existing session and NO startup trigger is delivered
 
 #### Scenario: Opt-out spawns HQ silently
 

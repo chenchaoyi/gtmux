@@ -176,6 +176,17 @@ exiting, so `gtmux hq` treated a stamped-but-dead pane as "running" and focused 
 that same pane instead of focusing a dead prompt (`agentAliveByCmd`, pinned by
 `TestAgentAliveByCmd`).
 
+### HQ's startup briefing typed into the input box but never sent
+**Symptom:** `gtmux hq` starts the agent, a long "Startup briefing — make this your very
+first output…" prompt sits in the input box UNSENT, and HQ stalls waiting.
+**Root cause:** the briefing used to be a huge multi-line prompt PASTED into the pane and
+submitted — fragile (a long paste + a single Enter can land as typed-but-not-submitted,
+especially on a just-started agent) and Claude-Code-specific.
+**Fix (v0.28.8, playbook v6):** the briefing CONTENT + format now live in the seeded
+playbook (`AGENTS.md` "## First turn"), read by any agent via its own convention file;
+gtmux injects only a MINIMAL one-line trigger — `» gtmux·startup` — which submits
+reliably and is agent-agnostic. (Unstick a stalled one: just press Enter in that pane.)
+
 ### `feed-degraded` in HQ — the perception feed is down
 **Symptom:** HQ surfaces `⚠ perception feed down — on the 5-min polling backstop`, or a
 `[CRITICAL gtmux:feed-degraded]` line appears in `gtmux hq-feed --tail`.

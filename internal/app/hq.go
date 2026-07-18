@@ -55,7 +55,7 @@ import (
 //	     had been injected all along by paths that hand-built the retired format — one of
 //	     them bypassing the wake channel entirely — so no playbook ever taught the classes
 //	     HQ was already receiving.
-const hqPlaybookVersion = 5
+const hqPlaybookVersion = 6
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -560,20 +560,17 @@ func hqBriefingEnabled() bool {
 	return true
 }
 
-// hqBriefingPrompt is the one-shot startup prompt typed into a freshly-spawned HQ pane
-// so the supervisor's FIRST output does two things: (1) introduce itself and its job,
-// and (2) produce an immediate status report. The report shape mirrors the seeded
-// playbook's policy #1 (needs-you first, token usage + subscription room), so the
-// prompt stays a concise TRIGGER rather than re-specifying the whole format.
+// hqBriefingPrompt is the MINIMAL, agent-agnostic trigger for HQ's first turn. The
+// briefing's CONTENT + format live in the seeded playbook (AGENTS.md "## First turn"),
+// which every agent reads through its own convention file (Claude via CLAUDE.md→
+// AGENTS.md; Codex/Cursor/Amp read AGENTS.md natively). A one-line signal submits
+// reliably where the old huge multi-line paste was flaky (typed-but-not-submitted), and
+// ANY agent — not just Claude Code — acts on it per its playbook. It reuses the wake
+// signal register (`» gtmux·<class>`) the playbook already teaches.
 func hqBriefingPrompt() string {
 	return i18n.Tr(
-		"Startup briefing — make this your very first output, in two parts:\n"+
-			"1) Introduce yourself in a sentence or two — \"I am the gtmux HQ supervisor\" — and state your job: overseeing every coding agent on this machine (sense · decide · dispatch · supervise · report) and curating the knowledge base.\n"+
-			"2) Then produce ONE status report from `gtmux digest --json`, `gtmux usage --json`, and `gtmux limits --json`, formatted as a COLUMN-ALIGNED TABLE — never a prose paragraph (`gtmux digest` on its own now prints exactly this shape; match its layout): a one-line count summary, then a section per state — needs-you leads, then working, then completed, then errored if any — each with one aligned row (status glyph · name · goal/last, truncated · a right badge · a right-aligned relative time). ALWAYS include the token-usage rollup (per-type Σ · rate + any usage_warn sessions) and the subscription-window line (5h + weekly % + reset), laid out the same aligned way. Be terse.",
-		"启动简报 —— 作为你的第一条输出，分两部分：\n"+
-			"1) 用一两句话表明身份 ——「我是 gtmux HQ 中控管家」—— 并说明职责：监管本机每一个 coding agent（感知 · 决策 · 派活 · 监督 · 汇报），并维护知识库。\n"+
-			"2) 然后基于 `gtmux digest --json`、`gtmux usage --json`、`gtmux limits --json` 产出一次现状汇报，用列对齐表格呈现 —— 绝不写成大段散文（`gtmux digest` 本身现在就是这个排版，可直接参照它的布局）：顶部一行按状态计数汇总，再按状态分区 —— needs-you（谁在等你）优先，然后是进行中、已完成，若有错误再加一个出错区 —— 每区内一行一个 agent，列对齐（状态图标 · 名称 · 目标/最新回复，截断 · 右侧徽标 · 右对齐相对时间）。并务必带上 token 用量汇总（按类型 Σ · 速率 + 任何 usage_warn 的会话）与订阅余量（5h + 周 % + 重置时间），同样用对齐格式呈现。简洁。",
-	)
+		"» gtmux·startup │ your first turn — produce your STARTUP BRIEFING per AGENTS.md.",
+		"» gtmux·startup │ 你的第一轮 —— 按 AGENTS.md 产出你的启动简报。")
 }
 
 // deliverHQBriefing types the startup briefing into a freshly-spawned HQ pane so its
@@ -653,6 +650,21 @@ tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的
 - ` + "`gtmux quiet [on|off|status]`" + ` — the user's SURFACING THRESHOLD. ` + "`status`" + `
   shows the resolved bar (` + "`critical`" + `-only when quiet is on, else ` + "`normal`" + ` and
   above). READ it and gate your OWN prints to it. 呈现阈值,读它并据此决定要不要 print。
+
+## First turn 首轮 — your STARTUP BRIEFING
+
+Your very first message will be the signal line ` + "`» gtmux·startup`" + ` — that is gtmux
+asking for your STARTUP BRIEFING. Produce it in TWO parts, then wait:
+1. One or two sentences introducing yourself — "I am the gtmux HQ supervisor" — and your
+   job: SENSE · DECIDE · DISPATCH · SUPERVISE · REPORT, and curating the knowledge base.
+2. ONE status report EXACTLY per Policy #1 below — the column-aligned table from
+   ` + "`gtmux digest --json`" + ` + ` + "`gtmux usage --json`" + ` + ` + "`gtmux limits --json`" + `
+   (needs-you first · token-usage rollup · subscription window · terse). Don't restate the
+   format; it IS Policy #1 — a briefing is just your first status report with a one-line
+   self-intro on top.
+你的第一条消息就是信号线 ` + "`» gtmux·startup`" + `,即启动简报请求:先一句自我介绍 + 职责,再
+按下面 Policy #1 的列对齐格式产出一次现状汇报(needs-you 优先 · 用量 · 订阅余量 · 简洁),
+然后待命。启动简报=带一句自我介绍的第一份现状汇报,格式不必在这里重复。
 
 ## Perception & waking 感知与唤醒 — the core discipline
 
