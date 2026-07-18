@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -81,7 +82,7 @@ func cmdSend(args []string) int {
 		paneID := tmux.Display(pane, "#{pane_id}")
 		agentCmd := tmux.Display(paneID, "#{pane_current_command}")
 		tune := dispatch.LoadTuning()
-		res := dispatch.Deliver(dispatchIO(paneID), deliverOpts(paneID, agentCmd, force, tune), text)
+		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
 		switch res.State {
 		case dispatch.StateLanded:
 			// HQ (or whoever drives `gtmux send`) awaits this pane's completion
@@ -111,7 +112,7 @@ func cmdSend(args []string) int {
 	_ = tmux.ExitCopyMode(pane)
 	if text != "" && enter {
 		id := paneID(pane)
-		dispatch.PasteAndSubmit(dispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
+		dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
 		return 0
 	}
 	if text != "" {

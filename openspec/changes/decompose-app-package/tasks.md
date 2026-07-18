@@ -28,12 +28,12 @@
 
 ## 2. PR 2 — extract `internal/dispatchbridge` (prerequisite for hq)
 
-- [ ] 2.1 Create `internal/dispatchbridge`; move `dispatchIO`, `deliverOpts`,
+- [x] 2.1 Create `internal/dispatchbridge`; move `dispatchIO`, `deliverOpts`,
   `hookEquipped`, `hookAgents`, `eventsForPane`, `waitAgentReady`, `pollInterval`,
   `shellCommands`.
-- [ ] 2.2 Confirm it imports ONLY leaves (dispatch/events/tmux). Update `spawn.go`/
+- [x] 2.2 Confirm it imports ONLY leaves (dispatch/events/tmux). Update `spawn.go`/
   `send.go`/`serve.go` (and any current caller) to `dispatchbridge.*`.
-- [ ] 2.3 Gate: `make check` green.
+- [x] 2.3 Gate: `make check` green.
 
 ## 3. PR 3 — extract `internal/hq` (the supervisor subsystem)
 

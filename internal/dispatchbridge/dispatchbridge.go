@@ -1,4 +1,4 @@
-package app
+package dispatchbridge
 
 import (
 	"path/filepath"
@@ -60,8 +60,8 @@ func eventsForPane(pane string, sinceTs int64) []dispatch.Ev {
 	return out
 }
 
-// dispatchIO builds the live tmux/events I/O for delivering to a pane.
-func dispatchIO(pane string) dispatch.IO {
+// DispatchIO builds the live tmux/events I/O for delivering to a pane.
+func DispatchIO(pane string) dispatch.IO {
 	return dispatch.IO{
 		Capture:    func() string { return tmux.CaptureFull(pane) },
 		Paste:      func(text string) error { return tmux.Paste(pane, text) },
@@ -77,8 +77,8 @@ func dispatchIO(pane string) dispatch.IO {
 	}
 }
 
-// deliverOpts builds the verify options for a pane + agent, applying tuning.
-func deliverOpts(pane, agentCmd string, force bool, tune dispatch.Tuning) dispatch.Opts {
+// DeliverOpts builds the verify options for a pane + agent, applying tuning.
+func DeliverOpts(pane, agentCmd string, force bool, tune dispatch.Tuning) dispatch.Opts {
 	return dispatch.Opts{
 		Pane:           pane,
 		HookEquipped:   hookEquipped(agentCmd),
@@ -91,21 +91,21 @@ func deliverOpts(pane, agentCmd string, force bool, tune dispatch.Tuning) dispat
 	}
 }
 
-// shellCommands are foreground commands that mean "still a bare shell, no agent yet"
+// ShellCommands are foreground commands that mean "still a bare shell, no agent yet"
 // — used to tell when a launched agent has actually taken over the pane.
-var shellCommands = map[string]bool{
+var ShellCommands = map[string]bool{
 	"sh": true, "bash": true, "zsh": true, "dash": true, "fish": true,
 	"-sh": true, "-bash": true, "-zsh": true, "login": true, "tmux": true,
 }
 
-// waitAgentReady polls a pane until its foreground command is no longer a bare
+// WaitAgentReady polls a pane until its foreground command is no longer a bare
 // shell (the launched agent has taken over) or the timeout lapses. Returns whether
 // the agent came up.
-func waitAgentReady(pane string, timeout time.Duration) bool {
+func WaitAgentReady(pane string, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	for {
 		cmd := tmux.Display(pane, "#{pane_current_command}")
-		if cmd != "" && !shellCommands[cmd] {
+		if cmd != "" && !ShellCommands[cmd] {
 			return true
 		}
 		if time.Now().After(deadline) {

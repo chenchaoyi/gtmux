@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -111,13 +112,13 @@ func cmdSpawn(args []string) int {
 	}
 
 	// Wait for the agent to actually come up before delivering.
-	if !waitAgentReady(pane, time.Duration(tune.ReadyTimeout)*time.Second) {
+	if !dispatchbridge.WaitAgentReady(pane, time.Duration(tune.ReadyTimeout)*time.Second) {
 		return spawnFail(asJSON, "", pane, session, dispatch.Result{
 			State: dispatch.StateFailed, Evidence: "agent did not come up at the prompt within the ready timeout"})
 	}
 
 	// Deliver + verify.
-	res := dispatch.Deliver(dispatchIO(pane), deliverOpts(pane, agent, force, tune), goal)
+	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane), dispatchbridge.DeliverOpts(pane, agent, force, tune), goal)
 
 	// HQ awaits this dispatch's completion (done-wake-keyed-on-awaited): mark the pane so
 	// its next `done` wakes HQ immediately even if the pane is attended.
@@ -153,7 +154,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		pane = tmux.Display(paneFlag, "#{pane_id}")
 		session = tmux.Display(paneFlag, "#{session_name}")
 		// If the pane already runs an agent, deliver into it (skip launch); else launch.
-		if shellCommands[tmux.Display(pane, "#{pane_current_command}")] {
+		if dispatchbridge.ShellCommands[tmux.Display(pane, "#{pane_current_command}")] {
 			launchAgent(pane, agent, model)
 		}
 		nameDispatchWindow(pane, spawnSlug(title, "", goal), headless) // task-named for a readable fleet
