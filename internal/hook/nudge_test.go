@@ -295,3 +295,31 @@ func TestDoneGoalFallback(t *testing.T) {
 		t.Fatalf("an expired dedup window must not erase the pane's goal; got %q", g)
 	}
 }
+
+func TestDeferDone(t *testing.T) {
+	const (
+		unattended = "unattended"
+		always     = "always"
+		tick       = "tick"
+	)
+	cases := []struct {
+		name     string
+		awaited  bool
+		mode     string
+		attended bool
+		want     bool // true = defer to tick (no immediate wake)
+	}{
+		{"awaited overrides attended-defer", true, unattended, true, false},
+		{"awaited fires even in tick mode", true, tick, true, false},
+		{"awaited unattended fires", true, unattended, false, false},
+		{"not awaited, attended, unattended-mode → defer", false, unattended, true, true},
+		{"not awaited, unattended pane → fire", false, unattended, false, false},
+		{"not awaited, always-mode attended → fire", false, always, true, false},
+		{"not awaited, tick-mode → defer even if unattended", false, tick, false, true},
+	}
+	for _, c := range cases {
+		if got := deferDone(c.awaited, c.mode, c.attended); got != c.want {
+			t.Errorf("%s: deferDone(%v,%q,%v) = %v, want %v", c.name, c.awaited, c.mode, c.attended, got, c.want)
+		}
+	}
+}

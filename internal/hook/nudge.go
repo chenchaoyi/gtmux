@@ -192,7 +192,12 @@ func wakeDone(pane, tail string, turnStart int64) {
 		}
 	}
 	cfg := hqwake.Load()
-	if cfg.Done == hqwake.DoneTick || (cfg.Done == hqwake.DoneUnattended && tmux.Attended(pane)) {
+	// Immediacy is keyed on whether HQ is AWAITING this pane (done-wake-keyed-on-awaited),
+	// not only on whether someone is watching it: an HQ-dispatched pane (spawn or send)
+	// wakes HQ on completion even when attended — the send-driven case a plain
+	// attended-defer dropped (HQ sat waiting and missed the finish).
+	awaited := dispatch.IsAwaited(pane)
+	if deferDone(awaited, cfg.Done, tmux.Attended(pane)) {
 		hqwake.AddOutcome("done") // deferred to the summary tick — still never lost
 		debugf("done tallied (attended/tick-mode) pane=%s", pane)
 		return
@@ -211,6 +216,16 @@ func wakeDone(pane, tail string, turnStart int64) {
 	fields = append(fields, hqwake.PullHint(now, 0))
 	line := hqwake.Line(hqwake.ClassDone, wakeHead(pane), fields...)
 
+	// An AWAITED completion is delivered NOW on the acked/retried wake channel, bypassing
+	// the per-pane merge defer — HQ is explicitly waiting on it. The await is a one-shot:
+	// clear it so a later unrelated completion doesn't re-fire unless HQ re-dispatches.
+	if awaited {
+		deliverWake(target, line)
+		hqwake.StampDone(pane, now)
+		dispatch.ClearAwaited(pane)
+		return
+	}
+
 	switch due, dueAt := hqwake.DoneDue(pane, now, cfg.PaneMinGapSec); {
 	case due:
 		deliverWake(target, line)
@@ -221,6 +236,18 @@ func wakeDone(pane, tail string, turnStart int64) {
 	default:
 		hqnudge.Enqueue(line) // no live HQ to merge against — hold the line as-is
 	}
+}
+
+// deferDone reports whether a completion should be TALLIED to the summary tick instead
+// of waking HQ immediately. An AWAITED pane (HQ dispatched to it via spawn/send and is
+// expecting the finish) ALWAYS wakes now — it overrides the attended-defer, because HQ
+// is explicitly waiting on it. Otherwise today's rule stands: tick-mode always defers,
+// unattended-mode defers only a completion the user is watching (an attended pane).
+func deferDone(awaited bool, doneMode string, attended bool) bool {
+	if awaited {
+		return false
+	}
+	return doneMode == hqwake.DoneTick || (doneMode == hqwake.DoneUnattended && attended)
 }
 
 // doneGoal resolves the finished session's goal: the dispatch ledger for a tracked
@@ -289,6 +316,7 @@ func unenroll(pane string) {
 	if pane == "" {
 		return
 	}
+	dispatch.ClearAwaited(pane) // a departing pane's await is moot — no stale marker
 	if state.Exists(enrolledMarker(pane)) {
 		state.Remove(enrolledMarker(pane))
 		hqwake.AddOutcome("gone")

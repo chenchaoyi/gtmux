@@ -118,6 +118,12 @@ func cmdSpawn(args []string) int {
 	// Deliver + verify.
 	res := dispatch.Deliver(dispatchIO(pane), deliverOpts(pane, agent, force, tune), goal)
 
+	// HQ awaits this dispatch's completion (done-wake-keyed-on-awaited): mark the pane so
+	// its next `done` wakes HQ immediately even if the pane is attended.
+	if res.Delivered {
+		dispatch.MarkAwaited(pane)
+	}
+
 	// Record the dispatch (even on failure, so a created session/worktree is reclaimable).
 	taskID := ""
 	if ownSession || wtPath != "" || res.Delivered {
