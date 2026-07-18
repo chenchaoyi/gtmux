@@ -1,10 +1,7 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
@@ -12,6 +9,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
 // resumeMode is how `restore` relaunches captured agent conversations.
@@ -46,15 +44,10 @@ func effectiveResumeMode() resumeMode {
 // autoResumeEnabled reads ~/.config/gtmux/config.json's autoResumeAgentSessions,
 // defaulting to true (on) when the file/key is absent or unreadable.
 func autoResumeEnabled() bool {
-	path := filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json")
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return true
-	}
 	var c struct {
 		AutoResumeAgentSessions *bool `json:"autoResumeAgentSessions"`
 	}
-	if json.Unmarshal(b, &c) != nil || c.AutoResumeAgentSessions == nil {
+	if usercfg.Load(&c) != nil || c.AutoResumeAgentSessions == nil {
 		return true
 	}
 	return *c.AutoResumeAgentSessions

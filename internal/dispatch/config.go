@@ -1,10 +1,6 @@
 package dispatch
 
-import (
-	"encoding/json"
-	"os"
-	"path/filepath"
-)
+import "github.com/chenchaoyi/gtmux/internal/usercfg"
 
 // Tuning holds the dispatch timeouts/windows (all in seconds). Overridable via
 // ~/.config/gtmux/config.json; every field falls back to a sane default.
@@ -32,10 +28,6 @@ func DefaultTuning() Tuning {
 // LoadTuning reads overrides from config.json, keeping defaults for absent keys.
 func LoadTuning() Tuning {
 	t := DefaultTuning()
-	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
-	if err != nil {
-		return t
-	}
 	var c struct {
 		SpawnReadyTimeout   *int64 `json:"spawnReadyTimeout"`
 		SpawnDeliverTimeout *int64 `json:"spawnDeliverTimeout"`
@@ -44,7 +36,7 @@ func LoadTuning() Tuning {
 		ReapIdleThreshold   *int64 `json:"reapIdleThreshold"`
 		ReapSnoozeTTL       *int64 `json:"reapSnoozeTTL"`
 	}
-	if json.Unmarshal(b, &c) != nil {
+	if usercfg.Load(&c) != nil {
 		return t
 	}
 	setIf(&t.ReadyTimeout, c.SpawnReadyTimeout)

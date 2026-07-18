@@ -192,7 +192,7 @@ func feedWatchdog(now int64) {
 			readFeedRestartAttempts(), now, readFeedRestartNextAt()); do {
 			_ = spawnFeedDaemon() // detached; the singleton guard makes a redundant spawn safe
 			_ = state.WriteMarker(feedRestartAttemptsPath(), strconv.Itoa(attempts))
-			_ = state.WriteMarker(feedRestartNextAtPath(), strconv.FormatInt(nextAt, 10))
+			_ = state.WriteInt64Marker(feedRestartNextAtPath(), nextAt)
 		}
 	} else {
 		resetFeedRestartGate() // healthy (or no HQ) → next outage restarts immediately

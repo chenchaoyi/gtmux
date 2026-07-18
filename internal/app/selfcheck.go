@@ -34,7 +34,7 @@ func readSelfCheckAt() int64 {
 }
 
 func writeSelfCheckAt(now int64) {
-	_ = state.WriteMarker(selfCheckAtPath(), strconv.FormatInt(now, 10))
+	_ = state.WriteInt64Marker(selfCheckAtPath(), now)
 }
 
 // shouldSelfCheck is the pure decision (design §8.2), testable without tmux/disk. It

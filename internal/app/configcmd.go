@@ -8,11 +8,10 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
-func configPath() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json")
-}
+func configPath() string { return usercfg.Path() }
 
 // cmdConfig implements `gtmux config agent-proxy [off|on|<url>]` — set or show how
 // agent launches are proxied. The choice is EXPLICIT: gtmux never probes the network

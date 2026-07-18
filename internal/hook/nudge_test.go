@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
@@ -320,6 +321,51 @@ func TestDeferDone(t *testing.T) {
 	for _, c := range cases {
 		if got := deferDone(c.awaited, c.mode, c.attended); got != c.want {
 			t.Errorf("%s: deferDone(%v,%q,%v) = %v, want %v", c.name, c.awaited, c.mode, c.attended, got, c.want)
+		}
+	}
+}
+
+func TestRouteDone(t *testing.T) {
+	cases := []struct {
+		name    string
+		awaited bool
+		due     bool
+		target  string
+		want    doneRoute
+	}{
+		{"awaited fires immediately even inside merge window", true, false, "%hq", routeImmediate},
+		{"awaited with no target still immediate (deliverWake holds it)", true, false, "", routeImmediate},
+		{"due (merge window clear) fires immediately", false, true, "%hq", routeImmediate},
+		{"inside merge window with a live HQ merges", false, false, "%hq", routeMerge},
+		{"inside merge window with no HQ is enqueued", false, false, "", routeEnqueue},
+	}
+	for _, c := range cases {
+		if got := routeDone(c.awaited, c.due, c.target); got != c.want {
+			t.Errorf("%s: routeDone(%v,%v,%q) = %v, want %v", c.name, c.awaited, c.due, c.target, got, c.want)
+		}
+	}
+}
+
+func TestReapCheapGates(t *testing.T) {
+	const now, thresh = 10_000, int64(600)
+	base := dispatch.Task{Pane: "%1"}
+	idle := now - thresh // exactly at the threshold
+	cases := []struct {
+		name      string
+		t         dispatch.Task
+		idleSince int64
+		suggested bool
+		want      bool
+	}{
+		{"passes all cheap gates", base, idle, false, true},
+		{"no pane", dispatch.Task{Pane: ""}, idle, false, false},
+		{"already suggested", base, idle, true, false},
+		{"not idle (no finished marker)", base, 0, false, false},
+		{"idle but not long enough", base, now - thresh + 1, false, false},
+	}
+	for _, c := range cases {
+		if got := reapCheapGates(c.t, now, c.idleSince, thresh, c.suggested); got != c.want {
+			t.Errorf("%s: reapCheapGates = %v, want %v", c.name, got, c.want)
 		}
 	}
 }

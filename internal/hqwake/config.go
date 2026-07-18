@@ -3,7 +3,8 @@ package hqwake
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
+
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
 // Done-wake modes (config hqWake.done).
@@ -29,7 +30,7 @@ func Defaults() Config {
 
 // Load reads the hqWake config, falling back per-field to defaults.
 func Load() Config {
-	return loadFrom(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
+	return loadFrom(usercfg.Path())
 }
 
 func loadFrom(path string) Config {

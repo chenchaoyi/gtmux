@@ -29,16 +29,25 @@ import (
 // single capture; the caller decides what to do with it.
 func stuckDispatchKind(paneID, agent string) string {
 	if _, ok := dispatch.TaskForPane(paneID); !ok {
+		return "" // not a tracked dispatch — skip the captures entirely
+	}
+	return classifyStuck(tmux.CaptureFull(paneID), tmux.CaptureFullColor(paneID), agent, true)
+}
+
+// classifyStuck is the pure decision behind stuckDispatchKind: given a pane's plain and
+// COLOR captures, the agent name, and whether it's a tracked dispatch, return "startup"
+// / "draft" / "". Separated from the tmux reads so the gate/draft classification is
+// unit-testable. The draft check is COLOR-aware: a plain capture can't tell a real
+// unsubmitted draft from CC's faint suggested-next-command ghost text, so DraftOfColored
+// drops the faint (SGR 2) ghost before reading the box (else a false-positive `draft`).
+func classifyStuck(plainCap, colorCap, agent string, tracked bool) string {
+	if !tracked {
 		return ""
 	}
-	cap := tmux.CaptureFull(paneID)
-	if prompt.IsStartupGate(cap, agent) {
+	if prompt.IsStartupGate(plainCap, agent) {
 		return "startup"
 	}
-	// The draft check is COLOR-aware: a plain capture can't tell a real unsubmitted draft
-	// from CC's faint suggested-next-command ghost text, so it would false-positive a
-	// stuck `draft`. DraftOfColored drops the faint (SGR 2) ghost before reading the box.
-	if draft, structured := dispatch.DraftOfColored(tmux.CaptureFullColor(paneID)); structured && strings.TrimSpace(draft) != "" {
+	if draft, structured := dispatch.DraftOfColored(colorCap); structured && strings.TrimSpace(draft) != "" {
 		return "draft"
 	}
 	return ""

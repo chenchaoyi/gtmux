@@ -1,10 +1,10 @@
 package hqfeed
 
 import (
-	"encoding/json"
 	"os"
-	"path/filepath"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
 // The surfacing-threshold config (hq-attention-system §4): how high the bar sits for
@@ -25,10 +25,7 @@ type surfaceConfig struct {
 
 func loadSurfaceConfig() surfaceConfig {
 	var c surfaceConfig
-	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json"))
-	if err == nil {
-		_ = json.Unmarshal(b, &c)
-	}
+	_ = usercfg.Load(&c)
 	return c
 }
 
