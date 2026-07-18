@@ -43,3 +43,20 @@ func TestVerboseTail(t *testing.T) {
 		t.Errorf("verbose tail with no fields should be empty, got %q", got)
 	}
 }
+
+// A dispatch whose pane the radar surfaced as "waiting" — a stuck-before-running worker
+// (startup gate / unsubmitted draft, stuck-dispatch-waiting) — maps to the ledger status
+// "waiting", NOT "done". `done` stays reserved for a pane that truly went idle after a
+// turn, so HQ is never told a task finished when not one step ran.
+func TestTaskStatus_StuckIsWaitingNotDone(t *testing.T) {
+	live := map[string]agentPane{
+		"%1": {paneID: "%1", status: "waiting"}, // radar flagged it stuck
+		"%2": {paneID: "%2", status: "idle"},    // genuinely finished a turn
+	}
+	if got := taskStatus(dispatch.Task{Pane: "%1"}, live); got != "waiting" {
+		t.Errorf("stuck pane task status = %q, want waiting (never done)", got)
+	}
+	if got := taskStatus(dispatch.Task{Pane: "%2"}, live); got != "done" {
+		t.Errorf("genuinely idle pane = %q, want done", got)
+	}
+}
