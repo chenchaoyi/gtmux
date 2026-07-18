@@ -19,10 +19,12 @@
   resume/state/native/transcript/i18n) — no `hq`/`app`/`dispatchbridge`.
 - [x] 1.5a Move the kernel's tests (`agents_test.go`, `digest_test.go`, …) into `radar`
   (splitting the render-only cases back into `app`).
-- [ ] 1.5b Add a `paneLister` injection seam + fixture tests for the gather/assemble/
-  ledger-join logic (the coverage lever) — a SEPARATE follow-up increment after the pure
-  move lands, so PR1 stays a clean behavior-preserving move (design.md "deferred
-  quality-sweep items land as separate follow-ups").
+- [x] 1.5b DONE — added `paneSource` (pane-line) + `procSnapshot` injection seams to
+  `radar.GatherAgents` (package vars defaulting to tmux/ps; behavior-preserving) and
+  fixture tests (`radar/gather_test.go`) that drive the whole assemble/resolve/sort +
+  digest ledger-join path over canned panes. The coverage lever landed: `GatherAgents`
+  0% → 72.9%, `GatherDigest` → 63.2%, `classifyAgent` 93.5%, `resolveWaiting` 100%; the
+  radar package sits at 62.4% (vs the entangled kernel's old 25.8% in `internal/app`).
 - [x] 1.6 Gate: `make check` + `check-design.sh` green; `agents --json` / `digest --json`
   byte-identical on a live fleet (manual smoke).
 
@@ -64,8 +66,10 @@
 
 - [x] 5.1 CONFIRMED `internal/app` is materially smaller: from ~51 non-test files to 40,
   with ~5.7k lines relocated into the compiler-bounded packages `internal/radar` (1758),
-  `internal/hq` (3765), `internal/dispatchbridge` (170), `internal/panefocus` (49). (The
-  coverage-lever rise is gated on 1.5b, deferred below.)
+  `internal/hq` (3765), `internal/dispatchbridge` (170), `internal/panefocus` (49). The
+  coverage lever also landed (1.5b): the extracted `radar` kernel is fixture-tested to
+  62.4% (`GatherAgents` 0% → 72.9%), where the old entangled `internal/app` kernel sat at
+  25.8%.
 - [x] 5.2 Docs updated: CLAUDE.md now describes the radar/hq/dispatchbridge/panefocus
   layout + the acyclic import rule; DESIGN.md / api/contract.md / CLAUDE.md code-position
   table point `agents.go` → `internal/radar`; TROUBLESHOOTING.md points `diskhygiene.go` →
