@@ -83,3 +83,64 @@ func TestIsBoxBorder(t *testing.T) {
 		}
 	}
 }
+
+// esc is the ANSI escape byte, kept out of the raw string literals below.
+const esc = "\x1b"
+
+func TestStripAnsiDroppingFaint(t *testing.T) {
+	cases := []struct {
+		name, in, want string
+	}{
+		{"plain passthrough", "just plain text", "just plain text"},
+		{"drops a faint span", "keep " + esc + "[2mghost" + esc + "[0m end", "keep  end"},
+		{"faint reset by 22", esc + "[2mghost" + esc + "[22mreal", "real"},
+		{"bright color kept", esc + "[38;5;246mdim-color-but-not-faint" + esc + "[39m", "dim-color-but-not-faint"},
+		{"faint in a combined SGR", esc + "[1;2mfaint" + esc + "[0mbright", "bright"},
+		{"strips OSC hyperlink chrome, keeps label", esc + "]8;;http://x" + esc + "\\label" + esc + "]8;;" + esc + "\\", "label"},
+	}
+	for _, c := range cases {
+		if got := stripAnsiDroppingFaint(c.in); got != c.want {
+			t.Errorf("%s: stripAnsiDroppingFaint(%q) = %q, want %q", c.name, c.in, got, c.want)
+		}
+	}
+}
+
+func TestDraftOfColored_ExcludesFaintGhost(t *testing.T) {
+	// A composer whose ONLY draft content is CC's faint suggested-next-command ghost text
+	// (the reproduced bug: %85 showed `ESC[2m ping %14 … ESC[0m`). It must read EMPTY.
+	ghost := strings.Join([]string{
+		"assistant: an earlier reply",
+		"╭──────────────────────────────╮",
+		"│ ❯ " + esc + "[2mping %14 that the charter needs coordinating" + esc + "[0m │",
+		"╰──────────────────────────────╯",
+	}, "\n")
+	draft, structured := DraftOfColored(ghost)
+	if !structured {
+		t.Fatalf("borders survive faint-strip → still structured")
+	}
+	if strings.TrimSpace(draft) != "" {
+		t.Fatalf("a faint ghost suggestion must read as an EMPTY draft; got %q", draft)
+	}
+
+	// A real, bright user draft must still be detected.
+	real := strings.Join([]string{
+		"╭──────────────────────────────╮",
+		"│ ❯ actually typed by the user  │",
+		"╰──────────────────────────────╯",
+	}, "\n")
+	draft, structured = DraftOfColored(real)
+	if !structured || strings.TrimSpace(draft) != "actually typed by the user" {
+		t.Fatalf("a bright draft must survive; structured=%v draft=%q", structured, draft)
+	}
+
+	// Bright input with a faint autosuggestion tail keeps only the bright part.
+	mixed := strings.Join([]string{
+		"╭──────────────────────────────╮",
+		"│ ❯ git com" + esc + "[2mmit -m done" + esc + "[0m │",
+		"╰──────────────────────────────╯",
+	}, "\n")
+	draft, _ = DraftOfColored(mixed)
+	if strings.TrimSpace(draft) != "git com" {
+		t.Fatalf("mixed draft must keep only the bright input; got %q", draft)
+	}
+}

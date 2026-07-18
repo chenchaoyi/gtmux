@@ -22,6 +22,97 @@ func DraftOf(capture string) (draft string, structured bool) {
 	return draft, structured
 }
 
+// DraftOfColored is the faint-aware DraftOf: given a COLOR capture (`capture-pane -e`),
+// it EXCLUDES any text the agent renders FAINT (SGR 2) before locating the draft — that
+// is Claude Code's suggested-next-command GHOST text (a dim autosuggestion that needs a
+// key to accept), which is NOT user input. On a plain CaptureFull the faint markers are
+// stripped, so the ghost is indistinguishable from a typed draft and every "is there an
+// unsubmitted draft?" caller false-positives (a stuck `waiting`, a suppressed `done`, a
+// held HQ nudge). Real user input is normal brightness and a pasted goal is bright too,
+// so dropping faint spans can only remove a ghost, never real input. Callers that match
+// a SPECIFIC payload (Deliver's verify, the wake-ack `#id`) don't need this — a ghost
+// can never equal their target — and keep using plain SplitInputRegion.
+func DraftOfColored(coloredCapture string) (draft string, structured bool) {
+	_, draft, structured = SplitInputRegion(stripAnsiDroppingFaint(coloredCapture))
+	return draft, structured
+}
+
+// stripAnsiDroppingFaint strips ANSI escapes from a color capture AND drops any literal
+// text emitted while SGR faint (code 2) is active — leaving box-drawing chrome and
+// normal-brightness input intact, but erasing the faint ghost suggestion. One pass:
+//   - an SGR sequence (ESC[…m) updates the faint flag (2 → on; 0 or 22 → off) and emits
+//     nothing;
+//   - any other CSI (ESC[…<final>) or OSC (ESC]…BEL/ST) escape emits nothing;
+//   - a literal rune is emitted only when faint is off.
+//
+// It keys narrowly on SGR 2 (the confirmed ghost-text signal); CC's dim STATUS text uses
+// a gray 256-COLOR (38;5;246), not SGR 2, so it is untouched — and it isn't in the draft
+// region anyway. A plain (escape-free) capture passes through unchanged.
+func stripAnsiDroppingFaint(s string) string {
+	var b strings.Builder
+	faint := false
+	rs := []rune(s)
+	for i := 0; i < len(rs); i++ {
+		if rs[i] != 0x1b { // not ESC — a literal rune
+			if !faint {
+				b.WriteRune(rs[i])
+			}
+			continue
+		}
+		// An escape sequence. Determine its kind from the byte after ESC.
+		if i+1 >= len(rs) {
+			break
+		}
+		switch rs[i+1] {
+		case '[': // CSI: ESC[ params <final-byte in @..~>
+			j := i + 2
+			for j < len(rs) && !(rs[j] >= '@' && rs[j] <= '~') {
+				j++
+			}
+			if j < len(rs) {
+				if rs[j] == 'm' { // an SGR — update faint from its params
+					faint = applyFaint(faint, string(rs[i+2:j]))
+				}
+				i = j // skip through the final byte
+			} else {
+				i = len(rs) // malformed tail
+			}
+		case ']': // OSC: ESC] … BEL or ST(ESC\)
+			j := i + 2
+			for j < len(rs) && rs[j] != 0x07 && !(rs[j] == 0x1b && j+1 < len(rs) && rs[j+1] == '\\') {
+				j++
+			}
+			if j < len(rs) && rs[j] == 0x1b {
+				j++ // consume the '\' of ST
+			}
+			i = j
+		default: // a two-char ESC sequence (best-effort) — skip the following byte
+			i++
+		}
+	}
+	return b.String()
+}
+
+// applyFaint folds an SGR parameter list into the running faint flag: `2` turns faint
+// on; `0` (reset all) or `22` (normal intensity) turns it off; an empty param list is a
+// bare `ESC[m` = reset. Other params don't affect intensity.
+func applyFaint(faint bool, params string) bool {
+	if params == "" {
+		return false // ESC[m == ESC[0m
+	}
+	for _, p := range strings.Split(params, ";") {
+		switch p {
+		case "2":
+			faint = true
+		case "0", "":
+			faint = false
+		case "22":
+			faint = false
+		}
+	}
+	return faint
+}
+
 // SplitInputRegion divides a full-screen capture into the HISTORY region (the
 // conversation transcript, above the input box) and the DRAFT region (what sits in
 // the input box, not yet submitted). Most agent TUIs (Claude Code, Codex) draw a

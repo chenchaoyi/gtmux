@@ -124,6 +124,16 @@ func CaptureFull(pane string) string {
 	return out
 }
 
+// CaptureFullColor is the COLOR twin of CaptureFull (`-e`, so ANSI SGR escapes are
+// kept), same `-S -200` bound. The draft detector reads it to tell a real user draft
+// (normal brightness) from an agent's suggested-next-command GHOST text, which Claude
+// Code renders faint (SGR 2) — invisible in the plain CaptureFull and thus misread as a
+// stuck draft. Read-only.
+func CaptureFullColor(pane string) string {
+	out, _ := runRaw("capture-pane", "-e", "-p", "-S", "-200", "-t", pane)
+	return out
+}
+
 // SendText types literal text into a pane (`send-keys -l`, so the text is never
 // interpreted as tmux key names), optionally followed by Enter. This is a WRITE.
 func SendText(pane, text string, enter bool) error {

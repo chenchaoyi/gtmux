@@ -202,6 +202,7 @@ it.
 - **WHEN** the supervisor itself is the waiting pane, or no hq session is live,
   or `hqNudge` is false
 - **THEN** nothing is injected
+
 ### Requirement: Human-in-the-loop boundary (P1)
 
 Beyond the nudge (inform-only), the supervisor MUST NOT be granted automatic
@@ -384,11 +385,15 @@ user DECLINES a suggestion, the playbook SHALL have HQ snooze the candidate
 The system SHALL NOT clobber or auto-submit a half-typed draft in the HQ pane when
 injecting a nudge. Before typing, it SHALL read the HQ input box (reusing the
 dispatch input-region detector) and, when the draft is non-empty, SHALL NOT type and
-SHALL NOT send Enter — the nudge is queued instead. Delivery SHALL occur only when
-the box is confirmed empty over TWO reads a short interval apart, and a queued nudge
-SHALL be delivered on a later empty box: on the next injection attempt, on HQ's own
-turn-end (`Stop`, box reliably empty — coalesced), or on the serve tick. It is an
-INVARIANT that no code path sends Enter into a non-empty HQ input box.
+SHALL NOT send Enter — the nudge is queued instead. The draft read SHALL be COLOR-aware
+and SHALL EXCLUDE the agent's suggested-next-command GHOST text — the dim autosuggestion
+rendered faint (SGR 2), which is NOT user input — so a faint ghost suggestion in the HQ
+composer does NOT hold a nudge behind a phantom draft; only genuinely half-typed USER
+input (normal brightness) SHALL defer delivery. Delivery SHALL occur only when the box
+is confirmed empty over TWO reads a short interval apart, and a queued nudge SHALL be
+delivered on a later empty box: on the next injection attempt, on HQ's own turn-end
+(`Stop`, box reliably empty — coalesced), or on the serve tick. It is an INVARIANT that
+no code path sends Enter into a non-empty HQ input box.
 
 #### Scenario: A half-typed draft is never clobbered
 
@@ -399,6 +404,13 @@ INVARIANT that no code path sends Enter into a non-empty HQ input box.
 
 - **WHEN** the HQ box is confirmed empty over two reads (or HQ finishes a turn)
 - **THEN** the queued nudge(s) are delivered, coalesced, exactly once
+
+#### Scenario: A faint ghost suggestion does not hold a nudge
+
+- **WHEN** a nudge fires while the HQ composer shows only the agent's faint
+  suggested-next-command ghost text (SGR 2), with no real half-typed input
+- **THEN** the ghost text is not read as a draft, so the nudge is delivered rather than
+  queued behind a phantom draft
 
 ### Requirement: Dual-channel dispatch — HQ senses user-direct tasks
 
@@ -440,6 +452,7 @@ as `user-direct`) rather than "correcting", interrupting, or overwriting it.
 
 - **WHEN** HQ observes an agent working on a task not in its ledger
 - **THEN** the playbook has HQ presume it is user-direct and verify, not correct it
+
 ### Requirement: Nudge payloads are marked as data
 
 Every nudge line SHALL mark agent-authored spans (goal, ask, title, reply summary)
@@ -623,6 +636,7 @@ Toolbox section SHALL document `gtmux events --severity` with that framing.
   catches up by pull rather than by the wake line
 - **THEN** the instruction is in the stream HQ is told to read (`notable` and above), not
   filtered out as routine chatter
+
 ### Requirement: Decision-authority tiers — when HQ decides versus escalates
 
 The seeded playbook SHALL encode the commander's three interaction modes — ① dispatch a ship
@@ -730,7 +744,6 @@ surface a feed-degradation CRITICAL regardless of the configured threshold.
 - **THEN** HQ prints it, and a feed-degradation CRITICAL is surfaced even when quiet
   mode is on
 
-
 ### Requirement: HQ self-check and self-maintenance
 
 The seeded playbook SHALL teach HQ, on a gtmux-raised self-check trigger, to review and
@@ -829,6 +842,7 @@ any home shape.
 - **WHEN** `gtmux hq` runs against a home containing only a legacy full CLAUDE.md
 - **THEN** the legacy file is backed up in place, the managed AGENTS.md + pointer +
   LOCAL.md are written at the shipped version, and the notice names the backup
+
 ### Requirement: The playbook teaches the wake re-send identifier
 
 The seeded playbook SHALL teach that every wake line ends with a short `#<id>` batch

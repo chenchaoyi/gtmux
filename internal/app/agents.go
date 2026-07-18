@@ -35,7 +35,10 @@ func stuckDispatchKind(paneID, agent string) string {
 	if prompt.IsStartupGate(cap, agent) {
 		return "startup"
 	}
-	if draft, structured := dispatch.DraftOf(cap); structured && strings.TrimSpace(draft) != "" {
+	// The draft check is COLOR-aware: a plain capture can't tell a real unsubmitted draft
+	// from CC's faint suggested-next-command ghost text, so it would false-positive a
+	// stuck `draft`. DraftOfColored drops the faint (SGR 2) ghost before reading the box.
+	if draft, structured := dispatch.DraftOfColored(tmux.CaptureFullColor(paneID)); structured && strings.TrimSpace(draft) != "" {
 		return "draft"
 	}
 	return ""

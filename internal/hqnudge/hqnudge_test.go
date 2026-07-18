@@ -701,3 +701,35 @@ func TestEnqueue_QueuesWithoutTyping(t *testing.T) {
 		t.Fatalf("the held wake should land on the next drain; sent=%v", f.sent)
 	}
 }
+
+// A faint suggested-next-command ghost in the HQ composer must NOT hold a nudge behind
+// a phantom draft: the color-aware draft-guard drops the faint (SGR 2) text, sees an
+// empty box, and delivers. A bright half-typed draft still queues (the contrast).
+func TestDeliver_FaintGhostDoesNotHoldNudge(t *testing.T) {
+	esc := "\x1b"
+	t.Setenv("HOME", t.TempDir())
+
+	// Ghost-only composer → delivers.
+	ghost := &fake{draft: esc + "[2mping %14 that the charter needs coordinating" + esc + "[0m"}
+	deliver(ghost.io(), "%hq", "» gtmux·done  %14 — landed")
+	if len(ghost.sent) != 1 {
+		t.Fatalf("a faint ghost box must be treated as empty and delivered; sent=%v", ghost.sent)
+	}
+	if !strings.Contains(ghost.sent[0], "landed") {
+		t.Fatalf("the delivered payload should carry the nudge; got %q", ghost.sent[0])
+	}
+	if queuedCount(t) != 0 {
+		t.Fatalf("nothing should remain queued after delivery; queued=%d", queuedCount(t))
+	}
+
+	// Bright half-typed draft → still queues (unchanged guard).
+	t.Setenv("HOME", t.TempDir())
+	real := &fake{draft: "user is half typing this"}
+	deliver(real.io(), "%hq", "» gtmux·waiting  %1 — needs you")
+	if len(real.sent) != 0 {
+		t.Fatalf("a real bright draft must still hold the nudge; sent=%v", real.sent)
+	}
+	if queuedCount(t) != 1 {
+		t.Fatalf("the nudge should be queued behind the real draft; queued=%d", queuedCount(t))
+	}
+}
