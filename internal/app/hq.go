@@ -24,6 +24,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -595,10 +596,10 @@ func deliverHQBriefing(pane, agentCmd string) {
 		return
 	}
 	tune := dispatch.LoadTuning()
-	if !waitAgentReady(pane, time.Duration(tune.ReadyTimeout)*time.Second) {
+	if !dispatchbridge.WaitAgentReady(pane, time.Duration(tune.ReadyTimeout)*time.Second) {
 		return
 	}
-	_ = dispatch.Deliver(dispatchIO(pane), deliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
+	_ = dispatch.Deliver(dispatchbridge.DispatchIO(pane), dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
 }
 
 // hqInstructions is the generated-once supervisor playbook (bilingual). It is

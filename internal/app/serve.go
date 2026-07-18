@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -585,7 +586,7 @@ func sendToPane(id, text, key string, enter bool) error {
 	}
 	if text != "" && enter {
 		// Confirm-then-submit: never race Enter against a still-rendering paste.
-		dispatch.PasteAndSubmit(dispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
+		dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
 		return nil
 	}
 	if text != "" {
