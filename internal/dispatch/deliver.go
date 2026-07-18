@@ -166,6 +166,30 @@ func Deliver(io IO, opts Opts, text string) Result {
 	}
 }
 
+// PasteAndSubmit pastes text into a pane's input draft (with the same fragment guard
+// the verified dispatch uses), confirms the FULL payload is present, THEN sends Enter
+// once. It is the paste→confirm→submit core shared by the UNVERIFIED send paths —
+// `POST /api/send` (phone / menu-bar reply) and `gtmux send --no-verify` — so they no
+// longer race a blind Enter against a still-rendering paste (the truncation / swallowed-
+// Enter bug). It deliberately does NOT run the post-submit LANDED-verification loop:
+// those paths stay fast on the phone's latency budget, differing from verified dispatch
+// only in whether they confirm the landing AFTER submit — not in whether they confirm
+// the DRAFT before it.
+//
+// Enter is sent whenever the paste was PLACED — a confirmed full draft, or a pane with
+// no locatable input region (a plain shell, where the draft can't be validated and a
+// bare command must still submit). It is WITHHELD only when the guard positively
+// settled on a fragment it could not place in full: submitting a known-truncated draft
+// is exactly what this fixes. Returns whether the full draft was confirmed.
+func PasteAndSubmit(io IO, opts Opts, text string) bool {
+	opts.fillDefaults()
+	if !pasteWithGuard(io, opts, text) {
+		return false // a settled fragment — do not submit a truncated draft
+	}
+	_ = io.Enter()
+	return true
+}
+
 // pasteWithGuard puts text in the pane's input draft and confirms the FULL text (or
 // a collapsed-paste placeholder) is there, retrying a genuine fragment. Returns
 // false if it cannot place the full text within PasteRetries.
@@ -282,12 +306,21 @@ func exitCopyMode(io IO) {
 	}
 }
 
-// draftHasDelivery reports whether the draft holds the full delivery — either the
-// literal text head, or a TUI's collapsed-paste placeholder ("[Pasted text +N
-// lines]"), which stands in for a large paste the agent folded. A mere prefix (the
-// "cl" fragment) matches neither.
+// draftHasDelivery reports whether the draft holds the FULL delivery — either both
+// the leading fingerprint (head) AND the trailing fingerprint (tail) of the literal
+// text, or a TUI's collapsed-paste placeholder ("[Pasted text +N lines]"), which
+// stands in for a large paste the agent folded. A head-only match is NOT enough: a
+// long/multi-line paste can render its head a frame before its tail, and submitting
+// on the head alone sends a truncated draft that the fallback then misreads as
+// landed (the "task tail severed" bug). Requiring the tail too waits the paste out.
+// A mere prefix (the "cl" fragment) matches neither head nor tail. Because this same
+// predicate gates the swallowed-Enter re-submit, a draft that has been submitted
+// (now empty) or mangled no longer satisfies it — so Enter is never re-sent blindly.
 func draftHasDelivery(draft, text string) bool {
-	return ContainsHead(draft, text) || looksCollapsedPaste(draft)
+	if looksCollapsedPaste(draft) {
+		return true
+	}
+	return ContainsHead(draft, text) && ContainsTail(draft, text)
 }
 
 // looksCollapsedPaste reports whether a draft shows a folded large-paste placeholder.

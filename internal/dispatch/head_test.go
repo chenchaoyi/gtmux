@@ -1,6 +1,9 @@
 package dispatch
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestNormalizeHead_CollapsesAndTruncates(t *testing.T) {
 	got := NormalizeHead("  hello\n  world\t\tfoo  ")
@@ -35,6 +38,41 @@ func TestContainsHead_HaystackNotTruncated(t *testing.T) {
 func TestContainsHead_EmptyNeverMatches(t *testing.T) {
 	if ContainsHead("anything at all", "   ") {
 		t.Fatalf("a blank delivery must match nothing")
+	}
+}
+
+func TestNormalizeTail_IsTheTrailingFingerprint(t *testing.T) {
+	long := "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOP" // > headRunes
+	tail := NormalizeTail(long)
+	if r := []rune(tail); len(r) != headRunes {
+		t.Fatalf("want %d runes, got %d", headRunes, len(r))
+	}
+	if !strings.HasSuffix(long, tail) {
+		t.Fatalf("tail must be the END of the payload; got %q", tail)
+	}
+	if NormalizeTail(long) == NormalizeHead(long) {
+		t.Fatalf("for a long payload head and tail must differ")
+	}
+}
+
+func TestNormalizeTail_ShortPayloadEqualsHead(t *testing.T) {
+	// A payload no longer than headRunes has head == tail (the whole thing), so a
+	// head match already implies the tail — the tail check is a no-op, not a regression.
+	short := "run make check"
+	if NormalizeTail(short) != NormalizeHead(short) {
+		t.Fatalf("short payload: head and tail must be identical")
+	}
+}
+
+func TestContainsTail_MatchesFullDraftNotHeadOnly(t *testing.T) {
+	text := "implement the verified dispatch state machine with layered checks and evidence"
+	headOnly := "me: " + NormalizeHead(text) // the first frame: only the head rendered
+	full := "me: " + text
+	if ContainsTail(headOnly, text) {
+		t.Fatalf("a head-only draft must NOT satisfy the tail check (would submit truncated)")
+	}
+	if !ContainsTail(full, text) {
+		t.Fatalf("the full draft must satisfy the tail check")
 	}
 }
 

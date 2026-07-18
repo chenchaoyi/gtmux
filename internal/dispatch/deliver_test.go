@@ -389,6 +389,112 @@ func TestDeliver_NotInMode_NoCancel(t *testing.T) {
 	}
 }
 
+func TestDeliver_HeadOnlyDraft_NotSubmittedAsWhole(t *testing.T) {
+	// The truncation bug: a long payload whose HEAD renders but whose TAIL never
+	// arrives. The old confirm matched on the 40-rune head alone and fired Enter,
+	// submitting a truncated draft that the fallback then misread as landed. The
+	// head-only draft must be treated as a fragment — never submitted.
+	headOnly := boxDraft(NormalizeHead(taskText)) // only the leading fingerprint is in the box
+	f := &fakeIO{caps: []string{headOnly}}        // the tail never comes
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 5, PasteRetries: 0, PasteSettle: 1}, taskText)
+	if r.Delivered || r.State != StateFailed {
+		t.Fatalf("a head-only draft must not be a success, got %+v", r)
+	}
+	if f.enterCalls != 0 {
+		t.Fatalf("must not submit a head-only (truncated) draft; enterCalls=%d", f.enterCalls)
+	}
+}
+
+func TestDeliver_TailRendersLate_WaitedNotTruncated(t *testing.T) {
+	// The head renders a frame before the tail. The confirm must WAIT for the tail
+	// within the settle window and submit the ONE complete paste — not fire Enter on
+	// the head and cut the task off.
+	f := &fakeIO{
+		caps: []string{
+			boxDraft(NormalizeHead(taskText)), // confirm i=0: only the head so far
+			boxDraft(taskText),                // confirm i=1: head AND tail present
+			boxEmpty("me: " + taskText),       // verify 1: landed
+			boxEmpty("me: " + taskText),       // verify 2: landed (two-frame agree)
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10, PasteSettle: 2}, taskText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("want landed once the tail arrives, got %+v", r)
+	}
+	if f.pasteCalls != 1 {
+		t.Fatalf("the late tail must be waited out, not re-pasted; pasteCalls=%d", f.pasteCalls)
+	}
+	if f.enterCalls != 1 {
+		t.Fatalf("exactly one submit of the whole payload; enterCalls=%d", f.enterCalls)
+	}
+}
+
+func TestDeliver_NoBlindReEnter_OnceDraftEmpty(t *testing.T) {
+	// "一致才发 Enter,别盲补回车": after the first Enter, if the draft is empty (or no
+	// longer holds the full target) the swallowed-Enter retry must NOT fire again.
+	f := &fakeIO{
+		caps: []string{
+			boxDraft(taskText),          // paste guard: full text
+			boxEmpty("assistant: idle"), // draft empty, text NOT in history (a mismatch)
+			boxEmpty("assistant: idle"),
+			boxEmpty("assistant: idle"),
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 4, EnterRetries: 3}, taskText)
+	if r.Delivered {
+		t.Fatalf("nothing landed, must not report success; got %+v", r)
+	}
+	if f.enterCalls != 1 {
+		t.Fatalf("Enter must fire once and not be blindly re-sent against an empty draft; enterCalls=%d", f.enterCalls)
+	}
+}
+
+func TestPasteAndSubmit_ConfirmsFullDraftThenEnters(t *testing.T) {
+	// The unverified send core: wait for the FULL payload in the draft, THEN one Enter.
+	f := &fakeIO{
+		caps: []string{
+			boxDraft(NormalizeHead(taskText)), // confirm i=0: head only
+			boxDraft(taskText),                // confirm i=1: full
+		},
+	}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, taskText)
+	if !ok {
+		t.Fatalf("a full paste must confirm")
+	}
+	if f.pasteCalls != 1 || f.enterCalls != 1 {
+		t.Fatalf("one paste + one Enter after confirming; paste=%d enter=%d", f.pasteCalls, f.enterCalls)
+	}
+}
+
+func TestPasteAndSubmit_WithholdsEnterOnFragment(t *testing.T) {
+	// A settled fragment the guard cannot place must NOT be submitted — that is the
+	// truncated submit this fixes. Enter is withheld.
+	f := &fakeIO{caps: []string{boxDraft("cl")}} // always a fragment
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, taskText)
+	if ok {
+		t.Fatalf("a fragment must not report confirmed")
+	}
+	if f.enterCalls != 0 {
+		t.Fatalf("must not submit a fragment; enterCalls=%d", f.enterCalls)
+	}
+}
+
+func TestPasteAndSubmit_UnstructuredShellSubmits(t *testing.T) {
+	// A plain shell has no locatable draft; the command must still submit (best-effort).
+	shell := "user@host project % " + taskText
+	f := &fakeIO{caps: []string{shell}}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 1}, taskText)
+	if !ok {
+		t.Fatalf("an unstructured pane should proceed to submit")
+	}
+	if f.enterCalls != 1 {
+		t.Fatalf("should submit once; enterCalls=%d", f.enterCalls)
+	}
+	if f.clearCalls != 0 {
+		t.Fatalf("must not clear-draft on an unstructured pane; clearCalls=%d", f.clearCalls)
+	}
+}
+
 func TestEvidenceTail(t *testing.T) {
 	var lines []string
 	for i := 0; i < 30; i++ {

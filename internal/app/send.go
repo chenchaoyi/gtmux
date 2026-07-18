@@ -98,13 +98,18 @@ func cmdSend(args []string) int {
 			return 1
 		}
 	}
-	// Plain (unverified) path: --no-verify or --no-enter. It skips the CONFIRMATION,
-	// not the delivery mechanics — text still rides a paste buffer and Enter is still
-	// a separate key, exactly as the verified path sends them. (`send-keys -l` here
-	// meant an unverified send handed a multi-line message to the agent as one bare
-	// Return per line, submitting it in pieces.) Drop out of copy/view-mode first —
-	// otherwise the pane swallows the text and the Enter as mode-nav commands.
+	// Plain (unverified) path: --no-verify or --no-enter. It skips the post-submit
+	// LANDED verification, not the delivery mechanics — text still rides a paste buffer
+	// and Enter is still a separate key. For a text+Enter send it still confirms the
+	// DRAFT before submitting (dispatch.PasteAndSubmit) so a multi-line message is not
+	// raced into a truncated submit; --no-enter just stages the paste. Drop out of
+	// copy/view-mode first — otherwise the pane swallows the text and Enter as mode-nav.
 	_ = tmux.ExitCopyMode(pane)
+	if text != "" && enter {
+		id := paneID(pane)
+		dispatch.PasteAndSubmit(dispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
+		return 0
+	}
 	if text != "" {
 		if err := tmux.Paste(pane, text); err != nil {
 			i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
@@ -118,6 +123,14 @@ func cmdSend(args []string) int {
 		}
 	}
 	return 0
+}
+
+// paneID resolves a pane target to its stable %id (dispatchIO keys everything off it).
+func paneID(pane string) string {
+	if id := tmux.Display(pane, "#{pane_id}"); id != "" {
+		return id
+	}
+	return pane
 }
 
 func sendUsage() int {
