@@ -10,6 +10,26 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
+// The seeded playbook teaches BOTH disciplines folded into v7 (hq-knowledge-
+// distillation): the distill ritual (a `[CONTROL gtmux:distill]` record + the triggered
+// Iterate clause) AND the perception self-heal discipline (verify-by-pull before
+// nagging, restart only via a dispatched worker). Pins the PROMPT half + the single bump.
+func TestPlaybookTeachesDistill(t *testing.T) {
+	pb := hqInstructions
+	for _, want := range []string{
+		"[CONTROL gtmux:distill]", "DISTILL:", "Iterate (now TRIGGERED", // distill
+		"PERCEPTION SELF-HEAL DISCIPLINE", "VERIFY BY PULL", // perception self-heal
+	} {
+		if !strings.Contains(pb, want) {
+			t.Errorf("seeded playbook must teach both folded disciplines; missing %q", want)
+		}
+	}
+	// The seed version bump is single-sourced here; the code-only disk/feed work adds none.
+	if hqPlaybookVersion < 7 {
+		t.Errorf("hqPlaybookVersion = %d, want ≥ 7", hqPlaybookVersion)
+	}
+}
+
 // A fresh seed writes a VERSIONED, managed AGENTS.md (the marker + playbook + LOCAL
 // import), the CLAUDE.md import, and a seed-once LOCAL.md; a re-run at the SAME
 // version is idempotent (no rewrite, no backup) — versioned-hq-playbook.

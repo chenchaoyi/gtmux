@@ -53,6 +53,11 @@ const (
 	// because the channel that would otherwise announce it is the one that failed.
 	ControlWakeDegraded = "gtmux:wake-degraded"
 	ControlSelfCheck    = "gtmux:self-check"
+	// ControlDistill asks HQ to run a periodic knowledge-distillation pass: distil the
+	// fleet's event delta since the last distill into the knowledge base and prune
+	// stale. A low-urgency maintenance signal like self-check (feed control record, not
+	// a typed wake) — HQ does the curation; gtmux only raises it on a cadence.
+	ControlDistill = "gtmux:distill"
 )
 
 // dir is the feed's private state home.
