@@ -331,45 +331,41 @@ func TestHQPlaybookCharter(t *testing.T) {
 	}
 }
 
-// The startup briefing prompt (HQ's first-output trigger) must, in EACH language,
-// carry both halves the feature promises: the self-introduction and the immediate
-// status report grounded in digest/usage/limits (needs-you first, token usage +
-// subscription room). Pins the prompt so a future edit can't silently drop a half.
+// The startup briefing is SPLIT: hqBriefingPrompt() is a MINIMAL, agent-agnostic
+// TRIGGER, and the briefing's content + format live in the seeded playbook (AGENTS.md
+// "## First turn"). Pin both so a future edit can't (a) bloat the trigger back into a
+// fragile multi-line paste, or (b) drop the briefing content from the playbook.
 func TestHQBriefingPrompt(t *testing.T) {
-	for _, tc := range []struct {
-		lang string
-		want []string
-	}{
-		{"en", []string{
-			"gtmux HQ supervisor", // self-introduction
-			"gtmux digest --json", // status report source
-			"gtmux usage --json",
-			"gtmux limits --json",
-			"needs-you",            // needs-you leads
-			"token-usage",          // token usage section
-			"subscription-",        // subscription-window room
-			"COLUMN-ALIGNED TABLE", // format: table, not prose
-		}},
-		{"zh", []string{
-			"gtmux HQ 中控管家",
-			"gtmux digest --json",
-			"gtmux usage --json",
-			"gtmux limits --json",
-			"needs-you",
-			"token 用量",
-			"订阅余量",
-			"列对齐表格",
-		}},
-	} {
-		i18n.SetLang(tc.lang)
+	// The trigger stays a short ONE-LINER that names the startup signal + points at the
+	// playbook — in each language — never the old format spec. (Short = submits reliably.)
+	for _, lang := range []string{"en", "zh"} {
+		i18n.SetLang(lang)
 		got := hqBriefingPrompt()
-		for _, w := range tc.want {
+		if strings.Contains(got, "\n") {
+			t.Errorf("[%s] briefing trigger must be a single line: %q", lang, got)
+		}
+		for _, w := range []string{"» gtmux·startup", "AGENTS.md"} {
 			if !strings.Contains(got, w) {
-				t.Errorf("[%s] briefing prompt missing %q\n---\n%s", tc.lang, w, got)
+				t.Errorf("[%s] briefing trigger missing %q: %q", lang, w, got)
 			}
 		}
 	}
 	i18n.SetLang("en")
+
+	// The briefing CONTENT (both halves + the report format) must live in the playbook,
+	// so any agent gets it from its own convention file — not from a big injected prompt.
+	for _, w := range []string{
+		"## First turn", "» gtmux·startup", "STARTUP BRIEFING", // the first-turn section
+		"gtmux HQ supervisor",                                              // self-introduction
+		"gtmux digest --json", "gtmux usage --json", "gtmux limits --json", // report sources
+		"Policy #1",            // references the existing format spec (not duplicated)
+		"COLUMN-ALIGNED TABLE", // that format lives in Policy #1
+		"needs-you",
+	} {
+		if !strings.Contains(hqInstructions, w) {
+			t.Errorf("playbook (hqInstructions) missing briefing content %q", w)
+		}
+	}
 }
 
 // The briefing is ON by default and opt-out-able via GTMUX_HQ_BRIEF (off/0/false/no),
