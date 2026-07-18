@@ -75,7 +75,7 @@
   table point `agents.go` → `internal/radar`; TROUBLESHOOTING.md points `diskhygiene.go` →
   `internal/hq`; check-design.sh PLAYBOOK path → `internal/hq/hq.go`; a memory records the
   new layout.
-- [ ] 5.3 DEFERRED archive (owner decision): the 3 core move PRs (#494/#495/#496) are
-  merged, but 1.5b (paneLister fixture-test seam — the coverage lever) is an intentional
-  open follow-up, so the change stays in `changes/` rather than archiving with an unchecked
-  task. Archive once 1.5b lands or is formally dropped. No spec deltas expected.
+- [x] 5.3 Archived. All shipped work landed (moves #494/#495/#496, close-out #497, the
+  1.5b coverage seam #498); 1.5b is now done and PR4 formally dropped, so nothing is left
+  open. The `code-architecture` capability delta (the acyclic-layering requirement) syncs
+  into `openspec/specs/code-architecture/`, and this change moves to `changes/archive/`.
