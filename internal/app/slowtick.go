@@ -67,6 +67,10 @@ func slowTickEval() {
 	// outcome-level changes accumulated (the zero-change gate — a quiet interval
 	// injects nothing and costs no tokens).
 	hqSummaryTick(time.Now().Unix())
+	// Disk hygiene (resource-watch): cap the never-rotated launchd logs + prune the
+	// uploads sink so gtmux can't fill the disk with its own output. Time-gated to
+	// ≤ 1/30 min; silent housekeeping (no HQ nudge).
+	diskHygieneSweep(time.Now().Unix())
 }
 
 // hqSummaryTick delivers the `tick` wake when due: at least one pending outcome
@@ -139,6 +143,32 @@ func readFeedFailCount() int {
 
 func writeFeedFailCount(n int) { _ = state.WriteMarker(feedFailCountPath(), strconv.Itoa(n)) }
 
+// The backoff gate's persisted state: how many restarts THIS outage has made, and the
+// earliest unix time the next restart is permitted. Separate from the escalation counter
+// above (which escalates CRITICAL at 2 unhealthy ticks) — these throttle the actual
+// spawns so a doomed daemon isn't respawned every 20 s. Both reset on a healthy feed.
+func feedRestartAttemptsPath() string {
+	return filepath.Join(state.Dir(), "hq-feed", "restart-attempts")
+}
+func feedRestartNextAtPath() string {
+	return filepath.Join(state.Dir(), "hq-feed", "restart-next-at")
+}
+
+func readFeedRestartAttempts() int {
+	n, _ := strconv.Atoi(state.ReadMarker(feedRestartAttemptsPath()))
+	return n
+}
+func readFeedRestartNextAt() int64 {
+	n, _ := strconv.ParseInt(state.ReadMarker(feedRestartNextAtPath()), 10, 64)
+	return n
+}
+
+// resetFeedRestartGate clears the backoff state so the next outage restarts immediately.
+func resetFeedRestartGate() {
+	state.Remove(feedRestartAttemptsPath())
+	state.Remove(feedRestartNextAtPath())
+}
+
 // feedWatchdog is the no-LLM perception-feed supervisor (design §1.2.2 / §6.4). It
 // runs from the single-writer serve slow-tick, so its markers have no race. Only
 // while an HQ pane is live: it ensures the daemon is up and beating, mechanically
@@ -151,7 +181,17 @@ func feedWatchdog(now int64) {
 	hqLive := findHQPane() != ""
 	h := hqfeed.Health{HQLive: hqLive, PidAlive: hqfeed.Running(), HbStale: hqfeed.Stale(now)}
 	if hqfeed.NeedsRestart(h) {
-		_ = spawnFeedDaemon() // detached; the singleton guard makes a redundant spawn safe
+		// Gate the respawn: exponential backoff between attempts + a hard cap, so a daemon
+		// that can't come up isn't relaunched every 20 s forever. The gate persists its
+		// attempt count + next-allowed-at across ticks.
+		if do, nextAt, attempts := hqfeed.RestartGate(
+			readFeedRestartAttempts(), now, readFeedRestartNextAt()); do {
+			_ = spawnFeedDaemon() // detached; the singleton guard makes a redundant spawn safe
+			_ = state.WriteMarker(feedRestartAttemptsPath(), strconv.Itoa(attempts))
+			_ = state.WriteMarker(feedRestartNextAtPath(), strconv.FormatInt(nextAt, 10))
+		}
+	} else {
+		resetFeedRestartGate() // healthy (or no HQ) → next outage restarts immediately
 	}
 	next := hqfeed.NextFailureCount(readFeedFailCount(), h)
 	writeFeedFailCount(next)

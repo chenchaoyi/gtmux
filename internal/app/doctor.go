@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -160,6 +161,37 @@ func doctorSections() []dsection {
 		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
 		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
 		{i18n.Tr("Remote access", "远程访问"), []dcheck{rowCloudflared()}},
+		{i18n.Tr("Storage", "存储"), []dcheck{rowDiskUsage()}},
+	}
+}
+
+// diskAmberBytes / diskRedBytes are the state-dir footprint thresholds the storage
+// sentinel warns at. Disk hygiene (diskHygieneSweep) keeps a healthy install well under
+// 100 MB; amber flags one trending large, red flags one an unrotated log or a stuck
+// hygiene pass has let balloon (the multi-GB incident this guards against).
+const (
+	diskAmberBytes int64 = 500 << 20 // 500 MB
+	diskRedBytes   int64 = 2 << 30   // 2 GB
+)
+
+// rowDiskUsage reports the total gtmux state-dir footprint and flags a runaway — the
+// visible half of disk hygiene: the sweep keeps it bounded, this makes a breach legible
+// before the disk does. An unrotated daemon log (serve/tunnel.log) is the usual culprit.
+func rowDiskUsage() dcheck {
+	label := i18n.Tr("gtmux disk usage", "gtmux 磁盘占用")
+	total := treeSize(state.Dir())
+	switch {
+	case total >= diskRedBytes:
+		return dcheck{stMiss, label, humanBytes(total),
+			i18n.Tr("very large — check for a runaway log (serve/tunnel.log)",
+				"过大 —— 检查是否有失控日志（serve/tunnel.log）")}
+	case total >= diskAmberBytes:
+		return dcheck{stRec, label, humanBytes(total),
+			i18n.Tr("trending large — hygiene trims logs/uploads automatically",
+				"偏大 —— hygiene 会自动裁剪日志/上传")}
+	default:
+		return dcheck{stOK, label, humanBytes(total),
+			i18n.Tr("state dir under control", "状态目录占用正常")}
 	}
 }
 
