@@ -23,6 +23,7 @@ the user is shown anything about it.
 - **WHEN** any event occurs while an HQ pane is live
 - **THEN** the event is delivered to HQ regardless of surfacing tier, and only a
   CRITICAL/NORMAL judgment by HQ produces user-visible output
+
 ### Requirement: Perception feed daemon
 
 The system SHALL provide a gtmux-managed, LLM-free perception daemon (`gtmux hq-feed`)
@@ -76,6 +77,14 @@ missing pidfile or a heartbeat older than 90 s as a dead feed and mechanically r
 daemon. A mechanical restart SHALL be SILENT (it does not disturb HQ). Only after two
 consecutive restart attempts fail SHALL the watchdog escalate.
 
+The mechanical restart SHALL NOT respawn the daemon on every tick during a persistent
+outage. Restarts SHALL be spaced by an exponential backoff (widening from a base delay,
+capped at a maximum), and after a bounded number of restart attempts within ONE continuous
+outage the watchdog SHALL STOP attempting further restarts and rely on the CRITICAL
+degradation plus the polling backstop instead of churning a daemon that will not come up.
+The backoff and attempt count SHALL reset the moment the feed is healthy again (or no HQ
+is live), so a later outage begins with an immediate restart.
+
 #### Scenario: A stale feed is restarted silently
 
 - **WHEN** the daemon's heartbeat is older than 90 s and an HQ pane is live
@@ -91,6 +100,18 @@ consecutive restart attempts fail SHALL the watchdog escalate.
 - **WHEN** two consecutive restart attempts fail to bring the heartbeat fresh
 - **THEN** the watchdog raises a degradation (see the degradation requirement) rather
   than continuing to retry silently forever
+
+#### Scenario: Restarts back off and stop after a cap
+
+- **WHEN** the feed stays unhealthy across many ticks
+- **THEN** the watchdog does not respawn every tick — attempts are spaced by a widening
+  backoff and cease after the attempt cap, leaving the CRITICAL degradation and the
+  polling backstop in effect
+
+#### Scenario: Recovery resets the backoff
+
+- **WHEN** the feed becomes healthy again after a backed-off / capped outage
+- **THEN** the attempt count and backoff reset, so the next outage is restarted at once
 
 ### Requirement: Degradation is surfaced as CRITICAL
 
