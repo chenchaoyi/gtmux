@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
@@ -77,7 +78,7 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.sel >= 0 && m.sel < len(m.panes) {
 				id := m.panes[m.sel].PaneID
 				delete(m.finished, id) // acknowledged
-				jumpCmd := func() tea.Msg { jumpPane(id); return nil }
+				jumpCmd := func() tea.Msg { panefocus.JumpPane(id); return nil }
 				if m.quitOnJump {
 					return m, tea.Sequence(jumpCmd, tea.Quit)
 				}

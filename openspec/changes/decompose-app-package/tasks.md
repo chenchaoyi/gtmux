@@ -37,18 +37,18 @@
 
 ## 3. PR 3 — extract `internal/hq` (the supervisor subsystem)
 
-- [ ] 3.1 Consolidate `findHQPane`/`findSupervisorPane` into `internal/hqpane` (a leaf),
+- [x] 3.1 Consolidate `findHQPane`/`findSupervisorPane` into `internal/hqpane` (a leaf),
   so both `hq` and `app` resolve the pane without a cross-dependency.
-- [ ] 3.2 Create `internal/hq`; move `hq.go`, `slowtick.go`, `selfcheck.go`, `distill.go`,
+- [x] 3.2 Create `internal/hq`; move `hq.go`, `slowtick.go`, `selfcheck.go`, `distill.go`,
   `diskhygiene.go`, `tiergate.go`, `watchdog.go`, `taskscmd.go`, `eventscmd.go`,
   `hqfeedcmd.go` (+ their tests).
-- [ ] 3.3 Confirm `hq` imports `radar` + `dispatchbridge` + hqwake/hqnudge/hqfeed/hqpane
+- [x] 3.3 Confirm `hq` imports `radar` + `dispatchbridge` + hqwake/hqnudge/hqfeed/hqpane
   + leaves — NEVER `app`.
-- [ ] 3.4 Update `app.go`'s command dispatch to `hq.CmdHQ`/`hq.CmdDigest`/`hq.CmdTasks`/
+- [x] 3.4 Update `app.go`'s command dispatch to `hq.CmdHQ`/`hq.CmdDigest`/`hq.CmdTasks`/
   `hq.CmdEvents`/`hq.CmdQuiet` (thin shims — no logic in the switch).
-- [ ] 3.5 The seed playbook is UNCHANGED — a pure move must NOT bump `hqPlaybookVersion`
+- [x] 3.5 The seed playbook is UNCHANGED — a pure move must NOT bump `hqPlaybookVersion`
   or edit `hqInstructions`.
-- [ ] 3.6 Gate: `make check` + `check-design.sh` green; HQ wake/tick/self-check/distill
+- [x] 3.6 Gate: `make check` + `check-design.sh` green; HQ wake/tick/self-check/distill
   behavior unchanged (smoke: a `done` wake still lands, a tick still fires).
 
 ## 4. PR 4 (optional) — extract `internal/tunnel`

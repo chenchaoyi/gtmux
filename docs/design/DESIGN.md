@@ -21,7 +21,7 @@
 
 ## 1. 状态模型（核心）
 
-每个 agent 有四种状态（与 CLI 一致，见 `internal/app/agents.go`）：
+每个 agent 有四种状态（与 CLI 一致，见 `internal/radar/agents.go`）：
 
 | status | 含义 | 颜色（权威，来自 `internal/menubar/icon.go`） | 形状 | 字形（白色，置于徽章内） |
 | --- | --- | --- | --- | --- |
@@ -188,7 +188,7 @@
   不抢状态色。
 - **不要给 agent 上品牌色**（紫/橙等会和状态色打架、稀释 waiting 的红）。
 - **真实 logo 是各家商标，不在设计里直接绘制**。系统预留接口：在 agent profile
-  （`~/.config/gtmux/agents.json`，见 `internal/app/agents.go` 的 `agentProfile`）增加一个
+  （`~/.config/gtmux/agents.json`，见 `internal/radar/agents.go` 的 `agentProfile`）增加一个
   `icon` 字段，app 运行时按各家品牌规范加载**官方图标**（仓库 hook 已有缓存 Claude 图标的先例）。
 - 可在偏好里开关「显示 agent 名」：开启时第二行前缀暗色 agent 名（`Codex · task…`）。
 
@@ -331,7 +331,7 @@ divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
 ## 14. 数据契约
 
 消费 `gtmux agents --json`（稳定 shape，见 `internal/menubar/model.go` 的 `Agent` 与
-`internal/app/agents.go` 的 `agentJSON`）。现有字段：
+`internal/radar/agents.go` 的 `agentJSON`）。现有字段：
 
 ```
 pane_id, session, window, pane, loc, agent, status, task, latest, activity

@@ -15,7 +15,9 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -159,15 +161,15 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
 		UsageJSON: radar.UsageJSONBytes,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
-		OnSlowTick: slowTickEval,
+		OnSlowTick: hq.SlowTickEval,
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
-		OnFastTick: drainHQNudges,
+		OnFastTick: hq.DrainHQNudges,
 		// The approval card's options are gated on the hook waiting marker, not screen
 		// text (an idle pane showing a numbered list must not surface an approval menu).
 		IsWaiting:  func(id string) bool { return state.Exists(state.WaitingPath(id)) },
 		PaneCursor: paneCursor,
-		Focus:      func(id string) error { return focusPaneByID(id) },
+		Focus:      func(id string) error { return panefocus.FocusPaneByID(id) },
 		Send:       sendToPane,
 		// `gtmux attach` bridges a tmux client (spawned in a server-side PTY) to a WS.
 		// Resolve the pane's session and attach to it; the handler drops write frames

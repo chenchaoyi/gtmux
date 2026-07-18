@@ -1,4 +1,4 @@
-package app
+package hq
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -23,7 +24,7 @@ func watchdogMarker(pane string) string { return filepath.Join(state.Dir(), "wat
 // episode and is cleared when the pane leaves waiting, so a fresh wait re-arms. It never
 // escalates about the HQ pane itself.
 func watchdogSweep(now int64) {
-	hq := findHQPane()
+	hq := hqpane.Find()
 	for _, p := range radar.GatherAgents() {
 		if p.Status != "waiting" || p.PaneID == hq {
 			state.Remove(watchdogMarker(p.PaneID)) // episode over / self → re-arm

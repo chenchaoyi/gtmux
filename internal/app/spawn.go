@@ -296,7 +296,7 @@ func spawnPreflight(model string) {
 		i18n.Say("• proxy: none (direct) — if the agent 403s, a proxy may be needed",
 			"• 代理：无（直连）—— 若 agent 报 403，可能需要代理")
 	}
-	preflightResource()
+	radar.PreflightResource()
 	if model == "" {
 		if r, ok := limits.Load(); ok && r.Warn != "" {
 			i18n.Say("• subscription tight ("+r.Warn+") — consider --model sonnet/haiku",

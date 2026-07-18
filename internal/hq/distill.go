@@ -6,7 +6,7 @@
 // distillation itself (no LLM in the timing loop; the same split as the self-check
 // sensor). It is the RETROSPECTIVE counterpart to the moment-of-learning capture: the
 // watermark bounds each pass to the delta so it consolidates rather than duplicates.
-package app
+package hq
 
 import (
 	"path/filepath"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqfeed"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -77,7 +78,7 @@ func shouldDistill(now, lastAt int64, notable, newCount int) (bool, string) {
 // slow-tick; only with a live HQ, and the expensive event scan runs only after the
 // cheap rate-limit gate passes.
 func distillSensor(now int64) {
-	if findHQPane() == "" {
+	if hqpane.Find() == "" {
 		return
 	}
 	lastAt, lastSeq := readDistillMark()

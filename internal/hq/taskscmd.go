@@ -1,4 +1,4 @@
-package app
+package hq
 
 import (
 	"encoding/json"
@@ -102,8 +102,8 @@ func gatherArchivedTasks() []taskJSON {
 	return out
 }
 
-// cmdTasks implements `gtmux tasks [--json] [--verbose]` — the attention ledger.
-func cmdTasks(args []string) int {
+// CmdTasks implements `gtmux tasks [--json] [--verbose]` — the attention ledger.
+func CmdTasks(args []string) int {
 	jsonOut, verbose := false, false
 	for _, a := range args {
 		switch a {
