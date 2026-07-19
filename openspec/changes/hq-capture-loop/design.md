@@ -200,12 +200,14 @@ stretch**:
   capture trigger — HQ captures it afterward.
 - **Tool echo — the dispatch-time KB echo (first-class, its own PR, right after ②):** at
   `gtmux spawn` / dispatch, auto-echo the **pitfalls / workflows summary** matching the
-  target repo (by cwd repo name) and the goal keywords, handing it to the worker as part
-  of the launch. This is **the only mechanism that structurally closes "captured but
-  never used"** — it surfaces the KB at the exact moment work starts, as a tool
-  guarantee rather than an HQ-discipline hope. That is why the commander promoted it out
-  of the ③ bucket: it is the payoff of ① + ②, and must not wait behind the deferred
-  auto-triggers.
+  target repo (by the cwd's base name) and the goal keywords, in the dispatch's **advisory
+  output** (alongside the proxy / resource preflight, silent in `--json`). Matching is
+  read-only over HQ's own knowledge files, bounded to a small line cap, and a no-op when
+  nothing matches. This surfaces the KB at the exact moment work starts, as a tool
+  guarantee rather than an HQ-discipline hope — the payoff of ① + ②, which is why the
+  commander promoted it out of the ③ bucket. (Injecting the summary directly INTO the
+  worker's pane is a natural extension, deferred to keep the verified-delivery payload —
+  the re-send interlock + land-verification — untouched.)
 
 Consult closes the loop: ① / ② fill the KB; the hard precondition + the dispatch echo
 spend it.

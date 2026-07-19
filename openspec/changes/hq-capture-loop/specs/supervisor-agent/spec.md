@@ -125,17 +125,22 @@ section, and `gtmux --help` (en+zh) — NOT the `check-design.sh` HIDDEN allowli
 ### Requirement: HQ echoes matching knowledge at dispatch time
 
 At `gtmux spawn` / dispatch time, the system SHALL auto-echo the pitfalls / workflows
-knowledge-base summary that matches the target repository (by cwd repo name) and the goal
-keywords, handing it to the worker at launch, so captured knowledge is surfaced at the
-moment it is needed rather than left to HQ to recall each time. This is the tool-layer
-mechanism that structurally closes "captured but never used" — the payoff of the capture
-layers — and is a first-class deliverable. When no KB topic matches, the echo SHALL be a
-no-op (nothing surfaced, no error).
+knowledge-base summary that matches the target repository (by the cwd's base name) and the
+goal keywords, in the dispatch's advisory output (alongside the proxy / resource
+preflight, so it is silent in `--json` mode), so captured knowledge is surfaced at the
+moment work starts rather than left to HQ to recall each time. This is the tool-layer
+mechanism that closes "captured but never used" — the payoff of the capture layers — and
+is a first-class deliverable. The echo SHALL be bounded (a small, fixed line cap) and
+read-only over HQ's own knowledge files. When no `pitfalls`/`workflows` entry matches, the
+echo SHALL be a no-op (nothing surfaced, no error). (Injecting the summary directly INTO
+the worker's pane is a natural extension, deferred to keep the verified-delivery payload
+untouched.)
 
 #### Scenario: A dispatch surfaces the repo's known footguns
 
 - **WHEN** HQ dispatches work into a repo whose `pitfalls`/`workflows` topics have entries
-- **THEN** the matching KB summary is echoed to the worker at dispatch time
+  matching the cwd base name or a goal keyword
+- **THEN** the matching KB summary is echoed in the dispatch's advisory output
 
 #### Scenario: No match is a silent no-op
 
