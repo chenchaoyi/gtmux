@@ -27,6 +27,9 @@ Commands:
                           fleet view (and the supervisor's read surface)
   hq                      open (or focus) the supervisor (中控) agent — one
                           session that watches, reports on, and drives the rest
+  capture "<lesson> @<topic>"
+                          record a durable, cross-cutting fact as a candidate for
+                          HQ's knowledge base (--list shows the pending queue)
   usage [--json]          token usage per session + per-type rollup, with
                           layered thresholds and ahead-of-time warnings
   limits [--json]         real subscription-window remaining (5h session +
@@ -126,6 +129,9 @@ const usageZH = `快速开始：
                           —— 一眼看清全部 agent（也是中控的主要信息源）
   hq                      打开（或跳到）中控 agent —— 一个替你盯全部 agent、
                           汇报并代为驱动的会话
+  capture "<教训> @<topic>"
+                          把一条持久、横向的事实作为候选记入 HQ 知识库
+                          （--list 查看待蒸馏队列）
   usage [--json]          每会话 token 用量 + 按类型汇总；分层阈值 + 按速率
                           提前预警（撞墙前告诉你）
   limits [--json]         真实订阅窗口余量（5 小时会话 + 周额度），来自 agent

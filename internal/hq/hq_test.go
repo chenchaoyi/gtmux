@@ -45,13 +45,15 @@ func TestPlaybookTeachesCaptureLoop(t *testing.T) {
 		"Consult (a HARD PRECONDITION",     // consult hardened
 		"BOARD vs KNOWLEDGE BASE — welded", // the definition weld
 		"\"I noted the board\" can NEVER",  // the anti-confusion clause
+		"gtmux capture",                    // PR2: the spool as a distill data source
+		"DRAIN the spool",                  // PR2: the drain-and-merge ritual
 	} {
 		if !strings.Contains(pb, want) {
-			t.Errorf("v8 playbook must teach the capture-loop; missing %q", want)
+			t.Errorf("v8/v9 playbook must teach the capture-loop; missing %q", want)
 		}
 	}
-	if hqPlaybookVersion < 8 {
-		t.Errorf("hqPlaybookVersion = %d, want ≥ 8 (hq-capture-loop)", hqPlaybookVersion)
+	if hqPlaybookVersion < 9 {
+		t.Errorf("hqPlaybookVersion = %d, want ≥ 9 (hq-capture-loop PR2)", hqPlaybookVersion)
 	}
 }
 

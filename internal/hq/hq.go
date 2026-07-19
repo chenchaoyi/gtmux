@@ -78,7 +78,13 @@ import (
 //	     filler). Consult is hardened into a HARD precondition before advising/dispatching.
 //	     The board (ephemeral private posture) vs knowledge base (durable cross-session
 //	     memory) definitions are WELDED so "I noted the board" can never count as capture.
-const hqPlaybookVersion = 8
+//	v9 — hq-capture-loop PR2: `gtmux capture` (a PUBLIC command) lets any worker drop a
+//	     durable-fact CANDIDATE into a pending-distill spool. The Iterate ritual now names
+//	     the spool as a second data source and teaches HQ to DRAIN it — merging each
+//	     candidate by its (topic, dedup-key) into the matching topic file, HQ being the
+//	     quality gate — then truncate it. (The engineering ships the command + spool; this
+//	     bump carries the playbook half so existing homes learn to drain the queue.)
+const hqPlaybookVersion = 9
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -951,13 +957,19 @@ Discipline:
   咨询是硬前置:建议/派活前必先查 KB 主题并注明依据;无覆盖的空白本身就是沉淀触发点。
 - **Iterate (now TRIGGERED, not just "periodically"):** on a ` + "`[CONTROL gtmux:distill]`" + `
   record, run a RETROSPECTIVE distillation over the fleet's activity since the last
-  distill — fold durable cross-cutting facts into the right topic file (UPDATE existing
-  entries over appending duplicates), correct what's stale, PRUNE what's dead, merge
-  duplicates. It works the DELTA (gtmux watermarks the last distill), so it consolidates
-  rather than re-summarizing — it never duplicates what moment-Capture already wrote.
-  Default SILENT; a one-line brief only on real curation; a charter-level lesson still
-  FLAGS a seed/spec update (as below), never just a local note. Treat the base as code
-  that rots if untended. 定期蒸馏是被触发的仪式:蒸馏增量、合并而非追加、剪枝陈旧,默认静默。
+  distill. TWO data sources: (1) the event DELTA (gtmux watermarks the last distill), and
+  (2) the pending-distill SPOOL that ` + "`gtmux capture`" + ` fills — anyone on this machine can
+  drop a candidate there (` + "`gtmux capture --list`" + ` to see the queue). DRAIN the spool:
+  for each candidate MERGE it by its (topic, dedup-key) into the matching topic file — a
+  candidate is not yet an entry, YOU are the quality gate; keep the durable, drop the
+  noise, and truncate the spool when done. Across both sources: fold durable cross-cutting
+  facts into the right topic file (UPDATE existing entries over appending duplicates),
+  correct what's stale, PRUNE what's dead, merge duplicates. It consolidates rather than
+  re-summarizing — it never duplicates what moment-Capture already wrote. Default SILENT;
+  a one-line brief only on real curation; a charter-level lesson still FLAGS a seed/spec
+  update (as below), never just a local note. Treat the base as code that rots if
+  untended. 定期蒸馏是被触发的仪式:抽干 ` + "`gtmux capture`" + ` 的候选队列(按 topic+key 合并进
+  已有条目,你是质量闸)、蒸馏事件增量、合并而非追加、剪枝陈旧,默认静默。
 - **LEARN FROM CORRECTIONS (a first-class ritual, not an afterthought):** when the
   commander CORRECTS you, or the SAME footgun is hit more than once, DISTILL the durable
   lesson into ` + "`corrections.md`" + ` and land it: a PORTABLE behavior lesson also folds into

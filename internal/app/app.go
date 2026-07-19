@@ -92,6 +92,8 @@ func Run(argv []string) int {
 		return cmdSpawn(args)
 	case "tasks":
 		return hq.CmdTasks(args)
+	case "capture":
+		return hq.CmdCapture(args)
 	case "reap":
 		return cmdReap(args)
 	case "send":

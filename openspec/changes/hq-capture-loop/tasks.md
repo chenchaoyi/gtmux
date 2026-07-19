@@ -49,31 +49,31 @@ Pure playbook / documentation. No behavior code.
 
 ## PR2 · group B — `gtmux capture` PUBLIC command + spool (dedup key + topic tag)
 
-- [ ] B1. Add the `gtmux capture "<lesson> @<topic>"` command + `--list`: parse the
+- [x] B1. Add the `gtmux capture "<lesson> @<topic>"` command + `--list`: parse the
       `@topic` (accounts|workflows|best-practices|pitfalls|corrections), compute a dedup
       key (topic + lesson-slug, or an explicit key), auto-collect event context
       (current/related `pane_id`, event `seq`, `task_id`, timestamp), append one JSON line
       to the spool.
-- [ ] B2. Spool file: `~/.config/gtmux/hq/knowledge/.pending-distill.jsonl` (or the
+- [x] B2. Spool file: `~/.config/gtmux/hq/knowledge/.pending-distill.jsonl` (or the
       `state.HQHome()`/`state.Dir()` equivalent) — append-only; JSON line carries
       `topic` + `key` (dedup) + lesson + context; `--list` renders the queue.
-- [ ] B3. Register `capture` in the `internal/app/app.go` command dispatch (registry stays in app).
-- [ ] B4. CLI-surface docs (drift rule) — `capture` is a **PUBLIC** command: add it to the
+- [x] B3. Register `capture` in the `internal/app/app.go` command dispatch (registry stays in app).
+- [x] B4. CLI-surface docs (drift rule) — `capture` is a **PUBLIC** command: add it to the
       CLAUDE.md command list, add a `## gtmux capture` section to `docs/cli.md`, and add it
       to `gtmux --help` (`internal/app/help.go`, en+zh). Do NOT hide it in the
       `check-design.sh` HIDDEN allowlist.
-- [ ] B5. Distill pass drains the spool MERGING by (topic, dedup key): fold each candidate
+- [x] B5. Distill pass drains the spool MERGING by (topic, dedup key): fold each candidate
       into the matching KB entry / earlier same-key candidate instead of appending a
       near-duplicate, then truncate the spool. (Runs on the EXISTING manual/periodic
       distill trigger — no auto-trigger yet; that is PR4.) Update the playbook `Iterate`
       wording to name the spool + merge-by-key as a data source — but land any
       `hqInstructions` text edit in PR1's v8 if possible to avoid a second version bump.
-- [ ] B6. Spec: land the `supervisor-agent` delta for the `gtmux capture` command + spool
+- [x] B6. Spec: land the `supervisor-agent` delta for the `gtmux capture` command + spool
       (public command, dedup key + topic tag, drained by the distill pass).
-- [ ] B7. Tests: capture parses topic + writes a well-formed spool line with a dedup key;
+- [x] B7. Tests: capture parses topic + writes a well-formed spool line with a dedup key;
       a bad/missing `@topic` errors; `--list` reads the queue; a drain merges two same-key
       candidates into one KB entry (no near-duplicate) and truncates the spool.
-- [ ] B8. `make check` + `check-design.sh` green.
+- [x] B8. `make check` + `check-design.sh` green.
 
 ## PR3 · group C — dispatch-time KB echo (first-class; right after ②)
 
