@@ -139,9 +139,15 @@ func deliverWake(target, msg string) {
 }
 
 // nudgeResolved tells HQ that a wait CLEARED (incident ⑤): the user answered in the
-// pane's own window, or the agent resumed — so HQ can drop any pending chase. Always
-// fires (the wake line IS the knock — no producer-side suppression).
+// pane's own window, or the agent resumed — so HQ can drop any pending chase. This is
+// the FAST path; the serve slow-tick emits the same resolved as a BACKSTOP for the
+// clears no hook event covers (a permission approved in the source window with no
+// resolving hook). Both consult hqwake.ClaimResolved so a single cleared wait announces
+// exactly one resolved, whichever channel observes it first.
 func nudgeResolved(pane, kind string) {
+	if !hqwake.ClaimResolved(pane, time.Now().Unix()) {
+		return // the slow-tick backstop already announced this clear
+	}
 	was := ""
 	if kind != "" {
 		was = "was " + kind

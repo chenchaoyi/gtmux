@@ -20,9 +20,11 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/notify"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // SlowTickEval is wired to server Deps.OnSlowTick. It evaluates resource +
@@ -55,6 +57,12 @@ func SlowTickEval() {
 	// would read idle → done. Persist a `waiting` marker + fire one `waiting` wake so HQ
 	// unblocks it instead of being told the task finished.
 	stuckDispatchSweep()
+	// Resolved backstop (hq-send-delivery-reliability B): fire a `resolved` wake when a
+	// pane LEAVES the waiting state via a path no hook event covers — a permission/
+	// question approved in the source window, after which the agent just resumes (Claude
+	// registers no PostToolUse, so its wait marker lingers until the eventual Stop). The
+	// hook's resolved emit is event-gated; this observes the radar's status transition.
+	resolvedTransitionSweep()
 	// Perception-feed watchdog (hq-attention-system): keep the silent feed daemon
 	// alive while an HQ is live; mechanically self-heal, escalate CRITICAL only after
 	// self-heal fails twice.
@@ -285,6 +293,84 @@ func stuckDispatchSweep() {
 		if state.WriteMarker(state.WaitingPath(p.PaneID), kind) == nil {
 			nudgeHQPane(hqwake.Line(hqwake.ClassWaiting, p.Loc+" ("+p.PaneID+")",
 				"stuck before running — "+kind), "")
+		}
+	}
+}
+
+// resolvedVerdict is resolvedDecide's outcome for one pane sample.
+type resolvedVerdict int
+
+const (
+	resolvedHold  resolvedVerdict = iota // no change (not tracked, or a flicker to keep tracking)
+	resolvedTrack                        // (re)record the pane as waiting on `kind`
+	resolvedEmit                         // waiting→clear CONFIRMED: emit resolved + clear tracker/marker
+)
+
+// resolvedDecide is the PURE transition rule (no IO, testable). From the pane's
+// DISPLAYED status, the kind we last tracked it waiting on, the current waiting-marker
+// kind, and whether the screen STILL shows a wait (menu/gate), it decides the
+// resolved-backstop action. On resolvedTrack the tracker value is the returned `kind`;
+// on resolvedEmit the cleared kind is the caller's lastTracked.
+//
+// The signal is the DISPLAYED status (resolveWaiting flips a fresh-marked pane to
+// "working" once the approved tool runs, even while the hook marker lingers), so a
+// permission approved in the source window reads as waiting→working here even though no
+// hook cleared the marker. screenWaits is the flicker guard: a one-tick liveWorking flip
+// while the approval card is still on screen must NOT read as resolved.
+func resolvedDecide(status, lastTracked, markerKind string, screenWaits bool) (resolvedVerdict, string) {
+	if status == "waiting" {
+		if markerKind == "" {
+			markerKind = "pending"
+		}
+		return resolvedTrack, markerKind
+	}
+	if lastTracked == "" || screenWaits {
+		return resolvedHold, ""
+	}
+	return resolvedEmit, ""
+}
+
+// resolvedTrackPath is the slow-tick's per-pane tracker of the kind it last saw a pane
+// waiting on — the state resolvedDecide compares against to detect a waiting→clear edge.
+// Single-writer (slow-tick only), so no read-modify-write race.
+func resolvedTrackPath(pane string) string {
+	return filepath.Join(state.Dir(), "hqwake", "resolved-track-"+pane)
+}
+
+// resolvedTransitionSweep fires a `resolved` wake when a pane LEAVES the waiting state
+// via a path no hook event covers (hq-send-delivery-reliability B). It is the BACKSTOP
+// to the hook's event-gated resolved emit: the hook fires only on
+// {UserPromptSubmit,Resumed,Stop,StopFailure}, but a permission/question approved in the
+// pane's OWN window and resumed produces none of those promptly (Claude registers no
+// PostToolUse), so HQ would hold a stale needs-you until the eventual Stop. This tracks
+// each pane's waiting kind and, on a confirmed waiting→non-waiting edge, emits ONE
+// resolved — deduped against the hook via hqwake.ClaimResolved and delivered on the
+// acked hqnudge channel. On emit it also drops the lingering hook waiting marker (safe:
+// the edge is screen-confirmed clear), so a later Stop can't double-announce it.
+func resolvedTransitionSweep() {
+	now := time.Now().Unix()
+	for _, p := range radar.GatherAgents() {
+		pane := p.PaneID
+		last := state.ReadMarker(resolvedTrackPath(pane))
+		markerKind := state.ReadMarker(state.WaitingPath(pane))
+		// Capture only for a transition CANDIDATE (was tracked waiting, now not) — the
+		// flicker guard, paid once per edge rather than per pane per tick.
+		screenWaits := false
+		if p.Status != "waiting" && last != "" {
+			cap := tmux.CaptureFull(pane)
+			screenWaits = prompt.WaitingOptions(cap) != nil || prompt.IsStartupGate(cap, p.Agent)
+		}
+		switch v, kind := resolvedDecide(p.Status, last, markerKind, screenWaits); v {
+		case resolvedTrack:
+			if kind != last {
+				_ = state.WriteMarker(resolvedTrackPath(pane), kind)
+			}
+		case resolvedEmit:
+			if hqwake.ClaimResolved(pane, now) {
+				nudgeHQPane(hqwake.Line(hqwake.ClassResolved, p.Loc+" ("+pane+")", "was "+last), "")
+			}
+			state.Remove(resolvedTrackPath(pane))
+			state.Remove(state.WaitingPath(pane)) // screen-confirmed clear → drop the lingering marker
 		}
 	}
 }

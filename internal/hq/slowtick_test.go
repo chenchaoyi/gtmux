@@ -95,3 +95,33 @@ func TestFeedDegradedDedup(t *testing.T) {
 		t.Fatal("re-degradation after recovery should alert again")
 	}
 }
+
+// resolvedDecide is the pure waiting→clear transition rule the resolved backstop runs.
+func TestResolvedDecide(t *testing.T) {
+	// A displayed-waiting pane is (re)tracked on its marker kind.
+	if v, k := resolvedDecide("waiting", "", "permission", false); v != resolvedTrack || k != "permission" {
+		t.Fatalf("waiting → track(permission), got %v %q", v, k)
+	}
+	// Waiting with no marker kind tracks a placeholder (still records the wait).
+	if v, k := resolvedDecide("waiting", "", "", false); v != resolvedTrack || k != "pending" {
+		t.Fatalf("waiting w/o marker → track(pending), got %v %q", v, k)
+	}
+	// A pane we never tracked as waiting produces no resolved.
+	if v, _ := resolvedDecide("working", "", "", false); v != resolvedHold {
+		t.Fatalf("untracked non-waiting → hold, got %v", v)
+	}
+	// The core fix: tracked waiting → now working (permission approved, agent resumed)
+	// with no wait on screen → EMIT resolved.
+	if v, _ := resolvedDecide("working", "permission", "permission", false); v != resolvedEmit {
+		t.Fatalf("tracked waiting → working (clear) → emit, got %v", v)
+	}
+	// Same, going idle (Stop-style clear) → EMIT.
+	if v, _ := resolvedDecide("idle", "question", "", false); v != resolvedEmit {
+		t.Fatalf("tracked waiting → idle (clear) → emit, got %v", v)
+	}
+	// Flicker guard: a one-tick liveWorking flip while the approval card is STILL on
+	// screen must NOT read as resolved — keep tracking.
+	if v, _ := resolvedDecide("working", "permission", "permission", true); v != resolvedHold {
+		t.Fatalf("clear with a wait still on screen → hold (flicker guard), got %v", v)
+	}
+}
