@@ -77,13 +77,13 @@ Pure playbook / documentation. No behavior code.
 
 ## PR3 · group C — dispatch-time KB echo (first-class; right after ②)
 
-- [ ] C1. At `gtmux spawn` / dispatch, auto-echo the matching pitfalls/workflows KB
+- [x] C1. At `gtmux spawn` / dispatch, auto-echo the matching pitfalls/workflows KB
       summary (by cwd repo name + goal keywords), handed to the worker at launch; no
       match → silent no-op.
-- [ ] C2. Spec: land the `supervisor-agent` delta for the dispatch-time KB echo.
-- [ ] C3. Tests: a dispatch into a repo with `pitfalls`/`workflows` entries surfaces the
+- [x] C2. Spec: land the `supervisor-agent` delta for the dispatch-time KB echo.
+- [x] C3. Tests: a dispatch into a repo with `pitfalls`/`workflows` entries surfaces the
       matching summary; a no-match dispatch echoes nothing and does not error.
-- [ ] C4. `make check` + `check-design.sh` green.
+- [x] C4. `make check` + `check-design.sh` green.
 
 ## PR4 · group D — ③ distill auto-triggers — DEFERRED behind the observation gate
 

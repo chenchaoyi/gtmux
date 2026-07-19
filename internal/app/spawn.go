@@ -11,6 +11,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -102,7 +103,7 @@ func cmdSpawn(args []string) int {
 
 	// Pre-flight (advisory — warns, never blocks). Silenced in --json mode.
 	if !asJSON {
-		spawnPreflight(model)
+		spawnPreflight(model, cwd, goal)
 	}
 
 	// Target a pane: reuse --pane, or create a fresh session (optionally in a worktree).
@@ -298,8 +299,10 @@ func launchAgent(pane, agent, model string) {
 }
 
 // spawnPreflight prints advisory checks: which proxy the launch will apply, the
-// machine resource watermark, and a model suggestion when the window is tight.
-func spawnPreflight(model string) {
+// machine resource watermark, a model suggestion when the window is tight, and the
+// pitfalls/workflows knowledge that matches this dispatch (the consult half-loop's tool
+// layer — surfacing captured knowledge at the moment work starts).
+func spawnPreflight(model, cwd, goal string) {
 	if u := agentenv.Active(); u != "" {
 		i18n.Say("• proxy: "+u, "• 代理："+u)
 	} else {
@@ -312,6 +315,9 @@ func spawnPreflight(model string) {
 			i18n.Say("• subscription tight ("+r.Warn+") — consider --model sonnet/haiku",
 				"• 订阅额度紧张（"+r.Warn+"）—— 可考虑 --model sonnet/haiku")
 		}
+	}
+	if kb := hq.MatchKnowledge(cwd, goal); kb != "" {
+		fmt.Println(kb)
 	}
 }
 
