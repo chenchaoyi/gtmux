@@ -156,3 +156,53 @@ func TestIsStartupGate(t *testing.T) {
 		t.Error("a named agent should still match the default gate set")
 	}
 }
+
+// IsComposerReady is the SCREEN half of the spawn readiness handshake: a pane is ready
+// to take a pasted goal only when its input prompt row is present, no startup/trust
+// gate is up, and no boot banner is still on screen.
+func TestIsComposerReady(t *testing.T) {
+	// A clean idle Claude composer is ready.
+	if !IsComposerReady("some earlier output\n\n❯ ", "") {
+		t.Error("a clean idle composer should be ready")
+	}
+	// A boot banner (MCP auth / connecting) is NOT ready — the composer hasn't taken over.
+	banners := []string{
+		"❯ \n\n2 MCP servers need authentication",
+		"Connecting to MCP servers…\n❯ ",
+		"Starting Claude Code…",
+		"Loading…\n❯ ",
+	}
+	for _, b := range banners {
+		if IsComposerReady(b, "") {
+			t.Errorf("boot banner should NOT be ready: %q", b)
+		}
+	}
+	// A trust/permission gate is NOT ready (pasting through it would eat the keypress).
+	trust := "  Do you trust the files in this folder?\n\n  ❯ 1. Yes, proceed\n    2. No, exit\n"
+	if IsComposerReady(trust, "") {
+		t.Error("trust gate should NOT be ready")
+	}
+	// A live approval menu is a CHOICE wait, not a goal-ready composer.
+	menu := "  ❯ 1. Yes\n    2. No\n    3. Always\n"
+	if IsComposerReady(menu, "") {
+		t.Error("a live approval menu should NOT be ready (waiting for a choice, not a goal)")
+	}
+	// A blank / still-booting screen with no prompt row is NOT ready.
+	if IsComposerReady("\n\n\n", "") {
+		t.Error("a screen with no prompt row should NOT be ready")
+	}
+	// A named agent still checks the default banner set.
+	if IsComposerReady("2 MCP servers need authentication\n❯ ", "Claude Code") {
+		t.Error("a named agent should still match the default boot-banner set")
+	}
+}
+
+// hasBootBanner matches the default set and a named agent's own phrases.
+func TestHasBootBanner(t *testing.T) {
+	if !hasBootBanner("all good\nMCP servers need authentication\n❯ ", "") {
+		t.Error("MCP auth notice is a boot banner")
+	}
+	if hasBootBanner("normal idle\n❯ ", "") {
+		t.Error("a clean idle screen has no boot banner")
+	}
+}

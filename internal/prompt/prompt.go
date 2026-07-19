@@ -109,6 +109,97 @@ func IsStartupGate(capture, agent string) bool {
 	return false
 }
 
+// bootBanners are an agent's still-BOOTING chrome — the startup banner it paints
+// while connecting before its composer stably takes over input (MCP-connect spinner,
+// authentication notice, the generic starting/loading lines). Pasting a task while any
+// of these is on screen risks a truncated goal and a swallowed Enter, so they make a
+// pane NOT-ready. Keyed by agent name ("" = the default/Claude set); an agent can add
+// its own boot phrases. Extensible for codex/gemini/… — NOT hardcoded to one agent.
+var bootBanners = map[string][]string{
+	"": { // Claude Code boot noise
+		"MCP servers need authentication",
+		"need authentication",
+		"Connecting",
+		"Connecting…",
+		"Starting",
+		"Loading",
+		"Initializing",
+	},
+}
+
+// hasBootBanner reports whether the capture shows a still-booting banner for the agent
+// (default set + the named agent's own). A booting pane is not yet ready to take a goal.
+func hasBootBanner(capture, agent string) bool {
+	for _, sig := range bootBanners[""] {
+		if strings.Contains(capture, sig) {
+			return true
+		}
+	}
+	if agent != "" {
+		for _, sig := range bootBanners[agent] {
+			if strings.Contains(capture, sig) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// promptGlyphs are the input-prompt cursor marks an agent draws on its (empty)
+// composer row when it is idle and ready to take input — the selector glyphs plus the
+// plain ">" some agents use. A composer row carries one; a boot banner / blank screen
+// does not.
+const promptGlyphs = selectorGlyphs + ">"
+
+// hasPromptLine reports whether the bottom region of the capture shows the agent's
+// input-prompt (composer) row — the row a ready, idle agent draws to take a goal. It
+// deliberately returns false when a live approval/gate MENU is up (WaitingOptions
+// non-nil): a menu is waiting for a CHOICE, not a goal, and is not a goal-ready
+// composer.
+func hasPromptLine(capture, agent string) bool {
+	if WaitingOptions(capture) != nil {
+		return false
+	}
+	for _, raw := range bottomLines(capture, 14) {
+		s := ansi.Strip(raw)
+		s = strings.TrimLeft(s, "│╭╰╮╯─ \t")
+		if strings.ContainsAny(s, promptGlyphs) {
+			return true
+		}
+	}
+	return false
+}
+
+// bottomLines returns up to the last n non-whitespace-blank lines of the capture — the
+// bottom region where an agent's active prompt/menu lives. It trims on raw whitespace
+// (NOT clean()) because clean() strips the very selector glyph the composer row is
+// detected by, which would swallow an empty `❯ ` prompt row as if it were chrome.
+func bottomLines(text string, n int) []string {
+	lines := strings.Split(text, "\n")
+	end := len(lines)
+	for end > 0 && strings.TrimSpace(lines[end-1]) == "" {
+		end--
+	}
+	lo := end - n
+	if lo < 0 {
+		lo = 0
+	}
+	return lines[lo:end]
+}
+
+// IsComposerReady reports whether the capture shows an agent whose composer is
+// input-ready and settled enough to receive a pasted goal: the input prompt row is
+// present, no PRE-TURN blocking gate (trust/permission) is up, and no still-booting
+// banner is on screen. It is the SCREEN half of the spawn readiness handshake
+// (launched → ready → content-verified → submitted); the caller adds the
+// two-stable-samples check. Agent "" uses the default (Claude) signatures; a named
+// agent also checks its own. Pure string predicate — no tmux.
+func IsComposerReady(capture, agent string) bool {
+	return hasPromptLine(capture, agent) &&
+		!IsStartupGate(capture, agent) &&
+		!hasBootBanner(capture, agent)
+}
+
 // looksLikeStartupChooser reports whether the bottom-of-screen menu is agent
 // session-startup chrome (a GATE or a PICKER) rather than a task-level approval — so
 // WaitingOptions doesn't flag either as an active task wait.

@@ -592,7 +592,7 @@ func deliverHQBriefing(pane, agentCmd string) {
 		return
 	}
 	tune := dispatch.LoadTuning()
-	if !dispatchbridge.WaitAgentReady(pane, time.Duration(tune.ReadyTimeout)*time.Second) {
+	if !dispatchbridge.WaitAgentReady(pane, agentCmd, time.Duration(tune.ReadyTimeout)*time.Second) {
 		return
 	}
 	_ = dispatch.Deliver(dispatchbridge.DispatchIO(pane), dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
