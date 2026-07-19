@@ -162,6 +162,28 @@ channel entirely (no hq pane → no wake, no cost). The wake only INFORMS: gtmux
 answers another agent's prompt, never sends navigation keys into a TUI, and the default
 policy tells the supervisor to surface decisions to you, not take them.
 
+## `gtmux capture` — cheap notice into HQ's knowledge base
+
+```
+gtmux capture "<one-line lesson> @<topic>"   # topic ∈ accounts | workflows | best-practices | pitfalls | corrections
+gtmux capture --list                         # show the pending-distill queue
+```
+
+Writing a polished knowledge-base entry mid-work is expensive and gets skipped, so
+`capture` decouples **noticing** (one line, in the moment) from **writing it up well**
+(batched, at HQ's distill pass). It is a **public** command by design — any worker, not
+just hq, that learns a durable, cross-cutting fact can drop a **candidate** into a
+pending-distill spool (`~/.config/gtmux/hq/knowledge/.pending-distill.jsonl`). Each line
+carries the lesson, its topic tag, a **dedup key** (`<topic>/<lesson-slug>`, so the
+distill pass MERGES same-key candidates instead of scattering near-duplicates), and
+auto-collected event context (the current pane, the event high-water mark, a timestamp,
+and `$GTMUX_TASK_ID` if the caller is a tracked dispatch).
+
+A candidate is **not** a knowledge-base entry: hq's distill pass is the quality gate that
+decides what is durable, files it under the right topic, and prunes — so opening the
+input is safe (worst case a candidate is dropped at distill time). This is layer ② of the
+capture loop; see `openspec/changes/hq-capture-loop`.
+
 ## `gtmux spawn` / `gtmux tasks` / `gtmux reap` — verified dispatch
 
 `gtmux spawn <goal>` dispatches new work to a coding agent and confirms it actually
