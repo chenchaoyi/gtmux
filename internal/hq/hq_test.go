@@ -30,6 +30,31 @@ func TestPlaybookTeachesDistill(t *testing.T) {
 	}
 }
 
+// v8 (hq-capture-loop) welds CAPTURE into the loop as a first-class step: the mandatory
+// capture verdict scoped to correction/crash/recurrence, the opportunistic-silent
+// done/resolved default, the `⟣ 📓` register glyph, consult as a hard precondition, and
+// the board-vs-KB weld. Pins the PROMPT half + the bump so existing homes adopt it.
+func TestPlaybookTeachesCaptureLoop(t *testing.T) {
+	pb := hqInstructions
+	for _, want := range []string{
+		"SENSE → JUDGE → CAPTURE? → REPORT", // the loop shape
+		"CAPTURE?",                         // the mandatory-verdict step
+		"⟣ 📓 captured:",                    // the capture register glyph
+		"recurrence",                       // the third forced closure class
+		"OPPORTUNISTIC and SILENT",         // done/resolved default
+		"Consult (a HARD PRECONDITION",     // consult hardened
+		"BOARD vs KNOWLEDGE BASE — welded", // the definition weld
+		"\"I noted the board\" can NEVER",  // the anti-confusion clause
+	} {
+		if !strings.Contains(pb, want) {
+			t.Errorf("v8 playbook must teach the capture-loop; missing %q", want)
+		}
+	}
+	if hqPlaybookVersion < 8 {
+		t.Errorf("hqPlaybookVersion = %d, want ≥ 8 (hq-capture-loop)", hqPlaybookVersion)
+	}
+}
+
 // A fresh seed writes a VERSIONED, managed AGENTS.md (the marker + playbook + LOCAL
 // import), the CLAUDE.md import, and a seed-once LOCAL.md; a re-run at the SAME
 // version is idempotent (no rewrite, no backup) — versioned-hq-playbook.
