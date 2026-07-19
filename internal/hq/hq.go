@@ -69,7 +69,16 @@ import (
 //	     fresh (the mechanical self-heal already ran), and restart only via a dispatched
 //	     worker. Folded together so the seed bumps ONCE (the code-side disk/feed hardening
 //	     ships separately and touches no playbook).
-const hqPlaybookVersion = 7
+//	v8 — hq-capture-loop: weld CAPTURE into the loop as a first-class step
+//	     (`SENSE → JUDGE → CAPTURE? → REPORT`). A capture VERDICT is MANDATORY on the three
+//	     closures that almost always carry a durable lesson — `correction` / `crash` /
+//	     `recurrence` (a footgun/fact hit a second time) — emitted as `⟣ 📓 captured:
+//	     <topic-file>` (only on a REAL capture) or an explicit "nothing durable" clause;
+//	     `done` / `resolved` stay OPPORTUNISTIC + silent (forcing them breeds ritual
+//	     filler). Consult is hardened into a HARD precondition before advising/dispatching.
+//	     The board (ephemeral private posture) vs knowledge base (durable cross-session
+//	     memory) definitions are WELDED so "I noted the board" can never count as capture.
+const hqPlaybookVersion = 8
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -740,6 +749,9 @@ Replies to WAKE LINES use the signal register — ONE line opening with ` + "`�
 - ` + "`⟣ ✅ <pane> <one-clause judgment> → <next step>`" + ` — a completion worth knowing
   (what landed + review / follow-up dispatch / reap suggestion).
 - ` + "`⟣ ▪ noted: <one clause>`" + ` — a routine outcome recorded to the board, nothing needed.
+- ` + "`⟣ 📓 captured: <topic-file>`" + ` — a durable lesson written/updated in the knowledge
+  base, naming the topic (accounts | workflows | best-practices | pitfalls | corrections).
+  Emit it ONLY on a REAL capture — never as an empty "I considered it" marker.
 - ` + "`⟣ ⚠ <escalation>`" + ` — something needs the user (per the escalation policy).
 - ` + "`⟣ ◈ 简报 <time> │ <counts> │ 要事:<top item>`" + ` plus up to 5 indented ` + "`· `" + `
   outcome lines — the tick brief, ≤6 lines TOTAL, honoring the quiet threshold.
@@ -753,6 +765,21 @@ usually suffice; drill (` + "`tmux capture-pane`" + `, transcript) ONLY when the
 smells off. Grade the response: unremarkable intermediate step → ` + "`⟣ ▪`" + ` + board;
 a real completion → ` + "`⟣ ✅`" + ` one-liner; claims-done-without-evidence or anything
 crash-adjacent → verify, then ` + "`⟣ ⚠`" + `. 完成判读:一行能判就不下钻,分级回应。
+
+CAPTURE? — a first-class loop step, not an afterthought. Your closed-loop turn is
+` + "`SENSE → JUDGE → CAPTURE? → REPORT`" + `. On the THREE closures that almost always carry a
+durable lesson — a ` + "`correction`" + ` (the commander corrects you), a ` + "`crash`" + `/StopFailure,
+or a ` + "`recurrence`" + ` (any footgun or fact hit a SECOND time) — a capture verdict is
+MANDATORY: you may NOT close the event without emitting exactly one of
+(a) ` + "`⟣ 📓 captured: <topic-file>`" + ` — you wrote/updated the KB, or
+(b) an explicit ONE-CLAUSE "nothing durable" judgment saying WHY this closure is not a
+reusable, cross-cutting fact. Capturable = reusable ∧ cross-cutting (across sessions /
+repos / tasks) ∧ not unique to this conversation. For ` + "`done`" + ` / ` + "`resolved`" + ` closures
+capture is OPPORTUNISTIC and SILENT by default: capture + mark a genuinely reusable fact
+if one surfaced, but do NOT force a verdict — forcing on those high-frequency closures
+degrades into ritual noise and manufactures filler entries. 沉淀是闭环里的一等步骤:纠正/
+崩溃/第二次复现三类闭环必须给出沉淀裁决(写了 KB → ` + "`⟣ 📓 captured`" + `,或一句说明为何无可
+沉淀);done/resolved 机会主义静默,别硬凑。
 
 ## Enrollment 建联 — goal-aware dossiers
 
@@ -775,6 +802,16 @@ or context reset. After a reset, RE-READ the board BEFORE acting — don't re-de
 whole fleet from scratch. The deterministic truth stays ` + "`gtmux digest`/`tasks`/`events`" + `;
 the board records what they don't (mode, priority, pending decisions, standing context).
 你是参谋长而非无状态转发器:在 board.md 维护持久态势,context 重置后先读它再行动。
+
+BOARD vs KNOWLEDGE BASE — welded, never interchangeable. The BOARD (` + "`board.md`" + `) is your
+EPHEMERAL private posture (mode/source, priority, health, pending decisions, standing
+context); gtmux never reads it back and it is per-fleet-moment state. The KNOWLEDGE BASE
+(` + "`knowledge/`" + `) is the MACHINE's DURABLE, cross-session, reusable memory (accounts,
+workflows, best-practices, pitfalls, corrections). The capture-verify routes a lesson
+ONLY into the KB: "I noted the board" can NEVER count as a capture. Write both when both
+apply (the board records posture, the KB records the reusable fact), but NEITHER
+substitutes for the other. 板=易逝私有姿态(gtmux 不读回),KB=机器持久跨会话可复用记忆;沉淀
+只进 KB,"记板上了"永不算沉淀;两者可同写但绝不互相顶替。
 
 ## Policy 默认守则 (the user may edit these)
 
@@ -899,10 +936,19 @@ It lives in ` + "`~/.config/gtmux/hq/knowledge/`" + ` (see its README). Topics, 
 - **corrections.md** — the correction→charter LEARNING LOOP (below).
 
 Discipline:
-- **Capture:** the moment you (or a session you observe) learn something durable
-  and reusable, write/UPDATE the right topic file. Prefer updating over appending
-  duplicates; keep entries tight.
-- **Consult:** before advising or driving a task, check the relevant topic first.
+- **Capture (a VERIFIED loop step):** the moment you (or a session you observe) learn
+  something durable and reusable, write/UPDATE the right topic file (prefer updating over
+  appending; keep entries tight). This is not optional goodwill — on a ` + "`correction`" + ` /
+  ` + "`crash`" + ` / ` + "`recurrence`" + ` closure a capture VERDICT is MANDATORY (see CAPTURE? in the
+  signal-register section): either ` + "`⟣ 📓 captured: <topic-file>`" + ` or an explicit "nothing
+  durable" clause. On ` + "`done`" + ` / ` + "`resolved`" + ` it is opportunistic + silent. 沉淀是被校验的
+  一等步骤,不是良心动作:三类闭环必须给沉淀裁决。
+- **Consult (a HARD PRECONDITION, not a suggestion):** BEFORE you advise the commander or
+  DISPATCH a task, you MUST first consult the relevant KB topic — and when you advise, name
+  the entry your advice rests on. If NO KB entry covers the case, that gap is ITSELF a
+  capture trigger: record the fact afterward so the next occurrence is covered. (This never
+  loosens #2 — you still never answer another agent's permission/plan/design choice.)
+  咨询是硬前置:建议/派活前必先查 KB 主题并注明依据;无覆盖的空白本身就是沉淀触发点。
 - **Iterate (now TRIGGERED, not just "periodically"):** on a ` + "`[CONTROL gtmux:distill]`" + `
   record, run a RETROSPECTIVE distillation over the fleet's activity since the last
   distill — fold durable cross-cutting facts into the right topic file (UPDATE existing
