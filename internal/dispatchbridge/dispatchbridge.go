@@ -7,6 +7,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -24,11 +25,7 @@ var hookAgents = map[string]bool{
 // hookEquipped reports whether an agent launch command is one whose hooks feed the
 // event stream (so the primary verify path applies).
 func hookEquipped(agentCmd string) bool {
-	f := strings.Fields(agentCmd)
-	if len(f) == 0 {
-		return false
-	}
-	return hookAgents[filepath.Base(f[0])]
+	return hookAgents[agentKey(agentCmd)]
 }
 
 // eventsForPane maps recent session-events for a pane (Ts >= sinceTs) into the
@@ -98,14 +95,28 @@ var ShellCommands = map[string]bool{
 	"-sh": true, "-bash": true, "-zsh": true, "login": true, "tmux": true,
 }
 
-// WaitAgentReady polls a pane until its foreground command is no longer a bare
-// shell (the launched agent has taken over) or the timeout lapses. Returns whether
-// the agent came up.
-func WaitAgentReady(pane string, timeout time.Duration) bool {
+// WaitAgentReady is the READY gate of the spawn delivery handshake
+// (launched → ready → content-verified → submitted). It waits until a pane's composer
+// is input-ready and SETTLED before the caller pastes a goal — process liveness alone
+// is necessary but NOT sufficient, because a freshly launched agent's TUI is still
+// painting a startup banner / trust gate / MCP-connect spinner, and pasting a long goal
+// into that unstable window truncates the goal and swallows the Enter.
+//
+// It proceeds in two phases under one deadline:
+//   - launched: the foreground command is no longer a bare shell (the agent took over);
+//   - ready: two CONSECUTIVE identical captures both satisfy prompt.IsComposerReady
+//     (prompt row present, no startup/trust gate, no boot banner) — the settle check
+//     that guards against catching the composer between two repaints of the banner.
+//
+// Returns false on timeout so the caller reports failure with evidence and does NOT
+// paste into a pane that never became ready. agentCmd is the launch command (its
+// basename selects the per-agent readiness signatures; "" uses the default set).
+func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
+	g := readyGate{agent: agentKey(agentCmd)}
 	for {
-		cmd := tmux.Display(pane, "#{pane_current_command}")
-		if cmd != "" && !ShellCommands[cmd] {
+		if g.step(tmux.Display(pane, "#{pane_current_command}"),
+			func() string { return tmux.CaptureFull(pane) }) {
 			return true
 		}
 		if time.Now().After(deadline) {
@@ -113,4 +124,41 @@ func WaitAgentReady(pane string, timeout time.Duration) bool {
 		}
 		time.Sleep(pollInterval)
 	}
+}
+
+// readyGate is the (pure, tmux-free) settle state machine WaitAgentReady drives: it
+// reaches `launched` once the foreground command leaves the shell set, then reports
+// ready only when two CONSECUTIVE identical captures both satisfy IsComposerReady.
+type readyGate struct {
+	agent    string
+	launched bool
+	prev     string
+}
+
+// step advances the gate by one sample. cmd is the pane's foreground command; capture
+// is called ONLY once launched (so an un-launched poll pays no capture cost). Returns
+// true when the composer is ready and settled.
+func (g *readyGate) step(cmd string, capture func() string) bool {
+	if !g.launched && cmd != "" && !ShellCommands[cmd] {
+		g.launched = true
+	}
+	if !g.launched {
+		return false
+	}
+	c := capture()
+	if prompt.IsComposerReady(c, g.agent) && c == g.prev {
+		return true // ready AND settled (two identical ready captures)
+	}
+	g.prev = c
+	return false
+}
+
+// agentKey reduces a launch command ("claude --model …") to the basename used to key
+// the per-agent readiness signatures.
+func agentKey(agentCmd string) string {
+	f := strings.Fields(agentCmd)
+	if len(f) == 0 {
+		return ""
+	}
+	return filepath.Base(f[0])
 }

@@ -111,13 +111,23 @@ func cmdSpawn(args []string) int {
 		return rc
 	}
 
-	// Wait for the agent to actually come up before delivering.
-	if !dispatchbridge.WaitAgentReady(pane, time.Duration(tune.ReadyTimeout)*time.Second) {
+	// Delivery is a four-state handshake: launched → ready → content-verified →
+	// submitted. WaitAgentReady is the READY gate — it blocks until the composer is
+	// input-ready and settled (no startup/trust gate, no boot banner, two stable
+	// captures), NOT merely until the agent process is up. Pasting a long goal before
+	// that truncates it and swallows the Enter. On timeout we FAIL with the pane's
+	// capture as evidence and never paste into a not-ready pane.
+	if !dispatchbridge.WaitAgentReady(pane, agent, time.Duration(tune.ReadyTimeout)*time.Second) {
 		return spawnFail(asJSON, "", pane, session, dispatch.Result{
-			State: dispatch.StateFailed, Evidence: "agent did not come up at the prompt within the ready timeout"})
+			State:    dispatch.StateFailed,
+			Evidence: "agent composer not ready within the ready timeout\n" + tmux.CaptureFull(pane)})
 	}
 
-	// Deliver + verify.
+	// content-verified + submitted: Deliver pastes atomically (bracketed paste-buffer),
+	// confirms the FULL goal (head AND tail) holds before Enter, and re-confirms a
+	// swallowed Enter without a blind re-paste. Reused as-is (send-submit-reliability);
+	// it now runs against a READY composer, so a "fragment" verdict is a real drop, not
+	// a mid-boot repaint.
 	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane), dispatchbridge.DeliverOpts(pane, agent, force, tune), goal)
 
 	// HQ awaits this dispatch's completion (done-wake-keyed-on-awaited): mark the pane so
