@@ -220,3 +220,25 @@ func TestPriorityOf_UnknownLines(t *testing.T) {
 		}
 	}
 }
+
+// ── resolved dedup ────────────────────────────────────────────────────────────
+
+// ClaimResolved lets exactly ONE channel (hook fast path / slow-tick backstop) emit a
+// resolved for a given clear: the first claim wins within the TTL; a second is refused;
+// a different pane is independent; past the TTL a fresh clear claims again.
+func TestClaimResolved(t *testing.T) {
+	withTempState(t)
+	now := int64(2_000_000)
+	if !ClaimResolved("%88", now) {
+		t.Fatal("first claim should win")
+	}
+	if ClaimResolved("%88", now+5) {
+		t.Fatal("a second claim inside the TTL must be refused (no duplicate resolved)")
+	}
+	if !ClaimResolved("%99", now+5) {
+		t.Fatal("a different pane claims independently")
+	}
+	if !ClaimResolved("%88", now+ResolvedClaimTTL) {
+		t.Fatal("past the TTL a fresh clear claims again")
+	}
+}

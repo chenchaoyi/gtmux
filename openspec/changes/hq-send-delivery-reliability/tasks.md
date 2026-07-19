@@ -59,31 +59,31 @@ the next. A/B are independent and can proceed in parallel.
 
 ### B1 — Transition detector in the single writer
 
-- [ ] B1.1 Add a `resolvedTransitionSweep` in `internal/hq/slowtick.go` (sibling to
+- [x] B1.1 Add a `resolvedTransitionSweep` in `internal/hq/slowtick.go` (sibling to
   `stuckDispatchSweep`, single writer). Per sampled pane, compare the last-seen
   waiting kind (`hqwake/resolved-last-<pane>` marker) against the current
   `waiting/<pane>` marker; on `wasWaiting != "" && nowWaiting == ""`, emit `resolved`
   for `wasWaiting` (unless the hook already announced it — see B1.3). Update the
   marker to the current state each pass.
-- [ ] B1.2 Emit through the SAME `nudgeResolved`/`hqnudge` path the hook uses (not a
+- [x] B1.2 Emit through the SAME `nudgeResolved`/`hqnudge` path the hook uses (not a
   raw `SendText`) so it inherits ack/retry/dedup/degradation.
-- [ ] B1.3 Optional conservative screen fallback: a pane still carrying the `waiting`
+- [x] B1.3 Optional conservative screen fallback: a pane still carrying the `waiting`
   marker whose capture has visibly advanced past the gate (no `WaitingOptions`, no
   `IsStartupGate`, active turn) MAY be treated as cleared. Keep marker-disappearance
   as the primary signal.
-- [ ] B1.4 Tests in `slowtick_test.go`: a pane that goes waiting→clear with no
+- [x] B1.4 Tests in `slowtick_test.go`: a pane that goes waiting→clear with no
   resolving hook event fires exactly one `resolved`; a pane still waiting fires none;
   the marker tracks state across ticks.
 
 ### B2 — `resolved` dedup + acked delivery
 
-- [ ] B2.1 Add the shared dedup marker: `nudgeResolved` (hook fast path) stamps
+- [x] B2.1 Add the shared dedup marker: `nudgeResolved` (hook fast path) stamps
   `resolved-emit-<pane>` (cleared kind + short TTL) when it emits; the slow-tick sweep
   checks it (`recentlyResolvedByHook`) and skips a duplicate. Exactly one `resolved`
   per clear, whichever channel sees it first.
-- [ ] B2.2 Test the dedup both ways: (a) hook emits first → slow-tick is silent;
+- [x] B2.2 Test the dedup both ways: (a) hook emits first → slow-tick is silent;
   (b) no hook event → slow-tick is the sole emitter.
-- [ ] B2.3 Confirm (test/assertion) `resolved` rides the acked `hqnudge` channel end
+- [x] B2.3 Confirm (test/assertion) `resolved` rides the acked `hqnudge` channel end
   to end — a delivery failure retries and, on repeated failure, escalates via the
   existing `wake-degraded` path. No bespoke best-effort send.
 

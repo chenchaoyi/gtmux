@@ -168,6 +168,37 @@ func StampDone(pane string, now int64) {
 	_ = os.Chtimes(p, t, t)
 }
 
+// ── resolved dedup (a cleared wait is announced ONCE) ────────────────────────
+
+// resolvedClaimPath stamps the last resolved-wake emission per pane.
+func resolvedClaimPath(pane string) string { return filepath.Join(dir(), "resolved-claim-"+pane) }
+
+// ResolvedClaimTTL bounds the window in which a resolved wake for a pane, once emitted
+// by EITHER channel (the hook fast path or the slow-tick transition backstop),
+// suppresses a duplicate from the other. Short: it only needs to cover the
+// near-simultaneous race between the two observers of the same clear (the slow-tick
+// also drops the lingering waiting marker on emit, so a later Stop-hook resolved is
+// already gated out by `hadWaiting`).
+const ResolvedClaimTTL = 30
+
+// ClaimResolved reports whether the caller should EMIT a resolved wake for pane now:
+// true when no resolved was emitted for it within ResolvedClaimTTL seconds — and it
+// stamps the claim so the OTHER channel skips the duplicate — false otherwise. This is
+// the dedup that makes a single cleared wait announce exactly one resolved, whichever
+// channel (hook or slow-tick) observes the clear first. Best-effort on I/O error: it
+// returns true (a possible duplicate resolved is harmless; a dropped one is not).
+func ClaimResolved(pane string, now int64) bool {
+	if err := os.MkdirAll(dir(), 0o755); err != nil {
+		return true
+	}
+	p := resolvedClaimPath(pane)
+	if last := state.ReadInt64Marker(p); last > 0 && now-last < ResolvedClaimTTL {
+		return false
+	}
+	_ = state.WriteInt64Marker(p, now)
+	return true
+}
+
 // ── pull freshness (consumer-side, replaces producer-heartbeat suppression) ──
 
 // pullStampPath records when HQ last pulled the stream (events --since-seq /
