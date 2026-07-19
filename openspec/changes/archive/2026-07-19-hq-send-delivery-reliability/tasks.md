@@ -89,15 +89,15 @@ the next. A/B are independent and can proceed in parallel.
 
 ## C. Spec / docs / gate (each PR keeps this truthful)
 
-- [ ] C.1 `make check` green (gofmt + vet + staticcheck + `go test -race`) on every
+- [x] C.1 `make check` green (gofmt + vet + staticcheck + `go test -race`) on every
   PR; `CGO_ENABLED=0 go build ./cmd/gtmux` stays clean.
-- [ ] C.2 Sync the deltas into `openspec/specs/agent-dispatch/spec.md` and
+- [x] C.2 Sync the deltas into `openspec/specs/agent-dispatch/spec.md` and
   `openspec/specs/hq-wake-protocol/spec.md`; `openspec validate
   hq-send-delivery-reliability --strict` and `openspec validate --specs --strict`
   pass.
-- [ ] C.3 No wire/CLI-surface change → `docs/cli.md`, `api/contract.md`,
+- [x] C.3 No wire/CLI-surface change → `docs/cli.md`, `api/contract.md`,
   `internal/app/help.go`, and the CLAUDE.md command list are unaffected (grep to be
   sure). If the readiness timeout gains a documented config knob beyond the existing
   `spawnReadyTimeout`, document it.
-- [ ] C.4 Archive the change once A + B are merged (sync-specs + archive-change),
+- [x] C.4 Archive the change once A + B are merged (sync-specs + archive-change),
   keeping these checkboxes truthful.
