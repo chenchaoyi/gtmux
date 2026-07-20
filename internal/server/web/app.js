@@ -432,9 +432,23 @@
       SHARE = {input: !!j.input, all: !!j.all, panes: {},
                viewCount: (j.view_panes || []).length, typeCount: (j.panes || []).length};
       (j.panes || []).forEach(function (p) { SHARE.panes[p] = true; });
+      SHARE.known = true;
       updateInputBar();
       updateGuestScopeStrip();
+      updateIdentity();
     }).catch(function () {});
+  }
+
+  // Identity chips (WEB §11): owner and guest top bars must read differently —
+  // owner = 全权 (full, every pane typable), guest = 协作视图 (this link's scope).
+  function updateIdentity() {
+    ['identity', 'wb-identity'].forEach(function (id) {
+      var el = document.getElementById(id); if (!el) return;
+      el.hidden = !SHARE.known;
+      if (!SHARE.known) return;
+      el.classList.toggle('id-owner', !!SHARE.all);
+      el.textContent = SHARE.all ? '全权 · ' + (location.hostname || 'local') : '协作视图 · 访客';
+    });
   }
 
   // "Your access" strip (pair-share-model S4): a GUEST sees what this link grants —
@@ -453,9 +467,29 @@
       ' visible · ' + SHARE.typeCount + ' typable — shared by the host, revocable any time';
   }
   function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
+  // setCapChip paints a ⌨可输入/👁只读 capability chip (WEB §11 — always explicit,
+  // color+glyph, never an unexplained missing input box).
+  function setCapChip(el, can) {
+    if (!el) return;
+    el.classList.toggle('cap-in', can);
+    el.classList.toggle('cap-ro', !can);
+    el.textContent = can ? '⌨ 可输入' : '👁 只读';
+  }
   function updateInputBar() {
     var bar = $('pane-input'); if (!bar) return;
-    bar.hidden = !(!$('pane').hidden && paneMode === 'term' && paneCanInput(curPane));
+    var inPaneTerm = !$('pane').hidden && paneMode === 'term';
+    var can = paneCanInput(curPane);
+    bar.hidden = !(inPaneTerm && can);
+    // read-only panes state WHY there is no input row (one line, no empty textbox)
+    var ro = $('pane-ro'); if (ro) ro.hidden = !(inPaneTerm && SHARE.known && !can);
+    $('pane').classList.toggle('has-input', inPaneTerm && SHARE.known);
+    // the single-pane top-bar capability chip (term + chat share the pane focus)
+    var cap = $('cap');
+    if (cap) {
+      var focused = !!curPane && (!$('pane').hidden || !$('chat').hidden);
+      cap.hidden = !(focused && SHARE.known);
+      setCapChip(cap, can);
+    }
     if (WB && WB.tiles) WB.tiles.forEach(tileInputSync); // the workbench tiles too
   }
   // postSend is the shared /api/send call used by BOTH the single-pane bar and the
@@ -475,8 +509,15 @@
     }).then(function (j) { if (j && typeof j.text === 'string') { writePane(j.text); hidePaneLoader(); } });
   }
   // tileInputSync shows a tile's input row iff it is in term mode and the host allowed
-  // this pane; tileSendThen renders the post-send echo into the tile's own terminal.
-  function tileInputSync(t) { if (t && t.inputEl) t.inputEl.hidden = !(t.mode === 'term' && paneCanInput(t.id)); }
+  // this pane — and keeps the head's ⌨/👁 capability chip + the read-only note in
+  // sync; tileSendThen renders the post-send echo into the tile's own terminal.
+  function tileInputSync(t) {
+    if (!t) return;
+    var can = paneCanInput(t.id);
+    if (t.inputEl) t.inputEl.hidden = !(t.mode === 'term' && can);
+    if (t.roEl) t.roEl.hidden = !(t.mode === 'term' && SHARE.known && !can);
+    if (t.capEl) { t.capEl.hidden = !SHARE.known; setCapChip(t.capEl, can); }
+  }
   function tileSendThen(t, pin) {
     return function (r) {
       if (!r) return;
@@ -513,6 +554,7 @@
       showChatLoader();
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
+      updateInputBar(); // keep the top-bar ⌨/👁 capability chip in sync in chat mode
     } else {
       clearInterval(chatTimer); chatTimer = null;
       show('pane'); ensureTerm(); lastText = ''; pendingText = null; userScrolling = false;
@@ -671,26 +713,33 @@
     try { navigator.clipboard.writeText(s); } catch (e) {}
   }
   function collapseAllSteps() { chatExpanded = {}; drawChat(lastTurns); }
-  // waiting approval card — view-only: shows the agent's 1/2/3 options (from
-  // /api/options) with the active one marked, but the buttons are disabled
-  // (the browser mirror can't send; reply on phone/Mac).
+  // waiting approval card — shows the agent's 1/2/3 options (from /api/options).
+  // When this caller may type into the pane (WEB §11), the rows are LIVE — one
+  // click sends the digit (no Enter, like the phone's ApprovalCard). Otherwise
+  // view-only with the reply-elsewhere hint. The server gate stays authoritative.
   function approvalCard() {
-    var card = document.createElement('div'); card.className = 'appr-card';
+    var can = paneCanInput(curPane);
+    var card = document.createElement('div'); card.className = can ? 'appr-card appr-live' : 'appr-card';
     var hd = document.createElement('div'); hd.className = 'appr-head';
     var d = document.createElement('span'); d.className = 'appr-dot'; hd.appendChild(d);
     var ht = document.createElement('span'); ht.textContent = '需要你批准'; hd.appendChild(ht); card.appendChild(hd);
     var opts = lastOpts || [];
     if (!opts.length) {
-      var ph = document.createElement('div'); ph.className = 'appr-empty'; ph.textContent = '在终端里有一个待确认的选择 · 用手机/Mac 回应'; card.appendChild(ph);
+      var ph = document.createElement('div'); ph.className = 'appr-empty';
+      ph.textContent = can ? '在终端里有一个待确认的选择 · 切到「终端」回应' : '在终端里有一个待确认的选择 · 用手机/Mac 回应';
+      card.appendChild(ph);
     } else {
       opts.forEach(function (o) {
         var row = document.createElement('div'); row.className = 'appr-opt';
         var k = document.createElement('span'); k.className = 'appr-key'; k.textContent = o.n; row.appendChild(k);
         var lb = document.createElement('span'); lb.className = 'appr-label'; lb.textContent = o.label || ''; row.appendChild(lb);
+        if (can) row.onclick = function () { sendPane({text: String(o.n)}); };
         card.appendChild(row);
       });
     }
-    var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = 'view-only · 用手机/Mac 发送,或扫码接管'; card.appendChild(hint);
+    if (!can) {
+      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = 'view-only · 用手机/Mac 发送,或扫码接管'; card.appendChild(hint);
+    }
     return card;
   }
 
@@ -989,6 +1038,8 @@
     head.appendChild(avatarEl(t.agent, 20, true));
     var nm = document.createElement('span'); nm.className = 'tile-name'; nm.textContent = primary(t.agent); head.appendChild(nm);
     var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = t.id; head.appendChild(id);
+    // input-capability chip (WEB §11): every tile head states ⌨可输入 / 👁只读
+    var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; head.appendChild(cap);
     var sp = document.createElement('span'); sp.className = 'th-spacer'; head.appendChild(sp);
     var modes = document.createElement('span'); modes.className = 'tile-modes';
     [['term', '终端'], ['chat', '对话'], ['diff', 'diff']].forEach(function (m) {
@@ -1011,6 +1062,9 @@
       tin.appendChild(b);
     });
     el.appendChild(tin);
+    // read-only note — states WHY there's no input row instead of leaving a gap
+    var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
+    ro.textContent = '🔒 host 未授予此 pane 的输入权限'; t.roEl = ro; el.appendChild(ro);
     var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
@@ -1171,9 +1225,19 @@
   function renderReply(opts) {
     var had = !$('reply-bar').hidden;
     $('pane').classList.add('has-reply'); $('reply-bar').hidden = false;
+    // A typable pane's 1/2/3 are LIVE buttons (one tap → /api/send, digit with no
+    // Enter — same as the phone's ApprovalCard); a read-only pane keeps the
+    // view-only chips + the reply-elsewhere hint. Server gate stays authoritative.
+    var can = paneCanInput(curPane);
+    var lead = document.querySelector('#reply-bar .rb-lead');
+    if (lead) lead.textContent = can ? '在此 pane 回应：' : 'view-only · 在此 pane 回应：';
+    var hint = document.querySelector('#reply-bar .rb-hint');
+    if (hint) hint.hidden = can;
     var box = $('reply-opts'); box.innerHTML = '';
     (opts.length ? opts : [{n: 1, label: 'Yes'}, {n: 2, label: 'Always'}, {n: 3, label: 'No'}]).forEach(function (o) {
-      var s = document.createElement('span'); s.className = 'rb-opt'; s.textContent = o.n + ' ' + (o.label || ''); box.appendChild(s);
+      var s = document.createElement('span'); s.className = can ? 'rb-opt live' : 'rb-opt'; s.textContent = o.n + ' ' + (o.label || '');
+      if (can) s.onclick = function () { sendPane({text: String(o.n)}); };
+      box.appendChild(s);
     });
     if (term) $('reply-size').textContent = term.cols + ' × ' + term.rows;
     if (!had) { try { fit.fit(); } catch (e) {} }
@@ -1187,7 +1251,7 @@
     lastOpts = []; lastOptsSig = '';
     pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000);
   }
-  function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
+  function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; var cap = $('cap'); if (cap) cap.hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
   function setupFocus() {
     $('font-dn').onclick = function () { sizePref = Math.max(10, termSize() - 1); persistSize(); applyAppearance(); };
     $('font-up').onclick = function () { sizePref = Math.min(22, termSize() + 1); persistSize(); applyAppearance(); };

@@ -12,7 +12,11 @@
     <div class="bar-inner">
       <button id="back" hidden>‹</button>
       <span id="title">gtmux</span>
+      <!-- identity chip (WEB §11): owner = 全权, guest = 协作视图 — set from GET /api/share -->
+      <span id="identity" class="id-chip" hidden></span>
       <span id="sub"></span>
+      <!-- per-pane input capability (WEB §11): ⌨ 可输入 (cyan) / 👁 只读 (grey) -->
+      <span id="cap" class="cap-chip" hidden></span>
       <span id="conn" class="conn"></span>
       <span id="focus-nav" hidden>
         <button id="pane-prev" title="Previous pane">‹</button>
@@ -64,6 +68,7 @@
   <section id="workbench" hidden>
     <header id="wb-bar">
       <span class="wb-brand"><span class="wb-mark"><i></i><i class="lit"></i><i class="wide"></i></span>gtmux</span>
+      <span id="wb-identity" class="id-chip" hidden></span>
       <span id="wb-preset-wrap">
         <button id="wb-preset" class="wb-toggle" title="Layout presets">▦ 布局<span id="wb-preset-cur"></span> ▾</button>
         <div id="wb-preset-menu" hidden></div>
@@ -116,6 +121,8 @@
       <button class="pin-k" data-key="Up" title="Up">↑</button>
       <button class="pin-k" data-key="Down" title="Down">↓</button>
     </div>
+    <!-- read-only pane: an explicit one-line explanation, never an empty textbox -->
+    <div id="pane-ro" hidden>🔒 host 未授予此 pane 的输入权限</div>
   </section>
 
   <!-- chat history (对话 mode) -->

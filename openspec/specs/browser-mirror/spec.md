@@ -146,6 +146,16 @@ NEVER assume: no input control is shown for a pane the server does not authorize
 any typing goes through `POST /api/send`, whose server-side gate is authoritative. A
 guest whose host has not consented, or a disallowed pane, shows no input control.
 
+The capability SHALL also be TRANSPARENT (design-round-2026-07, WEB §11): every
+focused pane / workbench tile head states its input capability explicitly — a cyan
+`⌨ 可输入` chip when the caller may type, a grey `👁 只读` chip when not — and a
+read-only pane shows a one-line "host 未授予此 pane 的输入权限" explanation instead
+of an empty or missing input box. The top bar SHALL name the caller's identity
+(owner = 全权, guest = 协作视图), resolved from `GET /api/share` (`all:true` ⇒
+owner). On a typable waiting pane the `1/2/3` structured options SHALL be live —
+one click sends the bare digit (no Enter) via `POST /api/send`, matching the phone's
+ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
+
 #### Scenario: Browser loads the web UI
 
 - **WHEN** a browser requests `GET /` from a running `gtmux serve`
@@ -161,4 +171,17 @@ guest whose host has not consented, or a disallowed pane, shows no input control
 
 - **WHEN** a guest `POST`s `/api/send` for a pane not in its authorized set
 - **THEN** the send is refused server-side regardless of the UI state
+
+#### Scenario: Capability is stated, not implied
+
+- **WHEN** a caller focuses a pane (or has it on the workbench board)
+- **THEN** its head shows `⌨ 可输入` (cyan) or `👁 只读` (grey) per the caller's
+  `/api/share` capability, and a read-only term view carries the one-line
+  "host 未授予" explanation rather than a blank where the input box would be
+
+#### Scenario: Live 1/2/3 on a typable waiting pane
+
+- **WHEN** a waiting pane the caller may type into shows its structured options
+- **THEN** clicking an option sends that digit (no Enter) through `POST /api/send`,
+  while a view-only caller sees the same options inert with the reply-elsewhere hint
 
