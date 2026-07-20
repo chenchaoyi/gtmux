@@ -126,3 +126,63 @@
 原横屏 split-view 基础上补：竖屏/分屏变窄 → 侧栏收成 ☰ 抽屉、详情占满、再窄回退手机式单列；指针/Apple Pencil（trackpad hover 高亮 + 右键菜单 + Pencil 在 pane 镜像上随手圈画转标注）。
 
 > 注：交接总入口已统一为 HANDOFF.md（旧 HANDOVER*.md 已废弃，可删）。
+
+---
+
+## E. 第三轮（HQ 中控 / 远程配置 / 网页输入 — 2026-07）
+
+### E1 · HQ 中控（DESIGN §12 · WEB §07 · MOBILE §17）
+`gtmux hq`（`role:"supervisor"`）不该长得像普通 session。菜单栏用**参谋长卡片**区分：**👁 CHIEF OF STAFF · 参谋长**角色横幅 + **1px 描边面板**（agent 行都没有）；点它=**跳到中控 pane**（与跳 worker 一致），不在弹层另开面板。真正的"指挥台"（态势板+命令台）在**手机 HQScreen（已实现）与网页宽屏版**。
+**v2（参谋长卡去 session 化）**：删状态角标（HQ 恒在监视，无 idle/working 之分）、删 agent 名与时长；名字旁挂**舰队光点条**（每 worker 一枚色+形 pip）；副题只说值得知道的事；HQ 自身等你拍板→整卡琥珀描边+副题红字。方案已选定：舰队光点条（menubar mockup §12）。
+- **指挥所三区**：状态条（舰队计数 + 订阅窗口 % + 资源告警）· 舰队态势板（`/api/digest`，waiting 的 ask 琥珀高亮、ctx% 右对齐）· 命令台（与 HQ 对话 + 快捷命令 简报/谁在等我/该我拍板/派活）。
+- **网页宽屏**为三栏：左态势 / 中对话 / 右派活台账（`/api/tasks`，spawn/reap）。窄屏折叠。
+- **红线**：命令台只对 HQ 说话，HQ 再驱动舰队（`send/spawn`）；HQ 只建议、不擅自替别的 agent 拍板；长按舰队行跳该 worker 的 Detail 直接回。落地点：菜单栏 popover + HQ panel、`HQScreen.tsx`（已实现，此为规范镜像）、`web/`。
+
+### E2 · 偏好：Anywhere + Sharing 两标签页（DESIGN §13）
+把「连不连得上」（网络层）与「谁能干什么」（权限层）拆成两个正交标签，各配人话解读：
+- **远程访问 = 通用底座**（对 Pair 与 Share 同时生效）：LAN 免费；Standard 隧道免费（稳定托管址、配一次）；**Direct 隧道 = 兑换码解锁（付费）**，你自己的 VPS + 域名（self-tunnel），给屏蔽 Cloudflare 的网络。+ 保持常开 + 安全提示（URL+token 当密码）。
+- **身份层**：**Pair** = 自己（全权 = 菜单栏全部能力，含 HQ）；**Share** = 协作者（逐 session「查看/输入」，输入隐含查看，可吊销，不含 HQ 与偏好）。文案统一「可见/输入」；图标扁平化（几何形/等宽 chip，去 emoji），§14 底栏内联指示同步扁平。
+- **偏好整窗（对齐 Preferences.swift）**：分组表单（通用/状态栏/通知/远程访问/我的设备·配对/分享/软件更新）；远程访问=关闭|局域网|任意网络分段+隧道后端+当前已连接（空则隐藏）；切任意网络先弹长期敞口确认。**配对 sheet**=一码三媒介（QR / url/#c=码 / gtmux attach，5 分钟一次性），顶部访问状态条（模式+隧道后端+地址+切换），远程访问未开时前置一步「开启」只开门（任意网络可细选 标准/直连，直连未解锁置灰；配对码由 sheet 主页生成；不经偏好折返）；**分享 sheet**=命名+逐 session 可见/输入一步建链，逐链接 scope 可展开编辑；创建后交付页=一码三媒介（QR / url/#g=码 / gtmux attach，与配对同构），token 只显一次。
+
+### E3 · 底栏 v3（按频次分层，DESIGN §14）
+永久底栏只剩一行：＋新建会话（左）+ 状态内联（仅为真时：绿点+设备数、「输入」chip）+ 版本号（常显 dim mono）+ ⚙︎ 菜单（偏好设置…/配对设备…/检查更新/退出 ⌘Q）。情境行「↩ 恢复上次的工作现场」仅在重启后（有快照且无在跑会话）出现，一键恢复全部会话与窗口（gtmux restore）。频次归宿：新建=常驻；恢复现场=情境行；配对/偏好/更新/退出=⚙︎ 菜单（配对另在空态 CTA）；远程/分享=状态非动作。按钮一律图标+文字同行。HQ 仍在顶部参谋长卡（§12）。
+
+### E4 · 网页输入 + 权限透出（WEB §08）
+网页从只读升级为可输入（`POST /api/send` / `attach`）。每个 tile 头部**明示** ⌨可敲（青，有 composer + 1/2/3）/ 👁只读（灰，无输入区 + 一行「未授权」说明，不留空文本框）。owner 全 pane 可敲；guest 仅 host `--type` 白名单 + 总开关。owner/guest 顶栏身份不同，HQ 指挥台不对 guest 开放。服务端强制、撤销即时。
+
+### E5 · 派活台账 + 用量/额度/资源透出
+- **spawn/tasks/reap**：HQ 指挥台右栏「派活台账」——每个 dispatch 的 working/done/gone，done 给 reap（安全门：worktree 干净 + 分支已并）。
+- **usage/limits/resource**：状态条与舰队板显 ctx%（⚠ 近上限琥珀）、订阅窗口 %（wk/Fable）、磁盘/内存告警；对齐 `/api/usage`、`/api/digest` 的 `usage_warn`。
+
+### E6 · §02 状态栏图标同步
+done 态不带计数（计数只给 待输入/运行中，对齐 BadgeText）；计数**含 HQ**（参谋长等你也算等你）；三档显示（点+数字/仅圆点/空闲时隐藏）入口在偏好·状态栏。
+
+> 状态语义铁律不变：`1/2/3` 结构化回应只挂 waiting；HQ 只建议不代拍板。
+
+
+---
+
+## F. 移动端对齐轮（2026-07）— 对齐仓库实现
+
+### F1 · 计费全部移出手机（§07/§08 重做）
+多 server / 多设备**不收费**，手机端无付费墙；旧「多 server 计费」「Tunnel 订阅 ¥」方案取消。唯一付费点在 Mac 端（Direct 隧道兑换码）。§07 = 添加 server（扫码主路径，#c= 配对码=我的 Mac / #g= 分享链接=访客；手动 host+token 兜底；无 server 自动弹出 + 只读 demo）。§08 = Servers 连接页（对齐 ServersScreen：我的 MAC / 访客连接两轨分组永不混排、绿点=当前、点行切换按 URL 重挂载、✕ 移除=清 Keychain+让该 Mac 丢弃本机推送 token、＋添加、断开连接）。访问方式（LAN/Anywhere/隧道后端）全在 Mac 端配，手机只连 URL。
+
+### F2 · Composer 对齐（§9/§10/§11 补记）
+FloatingKeys 方向键盘退役。静息键条 = ⌨ | Tab ⏎ Ctrl-C Esc | 快捷短语▾ 历史；**写死 1/2/3 从键条移除**，waiting 回应全由 ApprovalCard（/api/options 真实选项 1..N chips）承担；Tab(接受)+⏎(提交)相邻。默认回车=换行、↑ 发送（设置可开「回车直接发送」）；1→6 行自动增高 → ⤢ 全屏撰写（⌘⏎ 发送）。附件先暂存后发送（缩略图条、发送时逐个上传带 %、失败保留重试、图片先过标注器、粘贴识别图片）；AttachSheet=照片/拍照/文件/粘贴；快捷短语=picker、历史=modal。
+
+### F3 · 通知直接回复落地（§14 补记）
+iOS category AGENT_WAITING 固定三键 1·Yes/2·Always/3·No（系统限制静态）→ 后台 /api/send **数字不带 Enter**；正文点按=深链（payload 带 server 名先切服务器）；动态文案留给 app 内 ApprovalCard；通知内动态按钮/LA 内嵌回复列 future；角标=waiting 数（静默推送维持）。
+
+### F4 · 设置页重做（§15）
+Moshi 式分组卡 + PickerSheet（行显当前值+›，底表单选）：连接（server→Servers / 在电脑上打开=铸码分享浏览器链接 / 管理这台 Mac=远程管 share / 移除）· 终端（外观 / 默认模式 终端|对话 / 回车直接发送）· 通知（总开关 + 等你回应/已完成）· 通用（语言）· 关于（版本）。访客隐藏 通知/在电脑上打开/管理这台 Mac。旧「账户/Pro」分区随计费取消删除。
+
+### F5 · iPad 对齐（§06 补记）
+SplitScreen：宽度≥768 触发（非仅 iPad 硬件）；侧栏 320pt 复用 SectionList、折叠状态与手机同键；server chip(品牌标+名+⇄)；点行原地换主区、native 行不可选；推送深链=宽屏选中该行；离线/横幅同手机。
+
+### F6 · HQ 入口对齐菜单栏 v2（§17）
+雷达 HQ 入口改为**参谋长卡**：👁 CHIEF OF STAFF 角色横幅 + 描边卡 + 品牌网格头像（**无状态角标**）+ **舰队光点条** + 琥珀副题；HQ 自身等你=整卡琥珀。点它进 HQScreen（不变）。
+
+
+### F7 · Demo 模式（§18，对齐 DemoScreen.tsx + 优化提案）
+已实现：真雷达+真 Detail 套假 client（demoClient/demoData，零网络）；「See a demo」入口；DEMO chip 雷达+Detail 全程跟随；Servers 永无 demo 条目；退出即重置；hero %7 带 1/2/3 真实选项 → ApprovalCard；canned 回复恒以「配对你的 Mac」引导收尾。App Review 以 demo mode 代替演示账号。
+优化提案（待实现）：① 入口从 dim 链接升级为 DEMO 徽章次级卡（副题「样例数据 · 无需任何服务器」）；② **状态弧**：批准 %7 后在雷达上走完 waiting→working(~5s)→idle+latest，让审核员亲眼看到核心循环；③ HQ 参谋长卡入选 demo（canned digest + 一轮预设对话）。CTA 恒为青底「配对你的 Mac」；底部 CTA 不遮列表末行。
