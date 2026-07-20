@@ -10,6 +10,7 @@ import {Alert as AlertType, SectionKey} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
+import {HQCard} from '../ui/HQCard';
 import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
 import {SettingsIcon} from '../ui/SettingsIcon';
@@ -59,9 +60,10 @@ export function RadarScreen({navigation}: any) {
     setTimeout(() => setRefreshing(false), 600);
   };
 
-  // The supervisor (中控) renders as its OWN card below the header — never a
-  // section row (theme.sections excludes role rows). Tap → its Detail in CHAT
-  // mode; absent → no card (starting one needs the Mac; no dead control).
+  // The supervisor (中控) renders as its OWN chief-of-staff card below the header
+  // (ui/HQCard, menu-bar §12 v2 form) — never a section row (theme.sections
+  // excludes role rows). Tap → HQScreen; absent → no card (starting one needs
+  // the Mac; no dead control).
   const hq = agents.find(a => a.role === 'supervisor');
 
   const Header = (
@@ -100,24 +102,13 @@ export function RadarScreen({navigation}: any) {
         </Text>
       </View>
       {hq && !isGuest && (
-        <TouchableOpacity
-          accessibilityLabel="radar-hq-card"
-          testID="radar-hq-card"
-          activeOpacity={0.7}
-          style={[styles.hqCard, {backgroundColor: pal.surface, borderColor: pal.divider}]}
-          onPress={() => navigation.navigate('HQ', {agent: hq})}>
-          <BrandMark size={26} neutral={pal.fg3} />
-          <View style={styles.hqText}>
-            <View style={styles.hqTitleRow}>
-              <Text style={[styles.hqTitle, {color: pal.fg}]}>gtmux HQ</Text>
-              <View style={[styles.hqDot, {backgroundColor: StatusColor[hq.status] ?? StatusColor.running}]} />
-            </View>
-            <Text style={[styles.hqTask, {color: pal.fg2}]} numberOfLines={1}>
-              {hq.task || (lang === 'zh' ? '问它:现状?' : 'Ask it: status?')}
-            </Text>
-          </View>
-          <Text style={[styles.hqChevron, {color: pal.fg3}]}>›</Text>
-        </TouchableOpacity>
+        <HQCard
+          hq={hq}
+          agents={agents}
+          pal={pal}
+          lang={lang}
+          onPress={() => navigation.navigate('HQ', {agent: hq})}
+        />
       )}
     </View>
   );
@@ -256,11 +247,4 @@ const styles = StyleSheet.create({
   emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
   banner: {paddingHorizontal: 14, paddingVertical: 10},
   bannerText: {color: '#fff', fontSize: 13, fontWeight: '600'},
-  hqCard: {flexDirection: 'row', alignItems: 'center', marginTop: 10, padding: 10, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth},
-  hqText: {flex: 1, marginLeft: 10},
-  hqTitleRow: {flexDirection: 'row', alignItems: 'center'},
-  hqTitle: {fontSize: 13, fontWeight: '700'},
-  hqDot: {width: 8, height: 8, borderRadius: 4, marginLeft: 7},
-  hqTask: {fontSize: 11.5, marginTop: 1},
-  hqChevron: {fontSize: 18, fontWeight: '300', marginLeft: 8},
 });

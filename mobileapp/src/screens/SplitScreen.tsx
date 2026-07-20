@@ -16,6 +16,7 @@ import {Agent, Alert as AlertType, SectionKey, agentId} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
+import {HQCard} from '../ui/HQCard';
 import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
 import {SettingsIcon} from '../ui/SettingsIcon';
@@ -66,6 +67,10 @@ export function SplitScreen({navigation, route}: any) {
 
   const c = counts(agents);
 
+  // Same chief-of-staff entry as the phone radar (ui/HQCard): the wide sidebar
+  // must not be a second-class surface — tap → HQScreen (pushed over the split).
+  const hq = agents.find(a => a.role === 'supervisor');
+
   const onToggle = (st: SectionKey) =>
     setCollapsed(prev => {
       const next = new Set(prev);
@@ -110,6 +115,15 @@ export function SplitScreen({navigation, route}: any) {
           {summary(c, t('agents'))}
         </Text>
       </View>
+      {hq && !isGuest && (
+        <HQCard
+          hq={hq}
+          agents={agents}
+          pal={pal}
+          lang={lang}
+          onPress={() => navigation.navigate('HQ', {agent: hq})}
+        />
+      )}
     </View>
   );
 
