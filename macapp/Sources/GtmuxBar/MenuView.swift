@@ -339,20 +339,33 @@ struct MenuView: View {
     @ViewBuilder private func footer(_ p: Theme.Palette) -> some View {
         VStack(spacing: 0) {
             updateBanner(p)
-            HStack(spacing: 0) {
-                footerAction("arrow.uturn.backward", l10n.tr("Restore", "接回")) { onAction(.restore) }
-                footerAction("plus", l10n.tr("New", "新建")) { onAction(.newSession) }
-                footerAction("qrcode", l10n.tr("Pair", "配对")) { onAction(.pairPhone) }
+            // Contextual row (v3 §14): only when NOTHING is running — the "just rebooted"
+            // moment — offer one-tap restore of the last working set. Snapshot-precision
+            // ("有快照") would need a restore-available signal from core; gating on zero live
+            // sessions is the right UX moment (restore no-ops gracefully if there's nothing).
+            if store.total == 0 {
+                Button { onAction(.restore) } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.uturn.backward").font(.system(size: 11))
+                        Text(l10n.tr("Restore your last working set", "恢复上次的工作现场"))
+                            .font(.system(size: 11, weight: .medium))
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(p.fg2)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                Divider().overlay(p.divider)
             }
-            .padding(.vertical, 6)
-            Divider().overlay(p.divider)
+            // The single PERMANENT row (v3 §14): left ＋ New session, right = inline status
+            // (only when true) + version (dim mono, always) + the ⚙ menu. The old
+            // Restore/New/Pair three-cells and the standalone Preferences button are gone —
+            // Pair + Preferences + Check + Quit now live inside the ⚙ menu.
             HStack(spacing: 10) {
-                // Preferences sits at fg2 (interactive tone); the version meta at
-                // fg3. Single tappable icon+label; fixedSize so nothing wraps.
-                Button { onAction(.preferences) } label: {
+                Button { onAction(.newSession) } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "gearshape").font(.system(size: 12))
-                        Text(l10n.tr("Preferences", "偏好设置")).font(.system(size: 11, weight: .medium))
+                        Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                        Text(l10n.tr("New session", "新建会话")).font(.system(size: 11, weight: .medium))
                     }.foregroundStyle(p.fg2)
                 }.buttonStyle(.plain).fixedSize()
                 Spacer(minLength: 8)
@@ -405,6 +418,19 @@ struct MenuView: View {
                         .lineLimit(1).truncationMode(.tail)
                 }.buttonStyle(.plain).layoutPriority(-1)
                     .help(l10n.tr("Check for updates", "检查更新"))
+                // ⚙ menu — the low-frequency actions fold in here so the bar stays one line.
+                Menu {
+                    Button(l10n.tr("Preferences…", "偏好设置…")) { onAction(.preferences) }
+                        .keyboardShortcut(",", modifiers: .command)
+                    Button(l10n.tr("Pair a device…", "配对设备…")) { onAction(.pairPhone) }
+                    Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
+                    Divider()
+                    Button(l10n.tr("Quit gtmux", "退出 gtmux")) { onAction(.quit) }
+                        .keyboardShortcut("q", modifiers: .command)
+                } label: {
+                    Image(systemName: "gearshape").font(.system(size: 12)).foregroundStyle(p.fg2)
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
         }
@@ -468,18 +494,6 @@ struct MenuView: View {
         default:
             EmptyView()
         }
-    }
-
-    private func footerAction(_ symbol: String, _ title: String, _ act: @escaping () -> Void) -> some View {
-        Button(action: act) {
-            VStack(spacing: 3) {
-                Image(systemName: symbol).font(.system(size: 13))
-                Text(title).font(.system(size: 10))
-            }
-            .frame(maxWidth: .infinity)
-            .foregroundStyle(Theme.Palette.of(scheme).fg2)
-            .contentShape(Rectangle())
-        }.buttonStyle(.plain)
     }
 
     private var appVersion: String {
