@@ -171,16 +171,15 @@ final class AgentStore: ObservableObject {
         return .running // also the calm/none case when empty
     }
 
-    /// Count next to the tinted brand mark (ITERATIONS D1 / §02): the most-urgent
-    /// state's count — waiting, else working, else the done (idle) count, else "".
-    /// Matches the mark's tint (mostUrgent), so color + number always agree —
-    /// e.g. a green mark reads "how many finished". (Extends DESIGN §2's
-    /// waiting-else-working to also surface a done count.)
+    /// The status-bar count (DESIGN §2 / HANDOFF P0.4): the most-urgent ACTIONABLE
+    /// state's count — waiting, else working, else NOTHING. The done (idle) state
+    /// carries NO count: its ✓ glyph already says "your turn", and a number there just
+    /// adds noise to the calm state (this reverts the earlier ITERATIONS-D1 done-count
+    /// per the newer HANDOFF authority). Counts INCLUDE HQ — the supervisor is one more
+    /// thing that can be waiting on you (waiting/working don't exclude it).
     var badge: String {
         if waiting > 0 { return "\(waiting)" }
         if working > 0 { return "\(working)" }
-        let idle = agents.filter { $0.state == .idle }.count
-        if idle > 0 { return "\(idle)" }
         return ""
     }
 
