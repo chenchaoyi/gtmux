@@ -158,6 +158,13 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(s.mostUrgent, .working)
     }
 
+    func testBadgeIdleHasNoCount() {
+        // Done (idle) carries NO count — HANDOFF P0.4 (reverts the earlier done-count).
+        let s = store([("d", "idle"), ("e", "idle"), ("f", "running")])
+        XCTAssertEqual(s.badge, "")
+        XCTAssertEqual(s.mostUrgent, .idle)
+    }
+
     func testSectionsOrderAndNonEmpty() {
         let s = store([("d", "idle"), ("a", "waiting"), ("b", "working")])
         let secs = s.sections(query: "")

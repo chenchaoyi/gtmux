@@ -155,30 +155,35 @@ struct MenuView: View {
                 .padding(.horizontal, 4)
 
                 if let hq = store.supervisor {
+                    // v2: HQ is ALWAYS watching — no idle/working badge, no agent name or
+                    // relative time (session language that doesn't apply). Its identity is
+                    // the brand grid + a FLEET PIP STRIP (a micro-radar: one color+shape pip
+                    // per worker, square = waiting). When HQ ITSELF needs you, the whole card
+                    // goes amber with a red subtitle — a card-level cue distinct from the red
+                    // agent-waiting badge (§12 v2).
+                    let hqWaiting = hq.state == .waiting
                     Button { onJump(hq) } label: {
                         HStack(spacing: 11) {
-                            ZStack(alignment: .bottomTrailing) {
-                                GtmuxLogo(size: 26)
-                                StatusBadge(status: hq.state, size: 13, errored: hq.errored)
-                                    .offset(x: 3, y: 3)
-                            }
-                            VStack(alignment: .leading, spacing: 1) {
-                                HStack(spacing: 5) {
+                            GtmuxLogo(size: 26) // brand grid, NO status badge
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 8) {
                                     Text("gtmux HQ")
                                         .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
-                                    Text(hq.agent).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                                    fleetPips(p)
                                 }
-                                Text(hq.task.isEmpty ? "—" : hq.task)
-                                    .font(.system(size: 11)).foregroundStyle(p.fg2)
+                                Text(hq.task.isEmpty ? l10n.tr("all sessions normal", "各会话正常") : hq.task)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(hqWaiting ? Theme.Status.waiting : p.fg2)
                                     .lineLimit(1).truncationMode(.tail)
                             }
                             Spacer(minLength: 6)
-                            Text(hq.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
                             Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
                                 .foregroundStyle(p.fg3)
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
                         .background(hqPanel(p))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(hqWaiting ? Theme.Status.errored : Color.clear, lineWidth: 1.5))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -202,6 +207,29 @@ struct MenuView: View {
                 }
             }
             .padding(.horizontal, 8).padding(.top, 8)
+        }
+    }
+
+    // The fleet pip strip — a micro-radar beside "gtmux HQ": one pip per worker,
+    // color = status, SHAPE = square when waiting (needs you) else circle, so the
+    // whole fleet's shape reads at a glance without a badge. Capped so a big fleet
+    // never overflows the card; the remainder shows as "+N".
+    @ViewBuilder private func fleetPips(_ p: Theme.Palette) -> some View {
+        let workers = store.agents.filter { !$0.isSupervisor }
+        HStack(spacing: 3) {
+            ForEach(workers.prefix(14)) { a in
+                Group {
+                    if a.state == .waiting {
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(a.state.color)
+                    } else {
+                        Circle().fill(a.state.color)
+                    }
+                }
+                .frame(width: 6, height: 6)
+            }
+            if workers.count > 14 {
+                Text("+\(workers.count - 14)").font(.system(size: 8)).foregroundStyle(p.fg3)
+            }
         }
     }
 
@@ -311,20 +339,33 @@ struct MenuView: View {
     @ViewBuilder private func footer(_ p: Theme.Palette) -> some View {
         VStack(spacing: 0) {
             updateBanner(p)
-            HStack(spacing: 0) {
-                footerAction("arrow.uturn.backward", l10n.tr("Restore", "接回")) { onAction(.restore) }
-                footerAction("plus", l10n.tr("New", "新建")) { onAction(.newSession) }
-                footerAction("qrcode", l10n.tr("Pair", "配对")) { onAction(.pairPhone) }
+            // Contextual row (v3 §14): only when NOTHING is running — the "just rebooted"
+            // moment — offer one-tap restore of the last working set. Snapshot-precision
+            // ("有快照") would need a restore-available signal from core; gating on zero live
+            // sessions is the right UX moment (restore no-ops gracefully if there's nothing).
+            if store.total == 0 {
+                Button { onAction(.restore) } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.uturn.backward").font(.system(size: 11))
+                        Text(l10n.tr("Restore your last working set", "恢复上次的工作现场"))
+                            .font(.system(size: 11, weight: .medium))
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(p.fg2)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                Divider().overlay(p.divider)
             }
-            .padding(.vertical, 6)
-            Divider().overlay(p.divider)
+            // The single PERMANENT row (v3 §14): left ＋ New session, right = inline status
+            // (only when true) + version (dim mono, always) + the ⚙ menu. The old
+            // Restore/New/Pair three-cells and the standalone Preferences button are gone —
+            // Pair + Preferences + Check + Quit now live inside the ⚙ menu.
             HStack(spacing: 10) {
-                // Preferences sits at fg2 (interactive tone); the version meta at
-                // fg3. Single tappable icon+label; fixedSize so nothing wraps.
-                Button { onAction(.preferences) } label: {
+                Button { onAction(.newSession) } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "gearshape").font(.system(size: 12))
-                        Text(l10n.tr("Preferences", "偏好设置")).font(.system(size: 11, weight: .medium))
+                        Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                        Text(l10n.tr("New session", "新建会话")).font(.system(size: 11, weight: .medium))
                     }.foregroundStyle(p.fg2)
                 }.buttonStyle(.plain).fixedSize()
                 Spacer(minLength: 8)
@@ -377,6 +418,19 @@ struct MenuView: View {
                         .lineLimit(1).truncationMode(.tail)
                 }.buttonStyle(.plain).layoutPriority(-1)
                     .help(l10n.tr("Check for updates", "检查更新"))
+                // ⚙ menu — the low-frequency actions fold in here so the bar stays one line.
+                Menu {
+                    Button(l10n.tr("Preferences…", "偏好设置…")) { onAction(.preferences) }
+                        .keyboardShortcut(",", modifiers: .command)
+                    Button(l10n.tr("Pair a device…", "配对设备…")) { onAction(.pairPhone) }
+                    Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
+                    Divider()
+                    Button(l10n.tr("Quit gtmux", "退出 gtmux")) { onAction(.quit) }
+                        .keyboardShortcut("q", modifiers: .command)
+                } label: {
+                    Image(systemName: "gearshape").font(.system(size: 12)).foregroundStyle(p.fg2)
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
         }
@@ -440,18 +494,6 @@ struct MenuView: View {
         default:
             EmptyView()
         }
-    }
-
-    private func footerAction(_ symbol: String, _ title: String, _ act: @escaping () -> Void) -> some View {
-        Button(action: act) {
-            VStack(spacing: 3) {
-                Image(systemName: symbol).font(.system(size: 13))
-                Text(title).font(.system(size: 10))
-            }
-            .frame(maxWidth: .infinity)
-            .foregroundStyle(Theme.Palette.of(scheme).fg2)
-            .contentShape(Rectangle())
-        }.buttonStyle(.plain)
     }
 
     private var appVersion: String {
