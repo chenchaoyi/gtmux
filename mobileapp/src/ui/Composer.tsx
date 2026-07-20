@@ -295,9 +295,11 @@ export function Composer({
   // The key row (context shortcuts + control keys + arrows + snippets). Always
   // visible — when composing it sits just above the input field, so the special
   // keys AND the ▾ dismiss stay reachable while the keyboard is up.
-  // Resting row — decluttered + grouped: ⌨ | (waiting → 1/2/3) | Tab Ctrl-C Esc |
-  // 快捷短语▾ 历史. Snippets are a picker (not a flat list); attach/compose/paste
-  // live in the input row + attach sheet; directional keypads were removed.
+  // Resting row — decluttered + grouped: ⌨ | Tab ⏎ Ctrl-C Esc | 快捷短语▾ 历史.
+  // Waiting responses live in the ApprovalCard (real /api/options choices), never
+  // as hardcoded keys here. Snippets are a picker (not a flat list); attach/
+  // compose/paste live in the input row + attach sheet; directional keypads were
+  // removed.
   const renderKeys = () => (
     <ScrollView
       horizontal
