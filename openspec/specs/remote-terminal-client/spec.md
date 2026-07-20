@@ -7,7 +7,7 @@ TBD - created by archiving change remote-terminal-client. Update Purpose after a
 
 `gtmux attach <target>` SHALL open a remote tmux pane in the local terminal as a raw,
 interactive passthrough. The target SHALL be a guest share link
-(`https://host/#t=<token>` → GUEST bearer) or a host + `--token <tok>` (→ OWNER bearer).
+(`https://host/#g=<token>` → GUEST bearer; legacy `#t=` accepted) or a host + `--token <tok>` (→ OWNER bearer).
 The client SHALL verify reachability + token, resolve scope from `GET /api/share`
 (`all:true` ⇒ owner), and connect a WebSocket to `GET /api/attach?id=%N`. It SHALL stay
 cgo-free.
@@ -19,7 +19,7 @@ cgo-free.
 
 #### Scenario: Guest attaches an allowed pane
 
-- **WHEN** the user runs `gtmux attach https://host/#t=<token> %N` for a view-allowed pane
+- **WHEN** the user runs `gtmux attach https://host/#g=<token> %N` for a view-allowed pane
 - **THEN** the attach opens; if the pane is on the input allowlist it is interactive, otherwise it is read-only
 
 #### Scenario: Guest is refused a non-viewable pane
@@ -81,7 +81,7 @@ fragment carries an enroll code (`#c=<code>`) SHALL be redeemed once via
 persisted locally (`~/.config/gtmux/remotes.json`, mode 0600, keyed by host), and
 the attach proceeds with `full` scope. A later bare `gtmux attach <host>` SHALL
 reuse the persisted token for that host before requiring `--token`. Guest share
-links (`#t=`) SHALL keep their existing behavior. Revoking the device on the host
+links (`#g=`, legacy `#t=`) SHALL keep their existing behavior. Revoking the device on the host
 (`gtmux pair revoke`) SHALL invalidate the persisted token immediately (the next
 request fails auth).
 

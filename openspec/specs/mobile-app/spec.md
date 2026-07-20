@@ -12,8 +12,10 @@ app, so all three surfaces read as one product.
 The system SHALL let the user pair a Mac by host+token, a scanned pairing QR, or a
 guest share link, validating reachability + token before saving the pair to the device
 Keychain. On receiving a credential the app SHALL detect its KIND: an **enroll code** is
-redeemed via `POST /api/enroll` into a `device` (owner, full) token; a **guest token**
-(the `#t=<token>` carried by a `gtmux share` link/QR) is used directly as the bearer,
+redeemed via `POST /api/enroll` into a `device` (owner, full) token — carried either
+by the structured pairing QR or by a pair link (`…/#c=<code>`, the browser medium of
+`gtmux pair`), so scanning any pairing medium works; a **guest token**
+(the `#g=<token>` carried by a `gtmux share` link/QR; legacy `#t=` links are still accepted) is used directly as the bearer,
 without enrollment. After connecting, the app SHALL read `GET /api/share` to resolve its
 scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the returned
 `view_panes` (viewable) and `panes` (typable) — and enter the matching mode.
@@ -26,7 +28,7 @@ scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the retur
 
 #### Scenario: Pair as a guest from a share link
 
-- **WHEN** the user opens or scans a `gtmux share` guest link/QR (a `#t=<token>` URL)
+- **WHEN** the user opens or scans a `gtmux share` guest link/QR (a `#g=<token>` URL, or a legacy `#t=` one)
 - **THEN** the app stores that guest token as its bearer WITHOUT enrolling, reads
   `GET /api/share`, sees `all:false`, and enters guest mode scoped to the returned
   `view_panes`/`panes`

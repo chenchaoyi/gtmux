@@ -32,11 +32,15 @@ type Target struct {
 }
 
 var shareLinkRe = regexp.MustCompile(`^(https?://[^#]+?)/*#(.*)$`)
-var shareTokenRe = regexp.MustCompile(`(?:^|[?&])t=([^&]+)`)
+
+// `#g=` is the guest fragment `gtmux share new` mints; `#t=` is the legacy form —
+// still accepted so links minted before the rename keep working.
+var shareTokenRe = regexp.MustCompile(`(?:^|[?&])[gt]=([^&]+)`)
 var enrollCodeRe = regexp.MustCompile(`(?:^|[?&])c=([^&]+)`)
 
 // ParseTarget resolves a `gtmux connect` argument into a Target. A guest share link
-// (`https://host/#t=<token>`, what `gtmux share new` mints) yields a GUEST target
+// (`https://host/#g=<token>`, what `gtmux share new` mints; legacy `#t=` also
+// accepted) yields a GUEST target
 // carrying that token. A PAIR link (`https://host/#c=<code>`, what `gtmux pair`
 // prints) yields an OWNER target carrying the enroll code — redeemed once for a
 // persisted device token. Otherwise the argument is a host: `token` (from --token)

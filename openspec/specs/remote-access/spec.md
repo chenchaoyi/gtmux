@@ -430,7 +430,7 @@ regardless of client surface.
 
 #### Scenario: A terminal client with a guest token is restricted
 
-- **WHEN** `gtmux attach https://host/#t=<token> %N` connects with a guest token
+- **WHEN** `gtmux attach https://host/#g=<token> %N` connects with a guest token
 - **THEN** it is restricted exactly as a guest browser/app — refused a non-viewable pane, read-only on a view-only one
 
 ### Requirement: Share links may expire
@@ -496,7 +496,7 @@ door remain restricted:
   `full` caller (master or owner device) and SHALL refuse a `guest` (`403`) and an
   unknown id (`404`), so a host who didn't copy a link at mint time can copy it
   again (the CLI `gtmux share link <id>` and the menu-bar row's copy button both use
-  it; the token rides the `#t=` URL fragment, never a bare field).
+  it; the token rides the `#g=` URL fragment, never a bare field).
 
 `GET /api/share` (the caller's own capability) SHALL remain available to any
 authenticated scope, unchanged.
@@ -525,7 +525,7 @@ authenticated scope, unchanged.
 
 - **WHEN** a `full` caller (master or owner device) calls `GET /api/share/link?id=<id>`
   for a live guest link
-- **THEN** it returns that link's token (for rebuilding the `#t=` URL)
+- **THEN** it returns that link's token (for rebuilding the `#g=` URL)
 - **WHEN** a `guest` calls it, or the id is unknown
 - **THEN** it is refused (`403`) or reported not-found (`404`) respectively
 

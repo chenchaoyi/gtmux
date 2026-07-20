@@ -3,12 +3,18 @@ package connect
 import "testing"
 
 func TestParseTargetGuestLink(t *testing.T) {
-	tg, err := ParseTarget("https://gtmux-7a3f.ccy.dev/#t=SECRET", "")
-	if err != nil {
-		t.Fatalf("share link: %v", err)
-	}
-	if tg.Scope != ScopeGuest || tg.URL != "https://gtmux-7a3f.ccy.dev" || tg.Token != "SECRET" {
-		t.Fatalf("guest target = %+v", tg)
+	// `#g=` is what `gtmux share new` mints; `#t=` is the legacy form old links carry.
+	for _, arg := range []string{
+		"https://gtmux-7a3f.ccy.dev/#g=SECRET",
+		"https://gtmux-7a3f.ccy.dev/#t=SECRET",
+	} {
+		tg, err := ParseTarget(arg, "")
+		if err != nil {
+			t.Fatalf("share link %s: %v", arg, err)
+		}
+		if tg.Scope != ScopeGuest || tg.URL != "https://gtmux-7a3f.ccy.dev" || tg.Token != "SECRET" {
+			t.Fatalf("guest target for %s = %+v", arg, tg)
+		}
 	}
 }
 

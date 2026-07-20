@@ -68,7 +68,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
   };
 
   const connect = () => {
-    // A pasted guest link (`<base>/#t=<token>`) → connect as a scope-restricted guest.
+    // A pasted guest link (`<base>/#g=<token>`, legacy `#t=`) → scope-restricted guest.
     const guest = parseShareLink(host.trim());
     if (guest) {
       connectWith(guest.url, guest.token, guest.name, 'guest');

@@ -1378,9 +1378,10 @@
       home();
     });
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
-    // A GUEST share link carries its token directly (#t=<token>) — use it as-is (a
-    // lasting, revocable credential), unlike the one-time pairing code (#c=).
-    var mt = /(?:^|[#&])t=([a-f0-9]{16,})/i.exec(location.hash || '');
+    // A GUEST share link carries its token directly (#g=<token>; legacy #t= still
+    // accepted) — use it as-is (a lasting, revocable credential), unlike the
+    // one-time pairing code (#c=).
+    var mt = /(?:^|[#&])[gt]=([a-f0-9]{16,})/i.exec(location.hash || '');
     if (mt && mt[1]) { token = mt[1]; try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
     var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(location.hash || '');
     var code = m && m[1];

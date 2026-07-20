@@ -470,7 +470,7 @@ entries are editable.
 ### `GET /api/share/link?id=<id>` — re-copy a link's URL (full only)
 
 ```
-200 {"id":"…","label":"…","token":"<guest-token>"}   // build <base>/#t=<token>
+200 {"id":"…","label":"…","token":"<guest-token>"}   // build <base>/#g=<token>
 403 {"error":"forbidden: not shared"}                // a guest caller
 404 {"error":"unknown share link"}                   // no such guest link
 ```
