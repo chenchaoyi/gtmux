@@ -35,7 +35,7 @@ function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
 }
 
 export function SplitScreen({navigation, route}: any) {
-  const {agents, conn, lastUpdated, banner, dismissBanner, refresh} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
@@ -89,7 +89,11 @@ export function SplitScreen({navigation, route}: any) {
           hitSlop={hit}>
           <BrandMark size={22} neutral={pal.fg3} />
           <Text style={[styles.brand, {color: pal.fg}]} numberOfLines={1}>{mac?.name || 'gtmux'}</Text>
-          <Text style={[styles.switchGlyph, {color: pal.fg3}]}>⇄</Text>
+          {/* a bordered ⇄ chip reads as a tappable control (same as the phone radar —
+              the bare glyph looked like a decoration, so switching went unnoticed). */}
+          <Text style={[styles.switchGlyph, {color: pal.fg2, borderColor: pal.divider, backgroundColor: pal.surface}]}>
+            ⇄
+          </Text>
         </TouchableOpacity>
         <View style={styles.sideRight}>
           <ConnDot conn={conn} t={t} pal={pal} />
@@ -114,6 +118,32 @@ export function SplitScreen({navigation, route}: any) {
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
       {conn === 'offline' && (
         <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} onRetry={refresh} pal={pal} />
+      )}
+      {conn === 'unauthorized' && (
+        <TouchableOpacity
+          style={[styles.authBanner, {backgroundColor: '#3a1720', borderColor: StatusColor.waiting}]}
+          onPress={() => navigation.navigate('Servers')}
+          accessibilityRole="button"
+          accessibilityLabel={lang === 'zh' ? '访问被拒，重新配对' : 'Access rejected, re-pair'}>
+          <View style={[styles.connDot, {backgroundColor: StatusColor.waiting}]} />
+          <Text style={styles.authBannerText}>
+            {lang === 'zh'
+              ? '访问被拒 —— 这台服务器的 token 已吊销或更改。点此重新配对。'
+              : 'Access rejected — this server’s token was revoked or changed. Tap to re-pair.'}
+          </Text>
+        </TouchableOpacity>
+      )}
+      {isGuest && (
+        <View
+          testID="radar-guest-banner"
+          accessibilityLabel="radar-guest-banner"
+          style={[styles.guestBanner, {backgroundColor: pal.surface, borderBottomColor: pal.divider}]}>
+          <Text style={[styles.guestBannerText, {color: pal.fg2}]} numberOfLines={1}>
+            {lang === 'zh'
+              ? `以访客身份连到 ${mac?.name || '服务器'} · ${agents.length} 个会话`
+              : `Guest on ${mac?.name || 'server'} · ${agents.length} session${agents.length === 1 ? '' : 's'}`}
+          </Text>
+        </View>
       )}
       <View style={styles.row}>
         <View style={[styles.sidebar, {borderRightColor: pal.divider}]}>
@@ -190,7 +220,16 @@ const styles = StyleSheet.create({
   sideTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   brandRow: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8},
   brand: {fontSize: 18, fontWeight: '800', marginLeft: 8, flexShrink: 1},
-  switchGlyph: {fontSize: 13, marginLeft: 6},
+  switchGlyph: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
   sideRight: {flexDirection: 'row', alignItems: 'center'},
   gear: {marginLeft: 12},
   conn: {flexDirection: 'row', alignItems: 'center'},
@@ -204,4 +243,9 @@ const styles = StyleSheet.create({
   mainEmptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
   banner: {paddingHorizontal: 14, paddingVertical: 10},
   bannerText: {color: '#fff', fontSize: 13, fontWeight: '600'},
+  // Always-dark banner → FIXED light text (never pal.fg, which is near-black in light mode).
+  authBanner: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 2, gap: 4},
+  authBannerText: {flex: 1, fontSize: 12, color: '#F3D9DE', fontWeight: '600'},
+  guestBanner: {paddingHorizontal: 16, paddingVertical: 7, borderBottomWidth: 1},
+  guestBannerText: {fontSize: 12, fontWeight: '600'},
 });
