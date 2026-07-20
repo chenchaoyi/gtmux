@@ -84,7 +84,7 @@ export function ManageMacScreen({navigation}: any) {
       Alert.alert(zh ? '复制链接' : 'Copy link', zh ? '无法获取链接。' : "Couldn't fetch the link.");
       return;
     }
-    const url = `${mac.url.replace(/\/+$/, '')}/#t=${token}`;
+    const url = `${mac.url.replace(/\/+$/, '')}/#g=${token}`;
     Share.share({message: url});
   };
 

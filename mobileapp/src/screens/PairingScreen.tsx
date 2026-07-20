@@ -13,12 +13,14 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
 import {EnrollError, enrollDevice, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
 import {BrandMark} from '../ui/BrandMark';
+import {StatusColor} from '../ui/theme';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
 
@@ -68,7 +70,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
   };
 
   const connect = () => {
-    // A pasted guest link (`<base>/#t=<token>`) → connect as a scope-restricted guest.
+    // A pasted guest link (`<base>/#g=<token>`, legacy `#t=`) → scope-restricted guest.
     const guest = parseShareLink(host.trim());
     if (guest) {
       connectWith(guest.url, guest.token, guest.name, 'guest');
@@ -205,13 +207,27 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
           </TouchableOpacity>
 
           {/* Escape hatch for someone without a Mac handy (e.g. an App Store
-              reviewer): a read-only tour with sample data. */}
+              reviewer): a clickable tour with sample data. A badged SECONDARY CARD
+              (F7① — the old dim link was invisible), still clearly subordinate to
+              the two real pairing paths above. */}
           {onDemo && (
-            <TouchableOpacity onPress={onDemo} style={styles.demoLink}
-              accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a demo'}>
-              <Text style={[styles.demoLinkText, {color: pal.fg3}]}>
-                {lang === 'zh' ? '没有 Mac？看看演示 →' : 'No Mac handy? See a demo →'}
-              </Text>
+            <TouchableOpacity
+              onPress={onDemo}
+              style={[styles.demoCard, {borderColor: pal.divider, backgroundColor: pal.surface}]}
+              accessibilityRole="button"
+              accessibilityLabel={lang === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a demo'}>
+              <View style={[styles.demoBadge, {borderColor: StatusColor.working}]}>
+                <Text style={[styles.demoBadgeText, {color: StatusColor.working}]}>DEMO</Text>
+              </View>
+              <View style={styles.demoBody}>
+                <Text style={[styles.demoTitle, {color: pal.fg}]}>
+                  {lang === 'zh' ? '没有 Mac？看看演示' : 'No Mac handy? See a demo'}
+                </Text>
+                <Text style={[styles.demoSub, {color: pal.fg3}]}>
+                  {lang === 'zh' ? '样例数据 · 无需任何服务器' : 'Sample data · no server needed'}
+                </Text>
+              </View>
+              <Text style={[styles.demoChevron, {color: pal.fg3}]}>›</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -262,6 +278,18 @@ const styles = StyleSheet.create({
   },
   connectBusy: {opacity: 0.7},
   connectText: {color: '#fff', fontSize: 16, fontWeight: '700'},
-  demoLink: {alignItems: 'center', paddingVertical: 16},
-  demoLinkText: {fontSize: 13},
+  demoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  demoBadge: {borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1},
+  demoBadgeText: {fontSize: 10, fontWeight: '700', letterSpacing: 0.06},
+  demoBody: {flex: 1, marginLeft: 10},
+  demoTitle: {fontSize: 14, fontWeight: '600'},
+  demoSub: {fontSize: 12, marginTop: 1},
+  demoChevron: {fontSize: 17, fontWeight: '300', marginLeft: 8},
 });

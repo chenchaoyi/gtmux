@@ -1,4 +1,4 @@
-import {EnrollError, enrollDevice, labelFromUrl, normalizeHost, parsePairingQR, parseShareLink} from './qr';
+import {EnrollError, enrollDevice, labelFromUrl, normalizeHost, parsePairLink, parsePairingQR, parseShareLink} from './qr';
 
 describe('parsePairingQR', () => {
   it('parses a valid v1 pairing code (token in QR)', () => {
@@ -123,25 +123,52 @@ describe('labelFromUrl', () => {
 });
 
 describe('parseShareLink (guest)', () => {
-  it('parses a gtmux share guest link into a guest token', () => {
+  it('parses a gtmux share guest link (#g=, what share new mints)', () => {
+    const g = parseShareLink('https://gtmux-7a3f.ccy.dev/#g=SECRET');
+    expect(g).toEqual({kind: 'guest', url: 'https://gtmux-7a3f.ccy.dev', token: 'SECRET', name: 'gtmux-7a3f'});
+  });
+  it('still accepts the legacy #t= form (links minted before the rename)', () => {
     const g = parseShareLink('https://gtmux-7a3f.ccy.dev/#t=SECRET');
     expect(g).toEqual({kind: 'guest', url: 'https://gtmux-7a3f.ccy.dev', token: 'SECRET', name: 'gtmux-7a3f'});
   });
   it('url-decodes the token and strips a trailing slash before the fragment', () => {
-    const g = parseShareLink('http://1.2.3.4:8765/#t=a%2Fb');
+    const g = parseShareLink('http://1.2.3.4:8765/#g=a%2Fb');
     expect(g?.token).toBe('a/b');
     expect(g?.url).toBe('http://1.2.3.4:8765');
   });
-  it('is null for a non-share link (no t= token) — e.g. the #c= enroll handoff', () => {
+  it('is null for a non-share link (no g=/t= token) — e.g. the #c= enroll handoff', () => {
     expect(parseShareLink('https://h:8765/#c=CODE')).toBeNull();
     expect(parseShareLink('not a url')).toBeNull();
     expect(parseShareLink('{"v":1,"url":"http://h:1","token":"t"}')).toBeNull();
   });
   it('parsePairingQR routes a guest link to kind:guest (not JSON)', () => {
-    expect(parsePairingQR('https://h:8765/#t=TOK')).toEqual({
+    expect(parsePairingQR('https://h:8765/#g=TOK')).toEqual({
       kind: 'guest',
       url: 'https://h:8765',
       token: 'TOK',
+      name: 'h',
+    });
+  });
+});
+
+describe('parsePairLink (#c= pair link → enroll path)', () => {
+  it('parses a gtmux pair browser link into an enroll result', () => {
+    expect(parsePairLink('https://gtmux-7a3f.ccy.dev/#c=C0DE')).toEqual({
+      kind: 'enroll',
+      url: 'https://gtmux-7a3f.ccy.dev',
+      enrollCode: 'C0DE',
+      name: 'gtmux-7a3f',
+    });
+  });
+  it('is null for a guest link or non-URL', () => {
+    expect(parsePairLink('https://h:8765/#g=TOK')).toBeNull();
+    expect(parsePairLink('not a url')).toBeNull();
+  });
+  it('parsePairingQR routes a #c= link to the same enroll path as the JSON v2 QR', () => {
+    expect(parsePairingQR('https://h:8765/#c=C0DE')).toEqual({
+      kind: 'enroll',
+      url: 'https://h:8765',
+      enrollCode: 'C0DE',
       name: 'h',
     });
   });

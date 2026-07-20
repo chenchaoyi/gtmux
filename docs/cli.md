@@ -440,13 +440,13 @@ gtmux attach http://<mac>:8765 --token <serve-token> %12
 
 # guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
 # Sharing → New link); attach exactly what the host allowed:
-gtmux attach 'https://<mac>.example/#t=<token>' %12
+gtmux attach 'https://<mac>.example/#g=<token>' %12
 
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
 ```
 
-- **`<target>`** is a host (+ `--token`, → **owner**, full) or a `…/#t=<token>` share
+- **`<target>`** is a host (+ `--token`, → **owner**, full) or a `…/#g=<token>` share
   link (→ **guest**, restricted to the host's view/input allowlists — a view-only pane
   is read-only, and a non-viewable pane is refused).
 - **`%N`** (optional) is the tmux pane id to attach — it selects the SESSION that pane
@@ -518,7 +518,7 @@ clear`) still work but FAN OUT to every existing link — per-link tailoring sho
 use `share set`. `status --json` carries each guest's `view_panes`/`panes`/
 `expires_at` and never a bare token. A link's URL is printed at mint time; to copy
 it again later use `gtmux share link <id>` (or the menu-bar row's copy button) —
-it re-hands the same `#t=` URL (full-scope callers only; guests can't).
+it re-hands the same `#g=` URL (full-scope callers only; guests can't).
 
 ## tmux integration
 

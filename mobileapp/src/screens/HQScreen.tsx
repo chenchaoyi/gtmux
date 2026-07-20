@@ -54,7 +54,7 @@ function fmtTok(n?: number): string {
 
 export function HQScreen({route, navigation}: any) {
   const hq: Agent = route.params.agent;
-  const {client, agents, conn} = useAgents();
+  const {client, agents, conn, demo} = useAgents();
   const {pal, lang} = useApp();
 
   const [digest, setDigest] = useState<DigestRow[]>([]);
@@ -169,6 +169,11 @@ export function HQScreen({route, navigation}: any) {
         <View style={styles.stripMid}>
           <View style={styles.titleRow}>
             <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
+            {demo && (
+              <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
+                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+              </View>
+            )}
             <View style={[styles.dot, {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'connecting' ? '#F59E0B' : StatusColor.waiting}]} />
           </View>
           <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={1}>
@@ -310,6 +315,8 @@ const styles = StyleSheet.create({
   back: {fontSize: 30, fontWeight: '300', marginRight: 10, marginTop: -4},
   stripMid: {flex: 1},
   titleRow: {flexDirection: 'row', alignItems: 'center'},
+  demoPill: {borderWidth: 1, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 0.5, marginLeft: 8},
+  demoPillText: {fontSize: 9, fontWeight: '700', letterSpacing: 0.06},
   title: {fontSize: 17, fontWeight: '700'},
   dot: {width: 8, height: 8, borderRadius: 4, marginLeft: 8},
   sub: {fontSize: 12, marginTop: 1},

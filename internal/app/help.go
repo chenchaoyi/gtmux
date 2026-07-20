@@ -68,7 +68,7 @@ Commands:
                           WebSocket) — the local terminal becomes the remote tmux
                           session. A pair link (…/#c=<code>) enrolls this terminal
                           as your own device (token persisted); a share link
-                          (…/#t=<token>) connects as a scoped guest; host + --token
+                          (…/#g=<token>) connects as a scoped guest; host + --token
                           also works. --read-only to watch; Ctrl-] detaches
   devices [revoke <id>]   the device roster (alias of 'pair list' / 'pair revoke');
                           --push inspects, --forget-push <id|orphans|all> clears
@@ -166,7 +166,7 @@ const usageZH = `快速开始：
   attach <target> [%N]    在当前终端里附着到远程的某个 pane（原生、走 WebSocket）——
                           本地终端变成远程 tmux 会话。配对链接（…/#c=<code>）把本
                           终端登记为你自己的设备（token 会保存）；分享链接
-                          （…/#t=<token>）以受限访客接入；host + --token 亦可。
+                          （…/#g=<token>）以受限访客接入；host + --token 亦可。
                           --read-only 只看；Ctrl-] 退出
   devices [revoke <id>]   已配对设备名册（等价于 'pair list' / 'pair revoke'）；
                           --push 查看，--forget-push <id|orphans|all> 清推送 token

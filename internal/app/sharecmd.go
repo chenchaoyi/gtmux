@@ -421,8 +421,10 @@ func printFanOutNotice(base, token string) {
 }
 
 // shareNewOut is the `gtmux share new --json` contract: the minted link's id,
-// label, and full URL. NO bare token — the URL carries the `#t=` token, so the
-// secret lives in exactly one field a consumer already treats as sensitive.
+// label, and full URL. NO bare token — the URL carries the `#g=` guest token, so
+// the secret lives in exactly one field a consumer already treats as sensitive.
+// (`#g=` = guest, distinct from the one-time pair code `#c=`; consumers keep
+// accepting the legacy `#t=` form so already-minted links stay valid.)
 type shareNewOut struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
@@ -432,7 +434,7 @@ type shareNewOut struct {
 // buildShareNew is the pure link assembler (base + minted token → the --json
 // shape), unit-tested without a live serve.
 func buildShareNew(id, label, token, base string) shareNewOut {
-	return shareNewOut{ID: id, Label: label, URL: base + "/#t=" + token}
+	return shareNewOut{ID: id, Label: label, URL: base + "/#g=" + token}
 }
 
 // shareSet edits ONE guest link's scope (pair-share-model): per-flag replace —
@@ -522,7 +524,7 @@ func shareNew(base, token, label string, port int, jsonOut bool, view, input *[]
 		fmt.Println(string(b))
 		return 0
 	}
-	link := shareBase + "/#t=" + out.Token
+	link := shareBase + "/#g=" + out.Token
 	fmt.Println()
 	i18n.Say("New guest share link ("+out.ID+"):", "新的分享链接（"+out.ID+"）：")
 	fmt.Printf("  %s\n", link)
@@ -539,7 +541,7 @@ func shareNew(base, token, label string, port int, jsonOut bool, view, input *[]
 // shareLink re-hands an EXISTING guest link's URL by id. A link's token is shown
 // only at mint time (`share new`), so a host who didn't copy it then had no way to
 // get it back short of revoking + re-minting. This asks the local serve for the
-// token (GET /api/share/link, full-scope only) and rebuilds the same base + `#t=`
+// token (GET /api/share/link, full-scope only) and rebuilds the same base + `#g=`
 // URL `share new` prints — so a menu-bar/app "Copy link" is one CLI call.
 func shareLink(base, token, id string, jsonOut bool) int {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/share/link?id="+url.QueryEscape(id), nil)
@@ -571,7 +573,7 @@ func shareLink(base, token, id string, jsonOut bool) int {
 		fmt.Println(string(b))
 		return 0
 	}
-	link := shareBase + "/#t=" + out.Token
+	link := shareBase + "/#g=" + out.Token
 	fmt.Println()
 	i18n.Say("Share link ("+out.ID+"):", "分享链接（"+out.ID+"）：")
 	fmt.Printf("  %s\n", link)

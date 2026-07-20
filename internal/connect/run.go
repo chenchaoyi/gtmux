@@ -12,7 +12,7 @@ import (
 // Run implements `gtmux attach` — attach to a remote gtmux pane in the local terminal.
 //
 //	gtmux attach <host> --token <tok> [%pane]     # owner (full)
-//	gtmux attach https://host/#t=<token> [%pane]  # guest (scope-restricted)
+//	gtmux attach https://host/#g=<token> [%pane]  # guest (scope-restricted; legacy #t= accepted)
 //	  --read-only   watch only, never send input
 func Run(args []string) int {
 	var target, token, pane string
@@ -165,13 +165,13 @@ func usage() int {
 			"  Attach to a remote gtmux pane in your local terminal (raw, interactive).\n"+
 			"  A pair link (…/#c=<code>, from `gtmux pair`) enrolls THIS terminal as one of\n"+
 			"  your own devices (full control, token persisted — later just `gtmux attach <host>`).\n"+
-			"  A share link (…/#t=<token>) connects as a scope-restricted guest; a host +\n"+
+			"  A share link (…/#g=<token>) connects as a scope-restricted guest; a host +\n"+
 			"  --token also works. Detach with tmux `prefix d` or Ctrl-].",
 		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>] [--read-only]\n"+
 			"  在本地终端里附着到远程 gtmux 的 pane（原生、可交互）。\n"+
 			"  配对链接（…/#c=<code>，来自 `gtmux pair`）把本终端登记为你自己的设备\n"+
 			"  （全权,token 会保存 —— 之后直接 `gtmux attach <host>`）。\n"+
-			"  分享链接（…/#t=<token>）以受限访客接入；host + --token 亦可。\n"+
+			"  分享链接（…/#g=<token>）以受限访客接入；host + --token 亦可。\n"+
 			"  退出：tmux 前缀键 + d，或 Ctrl-]。")
 	return 0
 }

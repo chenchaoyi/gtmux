@@ -48,10 +48,10 @@ func TestBuildShareStatus(t *testing.T) {
 }
 
 // buildShareNew is the `gtmux share new --json` link assembler: the URL carries
-// the token via the `#t=` fragment; no bare token field is emitted.
+// the token via the `#g=` guest fragment; no bare token field is emitted.
 func TestBuildShareNew(t *testing.T) {
 	out := buildShareNew("g9", "carol", "SECRET_TOKEN", "https://gtmux-x.ccy.dev")
-	want := "https://gtmux-x.ccy.dev/#t=SECRET_TOKEN"
+	want := "https://gtmux-x.ccy.dev/#g=SECRET_TOKEN"
 	if out.URL != want {
 		t.Errorf("url = %q, want %q", out.URL, want)
 	}

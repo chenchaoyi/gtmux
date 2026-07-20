@@ -453,7 +453,7 @@ export class GtmuxClient {
   }
 
   // shareLink re-hands an existing link's token (GET /api/share/link) so the owner can
-  // re-copy the URL; the caller builds `${base}/#t=${token}`. Null if not found.
+  // re-copy the URL; the caller builds `${base}/#g=${token}`. Null if not found.
   async shareLink(id: string): Promise<string | null> {
     const r = await tfetch(`${this.base}/api/share/link?id=${encodeURIComponent(id)}`, {headers: this.h()});
     if (!r.ok) return null;

@@ -34,16 +34,17 @@ export function labelFromUrl(url: string): string {
   return /^\d+\.\d+\.\d+\.\d+$/.test(host) ? host : host.split('.')[0] || host;
 }
 
-// parseShareLink recognizes a `gtmux share` GUEST link — `<base>/#t=<token>` (what
-// `gtmux share new` mints + encodes in its QR). The app uses that token directly as a
+// parseShareLink recognizes a `gtmux share` GUEST link — `<base>/#g=<token>` (what
+// `gtmux share new` mints + encodes in its QR; the legacy `#t=` form is still
+// accepted so old links keep working). The app uses that token directly as a
 // scope-restricted GUEST bearer (no enroll). Returns null for anything that isn't a
-// share link, so the caller falls through to the JSON pairing-QR path.
+// share link, so the caller falls through to the pair-link / JSON pairing-QR path.
 export function parseShareLink(raw: string): (PairResult & {kind: 'guest'}) | null {
   const m = /^(https?:\/\/[^#]+?)\/*#(.*)$/.exec(raw.trim());
   if (!m) return null;
   const base = m[1].replace(/\/+$/, '');
-  const tm = /(?:^|[?&])t=([^&]+)/.exec(m[2]);
-  if (!tm) return null; // a fragment without a t= token (e.g. #c=<enroll> is not a guest link)
+  const tm = /(?:^|[?&])[gt]=([^&]+)/.exec(m[2]);
+  if (!tm) return null; // a fragment without a g=/t= token (e.g. #c=<enroll> is not a guest link)
   let token = tm[1];
   try {
     token = decodeURIComponent(token);
@@ -54,10 +55,33 @@ export function parseShareLink(raw: string): (PairResult & {kind: 'guest'}) | nu
   return {kind: 'guest', url: base, token, name: labelFromUrl(base)};
 }
 
+// parsePairLink recognizes a PAIR link — `<base>/#c=<code>` (what `gtmux pair` /
+// the menu-bar pairing sheet mint as the browser medium). It carries the same
+// short-lived enroll code as the JSON v2 QR, so it joins the enroll path: the code
+// is redeemed (POST /api/enroll) for this device's own OWNER token. This makes the
+// three pairing media equivalent — scanning the browser link works like the QR.
+export function parsePairLink(raw: string): (PairResult & {kind: 'enroll'}) | null {
+  const m = /^(https?:\/\/[^#]+?)\/*#(.*)$/.exec(raw.trim());
+  if (!m) return null;
+  const base = m[1].replace(/\/+$/, '');
+  const cm = /(?:^|[?&])c=([^&]+)/.exec(m[2]);
+  if (!cm) return null;
+  let enrollCode = cm[1];
+  try {
+    enrollCode = decodeURIComponent(enrollCode);
+  } catch {
+    /* keep raw */
+  }
+  if (!enrollCode) return null;
+  return {kind: 'enroll', url: base, enrollCode, name: labelFromUrl(base)};
+}
+
 export function parsePairingQR(raw: string): PairResult {
-  // A guest share link is a URL (not JSON) — check it first.
+  // A guest share link / pair link is a URL (not JSON) — check those first.
   const guest = parseShareLink(raw);
   if (guest) return guest;
+  const pair = parsePairLink(raw);
+  if (pair) return pair;
   let obj: any;
   try {
     obj = JSON.parse(raw);
