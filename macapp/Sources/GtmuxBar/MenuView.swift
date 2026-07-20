@@ -155,30 +155,35 @@ struct MenuView: View {
                 .padding(.horizontal, 4)
 
                 if let hq = store.supervisor {
+                    // v2: HQ is ALWAYS watching — no idle/working badge, no agent name or
+                    // relative time (session language that doesn't apply). Its identity is
+                    // the brand grid + a FLEET PIP STRIP (a micro-radar: one color+shape pip
+                    // per worker, square = waiting). When HQ ITSELF needs you, the whole card
+                    // goes amber with a red subtitle — a card-level cue distinct from the red
+                    // agent-waiting badge (§12 v2).
+                    let hqWaiting = hq.state == .waiting
                     Button { onJump(hq) } label: {
                         HStack(spacing: 11) {
-                            ZStack(alignment: .bottomTrailing) {
-                                GtmuxLogo(size: 26)
-                                StatusBadge(status: hq.state, size: 13, errored: hq.errored)
-                                    .offset(x: 3, y: 3)
-                            }
-                            VStack(alignment: .leading, spacing: 1) {
-                                HStack(spacing: 5) {
+                            GtmuxLogo(size: 26) // brand grid, NO status badge
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 8) {
                                     Text("gtmux HQ")
                                         .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
-                                    Text(hq.agent).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                                    fleetPips(p)
                                 }
-                                Text(hq.task.isEmpty ? "—" : hq.task)
-                                    .font(.system(size: 11)).foregroundStyle(p.fg2)
+                                Text(hq.task.isEmpty ? l10n.tr("all sessions normal", "各会话正常") : hq.task)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(hqWaiting ? Theme.Status.waiting : p.fg2)
                                     .lineLimit(1).truncationMode(.tail)
                             }
                             Spacer(minLength: 6)
-                            Text(hq.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
                             Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
                                 .foregroundStyle(p.fg3)
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
                         .background(hqPanel(p))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(hqWaiting ? Theme.Status.errored : Color.clear, lineWidth: 1.5))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -202,6 +207,29 @@ struct MenuView: View {
                 }
             }
             .padding(.horizontal, 8).padding(.top, 8)
+        }
+    }
+
+    // The fleet pip strip — a micro-radar beside "gtmux HQ": one pip per worker,
+    // color = status, SHAPE = square when waiting (needs you) else circle, so the
+    // whole fleet's shape reads at a glance without a badge. Capped so a big fleet
+    // never overflows the card; the remainder shows as "+N".
+    @ViewBuilder private func fleetPips(_ p: Theme.Palette) -> some View {
+        let workers = store.agents.filter { !$0.isSupervisor }
+        HStack(spacing: 3) {
+            ForEach(workers.prefix(14)) { a in
+                Group {
+                    if a.state == .waiting {
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(a.state.color)
+                    } else {
+                        Circle().fill(a.state.color)
+                    }
+                }
+                .frame(width: 6, height: 6)
+            }
+            if workers.count > 14 {
+                Text("+\(workers.count - 14)").font(.system(size: 8)).foregroundStyle(p.fg3)
+            }
         }
     }
 
