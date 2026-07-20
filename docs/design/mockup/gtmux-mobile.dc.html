@@ -823,337 +823,50 @@
     </div>
   </div>
 
+  <div style="max-width:840px; margin:26px 0 40px; background:#F4F8FF; border:1px solid rgba(10,90,200,0.18); border-radius:12px; padding:14px 17px;"><div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span class="gt-mono" style="font-size:9px;font-weight:700;letter-spacing:0.5px;background:#0a5ac8;color:#fff;border-radius:4px;padding:2px 6px;">对齐实现 2026-07</span><span style="font-size:12px; font-weight:660; color:#0a5ac8;">§06 iPad · SplitScreen.tsx</span></div><div style="font-size:12px; line-height:1.7; color:#3a4a60;">触发条件是<b>宽度 ≥ 768</b>(含分屏/浮窗,不只 iPad 硬件);窄了退回手机堆叠导航。侧栏固定 320pt,复用手机的 SectionList——<b>折叠状态与手机共用同一存储键</b>;顶部 server chip(品牌标 + 名字 + ⇄)点开 Servers 页。点行<b>原地切换主区</b>(无 push);native 行不可选(无 pane 镜像);推送深链在宽屏 = 选中该行而非叠 Detail。离线/事件横幅与手机一致;主区空态 = 品牌标 + 「启动一个 coding agent 就会出现在这里」。</div></div>
+
   <!-- ============ SECTION 07: PAIRING 合并 + TUNNEL 付费 ============ -->
   <div style="margin-top: 72px;">
     <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
       <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">07</span>
-      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">连接方式合并 + Tunnel 付费</h2>
-      <span style="font-size:10.5px; color:#9a6b00; background:#FFF3D6; border-radius:5px; padding:2px 8px; font-weight:600;">产品提案</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">添加 server — 配对与访客</h2>
+      <span style="font-size:10.5px; color:#0a7d33; background:#E3F7E8; border-radius:5px; padding:2px 8px; font-weight:600;">对齐实现</span>
     </div>
-    <p style="margin:0 0 22px; max-width:740px; font-size:13.5px; line-height:1.5; color:#7a7a80;">把「局域网 serve」和「远程 tunnel」合并成<b>一个连接流程、两种模式</b>：本地免费、随时可用；远程（从任何网络访问）作为 <b>gtmux Pro</b> 付费解锁。配对页用 segmented 切换，远程档锁定时引导升级。</p>
+    <p style="margin:0 0 8px; max-width:820px; font-size:13.5px; line-height:1.5; color:#7a7a80;">手机端<b>不再有任何计费/付费墙</b>——访问方式(局域网 / 任意网络、隧道后端 标准/直连)全部<b>在 Mac 端配置</b>(菜单栏偏好 / CLI),手机只是<b>连接一个 URL</b>。两轨身份:自己的 Mac 走<b>配对码</b>(#c=,全权);协作者走<b>分享链接</b>(#g=,受限 scope),永不混淆。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:820px; margin-bottom:22px; line-height:1.5;">添加 sheet 复用 PairingScreen(模态内自带 safe-area Provider,Cancel 不再压状态栏——实拍 Review P0 已修);没有任何 server 时本 sheet 自动弹出,还提供「看个演示」只读 demo。</div>
 
-    <!-- decision rationale -->
-    <div style="background:#F4F8FF; border:1px solid rgba(10,90,200,0.15); border-radius:12px; padding:14px 17px; margin-bottom:24px; max-width:820px;">
-      <div style="font-size:12.5px; font-weight:660; color:#0a5ac8; margin-bottom:6px;">为什么合并</div>
-      <div style="font-size:12.5px; line-height:1.6; color:#3a4a60;">用户其实只想「连上我的 Mac」——不该先懂 serve vs tunnel 的区别。所以入口统一为<b>「添加 server」</b>，里面分两档：<b>本地网络</b>（同 VPN/局域网，对应 <span class="gt-mono" style="font-size:11px;">gtmux serve</span>，免费）/ <b>远程访问</b>（任意网络，对应 <span class="gt-mono" style="font-size:11px;">gtmux tunnel</span>，Pro）。本地能满足「在家/同 WiFi」，远程覆盖「在外面也要看」——后者价值高、成本高（中转带宽），适合做订阅。</div>
-    </div>
-
-    <div style="display:flex; gap:26px; flex-wrap:wrap;">
-
-      <!-- Frame 1: Local (free) -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① 本地网络 · 免费</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <div style="padding:60px 22px 22px;">
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;"><span style="font-size:14px; color:#06B6D4;">‹ 取消</span></div>
-              <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:3px; width:36px; height:36px;"><span style="background:#c4c4ca;border-radius:5px;"></span><span style="background:#06B6D4;border-radius:5px;"></span><span style="background:#c4c4ca;border-radius:5px;grid-column:span 2;"></span></span>
-              <div style="font-size:26px; font-weight:700; color:#1d1d1f; margin:12px 0 16px;">添加 server</div>
-              <!-- segmented -->
-              <div style="display:flex; gap:3px; background:#E4E4E8; padding:3px; border-radius:11px; margin-bottom:18px;">
-                <div style="flex:1; text-align:center; background:#fff; border-radius:8px; padding:9px; font-size:13.5px; font-weight:600; color:#1d1d1f; box-shadow:0 1px 2px rgba(0,0,0,0.12);">本地网络</div>
-                <div style="flex:1; display:flex; align-items:center; justify-content:center; gap:5px; border-radius:8px; padding:9px; font-size:13.5px; color:#6b6b70;">远程访问 <span style="font-size:10px;">🔒</span></div>
-              </div>
-              <div style="font-size:12.5px; line-height:1.55; color:#6b6b70; margin-bottom:18px;">和 Mac 在同一网络（或 VPN）。在 Mac 上跑 <span class="gt-mono" style="font-size:11px;">gtmux serve</span>，扫码或手动填地址。</div>
-              <div style="background:#fff; border-radius:13px; padding:18px; text-align:center; margin-bottom:14px;">
-                <span style="display:inline-grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:3px; width:34px; height:34px;"><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span><span style="background:#1d1d1f;border-radius:2px;"></span></span>
-                <div style="font-size:15px; font-weight:600; color:#1d1d1f; margin-top:10px;">扫描配对二维码</div>
-              </div>
-              <div style="text-align:center; color:#a8a8ae; font-size:12px; margin-bottom:14px;">—— 或手动输入 ——</div>
-              <div style="border:0.5px solid rgba(0,0,0,0.1); background:#fff; border-radius:10px; padding:12px 13px; margin-bottom:18px;"><span class="gt-mono" style="font-size:14px; color:#a8a8ae;">192.168.1.20:8765</span></div>
-              <div style="background:#06B6D4; border-radius:12px; padding:14px; text-align:center; font-size:15px; font-weight:700; color:#fff;">连接</div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">默认档。免费、零配置，覆盖在家/同 WiFi。</div>
+    <div style="display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">添加 server(模态 sheet)</span>
+        <div style="width:300px;border-radius:26px;background:#0a0a0c;padding:9px;box-shadow:0 22px 55px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;"><div style="border-radius:19px;overflow:hidden;background:#0D0D0F;padding:14px 13px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-size:13px;color:rgba(235,235,245,0.62);">取消</span><span style="font-size:13px;font-weight:700;color:#fff;">添加 server</span><span style="width:28px;"></span></div><div style="border-radius:14px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);padding:20px;display:flex;flex-direction:column;align-items:center;gap:9px;margin-bottom:14px;"><span style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px;width:34px;height:34px;"><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span><span style="background:transparent;"></span><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span><span style="background:rgba(235,235,245,0.6);border-radius:2px;"></span></span><span style="font-size:14px;font-weight:600;color:rgba(235,235,245,0.85);">扫描配对二维码</span><span style="font-size:10.5px;color:rgba(235,235,245,0.4);">菜单栏「配对设备…」出示的码(#c=) 或分享链接码(#g=)</span></div><div style="text-align:center;color:rgba(235,235,245,0.34);font-size:11px;margin-bottom:12px;">—— 手动输入 ——</div><div style="font-size:10.5px;font-weight:600;color:rgba(235,235,245,0.62);margin-bottom:5px;">地址</div><div style="border:0.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);border-radius:9px;padding:10px 12px;margin-bottom:12px;"><span class="gt-mono" style="font-size:12px;color:rgba(235,235,245,0.34);">https://home-mac.gtmux.ccy.dev</span></div><div style="font-size:10.5px;font-weight:600;color:rgba(235,235,245,0.62);margin-bottom:5px;">配对码 / Token</div><div style="border:0.5px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);border-radius:9px;padding:10px 12px;margin-bottom:16px;"><span style="font-size:12px;color:rgba(235,235,245,0.34);letter-spacing:2px;">••••••••</span></div><div style="border-radius:11px;background:#06B6D4;padding:12px;text-align:center;font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;">连接</div><div style="text-align:center;font-size:11.5px;color:#27C7E6;">先看个演示 ›</div></div></div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.4;">扫码是主路径;#c= 配对码 → 我的 Mac(全权),#g= 分享链接 → 访客连接(受限)。无 server 时自动弹出 + 只读 demo 入口。</span>
       </div>
 
-      <!-- Frame 2: Remote locked -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 远程访问 · 锁定引导</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <div style="padding:60px 22px 22px;">
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;"><span style="font-size:14px; color:#06B6D4;">‹ 取消</span></div>
-              <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:3px; width:36px; height:36px;"><span style="background:#c4c4ca;border-radius:5px;"></span><span style="background:#06B6D4;border-radius:5px;"></span><span style="background:#c4c4ca;border-radius:5px;grid-column:span 2;"></span></span>
-              <div style="font-size:26px; font-weight:700; color:#1d1d1f; margin:12px 0 16px;">添加 server</div>
-              <div style="display:flex; gap:3px; background:#E4E4E8; padding:3px; border-radius:11px; margin-bottom:20px;">
-                <div style="flex:1; text-align:center; border-radius:8px; padding:9px; font-size:13.5px; color:#6b6b70;">本地网络</div>
-                <div style="flex:1; display:flex; align-items:center; justify-content:center; gap:5px; background:#fff; border-radius:8px; padding:9px; font-size:13.5px; font-weight:600; color:#1d1d1f; box-shadow:0 1px 2px rgba(0,0,0,0.12);">远程访问 <span style="font-size:10px;">🔒</span></div>
-              </div>
-              <!-- pro lock card -->
-              <div style="background:linear-gradient(165deg,#1b1d24,#0f1016); border-radius:16px; padding:22px 18px; text-align:center;">
-                <div style="width:46px; height:46px; margin:0 auto 14px; border-radius:12px; background:rgba(6,182,212,0.16); display:flex; align-items:center; justify-content:center; font-size:20px;">🔒</div>
-                <div style="display:inline-flex; align-items:center; gap:6px; margin-bottom:10px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1.5px; width:15px; height:15px;"><span style="background:rgba(255,255,255,0.3);border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:2px;grid-column:span 2;"></span></span><span style="font-size:15px; font-weight:700; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></span></div>
-                <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,0.92); line-height:1.45;">从任何网络访问你的 Mac</div>
-                <div style="font-size:12px; color:rgba(235,235,245,0.55); line-height:1.5; margin-top:7px;">不在同一 WiFi 也能看 agent、读 pane、收推送。加密中转，零端口转发。</div>
-                <div style="background:#06B6D4; border-radius:11px; padding:12px; margin-top:16px; font-size:14.5px; font-weight:700; color:#fff;">解锁远程访问</div>
-                <div style="font-size:11px; color:rgba(235,235,245,0.45); margin-top:9px;">¥10/月 · 首 7 天免费</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">切到「远程」即露出价值主张 + 单一 CTA，不堆功能。</div>
-      </div>
-
-      <!-- Frame 3: Paywall sheet -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">③ Pro 付费墙</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:linear-gradient(180deg,#10131a 0%,#0a0c11 100%);">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <div style="padding:54px 22px 20px; height:100%; display:flex; flex-direction:column;">
-              <div style="display:flex; justify-content:flex-end;"><span style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);font-size:14px;">✕</span></div>
-              <div style="text-align:center; margin-top:6px;">
-                <div style="display:inline-flex; align-items:center; gap:7px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:20px; height:20px;"><span style="background:rgba(255,255,255,0.3);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:3px;grid-column:span 2;"></span></span><span style="font-size:21px; font-weight:800; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></span></div>
-                <div style="font-size:14px; color:rgba(235,235,245,0.6); margin-top:8px; line-height:1.45;">随时随地掌控你的 coding agent</div>
-              </div>
-              <div style="margin-top:22px; display:flex; flex-direction:column; gap:14px;">
-                <div style="display:flex; align-items:flex-start; gap:11px;"><span style="color:#06B6D4; font-size:15px; margin-top:1px;">✓</span><div><div style="font-size:13.5px; font-weight:600; color:#fff;">远程访问（tunnel）</div><div style="font-size:11.5px; color:rgba(235,235,245,0.5);">离开局域网也能连，加密中转</div></div></div>
-                <div style="display:flex; align-items:flex-start; gap:11px;"><span style="color:#06B6D4; font-size:15px; margin-top:1px;">✓</span><div><div style="font-size:13.5px; font-weight:600; color:#fff;">多设备 + 多 server</div><div style="font-size:11.5px; color:rgba(235,235,245,0.5);">手机/iPad 同时连多台 Mac</div></div></div>
-                <div style="display:flex; align-items:flex-start; gap:11px;"><span style="color:#06B6D4; font-size:15px; margin-top:1px;">✓</span><div><div style="font-size:13.5px; font-weight:600; color:#fff;">锁屏推送不限量</div><div style="font-size:11.5px; color:rgba(235,235,245,0.5);">agent 等你/完成第一时间提醒</div></div></div>
-              </div>
-              <div style="flex:1;"></div>
-              <!-- plan picker -->
-              <div style="display:flex; gap:9px; margin-bottom:14px;">
-                <div style="flex:1; border:1.5px solid #06B6D4; background:rgba(6,182,212,0.08); border-radius:13px; padding:13px 10px; text-align:center; position:relative;">
-                  <div style="position:absolute; top:-9px; left:50%; transform:translateX(-50%); background:#06B6D4; color:#fff; font-size:9px; font-weight:700; border-radius:5px; padding:2px 7px; white-space:nowrap;">省 27%</div>
-                  <div style="font-size:12px; color:rgba(235,235,245,0.6);">年付</div>
-                  <div style="font-size:19px; font-weight:800; color:#fff; margin-top:2px;">¥88</div>
-                  <div style="font-size:10.5px; color:rgba(235,235,245,0.45);">≈ ¥7.3/月</div>
-                </div>
-                <div style="flex:1; border:1px solid rgba(255,255,255,0.14); border-radius:13px; padding:13px 10px; text-align:center;">
-                  <div style="font-size:12px; color:rgba(235,235,245,0.6);">月付</div>
-                  <div style="font-size:19px; font-weight:800; color:#fff; margin-top:2px;">¥10</div>
-                  <div style="font-size:10.5px; color:rgba(235,235,245,0.45);">每月</div>
-                </div>
-              </div>
-              <div style="background:#06B6D4; border-radius:13px; padding:15px; text-align:center; font-size:15.5px; font-weight:700; color:#fff;">开始 7 天免费试用</div>
-              <div style="text-align:center; font-size:10.5px; color:rgba(235,235,245,0.4); margin-top:11px; line-height:1.5;">试用后 ¥88/年，随时取消 · <span style="text-decoration:underline;">恢复购买</span> · <span style="text-decoration:underline;">条款</span></div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">价值在前、价格在后；年付默认高亮 + 免费试用降低门槛。走 App Store 订阅。</div>
-      </div>
-
-      <!-- Frame 4: connected via tunnel -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">④ 已用远程连接</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#0D0D0F;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <div style="padding:58px 16px 16px;">
-              <div style="display:flex; align-items:center; justify-content:space-between;">
-                <span style="font-size:22px; font-weight:800; color:rgba(255,255,255,0.96);">home-mac</span>
-                <span style="font-size:17px; color:rgba(235,235,245,0.62);">⚙</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px; margin-top:9px;">
-                <span style="display:flex; align-items:center; gap:5px; background:rgba(6,182,212,0.16); border-radius:6px; padding:3px 8px;"><span style="font-size:10px;">🛰</span><span style="font-size:11px; font-weight:600; color:#27C7E6;">远程 · Pro</span></span>
-                <span style="display:flex; align-items:center; gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:rgba(235,235,245,0.5);">home-mac</span></span>
-              </div>
-              <div style="font-size:12px; color:rgba(235,235,245,0.5); margin-top:12px;">3 agents · 1 waiting · 2 working</div>
-              <div style="height:8px; background:#0D0D0F; border-top:3px solid rgba(255,255,255,0.16); margin:14px -16px 0;"></div>
-              <div style="padding:12px 0 6px; font-size:10.5px; font-weight:700; letter-spacing:0.6px; color:#EF4444;">NEEDS YOU 1</div>
-              <div style="display:flex; align-items:center; gap:11px; padding:9px 0;">
-                <div style="position:relative; width:30px; height:30px;"><div style="width:30px;height:30px;border-radius:8px;background:#1C1C1F;border:0.5px solid rgba(255,255,255,0.09);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(235,235,245,0.62);">CC</div><div style="position:absolute; right:-3px; bottom:-3px; width:15px; height:15px; border-radius:4px; background:#EF4444; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #0D0D0F;"><span style="display:flex;gap:1.5px;"><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span><span style="width:2px;height:6px;background:#fff;border-radius:1px;"></span></span></div></div>
-                <div style="flex:1; min-width:0;"><div style="font-size:14px; font-weight:600; color:rgba(255,255,255,0.96);">permission to run tests</div><div style="font-size:11.5px; color:rgba(235,235,245,0.34);">Pica · %7</div></div>
-                <span class="gt-mono" style="font-size:11px; color:rgba(235,235,245,0.34);">now</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">远程连接时 header 显 <b>🛰 远程·Pro</b> 徽章,与本地区分。</div>
-      </div>
-    </div>
-
-    <!-- spec notes -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; max-width:1000px;">
-      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
-        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">免费 / Pro 边界</div>
-        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#3a3a40;">本地网络（serve）</span><span style="color:#22C55E; font-weight:600;">免费</span></div>
-        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#3a3a40;">读 pane / 输入 / 推送（本地）</span>本地）</span><span style="color:#22C55E; font-weight:600;">免费</span></div>
-        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed rgba(0,0,0,0.07); font-size:12.5px;"><span style="color:#3a3a40;">远程访问（tunnel）</span><span style="color:#06B6D4; font-weight:600;">Pro</span></div>
-        <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:12.5px;"><span style="color:#3a3a40;">多 server / 多设备</span><span style="color:#06B6D4; font-weight:600;">Pro</span></div>
-      </div>
-      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
-        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">落地要点</div>
-        <div style="font-size:12px; line-height:1.6; color:#5a5a60;">
-          · 配对入口统一为「添加 server」，segmented 切 <b>本地 / 远程</b>。<br>
-          · 远程档未订阅 → 锁定卡 + 单一 CTA → App Store 订阅（StoreKit 2）。<br>
-          · 已订阅 → 远程档显示 tunnel 配对（扫码/账号），连上后 header 加 <span class="gt-mono" style="font-size:11px;">🛰 远程·Pro</span> 徽章。<br>
-          · 入门免费体验完整本地功能,不设功能阉割,只在「远程」这一跨网价值点收费。<br>
-          · 订阅状态、价格、试用以 App Store 配置为准；此处 ¥10/月、¥88/年为占位。
-        </div>
+      <div style="flex:1; min-width:280px; max-width:420px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">计费已从手机移除</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;">多 server、多设备<b>不收费</b>,手机端没有付费墙。唯一付费点在 Mac 端:Direct 隧道后端 = 兑换码解锁(菜单栏 §13)。手机连 Standard 还是 Direct 的地址<b>无感知差别</b>。</div></div><div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">访问方式在 Mac 端定</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;">局域网 / 任意网络、隧道后端切换、长期敞口确认——都是 Mac 的事(菜单栏偏好 · Anywhere)。手机永远只拿到一个可达 URL + 凭证,连不上时给「检查 Mac 端远程访问」的指引而不是配置界面。</div></div><div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">两轨身份</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;"><b>配对码(#c=)</b> = 我的 Mac:全权,含 HQ、通知、管理分享。<b>分享链接(#g=)</b> = 访客:只看/输入被授权的 session,设置里隐藏 owner 专属项。Servers 页分组展示,见 §08。</div></div>
       </div>
     </div>
   </div>
 
-  <!-- ============ SECTION 08: SERVER 管理 + 多设备/多 SERVER 计费 ============ -->
+  <!-- ============ SECTION 08: SERVERS 连接页 ============ -->
   <div style="margin-top: 72px;">
     <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
       <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">08</span>
-      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Server 管理 + 多设备 / 多 server 计费</h2>
-      <span style="font-size:10.5px; color:#9a6b00; background:#FFF3D6; border-radius:5px; padding:2px 8px; font-weight:600;">产品提案</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">Servers — 连接页</h2>
+      <span style="font-size:10.5px; color:#0a7d33; background:#E3F7E8; border-radius:5px; padding:2px 8px; font-weight:600;">对齐实现</span>
     </div>
-    <p style="margin:0 0 22px; max-width:760px; font-size:13.5px; line-height:1.5; color:#7a7a80;">Pairing 的完整面貌:一个 <b>Servers</b> 管理页统辖「添加 / 切换 / 移除 server」与配对入口。免费版 = <b>1 台 server + 1 台设备</b>,够单人单机;<b>多 server / 多设备 / 远程</b>统一归到 gtmux Pro。下面是免费态、达限引导、Pro 态、多设备四屏。</p>
+    <p style="margin:0 0 8px; max-width:820px; font-size:13.5px; line-height:1.5; color:#7a7a80;">列出配对过的每台 Mac:绿点 = 当前连接;点行即<b>切换</b>(App 按 URL 重挂载雷达);✕ 移除(清 Keychain,并让该 Mac 丢弃本机的推送 token)。<b>两轨分组</b>:我的 MAC(全权)与 访客连接(分享链接),永不混排。原「多设备/多 server 计费」方案<b>已取消</b>。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:820px; margin-bottom:22px; line-height:1.5;">入口:雷达顶部 server chip(名字 + ⇄)/ 设置·连接。没有任何 server 时,本页就是根页并自动弹「添加 server」。</div>
 
-    <!-- billing matrix -->
-    <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; overflow:hidden; max-width:880px; margin-bottom:26px;">
-      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; background:#F5F5F7; border-bottom:1px solid rgba(0,0,0,0.06); padding:11px 18px; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:#9a9aa0;">
-        <div>能力</div><div>免费</div><div>Pro</div>
-      </div>
-      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">server 数量</div><div style="color:#6b6b70;">1 台</div><div style="color:#06B6D4; font-weight:600;">无限</div></div>
-      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">连接设备(手机 / iPad)</div><div style="color:#6b6b70;">1 台</div><div style="color:#06B6D4; font-weight:600;">无限</div></div>
-      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">本地网络访问(serve)</div><div style="color:#22C55E; font-weight:600;">✓</div><div style="color:#22C55E; font-weight:600;">✓</div></div>
-      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; border-bottom:1px solid rgba(0,0,0,0.05); font-size:12.5px;"><div style="color:#3a3a40;">远程访问(tunnel)</div><div style="color:#c4c4ca;">—</div><div style="color:#06B6D4; font-weight:600;">✓</div></div>
-      <div style="display:grid; grid-template-columns:1.6fr 1fr 1fr; padding:12px 18px; font-size:12.5px;"><div style="color:#3a3a40;">读 pane / 输入 / 本地推送</div><div style="color:#22C55E; font-weight:600;">✓</div><div style="color:#22C55E; font-weight:600;">✓</div></div>
-    </div>
-
-    <div style="display:flex; gap:26px; flex-wrap:wrap;">
-
-      <!-- Frame A: Servers (free, at limit) -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① Servers · 免费(已达 1 台上限)</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <div style="padding:60px 20px 20px;">
-              <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;"><span style="font-size:28px; font-weight:700; color:#1d1d1f;">‹ Servers</span></div>
-              <div style="font-size:12.5px; color:#6b6b70; line-height:1.5; margin-bottom:18px;">点一台连接,绿点是当前已连。免费版含 1 台 server。</div>
-              <!-- connected server -->
-              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px; margin-bottom:12px;">
-                <span style="width:9px;height:9px;border-radius:50%;background:#22C55E;flex:none;"></span>
-                <div style="flex:1; min-width:0;"><div style="font-size:15px; font-weight:600; color:#1d1d1f;">debug</div><div class="gt-mono" style="font-size:11.5px; color:#a8a8ae; margin-top:1px;">已连接 · 127.0.0.1:8799</div></div>
-                <span style="font-size:17px; color:#c4c4ca;">✕</span>
-              </div>
-              <!-- locked: add server -->
-              <div style="background:#fff; border:1px dashed rgba(0,0,0,0.12); border-radius:13px; padding:15px; display:flex; align-items:center; gap:11px; margin-bottom:8px;">
-                <span style="width:30px;height:30px;border-radius:8px;background:rgba(6,182,212,0.12);display:flex;align-items:center;justify-content:center;font-size:14px;flex:none;">🔒</span>
-                <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#1d1d1f;">再添加一台 server</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">多 server 属于 gtmux Pro</div></div>
-                <span style="font-size:10px; font-weight:700; color:#fff; background:#06B6D4; border-radius:5px; padding:2px 7px;">Pro</span>
-              </div>
-              <div style="font-size:11.5px; color:#a8a8ae; text-align:center; line-height:1.5; margin-top:14px;">家里一台、公司一台?<br><span style="color:#06B6D4; font-weight:600;">升级 Pro</span> 同时管理多台。</div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">免费态:1 台够用,第 2 台是温和的 Pro 锚点,不挡当前使用。</div>
+    <div style="display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">Servers(已连接态)</span>
+        <div style="width:300px;border-radius:26px;background:#0a0a0c;padding:9px;box-shadow:0 22px 55px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;"><div style="border-radius:19px;overflow:hidden;background:#0D0D0F;padding:14px 13px;"><div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">Servers</div><div style="font-size:10.5px;color:rgba(235,235,245,0.4);line-height:1.5;margin-bottom:12px;">点一行切换;移除后该 Mac 停止向本机推送。</div><div style="font-size:9.5px;font-weight:700;letter-spacing:0.5px;color:rgba(235,235,245,0.4);margin:0 2px 6px;">我的 MAC</div><div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,0.04);margin-bottom:14px;"><div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:9px;height:9px;border-radius:50%;background:#22C55E;opacity:1;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;">home-mac</div><div class="gt-mono" style="font-size:9.5px;color:rgba(235,235,245,0.34);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">已连接 · https://home-mac.gtmux.ccy.dev</div></div><span style="font-size:12px;color:rgba(235,235,245,0.34);">✕</span></div><div style="display:flex;align-items:center;gap:10px;padding:11px 12px;"><span style="width:9px;height:9px;border-radius:50%;background:rgba(235,235,245,0.6);opacity:0.35;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;">office-mac</div><div class="gt-mono" style="font-size:9.5px;color:rgba(235,235,245,0.34);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">http://10.4.22.7:8765</div></div><span style="font-size:12px;color:rgba(235,235,245,0.34);">✕</span></div></div><div style="font-size:9.5px;font-weight:700;letter-spacing:0.5px;color:rgba(235,235,245,0.4);margin:0 2px 6px;">访客连接</div><div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,0.04);margin-bottom:16px;"><div style="display:flex;align-items:center;gap:10px;padding:11px 12px;"><span style="width:9px;height:9px;border-radius:50%;background:rgba(235,235,245,0.6);opacity:0.35;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:#fff;">Alice 的 mac-studio</div><div class="gt-mono" style="font-size:9.5px;color:rgba(235,235,245,0.34);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">访客 · https://…/#g=8QW3K2</div></div><span style="font-size:12px;color:rgba(235,235,245,0.34);">✕</span></div></div><div style="border:0.5px solid rgba(255,255,255,0.14);border-radius:11px;background:rgba(255,255,255,0.05);padding:12px;text-align:center;font-size:13px;font-weight:600;color:rgba(235,235,245,0.85);margin-bottom:12px;">＋  添加 server</div><div style="text-align:center;font-size:12px;font-weight:600;color:#FF8A84;">断开连接</div></div></div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.4;">访客行副题带「访客」标注;断开连接只在有连接时出现,断开后落回本页。</span>
       </div>
 
-      <!-- Frame B: add-server gating sheet -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 达限引导(点「再添加」时)</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <!-- dimmed bg -->
-            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.35);"></div>
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <!-- bottom sheet -->
-            <div style="position:absolute; left:0; right:0; bottom:0; background:linear-gradient(180deg,#181b22,#0e1015); border-radius:24px 24px 0 0; padding:22px 22px 28px;">
-              <div style="width:38px; height:5px; border-radius:3px; background:rgba(255,255,255,0.2); margin:0 auto 18px;"></div>
-              <div style="text-align:center;">
-                <div style="display:inline-flex; align-items:center; gap:7px; margin-bottom:12px;"><span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:18px; height:18px;"><span style="background:rgba(255,255,255,0.3);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:3px;grid-column:span 2;"></span></span><span style="font-size:18px; font-weight:800; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></span></div>
-                <div style="font-size:16px; font-weight:700; color:#fff;">管理多台 server</div>
-                <div style="font-size:12.5px; color:rgba(235,235,245,0.55); line-height:1.5; margin-top:8px;">免费版含 1 台。升级后无限 server、无限设备,并解锁远程访问。</div>
-              </div>
-              <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.05); border-radius:12px; padding:13px 14px; margin-top:18px;">
-                <span style="color:#06B6D4; font-size:14px;">✓</span><span style="font-size:12.5px; color:rgba(255,255,255,0.9);">无限 server + 无限设备</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.05); border-radius:12px; padding:13px 14px; margin-top:8px;">
-                <span style="color:#06B6D4; font-size:14px;">✓</span><span style="font-size:12.5px; color:rgba(255,255,255,0.9);">远程访问(tunnel),离开局域网也能连</span>
-              </div>
-              <div style="background:#06B6D4; border-radius:13px; padding:15px; text-align:center; font-size:15.5px; font-weight:700; color:#fff; margin-top:18px;">开始 7 天免费试用</div>
-              <div style="text-align:center; font-size:11.5px; color:rgba(235,235,245,0.5); margin-top:12px;">查看全部方案</div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">触发点收费:在「真的要第 2 台」时弹,转化最自然。</div>
-      </div>
-
-      <!-- Frame C: Servers (Pro) -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">③ Servers · Pro(多 server)</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <div style="padding:60px 20px 20px;">
-              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-                <span style="font-size:28px; font-weight:700; color:#1d1d1f;">‹ Servers</span>
-                <span style="font-size:10px; font-weight:700; color:#fff; background:#06B6D4; border-radius:6px; padding:3px 9px;">PRO</span>
-              </div>
-              <div style="font-size:12.5px; color:#6b6b70; line-height:1.5; margin-bottom:18px;">点一台连接,绿点是当前已连。</div>
-              <!-- connected (remote) -->
-              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px; margin-bottom:10px;">
-                <span style="width:9px;height:9px;border-radius:50%;background:#22C55E;flex:none;"></span>
-                <div style="flex:1; min-width:0;"><div style="display:flex; align-items:center; gap:7px;"><span style="font-size:15px; font-weight:600; color:#1d1d1f;">home-mac</span><span style="display:flex; align-items:center; gap:3px; background:rgba(6,182,212,0.12); border-radius:5px; padding:1px 6px;"><span style="font-size:9px;">🛰</span><span style="font-size:10px; font-weight:600; color:#0596b0;">远程</span></span></div><div class="gt-mono" style="font-size:11.5px; color:#a8a8ae; margin-top:2px;">已连接 · tunnel</div></div>
-                <span style="font-size:17px; color:#c4c4ca;">✕</span>
-              </div>
-              <!-- idle local -->
-              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px; margin-bottom:10px;">
-                <span style="width:9px;height:9px;border-radius:50%;background:#c4c4ca;flex:none;"></span>
-                <div style="flex:1; min-width:0;"><div style="display:flex; align-items:center; gap:7px;"><span style="font-size:15px; font-weight:600; color:#1d1d1f;">office-mac</span><span style="font-size:10px; color:#9a9aa0; background:#F1F1F4; border-radius:5px; padding:1px 6px;">本地</span></div><div class="gt-mono" style="font-size:11.5px; color:#a8a8ae; margin-top:2px;">192.168.1.20:8765</div></div>
-                <span style="font-size:17px; color:#c4c4ca;">✕</span>
-              </div>
-              <!-- add (unlocked) -->
-              <div style="background:#fff; border-radius:13px; padding:15px; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:18px;">
-                <span style="font-size:18px; color:#06B6D4;">＋</span><span style="font-size:15px; font-weight:600; color:#1d1d1f;">添加 server</span>
-              </div>
-              <div style="text-align:center;"><span style="font-size:13px; color:#EF4444;">断开连接</span></div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">Pro 态:多 server 并存,远程/本地各带标签,自由切换。</div>
-      </div>
-
-      <!-- Frame D: devices on this Mac -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">④ 这台 Mac 的连接设备</span>
-        <div style="position:relative; width:300px; height:626px; border-radius:46px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:100px; height:28px; background:#000; border-radius:16px; z-index:5;"></div>
-            <div style="padding:60px 20px 20px;">
-              <span style="font-size:28px; font-weight:700; color:#1d1d1f;">‹ 设备</span>
-              <div style="font-size:12.5px; color:#6b6b70; line-height:1.5; margin:6px 0 18px;">正在看 <b>home-mac</b> 的设备。免费版限 1 台。</div>
-              <!-- this device -->
-              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-                <span style="font-size:20px;">📱</span>
-                <div style="flex:1;"><div style="font-size:15px; font-weight:600; color:#1d1d1f;">iPhone 15 Pro</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">这台设备 · 刚刚活跃</div></div>
-                <span style="width:9px;height:9px;border-radius:50%;background:#22C55E;"></span>
-              </div>
-              <!-- second device (Pro) -->
-              <div style="background:#fff; border-radius:13px; padding:14px; display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-                <span style="font-size:20px;">📲</span>
-                <div style="flex:1;"><div style="font-size:15px; font-weight:600; color:#1d1d1f;">iPad Pro</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">2 小时前</div></div>
-                <span style="font-size:10px; font-weight:700; color:#fff; background:#06B6D4; border-radius:5px; padding:2px 7px;">Pro</span>
-              </div>
-              <!-- add device locked -->
-              <div style="background:#fff; border:1px dashed rgba(0,0,0,0.12); border-radius:13px; padding:14px; display:flex; align-items:center; gap:11px;">
-                <span style="width:30px;height:30px;border-radius:8px;background:rgba(6,182,212,0.12);display:flex;align-items:center;justify-content:center;font-size:14px;">🔒</span>
-                <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#1d1d1f;">连接更多设备</div><div style="font-size:11.5px; color:#9a9aa0; margin-top:1px;">手机 + iPad 同时在线属于 Pro</div></div>
-              </div>
-              <div style="font-size:11.5px; color:#a8a8ae; text-align:center; line-height:1.5; margin-top:16px;">手机看一眼、iPad 上细看?<br><span style="color:#06B6D4; font-weight:600;">升级 Pro</span> 多设备同时在线。</div>
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.45;">多设备价值:手机 glance、iPad 细看,跨设备是付费动机。</div>
-      </div>
-    </div>
-
-    <!-- landing notes -->
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; max-width:1000px;">
-      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
-        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">计费心智(一句话)</div>
-        <div style="font-size:12.5px; line-height:1.65; color:#5a5a60;"><b>免费 = 单人单机的完整本地体验</b>(1 server + 1 设备 + 本地全功能)。<b>Pro = 规模 + 远程</b>:多 server、多设备、tunnel。不阉割核心功能,只在「更多 / 跨网」处收费——免费用户也爽,付费动机清晰。</div>
-      </div>
-      <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:14px; padding:16px 18px;">
-        <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:11px;">落地要点</div>
-        <div style="font-size:12px; line-height:1.65; color:#5a5a60;">
-          · 限额在客户端 + 服务端双校验(serve/tunnel 上报已连设备数)。<br>
-          · 达限触发统一 Pro sheet(server / 设备 / 远程三入口共用一个付费墙)。<br>
-          · 设备列表来自 server 端会话表;可远程「移除某设备」。<br>
-          · 降级(退订)后:保留全部 server 配置,仅强制回到「1 server + 1 设备 + 本地」生效,不删数据。
-        </div>
+      <div style="flex:1; min-width:280px; max-width:420px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">两轨分组(splitServers)</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;">我的 MAC(配对码而来,全权)与 访客连接(#g= 分享链接而来,受限)分成两张卡,身份一眼可辨;访客行永远带「访客」副题,绝不与自有 Mac 混排。</div></div><div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">移除的完整语义</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;">移除 = 本机清 Keychain 凭证 + 通知该 Mac 丢弃本设备的 APNs token(它不再给你推送)+ 若是当前连接则断开。吊销分享链接则在 Mac 端/「管理这台 Mac」做。</div></div><div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">计费说明</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;">此页<b>无任何计费逻辑</b>:server 数、设备数均不限。原多 server 订阅方案已取消;唯一付费点是 Mac 端 Direct 隧道兑换码。</div></div>
       </div>
     </div>
   </div>
@@ -1377,6 +1090,8 @@
     </div>
   </div>
 
+  <div style="max-width:840px; margin:26px 0 40px; background:#F4F8FF; border:1px solid rgba(10,90,200,0.18); border-radius:12px; padding:14px 17px;"><div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span class="gt-mono" style="font-size:9px;font-weight:700;letter-spacing:0.5px;background:#0a5ac8;color:#fff;border-radius:4px;padding:2px 6px;">对齐实现 2026-07</span><span style="font-size:12px; font-weight:660; color:#0a5ac8;">§9 · 悬浮方向键盘已退役</span></div><div style="font-size:12px; line-height:1.7; color:#3a4a60;">FloatingKeys(可拖动方向键盘)已从实现移除——方向导航整体退役,交互收敛为 Tab(接受建议)/ ⏎ / Ctrl-C / Esc 四个控制键(见 §10 补记)。其余(xterm 彩色渲染、diff、长按复制、回到底部箭头)以实现为准。</div></div>
+
   <!-- ============ SECTION 10: TERMINAL 输入重构（对标 Moshi） ============ -->
   <div style="margin-top: 72px;">
     <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
@@ -1480,6 +1195,8 @@
       </div>
     </div>
   </div>
+
+  <div style="max-width:840px; margin:26px 0 40px; background:#F4F8FF; border:1px solid rgba(10,90,200,0.18); border-radius:12px; padding:14px 17px;"><div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span class="gt-mono" style="font-size:9px;font-weight:700;letter-spacing:0.5px;background:#0a5ac8;color:#fff;border-radius:4px;padding:2px 6px;">对齐实现 2026-07</span><span style="font-size:12px; font-weight:660; color:#0a5ac8;">§10 · Composer 静息键条(Composer.tsx)</span></div><div style="font-size:12px; line-height:1.7; color:#3a4a60;">静息 = 单行横滚键条:<span class="gt-mono" style="font-size:11px;">⌨ | Tab ⏎ Ctrl-C Esc | 快捷短语▾ 历史</span>。<b>写死的「1·是/2·总是/3·否」已从键条移除</b>——waiting 的回应完全由 <b>ApprovalCard</b> 承担(GET /api/options 取 agent 的<b>真实选项</b>,渲染数字 chip 1..N),避免与计划/问答类 prompt 的选项集不一致。Tab 与 ⏎ 相邻成对:「接受建议 → 提交」两下完成,不经输入框。⌨ 才展开输入框;iOS 用 InputAccessoryView 把键条钉在键盘上方(替换系统的 prev/next/done 空条)。</div></div>
 
   <!-- ============ SECTION 11: 多行输入 + 粘贴/附件 + 图片标注 ============ -->
   <div style="margin-top: 72px;">
@@ -1621,6 +1338,8 @@
       </div>
     </div>
   </div>
+
+  <div style="max-width:840px; margin:26px 0 40px; background:#F4F8FF; border:1px solid rgba(10,90,200,0.18); border-radius:12px; padding:14px 17px;"><div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span class="gt-mono" style="font-size:9px;font-weight:700;letter-spacing:0.5px;background:#0a5ac8;color:#fff;border-radius:4px;padding:2px 6px;">对齐实现 2026-07</span><span style="font-size:12px; font-weight:660; color:#0a5ac8;">§11 · 已全部落地(Composer.tsx)</span></div><div style="font-size:12px; line-height:1.7; color:#3a4a60;">默认<b>回车 = 换行</b>,发送只走 ↑(设置「回车直接发送」可选回旧行为);输入框 1→6 行自动增高(40→132pt)后内滚;⤢ 全屏撰写(等宽字体,硬件键盘 ⌘⏎ 发送)。附件 iMessage 式<b>先暂存后发送</b>:选完(图片先过标注器)进缩略图条,可 × 移除;点发送才逐个上传(每张带 % 遮罩),失败则全部保留 + 红字提示重试,一条消息合并「文字 + 路径列表」。粘贴识别剪贴板图片 → 直接进标注器;附件入口 = 品牌 AttachSheet(照片/拍照/文件/粘贴);快捷短语 = picker 底表,历史 = modal 回填输入框。</div></div>
 
   <!-- ============ SECTION 12: 消息通知 (mobile + menubar) ============ -->
   <div style="margin-top: 72px;">
@@ -1939,105 +1658,32 @@
     </div>
   </div>
 
+  <div style="max-width:840px; margin:26px 0 40px; background:#F4F8FF; border:1px solid rgba(10,90,200,0.18); border-radius:12px; padding:14px 17px;"><div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span class="gt-mono" style="font-size:9px;font-weight:700;letter-spacing:0.5px;background:#0a5ac8;color:#fff;border-radius:4px;padding:2px 6px;">对齐实现 2026-07</span><span style="font-size:12px; font-weight:660; color:#0a5ac8;">§14 · 落地方式已改(push/index.ts)</span></div><div style="font-size:12px; line-height:1.7; color:#3a4a60;">实际落地:iOS 通知 category <span class="gt-mono" style="font-size:11px;">AGENT_WAITING</span> 注册<b>固定三键 1·Yes / 2·Always / 3·No</b>——iOS 限制:category 动作在注册时静态,无法按每条通知改文案。点按后台直发 <span class="gt-mono" style="font-size:11px;">/api/send</span>,<b>数字不带 Enter</b>(编号菜单按数字即提交;带 Enter 会漏到下一个 prompt)。通知正文点按 = 深链到该 pane(payload 携带 server 名,先切到对的服务器再打开);app 被杀后冷启动同样处理。<b>动态真实选项文案</b>由 app 内 ApprovalCard 承担;通知内动态按钮/富文本列为 future(需 Notification Content Extension);灵动岛/Live Activity 点按 = 深链。角标 = waiting 数,由静默推送在后台维持。</div></div>
+
   <!-- ============ SECTION 15: 设置页详细设计 ============ -->
   <div style="margin-top: 72px;">
     <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
       <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">15</span>
-      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">设置页 — 详细设计</h2>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">设置页 — Moshi 式分组</h2>
+      <span style="font-size:10.5px; color:#0a7d33; background:#E3F7E8; border-radius:5px; padding:2px 8px; font-weight:600;">对齐实现</span>
     </div>
-    <p style="margin:0 0 22px; max-width:780px; font-size:13.5px; line-height:1.5; color:#7a7a80;">iOS 分组列表(Form),信息架构按使用频率排:账户/Pro → 通知 → 外观 → 终端 → 语音 → server → 安全 → 关于。下面是完整两屏(可滚)+ 字段说明。</p>
+    <p style="margin:0 0 8px; max-width:820px; font-size:13.5px; line-height:1.5; color:#7a7a80;">分组卡片 + 行首线框图标;<b>多选项设置 = 一行显当前值 + ›,点开底部 PickerSheet 单选</b>(取代长的内联 radio);布尔 = 行内开关。分区:连接 → 终端 → 通知 → 通用 → 关于。访客连接时隐藏 owner 专属项,绝不出现点了才 403 的控件。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:820px; margin-bottom:22px; line-height:1.5;">「在电脑上打开」= 在 Mac 上铸一枚一次性码,分享 <span class="gt-mono" style="font-size:11px;">url/#c=码</span> 浏览器链接(owner 专属);「管理这台 Mac」= 远程管理分享链接与权限(ManageMacScreen,owner 专属)。</div>
 
     <div style="display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start;">
-      <!-- settings screen 1 -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① 账户 · 通知 · 外观</span>
-        <div style="position:relative; width:300px; height:640px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div class="gt-noscroll" style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
-            <div style="padding:54px 16px 16px;">
-              <div style="font-size:26px; font-weight:700; color:#1d1d1f; margin-bottom:14px;">设置</div>
-              <!-- Pro banner -->
-              <div style="background:linear-gradient(160deg,#1b1d24,#0f1016); border-radius:14px; padding:14px 15px; display:flex; align-items:center; gap:12px; margin-bottom:18px;">
-                <span style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; width:26px; height:26px;"><span style="background:rgba(255,255,255,0.3);border-radius:3px;"></span><span style="background:#06B6D4;border-radius:3px;"></span><span style="background:rgba(255,255,255,0.3);border-radius:3px;grid-column:span 2;"></span></span>
-                <div style="flex:1;"><div style="font-size:14px; font-weight:700; color:#fff;">gtmux <span style="color:#06B6D4;">Pro</span></div><div style="font-size:11px; color:rgba(235,235,245,0.55);">远程访问 · 多 server · 多设备</div></div>
-                <span style="font-size:12px; font-weight:700; color:#fff; background:#06B6D4; border-radius:7px; padding:6px 12px;">升级</span>
-              </div>
-              <!-- Notifications group -->
-              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">通知</div>
-              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">等你输入</span><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">已完成</span><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">通知声音</span><span style="font-size:13.5px; color:#8a8a8e;">默认 ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">勿扰时段</span><span style="font-size:13.5px; color:#8a8a8e;">23:00–8:00 ›</span></div>
-              </div>
-              <!-- Appearance group -->
-              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">外观</div>
-              <div style="background:#fff; border-radius:12px; overflow:hidden;">
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">主题</span><span style="font-size:13.5px; color:#8a8a8e;">跟随系统 ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">语言</span><span style="font-size:13.5px; color:#8a8a8e;">跟随系统 ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">App 图标</span><span style="font-size:13.5px; color:#8a8a8e;">默认 ›</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">设置(owner 连接)</span>
+        <div style="width:300px;border-radius:26px;background:#0a0a0c;padding:9px;box-shadow:0 22px 55px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;"><div style="border-radius:19px;overflow:hidden;background:#0D0D0F;padding:14px 13px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="font-size:22px;font-weight:300;color:rgba(235,235,245,0.62);">‹</span><span style="font-size:17px;font-weight:700;color:#fff;">设置</span></div><div style="font-size:9.5px;font-weight:700;letter-spacing:0.5px;color:rgba(235,235,245,0.4);margin:12px 2px 6px;">连接</div><div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,0.04);"><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">home-mac</div><div style="font-size:9.5px;color:rgba(235,235,245,0.34);margin-top:1px;">https://home-mac.gtmux.ccy.dev</div></div><span style="font-size:11.5px;color:rgba(235,235,245,0.45);"></span><span style="font-size:12px;color:rgba(235,235,245,0.3);margin-left:4px;">›</span></div><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">在电脑上打开</div><div style="font-size:9.5px;color:rgba(235,235,245,0.34);margin-top:1px;">铸一次性码,分享浏览器链接</div></div><span style="font-size:11.5px;color:rgba(235,235,245,0.45);"></span><span style="font-size:12px;color:rgba(235,235,245,0.3);margin-left:4px;">›</span></div><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">管理这台 Mac</div><div style="font-size:9.5px;color:rgba(235,235,245,0.34);margin-top:1px;">分享链接与权限</div></div><span style="font-size:11.5px;color:rgba(235,235,245,0.45);"></span><span style="font-size:12px;color:rgba(235,235,245,0.3);margin-left:4px;">›</span></div><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#FF8A84;">移除这台 Mac</div></div></div></div><div style="font-size:9.5px;font-weight:700;letter-spacing:0.5px;color:rgba(235,235,245,0.4);margin:12px 2px 6px;">终端</div><div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,0.04);"><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">外观</div></div><span style="font-size:11.5px;color:rgba(235,235,245,0.45);">跟随系统</span><span style="font-size:12px;color:rgba(235,235,245,0.3);margin-left:4px;">›</span></div><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">默认模式</div></div><span style="font-size:11.5px;color:rgba(235,235,245,0.45);">终端</span><span style="font-size:12px;color:rgba(235,235,245,0.3);margin-left:4px;">›</span></div><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">回车直接发送</div><div style="font-size:9.5px;color:rgba(235,235,245,0.34);margin-top:1px;">关闭时回车为换行,用 ↑ 发送</div></div><span style="width:34px;height:20px;border-radius:11px;background:rgba(255,255,255,0.16);position:relative;display:inline-block;flex:none;"><span style="position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;"></span></span></div></div><div style="font-size:9.5px;font-weight:700;letter-spacing:0.5px;color:rgba(235,235,245,0.4);margin:12px 2px 6px;">通知</div><div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,0.04);"><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">推送通知</div></div><span style="width:34px;height:20px;border-radius:11px;background:#22C55E;position:relative;display:inline-block;flex:none;"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;"></span></span></div><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">等你回应</div><div style="font-size:9.5px;color:rgba(235,235,245,0.34);margin-top:1px;">有 agent 在等你输入</div></div><span style="width:34px;height:20px;border-radius:11px;background:#22C55E;position:relative;display:inline-block;flex:none;"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;"></span></span></div><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">已完成</div><div style="font-size:9.5px;color:rgba(235,235,245,0.34);margin-top:1px;">agent 完成了一轮</div></div><span style="width:34px;height:20px;border-radius:11px;background:rgba(255,255,255,0.16);position:relative;display:inline-block;flex:none;"><span style="position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;"></span></span></div></div><div style="font-size:9.5px;font-weight:700;letter-spacing:0.5px;color:rgba(235,235,245,0.4);margin:12px 2px 6px;">通用</div><div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,0.04);"><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">语言</div></div><span style="font-size:11.5px;color:rgba(235,235,245,0.45);">跟随系统</span><span style="font-size:12px;color:rgba(235,235,245,0.3);margin-left:4px;">›</span></div></div><div style="font-size:9.5px;font-weight:700;letter-spacing:0.5px;color:rgba(235,235,245,0.4);margin:12px 2px 6px;">关于</div><div style="border:0.5px solid rgba(255,255,255,0.1);border-radius:11px;overflow:hidden;background:rgba(255,255,255,0.04);"><div style="display:flex;align-items:center;gap:9px;padding:10px 12px;"><span style="width:16px;height:16px;border:1.5px solid rgba(235,235,245,0.45);border-radius:4px;flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;color:#fff;">版本</div></div><span class="gt-mono" style="font-size:11px;color:rgba(235,235,245,0.45);">0.11.0</span></div></div></div></div>
       </div>
 
-      <!-- settings screen 2 -->
-      <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② 终端 · 语音 · server · 安全</span>
-        <div style="position:relative; width:300px; height:640px; border-radius:46px; background:#0a0a0c; padding:9px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
-          <div class="gt-noscroll" style="position:relative; width:100%; height:100%; border-radius:38px; overflow:hidden; background:#F2F2F7;">
-            <div style="position:absolute; top:9px; left:50%; transform:translateX(-50%); width:92px; height:26px; background:#000; border-radius:15px; z-index:20;"></div>
-            <div style="padding:54px 16px 16px;">
-              <!-- Terminal group -->
-              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">终端</div>
-              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">默认打开</span><span style="font-size:13.5px; color:#8a8a8e;">对话 ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">终端字体</span><span style="font-size:13.5px; color:#8a8a8e;">JetBrains Mono ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">字号</span><span style="font-size:13.5px; color:#8a8a8e;">13 ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><span style="font-size:14.5px; color:#1d1d1f;">修饰键显示</span><span style="font-size:13.5px; color:#8a8a8e;">图标 ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><div><div style="font-size:14.5px; color:#1d1d1f;">xterm 渲染器</div><div style="font-size:11px; color:#9a9aa0; margin-top:1px;">真彩 · CJK 宽度 · beta</div></div><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
-              </div>
-              <!-- Voice -->
-              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">语音</div>
-              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">听写引擎</span><span style="font-size:13.5px; color:#8a8a8e;">设备端 ›</span></div>
-              </div>
-              <!-- Server -->
-              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">server</div>
-              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06);"><div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background:#22C55E;"></span><span style="font-size:14.5px; color:#1d1d1f;">home-mac</span></div><span style="font-size:13.5px; color:#8a8a8e;">管理 ›</span></div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">在电脑上打开</span><span style="font-size:13.5px; color:#8a8a8e;">↗</span></div>
-              </div>
-              <!-- Security -->
-              <div style="font-size:11px; font-weight:700; letter-spacing:0.5px; color:#8a8a8e; margin:0 4px 7px;">安全</div>
-              <div style="background:#fff; border-radius:12px; overflow:hidden; margin-bottom:18px;">
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px;"><span style="font-size:14.5px; color:#1d1d1f;">Face ID 解锁</span><span style="width:40px;height:24px;border-radius:12px;background:#22C55E;position:relative;flex:none;"><span style="position:absolute;right:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;"></span></span></div>
-              </div>
-              <div style="text-align:center;"><span style="font-size:12px; color:#a8a8ae;">gtmux 0.9.3 · by ccy</span></div>
-            </div>
-          </div>
-        </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">PickerSheet(点「默认模式」)</span>
+        <div style="width:300px;border-radius:26px;background:#0a0a0c;padding:9px;box-shadow:0 22px 55px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;"><div style="border-radius:19px;overflow:hidden;background:#0D0D0F;padding:14px 13px;"><div style="height:150px;"></div><div style="border-radius:16px 16px 0 0;background:#1C1C1F;border:0.5px solid rgba(255,255,255,0.12);border-bottom:none;padding:14px 14px 20px;margin:0 -13px -14px;"><div style="width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.2);margin:0 auto 12px;"></div><div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px;">默认模式</div><div style="display:flex;align-items:center;gap:9px;padding:11px 4px;border-bottom:0.5px solid rgba(255,255,255,0.08);"><div style="flex:1;"><div style="font-size:13px;color:#fff;">终端</div><div style="font-size:10px;color:rgba(235,235,245,0.34);">完整 TUI</div></div><span style="color:#06B6D4;font-size:15px;font-weight:700;">✓</span></div><div style="display:flex;align-items:center;gap:9px;padding:11px 4px;"><div style="flex:1;"><div style="font-size:13px;color:#fff;">对话</div><div style="font-size:10px;color:rgba(235,235,245,0.34);">当前屏幕概览 + 审批卡</div></div></div></div></div></div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:300px; text-align:center; line-height:1.4;">语言 / 外观 / 默认模式共用同一套 PickerSheet;带副题说明差异。</span>
       </div>
 
-      <!-- settings spec -->
-      <div style="flex:1; min-width:280px; max-width:380px; display:flex; flex-direction:column; gap:11px;">
-        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
-          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">信息架构(按频率)</div>
-          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">
-            <b>账户/Pro</b> · <b>通知</b>(等你/完成开关 + 声音 + 勿扰)· <b>外观</b>(主题/语言/图标)· <b>终端</b>(默认模式/字体/字号/修饰键显示/xterm)· <b>语音</b>(引擎)· <b>server</b>(当前+管理+在电脑打开)· <b>安全</b>(Face ID)· <b>关于</b>(版本)。
-          </div>
-        </div>
-        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
-          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">新增项(相对现状)</div>
-          <div style="font-size:12px; line-height:1.7; color:#5a5a60;">
-            · <b>通知声音 / 勿扰时段</b>:夜里不被 done 吵醒。<br>· <b>主题</b>:跟随系统 / 浅 / 深。<br>· <b>App 图标</b>:备用图标(Pro 彩蛋)。<br>· <b>默认打开 对话/终端</b>:呼应 §14 双模式。<br>· <b>修饰键显示 图标/文字</b>:呼应 Moshi toolbar。<br>· <b>Face ID 解锁</b>:打开 app / 远程连接前生物识别。<br>· <b>语音引擎</b>:设备端 / 云端(配额)。
-          </div>
-        </div>
-        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
-          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">交互规范</div>
-          <div style="font-size:12px; line-height:1.65; color:#5a5a60;">分组 Form;开关即时生效;带二级页的用 <span class="gt-mono" style="font-size:11px;">›</span> 进选择列表(单选打勾);破坏性项(移除 server / 退出登录)红色置底;Pro 项未订阅显示锁,点击进付费墙。</div>
-        </div>
+      <div style="flex:1; min-width:280px; max-width:400px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">访客差异</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;">访客连接隐藏:<b>通知</b>分区(收不到 host 的推送)、<b>在电脑上打开</b>(铸 owner 码)、<b>管理这台 Mac</b>。只剩 连接(server+移除)/ 终端 / 通用 / 关于。</div></div><div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;"><div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">与旧版的差异</div><div style="font-size:12px; line-height:1.7; color:#5a5a60;">旧稿的「账户/Pro」分区随计费取消而移除;通知细分为 等你回应 / 已完成 两个 kind(主开关关闭时子项置灰);「默认模式 终端/对话」「回车直接发送」为终端新增项。</div></div>
       </div>
     </div>
   </div>
@@ -2153,6 +1799,71 @@
         <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
           <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:10px;">splash</div>
           <div style="font-size:12px; line-height:1.65; color:#5a5a60;">原生 LaunchScreen(品牌标记,纯静态、秒出)→ 交接到 RN 同款画面(加转圈)。&lt;1s 不显文案;恢复 token 失败 → 直接进配对页,不卡在闪屏。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 17: HQ 中控 (mobile) ============ -->
+  <div style="margin-top: 72px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;">
+      <span class="gt-mono" style="font-size:12px; font-weight:700; color:#06B6D4;">17</span>
+      <h2 style="margin:0; font-size:22px; font-weight:680; letter-spacing:-0.2px;">HQ 中控 — 口袋指挥所</h2>
+    </div>
+    <p style="margin:0 0 8px; max-width:820px; font-size:13.5px; line-height:1.5; color:#7a7a80;">点开 <span class="gt-mono" style="font-size:12px;">role:"supervisor"</span> 落到<b>专属 HQScreen</b>,不是普通 Detail。三区:<b>状态条</b>(舰队计数 + 订阅窗口 %)· <b>舰队态势板</b>(<span class="gt-mono" style="font-size:12px;">/api/digest</span>)· <b>命令台</b>(与 HQ 对话 + 快捷命令)。所有命令经 HQ 中转;长按舰队行跳到该 worker 的 Detail 直接回。</p>
+    <div style="font-size:12px; color:#9a9aa0; max-width:820px; margin-bottom:22px; line-height:1.5;">雷达里 HQ 用 <b>⌂ 图标</b>置顶、青框,与 worker 区分。这块与仓库已实现的 <span class="gt-mono" style="font-size:11px;">HQScreen.tsx</span> 对齐。</div>
+
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+      <!-- HQ entry in radar -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">① 雷达里的 HQ 入口 · 参谋长卡(与菜单栏 §12 同构)</span>
+        <div style="position:relative; width:280px; border-radius:30px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;"><div style="border-radius:22px; overflow:hidden; background:#0D0D0F; padding:14px 12px;"><div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span style="font-size:22px; font-weight:800; color:#fff;">gtmux</span><span style="display:flex; align-items:center; gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span><span style="font-size:11px; color:rgba(235,235,245,0.55);">home-mac</span></span></div><div style="display:flex; align-items:center; gap:5px; padding:0 2px 5px; color:rgba(235,235,245,0.34);"><span style="font-size:9px;">👁</span><span style="font-size:9px; font-weight:600; letter-spacing:0.9px;">CHIEF OF STAFF · 参谋长</span><div style="flex:1;"></div><span style="font-size:8.5px;">统观全局</span></div><div style="display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:11px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); margin-bottom:10px;"><span style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.5px;width:22px;height:22px;flex:none;"><span style="background:rgba(235,235,245,0.5);border-radius:2px;"></span><span style="background:#06B6D4;border-radius:2px;"></span><span style="background:rgba(235,235,245,0.5);border-radius:2px;grid-column:span 2;"></span></span><div style="flex:1; min-width:0;"><div style="display:flex;align-items:center;gap:7px;"><span style="font-size:13.5px;font-weight:700;color:#fff;">gtmux HQ</span><span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#EF4444;"></span><span style="width:7px;height:7px;border-radius:50%;background:#06B6D4;"></span><span style="width:7px;height:7px;border-radius:50%;background:#06B6D4;"></span><span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span><span style="width:7px;height:7px;border-radius:50%;background:#8E8E93;"></span></span></div><div style="font-size:11px;color:#F5B84A;margin-top:2px;">api 在等你拍板 · 其余正常</div></div><span style="font-size:15px;color:rgba(235,235,245,0.5);">›</span></div><div style="font-size:10px; font-weight:700; letter-spacing:0.6px; color:#EF4444; padding:2px 2px 6px;">NEEDS YOU 1</div><div style="display:flex; align-items:center; gap:10px; padding:6px 2px;"><div style="position:relative; width:30px;height:30px;flex:none;"><div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.11);display:flex;align-items:center;justify-content:center;font:700 11px Menlo;color:rgba(235,235,245,0.78);">CC</div><div style="position:absolute;right:-4px;bottom:-4px;width:15px;height:15px;border-radius:4px;background:#EF4444;"></div></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#fff;">Pica</div><div style="font-size:11.5px;color:rgba(235,235,245,0.34);">permission to run tests</div></div></div></div></div>
+        <span style="font-size:11px; color:#9a9aa0; max-width:280px; text-align:center; line-height:1.4;">与菜单栏 §12 v2 同构:<b>无状态角标</b>(HQ 恒在监视)、无 agent 名/时长;名字旁挂<b>舰队光点条</b>(微缩雷达),副题只说值得知道的事。HQ 自身等你 → 整卡琥珀描边 + 副题红字。点它进 HQScreen。</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; gap:11px;">
+        <span class="gt-mono" style="font-size:11px; color:#9a9aa0;">② HQScreen · 状态条 + 舰队板 + 命令台</span>
+        <div style="position:relative; width:280px; height:600px; border-radius:30px; background:#0a0a0c; padding:10px; box-shadow:0 24px 60px rgba(0,0,0,0.22), inset 0 0 0 2px #2a2a2e;">
+          <div style="width:100%; height:100%; border-radius:22px; overflow:hidden; background:#0D0D0F; display:flex; flex-direction:column;">
+            <!-- status strip -->
+            <div style="padding:14px 13px 10px; background:linear-gradient(135deg, rgba(6,182,212,0.14), transparent); border-bottom:0.5px solid rgba(255,255,255,0.08);">
+              <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:22px; font-weight:300; color:rgba(235,235,245,0.62);">‹</span><span style="font-size:16px; font-weight:700; color:#fff;">gtmux HQ</span><span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span></div>
+              <div style="font-size:11px; color:rgba(235,235,245,0.6); margin-top:6px;"><b style="color:#FF8A84;">1</b> 需要你 · <b style="color:#27C7E6;">2</b> 运行 · 2 空闲 · wk 60% · Fable <b style="color:#F5B84A;">90%</b></div>
+            </div>
+            <!-- fleet board -->
+            <div style="border-bottom:0.5px solid rgba(255,255,255,0.08); max-height:210px; overflow:hidden;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 13px 5px;"><span style="font-size:10px; font-weight:700; letter-spacing:0.6px; color:rgba(235,235,245,0.5);">舰队态势</span><span style="font-size:11px; color:rgba(235,235,245,0.34);">▾</span></div>
+              <div style="padding:6px 9px 8px;">
+                <div style="padding:6px 7px; border-radius:8px; background:rgba(255,255,255,0.05);">
+                  <div style="display:flex; align-items:center; gap:6px;"><span style="width:7px;height:7px;border-radius:2px;background:#EF4444;"></span><span style="font-size:9px;font-weight:700;color:rgba(235,235,245,0.5);border:0.5px solid rgba(255,255,255,0.14);border-radius:3px;padding:0 3px;">w0</span><span style="flex:1;font-size:12px;font-weight:600;color:#fff;">api <span style="color:rgba(235,235,245,0.4);font-weight:400;">Claude</span></span><span style="font-size:10px;color:rgba(235,235,245,0.34);">4m</span></div>
+                  <div style="font-size:10.5px; color:#F5B84A; margin-top:3px; margin-left:13px;">⏸ 1.Yes · 2.don't ask · 3.No</div>
+                </div>
+                <div style="padding:6px 7px;">
+                  <div style="display:flex; align-items:center; gap:6px;"><span style="width:7px;height:7px;border-radius:50%;background:#06B6D4;"></span><span style="font-size:9px;font-weight:700;color:rgba(235,235,245,0.5);border:0.5px solid rgba(255,255,255,0.14);border-radius:3px;padding:0 3px;">w2</span><span style="flex:1;font-size:12px;font-weight:600;color:#fff;">web <span style="color:rgba(235,235,245,0.4);font-weight:400;">Codex</span></span><span style="font-size:10px;color:rgba(235,235,245,0.34);">62%</span></div>
+                  <div style="font-size:10.5px; color:rgba(235,235,245,0.5); margin-top:2px; margin-left:13px;">↳ fix login-token refresh</div>
+                </div>
+              </div>
+            </div>
+            <!-- command console -->
+            <div style="flex:1; padding:11px 12px; background:#0D0D0F;">
+              <div style="display:flex; gap:7px;"><span style="width:20px;height:20px;flex:none;border-radius:6px;background:#0f1115;display:flex;align-items:center;justify-content:center;font-size:11px;color:#27C7E6;">👁</span><div style="background:#1C1C1F; border-radius:11px; border-top-left-radius:3px; padding:8px 11px; font-size:12px; color:rgba(235,235,245,0.9); line-height:1.45;">api 等运行测试权限,前 3 步都过了,建议放行。要我替你回 <b style="color:#27C7E6;">1</b> 吗?</div></div>
+            </div>
+            <!-- chips + bar -->
+            <div style="padding:0 10px 7px; display:flex; gap:6px;"><span style="font-size:11px; color:#fff; background:rgba(255,255,255,0.08); border:0.5px solid rgba(255,255,255,0.12); border-radius:14px; padding:5px 10px;">谁在等我</span><span style="font-size:11px; color:#fff; background:rgba(255,255,255,0.08); border:0.5px solid rgba(255,255,255,0.12); border-radius:14px; padding:5px 10px;">该我拍板</span></div>
+            <div style="padding:8px 12px 16px; border-top:0.5px solid rgba(255,255,255,0.07); display:flex; gap:8px; align-items:center;"><span style="flex:1; height:34px; border-radius:17px; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.1); display:flex; align-items:center; padding:0 13px; font-size:12.5px; color:rgba(235,235,245,0.34);">命令 gtmux HQ…</span><span style="width:34px;height:34px;border-radius:17px;background:#06B6D4;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;">↑</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- spec -->
+      <div style="flex:1; min-width:280px; max-width:360px; display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
+          <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">与实现对齐</div>
+          <div style="font-size:12px; line-height:1.6; color:#5a5a60;">已实现于 <span class="gt-mono" style="font-size:11px;">HQScreen.tsx</span>:状态条(计数+窗口%+资源告警)、舰队板(digest,waiting 的 ask 琥珀高亮、ctx% 右对齐)、命令台(ChatView)、快捷 chips(选中某行时变 continue/inspect/reply-for-me)。此稿为其视觉规范镜像。</div>
+        </div>
+        <div style="background:#F4F8FF; border:1px solid rgba(10,90,200,0.15); border-radius:12px; padding:14px 16px;">
+          <div style="font-size:12.5px; font-weight:660; color:#0a5ac8; margin-bottom:5px;">三屏一致</div>
+          <div style="font-size:12px; line-height:1.6; color:#3a4a60;">HQ 在菜单栏(指挥所面板)、手机(HQScreen)、网页(宽屏指挥台)是<b>同一心智</b>:态势 + 对话 + 派活,规模随屏放大。👁 参谋长角色、青框、「一切经 HQ」红线全表面统一。</div>
         </div>
       </div>
     </div>

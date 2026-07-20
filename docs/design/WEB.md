@@ -68,3 +68,14 @@ gtmux logo · **布局预设**下拉（Frontend trio…）· **贴齐网格**开
 - 实现：`web/app.js` 加一个 **board 布局引擎**（绝对定位 + 拖拽/缩放 + localStorage 持久化），
   tile 复用现有 xterm 逻辑；响应式回退：窄屏自动回到现有单列 radar→pane。
 - 渐进式：先并发多 pane + 拖拽缩放 + 收起/调宽，再加预设/自动浮出/专注。
+
+
+---
+
+## 10. HQ 中控宽屏指挥台 · §07 mockup
+
+宽屏三栏：左**舰队态势**（`/api/digest`）· 中**与 HQ 对话** · 右**派活台账**（`/api/tasks`，spawn/reap）。目录树 HQ 用 ⌂ 置顶，点它开指挥台而非普通 pane 镜像；命令经 `/api/send` 发 HQ pane。窄屏(<1100px)折叠为竖向。HQ 指挥台**不对 guest 开放**。
+
+## 11. 输入能力 + 权限透出 · §08 mockup
+
+网页可输入（`POST /api/send` / `attach`）。每 tile 头部明示 **⌨可输入**（青，有 composer + 1/2/3）/ **👁只读**（灰，无输入区 + 「未授权」说明，不留空文本框）。owner 全 pane 可输入；guest 仅该分享链接勾选的「输入」范围（逐链接 scope，输入⊆可见）+ host「允许协作者输入」总开关。owner/guest 顶栏身份不同。服务端强制、撤销即时。

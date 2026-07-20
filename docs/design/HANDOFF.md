@@ -1,62 +1,64 @@
-# 交接给仓库 Claude Code — 整体实现（FINAL · 2026-06）
+# 交接给仓库 Claude Code — 设计对齐与迭代（2026-07-18）
 
 ## 你（用户）怎么操作
 
-1. 把本 `docs/design/` 的内容**叠加覆盖**进仓库(只覆盖同名文件)。
-   > 不要删除仓库自有的 `DECISIONS-FOR-CCY.md` / `SECURITY.md` / `multi-agent-multi-terminal.md` /
-   > `multiplexer-research.md` / `remote-access-tunnel.md` / `RESEARCH-prior-art-2026-06.md`——它们不在本包里。
-2. 仓库根开 Claude Code，整段粘贴下面「给 CC 的 Prompt」。
+1. 把本 `docs/design/` **叠加覆盖**进仓库的 `docs/design/`（同名文件覆盖）。
+   > 不要清空目录：仓库自有的 `multi-agent-multi-terminal.md`、`remote-access-tunnel.md`、`DECISIONS-*` 等不在本包里，保留。
+   > 例外：仓库的 `MOBILE.md` 若含比本包更新的实现记录（NativeTerm/chat 等小节），取并集而非直接覆盖。
+2. 把 `CLAUDE.snippet.md` 合并进仓库根 `CLAUDE.md`（替换其中旧的设计段落）。
+3. 仓库根启动 Claude Code，整段粘贴下面的 Prompt。
 
 ---
 
-## 给 CC 的 Prompt（整段粘贴）
+## 粘贴给 CC 的 Prompt
 
-请按设计做一次整体实现。先读，以它们为准：
+你要为 gtmux 做一轮**设计对齐与迭代**，覆盖三个表面：菜单栏（`macapp/`）、手机（`mobileapp/`）、Web（`internal/server/web/`）。设计权威在 `docs/design/`：
 
-- `docs/design/ITERATIONS-2026-06.md` —— 本轮变更权威清单（菜单栏 A1–A5、移动端 B1–B4、状态语义 C）。
-- `docs/design/DESIGN.md`（菜单栏）、`docs/design/MOBILE.md`（移动端）—— 既有规范。
-- `docs/design/REVIEW-mobile-01.md` —— 实拍走查待修项。
-- 可视参照（浏览器打开，需联网；每个 section 顶部有编号 §）：
-  `docs/design/mockup/gtmux-menubar.dc.html`、`gtmux-mobile.dc.html`、`gtmux-web.dc.html`。
+先读（顺序）：
+1. `docs/design/DESIGN.md`（菜单栏权威规范，§12/§13/§14 为本轮重点）
+2. `docs/design/MOBILE.md` + `docs/design/WEB.md`
+3. `docs/design/ITERATIONS-2026-06.md` 的 **§E / §F**（最新两轮变更清单，权威）
+4. 浏览器打开 `docs/design/mockup/gtmux-menubar.dc.html`、`gtmux-mobile.dc.html`、`gtmux-web.dc.html` 对照像素细节（离线看不了就按文字规范）。
 
-**贯穿铁律**（先自查再动任何表面）：
-- **「等你输入」= 仅 `waiting`（红）；`working`（蓝）永不等输入。** 结构化 `1/2/3` 回应只挂 waiting。
-- 状态三重编码（色 + 形 + 字形）全表面一致；颜色只编码状态、不编码 agent 身份（身份用官方图标 / 中性字标）。
-- 中英 + CJK 不换行；连接指示用 **server 名 + 状态点**（已连接绿 / 重连琥珀 / 离线红），不用 “live” 字样。
+### P0 · 重点迭代（按序执行，每项一个 commit）
 
-按顺序实施，每完成一项跟 mockup 对应 § 截图比对：
+**1. 偏好设置整窗重做**（menubar mockup §13）
+- 分组表单：通用 / 状态栏 / 通知 / **远程访问** / **我的设备·配对** / **分享** / 软件更新。
+- 远程访问：`关闭 | 局域网 | 任意网络` 分段 + 地址副题 + 隧道后端 `标准 | 直连`（直连=**兑换码解锁**，走**你自己的 VPS+域名** self-tunnel）+「当前已连接」实时名单（空则整块隐藏）。切「任意网络」先弹长期敞口确认。
+- 配对 sheet：顶部**访问状态条**（模式+后端+地址+切换）；远程访问未开时先走**前置步**（选 局域网/任意网络，任意网络下细选 标准/直连、未解锁置灰；按钮只「**开启**」，配对码回主页生成）；主页 = 一次性码（5 分钟）**三种媒介**：扫 QR / 浏览器 `url/#c=码` / `gtmux attach`。⚙︎ 菜单「配对设备…」与空态 CTA 直达，不经偏好。
+- 分享：逐 session 勾「**可见 / 输入**」（输入⊆可见，可见未勾则输入置灰）；创建后翻**交付页**（与配对同构一码三媒介，`#g=` guest token 只显一次）；已有链接行可展开编辑 scope、可吊销；「允许协作者输入」总开关。
+- 文案统一「可见/输入」；图标扁平（几何形+等宽 chip），**无 emoji**。
 
-**菜单栏 app（SwiftUI）**
-1. 状态项 = **pane 网格品牌图标**，点亮格随最紧急状态（红方块·双竖线 / 青·加载环 / 绿·对勾）+ 计数；无底色，深/浅/着色栏自适应（§02）。
-2. 分区可折叠（Hide/Show + 箭头，记住每类）（§01 行为）。
-3. waiting 行就地展开 `1/2/3` 回应（§09）。
-4. 快速切换器：needs-you 优先、头像+角标、行内序号、选中 waiting 就地回应（§04）。
-5. macOS 系统通知带 1/2/3 动作 + 文字回复，去重 + 自动撤回（§10）。
-6. Pair 配对面板（带 logo 的二维码 + 本地/远程）（§11）。
+**2. HQ 中控 · 参谋长卡 v2**（menubar §12，已选定方案）
+- 卡片 = 「👁 CHIEF OF STAFF · 参谋长 · 统观全局」角色横幅 + 1px 描边面板 + **品牌网格头像（无状态角标）** + **舰队光点条**（微缩雷达：每 agent 一枚色点，方=waiting）+ 一行值得知道的副题；HQ 自身等你 → **整卡琥珀**。
+- 未运行 = 虚线幽灵条「中控未运行 · 点击启动」（shell `gtmux hq`）；搜索与真空态隐藏。
+- 点卡 = **跳到中控 pane**（不开面板）。摘要计数**不含** HQ；状态栏图标计数**含** HQ。
+- 手机雷达 HQ 入口同构（mobile §17）；Web 宽屏指挥台三栏（态势 `/api/digest` / 对话 / 派活台账 `/api/tasks`，不对 guest 开放）（web §07）。
 
-**移动端 app（RN）**
-7. Terminal 页（§09–§11 三部曲）：ANSI 彩色 + **滚动锁定**（向上滚不被新输出拽走，↓最新浮标带「新」点）+ **复制**（终端选择 / 代码块复制）+ 双模式审批卡 + **多行输入**（回车换行、↑ 发送、全屏撰写）+ 粘贴/附件 + 图片标注。
-8. 通知 / Live Activity / 灵动岛 **不进 app 直接回复**（1/2/3 + 真实 label 分行）（§12–§14）。
-9. 设置页按信息架构补全（§15）。
-10. **启动 splash**（`tmux × agent` slogan）/ **离线态**（红横幅 + 缓存置灰，不清屏）/ **进 pane 加载态**（骨架 + 转圈 + 慢/失败兜底）（§16）。
-11. iPad split-view + 竖屏抽屉 + 指针/Pencil（§06）。
+**3. 底栏 v3**（menubar §14）
+- 永久一行：左「＋ 新建会话」（图标+文字同行）· 右 状态内联（绿点+设备数、「输入」chip，**仅为真时**）+ 版本号（dim mono 常显）+ ⚙︎ 菜单（偏好设置… ⌘, / 配对设备… / 检查更新 / 退出 ⌘Q）。
+- 情境行「↩ 恢复上次的工作现场 · N 会话 M 窗口」：**仅重启后**（有快照且无在跑会话）出现，一键 `gtmux restore`。
+- 旧「接回/新建/配对」三格与旧连接条删除。
 
-**Web 浏览器镜像**（独立表面，详见 `WEB.md`）
-12. **工作台**：左侧 session→window→pane 目录树（可搜/可展开/**可收起·右缘拖拽调宽**，窄屏自动收起）+ 自由画板（拖 pane 生 tile、多个并发 `/api/pane` 实时镜像、拖动/缩放/贴齐）。
-13. **tile 缩放其余自适应回流 + 单击最大化聚焦**（gtmux-web §02）；tile 头部 **终端 / 对话 / diff**（不要 term/chat）。
-14. **对话模式·宽屏版**（§03）：轮次目录 + 居中对话列 + 气泡悬停复制/引用 + waiting 审批卡 + 多行 composer；**人类头像默认「人形电池」**（青色渐变底，与 agent 官方图标区分；设置可换/上传/emoji/首字母），三屏统一替换现有 `UserAvatar`。
-15. 一次性可过期链接 + 顶栏（布局预设·贴齐网格·自动浮出 waiting·连接指示）+ 键盘（⌘K/1–9/f/Esc/g/[ ]///·对话 j/k）。红线：**view-only，不新增后端**，只用现有 `/api/agents·pane·transcript·diff·icon·SSE`；窄屏可退回现有单列。
+**4. 状态栏图标同步**（menubar §02）
+done 态不带计数；计数=waiting 数否则 working 数（`BadgeText`）且**含 HQ**；三档显示（点+数字/仅圆点/空闲时隐藏）入口在偏好·状态栏。
 
-每项落地后，若与 mockup 有出入，**先报差异再改**，不要擅自偏离。
+### 移动端 F 轮（ITERATIONS §F，对照现有实现查漏补缺）
+- F1 计费全部移出手机：无付费墙；添加 server = 扫码主路径（`#c=`我的 Mac / `#g=`访客）；Servers 两轨分组（我的 MAC / 访客连接）、移除=清 Keychain+撤推送 token。
+- F2 Composer：静息键条 `⌨ | Tab ⏎ Ctrl-C Esc | 快捷短语▾ 历史`；写死 1/2/3 移除，waiting 回应由 **ApprovalCard**（`/api/options` 真实选项 1..N）承担；回车=换行、↑ 发送、⤢ 全屏撰写；附件先暂存后发送（上传带 %、失败重试、图片先过标注器）。
+- F3 通知：category 固定三键 1·Yes/2·Always/3·No，后台 `/api/send` **数字不带 Enter**；点按深链（payload 带 server 名先切服务器）；角标=waiting 数。
+- F4 设置页：Moshi 分组 + PickerSheet（行显当前值+›）；连接/终端/通知/通用/关于；**访客隐藏 owner 专属项**。
+- F5 iPad：SplitScreen 宽度≥768、侧栏 320 复用 SectionList、原地换主区、推送深链=选中行。
+- F6 HQ 雷达入口 = 参谋长卡（同 P0.2）。
+- F7 Demo 模式优化（mobile §18 / ITERATIONS §F7）：入口升级为 DEMO 徽章次级卡；批准后**状态弧** waiting→working→idle(latest) 在雷达可见；HQ 参谋长卡入选 demo（canned digest + 预设对话）。边界铁律不动：DEMO chip 全程、Servers 无条目、退出重置、零网络。
 
----
+### Web
+- tile 头部明示 `⌨ 可输入`（青，composer+数字 chip）/ `👁 只读`（灰，无输入框+「未授权」一行）；guest 权限=**逐链接 scope**（输入⊆可见）+ 总开关，服务端强制；owner/guest 顶栏身份不同。
+- 状态徽章补**字形**（红方块双竖线 / 青加载环 / 绿✓ / 灰点）——色+形+字形三重编码。
 
-## 落地点速查
+### 红线（不可违背）
+- 颜色只表达状态（`#EF4444/#06B6D4/#22C55E/#8E8E93`）；绝不只靠颜色。
+- `1/2/3` 结构化回应只在 waiting 出现，选项文案取 agent 真实 prompt。
+- 权限服务端强制；HQ 只建议不代拍板；双语 en/zh、CJK 不换行。
+- 与 mockup/规范有出入：**先报差异再改**，不要擅自偏离；每完成一项对照 mockup 自查并输出验收清单。
 
-- 菜单栏弹层/切换器/通知/Pair/状态项 → macOS app SwiftUI。
-- prompt 解析（`❯ N. label`）→ 抽成共享逻辑，菜单栏 + 通知 + 移动端复用。
-- 终端渲染/滚动锁定/复制/加载态 → `mobileapp/src/screens/DetailScreen.tsx`。
-- 多行输入/粘贴/附件 → `mobileapp/src/ui/Composer.tsx`；图片标注 → `ImageMarkup.tsx`。
-- 双模式/审批卡 → DetailScreen + 新增 Chat 视图。
-- 设置 → `SettingsScreen.tsx`；splash → 原生 LaunchScreen + RN。
-- 配对/Web → `api/contract.md`、`internal/server/`（Web 前端全在 `internal/server/web/`）、`PairingScreen.tsx`。
