@@ -76,7 +76,14 @@ struct CodeDeliveryBlock: View {
 struct PairDeviceSheet: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var pairStore = PairStore.shared
+    @ObservedObject var remote = RemoteAccess.shared
     let onClose: () -> Void
+
+    // Pre-step choices (only used when the door is shut): LAN vs anywhere, and — for
+    // anywhere — standard (Cloudflare) vs direct (self-hosted, redeem-unlocked).
+    @State private var preLan = true
+    @State private var preDirect = false
+    @State private var confirmAnywhere = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -87,23 +94,12 @@ struct PairDeviceSheet: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if let info = pairStore.pairInfo, let code = pairStore.pairCode {
-                CodeDeliveryBlock(
-                    l10n: l10n,
-                    qrText: Pairing.payload(info, enrollCode: code),
-                    phoneHint: l10n.tr("Phone — scan in the app", "手机 —— App 里扫码"),
-                    browserTitle: l10n.tr("Browser", "浏览器"),
-                    browserValue: "\(info.url)/#c=\(code)",
-                    terminalValue: "gtmux attach '\(info.url)/#c=\(code)'",
-                    note: info.anywhere ? nil : l10n.tr(
-                        "(LAN address — run `gtmux tunnel` first to pair from outside)",
-                        "（局域网地址 —— 想在外网配对，先跑 `gtmux tunnel`）"))
-            } else if pairStore.pairFailed {
-                Text(l10n.tr("Couldn't mint a pairing code — is remote access on? (gtmux serve / gtmux tunnel)",
-                             "生成配对码失败 —— 远程访问开了吗？（gtmux serve / gtmux tunnel）"))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
+            accessStatusBar
+
+            if remote.mode == .off {
+                preStep // door shut → open it first; then this view self-heals to the code
             } else {
-                ProgressView().controlSize(.small)
+                codeStep
             }
 
             HStack {
@@ -113,9 +109,128 @@ struct PairDeviceSheet: View {
         }
         .padding(18)
         .frame(width: 480)
-        // Mint once (idempotent in the store); clear on close so a reopen mints fresh.
-        .onAppear { pairStore.mintPairCodeIfNeeded() }
+        // Mint only once the door is open; on close clear so a reopen mints fresh.
+        .onAppear { remote.refresh(); if remote.mode != .off { pairStore.mintPairCodeIfNeeded() } }
+        .onChange(of: remote.mode) { _, m in
+            if m != .off && pairStore.pairCode == nil { pairStore.mintPairCodeIfNeeded() }
+        }
         .onDisappear { pairStore.clearPairCode() }
+    }
+
+    // Always-visible access status bar: the current door (mode · backend) so the sheet
+    // is self-explanatory — Preferences is the management panel, this is the task flow.
+    @ViewBuilder private var accessStatusBar: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "antenna.radiowaves.left.and.right").font(.system(size: 11))
+            Text(accessBarText).font(.system(size: 11, weight: .medium))
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(remote.mode == .off ? Theme.Status.none : Theme.Status.idle)
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.12)))
+    }
+
+    private var accessBarText: String {
+        switch remote.mode {
+        case .off: return l10n.tr("Remote access is off", "远程访问未开启")
+        case .lan: return l10n.tr("Wi-Fi (LAN)", "局域网")
+        case .anywhere:
+            let b = remote.backend == .selfHosted
+                ? l10n.tr("Direct", "直连") : l10n.tr("Standard", "标准")
+            return l10n.tr("Anywhere · ", "任意网络 · ") + b
+        }
+    }
+
+    // The pre-step: choose the door, open it. "开启" only opens access — the code is
+    // minted by the code step once the door is up (no round-trip back here).
+    @ViewBuilder private var preStep: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(l10n.tr("Turn on remote access first, then a pairing code is generated.",
+                         "先开启远程访问，再生成配对码。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+            Picker("", selection: $preLan) {
+                Text(l10n.tr("Wi-Fi", "局域网")).tag(true)
+                Text(l10n.tr("Anywhere", "任意网络")).tag(false)
+            }.pickerStyle(.segmented).labelsHidden()
+
+            if !preLan {
+                HStack(spacing: 8) {
+                    backendChip(l10n.tr("Standard", "标准"), on: !preDirect) { preDirect = false }
+                    backendChip(l10n.tr("Direct", "直连"), on: preDirect,
+                                disabled: !remote.selfTunnelConfigured) {
+                        if remote.selfTunnelConfigured { preDirect = true }
+                    }
+                }
+                if !remote.selfTunnelConfigured {
+                    Text(l10n.tr("Direct needs a redeem code — unlock it in Preferences › Remote access.",
+                                 "直连需兑换码解锁 —— 在 偏好设置 › 远程访问 里解锁。"))
+                        .font(.system(size: 10)).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Button(l10n.tr("Turn on", "开启")) {
+                if preLan { remote.enableLan() } else { confirmAnywhere = true }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(remote.busy)
+
+            if let e = remote.lastError, !e.isEmpty {
+                Text(e).font(.system(size: 10)).foregroundStyle(Theme.Status.waiting)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        // Anywhere is a standing exposure — confirm before opening it.
+        .confirmationDialog(l10n.tr("Expose this Mac to the whole internet?",
+                                    "把这台 Mac 暴露到整个互联网？"),
+                            isPresented: $confirmAnywhere, titleVisibility: .visible) {
+            Button(l10n.tr("Turn on Anywhere", "开启任意网络"), role: .destructive) {
+                remote.enableAnywhere(selfHosted: preDirect)
+            }
+            Button(l10n.tr("Cancel", "取消"), role: .cancel) {}
+        } message: {
+            Text(l10n.tr("A tunnel stays up so paired devices reach this Mac from anywhere until you turn it off.",
+                         "隧道会一直开着，配对设备可从任意网络访问这台 Mac，直到你关闭。"))
+        }
+    }
+
+    // The code step: one code, three doors (shown once the door is open).
+    @ViewBuilder private var codeStep: some View {
+        if let info = pairStore.pairInfo, let code = pairStore.pairCode {
+            CodeDeliveryBlock(
+                l10n: l10n,
+                qrText: Pairing.payload(info, enrollCode: code),
+                phoneHint: l10n.tr("Phone — scan in the app", "手机 —— App 里扫码"),
+                browserTitle: l10n.tr("Browser", "浏览器"),
+                browserValue: "\(info.url)/#c=\(code)",
+                terminalValue: "gtmux attach '\(info.url)/#c=\(code)'",
+                note: info.anywhere ? nil : l10n.tr(
+                    "(LAN address — switch to Anywhere to pair from outside)",
+                    "（局域网地址 —— 想在外网配对，切到「任意网络」）"))
+        } else if pairStore.pairFailed {
+            Text(l10n.tr("Couldn't mint a pairing code — try reopening.",
+                         "生成配对码失败 —— 重新打开试试。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+        } else {
+            ProgressView().controlSize(.small)
+        }
+    }
+
+    // A selectable backend chip (bordered capsule); greyed + inert when disabled.
+    @ViewBuilder private func backendChip(_ title: String, on: Bool,
+                                          disabled: Bool = false,
+                                          _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.system(size: 11, weight: .medium))
+                .padding(.horizontal, 12).padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 6)
+                    .fill(on ? Theme.Status.working.opacity(0.18) : Color.secondary.opacity(0.10)))
+                .overlay(RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(on ? Theme.Status.working.opacity(0.55) : Color.clear, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .opacity(disabled ? 0.4 : 1)
     }
 }
 
