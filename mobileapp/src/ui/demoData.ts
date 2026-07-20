@@ -5,13 +5,18 @@
 // language + ordering (needs-you → working → idle → running → Elsewhere) is on display.
 
 import {Agent, PaneResponse, ReplyOption} from '../api/types';
-import {TranscriptTurn} from '../api/client';
+import {DigestRow, TranscriptTurn} from '../api/client';
 
 // Built relative to "now" so the "5m / 1h ago" labels stay realistic over time.
 export function sampleAgents(): Agent[] {
   const now = Math.floor(Date.now() / 1000);
   const base = {window: '0', pane: '0', loc: '', activity: false, latest: false};
   const rows: Agent[] = [
+    // The chief-of-staff card joins the demo (F7③): a supervisor row renders the
+    // HQCard above the list (never a section row — theme.sections excludes it).
+    {...base, pane_id: '%1', session: 'hq', loc: 'hq:0.0', agent: 'Claude Code',
+      role: 'supervisor', status: 'working', task: 'api is waiting on you · rest normal',
+      source: 'tmux', since: now - 3600},
     {...base, pane_id: '%7', session: 'api', loc: 'api:0.0', agent: 'Claude Code',
       status: 'waiting', task: 'permission to run tests', source: 'tmux', since: now - 240},
     {...base, pane_id: '%11', session: 'web', loc: 'web:0.0', agent: 'Claude Code',
@@ -40,6 +45,11 @@ const secAgo = (n: number) => new Date(Date.now() - n * 1000).toISOString();
 // Per-pane terminal screen (what NativeTerm shows). The hero (%7) shows a
 // permission prompt with the 1/2/3 choices the ApprovalCard picks up.
 const PANE_TEXT: Record<string, string> = {
+  '%1':
+    'gtmux HQ — chief of staff\n\n' +
+    '⟣ fleet: 6 sessions · 1 waiting (api: run tests?) · rest normal\n' +
+    '⟣ api is blocked on a permission — worth a look; web is mid-refactor.\n' +
+    '⟣ nothing else needs you.\n',
   '%7':
     'refactor auth middleware\n\n' +
     '● Split verifyToken() out of the request handler and added a\n' +
@@ -83,6 +93,16 @@ export function demoPane(paneId: string): PaneResponse {
 
 // Per-pane chat transcript (what ChatView shows).
 const TRANSCRIPT: Record<string, TranscriptTurn[]> = {
+  // The HQ command console's preset exchange (F7③) — one believable turn showing
+  // what the chief of staff is FOR: a status question answered with judgment.
+  '%1': [
+    {
+      prompt: 'status?',
+      response:
+        '6 sessions. **api** is waiting on a permission (run tests) — that one is worth your tap. web is mid-refactor (auth middleware), worker just finished retry backoff, the rest are quiet. Nothing else needs you.',
+      time: secAgo(600),
+    },
+  ],
   '%7': [
     {
       prompt: 'Refactor the auth middleware to use the new token verifier.',
@@ -107,6 +127,32 @@ export function demoOptions(paneId: string): ReplyOption[] {
     {n: 2, label: "Yes, and don't ask again this session"},
     {n: 3, label: 'No, tell me what to change'},
   ];
+}
+
+// The HQ fleet board's canned digest (F7③) — derived from the CURRENT agent rows
+// so the status arc (waiting→working→idle) shows up on the board too.
+const DIGEST_EXTRAS: Record<string, Partial<DigestRow>> = {
+  '%7': {goal: 'refactor auth middleware', last: 'split verifyToken() + tests', ask: 'run the test suite?'},
+  '%11': {goal: 'refactor auth middleware', last: 'extracting the token check'},
+  '%8': {goal: 'add retry backoff', last: 'backoff + jitter landed, tests green'},
+  '%3': {goal: 'draft the API reference', last: 'v1 endpoints drafted, TODO examples'},
+  '%9': {goal: 'wire up the dashboard', last: 'metrics cards on /api/stats', bg: 'npm run dev'},
+  '%5': {last: 'terraform apply in flight'},
+};
+export function demoDigest(agents: Agent[]): DigestRow[] {
+  return agents
+    .filter(a => a.source !== 'native')
+    .map(a => ({
+      pane_id: a.pane_id,
+      loc: a.loc,
+      agent: a.agent,
+      source: a.source,
+      status: a.status,
+      role: a.role,
+      goal: a.task || undefined,
+      since: a.since,
+      ...(a.status === 'waiting' ? DIGEST_EXTRAS[a.pane_id] : {...DIGEST_EXTRAS[a.pane_id], ask: undefined}),
+    }));
 }
 
 // A believable git diff for the "Diff" control.
