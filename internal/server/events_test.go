@@ -230,6 +230,37 @@ func TestHubTally(t *testing.T) {
 	}
 }
 
+// The supervisor (HQ) is a meta-layer: it must never count toward the WORKER tally the
+// lockscreen shows, nor set the "who's waiting" headline — even when HQ itself is
+// waiting (hq-meta-layer).
+func TestHubTallyExcludesSupervisor(t *testing.T) {
+	cur := []AgentStatus{
+		// HQ itself waiting — must NOT count, must NOT set the headline.
+		{PaneID: "%1", Agent: "Claude Code", Loc: "hq:0.0", Task: "your call?", Status: "waiting", Role: "supervisor"},
+		{PaneID: "%7", Agent: "Claude Code", Loc: "api:0.0", Task: "run tests?", Status: "waiting"},
+		{PaneID: "%2", Agent: "Codex", Loc: "worker:0.0", Status: "working"},
+	}
+	var tallies []Tally
+	h := newHub(func() []AgentStatus { return cur }, time.Hour, nil)
+	h.onTally = func(tl Tally) { tallies = append(tallies, tl) }
+
+	h.tick()
+	if len(tallies) != 1 {
+		t.Fatalf("want one tally, got %+v", tallies)
+	}
+	got := tallies[0]
+	if got.Waiting != 1 { // the worker only — HQ excluded
+		t.Errorf("Waiting = %d, want 1 (HQ must not count)", got.Waiting)
+	}
+	if got.Working != 1 {
+		t.Errorf("Working = %d, want 1", got.Working)
+	}
+	// The headline is the WORKER, never HQ, even though HQ sorts first.
+	if got.WaitingSession != "api" || got.WaitingTitle != "run tests?" {
+		t.Errorf("headline = %q/%q, want api/run tests? (HQ must not hijack it)", got.WaitingSession, got.WaitingTitle)
+	}
+}
+
 // TestHubNilStatuses verifies the loop is a safe no-op without a status source.
 func TestHubNilStatuses(t *testing.T) {
 	h := newHub(nil, time.Hour, nil)
