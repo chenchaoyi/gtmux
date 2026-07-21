@@ -115,6 +115,14 @@ func ensureServer() {
 	restoreLogf("ensureServer: boot=%s save=%q hadLayout=%v restoreScript=%q savedSessions=%v",
 		boot, save, hadLayout, script, savedSessionNames(save))
 
+	// A save that stopped updating (a disarmed continuum autosave) would otherwise
+	// restore an ancient snapshot with no signal. Warn loudly before restoring it —
+	// `w` is already localized, so pass it as both halves.
+	if w := saveStalenessWarning(save, time.Now()); w != "" {
+		i18n.Sae(w, w)
+		restoreLogf("ensureServer: STALE-SAVE WARNING — %s", w)
+	}
+
 	if script != "" {
 		i18n.Say("tmux server not running — restoring your saved sessions via tmux-resurrect (may take a moment)...",
 			"tmux server 未运行，正在用 tmux-resurrect 恢复你的存档 session（可能要等一会）...")
