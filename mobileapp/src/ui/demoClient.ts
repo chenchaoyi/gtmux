@@ -7,9 +7,9 @@
 // server (F7②). State resets whenever a fresh client is made (each time Demo mode
 // is opened).
 
-import {GtmuxClient, DigestRow, TranscriptTurn, SendPayload} from '../api/client';
+import {GtmuxClient, DigestRow, TranscriptTurn, SendPayload, UsageReport} from '../api/client';
 import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
-import {sampleAgents, demoDigest, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply} from './demoData';
+import {sampleAgents, demoDigest, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme} from './demoData';
 
 // What the hero pane (%7) shows AFTER you approve running the tests.
 const TESTS_RAN =
@@ -19,6 +19,7 @@ const TESTS_RAN =
   '  All green — the refactor is verified. Want me to open a PR?\n';
 
 const HERO = '%7';
+const HERO_HQ = '%1'; // the supervisor pane — answers in the chief-of-staff voice
 const ARC_MS = 5000; // waiting → working dwell before idle+latest (per MOBILE §18)
 
 // makeDemoClient builds the fake client. `onAgents` (the Demo screen's setState)
@@ -73,7 +74,10 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
           if (id === HERO) startArc(); // …and the radar walks waiting→working→idle
         }
       } else if (t) {
-        (typed[id] ??= []).push({prompt: t, response: demoReply(lang), time: new Date().toISOString()});
+        // The HQ console (%1) answers in the chief-of-staff voice; workers get the
+        // generic canned reply. Both end on a pair-your-Mac beat.
+        const reply = id === HERO_HQ ? demoHQReply(lang, t) : demoReply(lang);
+        (typed[id] ??= []).push({prompt: t, response: reply, time: new Date().toISOString()});
       }
       return snap(id);
     },
@@ -81,11 +85,22 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     async digest(): Promise<DigestRow[]> {
       return demoDigest(currentAgents());
     },
-    async usage() {
-      return null;
+    // Believable telemetry so the HQ command screen's status strip + board meta
+    // (subscription window %, disk/mem, per-row `62% · 5.1k`) aren't blank — that
+    // telemetry is the chief-of-staff's whole edge.
+    async usage(): Promise<UsageReport> {
+      return {
+        limits: {
+          windows: [
+            {label: '5h', pct_used: 62, reset_at: new Date(Date.now() + 2.4 * 3600e3).toISOString()},
+            {label: 'week', pct_used: 41, reset_at: new Date(Date.now() + 3.5 * 24 * 3600e3).toISOString()},
+          ],
+        },
+        resource: {machine: {disk_free_gb: 84, mem_free_pct: 38, mem_tier: 'ok', warn: ''}},
+      };
     },
     async theme(): Promise<TermTheme | null> {
-      return null;
+      return demoTheme();
     },
     async diff(id: string): Promise<string> {
       return demoDiff(id);
@@ -97,9 +112,10 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     iconUri() {
       return {uri: '', headers: {}};
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async upload(): Promise<any> {
-      return {ok: true};
+    // Demo upload resolves to a believable staged path (the real client returns the
+    // uploaded path string), so the composer's attach flow behaves, not a no-op stub.
+    async upload(): Promise<string | null> {
+      return '~/Uploads/demo.png';
     },
   };
   return fake as unknown as GtmuxClient;
