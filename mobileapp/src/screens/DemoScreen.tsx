@@ -96,7 +96,7 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
             agents={agents}
             pal={pal}
             lang={lang}
-            onPressAgent={setSelected}
+            onPressAgent={a => a.source !== 'native' && setSelected(a)}
             refreshing={false}
             onRefresh={() => {}}
             collapsed={collapsed}

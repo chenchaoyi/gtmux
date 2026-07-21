@@ -69,4 +69,36 @@ describe('demo HQ', () => {
     expect(turns).toHaveLength(1);
     expect(turns[0].response).toMatch(/waiting/);
   });
+
+  it('serves believable telemetry so the HQ status strip + board meta are not blank', async () => {
+    const client = makeDemoClient('en');
+    const u = await client.usage();
+    expect(u?.limits?.windows?.length).toBeGreaterThan(0);
+    expect(u?.resource?.machine?.disk_free_gb).toBeGreaterThan(0);
+    const hero = (await client.digest()).find(r => r.pane_id === '%7')!;
+    expect(hero.tok).toBeGreaterThan(0);
+    expect(hero.ctx).toBeGreaterThan(0); // → a `62% · 5.1k` row meta
+  });
+
+  it('answers the HQ console in the chief-of-staff voice, not the flat worker reply', async () => {
+    const client = makeDemoClient('en');
+    await client.send('%1', {text: "who's waiting?"});
+    const hqTurn = (await client.transcript('%1')).slice(-1)[0];
+    expect(hqTurn.response).toMatch(/api/); // names the waiter, not a generic "this is the demo"
+    await client.send('%8', {text: 'anything?'});
+    const workerTurn = (await client.transcript('%8')).slice(-1)[0];
+    expect(workerTurn.response).not.toBe(hqTurn.response); // worker gets the generic reply
+  });
+});
+
+// #2: the demo terminal must show the flagship COLOR mirror, not flat grey.
+describe('demo terminal color', () => {
+  it('the hero panes carry real ANSI + a dark theme is served', async () => {
+    const client = makeDemoClient('en');
+    const hero = await client.pane('%7');
+    // eslint-disable-next-line no-control-regex
+    expect(hero.text).toMatch(/\x1b\[/); // SGR present → parseAnsi renders color
+    const theme = await client.theme();
+    expect(theme?.palette?.length).toBe(16);
+  });
 });
