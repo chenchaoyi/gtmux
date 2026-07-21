@@ -172,12 +172,13 @@ struct MenuView: View {
                         HStack(spacing: 11) {
                             GtmuxLogo(size: 22) // brand grid, NO status badge
                             VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 8) {
-                                    Text("gtmux HQ")
-                                        .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
-                                    fleetPips(p)
-                                }
-                                Text(hq.task.isEmpty ? l10n.tr("all sessions normal", "各会话正常") : hq.task)
+                                Text("gtmux HQ")
+                                    .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
+                                // The INTELLIGENCE HEADLINE (hq-meta-layer): a synthesized
+                                // chief-of-staff conclusion — names who needs you + how many
+                                // others are normal — REPLACING the anonymous fleet pips (pure
+                                // redundancy with the list) and the unreliable pane-title.
+                                Text(fleetHeadline(hqWaiting: hqWaiting))
                                     .font(.system(size: 11))
                                     .foregroundStyle(hqWaiting ? Theme.Status.waiting : (workerWaiting ? hqAmber : p.fg2))
                                     .lineLimit(1).truncationMode(.tail)
@@ -220,23 +221,28 @@ struct MenuView: View {
     // color = status, SHAPE = square when waiting (needs you) else circle, so the
     // whole fleet's shape reads at a glance without a badge. Capped so a big fleet
     // never overflows the card; the remainder shows as "+N".
-    @ViewBuilder private func fleetPips(_ p: Theme.Palette) -> some View {
-        let workers = store.agents.filter { !$0.isSupervisor }
-        HStack(spacing: 4) {
-            ForEach(workers.prefix(14)) { a in
-                // §12: waiting = a slightly larger rounded SQUARE (micro-radar), the rest
-                // are small circles — same shape language as the row status marks.
-                if a.state == .waiting {
-                    RoundedRectangle(cornerRadius: 2.5, style: .continuous).fill(a.state.color)
-                        .frame(width: 8, height: 8)
-                } else {
-                    Circle().fill(a.state.color).frame(width: 7, height: 7)
-                }
-            }
-            if workers.count > 14 {
-                Text("+\(workers.count - 14)").font(.system(size: 8)).foregroundStyle(p.fg3)
-            }
+    // fleetHeadline is the deterministic chief-of-staff conclusion shown as the HQ card
+    // subtitle (hq-meta-layer): when HQ itself needs a decision → "your call"; else it
+    // names the one worker that needs you + how many others are normal, or reads as "all
+    // normal" when the fleet is quiet. Zero LLM, single-source with the mobile card.
+    private func fleetHeadline(hqWaiting: Bool) -> String {
+        if hqWaiting {
+            return l10n.tr("needs your call", "请你拍板")
         }
+        let workers = store.agents.filter { !$0.isSupervisor && $0.source != "native" }
+        let waiting = workers.filter { $0.state == .waiting }
+        if waiting.isEmpty {
+            return l10n.tr("all normal — nothing needs you", "都正常 · 无需你介入")
+        }
+        let first = waiting[0]
+        let name = first.session.isEmpty ? first.primary : first.session
+        if waiting.count == 1 {
+            let rest = workers.count - 1
+            return rest > 0
+                ? l10n.tr("\(name) needs you · \(rest) others normal", "\(name) 在等你拍板 · 其余 \(rest) 个正常")
+                : l10n.tr("\(name) needs you", "\(name) 在等你拍板")
+        }
+        return l10n.tr("\(waiting.count) sessions need you", "\(waiting.count) 个会话在等你拍板")
     }
 
     // A framed, faintly-elevated panel. The 1px border is the primary "not a row"
