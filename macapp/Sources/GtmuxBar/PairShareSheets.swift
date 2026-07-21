@@ -377,3 +377,44 @@ struct NewShareSheet: View {
         )).labelsHidden().toggleStyle(.checkbox).frame(width: 44)
     }
 }
+
+/// ShareLinkDeliverySheet — re-open the "one link, three doors" delivery panel for an
+/// EXISTING guest link. The SAME panel NewShareSheet shows on mint, now reachable later
+/// from the link's row so the host can re-hand it (QR + browser link + terminal
+/// one-liner) without minting a new one. The full URL (token) is re-fetched by the CLI
+/// on demand, so this stays token-safe (the app never reads the roster). Each door
+/// carries its own copy button, so this supersedes the old bare "copy the URL" action.
+struct ShareLinkDeliverySheet: View {
+    @ObservedObject var l10n: L10n
+    let label: String
+    let url: String
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(label.isEmpty
+                    ? l10n.tr("Share link", "分享链接")
+                    : l10n.tr("Share link · \(label)", "分享链接 · \(label)"))
+                .font(.system(size: 14, weight: .semibold))
+            Text(l10n.tr("Hand this to the collaborator — one link, three ways.",
+                         "把它交给协作者 —— 一条链接、三种方式。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            CodeDeliveryBlock(
+                l10n: l10n,
+                qrText: url,
+                phoneHint: l10n.tr("Collaborator — scan in the app", "协作者 —— App 里扫码"),
+                browserTitle: l10n.tr("Browser", "浏览器"),
+                browserValue: url,
+                terminalValue: "gtmux attach '\(url)'")
+
+            HStack {
+                Spacer()
+                Button(l10n.tr("Done", "完成")) { onClose() }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(18)
+        .frame(width: 460)
+    }
+}
