@@ -5,7 +5,7 @@
 // app falls back to Pairing automatically.
 
 import React, {useState} from 'react';
-import {Alert, Share, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
@@ -19,7 +19,7 @@ type PickerKind = 'lang' | 'theme' | 'mode' | null;
 export function SettingsScreen({navigation}: any) {
   const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
-  const {client, isGuest} = useAgents();
+  const {isGuest} = useAgents();
   const [picker, setPicker] = useState<PickerKind>(null);
 
   const langs: {key: LangPref; label: string}[] = [
@@ -38,17 +38,6 @@ export function SettingsScreen({navigation}: any) {
   ];
 
   const labelOf = <T extends string>(arr: {key: T; label: string}[], k: T) => arr.find(o => o.key === k)?.label ?? '';
-
-  // Handoff: mint a one-time code on the paired Mac and share a browser link.
-  const openOnComputer = async () => {
-    try {
-      const code = client && (await client.enrollMint());
-      if (!code || !mac) return Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
-      await Share.share({message: `${mac.url.replace(/\/+$/, '')}/#c=${code}`});
-    } catch {
-      Alert.alert(t('openOnComputer'), t('openOnComputerFail'));
-    }
-  };
 
   const confirmRemove = () =>
     mac &&
@@ -71,11 +60,6 @@ export function SettingsScreen({navigation}: any) {
         {/* CONNECTION */}
         <SettingsGroup title={lang === 'zh' ? '连接' : 'Connection'} pal={pal}>
           <SettingsRow icon="server" label={mac?.name || '—'} sub={mac?.url} pal={pal} chevron divider onPress={() => navigation.navigate('Servers')} />
-          {/* Handing the Mac off to a computer browser mints an OWNER device code —
-              never available to a guest. */}
-          {!isGuest && (
-            <SettingsRow icon="share" label={t('openOnComputer')} sub={t('openOnComputerSub')} pal={pal} chevron divider onPress={openOnComputer} />
-          )}
           {/* Manage THIS Mac's sharing (owner-remote-admin, decision B): owner-only,
               hidden for a guest connection so no control ever 403s. */}
           {!isGuest && (
