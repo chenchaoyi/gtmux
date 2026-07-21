@@ -12,6 +12,15 @@ The client SHALL verify reachability + token, resolve scope from `GET /api/share
 (`all:true` ⇒ owner), and connect a WebSocket to `GET /api/attach?id=%N`. It SHALL stay
 cgo-free.
 
+When no `%pane` is given, the client SHALL resolve the pane as follows: if exactly one
+pane is attachable it SHALL auto-select it; if none are attachable it SHALL error. If
+more than one is attachable, then — WHEN stdin is a TTY — it SHALL present a numbered
+menu (one row per pane, showing session · agent · status · task) and attach to the
+chosen row without requiring the command be re-run; Enter SHALL select the first row and
+`q`/`Esc`/EOF SHALL cancel with no attach. WHEN stdin is NOT a TTY, it SHALL instead
+print the pane list and exit non-zero (never blocking on input), so scripts stay
+deterministic.
+
 #### Scenario: Owner attaches a pane
 
 - **WHEN** the user runs `gtmux attach <host> --token <device-token> %N`
@@ -26,6 +35,16 @@ cgo-free.
 
 - **WHEN** a guest attaches a pane not on its view allowlist
 - **THEN** the server refuses the WebSocket upgrade (no PTY is spawned) and the client exits with a clear "not shared" message
+
+#### Scenario: Interactive pick among multiple panes on a TTY
+
+- **WHEN** the user runs `gtmux attach <host>` (no `%pane`) from an interactive terminal and more than one pane is attachable
+- **THEN** the client prints a numbered menu (session · agent · status · task per row), reads a choice, and attaches to that pane directly; pressing Enter picks the first row and `q` cancels without attaching
+
+#### Scenario: Non-TTY stays scriptable
+
+- **WHEN** `gtmux attach <host>` (no `%pane`) runs with stdin NOT a TTY (a pipe or script) and more than one pane is attachable
+- **THEN** the client prints the pane list and exits non-zero without prompting, so automation never blocks on input
 
 ### Requirement: Raw local terminal with faithful passthrough
 
@@ -101,3 +120,4 @@ request fails auth).
 
 - **WHEN** the owner revokes that terminal's device on the host
 - **THEN** the persisted token stops authenticating (`401`) on its next use
+
