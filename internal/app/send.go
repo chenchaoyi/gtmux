@@ -116,7 +116,17 @@ func cmdSend(args []string) int {
 		return 0
 	}
 	if text != "" {
-		if err := tmux.Paste(pane, text); err != nil {
+		// Single-line, no submit → literal keystrokes (a numbered menu commits on the
+		// digit keypress; a bracketed paste of "1" is inserted as text and selects
+		// nothing). Multi-line still uses the paste buffer so newlines don't submit
+		// line-by-line. Mirrors sendToPane (POST /api/send).
+		var err error
+		if keystrokeText(text) {
+			err = tmux.SendText(pane, text, false)
+		} else {
+			err = tmux.Paste(pane, text)
+		}
+		if err != nil {
 			i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 			return 1
 		}

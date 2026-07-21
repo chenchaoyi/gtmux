@@ -12,9 +12,13 @@ The system SHALL, via `gtmux serve`, expose `GET /api/health`,
 `GET /api/agents` (byte-identical to `agents --json`), `GET /api/pane?id=%N`
 (`capture-pane -e`, ANSI color), `POST /api/focus?id=%N` (local pane select, no
 input), and `POST /api/send` (type into a pane via `tmux send-keys` — a WRITE).
-`/api/send` SHALL accept either an allow-listed named control key or literal text
-(`send-keys -l`, optionally + Enter), and is gated by the same bearer token as the
-rest (no separate authorization) — so the token also gates terminal input.
+`/api/send` SHALL accept either an allow-listed named control key or literal text, and
+is gated by the same bearer token as the rest (no separate authorization) — so the token
+also gates terminal input. SINGLE-LINE text SHALL be delivered as literal KEYSTROKES
+(`send-keys -l`) so an agent's numbered menu commits on the digit alone; MULTI-LINE text
+SHALL ride the tmux paste buffer (bracketed) so its newlines don't reach the TUI as bare
+Returns that submit each line separately. When `enter` is set, submission is a separate,
+confirmed step.
 
 #### Scenario: Agents match the CLI
 
@@ -33,6 +37,14 @@ rest (no separate authorization) — so the token also gates terminal input.
 - **WHEN** a client POSTs `/api/send` with `{id, text, enter}` or `{id, key}`
 - **THEN** the text (literal) or the allow-listed control key is sent to that pane
   via `tmux send-keys`; a disallowed key or missing pane returns an error
+
+#### Scenario: A numbered-menu digit selects the option (keystroke, not paste)
+
+- **WHEN** a client POSTs `/api/send` with a single-line `{id, text}` (e.g. `"1"`) and no
+  Enter, answering an agent's numbered menu
+- **THEN** the digit is sent as a literal keystroke (`send-keys -l`) and the menu commits
+  that choice — a bracketed paste of the digit would be inserted as text and select
+  nothing
 
 ### Requirement: Pane capture preserves a bottom-anchored cursor
 

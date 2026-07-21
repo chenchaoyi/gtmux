@@ -592,7 +592,17 @@ func sendToPane(id, text, key string, enter bool) error {
 		return nil
 	}
 	if text != "" {
-		if err := tmux.Paste(id, text); err != nil {
+		// A SINGLE-LINE send with no submit is a KEYSTROKE, not a paste. An agent's
+		// numbered menu (Claude's "❯ 1. Yes …") commits on the digit KEYPRESS; a
+		// bracketed paste of "1" is inserted as literal text and never selects the option
+		// — the "tapping a number in the approval card does nothing" regression, from when
+		// text delivery switched to the paste buffer. Only MULTI-LINE text needs the paste
+		// buffer (bracketed, so its newlines don't submit line-by-line).
+		if keystrokeText(text) {
+			if err := tmux.SendText(id, text, false); err != nil { // send-keys -l
+				return err
+			}
+		} else if err := tmux.Paste(id, text); err != nil {
 			return err
 		}
 	}
@@ -600,6 +610,15 @@ func sendToPane(id, text, key string, enter bool) error {
 		return tmux.SendKey(id, "Enter")
 	}
 	return nil
+}
+
+// keystrokeText reports whether text should be delivered as literal KEYSTROKES
+// (`send-keys -l`) rather than the bracketed paste buffer: a non-empty SINGLE line.
+// Keystrokes are what an agent's numbered menu commits on (a bracketed paste of a
+// digit selects nothing); the paste buffer is only needed for MULTI-LINE text, so its
+// newlines don't reach the TUI as bare Returns that submit each line separately.
+func keystrokeText(text string) bool {
+	return text != "" && !strings.Contains(text, "\n")
 }
 
 // saveUpload writes an uploaded file under ~/.local/share/gtmux/uploads with a
