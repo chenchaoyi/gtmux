@@ -37,6 +37,12 @@ export function AttachSheet({
   onPaste: () => void;
 }) {
   const zh = lang === 'zh';
+  // Defer the chosen action until AFTER this sheet has fully dismissed. Presenting a
+  // picker (photo library / camera / document) while this Modal is still animating out
+  // silently fails on iOS ("attempt to present while being dismissed") — which is why
+  // "+→ Photo Library" did nothing. onDismiss fires post-animation, so the picker
+  // presents cleanly. A ref (not state) avoids an extra render on selection.
+  const pendingRef = React.useRef<null | (() => void)>(null);
   const rows: Row[] = [
     {icon: CameraIcon, title: zh ? '拍照' : 'Camera', sub: zh ? '拍一张新照片' : 'Take a new photo', onPress: onCamera},
     {icon: PhotoLibraryIcon, title: zh ? '相册' : 'Photo Library', sub: zh ? '从相册选择照片' : 'Choose from your library', onPress: onPhoto},
@@ -44,7 +50,16 @@ export function AttachSheet({
     {icon: PasteIcon, title: zh ? '粘贴' : 'Paste', sub: zh ? '粘贴剪贴板的内容' : 'Paste from the clipboard', onPress: onPaste},
   ];
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      onDismiss={() => {
+        const fn = pendingRef.current;
+        pendingRef.current = null;
+        fn?.();
+      }}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity
           testID={TestIds.composer.attachSheet}
@@ -59,8 +74,8 @@ export function AttachSheet({
               accessibilityLabel={`attach-${i}`}
               activeOpacity={0.6}
               onPress={() => {
+                pendingRef.current = r.onPress; // run after the sheet dismisses (iOS present-race)
                 onClose();
-                r.onPress();
               }}
               style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
               <View style={[styles.tile, {backgroundColor: pal.bg, borderColor: pal.divider}]}>

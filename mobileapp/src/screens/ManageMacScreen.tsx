@@ -15,6 +15,7 @@ import {primary} from '../api/types';
 import type {Agent} from '../api/types';
 import type {GuestLink, PairedDevice, ShareConfig} from '../api/client';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
+import {SIcon} from '../ui/SettingsIcons';
 import {ContentColumn} from '../ui/ContentColumn';
 import {nextLinkScope} from '../state/shareScope';
 
@@ -118,7 +119,7 @@ export function ManageMacScreen({navigation}: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
           <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
         </TouchableOpacity>
-        <Text style={[styles.title, {color: pal.fg}]}>{zh ? '管理这台 Mac' : 'Manage this Mac'}</Text>
+        <Text style={[styles.title, {color: pal.fg}]}>{zh ? '分享与设备' : 'Sharing & devices'}</Text>
         {busy && <ActivityIndicator style={styles.spinner} color={pal.fg3} />}
       </View>
 
@@ -154,6 +155,9 @@ export function ManageMacScreen({navigation}: any) {
               guests.map((g, idx) => (
                 <View key={g.id} style={idx < guests.length - 1 ? {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth} : undefined}>
                   <TouchableOpacity style={styles.linkHead} onPress={() => setExpanded(expanded === g.id ? '' : g.id)}>
+                    <View style={styles.iconWrap}>
+                      <SIcon name="person" size={21} color={pal.fg2} />
+                    </View>
                     <View style={styles.flex1}>
                       <Text style={[styles.linkLabel, {color: pal.fg}]} numberOfLines={1}>
                         {g.label || (zh ? '分享链接' : 'Share link')}
@@ -246,11 +250,12 @@ const styles = StyleSheet.create({
   empty: {fontSize: 13, paddingHorizontal: 14, paddingVertical: 12},
   note: {fontSize: 12, paddingHorizontal: 14, paddingVertical: 10, lineHeight: 17},
   hint: {fontSize: 12, paddingVertical: 6},
-  linkHead: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12},
-  linkLabel: {fontSize: 15},
-  linkSub: {fontSize: 12, marginTop: 2},
-  chev: {fontSize: 18, marginLeft: 8},
-  editor: {paddingHorizontal: 14, paddingBottom: 12},
+  linkHead: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, minHeight: 52},
+  iconWrap: {width: 30, alignItems: 'center', marginRight: 8},
+  linkLabel: {fontSize: 16},
+  linkSub: {fontSize: 12.5, marginTop: 2},
+  chev: {fontSize: 20, fontWeight: '300', marginLeft: 8},
+  editor: {paddingLeft: 52, paddingRight: 14, paddingBottom: 12},
   paneRow: {flexDirection: 'row', alignItems: 'center', paddingVertical: 6},
   paneName: {flex: 1, fontSize: 13},
   facet: {flexDirection: 'row', alignItems: 'center', marginLeft: 10},
