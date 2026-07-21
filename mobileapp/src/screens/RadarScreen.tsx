@@ -15,15 +15,18 @@ import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
 import {SettingsIcon} from '../ui/SettingsIcon';
 import {StatusColor, counts} from '../ui/theme';
+import {statusLabel, Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 
 const COLLAPSED_KEY = 'radar.collapsed';
 
-function summary(c: ReturnType<typeof counts>, agentsWord: string): string {
+// The status words follow the language (统一双语铁律) — the same statusLabel the
+// section headers use, so the summary never reads "1 waiting" in a zh build.
+function summary(c: ReturnType<typeof counts>, agentsWord: string, lang: Lang): string {
   const parts: string[] = [];
-  if (c.waiting) parts.push(`${c.waiting} waiting`);
-  parts.push(`${c.working} working`);
-  parts.push(`${c.idle} idle`);
+  if (c.waiting) parts.push(`${c.waiting} ${statusLabel('waiting', lang)}`);
+  parts.push(`${c.working} ${statusLabel('working', lang)}`);
+  parts.push(`${c.idle} ${statusLabel('idle', lang)}`);
   return `${c.total} ${agentsWord} · ${parts.join(' · ')}`;
 }
 
@@ -33,6 +36,10 @@ export function RadarScreen({navigation}: any) {
   const [refreshing, setRefreshing] = useState(false);
   // Collapsed sections persist across launches (MOBILE §3).
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
+  // "Waiting only" narrows the list to the panes needing you (MOBILE §3/§8) — a fast
+  // triage lever when many agents are running. Session-scoped (not persisted): it's a
+  // transient filter, and auto-clears itself once nothing is waiting (see below).
+  const [waitingOnly, setWaitingOnly] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(COLLAPSED_KEY).then(raw => {
@@ -53,6 +60,13 @@ export function RadarScreen({navigation}: any) {
   };
 
   const c = counts(agents);
+  // Auto-clear the filter once nothing is waiting, so it never strands the user on an
+  // empty list after they answer the last pane.
+  useEffect(() => {
+    if (waitingOnly && c.waiting === 0) setWaitingOnly(false);
+  }, [waitingOnly, c.waiting]);
+  // The list the sections are built from — narrowed to waiting when the filter is on.
+  const shown = waitingOnly ? agents.filter(a => a.status === 'waiting') : agents;
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -98,8 +112,28 @@ export function RadarScreen({navigation}: any) {
       </View>
       <View style={styles.headerBottom}>
         <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
-          {summary(c, t('agents'))}
+          {summary(c, t('agents'), lang)}
         </Text>
+        {(c.waiting > 0 || waitingOnly) && (
+          <TouchableOpacity
+            testID={TestIds.radar.waitingOnly}
+            accessibilityLabel={TestIds.radar.waitingOnly}
+            accessibilityRole="button"
+            onPress={() => setWaitingOnly(v => !v)}
+            hitSlop={hit}
+            style={[
+              styles.filterChip,
+              waitingOnly
+                ? {backgroundColor: StatusColor.waiting + '1F', borderColor: StatusColor.waiting}
+                : {backgroundColor: 'transparent', borderColor: pal.divider},
+            ]}>
+            <Text
+              style={[styles.filterChipText, {color: waitingOnly ? StatusColor.waiting : pal.fg2}]}
+              numberOfLines={1}>
+              {lang === 'zh' ? '只看等输入' : 'Waiting only'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
       {hq && !isGuest && (
         <HQCard
@@ -156,7 +190,7 @@ export function RadarScreen({navigation}: any) {
         </View>
       )}
       <SectionList
-        agents={agents}
+        agents={shown}
         pal={pal}
         lang={lang}
         onPressAgent={a => { if (a.source !== 'native') navigation.navigate('Detail', {agent: a}); }}
@@ -242,6 +276,14 @@ const styles = StyleSheet.create({
   guestBannerText: {fontSize: 12, fontWeight: '600'},
   headerBottom: {flexDirection: 'row', alignItems: 'center', marginTop: 6},
   summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
+  filterChip: {
+    marginLeft: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 11,
+    borderWidth: 1,
+  },
+  filterChipText: {fontSize: 11, fontWeight: '600'},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 70, paddingHorizontal: 40},
   emptyText: {fontSize: 15, fontWeight: '600', marginTop: 16},
   emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
