@@ -446,11 +446,17 @@ gtmux attach <target>            # omit the pane: auto-attach the only one, else
 gtmux attach <target> --read-only  # watch only, never send input
 ```
 
+Omit `%N` and, when several panes are attachable, `attach` shows a **numbered menu**
+(session · agent · status · task per row) and connects to the one you pick — Enter takes
+the first row, `q` cancels. Piped or scripted (stdin not a TTY), it instead prints the
+list and exits non-zero, so automation never blocks on the prompt.
+
 - **`<target>`** is a host (+ `--token`, → **owner**, full) or a `…/#g=<token>` share
   link (→ **guest**, restricted to the host's view/input allowlists — a view-only pane
   is read-only, and a non-viewable pane is refused).
 - **`%N`** (optional) is the tmux pane id to attach — it selects the SESSION that pane
-  is in. Omit it to auto-attach when there's a single session, or get a chooser.
+  is in. Omit it to auto-attach when there's a single session, or (on a TTY) pick from a
+  numbered menu of the choices; non-interactively it lists them and exits non-zero.
 - **Detach** with tmux's own `<prefix> d`, or **`Ctrl-]`** (the local escape hatch).
 - Scope is enforced server-side; `--read-only` is a convenience, not the security
   boundary. See `docs/design/remote-attach-research.md` for the design + trade-offs
