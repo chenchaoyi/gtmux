@@ -1,18 +1,33 @@
-// HQCard — the chief-of-staff card (MOBILE §17 / menu-bar §12 v2, same form):
-// a ROLE BANNER ("👁 CHIEF OF STAFF · 参谋长 · 统观全局") over a FRAMED, bordered
-// panel. HQ is a META session — it never renders as one-more-agent-row, so the
-// card carries NO status badge on the brand avatar; its identity is the brand
-// grid + a FLEET PIP STRIP (a micro-radar: one pip per worker, square = waiting).
-// The subtitle says only what's worth knowing; when HQ ITSELF needs you the whole
-// card goes amber (amber border + red subtitle) — a card-level cue distinct from
-// the red agent-waiting badge. Tap → HQScreen.
+// HQCard — the chief-of-staff card (MOBILE §17 / menu-bar §12, same form): a ROLE
+// BANNER ("👁 CHIEF OF STAFF · 参谋长 · 统观全局") over a FRAMED, bordered panel. HQ is
+// a META session — it never renders as one-more-agent-row, so the card carries NO
+// status badge on the brand avatar. Its subtitle is an INTELLIGENCE HEADLINE
+// (hq-meta-layer): a deterministic chief-of-staff conclusion synthesized from the
+// worker fleet — who needs you + how many others are normal, or "all normal" when quiet
+// — REPLACING the old fleet pips (anonymous, redundant with the list below) and the
+// unreliable pane-title. When HQ ITSELF needs you the whole card goes amber. Tap → HQScreen.
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent} from '../api/types';
 import {BrandMark} from './BrandMark';
 import {ERRORED_COLOR, Palette, StatusColor} from './theme';
 
-const MAX_PIPS = 14; // cap so a big fleet never overflows the card; rest = "+N"
+// fleetHeadline is the deterministic subtitle — single-source with the menu-bar card's
+// fleetHeadline(): HQ itself waiting → "your call"; else name the one worker that needs
+// you + how many others are normal, or "all normal" when the fleet is quiet.
+export function fleetHeadline(hq: Agent, workers: Agent[], zh: boolean): string {
+  if (hq.status === 'waiting') return zh ? '请你拍板' : 'needs your call';
+  const waiting = workers.filter(a => a.status === 'waiting');
+  if (waiting.length === 0) return zh ? '都正常 · 无需你介入' : 'all normal — nothing needs you';
+  const first = waiting[0];
+  const name = first.session || first.agent || first.pane_id;
+  if (waiting.length === 1) {
+    const rest = workers.length - 1;
+    if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} others normal`;
+    return zh ? `${name} 在等你拍板` : `${name} needs you`;
+  }
+  return zh ? `${waiting.length} 个会话在等你拍板` : `${waiting.length} sessions need you`;
+}
 
 export function HQCard({
   hq,
@@ -28,16 +43,12 @@ export function HQCard({
   onPress: () => void;
 }) {
   const zh = lang === 'zh';
-  const workers = agents.filter(a => a.role !== 'supervisor');
+  const workers = agents.filter(a => a.role !== 'supervisor' && a.source !== 'native');
   const fleetWaiting = workers.some(a => a.status === 'waiting');
   const hqWaiting = hq.status === 'waiting';
-  // Subtitle color: red when HQ itself needs you; amber when the line is
-  // attention-worthy (a task line / a waiting worker); quiet otherwise.
-  const subColor = hqWaiting
-    ? StatusColor.waiting
-    : hq.task || fleetWaiting
-      ? ERRORED_COLOR
-      : pal.fg2;
+  // Subtitle color: red when HQ itself needs you; amber when a worker needs you;
+  // quiet otherwise.
+  const subColor = hqWaiting ? StatusColor.waiting : fleetWaiting ? ERRORED_COLOR : pal.fg2;
   return (
     <View style={styles.wrap}>
       {/* Role banner — the "this is the oversight layer, not a session" cue. */}
@@ -67,26 +78,9 @@ export function HQCard({
         onPress={onPress}>
         <BrandMark size={26} neutral={pal.fg3} />
         <View style={styles.body}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
-            <View style={styles.pips} accessibilityLabel="hq-fleet-pips">
-              {workers.slice(0, MAX_PIPS).map((a, i) => (
-                <View
-                  key={i}
-                  testID={a.status === 'waiting' ? 'hq-pip-square' : 'hq-pip-dot'}
-                  style={[
-                    a.status === 'waiting' ? styles.pipSquare : styles.pipDot,
-                    {backgroundColor: StatusColor[a.status] ?? StatusColor.running},
-                  ]}
-                />
-              ))}
-              {workers.length > MAX_PIPS && (
-                <Text style={[styles.pipMore, {color: pal.fg3}]}>+{workers.length - MAX_PIPS}</Text>
-              )}
-            </View>
-          </View>
+          <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
           <Text style={[styles.task, {color: subColor}]} numberOfLines={1}>
-            {hq.task || (zh ? '各会话正常' : 'all sessions normal')}
+            {fleetHeadline(hq, workers, zh)}
           </Text>
         </View>
         <Text style={[styles.chevron, {color: pal.fg3}]}>›</Text>
@@ -104,12 +98,7 @@ const styles = StyleSheet.create({
   rolePurpose: {fontSize: 8.5},
   card: {flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 11},
   body: {flex: 1, marginLeft: 10},
-  titleRow: {flexDirection: 'row', alignItems: 'center'},
   title: {fontSize: 13.5, fontWeight: '700'},
-  pips: {flexDirection: 'row', alignItems: 'center', marginLeft: 8, gap: 4},
-  pipSquare: {width: 8, height: 8, borderRadius: 2},
-  pipDot: {width: 7, height: 7, borderRadius: 3.5},
-  pipMore: {fontSize: 8},
   task: {fontSize: 11, marginTop: 2},
   chevron: {fontSize: 16, fontWeight: '300', marginLeft: 8},
 });

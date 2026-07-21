@@ -10,15 +10,15 @@
       pins the hook's HQ-done suppression decision.
 
 ## 2. HQ card redesign (PR-C, menu-bar + mobile)
-- [ ] 2.1 Menu-bar `MenuView.swift`: delete `fleetPips`; subtitle = a synthesized
+- [x] 2.1 Menu-bar `MenuView.swift`: delete `fleetPips`; subtitle = a synthesized
       intelligence headline over the worker agents (naming the waiter + "其余 N 正常" /
       "都正常"), red/amber when it needs you.
-- [ ] 2.2 Mobile `HQCard.tsx`: delete the pips block; same synthesized headline; update
+- [x] 2.2 Mobile `HQCard.tsx`: delete the pips block; same synthesized headline; update
       `HQCard.test.tsx`.
-- [ ] 2.3 A shared-shape deterministic headline function per surface, unit-tested
+- [x] 2.3 A shared-shape deterministic headline function per surface, unit-tested
       (waiting → names first + rest count; quiet → "all normal").
-- [ ] 2.4 Docs: mockup §12 (drop "fleet pips ★ chosen", show the headline), DESIGN.md +
+- [x] 2.4 Docs: mockup §12 (drop "fleet pips ★ chosen", show the headline), DESIGN.md +
       MOBILE.md HQ sections.
 
 ## 3. Verify
-- [ ] 3.1 `make check` + mobile `npm run check` + `scripts/check-design.sh` green.
+- [x] 3.1 `make check` + mobile `npm run check` + `scripts/check-design.sh` green.
