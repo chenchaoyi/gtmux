@@ -51,7 +51,10 @@ enum Pairing {
         } else {
             dict = ["v": 1, "url": p.url, "token": p.token, "name": p.name]
         }
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
+        // .sortedKeys → a DETERMINISTIC key order, so payload(info, code) returns the
+        // byte-identical string on every call. Without it the dictionary's per-call
+        // iteration order could vary, changing the QR content between renders.
+        guard let data = try? JSONSerialization.data(withJSONObject: dict, options: .sortedKeys),
               let s = String(data: data, encoding: .utf8) else { return "" }
         return s
     }
@@ -234,10 +237,10 @@ struct PairingView: View {
         .padding(22)
         .frame(width: 340)
         .onAppear { remote.refresh(); reload() }
-        .onChange(of: remote.mode) { _ in reload() }
+        .onChange(of: remote.mode) { _, _ in reload() }
         // Switching the tunnel BACKEND (self↔hosted) keeps mode == .anywhere but
         // changes the URL — reload so the QR/URL/reachability follow the new backend.
-        .onChange(of: remote.backend) { _ in reload() }
+        .onChange(of: remote.backend) { _, _ in reload() }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },

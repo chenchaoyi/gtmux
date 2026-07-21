@@ -133,11 +133,14 @@ struct PreferencesView: View {
                 } label: {
                     prefLabel("Access", "访问", symbol: "antenna.radiowaves.left.and.right")
                 }
+                tunnelBackendRow
+                // The reachable ADDRESS belongs BELOW the whole door config (access +
+                // tunnel), as a summary of "here's where you're reachable" — not wedged
+                // between the Access and Tunnel rows.
                 Text(remoteSubtitle)
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                tunnelBackendRow
                 connectedDevices
             }
 
@@ -322,7 +325,7 @@ struct PreferencesView: View {
                     }
                     .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
                 } label: {
-                    prefLabel("Tunnel", "隧道", symbol: "point.3.connected.trianglepath.dotted")
+                    prefLabel("Tunnel", "隧道", symbol: "network")
                 }
                 Text(backendSubtitle)
                     .font(.system(size: 11)).foregroundStyle(.secondary)

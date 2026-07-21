@@ -144,7 +144,7 @@ struct MenuView: View {
             VStack(alignment: .leading, spacing: 6) {
                 // Role banner — the "this is the oversight layer, not a session" cue.
                 HStack(spacing: 5) {
-                    Image(systemName: "binoculars.fill").font(.system(size: 9.5))
+                    Image(systemName: "eye.fill").font(.system(size: 9.5))
                     Text(l10n.tr("CHIEF OF STAFF", "参谋长"))
                         .font(.system(size: 9.5, weight: .semibold)).tracking(0.9)
                     Spacer(minLength: 6)
@@ -162,9 +162,15 @@ struct MenuView: View {
                     // goes amber with a red subtitle — a card-level cue distinct from the red
                     // agent-waiting badge (§12 v2).
                     let hqWaiting = hq.state == .waiting
+                    // A WORKER (not HQ) waiting is the amber "worth-knowing" cue on the
+                    // subtitle (§12: "api 在等你拍板"); HQ ITSELF waiting supersedes it to
+                    // red + an amber card border. hqAmber matches the mockup gold, not the
+                    // more-orange errored token.
+                    let hqAmber = Color(hex: 0xF5B84A)
+                    let workerWaiting = store.agents.contains { !$0.isSupervisor && $0.state == .waiting }
                     Button { onJump(hq) } label: {
                         HStack(spacing: 11) {
-                            GtmuxLogo(size: 26) // brand grid, NO status badge
+                            GtmuxLogo(size: 22) // brand grid, NO status badge
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 8) {
                                     Text("gtmux HQ")
@@ -173,7 +179,7 @@ struct MenuView: View {
                                 }
                                 Text(hq.task.isEmpty ? l10n.tr("all sessions normal", "各会话正常") : hq.task)
                                     .font(.system(size: 11))
-                                    .foregroundStyle(hqWaiting ? Theme.Status.waiting : p.fg2)
+                                    .foregroundStyle(hqWaiting ? Theme.Status.waiting : (workerWaiting ? hqAmber : p.fg2))
                                     .lineLimit(1).truncationMode(.tail)
                             }
                             Spacer(minLength: 6)
@@ -183,7 +189,7 @@ struct MenuView: View {
                         .padding(.horizontal, 11).padding(.vertical, 9)
                         .background(hqPanel(p))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(hqWaiting ? Theme.Status.errored : Color.clear, lineWidth: 1.5))
+                            .strokeBorder(hqWaiting ? hqAmber : Color.clear, lineWidth: 1.5))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -216,16 +222,16 @@ struct MenuView: View {
     // never overflows the card; the remainder shows as "+N".
     @ViewBuilder private func fleetPips(_ p: Theme.Palette) -> some View {
         let workers = store.agents.filter { !$0.isSupervisor }
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             ForEach(workers.prefix(14)) { a in
-                Group {
-                    if a.state == .waiting {
-                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(a.state.color)
-                    } else {
-                        Circle().fill(a.state.color)
-                    }
+                // §12: waiting = a slightly larger rounded SQUARE (micro-radar), the rest
+                // are small circles — same shape language as the row status marks.
+                if a.state == .waiting {
+                    RoundedRectangle(cornerRadius: 2.5, style: .continuous).fill(a.state.color)
+                        .frame(width: 8, height: 8)
+                } else {
+                    Circle().fill(a.state.color).frame(width: 7, height: 7)
                 }
-                .frame(width: 6, height: 6)
             }
             if workers.count > 14 {
                 Text("+\(workers.count - 14)").font(.system(size: 8)).foregroundStyle(p.fg3)
