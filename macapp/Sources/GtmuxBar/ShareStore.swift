@@ -128,13 +128,14 @@ final class ShareStore: ObservableObject {
 
     func revoke(_ id: String) { run(["share", "revoke", id]) }
 
-    /// Re-hand an EXISTING link's URL and copy it to the clipboard (pair-share-model:
-    /// a link's token is shown only at mint time, so this is the "copy it again
-    /// later" path). Shells `gtmux share link <id> --json` — the token roster is read
-    /// by the CLI, never the app. Surfaces the URL via `lastMintedLink` so the row can
-    /// confirm, or `lastError` on failure.
-    func copyLink(_ id: String) {
-        guard !busy else { return }
+    /// Re-fetch an EXISTING link's full URL (token included), WITHOUT touching the
+    /// clipboard — the caller re-opens the delivery panel (QR + browser + terminal),
+    /// which carries its own per-door copy. Shells `gtmux share link <id> --json` (the
+    /// token roster is read by the CLI, never the app); `completion` gets the URL, or
+    /// nil with `lastError` set. This is the "hand it out again later" path — a link's
+    /// token is shown only at mint time, but the CLI can always re-derive it on demand.
+    func fetchLinkURL(_ id: String, completion: @escaping (String?) -> Void) {
+        guard !busy else { completion(nil); return }
         busy = true
         lastError = nil
         DispatchQueue.global().async {
@@ -143,11 +144,10 @@ final class ShareStore: ObservableObject {
             DispatchQueue.main.async {
                 self.busy = false
                 if let url = url, !url.isEmpty {
-                    self.lastMintedLink = url
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(url, forType: .string)
+                    completion(url)
                 } else {
                     self.lastError = "Couldn't fetch the link. / 无法获取链接。"
+                    completion(nil)
                 }
             }
         }

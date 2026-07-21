@@ -43,6 +43,34 @@ struct PreferencesView: View {
     // shows a count so a collapsed list still tells you how much is inside).
     @State private var panesExpanded = true
     @State private var linksExpanded = true
+    // Revoke is destructive and immediate (a device/link stops working at once), so it
+    // goes through a confirmation alert. One target covers both the share-link and the
+    // paired-device buttons; nil = no alert.
+    @State private var revokeTarget: RevokeTarget?
+    // A pending "re-hand this link" — set once the CLI has re-fetched the full URL,
+    // then presented as the one-link-three-doors delivery sheet. nil = no sheet.
+    @State private var deliverLink: DeliverLink?
+
+    // The re-fetched full URL of an existing guest link + its display name, carried
+    // into ShareLinkDeliverySheet.
+    private struct DeliverLink: Identifiable {
+        let id = UUID()
+        let url: String
+        let label: String
+    }
+
+    // What a pending revoke points at — carries the display name so the alert message
+    // can say exactly what's about to be cut off.
+    private enum RevokeTarget: Identifiable {
+        case share(id: String, label: String)
+        case pair(id: String, name: String)
+        var id: String {
+            switch self {
+            case .share(let id, _): return "share:" + id
+            case .pair(let id, _): return "pair:" + id
+            }
+        }
+    }
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
@@ -176,10 +204,36 @@ struct PreferencesView: View {
         .sheet(isPresented: $showNewShareSheet) {
             NewShareSheet(l10n: l10n, share: share, store: store) { showNewShareSheet = false }
         }
+        .sheet(item: $deliverLink) { d in
+            ShareLinkDeliverySheet(l10n: l10n, label: d.label, url: d.url) { deliverLink = nil }
+        }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
                         onClose: { showPaywall = false })
+        }
+        .alert(
+            l10n.tr("Revoke access?", "吊销访问？"),
+            isPresented: Binding(get: { revokeTarget != nil },
+                                 set: { if !$0 { revokeTarget = nil } }),
+            presenting: revokeTarget
+        ) { target in
+            Button(l10n.tr("Revoke", "吊销"), role: .destructive) {
+                switch target {
+                case .share(let id, _): share.revoke(id)
+                case .pair(let id, _): pairStore.revoke(id)
+                }
+            }
+            Button(l10n.tr("Cancel", "取消"), role: .cancel) {}
+        } message: { target in
+            switch target {
+            case .share(_, let label):
+                Text(l10n.tr("“\(label)” stops working immediately. Anyone holding this link loses access.",
+                             "“\(label)”将立即失效。持有该链接的人会失去访问权限。"))
+            case .pair(_, let name):
+                Text(l10n.tr("“\(name)” stops working immediately and must be paired again to reconnect.",
+                             "“\(name)”将立即失效，需重新配对才能再次连接。"))
+            }
         }
     }
 
@@ -464,20 +518,26 @@ struct PreferencesView: View {
                                     .font(.system(size: 10)).foregroundStyle(.tertiary)
                             }
                             Spacer(minLength: 8)
-                            // Copy + Revoke as ONE tidy trailing group with matching
-                            // chrome (both bordered) — a bare borderless icon read as a
-                            // floating column next to the bordered Revoke button. Copy
-                            // re-hands the link (its token shows only at mint time).
+                            // Show + Revoke as ONE tidy trailing group with matching
+                            // chrome (both bordered). "Show" re-opens the full delivery
+                            // panel (QR + browser + terminal, each with its own copy) for
+                            // this link — a far stronger hand-off than a bare URL copy.
                             HStack(spacing: 6) {
                                 Button {
-                                    share.copyLink(g.id)
+                                    let lbl = g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label
+                                    share.fetchLinkURL(g.id) { url in
+                                        if let url = url { deliverLink = DeliverLink(url: url, label: lbl) }
+                                    }
                                 } label: {
-                                    Image(systemName: "doc.on.doc")
+                                    Image(systemName: "qrcode")
                                 }
                                 .buttonStyle(.bordered)
                                 .disabled(share.busy)
-                                .help(l10n.tr("Copy link", "复制链接"))
-                                Button(l10n.tr("Revoke", "吊销")) { share.revoke(g.id) }
+                                .help(l10n.tr("Show link — QR, browser, terminal", "展示链接 —— 二维码 / 浏览器 / 终端"))
+                                Button(l10n.tr("Revoke", "吊销")) {
+                                    revokeTarget = .share(id: g.id,
+                                                          label: g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
+                                }
                                     .buttonStyle(.bordered)
                                     .disabled(share.busy)
                             }
@@ -520,7 +580,9 @@ struct PreferencesView: View {
                             .font(.system(size: 10)).foregroundStyle(.tertiary)
                     }
                     Spacer(minLength: 0)
-                    Button(l10n.tr("Revoke", "吊销")) { pairStore.revoke(d.id) }
+                    Button(l10n.tr("Revoke", "吊销")) {
+                        revokeTarget = .pair(id: d.id, name: d.name)
+                    }
                         .disabled(pairStore.busy)
                 }
             }
