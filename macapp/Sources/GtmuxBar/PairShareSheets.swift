@@ -47,12 +47,20 @@ struct CodeDeliveryBlock: View {
     let terminalValue: String
     var note: String? = nil
 
+    // Memoized QR: the pairing/share code is stable while the sheet is open, but the
+    // sheet re-renders every poll (it observes RemoteAccess for the status bar), and
+    // re-encoding the QR each render produced a NEW NSImage → the code visibly
+    // flickered/redrew ~once a second. Compute it ONCE per distinct qrText instead.
+    @State private var qr: NSImage?
+
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(spacing: 6) {
-                if let img = Pairing.qrImage(qrText, size: 168) {
-                    Image(nsImage: img).interpolation(.none)
+                if let qr {
+                    Image(nsImage: qr).interpolation(.none)
                         .resizable().frame(width: 168, height: 168)
+                } else {
+                    Color.clear.frame(width: 168, height: 168) // reserve space during the one-time encode
                 }
                 Label(phoneHint, systemImage: "iphone")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -67,6 +75,8 @@ struct CodeDeliveryBlock: View {
                 }
             }
         }
+        .onAppear { if qr == nil { qr = Pairing.qrImage(qrText, size: 168) } }
+        .onChange(of: qrText) { _, t in qr = Pairing.qrImage(t, size: 168) }
     }
 }
 
