@@ -59,7 +59,7 @@ export function SettingsRow({
         </View>
       )}
       <View style={styles.textWrap}>
-        <Text style={[styles.label, {color: labelColor}]} numberOfLines={1}>
+        <Text style={[styles.label, {color: labelColor}]} numberOfLines={2}>
           {label}
         </Text>
         {!!sub && (

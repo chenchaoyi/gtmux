@@ -81,8 +81,8 @@ export function SettingsScreen({navigation}: any) {
           {!isGuest && (
             <SettingsRow
               icon="share"
-              label={lang === 'zh' ? '管理这台 Mac' : 'Manage this Mac'}
-              sub={lang === 'zh' ? '分享链接与权限' : 'Share links & permissions'}
+              label={lang === 'zh' ? '分享与设备' : 'Sharing & devices'}
+              sub={lang === 'zh' ? '分享链接、权限、已配对设备' : 'Share links, scopes, paired devices'}
               pal={pal}
               chevron
               divider

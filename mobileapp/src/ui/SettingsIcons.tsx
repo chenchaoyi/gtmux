@@ -16,6 +16,7 @@ export type IconName =
   | 'info'
   | 'share'
   | 'swap'
+  | 'person'
   | 'trash';
 
 export function SIcon({name, size = 22, color}: {name: IconName; size?: number; color: string}) {
@@ -100,6 +101,13 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
             <Path d="M4 7h13" {...s} />
             <Path d="M17 20l3-3-3-3" {...s} />
             <Path d="M20 17H7" {...s} />
+          </>
+        );
+      case 'person':
+        return (
+          <>
+            <Circle cx={12} cy={8} r={3.4} {...s} />
+            <Path d="M5.5 19.5c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8" {...s} />
           </>
         );
       case 'trash':
