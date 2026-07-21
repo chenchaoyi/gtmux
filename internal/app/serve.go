@@ -206,7 +206,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			for _, p := range panes {
 				out = append(out, server.AgentStatus{
 					PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
-					Since: p.Since,
+					Since: p.Since, Role: p.Role(),
 				})
 			}
 			return out

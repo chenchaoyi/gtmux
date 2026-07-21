@@ -18,6 +18,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
@@ -647,6 +648,16 @@ func Run(stdin io.Reader, args []string) int {
 	if event == "Notification" || event == "Waiting" {
 		kind = "input"
 		body = waitBody(waitKind)
+	}
+	// HQ is a meta-layer: suppress its ROUTINE `done` notification — a chief-of-staff
+	// finishing a think-cycle constantly must not buzz the user (the noise it exists to
+	// reduce). Its `input` (it needs your decision) is the one thing HQ should surface,
+	// so that still fires. hqpane.FindOther(self) resolves whether THIS pane is the HQ.
+	if kind == "done" {
+		if _, self := hqpane.FindOther(pane); self {
+			debugf("suppressed HQ done notification pane=%q", pane)
+			return 0
+		}
 	}
 	title := session
 	if title == "" {

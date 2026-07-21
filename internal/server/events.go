@@ -47,6 +47,7 @@ type AgentStatus struct {
 	Task   string
 	Status string // working | waiting | idle | running
 	Since  int64  // epoch seconds the current state started (relative-time line); 0 if unknown
+	Role   string // "supervisor" for the HQ pane, else "" — a meta-layer excluded from the worker tally/headline
 }
 
 // Alert is a status transition worth surfacing: a pane that just started
@@ -347,19 +348,25 @@ func (h *hub) tick() {
 	var waiters, workers []AgentStatus // collected to LIST the top in-flight sessions
 	for _, a := range cur {
 		curMap[a.PaneID] = a
-		switch a.Status {
-		case "waiting":
-			tally.Waiting++
-			waiters = append(waiters, a)
-			if tally.Waiting == 1 { // the first waiter sets the headline
-				tally.WaitingTitle = a.Task
-				tally.WaitingSession = waitSession(a)
+		// The supervisor (HQ) is a META layer — it never counts toward the WORKER
+		// fleet tally the lockscreen shows, and never sets the "who's waiting"
+		// headline (that headline is about the workers). Change-detection + alerts
+		// below still run for it, so the app's HQ card stays live.
+		if a.Role != "supervisor" {
+			switch a.Status {
+			case "waiting":
+				tally.Waiting++
+				waiters = append(waiters, a)
+				if tally.Waiting == 1 { // the first waiter sets the headline
+					tally.WaitingTitle = a.Task
+					tally.WaitingSession = waitSession(a)
+				}
+			case "working":
+				tally.Working++
+				workers = append(workers, a)
+			case "idle":
+				tally.Idle++
 			}
-		case "working":
-			tally.Working++
-			workers = append(workers, a)
-		case "idle":
-			tally.Idle++
 		}
 		p, existed := prev[a.PaneID]
 		if !existed || p.Status != a.Status || p.Task != a.Task {

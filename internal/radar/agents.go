@@ -169,6 +169,10 @@ type Pane struct {
 	usageWarn string
 }
 
+// Role exposes the pane's role ("supervisor" for HQ, else "") to callers outside
+// the package (e.g. serve threading it into the fleet snapshot for role-gating).
+func (p Pane) Role() string { return p.role }
+
 // agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
 // and the future menu-bar app — structured, no screen-scraping).
 type agentJSON struct {
