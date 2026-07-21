@@ -52,3 +52,24 @@ func TestSendToPaneNoTmuxRejects(t *testing.T) {
 		t.Errorf("sendToPane with no tmux + bad key should error")
 	}
 }
+
+// keystrokeText decides send-keys -l (a keystroke — what a numbered menu commits on)
+// vs the paste buffer (multi-line). Regression guard for "tapping a number in the
+// approval card does nothing" — a bracketed-pasted digit selects no menu option.
+func TestKeystrokeText(t *testing.T) {
+	cases := []struct {
+		in   string
+		want bool
+	}{
+		{"1", true},       // a menu digit → keystroke
+		{"hello", true},   // single-line text → keystrokes
+		{"", false},       // empty → nothing to send
+		{"a\nb", false},   // multi-line → paste buffer
+		{"line\n", false}, // trailing newline → multi-line path
+	}
+	for _, c := range cases {
+		if got := keystrokeText(c.in); got != c.want {
+			t.Errorf("keystrokeText(%q) = %v, want %v", c.in, got, c.want)
+		}
+	}
+}
