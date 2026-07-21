@@ -463,8 +463,10 @@
     }
     if (SHARE.all) { el.hidden = true; return; }
     el.hidden = false;
-    el.textContent = 'guest access · ' + SHARE.viewCount + ' session' + (SHARE.viewCount === 1 ? '' : 's') +
-      ' visible · ' + SHARE.typeCount + ' typable — shared by the host, revocable any time';
+    // zh to match the rest of the page (the web mirror is Chinese-primary; this line
+    // was the sole English holdout — bilingual 铁律).
+    el.textContent = '协作视图 · 访客 · ' + SHARE.viewCount + ' 个会话可见 · ' +
+      SHARE.typeCount + ' 个可输入 —— 由 host 授权，可随时吊销';
   }
   function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
   // setCapChip paints a ⌨可输入/👁只读 capability chip (WEB §11 — always explicit,
