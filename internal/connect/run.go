@@ -1,12 +1,15 @@
 package connect
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"golang.org/x/term"
 )
 
 // Run implements `gtmux attach` — attach to a remote gtmux pane in the local terminal.
@@ -139,15 +142,101 @@ func pickPane(ctx context.Context, c *Client, isGuest bool) (string, int) {
 	if len(panes) == 1 {
 		return panes[0].PaneID, 0
 	}
-	i18n.Sae("gtmux attach: name a pane —", "gtmux attach: 指定一个 pane —")
-	for _, a := range panes {
-		name := a.Task
-		if name == "" {
-			name = a.Session
+	// Many panes, no %pane given. On a TTY, offer a numbered menu and attach to the
+	// chosen row in place — no re-run. Off a TTY (pipe / script / CI), keep the old
+	// list-and-exit so automation never blocks on a prompt.
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		i18n.Sae("gtmux attach: name a pane —", "gtmux attach: 指定一个 pane —")
+		for _, a := range panes {
+			fmt.Fprintf(os.Stderr, "  %s  %s\n", a.PaneID, formatPaneChoice(a))
 		}
-		fmt.Fprintf(os.Stderr, "  %s  %s\n", a.PaneID, name)
+		return "", 2
 	}
-	return "", 2
+	return promptPane(panes, os.Stdin)
+}
+
+// promptPane renders a numbered menu of panes and reads a choice from r (cooked mode,
+// so the number + Enter echo normally). Enter picks row 1; `q`/EOF cancels. Invalid
+// input re-prompts. Returns the chosen pane id, or ("", code) on cancel.
+func promptPane(panes []Agent, r *os.File) (string, int) {
+	i18n.Sae("gtmux attach: which pane?", "gtmux attach: 附着哪个 pane？")
+	for i, a := range panes {
+		mark := " "
+		if i == 0 {
+			mark = "›" // the default (Enter) row
+		}
+		fmt.Fprintf(os.Stderr, "  %s %2d) %s  %s\n", mark, i+1, a.PaneID, formatPaneChoice(a))
+	}
+	br := bufio.NewReader(r)
+	for {
+		fmt.Fprintf(os.Stderr,
+			i18n.Tr("attach to which? [1-%d, Enter=1, q=cancel] ",
+				"附着哪个？[1-%d，回车=1，q=取消] "), len(panes))
+		line, err := br.ReadString('\n')
+		if err != nil && line == "" {
+			i18n.Sae("cancelled.", "已取消。") // EOF (Ctrl-D)
+			return "", 1
+		}
+		idx, cancel, ok := parsePaneChoice(line, len(panes))
+		if cancel {
+			i18n.Sae("cancelled.", "已取消。")
+			return "", 1
+		}
+		if !ok {
+			i18n.Sae("  not a valid choice — enter a number, or q to cancel.",
+				"  无效选择 —— 输入数字，或 q 取消。")
+			continue
+		}
+		return panes[idx].PaneID, 0
+	}
+}
+
+// parsePaneChoice interprets one menu line for n panes: empty ⇒ the default row 0;
+// `q`/`quit`/a leading ESC ⇒ cancel; a number in [1,n] ⇒ that row (0-based). Anything
+// else is invalid (ok=false) so the caller re-prompts.
+func parsePaneChoice(input string, n int) (idx int, cancel, ok bool) {
+	s := strings.TrimSpace(input)
+	switch {
+	case s == "":
+		return 0, false, true
+	case s == "q" || s == "Q" || s == "quit" || strings.HasPrefix(input, "\x1b"):
+		return 0, true, true
+	}
+	if v, err := strconv.Atoi(s); err == nil && v >= 1 && v <= n {
+		return v - 1, false, true
+	}
+	return 0, false, false
+}
+
+// formatPaneChoice is the one-line label for a pane in the picker / list: its identity
+// (session · agent · status) plus a truncated task. Falls back to the pane id if the
+// row carries no descriptive fields.
+func formatPaneChoice(a Agent) string {
+	var id []string
+	if a.Session != "" {
+		id = append(id, a.Session)
+	}
+	if a.Agent != "" {
+		id = append(id, a.Agent)
+	}
+	if a.Status != "" {
+		id = append(id, a.Status)
+	}
+	label := strings.Join(id, " · ")
+	task := a.Task
+	if r := []rune(task); len(r) > 60 {
+		task = string(r[:57]) + "…"
+	}
+	if task != "" {
+		if label != "" {
+			label += "  "
+		}
+		label += task
+	}
+	if label == "" {
+		label = a.PaneID
+	}
+	return label
 }
 
 func contains(s []string, v string) bool {
