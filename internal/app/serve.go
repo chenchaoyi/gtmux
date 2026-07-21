@@ -161,7 +161,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
 		UsageJSON: radar.UsageJSONBytes,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
-		OnSlowTick: hq.SlowTickEval,
+		// Also backstops the tmux-resurrect save: if continuum's autosave is disarmed,
+		// gtmux keeps the save fresh itself (a no-op when the save is already recent).
+		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave() },
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: hq.DrainHQNudges,

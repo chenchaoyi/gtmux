@@ -156,8 +156,7 @@ func doctorSections() []dsection {
 	agents = append(agents, rowApp())
 	return []dsection{
 		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowHistory()}},
-		{i18n.Tr("Restore after reboot", "重启后恢复"),
-			append(rowPlugins(), rowCapture(), rowAutoRestore())},
+		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
 		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
 		{i18n.Tr("Remote access", "远程访问"), []dcheck{rowCloudflared()}},
@@ -291,6 +290,32 @@ func rowCapture() dcheck {
 		return dcheck{stOK, label, "on", note}
 	}
 	return dcheck{stRec, label, "off", note}
+}
+
+// restoreRebootChecks assembles the "Restore after reboot" rows. The autosave-armed
+// check is appended only when continuum is installed AND a server is up (its trigger
+// lives in the running status-right) — otherwise there's nothing meaningful to read.
+func restoreRebootChecks() []dcheck {
+	rows := append(rowPlugins(), rowCapture(), rowAutoRestore())
+	if pluginDir("tmux-continuum") != "" && tmux.ServerUp() {
+		rows = append(rows, rowAutoSave())
+	}
+	return rows
+}
+
+// rowAutoSave verifies continuum's autosave is actually armed: its save trigger must be
+// in the running status-right, else continuum never saves and a reboot restores an
+// ancient snapshot (the exact silent failure the restore-save-reliability change guards).
+func rowAutoSave() dcheck {
+	label := i18n.Tr("resurrect autosave", "resurrect 自动保存")
+	note := i18n.Tr("continuum must save periodically for a reboot to restore",
+		"continuum 需周期保存,重启才能恢复")
+	if statusRightHasContinuumTrigger(tmuxOpt("status-right")) {
+		return dcheck{stOK, label, i18n.Tr("armed", "已武装"), note}
+	}
+	return dcheck{stRec, label, i18n.Tr("trigger missing", "触发器缺失"),
+		i18n.Tr("status-right lacks continuum's save trigger — autosave is OFF; append #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh) to status-right",
+			"status-right 缺少 continuum 保存触发器 —— 自动保存已关;在 status-right 末尾追加 #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh)")}
 }
 
 func rowAutoRestore() dcheck {
