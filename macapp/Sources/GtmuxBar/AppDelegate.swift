@@ -264,11 +264,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func perform(_ action: MenuAction) {
+        // Preferences / Pair open a REAL window. Close the (transient, high-window-level)
+        // popover FIRST — otherwise the popover stays in front and the window opens hidden
+        // behind it, and dismissing the popover later leaves the window orphaned. One
+        // surface at a time: the popover gives way to the window (like newSession does).
         switch action {
         case .restore:    GtmuxCLI.spawn(["restore"])
         case .newSession: newSession() // manages its own popover close + prompt
-        case .preferences: PreferencesController.shared.show(l10n: l10n, store: store)
-        case .pairPhone:  PairingController.shared.show(l10n: l10n)
+        case .preferences:
+            popover.performClose(nil)
+            PreferencesController.shared.show(l10n: l10n, store: store)
+        case .pairPhone:
+            popover.performClose(nil)
+            PairingController.shared.show(l10n: l10n)
         case .quit:       NSApp.terminate(nil)
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }
