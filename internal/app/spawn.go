@@ -21,8 +21,14 @@ import (
 
 // spawnJSON is the `gtmux spawn --json` contract.
 type spawnJSON struct {
-	TaskID    string `json:"task_id,omitempty"`
-	PaneID    string `json:"pane_id"`
+	TaskID string `json:"task_id,omitempty"`
+	PaneID string `json:"pane_id"`
+	// Loc is the LIVE tmux locator session:window.pane — the window's tmux number,
+	// recomputed each read so it stays correct under renumber-windows (never baked
+	// into the name). Title is the window/pane purpose slug. Together they are the
+	// standard handle for a spawned window: "<loc> (%pane) · <title>".
+	Loc       string `json:"loc,omitempty"`
+	Title     string `json:"title,omitempty"`
 	Session   string `json:"session"`
 	Delivered bool   `json:"delivered"`
 	State     string `json:"state"`
@@ -341,21 +347,50 @@ func spawnSessionName(branch, goal string) string {
 	return name
 }
 
+// spawnHandle formats the STANDARD handle for a spawned window: "<loc> (%pane) · <title>"
+// — the live tmux number (loc, so you can jump by number, correct under
+// renumber-windows) plus the concise purpose title. Degrades gracefully when loc/title
+// are unknown. Pure, so the format is unit-testable.
+func spawnHandle(loc, pane, title string) string {
+	h := pane
+	if loc != "" {
+		h = loc + " (" + pane + ")"
+	}
+	if title != "" {
+		h += " · " + title
+	}
+	return h
+}
+
+// spawnLocator reads the spawned pane's LIVE standard handle: its tmux locator
+// (session:window.pane — the window number, live so renumber-windows never staled it)
+// and its purpose title (the pane title = the slug we set). Best-effort ("" on failure).
+func spawnLocator(pane string) (loc, title string) {
+	if pane == "" {
+		return "", ""
+	}
+	loc = tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	title = strings.TrimSpace(tmux.Display(pane, "#{pane_title}"))
+	return loc, title
+}
+
 // spawnReport prints the outcome and returns the exit code (non-zero unless landed).
 func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result) int {
+	loc, title := spawnLocator(pane)
+	handle := spawnHandle(loc, pane, title)
 	if asJSON {
 		b, _ := json.MarshalIndent(spawnJSON{
-			TaskID: taskID, PaneID: pane, Session: session,
+			TaskID: taskID, PaneID: pane, Loc: loc, Title: title, Session: session,
 			Delivered: res.Delivered, State: string(res.State), Evidence: res.Evidence,
 		}, "", "  ")
 		fmt.Println(string(b))
 	} else {
 		switch res.State {
 		case dispatch.StateLanded:
-			i18n.Say("✓ dispatched to "+pane+" ("+session+")", "✓ 已派活到 "+pane+"（"+session+"）")
+			i18n.Say("✓ dispatched → "+handle, "✓ 已派活 → "+handle)
 		case dispatch.StateQueued:
-			i18n.Say("• queued on "+pane+" — it will run after the current turn",
-				"• 已排队到 "+pane+" —— 当前这轮结束后执行")
+			i18n.Say("• queued → "+handle+" — runs after the current turn",
+				"• 已排队 → "+handle+" —— 当前这轮结束后执行")
 		case dispatch.StateRefusedDup:
 			i18n.Sae("✗ refused: identical payload re-sent within the window (use --force)",
 				"✗ 拒发：时间窗内重复相同内容（要重发用 --force）")

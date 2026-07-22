@@ -192,10 +192,19 @@ tmux choreography:
 
 ```
 gtmux spawn "add a --dry-run flag to the deploy script"
-gtmux spawn --worktree feat/dry-run --model opus "add a --dry-run flag"
+gtmux spawn --title fix-auth-mw --worktree feat/dry-run --model opus "add a --dry-run flag"
 gtmux spawn --pane %14 "keep going, then run the tests"
-gtmux spawn --json "…"   # → {task_id, pane_id, session, delivered, state, evidence}
+gtmux spawn --json "…"   # → {task_id, pane_id, loc, title, session, delivered, state, evidence}
 ```
+
+**Window-title standard.** `--title` names the window's PURPOSE — a concise verb-object
+kebab slug (`fix-auth-mw`, `review-pr-518`), which becomes the window + pane name across
+tmux, the radar, and the app. On success `spawn` reports the **standard handle**
+`<loc> (%pane) · <title>` — `loc` is the LIVE tmux locator `session:window.pane` (the
+window's number, recomputed each read so it stays correct under `renumber-windows`; it is
+never baked into the name). Refer to a spawned window by that `loc %pane · title` so you
+can jump by number. The supervisor's playbook requires a concise `--title` on every
+dispatch and this handle in every report.
 
 It launches the agent (a fresh detached session by default, or `--pane <id>` to reuse
 one, or `--worktree <branch>` to run in an isolated git worktree), **through the
