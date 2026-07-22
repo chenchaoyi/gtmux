@@ -63,6 +63,14 @@ type Deps struct {
 	// pane response omits the cursor (the renderer then shows none / its own).
 	PaneCursor func(id string) (x, up int, visible, ok bool)
 
+	// AttachCursor returns the pane's cursor CELL (x,y) plus whether the pane is on
+	// the ALTERNATE screen — the attach bridge streams this as OpCursor frames so the
+	// attach client gets the authoritative cursor without emulating a terminal
+	// (attach-predictive-echo). `alt` is the precise "full-screen TUI" signal that a
+	// mere cursor-visible flag can't give (vim shows a cursor). Optional: nil → the
+	// bridge sends no cursor frames and clients simply never predict.
+	AttachCursor func(id string) (x, y int, alt, ok bool)
+
 	// Focus selects a pane locally — the "back at your desk, you're already on
 	// it" action. It injects no input. err is non-nil if the pane is gone.
 	Focus func(id string) error

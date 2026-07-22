@@ -171,8 +171,12 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// text (an idle pane showing a numbered list must not surface an approval menu).
 		IsWaiting:  func(id string) bool { return state.Exists(state.WaitingPath(id)) },
 		PaneCursor: paneCursor,
-		Focus:      func(id string) error { return panefocus.FocusPaneByID(id) },
-		Send:       sendToPane,
+		// attach-predictive-echo: the pane's cursor CELL + alt-screen flag, streamed as
+		// OpCursor frames so the attach client has the authoritative cursor without
+		// emulating a terminal. `alternate_on` is the precise full-screen-TUI signal.
+		AttachCursor: attachCursor,
+		Focus:        func(id string) error { return panefocus.FocusPaneByID(id) },
+		Send:         sendToPane,
 		// `gtmux attach` bridges a tmux client (spawned in a server-side PTY) to a WS.
 		// Resolve the pane's session and attach to it; the handler drops write frames
 		// for a read-only (view-only guest) pane. attach-session (not new-session) keeps
@@ -253,6 +257,27 @@ func serveUsageErr() int {
 // rows above the last captured line (pane_height-1-cursor_y, so it's anchored to the
 // bottom and survives the phone having fewer rows than the Mac pane), and whether
 // the pane's cursor is visible (hidden by alt-screen TUIs).
+// attachCursor reports the pane's cursor CELL (x,y) plus whether it is on the ALTERNATE
+// screen — the attach bridge streams this as OpCursor so the client gets the
+// authoritative cursor without a terminal emulator (attach-predictive-echo). `alt` is
+// what a cursor-visible flag can't tell us: vim shows a cursor, but predicting inside it
+// is unsafe.
+func attachCursor(id string) (x, y int, alt, ok bool) {
+	if tmux.Bin == "" {
+		return 0, 0, false, false
+	}
+	f := strings.Fields(tmux.Display(id, "#{cursor_x} #{cursor_y} #{alternate_on}"))
+	if len(f) < 3 {
+		return 0, 0, false, false
+	}
+	cx, err1 := strconv.Atoi(f[0])
+	cy, err2 := strconv.Atoi(f[1])
+	if err1 != nil || err2 != nil || cx < 0 || cy < 0 {
+		return 0, 0, false, false
+	}
+	return cx, cy, f[2] == "1", true
+}
+
 func paneCursor(id string) (x, up int, visible, ok bool) {
 	if tmux.Bin == "" {
 		return 0, 0, false, false

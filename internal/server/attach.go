@@ -4,11 +4,17 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sync"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/connect"
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
 )
+
+// attachCursorInterval paces the OpCursor sampler — fast enough to reconcile a
+// prediction quickly, slow enough that a `display-message` per tick is negligible.
+const attachCursorInterval = 120 * time.Millisecond
 
 // attachUpgrader upgrades /api/attach to a WebSocket. The bearer token (checked by
 // auth() before we get here) is the security boundary, so Origin is not gated.
@@ -69,6 +75,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	defer func() { _ = ptmx.Close() }()
 
 	done := make(chan struct{})
+	// gorilla/websocket forbids concurrent writes, and the cursor sampler below writes
+	// alongside the output pump. Output takes the lock normally; the sampler only
+	// TryLocks, so a cursor frame can NEVER delay or block the PTY stream.
+	var wmu sync.Mutex
 
 	// PTY → WS: read raw pane bytes and send OUTPUT frames. WriteMessage is
 	// synchronous, so a slow client backpressures this read (TCP → pty → tmux),
@@ -79,7 +89,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		for {
 			n, err := ptmx.Read(buf)
 			if n > 0 {
-				if werr := conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, buf[:n])); werr != nil {
+				wmu.Lock()
+				werr := conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, buf[:n]))
+				wmu.Unlock()
+				if werr != nil {
 					return
 				}
 			}
@@ -88,6 +101,44 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
+
+	// Cursor sampler → WS (attach-predictive-echo): stream the pane's tmux cursor +
+	// alt-screen flag so the client has the AUTHORITATIVE cursor without emulating a
+	// terminal. Coalesced (sent only when it changed) and TryLock'd (skipped whenever
+	// the output pump is mid-write) — a dropped sample is harmless, the next tick
+	// carries it. Absent the dep, no frames are sent and clients never predict.
+	if s.deps.AttachCursor != nil {
+		go func() {
+			t := time.NewTicker(attachCursorInterval)
+			defer t.Stop()
+			var last connect.Cursor
+			var have bool
+			for {
+				select {
+				case <-done:
+					return
+				case <-t.C:
+					x, y, alt, ok := s.deps.AttachCursor(id)
+					if !ok {
+						continue
+					}
+					c := connect.Cursor{X: x, Y: y, Alt: alt}
+					if have && c == last {
+						continue // unchanged → don't spend a frame
+					}
+					if !wmu.TryLock() {
+						continue // output is writing; never queue behind it
+					}
+					werr := conn.WriteMessage(websocket.BinaryMessage, connect.EncodeCursor(x, y, alt))
+					wmu.Unlock()
+					if werr != nil {
+						return
+					}
+					last, have = c, true
+				}
+			}
+		}()
+	}
 
 	// WS → PTY: input + resize (dropped for a read-only pane). Runs in its own
 	// goroutine so input (e.g. Ctrl-C) is never blocked behind output backpressure.

@@ -47,3 +47,46 @@ func TestResize(t *testing.T) {
 		t.Error("bad json should be rejected")
 	}
 }
+
+// OpCursor (attach-predictive-echo): the server-sent tmux cursor the client uses as the
+// authoritative reconcile point for predictions.
+func TestCursor(t *testing.T) {
+	frame := EncodeCursor(12, 3, true)
+	op, payload, ok := Decode(frame)
+	if !ok || op != OpCursor {
+		t.Fatalf("Decode → op=%q ok=%v; want OpCursor", op, ok)
+	}
+	c, ok := DecodeCursor(payload)
+	if !ok || c.X != 12 || c.Y != 3 || !c.Alt {
+		t.Errorf("DecodeCursor = %+v ok=%v; want {12 3 true}", c, ok)
+	}
+	// a cooked-line (non-alt) cursor round-trips too
+	if c2, ok := DecodeCursor(EncodeCursor(0, 0, false)[1:]); !ok || c2.Alt || c2.X != 0 {
+		t.Errorf("DecodeCursor(non-alt) = %+v ok=%v", c2, ok)
+	}
+	// garbage / negative cells are "unknown", never a bogus cell
+	if _, ok := DecodeCursor([]byte("not json")); ok {
+		t.Error("bad JSON should not decode")
+	}
+	if _, ok := DecodeCursor([]byte(`{"x":-1,"y":0}`)); ok {
+		t.Error("negative cell should not decode")
+	}
+}
+
+// cursorTracker records the server's authoritative cursor for the predictor (stage 2).
+// `have` stays false until the server sends one — an older server never does, and that
+// is exactly the condition under which prediction must stay off.
+func TestCursorTracker(t *testing.T) {
+	var tr cursorTracker
+	if tr.have {
+		t.Error("a fresh tracker must report no cursor (an old server never sends one)")
+	}
+	tr.set(Cursor{X: 7, Y: 2, Alt: false})
+	if !tr.have || tr.c.X != 7 || tr.c.Y != 2 || tr.c.Alt {
+		t.Errorf("after set = %+v have=%v; want {7 2 false}", tr.c, tr.have)
+	}
+	tr.set(Cursor{X: 0, Y: 0, Alt: true}) // entering a full-screen TUI
+	if !tr.c.Alt {
+		t.Error("tracker must reflect the latest cursor (alt-screen)")
+	}
+}

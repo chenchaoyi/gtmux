@@ -1,12 +1,12 @@
 # Tasks
 
 ## 1. `OpCursor` frame (plumbing)
-- [ ] 1.1 `internal/connect/frame.go`: `OpCursor byte = 'c'` + `EncodeCursor(x,y,alt)` /
+- [x] 1.1 `internal/connect/frame.go`: `OpCursor byte = 'c'` + `EncodeCursor(x,y,alt)` /
       `DecodeCursor(payload)` (JSON `{x,y,alt}`), unit-tested round-trip.
-- [ ] 1.2 `internal/server/attach.go`: sample tmux (`#{cursor_x},#{cursor_y},#{alternate_on}`)
+- [x] 1.2 `internal/server/attach.go`: sample tmux (`#{cursor_x},#{cursor_y},#{alternate_on}`)
       on a small cadence + after each output batch, send `OpCursor` (own goroutine,
       non-blocking, coalesce/skip unchanged).
-- [ ] 1.3 `internal/connect/attach.go`: read `OpCursor`, track `serverCursor` (no prediction
+- [x] 1.3 `internal/connect/attach.go`: read `OpCursor`, track `serverCursor` (no prediction
       yet; optional debug readout under a debug env).
 
 ## 2. The predictor (pure core, tested first)

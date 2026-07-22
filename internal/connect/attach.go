@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -73,6 +74,10 @@ func RunAttach(base, token, paneID string, readOnly bool) error {
 	}()
 
 	done := make(chan error, 2)
+	// The server's authoritative tmux cursor (OpCursor). Stage 1 of
+	// attach-predictive-echo only TRACKS it — nothing predicts yet; stage 2 draws at it
+	// and reconciles against it.
+	var cursor cursorTracker
 
 	// OUTPUT → stdout (raw). Ends when the pane detaches/exits (WS close).
 	go func() {
@@ -85,10 +90,22 @@ func RunAttach(base, token, paneID string, readOnly bool) error {
 			if mt != websocket.BinaryMessage {
 				continue
 			}
-			if op, payload, ok := Decode(data); ok && op == OpOutput {
+			op, payload, ok := Decode(data)
+			if !ok {
+				continue
+			}
+			switch op {
+			case OpOutput:
 				if _, werr := os.Stdout.Write(payload); werr != nil {
 					done <- werr
 					return
+				}
+			case OpCursor:
+				// attach-predictive-echo stage 1: track the AUTHORITATIVE tmux cursor the
+				// server streams, so a later stage can predict at it and reconcile against
+				// it. Display is untouched here — this only records state.
+				if c, cok := DecodeCursor(payload); cok {
+					cursor.set(c)
 				}
 			}
 		}
@@ -144,3 +161,21 @@ func indexByte(b []byte, c byte) int {
 	}
 	return -1
 }
+
+// cursorTracker holds the last cursor the server reported (OpCursor). Written by the
+// output reader, read by the (future) predictor on the input goroutine — hence the mutex.
+type cursorTracker struct {
+	mu   sync.Mutex
+	c    Cursor
+	have bool
+}
+
+func (t *cursorTracker) set(c Cursor) {
+	t.mu.Lock()
+	t.c, t.have = c, true
+	t.mu.Unlock()
+}
+
+// NOTE: the reader for this state (a `get`) lands in stage 2 with the predictor that
+// consumes it — `have` stays false against an older server that never sends OpCursor,
+// which is exactly the condition under which prediction must stay off.

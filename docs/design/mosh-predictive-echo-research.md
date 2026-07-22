@@ -36,7 +36,7 @@ directly usable or worth reimplementing. Prompted by the "Get rid of network lag
 
 | Mosh pillar | gtmux verdict |
 |---|---|
-| **Predictive local echo** | ⭐ **Reimplement (reference design).** The one high-value borrow — the only gtmux-side fix that makes cross-net typing *feel* instant. Applies to both surfaces; **mobile-first** (below). |
+| **Predictive local echo** | ⭐ **Reimplement (reference design).** The one high-value borrow — the only gtmux-side fix that makes cross-net typing *feel* instant. Applies to **`attach`** (the per-keystroke surface) — NOT mobile; see the Correction below. |
 | **Roaming** | Reference the *idea* only: a WS heartbeat + fast reconnect-and-redraw (tmux keeps the session) + a "haven't heard from the server" warning. Not the UDP mechanism. A follow-up for `attach` resilience. |
 | **SSP screen-diff** | **Mobile already has it for free** — the mobile terminal polls `capture-pane` (the whole current screen) every ~1.5s, i.e. it already syncs *screen state*, not bytes, so it inherits mosh's flood-resistance. For `attach` (byte passthrough) a full SSP = a rewrite (the deferred "档 2"), not worth it; our synchronous-write backpressure + independent input goroutine already bound memory and keep Ctrl-C responsive. |
 | **UTF-8 insistence** | Already learned — we force `LC_CTYPE` + `tmux -u` (see `attach-cjk-term-locale`). |
@@ -52,24 +52,29 @@ common case (typing at a prompt) while staying honest (underline) and authoritat
 (server wins). That is exactly mosh's value proposition, and it is transport-independent,
 so it works over our WS/TCP tunnel.
 
-## Key insight: do it mobile-first
+## Correction (2026-07-22): mobile-first was wrong — the target is `attach`
 
-Predictive echo needs a **client-side terminal-state model** (where is the cursor, what's
-on the line). The `attach` client is raw byte passthrough — it has **no** such model and
-would need an embedded VT parser first. **The mobile terminal already has everything:**
+An initial version of this note recommended shipping predictive echo on **mobile first**,
+reasoning that the mobile terminal already has the cursor/screen model that the raw
+`attach` client lacks. On implementing it, that premise fell apart:
 
-- `PaneResponse.cursor = {x, up, visible}` — the server **already tells us the cursor
-  position** each capture (`src/api/types.ts`).
-- `term.ts` already maintains the rendered screen and `cursorSpans(line, x, …)` already
-  draws a cell at column x (`src/ui/term.ts`).
-- `/api/send` **returns the post-send screen** (`DetailScreen.tsx`) — a clean reconcile
-  point, on top of the ~1.5 s capture poll.
+- **Mobile input is a BATCHED composer, not per-keystroke.** Free text is typed into a RN
+  `TextInput` — which **already echoes it locally, instantly** — and Send submits the
+  whole string with `enter: true` (`Composer.tsx`). There is no per-keystroke path into
+  the pane; the control keys (Tab/Enter/Ctrl-C/Esc) and 1/2/3 approvals each send a single
+  key that is a **state change** (mosh says: never predict through those). So mosh-style
+  per-keystroke local echo has **no place to plug in** on mobile — the thing it fixes
+  (typing that waits for a round-trip) doesn't happen; the composer field is the echo.
+- **The surface with the real pain is `attach`** — a raw, per-keystroke terminal client
+  where every character does wait a full round-trip (the measured ~340 ms). But `attach`
+  is the **Go** client (`internal/connect/attach.go`), so a mobile/TS predictor can't
+  serve it, and — as the original `remote-attach-research.md` already noted — it lacks a
+  client-side terminal-state model. Predictive echo there needs an **embedded VT parser**
+  in the Go client to know the cursor and current line.
 
-So on mobile we can predict by drawing the typed character at `cursor.x` (underlined/dim),
-advancing a local cursor, and dropping the prediction the moment the next capture confirms
-it. Far cheaper than building a VT model into the raw `attach` client — and mobile typing
-(a phone keyboard over a slow link) is where the lag hurts most. **Ship predictive echo on
-mobile first; bring it to `attach` later once (or if) a client VT model exists.**
+So predictive echo is **not a quick win on either surface**: mobile doesn't need it
+(batched + locally echoed), and `attach` needs a real VT model first. This loops back to
+`remote-attach-research.md`'s original deferral of predictive echo for exactly this reason.
 
 ## The borrowable heuristics (straight from mosh, reimplemented)
 
@@ -83,10 +88,19 @@ mobile first; bring it to `attach` later once (or if) a client VT model exists.*
 - Predictions are **local display only** — the real keystroke still goes via
   `POST /api/send`; functionality and the server's authority are unchanged.
 
-## Recommendation
+## Recommendation (corrected)
 
-Reimplement mosh-style **predictive local echo, mobile-first** (openspec change
-`mobile-predictive-echo`). Defer: `attach` predictive echo (needs a client VT model),
-`attach` reconnect/resync roaming (borrow the heartbeat idea), and any SSP adoption (not
-worth it — mobile already has the screen-state model, attach's backpressure suffices).
-Do **not** attempt to adopt mosh itself (UDP + GPL).
+Predictive local echo remains the one worthwhile idea from mosh, but its only real home is
+`attach` (Go), and only as a **larger effort** — it needs an embedded VT model in the raw
+client to know the cursor/line, then the borrowable heuristics (predict printable +
+backspace, underline-unconfirmed, adaptive-off on fast links, epoch-reset on state keys,
+local-only + server-authoritative). It is **not** a quick win and **not** a mobile
+feature. Given the ~340 ms is fundamentally the overseas-VPS distance, the cheaper,
+higher-leverage fixes stay: **LAN-prefer direct** when on-net, a **closer/faster tunnel
+VPS**, and fixing the proxy fake-ip (all network/infra, no code). Build `attach`
+predictive echo only if cross-net attach typing must feel instant AND those are exhausted.
+
+Also worth a small, separate effort regardless: `attach` **reconnect/resync** on a dropped
+WS (tmux keeps the session; a fresh attach redraws) + a "haven't heard from the server"
+warning — the borrowable part of mosh's roaming, without UDP. Do **not** adopt mosh itself
+(UDP is what our tunnel can't carry; GPLv3).
