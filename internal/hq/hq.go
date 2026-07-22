@@ -84,7 +84,7 @@ import (
 //	     candidate by its (topic, dedup-key) into the matching topic file, HQ being the
 //	     quality gate — then truncate it. (The engineering ships the command + spool; this
 //	     bump carries the playbook half so existing homes learn to drain the queue.)
-const hqPlaybookVersion = 9
+const hqPlaybookVersion = 10
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -644,6 +644,14 @@ tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的
   ` + "`--pane`" + ` / ` + "`--worktree <branch>`" + ` / ` + "`--model`" + `), proxied by construction, and
   deliver the task WITH land-verification. This is how you start work — never a
   hand-typed ` + "`send-keys`" + ` launch (that skips the proxy → 403). 派活的唯一正道。
+  - **WINDOW-TITLE STANDARD (always):** pass a concise ` + "`--title`" + ` naming the
+    window's PURPOSE — a verb-object kebab slug, ≤~24 chars (` + "`fix-auth-mw`" + `,
+    ` + "`review-pr-518`" + `, ` + "`debug-restore`" + `). NOT the raw goal head. This becomes
+    the window + pane name across tmux, the radar, and the app. The spawn report hands
+    back the STANDARD HANDLE ` + "`<loc> (%pane) · <title>`" + ` — ` + "`loc`" + ` is the LIVE
+    tmux number ` + "`session:N.M`" + ` (correct under renumber-windows; never baked into
+    the name). ALWAYS refer to a spawned window by that ` + "`loc %pane · title`" + ` so the
+    user can jump by number. 窗口标题=简洁目的(动宾 kebab);标号走活的 loc,回报一律带 loc %pane。
 - ` + "`gtmux tasks --json`" + ` — the dispatch/needs-you ledger: every task you spawned
   with its live status (waiting/done/working). 你派出去的活的账本。
 - ` + "`gtmux reap <pane|task_id>`" + ` — safely reclaim a finished dispatch (kills the
