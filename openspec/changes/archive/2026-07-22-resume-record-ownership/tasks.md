@@ -6,4 +6,4 @@
 - [x] 1.4 Tests: stub refused · handover allowed · same-session update · dead incumbent replaceable · unresolvable agent reads as dead
 - [x] 1.5 `make check` + `check-design.sh` green
 - [x] 1.6 Repair the already-clobbered record on the reporter's machine (it had self-healed on the next hook — the clobber is intermittent, which is why chat was blank only sometimes)
-- [ ] 1.7 sync-specs + archive (after merge)
+- [x] 1.7 sync-specs + archive
