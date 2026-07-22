@@ -27,11 +27,18 @@
       RTT into the EWMA; predict only above threshold, only when `!alt`.
 
 ## 5. Spec + docs
-- [ ] 5.1 Sync the `remote-terminal-client` spec (this change's delta) on archive.
+- [x] 5.1 Sync the `remote-terminal-client` spec (this change's delta) on archive.
 - [x] 5.2 `docs/cli.md` `gtmux attach`: document `--predict` (experimental, adaptive,
       underlined-unconfirmed).
 
 ## 6. Verify
 - [x] 6.1 `CGO_ENABLED=0 go build ./cmd/gtmux` + `make check` green.
 - [ ] 6.2 Manual: high-latency shell prompt (predict+confirm), vim (no predict), a mispredict
-      (erased, not left).
+      (erased, not left). **PARTIAL — deliberately left unchecked.** VERIFIED on a FAST
+      link (localhost): attach connects, the adaptive gate draws NO predictions, and the
+      typed text lands once with no doubling/corruption. NOT verified on a SLOW link:
+      driving a raw-mode attach from inside tmux nests tmux and garbles both the render
+      and the capture, so the slow-path predict/erase (and the vim + mispredict cases)
+      still need a real terminal. Shipped opt-in (`--predict`, default OFF) partly for
+      this reason. Known residual risk: a predicted run crossing a right-margin WRAP —
+      the back-N-columns erase can land on the wrong row; Ctrl-L / reattach recovers.
