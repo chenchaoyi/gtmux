@@ -62,14 +62,25 @@ func RunAttach(base, token, paneID string, readOnly, predict bool) error {
 	restore := func() { _ = term.Restore(fd, oldState) }
 	defer restore()
 
+	// gorilla/websocket forbids concurrent writes, and TWO goroutines send frames: the
+	// input pump and the SIGWINCH resizer. Unserialized, a resize landing mid-keystroke
+	// panics the session ("concurrent write to websocket connection") — observed in
+	// testing. Every frame goes through sendFrame.
+	var wsMu sync.Mutex
+	sendFrame := func(b []byte) error {
+		wsMu.Lock()
+		defer wsMu.Unlock()
+		return conn.WriteMessage(websocket.BinaryMessage, b)
+	}
+
 	// Tell the server our current size, then keep it in step on SIGWINCH.
-	sendSize(conn)
+	sendSize(sendFrame)
 	winch := make(chan os.Signal, 1)
 	signal.Notify(winch, syscall.SIGWINCH)
 	defer signal.Stop(winch)
 	go func() {
 		for range winch {
-			sendSize(conn)
+			sendSize(sendFrame)
 		}
 	}()
 
@@ -137,7 +148,7 @@ func RunAttach(base, token, paneID string, readOnly, predict bool) error {
 					return
 				}
 				if !readOnly {
-					if werr := conn.WriteMessage(websocket.BinaryMessage, Encode(OpInput, buf[:n])); werr != nil {
+					if werr := sendFrame(Encode(OpInput, buf[:n])); werr != nil {
 						done <- werr
 						return
 					}
@@ -166,10 +177,11 @@ func RunAttach(base, token, paneID string, readOnly, predict bool) error {
 	return err
 }
 
-// sendSize sends the current terminal size as a RESIZE frame (best-effort).
-func sendSize(conn *websocket.Conn) {
+// sendSize sends the current terminal size as a RESIZE frame (best-effort). It takes the
+// serialized sender rather than the raw conn so a resize can never race the input pump.
+func sendSize(send func([]byte) error) {
 	if w, h, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 && h > 0 {
-		_ = conn.WriteMessage(websocket.BinaryMessage, EncodeResize(w, h))
+		_ = send(EncodeResize(w, h))
 	}
 }
 

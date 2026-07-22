@@ -86,13 +86,22 @@ func normalizeHost(input string) string {
 	if !strings.HasPrefix(h, "http://") && !strings.HasPrefix(h, "https://") {
 		h = "http://" + h
 	}
-	hostPart := h
-	if i := strings.Index(hostPart, "://"); i >= 0 {
-		hostPart = hostPart[i+3:]
+	scheme := "http://"
+	if strings.HasPrefix(h, "https://") {
+		scheme = "https://"
 	}
-	// Add the default port only when the host has none (and isn't a path-only edge).
-	if !strings.Contains(hostPart, ":") {
-		h += ":8765"
+	rest := h[len(scheme):]
+	// The default port belongs to the HOST — never after a path. A tunnel target is
+	// path-based (https://tunnel.example/pNNNNN), and blindly appending ":8765" to the
+	// whole string produced "https://tunnel.example/pNNNNN:8765", which reaches nothing.
+	host, path := rest, ""
+	if i := strings.Index(rest, "/"); i >= 0 {
+		host, path = rest[:i], rest[i:]
 	}
-	return h
+	// Only a bare http host gets the serve default; an https endpoint (a tunnel behind
+	// TLS) is on 443, and a host that already names a port is left alone.
+	if scheme == "http://" && !strings.Contains(host, ":") {
+		host += ":8765"
+	}
+	return scheme + host + path
 }

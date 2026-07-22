@@ -81,3 +81,23 @@ func TestParseTarget_RemotesFallback(t *testing.T) {
 		t.Fatalf("explicit token must win: %+v", tgt)
 	}
 }
+
+// normalizeHost must put the default port on the HOST, never after a path — a
+// path-based tunnel target (https://tunnel.example/pNNNNN) previously became
+// "…/pNNNNN:8765", which reaches nothing.
+func TestNormalizeHost(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"192.168.1.20", "http://192.168.1.20:8765"},                       // bare host → serve default
+		{"http://192.168.1.20", "http://192.168.1.20:8765"},                // explicit http, no port
+		{"192.168.1.20:9000", "http://192.168.1.20:9000"},                  // explicit port preserved
+		{"http://host:9000/", "http://host:9000"},                          // trailing slash trimmed
+		{"https://tunnel.ccy.dev/p35047", "https://tunnel.ccy.dev/p35047"}, // tunnel: untouched
+		{"https://host.example", "https://host.example"},                   // https → 443, no bogus port
+		{"", ""},
+	}
+	for _, c := range cases {
+		if got := normalizeHost(c.in); got != c.want {
+			t.Errorf("normalizeHost(%q) = %q; want %q", c.in, got, c.want)
+		}
+	}
+}
