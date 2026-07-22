@@ -20,12 +20,15 @@ import (
 func Run(args []string) int {
 	var target, token, pane string
 	readOnly := false
+	predict := false
 	for i := 0; i < len(args); i++ {
 		switch a := args[i]; {
 		case a == "-h" || a == "--help":
 			return usage()
 		case a == "--read-only" || a == "-r":
 			readOnly = true
+		case a == "--predict":
+			predict = true
 		case a == "--token":
 			if i+1 < len(args) {
 				token = args[i+1]
@@ -115,7 +118,7 @@ func Run(args []string) int {
 		i18n.Tr("as", "以"), who, mode)
 	i18n.Sae("(detach: tmux prefix + d, or Ctrl-])", "（退出：tmux 前缀键 + d，或 Ctrl-]）")
 
-	if err := RunAttach(tgt.URL, tgt.Token, pane, readOnly); err != nil {
+	if err := RunAttach(tgt.URL, tgt.Token, pane, readOnly, predict); err != nil {
 		i18n.Sae("gtmux attach: "+err.Error(), "gtmux attach: "+err.Error())
 		return 1
 	}
@@ -250,17 +253,19 @@ func contains(s []string, v string) bool {
 
 func usage() int {
 	i18n.Sae(
-		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>] [--read-only]\n"+
+		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
 			"  Attach to a remote gtmux pane in your local terminal (raw, interactive).\n"+
 			"  A pair link (…/#c=<code>, from `gtmux pair`) enrolls THIS terminal as one of\n"+
 			"  your own devices (full control, token persisted — later just `gtmux attach <host>`).\n"+
 			"  A share link (…/#g=<token>) connects as a scope-restricted guest; a host +\n"+
 			"  --token also works. Detach with tmux `prefix d` or Ctrl-].",
-		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>] [--read-only]\n"+
+		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
 			"  在本地终端里附着到远程 gtmux 的 pane（原生、可交互）。\n"+
 			"  配对链接（…/#c=<code>，来自 `gtmux pair`）把本终端登记为你自己的设备\n"+
 			"  （全权,token 会保存 —— 之后直接 `gtmux attach <host>`）。\n"+
 			"  分享链接（…/#g=<token>）以受限访客接入；host + --token 亦可。\n"+
+			"  --predict（实验）用本地预测回显掩盖往返延迟：你敲的字立刻显示、加下划线表示未确认，\n"+
+			"  服务器确认后转正；快链路自动不预测，全屏 TUI 内不预测。\n"+
 			"  退出：tmux 前缀键 + d，或 Ctrl-]。")
 	return 0
 }

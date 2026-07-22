@@ -38,7 +38,7 @@ func wsURL(base, paneID string) string {
 // RunAttach opens the attach WebSocket and passes the local terminal through to the
 // remote pane: raw mode, stdin→INPUT (unless readOnly), OUTPUT→stdout, SIGWINCH→RESIZE.
 // It ALWAYS restores the terminal on exit (normal detach, error, or signal).
-func RunAttach(base, token, paneID string, readOnly bool) error {
+func RunAttach(base, token, paneID string, readOnly, predict bool) error {
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
 		return fmt.Errorf("gtmux attach needs an interactive terminal")
 	}
@@ -74,10 +74,21 @@ func RunAttach(base, token, paneID string, readOnly bool) error {
 	}()
 
 	done := make(chan error, 2)
-	// The server's authoritative tmux cursor (OpCursor). Stage 1 of
-	// attach-predictive-echo only TRACKS it — nothing predicts yet; stage 2 draws at it
-	// and reconciles against it.
-	var cursor cursorTracker
+	// Predictive local echo (attach-predictive-echo). Disabled unless --predict, in which
+	// case it draws unconfirmed keystrokes and erases them before authoritative output.
+	// BOTH goroutines write to the terminal now (input draws predictions, output writes
+	// the real bytes), so every write is serialized by outMu.
+	pred := NewPredictor(predict)
+	var outMu sync.Mutex
+	writeOut := func(b []byte) error {
+		if len(b) == 0 {
+			return nil
+		}
+		outMu.Lock()
+		_, err := os.Stdout.Write(b)
+		outMu.Unlock()
+		return err
+	}
 
 	// OUTPUT → stdout (raw). Ends when the pane detaches/exits (WS close).
 	go func() {
@@ -96,16 +107,20 @@ func RunAttach(base, token, paneID string, readOnly bool) error {
 			}
 			switch op {
 			case OpOutput:
-				if _, werr := os.Stdout.Write(payload); werr != nil {
+				// The server screen is authoritative: erase any outstanding predictions
+				// FIRST, then write the real bytes onto the clean line.
+				outMu.Lock()
+				_, werr := os.Stdout.Write(append(pred.OnOutput(), payload...))
+				outMu.Unlock()
+				if werr != nil {
 					done <- werr
 					return
 				}
 			case OpCursor:
-				// attach-predictive-echo stage 1: track the AUTHORITATIVE tmux cursor the
-				// server streams, so a later stage can predict at it and reconcile against
-				// it. Display is untouched here — this only records state.
+				// The authoritative cursor: re-arms the epoch, carries the alt-screen flag,
+				// and closes the round-trip measurement that gates prediction.
 				if c, cok := DecodeCursor(payload); cok {
-					cursor.set(c)
+					pred.OnCursor(c)
 				}
 			}
 		}
@@ -123,6 +138,11 @@ func RunAttach(base, token, paneID string, readOnly bool) error {
 				}
 				if !readOnly {
 					if werr := conn.WriteMessage(websocket.BinaryMessage, Encode(OpInput, buf[:n])); werr != nil {
+						done <- werr
+						return
+					}
+					// The raw key is already on its way — prediction only paints locally.
+					if werr := writeOut(pred.OnInput(buf[:n])); werr != nil {
 						done <- werr
 						return
 					}
@@ -161,21 +181,3 @@ func indexByte(b []byte, c byte) int {
 	}
 	return -1
 }
-
-// cursorTracker holds the last cursor the server reported (OpCursor). Written by the
-// output reader, read by the (future) predictor on the input goroutine — hence the mutex.
-type cursorTracker struct {
-	mu   sync.Mutex
-	c    Cursor
-	have bool
-}
-
-func (t *cursorTracker) set(c Cursor) {
-	t.mu.Lock()
-	t.c, t.have = c, true
-	t.mu.Unlock()
-}
-
-// NOTE: the reader for this state (a `get`) lands in stage 2 with the predictor that
-// consumes it — `have` stays false against an older server that never sends OpCursor,
-// which is exactly the condition under which prediction must stay off.

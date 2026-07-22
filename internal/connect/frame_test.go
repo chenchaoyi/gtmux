@@ -72,21 +72,3 @@ func TestCursor(t *testing.T) {
 		t.Error("negative cell should not decode")
 	}
 }
-
-// cursorTracker records the server's authoritative cursor for the predictor (stage 2).
-// `have` stays false until the server sends one — an older server never does, and that
-// is exactly the condition under which prediction must stay off.
-func TestCursorTracker(t *testing.T) {
-	var tr cursorTracker
-	if tr.have {
-		t.Error("a fresh tracker must report no cursor (an old server never sends one)")
-	}
-	tr.set(Cursor{X: 7, Y: 2, Alt: false})
-	if !tr.have || tr.c.X != 7 || tr.c.Y != 2 || tr.c.Alt {
-		t.Errorf("after set = %+v have=%v; want {7 2 false}", tr.c, tr.have)
-	}
-	tr.set(Cursor{X: 0, Y: 0, Alt: true}) // entering a full-screen TUI
-	if !tr.c.Alt {
-		t.Error("tracker must reflect the latest cursor (alt-screen)")
-	}
-}
