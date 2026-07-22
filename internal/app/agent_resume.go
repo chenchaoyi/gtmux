@@ -91,6 +91,16 @@ func resumeAgents() {
 		if used[rec.SessionID] {
 			return false
 		}
+		// Resume from where the conversation is actually FILED, not the cwd we last saw
+		// the pane in — an agent that `cd`s mid-session moves the latter, and resuming
+		// from the moved-to dir fails with "No conversation found with session ID".
+		// A conversation that's gone entirely is skipped rather than left as an error
+		// on the user's screen.
+		rec, alive := resume.Resolve(rec)
+		if !alive {
+			restoreLogf("resume[skip] pane=%s session=%s — conversation not on disk (deleted/expired)", paneID, rec.SessionID)
+			return false
+		}
 		cmd, ok := resume.Command(rec)
 		if !ok {
 			return false
