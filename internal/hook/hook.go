@@ -444,7 +444,11 @@ func Run(stdin io.Reader, args []string) int {
 				// this, restore couldn't resume Codex and its chat mode stayed empty.
 				sid, _ = transcript.CodexSessionForCwd(cwd)
 			}
-			if sid != "" {
+			// Only a real conversation may take a pane it doesn't already own: the agent
+			// runs slash commands (`/usage`) as their OWN session in the SAME pane, and
+			// letting one of those claim the record pointed restore at a command stub
+			// instead of the work session. See resumeowner.go.
+			if sid != "" && ownsPane(loc, agentKey, sid) {
 				_ = resume.Save(loc, resume.Record{
 					Agent: agentKey, SessionID: sid, Cwd: cwd, UpdatedAt: time.Now().Unix(),
 				})
