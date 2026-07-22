@@ -32,4 +32,4 @@
 - [x] 5.2 `api/contract.md` documents both endpoints
 - [x] 5.3 `make check` + `mobileapp: npm run check` + `scripts/check-design.sh` green
 - [x] 5.4 openspec validate --specs --strict
-- [ ] 5.5 sync-specs + archive (after merge)
+- [x] 5.5 sync-specs + archive
