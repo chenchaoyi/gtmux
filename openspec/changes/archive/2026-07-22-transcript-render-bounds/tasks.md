@@ -17,4 +17,4 @@
 - [x] 3.1 `api/contract.md` documents the bound + the dropped-turn signal
 - [x] 3.2 `make check` · `mobileapp npm run check` · `check-design.sh` green
 - [x] 3.3 openspec validate
-- [ ] 3.4 sync-specs + archive (after merge)
+- [x] 3.4 sync-specs + archive
