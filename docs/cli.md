@@ -453,7 +453,23 @@ gtmux attach 'https://<mac>.example/#g=<token>' %12
 
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
+gtmux attach <target> --predict    # experimental: hide round-trip lag while typing
 ```
+
+**`--predict` (experimental, off by default)** — predictive local echo, the mosh idea
+adapted to our WS/TCP bridge. Over a slow link every keystroke otherwise waits a full
+round-trip to echo (~340 ms on a cross-continent tunnel). With `--predict`, your own
+printable typing and backspaces appear **immediately, underlined** to mark them
+unconfirmed, and are erased the instant authoritative output arrives — **the server screen
+always wins**, so a wrong guess is corrected within one round-trip rather than left
+standing. The real keystroke is forwarded to the pane unchanged; prediction only paints
+locally. It is deliberately conservative: **adaptive** (nothing is drawn on a fast/LAN
+link, where the echo already feels instant), never inside a **full-screen TUI** (the
+server tells the client when the pane is on the alternate screen), and any state-changing
+key (Enter, ESC, arrows, Ctrl-C, Tab) ends the prediction epoch rather than guessing
+across an unpredictable screen change. The client learns the cursor from the server (tmux
+knows it) rather than emulating a terminal — see
+`docs/design/mosh-predictive-echo-research.md`.
 
 Omit `%N` and, when several panes are attachable, `attach` shows a **numbered menu**
 (session · agent · status · task per row) and connects to the one you pick — Enter takes
