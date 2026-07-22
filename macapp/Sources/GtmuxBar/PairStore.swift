@@ -11,13 +11,33 @@ struct PairedDevice: Identifiable, Equatable {
     let lastSeen: Int
 
     /// kind guesses a display icon from the device name (best-effort chrome only):
-    /// the phone app labels itself with the device model; the attach pair flow
+    /// the phone app labels itself with its idiom + OS version; the attach pair flow
     /// names entries after the hostname; browsers enroll via the web page.
     var kind: String {
         let n = name.lowercased()
         if n.contains("iphone") || n.contains("ipad") || n == "phone" { return "iphone" }
         if n.contains("safari") || n.contains("chrome") || n.contains("browser") { return "globe" }
         return "laptopcomputer"
+    }
+
+    /// displayName drops the legacy "gtmux • " prefix the phone app used to register
+    /// under. A "gtmux" prefix inside gtmux's OWN roster carried no information — nothing
+    /// in this list is not a gtmux device — while pushing the part that identifies the
+    /// device out to where it gets truncated. New pairings no longer send it; stripping
+    /// it here tidies the entries already on disk without asking anyone to re-pair.
+    var displayName: String {
+        let cleaned = PairedDevice.stripLegacyPrefix(name)
+        return cleaned.isEmpty ? name : cleaned
+    }
+
+    /// stripLegacyPrefix removes a leading "gtmux", with or without a bullet separator.
+    /// Pure + internal so it can be tested directly.
+    static func stripLegacyPrefix(_ raw: String) -> String {
+        var s = raw.trimmingCharacters(in: .whitespaces)
+        guard s.lowercased().hasPrefix("gtmux") else { return s }
+        s = String(s.dropFirst("gtmux".count))
+        s = s.trimmingCharacters(in: CharacterSet(charactersIn: " \u{2022}\u{00B7}"))
+        return s
     }
 }
 

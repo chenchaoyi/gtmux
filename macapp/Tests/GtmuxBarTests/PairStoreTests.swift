@@ -24,3 +24,35 @@ final class PairStoreTests: XCTestCase {
         XCTAssertEqual(PairedDevice(id: "3", name: "work-mbp", enrolledAt: 0, lastSeen: 0).kind, "laptopcomputer")
     }
 }
+
+// The roster's job is letting you tell YOUR devices apart well enough to revoke the right
+// one. Every entry used to read `gtmux • iPhone`: a "gtmux" prefix inside gtmux's own
+// roster (nothing in that list is not a gtmux device) over a word true of every iPhone.
+final class PairedDeviceNameTests: XCTestCase {
+    private func dev(_ name: String) -> PairedDevice {
+        PairedDevice(id: "d1", name: name, enrolledAt: 0, lastSeen: 0)
+    }
+
+    func testLegacyPrefixIsStrippedForDisplay() {
+        // Entries paired before the rename tidy themselves up — no re-pairing asked.
+        XCTAssertEqual(dev("gtmux • iPhone").displayName, "iPhone")
+        XCTAssertEqual(dev("gtmux · iPad").displayName, "iPad")
+        XCTAssertEqual(dev("gtmux iPhone").displayName, "iPhone")
+        XCTAssertEqual(dev("GTMUX • iPhone · iOS 18.5").displayName, "iPhone · iOS 18.5")
+    }
+
+    func testANameWithoutThePrefixIsUntouched() {
+        XCTAssertEqual(dev("iPhone · iOS 18.5").displayName, "iPhone · iOS 18.5")
+        XCTAssertEqual(dev("ccy-mbp.local").displayName, "ccy-mbp.local")
+        // A device legitimately NAMED after the tool keeps something to show, rather
+        // than being stripped to an empty row.
+        XCTAssertEqual(dev("gtmux").displayName, "gtmux")
+    }
+
+    func testTheIconStillResolvesFromTheNewNaming() {
+        XCTAssertEqual(dev("iPhone · iOS 18.5").kind, "iphone")
+        XCTAssertEqual(dev("iPad · iOS 18.5").kind, "iphone")
+        XCTAssertEqual(dev("Safari").kind, "globe")
+        XCTAssertEqual(dev("ccy-mbp.local").kind, "laptopcomputer")
+    }
+}

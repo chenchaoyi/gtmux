@@ -575,13 +575,13 @@ struct PreferencesView: View {
                     Image(systemName: d.kind).font(.system(size: 12))
                         .foregroundStyle(.secondary).frame(width: 16)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(d.name).font(.system(size: 12))
+                        Text(d.displayName).font(.system(size: 12))
                         Text(pairLastSeen(d))
                             .font(.system(size: 10)).foregroundStyle(.tertiary)
                     }
                     Spacer(minLength: 0)
                     Button(l10n.tr("Revoke", "吊销")) {
-                        revokeTarget = .pair(id: d.id, name: d.name)
+                        revokeTarget = .pair(id: d.id, name: d.displayName)
                     }
                         .disabled(pairStore.busy)
                 }
