@@ -30,6 +30,7 @@ import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
 import {ChatView} from '../ui/ChatView';
+import {SendFailedBar} from '../ui/SendFailedBar';
 import {BrandLoader} from '../ui/BrandLoader';
 import {ApprovalCard} from '../ui/ApprovalCard';
 import {NativeTerm} from '../ui/NativeTerm';
@@ -105,6 +106,9 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
   // How many OLDER turns the server left out to bound the payload — shown by ChatView so
   // a truncated history never reads as the whole conversation (transcript-render-bounds).
   const [droppedTurns, setDroppedTurns] = useState(0);
+  // A send the server declined to submit. Held (not dropped) so the text survives and
+  // can be retried — see SendFailedBar.
+  const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
   // B1: 对话 ↔ 终端. Initial mode = the global "default mode" setting (B2, default
   // 终端 — preserves the established read-the-pane behavior; 对话 is a visible-
   // screen glance, not a full transcript), overridden by this pane's own
@@ -226,14 +230,25 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
   // (the big win over a remote tunnel). Late bumps catch a slow TUI redraw.
   const sendPane = useCallback(
     (payload: SendPayload) => {
+      setFailedSend(null);
       client
         .send(agent.pane_id, payload)
         .then(snap => {
-          if (snap && snap.text) {
+          // null = the server refused (it could not confirm the full message reached
+          // the input box, so it declined to press Enter). Surface it and KEEP the
+          // text: a silently dropped message is the one failure the user can't recover
+          // from without retyping.
+          if (!snap) {
+            setFailedSend(payload);
+            setPendingPrompt('');
+            return;
+          }
+          if (snap.text) {
             setText(prev => (prev === snap.text ? prev : snap.text));
             if (snap.cursor) setCursor(snap.cursor);
           }
         })
+        .catch(() => setFailedSend(payload))
         .finally(bumpPane);
     },
     [client, agent.pane_id, bumpPane],
@@ -296,7 +311,7 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
     ),
     [live, lines, fontSize, pal, lang, turns, droppedTurns, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
   );
@@ -485,7 +500,10 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
           top chrome is hidden in full-screen; this is the way back). */}
       {fullscreen && (
         <View style={styles.fsBar}>
-          <FsBtn label={'⤡ ' + (lang === 'zh' ? '退出' : 'Exit')} onPress={() => setFullscreen(false)} testID={TestIds.detail.fsExit} />
+          {/* "✕" over "⤡": the old glyph is a diagonal RESIZE arrow, which reads as
+              "make it bigger/smaller", not "leave". Paired with the full word, there is
+              nothing left to guess at. */}
+          <FsBtn label={'✕ ' + (lang === 'zh' ? '退出全屏' : 'Exit full screen')} onPress={() => setFullscreen(false)} testID={TestIds.detail.fsExit} />
         </View>
       )}
       </View>
@@ -511,6 +529,15 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
       {/* input — types into the pane via POST /api/send (MOBILE §4). A guest may type
           only into a pane on the host's input allowlist; a view-only pane is read-only
           (the server would 403 the send anyway — this just makes it visible). */}
+      {failedSend && (
+        <SendFailedBar
+          text={failedSend.text ?? failedSend.key ?? ''}
+          pal={pal}
+          lang={lang}
+          onRetry={() => sendPane(failedSend)}
+          onDismiss={() => setFailedSend(null)}
+        />
+      )}
       <Composer
         pal={pal}
         lang={lang}
@@ -632,6 +659,13 @@ const styles = StyleSheet.create({
   layerOff: {opacity: 0, zIndex: 0},
   termWrap: {flex: 1},
   loadingOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 10},
+  // The way OUT of full screen sits on top of arbitrary terminal output, so it cannot
+  // borrow contrast from what is behind it. It used to: a translucent fill let the
+  // terminal's own text show through the chip and a hairline at 0.14 alpha barely drew
+  // an edge, so the control read as part of the screen it was floating over. Now the
+  // fill is OPAQUE, the edge is a real line, and a shadow lifts it off — the same chip
+  // is legible over a dense wall of text and over an empty pane, in a dark terminal
+  // theme or a light one.
   fsBar: {
     position: 'absolute',
     top: 8,
@@ -639,12 +673,20 @@ const styles = StyleSheet.create({
     zIndex: 10, // above the mode layers (layerOn uses zIndex:1) so it's tappable
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(20,20,22,0.82)',
+    backgroundColor: '#141416', // opaque: nothing behind it may show through
     borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
     paddingHorizontal: 4,
+    // Separation that does not depend on the fill contrasting with the content.
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 6,
   },
   fsBtn: {paddingHorizontal: 11, paddingVertical: 7},
-  fsBtnText: {color: 'rgba(255,255,255,0.88)', fontSize: 13, fontWeight: '600'},
+  // Fixed light text: this chip is ALWAYS dark, so it must never take its colour from
+  // the app palette (which would be near-black in light mode — invisible here).
+  fsBtnText: {color: '#FFFFFF', fontSize: 13, fontWeight: '600'},
 });

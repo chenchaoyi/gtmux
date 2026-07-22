@@ -46,6 +46,10 @@ interface Props {
   // Font-family config (same value the terminal uses), so chat text matches the
   // terminal font — resolved via the shared nativeFontFamily().
   fontPref?: string;
+  // When the agent started its current turn (the radar row's `since`). Used only to
+  // show how long it has been thinking — a silent wait is indistinguishable from a
+  // hung one, so the view always says which it is.
+  workingSince?: number;
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 
@@ -83,7 +87,21 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, onLiveEdge}: Props) {
+
+// thinkingLabel says the agent is working AND for how long. The duration is the point:
+// "working" alone can't distinguish a turn that's thinking from one that has hung, and
+// only one of those is worth interrupting. Falls back to the bare state when we don't
+// know when the turn started, rather than inventing an elapsed time.
+export function thinkingLabel(since: number | undefined, nowSec: number, lang: Lang): string {
+  const zh = lang === 'zh';
+  const base = zh ? '正在思考' : 'Thinking';
+  if (!since || since <= 0 || nowSec < since) return zh ? base + '…' : base + '…';
+  const s = nowSec - since;
+  const el = s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${s % 60}s` : `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
+  return zh ? `${base}… ${el}` : `${base}… ${el}`;
+}
+
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, workingSince, onLiveEdge}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -109,6 +127,14 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // Only the newest turns are MOUNTED. Rendering a long session whole is what killed the
   // app on switching to Chat — see chatWindow.ts for the measurements.
   const [windowSize, setWindowSize] = React.useState(CHAT_WINDOW);
+  // A 1s heartbeat WHILE WORKING only, so the "thinking" elapsed label moves. Idle
+  // costs nothing: the interval isn't created unless a turn is actually running.
+  const [nowSec, setNowSec] = React.useState(() => Math.floor(Date.now() / 1000));
+  React.useEffect(() => {
+    if (status !== 'working') return;
+    const id = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [status]);
   const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
   // A very long USER prompt (e.g. a pasted context dump) is auto-collapsed to a few
   // lines with a tap-to-expand toggle, so it doesn't bury the conversation.
@@ -377,6 +403,22 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
         </View>
       )}
 
+      {/* Working, but nothing to show yet — the case that reads as "the app froze".
+          A turn can spend a long time before it prints anything (thinking, a slow tool),
+          and the status subtitle sits at the TOP of the scroll where the reader has
+          already scrolled past it. So the tail of the conversation always carries a live
+          marker, and it says HOW LONG: a silent wait and a hung one look identical
+          otherwise, and only one of them is worth interrupting. */}
+      {status === 'working' && liveShown.length === 0 && (
+        <View style={styles.thinkingRow} testID={TestIds.detail.chatThinking}>
+          <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+          <View style={[styles.agentBubble, styles.thinkingBubble]}>
+            <BrandLoader size={16} neutral="rgba(255,255,255,0.30)" />
+            <Text style={styles.thinkingText}>{thinkingLabel(workingSince, nowSec, lang)}</Text>
+          </View>
+        </View>
+      )}
+
       {/* live card: the current screen while the agent is working */}
       {status === 'working' && liveShown.length > 0 && (
         <View style={styles.liveCard}>
@@ -417,6 +459,9 @@ const styles = StyleSheet.create({
   empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},
   // fixed collapse/expand-all bar above the scroll — right-aligned, quiet.
+  thinkingRow: {flexDirection: 'row', alignItems: 'center', marginTop: 6},
+  thinkingBubble: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8},
+  thinkingText: {fontSize: 12, color: 'rgba(235,235,245,0.6)', fontVariant: ['tabular-nums']},
   earlierRow: {alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
   earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},

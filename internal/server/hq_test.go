@@ -157,3 +157,41 @@ func TestTranscriptAnnouncesDroppedTurns(t *testing.T) {
 		})
 	}
 }
+
+// A send the pane never submitted must be REPORTED. serve used to discard the
+// paste-and-submit verdict and return nil, so the API answered success while the
+// message sat unsubmitted in the input box — the phone showed it as sent and the only
+// way to learn otherwise was to walk over to the Mac.
+func TestSendReportsAMessageThatWasNotSubmitted(t *testing.T) {
+	s := hqTestServer(t, Deps{
+		Send: func(_, text, _ string, _ bool) error {
+			if text == "a very long message" {
+				return errSendNotSubmitted
+			}
+			return nil
+		},
+	})
+	post := func(text string) *httptest.ResponseRecorder {
+		body := `{"id":"%1","text":"` + text + `","enter":true}`
+		req := httptest.NewRequest(http.MethodPost, "/api/send", strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer master")
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, req)
+		return w
+	}
+	if w := post("a very long message"); w.Code == http.StatusOK {
+		t.Error("an unsubmitted send answered 200 — the client cannot tell it failed")
+	} else if !strings.Contains(w.Body.String(), "send failed") {
+		t.Errorf("body = %s; want a send-failed error the client can surface", w.Body.String())
+	}
+	if w := post("ok"); w.Code != http.StatusOK {
+		t.Errorf("a normal send = %d; want 200", w.Code)
+	}
+}
+
+var errSendNotSubmitted = errSend("not submitted: the pane's input box did not settle on the full message")
+
+type errSend string
+
+func (e errSend) Error() string { return string(e) }

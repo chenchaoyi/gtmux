@@ -247,6 +247,7 @@ const (
 // destroying and re-pasting, so it is returned only after the whole settle window has
 // passed with no match.
 func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
+	budget := settleFrames(opts.PasteSettle, text)
 	for i := 0; ; i++ {
 		_, draft, structured := SplitInputRegion(io.Capture())
 		if !structured {
@@ -255,12 +256,48 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 		if draftHasDelivery(draft, text) {
 			return pasteInDraft
 		}
-		if i >= opts.PasteSettle {
+		if i >= budget {
 			return pasteFragment
 		}
 		io.Sleep()
 	}
 }
+
+// settleFrames is how long to let a paste RENDER before calling it a fragment, scaled
+// by how much was pasted.
+//
+// The fixed budget was the bug: PasteSettle is 3 frames (~900ms) whether the payload is
+// "1" or three paragraphs. A TUI redraws a long paste progressively, so a big message
+// could still be arriving when the deadline passed — the guard read the partial draft,
+// called it a fragment, and (correctly, by its own rule) refused to press Enter. The
+// user saw exactly that: a long message landing with its tail missing and no submit.
+// "Sometimes", because it is a race with rendering.
+//
+// Scaling only ever makes us WAIT LONGER before giving up: confirmPaste still returns
+// the instant the draft holds the delivery, so a short paste is as fast as it ever was,
+// and nothing is submitted that would not have been submitted before.
+func settleFrames(base int, text string) int {
+	if base <= 0 {
+		base = 1
+	}
+	// One extra frame per settleCharsPerFrame characters, capped so a pathological
+	// payload can't stall a delivery for minutes.
+	extra := len(text) / settleCharsPerFrame
+	if extra > settleMaxExtraFrames {
+		extra = settleMaxExtraFrames
+	}
+	return base + extra
+}
+
+const (
+	// settleCharsPerFrame: how many pasted characters buy one more render frame. Sized
+	// against a real terminal: a few hundred characters is roughly one more redraw.
+	settleCharsPerFrame = 400
+	// settleMaxExtraFrames caps the added wait (~6s at a 300ms poll) — past that the
+	// draft is not merely slow, and the caller is better served by a reported failure
+	// than an unbounded stall.
+	settleMaxExtraFrames = 20
+)
 
 // clearedForRetry clears a fragmented draft and reports whether the box is now
 // demonstrably EMPTY — the only state in which re-pasting cannot duplicate anything,
