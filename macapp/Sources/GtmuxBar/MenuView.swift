@@ -217,10 +217,6 @@ struct MenuView: View {
         }
     }
 
-    // The fleet pip strip — a micro-radar beside "gtmux HQ": one pip per worker,
-    // color = status, SHAPE = square when waiting (needs you) else circle, so the
-    // whole fleet's shape reads at a glance without a badge. Capped so a big fleet
-    // never overflows the card; the remainder shows as "+N".
     // fleetHeadline is the deterministic chief-of-staff conclusion shown as the HQ card
     // subtitle (hq-meta-layer): when HQ itself needs a decision → "your call"; else it
     // names the one worker that needs you + how many others are normal, or reads as "all

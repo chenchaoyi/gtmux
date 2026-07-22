@@ -113,6 +113,20 @@ type Deps struct {
 	// or the agent's log isn't found. Optional: nil → GET /api/transcript is 503.
 	Transcript func(id string) ([]byte, error)
 
+	// HQBoard returns the supervisor's situation board — the synthesis it maintains by
+	// hand so its picture of the fleet survives a context reset — plus when it was last
+	// written (unix secs). ok=false means no board exists, which is an ordinary state
+	// (a supervisor that has never written one), NOT an error. Optional: nil → GET
+	// /api/hq/board reports no board rather than 503, since "no board" is the same
+	// answer either way and a client shouldn't need to tell the two apart.
+	HQBoard func() (text string, modUnix int64, ok bool)
+
+	// HQEvents returns the marshaled event ledger at a severity FLOOR ("" = all),
+	// newest first, capped at limit records — the fleet's recent history, which the
+	// radar's present-instant view cannot show. Optional: nil → GET /api/hq/events
+	// serves an empty array (a client renders "no activity", not an error).
+	HQEvents func(severity string, limit int) ([]byte, error)
+
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
 	// GET /api/events still serves heartbeats but emits no agents/alert events.
@@ -224,6 +238,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
+	mux.Handle("/api/hq/board", s.auth(http.HandlerFunc(s.handleHQBoard)))   // owner: the supervisor's situation board
+	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents))) // owner: severity-floored event ledger
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))

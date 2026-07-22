@@ -7,9 +7,9 @@
 // server (F7②). State resets whenever a fresh client is made (each time Demo mode
 // is opened).
 
-import {GtmuxClient, DigestRow, TranscriptTurn, SendPayload, UsageReport} from '../api/client';
+import {GtmuxClient, DigestRow, HQBoard, HQEvent, TranscriptTurn, SendPayload, UsageReport} from '../api/client';
 import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
-import {sampleAgents, demoDigest, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme} from './demoData';
+import {sampleAgents, demoDigest, demoBoard, demoEvents, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme} from './demoData';
 
 // What the hero pane (%7) shows AFTER you approve running the tests.
 const TESTS_RAN =
@@ -84,6 +84,19 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     // The HQ command center over the same canned world (F7③).
     async digest(): Promise<DigestRow[]> {
       return demoDigest(currentAgents());
+    },
+    // The supervisor's own assessment + the fleet ledger — the two things the HQ
+    // page shows that the radar can't, so Demo must answer them or it demos a
+    // blank page.
+    async hqBoard(): Promise<HQBoard> {
+      return demoBoard(lang === 'zh');
+    },
+    async hqEvents(severity = 'notable', limit = 40): Promise<HQEvent[]> {
+      const rank: Record<string, number> = {routine: 0, notable: 1, important: 2};
+      const floor = rank[severity] ?? 0;
+      return demoEvents(currentAgents())
+        .filter(e => (rank[e.severity ?? 'routine'] ?? 0) >= floor)
+        .slice(0, limit);
     },
     // Believable telemetry so the HQ command screen's status strip + board meta
     // (subscription window %, disk/mem, per-row `62% · 5.1k`) aren't blank — that

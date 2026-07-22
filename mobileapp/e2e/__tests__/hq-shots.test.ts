@@ -48,10 +48,11 @@ gated('hq card', () => {
       void name;
     }
 
-    // Tap → the HQ command center (fleet board + command console), not the
-    // generic detail. Wait for a quick-command chip to confirm we're there.
+    // Tap → the HQ command page (assessment + your-call/activity/console zones),
+    // not the generic detail. The zone selector is the page's unmistakable marker —
+    // and it must NOT be a fleet list (hq-command-page).
     await card.click();
-    await driver.$(`~hq-chip-现状`).waitForDisplayed({timeout: 8_000}).catch(() => {});
+    await driver.$(`~hq-tab-console`).waitForDisplayed({timeout: 8_000});
     await settle(1800);
     shot('hq-command-center');
 

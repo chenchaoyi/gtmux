@@ -198,6 +198,73 @@ user's real terminal (see the `terminal-theme` capability). `source` is
 503 {"error":"theme not available"}   // Theme dep not wired
 ```
 
+### `GET /api/digest` — the fleet's cognitive digest (read-only, OWNER only)
+
+Byte-identical to `gtmux digest --json`: one row per agent carrying what a supervisor
+needs to triage — `goal` / `last` / `ask` on top of the radar's state. This is the
+`agent-digest` capability's wire form; the phone's HQ page reads it for the
+"who is blocked, and on what" decision cards.
+
+```
+200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62}, …]
+403 {"error":"forbidden: not shared"}   // guest scope
+503 {"error":"digest unavailable"}      // DigestJSON dep not wired
+```
+
+### `GET /api/usage` — token accounting + subscription windows (read-only, OWNER only)
+
+Byte-identical to `gtmux usage --json` (the `usage-watch` capability): per-session token
+totals and rates, the plan's real limit windows with `pct_used`, and the machine
+resource snapshot (`resource-watch`). Owner-only — it exposes the whole fleet's budget.
+
+```
+200 {"sessions":[…],"limits":{"windows":[{"label":"week (all models)","pct_used":41,"reset_at":"…"}]},"resource":{"machine":{"warn":"","disk_free_gb":210,"mem_tier":"ok"}}}
+403 {"error":"forbidden: not shared"}
+503 {"error":"usage unavailable"}
+```
+
+### `GET /api/hq/board` — the supervisor's situation board (read-only, OWNER only)
+
+The synthesis gtmux HQ maintains by hand (`~/.config/gtmux/hq/notes/board.md`) so its
+picture of the fleet survives a context reset — the one considered assessment anywhere in
+the product, and what the mobile HQ page shows instead of re-listing the radar
+(`hq-command-page`). Read-only: the board is HQ's own working memory, not something a
+client edits.
+
+A supervisor that has never written a board is ORDINARY, not an error — the response is
+`200` with `exists:false`, and a client degrades to its deterministic assessment line.
+Text is capped (128 KB, head kept — a board leads with its freshness line and current
+focus).
+
+```
+200 {"exists":true,"updated_at":1784720000,"text":"# gtmux HQ — situation board\n…"}
+200 {"exists":false}              // no board written, or no HQ home on this Mac
+403 {"error":"forbidden: not shared"}   // guest scope
+```
+
+### `GET /api/hq/events` — the fleet event ledger (read-only, OWNER only)
+
+The severity-tagged lifecycle ledger (`internal/events`), **newest first** — history,
+where `/api/agents` only has the present instant. Same records `gtmux events --json`
+prints, in feed order rather than log order.
+
+| param | default | meaning |
+|---|---|---|
+| `severity` | *(all)* | floor: `routine` \| `notable` \| `important` — that tier **and above** |
+| `limit` | `40` | max records, clamped to `200`; a junk value falls back to the default rather than erroring |
+
+Always a JSON array (never `null`); an unreachable/absent ledger reads as `[]`, since
+"nothing happened" and "can't tell you" are the same thing to a reader.
+
+```
+200 [{"ts":1784720000,"seq":108,"event":"Waiting","state":"waiting","pane":"%17","loc":"api:0.0","session":"api","agent":"Claude Code","kind":"permission","summary":"run the test suite?","severity":"important"}, …]
+403 {"error":"forbidden: not shared"}   // guest scope
+```
+
+Both HQ surfaces are refused to a guest for the same reason `/api/digest` and
+`/api/usage` are: they carry the WHOLE fleet plus HQ's private assessment, which are
+owner surfaces and never part of a shared scope.
+
 ### `GET /api/events` — live updates (Server-Sent Events)
 
 `text/event-stream`. Lets the app react to changes instead of polling. On

@@ -199,6 +199,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Icon:       agentIconPNG,
 		Diff:       diffForPane,
 		Transcript: transcriptForPane,
+		HQBoard:    hq.Board,
+		HQEvents:   hq.EventsJSON,
 		Theme:      terminal.Appearance,
 		OnClients:  writeRemoteClients,
 		AgentStatuses: func() []server.AgentStatus {
