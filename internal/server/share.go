@@ -17,6 +17,13 @@ type ShareState struct {
 	Enabled   bool     `json:"enabled"`
 	Panes     []string `json:"panes"`
 	ViewPanes []string `json:"view_panes"`
+	// PaneEpoch identifies the tmux SERVER these pane grants were made against. tmux
+	// pane ids (%N) are unique only within one server lifetime — after a restart they
+	// are reassigned from scratch, so a stored "%17" silently comes to mean a DIFFERENT
+	// pane. Grants stamped with a different epoch than the running server are STALE and
+	// are refused (fail closed) until the owner re-grants. Empty = never stamped, which
+	// is also treated as stale whenever a tmux server is running.
+	PaneEpoch string `json:"pane_epoch,omitempty"`
 }
 
 // ShareManager holds the shared-input policy for the running serve. A guest token's
@@ -29,6 +36,11 @@ type ShareManager struct {
 	panes     map[string]bool // input allowlist
 	viewPanes map[string]bool // view allowlist (⊇ panes)
 	save      func(ShareState)
+	// epoch is the tmux server identity the current pane grants were made against;
+	// curEpoch reports the RUNNING server's identity ("" when none/unknown). A mismatch
+	// means every stored pane id may now point at a different pane → refuse them.
+	epoch    string
+	curEpoch func() string
 }
 
 // NewShareManager seeds from persisted state (default: off, no panes). A pane on the
@@ -36,7 +48,7 @@ type ShareManager struct {
 // set — this also migrates an old share.json that had only `panes`: those previously
 // shared panes stay viewable, everything else becomes invisible (secure default).
 func NewShareManager(initial ShareState, save func(ShareState)) *ShareManager {
-	m := &ShareManager{panes: map[string]bool{}, viewPanes: map[string]bool{}, save: save, enabled: initial.Enabled}
+	m := &ShareManager{panes: map[string]bool{}, viewPanes: map[string]bool{}, save: save, enabled: initial.Enabled, epoch: initial.PaneEpoch}
 	for _, p := range initial.ViewPanes {
 		if p != "" {
 			m.viewPanes[p] = true
@@ -59,7 +71,52 @@ func (m *ShareManager) State() ShareState {
 }
 
 func (m *ShareManager) stateLocked() ShareState {
-	return ShareState{Enabled: m.enabled, Panes: sortedKeys(m.panes), ViewPanes: sortedKeys(m.viewPanes)}
+	return ShareState{Enabled: m.enabled, Panes: sortedKeys(m.panes), ViewPanes: sortedKeys(m.viewPanes), PaneEpoch: m.epoch}
+}
+
+// SetEpochSource injects the running tmux server's identity source. Without it (or with
+// an unknown identity) nothing is considered stale, so a build that can't see tmux
+// behaves exactly as before.
+func (m *ShareManager) SetEpochSource(f func() string) {
+	m.mu.Lock()
+	m.curEpoch = f
+	m.mu.Unlock()
+}
+
+// GrantsStale reports whether the stored pane grants belong to a DIFFERENT tmux server
+// than the one running — i.e. every stored pane id may now address an unrelated pane.
+// Callers MUST refuse pane-scoped access when this is true (fail closed): after a
+// reboot+restore, "%17" is simply not the pane the owner shared.
+//
+// It is false when no tmux server identity is available (nothing to compare, and no
+// panes to serve anyway), so this can never lock out a working setup by accident.
+func (m *ShareManager) GrantsStale() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.curEpoch == nil {
+		return false
+	}
+	cur := m.curEpoch()
+	if cur == "" {
+		return false // no running tmux server to disagree with
+	}
+	return m.epoch != cur
+}
+
+// StampEpoch binds the current pane grants to the running tmux server. Called whenever
+// the owner (re)grants pane scope, which is exactly the moment the pane ids are known to
+// mean what the owner intends.
+func (m *ShareManager) StampEpoch() {
+	m.mu.Lock()
+	if m.curEpoch != nil {
+		m.epoch = m.curEpoch()
+	}
+	st := m.stateLocked()
+	save := m.save
+	m.mu.Unlock()
+	if save != nil {
+		save(st)
+	}
 }
 
 func sortedKeys(set map[string]bool) []string {
@@ -150,10 +207,13 @@ func toSet(items []string) map[string]bool {
 // a surface shows each pane only where allowed. A full caller can see and type
 // anywhere (All); a guest is scoped to its view/input allowlists.
 type shareCapability struct {
-	Input     bool     `json:"input"`         // may this caller type at all
-	All       bool     `json:"all,omitempty"` // full caller: any pane (view + input)
-	Panes     []string `json:"panes"`         // guest: the input-allowed panes ([] when off)
-	ViewPanes []string `json:"view_panes"`    // guest: the view-allowed panes
+	Input bool `json:"input"`         // may this caller type at all
+	All   bool `json:"all,omitempty"` // full caller: any pane (view + input)
+	// Stale: the pane grants were made against a DIFFERENT tmux server (ids since
+	// reassigned), so they are refused until the owner re-grants.
+	Stale     bool     `json:"stale,omitempty"`
+	Panes     []string `json:"panes"`      // guest: the input-allowed panes ([] when off)
+	ViewPanes []string `json:"view_panes"` // guest: the view-allowed panes
 }
 
 // handleShare implements GET /api/share — AUTHENTICATED, any scope. Returns the
@@ -167,6 +227,9 @@ func (s *Server) handleShare(w http.ResponseWriter, r *http.Request) {
 	// gated by the host-level consent for input. Input=true only when the caller
 	// can actually type somewhere (consent on AND a non-empty input list).
 	cap := shareCapability{Panes: []string{}, ViewPanes: []string{}}
+	// Tell the caller when its grants belong to a previous tmux server, so the UI can say
+	// "the owner must re-grant" rather than silently showing nothing.
+	cap.Stale = s.deps.Share != nil && s.deps.Share.GrantsStale()
 	if dev, ok := callerDevice(r.Context()); ok {
 		if dev.ViewPanes != nil {
 			cap.ViewPanes = dev.ViewPanes
@@ -202,7 +265,13 @@ func (s *Server) handleShareConfig(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("bad json"))
 		return
 	}
-	writeJSON(w, http.StatusOK, s.deps.Share.SetConfig(body.Enabled, body.Panes, body.ViewPanes))
+	st := s.deps.Share.SetConfig(body.Enabled, body.Panes, body.ViewPanes)
+	// The owner just chose these panes against the RUNNING tmux server — bind the grants
+	// to it so a later restart (which reassigns pane ids) can be detected and refused.
+	if body.Panes != nil || body.ViewPanes != nil {
+		s.deps.Share.StampEpoch()
+	}
+	writeJSON(w, http.StatusOK, st)
 }
 
 // handleShareNew implements POST /api/share/new {label, view?, input?,
@@ -241,6 +310,10 @@ func (s *Server) handleShareNew(w http.ResponseWriter, r *http.Request) {
 		expiresAt = time.Now().Unix() + body.ExpiresInSec
 	}
 	d := s.deps.Enroll.MintGuest(body.Label, view, input, expiresAt)
+	// Bind these per-link pane grants to the running tmux server (see StampEpoch).
+	if s.deps.Share != nil {
+		s.deps.Share.StampEpoch()
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "id": d.ID, "name": d.Name})
 }
 
@@ -280,6 +353,10 @@ func (s *Server) handleShareSet(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		writeJSON(w, http.StatusNotFound, errBody("unknown share link"))
 		return
+	}
+	// Bind these per-link pane grants to the running tmux server (see StampEpoch).
+	if s.deps.Share != nil {
+		s.deps.Share.StampEpoch()
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"id": d.ID, "name": d.Name,

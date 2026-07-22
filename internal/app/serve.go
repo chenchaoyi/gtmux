@@ -236,6 +236,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	// Shared-input policy (web-shared-input): the host's consent + per-pane allowlist
 	// that gates a GUEST share link's input. Default off; persisted like the roster.
 	deps.Share = server.NewShareManager(loadShareState(), saveShareState)
+	// Pane grants are only meaningful within one tmux server lifetime (ids are reassigned
+	// on restart), so bind them to the server's identity: pid + its start time.
+	deps.Share.SetEpochSource(tmuxServerEpoch)
 
 	// pair-share-model: per-link guest scope. Legacy links (minted before per-link
 	// scope) get a ONE-TIME copy of the global lists so upgrade preserves behavior;
@@ -276,6 +279,31 @@ func attachCursor(id string) (x, y int, alt, ok bool) {
 		return 0, 0, false, false
 	}
 	return cx, cy, f[2] == "1", true
+}
+
+// tmuxServerEpoch identifies the RUNNING tmux server, so share grants can be bound to it.
+// tmux pane ids (%N) are unique only within one server lifetime — after a restart they
+// are reassigned, and a stored grant would silently address a different pane. The pid
+// alone is not enough (pids get reused), so it is paired with the process START TIME.
+// Returns "" when no tmux server is running or the identity can't be read; callers then
+// treat nothing as stale (there are no panes to serve anyway).
+func tmuxServerEpoch() string {
+	if tmux.Bin == "" || !tmux.ServerUp() {
+		return ""
+	}
+	pid := strings.TrimSpace(tmux.Display("", "#{pid}"))
+	if pid == "" {
+		return ""
+	}
+	out, err := exec.Command("ps", "-o", "lstart=", "-p", pid).Output()
+	if err != nil {
+		return "" // can't prove identity → don't invalidate a working setup
+	}
+	started := strings.Join(strings.Fields(string(out)), " ")
+	if started == "" {
+		return ""
+	}
+	return pid + "@" + started
 }
 
 func paneCursor(id string) (x, up int, visible, ok bool) {

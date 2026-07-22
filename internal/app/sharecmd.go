@@ -167,6 +167,8 @@ type shareStateJSON struct {
 	Enabled   bool     `json:"enabled"`
 	Panes     []string `json:"panes"`
 	ViewPanes []string `json:"view_panes"`
+	// PaneEpoch: the tmux server the pane grants were made against (share-grant-epoch).
+	PaneEpoch string `json:"pane_epoch,omitempty"`
 }
 
 // shareStatusOut is the `gtmux share status --json` contract: the consent state,
@@ -179,6 +181,9 @@ type shareStatusOut struct {
 	ViewPanes []string     `json:"view_panes"`
 	Guests    []shareGuest `json:"guests"`
 	Base      string       `json:"base,omitempty"`
+	// Stale: the pane grants belong to a PREVIOUS tmux server (ids since reassigned), so
+	// they are refused until the owner re-grants.
+	Stale bool `json:"stale,omitempty"`
 }
 
 type shareGuest struct {
@@ -193,8 +198,11 @@ type shareGuest struct {
 
 // buildShareStatus is the pure mapper (state + roster + base → the --json shape),
 // unit-tested without a live serve.
-func buildShareStatus(st shareStateJSON, guests []deviceListEntry, base string) shareStatusOut {
-	out := shareStatusOut{Enabled: st.Enabled, Panes: st.Panes, ViewPanes: st.ViewPanes, Base: base, Guests: []shareGuest{}}
+func buildShareStatus(st shareStateJSON, guests []deviceListEntry, base, curEpoch string) shareStatusOut {
+	// Stale when a tmux server is running and the grants were stamped against a different
+	// one (or never stamped): its pane ids no longer mean what the owner picked.
+	stale := curEpoch != "" && st.PaneEpoch != curEpoch
+	out := shareStatusOut{Enabled: st.Enabled, Panes: st.Panes, ViewPanes: st.ViewPanes, Base: base, Guests: []shareGuest{}, Stale: stale}
 	if out.Panes == nil {
 		out.Panes = []string{}
 	}
@@ -252,9 +260,18 @@ func shareStatus(base, token string, jsonOut bool) int {
 		if shareBase == "" {
 			shareBase = base
 		}
-		b, _ := json.MarshalIndent(buildShareStatus(st, guests, shareBase), "", "  ")
+		b, _ := json.MarshalIndent(buildShareStatus(st, guests, shareBase, tmuxServerEpoch()), "", "  ")
 		fmt.Println(string(b))
 		return 0
+	}
+	// A restart reassigns tmux pane ids, so grants made against a previous server no
+	// longer mean what the owner picked — they are REFUSED until re-granted. Say so
+	// loudly, or sharing just appears silently broken.
+	if cur := tmuxServerEpoch(); cur != "" && st.PaneEpoch != cur {
+		i18n.Sae("⚠ share grants are STALE — tmux restarted since they were set, so pane ids no longer match.",
+			"⚠ 分享授权已失效 —— 设置之后 tmux 重启过，pane 编号已不对应。")
+		i18n.Sae("  Guests are refused until you re-grant: gtmux share view add %A  ·  gtmux share set <id> --view %A",
+			"  在你重新授权前访客一律被拒：gtmux share view add %A  ·  gtmux share set <id> --view %A")
 	}
 	if st.Enabled {
 		i18n.Say("shared web input: ON", "分享输入：已开启")

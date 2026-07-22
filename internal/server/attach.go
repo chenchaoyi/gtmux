@@ -43,6 +43,13 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
 		return
 	}
+	// Pane grants are only meaningful within the tmux server they were made against —
+	// after a restart the ids are reassigned, so "%17" may now be an unrelated pane.
+	// Fail CLOSED until the owner re-grants (share-grant-epoch).
+	if scope == scopeGuest && s.deps.Share != nil && s.deps.Share.GrantsStale() {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: share is stale (tmux restarted) — the owner must re-grant"))
+		return
+	}
 	if s.deps.AttachCommand == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("attach not configured"))
 		return
@@ -55,7 +62,8 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// canType: an owner types anywhere; a guest only with host consent AND the pane
 	// on ITS OWN input allowlist (a view-only pane is read-only — write frames drop).
 	canType := scope != scopeGuest ||
-		(hasDev && s.deps.Share != nil && s.deps.Share.InputEnabled() && dev.MayInput(id))
+		(hasDev && s.deps.Share != nil && s.deps.Share.InputEnabled() &&
+			!s.deps.Share.GrantsStale() && dev.MayInput(id))
 
 	conn, err := attachUpgrader.Upgrade(w, r, nil)
 	if err != nil {
