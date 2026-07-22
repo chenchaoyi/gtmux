@@ -7,11 +7,12 @@ const AUTH = `Bearer ${TOKEN}`;
 // A jest-mocked fetch, installed on global before each test.
 let fetchMock: jest.Mock;
 
-const okJson = (body: any, ok = true, status = 200) =>
+const okJson = (body: any, ok = true, status = 200, headers: Record<string, string> = {}) =>
   ({
     ok,
     status,
     json: async () => body,
+    headers: {get: (k: string) => headers[k] ?? null},
   } as unknown as Response);
 
 // upload() uses XMLHttpRequest (for progress), which jest's node env lacks. A
@@ -146,17 +147,28 @@ describe('transcript', () => {
     const turns = [{prompt: 'fix it', response: 'done', steps: [{kind: 'tool', title: 'Edit', detail: 'a.go'}]}];
     fetchMock.mockResolvedValueOnce(okJson(turns));
     const res = await client().transcript('%12');
-    expect(res).toEqual(turns);
+    expect(res.turns).toEqual(turns);
+    expect(res.dropped).toBe(0);
     const [url, init] = call();
     expect(url).toBe(`${BASE}/api/transcript?id=%2512`);
     expect((init?.headers as any).Authorization).toBe(AUTH);
   });
 
-  it('returns [] on non-ok or non-array', async () => {
+  // A truncated history must reach the view as a NUMBER, or it silently reads as whole
+  // (transcript-render-bounds).
+  it('surfaces the dropped-turn count from the response header', async () => {
+    fetchMock.mockResolvedValueOnce(okJson([], true, 200, {'X-Gtmux-Turns-Dropped': '112'}));
+    expect((await client().transcript('%12')).dropped).toBe(112);
+    // A junk or absent header must never become NaN in the UI.
+    fetchMock.mockResolvedValueOnce(okJson([], true, 200, {'X-Gtmux-Turns-Dropped': 'lots'}));
+    expect((await client().transcript('%12')).dropped).toBe(0);
+  });
+
+  it('returns an empty history on non-ok or non-array', async () => {
     fetchMock.mockResolvedValueOnce(okJson(null, false, 404));
-    expect(await client().transcript('%9')).toEqual([]);
+    expect(await client().transcript('%9')).toEqual({turns: [], dropped: 0});
     fetchMock.mockResolvedValueOnce(okJson({not: 'array'}));
-    expect(await client().transcript('%9')).toEqual([]);
+    expect(await client().transcript('%9')).toEqual({turns: [], dropped: 0});
   });
 });
 

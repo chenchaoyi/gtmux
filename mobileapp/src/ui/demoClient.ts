@@ -60,8 +60,9 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     async pane(id: string): Promise<PaneResponse> {
       return snap(id);
     },
-    async transcript(id: string): Promise<TranscriptTurn[]> {
-      return [...demoTranscript(id), ...(typed[id] ?? [])];
+    async transcript(id: string): Promise<{turns: TranscriptTurn[]; dropped: number}> {
+      // The canned tour is short, so nothing is ever truncated here.
+      return {turns: [...demoTranscript(id), ...(typed[id] ?? [])], dropped: 0};
     },
     async options(id: string): Promise<ReplyOption[]> {
       return answered.has(id) ? [] : demoOptions(id);

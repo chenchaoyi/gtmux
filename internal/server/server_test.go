@@ -219,11 +219,11 @@ func TestTranscript(t *testing.T) {
 
 	turns := []byte(`[{"prompt":"hi","response":"yo","segments":[{"text":"yo"}],"time":"2026-06-29T10:00:00Z"}]`)
 	h := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
-		Transcript: func(id string) ([]byte, error) {
+		Transcript: func(id string) ([]byte, int, error) {
 			if id != "%1" {
-				return nil, errors.New("transcript failed")
+				return nil, 0, errors.New("transcript failed")
 			}
-			return turns, nil
+			return turns, 0, nil
 		},
 	}).Handler()
 

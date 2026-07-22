@@ -156,8 +156,21 @@ when the pane has no resumable session or no agent log. See the `chat-transcript
 capability for the parsing rules (multi-segment replies, reject-feedback, harness
 stripping, incremental cache).
 
+**Bounded by SIZE, newest-first** (`transcript-render-bounds`). The server keeps the most
+recent turns that fit a byte budget (512 KiB) and drops older ones, and reports how many
+in the `X-Gtmux-Turns-Dropped` response header (absent when nothing was dropped). At
+least the newest turn is always served, even if it alone exceeds the budget.
+
+A turn COUNT is not the bound: turns vary in size by orders of magnitude, and a real
+147-turn session — half the parser's 300-turn cap — marshaled to **1.76 MB** carrying
+1,885 reply bubbles and 2,974 tool steps, enough to get a phone app killed for memory.
+
+The signal is a header, not an envelope: the body stays the plain turn array, so a client
+predating this ignores the header instead of failing to decode.
+
 ```
 200 [ {turn}, … ]    // application/json
+    X-Gtmux-Turns-Dropped: 102     // 102 older turns not included (omitted when 0)
 400 {"error":"missing id"}
 404 {"error":"transcript failed: <reason>"}
 503 {"error":"transcript not available"}   // Transcript dep not wired

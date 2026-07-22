@@ -115,7 +115,7 @@ export function HQScreen({route, navigation}: any) {
     let alive = true;
     client
       .transcript(hq.pane_id)
-      .then(ts => {
+      .then(({turns: ts}) => {
         if (!alive) return;
         setTurns(ts);
         setLoaded(true);

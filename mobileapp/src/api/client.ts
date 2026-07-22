@@ -271,12 +271,18 @@ export class GtmuxClient {
   }
 
   // transcript fetches the pane's parsed chat history (prompt → collapsed steps →
-  // final response). [] when the pane has no resumable session / no agent log.
-  async transcript(id: string): Promise<TranscriptTurn[]> {
+  // final response). Empty when the pane has no resumable session / no agent log.
+  //
+  // `dropped` is how many OLDER turns the server left out to keep the payload within a
+  // size the phone can hold (transcript-render-bounds) — it rides a response HEADER, so
+  // the body stays the plain turn array. Surfaced so the view can say the history is
+  // truncated instead of showing part of a conversation as the whole one.
+  async transcript(id: string): Promise<{turns: TranscriptTurn[]; dropped: number}> {
     const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}`, {headers: this.h()});
-    if (!r.ok) return [];
+    if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);
-    return Array.isArray(j) ? j : [];
+    const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);
+    return {turns: Array.isArray(j) ? j : [], dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0};
   }
 
   // digest: the fleet's cognitive digest (GET /api/digest) — one row per agent

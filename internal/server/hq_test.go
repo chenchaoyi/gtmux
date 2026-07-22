@@ -127,3 +127,33 @@ func TestHQSurfacesAreRefusedToAGuest(t *testing.T) {
 		}
 	}
 }
+
+// A truncated history must be ANNOUNCED, so a client can say "earlier turns not shown"
+// instead of presenting part of a conversation as the whole one. It rides a header, not
+// an envelope: the body stays the plain turn array older app builds already parse
+// (transcript-render-bounds).
+func TestTranscriptAnnouncesDroppedTurns(t *testing.T) {
+	body := []byte(`[{"prompt":"hi","response":"yo"}]`)
+	for name, tc := range map[string]struct {
+		dropped    int
+		wantHeader string
+	}{
+		"truncated": {dropped: 112, wantHeader: "112"},
+		"whole":     {dropped: 0, wantHeader: ""}, // nothing dropped → no header at all
+	} {
+		t.Run(name, func(t *testing.T) {
+			d := tc.dropped
+			s := hqTestServer(t, Deps{Transcript: func(string) ([]byte, int, error) { return body, d, nil }})
+			w := hqGet(t, s, "/api/transcript?id=%251", "master")
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d; want 200", w.Code)
+			}
+			if got := w.Header().Get("X-Gtmux-Turns-Dropped"); got != tc.wantHeader {
+				t.Errorf("dropped header = %q; want %q", got, tc.wantHeader)
+			}
+			if w.Body.String() != string(body) {
+				t.Errorf("body = %s; want the turn array unchanged (no envelope)", w.Body.String())
+			}
+		})
+	}
+}
