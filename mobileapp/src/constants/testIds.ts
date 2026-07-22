@@ -39,6 +39,7 @@ export const TestIds = {
     collapseAll: 'detail-collapse-all',
     collapsedReply: 'detail-collapsed-reply',
     chatEarlier: 'detail-chat-earlier',
+    chatThinking: 'detail-chat-thinking',
     jumpBottom: 'detail-jump-bottom',
   },
   composer: {

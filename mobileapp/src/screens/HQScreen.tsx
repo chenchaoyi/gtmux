@@ -32,7 +32,9 @@ import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
+import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {ChatView} from '../ui/ChatView';
+import {SendFailedBar} from '../ui/SendFailedBar';
 import {
   Zone,
   assessment,
@@ -73,6 +75,16 @@ export function HQScreen({route, navigation}: any) {
   const [boardOpen, setBoardOpen] = useState(false);
   const [seenMark, setSeenMark] = useState(0);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  // The HQ pane's live screen. Without it the console had NO progress surface: your
+  // prompt echoed, then nothing until the reply landed, so a long turn was
+  // indistinguishable from a dead app. ChatView renders it as the same "live" card the
+  // worker Detail has — HQ was the only place passing an empty screen.
+  const [paneText, setPaneText] = useState('');
+  // Ticks while HQ is working, so the transcript re-reads and its intermediate reply
+  // bubbles / tool steps appear AS THEY LAND rather than all at once when the turn ends.
+  const [turnTick, setTurnTick] = useState(0);
+  // A command the server declined to submit — held so it can be retried, not lost.
+  const [failedSend, setFailedSend] = useState<string | null>(null);
 
   // The live supervisor row (status can change) — fall back to the route agent.
   const live = useMemo(() => agents.find(a => a.pane_id === hq.pane_id) ?? hq, [agents, hq]);
@@ -110,6 +122,39 @@ export function HQScreen({route, navigation}: any) {
     };
   }, [client]);
 
+  // Poll the HQ pane's screen only WHILE IT IS WORKING — that is the only time the live
+  // card renders, so an idle HQ costs no captures at all. Cleared on the way out so a
+  // finished turn never leaves a stale "live" screen behind.
+  useEffect(() => {
+    if (live.status !== 'working') {
+      setPaneText('');
+      return;
+    }
+    let alive = true;
+    const load = () =>
+      client
+        .pane(hq.pane_id)
+        .then(p => alive && setPaneText(p?.text ?? ''))
+        .catch(() => {});
+    load();
+    const id = setInterval(load, 1500);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client, hq.pane_id, live.status]);
+
+  const paneLines: AnsiLine[] = useMemo(() => parseAnsi(paneText), [paneText]);
+
+  // Re-read the transcript on a slow beat while working. Slower than the screen poll:
+  // the screen is what changes second to second, while a new reply SEGMENT is a rarer
+  // event and re-parsing is the more expensive of the two.
+  useEffect(() => {
+    if (live.status !== 'working') return;
+    const id = setInterval(() => setTurnTick(t => t + 1), 4000);
+    return () => clearInterval(id);
+  }, [live.status]);
+
   // The HQ conversation transcript — refetch on status flip or after a command.
   useEffect(() => {
     let alive = true;
@@ -124,7 +169,19 @@ export function HQScreen({route, navigation}: any) {
     return () => {
       alive = false;
     };
-  }, [client, hq.pane_id, live.status, pending]);
+  }, [client, hq.pane_id, live.status, pending, turnTick]);
+
+  // Retire the optimistic echo the moment the real turn is in the transcript, with a
+  // long safety net so a send that never lands can't pin a ghost bubble forever.
+  useEffect(() => {
+    if (!pending) return;
+    if (turns.length > 0 && turns[turns.length - 1].prompt === pending) {
+      setPending(undefined);
+      return;
+    }
+    const id = setTimeout(() => setPending(undefined), 10 * 60_000);
+    return () => clearTimeout(id);
+  }, [turns, pending]);
 
   const calls = useMemo(() => decisions(digest), [digest]);
   const counts = useMemo(() => fleetCounts(digest), [digest]);
@@ -151,11 +208,27 @@ export function HQScreen({route, navigation}: any) {
       const body = text.trim();
       if (!body) return;
       setPending(body);
+      setFailedSend(null);
       setZone('console'); // you asked HQ something — show you the answer arriving
-      client.send(hq.pane_id, {text: body, enter: true}).finally(() => {
-        // Let the optimistic echo linger until the refetch swaps in the real turn.
-        setTimeout(() => setPending(undefined), 4000);
-      });
+      // The echo is cleared by the effect below — when the transcript actually carries
+      // the turn — NOT on a timer. A blind 4s clear could erase your message while HQ
+      // was still thinking, leaving the console showing nothing at all.
+      //
+      // A null result means the server refused to submit (it couldn't confirm the full
+      // command reached HQ's input box). Say so and keep the text — otherwise the
+      // console shows your command echoed forever, waiting on a turn that never started.
+      client
+        .send(hq.pane_id, {text: body, enter: true})
+        .then(snap => {
+          if (!snap) {
+            setFailedSend(body);
+            setPending(undefined);
+          }
+        })
+        .catch(() => {
+          setFailedSend(body);
+          setPending(undefined);
+        });
     },
     [client, hq.pane_id],
   );
@@ -368,8 +441,9 @@ export function HQScreen({route, navigation}: any) {
           <View style={styles.flex}>
             <ChatView
               agent={live}
-              lines={[]}
+              lines={paneLines}
               status={live.status}
+              workingSince={live.since}
               fontSize={13}
               pal={pal}
               lang={lang}
@@ -404,6 +478,15 @@ export function HQScreen({route, navigation}: any) {
             ))}
           </ScrollView>
         </View>
+        {failedSend && (
+          <SendFailedBar
+            text={failedSend}
+            pal={pal}
+            lang={lang}
+            onRetry={() => command(failedSend)}
+            onDismiss={() => setFailedSend(null)}
+          />
+        )}
         <Composer pal={pal} lang={lang} onSend={onSend} />
       </KeyboardAvoidingView>
 

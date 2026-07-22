@@ -87,3 +87,29 @@ the whole one.
 - **WHEN** any turns are not being shown, whether windowed away or dropped before
   reaching the client
 - **THEN** the view states that earlier history is not shown and how many turns that is
+
+### Requirement: A turn in progress is visible in the conversation
+
+While the agent is working, the chat view SHALL show progress in the conversation itself,
+at the tail where the reader is looking, and SHALL state HOW LONG the turn has been
+running. A status word alone is not sufficient: it sits above the scroll where the reader
+has already passed it, and it cannot distinguish a turn that is thinking from one that has
+hung — and only one of those is worth interrupting. When the pane has produced visible
+output the view SHALL show that output; when it has produced none yet the view SHALL still
+mark the turn as running rather than showing nothing. Where the elapsed time is unknown the
+view SHALL omit it rather than present a fabricated duration.
+
+#### Scenario: A long turn with no output yet
+
+- **WHEN** the agent has been working for a while without printing anything
+- **THEN** the conversation shows that a turn is running and how long it has been running
+
+#### Scenario: A turn producing output
+
+- **WHEN** the agent is working and its screen has content
+- **THEN** that content is shown live at the tail of the conversation
+
+#### Scenario: The start time is unknown
+
+- **WHEN** the view cannot tell when the turn began
+- **THEN** it reports the turn as running without claiming an elapsed time

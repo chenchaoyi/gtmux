@@ -682,7 +682,16 @@ func sendToPane(id, text, key string, enter bool) error {
 	}
 	if text != "" && enter {
 		// Confirm-then-submit: never race Enter against a still-rendering paste.
-		dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
+		//
+		// REPORT the verdict. This return used to be a bare nil, so when the guard
+		// correctly refused to submit an unconfirmed draft the API still answered
+		// success — the phone showed the message as sent while it sat in the box,
+		// unsubmitted, with no way for the user to learn that except by looking at the
+		// Mac. A delivery we could not confirm is a failure, and the caller has to hear
+		// about it to offer a retry.
+		if !dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text) {
+			return fmt.Errorf("not submitted: the pane's input box did not settle on the full message")
+		}
 		return nil
 	}
 	if text != "" {

@@ -658,3 +658,31 @@ SHALL never render an entry as blank.
 
 - **WHEN** an entry's whole name is the product name
 - **THEN** it is still displayed, rather than being stripped to an empty row
+
+### Requirement: A message that was not submitted is reported as a failure
+
+The system SHALL report a message it declined to submit as a FAILURE, never as success.
+It pastes into a pane's input box and confirms the full message landed before submitting;
+when it cannot confirm, it does not submit. Reporting success for a message that was never
+submitted is worse than the refusal it hides: the message sits unsent in the box on the
+host while every remote surface shows it as delivered, and the sender can only discover
+this by inspecting the host directly. The time allowed for a paste to render before it is
+judged incomplete SHALL scale with the size of the message, since a fixed budget makes a
+large message fail for being large rather than for being wrong. A client receiving this
+failure SHALL tell the user and SHALL preserve the message text so it can be retried
+without retyping.
+
+#### Scenario: A paste that could not be confirmed
+
+- **WHEN** the input box does not settle on the full message
+- **THEN** the message is not submitted AND the caller is told the send failed
+
+#### Scenario: A large message is given time to render
+
+- **WHEN** a long message is pasted
+- **THEN** it is allowed proportionally more time to appear before being judged incomplete
+
+#### Scenario: The sender keeps their text
+
+- **WHEN** a send is reported as failed
+- **THEN** the client shows the failure and keeps the text available to retry
