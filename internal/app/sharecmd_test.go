@@ -15,7 +15,7 @@ func TestBuildShareStatus(t *testing.T) {
 		{ID: "g1", Name: "alice", EnrolledAt: 1783956522, Scope: "guest"},
 		{ID: "g2", Name: "bob", EnrolledAt: 1783934731, Scope: "guest"},
 	}
-	out := buildShareStatus(st, guests, "https://gtmux-x.ccy.dev")
+	out := buildShareStatus(st, guests, "https://gtmux-x.ccy.dev", "")
 
 	if !out.Enabled || len(out.Panes) != 2 || out.Panes[0] != "%37" {
 		t.Fatalf("state/allowlist not preserved: %+v", out)
@@ -39,7 +39,7 @@ func TestBuildShareStatus(t *testing.T) {
 		t.Errorf("status --json must not contain a token: %s", b)
 	}
 	// A nil allowlist marshals as [] (a stable array for the consumer), not null.
-	empty := buildShareStatus(shareStateJSON{Enabled: false, Panes: nil}, nil, "")
+	empty := buildShareStatus(shareStateJSON{Enabled: false, Panes: nil}, nil, "", "")
 	eb, _ := json.Marshal(empty)
 	if !strings.Contains(string(eb), `"panes":[]`) || !strings.Contains(string(eb), `"guests":[]`) ||
 		!strings.Contains(string(eb), `"view_panes":[]`) {
@@ -98,7 +98,7 @@ func TestBuildShareStatus_PerLinkScope(t *testing.T) {
 		{ID: "a", Name: "Alice", EnrolledAt: 100, ViewPanes: []string{"%1"}, InputPanes: []string{"%1"}, ExpiresAt: 999},
 		{ID: "b", Name: "Bob", EnrolledAt: 200}, // legacy nils → empty arrays
 	}
-	out := buildShareStatus(st, guests, "https://x")
+	out := buildShareStatus(st, guests, "https://x", "")
 	if len(out.Guests) != 2 {
 		t.Fatalf("guests = %d", len(out.Guests))
 	}
@@ -121,5 +121,22 @@ func TestGuestScopeSummary(t *testing.T) {
 	g.ExpiresAt = 1 // long past
 	if s := guestScopeSummary(g); !strings.Contains(s, "expired") && !strings.Contains(s, "已过期") {
 		t.Fatalf("expired summary = %q", s)
+	}
+}
+
+// share-grant-epoch: pane grants stamped against a DIFFERENT tmux server are stale, so
+// `gtmux share status` can tell the owner to re-grant instead of sharing silently
+// breaking (or worse, pointing at the wrong pane).
+func TestBuildShareStatusFlagsStaleGrants(t *testing.T) {
+	st := shareStateJSON{Enabled: true, Panes: []string{"%17"}, ViewPanes: []string{"%17"}, PaneEpoch: "111@old"}
+	if out := buildShareStatus(st, nil, "", "222@new"); !out.Stale {
+		t.Error("grants from a previous tmux server must be reported stale")
+	}
+	if out := buildShareStatus(st, nil, "", "111@old"); out.Stale {
+		t.Error("grants from the SAME tmux server must not be stale")
+	}
+	// No tmux server running → nothing to compare, never cry stale.
+	if out := buildShareStatus(st, nil, "", ""); out.Stale {
+		t.Error("with no tmux identity, grants must not be reported stale")
 	}
 }

@@ -335,7 +335,7 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			dev = EnrolledDevice{} // no resolvable link → sees nothing
 		}
-		b = filterAgentsForGuest(b, dev)
+		b = filterAgentsForGuest(b, dev, s.deps.Share != nil && s.deps.Share.GrantsStale())
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(b)
@@ -345,7 +345,12 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 // LINK's view allowlist (pair-share-model), preserving each surviving row
 // byte-for-byte. An empty scope yields an empty radar — a guest can never see
 // more than nothing.
-func filterAgentsForGuest(raw []byte, dev EnrolledDevice) []byte {
+func filterAgentsForGuest(raw []byte, dev EnrolledDevice, stale bool) []byte {
+	// Grants made against a PREVIOUS tmux server address pane ids that have since been
+	// reassigned — showing anything risks revealing a pane the owner never shared.
+	if stale {
+		return []byte("[]")
+	}
 	var rows []json.RawMessage
 	if err := json.Unmarshal(raw, &rows); err != nil {
 		return []byte("[]")
@@ -435,6 +440,10 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 	}
 	// A guest may read a pane's screen ONLY if it is on ITS OWN link's view list.
 	if callerScope(r.Context()) == scopeGuest {
+		if s.deps.Share != nil && s.deps.Share.GrantsStale() {
+			writeJSON(w, http.StatusForbidden, errBody("forbidden: share is stale (tmux restarted) — the owner must re-grant"))
+			return
+		}
 		if dev, ok := callerDevice(r.Context()); !ok || !dev.MayView(id) {
 			writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
 			return
@@ -532,7 +541,8 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 	// the web UI only mirrors it.
 	if callerScope(r.Context()) == scopeGuest {
 		dev, ok := callerDevice(r.Context())
-		if !ok || s.deps.Share == nil || !s.deps.Share.InputEnabled() || !dev.MayInput(req.ID) {
+		if !ok || s.deps.Share == nil || !s.deps.Share.InputEnabled() ||
+			s.deps.Share.GrantsStale() || !dev.MayInput(req.ID) {
 			writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
 			return
 		}
