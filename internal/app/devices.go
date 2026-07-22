@@ -272,7 +272,7 @@ func listDevices(base, token string) int {
 	i18n.Say(fmt.Sprintf("%d paired device(s):", len(out.Devices)),
 		fmt.Sprintf("已配对 %d 台设备：", len(out.Devices)))
 	for _, d := range out.Devices {
-		fmt.Printf("  %s  %-24s  paired %s%s\n", d.ID, d.Name, fmtAgo(d.EnrolledAt), lastSeenSuffix(d.LastSeen))
+		fmt.Printf("  %s  %-24s  paired %s%s\n", d.ID, deviceDisplayName(d.Name), fmtAgo(d.EnrolledAt), lastSeenSuffix(d.LastSeen))
 	}
 	i18n.Say("Revoke one:  gtmux devices revoke <id>", "吊销某台：  gtmux devices revoke <id>")
 	return 0

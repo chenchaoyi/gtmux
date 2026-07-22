@@ -99,8 +99,11 @@ struct PairDeviceSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(l10n.tr("Pair one of your own devices", "配对你自己的设备"))
                 .font(.system(size: 14, weight: .semibold))
-            Text(l10n.tr("Full control — this is you. The code is one-time and expires in 5 minutes; use exactly one of the three.",
-                         "全权 —— 这是你自己。配对码一次性、5 分钟内有效；三种方式选一种用。"))
+            // Say what pairing DOES before naming the mechanics: the old copy opened on
+            // "Full control — this is you", a fragment that reads as a riddle, and then
+            // referred to "the three" before the reader had seen any of them.
+            Text(l10n.tr("A paired device gets full control of this Mac — pair only your own. The code below works once and expires in 5 minutes; pick whichever of the three ways fits the device.",
+                         "配对后的设备对这台 Mac 有完全控制权 —— 只配对你自己的设备。下面的配对码只能用一次、5 分钟后失效；三种方式挑一种适合的用。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 

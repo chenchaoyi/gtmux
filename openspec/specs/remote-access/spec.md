@@ -631,3 +631,30 @@ remain available when no supervisor is running, reporting empty rather than fail
 
 - **WHEN** a guest-scoped caller requests the board or the event ledger
 - **THEN** the request is refused, exactly as for the digest and usage surfaces
+
+### Requirement: A roster entry identifies the device it names
+
+A paired device SHALL register under a name that identifies THAT device, using what the
+device knows about itself (its form factor and OS version), and SHALL NOT prefix it with
+the product's own name: inside gtmux's own roster a "gtmux" prefix carries no information
+— nothing in that list is not a gtmux device — while pushing the identifying part out to
+where a narrow row truncates it. The system SHALL NOT claim a device model it cannot
+establish, since a confidently wrong model is worse than an honest general one. Surfaces
+that display the roster SHALL strip a legacy product prefix from entries registered
+before this rule, so an existing roster reads correctly without anyone re-pairing, and
+SHALL never render an entry as blank.
+
+#### Scenario: A phone pairs
+
+- **WHEN** a phone enrolls into the roster
+- **THEN** its entry names its form factor and OS version, with no product prefix
+
+#### Scenario: An entry from before the rule
+
+- **WHEN** the roster contains an entry registered with the old product prefix
+- **THEN** every surface displays it without that prefix
+
+#### Scenario: A device actually named after the product
+
+- **WHEN** an entry's whole name is the product name
+- **THEN** it is still displayed, rather than being stripped to an empty row

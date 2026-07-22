@@ -14,6 +14,7 @@ import {useAgents} from '../state/AgentsContext';
 import {primary} from '../api/types';
 import type {Agent} from '../api/types';
 import type {GuestLink, PairedDevice, ShareConfig} from '../api/client';
+import {displayDeviceName} from '../pairing/deviceName';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
 import {SIcon} from '../ui/SettingsIcons';
 import {ContentColumn} from '../ui/ContentColumn';
@@ -218,7 +219,7 @@ export function ManageMacScreen({navigation}: any) {
                 <SettingsRow
                   key={d.id}
                   icon="server"
-                  label={d.name || '—'}
+                  label={displayDeviceName(d.name)}
                   sub={d.lastSeen ? (zh ? '最近在线' : 'recently seen') : undefined}
                   pal={pal}
                   divider={idx < devices.length - 1}

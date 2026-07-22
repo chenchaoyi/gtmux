@@ -19,15 +19,18 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
 import {EnrollError, enrollDevice, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
+import {deviceLabel} from '../pairing/deviceName';
 import {BrandMark} from '../ui/BrandMark';
 import {StatusColor} from '../ui/theme';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
 
-// deviceLabel names this phone in the Mac's device roster (so you can tell devices
-// apart and revoke the right one).
-function deviceLabel(): string {
-  return Platform.OS === 'ios' ? 'gtmux • iPhone' : 'gtmux • Android';
+// thisDeviceLabel names this phone in the Mac's device roster (so you can tell devices
+// apart and revoke the right one). The rule lives in pairing/deviceName so it can be
+// tested off-device; here we only read what the platform knows about itself.
+function thisDeviceLabel(): string {
+  const c = Platform.constants as any;
+  return deviceLabel(Platform.OS, c?.osVersion ?? Platform.Version, c?.interfaceIdiom);
 }
 
 // onCancel, when provided, renders a Cancel control — set when PairingScreen is
@@ -102,7 +105,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     setBusy(true);
     setError('');
     try {
-      const deviceToken = await enrollDevice(res.url, res.enrollCode, deviceLabel());
+      const deviceToken = await enrollDevice(res.url, res.enrollCode, thisDeviceLabel());
       setBusy(false);
       await connectWith(res.url, deviceToken, res.name);
     } catch (e: any) {
