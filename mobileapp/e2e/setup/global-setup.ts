@@ -85,7 +85,7 @@ export default async function globalSetup(): Promise<void> {
       path: '/',
       capabilities: iosCapabilities,
       logLevel: 'warn',
-      connectionRetryTimeout: 180_000, // first run builds WebDriverAgent (slow)
+      connectionRetryTimeout: 360_000, // first run builds WebDriverAgent (slow — minutes on Intel)
     });
   } catch (err) {
     // If opening the session fails, jest SKIPS globalTeardown — so the Appium
