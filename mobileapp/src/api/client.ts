@@ -72,6 +72,34 @@ export interface DigestRow {
   usage_warn?: string;
 }
 
+// HQBoard mirrors GET /api/hq/board (hq-command-page) — the supervisor's situation
+// board, the synthesis it maintains by hand so its picture of the fleet survives a
+// context reset. `exists:false` is an ordinary answer, not an error: plenty of
+// supervisors have never written one.
+export interface HQBoard {
+  exists: boolean;
+  updated_at?: number; // unix secs the board was last written
+  text?: string;
+}
+
+// HQEvent mirrors one internal/events Record from GET /api/hq/events — the
+// severity-tagged fleet ledger. The radar shows the present instant; this is history.
+export interface HQEvent {
+  ts: number;
+  seq?: number;
+  event: string; // Stop | Waiting | UserPromptSubmit | SessionStart | …
+  state?: string;
+  pane?: string;
+  loc?: string;
+  session?: string;
+  agent?: string;
+  kind?: string; // waiting kind: permission | plan | question
+  summary?: string;
+  class?: string;
+  origin?: string;
+  severity?: string; // routine | notable | important
+}
+
 // UsageReport mirrors internal/app usageReport (GET /api/usage).
 export interface UsageWindow {
   label: string;
@@ -256,6 +284,27 @@ export class GtmuxClient {
   // awareness source. [] on failure (the board just shows empty).
   async digest(): Promise<DigestRow[]> {
     const r = await tfetch(`${this.base}/api/digest`, {headers: this.h()});
+    if (!r.ok) return [];
+    const j = await r.json().catch(() => null);
+    return Array.isArray(j) ? j : [];
+  }
+
+  // hqBoard: the supervisor's own situation board (GET /api/hq/board). A
+  // not-exists board is the normal degraded case, so a failure returns the SAME
+  // shape rather than throwing — the HQ page falls back to its deterministic line.
+  async hqBoard(): Promise<HQBoard> {
+    const r = await tfetch(`${this.base}/api/hq/board`, {headers: this.h()});
+    if (!r.ok) return {exists: false};
+    const j = await r.json().catch(() => null);
+    return j && typeof j === 'object' ? (j as HQBoard) : {exists: false};
+  }
+
+  // hqEvents: the fleet's recent history at a severity floor (GET /api/hq/events),
+  // newest first. [] on failure — an empty feed reads as "quiet", which is honest
+  // when we can't reach the ledger and is what a reader can act on either way.
+  async hqEvents(severity = 'notable', limit = 40): Promise<HQEvent[]> {
+    const q = `severity=${encodeURIComponent(severity)}&limit=${limit}`;
+    const r = await tfetch(`${this.base}/api/hq/events?${q}`, {headers: this.h()});
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
     return Array.isArray(j) ? j : [];

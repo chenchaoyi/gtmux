@@ -5,7 +5,7 @@
 // language + ordering (needs-you → working → idle → running → Elsewhere) is on display.
 
 import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
-import {DigestRow, TranscriptTurn} from '../api/client';
+import {DigestRow, HQEvent, TranscriptTurn} from '../api/client';
 
 // SGR helpers so the demo terminal shows the flagship COLOR mirror (not flat grey):
 // the panes below carry real ANSI so NativeTerm/term.ts renders green ✓/+, red −,
@@ -258,4 +258,69 @@ export function demoHQReply(lang: 'en' | 'zh', text: string): string {
   return (zh
     ? '**简报**:6 个会话。api 在等你拍板(跑测试);web 正在重构 auth;worker 刚完成 retry backoff;docs/app/infra 平稳。只有 api 需要你。'
     : '**Brief**: 6 sessions. api is waiting on your call (run tests); web is refactoring auth; worker just finished retry backoff; docs/app/infra are steady. Only api needs you.') + '\n\n' + tail;
+}
+
+// The supervisor's canned situation board + event ledger (hq-command-page). The HQ
+// page's three zones are exactly the parts the radar can't show, so Demo must fill
+// them — an empty assessment and an empty feed would demo the page as blank, which
+// is the failure this design replaced.
+export function demoBoard(zh: boolean): {exists: boolean; updated_at: number; text: string} {
+  const text = zh
+    ? `# gtmux HQ — 作战态势板
+
+_最近刷新：刚刚_
+
+## 🔴 当前焦点
+- **api（%7 · 等你拍板）**：auth 中间件重构已切分完 verifyToken()，测试写好了，
+  正卡在「要不要跑测试套件」。我的建议：批准——改动只碰这一个包，测试失败也只是回到当前状态。
+- **web（%11 · 运行中）**：同一条重构线的前端侧，正在抽 token 检查，没有阻塞。
+
+## 🟢 正常
+- worker 的 retry backoff 已落地、测试全绿（最近完成）。docs 的 API 参考 v1 端点已起草，
+  待补示例。app 的 dashboard 指标卡已接 /api/stats。infra 在跑 terraform apply。
+
+## 📌 待办 / 教训
+- api 与 web 同碰 auth 包 → 若两边都要改同一文件，先让 web 停手，避免互相踩。
+`
+    : `# gtmux HQ — situation board
+
+_Last refresh: just now_
+
+## 🔴 Current focus
+- **api (%7 · needs your call)**: the auth-middleware refactor has verifyToken()
+  split out and tests written, and is blocked on "may I run the test suite?".
+  My read: approve — the change touches one package, and a failure just returns
+  us to where we are now.
+- **web (%11 · working)**: the front-end side of the same refactor, extracting the
+  token check. Not blocked.
+
+## 🟢 Normal
+- worker landed retry backoff, tests green (most recent finish). docs drafted the v1
+  endpoints, examples still TODO. app wired the dashboard cards to /api/stats.
+  infra is mid terraform apply.
+
+## 📌 Open / lessons
+- api and web both touch the auth package — if they need the same file, pause web
+  first rather than letting them collide.
+`;
+  return {exists: true, updated_at: Math.floor(Date.now() / 1000) - 420, text};
+}
+
+// The canned ledger, newest first — the same tiers the real one carries.
+export function demoEvents(agents: Agent[]): HQEvent[] {
+  const now = Math.floor(Date.now() / 1000);
+  const waiting = agents.find(a => a.pane_id === '%7');
+  const rows: HQEvent[] = [
+    {ts: now - 60, seq: 108, event: 'Stop', state: 'idle', loc: 'worker:0.0', session: 'worker',
+      agent: 'Codex', class: 'report', summary: 'backoff + jitter landed, tests green', severity: 'notable'},
+    {ts: now - 240, seq: 107, event: 'Waiting', state: 'waiting', loc: 'api:0.0', session: 'api',
+      agent: 'Claude Code', kind: 'permission', summary: 'run the test suite?', severity: 'important'},
+    {ts: now - 300, seq: 106, event: 'UserPromptSubmit', state: 'working', loc: 'web:0.0', session: 'web',
+      agent: 'Claude Code', origin: 'instruction', summary: 'extract the token check too', severity: 'notable'},
+    {ts: now - 900, seq: 104, event: 'SessionStart', state: 'running', loc: 'infra:0.0', session: 'infra',
+      agent: 'Claude Code', severity: 'notable'},
+  ];
+  // Once the hero pane is answered it is no longer waiting; drop the stale escalation
+  // so the feed never contradicts the radar.
+  return waiting?.status === 'waiting' ? rows : rows.filter(r => r.seq !== 107);
 }
