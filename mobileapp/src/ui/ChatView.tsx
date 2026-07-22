@@ -24,6 +24,7 @@ import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
 import {StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
+import {CHAT_WINDOW, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 
 interface Props {
   agent: Agent;
@@ -35,6 +36,9 @@ interface Props {
   // Transcript is fetched + cached by DetailScreen (survives mode switches), passed
   // in here so 终端→对话 shows instantly instead of re-fetching every mount.
   turns: TranscriptTurn[];
+  // How many OLDER turns the server dropped to bound the payload — folded into the one
+  // "earlier turns not shown" line so a truncated history is never passed off as whole.
+  droppedTurns?: number;
   loading: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
@@ -79,7 +83,7 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, loading, pendingPrompt, fontPref, onLiveEdge}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, onLiveEdge}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -102,6 +106,9 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
   // single turn while collapsed. This state lives in ChatView (kept mounted across
   // mode switches), so the collapse layout persists when you flip 终端↔对话.
   const [collapsedAll, setCollapsedAll] = React.useState(false);
+  // Only the newest turns are MOUNTED. Rendering a long session whole is what killed the
+  // app on switching to Chat — see chatWindow.ts for the measurements.
+  const [windowSize, setWindowSize] = React.useState(CHAT_WINDOW);
   const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
   // A very long USER prompt (e.g. a pasted context dump) is auto-collapsed to a few
   // lines with a tap-to-expand toggle, so it doesn't bury the conversation.
@@ -150,6 +157,12 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
       return '';
     });
   }, [turns, lang]);
+
+  // The MOUNTED slice. `offset` maps a windowed index back to its real turn index, so
+  // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
+  const {shown, hiddenHere} = windowedTurns(turns, windowSize);
+  const offset = turns.length - shown.length;
+  const earlier = earlierLabel(hiddenHere, droppedTurns, lang === 'zh');
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
@@ -221,8 +234,25 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, loading, 
         </Text>
       )}
 
+      {/* Only the newest turns are mounted; older ones are one tap away (or, when the
+          server dropped them to bound the payload, disclosed as not loadable). Without
+          this the view mounted every turn of a long session at once and the app was
+          killed for memory on switching to Chat. */}
+      {!!earlier && (
+        <TouchableOpacity
+          testID={TestIds.detail.chatEarlier}
+          accessibilityLabel={TestIds.detail.chatEarlier}
+          disabled={!canLoadMore(hiddenHere)}
+          onPress={() => setWindowSize(n => nextWindow(n, turns.length))}
+          activeOpacity={0.7}
+          style={styles.earlierRow}>
+          <Text style={styles.earlierText}>{earlier}</Text>
+        </TouchableOpacity>
+      )}
+
       {/* the conversation: prompt → interleaved (text bubble / step group) segments */}
-      {turns.map((t, i) => {
+      {shown.map((t, w) => {
+        const i = w + offset; // the turn's REAL index — per-turn state is keyed by it
         // each segment = one assistant message's text bubble + the tool steps that
         // ran after it; rendering them in order puts intermediate process BETWEEN
         // separate speech bubbles. Fall back to the joined response when no segments.
@@ -387,6 +417,8 @@ const styles = StyleSheet.create({
   empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},
   // fixed collapse/expand-all bar above the scroll — right-aligned, quiet.
+  earlierRow: {alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
+  earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).

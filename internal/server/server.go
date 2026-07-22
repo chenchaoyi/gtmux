@@ -30,6 +30,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -111,7 +112,10 @@ type Deps struct {
 	// conversation parsed into prompt → collapsed steps → final response), as a
 	// JSON array. Empty array (not error) when the pane has no resumable session
 	// or the agent's log isn't found. Optional: nil → GET /api/transcript is 503.
-	Transcript func(id string) ([]byte, error)
+	// dropped is how many OLDER turns were left out to keep the payload within a size
+	// the client can hold (transcript-render-bounds) — reported so a client can say the
+	// history is truncated instead of showing part of a conversation as the whole one.
+	Transcript func(id string) (turns []byte, dropped int, err error)
 
 	// HQBoard returns the supervisor's situation board — the synthesis it maintains by
 	// hand so its picture of the fleet survives a context reset — plus when it was last
@@ -708,10 +712,16 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	b, err := s.deps.Transcript(id)
+	b, dropped, err := s.deps.Transcript(id)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, errBody("transcript failed: "+err.Error()))
 		return
+	}
+	// An additive HEADER, not an envelope: the body stays the plain turn array every
+	// existing client (and the web mirror) already parses, so an app build that predates
+	// this simply ignores the signal instead of failing to decode.
+	if dropped > 0 {
+		w.Header().Set("X-Gtmux-Turns-Dropped", strconv.Itoa(dropped))
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(b)

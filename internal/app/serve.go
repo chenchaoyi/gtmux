@@ -586,38 +586,75 @@ func writeRemoteClients(clients []server.ClientInfo) {
 	_ = os.WriteFile(state.RemoteClientsPath(), b, 0o644)
 }
 
-// maxTranscriptTurns bounds the chat-history payload sent to the phone. Set high
-// so the chat view shows as much as the terminal scrollback would — the parser
-// tail-reads the log (8 MiB window), so this is the effective ceiling.
+// maxTranscriptTurns is the FIRST bound on the chat-history payload — how many turns
+// the parser is asked for. It is set high because it is not the bound that protects the
+// client: see transcriptByteBudget.
 const maxTranscriptTurns = 300
+
+// transcriptByteBudget is the bound that actually matters. A turn cap bounds the wrong
+// dimension: turns vary in size by orders of magnitude, so a count can't imply a payload
+// a phone can hold. Measured on a real long-running session, 147 turns — half of
+// maxTranscriptTurns — marshaled to 1.76 MB carrying 1,885 reply bubbles and 2,974 tool
+// steps, which the chat view renders eagerly; that is an out-of-memory kill, not a slow
+// screen (transcript-render-bounds).
+//
+// 512 KiB keeps a generous tail (tens of turns) while staying an ordinary parse and an
+// ordinary allocation on a phone.
+const transcriptByteBudget = 512 << 10
 
 // transcriptForPane returns the pane's parsed chat history as a JSON array of
 // turns for GET /api/transcript. It maps the pane → its resume record (agent +
 // session id, captured by the hooks) → the agent's on-disk conversation log.
 // Always returns a valid JSON array — "[]" when the pane has no resumable
 // session or the agent's log can't be found — never a hard error for those.
-func transcriptForPane(id string) ([]byte, error) {
+func transcriptForPane(id string) ([]byte, int, error) {
 	empty := []byte("[]")
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
-		return empty, nil
+		return empty, 0, nil
 	}
 	loc := tmux.Display(id, "#{session_name}:#{window_index}.#{pane_index}")
 	if loc == "" {
-		return empty, nil
+		return empty, 0, nil
 	}
 	rec, ok := resume.Load(loc)
 	if !ok {
-		return empty, nil
+		return empty, 0, nil
 	}
 	turns, err := transcript.Load(rec.Agent, rec.SessionID, maxTranscriptTurns)
 	if err != nil || len(turns) == 0 {
-		return empty, nil
+		return empty, 0, nil
 	}
-	b, err := json.Marshal(turns)
+	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
+	b, err := json.Marshal(kept)
 	if err != nil {
-		return empty, nil
+		return empty, 0, nil
 	}
-	return b, nil
+	return b, dropped, nil
+}
+
+// turnsWithinBudget keeps the NEWEST turns that fit `budget` bytes and reports how many
+// older ones it dropped. Newest-first because the tail is what the reader opened chat to
+// see; the earlier history is reachable in the terminal view and the log itself.
+//
+// It always keeps at least one turn: a single turn larger than the budget is still the
+// turn the user is looking at, and serving nothing instead would turn a heavy screen into
+// an empty one.
+func turnsWithinBudget(turns []transcript.Turn, budget int) (kept []transcript.Turn, dropped int) {
+	size := 0
+	first := len(turns) // index of the oldest turn we keep
+	for i := len(turns) - 1; i >= 0; i-- {
+		b, err := json.Marshal(turns[i])
+		if err != nil {
+			break
+		}
+		// +1 for the comma/bracket overhead this turn adds to the array.
+		if size+len(b)+1 > budget && first < len(turns) {
+			break
+		}
+		size += len(b) + 1
+		first = i
+	}
+	return turns[first:], first
 }
 
 // sendToPane types into a pane for POST /api/send (a WRITE). A non-empty key must

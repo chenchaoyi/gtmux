@@ -102,6 +102,9 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
   // spinning every time. Polled on status/prompt change; turns are never cleared.
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
   const [chatLoaded, setChatLoaded] = useState(false);
+  // How many OLDER turns the server left out to bound the payload — shown by ChatView so
+  // a truncated history never reads as the whole conversation (transcript-render-bounds).
+  const [droppedTurns, setDroppedTurns] = useState(0);
   // B1: 对话 ↔ 终端. Initial mode = the global "default mode" setting (B2, default
   // 终端 — preserves the established read-the-pane behavior; 对话 is a visible-
   // screen glance, not a full transcript), overridden by this pane's own
@@ -271,9 +274,10 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
     let alive = true;
     client
       .transcript(agent.pane_id)
-      .then(ts => {
+      .then(({turns: ts, dropped}) => {
         if (!alive) return;
         setTurns(ts);
+        setDroppedTurns(dropped);
         setChatLoaded(true);
       })
       .catch(() => alive && setChatLoaded(true));
@@ -292,9 +296,9 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
     ),
-    [live, lines, fontSize, pal, lang, turns, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
+    [live, lines, fontSize, pal, lang, turns, droppedTurns, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
   );
   const termEl = useMemo(
     () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} onLiveEdge={onLiveEdge} />,

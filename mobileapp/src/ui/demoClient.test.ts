@@ -65,7 +65,7 @@ describe('demo HQ', () => {
 
   it('has one preset HQ exchange for the command console', async () => {
     const client = makeDemoClient('en');
-    const turns = await client.transcript('%1');
+    const {turns} = await client.transcript('%1');
     expect(turns).toHaveLength(1);
     expect(turns[0].response).toMatch(/waiting/);
   });
@@ -83,10 +83,10 @@ describe('demo HQ', () => {
   it('answers the HQ console in the chief-of-staff voice, not the flat worker reply', async () => {
     const client = makeDemoClient('en');
     await client.send('%1', {text: "who's waiting?"});
-    const hqTurn = (await client.transcript('%1')).slice(-1)[0];
+    const hqTurn = (await client.transcript('%1')).turns.slice(-1)[0];
     expect(hqTurn.response).toMatch(/api/); // names the waiter, not a generic "this is the demo"
     await client.send('%8', {text: 'anything?'});
-    const workerTurn = (await client.transcript('%8')).slice(-1)[0];
+    const workerTurn = (await client.transcript('%8')).turns.slice(-1)[0];
     expect(workerTurn.response).not.toBe(hqTurn.response); // worker gets the generic reply
   });
 });
