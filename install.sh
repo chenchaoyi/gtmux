@@ -179,6 +179,15 @@ EOF
 # ---- platform check ----
 OS="$(uname -s)"; ARCH_RAW="$(uname -m)"
 [ "$OS" = "Darwin" ] || die "gtmux is macOS-only (uname -s = $OS)"
+# `uname -m` reports the arch of the PROCESS, not the machine. Under Rosetta it says
+# x86_64 on Apple Silicon — so an installer run from a translated shell (or from an
+# x86 gtmux calling `gtmux update`) fetched the amd64 build onto an M-series Mac, and
+# the result perpetuated itself: the x86 binary it just installed runs translated, so
+# the NEXT update sees x86_64 again. sysctl.proc_translated=1 is the definitive
+# "you are being translated, the hardware is arm64" signal.
+if [ "$ARCH_RAW" = "x86_64" ] && [ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" = "1" ]; then
+  ARCH_RAW="arm64"
+fi
 case "$ARCH_RAW" in
   arm64|aarch64) ARCH="arm64" ;;
   x86_64|amd64)  ARCH="amd64" ;;
