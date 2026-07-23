@@ -52,16 +52,26 @@
 
 ## P2 — wake ack 升级(hq-wake-reliability 的扩展;修回车被吞搁浅)
 
-- [ ] 2.1 `hqnudge.deliverPayload` ack 三层化:Receipt(`#id` 的
-      UserPromptSubmit)优先 → Unsubmitted/屏读见 draft 持 `#id` → 只补 Enter
-      → 屏读 history 判定兜底;队列/claim/orphan/优先级/上限机制零改动
-- [ ] 2.2 "只补 Enter"实现:同一 claim 下一次 drain 只发 Enter(draft 仍完整
-      持有该批文本才补,否则按现状 requeue);不重贴 payload、不重算 `#id`
-- [ ] 2.3 回归测试:复刻今日实锤(paste 落地、Enter 被吞、draft-guard 堵死、
-      10min stale 才升级)为 fake 时间线,断言升级后 3s fast tick 下一拍补上
-- [ ] 2.4 `wake-degraded` 判据不变的回归(fail≥3 / stale>10min 仍有效);
-      at-least-once 与 `#id` 幂等语义不变(playbook 不需要改动)
-- [ ] 2.5 kill-switch 验证 + spec 场景对齐(hq-wake-protocol delta)
+- [x] 2.1 `hqnudge.deliverPayload` ack 三层化:Receipt(`#id` 的
+      UserPromptSubmit——hook 侧对 wake 批次落盘其 `#id` 为 Summary,
+      `hqwake.BatchID` 提取)优先 → 屏读见 draft 持 `#id` = 精确 unsubmitted
+      → 只补 Enter → 屏读 history 判定兜底;队列/claim/orphan/优先级/上限
+      机制零改动
+- [x] 2.2 "只补 Enter"实现:unsubmitted 批次的 claim 停靠为 `.stuck` +
+      `enter-repair` 记录,下一次 drain 只发 Enter(draft 仍完整持有该批
+      payload 头 + `#id` 尾才补,否则交还 requeue 路径);不重贴 payload、
+      不重算 `#id`;补 Enter 有界(3 次)后按现状 unacked 交还
+- [x] 2.3 回归测试:复刻今日实锤(paste 落地、Enter 被吞、draft-guard 堵死、
+      10min stale 才升级)为 fake 时间线,断言升级后下一拍 drain 即补上
+      (`TestDrain_SwallowedEnter_RepairedOnNextTick`;另有用户改动草稿
+      永不代提交 / 用户代按 Enter 即确认 / 修复额度耗尽交还 三态)
+- [x] 2.4 `wake-degraded` 判据不变的回归(fail≥3 / stale>10min 仍有效——既有
+      Degraded 测试全数保留通过;停靠不计 fail,弃修才计一次);at-least-once
+      与 `#id` 幂等语义不变(playbook 不需要改动)
+- [x] 2.5 kill-switch 验证(receipt off → `driver.For` 剥除 → NoEvidence →
+      纯屏读 ack;`TestDeliver_ReceiptNoEvidence_ScreenStillJudges` +
+      driver 侧 `TestSwitchForcesLayerOne`)+ spec 场景对齐(hq-wake-protocol
+      delta 已在 P0 落盘,实现与其逐场景吻合)
 
 ## P3 — spawn 就绪正向信号(SessionStart 短路)
 
