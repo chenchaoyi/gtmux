@@ -173,3 +173,32 @@ correctly-armed setup using one spelling is never reported as unarmed.
 
 - **WHEN** the status line carries exactly one save trigger, in any path form
 - **THEN** the doctor reports autosave as armed
+
+### Requirement: An update reports what changed, in the user's terms
+
+After a successful self-update the system SHALL summarise what changed, and the summary
+SHALL be written for the user rather than derived from commit subjects — a commit subject
+addresses whoever reads the diff, and identifiers such as revision hashes, change numbers
+and author handles are noise to someone who only wants to know whether something they rely
+on moved. The summary SHALL aggregate EVERY version crossed, not only the newest, since a
+user several releases behind is exactly the one for whom describing one release would be a
+lie of omission. It SHALL be brief, and point to a fuller listing for the remainder. It
+SHALL be SILENT when it has nothing to say or cannot fetch the notes: this runs after the
+install already succeeded, and an error about it reads as though the update itself failed.
+A release whose author wrote no user-facing note SHALL contribute nothing rather than
+having one invented for it.
+
+#### Scenario: Several versions crossed
+
+- **WHEN** a user updates across more than one release
+- **THEN** the summary covers all of them, newest first
+
+#### Scenario: More than fits
+
+- **WHEN** more changes exist than the summary shows
+- **THEN** it says how many remain and how to see them
+
+#### Scenario: Notes unavailable
+
+- **WHEN** the notes cannot be fetched
+- **THEN** the update reports success and prints no summary and no error

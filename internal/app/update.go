@@ -105,7 +105,34 @@ func cmdUpdate(args []string) int {
 		i18n.Say("Updating gtmux to the latest release…", "正在更新 gtmux 到最新版…")
 	}
 
-	return runInstaller(cliOnly, latestTag)
+	rc := runInstaller(cliOnly, latestTag)
+	if rc == 0 {
+		printWhatChanged(cur, latest)
+	}
+	return rc
+}
+
+// printWhatChanged summarises the versions just crossed. Best-effort and SILENT on
+// failure: this runs after a SUCCESSFUL install, so an error here would be noise about a
+// cosmetic step — and worse, would read as though the update itself had gone wrong.
+func printWhatChanged(from, to string) {
+	if to == "" {
+		return
+	}
+	entries := changesBetween(fetchReleases(), from, to)
+	lines, omitted := flatten(entries, changelogMax)
+	if len(lines) == 0 {
+		return
+	}
+	fmt.Println()
+	i18n.Say(i18n.Bold+"  What changed"+i18n.Reset, i18n.Bold+"  本次更新"+i18n.Reset)
+	for _, l := range lines {
+		fmt.Println("    · " + l)
+	}
+	if omitted > 0 {
+		i18n.Say(i18n.Dim+"    +"+strconv.Itoa(omitted)+" more — gtmux whatsnew"+i18n.Reset,
+			i18n.Dim+"    还有 "+strconv.Itoa(omitted)+" 条 —— gtmux whatsnew"+i18n.Reset)
+	}
 }
 
 // runInstaller fetches the official install.sh and runs it in place (over the

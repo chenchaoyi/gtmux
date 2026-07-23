@@ -5,7 +5,7 @@ over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
   `digest`, `hq`, `hq-feed`, `quiet`, `capture`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
-  `serve`, `tunnel`, `devices`, `doctor`, `update`, `install-hooks`, `uninstall-hooks`,
+  `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install-hooks`, `uninstall-hooks`,
   `uninstall-app`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
   (`GET /api/attach`, scope-gated), raw passthrough; owner or guest. See
@@ -111,6 +111,20 @@ over one Go core (gtmux-core is the single data source):
   for "drive tmux / control arbitrary terminals"). Ship **Developer ID + notarized
   direct distribution**; MAS would require a sandbox-compatible rearchitect.
 - Workflow: branch → PR → CI green → squash-merge → tag. Don't commit to `main`.
+- **Every release tag MUST carry a `user:` block in its tag message** — the lines
+  `gtmux update` prints after installing and `gtmux whatsnew` lists. Write them for the
+  USER (what moved that they'd notice), not as commit subjects; goreleaser copies the tag
+  body into the release, and the CLI reads it back. A release with no `user:` block shows
+  nothing, which is correct only when nothing changed for users.
+
+  ```
+  git tag -a v0.40.0 -m "v0.40.0 — <one-line dev summary>
+
+  user:
+  - spawn --title now names the session
+  - restore returns you to the window you were on
+  "
+  ```
 - **git-ops footgun:** never build a `gh pr create` / `git commit` body via
   `--body "$(cat <<'EOF' … EOF)"` or `-m "$(…)"` when the text contains backticks —
   the `"$(…)"` re-enables command substitution, so `` `gtmux serve` `` in prose gets
