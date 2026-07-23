@@ -121,3 +121,31 @@ func TestSemverOrdering(t *testing.T) {
 		t.Error("junk parsed as a version")
 	}
 }
+
+// A release body routinely QUOTES the convention it documents — the PR that introduced
+// this feature had a `user:` example inside a code fence, and the parser reported the
+// fence and a stray quote mark as "what changed". Nonsense presented as a changelog is
+// worse than an empty one.
+func TestUserLinesIgnoresAQuotedExampleInsideACodeFence(t *testing.T) {
+	body := "Here's how it works:\n\n" +
+		"```\n" +
+		"git tag -a v0.40.0 -m \"v0.40.0 — x\n\n" +
+		"user:\n" +
+		"- an EXAMPLE, not a real change\n" +
+		"\"\n" +
+		"```\n\n" +
+		"## Changelog\n* abc: feat: something\n"
+	if got := userLines(body); len(got) != 0 {
+		t.Errorf("scraped a fenced example: %#v", got)
+	}
+}
+
+// ...and a real block still parses when an example appears elsewhere in the same body.
+func TestUserLinesTakesTheRealBlockNotTheQuotedOne(t *testing.T) {
+	body := "user:\n- the real change\n\n" +
+		"Docs:\n```\nuser:\n- not this one\n```\n"
+	got := userLines(body)
+	if len(got) != 1 || got[0] != "the real change" {
+		t.Errorf("got %#v; want just the real change", got)
+	}
+}

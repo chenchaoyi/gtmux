@@ -72,9 +72,24 @@ func fetchReleases() []release {
 func userLines(body string) []string {
 	lines := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n")
 	var out []string
-	in := false
+	in, fenced := false, false
 	for _, l := range lines {
 		t := strings.TrimSpace(l)
+		// A release body routinely QUOTES the convention it documents. Without fence
+		// tracking the parser found the example inside a code block and reported the
+		// fence and a stray quote character as changes — nonsense presented to the user
+		// as "what changed". A marker only counts outside a fence, and a fence ends a
+		// block that was already open.
+		if strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") {
+			fenced = !fenced
+			if in {
+				break
+			}
+			continue
+		}
+		if fenced {
+			continue
+		}
 		if !in {
 			if strings.EqualFold(t, userLinePrefix) || strings.HasPrefix(strings.ToLower(t), userLinePrefix+" ") {
 				in = true
