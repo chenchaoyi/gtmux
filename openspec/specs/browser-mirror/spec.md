@@ -185,3 +185,29 @@ ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
 - **THEN** clicking an option sends that digit (no Enter) through `POST /api/send`,
   while a view-only caller sees the same options inert with the reply-elsewhere hint
 
+### Requirement: A page that cannot show anything explains itself
+
+When the browser cannot show sessions — it is not paired, or its link expired — the page
+SHALL state WHICH of those it is, and SHALL give the exact step that resolves it. It SHALL
+name only affordances that exist: an instruction referring to a control the product does
+not have is worse than no instruction, because the reader spends their time looking for
+it. It SHALL identify itself as gtmux, since a reader may arrive from a bookmark with no
+other context. Commands SHALL be rendered as commands rather than as their markup source.
+Like every other surface, it SHALL be bilingual.
+
+#### Scenario: An unpaired browser
+
+- **WHEN** the page is opened with no credential
+- **THEN** it says the browser isn't paired, and gives the command that produces a link
+  plus which of that command's outputs to open
+
+#### Scenario: An expired link
+
+- **WHEN** the page's credential is rejected as expired
+- **THEN** it says the link expired — distinct from never having been paired — and how to
+  mint a fresh one
+
+#### Scenario: A guest arrives
+
+- **WHEN** an unpaired reader holds a link someone shared with them
+- **THEN** the page tells them such a link works without pairing

@@ -60,8 +60,20 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 
 /* gate (pairing / errors) */
 #gate { display: flex; align-items: center; justify-content: center; }
-.gate-box { text-align: center; color: var(--fg2); max-width: 460px; padding: 24px; line-height: 1.5; }
-.gate-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--running); margin: 0 auto 14px; }
+.gate-box { text-align: center; color: var(--fg2); max-width: 470px; padding: 24px; line-height: 1.55; }
+.gate-brand { display: inline-flex; align-items: center; gap: 7px; color: var(--fg); font-weight: 600; margin-bottom: 16px; }
+/* WHAT state you're in — the sentence the old screen never had. */
+.gate-state { color: var(--fg); font-size: 15px; margin: 0 0 4px; }
+.gate-state .en { display: block; color: var(--fg2); font-size: 13px; font-weight: 400; }
+/* WHAT to do. Left-aligned: instructions are read, not glanced at. */
+.gate-steps { text-align: left; margin-top: 18px; font-size: 13px; }
+.gate-steps p { margin: 0 0 4px; }
+.gate-steps .en { color: var(--fg3); }
+.gate-steps .note { margin-top: 14px; color: var(--fg3); font-size: 12px; }
+/* A command is a thing you TYPE — render it as one, not as literal backticks. */
+.gate-steps code { display: block; margin: 8px 0 10px; padding: 9px 12px; border-radius: 7px;
+  background: var(--surface, #1c1c1f); color: var(--fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px; user-select: all; }
 
 /* radar — centered column */
 #radar { max-width: var(--col); margin: 0 auto; width: 100%; padding: 6px 0 40px; }
