@@ -34,6 +34,7 @@ import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {ChatView} from '../ui/ChatView';
+import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {
   Zone,
@@ -54,6 +55,13 @@ import {
 } from './hqZones';
 
 const hit = {top: 8, bottom: 8, left: 8, right: 8};
+
+// Colours for the situation board's markdown. The board sheet follows the APP palette
+// (unlike the chat surface, which is always dark), so these are resolved per render from
+// `pal` rather than fixed — a fixed light-on-dark set would be invisible in light mode.
+function boardMdColors(pal: any): MdColors {
+  return {text: pal.fg, dim: pal.fg3, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2};
+}
 
 export function HQScreen({route, navigation}: any) {
   const hq: Agent = route.params.agent;
@@ -491,25 +499,49 @@ export function HQScreen({route, navigation}: any) {
       </KeyboardAvoidingView>
 
       {/* The situation board, read-only — the supervisor's own working memory. */}
-      <Modal visible={boardOpen} animationType="slide" onRequestClose={() => setBoardOpen(false)}>
-        <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
-          <View style={[styles.strip, {borderBottomColor: pal.divider}]}>
+      {/* The situation board, read-only.
+          `pageSheet`, not a full-screen modal. A Modal renders in its OWN native
+          hierarchy, where SafeAreaView resolves every inset to ZERO — so the header and
+          its close control were drawn UNDERNEATH the system status bar, overlapping the
+          clock and the battery, and the ✕ could not reliably be tapped. A page sheet is
+          laid out below the status bar by iOS itself, and it adds a second way out
+          (swipe down) so leaving never depends on hitting one glyph. */}
+      <Modal
+        visible={boardOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setBoardOpen(false)}>
+        <View style={[styles.root, {backgroundColor: pal.bg}]}>
+          <View style={[styles.sheetHead, {borderBottomColor: pal.divider}]}>
             <View style={styles.stripMid}>
               <Text style={[styles.title, {color: pal.fg}]}>{t('Situation board', '作战态势板')}</Text>
-              <Text style={[styles.sub, {color: pal.fg3}]}>
+              <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
                 {boardFreshness(board.updated_at, now, zh)} · {t('read-only', '只读')}
               </Text>
             </View>
-            <TouchableOpacity testID="hq-board-close" onPress={() => setBoardOpen(false)} hitSlop={hit}>
-              <Text style={[styles.close, {color: pal.fg2}]}>✕</Text>
+            {/* A labelled button, not a bare ✕: the way out of a full-screen reader has
+                to be unmissable, and a word cannot be mistaken for decoration. */}
+            <TouchableOpacity
+              testID="hq-board-close"
+              accessibilityLabel="hq-board-close"
+              onPress={() => setBoardOpen(false)}
+              hitSlop={hit}
+              style={[styles.sheetClose, {borderColor: pal.divider}]}>
+              <Text style={[styles.sheetCloseText, {color: pal.fg}]}>{t('Done', '完成')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.pad}>
-            <Text style={[styles.boardText, {color: pal.fg2}]} selectable>
-              {board.text ?? ''}
-            </Text>
+            {/* Rendered, not raw. The board is markdown a person writes by hand; showing
+                its source turned headings into `##` and emphasis into `**` — a wall of
+                punctuation to read on a phone. */}
+            <MarkdownView
+              source={board.text ?? ''}
+              colors={boardMdColors(pal)}
+              fontSize={13.5}
+              selectable
+            />
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -530,6 +562,9 @@ const styles = StyleSheet.create({
   dot: {width: 8, height: 8, borderRadius: 4, marginLeft: 8},
   sub: {fontSize: 12, marginTop: 1},
 
+  sheetHead: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth},
+  sheetClose: {paddingHorizontal: 12, paddingVertical: 6, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, marginLeft: 10},
+  sheetCloseText: {fontSize: 13, fontWeight: '600'},
   assess: {paddingHorizontal: 14, paddingTop: 9, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   assessText: {fontSize: 14, fontWeight: '600', lineHeight: 19},
   boardRow: {flexDirection: 'row', alignItems: 'center', marginTop: 4},

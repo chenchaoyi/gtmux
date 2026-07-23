@@ -32,12 +32,16 @@ var numbered = regexp.MustCompile(`^(\d+)\.\s+(.*\S)`)
 func ParseOptions(text string) []Option {
 	var opts []Option
 	want := 1
+	selected := false // did this run carry a selector glyph — i.e. is it a LIVE menu?
 	for _, raw := range strings.Split(text, "\n") {
 		line := clean(raw)
 		m := numbered.FindStringSubmatch(line)
 		if m == nil {
 			continue
 		}
+		// Note the glyph BEFORE clean() discards it. An interactive menu marks its
+		// highlighted row (❯ 1. Yes); prose never does.
+		glyph := strings.ContainsAny(ansi.Strip(raw), promptGlyphs)
 		n := 0
 		for _, c := range m[1] {
 			n = n*10 + int(c-'0')
@@ -47,14 +51,25 @@ func ParseOptions(text string) []Option {
 			// a new menu started — restart the run.
 			opts = []Option{{N: 1, Label: label}}
 			want = 2
+			selected = glyph
 			continue
 		}
 		if n == want {
 			opts = append(opts, Option{N: n, Label: label})
 			want++
+			selected = selected || glyph
 		}
 	}
-	if len(opts) == 0 {
+	// A run with NO selector glyph anywhere is a numbered LIST, not a menu.
+	//
+	// This file already named the discriminator — see selectorGlyphs — and used it for
+	// waiting-detection, but the parser itself matched any "1. …" line anywhere on
+	// screen. So while a pane was genuinely waiting on a free-form question, three
+	// bullet points from the agent's own prose were scraped out of the scrollback and
+	// presented as an approval menu: choices that were never offered, on a card that
+	// invites one keypress to "answer" with. Presenting a wrong choice is worse than
+	// presenting none — with no card the user simply types their reply.
+	if len(opts) == 0 || !selected {
 		return nil
 	}
 	return opts

@@ -361,3 +361,49 @@ coloured for attention when a worker or HQ itself needs the user.
 - **WHEN** no worker is waiting
 - **THEN** the mobile HQ card subtitle reads as "all normal", dim, with no pip row
 
+### Requirement: Only an actual menu is offered as an approval card
+
+The system SHALL present numbered choices only when the agent is actually offering a menu,
+and SHALL distinguish a menu from a numbered LIST in ordinary output. A menu marks its
+highlighted row with a selector; prose never does. Being blocked on the user is not
+sufficient evidence, because an agent can be waiting on a free-form question while its
+recent output happens to contain a numbered list — presenting that list as choices offers
+options the agent never made, on a control that invites a single keypress to answer with.
+Where no menu can be identified the system SHALL present no card, leaving the user to
+reply in their own words.
+
+#### Scenario: A numbered list in prose
+
+- **WHEN** a waiting session's output contains a numbered list that is not a menu
+- **THEN** no approval card is shown
+
+#### Scenario: A real menu after prose
+
+- **WHEN** the output contains both a numbered list and a genuine menu
+- **THEN** the card offers the menu's choices
+
+### Requirement: A full-screen reader is escapable and clear of system UI
+
+A full-screen reader the app presents SHALL be laid out clear of the device's own status
+bar, and SHALL offer an unmistakable way out. Presenting it as a plain modal is not
+sufficient: a modal is rendered in its own hierarchy where safe-area insets resolve to
+zero, so its header and its close control are drawn underneath the clock and battery —
+illegible, and overlapping system UI that intercepts the touch. The way out SHALL be
+labelled rather than a bare glyph, and SHALL NOT be the only one, so leaving never depends
+on hitting a single small target. Content authored as markup SHALL be rendered, not shown
+as its source.
+
+#### Scenario: Opening the reader
+
+- **WHEN** a full-screen reader is presented
+- **THEN** its header and close control sit below the system status bar
+
+#### Scenario: Leaving
+
+- **WHEN** the user wants to leave the reader
+- **THEN** a labelled control and a gesture both dismiss it
+
+#### Scenario: Markup content
+
+- **WHEN** the content is markdown
+- **THEN** it is rendered as formatted text, not as raw markup
