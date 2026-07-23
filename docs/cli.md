@@ -103,7 +103,11 @@ its last reply (both from the agent's own transcript), **asks** = a waiting
 prompt's parsed options, plus the errored/background modifiers. `--json` emits
 the machine form (also served as `GET /api/digest`). A session gtmux has no
 transcript for still renders from radar signals alone — agents don't need to
-cooperate.
+cooperate. Each JSON row states its own perception tier as `sense`
+(agent-drivers): `driver` — the agent's hook feeds its state AND its transcript
+feeds goal/last; `partial` — the hook is in but no structured content resolved;
+`screen` — pure capture/process inference. Additive and derived from facts the
+digest already holds (no new collection); consumers may weight trust by it.
 
 `gtmux hq` opens (or focuses — never duplicates) the **supervisor**: your coding
 agent running in a dedicated tmux session at `~/.config/gtmux/hq/`, seeded once

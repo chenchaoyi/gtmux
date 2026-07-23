@@ -232,7 +232,8 @@ squash-merge — they can't be fully automated).
 
 - **Contracts (don't break):** the `gtmux agents --json` schema (incl. the
   additive optional `role` field) + the `gtmux digest --json`/`GET /api/digest`
-  shape + `gtmux usage --json`/`GET /api/usage` (usage-watch); state paths
+  shape (incl. the additive `sense: driver|partial|screen` perception tier,
+  agent-drivers) + `gtmux usage --json`/`GET /api/usage` (usage-watch); state paths
   `~/.local/share/gtmux/{active/<pane>, waiting/<pane>, last-finished,
   notify-icon.png, notify/<id>.json}`; hook events
   `Stop`/`Notification`/`UserPromptSubmit`; bundle id `com.gtmux.menubar`. The

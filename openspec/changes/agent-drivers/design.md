@@ -271,6 +271,12 @@ driver 级,本期只做两件事:
 1. 状态/内容来源改经 `driver.For()` 取用(实现仍是原函数;纯接线收拢)。
 2. digest 行计算并透出 `sense`(§1.2);`docs/cli.md` + `api/contract.md` 同步。
 
+实现注记(P4 落地校准):内容通道如设计收拢为 `Content` 能力(claude/codex);
+**状态通道保持直连**——waiting 标记按 pane 键控、由 radar 内核在识别 agent 之前
+消费,与 agent 键控的注册表天然错位,强行绕行只添间接层而无开关收益(标记本身
+就是 hook 写入的第 2 层事实)。`sense` 的 hook-在位判据取 sessionRef 解析成功
+(resume/native 记录均为 hook 落盘),内容判据取 transcript 实际可读。
+
 **明确不做**:working/idle 屏幕分类(spinner/帧哈希/CPU)不迁移、不重写——它
 是第 1 层的核心资产,对 hook-less agent 是唯一信号。
 

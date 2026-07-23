@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -59,6 +60,11 @@ type DigestRow struct {
 	Ctx       float64 `json:"ctx,omitempty"`  // live context fraction 0–1
 	Rate      int64   `json:"rate,omitempty"` // output tokens/min (recent window)
 	UsageWarn string  `json:"usage_warn,omitempty"`
+	// Sense grades this row's perception tier (agent-drivers): "driver" — the
+	// hook feeds its state AND the transcript feeds its content; "partial" — the
+	// hook is in but no structured content resolved; "screen" — pure
+	// capture/process inference (Layer 1). Additive; consumers may weight trust.
+	Sense string `json:"sense,omitempty"`
 }
 
 // Truncation caps: digest rows are the "短状态" tier — tens of tokens each. Deep
@@ -138,15 +144,24 @@ func GatherDigest() []DigestRow {
 			row.Kind = state.ReadMarker(state.WaitingPath(p.PaneID))
 			row.Ask = joinAsk(prompt.ParseOptions(tmux.CapturePane(p.PaneID)))
 		}
+		hooked, content := false, false
 		if agentKey, sessionID := sessionRef(p); sessionID != "" {
-			if turns, err := transcript.Load(agentKey, sessionID, 1); err == nil {
-				row.Goal, row.Last = turnDigest(turns)
+			// A resolved session record IS the hook's signature — the hook wrote it.
+			hooked = true
+			// Content rides the agent's driver (a pure re-wiring of transcript.Load;
+			// nil where no parser is registered or the capability is switched off).
+			if d := driver.For(agentKey); d.Content != nil {
+				if turns, err := d.Content(sessionID, 1); err == nil {
+					row.Goal, row.Last = turnDigest(turns)
+					content = true
+				}
 			}
 			if u, ok := uwatch.ForSession(agentKey, sessionID, time.Now()); ok {
 				row.Tok, row.Ctx, row.Rate = u.OutTok, u.CtxFrac, u.RatePerMin
 				row.UsageWarn = uwatch.EvaluateSession(u)
 			}
 		}
+		row.Sense = senseOf(hooked, content)
 		// Dispatch ledger join: if this pane was dispatched by spawn, surface its
 		// tracked goal + derived lifecycle status (additive).
 		if p.PaneID != "" {
@@ -158,6 +173,24 @@ func GatherDigest() []DigestRow {
 		out = append(out, row)
 	}
 	return out
+}
+
+// senseOf grades a row's perception tier from facts the digest already holds
+// (zero new collection): the hook's signature is the session record it wrote
+// (sessionRef resolved), the content channel is a transcript that actually
+// loaded. Both → "driver"; hook without content (no parser, unreadable log, or
+// the capability switched off) → "partial"; neither → "screen" — the row is pure
+// Layer-1 capture/process inference. Content without the hook cannot occur (the
+// transcript lookup is keyed by the hook-written record).
+func senseOf(hooked, content bool) string {
+	switch {
+	case hooked && content:
+		return "driver"
+	case hooked:
+		return "partial"
+	default:
+		return "screen"
+	}
 }
 
 // DigestJSONBytes is the machine form (CLI --json and GET /api/digest share it).

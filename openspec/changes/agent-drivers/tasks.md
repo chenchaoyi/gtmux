@@ -92,13 +92,18 @@
 
 ## P4 — digest 感知档位标注(sense 字段)
 
-- [ ] 4.1 radar/digest 计算 `sense`(driver/partial/screen;判据取自既有事实:
-      waiting 标记来源 + transcript 可达性;零新增采集)
-- [ ] 4.2 契约加法:`digest --json` / `GET /api/digest` 透出 omitempty `sense`;
-      既有字段与顺序不变(契约回归测试)
-- [ ] 4.3 状态/内容来源接线经 `driver.For()`(实现不动,纯收拢)
-- [ ] 4.4 文档:`docs/cli.md` digest 一节 + `api/contract.md` + CLAUDE.md 契约行
-      同 PR 更新(docs-conformance 检查通过)
+- [x] 4.1 radar/digest 计算 `sense`(driver/partial/screen;判据取自既有事实:
+      hook 落盘的 session 记录(sessionRef 解析成功 = hook 在)+ transcript
+      实际可读;零新增采集;`senseOf` 纯函数 + 表测试)
+- [x] 4.2 契约加法:`digest --json` / `GET /api/digest` 透出 omitempty `sense`
+      (追加在结构体尾,既有字段与顺序不变;`TestDigestRow_SenseIsAdditive`)
+- [x] 4.3 内容来源接线经 `driver.For()`:新增 `Content` 能力(claude/codex 的
+      transcript.Load 纯收拢,`driver.<agent>.content` 开关独立剥除)。
+      状态来源(waiting 标记)按 pane 键控、在 radar 内核先于 agent 识别被
+      消费,强行经 agent 键控的注册表属人为绕行——保持直连,sense 判据如实
+      反映之(校准记录于 design.md)
+- [x] 4.4 文档:`docs/cli.md` digest 一节 + `api/contract.md`(示例含 `sense`)
+      + CLAUDE.md 契约行 同 PR 更新(docs-conformance 检查通过)
 
 ## P5 — 一次性 headless worker(spawn --oneshot)
 
