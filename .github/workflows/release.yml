@@ -29,6 +29,14 @@ jobs:
         with:
           fetch-depth: 0  # GoReleaser needs full history for the changelog
 
+      # actions/checkout leaves the tag as a LIGHTWEIGHT ref, so `%(contents:body)` —
+      # which is where GoReleaser's {{ .TagBody }} comes from — falls back to the COMMIT
+      # message instead of the annotated tag's. That silently put the merge commit's body
+      # (i.e. the PR description) into the release, and the `user:` block `gtmux update`
+      # reads never arrived. Re-fetching the tags brings the real annotated objects.
+      - name: Fetch annotated tags
+        run: git fetch --force --tags
+
       - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
