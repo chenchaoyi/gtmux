@@ -49,11 +49,63 @@
 
   // ---- helpers ----------------------------------------------------------
   function show(which) { ['gate', 'radar', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
-  function gate(msg) {
-    $('gate-msg').textContent = msg; show('gate');
+  // GATE states. Each says what the situation IS and the one thing to do about it, in
+  // both languages — the old screen was a single English sentence with no subject, and it
+  // pointed at a phone-app affordance ("open on computer") that does not exist. The
+  // instruction below is the one `gtmux pair` actually prints.
+  var GATE = {
+    unpaired: {
+      zh: '这个浏览器还没有和你的 Mac 配对。',
+      en: "This browser isn't paired with your Mac yet.",
+      steps: [
+        {zh: '在你的 Mac 上运行：', en: 'On your Mac, run:', code: 'gtmux pair'},
+        {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'}
+      ],
+      note: {zh: '别人分享给你的访客链接可以直接打开，不用配对。',
+             en: 'A guest link someone shared with you works as-is — no pairing needed.'}
+    },
+    expired: {
+      zh: '这个链接已经失效了。',
+      en: 'This link has expired.',
+      steps: [
+        {zh: '配对码是一次性的、5 分钟内有效。在你的 Mac 上重新生成：',
+         en: 'A pairing code is one-time and expires in 5 minutes. Mint a fresh one on your Mac:', code: 'gtmux pair'},
+        {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'}
+      ]
+    }
+  };
+
+  // gate renders one of those states. Built as DOM (not a string) so a command renders as
+  // a command — the old copy carried markdown backticks into a rendered page, where they
+  // showed up as literal ` characters.
+  function gate(which) {
+    var g = GATE[which] || GATE.unpaired;
+    var state = $('gate-state'), steps = $('gate-steps');
+    state.textContent = g.zh;
+    state.appendChild(el('span', 'en', g.en));
+    steps.textContent = '';
+    g.steps.forEach(function (st) {
+      steps.appendChild(el('p', '', st.zh));
+      steps.appendChild(el('p', 'en', st.en));
+      if (st.code) steps.appendChild(el('code', '', st.code));
+    });
+    if (g.note) {
+      var n = el('p', 'note', g.note.zh);
+      n.appendChild(el('span', 'en', g.note.en));
+      steps.appendChild(n);
+    }
+    show('gate');
     $('mode').hidden = true; $('back').hidden = true;
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer);
     radarTimer = paneTimer = chatTimer = null;
+  }
+
+  // el builds a text node element (no innerHTML anywhere in the gate).
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    e.textContent = text;
+    return e;
   }
   // Connection indicator (铁律: server 名 + 状态点,不用 "live"). 3 states:
   // 已连接绿 / 重连琥珀(首次失败) / 离线红(持续失败). Both the radar/pane bar
@@ -270,7 +322,7 @@
 
   function pollRadar() {
     api('/api/agents').then(function (r) {
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
+      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('agents'); return r.json();
     }).then(function (agents) { if (!agents) return; setConn(true); lastAgents = agents; renderRadar(agents); })
       .catch(function () { setConn(false); });
@@ -505,7 +557,7 @@
     return postSend(curPane, body).then(function (r) {
       if (!r) return;
       if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = 'input not shared for this pane'; } return; }
-      if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('Session expired — open a fresh link.'); return; }
+      if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) return;
       return r.json();
     }).then(function (j) { if (j && typeof j.text === 'string') { writePane(j.text); hidePaneLoader(); } });
@@ -532,7 +584,7 @@
   function pollPane() {
     if (!curPane) return;
     api('/api/pane?id=' + encodeURIComponent(curPane)).then(function (r) {
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
+      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('pane'); return r.json();
     }).then(function (j) { if (!j) return; setConn(true); writePane(j.text); hidePaneLoader(); })
       .catch(function () { setConn(false); });
@@ -584,7 +636,7 @@
   function pollChat() {
     if (!curPane) return;
     api('/api/transcript?id=' + encodeURIComponent(curPane)).then(function (r) {
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
+      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (r.status === 404 || r.status === 503) { setConn(true); return []; } // no resume record / not available
       if (!r.ok) throw new Error('transcript'); return r.json();
     }).then(function (turns) { if (turns === null) return; setConn(true); hideChatLoader(); renderChat(turns || []); })
@@ -881,7 +933,7 @@
 
   function pollWB() {
     api('/api/agents').then(function (r) {
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('Pairing expired — open a fresh link.'); return null; }
+      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('agents'); return r.json();
     }).then(function (agents) {
       if (!agents) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
@@ -1454,7 +1506,7 @@
     if (code) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
     var ready = code ? pair(code).catch(function () { return null; }) : Promise.resolve();
     ready.then(function () {
-      if (!token) return gate('Open the pairing link from `gtmux serve` / `gtmux tunnel`, or from the phone app ("open on computer").');
+      if (!token) return gate('unpaired');
       fetchTheme(); // match the user's real terminal (async; the pane picks it up)
       fetchShare(); // learn which panes (if any) this caller may type into
       setupSettings();
