@@ -112,3 +112,27 @@ func writeConfig(t *testing.T, content string) {
 		t.Fatal(err)
 	}
 }
+
+// Content is registered exactly where a transcript parser exists — a pure
+// re-wiring of transcript.Load — and switches off independently.
+func TestContentRegistration(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	for _, k := range []string{"claude", "codex"} {
+		if For(k).Content == nil {
+			t.Errorf("For(%q).Content = nil; a parser exists for it", k)
+		}
+	}
+	for _, k := range []string{"gemini", "cursor", "kiro", "unknown"} {
+		if For(k).Content != nil {
+			t.Errorf("For(%q).Content must be nil (no parser)", k)
+		}
+	}
+	writeConfig(t, `{"driver": {"claude": {"content": false}}}`)
+	d := For("claude")
+	if d.Content != nil {
+		t.Error("driver.claude.content=false must strip Content")
+	}
+	if d.Receipt == nil || d.Ready == nil {
+		t.Error("the content switch must not touch other capabilities")
+	}
+}

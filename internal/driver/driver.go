@@ -16,7 +16,10 @@
 // so the layering stays acyclic.
 package driver
 
-import "github.com/chenchaoyi/gtmux/internal/usercfg"
+import (
+	"github.com/chenchaoyi/gtmux/internal/transcript"
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
+)
 
 // Verdict is the three-valued outcome of a Receipt check. Positive evidence is
 // monotonic (invariant I2): Confirmed is final and cannot be overturned by a
@@ -54,6 +57,12 @@ type Driver struct {
 	// wait (one input-ready capture then suffices). Positive-only (I2): false is
 	// never failure evidence — the full screen gate applies unchanged.
 	Ready func(pane string, since int64) bool
+
+	// Content loads a session's structured conversation turns — the transcript
+	// parser behind the digest's goal/last. Registered only where a parser
+	// exists (claude, codex); nil elsewhere, and the digest row renders from
+	// radar signals alone (the design rule: every field degrades to "").
+	Content func(sessionID string, maxTurns int) ([]transcript.Turn, error)
 }
 
 // hookEquippedAgents are the agents whose installers wire gtmux hooks, so their
@@ -80,6 +89,16 @@ var registry = func() map[string]Driver {
 	for _, k := range hookEquippedAgents {
 		m[k] = Driver{Name: k, Receipt: eventsReceipt, Ready: eventsReady}
 	}
+	// Content only where a transcript parser exists (internal/transcript's
+	// per-agent log readers) — a pure re-wiring of today's transcript.Load.
+	for _, k := range []string{"claude", "codex"} {
+		d := m[k]
+		key := k
+		d.Content = func(sessionID string, maxTurns int) ([]transcript.Turn, error) {
+			return transcript.Load(key, sessionID, maxTurns)
+		}
+		m[k] = d
+	}
 	return m
 }()
 
@@ -100,6 +119,9 @@ func For(agentKey string) Driver {
 	}
 	if !sw.enabled() || !sw.capOn(agentKey, "ready") {
 		d.Ready = nil
+	}
+	if !sw.enabled() || !sw.capOn(agentKey, "content") {
+		d.Content = nil
 	}
 	return d
 }

@@ -216,10 +216,13 @@ user's real terminal (see the `terminal-theme` capability). `source` is
 Byte-identical to `gtmux digest --json`: one row per agent carrying what a supervisor
 needs to triage — `goal` / `last` / `ask` on top of the radar's state. This is the
 `agent-digest` capability's wire form; the phone's HQ page reads it for the
-"who is blocked, and on what" decision cards.
+"who is blocked, and on what" decision cards. Each row also states its perception
+tier as `sense` (`driver` | `partial` | `screen`, additive + omitempty —
+agent-drivers): how much of the row rests on the agent's structured interfaces
+versus pure screen inference.
 
 ```
-200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62}, …]
+200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"}, …]
 403 {"error":"forbidden: not shared"}   // guest scope
 503 {"error":"digest unavailable"}      // DigestJSON dep not wired
 ```

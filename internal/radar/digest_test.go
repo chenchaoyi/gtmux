@@ -1,6 +1,7 @@
 package radar
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -70,5 +71,39 @@ func TestRoleForCwd(t *testing.T) {
 	}
 	if got := roleForCwd(filepath.Join(os.Getenv("HOME"), "code")); got != "" {
 		t.Errorf("other cwd role = %q", got)
+	}
+}
+
+// senseOf grades a row's perception tier from facts the digest already holds —
+// the agent-drivers contract addition (additive, omitempty).
+func TestSenseOf(t *testing.T) {
+	cases := []struct {
+		hooked, content bool
+		want            string
+	}{
+		{true, true, "driver"},
+		{true, false, "partial"},
+		{false, false, "screen"},
+	}
+	for _, c := range cases {
+		if got := senseOf(c.hooked, c.content); got != c.want {
+			t.Errorf("senseOf(%v,%v) = %q, want %q", c.hooked, c.content, got, c.want)
+		}
+	}
+}
+
+// The contract is additive: sense marshals as `sense`, is omitted when unset,
+// and no pre-existing key moves — an old consumer parses the row unchanged.
+func TestDigestRow_SenseIsAdditive(t *testing.T) {
+	b, err := json.Marshal(DigestRow{Agent: "claude", Source: "tmux", Status: "idle", Sense: "driver"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"sense":"driver"`) {
+		t.Fatalf("sense must marshal; got %s", b)
+	}
+	b, _ = json.Marshal(DigestRow{Agent: "claude", Source: "tmux", Status: "idle"})
+	if strings.Contains(string(b), "sense") {
+		t.Fatalf("an unset sense must be omitted; got %s", b)
 	}
 }
