@@ -139,9 +139,7 @@ func (e *restoreEnv) snap() snapshot {
 		cwds:    map[string]string{},
 		active:  map[string]string{},
 	}
-	for _, l := range e.lines("list-sessions", "-F", "#{session_name}") {
-		s.sessions = append(s.sessions, l)
-	}
+	s.sessions = append(s.sessions, e.lines("list-sessions", "-F", "#{session_name}")...)
 	sort.Strings(s.sessions)
 	for _, l := range e.lines("list-windows", "-a", "-F",
 		"#{session_name}\t#{window_index}\t#{window_name}\t#{window_layout}\t#{window_active}") {
