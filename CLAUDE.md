@@ -36,11 +36,16 @@ over one Go core (gtmux-core is the single data source):
   playbook v2 teaches enrollment (建联, goal-aware dossiers) and works on any agent
   (no background tail). `gtmux hq` also MIGRATES legacy CLAUDE.md-only homes now.
   **Wake DELIVERY is acked** (change `hq-wake-reliability`, `internal/hqnudge`): paste
-  + Enter as separate steps, one screen read to confirm, and a claim (`.txt` →
-  `.sending` rename) is deleted ONLY on that confirmation — any error or missed ack
-  requeues, a claim stranded >60s by a dead drainer is reclaimed, 3 unconfirmed
-  deliveries raise a CRITICAL `wake-degraded` (control record + desktop notification —
-  the alarm can't ride the broken channel). Delivery is therefore at-least-once: each
+  + Enter as separate steps, and a claim (`.txt` → `.sending` rename) is deleted ONLY
+  on confirmation. The ack is three layers (agent-drivers P2): the DRIVER RECEIPT
+  first — the HQ session's own `UserPromptSubmit` carrying the batch `#id` (the hook
+  records a wake batch's id as its event Summary; `hqwake.BatchID`) — then the screen
+  read (id in history, not draft); an id still in the DRAFT is the precise
+  swallowed-Enter verdict: the claim parks as `.stuck` and the next drain re-sends
+  ONLY Enter (draft must still hold the batch intact; bounded, never a re-paste, same
+  id). Any error or missed ack requeues, a claim stranded >60s by a dead drainer is
+  reclaimed, 3 unconfirmed deliveries raise a CRITICAL `wake-degraded` (control
+  record + desktop notification — the alarm can't ride the broken channel). Delivery is therefore at-least-once: each
   batch ends with `#<id>`, stable across a re-send, and playbook v3 tells HQ to ignore
   a repeated id. The queue drains by class priority (decision > outcome > standing),
   caps at 8 lines per batch + 200 entries, and is flushed by a 3s serve fast tick

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -45,6 +46,13 @@ func goalOf(raw string) string {
 func eventSummary(event, prompt, pane, agentSession, agentKey string) (summary, class string) {
 	switch event {
 	case "UserPromptSubmit":
+		// A submitted WAKE BATCH is gtmux's own line — the cleaning below drops it
+		// entirely (it must never become a goal) — but its trailing batch id IS worth
+		// recording: it is the wake channel's delivery receipt, matched by hqnudge's
+		// driver-receipt ack instead of a scroll-fragile screen read.
+		if id := hqwake.BatchID(prompt); id != "" {
+			return id, ""
+		}
 		// A "UserPromptSubmit" can carry harness-injected content (a task-notification,
 		// a system-reminder) or our OWN nudge echoed back — never a real goal. Filter it
 		// with the SAME sanitizer the transcript uses so it doesn't become a goal or a

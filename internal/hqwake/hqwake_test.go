@@ -242,3 +242,25 @@ func TestClaimResolved(t *testing.T) {
 		t.Fatal("past the TTL a fresh clear claims again")
 	}
 }
+
+// BatchID extracts a submitted wake batch's trailing id — and ONLY that: it is
+// the wake channel's delivery-receipt fingerprint (the hook records it as the
+// submission's Summary), so anything user-authored must yield "".
+func TestBatchID(t *testing.T) {
+	cases := []struct{ name, in, want string }{
+		{"single wake", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x" · #a3f1c2`, "#a3f1c2"},
+		{"coalesced batch", `» gtmux·waiting  %1 · » gtmux·crash  %2 · +3 more queued · #09fe12`, "#09fe12"},
+		{"trailing newline", "» gtmux·asks  %7 · #abc123\n", "#abc123"},
+		{"no id", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, ""},
+		{"not a wake line", "please ship the release · #a3f1c2", ""},
+		{"id not hex", `» gtmux·done  %14 · #ZZZZZZ`, ""},
+		{"id wrong length", `» gtmux·done  %14 · #a3f1`, ""},
+		{"user text after id", "» gtmux·done  %14 · #a3f1c2\nand my own note", ""},
+		{"empty", "", ""},
+	}
+	for _, c := range cases {
+		if got := BatchID(c.in); got != c.want {
+			t.Errorf("%s: BatchID(%q) = %q, want %q", c.name, c.in, got, c.want)
+		}
+	}
+}

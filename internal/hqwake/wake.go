@@ -234,3 +234,35 @@ func PullHint(now, sinceSeq int64) string {
 	}
 	return fmt.Sprintf("pull overdue — run: gtmux events --since-seq %d --json", sinceSeq)
 }
+
+// BatchID extracts the trailing wake-batch id (`… · #a3f1c2`) from a submitted
+// wake batch — the line hqnudge types, which always OPENS with the wake sigil and
+// CLOSES with the id. "" for anything else. The hook records this id as the
+// UserPromptSubmit Summary of a wake submission: the batch text itself is
+// stripped as gtmux's own echo (it must never read back as a user prompt or
+// goal), but its id becomes the wake channel's delivery receipt — hqnudge
+// confirms a delivery from the HQ session's own submit event instead of a
+// scroll-fragile screen read (openspec agent-drivers P2).
+func BatchID(s string) string {
+	t := strings.TrimSpace(s)
+	if !strings.HasPrefix(t, Sigil+" gtmux·") {
+		return ""
+	}
+	j := strings.LastIndex(t, "#")
+	if j < 0 || !strings.HasSuffix(t[:j], " · ") {
+		return ""
+	}
+	id := t[j:]
+	if len(id) != 1+batchIDHexLen {
+		return ""
+	}
+	for i := 1; i < len(id); i++ {
+		if c := id[i]; (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return ""
+		}
+	}
+	return id
+}
+
+// batchIDHexLen is the hex length of a wake batch id (hqnudge.batchID's cut).
+const batchIDHexLen = 6

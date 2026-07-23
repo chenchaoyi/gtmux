@@ -58,6 +58,21 @@ func TestEventSummary_PromptHead(t *testing.T) {
 	}
 }
 
+// A submitted WAKE BATCH records its trailing id as the Summary — the wake
+// channel's delivery receipt (hqnudge confirms the batch from this event) — while
+// the batch text itself stays dropped (it must never become a goal).
+func TestEventSummary_WakeBatchRecordsItsID(t *testing.T) {
+	sum, class := eventSummary("UserPromptSubmit",
+		`» gtmux·done  gtmux:0.0 (%14) │ goal:"x" · #a3f1c2`, "", "", "claude")
+	if sum != "#a3f1c2" || class != "" {
+		t.Fatalf("wake batch summary = %q/%q, want the batch id", sum, class)
+	}
+	// A wake line WITHOUT an id (a stray echo, not a delivered batch) stays silent.
+	if sum, _ := eventSummary("UserPromptSubmit", "» gtmux·done  %14", "", "", "claude"); sum != "" {
+		t.Fatalf("an id-less wake echo must record nothing, got %q", sum)
+	}
+}
+
 // A UserPromptSubmit carrying a system-injected block (task-notification, our own
 // nudge) must yield NO summary — so it never becomes a goal or a goal-changed nudge.
 func TestEventSummary_DropsInjectedPrompt(t *testing.T) {

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/driver"
 )
 
 // boxWith renders a minimal HQ TUI capture's input box holding draft.
@@ -29,10 +31,12 @@ type fake struct {
 	draft     string   // what sits in the input box (user text and/or our paste)
 	history   []string // submitted lines, oldest first
 	sent      []string // payloads that actually reached history — the deliveries
+	pastes    int      // paste invocations (the never-re-paste asserts)
 	slept     int
 	base      int64 // clock origin (0 → a fixed fake epoch)
 	nano      int64
 	onCapture func(f *fake) // mutate state between frames (the race tests)
+	receipt   func(pane, needle string, since int64) driver.Verdict
 }
 
 func (f *fake) capture(string) string {
@@ -61,6 +65,7 @@ func (f *fake) io() io {
 		capture:     f.capture,
 		captureFull: f.captureFull,
 		paste: func(_, t string) error {
+			f.pastes++
 			if f.pasteErr != nil {
 				return f.pasteErr
 			}
@@ -82,6 +87,7 @@ func (f *fake) io() io {
 		sleep:   func() { f.slept++ },
 		nowNano: func() int64 { f.nano++; return base + f.nano },
 		inMode:  func(string) bool { return f.inMode },
+		receipt: f.receipt,
 	}
 }
 
@@ -103,6 +109,18 @@ func claimCount(t *testing.T) int {
 	n := 0
 	for _, e := range entries {
 		if strings.HasSuffix(e.Name(), sendingSuffix) {
+			n++
+		}
+	}
+	return n
+}
+
+func stuckCount(t *testing.T) int {
+	t.Helper()
+	entries, _ := os.ReadDir(queueDir())
+	n := 0
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), stuckSuffix) {
 			n++
 		}
 	}
@@ -332,20 +350,29 @@ func TestDrain_EnterError_Requeues(t *testing.T) {
 	}
 }
 
-// A swallowed Enter (reported success, nothing submitted) leaves the paste in the box:
-// the ack finds the id in the DRAFT, not history, which is the opposite of delivered.
-func TestDrain_SwallowedEnter_NotAcked(t *testing.T) {
+// A swallowed Enter (reported success, nothing submitted) leaves the paste in the
+// box: the ack finds the id in the DRAFT — the precise unsubmitted verdict. The
+// batch is PARKED for the Enter-only repair, not requeued (a requeue would strand
+// the channel behind our own paste at the draft-guard).
+func TestDrain_SwallowedEnter_ParksForEnterRepair(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{swallow: true}
 	deliver(f.io(), "%hq", "swallowed")
 	if len(f.sent) != 0 {
 		t.Fatalf("nothing reached history; sent=%v", f.sent)
 	}
-	if queuedCount(t) != 1 {
-		t.Fatalf("an unacked delivery must stay queued; queued=%d", queuedCount(t))
+	if queuedCount(t) != 0 || stuckCount(t) != 1 {
+		t.Fatalf("an unsubmitted delivery parks as .stuck; queued=%d stuck=%d",
+			queuedCount(t), stuckCount(t))
 	}
-	if readFailCount() != 1 {
-		t.Fatalf("an unacked delivery counts as a failure; fails=%d", readFailCount())
+	if _, ok := readRepair(); !ok {
+		t.Fatal("a parked batch must record its Enter-repair state")
+	}
+	if !Pending() {
+		t.Fatal("a parked batch is pending work — the fast tick must keep draining")
+	}
+	if readFailCount() != 0 {
+		t.Fatalf("parking is not a failure yet (the repair answers it); fails=%d", readFailCount())
 	}
 }
 
@@ -465,7 +492,7 @@ func TestAck_MatchesAWrappedSubmittedLine(t *testing.T) {
 		sleep: func() {},
 	}
 	payload := `» gtmux·done  gtmux:0.0 (%14) │ 3m │ goal:"ship the wake fix" · #a3f1c2`
-	if got := deliverPayload(x, "%hq", payload, "#a3f1c2"); got != delivered {
+	if got := deliverPayload(x, "%hq", payload, "#a3f1c2", 0); got != delivered {
 		t.Fatalf("a wrapped submitted line must still ack; got %v", got)
 	}
 }
@@ -731,5 +758,147 @@ func TestDeliver_FaintGhostDoesNotHoldNudge(t *testing.T) {
 	}
 	if queuedCount(t) != 1 {
 		t.Fatalf("the nudge should be queued behind the real draft; queued=%d", queuedCount(t))
+	}
+}
+
+// ── P2: three-layer ack + Enter-only repair (agent-drivers) ──────────────────
+
+// The REAL incident, replayed end-to-end: paste lands, Enter is swallowed, the
+// batch sits in the box. Before P2 that meant `unacked` → requeue → every later
+// drain blocked at the draft-guard behind our OWN paste → the fail counter froze
+// → only the 10-minute stale check escalated. Now the batch parks for the
+// Enter-only repair and the NEXT drain (the 3s fast tick) finishes the delivery.
+func TestDrain_SwallowedEnter_RepairedOnNextTick(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» gtmux·crash  gtmux:0.2 (%31)")
+	if stuckCount(t) != 1 || len(f.sent) != 0 {
+		t.Fatalf("swallowed Enter must park the batch; stuck=%d sent=%v", stuckCount(t), f.sent)
+	}
+	f.swallow = false // the TUI accepts the next Enter
+	drain(f.io(), "%hq")
+	if len(f.sent) != 1 || body(t, f.sent[0]) != "» gtmux·crash  gtmux:0.2 (%31)" {
+		t.Fatalf("the repair must SUBMIT the stranded batch; sent=%v", f.sent)
+	}
+	if f.pastes != 1 {
+		t.Fatalf("the repair is Enter-ONLY — one paste ever; pastes=%d", f.pastes)
+	}
+	if queuedCount(t) != 0 || stuckCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("a repaired delivery leaves nothing behind; queued=%d stuck=%d claims=%d",
+			queuedCount(t), stuckCount(t), claimCount(t))
+	}
+	if _, ok := readRepair(); ok {
+		t.Fatal("the repair record must be cleared")
+	}
+	if readFailCount() != 0 {
+		t.Fatalf("a repaired delivery is a success; fails=%d", readFailCount())
+	}
+}
+
+// The repair submits ONLY gtmux's own intact batch. A draft the user has edited
+// (or replaced) is never Entered — the batch is handed back to the normal
+// requeue path and the miss counts toward wake-degraded.
+func TestRepair_EditedDraft_NeverEnters(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» gtmux·waiting  %14")
+	f.swallow = false
+	f.draft = "user took over the box" // the stranded paste is gone
+	drain(f.io(), "%hq")
+	if len(f.sent) != 0 || f.draft != "user took over the box" {
+		t.Fatalf("a user draft must never be submitted; sent=%v draft=%q", f.sent, f.draft)
+	}
+	if queuedCount(t) != 1 || stuckCount(t) != 0 {
+		t.Fatalf("the batch is handed back to the queue; queued=%d stuck=%d",
+			queuedCount(t), stuckCount(t))
+	}
+	if _, ok := readRepair(); ok {
+		t.Fatal("an abandoned repair must clear its record")
+	}
+	if readFailCount() != 1 {
+		t.Fatalf("an abandoned repair counts as an unconfirmed delivery; fails=%d", readFailCount())
+	}
+}
+
+// The user pressing Enter on our stranded batch completes the delivery: the
+// repair confirms it (id in history) and cleans up without typing anything.
+func TestRepair_UserSubmittedTheBatch_Confirms(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» gtmux·asks  %14")
+	f.history = append(f.history, f.draft) // the user hits Enter for us
+	f.draft = ""
+	drain(f.io(), "%hq")
+	if len(f.sent) != 0 { // OUR enter never ran — nothing moved through the fake's enter
+		t.Fatalf("nothing should be typed; sent=%v", f.sent)
+	}
+	if queuedCount(t) != 0 || stuckCount(t) != 0 {
+		t.Fatalf("a user-completed delivery leaves nothing behind; queued=%d stuck=%d",
+			queuedCount(t), stuckCount(t))
+	}
+	if readFailCount() != 0 {
+		t.Fatalf("delivered is delivered; fails=%d", readFailCount())
+	}
+}
+
+// A TUI that eats every repair Enter: the repair is bounded, then the batch goes
+// back to the normal (bounded, degraded-counted) unacked path — never an
+// unbounded Enter loop.
+func TestRepair_ExhaustedHandsBack(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» gtmux·done  %14")
+	for i := 0; i < enterRepairMaxAttempts; i++ {
+		drain(f.io(), "%hq")
+	}
+	if _, ok := readRepair(); ok {
+		t.Fatal("the repair must give up after its budget")
+	}
+	if queuedCount(t) != 1 || stuckCount(t) != 0 {
+		t.Fatalf("the batch is handed back for the normal retry path; queued=%d stuck=%d",
+			queuedCount(t), stuckCount(t))
+	}
+	if readFailCount() != 1 {
+		t.Fatalf("giving up counts once toward wake-degraded; fails=%d", readFailCount())
+	}
+	if f.pastes != 1 {
+		t.Fatalf("still never a re-paste; pastes=%d", f.pastes)
+	}
+}
+
+// The driver receipt confirms a delivery even when the screen ack is blind (HQ's
+// reply scrolled the line out of capture reach) — the pre-P2 false "unacked".
+func TestDeliver_ReceiptConfirms_ScreenBlind(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	var gotPane, gotNeedle string
+	var gotSince int64
+	f := &fake{ackBlind: true}
+	f.receipt = func(pane, needle string, since int64) driver.Verdict {
+		gotPane, gotNeedle, gotSince = pane, needle, since
+		return driver.Confirmed
+	}
+	deliver(f.io(), "%hq", "» gtmux·done  %14")
+	if len(f.sent) != 1 {
+		t.Fatalf("the line was submitted; sent=%v", f.sent)
+	}
+	if queuedCount(t) != 0 || claimCount(t) != 0 || readFailCount() != 0 {
+		t.Fatalf("a receipt-confirmed delivery is final; queued=%d claims=%d fails=%d",
+			queuedCount(t), claimCount(t), readFailCount())
+	}
+	if gotPane != "%hq" || gotNeedle != strings.TrimSpace(idOf(t, f.sent[0])) || gotSince <= 0 {
+		t.Fatalf("the receipt is asked for THIS batch id on THIS pane since the paste; pane=%q needle=%q since=%d",
+			gotPane, gotNeedle, gotSince)
+	}
+}
+
+// NoEvidence defers to the screen (I2) — it must never change the screen verdict.
+func TestDeliver_ReceiptNoEvidence_ScreenStillJudges(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{}
+	f.receipt = func(string, string, int64) driver.Verdict { return driver.NoEvidence }
+	deliver(f.io(), "%hq", "» gtmux·waiting  %14")
+	if len(f.sent) != 1 || queuedCount(t) != 0 || readFailCount() != 0 {
+		t.Fatalf("the screen ack still confirms a healthy delivery; sent=%v queued=%d fails=%d",
+			f.sent, queuedCount(t), readFailCount())
 	}
 }
