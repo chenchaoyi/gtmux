@@ -220,9 +220,15 @@ func TestPaneIDRe(t *testing.T) {
 	}
 }
 
-// TestShouldRecover: drive a resurrect restore into a running server only when
-// the save has sessions and NONE are live (a fresh post-reboot server). If any
-// saved session is already present, do nothing (normal reattach; no duplicates).
+// TestShouldRecover: drive a resurrect restore into a running server whenever ANY saved
+// session is missing from it.
+//
+// This used to require that NONE were live, and that made the common case unrecoverable:
+// after a reboot a terminal tab reopens and starts ONE saved session, so recovery was
+// skipped and every OTHER saved session stayed gone for good (the next autosave then
+// recorded their absence). One session was lost on two consecutive days that way — it
+// just wasn't the one that came back on its own. Recovering alongside live sessions is
+// safe: resurrect only creates sessions/windows that don't already exist.
 func TestShouldRecover(t *testing.T) {
 	saved := []string{"Diting", "Pica", "Rodi"}
 	cases := []struct {
@@ -232,8 +238,11 @@ func TestShouldRecover(t *testing.T) {
 	}{
 		{"empty server (post-reboot)", map[string]bool{}, true},
 		{"only an unrelated stray session", map[string]bool{"main": true}, true},
-		{"a saved session already live", map[string]bool{"Pica": true}, false},
-		{"all saved sessions live (normal reattach)", map[string]bool{"Diting": true, "Pica": true, "Rodi": true}, false},
+		{"ONE saved session came back on its own — the rest must still be recovered",
+			map[string]bool{"Pica": true}, true},
+		{"a saved session live plus a stray", map[string]bool{"Pica": true, "main": true}, true},
+		{"all saved sessions live (normal reattach — nothing to do)",
+			map[string]bool{"Diting": true, "Pica": true, "Rodi": true}, false},
 	}
 	for _, c := range cases {
 		if got := shouldRecover(saved, c.live); got != c.want {

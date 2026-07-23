@@ -205,3 +205,69 @@ record that can never be resumed must not pin the pane.
 - **WHEN** the recorded conversation's log no longer exists on disk
 - **THEN** another session may claim the pane, rather than the pane staying bound to a
   conversation that can never be resumed
+
+### Requirement: Restore is defined by a contract, and the contract is executed
+
+The system SHALL define what restore preserves as an enumerated contract, and SHALL verify
+each machine-verifiable dimension automatically by saving a known session topology,
+destroying the server, restoring, and asserting that dimension. Verification SHALL drive a
+real terminal multiplexer rather than a substitute, because the failures being guarded
+against arise in the interaction between the system, the save/restore tool and a live
+server — the part a substitute removes. Verification SHALL be confined to a private server
+and a private save location, so it can never affect the operator's own sessions or saves.
+The contract SHALL state which dimensions are NOT machine-verifiable rather than omitting
+them, so its coverage is not overstated.
+
+The enumerated dimensions are: the set of sessions; each session's window order and names;
+each window's pane layout; each pane's working directory; and the active window and pane
+per session. The order of a host terminal's own windows is part of the contract but is NOT
+machine-verifiable and remains a manual check.
+
+#### Scenario: A dimension regresses
+
+- **WHEN** a change breaks any machine-verifiable dimension of restore
+- **THEN** the verification fails and names the dimension that broke
+
+#### Scenario: Verification cannot harm live work
+
+- **WHEN** the verification runs on a machine with live sessions and existing saves
+- **THEN** neither is read, modified, or destroyed
+
+### Requirement: A running server missing saved sessions has them restored
+
+When a server is already running and ANY saved session is absent from it, the system SHALL
+restore the absent ones. It SHALL NOT require that ALL saved sessions be absent: after a
+restart something routinely starts one session on its own, and requiring all-absent made
+that the condition under which the remaining sessions were never recovered — permanently,
+once the next autosave recorded their absence. Restoring alongside live sessions is safe
+because the save/restore tool creates only what does not already exist.
+
+#### Scenario: One session came back on its own
+
+- **WHEN** a running server holds one saved session and is missing the others
+- **THEN** the missing ones are restored
+
+#### Scenario: Nothing is missing
+
+- **WHEN** every saved session is already live
+- **THEN** no restore is driven
+
+### Requirement: Restore returns you to the window and pane you were on
+
+The system SHALL restore each session's active window and that window's active pane. It
+SHALL NOT rely on a mechanism that requires an attached client, because restore runs
+headlessly — before any client attaches — and such a mechanism silently does nothing,
+leaving every session on its first window regardless of where the user was working. Where a
+save records no active window for a session, the system SHALL leave that session alone
+rather than selecting a default, since selecting the first window is indistinguishable from
+the failure being corrected.
+
+#### Scenario: A session was left on a later window
+
+- **WHEN** a session was saved with a non-first window active
+- **THEN** after restore that window is active, and within it the pane that was active
+
+#### Scenario: The save records no active window
+
+- **WHEN** a save marks no active window for a session
+- **THEN** no window is selected for it
