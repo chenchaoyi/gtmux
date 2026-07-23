@@ -106,6 +106,26 @@ gtmux × resurrect × 真 server 的交互里，mock 会把它删掉。
 - 断言 tmux layout 字符串时，**永远先归一化 pane id**，否则你测的是 pane 编号不是布局。
 
 
+## release 里拿不到 tag message（`{{ .TagBody }}` 变成了 PR 描述）
+
+**症状** —— tag 上明明写了 `user:` 段（`git tag -l --format='%(contents:body)' vX` 本地看得到），
+但 GitHub Release 的正文里是**那次 squash merge 的 commit body（也就是 PR 描述）**，`user:` 段
+根本没出现，于是 `gtmux update` 的「本次更新」什么都不印。
+
+**根因** —— `actions/checkout` 把 tag 留成**轻量 ref**。`%(contents:body)`（GoReleaser 的
+`{{ .TagBody }}` 就取这个）在轻量 tag 上会**回退到 commit message**，而 squash merge 的 commit
+body 正是 PR 描述。整条链路不报错，只是悄悄换了内容。
+
+**修法** —— checkout 之后补一句：
+```yaml
+- run: git fetch --force --tags
+```
+
+**必查**
+- 发版后**确认 release 正文里有 `user:` 段**，别只看 workflow 绿了。
+- 任何依赖 tag message 的 CI 逻辑，都要先 `git fetch --force --tags`。
+
+
 ## Release / git-ops
 
 ### Never inline backtick-containing prose into a shell-substituted string
