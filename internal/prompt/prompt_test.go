@@ -34,10 +34,14 @@ func TestParseOptions_PlainAndSelectorVariants(t *testing.T) {
 	}
 }
 
+// NOTE on the ❯ in these fixtures: an option run must now carry a selector glyph to be
+// read as a MENU. Without one it is a numbered LIST in prose, and presenting that as an
+// approval card offers choices the agent never made. These fixtures gained the glyph
+// because they were always meant to describe real menus.
 func TestParseOptions_LatestMenuWins(t *testing.T) {
 	// An older menu scrolled up, a fresh one below — the fresh run (restart at 1)
 	// must win, not a concatenation.
-	text := "1. old-a\n2. old-b\n... lots of output ...\n1. new-a\n2. new-b\n3. new-c"
+	text := "❯ 1. old-a\n2. old-b\n... lots of output ...\n❯ 1. new-a\n2. new-b\n3. new-c"
 	got := ParseOptions(text)
 	want := []Option{{1, "new-a"}, {2, "new-b"}, {3, "new-c"}}
 	if !reflect.DeepEqual(got, want) {
@@ -66,7 +70,7 @@ func TestParseOptions_StripsOSCHyperlinks(t *testing.T) {
 	// Claude Code wraps file paths in OSC 8 hyperlinks; strip them too.
 	esc := "\x1b"
 	bel := "\x07"
-	text := "1. open " + esc + "]8;;file:///tmp/a.go" + bel + "a.go" + esc + "]8;;" + bel + " now"
+	text := "❯ 1. open " + esc + "]8;;file:///tmp/a.go" + bel + "a.go" + esc + "]8;;" + bel + " now"
 	got := ParseOptions(text)
 	want := []Option{{1, "open a.go now"}}
 	if !reflect.DeepEqual(got, want) {
@@ -82,7 +86,7 @@ func TestParseOptions_None(t *testing.T) {
 
 func TestParseOptions_GapBreaksRun(t *testing.T) {
 	// "3." without a preceding 2. must not attach to option 1.
-	text := "1. only\nsome noise\n3. orphan"
+	text := "❯ 1. only\nsome noise\n3. orphan"
 	got := ParseOptions(text)
 	want := []Option{{1, "only"}}
 	if !reflect.DeepEqual(got, want) {
@@ -204,5 +208,42 @@ func TestHasBootBanner(t *testing.T) {
 	}
 	if hasBootBanner("normal idle\n❯ ", "") {
 		t.Error("a clean idle screen has no boot banner")
+	}
+}
+
+// The reported bug: a pane genuinely WAITING on a free-form question, whose recent output
+// happened to contain a numbered list, showed that list as an approval menu — "choices"
+// the agent never offered, on a card that invites a single keypress to answer with.
+//
+// The discriminator was already named in prompt.go (selectorGlyphs) and used for
+// waiting-detection; the parser itself matched any "1. …" anywhere on screen.
+func TestParseOptions_ProseListIsNotAMenu(t *testing.T) {
+	prose := "Here's what's left:\n" +
+		"1. 雷达不该做 per-pane exec。\n" +
+		"2. attach 的 8s 超时 + 误导性错误。\n" +
+		"3. Ghostty 窗口顺序（机器验不了）\n" +
+		"\nWhich should I do next?"
+	if got := ParseOptions(prose); got != nil {
+		t.Errorf("a prose list became a menu: %#v", got)
+	}
+}
+
+// ...while a real menu on the same screen still parses. The guard must not cost us the
+// actual approval card.
+func TestParseOptions_RealMenuStillParsesAfterProse(t *testing.T) {
+	text := "Here's what's left:\n1. a thing\n2. another\n\n" +
+		"Do you want to proceed?\n❯ 1. Yes\n  2. Yes, and don't ask again\n  3. No"
+	got := ParseOptions(text)
+	want := []Option{{1, "Yes"}, {2, "Yes, and don't ask again"}, {3, "No"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %#v; want the real menu", got)
+	}
+}
+
+// The selector may sit on a row other than the first — only ONE row is highlighted.
+func TestParseOptions_SelectorOnALaterRow(t *testing.T) {
+	got := ParseOptions("Continue?\n  1. Yes\n❯ 2. No")
+	if len(got) != 2 {
+		t.Fatalf("got %#v; want both options — the run carries a glyph on row 2", got)
 	}
 }
