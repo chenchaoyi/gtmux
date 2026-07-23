@@ -6,17 +6,19 @@ import (
 	"testing"
 )
 
-// TestRegistryMatchesFormerHookAgents pins the P0 zero-behavior guarantee: the
-// registry's hook-equipped set is exactly the former dispatchbridge hookAgents
-// whitelist — no agent gained or lost the event-first verify path in the move.
+// TestRegistryMatchesFormerHookAgents pins the migration guarantee: the set of
+// agents whose Receipt is registered (the event-first verify path) is exactly the
+// former dispatchbridge hookAgents whitelist — no agent gained or lost the
+// event-first verify path across P0 (HookEquipped fact) → P1 (Receipt capability).
 func TestRegistryMatchesFormerHookAgents(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // no user config: all-on defaults
 	former := []string{
 		"claude", "codex", "gemini", "cursor",
 		"cursor-agent", "opencode", "copilot", "kiro",
 	}
 	for _, k := range former {
-		if !For(k).HookEquipped {
-			t.Errorf("For(%q).HookEquipped = false; the former whitelist had it", k)
+		if For(k).Receipt == nil {
+			t.Errorf("For(%q).Receipt = nil; the former whitelist had it hook-equipped", k)
 		}
 	}
 	if len(registry) != len(former) {
@@ -25,8 +27,9 @@ func TestRegistryMatchesFormerHookAgents(t *testing.T) {
 }
 
 func TestUnknownAgentIsLayerOne(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	d := For("mystery-agent")
-	if d.HookEquipped || d.Receipt != nil {
+	if d.Receipt != nil {
 		t.Errorf("unknown agent must resolve to the zero (Layer-1) driver, got %+v", d)
 	}
 	if d.Name != "mystery-agent" {
@@ -34,13 +37,20 @@ func TestUnknownAgentIsLayerOne(t *testing.T) {
 	}
 }
 
-// TestSwitchesDoNotAffectHookEquipped pins that the capability switches never
-// touch the baseline hook-equipped fact (design §5): pre-driver behavior is not
-// gated by driver config.
-func TestSwitchesDoNotAffectHookEquipped(t *testing.T) {
-	writeConfig(t, `{"driver": {"enable": false, "claude": {"receipt": false}}}`)
-	if !For("claude").HookEquipped {
-		t.Error("driver.enable=false must not strip the baseline HookEquipped fact")
+// TestSwitchForcesLayerOne pins design §5: turning the receipt capability off —
+// per-agent or via the global enable — strips Receipt, so delivery verification
+// runs the pure Layer-1 screen path for that agent.
+func TestSwitchForcesLayerOne(t *testing.T) {
+	writeConfig(t, `{"driver": {"claude": {"receipt": false}}}`)
+	if For("claude").Receipt != nil {
+		t.Error("driver.claude.receipt=false must strip Receipt (pure Layer-1 path)")
+	}
+	if For("codex").Receipt == nil {
+		t.Error("a per-agent switch must not touch other agents")
+	}
+	writeConfig(t, `{"driver": {"enable": false}}`)
+	if For("claude").Receipt != nil || For("codex").Receipt != nil {
+		t.Error("driver.enable=false must strip every capability")
 	}
 }
 

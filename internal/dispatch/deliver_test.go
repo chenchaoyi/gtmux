@@ -505,3 +505,78 @@ func TestEvidenceTail(t *testing.T) {
 		t.Fatalf("evidence should keep the last 12 lines, got %d", strings.Count(got, "line"))
 	}
 }
+
+// --- P1: receipt arbitration (openspec agent-drivers) ---
+
+// The REAL misjudgment timeline, replayed (task 1.6): the payload carries a prefix
+// the hook-side cleaning strips (here a gtmux wake line), so under the old
+// dual-track normalization the event head and the verifier's needle never matched —
+// the genuine UserPromptSubmit sat in the stream while the screen fallback (history
+// scrolled away) ran out the clock and reported NOT delivered. With the single
+// NormalizeNeedle pipeline the event confirms it.
+func TestDeliver_StrippablePrefix_EventStillMatches(t *testing.T) {
+	payload := "» gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地"
+	f := &fakeIO{
+		caps: []string{boxDraftLines("» gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"", "继续 P2，按 tasks.md 逐项落地")},
+		// The event Summary is what the hook records: the needle pipeline's output.
+		evs: []Ev{{Kind: EvSubmit, Head: NormalizeNeedle(payload), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, payload)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("the stream proved the landing; got %+v", r)
+	}
+	if r.JudgedBy != JudgedByDriver {
+		t.Fatalf("JudgedBy = %q, want driver", r.JudgedBy)
+	}
+}
+
+// A submit event that arrives BETWEEN the last poll and the deadline must not be
+// lost to the timeout: the final receipt re-check reads the stream once more before
+// any failure verdict (invariant I2 — screen evidence cannot outrank a
+// stream-confirmed landing).
+func TestDeliver_TimeoutRecheck_LateEventNotLost(t *testing.T) {
+	const deadline = 6
+	f := &fakeIO{caps: []string{
+		boxDraft(taskText),           // paste guard: draft holds the payload
+		boxEmpty("scrolled history"), // then the text is nowhere on screen
+	}}
+	io := f.io()
+	// Screen reads cost time (the real 300ms cadence): each capture advances the
+	// clock, so the deadline lands between an event scan and the deadline check.
+	baseCap := io.Capture
+	io.Capture = func() string { f.clock += 2; return baseCap() }
+	// The submit event only becomes visible at/after the deadline moment.
+	io.Events = func(since int64) []Ev {
+		if f.clock < deadline {
+			return nil
+		}
+		return []Ev{{Kind: EvSubmit, Head: NormalizeNeedle(taskText), Ts: deadline}}
+	}
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: deadline}, taskText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("late event must be caught by the final re-check, got %+v", r)
+	}
+	if r.JudgedBy != JudgedByDriver {
+		t.Fatalf("JudgedBy = %q, want driver", r.JudgedBy)
+	}
+}
+
+// Attribution: a screen-confirmed landing and a screen-judged failure both say so.
+func TestDeliver_JudgedByScreen_Attributed(t *testing.T) {
+	// Hook-less two-frame landing → screen.
+	f := &fakeIO{caps: []string{
+		boxDraft(taskText),
+		boxEmpty("me: " + taskText),
+		boxEmpty("me: " + taskText),
+	}}
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 10}, taskText)
+	if !r.Delivered || r.JudgedBy != JudgedByScreen {
+		t.Fatalf("screen landing must be attributed to screen, got %+v", r)
+	}
+	// Hook-equipped timeout with a silent stream → the failure is the screen's call.
+	f2 := &fakeIO{caps: []string{boxDraft(taskText), boxDraft(taskText)}}
+	r2 := Deliver(f2.io(), Opts{Pane: "%1", HookEquipped: true, HookGrace: 100, DeliverTimeout: 3}, taskText)
+	if r2.Delivered || r2.JudgedBy != JudgedByScreen {
+		t.Fatalf("timeout failure must be attributed to screen, got %+v", r2)
+	}
+}

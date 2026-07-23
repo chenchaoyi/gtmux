@@ -212,6 +212,15 @@ digest 每行新增可选字段 `sense`,标注该行的感知档位(加法,omite
 不动:paste/Enter 分步、片段守卫、re-send interlock、`PasteAndSubmit`
 (API/`--no-verify` 路径)、超时与重试参数。
 
+实现注记(P1 落地校准):①`NormalizeNeedle` 落在 `dispatch` 包(dispatch 依赖
+transcript 叶子;driver 依赖 dispatch 的纯匹配函数,dispatch 永不依赖 driver——
+Deliver 的事件证据经 `dispatch.IO.Events` 注入,保持无环与可注入测试)。
+②events 回执对**全部 hook-equipped agent** 注册同一实现:证据是 gtmux 自己的
+hook 写入的流记录,与 agent 无关——只注册 Claude/Codex 会让其余 hook agent 丢失
+既有事件优先校验(违反零回归);司令拍板点(Codex 不延后)被此超集覆盖。
+③事件流看不见草稿,`eventsReceipt` 只产 Confirmed/NoEvidence;`Unsubmitted`
+的生产者是能看见"paste 在、submit 无"的证据源(P2 wake 的 draft 检查)。
+
 ### 2.2 wake ack —— `hq-wake-reliability` 的扩展(P2)
 
 **定位:显式扩展已归档的 `hq-wake-reliability`,只换 ack 的证据来源;队列、

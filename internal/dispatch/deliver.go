@@ -14,12 +14,21 @@ const (
 	StateRefusedDup State = "refused-duplicate" // identical payload re-sent inside the window
 )
 
+// JudgedBy values — which evidence layer decided a delivery's outcome. Attributed
+// so a misjudgment can be pinned to its layer instead of reconstructed from
+// timelines (openspec change agent-drivers).
+const (
+	JudgedByDriver = "driver" // deterministic agent evidence (submit event on the stream)
+	JudgedByScreen = "screen" // Layer-1 screen read (two-frame fallback / timeout)
+)
+
 // Result is what Deliver returns. Delivered is true ONLY for StateLanded.
 type Result struct {
 	Delivered bool
 	State     State
 	Evidence  string // capture tail on failure, or a short note
 	Attempts  int    // submit (Enter) attempts made
+	JudgedBy  string // JudgedByDriver | JudgedByScreen ("" when refused before judging)
 }
 
 // Event kinds carried by IO.Events (mapped from the session-events stream).
@@ -90,7 +99,11 @@ func (o *Opts) fillDefaults() {
 // hq-dispatch design for the full state machine.
 func Deliver(io IO, opts Opts, text string) Result {
 	opts.fillDefaults()
-	head := NormalizeHead(text)
+	// The event needle rides the SAME pipeline as the hook-recorded Summary
+	// (NormalizeNeedle) so a cleaning difference can never make the verifier
+	// ignore a genuine submit event. Screen comparisons keep using the raw text —
+	// the screen shows what was pasted, uncleaned.
+	head := NormalizeNeedle(text)
 
 	// 1 · Re-send interlock (incident ⑨): refuse an identical payload within the window.
 	if !opts.Force && io.RecentSend != nil &&
@@ -102,7 +115,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 
 	// 2·3 · Paste with the fragment guard (incident ③).
 	if !pasteWithGuard(io, opts, text) {
-		return Result{State: StateFailed, Evidence: evidenceTail(io.Capture())}
+		return Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), JudgedBy: JudgedByScreen}
 	}
 	if io.RecordSend != nil {
 		io.RecordSend(opts.Pane, PayloadHash(opts.Pane, text), io.Now())
@@ -124,19 +137,15 @@ func Deliver(io IO, opts Opts, text string) Result {
 		first = false
 
 		// PRIMARY — deterministic hook evidence (no screen-read needed).
-		if opts.HookEquipped && io.Events != nil {
-			for _, e := range io.Events(start) {
-				if e.Kind == EvSubmit && headsMatch(e.Head, head) {
-					return Result{Delivered: true, State: StateLanded, Attempts: attempts}
-				}
-			}
+		if submitConfirmed(io, opts, head, start) {
+			return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByDriver}
 		}
 
 		screen := io.Capture()
 
 		// A queued submission is a distinct, reported outcome (incident ④).
 		if looksQueued(screen) {
-			return Result{State: StateQueued, Attempts: attempts}
+			return Result{State: StateQueued, Attempts: attempts, JudgedBy: JudgedByScreen}
 		}
 
 		// FALLBACK — hardened, two-frame screen-read (hook-less agent, or the hook
@@ -149,7 +158,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 			// Only a verdict that AGREES with the previous frame is trusted (defeats the
 			// single-frame ctx%/compact-bar misread, incident ⑩).
 			if landed && prevLanded {
-				return Result{Delivered: true, State: StateLanded, Attempts: attempts}
+				return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByScreen}
 			}
 			if inDraft && prevInDraft && attempts <= opts.EnterRetries &&
 				io.Now()-lastEnter >= backoff(attempts) {
@@ -161,9 +170,34 @@ func Deliver(io IO, opts Opts, text string) Result {
 		}
 
 		if io.Now() >= deadline {
-			return Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts}
+			// FINAL receipt re-check (invariant I2): a submit event that arrived between
+			// the last poll and the deadline must not be lost to the timeout — this was a
+			// real misjudgment source ("NOT delivered" reported while UserPromptSubmit sat
+			// in the stream). Only after this re-read may the screen's failure verdict
+			// stand; a stream-confirmed landing is final.
+			if submitConfirmed(io, opts, head, start) {
+				return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByDriver}
+			}
+			return Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen}
 		}
 	}
+}
+
+// submitConfirmed scans the pane's event stream for a submit event whose recorded
+// head matches the delivery needle — the deterministic receipt that both the verify
+// loop and the pre-failure final re-check consult. False when the event channel is
+// absent or silent, which is NEVER failure evidence — the judgment falls to the
+// screen (I2).
+func submitConfirmed(io IO, opts Opts, head string, since int64) bool {
+	if !opts.HookEquipped || io.Events == nil {
+		return false
+	}
+	for _, e := range io.Events(since) {
+		if e.Kind == EvSubmit && HeadsMatch(e.Head, head) {
+			return true
+		}
+	}
+	return false
 }
 
 // PasteAndSubmit pastes text into a pane's input draft (with the same fragment guard
@@ -366,10 +400,12 @@ func looksCollapsedPaste(draft string) bool {
 	return strings.Contains(low, "[pasted text") || strings.Contains(low, "pasted text #")
 }
 
-// headsMatch compares two normalized heads tolerantly (equal, or one a prefix of
+// HeadsMatch compares two normalized heads tolerantly (equal, or one a prefix of
 // the other) — the event head and the delivered head are the same content, so an
-// exact match is expected; containment guards against a length mismatch.
-func headsMatch(a, b string) bool {
+// exact match is expected; containment guards against a length mismatch. Exported
+// because the driver receipt (internal/driver) matches event summaries against a
+// delivery needle with the same rule Deliver uses.
+func HeadsMatch(a, b string) bool {
 	if a == "" || b == "" {
 		return false
 	}

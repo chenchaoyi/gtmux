@@ -34,7 +34,11 @@ type spawnJSON struct {
 	Session   string `json:"session"`
 	Delivered bool   `json:"delivered"`
 	State     string `json:"state"`
-	Evidence  string `json:"evidence,omitempty"`
+	// JudgedBy attributes the verdict to its evidence layer — "driver" (the
+	// agent's submit event on the session-events stream) or "screen" (Layer-1
+	// screen read) — so a misjudged delivery can be pinned to the layer that erred.
+	JudgedBy string `json:"judged_by,omitempty"`
+	Evidence string `json:"evidence,omitempty"`
 }
 
 // cmdSpawn implements `gtmux spawn` — verified programmatic dispatch. It launches a
@@ -441,7 +445,8 @@ func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result)
 	if asJSON {
 		b, _ := json.MarshalIndent(spawnJSON{
 			TaskID: taskID, PaneID: pane, Loc: loc, Title: title, Session: session,
-			Delivered: res.Delivered, State: string(res.State), Evidence: res.Evidence,
+			Delivered: res.Delivered, State: string(res.State), JudgedBy: res.JudgedBy,
+			Evidence: res.Evidence,
 		}, "", "  ")
 		fmt.Println(string(b))
 	} else {
