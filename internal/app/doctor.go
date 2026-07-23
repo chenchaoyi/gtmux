@@ -309,8 +309,17 @@ func rowAutoSave() dcheck {
 	label := i18n.Tr("resurrect autosave", "resurrect 自动保存")
 	note := i18n.Tr("continuum must save periodically for a reboot to restore",
 		"continuum 需周期保存,重启才能恢复")
-	if statusRightHasContinuumTrigger(tmuxOpt("status-right")) {
+	switch n := continuumTriggerCount(tmuxOpt("status-right")); {
+	case n == 1:
 		return dcheck{stOK, label, i18n.Tr("armed", "已武装"), note}
+	case n > 1:
+		// Two triggers = every interval runs the save twice, forever, silently. It comes
+		// from a path-FORM mismatch: continuum looks for its own ABSOLUTE path, so a
+		// hand-written `~/…` trigger doesn't match and it appends a second copy.
+		return dcheck{stRec, label,
+			i18n.Tr(fmt.Sprintf("%d triggers", n), fmt.Sprintf("%d 个触发器", n)),
+			i18n.Tr("status-right carries continuum's save trigger more than once — every save runs that many times. Usually a `~/…` trigger you wrote by hand plus the absolute-path one continuum added because `~` didn't match its check; keep ONE (the absolute form)",
+				"status-right 里有多份 continuum 保存触发器 —— 每次保存会跑这么多遍。通常是你手写的 `~/…` 那份 + continuum 因为 `~` 没匹配上它的检查而又追加的绝对路径那份;只保留一份(用绝对路径那份)")}
 	}
 	return dcheck{stRec, label, i18n.Tr("trigger missing", "触发器缺失"),
 		i18n.Tr("status-right lacks continuum's save trigger — autosave is OFF; append #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh) to status-right",

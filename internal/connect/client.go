@@ -39,9 +39,19 @@ type Client struct {
 	http  *http.Client
 }
 
+// setupTimeout bounds the request/response calls that precede the attach stream.
+//
+// It is generous on purpose. These calls hit /api/agents, whose cost scales with the
+// number of panes and with whatever else the host is doing — on a loaded machine it has
+// been measured in seconds, and it travels a tunnel on top of that. The previous 8s
+// budget turned an ordinary slow moment into `context deadline exceeded`, which reads
+// like the server is unreachable when it is merely busy. Waiting longer costs a user
+// nothing they notice; failing early costs them the session.
+const setupTimeout = 45 * time.Second
+
 // NewClient builds a client for a base URL + bearer token.
 func NewClient(base, token string) *Client {
-	return &Client{base: strings.TrimRight(base, "/"), token: token, http: &http.Client{Timeout: 8 * time.Second}}
+	return &Client{base: strings.TrimRight(base, "/"), token: token, http: &http.Client{Timeout: setupTimeout}}
 }
 
 // Base is the resolved server URL (for building the WS attach URL).
@@ -110,7 +120,7 @@ func RedeemEnrollCode(ctx context.Context, base, code, name string) (string, err
 		return "", err
 	}
 	r.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{Timeout: 8 * time.Second}).Do(r)
+	resp, err := (&http.Client{Timeout: setupTimeout}).Do(r)
 	if err != nil {
 		return "", err
 	}
