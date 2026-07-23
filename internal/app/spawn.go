@@ -13,6 +13,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
@@ -48,7 +49,7 @@ type spawnJSON struct {
 func cmdSpawn(args []string) int {
 	var (
 		paneFlag, worktree, model, agent, cwd, title string
-		noOpen, headless, force, asJSON              bool
+		noOpen, headless, oneshot, force, asJSON     bool
 		timeout                                      time.Duration
 		goalParts                                    []string
 	)
@@ -84,6 +85,13 @@ func cmdSpawn(args []string) int {
 			// background — but the pane still exists, so it stays proxied, land-verified,
 			// tracked, and reapable like any dispatch.
 			headless, noOpen = true, true
+		case a == "--oneshot":
+			// One-shot non-interactive worker through the agent driver's headless
+			// mode (agent-drivers P5): the goal travels as argv, lifecycle truth
+			// comes from the structured output stream + exit code. Distinct from
+			// --headless (which only suppresses the terminal tab): a one-shot run
+			// cannot be taken over — its pane is watch-only until it exits.
+			oneshot = true
 		case a == "--force":
 			force = true
 		case a == "--json":
@@ -103,6 +111,14 @@ func cmdSpawn(args []string) int {
 	if goal == "" {
 		return spawnUsage()
 	}
+	// --oneshot is accepted ONLY for an agent whose driver has the headless
+	// capability — an explicit refusal, never a silent degrade to an interactive
+	// spawn (the caller asked for structured lifecycle guarantees).
+	if oneshot && driver.For(agent).Headless == nil {
+		i18n.Sae("gtmux spawn: --oneshot needs a headless-capable agent ('"+agent+"' has no headless mode) — drop --oneshot for an interactive spawn",
+			"gtmux spawn: --oneshot 需要具备 headless 能力的 agent（'"+agent+"' 没有）——去掉 --oneshot 改用交互式派发")
+		return 2
+	}
 	if tmux.Bin == "" {
 		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
 		return 1
@@ -119,9 +135,27 @@ func cmdSpawn(args []string) int {
 	}
 
 	// Target a pane: reuse --pane, or create a fresh session (optionally in a worktree).
-	pane, session, ownSession, wtPath, branch, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, asJSON)
+	pane, session, ownSession, wtPath, branch, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, oneshot, asJSON)
 	if rc != 0 {
 		return rc
+	}
+
+	// One-shot: the goal already traveled as argv inside the launch command — there
+	// is nothing to paste and nothing to land-verify (the receipt is free by
+	// construction). Lifecycle truth arrives from the runner's stream/exit-code
+	// records; the dispatch is tracked and reapable like any other.
+	if oneshot {
+		res := dispatch.Result{Delivered: true, State: dispatch.StateLanded,
+			JudgedBy: dispatch.JudgedByDriver, Evidence: "one-shot: goal delivered as argv"}
+		dispatch.MarkAwaited(pane)
+		taskID := dispatch.NewID(time.Now().UnixNano())
+		_ = dispatch.AddTask(dispatch.Task{
+			ID: taskID, Pane: pane, Session: session, Agent: agent, Model: model,
+			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
+			CreatedAt: time.Now().Unix(), Delivered: true, OwnSession: ownSession,
+			Source: dispatch.SourceHQDispatched,
+		})
+		return spawnReport(asJSON, taskID, pane, session, res)
 	}
 
 	// Delivery is a four-state handshake: launched → ready → content-verified →
@@ -165,9 +199,14 @@ func cmdSpawn(args []string) int {
 }
 
 // spawnTarget resolves the destination pane, creating a session/worktree as needed
-// and launching the agent through the proxy. Returns the pane, session, whether we
+// and launching the agent through the proxy (for --oneshot, the headless runner —
+// the goal rides the launch command itself). Returns the pane, session, whether we
 // created the session, the worktree path/branch, and a non-zero rc on failure.
-func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
+func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
+	launch := func(pane string) { launchAgent(pane, agent, model) }
+	if oneshot {
+		launch = func(pane string) { oneshotLaunch(pane, agent, model, goal) }
+	}
 	// Reuse an existing pane.
 	if paneFlag != "" {
 		if tmux.Display(paneFlag, "#{pane_id}") == "" {
@@ -176,9 +215,18 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		}
 		pane = tmux.Display(paneFlag, "#{pane_id}")
 		session = tmux.Display(paneFlag, "#{session_name}")
+		bareShell := dispatchbridge.ShellCommands[tmux.Display(pane, "#{pane_current_command}")]
+		// A one-shot is a shell COMMAND: it can only be typed into a bare shell —
+		// never into a pane already running an agent (that would paste a shell line
+		// into a composer).
+		if oneshot && !bareShell {
+			i18n.Sae("gtmux spawn: --oneshot needs a bare-shell pane ("+pane+" is running something)",
+				"gtmux spawn: --oneshot 需要空 shell 的 pane（"+pane+" 正在运行程序）")
+			return "", "", false, "", "", 1
+		}
 		// If the pane already runs an agent, deliver into it (skip launch); else launch.
-		if dispatchbridge.ShellCommands[tmux.Display(pane, "#{pane_current_command}")] {
-			launchAgent(pane, agent, model)
+		if bareShell {
+			launch(pane)
 		}
 		nameDispatchWindow(pane, spawnSlug(title, "", goal), headless) // task-named for a readable fleet
 		return pane, session, false, "", "", 0
@@ -218,7 +266,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		return "", "", false, "", "", 1
 	}
 	pane = tmux.Display(created, "#{pane_id}")
-	launchAgent(pane, agent, model)
+	launch(pane)
 	nameDispatchWindow(pane, spawnSlug(title, branch, goal), headless) // task-named for a readable fleet
 
 	// Open an UNFOCUSED terminal tab (never steal focus) unless --no-open.
@@ -480,7 +528,7 @@ func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) i
 }
 
 func spawnUsage() int {
-	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--no-open] [--force] [--json] <goal…>",
-		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--no-open] [--force] [--json] <任务…>")
+	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--oneshot] [--no-open] [--force] [--json] <goal…>",
+		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--oneshot] [--no-open] [--force] [--json] <任务…>")
 	return 2
 }

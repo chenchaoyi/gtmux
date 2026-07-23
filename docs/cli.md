@@ -240,6 +240,18 @@ interlock** refuses an identical payload to the same pane within a window (so a 
 duplicate `/compact` can't double-fire); `--force` overrides it. Pre-flight checks
 (proxy, machine resource, subscription window) are advisory and never block.
 
+`--oneshot` dispatches a ONE-SHOT, non-interactive worker through the agent
+driver's headless mode (`claude -p … --output-format stream-json`, `codex exec
+--json`) — accepted only for a headless-capable agent, refused explicitly
+otherwise (never silently degraded to an interactive spawn). The goal travels as
+an ARGUMENT, so there is nothing to paste and nothing to land-verify; the run
+still lives in a tmux pane (its JSON stream visible, its radar row present, reap
+applicable), and its lifecycle truth — done / crash — comes from that stream plus
+the exit code, never from screen classification. The explicit contract: a
+one-shot pane is WATCH-ONLY — you cannot jump in and take over mid-run. Distinct
+from `--headless`, which only suppresses the terminal tab: a `--headless` spawn
+is still a fully interactive session you can attach to and steer.
+
 `gtmux send <pane> <text>` uses the SAME land-verification by DEFAULT now (returns as
 soon as it confirms, so a healthy send stays fast); `--no-verify` opts out,
 `--force` overrides the interlock, and `--json` prints the verified result
