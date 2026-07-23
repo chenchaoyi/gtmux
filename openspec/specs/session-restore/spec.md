@@ -271,3 +271,25 @@ the failure being corrected.
 
 - **WHEN** a save marks no active window for a session
 - **THEN** no window is selected for it
+
+### Requirement: The layout backstop never runs alongside the autosaver
+
+The system SHALL save the tmux layout itself ONLY when the periodic autosaver is not
+armed. When the autosaver is armed a second saver is not redundancy but a RACE: both run
+the same save routine over the same files, and concurrent runs have produced duplicate
+save files and a truncated pane-contents archive — the system corrupting the very save
+restore depends on. Corrupting the save is strictly worse than the staleness the backstop
+guards against. The system SHALL also invoke the save script in its QUIET mode, because
+its default mode paints a progress message into the multiplexer's message line on every
+attached client and forks an extra process to animate it, producing recurring on-screen
+noise with no visible cause.
+
+#### Scenario: The autosaver is armed
+
+- **WHEN** the periodic save trigger is present
+- **THEN** the system does not save the layout itself
+
+#### Scenario: The autosaver is missing
+
+- **WHEN** the periodic save trigger is absent and the save has gone stale
+- **THEN** the system saves the layout itself, without printing to the message line

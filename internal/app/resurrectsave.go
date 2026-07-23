@@ -99,7 +99,13 @@ func driveResurrectSave(script string) {
 	pid := tmux.Display("", "#{pid}")
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "bash", script)
+	// "quiet" is REQUIRED, not cosmetic. Without it resurrect's save.sh forks a spinner
+	// that writes "Saving..." into tmux's message line and then displays "Tmux
+	// environment saved!" — so gtmux's own backstop was painting a flicker across every
+	// client on a cadence nobody could account for, while continuum (which does pass
+	// quiet) stayed silent. The spinner is also an extra background fork per save.
+	argv := resurrectSaveArgs(script)
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	env := os.Environ()
 	if socket != "" {
 		env = append(env, "TMUX="+socket+","+pid+",0")
@@ -121,6 +127,16 @@ func maybeBackstopSave() {
 	if !tmux.ServerUp() {
 		return
 	}
+	// Only back up an autosave that ISN'T running. The backstop exists for the case
+	// continuum's trigger is missing from status-right (autosave silently off); when the
+	// trigger IS there, continuum is already saving and a second saver is not redundancy
+	// — it is a RACE. Both run resurrect's save_all against the same files, and two
+	// concurrent runs produced paired save files and a truncated pane_contents.tar.gz
+	// (the archive is written by one process while the other is removing its inputs).
+	// Corrupting the save is strictly worse than the staleness this was guarding against.
+	if !shouldBackstopSave(tmuxOpt("status-right")) {
+		return
+	}
 	if !saveIsStale(resurrectLastSave(), time.Now(), backstopSaveStaleAfter) {
 		return
 	}
@@ -131,6 +147,30 @@ func maybeBackstopSave() {
 		defer backstopSaving.Store(false)
 		driveResurrectSave(resurrectSaveScript())
 	}()
+}
+
+// resurrectSaveArgs is how resurrect's save script must be invoked.
+//
+// "quiet" is REQUIRED, not cosmetic. Without it save.sh forks a spinner that writes
+// "Saving..." into tmux's message line and then displays "Tmux environment saved!" — so
+// gtmux's backstop painted a flicker across every attached client on a cadence nobody
+// could account for, while continuum (which does pass quiet) stayed silent. The spinner
+// is also an extra background fork per save.
+func resurrectSaveArgs(script string) []string {
+	return []string{"bash", script, "quiet"}
+}
+
+// shouldBackstopSave reports whether gtmux should save the tmux layout ITSELF, given the
+// running status-right.
+//
+// Only when continuum is NOT armed. The backstop exists for the case its trigger is
+// missing (autosave silently off); when the trigger is present continuum is already
+// saving, and a second saver is a RACE rather than redundancy — two concurrent save_all
+// runs over the same files yielded paired save files and a truncated
+// pane_contents.tar.gz. Corrupting the save is strictly worse than the staleness this
+// guards against.
+func shouldBackstopSave(statusRight string) bool {
+	return !statusRightHasContinuumTrigger(statusRight)
 }
 
 // statusRightHasContinuumTrigger reports whether a tmux status-right value carries
