@@ -130,6 +130,9 @@
 
 ## 收尾(每期各自包含;此处为全 change 完成态)
 
-- [ ] 6.1 `npx @fission-ai/openspec validate --specs --strict` 通过
-- [ ] 6.2 实现全部合并后:sync-specs + archive 本 change(同 PR 或紧随 PR),
-      tasks 勾选保持真实
+- [x] 6.1 `npx @fission-ai/openspec validate --specs --strict` 通过(27 项,
+      含新增 agent-driver capability)
+- [x] 6.2 实现全部合并后(P0 #553 · P1 #556 · P2 #558 · P3 #559 · P4 #560 ·
+      P5 #561):sync-specs(agent-driver 新建;agent-dispatch 两处 MODIFIED +
+      One-shot ADDED;hq-wake-protocol ack MODIFIED;agent-digest sense ADDED)
+      + archive 本 change,tasks 勾选真实
