@@ -107,18 +107,26 @@
 
 ## P5 — 一次性 headless worker(spawn --oneshot)
 
-- [ ] 5.1 `HeadlessSpec`:Claude(`claude -p --output-format stream-json`)与
-      Codex(`codex exec --json`)的启动命令构造 + 流式 JSON 解析器
-      (容错:未知事件忽略,退出码兜底)
-- [ ] 5.2 `gtmux spawn --oneshot`:仅 Headless 能力在位才接受,否则明确拒绝
-      (en+zh 提示);命令仍跑在 tmux pane 内;`--worktree`/`--title` 正交
-- [ ] 5.3 状态真值接线:done/crash 来自 JSON 流与退出码,不经屏幕分类;
-      digest 行 `sense: driver`;ledger/tasks/reap 语义照旧
-- [ ] 5.4 环境纪律:launch 前清除会递归触发 hook 的环境变量(CLAUDE_CODE_* 等,
-      沿用 multiplexer-research ⭐B 结论);测试断言
-- [ ] 5.5 CLI 面文档:CLAUDE.md 命令列表不变(仍是 spawn)、`gtmux --help`
-      (en+zh)、`docs/cli.md` spawn 一节 `--oneshot` 与 `--headless` 的区别
-      说明;check-design.sh 通过
+- [x] 5.1 `HeadlessSpec`:Claude(`claude -p --output-format stream-json
+      --verbose`)与 Codex(`codex exec --json`,type 平铺/msg 嵌套两种协议
+      形态都认)的启动命令构造 + 流式 JSON 解析器(容错:未知/不可解析行
+      忽略,退出码兜底;解析器表测试)
+- [x] 5.2 `gtmux spawn --oneshot`:仅 Headless 能力在位才接受,否则明确拒绝
+      (en+zh,先于任何 tmux 依赖;kill-switch `driver.<agent>.headless` 同门);
+      经隐藏 runner `gtmux oneshot-run`(check-design HIDDEN 白名单)在 tmux
+      pane 内跑,JSON 流对用户可见;`--pane` 复用要求空 shell;
+      `--worktree`/`--title`/`--headless` 正交
+- [x] 5.3 状态真值接线:done/crash 来自 JSON 流与退出码,不经屏幕分类——
+      runner 落 Stop/StopFailure 事件 + finished/active 标记(镜像 hook
+      decide 语义,run 自带 hook 已记录时去重兜底不重复);session_id 落
+      resume 记录 → digest 行经既有 sense 判据读出 `driver`;radar 行经
+      进程子树识别照常;ledger/tasks/reap 语义照旧(投递即 argv,
+      `judged_by: driver`)
+- [x] 5.4 环境纪律:runner exec 前清除 `CLAUDECODE`/`CLAUDE_CODE_*`/`CMUX_*`
+      (multiplexer-research ⭐B),代理等其余环境透传;测试断言
+- [x] 5.5 CLI 面文档:CLAUDE.md 命令列表不变(仍是 spawn;`oneshot-run` 进
+      HIDDEN)、spawnUsage(en+zh)、`docs/cli.md` spawn 一节 `--oneshot` 与
+      `--headless` 的区别说明(watch-only 契约写明);check-design.sh 通过
 
 ## 收尾(每期各自包含;此处为全 change 完成态)
 

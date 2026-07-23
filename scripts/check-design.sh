@@ -60,7 +60,7 @@ fi
 #    not reference a command that no longer exists). Spec↔behavior + "is this command
 #    worth documenting in the curated usage/cli.md" stay REVIEW-GATE items (see below).
 APP=internal/app/app.go
-HIDDEN=" tunnel-client save-tab-order options app "   # internal plumbing, not user commands
+HIDDEN=" tunnel-client save-tab-order options app oneshot-run "   # internal plumbing, not user commands
 cmds=$(grep -oE 'case "[a-z][a-z0-9-]*"' "$APP" | sed 's/case "//;s/"$//' | sort -u)
 # The command list is "Commands: `a`, `b`, … `uninstall-app`." — grab exactly that,
 # truncating the prose that follows `uninstall-app` on the same line (else a command

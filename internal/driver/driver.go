@@ -63,6 +63,11 @@ type Driver struct {
 	// exists (claude, codex); nil elsewhere, and the digest row renders from
 	// radar signals alone (the design rule: every field degrades to "").
 	Content func(sessionID string, maxTurns int) ([]transcript.Turn, error)
+
+	// Headless is the agent's one-shot non-interactive mode (`spawn --oneshot`).
+	// Nil means the agent has no structured one-shot interface and the flag is
+	// REFUSED for it — never silently degraded to an interactive spawn.
+	Headless *HeadlessSpec
 }
 
 // hookEquippedAgents are the agents whose installers wire gtmux hooks, so their
@@ -99,6 +104,14 @@ var registry = func() map[string]Driver {
 		}
 		m[k] = d
 	}
+	// Headless only where a structured one-shot mode exists.
+	withHeadless := func(k string, spec *HeadlessSpec) {
+		d := m[k]
+		d.Headless = spec
+		m[k] = d
+	}
+	withHeadless("claude", claudeHeadless)
+	withHeadless("codex", codexHeadless)
 	return m
 }()
 
@@ -122,6 +135,9 @@ func For(agentKey string) Driver {
 	}
 	if !sw.enabled() || !sw.capOn(agentKey, "content") {
 		d.Content = nil
+	}
+	if !sw.enabled() || !sw.capOn(agentKey, "headless") {
+		d.Headless = nil
 	}
 	return d
 }
