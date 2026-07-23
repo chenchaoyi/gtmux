@@ -124,6 +124,8 @@ func Run(argv []string) int {
 		return cmdDoctor(args)
 	case "update", "upgrade":
 		return cmdUpdate(args)
+	case "whatsnew":
+		return cmdWhatsnew(args)
 	case "install-hooks":
 		return cmdInstallHooks(args)
 	case "uninstall-hooks":

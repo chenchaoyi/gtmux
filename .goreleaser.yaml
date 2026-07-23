@@ -59,6 +59,16 @@ release:
     name: gtmux
   draft: false
   prerelease: auto
+  # The tag message's `user:` block, verbatim at the top of the release body.
+  #
+  # `gtmux update` reads it back to tell the user what changed (see internal/app
+  # changelog.go). Commit subjects can't serve that purpose: they are addressed to
+  # whoever reads the diff, and a sha + PR number + author is noise to someone who just
+  # wants to know whether anything they rely on moved. So the release carries a SECOND,
+  # human-written section aimed at the user, and the generated commit list stays below it
+  # for anyone who wants the detail.
+  header: |
+    {{ .TagBody }}
 
 changelog:
   use: github

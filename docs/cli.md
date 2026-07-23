@@ -551,6 +551,33 @@ use `share set`. `status --json` carries each guest's `view_panes`/`panes`/
 it again later use `gtmux share link <id>` (or the menu-bar row's copy button) —
 it re-hands the same `#g=` URL (full-scope callers only; guests can't).
 
+## `gtmux whatsnew` — what changed for YOU
+
+```sh
+gtmux whatsnew                 # everything newer than the version you're running
+gtmux whatsnew --since v0.36.0 # from a specific version
+gtmux whatsnew --all           # every release we have notes for
+```
+
+Per release, the lines written **for users** — not commit subjects. `gtmux update` prints
+the first few of these automatically after installing; this is the full list.
+
+The source is a `user:` block in the release's **tag message**, which goreleaser copies
+into the release body:
+
+```
+git tag -a v0.40.0 -m "v0.40.0 — …
+
+user:
+- spawn --title now names the session
+- restore returns you to the window you were on
+"
+```
+
+A release with no `user:` block contributes nothing — deliberately. A version where
+nothing changed for users should say nothing, rather than paraphrasing a commit subject
+into developer vocabulary.
+
 ## tmux integration
 
 gtmux is just a CLI — bind whatever keys you like in `tmux.conf`. Suggested:
