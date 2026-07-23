@@ -47,6 +47,13 @@ type Driver struct {
 	// (it replaced the P0 HookEquipped field), so the capability switches can
 	// force the pure Layer-1 screen path (design §5).
 	Receipt func(pane, needle string, since int64) Verdict
+
+	// Ready reports the deterministic "session came up" signal for a pane: has a
+	// session-start event appeared for it since the launch moment (unix seconds)?
+	// Consumers use it to SHORT-CIRCUIT the spawn ready gate's two-frame settle
+	// wait (one input-ready capture then suffices). Positive-only (I2): false is
+	// never failure evidence — the full screen gate applies unchanged.
+	Ready func(pane string, since int64) bool
 }
 
 // hookEquippedAgents are the agents whose installers wire gtmux hooks, so their
@@ -62,11 +69,16 @@ var hookEquippedAgents = []string{
 }
 
 // registry holds the built-in drivers, keyed by agent key. Further capabilities
-// arrive per phase (readiness in P3, content wiring in P4, headless in P5).
+// arrive per phase (content wiring in P4, headless in P5). Ready, like Receipt,
+// is shared by every hook-equipped agent: the hook NORMALIZES each agent's
+// session-start-ish raw event (SessionStart / session_start / on_session_start /
+// agentSpawn, …) to one `SessionStart` stream record, so the evidence is
+// agent-agnostic — an agent whose hook never emits it simply never
+// short-circuits, which changes nothing (I2).
 var registry = func() map[string]Driver {
 	m := make(map[string]Driver, len(hookEquippedAgents))
 	for _, k := range hookEquippedAgents {
-		m[k] = Driver{Name: k, Receipt: eventsReceipt}
+		m[k] = Driver{Name: k, Receipt: eventsReceipt, Ready: eventsReady}
 	}
 	return m
 }()
@@ -85,6 +97,9 @@ func For(agentKey string) Driver {
 	sw := loadSwitches()
 	if !sw.enabled() || !sw.capOn(agentKey, "receipt") {
 		d.Receipt = nil
+	}
+	if !sw.enabled() || !sw.capOn(agentKey, "ready") {
+		d.Ready = nil
 	}
 	return d
 }

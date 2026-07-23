@@ -255,6 +255,13 @@ ack 升级为三层:
 - 无 `Ready` 能力或事件未到:现状屏幕门逐字节不变(两帧稳定 + 超时拒贴)。
 - I2 适用:`SessionStart` 缺席**不是**失败证据(旧版 agent hook 不发它),
   只是不短路。
+- 实现注记(P3 落地校准):与 P1 Receipt 同理,`Ready` 对**全部 hook-equipped
+  agent** 注册同一 events 实现——hook 侧已把各家 session-start 类原始事件
+  (`session_start`/`on_session_start`/`agentSpawn` 等)归一为同一 `SessionStart`
+  流记录,证据 agent 无关;短路帧仍须通过 IsComposerReady(gate/banner 检查
+  不放松),不发事件的 agent 只是永不短路。启动时刻取 `WaitAgentReady` 进门
+  时刻(launch 键入后立即进门,留 1s 余量);pane 复用旧会话的历史
+  SessionStart 因早于该时刻而不会误短路。
 
 ### 2.4 radar 状态/digest 内容 —— 显式化 + 档位标注(P4)
 

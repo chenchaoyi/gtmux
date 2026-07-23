@@ -50,3 +50,23 @@ func TestFor_ReceiptReadsTheStream(t *testing.T) {
 		}
 	}
 }
+
+func TestEventsReady(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	events.Append(events.Record{Ts: now, Event: "SessionStart", Pane: "%9"})
+	events.Append(events.Record{Ts: now, Event: "Stop", Pane: "%8"})
+
+	if !eventsReady("%9", now-5) {
+		t.Error("a session-start for the pane after the launch moment must read ready")
+	}
+	if eventsReady("%8", now-5) {
+		t.Error("a non-session-start event must not read ready")
+	}
+	if eventsReady("%9", now+5) {
+		t.Error("a session-start BEFORE the launch moment (stale pane reuse) must not read ready")
+	}
+	if eventsReady("%7", now-5) {
+		t.Error("another pane's session-start must not read ready")
+	}
+}

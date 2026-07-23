@@ -98,3 +98,66 @@ func TestReadyGate(t *testing.T) {
 		t.Fatal("a bare shell must not be ready")
 	}
 }
+
+// The driver's session-start signal SHORT-CIRCUITS the settle wait: a boot whose
+// screen keeps churning (MCP noise — every frame different) normally never
+// settles, but once the event proves the session is up, the FIRST input-ready
+// capture is enough. The gate/banner checks still apply to that capture.
+func TestReadyGate_SessionStartShortCircuits(t *testing.T) {
+	const ready = "prior output\n\n❯ "
+	const banner = "2 MCP servers need authentication\n❯ "
+
+	// Event fired, but a banner still on screen → NOT ready (the one-capture
+	// check keeps its gate/banner teeth).
+	g := readyGate{agent: "claude", sessionUp: func() bool { return true }}
+	if g.step("claude", func() string { return banner }) {
+		t.Fatal("a boot banner must hold the gate even with the session-start event")
+	}
+	// First ready capture → ready, no second identical frame needed.
+	if !g.step("claude", func() string { return ready + "\nchurn-1" }) {
+		t.Fatal("session-start + one ready capture must be READY")
+	}
+
+	// Regression (the slow-boot timeout): churning ready frames + NO event →
+	// never settles, exactly the pre-driver behavior.
+	g2 := readyGate{agent: "claude", sessionUp: func() bool { return false }}
+	for i := 0; i < 5; i++ {
+		frame := ready + "\nchurn-" + string(rune('a'+i))
+		if g2.step("claude", func() string { return frame }) {
+			t.Fatalf("no event: a changing capture must not settle (step %d)", i)
+		}
+	}
+
+	// …and WITH the event the same churn is ready on its first ready frame.
+	g3 := readyGate{agent: "claude", sessionUp: func() bool { return true }}
+	if !g3.step("claude", func() string { return ready + "\nchurn-x" }) {
+		t.Fatal("the same churn with the event must be ready at once")
+	}
+}
+
+// I2: the signal's absence changes nothing — a nil sessionUp gate behaves
+// byte-identically to the pre-driver gate (two identical ready captures), and a
+// missing event never fails the spawn (the gate simply keeps polling).
+func TestReadyGate_NoEvent_TwoFrameUnchanged(t *testing.T) {
+	const ready = "prior output\n\n❯ "
+	g := readyGate{agent: "claude"} // nil sessionUp
+	if g.step("claude", func() string { return ready }) {
+		t.Fatal("first ready capture alone must not settle without the event")
+	}
+	if !g.step("claude", func() string { return ready }) {
+		t.Fatal("two identical ready captures must settle, event or not")
+	}
+}
+
+// The signal is consulted only on a ready-but-unsettled frame — a banner frame
+// (composer not ready) never pays the event-file scan.
+func TestReadyGate_NoPollWhileNotComposerReady(t *testing.T) {
+	const banner = "2 MCP servers need authentication\n❯ "
+	polls := 0
+	g := readyGate{agent: "claude", sessionUp: func() bool { polls++; return true }}
+	_ = g.step("claude", func() string { return banner })
+	_ = g.step("claude", func() string { return banner })
+	if polls != 0 {
+		t.Fatalf("a not-ready frame must not poll the signal; polled %d times", polls)
+	}
+}

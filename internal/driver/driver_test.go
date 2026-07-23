@@ -52,6 +52,19 @@ func TestSwitchForcesLayerOne(t *testing.T) {
 	if For("claude").Receipt != nil || For("codex").Receipt != nil {
 		t.Error("driver.enable=false must strip every capability")
 	}
+	// Capabilities switch independently: ready off leaves receipt on (and v.v.).
+	writeConfig(t, `{"driver": {"claude": {"ready": false}}}`)
+	d := For("claude")
+	if d.Ready != nil {
+		t.Error("driver.claude.ready=false must strip Ready (full screen gate applies)")
+	}
+	if d.Receipt == nil {
+		t.Error("the ready switch must not touch Receipt")
+	}
+	writeConfig(t, `{"driver": {"enable": false}}`)
+	if For("claude").Ready != nil {
+		t.Error("driver.enable=false strips Ready too")
+	}
 }
 
 func TestSwitchParsing(t *testing.T) {
