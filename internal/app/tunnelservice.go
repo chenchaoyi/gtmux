@@ -48,8 +48,11 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 			"gtmux tunnel: always-on 需要托管模式（此构建未启用）。")
 		return 2
 	}
-	bin, err := exec.LookPath("cloudflared")
-	if err != nil {
+	// lookTool, not exec.LookPath: the menu-bar app shells out with launchd's PATH,
+	// where /usr/local/bin isn't listed — cloudflared read as "not installed" on a Mac
+	// that had it, and Anywhere could never be switched on from the menu bar.
+	bin := lookTool("cloudflared")
+	if bin == "" {
 		if bin = ensureCloudflared(yes); bin == "" {
 			return 1
 		}

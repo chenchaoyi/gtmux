@@ -686,3 +686,39 @@ without retyping.
 
 - **WHEN** a send is reported as failed
 - **THEN** the client shows the failure and keeps the text available to retry
+
+### Requirement: Helper tools are found where they are installed, not only on PATH
+
+The system SHALL locate the helper binaries it shells out to (the tunnel client, the
+package manager) by searching the standard install locations when they are absent from
+`PATH`, and SHALL report a tool as missing only when it is genuinely not installed. A
+process launched from the GUI inherits the login daemon's PATH, which contains neither
+package-manager prefix, so trusting PATH alone reports an installed tool as missing — and
+the user is told to install what they already have, on a machine where the identical
+command succeeds from a terminal. A surface that launches the CLI SHALL additionally pass
+those locations down in the child's PATH, so tools resolved further down the call chain
+are found too.
+
+#### Scenario: The tunnel client is installed but off the GUI PATH
+
+- **WHEN** the user enables remote access from the menu bar on a Mac whose tunnel client
+  lives in a package-manager prefix
+- **THEN** the tunnel client is found and remote access is enabled
+
+#### Scenario: A tool really is absent
+
+- **WHEN** a helper binary is installed nowhere
+- **THEN** it is reported as missing, with how to install it
+
+### Requirement: A remote-access mode change that fails says why, where it was attempted
+
+Every surface that offers the remote-access mode switch SHALL show the reason when a
+change does not take effect. Without it a failed switch is indistinguishable from a
+control that does nothing: the confirmation closes, the selector returns to its previous
+value, and nothing on screen accounts for it — which is how an environment problem reads
+as a broken button.
+
+#### Scenario: Enabling fails
+
+- **WHEN** the user confirms a switch to always-on access and it cannot be enabled
+- **THEN** the surface they used shows why, next to the control they used

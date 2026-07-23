@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -365,7 +364,7 @@ func rowCodexHook() dcheck {
 // problem — `doctor --fix` offers to install it.
 func rowCloudflared() dcheck {
 	label := i18n.Tr("cloudflared", "cloudflared")
-	if _, err := exec.LookPath("cloudflared"); err == nil {
+	if lookTool("cloudflared") != "" {
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"),
 			i18n.Tr("remote access via `gtmux tunnel`", "`gtmux tunnel` 远程访问")}
 	}

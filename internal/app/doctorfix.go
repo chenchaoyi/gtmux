@@ -332,7 +332,7 @@ func insertTomlTopLevel(content, line string) string {
 // forced, under --yes — installing a 40MB dependency nobody asked for would be
 // presumptuous). `gtmux tunnel` also offers this on first run.
 func (s *fixState) stepCloudflared() int {
-	if _, err := exec.LookPath("cloudflared"); err == nil {
+	if lookTool("cloudflared") != "" {
 		return 0
 	}
 	fmt.Printf("\n%s%s%s\n", i18n.Bold,
@@ -340,7 +340,7 @@ func (s *fixState) stepCloudflared() int {
 	fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
 		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access — skip if you don't use the mobile app away from home.",
 		"  装上它，`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要，\n  不在外面用手机 App 可跳过。"), i18n.Reset)
-	if _, err := exec.LookPath("brew"); err != nil {
+	if lookTool("brew") == "" {
 		i18n.Say("  • brew not found — install from https://github.com/cloudflare/cloudflared/releases",
 			"  • 未找到 brew，从 https://github.com/cloudflare/cloudflared/releases 安装")
 		return 0
@@ -355,7 +355,7 @@ func (s *fixState) stepCloudflared() int {
 		return 0
 	}
 	i18n.Say("  • brew install cloudflared …", "  • brew install cloudflared …")
-	c := exec.Command("brew", "install", "cloudflared")
+	c := exec.Command(lookTool("brew"), "install", "cloudflared")
 	c.Stdout, c.Stderr = os.Stdout, os.Stderr
 	if err := c.Run(); err != nil {
 		i18n.Sae("  ✗ brew install failed: "+err.Error(), "  ✗ brew 安装失败："+err.Error())
