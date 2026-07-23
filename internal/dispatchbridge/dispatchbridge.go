@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -14,18 +15,12 @@ import (
 // pollInterval is how often the deliver-verify loop re-reads the pane/stream.
 const pollInterval = 300 * time.Millisecond
 
-// hookAgents are the agents that install gtmux hooks (so their submissions land on
-// the session-events stream). For these, dispatch verify prefers the deterministic
-// event; others fall to the hardened screen-read. Keyed by launch-command basename.
-var hookAgents = map[string]bool{
-	"claude": true, "codex": true, "gemini": true, "cursor": true,
-	"cursor-agent": true, "opencode": true, "copilot": true, "kiro": true,
-}
-
 // hookEquipped reports whether an agent launch command is one whose hooks feed the
-// event stream (so the primary verify path applies).
+// event stream (so the primary verify path applies). The fact lives in the driver
+// registry (the agents that install gtmux hooks, keyed by launch-command basename);
+// this is baseline behavior, not gated by the driver capability switches.
 func hookEquipped(agentCmd string) bool {
-	return hookAgents[agentKey(agentCmd)]
+	return driver.For(agentKey(agentCmd)).HookEquipped
 }
 
 // eventsForPane maps recent session-events for a pane (Ts >= sinceTs) into the
