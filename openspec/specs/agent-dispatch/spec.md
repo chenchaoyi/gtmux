@@ -620,3 +620,44 @@ in every report, so a spawned window can be referred to and jumped to by its num
 - **WHEN** a spawned window's session later has an earlier window closed under `renumber-windows on`
 - **THEN** the reported/derivable window number reflects the CURRENT tmux index (the locator is read live), and the window's name remains the purpose title with no stale number in it
 
+### Requirement: An explicit title names the session, independently of delivery
+
+When a dispatch is given an explicit title, that title SHALL name the SESSION it creates,
+not only the window, and the name SHALL be applied when the session is created — before
+the task is delivered — so that a delivery that is slow, refused, or fails cannot change
+it. When no title is given the system SHALL fall back to the branch, then to the goal.
+
+A derived name SHALL be sanitized: characters that read as noise or that complicate
+addressing the session SHALL be replaced, and the name SHALL be truncated by CHARACTER
+rather than by byte, since a byte-wise cut corrupts any multi-byte script.
+
+When the chosen name is already taken the system SHALL adjust it and keep it, rather than
+abandoning it for an automatically generated one — an automatic name is typically a bare
+number, which discards what the caller asked for and identifies nothing.
+
+#### Scenario: A title is given
+
+- **WHEN** a dispatch is spawned with an explicit title
+- **THEN** the session bears that title, whatever the delivery outcome
+
+#### Scenario: A goal with punctuation and multi-byte text
+
+- **WHEN** a session name is derived from a goal containing punctuation and non-Latin text
+- **THEN** the name carries neither the punctuation nor a character cut in half
+
+#### Scenario: The name is taken
+
+- **WHEN** a session of the chosen name already exists
+- **THEN** the new session takes an adjusted form of that name
+
+### Requirement: A failed dispatch reports where its session is
+
+A dispatch report SHALL carry the standard handle — location, pane, and title — including
+when delivery failed or was refused. A failure leaves a live session behind, so the report
+is how the user finds it; a bare pane identifier cannot be jumped to and says nothing about
+which session it is or what it was for.
+
+#### Scenario: Delivery fails
+
+- **WHEN** a dispatch is created but its task is not delivered
+- **THEN** the report names the session by its standard handle, not by pane id alone

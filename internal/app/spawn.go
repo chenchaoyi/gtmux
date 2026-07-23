@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"path"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -193,7 +195,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	}
 
 	// Create a detached session (named from the branch/goal), optionally in runDir.
-	name := spawnSessionName(branch, goal)
+	name := uniqueSessionName(spawnSessionName(title, branch, goal), sessionExists)
 	create := newSessionArgs(name)
 	if runDir != "" {
 		create = append(create, "-c", runDir)
@@ -328,23 +330,81 @@ func spawnPreflight(model, cwd, goal string) {
 }
 
 // spawnSessionName derives a tmux session name from the branch, else the goal head.
-func spawnSessionName(branch, goal string) string {
-	src := branch
-	if src == "" {
-		src = goal
-	}
-	name := strings.Map(func(r rune) rune {
-		switch r {
-		case '.', ':', ' ', '\t', '/':
-			return '-'
+func spawnSessionName(title, branch, goal string) string {
+	// TITLE FIRST. --title is the caller stating what this session is FOR, and it was
+	// reaching only the window name — the session kept a name derived from the goal, on
+	// every path, not just when delivery failed. That is where names like
+	// `你是一次性-worker(不是-HQ,不要` came from: a goal's opening words used verbatim.
+	src := firstNonEmpty(title, branch, goal)
+	var b strings.Builder
+	for _, r := range src {
+		switch {
+		case r == '.' || r == ':' || r == '/' || unicode.IsSpace(r):
+			b.WriteRune('-') // tmux treats . and : as target separators
+		case unicode.IsPunct(r) && r != '-' && r != '_':
+			// Brackets, commas and friends survived the old mapping and made session
+			// names that read as noise and are awkward to type as a tmux target.
+			b.WriteRune('-')
+		default:
+			b.WriteRune(r)
 		}
-		return r
-	}, src)
-	name = strings.Trim(name, "-")
-	if len(name) > 40 {
-		name = strings.Trim(name[:40], "-")
+	}
+	name := collapseDashes(strings.Trim(b.String(), "-"))
+	// Truncate by RUNE, not byte. The old cut was `name[:40]`, which slices mid-character
+	// on any multi-byte script and yields mojibake — latent for any goal over 40 bytes,
+	// which two Chinese words already are.
+	if r := []rune(name); len(r) > spawnNameMaxRunes {
+		name = strings.Trim(string(r[:spawnNameMaxRunes]), "-")
 	}
 	return name
+}
+
+// sessionExists reports whether a tmux session of that name is live.
+func sessionExists(name string) bool {
+	return tmux.OK("has-session", "-t", "="+name)
+}
+
+// spawnNameMaxRunes bounds a session name so it stays readable in a status line and
+// typable as a tmux target.
+const spawnNameMaxRunes = 24
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
+// collapseDashes squeezes runs of '-' left by sanitizing adjacent punctuation.
+func collapseDashes(s string) string {
+	for strings.Contains(s, "--") {
+		s = strings.ReplaceAll(s, "--", "-")
+	}
+	return s
+}
+
+// uniqueSessionName appends a numeric suffix until the name is free.
+//
+// Without this a name collision fell through to tmux's own auto-naming, which numbers
+// sessions — that is where a session called `12` came from. A collision is ordinary (two
+// dispatches for the same goal), and answering it with a bare number throws away the name
+// the caller asked for instead of adjusting it.
+func uniqueSessionName(name string, exists func(string) bool) string {
+	if name == "" {
+		return ""
+	}
+	if !exists(name) {
+		return name
+	}
+	for i := 2; i < 100; i++ {
+		cand := name + "-" + strconv.Itoa(i)
+		if !exists(cand) {
+			return cand
+		}
+	}
+	return ""
 }
 
 // spawnHandle formats the STANDARD handle for a spawned window: "<loc> (%pane) · <title>"
@@ -392,11 +452,15 @@ func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result)
 			i18n.Say("• queued → "+handle+" — runs after the current turn",
 				"• 已排队 → "+handle+" —— 当前这轮结束后执行")
 		case dispatch.StateRefusedDup:
-			i18n.Sae("✗ refused: identical payload re-sent within the window (use --force)",
-				"✗ 拒发：时间窗内重复相同内容（要重发用 --force）")
+			// The handle belongs on the FAILURE lines most of all: a bare "%37" is the
+			// one identifier you can't act on — you can't jump to it, and it says nothing
+			// about which session or what the window was for. A failed dispatch leaves a
+			// live session behind, so naming it is how you find it.
+			i18n.Sae("✗ refused → "+handle+": identical payload re-sent within the window (use --force)",
+				"✗ 拒发 → "+handle+"：时间窗内重复相同内容（要重发用 --force）")
 		default:
-			i18n.Sae("✗ NOT delivered to "+pane+" — evidence:\n"+res.Evidence,
-				"✗ 未送达 "+pane+" —— 证据：\n"+res.Evidence)
+			i18n.Sae("✗ NOT delivered → "+handle+" — evidence:\n"+res.Evidence,
+				"✗ 未送达 → "+handle+" —— 证据：\n"+res.Evidence)
 		}
 	}
 	if res.Delivered {
