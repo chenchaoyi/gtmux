@@ -3,16 +3,17 @@
 // set of OPTIONAL capabilities an agent's structured interfaces can provide
 // (delivery receipt from its hook event stream, state truth, transcript content,
 // readiness, headless one-shot); a nil capability means that channel falls back to
-// Layer 1 — the tmux screen/keystroke base, which is permanently retained and
-// behaviorally identical to the pre-driver system.
+// Layer 1 — the tmux screen/keystroke base, which is permanently retained.
 //
 // Drivers consume facts the agent already produces (events.jsonl, transcript
 // files, state markers, exec output). They never wrap the agent in a proxy or a
 // persistent session: the tmux pane stays the single input path, so the user can
 // always jump in and take over.
 //
-// This package is a LEAF (only usercfg below it) so every layer — dispatch,
-// dispatchbridge, radar, hqnudge, app — may consult it without an import cycle.
+// Import direction: this package sits BELOW dispatchbridge/radar/hqnudge/app and
+// ABOVE the evidence leaves it reads (events, dispatch's pure matching helpers) —
+// dispatch never imports driver (its event evidence is injected via dispatch.IO),
+// so the layering stays acyclic.
 package driver
 
 import "github.com/chenchaoyi/gtmux/internal/usercfg"
@@ -27,7 +28,7 @@ const (
 	NoEvidence Verdict = iota
 	// Confirmed — the event stream proves the payload was submitted. Final.
 	Confirmed
-	// Unsubmitted — the stream proves the paste is in place but was never
+	// Unsubmitted — the evidence proves the paste is in place but was never
 	// submitted (the precise "swallowed Enter"): repair is Enter-only.
 	Unsubmitted
 )
@@ -39,41 +40,43 @@ type Driver struct {
 	// and the radar profiles ("claude", "codex", …).
 	Name string
 
-	// HookEquipped records that this agent installs gtmux hooks, so its prompt
-	// submissions land on the session-events stream. This is BASELINE fact, not
-	// a driver capability: the pre-driver system already prefers the event
-	// stream for these agents (dispatch verify), so it is deliberately NOT
-	// subject to the capability switches — disabling drivers must restore the
-	// Layer-1-only path only for behaviors the driver layer itself added.
-	// From P1 the hook-first verify collapses into Receipt and this field's
-	// consumers migrate to `Receipt != nil`.
-	HookEquipped bool
-
-	// Receipt confirms a delivery from the agent's event stream: needle is the
-	// shared-normalization head of the delivered payload, since bounds the
-	// event window (unix seconds). Nil until the receipt capability ships (P1).
+	// Receipt confirms a delivery from the agent's session-events stream: needle
+	// is the dispatch.NormalizeNeedle fingerprint of the delivered payload, since
+	// bounds the event window (unix seconds). Non-nil for every hook-equipped
+	// agent — `Receipt != nil` is the fact the event-first verify path keys on
+	// (it replaced the P0 HookEquipped field), so the capability switches can
+	// force the pure Layer-1 screen path (design §5).
 	Receipt func(pane, needle string, since int64) Verdict
 }
 
-// registry holds the built-in drivers, keyed by agent key. P0 collapses the
-// former dispatchbridge hookAgents whitelist here; capabilities arrive per
-// phase (Receipt in P1, readiness in P3, headless in P5).
-var registry = map[string]Driver{
-	"claude":       {Name: "claude", HookEquipped: true},
-	"codex":        {Name: "codex", HookEquipped: true},
-	"gemini":       {Name: "gemini", HookEquipped: true},
-	"cursor":       {Name: "cursor", HookEquipped: true},
-	"cursor-agent": {Name: "cursor-agent", HookEquipped: true},
-	"opencode":     {Name: "opencode", HookEquipped: true},
-	"copilot":      {Name: "copilot", HookEquipped: true},
-	"kiro":         {Name: "kiro", HookEquipped: true},
+// hookEquippedAgents are the agents whose installers wire gtmux hooks, so their
+// prompt submissions land on the session-events stream — the former
+// dispatchbridge whitelist. They all share the SAME events-backed Receipt: the
+// evidence is the stream record gtmux's own hook writes, not anything
+// agent-specific, so registering one is registering all (the commander's P1
+// ruling covered the sparse-events case explicitly: Codex ships in the same
+// batch as Claude — low event density only lowers the hit rate, and NoEvidence
+// falls to Layer 1).
+var hookEquippedAgents = []string{
+	"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "copilot", "kiro",
 }
+
+// registry holds the built-in drivers, keyed by agent key. Further capabilities
+// arrive per phase (readiness in P3, content wiring in P4, headless in P5).
+var registry = func() map[string]Driver {
+	m := make(map[string]Driver, len(hookEquippedAgents))
+	for _, k := range hookEquippedAgents {
+		m[k] = Driver{Name: k, Receipt: eventsReceipt}
+	}
+	return m
+}()
 
 // For resolves the driver for an agent key. An unknown agent yields the zero
 // Driver (all capabilities nil → Layer 1 everywhere). Capability switches from
 // the user config (`driver.enable`, `driver.<agent>.<capability>`) strip the
-// corresponding capability functions; they never touch HookEquipped (see the
-// field comment — baseline fact, not a driver behavior).
+// corresponding capability functions — a stripped Receipt means delivery
+// verification runs the pure Layer-1 screen path, deliberately MORE conservative
+// than the default, for isolating event-channel faults (design §5).
 func For(agentKey string) Driver {
 	d, ok := registry[agentKey]
 	if !ok {

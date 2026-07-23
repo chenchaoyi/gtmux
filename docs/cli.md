@@ -194,7 +194,7 @@ tmux choreography:
 gtmux spawn "add a --dry-run flag to the deploy script"
 gtmux spawn --title fix-auth-mw --worktree feat/dry-run --model opus "add a --dry-run flag"
 gtmux spawn --pane %14 "keep going, then run the tests"
-gtmux spawn --json "…"   # → {task_id, pane_id, loc, title, session, delivered, state, evidence}
+gtmux spawn --json "…"   # → {task_id, pane_id, loc, title, session, delivered, state, judged_by, evidence}
 ```
 
 **Window-title standard.** `--title` names the window's PURPOSE — a concise verb-object
@@ -211,9 +211,19 @@ one, or `--worktree <branch>` to run in an isolated git worktree), **through the
 network proxy by construction** (never a bare, un-proxied launch that would 403),
 waits for the agent to come up, then delivers the task via a tmux **paste buffer** and
 **verifies** it landed. Verification is layered: for a hook-equipped agent (Claude
-Code, …) it prefers the deterministic `UserPromptSubmit` event on the #388
-session-events stream (no screen-scraping); otherwise it falls back to a hardened,
-two-frame screen-read that locates the input box structurally. The paste is
+Code, Codex, …) it prefers the deterministic `UserPromptSubmit` event on the #388
+session-events stream (no screen-scraping) — the event's recorded head and the
+verifier's needle come from ONE shared normalization pipeline, so a genuine submit
+event always matches; otherwise it falls back to a hardened, two-frame screen-read
+that locates the input box structurally. Arbitration is positive-monotonic: a
+stream-confirmed landing is final (a screen read can never overturn it), and before
+any `delivered:false` the stream is re-read once more so a confirmation arriving at
+the deadline is never lost to the timeout. The JSON result says which layer judged
+it (`judged_by: driver|screen`), so a misjudgment can be attributed instead of
+reconstructed from timelines. Turning the receipt capability off
+(`driver.<agent>.receipt: false` or `driver.enable: false` in
+`~/.config/gtmux/config.json`) forces the pure screen-read path — a deliberately
+more conservative fallback for isolating event-channel faults. The paste is
 **bracketed**, so a multi-line instruction lands as ONE draft and the separate Enter
 submits it once (sent raw, each newline would reach the TUI as a bare Return and
 submit that line on the spot). The ONLY success is a confirmed landing — a swallowed
@@ -227,8 +237,9 @@ duplicate `/compact` can't double-fire); `--force` overrides it. Pre-flight chec
 (proxy, machine resource, subscription window) are advisory and never block.
 
 `gtmux send <pane> <text>` uses the SAME land-verification by DEFAULT now (returns as
-soon as it confirms, so a healthy send stays fast); `--no-verify` opts out and
-`--force` overrides the interlock. What `--no-verify` and the mobile `POST /api/send`
+soon as it confirms, so a healthy send stays fast); `--no-verify` opts out,
+`--force` overrides the interlock, and `--json` prints the verified result
+(`{delivered, state, judged_by, evidence}` — verified sends only). What `--no-verify` and the mobile `POST /api/send`
 skip is the CONFIRMATION, not the mechanics: every text path pastes and then sends
 Enter as its own key, so an unverified send can't split a multi-line message either.
 `--key` remains a single keystroke.

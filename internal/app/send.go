@@ -25,6 +25,7 @@ func cmdSend(args []string) int {
 	enter := true
 	verify := true
 	force := false
+	asJSON := false
 	key := ""
 	var rest []string
 	for i := 0; i < len(args); i++ {
@@ -39,6 +40,8 @@ func cmdSend(args []string) int {
 			verify = false
 		case a == "--force":
 			force = true
+		case a == "--json":
+			asJSON = true
 		case a == "--key":
 			if i+1 >= len(args) {
 				return sendUsage()
@@ -54,6 +57,11 @@ func cmdSend(args []string) int {
 		}
 	}
 	if len(rest) == 0 {
+		return sendUsage()
+	}
+	// --json reports the VERIFIED delivery result (delivered/state/judged_by/
+	// evidence); the unverified and single-key paths have no verdict to report.
+	if asJSON && (!verify || !enter || key != "") {
 		return sendUsage()
 	}
 	pane := rest[0]
@@ -83,12 +91,25 @@ func cmdSend(args []string) int {
 		agentCmd := tmux.Display(paneID, "#{pane_current_command}")
 		tune := dispatch.LoadTuning()
 		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
-		switch res.State {
-		case dispatch.StateLanded:
+		if res.Delivered {
 			// HQ (or whoever drives `gtmux send`) awaits this pane's completion
 			// (done-wake-keyed-on-awaited): mark it so its next `done` wakes HQ even when
 			// the pane is attended — the send-driven case a plain attended-defer dropped.
 			dispatch.MarkAwaited(paneID)
+		}
+		if asJSON {
+			b, _ := json.Marshal(sendJSON{
+				Delivered: res.Delivered, State: string(res.State),
+				JudgedBy: res.JudgedBy, Evidence: res.Evidence,
+			})
+			fmt.Println(string(b))
+			if res.Delivered || res.State == dispatch.StateQueued {
+				return 0
+			}
+			return 1
+		}
+		switch res.State {
+		case dispatch.StateLanded:
 			return 0
 		case dispatch.StateQueued:
 			i18n.Say("• queued — it will run after the current turn", "• 已排队 —— 当前这轮结束后执行")
@@ -148,9 +169,17 @@ func paneID(pane string) string {
 	return pane
 }
 
+// sendJSON is the `gtmux send --json` contract (verified sends only).
+type sendJSON struct {
+	Delivered bool   `json:"delivered"`
+	State     string `json:"state"`
+	JudgedBy  string `json:"judged_by,omitempty"` // driver | screen — the layer that judged it
+	Evidence  string `json:"evidence,omitempty"`
+}
+
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--key NAME]",
-		"用法：gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--key 键名]")
+	i18n.Sae("usage: gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--json] [--key NAME]",
+		"用法：gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--json] [--key 键名]")
 	return 2
 }
 

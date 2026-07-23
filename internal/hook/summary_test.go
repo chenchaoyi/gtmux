@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 )
 
@@ -68,6 +69,31 @@ func TestEventSummary_DropsInjectedPrompt(t *testing.T) {
 	} {
 		if sum, _ := eventSummary("UserPromptSubmit", in, "", "", "claude"); sum != "" {
 			t.Errorf("injected prompt %q should yield no summary, got %q", in, sum)
+		}
+	}
+}
+
+// TestEventSummary_SharesTheDeliverNeedlePipeline pins the single-track guarantee
+// (openspec agent-drivers P1): the Summary the hook records for a UserPromptSubmit
+// IS dispatch.NormalizeNeedle of the raw prompt — the same function Deliver derives
+// its matching needle with — so the two sides can never drift apart again (the
+// dual-track normalization was a real "NOT delivered" misjudgment source).
+func TestEventSummary_SharesTheDeliverNeedlePipeline(t *testing.T) {
+	payloads := []string{
+		"cut a new release and update the cask",
+		"  Please  refactor   the verifier  ",
+		"fix the flaky test\n<system-reminder>context low</system-reminder>",
+		"» gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地",
+		strings.Repeat("多字节长指令 ", 30),
+	}
+	for _, p := range payloads {
+		sum, _ := eventSummary("UserPromptSubmit", p, "", "", "claude")
+		if sum == "" {
+			t.Errorf("payload should record a summary: %q", p)
+			continue
+		}
+		if want := dispatch.NormalizeNeedle(p); sum != want {
+			t.Errorf("hook summary %q != deliver needle %q for %q", sum, want, p)
 		}
 	}
 }

@@ -21,24 +21,34 @@
 
 ## P1 — 投递回执仲裁(send/spawn 落地校验;修误判 NOT delivered)
 
-- [ ] 1.1 归一化单轨:`driver.NormalizeNeedle` 统一 hook 落盘 Summary 与
-      Deliver 比对两侧;fixture 断言两侧对同一 payload 产出相等指纹
-      (events.jsonl 落盘格式不变)
-- [ ] 1.2 实现 `Receipt`(读 events.jsonl,按 pane+since+needle 三值判定
-      Confirmed/Unsubmitted/NoEvidence)——**Claude 与 Codex 首期同批注册**
-      (司令拍板 2026-07-23;Codex 事件密度低只降命中率,NoEvidence 落第 1 层)
-- [ ] 1.3 `dispatch.Deliver`:宣告 failed 前强制终局 Receipt 复查;Confirmed
+- [x] 1.1 归一化单轨:`dispatch.NormalizeNeedle`(落在 dispatch 而非 driver,
+      保持 dispatch 不依赖 driver 的无环方向)统一 hook 落盘 Summary 与
+      Deliver 比对两侧——hook 侧改为字面调用同一函数;fixture 断言两侧对同一
+      payload 产出相等指纹(events.jsonl 落盘格式不变)
+- [x] 1.2 实现 `Receipt`(读 events.jsonl,按 pane+since+needle 判定
+      Confirmed/NoEvidence)——**Claude 与 Codex 首期同批注册**(司令拍板
+      2026-07-23;Codex 事件密度低只降命中率,NoEvidence 落第 1 层)。实现为
+      全部 hook-equipped agent 共用同一 events 回执(同一 gtmux hook、同一
+      证据流,agent 无关)——只注册两家会让其余 6 家丢失既有事件优先校验,
+      违反零回归;`HookEquipped` 字段按计划退役,消费方迁移到 `Receipt != nil`
+- [x] 1.3 `dispatch.Deliver`:宣告 failed 前强制终局 Receipt 复查
+      (`submitConfirmed`,经注入的 `io.Events` 读同一事件证据);Confirmed
       即 landed;屏读不得推翻 Confirmed(单调仲裁测试:事件迟到于最后一轮
-      轮询、先屏读误判后事件到达 等场景)
-- [ ] 1.4 `Result` 增加 `JudgedBy: driver|screen`,`send --json`/`spawn --json`
-      透出;evidence 附带判定层
-- [ ] 1.5 swallowed-Enter 精化:Receipt 返回 Unsubmitted 时走既有退避补 Enter
-      路径(沿用"草稿仍完整才补"纪律;不新增重试机制)
-- [ ] 1.6 回归测试:复刻"UserPromptSubmit 已在流中而屏读判 NOT delivered"的
-      实锤时间线为 fake-IO 测试用例
-- [ ] 1.7 kill-switch 验证:`driver.<agent>.receipt: off` 下 Deliver 走纯
-      第 1 层屏读路径(design §5);docs(`docs/cli.md` send/spawn 一节的
-      judged-by 说明)
+      轮询之后、deadline 时刻才可见 → 终局复查捞回)
+- [x] 1.4 `Result` 增加 `JudgedBy: driver|screen`,`send --json`(本期新增
+      flag,仅限验证路径)/`spawn --json` 透出 `judged_by`
+- [x] 1.5 swallowed-Enter 精化:dispatch 侧 Unsubmitted 的证据源即既有 draft
+      判定(`draftHasDelivery` → 退避补 Enter,机制零改动);事件流看不见
+      草稿,`eventsReceipt` 不产 Unsubmitted——该 verdict 的生产者是 P2 的
+      wake draft 检查(`Verdict` 类型已就位)
+- [x] 1.6 回归测试:复刻"UserPromptSubmit 已在流中而屏读判 NOT delivered"的
+      实锤时间线(可剥前缀 payload 双轨失配 + 事件迟到)为 fake-IO 测试用例
+      (`TestDeliver_StrippablePrefix_EventStillMatches`、
+      `TestDeliver_TimeoutRecheck_LateEventNotLost`)
+- [x] 1.7 kill-switch 验证:`driver.<agent>.receipt: off` 下 `hookEquipped()`
+      为 false → Deliver 走纯第 1 层屏读路径(design §5;
+      `TestSwitchForcesLayerOne`);docs(`docs/cli.md` spawn/send 一节的
+      judged-by + 开关说明)
 
 ## P2 — wake ack 升级(hq-wake-reliability 的扩展;修回车被吞搁浅)
 

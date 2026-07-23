@@ -15,12 +15,13 @@ import (
 // pollInterval is how often the deliver-verify loop re-reads the pane/stream.
 const pollInterval = 300 * time.Millisecond
 
-// hookEquipped reports whether an agent launch command is one whose hooks feed the
-// event stream (so the primary verify path applies). The fact lives in the driver
-// registry (the agents that install gtmux hooks, keyed by launch-command basename);
-// this is baseline behavior, not gated by the driver capability switches.
+// hookEquipped reports whether an agent launch command has the delivery-receipt
+// capability (its hooks feed the event stream, so the event-first verify path
+// applies). Since P1 the fact is the driver registry's Receipt capability — which
+// makes it switchable: `driver.<agent>.receipt: off` (or `driver.enable: off`)
+// forces the pure Layer-1 screen-read verification for fault isolation.
 func hookEquipped(agentCmd string) bool {
-	return driver.For(agentKey(agentCmd)).HookEquipped
+	return driver.For(agentKey(agentCmd)).Receipt != nil
 }
 
 // eventsForPane maps recent session-events for a pane (Ts >= sinceTs) into the

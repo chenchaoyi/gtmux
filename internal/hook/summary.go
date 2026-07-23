@@ -49,11 +49,13 @@ func eventSummary(event, prompt, pane, agentSession, agentKey string) (summary, 
 		// a system-reminder) or our OWN nudge echoed back — never a real goal. Filter it
 		// with the SAME sanitizer the transcript uses so it doesn't become a goal or a
 		// goal-changed nudge.
-		clean, ok := transcript.CleanUserPrompt(prompt)
-		if !ok {
+		if _, ok := transcript.CleanUserPrompt(prompt); !ok {
 			return "", ""
 		}
-		return dispatch.NormalizeHead(clean), ""
+		// The recorded head is the delivery-receipt fingerprint: ONE pipeline
+		// (dispatch.NormalizeNeedle) on this side and on Deliver's needle side, so a
+		// cleaning difference can never make the verifier ignore this event.
+		return dispatch.NormalizeNeedle(prompt), ""
 	case "Stop":
 		reply := lastReply(pane, agentSession, agentKey)
 		if reply == "" {
