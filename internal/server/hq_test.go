@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The HQ page's whole reason to exist is data the radar doesn't have. These pin the two
@@ -195,3 +196,47 @@ var errSendNotSubmitted = errSend("not submitted: the pane's input box did not s
 type errSend string
 
 func (e errSend) Error() string { return string(e) }
+
+// The supervisor is a META layer: hq-meta-layer took it out of the lockscreen tally and
+// the "who's waiting" headline, but left the alert loop firing for it — so HQ still
+// PUSHED notifications worded and routed exactly like a worker's, for a session the radar
+// deliberately no longer lists as one. Getting a push for something you can't find in the
+// list is what made the meta-layer read as broken rather than as a layer.
+func TestSupervisorProducesNoWorkerAlerts(t *testing.T) {
+	var alerts []Alert
+	var cur []AgentStatus
+	h := newHub(func() []AgentStatus { return cur }, 0, func(a Alert) { alerts = append(alerts, a) })
+	h.renudge = time.Hour
+
+	worker := AgentStatus{PaneID: "%7", Agent: "Claude Code", Loc: "api:0.0", Status: "working"}
+	hq := AgentStatus{PaneID: "%5", Agent: "Claude Code", Loc: "HQ:0.0", Status: "working", Role: "supervisor"}
+
+	cur = []AgentStatus{worker, hq}
+	h.tick() // baseline snapshot — no alerts on first observation
+	worker.Status, hq.Status = "waiting", "waiting"
+	cur = []AgentStatus{worker, hq}
+	h.tick()
+
+	for _, a := range alerts {
+		if a.Pane == "%5" {
+			t.Errorf("the supervisor emitted a worker alert: %+v", a)
+		}
+	}
+	if len(alerts) == 0 {
+		t.Fatal("the WORKER's alert went missing — the gate must be role-scoped, not a blanket mute")
+	}
+
+	// ...and a supervisor finishing a turn must not push a "done" either.
+	alerts = nil
+	worker.Status, hq.Status = "working", "working"
+	cur = []AgentStatus{worker, hq}
+	h.tick()
+	worker.Status, hq.Status = "idle", "idle"
+	cur = []AgentStatus{worker, hq}
+	h.tick()
+	for _, a := range alerts {
+		if a.Pane == "%5" {
+			t.Errorf("the supervisor emitted a done alert: %+v", a)
+		}
+	}
+}

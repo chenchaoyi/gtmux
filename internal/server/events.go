@@ -350,8 +350,7 @@ func (h *hub) tick() {
 		curMap[a.PaneID] = a
 		// The supervisor (HQ) is a META layer — it never counts toward the WORKER
 		// fleet tally the lockscreen shows, and never sets the "who's waiting"
-		// headline (that headline is about the workers). Change-detection + alerts
-		// below still run for it, so the app's HQ card stays live.
+		// headline (that headline is about the workers).
 		if a.Role != "supervisor" {
 			switch a.Status {
 			case "waiting":
@@ -372,7 +371,20 @@ func (h *hub) tick() {
 		if !existed || p.Status != a.Status || p.Task != a.Task {
 			changed = true
 		}
-		if a.Status == "waiting" {
+		// ALERTS are worker events too. hq-meta-layer took the supervisor out of the
+		// tally and the headline but left this loop alerting for it, so HQ still pushed
+		// notifications worded and routed exactly like a worker's — for a session the
+		// radar deliberately no longer lists as one. Getting a push for something you
+		// cannot find in the list is the contradiction that made the meta-layer read as
+		// broken rather than as a layer.
+		//
+		// The change-detection above is untouched: `changed` still flips for the
+		// supervisor, so the app's HQ card stays live. Only the ALERT — the push — is
+		// withheld. A supervisor-specific notification is a separate design (a distinct
+		// category in the supervisor's own voice), not this one wearing worker clothes.
+		if a.Role == "supervisor" {
+			delete(h.waitAlertAt, a.PaneID)
+		} else if a.Status == "waiting" {
 			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task}
 			last, tracked := h.waitAlertAt[a.PaneID]
 			switch {
