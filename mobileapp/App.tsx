@@ -69,7 +69,12 @@ function PushBridge({navRef}: {navRef: any}) {
         pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
         status: 'working', task: '', latest: false, activity: false, source: 'tmux',
       };
-    navRef.navigate('Detail', {agent});
+    // The supervisor opens its own command page, exactly as tapping its card does.
+    // A deep-link used to drop it into the generic Chat/Terminal detail — so the one
+    // session the radar deliberately does NOT list as a worker was the one a
+    // notification opened AS a worker, which is what made the meta-layer read as
+    // inconsistent rather than as a layer.
+    navRef.navigate(agent.role === 'supervisor' ? 'HQ' : 'Detail', {agent});
   };
   // navRef isn't ready until NavigationContainer mounts (this bridge renders
   // first), so a deep-link consumed on mount retries briefly until it is.

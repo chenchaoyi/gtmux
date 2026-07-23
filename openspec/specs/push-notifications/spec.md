@@ -167,3 +167,35 @@ device's push binding + a count of unlinked tokens) and
 - **WHEN** a device or guest token calls `GET /api/push/tokens` or `POST /api/push/forget`
 - **THEN** it is refused (`403`)
 
+### Requirement: The supervisor does not notify as a worker
+
+The system SHALL NOT emit worker alerts — and therefore SHALL NOT push notifications — for
+the supervisor session. The supervisor is a meta layer that the session list deliberately
+does not present as one more session, and a push about something the user cannot find in
+that list is a contradiction: it makes the meta layer read as broken rather than as a
+layer. Suppression SHALL be scoped to the supervisor's ROLE and SHALL NOT mute workers,
+and it SHALL NOT suppress the change signal that keeps the supervisor's own card live —
+only the alert. A notification in the supervisor's own voice remains a separate design; it
+is not this one wearing worker wording.
+
+#### Scenario: The supervisor blocks on the user
+
+- **WHEN** the supervisor enters a waiting state
+- **THEN** no push notification is sent for it, while a worker entering the same state
+  still notifies
+
+#### Scenario: The supervisor finishes a turn
+
+- **WHEN** the supervisor goes from working to idle
+- **THEN** no completion notification is sent for it
+
+### Requirement: A notification opens the surface its session belongs to
+
+Tapping a notification SHALL open the same surface that opening that session from the
+session list opens. A session presented by a dedicated surface SHALL NOT be opened by a
+notification into the generic one, since that contradicts the distinction the list makes.
+
+#### Scenario: Tapping a supervisor notification
+
+- **WHEN** the user taps a notification belonging to the supervisor
+- **THEN** the supervisor's own command surface opens, not the generic session detail
