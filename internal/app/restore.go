@@ -131,6 +131,9 @@ func ensureServer() {
 		restoreLogf("ensureServer: driven-restore restored=%v liveSessions=%v", restored, sessionNamesList())
 		if restored {
 			tmux.OK("kill-session", "-t", boot)
+			// resurrect places the active window with `switch-client`, which does nothing
+			// without an attached client — and we just restored headlessly. Replay it.
+			restoreActiveSpots(save)
 			i18n.Say("Restored layout, dirs and screen text — bringing your agent conversations back…",
 				"已恢复布局 / 目录 / 屏幕文本 —— 正在接回你的 agent 会话…")
 			resumeAgents()
@@ -396,22 +399,32 @@ func sessionNamesList() []string {
 // server: yes only when the save has sessions AND none of them are live (the
 // server is a fresh/empty post-reboot one). If any saved session is already live
 // we assume a normal reattach and do nothing, to avoid duplicating sessions.
+// shouldRecover reports whether a running server is missing saved sessions that ought to
+// be brought back.
+//
+// It used to require that ALL saved sessions be missing, which made the common case
+// unrecoverable: after a reboot a terminal tab reopens and starts ONE of your sessions,
+// so "some saved session is already live" was true, recovery was skipped, and every OTHER
+// saved session stayed gone — permanently, since the next autosave then recorded their
+// absence. That is how one particular session was lost on two consecutive days: it simply
+// wasn't the one that happened to come back on its own.
+//
+// Recovering with sessions already live is safe: tmux-resurrect checks session_exists /
+// window_exists and only creates what is missing, so driving it against a partially
+// populated server fills the gaps instead of duplicating anything.
 func shouldRecover(saved []string, live map[string]bool) bool {
-	if len(saved) == 0 {
-		return false
-	}
 	for _, s := range saved {
-		if live[s] {
-			return false
+		if !live[s] {
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 // recoverMissingSavedSessions handles the post-reboot trap: a server is already
 // up (so ensureServer's boot+restore is skipped) but the saved layout never came
-// back. If a real saved layout exists whose sessions are ALL missing from the
-// running server, drive the tmux-resurrect restore into it.
+// back. If a real saved layout exists with ANY session missing from the running
+// server, drive the tmux-resurrect restore into it to fill the gaps.
 func recoverMissingSavedSessions() {
 	save := resurrectLastSave()
 	if save == "" || !saveHasLayout(save) {
@@ -421,10 +434,10 @@ func recoverMissingSavedSessions() {
 	saved := savedSessionNames(save)
 	live := liveSessionNames()
 	if !shouldRecover(saved, live) {
-		restoreLogf("recover: skip — some saved session already live (saved=%v live=%v)", saved, sessionNamesList())
+		restoreLogf("recover: skip — every saved session is already live (saved=%v live=%v)", saved, sessionNamesList())
 		return
 	}
-	restoreLogf("recover: driving restore into running server (saved=%v missing-all)", saved)
+	restoreLogf("recover: driving restore into running server (saved=%v, some missing)", saved)
 	script := resurrectRestoreScript()
 	if script == "" {
 		i18n.Sae("⚠ This tmux server is missing your saved sessions, but tmux-resurrect isn't installed to restore them. Save: "+save,
@@ -435,6 +448,7 @@ func recoverMissingSavedSessions() {
 		"检测到 tmux server 在跑但缺少你的存档 session，正在用最近一次存档恢复...")
 	driveResurrectRestore(script)
 	if waitForSavedSessions(saved, 120*time.Second) {
+		restoreActiveSpots(save) // see restoreactive.go — switch-client is a no-op here too
 		i18n.Say("Restored your saved sessions — bringing your agent conversations back…",
 			"已恢复你的存档 session —— 正在接回你的 agent 会话…")
 		resumeAgents()

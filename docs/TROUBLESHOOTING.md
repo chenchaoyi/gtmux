@@ -71,6 +71,41 @@ env -i HOME="$HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin" gtmux tunnel --service 
 - `~/.tmux.conf` 里的 `bind g/a/J` 硬编码 `~/.local/bin/gtmux` —— **正确**，因为那正是权威路径。
 
 
+## restore：四类症状、一个共同成因（没有可执行的契约）
+
+一天之内 restore 暴露四类症状（丢会话 / 同一个会话连丢两次 / pane 布局变了 / 终端窗口顺序），
+每次都只修被人注意到的那一个。**这不是四个独立 bug，是「这个子系统没有可执行契约」的特征。**
+
+**跑契约**（默认 SKIP，不会碰你的东西）：
+```sh
+GTMUX_RESTORE_E2E=1 go test ./internal/app/ -run TestRestore -timeout 12m
+```
+
+它在一个**私有 tmux server**（`TMUX_TMPDIR`）+ **私有 HOME**（resurrect 存档目录）里
+save → kill-server → restore → 逐维断言。**不 mock tmux**——要抓的失败恰恰活在
+gtmux × resurrect × 真 server 的交互里，mock 会把它删掉。
+
+**它第一次跑就抓到的**
+- **活跃窗口/pane 从来就没恢复过**，而且**四类症状里没人报过它**。resurrect 用
+  `tmux switch-client` 放置活跃窗口，而**没有 client 附着时它什么都不做、也不报错**——
+  gtmux 是无头驱动 restore 的。修法：自己用 `select-window`/`select-pane` 回放（见
+  `restoreactive.go`）。
+- **缺失会话找回被一个反了的条件挡住**：`shouldRecover` 要求**所有**存档会话都不在才找回。
+  重启后总有某个终端标签自己带起一个 session → 条件不成立 → **其余会话永远回不来**，
+  下一次 autosave 还会把「它们不存在」这件事记下去。
+
+**它没抓到的，也要说清**
+- **pane 布局在干净路径上不丢**。第一版测试报红过，**是我的比较写错了**：恢复出来的是新
+  pane，layout 字符串里的 pane id 当然会变（`...,0,0,7` → `...,0,0,8`），几何完全一致。
+  比较必须去掉**校验和**和**每个叶子末尾的 pane id**。差点把它当 bug 报出去。
+- **终端窗口顺序无法在这里验证**（要真终端 + 辅助功能树）。列在契约里，标注「人验」。
+
+**必查**
+- 改任何 restore 相关代码，跑上面那条命令。
+- 加一条 restore 行为时，**先往契约里加一维断言**，再写实现。
+- 断言 tmux layout 字符串时，**永远先归一化 pane id**，否则你测的是 pane 编号不是布局。
+
+
 ## Release / git-ops
 
 ### Never inline backtick-containing prose into a shell-substituted string
