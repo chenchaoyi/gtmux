@@ -169,6 +169,19 @@ struct PreferencesView: View {
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                // WHY a mode change didn't take. RemoteAccess has always published this,
+                // and the pair sheet has always shown it — this pane never did, so a
+                // failed switch to Anywhere looked like the confirmation dialog simply
+                // vanishing: the picker snapped back and nothing said a word. A control
+                // that can fail has to be able to say so where it is.
+                if let e = remote.lastError, !e.isEmpty {
+                    Text(e)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color(Theme.Status.errored))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                }
                 connectedDevices
             }
 

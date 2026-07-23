@@ -193,8 +193,8 @@ func tunnelHosted(port int, name string, yes bool) int {
 			"gtmux tunnel: 此构建未启用托管模式。用 `gtmux tunnel --quick` 走临时隧道，或设置 GTMUX_TUNNEL_REG。")
 		return 2
 	}
-	bin, err := exec.LookPath("cloudflared")
-	if err != nil {
+	bin := lookTool("cloudflared")
+	if bin == "" {
 		if bin = ensureCloudflared(yes); bin == "" {
 			return 1
 		}
@@ -346,8 +346,8 @@ func resolveDeviceID() string {
 var tryCloudflareRe = regexp.MustCompile(`https://[a-z0-9-]+\.trycloudflare\.com`)
 
 func tunnelQuick(port int, name string, yes bool) int {
-	bin, err := exec.LookPath("cloudflared")
-	if err != nil {
+	bin := lookTool("cloudflared")
+	if bin == "" {
 		if bin = ensureCloudflared(yes); bin == "" {
 			return 1
 		}
@@ -464,7 +464,7 @@ func cloudflaredProblem(line string) bool {
 func ensureCloudflared(yes bool) string {
 	i18n.Say("cloudflared isn't installed — it's the Cloudflare tunnel client (one binary, Mac-side only; the mobile app never touches it).",
 		"未检测到 cloudflared，它是 Cloudflare 隧道客户端（一个二进制，只在 Mac 上跑；手机 App 完全不碰它）。")
-	if _, err := exec.LookPath("brew"); err != nil {
+	if lookTool("brew") == "" {
 		i18n.Sae("Anywhere needs cloudflared, and Homebrew isn't installed to fetch it. Install cloudflared, then retry: https://github.com/cloudflare/cloudflared/releases",
 			"任意网络访问需要 cloudflared，但未安装 Homebrew 来获取它。请手动安装 cloudflared 后重试：https://github.com/cloudflare/cloudflared/releases")
 		return ""
@@ -476,15 +476,15 @@ func ensureCloudflared(yes bool) string {
 		return ""
 	}
 	i18n.Say("Installing cloudflared (brew install cloudflared)…", "正在安装 cloudflared（brew install cloudflared）…")
-	c := exec.Command("brew", "install", "cloudflared")
+	c := exec.Command(lookTool("brew"), "install", "cloudflared")
 	c.Stdout, c.Stderr, c.Stdin = os.Stdout, os.Stderr, os.Stdin
 	if err := c.Run(); err != nil {
 		i18n.Sae("gtmux tunnel: `brew install cloudflared` failed: "+err.Error(),
 			"gtmux tunnel: `brew install cloudflared` 失败："+err.Error())
 		return ""
 	}
-	bin, err := exec.LookPath("cloudflared")
-	if err != nil {
+	bin := lookTool("cloudflared")
+	if bin == "" {
 		i18n.Sae("gtmux tunnel: cloudflared still not found after install.",
 			"gtmux tunnel: 安装后仍未找到 cloudflared。")
 		return ""

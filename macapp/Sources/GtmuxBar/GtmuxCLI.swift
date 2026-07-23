@@ -30,6 +30,7 @@ enum GtmuxCLI {
 
     private static func makeProcess(_ args: [String]) -> Process {
         let proc = Process()
+        proc.environment = childEnvironment()
         if path == "/usr/bin/env" {
             proc.executableURL = URL(fileURLWithPath: "/usr/bin/env")
             proc.arguments = ["gtmux"] + args
@@ -38,6 +39,26 @@ enum GtmuxCLI {
             proc.arguments = args
         }
         return proc
+    }
+
+    /// The environment gtmux runs in. Identical to ours except PATH, which gets the
+    /// usual install locations PREPENDED.
+    ///
+    /// A GUI app inherits launchd's PATH — `/usr/bin:/bin:/usr/sbin:/sbin` — which has
+    /// neither Homebrew prefix on it. gtmux shells out to real tools (cloudflared, brew,
+    /// tmux, git), so with that PATH it reported cloudflared as "not installed" and
+    /// Homebrew as "not installed to fetch it" on a Mac holding both in /usr/local/bin:
+    /// switching to Anywhere from the menu bar silently could not work, while the exact
+    /// same command from a terminal did. We already resolve gtmux ITSELF across these
+    /// same directories; anything gtmux then calls deserves the same PATH.
+    private static func childEnvironment() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        let extras = ["/opt/homebrew/bin", "/usr/local/bin", NSHomeDirectory() + "/.local/bin"]
+        let current = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
+        let have = Set(current.split(separator: ":").map(String.init))
+        let prefix = extras.filter { !have.contains($0) }
+        env["PATH"] = prefix.isEmpty ? current : prefix.joined(separator: ":") + ":" + current
+        return env
     }
 
     /// Run gtmux and return its stdout (nil on failure). Blocking — call off-main.

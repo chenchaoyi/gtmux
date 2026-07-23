@@ -11,6 +11,35 @@ rake. Keep entries short and action-first.
 
 ---
 
+## 菜单栏切不到 Anywhere：GUI 进程的 PATH 没有 Homebrew 前缀
+
+**症状** —— 菜单栏偏好设置里点「任意网络」，确认弹窗出现，点 Enable 后**弹窗直接消失、开关弹回、
+屏幕上什么都没有**。同一条命令在终端里跑（`gtmux tunnel --service --yes`）**完全成功**。
+
+**根因（两条，缺一条都还不够解释）**
+
+1. **GUI 进程的 PATH 不是你的 PATH。** 从 Finder/LaunchServices 启动的 app 继承 launchd 的
+   `PATH=/usr/bin:/bin:/usr/sbin:/sbin` —— **两个 Homebrew 前缀都不在上面**。`cloudflared` 在
+   `/usr/local/bin`，于是 `exec.LookPath` 报「没装」，CLI 接着说「也没装 Homebrew 来帮你装」——
+   两句都是假的，两个东西一直都在。`internal/tmux` 早就踩过这个坑并为 tmux 硬编码了兜底路径，
+   但 cloudflared / brew 从来没享受到同一课。
+2. **失败被吞掉。** `RemoteAccess.run()` 一直有 `lastError`，配对面板一直在显示它，**但偏好设置
+   那一栏从来没渲染过**。所以失败的表现就是「弹窗消失，什么都没发生」。
+
+**复现（不需要真的弄坏环境）**
+```sh
+env -i HOME="$HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin" gtmux tunnel --service --yes
+# → cloudflared isn't installed … Homebrew isn't installed to fetch it
+```
+
+**必查**
+- 调试任何「app 里不行、终端里行」的问题，**先用上面那行 `env -i` 复现**。这是这一类 bug 的
+  分水岭，不先做这一步会往错误的方向查很久（网络？token？权限？）。
+- 新增一个 gtmux 要 shell 出去调用的工具时，用 `lookTool()`（`internal/app/toolpath.go`）而不是
+  `exec.LookPath`。
+- 新增一个能失败的控件时，**在它自己所在的界面**渲染错误。别指望用户去别的面板找原因。
+
+
 ## Release / git-ops
 
 ### Never inline backtick-containing prose into a shell-substituted string
