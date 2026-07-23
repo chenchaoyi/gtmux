@@ -40,6 +40,37 @@ env -i HOME="$HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin" gtmux tunnel --service 
 - 新增一个能失败的控件时，**在它自己所在的界面**渲染错误。别指望用户去别的面板找原因。
 
 
+## `gtmux update` 在 Apple Silicon 上装了 x86 版（并且会自我延续）
+
+**症状** —— M 系列 Mac 上，`gtmux update` 打印 `[1/5] Host darwin-amd64`，`~/.local/bin/gtmux`
+落成纯 x86 二进制。装完之后**每次再更新还是 amd64**，而且 `file` 一看就是 x86_64。
+
+**根因** —— `install.sh` 用 `uname -m` 判断架构，而 **`uname -m` 报的是「当前进程」的架构，
+不是这台机器的**。在 Rosetta 下它在 Apple Silicon 上返回 `x86_64`。所以：
+
+- 从一个被翻译的 shell 跑安装（`sysctl -n sysctl.proc_translated` = 1）→ 拿 amd64 包；
+- **装完的 x86 gtmux 自己就是翻译着跑的**，它再调 `gtmux update` → 又看到 x86_64 → **闭环，永远
+  出不来**。这就是为什么"装一次不对，以后次次不对"。
+
+**判据** —— `sysctl -n sysctl.proc_translated` 返回 `1` 就说明「你在被翻译，硬件是 arm64」。
+`install.sh` 现在据此纠正 `uname -m`。
+
+**必查**
+- 怀疑架构问题时，**别信 `uname -m`**，先 `sysctl -n sysctl.proc_translated`。
+- `file -b ~/.local/bin/gtmux` 应该是 `arm64`（或 universal），不该是纯 `x86_64`。
+
+## 安装布局：哪个 gtmux 是权威的
+
+**权威 CLI = `~/.local/bin/gtmux`**，一个**真实二进制**（不是软链）。`install.sh` / `gtmux update`
+就是往这里原子替换的（`mv -f`），所以**把它做成软链没有意义——下次更新会把软链直接覆盖成文件**。
+
+- `~/Applications/Gtmux.app/Contents/MacOS/gtmux` —— app **自带的私有副本**，与 app 版本绑定。
+  两个 LaunchAgent（serve / selftunnel）用**绝对路径**指向它，所以清理 PATH 上的副本不会动到服务。
+  **不要**让任何东西软链到它：app 可以被替换或删掉。
+- `/usr/local/bin/gtmux` —— **不该存在**。那是 Homebrew cask 的地盘（早期 0.9.3 cask 的遗留）。
+- `~/.tmux.conf` 里的 `bind g/a/J` 硬编码 `~/.local/bin/gtmux` —— **正确**，因为那正是权威路径。
+
+
 ## Release / git-ops
 
 ### Never inline backtick-containing prose into a shell-substituted string
