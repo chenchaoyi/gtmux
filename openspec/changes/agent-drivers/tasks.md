@@ -75,13 +75,20 @@
 
 ## P3 — spawn 就绪正向信号(SessionStart 短路)
 
-- [ ] 3.1 Claude driver `Ready`:spawn 记录启动时刻,SessionStart 事件
-      (该 pane、时刻后)→ ready 短路(一帧 IsComposerReady 确认,免两帧稳定)
-- [ ] 3.2 缺席不降级:无事件时屏幕门(两帧 + 超时拒贴)逐字节不变;I2 测试
-      (SessionStart 缺席绝不导致 failed)
-- [ ] 3.3 慢启动回归测试:MCP 抖动导致屏幕久不稳定的时间线,断言短路后不再
-      拖满 20s
-- [ ] 3.4 kill-switch 验证(`driver.claude.ready: off`)
+- [x] 3.1 driver `Ready`(`eventsReady`):`WaitAgentReady` 以进门时刻为启动
+      时刻(-1s 余量),SessionStart 事件(该 pane、时刻后)→ ready 短路
+      (一帧 IsComposerReady 确认,免两帧稳定;gate/banner 检查对该帧仍生效)。
+      与 Receipt 同理对全部 hook-equipped agent 注册——hook 把各家
+      session_start/on_session_start/agentSpawn 等统一归一为 `SessionStart`
+      流记录,证据 agent 无关;不发该事件的 agent 只是永不短路(I2)
+- [x] 3.2 缺席不降级:`sessionUp` 为 nil / 恒 false 时屏幕门(两帧 + 超时
+      拒贴)逐字节不变(`TestReadyGate_NoEvent_TwoFrameUnchanged`;旧
+      `TestReadyGate` 全数保留)
+- [x] 3.3 慢启动回归测试:每帧都在变(MCP 抖动)的 ready 帧序列,无事件永不
+      settle、有事件首个 ready 帧即过(`TestReadyGate_SessionStartShortCircuits`);
+      非 ready 帧不付事件扫描成本(`TestReadyGate_NoPollWhileNotComposerReady`)
+- [x] 3.4 kill-switch 验证(`driver.<agent>.ready: off` 单独剥除、不碰
+      receipt;`driver.enable: false` 全剥;`TestSwitchForcesLayerOne`)
 
 ## P4 — digest 感知档位标注(sense 字段)
 

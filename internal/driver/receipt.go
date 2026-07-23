@@ -35,3 +35,22 @@ func eventsReceipt(pane, needle string, since int64) Verdict {
 	}
 	return NoEvidence
 }
+
+// eventsReady is the shared Ready implementation: the hook records every agent's
+// (normalized) session-start as a `SessionStart` stream record stamped with its
+// pane, so "the session came up" is a plain scan — a matching record at/after the
+// launch moment. False is NoEvidence in spirit (I2): the caller's screen gate
+// applies unchanged; it is never a failure verdict.
+func eventsReady(pane string, since int64) bool {
+	now := time.Now().Unix()
+	win := now - since + 2
+	if win < 1 {
+		win = 1
+	}
+	for _, r := range events.Read(win, now) {
+		if r.Event == "SessionStart" && r.Pane == pane && r.Ts >= since {
+			return true
+		}
+	}
+	return false
+}

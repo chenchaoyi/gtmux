@@ -107,9 +107,15 @@ var ShellCommands = map[string]bool{
 // Returns false on timeout so the caller reports failure with evidence and does NOT
 // paste into a pane that never became ready. agentCmd is the launch command (its
 // basename selects the per-agent readiness signatures; "" uses the default set).
+//
+// When the agent's driver provides the session-start signal (Ready), the settle
+// requirement may SHORT-CIRCUIT: once the event proves the session came up, ONE
+// input-ready capture suffices — a slow-settling boot (MCP noise churning the
+// screen) no longer runs out the clock waiting for two identical frames. The
+// event's ABSENCE changes nothing (I2): the full two-frame gate applies unchanged.
 func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
-	g := readyGate{agent: agentKey(agentCmd)}
+	g := readyGate{agent: agentKey(agentCmd), sessionUp: driverReady(pane, agentKey(agentCmd))}
 	for {
 		if g.step(tmux.Display(pane, "#{pane_current_command}"),
 			func() string { return tmux.CaptureFull(pane) }) {
@@ -122,18 +128,37 @@ func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 	}
 }
 
+// driverReady wires the driver's session-start signal for the ready gate; nil when
+// the capability is absent (hook-less agent) or switched off (`driver.<agent>.ready`).
+// The launch moment is NOW (WaitAgentReady runs right after the launch keystroke),
+// with a 1s margin so a same-second event is not missed.
+func driverReady(pane, agent string) func() bool {
+	d := driver.For(agent)
+	if d.Ready == nil {
+		return nil
+	}
+	since := time.Now().Unix() - 1
+	return func() bool { return d.Ready(pane, since) }
+}
+
 // readyGate is the (pure, tmux-free) settle state machine WaitAgentReady drives: it
 // reaches `launched` once the foreground command leaves the shell set, then reports
-// ready only when two CONSECUTIVE identical captures both satisfy IsComposerReady.
+// ready when two CONSECUTIVE identical captures both satisfy IsComposerReady — or,
+// when the driver's session-start signal has fired, on the FIRST ready capture (the
+// event deterministically proves the session came up, so the settle wait is
+// redundant; the gate/banner/prompt checks still apply to that one capture).
 type readyGate struct {
-	agent    string
-	launched bool
-	prev     string
+	agent     string
+	launched  bool
+	prev      string
+	sessionUp func() bool // driver session-start signal; nil → no short-circuit
 }
 
 // step advances the gate by one sample. cmd is the pane's foreground command; capture
 // is called ONLY once launched (so an un-launched poll pays no capture cost). Returns
-// true when the composer is ready and settled.
+// true when the composer is ready and settled (or ready once, session-start proven —
+// the signal is polled only on a ready-but-unsettled frame, so it costs nothing on
+// the settled path, and the poll that returns true is also the one that returns).
 func (g *readyGate) step(cmd string, capture func() string) bool {
 	if !g.launched && cmd != "" && !ShellCommands[cmd] {
 		g.launched = true
@@ -142,8 +167,9 @@ func (g *readyGate) step(cmd string, capture func() string) bool {
 		return false
 	}
 	c := capture()
-	if prompt.IsComposerReady(c, g.agent) && c == g.prev {
-		return true // ready AND settled (two identical ready captures)
+	if prompt.IsComposerReady(c, g.agent) &&
+		(c == g.prev || (g.sessionUp != nil && g.sessionUp())) {
+		return true
 	}
 	g.prev = c
 	return false
