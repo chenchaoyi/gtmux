@@ -3,7 +3,9 @@ package connect
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -126,10 +128,45 @@ func Run(args []string) int {
 }
 
 // pickPane auto-selects the single attachable tmux pane, or lists the choices.
+// describeSetupErr turns a transport failure during setup into a sentence that names the
+// likely cause. A timeout is called out separately because it is the common one and the
+// least self-explanatory: the reachability probe has already succeeded by this point, so
+// "deadline exceeded" means the host is BUSY, not gone — and the fix (wait, or ask for a
+// specific pane so the pane list isn't needed) is different from a connectivity fix.
+func describeSetupErr(err error) string {
+	if isTimeout(err) {
+		return "the host answered too slowly while listing its sessions (it's reachable — just busy). " +
+			"Retry, or name the pane directly: gtmux attach <target> %pane"
+	}
+	return err.Error()
+}
+
+func describeSetupErrZH(err error) string {
+	if isTimeout(err) {
+		return "拉取会话列表时主机响应太慢（能连上，只是忙）。重试，或直接指定窗格：gtmux attach <目标> %pane"
+	}
+	return err.Error()
+}
+
+// isTimeout reports whether err is a deadline/timeout rather than a connection failure.
+func isTimeout(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var ne net.Error
+	return errors.As(err, &ne) && ne.Timeout()
+}
+
 func pickPane(ctx context.Context, c *Client, isGuest bool) (string, int) {
 	agents, err := c.Agents(ctx)
 	if err != nil {
-		i18n.Sae("gtmux attach: "+err.Error(), "gtmux attach: "+err.Error())
+		// A raw transport error here reads as "the host is unreachable" when the usual
+		// cause is the opposite: we got through, and the host took too long to answer.
+		// Health() already passed a moment ago, so say which of the two it is.
+		i18n.Sae("gtmux attach: "+describeSetupErr(err), "gtmux attach: "+describeSetupErrZH(err))
 		return "", 1
 	}
 	var panes []Agent

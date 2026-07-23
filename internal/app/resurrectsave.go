@@ -137,5 +137,22 @@ func maybeBackstopSave() {
 // tmux-continuum's autosave trigger (`…/continuum_save.sh`). Without it, continuum never
 // autosaves — the silent misconfiguration `gtmux doctor` flags.
 func statusRightHasContinuumTrigger(sr string) bool {
-	return strings.Contains(sr, "continuum_save")
+	return continuumTriggerCount(sr) > 0
+}
+
+// continuumTriggerCount counts how many autosave triggers a status-right carries.
+//
+// TWO is a real and silent misconfiguration, and it happens for a specific reason:
+// continuum decides whether to inject its trigger by looking for its OWN absolute path.
+// A trigger written by hand as `#(~/.tmux/plugins/.../continuum_save.sh)` does not match
+// that comparison, so continuum appends a second, absolute-path copy — and every save
+// interval then runs the save script twice, forever, with nothing to say so.
+//
+// gtmux cannot fix continuum's comparison (it is that plugin's own shell code, and gtmux
+// never writes status-right — it only reads it). What it CAN do is notice, which is
+// exactly what doctor is for. Counting is deliberately path-FORM agnostic: `~` and the
+// expanded absolute path are the same script, so both are counted, and two spellings of
+// it are still two triggers.
+func continuumTriggerCount(sr string) int {
+	return strings.Count(sr, "continuum_save")
 }

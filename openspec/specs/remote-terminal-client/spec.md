@@ -168,3 +168,25 @@ passthrough.
 - **WHEN** the pane is in the alternate screen (`alt=true`), or the measured round-trip is below the threshold
 - **THEN** no prediction is drawn and attach behaves as plain raw passthrough
 
+### Requirement: A slow host is not reported as an unreachable one
+
+The client SHALL distinguish a setup request that TIMED OUT from one that could not
+connect, and SHALL say which. The reachability probe has already succeeded by the time the
+session list is fetched, so a deadline there means the host is busy, not gone — and the
+remedy differs: waiting or naming a pane directly, rather than diagnosing connectivity. The
+budget for these setup requests SHALL be generous enough to absorb an ordinarily loaded
+host, since the cost of listing sessions scales with what the host is doing and the request
+may cross a tunnel; failing early costs the user the session, while waiting longer costs
+them nothing they would notice.
+
+#### Scenario: The host is reachable but slow to list sessions
+
+- **WHEN** the session list request exceeds its deadline after the host answered the
+  reachability probe
+- **THEN** the client says the host is reachable but busy, and offers naming the pane
+  directly instead of listing
+
+#### Scenario: The host cannot be reached
+
+- **WHEN** the connection itself fails
+- **THEN** the client reports that, not a timeout

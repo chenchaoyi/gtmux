@@ -153,3 +153,23 @@ restores an ancient snapshot.
 - **WHEN** the continuum plugin is installed but `status-right` does not contain the trigger
 - **THEN** doctor flags it with a recommendation to add the `continuum_save.sh` interpolation to `status-right`
 
+### Requirement: A duplicated autosave trigger is reported
+
+The doctor SHALL report when the status line carries the periodic-save trigger more than
+once, and SHALL say how many. A duplicate makes every save interval run the save that many
+times, for as long as the configuration stands, with nothing on screen to indicate it —
+checking only for PRESENCE cannot see it. The cause SHALL be named in the advice, because
+it is not guessable: the save plugin decides whether to inject by looking for its own
+ABSOLUTE path, so a trigger written by hand with a `~` path does not match and a second,
+absolute copy is appended. A trigger written in ANY path form SHALL count, so a
+correctly-armed setup using one spelling is never reported as unarmed.
+
+#### Scenario: A hand-written and an auto-injected trigger coexist
+
+- **WHEN** the status line carries a `~`-path save trigger and an absolute-path one
+- **THEN** the doctor reports two triggers and explains that the save runs twice
+
+#### Scenario: One trigger, either spelling
+
+- **WHEN** the status line carries exactly one save trigger, in any path form
+- **THEN** the doctor reports autosave as armed
