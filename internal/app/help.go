@@ -56,10 +56,12 @@ Commands:
                           on first run); --relay-url URL --relay-token TOKEN point
                           push at a relay so alerts reach the phone's lock screen
   tunnel                  expose the read-only radar from ANYWHERE (no VPN app)
-                          via an outbound Cloudflare tunnel; prints a public URL,
-                          token, and a scannable pairing QR. Default is a STABLE
-                          hosted address (pair once); --quick for an account-less
-                          ephemeral URL. --port N --name LABEL
+                          via an outbound tunnel; prints a public URL, token, and
+                          a scannable pairing QR. Default is a STABLE hosted
+                          address (Standard, pair once); --backend self = Direct
+                          over 443 (unlock: --redeem <code>, or self-host);
+                          --quick for an account-less ephemeral URL. --port N
+                          --name LABEL --service to keep it on across reboots
   pair [list|revoke <id>] pair YOUR OWN devices (full control): one one-time code
                           printed three ways — phone QR / browser link / a one-line
                           'gtmux attach' command for another computer's terminal.
@@ -158,10 +160,12 @@ const usageZH = `快速开始：
                           --token TOKEN（首次运行自动生成并持久化 token）；
                           --relay-url URL --relay-token TOKEN 把推送指向中继，
                           让 agent 提醒推到手机锁屏
-  tunnel                  把只读雷达暴露到任何地方（免 VPN app）：走出站
-                          Cloudflare 隧道，打印公网 URL、token 和可扫的配对
-                          二维码。默认给固定的托管地址（配一次即可），--quick 走
-                          免账号的临时地址。--port N --name 标签
+  tunnel                  把只读雷达暴露到任何地方（免 VPN app）：走出站隧道，
+                          打印公网 URL、token 和可扫的配对二维码。默认给固定的
+                          托管地址（Standard，配一次即可）；--backend self 走
+                          Direct（443 直连，--redeem <码> 解锁，或自托管）；
+                          --quick 走免账号的临时地址。--port N --name 标签
+                          --service 常开（重启不掉）
   pair [list|revoke <id>] 配对你自己的设备（全权）：一个一次性配对码,三种用法
                           一次给全 —— 手机扫码 / 浏览器链接 / 另一台电脑终端的
                           一行 'gtmux attach' 命令。协作者走 'share',不走 pair
