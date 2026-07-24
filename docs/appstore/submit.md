@@ -140,11 +140,25 @@ Result: **4+** (same class as SSH/terminal apps).
 - **Vietnam Game License** (not a game) and **Regulated Medical Devices** (not medical) —
   skip.
 
-### 4f. Digital Services Act (EU only — "Set Up")
-Declare your **trader status** (an individual releasing a free, non-commercial app is
-typically a non-trader). Affects **EU App Store availability only**, not function. Apple
-may require trader details for continued EU distribution; if you'd rather not deal with EU
-trader requirements, you can exclude the EU from availability instead.
+### 4f. Digital Services Act (EU trader status) + Business agreements
+
+On **Business → Agreements** there are two banners; only one matters here.
+
+- **Paid Apps Agreement / "Edit Legal Entity" (blue) → IGNORE.** That's for paid apps or
+  in-app purchases. gtmux is free with no IAP, and the **Free Apps Agreement is already
+  Active**. Do not sign the Paid Apps Agreement.
+
+- **DSA trader status (red) → declare NON-TRADER.** An individual releasing a free,
+  non-commercial open-source app is not a "trader". This only affects **EU** availability,
+  not function.
+
+  ⚠ **Privacy: do NOT declare "trader".** For a trader, Apple **publicly displays your
+  contact address on every EU App Store listing** — and the address on file is a personal
+  home address. Non-trader keeps it private. The trade-off: Apple is tightening EU
+  distribution for non-traders, so EU availability may be limited; if that ever matters
+  less than publicizing a home address (it doesn't, for a free personal app), you can
+  instead **exclude the EU from availability** and the banner stops blocking. Never
+  publicize a home address to keep the EU storefront.
 
 ### 4g. Privacy
 App **Privacy → "Data Not Collected"** (gtmux collects nothing; it talks only to the
