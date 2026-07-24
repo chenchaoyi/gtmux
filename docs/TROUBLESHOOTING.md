@@ -126,6 +126,41 @@ body 正是 PR 描述。整条链路不报错，只是悄悄换了内容。
 - 任何依赖 tag message 的 CI 逻辑，都要先 `git fetch --force --tags`。
 
 
+## iOS 上架：`fastlane release` 在这台 M4 上归档失败的一长串坑（2026-07-24）
+
+一次 `bundle exec fastlane release` 连撞五个坑才把 build 传上去。全部源于**工具链是 Intel x86
+（Rosetta）**——同一台机器 `uname -m` 在 Rosetta 下返回 x86_64，ruby/cocoapods 都是 intel。
+
+**根因链（按撞到的顺序）**
+1. **`bundle` 找不到 bundler 4.0.8** —— `/usr/bin/bundle` 是系统 ruby 2.6。项目的 gem 在
+   `vendor/bundle/ruby/4.0.0`，要 ruby 4.x。修：用 Homebrew ruby 的 bundle。
+2. **gym 归档「秒失败、gym 日志只有一行」** —— gym 把 xcodebuild 管道给 **xcpretty**，而
+   xcpretty 在新 ruby 下把 xcodebuild 的管道 SIGPIPE 掉，一行就死。**裸跑 xcodebuild 正常**。
+   修：`build_app(xcodebuild_formatter: "")`（xcpretty 已废弃）。**这是让所有后续真错误现形的关键。**
+3. **`Signing … requires a development team`** —— release lane 没往归档传 `DEVELOPMENT_TEAM`
+   （可靠的真机 build 一直有传）。修：xcargs 加 `DEVELOPMENT_TEAM=<TEAM> CODE_SIGN_STYLE=Automatic`。
+4. **`Build input file cannot be found … ReactCodegen/*-generated.mm`** —— `clean: true` 把
+   `ios/build/generated`（RN 新架构 codegen 落点）清掉，codegen script phase 不保证在消费它的
+   编译前重生成。修：`clean: false` + `pod install`（真机 build 也从不 clean）。
+5. **`option '-authenticationKeyPath' may only be provided once`** —— 这个版本的 gym 把
+   `xcargs` **同时**用于归档和导出，再加 `export_xcargs: auth` 就把 auth 传了两遍。修：删掉
+   `export_xcargs`，auth 只放 `xcargs`（一份就同时到达两边）。
+
+**彻底修法：换 arm ruby**
+- `arch -arm64 /opt/homebrew/bin/brew install ruby`（arm 4.0.6）。
+- `.zshrc`：`export PATH="/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"`
+  （ruby bin + gem-exec bin），删掉 RVM 与 `/usr/local/opt/ruby`。
+- `gem install cocoapods`（arm）；`bundle install`（重编 native gem 为 arm）；`Gemfile.lock`
+  的 `BUNDLED WITH` 跟 arm ruby 的 bundler 走（4.0.16）。
+- 移除 RVM：`rvm implode` + `rm -rf ~/.rvm` + 清 rc 里的 rvm 行。
+
+**必查**
+- 调 iOS 归档报错时**先把 `xcodebuild_formatter` 关掉**再看日志——formatter 一崩，真错误全被吞。
+- `bundle`/`ruby`/`pod` 必须都是 arm（`file $(which ruby) | grep arm64`）。
+- 首次上架某版本时 `fastlane metadata` 会在传完文案后、传截图前撞 fastlane 的 `No data` bug，
+  用 `fastlane metadata skip_metadata:true` 单独补截图（Fastfile 注释里已写）。
+
+
 ## Release / git-ops
 
 ### Never inline backtick-containing prose into a shell-substituted string
