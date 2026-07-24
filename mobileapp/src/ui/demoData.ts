@@ -324,3 +324,13 @@ export function demoEvents(agents: Agent[]): HQEvent[] {
   // so the feed never contradicts the radar.
   return waiting?.status === 'waiting' ? rows : rows.filter(r => r.seq !== 107);
 }
+
+// The composer's "history" (输入历史) in Demo mode. The global input-history store holds
+// the REAL messages you typed against your real Mac — showing them inside Demo both leaks
+// them and breaks the demo's own rule (永不混入真实). So Demo seeds a canned list instead,
+// and never persists what you type in Demo back to the real store.
+export function demoInputHistory(zh: boolean): string[] {
+  return zh
+    ? ['继续', '把测试跑一遍', '这里为什么要加锁？', '提交并推送', '回滚上一次改动']
+    : ['continue', 'run the tests', 'why the lock here?', 'commit & push', 'revert the last change'];
+}
