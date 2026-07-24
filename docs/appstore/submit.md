@@ -121,19 +121,42 @@ On the app's **General Information** page:
 - **Primary Language: English (U.S.)** (matches the en-US-first metadata; zh-Hans is the
   localization). **License Agreement: Apple's Standard License Agreement** (no custom EULA).
 
-### 4d. Privacy
+### 4d. Age Ratings (required — "Set Up Age Ratings")
+Answer every content category **None / No**. gtmux is a developer tool with no
+objectionable content. The two that give pause:
+- **Unrestricted Web Access → No.** It's a terminal to the user's own Mac (SSH-analogous),
+  not a web browser.
+- **User-Generated Content → No.** It shows the user's own agent sessions, not content
+  other users share through the app.
+
+Result: **4+** (same class as SSH/terminal apps).
+
+### 4e. Sections that need NOTHING (verify, don't fill)
+- **App Encryption Documentation** — already handled by the binary:
+  `ITSAppUsesNonExemptEncryption = false` is in `ios/GtmuxMobile/Info.plist` (gtmux uses
+  only standard OS TLS = exempt). No upload; you won't be asked at submission.
+- **App Store Server Notifications** (Production/Sandbox URL) and **App-Specific Shared
+  Secret** — these are for in-app purchases / subscriptions. gtmux has none. Leave blank.
+- **Vietnam Game License** (not a game) and **Regulated Medical Devices** (not medical) —
+  skip.
+
+### 4f. Digital Services Act (EU only — "Set Up")
+Declare your **trader status** (an individual releasing a free, non-commercial app is
+typically a non-trader). Affects **EU App Store availability only**, not function. Apple
+may require trader details for continued EU distribution; if you'd rather not deal with EU
+trader requirements, you can exclude the EU from availability instead.
+
+### 4g. Privacy
 App **Privacy → "Data Not Collected"** (gtmux collects nothing; it talks only to the
 user's own paired Mac). Confirm the **Privacy Policy URL** is
 `https://ccy.dev/projects/gtmux/privacy` (resolves 200).
 
-### 4e. Everything else
+### 4h. Everything else
 - Support URL `https://ccy.dev/projects/gtmux/support`, Marketing URL
   `https://ccy.dev/projects/gtmux` (both resolve).
 - Screenshots / description / keywords are already pushed by step 3.
-- Export compliance: gtmux uses only standard TLS (no proprietary crypto) → the usual
-  "uses encryption / exempt" answer.
 
-### 4f. Submit
+### 4i. Submit
 Click **Add for Review** → **Submit to App Review**.
 
 ---
