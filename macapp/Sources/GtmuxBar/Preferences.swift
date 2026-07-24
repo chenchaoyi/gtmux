@@ -378,8 +378,8 @@ struct PreferencesView: View {
     }
 
     // TUNNEL BACKEND — "Anywhere" reaches the Mac over a tunnel, and there are two:
-    // Standard (zero-config hosted Cloudflare) and Direct (your own VPS + domain). The
-    // picker was hiding this choice. When Direct is configured on this Mac, offer a
+    // Standard (zero-config hosted Cloudflare) and Direct (a chisel tunnel straight
+    // over 443 — access-code unlock, or self-hosted). The picker was hiding this choice. When Direct is configured on this Mac, offer a
     // Standard | Direct switch; otherwise show which backend is active (read-only) plus
     // how to set Direct up — so it's never a mystery which tunnel you're on.
     @ViewBuilder private var tunnelBackendRow: some View {
@@ -399,8 +399,8 @@ struct PreferencesView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Text(l10n.tr("Tunnel: Standard (zero-config, hosted). Direct — your own VPS + domain — sets up with `gtmux tunnel --backend self`.",
-                             "隧道：Standard（零配置托管）。Direct —— 你自己的 VPS + 域名 —— 用 `gtmux tunnel --backend self` 配置。"))
+                Text(l10n.tr("Tunnel: Standard (zero-config, hosted). Direct — straight over 443 where the hosted edge is blocked — unlock: `gtmux tunnel --redeem <code>` (or self-host).",
+                             "隧道：Standard（零配置托管）。Direct —— 443 直连，托管边缘被封的网络用 —— `gtmux tunnel --redeem <码>` 解锁（或自托管）。"))
                     .font(.system(size: 11)).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -419,7 +419,7 @@ struct PreferencesView: View {
     private var backendSubtitle: String {
         switch remote.backend {
         case .selfHosted:
-            return l10n.tr("Direct — reached over your own VPS + domain.", "直连 —— 经你自己的 VPS + 域名可达。")
+            return l10n.tr("Direct — straight over 443 (works where the hosted edge is blocked).", "直连 —— 443 直连（托管边缘被封的网络也可达）。")
         case .cloudflare:
             return l10n.tr("Standard — a zero-config hosted tunnel.", "标准 —— 零配置托管隧道。")
         case .none:
