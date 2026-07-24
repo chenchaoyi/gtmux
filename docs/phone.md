@@ -18,6 +18,18 @@ Then pair the app — scan the menu-bar app's pairing QR, or enter the host + to
 manually. You can save several servers and switch between them from the
 connection page (tap the server name in the radar header).
 
+## No terminal needed — the menu-bar app opens the same door
+
+<img src="assets/menubar-remote.png" width="418" alt="menu-bar Preferences — Remote access: Off / Wi-Fi / Anywhere, tunnel Standard / Direct" />
+
+Everything in this doc's "open the door" half is also two clicks in the menu-bar
+app: click the gtmux status icon → ⚙︎ → **Preferences… → Remote access** — the
+same three-way switch (**Off / Wi-Fi / Anywhere**), the tunnel backend under
+Anywhere (**Standard / Direct**), and the reachable URL while it's on. **⚙︎ →
+Pair a device…** shows the one-time pairing QR/code directly (and walks you
+through turning the door on first if it's off); the **Sharing** section in
+Preferences manages the same scoped guest links as `gtmux share`.
+
 A **paired (owner) phone can manage sharing remotely** — a **Manage this Mac** screen
 lets you mint, copy, and revoke the same scoped guest links as `gtmux share` (per-pane
 view/type), plus see the paired-device roster, without walking to the Mac. Revoking a
