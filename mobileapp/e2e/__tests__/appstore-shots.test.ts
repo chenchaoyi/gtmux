@@ -67,9 +67,9 @@ gated('app store demo shots', () => {
     await driver.$(`~${TestIds.detail.back}`).click();
     await hqCard.waitForDisplayed({timeout: 10_000});
 
-    // 3) HQ command screen — the chief-of-staff differentiator (fleet board with
-    //    telemetry + command console). Captured last so we never need its (untested)
-    //    back control.
+    // 3) HQ command page — the chief-of-staff differentiator: the assessment line +
+    //    the your-call / activity / console zones (hq-command-page removed the old fleet
+    //    board). Captured last so we never need its (untested) back control.
     await hqCard.click();
     await settle(1800);
     shot('03-hq');
