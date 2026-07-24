@@ -103,11 +103,22 @@ platform :ios do
       scheme: "GtmuxMobile",
       configuration: "Release",
       export_method: "app-store",
-      clean: true,
+      # clean:false — a clean wipes ios/build/generated, where the RN New-Architecture
+      # codegen (.mm/.cpp) lands, and the codegen script phase doesn't reliably
+      # regenerate it before the compile that consumes it (missing-build-input error).
+      # `pod install` produces it fresh; the reliable device build never cleans either.
+      clean: false,
+      # No xcpretty. It is deprecated and, under the arm Homebrew ruby the toolchain
+      # moved to, its stream handling SIGPIPE-killed xcodebuild after a single line
+      # (the gym log was one line; a raw xcodebuild ran fine). Empty formatter = gym
+      # runs xcodebuild directly and surfaces its real output.
+      xcodebuild_formatter: "",
       output_directory: "build",
       output_name: "GtmuxMobile.ipa",
-      xcargs: "#{auth} CURRENT_PROJECT_VERSION=#{build}",
-      export_xcargs: auth,
+      # auth goes in xcargs, which THIS gym version applies to BOTH the archive and the
+      # export. Passing it again via export_xcargs duplicated it on the export command
+      # → "xcodebuild: error: option '-authenticationKeyPath' may only be provided once".
+      xcargs: "#{auth} CURRENT_PROJECT_VERSION=#{build} DEVELOPMENT_TEAM=#{TEAM_ID} CODE_SIGN_STYLE=Automatic",
       export_options: {
         signingStyle: "automatic",
         teamID: TEAM_ID,
