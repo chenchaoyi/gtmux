@@ -541,6 +541,7 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
       <Composer
         pal={pal}
         lang={lang}
+        demo={demo}
         enabled={!isGuest || inputPanes.includes(agent.pane_id)}
         returnSends={returnSends}
         onSend={p => {

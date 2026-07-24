@@ -42,6 +42,7 @@ import {HistoryModal} from './HistoryModal';
 import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon, ExpandIcon, FileIcon} from './Icons';
 import {loadSnippets, saveSnippets} from '../state/snippets';
 import {loadHistory, saveHistory, pushHistory} from '../state/history';
+import {demoInputHistory} from './demoData';
 
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
 // default assistant bar instead of stacking another sparse row above it).
@@ -76,6 +77,7 @@ export function Composer({
   lang,
   enabled = true,
   returnSends = false,
+  demo = false,
   onSend,
   onUpload,
 }: {
@@ -83,6 +85,11 @@ export function Composer({
   lang: Lang;
   enabled?: boolean;
   returnSends?: boolean; // D7: when off (default) Return = newline; send via ↑ only
+  // In Demo mode the composer must NOT read or write the real input-history store: it
+  // holds the actual messages you typed against your Mac, so showing them in Demo leaks
+  // them and violates the demo's "never mix in real data" rule. Demo seeds a canned list
+  // and persists nothing.
+  demo?: boolean;
   onSend?: (p: SendPayload) => void;
   onUpload?: (
     uri: string,
@@ -120,8 +127,15 @@ export function Composer({
 
   useEffect(() => {
     loadSnippets().then(setSnippets);
-    loadHistory().then(setHistory);
-  }, []);
+    if (demo) setHistory(demoInputHistory(lang === 'zh'));
+    else loadHistory().then(setHistory);
+  }, [demo, lang]);
+
+  // In Demo, history persistence is a no-op — typing in the sample world must never
+  // reach (or grow) the real input-history store.
+  const persistHistory = (list: string[]) => {
+    if (!demo) saveHistory(list);
+  };
   const updateSnippets = (list: string[]) => {
     setSnippets(list);
     saveSnippets(list);
@@ -173,7 +187,7 @@ export function Composer({
     if (body) {
       setHistory(h => {
         const next = pushHistory(h, body);
-        saveHistory(next);
+        persistHistory(next);
         return next;
       });
     }
@@ -478,13 +492,13 @@ export function Composer({
         onDelete={i => {
           setHistory(h => {
             const next = h.filter((_, idx) => idx !== i);
-            saveHistory(next);
+            persistHistory(next);
             return next;
           });
         }}
         onClear={() => {
           setHistory([]);
-          saveHistory([]);
+          persistHistory([]);
         }}
         onClose={() => setHistoryOpen(false)}
       />

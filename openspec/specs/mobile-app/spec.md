@@ -407,3 +407,23 @@ as its source.
 
 - **WHEN** the content is markdown
 - **THEN** it is rendered as formatted text, not as raw markup
+
+### Requirement: Demo mode never shows or writes real user data
+
+In demo mode the app SHALL present only sample data and SHALL NOT read from, or write to,
+any store that holds the user's real content. The composer's input history is such a
+store: it holds the actual messages the user typed against their own machine, and showing
+those inside the demo both exposes them and breaks the demo's guarantee of being a
+self-contained sample. In demo, the input history SHALL be a canned sample list, and
+messages typed in demo SHALL NOT be persisted to the real history — so the demo neither
+reveals real history nor grows it.
+
+#### Scenario: Opening history in demo
+
+- **WHEN** the user opens the composer's input history in demo mode
+- **THEN** it shows a canned sample list, not messages typed against a real machine
+
+#### Scenario: Typing in demo
+
+- **WHEN** the user sends a message in demo mode
+- **THEN** it is not added to the real input history
