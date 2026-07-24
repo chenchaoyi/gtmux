@@ -108,6 +108,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.toggleCommandPalette()
             }
         }
+        // Test seam: GTMUXBAR_SHOW_PREFS auto-opens the Preferences window — the only
+        // interactive route is a status-item click, which a menu-bar manager (e.g. Ice)
+        // can hide entirely, making Preferences unreachable for headless verification
+        // and documentation screenshots. No-op normally.
+        if ProcessInfo.processInfo.environment["GTMUXBAR_SHOW_PREFS"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self else { return }
+                PreferencesController.shared.show(l10n: self.l10n, store: self.store)
+            }
+        }
     }
 
     private func toggleCommandPalette() {
