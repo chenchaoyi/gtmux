@@ -30,18 +30,21 @@ tmux 之外运行的 agent**（只读）—— 可用 `gtmux adopt` 把它转入
 agent 之上的雷达和遥控。用 tmux 管理多个 agent（各自命名、一 pane 一个、断连和重启都不丢）
 在我们看来是最好的方式，gtmux 的查看/跳转/回复能力都建立在它之上。**我们推荐的组合：
 [Ghostty](https://ghostty.org) + tmux + gtmux** —— 一个快的原生终端、tmux 托住 agent、gtmux
-随处查看与触达它们。
+随处查看与触达它们。没用过 tmux？从官方的
+[Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started) 入门，完整参考看
+[`man tmux`](https://man.openbsd.org/tmux)。
 
-**一个核心，三块屏：**
+**一套核心，五个入口：**
 
-- **CLI**：`gtmux agents` 列出每个 agent 和跳转位置；`--watch` 是实时看板。
-- **菜单栏 app**：常驻可见的状态点（红 / 青 / 绿），带弹层和 `⌘⌥G` 命令面板。
-- **移动端 app**：同一套雷达搬到 iOS，agent 需要你时锁屏推送，点一下就能回复。
+- **CLI**：基座。`gtmux agents` 列出每个 agent（`--watch` 是实时看板），`focus` 跳转、`spawn` 派活，都在 tmux 里。
+- **菜单栏 app**：常驻状态点（红 / 青 / 绿），带弹层和 `⌘⌥G` 命令面板；agent 等你时弹桌面通知。
+- **iPhone app**：同一块雷达搬到 iOS——锁屏推送、往 pane 里回话、灵动岛。远程管理，也能远程协作。
+- **网页**：任何浏览器打开你的雷达和终端镜像；发给协作者的访客链接也开在这里。
+- **别的电脑**：`gtmux attach` 把 Mac 上的 tmux 会话原样接到眼前这台终端里。
 
 <div align="center">
-<img src="docs/assets/surface-cli.png" width="252" alt="CLI —— gtmux agents" />
-<img src="docs/assets/surface-menubar.png" width="252" alt="菜单栏 app —— 弹层 + 状态点" />
-<img src="docs/assets/surface-mobile.png" width="252" alt="移动端 app —— iOS 上的 agent 雷达" />
+<img src="docs/assets/surface-menubar.png" width="280" alt="菜单栏 app —— 弹层 + 状态点" />
+<img src="docs/assets/surface-mobile.png" width="230" alt="移动端 app —— iOS 上的 agent 雷达" />
 </div>
 
 ## 什么时候用得上
@@ -103,8 +106,8 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 **2. 配置** —— 一条命令体检并把其余项配好，每步都会解释并征求确认：
 
 ```sh
-gtmux doctor                 # 按主题分组的体检（只读）
-gtmux doctor --fix           # 一站式配置：agent hook、set-titles（focus/restore 需要）、
+gtmux doctor                 # 体检，然后当场问你要不要把缺的配上：
+                             # agent hook、set-titles（focus/restore 需要）、
                              # 重启后恢复、菜单栏 app
 ```
 
@@ -122,7 +125,7 @@ gtmux app                    # 启动菜单栏 app（别名：menubar）
 gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持一键「检查更新」）
 ```
 
-> 只想要通知？`gtmux install-hooks` 只注册 agent hook —— 但推荐走 `gtmux doctor --fix`
+> 只想要通知？`gtmux install-hooks` 只注册 agent hook —— 但推荐走 `gtmux doctor`
 > （它会做这个**并且**配好 focus/restore 依赖的 set-titles）。非 Claude 的 agent 加
 > `--agent codex|cursor|gemini|copilot|kiro`（Codex 走它自己的 hooks 系统，与已有的
 > `notify` 并存）。

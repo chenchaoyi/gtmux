@@ -35,17 +35,21 @@ pane, persistent across disconnects and reboots — is, we think, the best way t
 them all in reach, and it's what gtmux's view/jump/reply features are built on.
 The setup we recommend: **[Ghostty](https://ghostty.org) + tmux + gtmux** — a fast
 native terminal, tmux holding the agents, gtmux to see and reach them from anywhere.
+New to tmux? Start with the official
+[Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started) guide, or
+[`man tmux`](https://man.openbsd.org/tmux) for the full reference.
 
-**Three surfaces, one source of truth:**
+**One core, five ways in:**
 
-- **CLI** — `gtmux agents` lists every agent and where to jump; `--watch` is a live dashboard.
-- **Menu-bar app** — an always-visible status dot (red / cyan / green) with a popover and a `⌘⌥G` palette.
-- **Mobile app** — the same radar on iOS, with a lock-screen push when an agent needs you, and a tap to reply.
+- **CLI** — the base. `gtmux agents` lists every agent (`--watch` is a live dashboard); `focus` jumps, `spawn` dispatches — all inside tmux.
+- **Menu-bar app** — an always-visible status dot (red / cyan / green) with a popover and a `⌘⌥G` palette; desktop banners when an agent needs you.
+- **iPhone app** — the same radar on iOS: lock-screen push, reply into a pane, Dynamic Island. Remote management — and remote collaboration.
+- **Web** — any browser opens your radar and a terminal mirror; guest links you share open here too.
+- **Another computer** — `gtmux attach` bridges a tmux session from your Mac into the terminal in front of you.
 
 <div align="center">
-<img src="docs/assets/surface-cli.png" width="252" alt="CLI — gtmux agents" />
-<img src="docs/assets/surface-menubar.png" width="252" alt="Menu-bar app — popover + status dot" />
-<img src="docs/assets/surface-mobile.png" width="252" alt="Mobile app — the agent radar on iOS" />
+<img src="docs/assets/surface-menubar.png" width="280" alt="Menu-bar app — popover + status dot" />
+<img src="docs/assets/surface-mobile.png" width="230" alt="Mobile app — the agent radar on iOS" />
 </div>
 
 ## When you'd use it
@@ -113,9 +117,9 @@ Prefer Homebrew? `brew install chenchaoyi/tap/gtmux` (CLI) and
 and asking before each change:
 
 ```sh
-gtmux doctor                 # health check, grouped by concern (read-only)
-gtmux doctor --fix           # one-stop setup: the agent hook, set-titles (focus/
-                             # restore need it), restore-after-reboot, the app
+gtmux doctor                 # health check — then it offers to fix what's missing:
+                             # the agent hook, set-titles (focus/restore need it),
+                             # restore-after-reboot, the app
 ```
 
 **3. Use it — mostly you don't have to.** Once set up, gtmux is passive:
@@ -136,7 +140,7 @@ gtmux update                 # self-update the CLI + menu-bar app (the app also
 ```
 
 > Just want notifications and nothing else? `gtmux install-hooks` registers only
-> the agent hook — but `gtmux doctor --fix` is the recommended path (it does that
+> the agent hook — but `gtmux doctor` is the recommended path (it does that
 > **and** the set-titles focus/restore depend on). For non-Claude agents, add
 > `--agent codex|cursor|gemini|copilot|kiro` (Codex wires via its own hooks system,
 > coexisting with any existing `notify`).
