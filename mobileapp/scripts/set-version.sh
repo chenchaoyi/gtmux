@@ -20,4 +20,15 @@ cat > "$OUT" <<EOF
 export const APP_VERSION = '$VER';
 EOF
 
+# Also sync the native MARKETING_VERSION in the pbxproj, so a store ARCHIVE (which
+# reads MARKETING_VERSION from the project, NOT from a MARKETING_VERSION= xcarg) ships
+# the same version. Without this the two drift: version.ts said 0.41.0 while the pbxproj
+# sat at a stale 1.0, and the fastlane release/metadata lanes read the pbxproj — so the
+# App Store version would have been 1.0. All targets (app + widget + notif-service) share
+# one app version.
+PBX="mobileapp/ios/GtmuxMobile.xcodeproj/project.pbxproj"
+if [ -f "$PBX" ]; then
+  sed -i '' "s/MARKETING_VERSION = [0-9][0-9.]*;/MARKETING_VERSION = ${VER};/g" "$PBX"
+fi
+
 echo "$VER"
