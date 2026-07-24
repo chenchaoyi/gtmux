@@ -105,6 +105,8 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 	if url == "" || secret == "" {
 		i18n.Sae("Direct isn't unlocked on this Mac. Redeem your access code:  gtmux tunnel --redeem <code>",
 			"这台 Mac 还没解锁 Direct。用你的访问码解锁：  gtmux tunnel --redeem <码>")
+		i18n.Sae("  (get an access code: https://ccy.dev/projects/gtmux/direct)",
+			"  （获取访问码：https://ccy.dev/projects/gtmux/direct）")
 		i18n.Sae("  (or point at your OWN server via GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+" — see deploy/self-tunnel/README.md)",
 			"  （或用 GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+" 指向你自己的服务器 —— 见 deploy/self-tunnel/README.md）")
 		return "", "", false

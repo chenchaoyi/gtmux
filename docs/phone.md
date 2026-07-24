@@ -94,7 +94,8 @@ no app). Open the mobile app → **Add a server → Scan** → connected from an
   **pairs once** and keeps working across restarts. No account or domain on your side.
 - **Direct (`--backend self`)** — a chisel tunnel through **gtmux's own server** over
   443, for networks that DNS-hijack or block Cloudflare's tunnel edge (some corp /
-  China networks). It's a **paid unlock**: redeem your access code with
+  China networks). It's a **paid unlock**: get an access code at
+  <https://ccy.dev/projects/gtmux/direct>, redeem it with
   `gtmux tunnel --redeem <code>` (or the menu bar's **Anywhere → Direct**, which
   prompts for one), then use `--backend self`. Direct is multi-tenant — each Mac gets
   its own address `https://tunnel.ccy.dev/p<port>`. (Running your OWN server instead?

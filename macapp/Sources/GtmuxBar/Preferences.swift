@@ -404,6 +404,10 @@ struct PreferencesView: View {
                     .font(.system(size: 11)).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                Link(l10n.tr("Get an access code →", "获取访问码 →"),
+                     destination: URL(string: "https://ccy.dev/projects/gtmux/direct")!)
+                    .font(.system(size: 11))
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
