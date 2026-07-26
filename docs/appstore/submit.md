@@ -105,6 +105,16 @@ Apple to finish processing if it's not selectable yet).
   >
   > Remote terminal input goes only to the user's own paired machine, gated by a bearer
   > token the user controls; nothing is sent to any third party.
+  >
+  > Clarification re: VPN — gtmux has no VPN functionality (no NetworkExtension
+  > framework, no VPN entitlements, no device network configuration). It is a plain
+  > HTTPS/SSE/WebSocket client to a server the user runs on their own Mac. The app
+  > provides no VPN and collects no data.
+
+  (The VPN paragraph exists because the v0.41.0 review was auto-flagged "contains VPN
+  functionality" — triggered by the word "VPN" in the description, since removed from
+  the metadata. Keep the clarification in the notes so the flag never stalls a review
+  again.)
 
 - **Contact Information** — the developer's real name / phone / email (Apple contacts you
   about the review). Not app data.
