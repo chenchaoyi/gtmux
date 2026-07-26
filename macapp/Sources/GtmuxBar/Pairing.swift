@@ -189,6 +189,7 @@ struct PairingView: View {
     @State private var wantSelfHosted = false // which backend the Anywhere toggle uses
     @State private var showDirectCode = false // the "enter Direct access code" sheet
     @State private var directCodeInput = ""
+    @State private var backendRevert = 0 // bumped to snap the backend picker back (see backendChooser)
     @State private var directCodeError: String?
     @State private var redeemingDirect = false
 
@@ -439,6 +440,12 @@ struct PairingView: View {
                 if self_ && !remote.selfTunnelConfigured {
                     directCodeError = nil
                     showDirectCode = true
+                    // Snap the segmented control back to Standard: nothing switched, so
+                    // the control must not REST on Direct. The control renders its tap
+                    // optimistically and nothing else re-publishes here, so without this
+                    // bump a canceled unlock leaves "Direct" selected while Standard is
+                    // what's actually running — exactly the confusion this fixes.
+                    backendRevert += 1
                     return
                 }
                 wantSelfHosted = self_
@@ -447,6 +454,7 @@ struct PairingView: View {
             Text(l10n.tr("Standard", "标准")).tag(false)
             Text(l10n.tr("Direct", "直连")).tag(true)
         }
+        .id(backendRevert)
         .labelsHidden()
         .pickerStyle(.segmented)
         .frame(width: 290)
@@ -466,6 +474,9 @@ struct PairingView: View {
                 .textFieldStyle(.roundedBorder)
                 .disableAutocorrection(true)
                 .onSubmit { submitDirectCode() }
+            Link(l10n.tr("Don't have a code? Get one →", "还没有访问码？获取一个 →"),
+                 destination: URL(string: "https://ccy.dev/projects/gtmux/direct")!)
+                .font(.system(size: 11))
             if let e = directCodeError {
                 Text(e).font(.system(size: 11)).foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
