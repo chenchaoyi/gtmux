@@ -57,18 +57,18 @@ const S: Dict = {
   token: {en: 'Token', zh: 'Token'},
   connect: {en: 'Connect', zh: '连接'},
   cantReach: {
-    en: "Can't reach this server — are you both on the same VPN / Wi-Fi / Tailscale?",
-    zh: '连不上这台服务器，手机和它在同一个 VPN / Wi-Fi / Tailscale 上吗？',
+    en: "Can't reach this server — are you both on the same network (Wi-Fi / Tailscale)?",
+    zh: '连不上这台服务器，手机和它在同一个网络（Wi-Fi / Tailscale）吗？',
   },
   badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Couldn't reach the server — nothing answered. Check the address is right and your phone can reach the Mac: same Wi‑Fi/VPN for a local address, or `gtmux tunnel` running for an internet address.",
-    zh: '连不上服务器，没有任何响应。检查地址是否正确，以及手机能否到达这台 Mac：局域网地址需在同一 Wi‑Fi/VPN；公网地址需 Mac 上的 `gtmux tunnel` 正在运行。',
+    en: "Couldn't reach the server — nothing answered. Check the address is right and your phone can reach the Mac: same Wi‑Fi for a local address, or remote access set to Anywhere on the Mac for an internet address.",
+    zh: '连不上服务器，没有任何响应。检查地址是否正确，以及手机能否到达这台 Mac：局域网地址需在同一 Wi‑Fi；公网地址需 Mac 已把远程访问开到「任意网络」。',
   },
   enrollTunnelDown: {
-    en: "Reached the network but not your Mac — gtmux may have stopped. Make sure it's still running on the Mac (`gtmux serve` or `gtmux tunnel`), then try again. The pairing code is fine.",
-    zh: '连到了网络但没到你的 Mac —— gtmux 可能停了。确认 Mac 上的 gtmux 还在运行（`gtmux serve` 或 `gtmux tunnel`），然后重试。配对码没问题。',
+    en: "Reached the network but not your Mac — gtmux may have stopped. Make sure remote access is still on at the Mac (the menu bar's Remote access, or `gtmux serve`), then try again. The pairing code is fine.",
+    zh: '连到了网络但没到你的 Mac —— gtmux 可能停了。确认 Mac 上的远程访问还开着（菜单栏「远程访问」或 `gtmux serve`），然后重试。配对码没问题。',
   },
   enrollCodeInvalid: {
     en: 'Pairing code expired or already used — refresh it in the Mac menu bar and rescan.',
