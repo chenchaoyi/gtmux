@@ -391,13 +391,70 @@ func draftHasDelivery(draft, text string) bool {
 	if looksCollapsedPaste(draft) {
 		return true
 	}
-	return ContainsHead(draft, text) && ContainsTail(draft, text)
+	if ContainsHead(draft, text) && ContainsTail(draft, text) {
+		return true
+	}
+	// Attachment-aware: an agent TUI (Claude Code) folds a pasted image PATH into an
+	// "[Image #N]" chip the instant it lands, so the path text can never be found in
+	// the draft verbatim — the guard called a perfectly-placed photo a fragment and
+	// refused the submit (the phone's "uploaded image never sends" bug). When the
+	// only lines the head/tail match is missing are image paths and the draft shows
+	// an attachment chip, the delivery is placed: any remaining prose must still
+	// match head+tail on its own.
+	rest, hadImages := stripImagePathLines(text)
+	if !hadImages || !looksAttachmentChip(draft) {
+		return false
+	}
+	if strings.TrimSpace(rest) == "" {
+		return true
+	}
+	return ContainsHead(draft, rest) && ContainsTail(draft, rest)
 }
 
 // looksCollapsedPaste reports whether a draft shows a folded large-paste placeholder.
 func looksCollapsedPaste(draft string) bool {
 	low := strings.ToLower(draft)
 	return strings.Contains(low, "[pasted text") || strings.Contains(low, "pasted text #")
+}
+
+// looksAttachmentChip reports whether the draft shows an attachment placeholder —
+// what Claude Code renders in place of a pasted image path ("[Image #1]").
+func looksAttachmentChip(draft string) bool {
+	return strings.Contains(strings.ToLower(draft), "[image #")
+}
+
+// imageExts are the path suffixes an agent TUI folds into an attachment chip on
+// paste — the formats the phone's photo/screenshot flow produces.
+var imageExts = []string{".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".heif"}
+
+// stripImagePathLines removes the lines of text that are bare image paths (the shape
+// the mobile composer appends after the typed body: one absolute path per line) and
+// reports whether any were present.
+func stripImagePathLines(text string) (rest string, hadImages bool) {
+	var kept []string
+	for _, line := range strings.Split(text, "\n") {
+		if isImagePathLine(line) {
+			hadImages = true
+			continue
+		}
+		kept = append(kept, line)
+	}
+	return strings.Join(kept, "\n"), hadImages
+}
+
+// isImagePathLine reports whether a single line is nothing but a path to an image
+// file — no spaces beyond the path itself, an image extension at the end.
+func isImagePathLine(line string) bool {
+	t := strings.ToLower(strings.TrimSpace(line))
+	if t == "" || strings.ContainsAny(t, " \t") {
+		return false
+	}
+	for _, ext := range imageExts {
+		if strings.HasSuffix(t, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 // HeadsMatch compares two normalized heads tolerantly (equal, or one a prefix of

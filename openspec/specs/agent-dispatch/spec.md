@@ -144,7 +144,12 @@ fingerprint (head) AND the trailing fingerprint (tail) of the payload, or a TUI'
 collapsed-paste placeholder that stands in for a folded large paste; a match on the
 head alone (a prefix) SHALL NOT authorize submission, because a half-rendered draft
 whose tail has not yet arrived would otherwise be submitted truncated and then
-misread as landed. A partial/fragment paste SHALL be retried or reported as failed,
+misread as landed. A payload line that is a bare image path (the mobile composer's
+attachment shape) SHALL additionally be accepted as placed when the draft shows an
+attachment chip (e.g. Claude Code's `[Image #N]`) standing in for it — the TUI folds
+a pasted image path into the chip immediately, so the path text itself never appears
+in the draft; any remaining prose in the payload must still match head AND tail on
+its own, and a chip SHALL NOT vouch for a payload that had no image-path lines. A partial/fragment paste SHALL be retried or reported as failed,
 never submitted as-is. A submission whose Enter was swallowed (the text remains in
 the draft and no submit event arrived) SHALL be resubmitted with backoff, and each
 resubmit SHALL re-confirm the draft STILL holds the full text first — the system
@@ -165,6 +170,15 @@ SHALL report `delivered:false` (`state:"failed"`) together with on-screen eviden
   has not rendered yet
 - **THEN** submission waits for the tail within the settle window; a draft holding
   only the head is treated as a fragment, not submitted as the complete task
+
+#### Scenario: An image path folded into an attachment chip still submits
+
+- **WHEN** the payload is (or ends with) a bare image path — the phone's uploaded
+  photo — and the agent's TUI immediately folds it into an `[Image #N]` chip so the
+  path text never appears in the draft
+- **THEN** the chip (plus a head+tail match on any remaining prose) counts as the
+  delivery placed, and Enter is sent — the photo is not stranded placed-but-unsent;
+  a chip alone SHALL NOT confirm a payload that contained no image-path lines
 
 #### Scenario: Swallowed Enter is retried, but only against a matching draft
 
