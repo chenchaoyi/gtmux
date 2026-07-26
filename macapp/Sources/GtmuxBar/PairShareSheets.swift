@@ -175,10 +175,13 @@ struct PairDeviceSheet: View {
                     }
                 }
                 if !remote.selfTunnelConfigured {
-                    Text(l10n.tr("Direct needs a redeem code — unlock it in Preferences › Remote access.",
-                                 "直连需兑换码解锁 —— 在 偏好设置 › 远程访问 里解锁。"))
+                    Text(l10n.tr("Direct needs an access code — unlock it in Preferences › Remote access.",
+                                 "直连需访问码解锁 —— 在 偏好设置 › 远程访问 里解锁。"))
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
+                    Link(l10n.tr("Get an access code →", "获取访问码 →"),
+                         destination: URL(string: "https://ccy.dev/projects/gtmux/direct")!)
+                        .font(.system(size: 10))
                 }
             }
 
