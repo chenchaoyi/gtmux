@@ -580,3 +580,64 @@ func TestDeliver_JudgedByScreen_Attributed(t *testing.T) {
 		t.Fatalf("timeout failure must be attributed to screen, got %+v", r2)
 	}
 }
+
+// --- attachment-chip verification (the phone's "uploaded image never sends" bug) ---
+//
+// Claude Code folds a pasted image path into an "[Image #N]" chip the moment it
+// lands, so the path text is never in the draft verbatim. The guard used to settle
+// on that as a fragment and withhold Enter — the photo sat placed-but-unsubmitted
+// while the phone showed a send failure.
+
+func TestPasteAndSubmit_ImagePathFoldedIntoChip_Submits(t *testing.T) {
+	path := "/Users/x/.local/share/gtmux/uploads/ef153468-markup.png"
+	f := &fakeIO{caps: []string{boxDraft("[Image #1]")}}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, path)
+	if !ok || f.enterCalls != 1 {
+		t.Fatalf("chip in draft = delivery placed; want submit, got ok=%v enters=%d", ok, f.enterCalls)
+	}
+	if f.pasteCalls != 1 {
+		t.Fatalf("no re-paste on a placed delivery; pastes=%d", f.pasteCalls)
+	}
+}
+
+func TestPasteAndSubmit_BodyPlusImagePath_ChipAndProseSubmit(t *testing.T) {
+	text := "看看这个报错截图\n/Users/x/.local/share/gtmux/uploads/a1b2c3d4-shot.jpg"
+	f := &fakeIO{caps: []string{boxDraftLines("看看这个报错截图 [Image #1]")}}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, text)
+	if !ok || f.enterCalls != 1 {
+		t.Fatalf("prose matched + chip shown; want submit, got ok=%v enters=%d", ok, f.enterCalls)
+	}
+}
+
+func TestPasteAndSubmit_ImagePathButNoChipNoPath_StillWithheld(t *testing.T) {
+	path := "/Users/x/.local/share/gtmux/uploads/ef153468-markup.png"
+	f := &fakeIO{caps: []string{boxEmpty("history")}} // box stays empty: nothing landed
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, path)
+	if ok || f.enterCalls != 0 {
+		t.Fatalf("no chip and no path = not placed; want withheld, got ok=%v enters=%d", ok, f.enterCalls)
+	}
+}
+
+func TestPasteAndSubmit_ProseWithStaleChip_NotMistakenForDelivery(t *testing.T) {
+	// A draft holding an old attachment chip must not vouch for a PROSE delivery
+	// that never landed — the chip path only applies when the text had image paths.
+	f := &fakeIO{caps: []string{boxDraft("[Image #1]")}}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, taskText)
+	if ok || f.enterCalls != 0 {
+		t.Fatalf("chip must not confirm unrelated prose; got ok=%v enters=%d", ok, f.enterCalls)
+	}
+}
+
+func TestStripImagePathLines(t *testing.T) {
+	rest, had := stripImagePathLines("body line\n/a/b/c-photo.HEIC\n/a/b/d.png")
+	if !had || rest != "body line" {
+		t.Fatalf("paths stripped, prose kept; got had=%v rest=%q", had, rest)
+	}
+	rest, had = stripImagePathLines("no attachments here")
+	if had || rest != "no attachments here" {
+		t.Fatalf("prose untouched; got had=%v rest=%q", had, rest)
+	}
+	if _, had = stripImagePathLines("look at /a/b.png please"); had {
+		t.Fatalf("a prose line mentioning a path is not a bare path line")
+	}
+}
