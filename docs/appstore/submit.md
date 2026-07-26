@@ -43,6 +43,41 @@ cd mobileapp && bash scripts/set-version.sh    # writes src/version.ts + pbxproj
 Confirm: `grep MARKETING_VERSION ios/GtmuxMobile.xcodeproj/project.pbxproj` (all targets
 equal, e.g. `0.41.0`). The build NUMBER auto-increments off ASC — don't set it.
 
+### Re-submitting with a NEW build after a bump (the version-mismatch trap)
+
+A build attaches to the ASC version record **only if the record's version string
+equals the build's `MARKETING_VERSION`**, and ASC allows exactly **one** editable
+version record at a time. So this sequence traps:
+
+1. A version record `0.41.0` is on review (or `DEVELOPER_REJECTED` after you Remove
+   it from review — still editable).
+2. You bump the tag, rebuild, and upload a build whose marketing version is now
+   `0.41.4`.
+3. That build **cannot** attach to the `0.41.0` record, and `fastlane metadata`
+   (which targets the pbxproj `MARKETING_VERSION`) would try to *create* a second
+   `0.41.4` record — which ASC refuses while `0.41.0` is still editable.
+
+**Fix — rename the existing editable record to match the build, via the ASC API**
+(deterministic; the version-string field is fiddly to find in the ASC UI):
+
+```ruby
+# bundle exec ruby this, with ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH in env
+require 'spaceship'
+Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+  key_id: ENV['ASC_KEY_ID'], issuer_id: ENV['ASC_ISSUER_ID'],
+  filepath: File.expand_path(ENV['ASC_KEY_PATH']))
+app = Spaceship::ConnectAPI::App.find('com.gtmux.app')
+v = app.get_edit_app_store_version                 # the one editable record
+v.update(attributes: { versionString: '0.41.4' })  # rename to the build's marketing version
+```
+
+Then: `fastlane metadata` (updates text/screenshots on the now-`0.41.4` record),
+attach the build (`v.select_build(build_id: b.id)` for the build whose
+`pre_release_version.version == '0.41.4'`), and Submit. Screenshots/description/
+review notes carry over untouched — only the version string changed. (Same
+spaceship handle also answers "did the description keep any `VPN`/`tunnel` wording?"
+and "is the right build attached?" without clicking through the UI.)
+
 ---
 
 ## 2. Build + upload the binary
