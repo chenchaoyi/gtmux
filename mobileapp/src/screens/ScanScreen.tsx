@@ -57,8 +57,8 @@ export function ScanScreen({
           <Text style={styles.title}>{lang === 'zh' ? '扫描配对码' : 'Scan pairing code'}</Text>
           <Text style={styles.subtitle}>
             {lang === 'zh'
-              ? '对准服务器上「配对手机」或 gtmux tunnel 的二维码'
-              : 'Point at the QR from “Pair phone” or gtmux tunnel'}
+              ? '对准 Mac 上「配对设备」或 gtmux pair 的二维码'
+              : 'Point at the QR from “Pair a device” or gtmux pair'}
           </Text>
         </SafeAreaView>
       </View>
