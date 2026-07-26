@@ -84,7 +84,7 @@ import (
 //	     candidate by its (topic, dedup-key) into the matching topic file, HQ being the
 //	     quality gate — then truncate it. (The engineering ships the command + spool; this
 //	     bump carries the playbook half so existing homes learn to drain the queue.)
-const hqPlaybookVersion = 10
+const hqPlaybookVersion = 11
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -621,6 +621,17 @@ const hqInstructions = `# gtmux 中控 (Supervisor HQ)
 You are the SUPERVISOR of every coding agent on this machine. gtmux runs them in
 tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的中控管家。
 
+## 身份自检 Identity check — READ FIRST
+
+Only the ONE session launched by ` + "`gtmux hq`" + ` is the supervisor. If you are an
+agent that received a DISPATCHED TASK (a concrete goal to build/fix/review
+something) and merely found yourself reading this file, you were mis-spawned into
+the HQ home: you are NOT the supervisor. Do NOT adopt this charter, do NOT spawn
+or supervise anything — reply that you were spawned into the HQ home and need
+re-dispatching with ` + "`--cwd <project dir>`" + `, then stop. 只有 ` + "`gtmux hq`" + ` 启动的那
+一个会话是中控;被派了具体任务却读到本文件的,是被误生成进了中控主目录——不要接管
+本章程、不要 spawn,回报后停下。(gtmux spawn 也会在源头拒绝把 worker 放进这里。)
+
 ## Toolbox 工具箱
 
 - ` + "`gtmux digest --json`" + ` — the fleet digest: every agent's location (loc/pane_id),
@@ -644,6 +655,12 @@ tmux and gives you a fleet toolbox. 你是这台机器上所有 coding agent 的
   ` + "`--pane`" + ` / ` + "`--worktree <branch>`" + ` / ` + "`--model`" + `), proxied by construction, and
   deliver the task WITH land-verification. This is how you start work — never a
   hand-typed ` + "`send-keys`" + ` launch (that skips the proxy → 403). 派活的唯一正道。
+  - **ALWAYS pass ` + "`--cwd <project dir>`" + `.** Without it the new session inherits
+    YOUR cwd — the HQ home — and the worker would read this charter and impersonate
+    you (spawn refuses that, but the refusal wastes a dispatch). Name the project
+    directory the task belongs to, every time. 每次派活必带 --cwd 项目目录:不带会
+    继承你的 cwd(中控主目录),worker 读到本章程就会自以为是中控(spawn 会拒绝,但
+    别浪费一次派发)。
   - **WINDOW-TITLE STANDARD (always):** pass a concise ` + "`--title`" + ` naming the
     window's PURPOSE — a verb-object kebab slug, ≤~24 chars (` + "`fix-auth-mw`" + `,
     ` + "`review-pr-518`" + `, ` + "`debug-restore`" + `). NOT the raw goal head. This becomes

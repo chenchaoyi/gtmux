@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
@@ -501,7 +502,7 @@ func headBranch(gitPath string, isDir bool) string {
 // inject canned panes and drive the whole assemble/join/sort path with no live server.
 var paneSource = func() []string {
 	const fields = "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}\t#{pane_in_mode}"
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}\t#{pane_in_mode}\t#{@gtmux_hq_home}"
 	return tmux.Lines("list-panes", "-a", "-F", fields)
 }
 
@@ -525,8 +526,9 @@ func GatherAgents() []Pane {
 	}
 
 	var panes []Pane
+	hqStamps := map[string]string{} // pane id → its @gtmux_hq_home stamp (role precedence)
 	for _, line := range paneSource() {
-		f := strings.SplitN(line, "\t", 11)
+		f := strings.SplitN(line, "\t", 12)
 		if len(f) < 7 {
 			continue
 		}
@@ -688,6 +690,9 @@ func GatherAgents() []Pane {
 		}
 		usageWarn := state.ReadMarker(state.UsageWarnPath(id))
 		inMode := len(f) >= 11 && f[10] == "1"
+		if len(f) >= 12 && f[11] != "" {
+			hqStamps[id] = f[11]
+		}
 		panes = append(panes, Pane{
 			PaneID:     id,
 			session:    f[1],
@@ -718,8 +723,36 @@ func GatherAgents() []Pane {
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
 	panes = append(panes, nativePanes(panes, profiles, now)...)
+	applyRolePrecedence(panes, hqStamps)
 	sortPanes(panes)
 	return panes
+}
+
+// applyRolePrecedence enforces that the supervisor role belongs to ONE pane
+// (hq-home-quarantine): when any pane carries the `gtmux hq` stamp for THIS home,
+// the stamp is the sole authority — a worker session parked in the HQ home (a cwd
+// match) stays a NORMAL, visible radar row instead of masquerading as HQ. The cwd
+// fallback stands only when no stamped pane exists (legacy homes predating the
+// stamp).
+func applyRolePrecedence(panes []Pane, stamps map[string]string) {
+	home := state.HQHome()
+	stamped := false
+	for _, v := range stamps {
+		if hqpane.SameDir(v, home) {
+			stamped = true
+			break
+		}
+	}
+	if !stamped {
+		return
+	}
+	for i := range panes {
+		if hqpane.SameDir(stamps[panes[i].PaneID], home) {
+			panes[i].role = "supervisor"
+		} else {
+			panes[i].role = ""
+		}
+	}
 }
 
 // nativePanes turns the native-session store into `source:"native"` radar rows —
@@ -846,11 +879,14 @@ func resolveWaiting(status string, hasMark, stale bool, liveWorking func() bool)
 	}
 }
 
-// roleForCwd marks the supervisor (中控) session: any pane whose working dir is
-// the hq home (see `gtmux hq`) carries role:"supervisor" so surfaces can pin or
-// badge it. Cwd-keyed on purpose — robust to tmux session renames.
+// roleForCwd marks the supervisor (中控) session: a pane whose working dir is the
+// hq home (see `gtmux hq`) carries role:"supervisor" so surfaces can pin or badge
+// it. Cwd-keyed on purpose — robust to tmux session renames — and symlink-normalized
+// (tmux reports physical paths). This is only the FIRST pass: applyRolePrecedence
+// then withdraws the role from every cwd-matched pane whenever a `gtmux hq`-stamped
+// pane exists, so a worker parked in the HQ home never impersonates the supervisor.
 func roleForCwd(cwd string) string {
-	if cwd != "" && cwd == state.HQHome() {
+	if hqpane.SameDir(cwd, state.HQHome()) {
 		return "supervisor"
 	}
 	return ""

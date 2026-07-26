@@ -54,10 +54,23 @@ func FindOther(about string) (pane string, self bool) {
 	return pane, false
 }
 
-// resolve scans the panes for the HQ home and stamps a hit.
+// resolve scans the panes for the HQ home and stamps a hit. The STAMP outranks the
+// path fallback (hq-home-quarantine): a worker session mistakenly parked in the HQ
+// home matches the path criteria too, and first-line-wins used to let it STEAL the
+// supervisor identity — wakes delivered to a worker, the real HQ silent. When any
+// stamped pane exists, only the stamp answers; the path criteria remain solely the
+// legacy fallback for a pane predating the stamp.
 func resolve() string {
 	home := normalize(state.HQHome())
-	for _, line := range lister() {
+	lines := lister()
+	for _, line := range lines {
+		f := strings.SplitN(line, "\t", 4)
+		if len(f) == 4 && normalize(f[1]) == home {
+			stampSeen()
+			return f[0]
+		}
+	}
+	for _, line := range lines {
 		f := strings.SplitN(line, "\t", 4)
 		if len(f) != 4 || !isHQ(f, home) {
 			continue
@@ -75,6 +88,14 @@ func resolve() string {
 // physical paths and HQHome() is built from $HOME.
 func isHQ(f []string, home string) bool {
 	return normalize(f[1]) == home || normalize(f[2]) == home || normalize(f[3]) == home
+}
+
+// SameDir reports whether two paths name the same directory once symlinks are
+// resolved — the comparison every HQ-home check must use (tmux reports physical
+// paths; HQHome() is built from $HOME). Exported for the spawn quarantine and the
+// radar's role assignment, so "is this the HQ home?" has exactly one spelling.
+func SameDir(a, b string) bool {
+	return a != "" && b != "" && normalize(a) == normalize(b)
 }
 
 // normalize resolves a path's symlinks so a logical and a physical spelling of the

@@ -210,6 +210,12 @@ never baked into the name). Refer to a spawned window by that `loc %pane · titl
 can jump by number. The supervisor's playbook requires a concise `--title` on every
 dispatch and this handle in every report.
 
+**HQ-home quarantine.** `spawn` refuses to run a worker in the HQ home (an explicit
+`--cwd` naming it, the inherited cwd when `--cwd` is absent, or `--pane` reuse of a
+pane sitting there): the home's `AGENTS.md` is the supervisor charter, and a worker
+launched there would read it and impersonate HQ. Pass `--cwd <project dir>` — the
+supervisor's playbook requires it on every dispatch.
+
 It launches the agent (a fresh detached session by default, or `--pane <id>` to reuse
 one, or `--worktree <branch>` to run in an isolated git worktree), **through the
 network proxy by construction** (never a bare, un-proxied launch that would 403),

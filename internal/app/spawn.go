@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
 	"runtime"
 	"strconv"
@@ -15,9 +16,11 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/hq"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -124,6 +127,18 @@ func cmdSpawn(args []string) int {
 		return 1
 	}
 
+	// hq-home-quarantine: a worker must NEVER run in the HQ home. The home's
+	// AGENTS.md is the supervisor charter — an agent launched there reads it and
+	// starts impersonating HQ (spawning more workers: the recursion incident).
+	// Without --cwd the new session inherits the CALLER's cwd, which for a spawn
+	// issued from the HQ pane IS the HQ home — so the default is exactly the trap.
+	// Hard refusal, with the fix in the message.
+	if dir, bad := spawnDirInHQHome(paneFlag, cwd); bad {
+		i18n.Sae("gtmux spawn: refusing to run a worker in the HQ home ("+dir+") — its AGENTS.md is the supervisor charter and the worker would impersonate HQ. Pass --cwd <project dir>.",
+			"gtmux spawn: 拒绝在中控主目录（"+dir+"）里跑执行 session —— 那里的 AGENTS.md 是中控章程，worker 会误当自己是 HQ。请加 --cwd <项目目录>。")
+		return 2
+	}
+
 	tune := dispatch.LoadTuning()
 	if timeout > 0 {
 		tune.DeliverTimeout = int64(timeout.Seconds())
@@ -202,6 +217,33 @@ func cmdSpawn(args []string) int {
 // and launching the agent through the proxy (for --oneshot, the headless runner —
 // the goal rides the launch command itself). Returns the pane, session, whether we
 // created the session, the worktree path/branch, and a non-zero rc on failure.
+// spawnDirInHQHome reports whether this spawn would put a worker in the HQ home —
+// the directory whose AGENTS.md is the supervisor charter. Three routes in: an
+// explicit --cwd naming it, NO --cwd (the session inherits the caller's cwd — the
+// exact trap when HQ itself dispatches), or --pane reuse of a pane sitting there.
+// Comparison is symlink-normalized via hqpane.SameDir.
+func spawnDirInHQHome(paneFlag, cwd string) (dir string, bad bool) {
+	home := state.HQHome()
+	if paneFlag != "" {
+		if p := tmux.Display(paneFlag, "#{pane_current_path}"); hqpane.SameDir(p, home) {
+			return p, true
+		}
+		return "", false
+	}
+	eff := cwd
+	if eff == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", false
+		}
+		eff = wd
+	}
+	if hqpane.SameDir(eff, home) {
+		return eff, true
+	}
+	return "", false
+}
+
 func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
 	launch := func(pane string) { launchAgent(pane, agent, model) }
 	if oneshot {

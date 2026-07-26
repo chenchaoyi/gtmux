@@ -125,3 +125,55 @@ func TestGatherDigestFixtureLedgerJoin(t *testing.T) {
 		t.Errorf("untracked pane %%1 should carry no ledger fields, got task=%q status=%q", un.Task, un.TaskStatus)
 	}
 }
+
+// paneLineHQ is paneLine plus the trailing @gtmux_hq_home stamp field.
+func paneLineHQ(id, session, title, cmd, path, stamp string) string {
+	return strings.Join([]string{
+		id, session, "0", "0", title, cmd, "0", "1700000000", "900100", path, "0", stamp,
+	}, "\t")
+}
+
+// hq-home-quarantine: when a `gtmux hq`-stamped pane exists, ONLY it carries
+// role:"supervisor" — a worker mis-spawned into the HQ home (cwd match) stays a
+// normal, visible row instead of masquerading as HQ.
+func TestGatherAgents_SupervisorRoleFollowsTheStamp(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	hqDir := state.HQHome()
+
+	lines := []string{
+		paneLineHQ("%1", "hq", "✳ watching", "claude", hqDir, hqDir),  // the real, stamped HQ
+		paneLineHQ("%2", "task", "⠋ building", "claude", hqDir, ""),   // mis-spawned worker in the home
+		paneLineHQ("%3", "work", "✳ done", "claude", "/tmp/nope", ""), // normal worker elsewhere
+	}
+	var got []Pane
+	withFixture(t, lines, func() { got = GatherAgents() })
+
+	roles := map[string]string{}
+	for _, p := range got {
+		roles[p.PaneID] = p.Role()
+	}
+	if roles["%1"] != "supervisor" {
+		t.Fatalf("the stamped pane is the supervisor; roles=%v", roles)
+	}
+	if roles["%2"] != "" {
+		t.Fatalf("a worker parked in the HQ home must stay a NORMAL row; roles=%v", roles)
+	}
+	if roles["%3"] != "" {
+		t.Fatalf("an unrelated pane never gets the role; roles=%v", roles)
+	}
+}
+
+// Legacy home: no stamp anywhere → the cwd fallback still marks the supervisor.
+func TestGatherAgents_CwdFallbackWhenNoStamp(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	hqDir := state.HQHome()
+
+	lines := []string{paneLineHQ("%5", "hq", "✳ watching", "claude", hqDir, "")}
+	var got []Pane
+	withFixture(t, lines, func() { got = GatherAgents() })
+	if len(got) != 1 || got[0].Role() != "supervisor" {
+		t.Fatalf("cwd fallback must still resolve a legacy HQ; got %+v", got)
+	}
+}

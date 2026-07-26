@@ -153,3 +153,38 @@ func TestSeenRecently_StampedOnResolve(t *testing.T) {
 		t.Fatal("past the window there is genuinely no supervisor — queue nothing")
 	}
 }
+
+// hq-home-quarantine: a worker session mistakenly parked in the HQ home matches the
+// path criteria; the STAMP must outrank it or the worker steals the supervisor
+// identity (wakes delivered to a worker, the real HQ silent).
+func TestFind_StampOutranksAWorkerParkedInTheHome(t *testing.T) {
+	dir := hqHome(t)
+	fakePanes(t,
+		pane("%3", "", dir, dir),  // the mis-spawned worker, listed FIRST
+		pane("%9", dir, dir, dir), // the real, stamped HQ
+	)
+	if got := Find(); got != "%9" {
+		t.Fatalf("the stamped pane is the supervisor even when a worker sits in the home first; got %q", got)
+	}
+}
+
+func TestFind_PathFallbackStandsWhenNoStampExists(t *testing.T) {
+	dir := hqHome(t)
+	fakePanes(t, pane("%4", "", dir, dir)) // legacy home: no stamp anywhere
+	if got := Find(); got != "%4" {
+		t.Fatalf("with no stamped pane the path fallback still resolves; got %q", got)
+	}
+}
+
+func TestSameDir(t *testing.T) {
+	dir := hqHome(t)
+	if !SameDir(dir, dir+"/") && !SameDir(dir, dir) {
+		t.Fatal("a directory equals itself")
+	}
+	if SameDir("", dir) || SameDir(dir, "") {
+		t.Fatal("empty never matches")
+	}
+	if SameDir(dir, filepath.Join(dir, "sub")) {
+		t.Fatal("a subdirectory is not the home")
+	}
+}
