@@ -177,3 +177,76 @@ func TestGatherAgents_CwdFallbackWhenNoStamp(t *testing.T) {
 		t.Fatalf("cwd fallback must still resolve a legacy HQ; got %+v", got)
 	}
 }
+
+// tiered-pane-control: a user-watched PLAIN pane appears as a distinct watched radar
+// row (no agent status), sorts below agents, and is dropped when its pane closes.
+func TestGatherAgents_WatchedPlainPane(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	lines := []string{
+		paneLine("%1", "work", "0", "0", "⠋ building", "claude", 1700000000, 900001, "/tmp/x"),
+		paneLine("%2", "work", "0", "1", "", "bash", 1700000100, 900002, "/tmp/x"), // plain, watched below
+		paneLine("%3", "work", "1", "0", "", "vim", 1700000200, 900003, "/tmp/x"),  // plain, NOT watched
+	}
+	if err := state.Touch(state.WatchedPath("%2")); err != nil {
+		t.Fatal(err)
+	}
+
+	var got []Pane
+	withFixture(t, lines, func() { got = GatherAgents() })
+
+	byID := map[string]Pane{}
+	for _, p := range got {
+		byID[p.PaneID] = p
+	}
+	// %1 the agent is present and NOT watched.
+	if _, ok := byID["%1"]; !ok || byID["%1"].Watched {
+		t.Fatalf("%%1 should be a normal agent row: %+v", byID["%1"])
+	}
+	// %2 appears as a watched row with NO agent status.
+	w, ok := byID["%2"]
+	if !ok || !w.Watched {
+		t.Fatalf("%%2 should be a watched row: %+v", w)
+	}
+	if w.Status != "" {
+		t.Fatalf("a watched pane carries no agent status, got %q", w.Status)
+	}
+	// %3 (unwatched plain vim) must NOT be on the radar.
+	if _, ok := byID["%3"]; ok {
+		t.Fatal("an unwatched plain pane must not appear on the radar")
+	}
+	// Watched rows sort below agents.
+	lastAgent, firstWatched := -1, len(got)
+	for i, p := range got {
+		if p.Watched && i < firstWatched {
+			firstWatched = i
+		}
+		if !p.Watched && i > lastAgent {
+			lastAgent = i
+		}
+	}
+	if firstWatched < lastAgent {
+		t.Fatal("watched rows must sort below all agent rows")
+	}
+}
+
+// A watched pane whose pane has closed is not rendered (and its marker is reaped).
+func TestGatherAgents_WatchedPaneDroppedWhenClosed(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// %9 is watched but NOT in the live pane fixture (its pane closed).
+	if err := state.Touch(state.WatchedPath("%9")); err != nil {
+		t.Fatal(err)
+	}
+	lines := []string{paneLine("%1", "work", "0", "0", "⠋ go", "claude", 1700000000, 900001, "/tmp/x")}
+	var got []Pane
+	withFixture(t, lines, func() { got = GatherAgents() })
+	for _, p := range got {
+		if p.PaneID == "%9" {
+			t.Fatal("a watched pane that no longer exists must not be on the radar")
+		}
+	}
+	// The orphan sweep removed its marker.
+	if state.IsWatched("%9") {
+		t.Fatal("the closed watched pane's marker should be reaped")
+	}
+}

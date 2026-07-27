@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -17,16 +18,39 @@ import (
 // output is a session → window → pane tree. Read-only; unlike `agents`, it does not
 // filter to agent panes. This is the superset; `gtmux agents` stays the agent radar.
 func cmdPanes(args []string) int {
-	asJSON := false
-	for _, a := range args {
+	asJSON, watched := false, false
+	var watchVerb, watchTarget string
+	rest := []string{}
+	for i := 0; i < len(args); i++ {
+		a := args[i]
 		switch a {
 		case "-h", "--help":
 			usage()
 			return 0
 		case "--json":
 			asJSON = true
+		case "--watched":
+			watched = true
+		case "watch", "unwatch":
+			// `gtmux panes watch %N` / `gtmux panes unwatch %N` — opt a plain pane
+			// onto (off) the radar (tiered-pane-control). Kept under `panes` (not a
+			// top-level `watch`, which would collide with `agents --watch`).
+			watchVerb = a
+			if i+1 < len(args) {
+				i++
+				watchTarget = args[i]
+			}
+		default:
+			rest = append(rest, a)
 		}
 	}
+	if watchVerb != "" {
+		return paneWatch(watchVerb, watchTarget)
+	}
+	if watched {
+		return paneWatchList()
+	}
+	_ = rest
 	if !tmux.ServerUp() {
 		if asJSON {
 			fmt.Println("[]")
@@ -109,4 +133,41 @@ func winLess(a, b string) bool {
 		return ai < bi
 	}
 	return a < b
+}
+
+// paneWatch promotes (`watch`) or demotes (`unwatch`) a plain pane on the radar.
+func paneWatch(verb, target string) int {
+	if !paneIDRe.MatchString(target) {
+		i18n.Sae("usage: gtmux panes "+verb+" <pane-id>", "用法：gtmux panes "+verb+" <pane-id>")
+		return 2
+	}
+	if verb == "unwatch" {
+		state.Remove(state.WatchedPath(target))
+		i18n.Say("Unwatched "+target+".", "已取消关注 "+target+"。")
+		return 0
+	}
+	if tmux.Bin == "" || tmux.Display(target, "#{pane_id}") == "" {
+		i18n.Sae("Pane "+target+" no longer exists", "pane "+target+" 已不存在")
+		return 1
+	}
+	if err := state.Touch(state.WatchedPath(target)); err != nil {
+		i18n.Sae("panes watch: "+err.Error(), "panes watch："+err.Error())
+		return 1
+	}
+	i18n.Say("Watching "+target+" — it rides along on the radar as a watched pane.",
+		"已关注 "+target+" —— 它会作为「关注的 pane」出现在雷达上。")
+	return 0
+}
+
+func paneWatchList() int {
+	watched := state.WatchedPanes()
+	if len(watched) == 0 {
+		i18n.Say("No watched panes.", "没有关注中的 pane。")
+		return 0
+	}
+	sort.Strings(watched)
+	for _, p := range watched {
+		fmt.Println(p)
+	}
+	return 0
 }
