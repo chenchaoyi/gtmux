@@ -39,6 +39,9 @@ Commands:
     restore <name>        attach that session by name in THIS tab
     restore --one         attach the next unattached session in THIS tab
     restore --dry-run     print what would happen, change nothing
+    restore --plan [--json]
+                          preview what would be restored (sessions + the agent
+                          conversations under each) — read-only, no tmux started
     restore --resume-agents=auto|type|off
                           after restoring, relaunch captured agent conversations
                           (claude --resume etc.) into their panes. auto runs them;
@@ -145,6 +148,9 @@ const usageZH = `快速开始：
     restore <名字>         按名字把当前 tab 接回指定 session
     restore --one         只把当前 tab 接回下一个无人连接的 session
     restore --dry-run     只打印将要做什么，不实际执行
+    restore --plan [--json]
+                          预览将恢复什么（各 session + 其下可接回的 agent 会话）——
+                          只读，不启动 tmux
     restore --resume-agents=auto|type|off
                           恢复后把捕获到的 agent 会话接回各窗格（claude --resume
                           等）。auto 直接执行；type 只预填命令；off 跳过。默认跟随

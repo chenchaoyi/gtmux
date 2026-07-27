@@ -609,6 +609,7 @@ func cmdRestore(args []string) int {
 		return 1
 	}
 	mode, target, dryRun := "all", "", false
+	planOnly, asJSON := false, false
 	restoreResumeFlag = "" // reset per invocation (the flag below overrides config)
 	for _, a := range args {
 		switch {
@@ -620,6 +621,10 @@ func cmdRestore(args []string) int {
 			mode = "all"
 		case a == "--dry-run":
 			dryRun = true
+		case a == "--plan":
+			planOnly = true
+		case a == "--json":
+			asJSON = true
 		case strings.HasPrefix(a, "--resume-agents="):
 			restoreResumeFlag = strings.TrimPrefix(a, "--resume-agents=")
 		case a == "-h" || a == "--help":
@@ -628,6 +633,17 @@ func cmdRestore(args []string) int {
 		default:
 			target = a
 		}
+	}
+	// --plan (and any --json) is a READ-ONLY preview: what restore would bring back,
+	// no tmux started, no panes touched. It's the menu bar's source for the
+	// expandable "restore" row and a human preview of the review checklist.
+	if planOnly || asJSON {
+		if asJSON {
+			printRestorePlanJSON()
+		} else {
+			printRestorePlan(buildRestorePlan())
+		}
+		return 0
 	}
 	if dryRun {
 		restoreResumeFlag = "off" // never touch panes on a dry run
@@ -657,6 +673,13 @@ func cmdRestore(args []string) int {
 	if mode == "pick" {
 		ensureServer()
 		return restorePick(dryRun)
+	}
+
+	// Preview what's about to come back BEFORE touching tmux (read-only) — the user
+	// sees which sessions and agent conversations restore is bringing back, and it
+	// doubles as the review checklist afterward. Skipped when nothing is saved.
+	if plan := buildRestorePlan(); len(plan.Sessions) > 0 {
+		printRestorePlan(plan)
 	}
 
 	// default: one terminal tab per unattached session, in the recorded tab
