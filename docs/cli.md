@@ -4,7 +4,7 @@
 | --- | --- |
 | `agents [--watch\|--json]` | coding agents across your panes: who's waiting / working / idle, where, and the pane id to jump to |
 | `overview [--popup]` | sessions / windows / panes summary; `--popup` fits a tmux popup |
-| `restore [--pick\|--one\|<name>\|--dry-run] [--resume-agents=auto\|type\|off]` | one terminal tab per session, attach all; optionally relaunch captured agent conversations |
+| `restore [--pick\|--one\|<name>\|--dry-run\|--plan[ --json]] [--resume-agents=auto\|type\|off]` | one terminal tab per session, attach all; optionally relaunch captured agent conversations; `--plan` previews what would come back |
 | `focus <name\|pane-id\|--last>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane; `--last` = the most-recently-finished agent |
 | `new [name]` | start a new tmux session in a fresh terminal tab |
 | `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
@@ -411,7 +411,16 @@ gtmux restore --pick     # choose which sessions: "1 3" / "1,3", Enter = all, q 
 gtmux restore --one      # attach the next unattached session in this tab
 gtmux restore <name>     # attach a specific session here
 gtmux restore --dry-run  # print what would happen, change nothing
+gtmux restore --plan     # preview: which sessions + agent conversations would come back (read-only)
+gtmux restore --plan --json   # the same plan as JSON (the menu bar's source for its expandable restore row)
 ```
+
+A real `gtmux restore` prints this same plan up front — the sessions it's about to
+bring back and the agent conversation (goal) under each pane — so you see what's
+being restored as it happens and have a review checklist afterward. `--plan` is that
+preview on its own: it reads the last resurrect save + the resume records and starts
+no tmux (safe to run or poll anytime). An agent line marked `×` is a conversation
+whose transcript is gone from disk and won't resume.
 
 The first run pops an Automation permission dialog ("wants to control Ghostty") —
 click Allow. **After a reboot** the tmux server is gone too; `gtmux restore`
