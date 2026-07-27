@@ -26,6 +26,7 @@ struct MenuView: View {
     @State private var searchText = ""
     @State private var selected = 0
     @State private var expanded: String? // paneID of the waiting row showing 1/2/3
+    @State private var restoreExpanded = false // the footer restore row is showing its session list
     @FocusState private var rootFocused: Bool
     @FocusState private var searchFocused: Bool
     @Environment(\.colorScheme) private var scheme
@@ -342,6 +343,81 @@ struct MenuView: View {
         return items
     }
 
+    // MARK: restore row (contextual, DESIGN §14)
+
+    // The "just rebooted" restore affordance. The main label restores in one tap
+    // (unchanged); a chevron on the right expands it into the actual pending sessions
+    // — name, window/pane counts, and the agent conversation (goal) under each — so
+    // you can review what's coming back BEFORE clicking, or decide it's stale. The
+    // list is `store.restorePlan` (from `restore --plan --json`), present only when
+    // nothing is running. When the plan has no sessions the chevron is hidden (there
+    // is nothing to expand into; restore no-ops gracefully).
+    @ViewBuilder private func restoreRow(_ p: Theme.Palette) -> some View {
+        let plan = store.restorePlan
+        let count = plan?.sessions.count ?? 0
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Button { onAction(.restore) } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.uturn.backward").font(.system(size: 11))
+                        Text(count > 0
+                            ? l10n.tr("Restore \(count) session(s)", "恢复上次的工作现场 · \(count) 个会话")
+                            : l10n.tr("Restore your last working set", "恢复上次的工作现场"))
+                            .font(.system(size: 11, weight: .medium))
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(p.fg2)
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                if count > 0 {
+                    Button { withAnimation(.easeInOut(duration: 0.12)) { restoreExpanded.toggle() } } label: {
+                        Image(systemName: restoreExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(p.fg3)
+                            .frame(width: 18, height: 18)
+                            .contentShape(Rectangle())
+                    }.buttonStyle(.plain)
+                    .help(l10n.tr("Show which sessions would be restored", "看看会恢复哪些会话"))
+                }
+            }
+            .padding(.horizontal, 12).padding(.vertical, 7)
+
+            if restoreExpanded, let plan {
+                restorePlanList(plan, p)
+            }
+        }
+    }
+
+    @ViewBuilder private func restorePlanList(_ plan: RestorePlan, _ p: Theme.Palette) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            ForEach(plan.sessions) { s in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(s.name).font(.system(size: 11, weight: .medium)).foregroundStyle(p.fg2)
+                            .lineLimit(1).truncationMode(.tail)
+                        Text(l10n.tr("\(s.windows)w · \(s.panes)p", "\(s.windows) 窗口 · \(s.panes) 窗格"))
+                            .font(.system(size: 9)).foregroundStyle(p.fg3)
+                        Spacer(minLength: 0)
+                    }
+                    ForEach(s.agents) { a in
+                        HStack(spacing: 5) {
+                            // ↻ resumable · × transcript gone (won't resume). Color, not
+                            // just glyph, matches the status language (green=ok, dim=gone).
+                            Image(systemName: a.alive ? "arrow.clockwise" : "xmark")
+                                .font(.system(size: 8, weight: .semibold))
+                                .foregroundStyle(a.alive ? Theme.Status.idle : p.fg3)
+                            Text(a.label).font(.system(size: 10)).foregroundStyle(p.fg3)
+                                .lineLimit(1).truncationMode(.tail)
+                            Spacer(minLength: 0)
+                        }.padding(.leading, 10)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 14).padding(.top, 1).padding(.bottom, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     // MARK: footer
 
     @ViewBuilder private func footer(_ p: Theme.Palette) -> some View {
@@ -352,17 +428,7 @@ struct MenuView: View {
             // ("有快照") would need a restore-available signal from core; gating on zero live
             // sessions is the right UX moment (restore no-ops gracefully if there's nothing).
             if store.total == 0 {
-                Button { onAction(.restore) } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.uturn.backward").font(.system(size: 11))
-                        Text(l10n.tr("Restore your last working set", "恢复上次的工作现场"))
-                            .font(.system(size: 11, weight: .medium))
-                        Spacer(minLength: 0)
-                    }
-                    .foregroundStyle(p.fg2)
-                    .padding(.horizontal, 12).padding(.vertical, 7)
-                    .contentShape(Rectangle())
-                }.buttonStyle(.plain)
+                restoreRow(p)
                 Divider().overlay(p.divider)
             }
             // The single PERMANENT row (v3 §14): left ＋ New session, right = inline status

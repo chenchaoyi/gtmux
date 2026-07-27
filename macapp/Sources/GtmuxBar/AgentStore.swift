@@ -37,6 +37,37 @@ enum Status: String, CaseIterable {
 
 /// One agent pane, consuming `gtmux agents --json` (DESIGN §14). Tolerates older
 /// JSON without the source/native fields (decodeIfPresent).
+// RestorePlan mirrors `gtmux restore --plan --json` — the sessions the last
+// resurrect save would bring back, each with the agent conversations under it. The
+// menu-bar restore row expands into this. Read-only; the CLI is the source of truth.
+struct RestorePlan: Codable, Equatable {
+    var savePath = ""
+    var sessions: [RestorePlanSession] = []
+
+    var agentCount: Int { sessions.reduce(0) { $0 + $1.agents.count } }
+}
+
+struct RestorePlanSession: Codable, Equatable, Identifiable {
+    var name = ""
+    var windows = 0
+    var panes = 0
+    var agents: [RestorePlanAgent] = []
+    var id: String { name }
+}
+
+struct RestorePlanAgent: Codable, Equatable, Identifiable {
+    var agent = ""
+    var loc = ""
+    var cwd = ""
+    var sessionId = ""
+    var goal = ""
+    var alive = true
+    var id: String { loc + sessionId }
+
+    /// What to show as the conversation's label: its goal, else the directory.
+    var label: String { goal.isEmpty ? cwd : goal }
+}
+
 struct Agent: Identifiable, Equatable {
     var paneID = ""
     var session = ""
@@ -146,11 +177,28 @@ extension Agent: Decodable {
 final class AgentStore: ObservableObject {
     @Published private(set) var agents: [Agent] = []
 
+    /// The restore plan — what `gtmux restore` would bring back — populated ONLY when
+    /// nothing is running (the "just rebooted" moment the restore row appears), so the
+    /// footer row can expand into the actual pending sessions. nil the rest of the time.
+    @Published private(set) var restorePlan: RestorePlan?
+
     func refresh() {
         DispatchQueue.global(qos: .userInitiated).async {
             let data = GtmuxCLI.capture(["agents", "--json"]) ?? Data("[]".utf8)
             let decoded = (try? JSONDecoder().decode([Agent].self, from: data)) ?? []
-            DispatchQueue.main.async { self.agents = decoded }
+            // Fetch the restore plan on the same tick, but only when the fleet is
+            // empty — that's the only moment the restore row shows, and it keeps the
+            // extra shell-out off the hot path when agents are running.
+            var plan: RestorePlan?
+            if decoded.isEmpty {
+                if let pd = GtmuxCLI.capture(["restore", "--plan", "--json"]) {
+                    plan = try? JSONDecoder().decode(RestorePlan.self, from: pd)
+                }
+            }
+            DispatchQueue.main.async {
+                self.agents = decoded
+                self.restorePlan = decoded.isEmpty ? plan : nil
+            }
         }
     }
 

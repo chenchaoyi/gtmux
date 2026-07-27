@@ -298,6 +298,8 @@ divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
 
 永久底栏只剩**一行**：左「＋ 新建会话」，右 ⚙︎ 菜单（偏好设置… ⌘, / 配对设备… / 检查更新·版本号 / 退出 ⌘Q）。**情境通知行**「↩ N 个会话可接回」仅当存在 detached session 时出现，点击即 restore。连接/分享状态（绿点+设备数、「输入」chip）内联在永久行、仅为真时显。按钮一律图标+文字同行（不再上下两行）；版本号收进 ⚙︎ 菜单；配对另在空态卡有 CTA。
 
+**恢复行可展开（restore-plan）**：情境行右侧有 chevron，展开后列出**将恢复什么**——每个 session（名 + `Nw·Mp` 窗口/窗格数）+ 其下将接回的 agent 会话（↻ 绿=可接回 / × 灰=transcript 已丢失不会恢复，标签取会话 goal，无则 cwd）。主标签仍一键 restore，chevron 只管展开。数据源 = `gtmux restore --plan --json`（只读，仅在无在跑会话即恢复行出现时抓）。**目的**：重启后先 review 再决定，且和 CLI `gtmux restore` 打印的同一份计划一致（一个数据源，两块屏）。空计划时隐藏 chevron。
+
 ## 15. 参照（borrowed from）
 
 Tailscale（状态项克制、连接态一眼可读）· OrbStack（两行列表、温和材质）·
