@@ -56,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onAction: { [weak self] in self?.perform($0) },
                 onAdopt: { [weak self] in self?.adopt($0) },
                 onSend: { [weak self] in self?.sendReply($0, $1) },
+                onUnwatch: { [weak self] in self?.unwatch($0) },
                 onClose: { [weak self] in self?.popover.performClose(nil) }))
 
         // Repaint the status item whenever agents change.
@@ -265,6 +266,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// In-place reply (A1/A3): send the chosen option to the pane and re-poll soon
     /// so the row flips to working. Stays in the popover (no close).
     private func sendReply(_ agent: Agent, _ n: Int) { sendText(agent.paneID, "\(n)") }
+
+    /// Stop watching a promoted plain pane (tiered-pane-control): drop its watched
+    /// marker and re-poll so it leaves the radar's watched section.
+    private func unwatch(_ agent: Agent) {
+        guard !agent.paneID.isEmpty else { return }
+        GtmuxCLI.spawn(["panes", "unwatch", agent.paneID])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.store.refresh() }
+    }
 
     /// Send literal text to a pane (notification 1/2/3 + free-text reply, A2).
     private func sendText(_ pane: String, _ text: String) {

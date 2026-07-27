@@ -20,6 +20,7 @@ struct MenuView: View {
     var onAction: (MenuAction) -> Void
     var onAdopt: (Agent) -> Void = { _ in }
     var onSend: (Agent, Int) -> Void = { _, _ in }
+    var onUnwatch: (Agent) -> Void = { _ in }
     var onClose: () -> Void = {}
 
     @State private var searchActive = false
@@ -294,6 +295,13 @@ struct MenuView: View {
                             // Sense-only: no jump on tap, no reply. Adoptable ones can
                             // be resumed into tmux.
                             NativeRowView(agent: agent, l10n: l10n, onAdopt: { onAdopt(agent) })
+                        case let .watchedHeader(count):
+                            WatchedHeader(count: count, l10n: l10n)
+                        case let .watched(agent):
+                            // A promoted plain pane: focus on tap; an unwatch affordance.
+                            WatchedRowView(agent: agent, l10n: l10n,
+                                           onFocus: { onJump(agent) },
+                                           onUnwatch: { onUnwatch(agent) })
                         }
                     }
                 }
@@ -308,8 +316,10 @@ struct MenuView: View {
     private enum ListItem: Identifiable {
         case header(Status, Int)
         case agent(Agent, Int) // agent + its flat index (for keyboard selection)
-        case nativeHeader(Int) // the "Elsewhere / 不在 tmux" category header
-        case native(Agent)     // a sensed non-tmux session (sense-only + Adopt)
+        case nativeHeader(Int)  // the "Elsewhere / 不在 tmux" category header
+        case native(Agent)      // a sensed non-tmux session (sense-only + Adopt)
+        case watchedHeader(Int) // the "Watched / 关注" category header
+        case watched(Agent)     // a user-promoted plain pane (focus + unwatch)
         var id: String {
             switch self {
             case let .header(s, _): return "h:" + s.rawValue
@@ -318,6 +328,8 @@ struct MenuView: View {
             case let .agent(a, _): return "a:" + a.id + ":" + a.status
             case .nativeHeader: return "h:native"
             case let .native(a): return "n:" + a.id + ":" + a.status
+            case .watchedHeader: return "h:watched"
+            case let .watched(a): return "w:" + a.id
             }
         }
     }
@@ -332,6 +344,13 @@ struct MenuView: View {
                 items.append(.agent(a, idx))
                 idx += 1
             }
+        }
+        // Opt-in watched plain panes as their own trailing category (tiered-pane-
+        // control) — below the agents, above natives. Hidden when there are none.
+        let watched = store.watchedPanes(query: query)
+        if !watched.isEmpty {
+            items.append(.watchedHeader(watched.count))
+            for a in watched { items.append(.watched(a)) }
         }
         // Sensed non-tmux sessions as their own trailing category (not keyboard-
         // navigable — sense-only). Hidden entirely when there are none.
@@ -756,6 +775,66 @@ private struct NativeRowView: View {
         .padding(.horizontal, 12).padding(.vertical, 6)
         .frame(minHeight: Theme.Size.rowHeight)
         .opacity(0.94)
+    }
+}
+
+/// Header for the opt-in watched-pane section (tiered-pane-control) — a hairline
+/// divider above it sets it apart from the agent sections, with a quiet "WATCHED"
+/// label so a promoted plain pane never reads as an agent.
+private struct WatchedHeader: View {
+    let count: Int
+    @ObservedObject var l10n: L10n
+    @Environment(\.colorScheme) private var scheme
+    var body: some View {
+        let p = Theme.Palette.of(scheme)
+        VStack(spacing: 0) {
+            Divider().overlay(p.divider).padding(.horizontal, 12).padding(.top, 6)
+            HStack(spacing: 6) {
+                Image(systemName: "eye").font(.system(size: 9)).foregroundStyle(p.fg3)
+                Text(l10n.tr("WATCHED", "关注")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
+                Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
+                Spacer()
+                Text(l10n.tr("plain panes you pinned", "你钉住的普通 pane")).font(Theme.Font.footer).foregroundStyle(p.fg3)
+            }
+            .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 2)
+        }
+    }
+}
+
+/// A watched plain pane: an eye glyph (NOT an agent status), the pane's label +
+/// loc, focus on tap, and an unwatch (×) affordance. Dimmed slightly so it reads as
+/// secondary to the agent rows above it.
+private struct WatchedRowView: View {
+    let agent: Agent
+    @ObservedObject var l10n: L10n
+    var onFocus: () -> Void
+    var onUnwatch: () -> Void
+    @Environment(\.colorScheme) private var scheme
+    @State private var hovering = false
+    var body: some View {
+        let p = Theme.Palette.of(scheme)
+        HStack(spacing: Theme.Size.gap) {
+            Image(systemName: "eye").font(.system(size: 12)).foregroundStyle(p.fg3)
+                .frame(width: Theme.Size.avatar, height: Theme.Size.avatar)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(agent.task.isEmpty ? agent.session : agent.task)
+                    .font(Theme.Font.session).foregroundStyle(p.fg).lineLimit(1).truncationMode(.tail)
+                Text(agent.loc).font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
+            }
+            Spacer(minLength: 6)
+            if hovering {
+                Button(action: onUnwatch) {
+                    Image(systemName: "xmark").font(.system(size: 9, weight: .semibold)).foregroundStyle(p.fg3)
+                        .frame(width: 18, height: 18).contentShape(Rectangle())
+                }.buttonStyle(.plain).help(l10n.tr("Stop watching this pane", "取消关注这个 pane"))
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .frame(minHeight: Theme.Size.rowHeight)
+        .opacity(0.92)
+        .contentShape(Rectangle())
+        .onTapGesture { onFocus() }
+        .onHover { hovering = $0 }
     }
 }
 
