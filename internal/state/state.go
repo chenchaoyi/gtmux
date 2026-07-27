@@ -34,8 +34,38 @@ func Dir() string { return filepath.Join(os.Getenv("HOME"), ".local", "share", "
 // `internal/hook` (nudge) need the same path without an import cycle.
 func HQHome() string { return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "hq") }
 
+// ActiveDir is the directory of per-pane "agent is mid-turn" markers.
+func ActiveDir() string { return filepath.Join(Dir(), "active") }
+
 // ActivePath is the in-progress marker file for a pane.
-func ActivePath(pane string) string { return filepath.Join(Dir(), "active", pane) }
+func ActivePath(pane string) string { return filepath.Join(ActiveDir(), pane) }
+
+// ReapOrphanTurnMarkers deletes the per-pane TURN-STATE markers (active / waiting /
+// finished) for panes NOT in `live` — panes tmux no longer has (an agent exited and
+// its pane was closed, or the whole session went away). These markers are keyed by
+// pane id, so a closed pane leaves them behind as cruft that can feed phantom state
+// into surfaces that look a pane up by id. Resume records are deliberately NOT
+// touched — they must survive a closed pane so `restore` can bring the conversation
+// back after a reboot (when EVERY pane is momentarily gone). Best-effort; returns the
+// number of marker files removed.
+func ReapOrphanTurnMarkers(live map[string]bool) int {
+	removed := 0
+	for _, dir := range []string{ActiveDir(), WaitingDir(), FinishedDir()} {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || live[e.Name()] {
+				continue
+			}
+			if os.Remove(filepath.Join(dir, e.Name())) == nil {
+				removed++
+			}
+		}
+	}
+	return removed
+}
 
 // WaitingDir is the directory of per-pane "blocked on the user" markers.
 func WaitingDir() string { return filepath.Join(Dir(), "waiting") }
