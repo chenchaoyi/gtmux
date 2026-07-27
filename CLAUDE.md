@@ -3,7 +3,7 @@
 **gtmux** is a command center for tmux sessions and coding agents. Two surfaces
 over one Go core (gtmux-core is the single data source):
 
-- **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`,
+- **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`, `panes`,
   `digest`, `hq`, `hq-feed`, `quiet`, `capture`, `usage`, `limits`, `events`, `resource`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
   `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install-hooks`, `uninstall-hooks`,
   `uninstall-app`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>

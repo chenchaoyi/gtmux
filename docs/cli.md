@@ -3,6 +3,7 @@
 | command | what it does |
 | --- | --- |
 | `agents [--watch\|--json]` | coding agents across your panes: who's waiting / working / idle, where, and the pane id to jump to |
+| `panes [--json]` | EVERY tmux pane (not just agents), tiered agent/plain — the superset behind the pane browser |
 | `overview [--popup]` | sessions / windows / panes summary; `--popup` fits a tmux popup |
 | `restore [--pick\|--one\|<name>\|--dry-run\|--plan[ --json]] [--resume-agents=auto\|type\|off]` | one terminal tab per session, attach all; optionally relaunch captured agent conversations; `--plan` previews what would come back |
 | `focus <name\|pane-id\|--last>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane; `--last` = the most-recently-finished agent |
@@ -72,6 +73,27 @@ the same data for scripts and the menu-bar app.
 `⏸ waiting` and `✓ latest` come from state files written by the
 [notification hook](#notification-hook). Without it, agents never show `⏸`;
 everything else still works.
+
+## `gtmux panes`
+
+`gtmux panes` lists **every** tmux pane, not just coding agents — the superset of
+`gtmux agents`. It's the read-only producer behind the pane browser
+(tiered-pane-control): a session → window → pane tree, or `--json` for a structured
+array. Each pane carries a `tier` of `"agent"` (a coding-agent pane — classified
+exactly as the radar does) or `"plain"` (a shell, editor, dev server, log — anything
+else), plus its loc, cwd, current command, title, active flag, and copy-mode flag.
+
+```sh
+gtmux panes            # session → window → pane tree; ▸ marks agent panes
+gtmux panes --json     # [{pane_id, loc, session, window, pane, cwd, command, title, active, in_mode, tier, agent}]
+```
+
+Why a separate command from `agents`: `gtmux agents --json` is a locked contract
+meaning "coding agents" — the radar. `panes` is the everything-superset for a browser
+that reaches ANY pane. `gtmux focus`/`send`/`attach` already work on any pane id, so a
+`tier:"plain"` pane is a first-class focus/type/attach target; it just doesn't get the
+agent-only intelligence (digest, 1/2/3 approval, dispatch, HQ). The agent radar is NOT
+diluted — plain panes never appear on it unless you opt in with "watch this pane".
 
 ## `gtmux digest` + `gtmux hq` — the supervisor (中控)
 
