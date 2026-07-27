@@ -168,6 +168,33 @@ report a missing conversation. Agents whose store cannot be inspected SHALL be u
 - **WHEN** a resume record names a session id with no transcript on disk
 - **THEN** restore skips that resume and logs the reason, leaving a usable pane instead of an error message
 
+### Requirement: The cwd fallback requires layout-position agreement
+
+When a restored pane's exact locator has no saved resume record, `gtmux restore`
+MAY recover a conversation by a fallback, but ONLY from a record that shares BOTH
+the pane's working directory AND its window.pane layout position (the coordinates
+tmux-resurrect preserves across a reboot). A directory match alone SHALL NOT
+authorize a resume. This is required because many restored panes are plain shells
+(editors, extra terminals) that merely sit inside a project directory without ever
+having hosted an agent; a directory-only fallback injected a historical conversation
+into every such pane, so a single session came back showing several agent
+conversations that were never running. Position agreement is the evidence that the
+restored pane is the same pane that hosted the conversation (its session having only
+been renamed); a pane at a position no agent ever occupied SHALL recover nothing.
+
+#### Scenario: A bare shell pane sharing a project directory is not injected
+
+- **WHEN** a restored pane at a window.pane position that never hosted an agent sits
+  in a directory where some other pane once ran a conversation
+- **THEN** restore resumes nothing into it, rather than injecting a historical
+  conversation from that directory
+
+#### Scenario: A renamed session still resumes at its position
+
+- **WHEN** a pane's exact locator no longer matches (its session was renamed) but a
+  saved record shares the pane's directory and its window.pane position
+- **THEN** restore recovers that conversation into the pane
+
 ### Requirement: Only a real conversation may claim a pane's resume record
 
 The system SHALL NOT let a session take over a pane's resume record unless that session

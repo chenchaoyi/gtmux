@@ -65,15 +65,40 @@ func Load(key string) (Record, bool) {
 // Remove drops the record for a location key (best-effort).
 func Remove(key string) { _ = os.Remove(fileFor(key)) }
 
-// All returns every saved record, most-recent first. Restore uses it as a cwd
-// fallback: when a restored pane's exact locator key didn't match (a session was
-// renamed / windows reindexed), it can still find the conversation by working dir.
+// Located pairs a record with the location key it was saved under (decoded from the
+// filename). Restore's cwd fallback needs the ORIGINAL locator — specifically the
+// window.pane layout position inside it — to tell a pane that truly hosted an agent
+// (its session was merely renamed, position preserved) from a bare shell pane that
+// only shares a project directory. Without that evidence the fallback injected a
+// historical conversation into every project-dir shell pane after a restore (the
+// "multiple cc sessions after reboot" bug).
+type Located struct {
+	Loc string // the location key this record was saved under (e.g. "session:window.pane")
+	Record
+}
+
+// All returns every saved record, most-recent first (nil on an empty store).
 func All() []Record {
+	loc := AllLocated()
+	if loc == nil {
+		return nil
+	}
+	out := make([]Record, len(loc))
+	for i := range loc {
+		out[i] = loc[i].Record
+	}
+	return out
+}
+
+// AllLocated returns every saved record paired with its decoded location key,
+// most-recent first. Restore uses it for the cwd fallback so it can require the
+// record's original window.pane position to match the restored pane.
+func AllLocated() []Located {
 	entries, err := os.ReadDir(Dir())
 	if err != nil {
 		return nil
 	}
-	var out []Record
+	var out []Located
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
 			continue
@@ -83,9 +108,14 @@ func All() []Record {
 			continue
 		}
 		var r Record
-		if json.Unmarshal(b, &r) == nil {
-			out = append(out, r)
+		if json.Unmarshal(b, &r) != nil {
+			continue
 		}
+		key, err := base64.RawURLEncoding.DecodeString(strings.TrimSuffix(e.Name(), ".json"))
+		if err != nil {
+			continue // an unexpected filename — skip rather than guess its locator
+		}
+		out = append(out, Located{Loc: string(key), Record: r})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].UpdatedAt > out[j].UpdatedAt })
 	return out

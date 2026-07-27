@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/resume"
 )
 
 func TestEffectiveResumeMode(t *testing.T) {
@@ -62,6 +64,67 @@ func TestIsShellCommand(t *testing.T) {
 	for _, s := range []string{"node", "claude", "codex", "python", "vim", ""} {
 		if isShellCommand(s) {
 			t.Errorf("isShellCommand(%q) = true, want false", s)
+		}
+	}
+}
+
+// hq-home-quarantine's sibling: the "multiple cc sessions after restore" bug. The
+// old cwd-only fallback injected a historical conversation into any bare-shell pane
+// that merely shared a project directory. pickCwdFallback now requires the record's
+// original window.pane position to match, so a never-agent pane gets nothing.
+func TestPickCwdFallback(t *testing.T) {
+	proj := "/Users/ccy/proj/gtmux"
+	all := []resume.Located{
+		{Loc: "gtmux dev:0.0", Record: resume.Record{SessionID: "sess-00", Cwd: proj, UpdatedAt: 300}},
+		{Loc: "old name:0.0", Record: resume.Record{SessionID: "sess-old00", Cwd: proj, UpdatedAt: 200}},
+		{Loc: "gtmux dev:0.1", Record: resume.Record{SessionID: "sess-01", Cwd: proj, UpdatedAt: 100}},
+	}
+	used := map[string]bool{}
+
+	// A restored pane at window.pane 0.0 whose session was renamed: matches records at
+	// position 0.0 (same dir). Newest wins (sess-00).
+	rec, cands := pickCwdFallback("renamed:0.0", proj, all, used)
+	if rec == nil || rec.SessionID != "sess-00" {
+		t.Fatalf("position 0.0 should recover the newest 0.0 record; got %+v", rec)
+	}
+	if cands != 2 {
+		t.Fatalf("two records at position 0.0 in this dir; got cands=%d", cands)
+	}
+
+	// THE BUG: a bare shell pane at position 0.9 that only shares the project dir —
+	// no record ever lived at 0.9, so it must recover NOTHING (was: injected a
+	// historical conversation).
+	if rec, _ := pickCwdFallback("gtmux dev:0.9", proj, all, used); rec != nil {
+		t.Fatalf("a pane at a position no agent ever used must not be injected; got %+v", rec)
+	}
+
+	// A different directory with no matching record → nothing.
+	if rec, _ := pickCwdFallback("gtmux dev:0.0", "/other/dir", all, used); rec != nil {
+		t.Fatalf("no record in this dir → no recovery; got %+v", rec)
+	}
+
+	// used dedup: once sess-00 is consumed, position 0.0 falls through to sess-old00.
+	used["sess-00"] = true
+	if rec, _ := pickCwdFallback("renamed:0.0", proj, all, used); rec == nil || rec.SessionID != "sess-old00" {
+		t.Fatalf("a used record is skipped; got %+v", rec)
+	}
+
+	// empty cwd never matches (a pane with no dir can't be recovered by dir).
+	if rec, _ := pickCwdFallback("x:0.0", "", all, used); rec != nil {
+		t.Fatalf("empty cwd must not match; got %+v", rec)
+	}
+}
+
+func TestPosSuffix(t *testing.T) {
+	cases := map[string]string{
+		"gtmux dev:0.1":      "0.1",
+		"a:b:2.3":            "2.3", // colon in session name → split on LAST colon
+		"你是worker(不是HQ):1.0": "1.0",
+		"nocolon":            "nocolon",
+	}
+	for in, want := range cases {
+		if got := posSuffix(in); got != want {
+			t.Errorf("posSuffix(%q) = %q, want %q", in, got, want)
 		}
 	}
 }
