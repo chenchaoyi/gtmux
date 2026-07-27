@@ -111,3 +111,28 @@ func TestCommandQuoteEscape(t *testing.T) {
 		t.Errorf("single quote not escaped: %q", got)
 	}
 }
+
+// AllLocated must recover each record's ORIGINAL locator (decoded from the base64
+// filename) so restore's cwd fallback can require a window.pane position match.
+func TestAllLocatedRecoversLocator(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// A session name with a colon + spaces — must round-trip through the base64 filename.
+	_ = Save("gtmux dev:0.1", Record{Agent: "claude", SessionID: "s1", Cwd: "/p", UpdatedAt: 200})
+	_ = Save("a:b:2.3", Record{Agent: "codex", SessionID: "s2", Cwd: "/q", UpdatedAt: 100})
+
+	got := AllLocated()
+	if len(got) != 2 {
+		t.Fatalf("want 2 located records, got %d", len(got))
+	}
+	// most-recent first
+	if got[0].Loc != "gtmux dev:0.1" || got[0].SessionID != "s1" {
+		t.Fatalf("first (newest) locator wrong: %+v", got[0])
+	}
+	if got[1].Loc != "a:b:2.3" || got[1].SessionID != "s2" {
+		t.Fatalf("second locator wrong: %+v", got[1])
+	}
+	// All() stays consistent (same records, no locator).
+	if len(All()) != 2 {
+		t.Fatalf("All() should mirror AllLocated count")
+	}
+}

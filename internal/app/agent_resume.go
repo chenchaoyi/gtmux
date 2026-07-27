@@ -61,8 +61,10 @@ func autoResumeEnabled() bool {
 // are skipped so re-running restore never clobbers a live agent.
 //
 // Matching is two-pass: first the exact locator (session:window.pane, the key the
-// hook saved), then a CWD fallback (resume.All → most-recent record whose Cwd is
-// the pane's restored dir) so a renamed session / reindexed window still resumes.
+// hook saved), then a fallback (pickCwdFallback) that recovers a conversation only
+// when a saved record shares the pane's cwd AND its window.pane position — so a
+// session renamed since the save still resumes, but a bare shell pane that merely
+// shares a project dir is never injected with a historical conversation.
 // A conversation is used at most once (dedup by session id).
 func resumeAgents() {
 	mode := effectiveResumeMode()
@@ -125,31 +127,25 @@ func resumeAgents() {
 			pending = append(pending, p)
 		}
 	}
-	// Pass 2 — CWD fallback for panes whose locator didn't match a record. This is a
-	// HEURISTIC: when several sessions share a cwd it can resume the WRONG one into a
-	// pane. It's logged with the candidate count so an AMBIGUOUS match (>1) — the prime
-	// suspect for a "window came back on the wrong conversation" report — is traceable.
+	// Pass 2 — fallback for panes whose exact locator had no record: recover a
+	// conversation ONLY when a saved record shares this pane's cwd AND its original
+	// window.pane layout position (see pickCwdFallback). The position requirement is
+	// what stops the "multiple cc sessions after restore" bug: a bare shell pane that
+	// merely sits in a project dir (never hosted an agent) has no record at its
+	// position, so it correctly gets nothing — the old cwd-only match injected a
+	// historical conversation into every such pane.
 	if len(pending) > 0 {
-		all := resume.All() // most-recent first
+		all := resume.AllLocated() // most-recent first, each with its original locator
 		for _, p := range pending {
-			var chosen *resume.Record
-			cands := 0
-			for i := range all {
-				if all[i].Cwd != "" && all[i].Cwd == p.cwd && !used[all[i].SessionID] {
-					cands++
-					if chosen == nil {
-						chosen = &all[i]
-					}
-				}
-			}
+			chosen, cands := pickCwdFallback(p.loc, p.cwd, all, used)
 			if chosen == nil {
-				restoreLogf("resume[no-match] pane=%s loc=%s cwd=%s (no exact record, no cwd candidate)", p.id, p.loc, p.cwd)
+				restoreLogf("resume[no-match] pane=%s loc=%s cwd=%s (no exact record; no cwd+position candidate)", p.id, p.loc, p.cwd)
 				continue
 			}
 			ran := run(p.id, *chosen)
 			amb := ""
 			if cands > 1 {
-				amb = fmt.Sprintf(" AMBIGUOUS(%d cwd candidates — may be the wrong conversation)", cands)
+				amb = fmt.Sprintf(" AMBIGUOUS(%d cwd+position candidates)", cands)
 			}
 			restoreLogf("resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v%s",
 				p.id, p.loc, p.cwd, chosen.SessionID, ran, amb)
@@ -161,6 +157,43 @@ func resumeAgents() {
 
 	restoreLogf("resumeAgents: done resumed=%d", n)
 	reportResume(mode, n)
+}
+
+// pickCwdFallback chooses the record to recover into a restored pane whose exact
+// locator had no saved record. A candidate must share the pane's cwd AND the same
+// window.pane layout position (session may have been renamed, but tmux-resurrect
+// preserves window/pane indices) — position agreement is the evidence that THIS
+// pane hosted THAT conversation. A pane that only shares a directory (a plain shell
+// that never ran an agent) matches no record at its position and gets nil, which is
+// what stops historical conversations being injected into every project-dir pane
+// after a restore. Records are most-recent first; the newest matching one wins.
+// candidates counts the position+cwd matches so an ambiguous recovery stays logged.
+func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool) (rec *resume.Record, candidates int) {
+	if cwd == "" {
+		return nil, 0
+	}
+	wp := posSuffix(loc)
+	for i := range all {
+		r := &all[i]
+		if r.Cwd != cwd || used[r.SessionID] || posSuffix(r.Loc) != wp {
+			continue
+		}
+		candidates++
+		if rec == nil {
+			rec = &all[i].Record
+		}
+	}
+	return rec, candidates
+}
+
+// posSuffix returns the window.pane part of a locator ("session:window.pane" →
+// "window.pane"). It splits on the LAST colon so a session name containing a colon
+// doesn't corrupt the position. A locator with no colon returns unchanged.
+func posSuffix(loc string) string {
+	if i := strings.LastIndex(loc, ":"); i >= 0 {
+		return loc[i+1:]
+	}
+	return loc
 }
 
 // reportResume prints the outcome AND (when something resumed) posts a menu-bar
