@@ -527,11 +527,13 @@ func GatherAgents() []Pane {
 
 	var panes []Pane
 	hqStamps := map[string]string{} // pane id → its @gtmux_hq_home stamp (role precedence)
+	livePanes := map[string]bool{}  // every live tmux pane id (agents or not) — for orphan-marker GC
 	for _, line := range paneSource() {
 		f := strings.SplitN(line, "\t", 12)
 		if len(f) < 7 {
 			continue
 		}
+		livePanes[f[0]] = true
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
@@ -724,6 +726,13 @@ func GatherAgents() []Pane {
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
 	panes = append(panes, nativePanes(panes, profiles, now)...)
 	applyRolePrecedence(panes, hqStamps)
+	// Self-heal: drop turn-state markers left behind by panes tmux no longer has
+	// (an exited agent whose pane was closed). livePanes is the raw pane set gathered
+	// above (agents or not) — reusing it avoids a second list-panes on the hot path.
+	// Guard on non-empty: a transient empty scan must never reap every marker.
+	if len(livePanes) > 0 {
+		state.ReapOrphanTurnMarkers(livePanes)
+	}
 	sortPanes(panes)
 	return panes
 }

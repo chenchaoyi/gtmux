@@ -199,3 +199,45 @@ func TestLoadTabOrderDropsBlanks(t *testing.T) {
 		t.Errorf("LoadTabOrder = %v, want %v", got, want)
 	}
 }
+
+// TestReapOrphanTurnMarkers: turn-state markers for panes tmux no longer has are
+// swept; markers for live panes and resume records are left untouched (an exited
+// agent whose pane closed must not strand cruft, but restore still needs its record).
+func TestReapOrphanTurnMarkers(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	// %live is still a pane; %dead was closed. Give each an active + waiting +
+	// finished marker.
+	for _, pane := range []string{"%live", "%dead"} {
+		if err := Touch(ActivePath(pane)); err != nil {
+			t.Fatal(err)
+		}
+		if err := Touch(WaitingPath(pane)); err != nil {
+			t.Fatal(err)
+		}
+		if err := Touch(FinishedPath(pane)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	n := ReapOrphanTurnMarkers(map[string]bool{"%live": true})
+	if n != 3 {
+		t.Fatalf("want 3 orphan markers removed (%%dead ×3), got %d", n)
+	}
+	// %dead's markers are gone.
+	for _, p := range []string{ActivePath("%dead"), WaitingPath("%dead"), FinishedPath("%dead")} {
+		if Exists(p) {
+			t.Fatalf("orphan marker should be reaped: %s", p)
+		}
+	}
+	// %live's markers survive.
+	for _, p := range []string{ActivePath("%live"), WaitingPath("%live"), FinishedPath("%live")} {
+		if !Exists(p) {
+			t.Fatalf("live pane's marker must survive: %s", p)
+		}
+	}
+	// An empty live set with no markers is a no-op (and never panics).
+	if got := ReapOrphanTurnMarkers(map[string]bool{"%live": true}); got != 0 {
+		t.Fatalf("second sweep removes nothing, got %d", got)
+	}
+}
