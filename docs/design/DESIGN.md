@@ -300,6 +300,18 @@ divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
 
 **恢复行可展开（restore-plan）**：情境行右侧有 chevron，展开后列出**将恢复什么**——每个 session（名 + `Nw·Mp` 窗口/窗格数）+ 其下将接回的 agent 会话（↻ 绿=可接回 / × 灰=transcript 已丢失不会恢复，标签取会话 goal，无则 cwd）。主标签仍一键 restore，chevron 只管展开。数据源 = `gtmux restore --plan --json`（只读，仅在无在跑会话即恢复行出现时抓）。**目的**：重启后先 review 再决定，且和 CLI `gtmux restore` 打印的同一份计划一致（一个数据源，两块屏）。空计划时隐藏 chevron。
 
+## 16. Pane 浏览器 · tiered-pane-control（**与雷达分离，红线**）
+
+gtmux 的控制原语（`focus`/`send`/`attach`）本来就是 **pane 级**、对任意 tmux pane 都生效；agent-only 的只有雷达的"智能"层（识别/digest/1·2·3/dispatch/HQ）。所以"能管所有 pane"是**呈现决策**，不是能力重构。**唯一红线：绝不把所有 pane 平铺进雷达**——否则 vim/htop/日志和 agent 挤一起，"谁在等你"被稀释，雷达退化成又一个 tmux 会话列表（tmux 自己就是的红海）。
+
+三个面，分级、分面：
+
+- **独立浏览器窗口**（`⚙︎ → 浏览所有 pane…`，**不是雷达 popover 的一部分**）：`gtmux panes --json` 的 session→窗口→pane 树，每行标 `tier=agent|plain`。agent 行 ▸ 标记 + 名/标题;普通行 = 命令名。点任意行 = focus；普通行悬停出 👁 关注开关（把它钉上雷达）。这里是"管全量 tmux"的地方，雷达因此保持干净。同 session 的 pane 天然聚在一起 → 桌面侧的"agent 邻居 pane"由此覆盖（手机 Detail 的邻居条见 MOBILE）。
+- **雷达内 watched 分区**（§3 之下）：opt-in 关注的普通 pane 作为**独立分区**出现——细分隔线 + 👁「关注」小标题，行带 👁（**无 agent 状态**：waiting/working/idle 是 agent 概念），排在所有 agent 之后，pane 一关就自动掉。**绝不自动加**。
+- **分级契约**：agent = 全套智能；普通 tmux pane = focus/输入/关注/attach；非 tmux agent = 只读（Elsewhere）。同一套 `send`/`attach`，差异只在"雷达给不给它加 buff"。guest scope 照常对任意 pane 生效。
+
+**定位红线**：gtmux 仍是"coding agent 指挥中心"，"任意 pane 可达"是**能力**不是**招牌**——不得改叙事为通用 tmux 管理器。
+
 ## 15. 参照（borrowed from）
 
 Tailscale（状态项克制、连接态一眼可读）· OrbStack（两行列表、温和材质）·

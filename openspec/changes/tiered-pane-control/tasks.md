@@ -38,15 +38,17 @@ unblocks every surface.
 
 ## 4. Menu-bar surfaces (PR 4, Swift)
 
-- [ ] 4.1 A sessions/panes browser view (consumes `gtmux panes --json`): session →
+- [x] 4.1 A sessions/panes browser view (consumes `gtmux panes --json`): session →
       window → pane tree, focus/type/attach any pane, agent panes badged + linking to
       their Detail. A SEPARATE view, reached from the ⚙ menu / a browser affordance —
       NOT merged into the radar list.
-- [ ] 4.2 Agent-neighbor strip in an agent's Detail: sibling panes in the same
-      session (filtered `panes --json`) with focus/type.
+- [~] 4.2 Agent-neighbor panes: on DESKTOP subsumed by the browser (it groups panes
+      by session, so an agent sits alongside its siblings). A dedicated neighbor strip
+      belongs to the MOBILE Detail screen (there's no rich Detail in the menu bar) →
+      folded into PR 5.
 - [x] 4.3 Watched panes render as a distinct radar section (menu bar), unwatch (×) inline in the browser; watched panes render as a
       distinct radar row type (own glyph, no agent status).
-- [ ] 4.4 DESIGN.md: a NEW section for the pane browser, kept separate from the radar
+- [x] 4.4 DESIGN.md §16: a NEW section for the pane browser, kept separate from the radar
       section, stating the anti-dilution rule (plain panes never auto-enter the radar).
 
 ## 5. Mobile / web (PR 5, optional follow-up)
