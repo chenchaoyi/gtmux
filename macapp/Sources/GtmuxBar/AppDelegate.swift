@@ -119,6 +119,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 PreferencesController.shared.show(l10n: self.l10n, store: self.store)
             }
         }
+        // Test seam: GTMUXBAR_SHOW_BROWSER auto-opens the pane browser window, so it
+        // can be verified headlessly (the only interactive route is the ⚙ menu). No-op
+        // normally.
+        if ProcessInfo.processInfo.environment["GTMUXBAR_SHOW_BROWSER"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self else { return }
+                PaneBrowserController.shared.show(l10n: self.l10n)
+            }
+        }
     }
 
     private func toggleCommandPalette() {
@@ -296,10 +305,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .pairPhone:
             popover.performClose(nil)
             PairingController.shared.show(l10n: l10n)
+        case .browsePanes:
+            popover.performClose(nil)
+            PaneBrowserController.shared.show(l10n: l10n)
         case .quit:       NSApp.terminate(nil)
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }
-        if action != .quit && action != .preferences && action != .pairPhone && action != .newSession {
+        if action != .quit && action != .preferences && action != .pairPhone && action != .newSession && action != .browsePanes {
             popover.performClose(nil)
         }
     }
