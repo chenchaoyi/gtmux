@@ -22,6 +22,9 @@ Commands:
                           idle, where, and the pane id to jump to. --watch is a
                           live dashboard (↑/↓ select · enter jump · r · q);
                           --json prints a structured array (for scripts/apps)
+  panes [--json]          EVERY tmux pane (not just agents): a session/window/pane
+                          tree, each tagged tier=agent|plain. focus/send/attach work
+                          on any of them — the superset behind the pane browser
   digest [--json]         a cognitive digest of every agent: its goal, latest
                           reply, and what it's asking you — the "one glance"
                           fleet view (and the supervisor's read surface)
@@ -132,6 +135,9 @@ const usageZH = `快速开始：
                           在哪、以及可跳转的 pane id。--watch 是实时面板
                           （↑/↓ 选择 · enter 跳转 · r 刷新 · q 退出）；
                           --json 输出结构化数组（给脚本 / app 用）
+  panes [--json]          全部 tmux pane（不只 agent）：session/窗口/pane 树，
+                          每个标 tier=agent|plain。focus/send/attach 对任意 pane
+                          都生效 —— pane 浏览器背后的全集
   digest [--json]         每个 agent 的认知摘要：目标、最新回复、正在问什么
                           —— 一眼看清全部 agent（也是中控的主要信息源）
   hq                      打开（或跳到）中控 agent —— 一个替你盯全部 agent、

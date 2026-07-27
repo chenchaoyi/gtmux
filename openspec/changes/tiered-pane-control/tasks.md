@@ -5,15 +5,15 @@ unblocks every surface.
 
 ## 1. CLI producer — `gtmux panes` (PR 1)
 
-- [ ] 1.1 `internal/radar`: `GatherPanes()` enumerates all tmux panes (one
+- [x] 1.1 `internal/radar`: `GatherPanes()` enumerates all tmux panes (one
       `list-panes -a`) into a `PaneRow` with id, loc, session/window/pane, cwd,
       command, title, active, inMode, and `tier` (`agent`|`plain`). `tier` reuses
       `classifyAgent` / cross-references `GatherAgents` so an agent pane is marked and
       linkable. Read-only, off the radar's 1.5s poll. Tests: fixture panes → tiers,
       agent vs plain, `agents --json` unchanged.
-- [ ] 1.2 `internal/app`: dispatch `panes` → `--json` array + plain-text session tree.
+- [x] 1.2 `internal/app`: dispatch `panes` → `--json` array + plain-text session tree.
       Register in `app.go`.
-- [ ] 1.3 Docs surface (same PR): CLAUDE.md command list, `gtmux --help` (en+zh),
+- [x] 1.3 Docs surface (same PR): CLAUDE.md command list, `gtmux --help` (en+zh),
       `## gtmux panes` in `docs/cli.md`, and note the `tier` field. (No HTTP endpoint
       yet → no api/contract.md change; add when the app needs it.)
 
