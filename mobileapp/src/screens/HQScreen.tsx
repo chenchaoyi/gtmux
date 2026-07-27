@@ -81,6 +81,10 @@ export function HQScreen({route, navigation}: any) {
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
   const [boardOpen, setBoardOpen] = useState(false);
+  // The assessment headline is the supervisor's synthesized conclusion — it can run
+  // long. Collapsed to 2 lines by default; tapping it expands to the full text so it
+  // is never stranded truncated with no way to read the rest.
+  const [assessExpanded, setAssessExpanded] = useState(false);
   const [seenMark, setSeenMark] = useState(0);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   // The HQ pane's live screen. Without it the console had NO progress surface: your
@@ -293,7 +297,7 @@ export function HQScreen({route, navigation}: any) {
               ]}
             />
           </View>
-          <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={1}>
+          <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={2}>
             {t(
               `${counts.waiting} need you · ${counts.working} working · ${counts.idle} idle`,
               `${counts.waiting} 需要你 · ${counts.working} 运行 · ${counts.idle} 空闲`,
@@ -308,12 +312,20 @@ export function HQScreen({route, navigation}: any) {
         </View>
       </View>
 
-      {/* Assessment — the conclusion, and the supervisor's own board behind it. */}
+      {/* Assessment — the conclusion, and the supervisor's own board behind it.
+          Tap the conclusion to expand it in full (it can be long) and again to collapse. */}
       <View style={[styles.assess, {borderBottomColor: pal.divider}]}>
-        <Text style={[styles.assessText, {color: calls.length > 0 ? ERRORED_COLOR : pal.fg}]} numberOfLines={2}>
-          <Text style={{color: pal.fg3}}>⟣ </Text>
-          {assessment(digest, zh)}
-        </Text>
+        <TouchableOpacity
+          activeOpacity={0.6}
+          testID="hq-assess"
+          onPress={() => setAssessExpanded(v => !v)}>
+          <Text
+            style={[styles.assessText, {color: calls.length > 0 ? ERRORED_COLOR : pal.fg}]}
+            numberOfLines={assessExpanded ? undefined : 2}>
+            <Text style={{color: pal.fg3}}>⟣ </Text>
+            {assessment(digest, zh)}
+          </Text>
+        </TouchableOpacity>
         {board.exists && (
           <TouchableOpacity testID="hq-board-open" onPress={() => setBoardOpen(true)} hitSlop={hit} style={styles.boardRow}>
             <Text style={[styles.boardLink, {color: pal.fg3}]} numberOfLines={1}>
