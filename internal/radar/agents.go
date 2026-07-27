@@ -168,6 +168,11 @@ type Pane struct {
 	// usage-watch modifier: this session breached (or projects into) a usage
 	// layer — content of the usagewarn marker, e.g. "ctx 86%". Amber, like bg.
 	usageWarn string
+	// watched (tiered-pane-control): this row is a PLAIN pane the user opted onto the
+	// radar via `gtmux watch`. It is NOT an agent — it carries no agent status
+	// (waiting/working/idle), just "a pane you asked to keep an eye on". Never
+	// auto-added; dropped when its pane closes.
+	Watched bool
 }
 
 // Role exposes the pane's role ("supervisor" for HQ, else "") to callers outside
@@ -223,6 +228,10 @@ type agentJSON struct {
 	// swallowed until it exits. `gtmux send`/`spawn` auto-exit before delivering;
 	// this flag lets surfaces show WHICH pane is input-locked. Absent = not in a mode.
 	InMode bool `json:"in_mode,omitempty"`
+	// watched (tiered-pane-control): this row is a user-promoted PLAIN pane, not a
+	// coding agent — it carries no agent status. Surfaces render it as a distinct
+	// watched row. Additive + omitempty: absent for agent rows.
+	Watched bool `json:"watched,omitempty"`
 }
 
 // isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
@@ -526,14 +535,16 @@ func GatherAgents() []Pane {
 	}
 
 	var panes []Pane
-	hqStamps := map[string]string{} // pane id → its @gtmux_hq_home stamp (role precedence)
-	livePanes := map[string]bool{}  // every live tmux pane id (agents or not) — for orphan-marker GC
+	hqStamps := map[string]string{}         // pane id → its @gtmux_hq_home stamp (role precedence)
+	livePanes := map[string]bool{}          // every live tmux pane id (agents or not) — for orphan-marker GC
+	paneFieldsByID := map[string][]string{} // pane id → its raw field slice (for watched-pane rows)
 	for _, line := range paneSource() {
 		f := strings.SplitN(line, "\t", 12)
 		if len(f) < 7 {
 			continue
 		}
 		livePanes[f[0]] = true
+		paneFieldsByID[f[0]] = f
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
@@ -725,6 +736,11 @@ func GatherAgents() []Pane {
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
 	panes = append(panes, nativePanes(panes, profiles, now)...)
+	// Opt-in watched plain panes (tiered-pane-control): user-promoted non-agent panes,
+	// appended as distinct watched rows (no agent status). Built from the raw pane
+	// scan so we know their loc/cwd/command; only panes NOT already an agent row and
+	// still live are added.
+	panes = append(panes, watchedPanes(panes, paneFieldsByID)...)
 	applyRolePrecedence(panes, hqStamps)
 	// Self-heal: drop turn-state markers left behind by panes tmux no longer has
 	// (an exited agent whose pane was closed). livePanes is the raw pane set gathered
@@ -762,6 +778,56 @@ func applyRolePrecedence(panes []Pane, stamps map[string]string) {
 			panes[i].role = ""
 		}
 	}
+}
+
+// watchedPanes turns user-watched PLAIN panes into distinct watched radar rows
+// (tiered-pane-control). A watched pane that is ALSO an agent (`existing` already has
+// it) is skipped — the agent row wins; you don't double-list it. A watched pane whose
+// pane is no longer live (absent from paneFieldsByID) is skipped here and its marker
+// is reaped by the orphan sweep. A watched row carries NO agent status: it's "a pane
+// you asked to keep an eye on", labeled by its command/title, not waiting/working/idle.
+func watchedPanes(existing []Pane, paneFieldsByID map[string][]string) []Pane {
+	watched := state.WatchedPanes()
+	if len(watched) == 0 {
+		return nil
+	}
+	isAgentRow := map[string]bool{}
+	for _, p := range existing {
+		isAgentRow[p.PaneID] = true
+	}
+	var out []Pane
+	for _, id := range watched {
+		if isAgentRow[id] {
+			continue // it became/was an agent — the agent row already represents it
+		}
+		f, ok := paneFieldsByID[id]
+		if !ok || len(f) < 10 {
+			continue // pane gone (marker will be reaped) or malformed
+		}
+		cwd := f[9]
+		project, branch := gitInfo(cwd)
+		label := strings.TrimSpace(f[4]) // pane title
+		if label == "" {
+			label = f[5] // fall back to the current command (bash / vim / …)
+		}
+		inMode := len(f) >= 11 && f[10] == "1"
+		out = append(out, Pane{
+			PaneID:  id,
+			session: f[1],
+			window:  f[2],
+			pane:    f[3],
+			Loc:     fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]),
+			Task:    label,
+			Status:  "", // NOT an agent state — a watched plain pane
+			source:  "tmux",
+			cwd:     cwd,
+			project: project,
+			branch:  branch,
+			inMode:  inMode,
+			Watched: true,
+		})
+	}
+	return out
 }
 
 // nativePanes turns the native-session store into `source:"native"` radar rows —
@@ -827,6 +893,11 @@ func displayForKey(key string, profiles []agentProfile) (name, icon string) {
 // group by location (a stable, familiar layout).
 func sortPanes(panes []Pane) {
 	sort.SliceStable(panes, func(i, j int) bool {
+		// Watched (non-agent) rows always sort BELOW every agent row — they're a
+		// secondary, opt-in presence, never competing with "who needs you".
+		if panes[i].Watched != panes[j].Watched {
+			return !panes[i].Watched
+		}
 		if ri, rj := statusRank(panes[i].Status), statusRank(panes[j].Status); ri != rj {
 			return ri < rj
 		}
@@ -934,6 +1005,7 @@ func AgentsJSONBytes() ([]byte, error) {
 			Bg: p.Bg, BgCount: p.BgCount, BgText: p.BgText,
 			UsageWarn: p.usageWarn,
 			InMode:    p.inMode,
+			Watched:   p.Watched,
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")

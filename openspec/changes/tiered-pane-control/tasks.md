@@ -21,19 +21,19 @@ unblocks every surface.
 
 - [x] 2.1 `gtmux focus %pane` states when the target's agent has exited (plain shell
       now) and still jumps; a gone pane reports missing. (Shipped in the papercut PR.)
-- [ ] 2.2 `docs/cli.md` + help: document that `focus`/`send` take any pane id (not
+- [x] 2.2 `docs/cli.md` + help: document that `focus`/`send` take any pane id (not
       just agents) and the tier capability matrix (agent = full, plain = focus/type/
       watch/attach, sensed non-tmux = read-only).
 
 ## 3. Watch-this-pane (PR 3)
 
-- [ ] 3.1 `internal/state`: a `watched/<pane>` marker set (add/remove/list),
+- [x] 3.1 `internal/state`: a `watched/<pane>` marker set (add/remove/list),
       auto-reaped by the existing orphan sweep when the pane closes. Tests.
-- [ ] 3.2 `internal/radar`: `GatherAgents` appends watched plain panes as a distinct
+- [x] 3.2 `internal/radar`: `GatherAgents` appends watched plain panes as a distinct
       `source:"watched"` (or a `watched:true` flag) row — NO agent status, marked as
       watched. Never auto-added. Tests: watched pane present + distinct; unwatched
       plain pane absent; closed watched pane dropped.
-- [ ] 3.3 `gtmux watch <pane>` / `gtmux watch --remove <pane>` / `gtmux watch --list`
+- [x] 3.3 `gtmux watch <pane>` / `gtmux watch --remove <pane>` / `gtmux watch --list`
       CLI (or fold into `panes`), documented per the command-docs rule.
 
 ## 4. Menu-bar surfaces (PR 4, Swift)

@@ -86,14 +86,29 @@ else), plus its loc, cwd, current command, title, active flag, and copy-mode fla
 ```sh
 gtmux panes            # session → window → pane tree; ▸ marks agent panes
 gtmux panes --json     # [{pane_id, loc, session, window, pane, cwd, command, title, active, in_mode, tier, agent}]
+gtmux panes watch %N   # opt a PLAIN pane onto the radar as a watched row
+gtmux panes unwatch %N # remove it
+gtmux panes --watched  # list watched pane ids
 ```
 
 Why a separate command from `agents`: `gtmux agents --json` is a locked contract
 meaning "coding agents" — the radar. `panes` is the everything-superset for a browser
 that reaches ANY pane. `gtmux focus`/`send`/`attach` already work on any pane id, so a
 `tier:"plain"` pane is a first-class focus/type/attach target; it just doesn't get the
-agent-only intelligence (digest, 1/2/3 approval, dispatch, HQ). The agent radar is NOT
-diluted — plain panes never appear on it unless you opt in with "watch this pane".
+agent-only intelligence (digest, 1/2/3 approval, dispatch, HQ).
+
+**The tier capability matrix** — same primitives, different power (surfaces apply it):
+
+| tier | on the radar | view/capture | focus/jump | type/send | attach | intelligence (digest / 1·2·3 / dispatch / HQ) |
+|---|---|---|---|---|---|---|
+| agent (tmux) | auto | ✓ | ✓ | ✓ | ✓ | ✓ |
+| plain tmux pane | opt-in (`panes watch`) | ✓ | ✓ | ✓ | ✓ | — |
+| sensed non-tmux agent | "Elsewhere" | — | — | — | — | — (read-only) |
+
+The agent radar is NOT diluted — a plain pane appears on it ONLY when you opt in with
+`gtmux panes watch %N`, as a distinct **watched** row (no agent status), and it's
+dropped automatically when the pane closes. Guest share scope still gates view/type on
+any pane the same way.
 
 ## `gtmux digest` + `gtmux hq` — the supervisor (中控)
 

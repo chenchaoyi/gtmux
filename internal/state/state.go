@@ -34,6 +34,33 @@ func Dir() string { return filepath.Join(os.Getenv("HOME"), ".local", "share", "
 // `internal/hook` (nudge) need the same path without an import cycle.
 func HQHome() string { return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "hq") }
 
+// WatchedDir is the directory of per-pane "watch this pane" markers — a user has
+// opted a PLAIN (non-agent) pane onto the radar (tiered-pane-control). A marker's
+// presence is the whole signal; it is never auto-created, and is reaped when its
+// pane closes (see ReapOrphanTurnMarkers).
+func WatchedDir() string { return filepath.Join(Dir(), "watched") }
+
+// WatchedPath is the "watch this pane" marker for a pane id.
+func WatchedPath(pane string) string { return filepath.Join(WatchedDir(), pane) }
+
+// IsWatched reports whether a pane has been opted onto the radar.
+func IsWatched(pane string) bool { return Exists(WatchedPath(pane)) }
+
+// WatchedPanes lists the pane ids currently watched (order unspecified).
+func WatchedPanes() []string {
+	entries, err := os.ReadDir(WatchedDir())
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			out = append(out, e.Name())
+		}
+	}
+	return out
+}
+
 // ActiveDir is the directory of per-pane "agent is mid-turn" markers.
 func ActiveDir() string { return filepath.Join(Dir(), "active") }
 
@@ -50,7 +77,9 @@ func ActivePath(pane string) string { return filepath.Join(ActiveDir(), pane) }
 // number of marker files removed.
 func ReapOrphanTurnMarkers(live map[string]bool) int {
 	removed := 0
-	for _, dir := range []string{ActiveDir(), WaitingDir(), FinishedDir()} {
+	// watched/ is included: a watched plain pane is dropped from the radar the moment
+	// its pane closes (tiered-pane-control), the same lifecycle as the turn markers.
+	for _, dir := range []string{ActiveDir(), WaitingDir(), FinishedDir(), WatchedDir()} {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			continue
