@@ -104,6 +104,10 @@ struct Agent: Identifiable, Equatable {
     var bg = false
     var bgCount = 0
     var bgText = ""
+    // watched (tiered-pane-control): this row is a user-promoted PLAIN pane, not a
+    // coding agent — no agent status. Rendered in its OWN "watched" section below the
+    // agent sections, visually distinct. false = a normal agent.
+    var watched = false
 
     var id: String {
         if !paneID.isEmpty { return paneID }
@@ -157,10 +161,11 @@ extension Agent: Decodable {
         sessionID = s(.sessionID); adoptable = b(.adoptable)
         errored = b(.errored); errorText = s(.errorText)
         bg = b(.bg); bgCount = (try? c.decode(Int.self, forKey: .bgCount)) ?? 0; bgText = s(.bgText)
+        watched = b(.watched)
     }
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
-        case session, window, pane, loc, agent, status, task, latest, activity
+        case session, window, pane, loc, agent, status, task, latest, activity, watched
         case source, role, project, terminal, tab, icon, since, adoptable, bg
         case activityAt = "activity_at"
         case sessionID = "session_id"
@@ -239,7 +244,8 @@ final class AgentStore: ObservableObject {
             // Native (non-tmux) sessions are their own category, not mixed into the
             // tmux status groups.
             // The supervisor renders as its own HQ card, never inside the sections.
-            let group = agents.filter { $0.state == st && !$0.isNative && !$0.isSupervisor && matches($0, query) }
+            // Watched (opt-in plain) panes render in their OWN section below, not here.
+            let group = agents.filter { $0.state == st && !$0.isNative && !$0.isSupervisor && !$0.watched && matches($0, query) }
             // Finished (idle): most-recently-finished first (its `since` is frozen at
             // last activity, so order stays stable). Other sections: by name.
             let rows = st == .idle
@@ -259,6 +265,14 @@ final class AgentStore: ObservableObject {
     func nativeSessions(query: String) -> [Agent] {
         agents.filter { $0.isNative && matches($0, query) }
             .sorted { $0.since > $1.since }
+    }
+
+    /// User-watched PLAIN panes (tiered-pane-control) — their OWN section below the
+    /// agent sections, so a promoted dev-server / log pane rides along without ever
+    /// competing with "which agent needs you". By loc, so the order is stable.
+    func watchedPanes(query: String) -> [Agent] {
+        agents.filter { $0.watched && matches($0, query) }
+            .sorted { $0.loc.localizedCaseInsensitiveCompare($1.loc) == .orderedAscending }
     }
 
     /// Panes eligible for the web-shared-input allowlist (Preferences → Shared

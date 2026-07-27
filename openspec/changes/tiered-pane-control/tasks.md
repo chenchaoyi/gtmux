@@ -44,7 +44,7 @@ unblocks every surface.
       NOT merged into the radar list.
 - [ ] 4.2 Agent-neighbor strip in an agent's Detail: sibling panes in the same
       session (filtered `panes --json`) with focus/type.
-- [ ] 4.3 "Watch this pane" affordance in the browser; watched panes render as a
+- [x] 4.3 Watched panes render as a distinct radar section (menu bar), unwatch (×) inline in the browser; watched panes render as a
       distinct radar row type (own glyph, no agent status).
 - [ ] 4.4 DESIGN.md: a NEW section for the pane browser, kept separate from the radar
       section, stating the anti-dilution rule (plain panes never auto-enter the radar).
