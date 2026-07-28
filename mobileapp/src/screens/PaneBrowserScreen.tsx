@@ -41,6 +41,16 @@ function wp(row: PaneRow): string {
   return i >= 0 ? row.loc.slice(i + 1) : row.loc;
 }
 
+// Label for a PLAIN pane. Many shells set the pane title to the cwd (some prefixed
+// with a colon, e.g. ":/Users/…"), which is both ugly and redundant with the dir shown
+// in the sub-line. So: strip a leading colon; if what remains is a filesystem path
+// (or empty), fall back to the command (bash/vim/…), which reads far cleaner.
+function plainLabel(title: string | undefined, command: string): string {
+  const t = (title || '').replace(/^:+\s*/, '').trim();
+  if (!t || t.startsWith('/') || t.startsWith('~')) return command;
+  return t;
+}
+
 interface Section {
   title: string; // session name
   agentCount: number;
@@ -227,7 +237,7 @@ function PaneRowView({
   onPress: () => void;
 }) {
   const isAgent = row.tier === 'agent';
-  const label = isAgent ? row.agent || row.command : row.title || row.command;
+  const label = isAgent ? row.agent || row.command : plainLabel(row.title, row.command);
   const dir = base(row.cwd);
   // sub line: window.pane position · dir · (command, when it isn't already the label)
   const bits = [wp(row)];

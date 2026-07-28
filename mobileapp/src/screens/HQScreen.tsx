@@ -309,79 +309,82 @@ export function HQScreen({route, navigation}: any) {
 
   return (
     <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
-      {/* Status strip — the thin title row stays put (back + identity never scroll away). */}
-      <View style={[styles.strip, {borderBottomColor: pal.divider}]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
-          <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
-        </TouchableOpacity>
-        <View style={styles.titleRow}>
-          <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
-          {demo && (
-            <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-              <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
-            </View>
-          )}
-          <View
-            style={[
-              styles.dot,
-              {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting},
-            ]}
-          />
-        </View>
-      </View>
-
-      {/* Collapsing detail: fleet counts + resource + the assessment (the conclusion +
-          the supervisor's board). Hides as you scroll into a zone body — like the
-          terminal header — to give the content the height; reappears at the top. */}
+      {/* Collapsing top — the WHOLE header (title + fleet counts + assessment) hides as
+          you scroll into a zone body, like the terminal header, to give the content the
+          full height; it reappears when you flick back to the top. */}
       <Animated.View
         style={{
           opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
           height: topH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [topH, 0]}) : undefined,
           overflow: 'hidden',
-        }}
-        onLayout={e => {
-          // Measure ONCE at natural height (collapse starts at 0=shown). A later layout
-          // during the animation would clobber it with a shrunken value.
-          const h = e.nativeEvent.layout.height;
-          if (topH === 0 && h > 0) setTopH(h);
         }}>
-        <View style={[styles.stripDetail, {borderBottomColor: pal.divider}]}>
-          <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={2}>
-            {t(
-              `${counts.waiting} need you · ${counts.working} working · ${counts.idle} idle`,
-              `${counts.waiting} 需要你 · ${counts.working} 运行 · ${counts.idle} 空闲`,
-            )}
-            {week.length > 0 && '  ·  ' + week.map(w => `${planLabel(w.label, zh)} ${w.pct}%`).join(' · ')}
-          </Text>
-          {res && (res.warn || res.diskGB != null) && (
-            <Text style={[styles.sub, {color: res.warn ? ERRORED_COLOR : pal.fg3}]} numberOfLines={1}>
-              {res.warn ? '⚠ ' + res.warn : `${zh ? '磁盘' : 'disk'} ${res.diskGB}GB · ${zh ? '内存' : 'mem'} ${res.memTier}`}
-            </Text>
-          )}
-        </View>
-
-        {/* Assessment — the conclusion, and the supervisor's own board behind it.
-            Tap the conclusion to expand it in full (it can be long) and again to collapse. */}
-        <View style={[styles.assess, {borderBottomColor: pal.divider}]}>
-          <TouchableOpacity
-            activeOpacity={0.6}
-            testID="hq-assess"
-            onPress={() => setAssessExpanded(v => !v)}>
-            <Text
-              style={[styles.assessText, {color: calls.length > 0 ? ERRORED_COLOR : pal.fg}]}
-              numberOfLines={assessExpanded ? undefined : 2}>
-              <Text style={{color: pal.fg3}}>⟣ </Text>
-              {assessment(digest, zh)}
-            </Text>
-          </TouchableOpacity>
-          {board.exists && (
-            <TouchableOpacity testID="hq-board-open" onPress={() => setBoardOpen(true)} hitSlop={hit} style={styles.boardRow}>
-              <Text style={[styles.boardLink, {color: pal.fg3}]} numberOfLines={1}>
-                {boardFreshness(board.updated_at, now, zh)}
-              </Text>
-              <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
+        {/* Inner wrapper measures the NATURAL height on EVERY layout (not once): the
+            assessment text arrives after mount and can grow to two lines, so a frozen
+            one-line measurement clipped it behind the tabs. Tracking natural height keeps
+            the expanded header showing everything. */}
+        <View
+          onLayout={e => {
+            const h = e.nativeEvent.layout.height;
+            if (h > 0 && Math.abs(h - topH) > 1) setTopH(h);
+          }}>
+          <View style={[styles.strip, {borderBottomColor: pal.divider}]}>
+            <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
+              <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
             </TouchableOpacity>
-          )}
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
+              {demo && (
+                <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
+                  <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+                </View>
+              )}
+              <View
+                style={[
+                  styles.dot,
+                  {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting},
+                ]}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.stripDetail, {borderBottomColor: pal.divider}]}>
+            <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={2}>
+              {t(
+                `${counts.waiting} need you · ${counts.working} working · ${counts.idle} idle`,
+                `${counts.waiting} 需要你 · ${counts.working} 运行 · ${counts.idle} 空闲`,
+              )}
+              {week.length > 0 && '  ·  ' + week.map(w => `${planLabel(w.label, zh)} ${w.pct}%`).join(' · ')}
+            </Text>
+            {res && (res.warn || res.diskGB != null) && (
+              <Text style={[styles.sub, {color: res.warn ? ERRORED_COLOR : pal.fg3}]} numberOfLines={1}>
+                {res.warn ? '⚠ ' + res.warn : `${zh ? '磁盘' : 'disk'} ${res.diskGB}GB · ${zh ? '内存' : 'mem'} ${res.memTier}`}
+              </Text>
+            )}
+          </View>
+
+          {/* Assessment — the conclusion, and the supervisor's own board behind it.
+              Tap the conclusion to expand it in full (it can be long) and again to collapse. */}
+          <View style={[styles.assess, {borderBottomColor: pal.divider}]}>
+            <TouchableOpacity
+              activeOpacity={0.6}
+              testID="hq-assess"
+              onPress={() => setAssessExpanded(v => !v)}>
+              <Text
+                style={[styles.assessText, {color: calls.length > 0 ? ERRORED_COLOR : pal.fg}]}
+                numberOfLines={assessExpanded ? undefined : 2}>
+                <Text style={{color: pal.fg3}}>⟣ </Text>
+                {assessment(digest, zh)}
+              </Text>
+            </TouchableOpacity>
+            {board.exists && (
+              <TouchableOpacity testID="hq-board-open" onPress={() => setBoardOpen(true)} hitSlop={hit} style={styles.boardRow}>
+                <Text style={[styles.boardLink, {color: pal.fg3}]} numberOfLines={1}>
+                  {boardFreshness(board.updated_at, now, zh)}
+                </Text>
+                <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </Animated.View>
 

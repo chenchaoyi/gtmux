@@ -46,6 +46,13 @@ describe('toAgent', () => {
     expect(b.bg_text).toBeUndefined();
   });
 
+  it('decodes the watched flag (a pinned plain pane → its own section, not RUNNING)', () => {
+    expect(toAgent({pane_id: '%1', watched: true}).watched).toBe(true);
+    // absent/false → undefined, so the section/count filters treat it as a normal agent
+    expect(toAgent({pane_id: '%2'}).watched).toBeUndefined();
+    expect(toAgent({pane_id: '%3', watched: false}).watched).toBeUndefined();
+  });
+
   it('applies defaults for an empty object', () => {
     expect(toAgent({})).toEqual({
       pane_id: '',
