@@ -18,6 +18,10 @@
       <!-- per-pane input capability (WEB §11): ⌨ 可输入 (cyan) / 👁 只读 (grey) -->
       <span id="cap" class="cap-chip" hidden></span>
       <span id="conn" class="conn"></span>
+      <!-- Browse ALL panes (tiered-pane-control): the opt-in secondary surface — reach
+           a pane in a session with no agent. Shown on the radar only; the workbench
+           has its own session tree. -->
+      <button id="panes-btn" hidden title="All panes / 所有 pane">▤</button>
       <span id="focus-nav" hidden>
         <button id="pane-prev" title="Previous pane">‹</button>
         <button id="pane-next" title="Next pane">›</button>
@@ -101,6 +105,20 @@
 
   <!-- agent radar -->
   <section id="radar" hidden></section>
+
+  <!-- all-panes browser (tiered-pane-control): every tmux pane grouped session →
+       window, so a pane in a session with no agent is one tap away. Its own header
+       (back + search) — the #bar hides while this is up. Narrow path only. -->
+  <section id="panes" hidden>
+    <header id="panes-bar">
+      <button id="panes-back" title="Back">‹</button>
+      <span id="panes-title">所有 pane</span>
+      <span id="panes-count" class="pb-count"></span>
+      <span class="pb-spacer"></span>
+      <input id="panes-search" placeholder="⌕ 会话 / 命令 / 目录" autocomplete="off" spellcheck="false" />
+    </header>
+    <div id="panes-list"></div>
+  </section>
 
   <!-- pane mirror -->
   <section id="pane" hidden>

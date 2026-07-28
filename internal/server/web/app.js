@@ -48,7 +48,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { ['gate', 'radar', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
+  function show(which) { ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
   // GATE states. Each says what the situation IS and the one thing to do about it, in
   // both languages — the old screen was a single English sentence with no subject, and it
   // pointed at a phone-app affordance ("open on computer") that does not exist. The
@@ -137,7 +137,10 @@
     if (MARKS[k]) return MARKS[k];
     for (var key in MARKS) { if (k.indexOf(key) !== -1) return MARKS[key]; }
     var c = (name || '').trim();
-    return c ? c.slice(0, 2) : '?';
+    // A pane with NO coding agent (a plain shell, opened from the all-panes browser)
+    // shows a terminal glyph, not '?' — a plain pane is first-class, not an unknown
+    // agent (tiered-pane-control; matches the mobile agentMark).
+    return c ? c.slice(0, 2) : '$_';
   }
   function relTime(since) {
     if (!since) return '';
@@ -307,6 +310,10 @@
         if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
         else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
         else if (e.key === 'Enter') { var rows = radarRows(); if (rows[selIdx]) { e.preventDefault(); rows[selIdx].click(); } }
+        else if (e.key === 'p') { e.preventDefault(); openPanes(); }
+      } else if (!$('panes').hidden) {
+        if (e.key === 'Escape') { e.preventDefault(); startRadar(); }
+        else if (e.key === '/') { e.preventDefault(); $('panes-search').focus(); }
       } else if (!$('pane').hidden || !$('chat').hidden) {
         var inChat = !$('chat').hidden;
         if (e.key === 'Escape') { e.preventDefault(); $('back').click(); }
@@ -329,9 +336,106 @@
   }
   function startRadar() {
     show('radar'); $('bar').hidden = false; $('back').hidden = true; $('mode').hidden = true; hideFocusChrome(); $('title').textContent = 'gtmux'; $('sub').textContent = '';
+    $('panes-btn').hidden = false; // the Browse-all-panes entry lives on the radar only
     curPane = null; curAgent = null; lastSig = '';
     clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
+    clearInterval(panesTimer); panesTimer = null;
     pollRadar(); clearInterval(radarTimer); radarTimer = setInterval(pollRadar, 2000);
+  }
+
+  // ---- all-panes browser (tiered-pane-control) --------------------------
+  // The radar is agent-first; THIS lists EVERY tmux pane (agent + plain) grouped
+  // session → window, so a pane in a session with no coding agent is one tap away.
+  // Tapping any row opens it in the same pane mirror as an agent (view + type where
+  // allowed). Fed by GET /api/panes (guest-scoped server-side, so no leak).
+  var panesTimer = null, panesRows = [], panesSig = '';
+  // Adapt a PaneRow → the shape openAgent/pollPane consume. A plain pane invents no
+  // agent status (status 'running' = the neutral bucket); its label is title||command.
+  function paneToAgent(p) {
+    return {
+      pane_id: p.pane_id, session: p.session, window: p.window, pane: p.pane, loc: p.loc,
+      agent: p.tier === 'agent' ? (p.agent || '') : '', status: 'running',
+      task: p.title || p.command, source: 'tmux', project: p.cwd,
+    };
+  }
+  function openPanes() {
+    show('panes'); $('bar').hidden = true;
+    clearInterval(radarTimer); radarTimer = null;
+    clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
+    $('panes-search').value = '';
+    panesSig = '';
+    pollPanes(); clearInterval(panesTimer); panesTimer = setInterval(pollPanes, 3000);
+    $('panes-search').focus();
+  }
+  function pollPanes() {
+    api('/api/panes').then(function (r) {
+      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+      if (!r.ok) throw new Error('panes'); return r.json();
+    }).then(function (rows) { if (!rows) return; setConn(true); panesRows = rows; renderPanes(); })
+      .catch(function () { setConn(false); });
+  }
+  function renderPanes() {
+    var q = ($('panes-search').value || '').trim().toLowerCase();
+    var match = function (p) {
+      return !q || [p.session, p.window, p.command, p.title, p.cwd, p.agent, p.loc]
+        .some(function (v) { return String(v || '').toLowerCase().indexOf(q) !== -1; });
+    };
+    // group session → (first-seen order), preserving pane order within
+    var order = [], byS = {}, shown = 0;
+    panesRows.forEach(function (p) {
+      if (!match(p)) return;
+      shown++;
+      if (!byS[p.session]) { byS[p.session] = []; order.push(p.session); }
+      byS[p.session].push(p);
+    });
+    var sig = q + '|' + JSON.stringify(panesRows.map(function (p) { return [p.pane_id, p.tier, p.agent, p.title, p.command, p.active, p.cwd]; }));
+    if (sig === panesSig) return; // avoid repaint (+ losing focus) every poll
+    panesSig = sig;
+    $('panes-count').textContent = (q ? shown + '/' + panesRows.length : String(panesRows.length)) +
+      ' pane · ' + order.length + ' 会话';
+    var root = $('panes-list'); root.innerHTML = '';
+    if (!order.length) {
+      var e = document.createElement('div'); e.className = 'pb-empty';
+      e.textContent = q ? '没有匹配的 pane' : 'no tmux panes';
+      root.appendChild(e); return;
+    }
+    order.forEach(function (sess) {
+      var list = byS[sess];
+      var nAgent = list.filter(function (p) { return p.tier === 'agent'; }).length;
+      var hd = document.createElement('div'); hd.className = 'pb-session';
+      hd.innerHTML = '<span class="pb-sname">' + esc(sess) + '</span><span class="pb-smeta">' +
+        list.length + (nAgent ? ' · ' + nAgent + ' agent' : '') + '</span>';
+      root.appendChild(hd);
+      var lastWin = null;
+      list.forEach(function (p) {
+        if (p.window !== lastWin) {
+          lastWin = p.window;
+          var wl = document.createElement('div'); wl.className = 'pb-win';
+          wl.textContent = 'win ' + p.window; root.appendChild(wl);
+        }
+        root.appendChild(paneRowEl(p));
+      });
+    });
+  }
+  function paneRowEl(p) {
+    var a = paneToAgent(p), isAgent = p.tier === 'agent';
+    var label = isAgent ? (p.agent || p.command) : (p.title || p.command);
+    var row = document.createElement('div'); row.className = 'pb-row';
+    row.appendChild(avatarEl(a, 30, false));
+    var tx = document.createElement('div'); tx.className = 'pb-text';
+    var nm = document.createElement('div'); nm.className = 'pb-name';
+    var nt = document.createElement('span'); nt.className = 'pb-nm-text'; nt.textContent = label; nm.appendChild(nt);
+    if (isAgent) { var tg = document.createElement('span'); tg.className = 'pb-tag'; tg.textContent = 'on radar'; nm.appendChild(tg); }
+    if (p.active) { var ad = document.createElement('span'); ad.className = 'pb-active'; nm.appendChild(ad); }
+    var sub = document.createElement('div'); sub.className = 'pb-sub';
+    var wp = (p.loc || '').split(':').pop() || '';
+    var dir = (p.cwd || '').replace(/\/+$/, '').split('/').pop() || '';
+    var bits = [wp]; if (dir) bits.push(dir); if (p.command && p.command !== label) bits.push(p.command);
+    sub.textContent = bits.join('  ·  ');
+    tx.appendChild(nm); tx.appendChild(sub); row.appendChild(tx);
+    var ch = document.createElement('span'); ch.className = 'pb-chev'; ch.textContent = '›'; row.appendChild(ch);
+    row.onclick = function () { var live = byId(lastAgents, p.pane_id); openAgent(live || a); };
+    return row;
   }
 
   // ---- pane mirror ------------------------------------------------------
@@ -594,7 +698,7 @@
   var focusFromWB = false;
   function openAgent(a) {
     focusFromWB = !$('workbench').hidden; // remember where to return (workbench vs radar)
-    curPane = a.pane_id; curAgent = a; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = false; $('gear').hidden = false;
+    curPane = a.pane_id; curAgent = a; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = false; $('gear').hidden = false; $('panes-btn').hidden = true;
     $('title').textContent = primary(a); $('sub').textContent = (a.agent || '') + ' · ' + secondary(a);
     clearInterval(radarTimer); radarTimer = null;
     applyMode();
@@ -1479,6 +1583,9 @@
 
   function boot() {
     $('back').onclick = function () { if (focusFromWB && isWide()) startWorkbench(); else startRadar(); };
+    $('panes-btn').onclick = function () { openPanes(); };
+    $('panes-back').onclick = function () { startRadar(); };
+    $('panes-search').oninput = function () { panesSig = ''; renderPanes(); };
     setupKeyboard();
     setupMode();
     setupFocus();
