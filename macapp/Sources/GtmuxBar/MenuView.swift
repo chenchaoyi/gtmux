@@ -94,6 +94,14 @@ struct MenuView: View {
                 GtmuxLogo(size: 15)
                 Text("gtmux").font(.system(size: 13, weight: .semibold)).foregroundStyle(p.fg)
                 Spacer()
+                // Browse ALL panes (tiered-pane-control): a top-bar icon like the phone's,
+                // NOT buried in the ⚙ menu — reaching any pane is a first-class affordance,
+                // not a low-frequency setting. Opens the separate browser window.
+                Button { onAction(.browsePanes) } label: {
+                    Image(systemName: "rectangle.split.2x2").font(.system(size: 11))
+                        .foregroundStyle(p.fg2)
+                }.buttonStyle(.plain)
+                    .help(l10n.tr("Browse all panes", "浏览所有 pane"))
                 Button { toggleSearch() } label: {
                     Image(systemName: "magnifyingglass").font(.system(size: 11))
                         .foregroundStyle(searchActive ? Theme.Status.working : p.fg2)
@@ -515,7 +523,6 @@ struct MenuView: View {
                 Menu {
                     Button(l10n.tr("Preferences…", "偏好设置…")) { onAction(.preferences) }
                         .keyboardShortcut(",", modifiers: .command)
-                    Button(l10n.tr("Browse all panes…", "浏览所有 pane…")) { onAction(.browsePanes) }
                     Button(l10n.tr("Pair a device…", "配对设备…")) { onAction(.pairPhone) }
                     Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
                     Divider()

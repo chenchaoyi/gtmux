@@ -163,6 +163,21 @@ describe('sections', () => {
   it('returns an empty array when there are no agents', () => {
     expect(sections([])).toEqual([]);
   });
+
+  it('pulls a watched plain pane into its OWN section, not a status bucket', () => {
+    // A watched pane has no agent status; its "" defaults to 'running' on decode, so
+    // without special handling it would land in the RUNNING bucket (the bug the menu-bar
+    // never had). It must render in a distinct 'watched' section instead.
+    const out = sections([
+      mk({status: 'idle', session: 'agent-a'}),
+      mk({status: 'running', session: 'pinned-pane', watched: true}),
+    ]);
+    expect(out.map(s => s.status)).toEqual(['idle', 'watched']);
+    const watched = out.find(s => s.status === 'watched');
+    expect(watched?.agents.map(a => a.session)).toEqual(['pinned-pane']);
+    // and it is NOT duplicated into the running bucket
+    expect(out.some(s => s.status === 'running')).toBe(false);
+  });
 });
 
 describe('counts', () => {
@@ -179,5 +194,15 @@ describe('counts', () => {
 
   it('is all-zero for an empty list', () => {
     expect(counts([])).toEqual({total: 0, waiting: 0, working: 0, idle: 0});
+  });
+
+  it('excludes watched plain panes — they are not agents (no inflated idle/total)', () => {
+    const agents = [
+      mk({status: 'working'}),
+      mk({status: 'idle'}),
+      mk({status: 'running', watched: true}), // pinned pane, not an agent
+    ];
+    // total counts the 2 agents (not the pinned pane); idle stays 1, not 2.
+    expect(counts(agents)).toEqual({total: 2, waiting: 0, working: 1, idle: 1});
   });
 });

@@ -89,10 +89,13 @@ export interface Section {
 export function sections(agents: Agent[]): Section[] {
   const out: Section[] = [];
   for (const st of SECTION_ORDER) {
-    // Native (non-tmux) sessions are their own trailing category, not mixed in;
-    // the supervisor (role) renders as the HQ card above the list, never a row.
+    // Native (non-tmux) sessions and WATCHED plain panes are their own trailing
+    // categories, not mixed in; the supervisor (role) renders as the HQ card above the
+    // list, never a row. A watched pane has no agent status (its "" defaults to
+    // 'running' on decode), so without this it would fall into the RUNNING bucket
+    // instead of its own "Watched / 关注" section (mirrors the menu-bar).
     const rows = agents
-      .filter(a => a.status === st && a.source !== 'native' && a.role !== 'supervisor')
+      .filter(a => a.status === st && a.source !== 'native' && a.role !== 'supervisor' && !a.watched)
       .sort((l, r) =>
         st === 'idle'
           ? (r.since ?? 0) - (l.since ?? 0)
@@ -100,9 +103,16 @@ export function sections(agents: Agent[]): Section[] {
       );
     if (rows.length) out.push({status: st, agents: rows});
   }
+  // "Watched": user-pinned PLAIN panes (tiered-pane-control) — a distinct section, no
+  // agent status. Placed above natives (your own pinned tmux panes are nearer than
+  // sensed non-tmux sessions).
+  const watched = agents
+    .filter(a => a.watched && a.role !== 'supervisor')
+    .sort((l, r) => primary(l).toLowerCase().localeCompare(primary(r).toLowerCase()));
+  if (watched.length) out.push({status: 'watched', agents: watched});
   // "Elsewhere": sensed agents running outside tmux (sense-only, no jump/send).
   const natives = agents
-    .filter(a => a.source === 'native')
+    .filter(a => a.source === 'native' && !a.watched)
     .sort((l, r) => (r.since ?? 0) - (l.since ?? 0));
   if (natives.length) out.push({status: 'native', agents: natives});
   return out;
@@ -118,9 +128,12 @@ export interface Counts {
 export function counts(agents: Agent[]): Counts {
   // Per-status counts DESCRIBE the sections below, which exclude the supervisor
   // (it renders as the HQ card) — so exclude it here too or the summary reads
-  // "10 idle" over an IDLE-9 section. The TOTAL keeps every agent incl. HQ.
-  const rows = agents.filter(a => a.role !== 'supervisor');
+  // "10 idle" over an IDLE-9 section. WATCHED plain panes are NOT agents (they render
+  // in their own section, and their "" status defaults to 'running'), so exclude them
+  // too — otherwise a pinned pane inflates "idle" past the IDLE section's count. The
+  // TOTAL counts agents (incl. HQ) but not watched panes.
+  const rows = agents.filter(a => a.role !== 'supervisor' && !a.watched);
   const waiting = rows.filter(a => a.status === 'waiting').length;
   const working = rows.filter(a => a.status === 'working').length;
-  return {total: agents.length, waiting, working, idle: rows.length - waiting - working};
+  return {total: agents.filter(a => !a.watched).length, waiting, working, idle: rows.length - waiting - working};
 }

@@ -356,6 +356,9 @@
       pane_id: p.pane_id, session: p.session, window: p.window, pane: p.pane, loc: p.loc,
       agent: p.tier === 'agent' ? (p.agent || '') : '', status: 'running',
       task: p.title || p.command, source: 'tmux', project: p.cwd,
+      // an agent pane shows its OFFICIAL icon (avatarEl → loadIcon via /api/icon); a
+      // plain pane has none → the $_ monogram.
+      icon: p.tier === 'agent' ? p.icon : undefined,
     };
   }
   function openPanes() {

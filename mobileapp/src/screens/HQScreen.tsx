@@ -14,8 +14,9 @@
 // The command bar spans all three; every command is HQ-mediated (the HQ page has no
 // direct-send input — direct control lives in each worker's own Detail).
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  Animated,
   View,
   Text,
   ScrollView,
@@ -23,6 +24,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -85,6 +88,27 @@ export function HQScreen({route, navigation}: any) {
   // long. Collapsed to 2 lines by default; tapping it expands to the full text so it
   // is never stranded truncated with no way to read the rest.
   const [assessExpanded, setAssessExpanded] = useState(false);
+  // Collapsing top (like the terminal/Detail header): the fleet-counts + resource +
+  // assessment block hides as you scroll into a zone's body, reclaiming the height for
+  // content, and reappears at the top. The thin title row (back · gtmux HQ · conn) stays
+  // put so navigation is never scrolled away. `collapse` 0 = shown, 1 = hidden; `topH`
+  // measured once for the height animation.
+  const collapse = useRef(new Animated.Value(0)).current;
+  const topHidden = useRef(false); // animate only on a real change
+  const [topH, setTopH] = useState(0);
+  const setCollapsed = useCallback(
+    (hide: boolean) => {
+      if (hide === topHidden.current) return;
+      topHidden.current = hide;
+      Animated.timing(collapse, {toValue: hide ? 1 : 0, duration: 200, useNativeDriver: false}).start();
+    },
+    [collapse],
+  );
+  // Top-anchored zones (calls/activity): hide once scrolled a little past the top.
+  const onZoneScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => setCollapsed(e.nativeEvent.contentOffset.y > 24),
+    [setCollapsed],
+  );
   const [seenMark, setSeenMark] = useState(0);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   // The HQ pane's live screen. Without it the console had NO progress surface: your
@@ -206,6 +230,14 @@ export function HQScreen({route, navigation}: any) {
   }, [digest, zone]);
   const activeZone: Zone = zone ?? 'console';
 
+  // Reveal the top when switching zones — each zone starts at its resting edge, so a
+  // stale collapsed state from the previous zone would hide the header with nothing
+  // scrolled.
+  useEffect(() => {
+    collapse.setValue(0);
+    topHidden.current = false;
+  }, [activeZone, collapse]);
+
   // Reading the feed marks it read; leaving it doesn't un-mark.
   useEffect(() => {
     if (activeZone === 'activity' && ledger.length > 0) {
@@ -277,26 +309,43 @@ export function HQScreen({route, navigation}: any) {
 
   return (
     <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
-      {/* Status strip */}
+      {/* Status strip — the thin title row stays put (back + identity never scroll away). */}
       <View style={[styles.strip, {borderBottomColor: pal.divider}]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
           <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
         </TouchableOpacity>
-        <View style={styles.stripMid}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
-            {demo && (
-              <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
-              </View>
-            )}
-            <View
-              style={[
-                styles.dot,
-                {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting},
-              ]}
-            />
-          </View>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
+          {demo && (
+            <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
+              <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+            </View>
+          )}
+          <View
+            style={[
+              styles.dot,
+              {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting},
+            ]}
+          />
+        </View>
+      </View>
+
+      {/* Collapsing detail: fleet counts + resource + the assessment (the conclusion +
+          the supervisor's board). Hides as you scroll into a zone body — like the
+          terminal header — to give the content the height; reappears at the top. */}
+      <Animated.View
+        style={{
+          opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+          height: topH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [topH, 0]}) : undefined,
+          overflow: 'hidden',
+        }}
+        onLayout={e => {
+          // Measure ONCE at natural height (collapse starts at 0=shown). A later layout
+          // during the animation would clobber it with a shrunken value.
+          const h = e.nativeEvent.layout.height;
+          if (topH === 0 && h > 0) setTopH(h);
+        }}>
+        <View style={[styles.stripDetail, {borderBottomColor: pal.divider}]}>
           <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={2}>
             {t(
               `${counts.waiting} need you · ${counts.working} working · ${counts.idle} idle`,
@@ -310,31 +359,31 @@ export function HQScreen({route, navigation}: any) {
             </Text>
           )}
         </View>
-      </View>
 
-      {/* Assessment — the conclusion, and the supervisor's own board behind it.
-          Tap the conclusion to expand it in full (it can be long) and again to collapse. */}
-      <View style={[styles.assess, {borderBottomColor: pal.divider}]}>
-        <TouchableOpacity
-          activeOpacity={0.6}
-          testID="hq-assess"
-          onPress={() => setAssessExpanded(v => !v)}>
-          <Text
-            style={[styles.assessText, {color: calls.length > 0 ? ERRORED_COLOR : pal.fg}]}
-            numberOfLines={assessExpanded ? undefined : 2}>
-            <Text style={{color: pal.fg3}}>⟣ </Text>
-            {assessment(digest, zh)}
-          </Text>
-        </TouchableOpacity>
-        {board.exists && (
-          <TouchableOpacity testID="hq-board-open" onPress={() => setBoardOpen(true)} hitSlop={hit} style={styles.boardRow}>
-            <Text style={[styles.boardLink, {color: pal.fg3}]} numberOfLines={1}>
-              {boardFreshness(board.updated_at, now, zh)}
+        {/* Assessment — the conclusion, and the supervisor's own board behind it.
+            Tap the conclusion to expand it in full (it can be long) and again to collapse. */}
+        <View style={[styles.assess, {borderBottomColor: pal.divider}]}>
+          <TouchableOpacity
+            activeOpacity={0.6}
+            testID="hq-assess"
+            onPress={() => setAssessExpanded(v => !v)}>
+            <Text
+              style={[styles.assessText, {color: calls.length > 0 ? ERRORED_COLOR : pal.fg}]}
+              numberOfLines={assessExpanded ? undefined : 2}>
+              <Text style={{color: pal.fg3}}>⟣ </Text>
+              {assessment(digest, zh)}
             </Text>
-            <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
           </TouchableOpacity>
-        )}
-      </View>
+          {board.exists && (
+            <TouchableOpacity testID="hq-board-open" onPress={() => setBoardOpen(true)} hitSlop={hit} style={styles.boardRow}>
+              <Text style={[styles.boardLink, {color: pal.fg3}]} numberOfLines={1}>
+                {boardFreshness(board.updated_at, now, zh)}
+              </Text>
+              <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </Animated.View>
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Zone selector — each tab carries its own signal so a hidden zone still reports itself. */}
@@ -363,7 +412,7 @@ export function HQScreen({route, navigation}: any) {
 
         {/* YOUR CALL — one decision card per blocked session. */}
         {activeZone === 'calls' && (
-          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad}>
+          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad} onScroll={onZoneScroll} scrollEventThrottle={16}>
             {calls.length === 0 ? (
               <Text style={[styles.empty, {color: pal.fg3}]}>
                 {t('Nothing needs your decision right now.', '现在没有需要你拍板的事。')}
@@ -427,7 +476,7 @@ export function HQScreen({route, navigation}: any) {
 
         {/* ACTIVITY — the ledger. History; the radar only has the present instant. */}
         {activeZone === 'activity' && (
-          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad}>
+          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad} onScroll={onZoneScroll} scrollEventThrottle={16}>
             {ledger.length === 0 ? (
               <Text style={[styles.empty, {color: pal.fg3}]}>{t('Nothing notable recently.', '最近没有值得一提的动静。')}</Text>
             ) : (
@@ -470,6 +519,7 @@ export function HQScreen({route, navigation}: any) {
               turns={turns}
               loading={!loaded}
               pendingPrompt={pending}
+              onLiveEdge={atBottom => setCollapsed(!atBottom)}
             />
           </View>
         )}
@@ -567,7 +617,8 @@ const styles = StyleSheet.create({
   back: {fontSize: 30, fontWeight: '300', marginRight: 10, marginTop: -4},
   close: {fontSize: 18, fontWeight: '400', paddingHorizontal: 4},
   stripMid: {flex: 1},
-  titleRow: {flexDirection: 'row', alignItems: 'center'},
+  stripDetail: {paddingHorizontal: 14, paddingTop: 6, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
+  titleRow: {flexDirection: 'row', alignItems: 'center', flex: 1},
   demoPill: {borderWidth: 1, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 0.5, marginLeft: 8},
   demoPillText: {fontSize: 9, fontWeight: '700', letterSpacing: 0.06},
   title: {fontSize: 17, fontWeight: '700'},

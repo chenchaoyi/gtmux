@@ -25,6 +25,7 @@ type PaneRow struct {
 	InMode  bool   `json:"in_mode,omitempty"` // copy/view-mode → input is swallowed
 	Tier    string `json:"tier"`              // "agent" | "plain"
 	Agent   string `json:"agent,omitempty"`   // display name when Tier=="agent"
+	Icon    string `json:"icon,omitempty"`    // identity icon hint (.app/image path) when Tier=="agent"
 }
 
 // panesSource lists every tmux pane with the fields the browser needs. A package var
@@ -38,23 +39,29 @@ var panesSource = func() []string {
 // agentPaneSet is the set of pane ids the radar classifies as coding agents (the
 // full classification: title glyph + process subtree). A package var so tests can
 // stub it without driving GatherAgents.
-var agentPaneSet = func() (map[string]string, map[string]bool) {
+var agentPaneSet = func() (map[string]string, map[string]bool, map[string]string) {
 	names := map[string]string{} // pane id → agent display name
 	agents := map[string]bool{}
+	icons := map[string]string{} // pane id → official-icon hint (drives the browser avatar)
 	for _, p := range GatherAgents() {
-		if p.source == "tmux" {
+		// A WATCHED row is a user-pinned PLAIN pane, NOT a coding agent — GatherAgents
+		// appends it so the radar can show it, but it must stay tier="plain" in the
+		// browser (else it's mislabeled an agent, tagged "on radar", and shows no $_
+		// glyph). Only true agent rows set the agent tier.
+		if p.source == "tmux" && !p.Watched {
 			agents[p.PaneID] = true
 			names[p.PaneID] = p.Agent
+			icons[p.PaneID] = p.icon
 		}
 	}
-	return names, agents
+	return names, agents, icons
 }
 
 // GatherPanes enumerates every tmux pane, tagging each with its tier by
 // cross-referencing the agent radar — so "agent" here means exactly what the radar
 // means by it (no duplicated classification), and everything else is "plain".
 func GatherPanes() []PaneRow {
-	names, agents := agentPaneSet()
+	names, agents, icons := agentPaneSet()
 	var out []PaneRow
 	for _, line := range panesSource() {
 		f := strings.SplitN(line, "\t", 9)
@@ -76,6 +83,7 @@ func GatherPanes() []PaneRow {
 			Command: f[5],
 			Tier:    tier,
 			Agent:   names[id],
+			Icon:    icons[id],
 		}
 		if len(f) >= 7 {
 			row.Title = strings.TrimSpace(f[6])

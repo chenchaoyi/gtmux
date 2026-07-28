@@ -4,7 +4,7 @@
 
 export type StatusName = 'waiting' | 'working' | 'idle' | 'running';
 // Section grouping key: the four statuses plus the non-tmux ("Elsewhere") category.
-export type SectionKey = StatusName | 'native';
+export type SectionKey = StatusName | 'native' | 'watched';
 
 export interface Agent {
   pane_id: string;
@@ -57,6 +57,7 @@ export interface PaneRow {
   in_mode?: boolean;
   tier: 'agent' | 'plain';
   agent?: string;
+  icon?: string; // official-icon hint for an agent pane → the browser avatar (empty for plain)
 }
 
 // paneRowToAgent adapts a PaneRow into an Agent so a plain (non-agent) pane can open
@@ -76,6 +77,9 @@ export function paneRowToAgent(r: PaneRow): Agent {
     activity: false,
     source: 'tmux',
     project: r.cwd,
+    // an agent pane shows its OFFICIAL icon (via /api/icon) like the radar; a plain
+    // pane has none → AgentAvatar falls back to the $_ monogram.
+    icon: r.tier === 'agent' ? r.icon : undefined,
   };
 }
 
