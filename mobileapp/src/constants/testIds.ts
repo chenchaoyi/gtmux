@@ -22,6 +22,13 @@ export const TestIds = {
     serverChip: 'radar-server-chip',
     settings: 'radar-settings',
     waitingOnly: 'radar-waiting-only',
+    panes: 'radar-panes',
+  },
+  panes: {
+    screen: 'panes-screen',
+    back: 'panes-back',
+    search: 'panes-search',
+    row: 'panes-row', // suffixed with the pane id → `${panes.row}-${paneId}`
   },
   agent: {
     // one per row; suffixed with the pane id so a test can target a known agent
