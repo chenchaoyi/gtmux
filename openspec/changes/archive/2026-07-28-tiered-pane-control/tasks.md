@@ -54,15 +54,19 @@ unblocks every surface.
 
 ## 5. Mobile / web (PR 5, optional follow-up)
 
-- [~] 5.1 Server GET /api/panes (guest-filtered) + mobile client.panes() + Detail neighbor strip DONE. Remaining: a full mobile pane-browser SCREEN + web browser. MOBILE.md §4 neighbor strip; api/contract.md /api/panes.
-- [ ] 5.1-rest Generalize the phone/web surfaces to the pane browser + neighbor panes using
-      the same `panes --json` + `send`/`attach` contract; MOBILE.md / WEB.md notes.
-      Guest scope unchanged. (Can trail the desktop surfaces.)
+- [x] 5.1 Server GET /api/panes (guest-filtered) + mobile client.panes() + Detail neighbor strip DONE. MOBILE.md §4 neighbor strip; api/contract.md /api/panes.
+- [x] 5.1-rest Full pane-browser SCREEN on BOTH follow-up surfaces, off the same
+      `panes --json`/`/api/panes` contract (guest scope unchanged):
+      • mobile — `PaneBrowserScreen` (a ▤ radar-header entry → full-screen session→window
+        tree, live search, tap any row → Detail); `agentMark` empty → `$_`.
+      • web — a ▤ radar entry → the `#panes` view (session→window, sticky headers, search,
+        tap → the pane mirror); `agentMark` `'?'` → `'$_'` to match mobile.
+      • menu-bar — the "0 panes" decode bug fixed (omitempty fields tolerated).
 
 ## 6. Close-out
 
-- [ ] 6.1 `openspec validate --specs --strict` green; sync deltas into
+- [x] 6.1 `openspec validate --specs --strict` green; sync deltas into
       `openspec/specs/{pane-browser,agent-radar,terminal-jump}` and archive the change.
-- [ ] 6.2 Positioning check: help/docs frame plain-pane reach as "you're never stuck,"
+- [x] 6.2 Positioning check: help/docs frame plain-pane reach as "you're never stuck,"
       not "tmux manager"; the README's five-ways-in is unchanged (this is a capability,
       not a new surface headline).
