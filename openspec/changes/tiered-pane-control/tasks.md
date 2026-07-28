@@ -42,7 +42,8 @@ unblocks every surface.
       window → pane tree, focus/type/attach any pane, agent panes badged + linking to
       their Detail. A SEPARATE view, reached from the ⚙ menu / a browser affordance —
       NOT merged into the radar list.
-- [~] 4.2 Agent-neighbor panes: on DESKTOP subsumed by the browser (it groups panes
+- [x] 4.2 Agent-neighbor panes: DESKTOP subsumed by the browser (session-grouped); MOBILE = a neighbor strip in Detail (same-session panes → open any). Server /api/panes + client.panes() + paneRowToAgent. Done in the mobile PR.
+- [~] 4.2-note (old): on DESKTOP subsumed by the browser (it groups panes
       by session, so an agent sits alongside its siblings). A dedicated neighbor strip
       belongs to the MOBILE Detail screen (there's no rich Detail in the menu bar) →
       folded into PR 5.
@@ -53,7 +54,8 @@ unblocks every surface.
 
 ## 5. Mobile / web (PR 5, optional follow-up)
 
-- [ ] 5.1 Generalize the phone/web surfaces to the pane browser + neighbor panes using
+- [~] 5.1 Server GET /api/panes (guest-filtered) + mobile client.panes() + Detail neighbor strip DONE. Remaining: a full mobile pane-browser SCREEN + web browser. MOBILE.md §4 neighbor strip; api/contract.md /api/panes.
+- [ ] 5.1-rest Generalize the phone/web surfaces to the pane browser + neighbor panes using
       the same `panes --json` + `send`/`attach` contract; MOBILE.md / WEB.md notes.
       Guest scope unchanged. (Can trail the desktop surfaces.)
 

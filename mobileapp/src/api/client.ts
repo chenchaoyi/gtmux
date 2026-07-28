@@ -2,7 +2,7 @@
 // Mirrors api/contract.md. `focus` selects a pane; `send` types into one (a WRITE
 // gated only by the bearer token).
 
-import {Agent, PaneResponse, ReplyOption, TermTheme, toAgent} from './types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, TermTheme, toAgent} from './types';
 import {Debug} from '../debug';
 
 export interface SendPayload {
@@ -198,6 +198,17 @@ export class GtmuxClient {
     if (!r.ok) throw new ApiError(r.status, 'agents');
     const raw = await r.json();
     return Array.isArray(raw) ? raw.map(toAgent) : [];
+  }
+
+  // panes reads EVERY tmux pane (GET /api/panes, tiered-pane-control) — the superset
+  // of agents, for the pane browser + the Detail neighbor strip. [] on failure (a
+  // pane list is a convenience surface, not worth throwing over an older server that
+  // 503s /api/panes).
+  async panes(): Promise<PaneRow[]> {
+    const r = await tfetch(`${this.base}/api/panes`, {headers: this.h()});
+    if (!r.ok) return [];
+    const raw = await r.json().catch(() => null);
+    return Array.isArray(raw) ? (raw as PaneRow[]) : [];
   }
 
   // share reads the caller's own scope (GET /api/share): `all:true` ⇒ owner (full),

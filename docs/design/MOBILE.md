@@ -119,6 +119,14 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
 
 ## 4. Detail 交互（pane 视图 + 输入）
 
+### 邻居 pane 条（tiered-pane-control）
+
+Detail 顶部（header 下、segmented 上）一条**横向邻居 pane 条**：列出该 pane 所在 tmux
+session 的**其他 pane**（`GET /api/panes` 过滤同 session），agent 行 ▸ + 名、普通行 › +
+命令名。点一个 = 打开那个 pane 的 Detail(任意 pane 可看/可输入,普通 pane 以 `paneRowToAgent`
+适配)。**无兄弟 pane 或全屏时隐藏**;guest 只看到被授权的 pane。桌面侧的"邻居"由 §16 的
+pane 浏览器(按 session 分组)覆盖,手机侧则用这条 —— 都基于同一 `/api/panes` 契约。
+
 ### 终端渲染（窄屏适配）
 
 - 数据：每 ~1.5s `GET /api/pane`。**`/api/pane` 用 `tmux capture-pane -e -p`**（带 ANSI SGR），

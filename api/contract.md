@@ -52,8 +52,33 @@ app, and mobile app share one shape. Empty array when no tmux server is running.
 | `latest` | bool | the most-recently-finished pane |
 | `activity` | bool | window activity flag |
 | `source` | string | `tmux` (native terminals reserved for later) |
+| `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
+
+### `GET /api/panes` — every tmux pane (tiered-pane-control)
+
+Returns the **byte-identical** `gtmux panes --json` array — EVERY tmux pane, not just
+coding agents (the superset of `/api/agents`), for the pane browser. Empty array when
+no tmux server is running. A guest is filtered to its view allowlist by the same
+`pane_id` rule as `/api/agents`. Owner (master/paired device) sees all panes.
+
+```
+200 [ {pane}, … ]    // application/json
+401 {"error":"unauthorized"}
+503 {"error":"panes unavailable"}   // producer not wired
+```
+
+`pane` object (see `internal/radar/panes.go` `PaneRow`):
+
+| field | type | meaning |
+|---|---|---|
+| `pane_id` `loc` | string | tmux pane id (`%N`) + `session:window.pane` |
+| `session` `window` `pane` | string | tmux location parts |
+| `cwd` `command` `title` | string | working dir, `pane_current_command`, pane title |
+| `active` `in_mode` | bool | the window's active pane / in copy-mode (input swallowed) |
+| `tier` | string | `agent` (a coding-agent pane) \| `plain` (shell/editor/other) |
+| `agent` | string? | display name when `tier==agent` |
 
 ### `GET /api/pane?id=%N` — read a pane's screen (read-only)
 

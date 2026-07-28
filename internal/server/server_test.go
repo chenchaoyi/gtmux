@@ -34,6 +34,31 @@ type fakeDeps struct {
 
 func (f *fakeDeps) AgentsJSON() ([]byte, error)       { return f.agents, f.agentsErr }
 func (f *fakeDeps) PaneText(id string) (string, bool) { return f.paneText, f.paneOK }
+
+// TestPanesEndpoint: GET /api/panes serves the panes array to an owner, and is 503
+// when the producer isn't wired.
+func TestPanesEndpoint(t *testing.T) {
+	body := `[{"pane_id":"%1","tier":"agent"},{"pane_id":"%2","tier":"plain"}]`
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		PanesJSON: func() ([]byte, error) { return []byte(body), nil },
+	})
+	rr := do(t, s.Handler(), http.MethodGet, "/api/panes", testToken)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("owner GET /api/panes = %d, want 200 (%s)", rr.Code, rr.Body.String())
+	}
+	if rr.Body.String() != body {
+		t.Fatalf("owner should see all panes byte-identical; got %s", rr.Body.String())
+	}
+	// No producer wired → 503.
+	s2 := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{})
+	if rr := do(t, s2.Handler(), http.MethodGet, "/api/panes", testToken); rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("nil PanesJSON = %d, want 503", rr.Code)
+	}
+	// No token → 401.
+	if rr := do(t, s.Handler(), http.MethodGet, "/api/panes", ""); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("no token = %d, want 401", rr.Code)
+	}
+}
 func (f *fakeDeps) Focus(id string) error             { f.focusCalls = append(f.focusCalls, id); return f.focusErr }
 
 // TestSendReturnsPaneSnapshot: POST /api/send echoes the post-send pane text +

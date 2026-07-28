@@ -11,6 +11,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -20,7 +21,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {Agent, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
@@ -51,10 +52,27 @@ const FONT_IDX_KEY = 'detail.fontIdx';
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
 export function DetailScreen({route, navigation}: any) {
-  return <DetailView agent={route.params.agent} initialMode={route.params.mode} onBack={() => navigation.goBack()} />;
+  return (
+    <DetailView
+      agent={route.params.agent}
+      initialMode={route.params.mode}
+      onBack={() => navigation.goBack()}
+      onOpenPane={row => navigation.push('Detail', {agent: paneRowToAgent(row)})}
+    />
+  );
 }
 
-export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?: () => void; initialMode?: DetailMode}) {
+export function DetailView({
+  agent,
+  onBack,
+  initialMode,
+  onOpenPane,
+}: {
+  agent: Agent;
+  onBack?: () => void;
+  initialMode?: DetailMode;
+  onOpenPane?: (row: PaneRow) => void;
+}) {
   const {client, agents, conn, isGuest, inputPanes, demo} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
   // ≥768 means we're embedded in the iPad split-view's main pane (never a narrow
@@ -67,6 +85,11 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
   // it's momentarily absent from the list (e.g. between polls / pane just closed).
   const live = agents.find(a => a.pane_id === agent.pane_id) ?? agent;
+  // Neighbor panes (tiered-pane-control): the OTHER panes in this pane's tmux
+  // session — the shell next to your agent, a dev server, a log tail. Tapping one
+  // opens it in Detail (any pane is view/typeable). Guests without extra shared panes
+  // just see none. Fetched off /api/panes (a convenience surface — [] on failure).
+  const [neighbors, setNeighbors] = useState<PaneRow[]>([]);
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
@@ -320,6 +343,27 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
     [text, fontSize, cursor, theme, fontPref, onLiveEdge],
   );
 
+  // Load the sibling panes in this pane's session, refreshed on a slow cadence
+  // (siblings change on a human timescale). Demo mode has no server → skip.
+  useEffect(() => {
+    if (demo) return;
+    let alive = true;
+    const load = () =>
+      client
+        .panes()
+        .then(rows => {
+          if (!alive) return;
+          setNeighbors(rows.filter(r => r.session === live.session && r.pane_id !== live.pane_id));
+        })
+        .catch(() => {});
+    load();
+    const id = setInterval(load, 5000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client, demo, live.session, live.pane_id]);
+
   return (
     <KeyboardAvoidingView
       testID={TestIds.detail.screen}
@@ -383,6 +427,32 @@ export function DetailView({agent, onBack, initialMode}: {agent: Agent; onBack?:
           </TouchableOpacity>
         </View>
         </Animated.View>
+      )}
+
+      {/* Neighbor panes (tiered-pane-control): the other panes in this session —
+          tap to open one (its live screen + input). Hidden when there are none or
+          in full-screen. onOpenPane navigates to that pane's Detail. */}
+      {!fullscreen && onOpenPane && neighbors.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={[styles.neighborStrip, {borderBottomColor: pal.divider}]}
+          contentContainerStyle={styles.neighborContent}>
+          {neighbors.map(n => (
+            <TouchableOpacity
+              key={n.pane_id}
+              onPress={() => onOpenPane(n)}
+              style={[styles.neighborChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              <Text style={[styles.neighborMark, {color: n.tier === 'agent' ? StatusColor.working : pal.fg3}]}>
+                {n.tier === 'agent' ? '▸' : '›'}
+              </Text>
+              <Text style={[styles.neighborLabel, {color: pal.fg2}]} numberOfLines={1}>
+                {n.tier === 'agent' ? n.agent || n.command : n.command}
+              </Text>
+              <Text style={[styles.neighborLoc, {color: pal.fg3}]}>{n.pane_id}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       )}
 
       {/* B1: 对话 ↔ 终端 segmented (remembered per pane) */}
@@ -636,6 +706,21 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  neighborStrip: {flexGrow: 0, borderBottomWidth: StyleSheet.hairlineWidth},
+  neighborContent: {paddingHorizontal: 10, paddingVertical: 6, gap: 6},
+  neighborChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    maxWidth: 180,
+  },
+  neighborMark: {fontSize: 11, fontWeight: '700'},
+  neighborLabel: {fontSize: 11, flexShrink: 1},
+  neighborLoc: {fontSize: 9, fontVariant: ['tabular-nums']},
   segWrap: {paddingHorizontal: 12, paddingTop: 5, paddingBottom: 5},
   seg: {flexDirection: 'row', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, padding: 2},
   segWide: {maxWidth: 460, alignSelf: 'center', width: '100%'}, // iPad: don't span the whole main pane

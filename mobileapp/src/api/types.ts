@@ -36,6 +36,47 @@ export interface Agent {
   bg?: boolean;
   bg_count?: number;
   bg_text?: string;
+  // watched (tiered-pane-control): a user-promoted PLAIN pane, not an agent — no
+  // agent status. Absent/false for agent rows.
+  watched?: boolean;
+}
+
+// PaneRow mirrors `gtmux panes --json` (GET /api/panes) — EVERY tmux pane, tiered
+// agent/plain (tiered-pane-control). The superset of Agent used by the pane browser
+// and the Detail neighbor strip; focus/send/attach work on any of them.
+export interface PaneRow {
+  pane_id: string;
+  loc: string;
+  session: string;
+  window: string;
+  pane: string;
+  cwd?: string;
+  command: string;
+  title?: string;
+  active?: boolean;
+  in_mode?: boolean;
+  tier: 'agent' | 'plain';
+  agent?: string;
+}
+
+// paneRowToAgent adapts a PaneRow into an Agent so a plain (non-agent) pane can open
+// in the same DetailView (its live screen + input). A plain pane has no agent status,
+// so status stays 'running' (the neutral bucket); the label is its title or command.
+export function paneRowToAgent(r: PaneRow): Agent {
+  return {
+    pane_id: r.pane_id,
+    session: r.session,
+    window: r.window,
+    pane: r.pane,
+    loc: r.loc,
+    agent: r.tier === 'agent' ? r.agent || '' : '',
+    status: 'running',
+    task: r.title || r.command,
+    latest: false,
+    activity: false,
+    source: 'tmux',
+    project: r.cwd,
+  };
 }
 
 // Decode one agent from raw JSON, applying the same defaults as the Swift decoder.
