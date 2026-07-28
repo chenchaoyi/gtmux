@@ -420,9 +420,17 @@
       });
     });
   }
+  // Label for a PLAIN pane: strip a leading colon (some shells set the title to
+  // ":$PWD") and, if what's left is a filesystem path (redundant with the dir in the
+  // sub) or empty, use the command — far cleaner than a raw path as the name.
+  function plainLabel(title, command) {
+    var t = String(title || '').replace(/^:+\s*/, '').trim();
+    if (!t || t.charAt(0) === '/' || t.charAt(0) === '~') return command;
+    return t;
+  }
   function paneRowEl(p) {
     var a = paneToAgent(p), isAgent = p.tier === 'agent';
-    var label = isAgent ? (p.agent || p.command) : (p.title || p.command);
+    var label = isAgent ? (p.agent || p.command) : plainLabel(p.title, p.command);
     var row = document.createElement('div'); row.className = 'pb-row';
     row.appendChild(avatarEl(a, 30, false));
     var tx = document.createElement('div'); tx.className = 'pb-text';

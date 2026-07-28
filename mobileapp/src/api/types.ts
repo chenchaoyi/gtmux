@@ -114,6 +114,10 @@ export function toAgent(raw: any): Agent {
     bg: b('bg') || undefined,
     bg_count: n('bg_count'),
     bg_text: s('bg_text') || undefined,
+    // watched (tiered-pane-control): a user-pinned PLAIN pane — decoded so it lands in
+    // the "Watched / 关注" section, NOT the RUNNING bucket (its "" status defaults to
+    // 'running'). Without this the section fix never fires.
+    watched: b('watched') || undefined,
   };
 }
 
