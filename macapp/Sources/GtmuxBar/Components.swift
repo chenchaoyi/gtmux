@@ -82,22 +82,27 @@ enum AgentIcons {
     private static var cache: [String: NSImage] = [:]
 
     static func image(for agent: Agent) -> NSImage? {
-        let key = agent.icon.isEmpty ? "name:\(agent.agent)" : agent.icon
+        image(icon: agent.icon, name: agent.agent)
+    }
+
+    /// Resolve by the raw hint + display name, so ANY surface — radar, palette, the
+    /// pane browser — gets the same official icon without needing an `Agent` value.
+    static func image(icon: String, name: String) -> NSImage? {
+        let key = icon.isEmpty ? "name:\(name)" : icon
         if let hit = cache[key] { return hit }
-        guard let img = resolve(agent) else { return nil }
+        guard let img = resolve(icon: icon, name: name) else { return nil }
         cache[key] = img
         return img
     }
 
-    private static func resolve(_ agent: Agent) -> NSImage? {
+    private static func resolve(icon hint: String, name: String) -> NSImage? {
         let fm = FileManager.default
-        let hint = agent.icon
         if !hint.isEmpty, fm.fileExists(atPath: hint) {
             if hint.hasSuffix(".app") { return NSWorkspace.shared.icon(forFile: hint) }
             return NSImage(contentsOfFile: hint)
         }
         // no-config drop-in: ~/.config/gtmux/icons/<agent-key>.png
-        let slug = agent.agent.lowercased().replacingOccurrences(of: " ", with: "-")
+        let slug = name.lowercased().replacingOccurrences(of: " ", with: "-")
         let dropped = "\(NSHomeDirectory())/.config/gtmux/icons/\(slug).png"
         if fm.fileExists(atPath: dropped) { return NSImage(contentsOfFile: dropped) }
         return nil

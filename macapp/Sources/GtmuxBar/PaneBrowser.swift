@@ -17,6 +17,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
     var inMode = false
     var tier = "plain"
     var agent = ""
+    var icon = "" // official-icon hint for an agent pane (.app/image path); "" = monogram
     var id: String { paneID }
 
     var isAgent: Bool { tier == "agent" }
@@ -31,7 +32,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
-        case loc, session, window, pane, cwd, command, title, active, tier, agent
+        case loc, session, window, pane, cwd, command, title, active, tier, agent, icon
         case inMode = "in_mode"
     }
 
@@ -47,7 +48,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
         paneID = s(.paneID); loc = s(.loc); session = s(.session); window = s(.window); pane = s(.pane)
         cwd = s(.cwd); command = s(.command); title = s(.title)
         active = b(.active); inMode = b(.inMode)
-        tier = s(.tier, "plain"); agent = s(.agent)
+        tier = s(.tier, "plain"); agent = s(.agent); icon = s(.icon)
     }
 }
 
@@ -192,9 +193,9 @@ private struct PaneBrowserRow: View {
     var body: some View {
         let p = Theme.Palette.of(scheme)
         HStack(spacing: 8) {
-            Text(row.isAgent ? "▸" : " ")
-                .font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.Status.working)
-                .frame(width: 10)
+            // Identity: an agent pane shows its OFFICIAL icon (like the radar), not a
+            // "▸" glyph; a plain pane shows a dim $_ terminal mark (matches phone/web).
+            paneIcon(p).frame(width: 20, height: 20)
             Text(row.wp).font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 34, alignment: .leading)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 5) {
@@ -229,5 +230,22 @@ private struct PaneBrowserRow: View {
         .contentShape(Rectangle())
         .onTapGesture { onFocus() }
         .onHover { hovering = $0 }
+    }
+
+    // The leading identity tile: an agent's real icon (monogram fallback), or a plain
+    // pane's dim $_ terminal mark. Reuses the radar's AgentIcons resolver so the browser
+    // shows the same official logos.
+    @ViewBuilder private func paneIcon(_ p: Theme.Palette) -> some View {
+        if row.isAgent, let img = AgentIcons.image(icon: row.icon, name: row.agent) {
+            Image(nsImage: img).resizable().interpolation(.high).scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+        } else if row.isAgent {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(scheme == .dark ? Color.white.opacity(0.09) : Color.black.opacity(0.05))
+                .overlay(Text(agentMonogram(row.agent))
+                    .font(.system(size: 9, weight: .semibold, design: .rounded)).foregroundStyle(p.fg2))
+        } else {
+            Text("$_").font(.system(size: 10, design: .monospaced)).foregroundStyle(p.fg3)
+        }
     }
 }
