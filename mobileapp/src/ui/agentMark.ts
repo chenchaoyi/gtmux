@@ -24,5 +24,8 @@ export function agentMark(name: string): string {
     if (k.includes(key)) return MARKS[key];
   }
   const cleaned = (name || '').trim();
-  return cleaned ? cleaned.slice(0, 2) : '?';
+  // A pane with NO coding agent (a plain shell / dev server opened from the pane
+  // browser or a neighbor strip) has no name — show a terminal glyph, not a '?'
+  // (tiered-pane-control: a plain pane is a first-class pane, not an unknown agent).
+  return cleaned ? cleaned.slice(0, 2) : '$_';
 }
