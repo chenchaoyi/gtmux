@@ -10,6 +10,7 @@ import {Alert as AlertType, SectionKey} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
+import {PanesIcon} from '../ui/Icons';
 import {HQCard} from '../ui/HQCard';
 import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
@@ -101,6 +102,17 @@ export function RadarScreen({navigation}: any) {
         </TouchableOpacity>
         <View style={styles.headerRight}>
           <ConnDot conn={conn} t={t} pal={pal} lang={lang} />
+          {/* Browse ALL panes (tiered-pane-control): the opt-in secondary surface —
+              reach a pane in a session with no agent. Kept off the radar itself so the
+              agent-first list stays clean. Guests reach only their shared panes. */}
+          <TouchableOpacity
+            testID={TestIds.radar.panes}
+            accessibilityLabel={lang === 'zh' ? '所有 pane' : 'All panes'}
+            onPress={() => navigation.navigate('Panes')}
+            hitSlop={hit}
+            style={styles.panesBtn}>
+            <PanesIcon size={19} color={pal.fg2} />
+          </TouchableOpacity>
           <TouchableOpacity
             testID={TestIds.radar.settings}
             accessibilityLabel={TestIds.radar.settings}
@@ -265,6 +277,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerRight: {flexDirection: 'row', alignItems: 'center'},
+  panesBtn: {marginLeft: 14},
   gear: {marginLeft: 14},
   conn: {flexDirection: 'row', alignItems: 'center'},
   connDot: {width: 7, height: 7, borderRadius: 3.5, marginRight: 5},

@@ -103,6 +103,21 @@ export function ExpandIcon({size = 20, color = '#fff'}: {size?: number; color?: 
   );
 }
 
+// Panes: a window split into a big left pane + two stacked right panes — the tmux
+// "all panes" glyph (tiered-pane-control). For the radar's Browse-all-panes entry.
+export function PanesIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={4.5} width={18} height={15} rx={2.4} stroke={color} strokeWidth={1.6} />
+      {/* vertical split */}
+      <Path d="M12 4.5 V19.5" stroke={color} strokeWidth={1.5} />
+      {/* horizontal split on the right half only */}
+      <Path d="M12 12 H21" stroke={color} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
 // A "history" clock: a clock face + hands + a counterclockwise back-arrow over the
 // top — the standard recall-the-past glyph (replaces the "历史/History" word).
 export function HistoryIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {

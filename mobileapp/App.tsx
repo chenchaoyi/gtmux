@@ -19,6 +19,7 @@ import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
 import {HQScreen} from './src/screens/HQScreen';
 import {ManageMacScreen} from './src/screens/ManageMacScreen';
+import {PaneBrowserScreen} from './src/screens/PaneBrowserScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
 import {ServersScreen} from './src/screens/ServersScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
@@ -161,6 +162,7 @@ function Root() {
         <Stack.Navigator screenOptions={{headerShown: false}}>
           <Stack.Screen name="Radar" component={RadarRoute} />
           <Stack.Screen name="Detail" component={DetailScreen} />
+          <Stack.Screen name="Panes" component={PaneBrowserScreen} />
           <Stack.Screen name="HQ" component={HQScreen} />
           <Stack.Screen name="Servers" component={ServersScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
