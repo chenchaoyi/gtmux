@@ -45,10 +45,10 @@ describe('agentMark', () => {
     expect(agentMark('q')).toBe('q');
   });
 
-  it('returns "?" for empty / whitespace-only / undefined / null', () => {
-    expect(agentMark('')).toBe('?');
-    expect(agentMark('   ')).toBe('?');
-    expect(agentMark(undefined as any)).toBe('?');
-    expect(agentMark(null as any)).toBe('?');
+  it('returns the terminal glyph "$_" for empty / whitespace-only / undefined / null (a plain pane, not an unknown agent)', () => {
+    expect(agentMark('')).toBe('$_');
+    expect(agentMark('   ')).toBe('$_');
+    expect(agentMark(undefined as any)).toBe('$_');
+    expect(agentMark(null as any)).toBe('$_');
   });
 });

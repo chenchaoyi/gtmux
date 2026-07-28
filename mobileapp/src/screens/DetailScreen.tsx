@@ -85,11 +85,17 @@ export function DetailView({
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
   // it's momentarily absent from the list (e.g. between polls / pane just closed).
   const live = agents.find(a => a.pane_id === agent.pane_id) ?? agent;
+  // A PLAIN pane (tiered-pane-control): a tmux pane with no coding agent — opened
+  // from a neighbor strip / the browser. It has no chat transcript, so the Chat tab
+  // is meaningless: only the live terminal makes sense. `live.agent` is empty for a
+  // plain pane (it isn't in the agents list, so `live` is the paneRowToAgent snapshot).
+  const isPlainPane = live.source === 'tmux' && !live.agent;
   // Neighbor panes (tiered-pane-control): the OTHER panes in this pane's tmux
   // session — the shell next to your agent, a dev server, a log tail. Tapping one
   // opens it in Detail (any pane is view/typeable). Guests without extra shared panes
   // just see none. Fetched off /api/panes (a convenience surface — [] on failure).
   const [neighbors, setNeighbors] = useState<PaneRow[]>([]);
+  const [neighborH, setNeighborH] = useState(0); // measured once, for the collapse animation
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
@@ -155,6 +161,12 @@ export function DetailView({
     collapse.setValue(0); // reveal the header when switching Chat↔Terminal
     lastEdge.current = true;
   }, [mode, collapse]);
+
+  // A plain pane has no chat — force Terminal (the Chat/Terminal segmented is hidden
+  // for it below), so opening a shell/dev-server pane lands on its live screen.
+  useEffect(() => {
+    if (isPlainPane && mode !== 'terminal') setMode('terminal');
+  }, [isPlainPane, mode]);
 
   useEffect(() => {
     let alive = true;
@@ -431,32 +443,44 @@ export function DetailView({
 
       {/* Neighbor panes (tiered-pane-control): the other panes in this session —
           tap to open one (its live screen + input). Hidden when there are none or
-          in full-screen. onOpenPane navigates to that pane's Detail. */}
+          in full-screen. Auto-collapses on scroll-away (same `collapse` driver as
+          the header) so it doesn't eat space while you read scrollback. */}
       {!fullscreen && onOpenPane && neighbors.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={[styles.neighborStrip, {borderBottomColor: pal.divider}]}
-          contentContainerStyle={styles.neighborContent}>
-          {neighbors.map(n => (
-            <TouchableOpacity
-              key={n.pane_id}
-              onPress={() => onOpenPane(n)}
-              style={[styles.neighborChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-              <Text style={[styles.neighborMark, {color: n.tier === 'agent' ? StatusColor.working : pal.fg3}]}>
-                {n.tier === 'agent' ? '▸' : '›'}
-              </Text>
-              <Text style={[styles.neighborLabel, {color: pal.fg2}]} numberOfLines={1}>
-                {n.tier === 'agent' ? n.agent || n.command : n.command}
-              </Text>
-              <Text style={[styles.neighborLoc, {color: pal.fg3}]}>{n.pane_id}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <Animated.View
+          style={{
+            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+            height: neighborH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [neighborH, 0]}) : undefined,
+            overflow: 'hidden',
+          }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            onLayout={e => {
+              const h = e.nativeEvent.layout.height;
+              if (neighborH === 0 && h > 0) setNeighborH(h);
+            }}
+            style={[styles.neighborStrip, {borderBottomColor: pal.divider}]}
+            contentContainerStyle={styles.neighborContent}>
+            {neighbors.map(n => (
+              <TouchableOpacity
+                key={n.pane_id}
+                onPress={() => onOpenPane(n)}
+                style={[styles.neighborChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+                <Text style={[styles.neighborMark, {color: n.tier === 'agent' ? StatusColor.working : pal.fg3}]}>
+                  {n.tier === 'agent' ? '▸' : '›'}
+                </Text>
+                <Text style={[styles.neighborLabel, {color: pal.fg2}]} numberOfLines={1}>
+                  {n.tier === 'agent' ? n.agent || n.command : n.command}
+                </Text>
+                <Text style={[styles.neighborLoc, {color: pal.fg3}]}>{n.pane_id}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
       )}
 
-      {/* B1: 对话 ↔ 终端 segmented (remembered per pane) */}
-      {!fullscreen && (
+      {/* B1: 对话 ↔ 终端 segmented — hidden for a PLAIN pane (no chat, terminal only) */}
+      {!fullscreen && !isPlainPane && (
         <View style={styles.segWrap}>
           <View style={[styles.seg, {backgroundColor: pal.surface, borderColor: pal.divider}, isWide && styles.segWide]}>
             <Seg
