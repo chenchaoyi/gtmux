@@ -287,13 +287,18 @@ iPad **不是「放大的手机」**——大画布用 **split-view（侧栏雷�
 
 **任何分区都不允许「光头 + 空白」**，空态必须是一句话。
 
-雷达里 HQ 仍是参谋长卡（无角标 + 情报头条，见 `hq-meta-layer`）。三屏（菜单栏/手机/网页）
-同一心智：判断 + 该你拍板 + 对话，规模随屏放大。实现见 `HQScreen.tsx` + 纯逻辑 `hqZones.ts`。
+**手机雷达里 HQ = 浮窗圆盘（`HQDisc`）**，不再是最顶部的卡片。HQ 是**元层**（凌驾于舰队之上），
+所以它**浮**在列表右下角、不随滚动移走，而不是当作「又一张卡」挤在顶部（那样太像一个 session）。
+一个圆盘：中心是 gtmux 品牌标，**状态环**编码舰队态（铁律 色=状态）——红=HQ 自己请你拍板 · 琥珀=有
+worker 等你（带需要你计数角标）· 绿=一切正常（静，无动效）。点 → HQScreen。圆盘放不下那句合成头条,
+故**情报头条移到 HQ 页**（无障碍标签仍念出来）。**仅手机雷达**用圆盘；iPad 侧栏（`SplitScreen`）与
+Demo 仍用 `HQCard`（浮窗不适合常驻侧栏/教学面）。三屏（菜单栏/手机/网页）同一心智：判断 + 该你拍板 +
+对话，规模随屏放大。实现见 `HQDisc.tsx` / `HQScreen.tsx` + 纯逻辑 `hqZones.ts`。
 
 
 ---
 
 ## 对齐实现补记（2026-07 · F 轮）
-见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ⏎ Ctrl-C Esc|快捷短语▾ 历史，写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 雷达入口=参谋长卡（无角标+情报头条,舰队光点条已退，见 hq-meta-layer）。
+见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ⏎ Ctrl-C Esc|快捷短语▾ 历史，写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 手机雷达入口=浮窗圆盘（`HQDisc`，状态环+需要你角标，情报头条移 HQ 页；iPad/Demo 仍 `HQCard`，见 hq-meta-layer）。
 
 - **Demo 模式**（mockup §18）：全功能无 server 演示（App Review 路径）。铁律：明示样例（DEMO chip 全程）、永不混入真实（Servers 无条目）、每次进入重置、每步引导「配对你的 Mac」。剧本主线 = 30 秒核心循环：看到等你 → 点进 → 按 1 批准 → 测试跑完 → 雷达变绿挂 latest。优化项见 ITERATIONS §F7。

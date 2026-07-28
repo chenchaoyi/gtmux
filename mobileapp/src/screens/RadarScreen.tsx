@@ -11,7 +11,7 @@ import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
 import {PanesIcon} from '../ui/Icons';
-import {HQCard} from '../ui/HQCard';
+import {HQDisc} from '../ui/HQDisc';
 import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
 import {SettingsIcon} from '../ui/SettingsIcon';
@@ -75,10 +75,10 @@ export function RadarScreen({navigation}: any) {
     setTimeout(() => setRefreshing(false), 600);
   };
 
-  // The supervisor (中控) renders as its OWN chief-of-staff card below the header
-  // (ui/HQCard, menu-bar §12 v2 form) — never a section row (theme.sections
-  // excludes role rows). Tap → HQScreen; absent → no card (starting one needs
-  // the Mac; no dead control).
+  // The supervisor (中控) is the meta-layer, so on the phone it renders as a FLOATING
+  // DISC over the list (ui/HQDisc), NOT a section row (theme.sections excludes role
+  // rows) and NOT a top card (which read too much like a session). Tap → HQScreen;
+  // absent → no disc (starting one needs the Mac; no dead control).
   const hq = agents.find(a => a.role === 'supervisor');
 
   const Header = (
@@ -147,15 +147,6 @@ export function RadarScreen({navigation}: any) {
           </TouchableOpacity>
         )}
       </View>
-      {hq && !isGuest && (
-        <HQCard
-          hq={hq}
-          agents={agents}
-          pal={pal}
-          lang={lang}
-          onPress={() => navigation.navigate('HQ', {agent: hq})}
-        />
-      )}
     </View>
   );
 
@@ -213,6 +204,11 @@ export function RadarScreen({navigation}: any) {
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
       />
+      {/* HQ floats over the list as a disc (the meta-layer, above the fleet) — always
+          reachable, never scrolls away. Owner-only; a guest has no HQ. */}
+      {hq && !isGuest && (
+        <HQDisc hq={hq} agents={agents} pal={pal} lang={lang} onPress={() => navigation.navigate('HQ', {agent: hq})} />
+      )}
     </SafeAreaView>
   );
 }
