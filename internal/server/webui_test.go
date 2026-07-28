@@ -27,6 +27,13 @@ func TestWebUIRouting(t *testing.T) {
 
 	if rr := get("/app.js"); rr.Code != http.StatusOK {
 		t.Errorf("GET /app.js = %d, want 200", rr.Code)
+	} else if body := rr.Body.String(); !strings.Contains(body, "openPanes") || !strings.Contains(body, "/api/panes") {
+		// the all-panes browser (tiered-pane-control): the radar entry + the fetch
+		t.Errorf("app.js missing the all-panes browser wiring (openPanes / /api/panes)")
+	}
+	// index.html carries the browser's entry button + its own section.
+	if rr := get("/"); !strings.Contains(rr.Body.String(), "panes-btn") || !strings.Contains(rr.Body.String(), "id=\"panes\"") {
+		t.Errorf("index.html missing the all-panes browser markup (panes-btn / #panes)")
 	}
 	if rr := get("/vendor/xterm.js"); rr.Code != http.StatusOK {
 		t.Errorf("GET /vendor/xterm.js = %d, want 200", rr.Code)
