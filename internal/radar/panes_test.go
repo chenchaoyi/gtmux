@@ -16,12 +16,14 @@ func withPaneFixture(t *testing.T, lines []string, agents map[string]string, fn 
 	t.Helper()
 	origPanes, origAgents := panesSource, agentPaneSet
 	panesSource = func() []string { return lines }
-	agentPaneSet = func() (map[string]string, map[string]bool) {
+	agentPaneSet = func() (map[string]string, map[string]bool, map[string]string) {
 		set := map[string]bool{}
-		for id := range agents {
+		icons := map[string]string{}
+		for id, name := range agents {
 			set[id] = true
+			icons[id] = "/Applications/" + name + ".app" // stub official-icon hint
 		}
-		return agents, set
+		return agents, set, icons
 	}
 	defer func() { panesSource, agentPaneSet = origPanes, origAgents }()
 	fn()
@@ -49,8 +51,13 @@ func TestGatherPanes_Tiers(t *testing.T) {
 	if byID["%1"].Tier != "agent" || byID["%1"].Agent != "Claude Code" {
 		t.Fatalf("%%1 should be an agent pane: %+v", byID["%1"])
 	}
-	if byID["%2"].Tier != "plain" || byID["%2"].Agent != "" {
-		t.Fatalf("%%2 (bare shell) should be plain: %+v", byID["%2"])
+	// An agent pane carries the official-icon hint (so the pane browser shows the real
+	// logo, not the monogram); a plain pane never does.
+	if byID["%1"].Icon == "" {
+		t.Fatalf("%%1 (agent) should carry an icon hint: %+v", byID["%1"])
+	}
+	if byID["%2"].Tier != "plain" || byID["%2"].Agent != "" || byID["%2"].Icon != "" {
+		t.Fatalf("%%2 (bare shell) should be plain with no icon: %+v", byID["%2"])
 	}
 	if byID["%3"].Tier != "plain" {
 		t.Fatalf("%%3 (vim) is a plain pane, not an agent: %+v", byID["%3"])
