@@ -149,6 +149,12 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return radar.AgentsJSONBytes()
 		},
+		PanesJSON: func() ([]byte, error) {
+			if !tmux.ServerUp() { // no tmux → empty array, same as `panes --json`
+				return []byte("[]"), nil
+			}
+			return radar.PanesJSONBytes()
+		},
 		PaneText: func(id string) (string, bool) {
 			if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
 				return "", false

@@ -7,6 +7,7 @@
 //
 //	GET  /api/health        — liveness/reachability probe (unauthenticated)
 //	GET  /api/agents        — the `gtmux agents --json` array (byte-identical)
+//	GET  /api/panes         — the `gtmux panes --json` array (EVERY pane, tiered)
 //	GET  /api/pane?id=%N    — a pane's current screen text (read-only)
 //	POST /api/focus?id=%N   — select that pane locally (no input injection)
 //	POST /api/send          — type text / a control key into a pane (WRITE)
@@ -47,6 +48,12 @@ type Deps struct {
 	// contract. It should return an empty JSON array (not an error) when no
 	// tmux server is running.
 	AgentsJSON func() ([]byte, error)
+
+	// PanesJSON returns the marshaled ALL-panes array — byte-identical to
+	// `gtmux panes --json` (tiered-pane-control): every tmux pane tiered agent/plain,
+	// for the pane browser. Empty array (not an error) when no tmux server runs.
+	// Optional: nil → GET /api/panes is 503.
+	PanesJSON func() ([]byte, error)
 
 	// PaneText returns a pane's current screen text (read-only capture-pane).
 	// ok is false when the pane no longer exists.
@@ -240,6 +247,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/share/set", s.auth(http.HandlerFunc(s.handleShareSet)))       // full: edit ONE link's scope
 	mux.Handle("/api/share/link", s.auth(http.HandlerFunc(s.handleShareLink)))     // full: re-copy a link's URL
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
+	mux.Handle("/api/panes", s.auth(http.HandlerFunc(s.handlePanes)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
 	mux.Handle("/api/hq/board", s.auth(http.HandlerFunc(s.handleHQBoard)))   // owner: the supervisor's situation board
@@ -354,6 +362,31 @@ func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 		dev, ok := callerDevice(r.Context())
 		if !ok {
 			dev = EnrolledDevice{} // no resolvable link → sees nothing
+		}
+		b = filterAgentsForGuest(b, dev, s.deps.Share != nil && s.deps.Share.GrantsStale())
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(b)
+}
+
+// handlePanes serves the ALL-panes array (GET /api/panes, tiered-pane-control) — the
+// pane browser's data. A guest is filtered to its view allowlist by the SAME
+// pane_id filter as /api/agents (PaneRow also carries pane_id), so a shared link can
+// never see a pane the owner didn't share.
+func (s *Server) handlePanes(w http.ResponseWriter, r *http.Request) {
+	if s.deps.PanesJSON == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("panes unavailable"))
+		return
+	}
+	b, err := s.deps.PanesJSON()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("panes error"))
+		return
+	}
+	if callerScope(r.Context()) == scopeGuest {
+		dev, ok := callerDevice(r.Context())
+		if !ok {
+			dev = EnrolledDevice{}
 		}
 		b = filterAgentsForGuest(b, dev, s.deps.Share != nil && s.deps.Share.GrantsStale())
 	}
