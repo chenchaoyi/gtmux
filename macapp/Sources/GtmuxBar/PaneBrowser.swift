@@ -34,6 +34,21 @@ struct PaneRow: Codable, Equatable, Identifiable {
         case loc, session, window, pane, cwd, command, title, active, tier, agent
         case inMode = "in_mode"
     }
+
+    // Custom decoder: `gtmux panes --json` OMITS empty fields (title/agent/cwd/in_mode
+    // via omitempty). The synthesized Codable init calls `decode` (not decodeIfPresent)
+    // for the non-optional properties, so a plain shell pane with no title/agent made
+    // the WHOLE array fail to decode → an empty "0 panes" browser. decodeIfPresent
+    // tolerates the omitted keys (defaults stand).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func s(_ k: CodingKeys, _ d: String = "") -> String { (try? c.decode(String.self, forKey: k)) ?? d }
+        func b(_ k: CodingKeys) -> Bool { (try? c.decode(Bool.self, forKey: k)) ?? false }
+        paneID = s(.paneID); loc = s(.loc); session = s(.session); window = s(.window); pane = s(.pane)
+        cwd = s(.cwd); command = s(.command); title = s(.title)
+        active = b(.active); inMode = b(.inMode)
+        tier = s(.tier, "plain"); agent = s(.agent)
+    }
 }
 
 /// PaneBrowserStore polls `gtmux panes --json` while the browser window is open,
