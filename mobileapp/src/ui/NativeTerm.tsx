@@ -22,7 +22,7 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {JumpToBottom} from './JumpToBottom';
 import {parseAnsi} from './ansi';
 import {cursorSpans, nativeFontFamily, normalizeGlyphs} from './term';
@@ -189,11 +189,25 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
     <Text style={[styles.mono, {fontSize, color: fg}]}>
       {rendered.map((spans, i) => (
         <Text key={i}>
-          {spans.map((s, j) => (
-            <Text key={j} style={{color: s.color, backgroundColor: s.bg, fontWeight: s.bold ? '700' : '400'}}>
-              {s.text}
-            </Text>
-          ))}
+          {spans.map((s, j) => {
+            // An OSC 8 hyperlink (tiered/terminal-hyperlink): a web link is underlined
+            // + tappable (opens in the browser); a non-web href (e.g. file:// image
+            // refs from the Mac) shows as clean text — it isn't openable on the phone.
+            const web = !!s.href && /^https?:\/\//i.test(s.href);
+            return (
+              <Text
+                key={j}
+                onPress={web ? () => Linking.openURL(s.href!) : undefined}
+                style={{
+                  color: s.color,
+                  backgroundColor: s.bg,
+                  fontWeight: s.bold ? '700' : '400',
+                  textDecorationLine: web ? 'underline' : 'none',
+                }}>
+                {s.text}
+              </Text>
+            );
+          })}
           {i < rendered.length - 1 ? '\n' : ''}
         </Text>
       ))}
