@@ -287,3 +287,42 @@ describe('parseAnsi — shape invariants', () => {
     });
   });
 });
+
+
+describe('parseAnsi - OSC 8 hyperlinks (terminal links)', () => {
+  const ESC = '\u001b';
+  const BEL = '\u0007';
+  // ESC ] 8 ; ; URI ST  <text>  ESC ] 8 ; ; ST
+  const link = (uri: string, text: string, st = BEL) =>
+    ESC + ']8;;' + uri + st + text + ESC + ']8;;' + st;
+
+  it('strips the OSC 8 markers and keeps only the link text (no garbage)', () => {
+    const line = parseAnsi('PR ' + link('https://x.dev/pull/593', '#593'))[0];
+    const joined = line.map(s => s.text).join('');
+    expect(joined).toBe('PR #593');
+    expect(joined).not.toContain(']8;');
+  });
+
+  it('carries the http(s) URI as the span href', () => {
+    const line = parseAnsi(link('https://x.dev/pull/593', '#593'))[0];
+    const hrefSpan = line.find(s => s.text.includes('#593'));
+    expect(hrefSpan?.href).toBe('https://x.dev/pull/593');
+  });
+
+  it('handles the ESC-backslash string terminator too', () => {
+    const line = parseAnsi(link('https://x.dev', 'go', ESC + '\\'))[0];
+    expect(line.map(s => s.text).join('')).toBe('go');
+  });
+
+  it('keeps file:// link text clean (href set, no garbage)', () => {
+    const line = parseAnsi(link('file:///Users/x/29.png', '[Image #29]'))[0];
+    const joined = line.map(s => s.text).join('');
+    expect(joined).toBe('[Image #29]');
+    expect(joined).not.toContain(']8;');
+  });
+
+  it('does not leak an unterminated / other OSC as text', () => {
+    const line = parseAnsi(ESC + ']0;a title' + BEL + 'hello')[0];
+    expect(line.map(s => s.text).join('')).toBe('hello');
+  });
+});

@@ -8,6 +8,7 @@ export interface Span {
   color: string;
   bold?: boolean;
   bg?: string; // background color — only emitted when opts.bg is set (terminal grid)
+  href?: string; // OSC 8 hyperlink target for this span's text (a terminal link)
 }
 export type AnsiLine = Span[];
 
@@ -110,10 +111,19 @@ function applySGR(style: Style, codes: number[], pal: string[], wantBg: boolean)
   return s;
 }
 
+// One tokenizer for the escape sequences that carry rendering meaning: an SGR
+// (color) sequence, or an OSC 8 hyperlink OPEN (ESC ] 8 ; params ; URI ST) /
+// CLOSE (ESC ] 8 ; ; ST). ST = BEL (\u0007) or ESC-backslash (\u001b\\). Group
+// 1 = SGR codes; group 2 = the OSC 8 URI (only that alternative sets it).
 // eslint-disable-next-line no-control-regex
-const SGR_RE = /\u001b\[([0-9;]*)m/g;
+const TOKEN =
+  /\u001b\[([0-9;]*)m|\u001b\]8;[^;]*;([^\u0007\u001b]*)(?:\u0007|\u001b\\)|\u001b\]8;;(?:\u0007|\u001b\\)/g;
+// Sequences with NO rendering effect that must be STRIPPED from displayed text
+// (else they leak as garbage): CSI cursor/erase moves, charset selects, any OTHER
+// OSC (title-set etc.), and a stray lone ESC/BEL left by a partial capture.
 // eslint-disable-next-line no-control-regex
-const OTHER_ESC = /\u001b\[[0-9;?]*[A-Za-z]|\u001b[()][AB0]/g;
+const STRIP =
+  /\u001b\[[0-9;?]*[A-Za-z]|\u001b[()][AB0]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?|[\u0007\u001b]/g;
 
 export function parseAnsi(input: string, opts?: AnsiOpts): AnsiLine[] {
   const pal = opts?.palette && opts.palette.length >= 16 ? opts.palette : PALETTE;
@@ -123,19 +133,27 @@ export function parseAnsi(input: string, opts?: AnsiOpts): AnsiLine[] {
   return input.split('\n').map(raw => {
     const spans: AnsiLine = [];
     let style: Style = {};
+    let href: string | undefined;
     let last = 0;
-    SGR_RE.lastIndex = 0;
+    TOKEN.lastIndex = 0;
     const push = (text: string) => {
-      text = text.replace(OTHER_ESC, '');
+      text = text.replace(STRIP, '');
       if (!text) return;
       const color = style.color ?? (style.dim ? dim : base);
-      spans.push({text, color, bold: style.bold, bg: wantBg ? style.bg : undefined});
+      spans.push({text, color, bold: style.bold, bg: wantBg ? style.bg : undefined, href});
     };
     let m: RegExpExecArray | null;
-    while ((m = SGR_RE.exec(raw))) {
+    while ((m = TOKEN.exec(raw))) {
       push(raw.slice(last, m.index));
-      const codes = m[1] === '' ? [0] : m[1].split(';').map(x => parseInt(x, 10) || 0);
-      style = applySGR(style, codes, pal, wantBg);
+      if (m[1] !== undefined) {
+        // SGR (color).
+        const codes = m[1] === '' ? [0] : m[1].split(';').map(x => parseInt(x, 10) || 0);
+        style = applySGR(style, codes, pal, wantBg);
+      } else if (m[2] !== undefined) {
+        href = m[2] || undefined; // OSC 8 OPEN - text until the close is a link
+      } else {
+        href = undefined; // OSC 8 CLOSE
+      }
       last = m.index + m[0].length;
     }
     push(raw.slice(last));
