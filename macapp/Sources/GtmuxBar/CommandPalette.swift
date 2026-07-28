@@ -13,6 +13,12 @@ final class KeyablePanel: NSPanel {
 final class PaletteModel: ObservableObject {
     @Published var query = ""
     @Published var selected = 0
+    // Set true ONLY just before a keyboard-driven selection change (↑↓ / filter reset),
+    // so the list scrolls that row into view. Hover-driven changes leave it false — a
+    // stationary cursor over a scrolling list re-selects the row sliding under it, and a
+    // scroll-to-selection would then yank the list back to the cursor (a nasty jitter
+    // the user hit). onChange reads this flag and clears it.
+    var followScroll = false
     private let store: AgentStore
     private var cancellable: AnyCancellable?
     init(store: AgentStore) {
@@ -28,6 +34,7 @@ final class PaletteModel: ObservableObject {
     func move(_ delta: Int) {
         let n = results.count
         guard n > 0 else { selected = 0; return }
+        followScroll = true // keyboard nav → scroll the row into view
         selected = (selected + delta + n) % n // wrap, command-palette style
     }
     func reset() { query = ""; selected = 0 }
@@ -194,7 +201,7 @@ struct CommandPaletteView: View {
             TextField(l10n.tr("Jump to agent", "跳到某个 agent"), text: $model.query)
                 .textFieldStyle(.plain).font(.system(size: 18)).foregroundStyle(fg)
                 .focused($searchFocused)
-                .onChange(of: model.query) { _, _ in model.selected = 0 }
+                .onChange(of: model.query) { _, _ in model.followScroll = true; model.selected = 0 }
             Text("⌘⌥G").font(.system(size: 11, design: .monospaced)).foregroundStyle(fg3)
                 .padding(.horizontal, 6).padding(.vertical, 2)
                 .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white.opacity(0.15), lineWidth: 0.5))
@@ -225,7 +232,12 @@ struct CommandPaletteView: View {
                 }
                 .frame(height: min(CGFloat(r.count) * 54 + 120, 380))
                 .onChange(of: model.selected) { _, s in
-                    if s < r.count { proxy.scrollTo(PItem.agent(r[s], s).id, anchor: .center) }
+                    // Scroll only for keyboard selection; hover must NOT move the list
+                    // (else scrolling fights the cursor). Clear the one-shot flag after.
+                    if model.followScroll, s < r.count {
+                        proxy.scrollTo(PItem.agent(r[s], s).id, anchor: .center)
+                    }
+                    model.followScroll = false
                 }
             }
         }
@@ -306,7 +318,7 @@ struct CommandPaletteView: View {
             }
         }
         .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(selected ? rowSel : .clear))
-        .onHover { if $0 { model.selected = i } }
+        .onHover { if $0 { model.followScroll = false; model.selected = i } }
     }
 
     // MARK: bottom bar

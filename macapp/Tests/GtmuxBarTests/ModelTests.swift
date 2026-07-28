@@ -269,6 +269,19 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(m.selected, 0)
     }
 
+    /// A keyboard move requests a scroll-into-view; a direct (hover-style) selection
+    /// does NOT — else a stationary cursor over a scrolling list re-selects the row
+    /// under it and the scroll yanks back to the cursor (the reported jitter).
+    func testPaletteFollowScrollOnlyOnKeyboardMove() {
+        let m = PaletteModel(store: store([("a", "idle"), ("b", "idle"), ("c", "idle")]))
+        XCTAssertFalse(m.followScroll)          // default: don't fight the mouse
+        m.move(1)
+        XCTAssertTrue(m.followScroll)           // keyboard nav → scroll the row into view
+        m.followScroll = false                  // (the view's onChange clears it after scrolling)
+        m.selected = 2                          // the hover path sets selected directly…
+        XCTAssertFalse(m.followScroll)          // …and never asks for a scroll
+    }
+
     // MARK: self-update — exit:0 self-heal (no stuck "Updating…" spinner)
 
     /// Within the grace window, keep waiting to be killed regardless of versions —
