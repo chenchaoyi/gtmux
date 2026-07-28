@@ -59,7 +59,7 @@ func TestPanesEndpoint(t *testing.T) {
 		t.Fatalf("no token = %d, want 401", rr.Code)
 	}
 }
-func (f *fakeDeps) Focus(id string) error             { f.focusCalls = append(f.focusCalls, id); return f.focusErr }
+func (f *fakeDeps) Focus(id string) error { f.focusCalls = append(f.focusCalls, id); return f.focusErr }
 
 // TestSendReturnsPaneSnapshot: POST /api/send echoes the post-send pane text +
 // cursor so the client renders the echo in one round-trip (no separate /api/pane).
