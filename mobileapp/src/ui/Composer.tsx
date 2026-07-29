@@ -47,6 +47,33 @@ import {demoInputHistory} from './demoData';
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
 // default assistant bar instead of stacking another sparse row above it).
 const ACCESSORY_ID = 'gtmux-composer-keys';
+
+type UploadFn = (uri: string, name: string, type: string, onProgress: (fraction: number) => void) => Promise<string | null>;
+
+// uploadAll uploads every staged attachment in order and returns the saved paths, or
+// null if ANY upload fails. Crucially it NEVER throws: a rejected upload (a synchronous
+// XHR/FormData error) is caught and mapped to null, exactly like a null result. That
+// lets the caller reset its `sending` flag unconditionally — without this, a thrown
+// upload escaped the send handler, `sending` stayed true, and the send box wedged
+// permanently (button disabled + every retry early-returns). Exported for testing.
+export async function uploadAll(
+  attachments: {id: string; uri: string; name: string; type: string}[],
+  onUpload: UploadFn,
+  onProgress: (id: string, fraction: number) => void,
+): Promise<string[] | null> {
+  const out: string[] = [];
+  for (const att of attachments) {
+    let path: string | null = null;
+    try {
+      path = await onUpload(att.uri, att.name, att.type, f => onProgress(att.id, f));
+    } catch {
+      return null;
+    }
+    if (!path) return null;
+    out.push(path);
+  }
+  return out;
+}
 const ACCENT = '#06B6D4';
 
 // A staged attachment — picked (and, for images, edited) but not yet uploaded. It
@@ -164,20 +191,18 @@ export function Composer({
       setSending(true);
       setSendError(null);
       setProgress({});
-      const uploaded: string[] = [];
-      for (const att of attachments) {
-        const path = await onUpload(att.uri, att.name, att.type, f =>
-          setProgress(p => ({...p, [att.id]: f})),
-        );
-        if (!path) {
-          setSending(false);
-          setSendError(lang === 'zh' ? '上传失败，点发送重试' : 'Upload failed — tap send to retry');
-          return; // keep text + attachments staged
-        }
-        uploaded.push(path);
+      // uploadAll NEVER throws (a rejected upload maps to null), so setSending(false)
+      // below ALWAYS runs. `sending` disables the send button + gates sendText, so if it
+      // ever stuck true the box would wedge forever — this is the robustness fix.
+      const uploaded = await uploadAll(attachments, onUpload, (id, f) =>
+        setProgress(p => ({...p, [id]: f})),
+      );
+      setSending(false);
+      if (!uploaded) {
+        setSendError(lang === 'zh' ? '上传失败，点发送重试' : 'Upload failed — tap send to retry');
+        return; // keep text + attachments staged for a retry
       }
       paths = uploaded;
-      setSending(false);
     }
 
     const parts: string[] = [];
