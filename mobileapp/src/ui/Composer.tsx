@@ -56,6 +56,14 @@ type UploadFn = (uri: string, name: string, type: string, onProgress: (fraction:
 // lets the caller reset its `sending` flag unconditionally — without this, a thrown
 // upload escaped the send handler, `sending` stayed true, and the send box wedged
 // permanently (button disabled + every retry early-returns). Exported for testing.
+// dropDoubleSubmit decides whether to drop a send as a duplicate. Only the Return key
+// (onSubmitEditing) needs this — iOS fires it twice with blurOnSubmit=false — so a
+// button/other send (fromSubmit=false) is NEVER dropped, even within the window. That's
+// the fix for legit rapid button sends being swallowed by a blanket time gate.
+export function dropDoubleSubmit(fromSubmit: boolean, now: number, lastAt: number, windowMs = 600): boolean {
+  return fromSubmit && now - lastAt < windowMs;
+}
+
 export async function uploadAll(
   attachments: {id: string; uri: string; name: string; type: string}[],
   onUpload: UploadFn,
@@ -167,9 +175,12 @@ export function Composer({
     setSnippets(list);
     saveSnippets(list);
   };
-  // Guard against a double submit: iOS fires onSubmitEditing twice with
-  // blurOnSubmit=false (notably after voice dictation), which sent the message
-  // twice. Drop a second submit within a short window.
+  // Double-submit guard: iOS fires onSubmitEditing TWICE with blurOnSubmit=false
+  // (notably after voice dictation) → the message was sent twice. But the ↑ button
+  // fires once per tap, so debouncing it too was WRONG: a legit rapid second message
+  // via the button (within 600ms of the last send) got silently dropped — the "text
+  // didn't send; tap Return a beat later and it goes" report. So the debounce is now
+  // scoped to the Return path only (see dropDoubleSubmit); the button never debounces.
   const lastSubmit = useRef(0);
   const send = (p: SendPayload) => {
     if (enabled && onSend) onSend(p);
@@ -177,13 +188,14 @@ export function Composer({
   // Send = upload every staged attachment (with progress), THEN send one message
   // combining the uploaded paths + the typed text. On an upload failure nothing is
   // cleared — the text + attachments stay staged and `sendError` invites a retry.
-  const sendText = async () => {
+  // `fromSubmit` = triggered by Return (onSubmitEditing); the ↑ button passes false.
+  const sendText = async (fromSubmit = false) => {
     if (sending) return;
     const body = text.trim();
     if (!body && attachments.length === 0) return;
     const now = Date.now();
-    if (now - lastSubmit.current < 600) return;
-    lastSubmit.current = now;
+    if (dropDoubleSubmit(fromSubmit, now, lastSubmit.current)) return;
+    if (fromSubmit) lastSubmit.current = now;
 
     let paths: string[] = [];
     if (attachments.length > 0) {
@@ -442,7 +454,7 @@ export function Composer({
         textAlignVertical="top"
         onContentSizeChange={e => setInputH(e.nativeEvent.contentSize.height)}
         returnKeyType={returnSends ? 'send' : 'default'}
-        onSubmitEditing={returnSends ? sendText : undefined}
+        onSubmitEditing={returnSends ? () => sendText(true) : undefined}
         blurOnSubmit={false}
         style={[
           styles.input,
@@ -465,7 +477,7 @@ export function Composer({
       <TouchableOpacity
         testID={TestIds.composer.send}
         accessibilityLabel={TestIds.composer.send}
-        onPress={sendText}
+        onPress={() => sendText(false)}
         disabled={!enabled || sending || !canSend}
         style={[styles.send, {backgroundColor: canSend ? ACCENT : pal.surface, borderColor: canSend ? ACCENT : pal.divider}]}>
         {sending ? (

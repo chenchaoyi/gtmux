@@ -1,4 +1,21 @@
-import {uploadAll} from './Composer';
+import {uploadAll, dropDoubleSubmit} from './Composer';
+
+// Pins the fix for the "plain text sometimes doesn't send; tap Return a beat later and
+// it goes" bug. The 600ms guard exists to drop iOS's DOUBLE onSubmitEditing fire — but it
+// was applied to ALL sends, so a legit rapid second message via the ↑ BUTTON (within
+// 600ms of the last send) got silently dropped. Now only the Return path is debounced.
+describe('dropDoubleSubmit — debounce the Return double-fire only, never the button', () => {
+  it('NEVER drops a button send (fromSubmit=false), even within the window', () => {
+    expect(dropDoubleSubmit(false, 1000, 900)).toBe(false); // 100ms after last → still sends
+    expect(dropDoubleSubmit(false, 1000, 1000)).toBe(false); // same instant → still sends
+  });
+  it('drops a Return re-fire within the window (the iOS duplicate onSubmitEditing)', () => {
+    expect(dropDoubleSubmit(true, 1000, 900)).toBe(true); // 100ms < 600 → the second fire
+  });
+  it('allows a Return send once the window has passed', () => {
+    expect(dropDoubleSubmit(true, 1000, 300)).toBe(false); // 700ms > 600 → a deliberate Return
+  });
+});
 
 // Pins the fix for the "input box didn't confirm → stuck forever" bug: the send box's
 // `sending` flag disables the send button + gates the send handler, so it MUST always
