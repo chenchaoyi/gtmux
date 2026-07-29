@@ -535,11 +535,12 @@ export function HQScreen({route, navigation}: any) {
               turns={turns}
               loading={!loaded}
               pendingPrompt={pending}
-              // Direction-based header: show on up-scroll / at the top, hide on
-              // down-scroll. atBottom looped (reaching the newest re-showed the header,
-              // bumping you off); atTop-only made it practically unreachable in a long
-              // chat. Up-flick to peek the header, down-scroll to reclaim the space.
-              onChrome={show => setCollapsed(!show)}
+              // Header shows at the live tail (newest), hides when you scroll up into
+              // history. The old loop (showing the header bumped you off the bottom →
+              // it re-hid → …) is broken in ChatView: it re-pins to the bottom when its
+              // viewport changes while at the tail, so atBottom stays true and the header
+              // stays put.
+              onLiveEdge={atBottom => setCollapsed(!atBottom)}
             />
           </View>
         )}
