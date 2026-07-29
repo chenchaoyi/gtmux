@@ -84,7 +84,10 @@ export ASC_KEY_PATH=$HOME/Downloads/AuthKey_XXXXXXXXXX.p8
    rebuild — run `bundle exec fastlane upload`.
 5. 🖥️ **Metadata + screenshots** — `cd mobileapp && bundle exec fastlane metadata`
    (needs screenshots staged first — see §5). Pushes en-US + zh-Hans copy +
-   screenshots; never auto-submits.
+   screenshots; never auto-submits. **THEN prune the duplicates deliver leaves:**
+   `bundle exec ruby scripts/asc-prune-dup-screenshots.rb` (see gotchas — the retry
+   dup happens every run). Update `metadata/*/release_notes.txt` ("What's New") for the
+   release first — don't ship the stale first-release copy.
    > **First version only:** deliver uploads the text, then crashes with
    > `No data` reading the not-yet-existing App Store review detail (a known
    > fastlane bug for a brand-new app's first version). The **text still lands** —
@@ -255,6 +258,17 @@ or a missing demo) vs "Binary Rejected".
   cosmetic `COCOAPODS x.y.z` stamp — revert just that line after), or leave the
   dirty lock alone. Sanity-check before the ~4-min build:
   `diff ios/Podfile.lock ios/Pods/Manifest.lock` must be empty.
+- **⚠️ `fastlane metadata` leaves DUPLICATE screenshots** (every run). deliver uploads
+  all shots, then verifies each is present, but ASC's media processing lags → some come
+  back "missing on App Store Connect" → deliver re-uploads them → ASC keeps BOTH (e.g.
+  `05.png` twice), even with `overwrite_screenshots: true`. After `fastlane metadata`,
+  ALWAYS prune: `bundle exec ruby scripts/asc-prune-dup-screenshots.rb` (keeps one of
+  each `01..NN`, deletes the rest — no re-upload, so no re-dup). Verify with the
+  `--list` flag. Also: a **500 from the ASC media endpoint** mid-run is transient — it
+  can leave the slot deleted-but-not-re-uploaded (0 shots); just rerun `fastlane metadata
+  skip_metadata:true` (screenshots only) then prune. And **`release_notes.txt` is the
+  "What's New"** — an UPDATE must not ship the first-release copy (a leftover "First
+  release of gtmux…" is wrong on a bump).
 - **On a set-up Mac the whole pipeline runs NON-INTERACTIVELY** (verify/release/
   metadata), no keychain prompt — the login keychain here is `no-timeout` and the
   Apple Distribution identity is present (`security find-identity -p codesigning`).
