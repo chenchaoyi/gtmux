@@ -95,10 +95,18 @@ export function HQScreen({route, navigation}: any) {
   // measured once for the height animation.
   const collapse = useRef(new Animated.Value(0)).current;
   const topHidden = useRef(false); // animate only on a real change
+  const lastFlip = useRef(0); // when the collapse last changed (for the anti-flip-flop lock)
   const [topH, setTopH] = useState(0);
   const setCollapsed = useCallback(
     (hide: boolean) => {
       if (hide === topHidden.current) return;
+      // Anti-flip-flop lock: collapsing the header grows the ChatView's viewport, which
+      // changes its own atBottom test → onLiveEdge can bounce back the other way and the
+      // header reverses mid-animation (the "two-stage / 卡涩" jank). Ignore a REVERSAL
+      // within a short window of the last flip; a genuine, settled change still lands.
+      const now = Date.now();
+      if (now - lastFlip.current < 400) return;
+      lastFlip.current = now;
       topHidden.current = hide;
       Animated.timing(collapse, {toValue: hide ? 1 : 0, duration: 200, useNativeDriver: false}).start();
     },
@@ -236,6 +244,7 @@ export function HQScreen({route, navigation}: any) {
   useEffect(() => {
     collapse.setValue(0);
     topHidden.current = false;
+    lastFlip.current = 0; // don't carry the anti-flip-flop lock across a zone switch
   }, [activeZone, collapse]);
 
   // Reading the feed marks it read; leaving it doesn't un-mark.
@@ -324,6 +333,10 @@ export function HQScreen({route, navigation}: any) {
             the expanded header showing everything. */}
         <View
           onLayout={e => {
+            // Re-measure only while SHOWN — feeding a new height into the interpolation
+            // mid-hide makes the collapse jump (a visible second stage). When shown
+            // again it re-syncs (fixes the assessment-grew clip).
+            if (topHidden.current) return;
             const h = e.nativeEvent.layout.height;
             if (h > 0 && Math.abs(h - topH) > 1) setTopH(h);
           }}>
