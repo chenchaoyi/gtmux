@@ -105,7 +105,7 @@ export function HQScreen({route, navigation}: any) {
       // header reverses mid-animation (the "two-stage / 卡涩" jank). Ignore a REVERSAL
       // within a short window of the last flip; a genuine, settled change still lands.
       const now = Date.now();
-      if (now - lastFlip.current < 400) return;
+      if (now - lastFlip.current < 250) return;
       lastFlip.current = now;
       topHidden.current = hide;
       Animated.timing(collapse, {toValue: hide ? 1 : 0, duration: 200, useNativeDriver: false}).start();
@@ -535,11 +535,11 @@ export function HQScreen({route, navigation}: any) {
               turns={turns}
               loading={!loaded}
               pendingPrompt={pending}
-              // Collapse on !atTop (NOT !atBottom): the header shows only at the very
-              // top and hides everywhere else — including the live tail. Driving it off
-              // atBottom bumped you off the newest message when the header re-appeared,
-              // so you scrolled back down, which re-collapsed it → an endless loop.
-              onScrollTop={atTop => setCollapsed(!atTop)}
+              // Direction-based header: show on up-scroll / at the top, hide on
+              // down-scroll. atBottom looped (reaching the newest re-showed the header,
+              // bumping you off); atTop-only made it practically unreachable in a long
+              // chat. Up-flick to peek the header, down-scroll to reclaim the space.
+              onChrome={show => setCollapsed(!show)}
             />
           </View>
         )}
