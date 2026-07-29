@@ -116,27 +116,28 @@ export function HQDisc({
   const pan = useRef(new Animated.ValueXY({x: bounds.current.maxX, y: bounds.current.maxY})).current;
   const posRef = useRef({x: bounds.current.maxX, y: bounds.current.maxY});
   const dragStart = useRef({x: 0, y: 0});
-  const [ready, setReady] = useState(false);
 
   // A tap opens HQ (or the explainer when not started); a real drag repositions.
   const onTap = () => (state === 'absent' ? setExplain(true) : onOpen());
 
+  // Load the saved position once and slide the disc to it. This drives the Animated
+  // value directly (setValue → the native transform, NO React state / re-render), so
+  // there's no async render gate to race — the disc renders immediately at the default
+  // and snaps to the saved spot when it loads. (An earlier `ready` gate returned null
+  // until this resolved, which raced in jest — flaky "import after teardown".)
   useEffect(() => {
     let alive = true;
     AsyncStorage.getItem(POS_KEY)
       .then(raw => {
-        if (!alive) return;
-        if (raw) {
-          try {
-            const p = JSON.parse(raw);
-            const c = clamp(p.x, p.y);
-            pan.setValue(c);
-            posRef.current = c;
-          } catch {}
-        }
-        setReady(true);
+        if (!alive || !raw) return;
+        try {
+          const p = JSON.parse(raw);
+          const c = clamp(p.x, p.y);
+          pan.setValue(c);
+          posRef.current = c;
+        } catch {}
       })
-      .catch(() => alive && setReady(true));
+      .catch(() => {});
     return () => {
       alive = false;
     };
@@ -169,8 +170,6 @@ export function HQDisc({
   // without re-creating the PanResponder.
   const onTapRef = useRef(onTap);
   onTapRef.current = onTap;
-
-  if (!ready) return null;
 
   return (
     <>
