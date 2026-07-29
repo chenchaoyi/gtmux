@@ -201,12 +201,18 @@ candidate by (topic, dedup key) into the right KB entry rather than appending a
 near-duplicate, and truncating the spool. When no HQ pane exists, no trigger SHALL be
 raised.
 
-#### Scenario: The periodic floor guarantees a pass on a quiet fleet
+#### Scenario: A weekly pass is due
 
-- **WHEN** the weekly/volume floor is reached with at least one notable event accrued and
-  the rate limit has elapsed
+- **WHEN** the time floor has elapsed since the last distill and at least one notable
+  event has accrued
 - **THEN** gtmux raises exactly one `distill` control record and advances the watermark
-  (the retained baseline)
+
+#### Scenario: A busy fleet distills before the log rotates
+
+- **WHEN** the event-volume floor is reached well before the weekly floor (a high-churn
+  period)
+- **THEN** the `distill` trigger fires on the volume floor, so the delta is distilled
+  before the size-bounded event log rotates it away
 
 #### Scenario: A density of closures triggers a distill (when the event-driven layer is built)
 

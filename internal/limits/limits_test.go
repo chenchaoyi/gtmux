@@ -5,6 +5,32 @@ import (
 	"time"
 )
 
+// Get must return the LAST GOOD cache (ok=true) when the command fails or yields no
+// windows, never a blank Report — otherwise a transient `/usage` hiccup silently blanks
+// the usage/limits surface (mobile + menu-bar) and drops HQ's plan-exhaustion warning.
+// This is the one orchestration path in Get that runAndParse/parse tests don't reach.
+func TestGetKeepsLastGoodCacheOnFailure(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // isolates state.Dir() → cachePath()
+	seed := Report{Windows: []Window{{Label: "week (all models)", PctUsed: 58}}, At: 1_000_000, Warn: ""}
+	save(seed)
+
+	now := time.Unix(2_000_000, 0) // far past the seed's TTL → force a refresh attempt
+
+	// Command exits non-zero → runAndParse errors → keep the seed, ok stays true.
+	if r, ok := Get(Config{Command: "false", TTLMin: 15}, true, now); !ok || len(r.Windows) != 1 || r.Windows[0].PctUsed != 58 {
+		t.Errorf("failing command: Get = (%+v, %v), want the seeded 58%% window with ok=true", r, ok)
+	}
+	// Command succeeds but prints nothing → 0 windows → also keep the seed (not blank).
+	if r, ok := Get(Config{Command: "true", TTLMin: 15}, true, now); !ok || len(r.Windows) != 1 {
+		t.Errorf("empty output: Get = (%+v, %v), want the seed held, not a blank report", r, ok)
+	}
+	// No cache at all + failing command → blank + ok=false (nothing to show, honestly).
+	t.Setenv("HOME", t.TempDir()) // fresh HOME → no cache
+	if r, ok := Get(Config{Command: "false", TTLMin: 15}, true, now); ok || len(r.Windows) != 0 {
+		t.Errorf("no cache + failure: Get = (%+v, %v), want empty + ok=false", r, ok)
+	}
+}
+
 const sample = `You are currently using your subscription to power your Claude Code usage
 
 Current session: 11% used · resets Jul 13 at 1:30am (Asia/Shanghai)

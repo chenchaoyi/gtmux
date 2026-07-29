@@ -71,7 +71,7 @@ saved. Three layers, cheapest → most thorough, plus a definition weld:
   (`~/.config/gtmux/hq/knowledge/.pending-distill.jsonl` or the state equivalent), each
   line carrying a dedup key + topic tag so distill merges instead of duplicating.
 - **Reuse, don't rebuild:** the distill watermark (`last-distill`), the `[CONTROL
-  gtmux:distill]` control-record pipeline (`internal/app/distill.go`,
+  gtmux:distill]` control-record pipeline (`internal/hq/distill.go`,
   `internal/hqfeed`), and the severity-tagged event ledger already exist — this change
   extends the distill *trigger conditions* and adds a spool; it does not re-plumb the
   timing loop or the feed.

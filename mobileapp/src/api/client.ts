@@ -48,7 +48,7 @@ export interface PairedDevice {
   lastSeen?: number;
 }
 
-// DigestRow mirrors internal/app digestRow (GET /api/digest) — the fleet's
+// DigestRow mirrors internal/radar DigestRow (GET /api/digest) — the fleet's
 // cognitive digest for the gtmux HQ command center.
 export interface DigestRow {
   pane_id?: string;
@@ -100,7 +100,8 @@ export interface HQEvent {
   severity?: string; // routine | notable | important
 }
 
-// UsageReport mirrors internal/app usageReport (GET /api/usage).
+// UsageReport mirrors internal/radar UsageReport (GET /api/usage); the limits/resource
+// sub-shapes come from internal/limits + internal/resource.
 export interface UsageWindow {
   label: string;
   pct_used: number;

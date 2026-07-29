@@ -37,6 +37,7 @@ import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {ChatView} from '../ui/ChatView';
+import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {
@@ -99,16 +100,16 @@ export function HQScreen({route, navigation}: any) {
   const [topH, setTopH] = useState(0);
   const setCollapsed = useCallback(
     (hide: boolean) => {
-      if (hide === topHidden.current) return;
-      // Anti-flip-flop lock: collapsing the header grows the ChatView's viewport, which
-      // changes its own atBottom test → onLiveEdge can bounce back the other way and the
-      // header reverses mid-animation (the "two-stage / 卡涩" jank). Ignore a REVERSAL
-      // within a short window of the last flip; a genuine, settled change still lands.
-      const now = Date.now();
-      if (now - lastFlip.current < 250) return;
-      lastFlip.current = now;
-      topHidden.current = hide;
-      Animated.timing(collapse, {toValue: hide ? 1 : 0, duration: 200, useNativeDriver: false}).start();
+      // The anti-flip-flop rule is the pure `collapseDecision` (ui/collapse, tested):
+      // collapsing the header grows the ChatView's viewport, which changes its own
+      // atBottom test → onLiveEdge can bounce back the other way and the header reverses
+      // mid-animation (the "two-stage / 卡涩" jank). A reversal within 250ms of the last
+      // flip is the echo and is ignored; a settled change still lands.
+      const d = collapseDecision({hidden: topHidden.current, lastFlip: lastFlip.current}, hide, Date.now());
+      if (!d.change) return;
+      lastFlip.current = d.lastFlip;
+      topHidden.current = d.hidden;
+      Animated.timing(collapse, {toValue: d.hidden ? 1 : 0, duration: 200, useNativeDriver: false}).start();
     },
     [collapse],
   );
