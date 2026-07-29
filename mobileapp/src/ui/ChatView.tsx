@@ -51,11 +51,12 @@ interface Props {
   // hung one, so the view always says which it is.
   workingSince?: number;
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
-  // Reports whether the scroll is at the TOP (oldest). Unlike atBottom, this is
-  // INDEPENDENT of the viewport height, so a host header that collapses on it can't
-  // create a feedback loop (collapsing changes the viewport → atBottom flips → the
-  // header bounces). The HQ console collapses its header on !atTop for exactly this.
-  onScrollTop?: (atTop: boolean) => void;
+  // Whether the host's collapsible chrome (e.g. the HQ header) should be SHOWN: true at
+  // the top or while scrolling UP, false while scrolling DOWN. DIRECTION-based, so: (a)
+  // reaching the live tail is a down-scroll → chrome stays hidden → no bump-loop (unlike
+  // atBottom), and (b) it's reachable with a small up-flick anywhere (unlike atTop-only,
+  // which sat at the far top of a long chat and never showed).
+  onChrome?: (show: boolean) => void;
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -106,18 +107,25 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, onScrollTop}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, onChrome}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
   const [atBottom, setAtBottom] = React.useState(true);
+  const lastY = React.useRef(0);
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     const b = contentSize.height - contentOffset.y - layoutMeasurement.height < 60;
     setAtBottom(b);
     onLiveEdge?.(b);
-    onScrollTop?.(contentOffset.y < 24);
+    // Direction-based chrome hint: show at the top or on an up-scroll, hide on a
+    // down-scroll. The 6px deadband ignores tiny jitters.
+    const y = contentOffset.y;
+    const dy = y - lastY.current;
+    lastY.current = y;
+    if (y < 24 || dy <= -6) onChrome?.(true);
+    else if (dy >= 6) onChrome?.(false);
   };
   const jumpToBottom = () => {
     scrollRef.current?.scrollToEnd({animated: true});
