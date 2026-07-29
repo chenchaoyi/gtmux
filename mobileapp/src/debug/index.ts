@@ -39,6 +39,10 @@ export const Debug = {
   seedServers: flag('SERVERS'), // JSON array of PairedMac to seed (pair-share UI tests)
   noPush: flag('NO_PUSH') === '1',
   logNet: flag('LOG_NET') === '1',
+  // SHOT_MODE hides the demo-data markers (the "DEMO · Sample data" banner + the DEMO
+  // chip) for clean App Store marketing captures. Only ever set by the screenshot
+  // harness — the shipped demo mode always shows the markers (App Review requires it).
+  shotMode: flag('SHOT_MODE') === '1',
 
   // Wipe the debug log (call once at startup when any logging is on).
   reset(): void {
