@@ -40,7 +40,7 @@ async function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string
   // load with a macrotask flush so `ready` is true before we assert — a single create
   // act doesn't reliably settle the promise → re-render chain (green locally, flaky in CI).
   await act(async () => {
-    await new Promise(r => setTimeout(r, 0));
+    await new Promise<void>(r => setTimeout(() => r(), 0));
   });
   trees.push(tree!);
   return tree!;
