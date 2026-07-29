@@ -173,26 +173,43 @@ screen for a built-in sample tour of the UI.
 
 ---
 
-## 5. 🖥️/🤖 Screenshots (iPhone-only for the first release)
+## 5. 🤖 Screenshots — a MARKETED set, generated (iPhone 6.9″ 1320×2868)
 
-Required: one iPhone set, **6.7″ 1290×2796** OR **6.9″ 1320×2868** (either
-covers modern iPhones), **3–10 images**. No iPad set needed (we ship iPhone-only).
+The store shots are **not raw captures** — they're a marketed set (bold caption +
+status accent dot + device frame on a branded gradient), so they SELL the value
+instead of just showing the UI. Two stages, both scripted; no keychain needed.
 
-Easiest source — the app's built-in **Demo mode** (no server needed):
+**(a) Raw captures from the committed e2e harness** (`e2e/__tests__/appstore-shots.test.ts`,
+DEMO mode, clean generic data). It drives the sim via Appium and `simctl io screenshot`,
+gated on `GTMUX_DEMO_SHOTS`. **Needs Node 22** — webdriverio/undici throws
+`UND_ERR_INVALID_ARG` on Node 26. `GTMUX_DEBUG_SHOT_MODE=1` (set by the harness) hides the
+demo markers (banner / DEMO chip / detail "sample data"), renders the real floating HQ
+**disc** (not the demo card), hides the "Pair your Mac" CTA, and — for the multi-Mac shot —
+seeds a `GTMUX_DEBUG_SERVERS` list so the Servers page shows several Macs (first one
+active = green dot). The sim's **system language must match** `GTMUX_SHOTS_LANG` (set it
+via the sim's `.GlobalPreferences.plist` `AppleLanguages` + reboot, and verify with a
+screenshot — a mismatch times out on the localized "See a demo" label).
 
 ```sh
-# Boot an iPhone 16 Pro Max (6.9") or 15 Pro Max (6.7") simulator, run the app,
-# tap "See a demo", then capture a few screens:
-xcrun simctl io booted screenshot ~/Desktop/gtmux-01.png
-# repeat for radar / detail / chat / diff / push views
+xcrun simctl boot "iPhone 17 Pro Max"        # a 6.9" device
+export PATH="$HOME/.nvm/versions/node/v22.22.0/bin:$PATH"   # Node 22, NOT 26
+export GTMUX_E2E_UDID=<booted udid>
+npm run e2e:build                            # sim build + fresh install (after any src change)
+GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en npm run test:e2e -- __tests__/appstore-shots
+# switch the sim to zh (AppleLanguages + reboot), then rerun with GTMUX_SHOTS_LANG=zh
+# → raw PNGs land in .e2e-artifacts/appstore/{en,zh}/ (01-radar / 02-terminal-approval / 03-hq / 04-servers)
 ```
 
-Drop the PNGs into `mobileapp/fastlane/screenshots/en-US/` (and `zh-Hans/` for a
-localized set — optional; en set is used for both if zh is absent). fastlane
-`metadata` uploads whatever is there.
+**(b) Composite into the marketed set** — `python3 docs/appstore/gen_screenshots.py`
+(headless Chrome; learns from `docs/marketing/gen.py` / Rodi). Wraps each raw capture in
+the caption card, and renders the two **OS-level** shots (a push with the 1·2·3 quick-reply,
+the Live Activity on the Lock Screen) as **faithful mockups** — Apple allows composed
+marketing images; a plain in-app capture can't show a banner / Lock Screen. Edit the
+`SHOTS` list to change copy/order. Outputs the numbered set straight into
+`fastlane/screenshots/{en-US,zh-Hans}/01.png…` — where `fastlane metadata` picks them up.
 
-> Ask Claude to drive the simulator's Demo mode and capture a clean 5-shot set if
-> you'd rather not do it by hand — no keychain needed for screenshots.
+Keep copy concrete + human (not marketing-boilerplate), and avoid the heavy Chinese
+em-dash `——` in short lines (formally correct, but reads stiff — prefer 顿号/逗号).
 
 ---
 
@@ -229,3 +246,21 @@ or a missing demo) vs "Binary Rejected".
 - **First archive + three targets:** if signing an extension fails headlessly,
   open `ios/GtmuxMobile.xcworkspace` in Xcode once to let it provision all three,
   then re-run `fastlane release`.
+- **⚠️ Do NOT `git checkout` a dirty `Podfile.lock` before archiving.** Device/e2e
+  builds leave `ios/Podfile.lock` dirty; reverting it for a "clean archive" desyncs
+  it from the installed `Pods/Manifest.lock`, and the archive dies ~1 min in with
+  *"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install'"*
+  (AFTER compiling + signing the extensions, so it looks like a signing failure but
+  isn't). Fix: `cd ios && bundle exec pod install` to resync (it may rewrite the
+  cosmetic `COCOAPODS x.y.z` stamp — revert just that line after), or leave the
+  dirty lock alone. Sanity-check before the ~4-min build:
+  `diff ios/Podfile.lock ios/Pods/Manifest.lock` must be empty.
+- **On a set-up Mac the whole pipeline runs NON-INTERACTIVELY** (verify/release/
+  metadata), no keychain prompt — the login keychain here is `no-timeout` and the
+  Apple Distribution identity is present (`security find-identity -p codesigning`).
+  An automation/agent shell may not auto-source `~/.zshrc`, so load the ASC key
+  first: `eval "$(grep -E '^export ASC_(KEY_ID|ISSUER_ID|KEY_PATH)=' ~/.zshrc)"` +
+  `export PATH="/opt/homebrew/opt/ruby/bin:$PATH"`, then `bundle exec fastlane
+  release` (~4 min: build_app ~90s + upload ~2 min). Only the ASC-web **Submit** is
+  truly you-only. (History: shipped 0.41.4 b3 and 0.43.6 b4 this way; build number
+  is automatic = latest ASC + 1.)
