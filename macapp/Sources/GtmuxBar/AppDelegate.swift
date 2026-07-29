@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = AppSettings.shared
     private var timer: Timer?
     private var tabOrderTimer: Timer?
+    private var resourceTimer: Timer?
     private var hotkey: GlobalHotkey?
     private var cancellables = Set<AnyCancellable>()
 
@@ -66,7 +67,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         renderIcon([])
 
         store.refresh()
+        store.refreshResource()
         resetTimer()
+
+        // The HQ medallion's resource state (menubar-hq-state-parity) polls the machine
+        // tier on a SLOW cadence — it changes on a hardware/human cadence, not per fast
+        // tick, and it's a second shell-out — so it rides its own 25s timer, not the
+        // agents refresh.
+        resourceTimer = Timer.scheduledTimer(withTimeInterval: 25, repeats: true) { [weak self] _ in
+            self?.store.refreshResource()
+        }
 
         // Quietly check for a newer release a few seconds after launch (throttled to
         // once/day inside Updater). If one exists, the popover shows a "new version"

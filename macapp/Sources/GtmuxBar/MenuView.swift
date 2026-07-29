@@ -165,22 +165,18 @@ struct MenuView: View {
                 .padding(.horizontal, 4)
 
                 if let hq = store.supervisor {
-                    // v2: HQ is ALWAYS watching — no idle/working badge, no agent name or
-                    // relative time (session language that doesn't apply). Its identity is
-                    // the brand grid + a FLEET PIP STRIP (a micro-radar: one color+shape pip
-                    // per worker, square = waiting). When HQ ITSELF needs you, the whole card
-                    // goes amber with a red subtitle — a card-level cue distinct from the red
-                    // agent-waiting badge (§12 v2).
-                    let hqWaiting = hq.state == .waiting
-                    // A WORKER (not HQ) waiting is the amber "worth-knowing" cue on the
-                    // subtitle (§12: "api 在等你拍板"); HQ ITSELF waiting supersedes it to
-                    // red + an amber card border. hqAmber matches the mockup gold, not the
-                    // more-orange errored token.
-                    let hqAmber = Color(hex: 0xF5B84A)
-                    let workerWaiting = store.agents.contains { !$0.isSupervisor && $0.state == .waiting }
+                    // The HQ MEDALLION (menubar-hq-state-parity): the same circular HQ
+                    // token as the mobile disc (MOBILE §17), whose ring + badge carry the
+                    // full six-state model. This supersedes the v2 "no badge" card — the
+                    // two surfaces now read the supervisor identically (DESIGN §12). The
+                    // ring is the at-a-glance layer; the intelligence headline is the
+                    // sentence. Red states (HQ waiting / a worker waiting / a resource
+                    // bottleneck) tint the headline too; the ring/badge says which.
+                    let state = store.hqState
+                    let attention = state == .hqCall || state == .needsYou || state == .resource
                     Button { onJump(hq) } label: {
                         HStack(spacing: 11) {
-                            GtmuxLogo(size: 22) // brand grid, NO status badge
+                            HQMedallion(state: state, waitingCount: store.workerWaiting, size: 30, badgeBG: p.bg)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("gtmux HQ")
                                     .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
@@ -188,9 +184,9 @@ struct MenuView: View {
                                 // chief-of-staff conclusion — names who needs you + how many
                                 // others are normal — REPLACING the anonymous fleet pips (pure
                                 // redundancy with the list) and the unreliable pane-title.
-                                Text(fleetHeadline(hqWaiting: hqWaiting))
+                                Text(fleetHeadline(hqWaiting: state == .hqCall))
                                     .font(.system(size: 11))
-                                    .foregroundStyle(hqWaiting ? Theme.Status.waiting : (workerWaiting ? hqAmber : p.fg2))
+                                    .foregroundStyle(attention ? Theme.Status.waiting : p.fg2)
                                     .lineLimit(1).truncationMode(.tail)
                             }
                             Spacer(minLength: 6)
@@ -199,8 +195,6 @@ struct MenuView: View {
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
                         .background(hqPanel(p))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(hqWaiting ? hqAmber : Color.clear, lineWidth: 1.5))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -208,7 +202,7 @@ struct MenuView: View {
                 } else {
                     Button { onAction(.startHQ) } label: {
                         HStack(spacing: 11) {
-                            GtmuxLogo(size: 26).opacity(0.45)
+                            HQMedallion(state: .absent, size: 30, badgeBG: p.bg)
                             Text(l10n.tr("HQ not running — click to start", "中控未运行 · 点击启动"))
                                 .font(.system(size: 11)).foregroundStyle(p.fg3)
                             Spacer(minLength: 6)

@@ -171,6 +171,49 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(secs.map { $0.status }, [.waiting, .working, .idle])
     }
 
+    // MARK: HQ medallion state resolver (parity with the mobile disc — MOBILE §17)
+
+    private func sup(_ status: String) -> Agent {
+        try! JSONDecoder().decode([Agent].self,
+            from: Data(#"[{"pane_id":"%h","session":"HQ","status":"\#(status)","role":"supervisor"}]"#.utf8))[0]
+    }
+
+    /// The resolver is the SAME six-state priority as the mobile `discState`: HQ's own
+    /// call > a worker waiting > a resource bottleneck > working > normal; absent when no
+    /// supervisor. A rename of a state or a reordering here silently desyncs the surfaces.
+    func testHQStateResolverPriority() {
+        XCTAssertEqual(AgentStore.hqState(supervisor: nil, waiting: 0, resourceCritical: false), .absent)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("waiting"), waiting: 3, resourceCritical: true), .hqCall)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 2, resourceCritical: true), .needsYou)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 0, resourceCritical: true), .resource)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("working"), waiting: 0, resourceCritical: false), .working)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 0, resourceCritical: false), .normal)
+    }
+
+    /// A soft "amber" resource tier must NOT redden the medallion — only "red" reaches
+    /// the resource state (低噪, matching the disc). Also pins the store's tier wiring.
+    func testHQStateSoftAmberStaysGreen() {
+        let s = AgentStore()
+        s.setForTesting([sup("idle")])
+        s.setTierForTesting("amber")
+        XCTAssertEqual(s.hqState, .normal)
+        s.setTierForTesting("red")
+        XCTAssertEqual(s.hqState, .resource)
+    }
+
+    /// workerWaiting (the `needsYou` driver) counts non-supervisor, non-native waiting
+    /// sessions only — a waiting HQ or a waiting native session must not inflate it.
+    func testWorkerWaitingExcludesSupervisorAndNative() {
+        let s = AgentStore()
+        s.setForTesting(try! JSONDecoder().decode([Agent].self, from: Data("""
+        [{"pane_id":"%h","status":"waiting","role":"supervisor"},
+         {"pane_id":"%w","status":"waiting"},
+         {"pane_id":"%n","status":"waiting","source":"native"}]
+        """.utf8)))
+        XCTAssertEqual(s.workerWaiting, 1)   // only %w
+        XCTAssertEqual(s.hqState, .hqCall)   // the waiting supervisor outranks the worker
+    }
+
     // The Shared-input allowlist (Preferences) renders from `shareablePanes`: real
     // tmux panes only (native/hook-less rows can't be typed into), ordered like the
     // radar (state rank → session title), and identified by the SAME `primary`

@@ -175,3 +175,66 @@ struct GtmuxLogo: View {
         RoundedRectangle(cornerRadius: cell * 0.28, style: .continuous).fill(color).frame(width: cell, height: cell)
     }
 }
+
+/// HQMedallion — the circular HQ identity token SHARED with the mobile HQ disc
+/// (MOBILE §17): the gtmux brand mark + an "HQ" wordmark inside a state RING, with a
+/// corner BADGE. This is the menu-bar's answer to the phone's floating disc — the same
+/// token as a fixed card avatar rather than a floating element. Ring/badge colors are
+/// the authoritative status palette (DESIGN §9 / `Theme.Status`); the medallion adds NO
+/// new colors. `badgeBG` is the card background it sits on, for the badge's cutout ring.
+struct HQMedallion: View {
+    let state: HQState
+    var waitingCount: Int = 0
+    var size: CGFloat = 30
+    var badgeBG: Color = .clear
+
+    var body: some View {
+        Circle()
+            .fill(Color.primary.opacity(0.04))
+            .overlay(Circle().strokeBorder(ringColor, lineWidth: 2))
+            .overlay(
+                VStack(spacing: 0) {
+                    GtmuxLogo(size: size * 0.42)
+                    Text("HQ")
+                        .font(.system(size: size * 0.24, weight: .heavy)).tracking(0.4)
+                        .foregroundStyle(.primary.opacity(0.82))
+                }
+            )
+            .frame(width: size, height: size)
+            .opacity(state == .absent ? 0.5 : 1)
+            .overlay(alignment: .topTrailing) { badge }
+    }
+
+    private var ringColor: Color {
+        switch state {
+        case .absent: return Theme.Status.none
+        case .working: return Theme.Status.working
+        case .normal: return Theme.Status.idle
+        case .hqCall, .needsYou, .resource: return Theme.Status.waiting // red = attention
+        }
+    }
+
+    // The corner badge disambiguates the red states: "!" (HQ itself) / count (a worker) /
+    // "⚠" (a resource bottleneck). U+FE0E forces the monochrome glyph, matching the disc.
+    private var badgeText: String? {
+        switch state {
+        case .hqCall: return "!"
+        case .needsYou: return "\(waitingCount)"
+        case .resource: return "\u{26A0}\u{FE0E}"
+        default: return nil
+        }
+    }
+
+    @ViewBuilder private var badge: some View {
+        if let text = badgeText {
+            Text(text)
+                .font(.system(size: 9, weight: .heavy))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 3)
+                .frame(minWidth: 15, minHeight: 15)
+                .background(Capsule().fill(Theme.Status.waiting))
+                .overlay(Capsule().strokeBorder(badgeBG, lineWidth: 1.5))
+                .offset(x: 5, y: -5)
+        }
+    }
+}

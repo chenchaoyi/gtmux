@@ -315,6 +315,12 @@ iPad 侧栏（`SplitScreen`）与 Demo 仍用 `HQCard`（浮窗不适合常驻�
 用量视图,不占「一眼看板」的圆盘。`resource.machine.tier` 由 Go `WarnTier` 产出(`amber`/`red`,normal 时
 省略),`disk_use_pct` 采**数据卷** `/System/Volumes/Data`(而非只读的 `/`,否则容量%严重偏低误导)。
 
+**跨屏识别令牌统一**（menubar-hq-state-parity）：菜单栏的 HQ 卡片头像现在也是**同一枚圆形 HQ 徽章**
+（brand + 「HQ」+ 状态环），用与本处 `discState` 完全相同的六态优先级(Swift 侧 `AgentStore.hqState`,
+resource 同样只在 red 档才红、软 amber 不红)。差异仅在容器:手机是**可拖动浮窗**、菜单栏是**卡片头像**
+(popover 是固定面板,不浮窗);且菜单栏 absent 态可直接 shell `gtmux hq`(手机是远端,只能弹说明)。改这边
+的状态模型/配色时,记得同步菜单栏 `HQMedallion` 与 DESIGN §12。
+
 三屏（菜单栏/手机/网页）同一心智：判断 + 该你拍板 + 对话，规模随屏放大。实现见 `HQDisc.tsx` /
 `HQScreen.tsx` + 纯逻辑 `hqZones.ts`。
 
