@@ -136,6 +136,13 @@ export function AppProvider({children}: {children: React.ReactNode}) {
           /* malformed seed — ignore */
         }
       }
+      // SHOT_MODE: mark the first seeded Mac active so its Servers-page row shows a green
+      // "connected" dot (the rest stay grey "saved") — the honest one-active-many-saved
+      // look, vs an all-grey "nothing connected" list. Capture-only. The harness lands on
+      // the radar first, then opens the Servers page via the server chip.
+      if (Debug.shotMode && act == null && svs.length > 0) {
+        act = svs[0].url;
+      }
       setServers(svs);
       setActiveUrl(act);
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);

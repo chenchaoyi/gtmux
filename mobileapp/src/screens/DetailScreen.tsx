@@ -22,6 +22,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Agent, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
@@ -510,14 +511,17 @@ export function DetailView({
           {demo ? (
             // Demo tour: no real connection — a persistent DEMO chip so canned
             // output is never mistaken for a live Mac (research: label follows you in).
-            <View style={styles.live}>
-              <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+            // Hidden in SHOT_MODE (clean App Store captures); the shipped demo shows it.
+            Debug.shotMode ? null : (
+              <View style={styles.live}>
+                <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
+                  <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+                </View>
+                <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
+                  {lang === 'zh' ? ' 样例数据' : ' sample data'}
+                </Text>
               </View>
-              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
-                {lang === 'zh' ? ' 样例数据' : ' sample data'}
-              </Text>
-            </View>
+            )
           ) : isWide ? (
             <View style={styles.live} />
           ) : (
