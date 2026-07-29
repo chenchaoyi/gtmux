@@ -10,6 +10,18 @@ const mk = (o: Partial<Agent>): Agent =>
   ({agent: 'Claude Code', source: 'tmux', status: 'idle', ...o} as Agent);
 const sup = (o: Partial<Agent> = {}): Agent => mk({role: 'supervisor', status: 'idle', ...o});
 
+// HQDisc loads its persisted position from AsyncStorage (a microtask) on mount and
+// gates its first render on it. Track every tree and UNMOUNT it after each test — an
+// un-unmounted component's pending promise resolves after the Jest environment tears
+// down, which throws "import after teardown" (flaky, only bit in CI).
+const trees: renderer.ReactTestRenderer[] = [];
+afterEach(async () => {
+  await act(async () => {
+    trees.forEach(t => t.unmount());
+  });
+  trees.length = 0;
+});
+
 async function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string; onOpen?: () => void}) {
   let tree: renderer.ReactTestRenderer;
   await act(async () => {
@@ -24,6 +36,7 @@ async function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string
       />,
     );
   });
+  trees.push(tree!);
   return tree!;
 }
 
