@@ -51,12 +51,6 @@ interface Props {
   // hung one, so the view always says which it is.
   workingSince?: number;
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
-  // Whether the host's collapsible chrome (e.g. the HQ header) should be SHOWN: true at
-  // the top or while scrolling UP, false while scrolling DOWN. DIRECTION-based, so: (a)
-  // reaching the live tail is a down-scroll → chrome stays hidden → no bump-loop (unlike
-  // atBottom), and (b) it's reachable with a small up-flick anywhere (unlike atTop-only,
-  // which sat at the far top of a long chat and never showed).
-  onChrome?: (show: boolean) => void;
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -107,28 +101,33 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, onChrome}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, workingSince, onLiveEdge}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
   const [atBottom, setAtBottom] = React.useState(true);
-  const lastY = React.useRef(0);
+  // atBottom as a ref too, so the layout-pin (below) reads the live value without a
+  // stale closure. The host chrome (HQ header) shows at the live tail via onLiveEdge.
+  const atBottomRef = React.useRef(true);
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     const b = contentSize.height - contentOffset.y - layoutMeasurement.height < 60;
+    atBottomRef.current = b;
     setAtBottom(b);
     onLiveEdge?.(b);
-    // Direction-based chrome hint: show at the top or on an up-scroll, hide on a
-    // down-scroll. The 6px deadband ignores tiny jitters.
-    const y = contentOffset.y;
-    const dy = y - lastY.current;
-    lastY.current = y;
-    if (y < 24 || dy <= -6) onChrome?.(true);
-    else if (dy >= 6) onChrome?.(false);
+  };
+  // When the VIEWPORT changes while we're at the tail — e.g. a host header collapsing
+  // in/out above us shrinks/grows this ScrollView — re-pin to the bottom. Without this,
+  // showing the header at the tail pushed the newest up, atBottom flipped false, the
+  // header hid, the viewport grew back… an endless loop. Pinning keeps atBottom true so
+  // the header stays put at the live tail.
+  const onBodyLayout = () => {
+    if (atBottomRef.current) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
   };
   const jumpToBottom = () => {
     scrollRef.current?.scrollToEnd({animated: true});
+    atBottomRef.current = true;
     setAtBottom(true);
     onLiveEdge?.(true);
   };
@@ -181,6 +180,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // Jump to the latest turn whenever the history grows (kept in sync by the parent).
   React.useEffect(() => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+    atBottomRef.current = true;
     setAtBottom(true);
   }, [turns.length]);
 
@@ -243,6 +243,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       style={styles.body}
       contentContainerStyle={styles.content}
       onScroll={onScroll}
+      onLayout={onBodyLayout}
       scrollEventThrottle={16}>
       {/* current-state row: avatar + agent + status dot */}
       <View style={styles.stateRow}>
