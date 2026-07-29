@@ -19,6 +19,7 @@ import {Debug} from '../debug';
 import {useApp} from '../state/AppContext';
 import {DemoAgentsProvider} from '../state/AgentsContext';
 import {HQCard} from '../ui/HQCard';
+import {HQDisc} from '../ui/HQDisc';
 import {SectionList} from '../ui/SectionList';
 import {StatusColor} from '../ui/theme';
 import {sampleAgents} from '../ui/demoData';
@@ -58,7 +59,10 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
           </Text>
         </View>
       )}
-      {hq && (
+      {/* The shipped demo keeps the HQ CARD (MOBILE §17); App Store SHOT_MODE renders the
+          real floating DISC instead (rendered as an overlay below), so the capture matches
+          what a real user's radar shows. */}
+      {hq && !Debug.shotMode && (
         <View style={styles.hqWrap}>
           <HQCard hq={hq} agents={agents} pal={pal} lang={lang} onPress={() => setShowHQ(true)} />
         </View>
@@ -109,13 +113,23 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
             ListHeaderComponent={Header}
           />
 
-          <TouchableOpacity
-            style={[styles.cta, {backgroundColor: StatusColor.working}]}
-            onPress={onPair}
-            accessibilityRole="button"
-            accessibilityLabel={lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}>
-            <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}</Text>
-          </TouchableOpacity>
+          {/* The "Pair your Mac" CTA is a demo affordance the real radar doesn't have —
+              hidden in SHOT_MODE so the capture reads like a real paired radar. */}
+          {!Debug.shotMode && (
+            <TouchableOpacity
+              style={[styles.cta, {backgroundColor: StatusColor.working}]}
+              onPress={onPair}
+              accessibilityRole="button"
+              accessibilityLabel={lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}>
+              <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* SHOT_MODE: the real floating HQ disc over the demo radar, so the App Store
+              capture shows the current UI (not the demo's HQ card). */}
+          {hq && Debug.shotMode && (
+            <HQDisc hq={hq} agents={agents} pal={pal} lang={lang} onOpen={() => setShowHQ(true)} />
+          )}
         </SafeAreaView>
       )}
     </DemoAgentsProvider>

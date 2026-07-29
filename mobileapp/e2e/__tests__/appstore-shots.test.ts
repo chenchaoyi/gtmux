@@ -47,10 +47,10 @@ gated('app store demo shots', () => {
     await demo.waitForDisplayed({timeout: 25_000});
     await demo.click();
 
-    // 1) Demo radar — the HQ card (intelligence headline) + the fleet in the status
-    //    language. The HQ card confirms the demo radar rendered.
-    const hqCard = driver.$('~radar-hq-card');
-    await hqCard.waitForDisplayed({timeout: 20_000});
+    // 1) Demo radar — the fleet in the status language + the floating HQ DISC (SHOT_MODE
+    //    renders the real disc, not the demo's HQ card). The disc confirms the radar rendered.
+    const hqDisc = driver.$('~radar-hq-disc');
+    await hqDisc.waitForDisplayed({timeout: 20_000});
     await settle(1400); // let icons + rows settle
     shot('01-radar');
 
@@ -65,16 +65,36 @@ gated('app store demo shots', () => {
     shot('02-terminal-approval');
 
     await driver.$(`~${TestIds.detail.back}`).click();
-    await hqCard.waitForDisplayed({timeout: 10_000});
+    await hqDisc.waitForDisplayed({timeout: 10_000});
 
     // 3) HQ command page — the chief-of-staff differentiator: the assessment line +
     //    the your-call / activity / console zones (hq-command-page removed the old fleet
-    //    board). Captured last so we never need its (untested) back control.
-    await hqCard.click();
+    //    board). Tapping the disc opens the real HQScreen.
+    await hqDisc.click();
     await settle(1800);
     shot('03-hq');
 
+    // 4) Servers — the multi-Mac story: one phone managing agents across several Macs
+    //    (own Macs full-control + a scoped guest connection). Seeded via GTMUX_DEBUG_SERVERS
+    //    (no active → the app lands on the two-track Servers page); SHOT_MODE greens the
+    //    first row's connected dot.
+    const servers = JSON.stringify([
+      {url: 'ccy-mbp.local:8765', token: 'demo', name: 'MacBook Pro'},
+      {url: 'studio.local:8765', token: 'demo', name: 'Mac Studio'},
+      {url: 'mac-mini.local:8765', token: 'demo', name: 'Office mini'},
+      {url: 'ana-mac.local:8765', token: 'demo', name: "Ana's Mac", scope: 'guest'},
+    ]);
+    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_SERVERS: servers});
+    // The first seeded Mac is active, so the app opens on its radar — hop to the Servers
+    // page via the header's server chip (the two-track My-Macs / Guests list).
+    const chip = driver.$(`~${TestIds.radar.serverChip}`);
+    await chip.waitForDisplayed({timeout: 15_000});
+    await chip.click();
+    await driver.$(`~${TestIds.servers.screen}`).waitForDisplayed({timeout: 15_000});
+    await settle(900);
+    shot('04-servers');
+
     // eslint-disable-next-line no-console
-    console.log(`[appstore-shots] wrote 01-radar / 02-terminal-approval / 03-hq to ${OUT}`);
+    console.log(`[appstore-shots] wrote 01-radar / 02-terminal-approval / 03-hq / 04-servers to ${OUT}`);
   });
 });
