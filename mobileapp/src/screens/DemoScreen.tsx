@@ -15,6 +15,7 @@ import React, {useMemo, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent, SectionKey} from '../api/types';
+import {Debug} from '../debug';
 import {useApp} from '../state/AppContext';
 import {DemoAgentsProvider} from '../state/AgentsContext';
 import {HQCard} from '../ui/HQCard';
@@ -45,14 +46,18 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
 
   const Header = (
     <View>
-      <View style={styles.banner}>
-        <View style={[styles.pill, {borderColor: StatusColor.working}]}>
-          <Text style={[styles.pillText, {color: StatusColor.working}]}>DEMO</Text>
+      {/* The demo-data banner is hidden in SHOT_MODE (clean App Store captures) — it is
+          always shown in the shipped demo mode, which App Review requires. */}
+      {!Debug.shotMode && (
+        <View style={styles.banner}>
+          <View style={[styles.pill, {borderColor: StatusColor.working}]}>
+            <Text style={[styles.pillText, {color: StatusColor.working}]}>DEMO</Text>
+          </View>
+          <Text style={[styles.bannerText, {color: pal.fg2}]}>
+            {lang === 'zh' ? '样例数据 —— 不是真的 Mac。点任意一行进去看看。' : 'Sample data — not a real Mac. Tap any row to explore.'}
+          </Text>
         </View>
-        <Text style={[styles.bannerText, {color: pal.fg2}]}>
-          {lang === 'zh' ? '样例数据 —— 不是真的 Mac。点任意一行进去看看。' : 'Sample data — not a real Mac. Tap any row to explore.'}
-        </Text>
-      </View>
+      )}
       {hq && (
         <View style={styles.hqWrap}>
           <HQCard hq={hq} agents={agents} pal={pal} lang={lang} onPress={() => setShowHQ(true)} />

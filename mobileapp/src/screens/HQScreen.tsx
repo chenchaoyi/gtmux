@@ -30,6 +30,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent} from '../api/types';
+import {Debug} from '../debug';
 import {DigestRow, HQBoard, HQEvent, SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
@@ -347,7 +348,7 @@ export function HQScreen({route, navigation}: any) {
             </TouchableOpacity>
             <View style={styles.titleRow}>
               <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
-              {demo && (
+              {demo && !Debug.shotMode && (
                 <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
                   <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
                 </View>

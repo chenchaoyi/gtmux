@@ -41,7 +41,7 @@ gated('app store demo shots', () => {
     const driver = getDriver();
     // No pairing flags → the app opens on Servers and auto-presents the pairing
     // sheet with the "See a demo" card.
-    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1'});
+    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1'});
 
     const demo = driver.$(`~${DEMO_LABEL}`);
     await demo.waitForDisplayed({timeout: 25_000});
