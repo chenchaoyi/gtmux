@@ -196,7 +196,7 @@ export function HQDisc({
         <View
           testID="radar-hq-disc-ring"
           style={[styles.disc, {backgroundColor: pal.surface, borderColor: ring, opacity: state === 'absent' ? 0.62 : 1}]}>
-          <BrandMark size={16} neutral={pal.fg2} />
+          <BrandMark size={26} neutral={pal.fg2} />
           <Text style={[styles.hq, {color: pal.fg}]} allowFontScaling={false}>
             HQ
           </Text>
