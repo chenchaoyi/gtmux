@@ -10,21 +10,22 @@ const mk = (o: Partial<Agent>): Agent =>
   ({agent: 'Claude Code', source: 'tmux', status: 'idle', ...o} as Agent);
 const sup = (o: Partial<Agent> = {}): Agent => mk({role: 'supervisor', status: 'idle', ...o});
 
-// HQDisc loads its persisted position from AsyncStorage (a microtask) on mount and
-// gates its first render on it. Track every tree and UNMOUNT it after each test — an
-// un-unmounted component's pending promise resolves after the Jest environment tears
-// down, which throws "import after teardown" (flaky, only bit in CI).
+// SYNCHRONOUS render + unmount only. HQDisc renders immediately (no async gate), and
+// its AsyncStorage position load is fire-and-forget (setValue on the Animated value,
+// never a React state update), so there is nothing to await — using async act() here
+// hung under CI timing. Unmount each tree after the test so the pending getItem promise
+// (guarded by the effect's `alive` flag) can't touch a torn-down module.
 const trees: renderer.ReactTestRenderer[] = [];
-afterEach(async () => {
-  await act(async () => {
+afterEach(() => {
+  act(() => {
     trees.forEach(t => t.unmount());
   });
   trees.length = 0;
 });
 
-async function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string; onOpen?: () => void}) {
+function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string; onOpen?: () => void}) {
   let tree: renderer.ReactTestRenderer;
-  await act(async () => {
+  act(() => {
     tree = renderer.create(
       <HQDisc
         hq={opts.hq}
