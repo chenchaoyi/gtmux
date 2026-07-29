@@ -1,66 +1,106 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {StyleSheet} from 'react-native';
-import {HQDisc} from './HQDisc';
+import {HQDisc, discState} from './HQDisc';
 import {Agent} from '../api/types';
-import {ERRORED_COLOR, StatusColor, paletteFor} from './theme';
+import {StatusColor, paletteFor} from './theme';
 
 const pal = paletteFor('dark');
 const mk = (o: Partial<Agent>): Agent =>
   ({agent: 'Claude Code', source: 'tmux', status: 'idle', ...o} as Agent);
+const sup = (o: Partial<Agent> = {}): Agent => mk({role: 'supervisor', status: 'idle', ...o});
 
-// HQDisc gates its first render on the persisted position loading (AsyncStorage, a
-// microtask), so the render must be flushed with an async act.
-async function render(hq: Agent, agents: Agent[], onPress: () => void = () => {}) {
-  let tree: renderer.ReactTestRenderer;
-  await act(async () => {
-    tree = renderer.create(<HQDisc hq={hq} agents={agents} pal={pal} lang="en" onPress={onPress} />);
+// SYNCHRONOUS render + unmount only. HQDisc renders immediately (no async gate), and
+// its AsyncStorage position load is fire-and-forget (setValue on the Animated value,
+// never a React state update), so there is nothing to await — using async act() here
+// hung under CI timing. Unmount each tree after the test so the pending getItem promise
+// (guarded by the effect's `alive` flag) can't touch a torn-down module.
+const trees: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  act(() => {
+    trees.forEach(t => t.unmount());
   });
+  trees.length = 0;
+});
+
+function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string; onOpen?: () => void}) {
+  let tree: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <HQDisc
+        hq={opts.hq}
+        agents={opts.agents ?? []}
+        pal={pal}
+        lang="en"
+        resourceWarn={opts.resourceWarn}
+        onOpen={opts.onOpen ?? (() => {})}
+      />,
+    );
+  });
+  trees.push(tree!);
   return tree!;
 }
 
-// The ring border color encodes the fleet state (铁律 color = status).
 const ringColor = (tree: renderer.ReactTestRenderer): string =>
   StyleSheet.flatten(tree.root.findByProps({testID: 'radar-hq-disc-ring'}).props.style).borderColor;
-
-// The needs-you badge text, or null when the disc is quiet.
 const badgeText = (tree: renderer.ReactTestRenderer): string | null => {
   const texts = tree.root.findAllByType('Text' as any).map(n => n.props.children);
-  const hit = texts.find(c => c === '!' || (typeof c === 'string' && /^\d+$/.test(c)));
+  const hit = texts.find(c => c === '!' || c === '⚠' || c === '?' || (typeof c === 'string' && /^\d+$/.test(c)));
   return (hit as string) ?? null;
 };
 
-describe('HQDisc ring + badge', () => {
+describe('discState (priority-ordered)', () => {
+  it('resolves each state by priority', () => {
+    expect(discState(undefined, 0, false)).toBe('absent'); // no HQ wins over everything
+    expect(discState(sup({status: 'waiting'}), 3, true)).toBe('hqCall'); // HQ's own call is top
+    expect(discState(sup({status: 'idle'}), 2, true)).toBe('needsYou'); // workers outrank resource
+    expect(discState(sup({status: 'idle'}), 0, true)).toBe('resource');
+    expect(discState(sup({status: 'working'}), 0, false)).toBe('working');
+    expect(discState(sup({status: 'idle'}), 0, false)).toBe('normal');
+  });
+});
+
+describe('HQDisc ring + badge per state', () => {
+  it('not started (no HQ) → grey ring + "?" + explainer affordance', async () => {
+    const tree = await render({hq: undefined, agents: [mk({status: 'idle'})]});
+    expect(ringColor(tree)).toBe(pal.fg3);
+    expect(badgeText(tree)).toBe('?');
+  });
+
   it('all normal → green ring, no badge', async () => {
-    const tree = await render(mk({role: 'supervisor', status: 'idle'}), [mk({status: 'idle'}), mk({status: 'working'})]);
+    const tree = await render({hq: sup(), agents: [mk({status: 'idle'}), mk({status: 'working'})]});
     expect(ringColor(tree)).toBe(StatusColor.idle);
     expect(badgeText(tree)).toBeNull();
   });
 
-  it('a worker needs you → amber ring + count badge', async () => {
-    const tree = await render(mk({role: 'supervisor', status: 'idle'}), [
-      mk({status: 'waiting'}),
-      mk({status: 'waiting'}),
-      mk({status: 'idle'}),
-    ]);
-    expect(ringColor(tree)).toBe(ERRORED_COLOR);
+  it('HQ working → cyan ring', async () => {
+    const tree = await render({hq: sup({status: 'working'}), agents: [mk({status: 'idle'})]});
+    expect(ringColor(tree)).toBe(StatusColor.working);
+    expect(badgeText(tree)).toBeNull();
+  });
+
+  it('a worker needs you → red ring + count badge', async () => {
+    const tree = await render({hq: sup(), agents: [mk({status: 'waiting'}), mk({status: 'waiting'}), mk({status: 'idle'})]});
+    expect(ringColor(tree)).toBe(StatusColor.waiting);
     expect(badgeText(tree)).toBe('2');
   });
 
-  it('HQ itself needs you → red ring + "!" badge (its own call outranks a worker)', async () => {
-    const tree = await render(mk({role: 'supervisor', status: 'waiting'}), [mk({status: 'waiting'})]);
+  it('resource bottleneck → red ring + ⚠ (when nothing needs a decision)', async () => {
+    const tree = await render({hq: sup(), agents: [mk({status: 'idle'})], resourceWarn: 'disk 3% free'});
+    expect(ringColor(tree)).toBe(StatusColor.waiting);
+    expect(badgeText(tree)).toBe('⚠');
+  });
+
+  it('HQ itself needs you → red ring + "!" (outranks a worker + resource)', async () => {
+    const tree = await render({hq: sup({status: 'waiting'}), agents: [mk({status: 'waiting'})], resourceWarn: 'x'});
     expect(ringColor(tree)).toBe(StatusColor.waiting);
     expect(badgeText(tree)).toBe('!');
   });
 
-  it('shows the HQ wordmark so it points at HQ, not just the logo', async () => {
-    const tree = await render(mk({role: 'supervisor', status: 'idle'}), [mk({status: 'idle'})]);
+  it('shows the HQ wordmark + speaks the state via the accessibility label', async () => {
+    const tree = await render({hq: sup(), agents: [mk({status: 'idle'})]});
     const texts = tree.root.findAllByType('Text' as any).map(n => n.props.children);
     expect(texts).toContain('HQ');
-  });
-
-  it('speaks the intelligence headline via the accessibility label', async () => {
-    const tree = await render(mk({role: 'supervisor', status: 'idle'}), [mk({status: 'idle'})]);
     const label = tree.root.findByProps({testID: 'radar-hq-disc'}).props.accessibilityLabel;
     expect(label).toContain('gtmux HQ');
     expect(label).toContain('all normal');
