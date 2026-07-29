@@ -535,7 +535,11 @@ export function HQScreen({route, navigation}: any) {
               turns={turns}
               loading={!loaded}
               pendingPrompt={pending}
-              onLiveEdge={atBottom => setCollapsed(!atBottom)}
+              // Collapse on !atTop (NOT !atBottom): the header shows only at the very
+              // top and hides everywhere else — including the live tail. Driving it off
+              // atBottom bumped you off the newest message when the header re-appeared,
+              // so you scrolled back down, which re-collapsed it → an endless loop.
+              onScrollTop={atTop => setCollapsed(!atTop)}
             />
           </View>
         )}
