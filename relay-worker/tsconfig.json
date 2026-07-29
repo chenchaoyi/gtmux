@@ -4,5 +4,7 @@
     "lib": ["ES2022"], "types": ["@cloudflare/workers-types"],
     "strict": true, "noEmit": true, "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "//exclude": "test files import node:test/node:assert (no @types/node here); they run via `npm test` (node --test, type-stripped), not tsc.",
+  "exclude": ["src/**/*.test.ts"]
 }

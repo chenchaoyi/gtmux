@@ -89,42 +89,7 @@ export default {
       return json({error: 'apns', status: lr.status, detail: d}, 502);
     }
 
-    const aps: Record<string, unknown> = {};
-    if (intent.silent) {
-      // Badge/dismiss sync: no alert/sound — just content-available + the absolute
-      // badge, so a second (offline-until-now) phone clears its red dot.
-      aps['content-available'] = 1;
-    } else {
-      const alert: Record<string, unknown> = {title: intent.title ?? '', body: intent.body ?? ''};
-      // subtitle = which Mac (multi-server): the bold line between title and body.
-      if (intent.subtitle) alert.subtitle = intent.subtitle;
-      aps.alert = alert;
-      aps.sound = 'default';
-      // mutable-content wakes the app's Notification Service Extension, which
-      // attaches a per-kind status badge (red stop / green ✓) to the banner.
-      aps['mutable-content'] = 1;
-      // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
-      // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
-      if (intent.kind === 'waiting') aps.category = 'AGENT_WAITING';
-    }
-    if (typeof intent.badge === 'number') aps.badge = intent.badge;
-    const payload = JSON.stringify({
-      aps,
-      pane: intent.pane ?? '',
-      kind: intent.kind ?? '',
-      // top-level (readable on tap) so the app can route to the RIGHT server; same
-      // value as aps.alert.subtitle, which is display-only.
-      server: intent.subtitle ?? '',
-    });
-    const headers: Record<string, string> = {
-      authorization: 'bearer ' + jwt,
-      'apns-topic': env.APNS_TOPIC,
-      // A silent push must be a low-priority background type or APNs throttles it.
-      'apns-push-type': intent.silent ? 'background' : 'alert',
-      'content-type': 'application/json',
-    };
-    if (intent.silent) headers['apns-priority'] = '5';
-    if (intent.collapseId) headers['apns-collapse-id'] = intent.collapseId;
+    const {payload, headers} = buildApnsRequest(intent, jwt, env.APNS_TOPIC);
     const r = await fetch(base + '/3/device/' + intent.token, {
       method: 'POST',
       headers,
@@ -135,6 +100,56 @@ export default {
     return json({error: 'apns', status: r.status, detail}, 502);
   },
 };
+
+// buildApnsRequest builds the {payload, headers} for a standard alert/silent push.
+// This payload SHAPE is a cross-runtime contract that MUST stay in sync with the Go
+// reference impl relay/apns.go (per CLAUDE.md's deploy table). It is pure (no network,
+// no clock, no env beyond the injected topic) so index.test.ts can pin it against a
+// golden fixture — the only automated guard that a shape edit here doesn't silently
+// diverge from apns.go / the app's expectations. `jwt` and `topic` are injected.
+export function buildApnsRequest(
+  intent: PushIntent,
+  jwt: string,
+  topic: string,
+): {payload: string; headers: Record<string, string>} {
+  const aps: Record<string, unknown> = {};
+  if (intent.silent) {
+    // Badge/dismiss sync: no alert/sound — just content-available + the absolute
+    // badge, so a second (offline-until-now) phone clears its red dot.
+    aps['content-available'] = 1;
+  } else {
+    const alert: Record<string, unknown> = {title: intent.title ?? '', body: intent.body ?? ''};
+    // subtitle = which Mac (multi-server): the bold line between title and body.
+    if (intent.subtitle) alert.subtitle = intent.subtitle;
+    aps.alert = alert;
+    aps.sound = 'default';
+    // mutable-content wakes the app's Notification Service Extension, which
+    // attaches a per-kind status badge (red stop / green ✓) to the banner.
+    aps['mutable-content'] = 1;
+    // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
+    // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
+    if (intent.kind === 'waiting') aps.category = 'AGENT_WAITING';
+  }
+  if (typeof intent.badge === 'number') aps.badge = intent.badge;
+  const payload = JSON.stringify({
+    aps,
+    pane: intent.pane ?? '',
+    kind: intent.kind ?? '',
+    // top-level (readable on tap) so the app can route to the RIGHT server; same
+    // value as aps.alert.subtitle, which is display-only.
+    server: intent.subtitle ?? '',
+  });
+  const headers: Record<string, string> = {
+    authorization: 'bearer ' + jwt,
+    'apns-topic': topic,
+    // A silent push must be a low-priority background type or APNs throttles it.
+    'apns-push-type': intent.silent ? 'background' : 'alert',
+    'content-type': 'application/json',
+  };
+  if (intent.silent) headers['apns-priority'] = '5';
+  if (intent.collapseId) headers['apns-collapse-id'] = intent.collapseId;
+  return {payload, headers};
+}
 
 async function providerJWT(env: Env): Promise<string> {
   const now = Date.now();

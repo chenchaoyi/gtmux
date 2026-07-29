@@ -1,6 +1,10 @@
 package resource
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func cfg() config { return defaultConfig }
 
@@ -25,6 +29,42 @@ func TestEvalMachine(t *testing.T) {
 	// load red
 	if w := evalMachine(Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 1.6}, c); w == "" {
 		t.Error("load 1.6×cores should warn red")
+	}
+}
+
+// The mobile HQ disc reddens on the exact wire string `"tier":"red"` (and the API
+// contract documents `amber`|`red`), so both the json tag and Tier.String()'s output
+// are a cross-language contract — renaming either (e.g. "red" → "critical" to match
+// MemTier's vocabulary) silently breaks the disc with no other failing test. `role`
+// and `sense` have such additive-marshal pins; this gives `tier` the same guard.
+func TestTierWireContract(t *testing.T) {
+	// Tier.String() wire vocabulary — the values a consumer switches on.
+	for _, tc := range []struct {
+		tier Tier
+		want string
+	}{{TierNormal, "normal"}, {TierAmber, "amber"}, {TierRed, "red"}} {
+		if got := tc.tier.String(); got != tc.want {
+			t.Errorf("Tier(%d).String() = %q, want %q", tc.tier, got, tc.want)
+		}
+	}
+	// A red-tier machine marshals `"tier":"red"` under that exact json key.
+	m := Machine{DiskFreeGB: 10, MemTier: "normal"}
+	m.Tier = m.WarnTier(cfg()).String()
+	b, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"tier":"red"`) {
+		t.Errorf("red machine must marshal \"tier\":\"red\"; got %s", b)
+	}
+	// A normal machine omits the field entirely (omitempty) — no stray "tier":"normal".
+	healthy := Machine{DiskFreeGB: 500, MemTier: "normal", LoadRatio: 0.2}
+	if healthy.WarnTier(cfg()) == TierNormal {
+		healthy.Tier = "" // Snapshot leaves it empty when normal
+	}
+	hb, _ := json.Marshal(healthy)
+	if strings.Contains(string(hb), `"tier"`) {
+		t.Errorf("healthy machine must omit tier; got %s", hb)
 	}
 }
 

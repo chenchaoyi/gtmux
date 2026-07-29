@@ -90,6 +90,31 @@ jobs:
       - name: jest
         run: cd mobileapp && npx jest --ci
 
+  relay-worker:
+    name: push relay worker (typecheck + golden payload)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: relay-worker/package-lock.json
+
+      # The LIVE push relay is this Cloudflare Worker (the Go relay/ is a never-deployed
+      # reference). Its APNs payload SHAPE must stay in sync with relay/apns.go; the
+      # golden test is the only automated guard against silent drift. Deployed manually
+      # via `wrangler deploy`, so this can't ship a tag — but a shape regression fails CI.
+      - name: install deps
+        run: cd relay-worker && npm ci
+
+      - name: typecheck (tsc)
+        run: cd relay-worker && npm run typecheck
+
+      - name: golden payload test
+        run: cd relay-worker && npm test
+
   menubar:
     name: menu-bar app build (macOS)
     runs-on: macos-latest

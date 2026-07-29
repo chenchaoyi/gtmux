@@ -1,5 +1,5 @@
 // Mirrors macapp/Sources/GtmuxBar/AgentStore.swift's `Agent` (and the
-// `agentJSON` shape in internal/app/agents.go) — the one cross-surface contract.
+// `agentJSON` shape in internal/radar/agents.go) — the one cross-surface contract.
 // Tolerate missing fields: default status "running", source "tmux".
 
 export type StatusName = 'waiting' | 'working' | 'idle' | 'running';
