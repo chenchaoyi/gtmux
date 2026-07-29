@@ -9,10 +9,15 @@
 //     spawn it — it's a remote client).
 //   • needs-your-call — HQ itself is waiting on you → RED ring + "!".
 //   • worker-needs-you — a fleet session is waiting → RED ring + count badge.
-//   • resource-bottleneck — disk/mem/usage warning → RED ring + "⚠".
+//   • resource-bottleneck — a GENUINE machine bottleneck (the "red" resource tier:
+//     disk critically low / memory critical / load pinned) → RED ring + "⚠". A soft
+//     "amber" heads-up (e.g. 37GB free) is deliberately NOT shown here — it isn't an
+//     act-now condition, and reddening the disc for it made HQ look like it needed you
+//     when it didn't. Amber lives on the HQ page / usage view, not the at-a-glance disc.
 //   • working — HQ is actively processing a turn → CYAN ring.
 //   • normal — all quiet → GREEN ring (static — idle 静).
-// Red = "attention" (a decision or a resource issue); the badge/glyph says which. The
+// Red = "attention" (a decision or a real resource bottleneck); the badge/glyph says
+// which. The
 // full intelligence headline (a disc can't hold a sentence) lives on the HQ page;
 // VoiceOver speaks the disc's state via its accessibility label. Phone radar only —
 // the iPad sidebar (SplitScreen) and Demo keep the HQCard.
@@ -43,12 +48,13 @@ const TAP_SLOP = 5;
 
 export type DiscState = 'absent' | 'hqCall' | 'needsYou' | 'resource' | 'working' | 'normal';
 
-// Pure state resolver (priority-ordered) — exported for tests.
-export function discState(hq: Agent | undefined, waiting: number, resourceWarn: boolean): DiscState {
+// Pure state resolver (priority-ordered) — exported for tests. `resourceCritical` is
+// the machine's "red" tier only (a genuine bottleneck); soft amber never lands here.
+export function discState(hq: Agent | undefined, waiting: number, resourceCritical: boolean): DiscState {
   if (!hq) return 'absent';
   if (hq.status === 'waiting') return 'hqCall';
   if (waiting > 0) return 'needsYou';
-  if (resourceWarn) return 'resource';
+  if (resourceCritical) return 'resource';
   if (hq.status === 'working') return 'working';
   return 'normal';
 }
@@ -58,14 +64,14 @@ export function HQDisc({
   agents,
   pal,
   lang,
-  resourceWarn,
+  resourceCritical,
   onOpen,
 }: {
   hq?: Agent; // undefined = HQ not started yet
   agents: Agent[];
   pal: Palette;
   lang: string;
-  resourceWarn?: string;
+  resourceCritical?: boolean; // machine at the "red" tier (genuine bottleneck), not a soft amber
   onOpen: () => void; // navigate to HQScreen (only meaningful when hq exists)
 }) {
   const {width, height} = useWindowDimensions();
@@ -75,7 +81,7 @@ export function HQDisc({
 
   const workers = agents.filter(a => a.role !== 'supervisor' && a.source !== 'native');
   const waiting = workers.filter(a => a.status === 'waiting').length;
-  const state = discState(hq, waiting, !!resourceWarn);
+  const state = discState(hq, waiting, !!resourceCritical);
 
   const ring =
     state === 'absent'
@@ -85,8 +91,10 @@ export function HQDisc({
         : state === 'normal'
           ? StatusColor.idle
           : StatusColor.waiting; // hqCall / needsYou / resource → red
+  // U+FE0E forces the monochrome TEXT glyph (not the multicolor emoji triangle), so the
+  // white ⚠ sits cleanly on the red badge circle instead of fighting the emoji's colors.
   const badge =
-    state === 'absent' ? '?' : state === 'hqCall' ? '!' : state === 'needsYou' ? String(waiting) : state === 'resource' ? '⚠' : '';
+    state === 'absent' ? '?' : state === 'hqCall' ? '!' : state === 'needsYou' ? String(waiting) : state === 'resource' ? '⚠︎' : '';
   // The "?" (not-started) badge is quiet grey; every live attention badge is red.
   const badgeColor = state === 'absent' ? pal.fg3 : StatusColor.waiting;
 
@@ -95,7 +103,11 @@ export function HQDisc({
       ? zh
         ? 'gtmux HQ · 未启动 · 点按了解如何启动'
         : 'gtmux HQ · not started · tap to learn how'
-      : `gtmux HQ · ${hq ? fleetHeadline(hq, workers, zh) : ''}`;
+      : state === 'resource'
+        ? zh
+          ? 'gtmux HQ · 资源瓶颈 · 点按查看'
+          : 'gtmux HQ · resource bottleneck · tap to view'
+        : `gtmux HQ · ${hq ? fleetHeadline(hq, workers, zh) : ''}`;
 
   // ---- drag (position persisted) ----------------------------------------
   const bounds = useRef({minX: 0, maxX: 0, minY: 0, maxY: 0});

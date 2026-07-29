@@ -107,7 +107,7 @@ export interface UsageWindow {
   reset_at: string;
 }
 export interface ResourceReport {
-  machine?: {disk_free_gb?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string};
+  machine?: {disk_free_gb?: number; disk_use_pct?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string; tier?: 'amber' | 'red'};
   orphans?: {pid: number; rss_mb: number; comm: string; kind?: string; hint?: string}[];
 }
 export interface UsageReport {

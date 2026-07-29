@@ -10,13 +10,27 @@ import (
 // leaves its field zero/"" so the rest still works).
 func sampleMachine() Machine {
 	m := Machine{NCPU: ncpu()}
-	m.DiskFreeGB, m.DiskUsePct = diskFree("/")
+	m.DiskFreeGB, m.DiskUsePct = diskFree(diskPath())
 	m.MemFreePct = memFreePct()
 	m.MemTier = memPressureTier()
 	if la := loadavg1(); la > 0 && m.NCPU > 0 {
 		m.LoadRatio = la / float64(m.NCPU)
 	}
 	return m
+}
+
+// diskPath is the volume to sample for disk pressure. On macOS the writable user
+// data lives on the DATA volume (/System/Volumes/Data); the root `/` is the tiny
+// read-only system volume, so `df /`'s Capacity% reflects that near-empty volume
+// (24% here) and badly understates real usage while the Data volume sits at 92%.
+// (The Available GB is shared across the APFS container, so it's the same either
+// way — only Capacity% was lying.) Fall back to `/` where the data volume is absent
+// (Linux, older macOS).
+func diskPath() string {
+	if _, err := exec.Command("df", "-g", "/System/Volumes/Data").Output(); err == nil {
+		return "/System/Volumes/Data"
+	}
+	return "/"
 }
 
 // diskFree parses `df -g <path>`: the Available (GB) + Capacity (%). 0,0 on error.

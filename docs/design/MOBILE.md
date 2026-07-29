@@ -295,19 +295,25 @@ iPad **不是「放大的手机」**——大画布用 **split-view（侧栏雷�
 iPad 侧栏（`SplitScreen`）与 Demo 仍用 `HQCard`（浮窗不适合常驻侧栏/教学面）。
 
 **圆盘状态模型（`HQDisc` 的 `discState`，按优先级取最高一个；铁律 色=状态）**——红=需要注意（决策或
-资源），角标区分是哪种：
+**真·资源瓶颈**），角标区分是哪种：
 
 | 状态 | 条件 | 环色 | 中心/角标 | 轻点 |
 |---|---|---|---|---|
 | 未启动 | 无 HQ session（仅 owner，且已连上） | 灰（整体置灰 62%） | `?` 角标 | 弹说明：HQ 是什么 + 如何在 Mac 启动（手机是远端，不能 spawn） |
 | 请你拍板 | HQ 自身 `waiting` | 红 | `!` | 进 HQ 页 |
 | 有人等你 | ≥1 worker `waiting` | 红 | 计数 | 进 HQ 页 |
-| 资源瓶颈 | 磁盘/内存/用量告警（`/api/usage` `resource.machine.warn` 或 `limits.warn`，雷达慢轮询 25s） | 红 | `⚠` | 进 HQ 页 |
+| 资源瓶颈 | 机器 **red 档**真瓶颈（`/api/usage` `resource.machine.tier==='red'`：磁盘临界 / 内存 critical / 负载顶满；雷达慢轮询 25s） | 红 | `⚠` | 进 HQ 页 |
 | HQ 运行中 | HQ 自身 `working` | 青 | — | 进 HQ 页 |
 | 一切正常 | 其余 | 绿 | — | 进 HQ 页 |
 
 优先级：请你拍板 > 有人等你 > 资源瓶颈 > 运行中 > 正常。**未启动**态即使没有 HQ 也渲染（灰盘 +
 说明），但只在 `conn==='live'` 后显示，避免连接中闪现「未启动」。
+
+**只有 red 档才染红盘（低噪铁律）**：软 **amber** 提示（如 37GB 空闲——低于 amber 线 50GB 但远未见底，
+或内存 `warn`、负载 1.0~1.5×核）**不**变红。理由:红=「该你拍板/立刻处理」;一个后台磁盘提示若染成和
+「session 等你输入」一样的红，用户会误以为 HQ 有事、点进去却什么都没有(实测踩过)。amber 只活在 HQ 页 /
+用量视图,不占「一眼看板」的圆盘。`resource.machine.tier` 由 Go `WarnTier` 产出(`amber`/`red`,normal 时
+省略),`disk_use_pct` 采**数据卷** `/System/Volumes/Data`(而非只读的 `/`,否则容量%严重偏低误导)。
 
 三屏（菜单栏/手机/网页）同一心智：判断 + 该你拍板 + 对话，规模随屏放大。实现见 `HQDisc.tsx` /
 `HQScreen.tsx` + 纯逻辑 `hqZones.ts`。

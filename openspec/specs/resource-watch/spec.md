@@ -6,15 +6,21 @@ TBD - created by archiving change resource-watch. Update Purpose after archive.
 ### Requirement: Machine resource snapshot
 
 The system SHALL compute a deterministic, cgo-free snapshot of local resources:
-disk free (via `df` on the relevant volume), memory pressure (via
-`memory_pressure -Q`, mapping its normal/warn/critical to the warn tiers), and CPU
-saturation (loadavg ÷ core count). A source that is unavailable SHALL degrade to
-an empty field without failing the rest.
+disk free and capacity% (via `df` on the WRITABLE data volume — macOS
+`/System/Volumes/Data`, falling back to `/` where that is absent, so capacity%
+reflects real user usage and not the near-empty read-only system volume), memory
+pressure (via `memory_pressure -Q`, mapping its normal/warn/critical to the warn
+tiers), and CPU saturation (loadavg ÷ core count). A source that is unavailable
+SHALL degrade to an empty field without failing the rest. The snapshot SHALL also
+expose an overall severity `tier` (`amber` | `red`; omitted when normal) — the worst
+of the disk/memory/load tiers — so a consumer can distinguish a soft heads-up from a
+genuine bottleneck without re-deriving thresholds.
 
 #### Scenario: Snapshot reflects the machine
 
 - **WHEN** `gtmux resource` is run
-- **THEN** it reports disk free, the memory-pressure tier, and load ÷ cores
+- **THEN** it reports disk free + capacity% on the writable data volume, the
+  memory-pressure tier, load ÷ cores, and an overall `tier` when not normal
 
 ### Requirement: Per-agent resource attribution
 

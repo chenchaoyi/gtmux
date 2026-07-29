@@ -257,9 +257,13 @@ versus pure screen inference.
 Byte-identical to `gtmux usage --json` (the `usage-watch` capability): per-session token
 totals and rates, the plan's real limit windows with `pct_used`, and the machine
 resource snapshot (`resource-watch`). Owner-only — it exposes the whole fleet's budget.
+`resource.machine` carries an optional additive `tier` (`amber` | `red`, omitted when
+normal) — the overall severity — so a client (e.g. the mobile HQ disc) can redden ONLY
+on a genuine `red` bottleneck, never on a soft amber. `disk_use_pct` is the writable
+data volume's capacity.
 
 ```
-200 {"sessions":[…],"limits":{"windows":[{"label":"week (all models)","pct_used":41,"reset_at":"…"}]},"resource":{"machine":{"warn":"","disk_free_gb":210,"mem_tier":"ok"}}}
+200 {"sessions":[…],"limits":{"windows":[{"label":"week (all models)","pct_used":41,"reset_at":"…"}]},"resource":{"machine":{"warn":"disk 36GB free","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn"}}}
 403 {"error":"forbidden: not shared"}
 503 {"error":"usage unavailable"}
 ```

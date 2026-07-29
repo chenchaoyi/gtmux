@@ -40,6 +40,11 @@ type Machine struct {
 	LoadRatio  float64 `json:"load_ratio"` // 1-min loadavg ÷ ncpu
 	NCPU       int     `json:"ncpu"`
 	Warn       string  `json:"warn,omitempty"` // the first resource at/over amber, "" = fine
+	// Tier is the overall severity — "amber" (soft heads-up) | "red" (genuine
+	// bottleneck); omitted when normal. Consumers use it to decide how loud to be:
+	// only "red" is an act-now bottleneck (the mobile HQ disc reddens on "red" alone,
+	// never on a soft "amber" — a 37GB-free amber is not an emergency).
+	Tier string `json:"tier,omitempty"`
 }
 
 // AgentUse is one agent's attributed resource use (its pane process tree).
@@ -71,6 +76,9 @@ func Snapshot(panePIDs map[string]int) Report {
 	cfg := loadConfig()
 	m := sampleMachine()
 	m.Warn = evalMachine(m, cfg)
+	if t := m.WarnTier(cfg); t != TierNormal {
+		m.Tier = t.String()
+	}
 	rep := Report{Machine: m}
 	if procs := sampleProcs(); len(procs) > 0 {
 		rep.Agents, rep.Orphans = attribute(procs, panePIDs, cfg)
