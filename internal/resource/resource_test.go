@@ -28,6 +28,30 @@ func TestEvalMachine(t *testing.T) {
 	}
 }
 
+// WarnTier is what the mobile HQ disc keys off: only "red" is a genuine bottleneck
+// (the disc reddens); a soft "amber" must stay amber so it doesn't masquerade as an
+// attention emergency. This pins the 37GB-free case to amber (not red).
+func TestWarnTier(t *testing.T) {
+	c := cfg()
+	cases := []struct {
+		name string
+		m    Machine
+		want Tier
+	}{
+		{"37GB free (below amber line 50, above red line 15) → amber", Machine{DiskFreeGB: 37, MemTier: "normal"}, TierAmber},
+		{"10GB free → red", Machine{DiskFreeGB: 10, MemTier: "normal"}, TierRed},
+		{"mem warn only → amber", Machine{DiskFreeGB: 200, MemTier: "warn"}, TierAmber},
+		{"mem critical → red", Machine{DiskFreeGB: 200, MemTier: "critical"}, TierRed},
+		{"healthy → normal", Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 0.3}, TierNormal},
+		{"the worst wins: amber disk + red mem → red", Machine{DiskFreeGB: 37, MemTier: "critical"}, TierRed},
+	}
+	for _, tc := range cases {
+		if got := tc.m.WarnTier(c); got != tc.want {
+			t.Errorf("%s: WarnTier = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
 // attribute: per-pane RSS/CPU sums the subtree; simulator procs aggregate; an
 // agent process outside a pane is NOT flagged; a heavy generic orphan is.
 func TestAttribute(t *testing.T) {

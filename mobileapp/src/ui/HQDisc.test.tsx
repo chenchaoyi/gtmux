@@ -23,7 +23,7 @@ afterEach(() => {
   trees.length = 0;
 });
 
-function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string; onOpen?: () => void}) {
+function render(opts: {hq?: Agent; agents?: Agent[]; resourceCritical?: boolean; onOpen?: () => void}) {
   let tree: renderer.ReactTestRenderer;
   act(() => {
     tree = renderer.create(
@@ -32,7 +32,7 @@ function render(opts: {hq?: Agent; agents?: Agent[]; resourceWarn?: string; onOp
         agents={opts.agents ?? []}
         pal={pal}
         lang="en"
-        resourceWarn={opts.resourceWarn}
+        resourceCritical={opts.resourceCritical}
         onOpen={opts.onOpen ?? (() => {})}
       />,
     );
@@ -45,7 +45,11 @@ const ringColor = (tree: renderer.ReactTestRenderer): string =>
   StyleSheet.flatten(tree.root.findByProps({testID: 'radar-hq-disc-ring'}).props.style).borderColor;
 const badgeText = (tree: renderer.ReactTestRenderer): string | null => {
   const texts = tree.root.findAllByType('Text' as any).map(n => n.props.children);
-  const hit = texts.find(c => c === '!' || c === '⚠' || c === '?' || (typeof c === 'string' && /^\d+$/.test(c)));
+  // The resource badge carries a trailing U+FE0E (text-presentation selector), so match
+  // the ⚠ base rather than an exact string.
+  const hit = texts.find(
+    c => c === '!' || c === '?' || (typeof c === 'string' && (c.startsWith('⚠') || /^\d+$/.test(c))),
+  );
   return (hit as string) ?? null;
 };
 
@@ -54,9 +58,16 @@ describe('discState (priority-ordered)', () => {
     expect(discState(undefined, 0, false)).toBe('absent'); // no HQ wins over everything
     expect(discState(sup({status: 'waiting'}), 3, true)).toBe('hqCall'); // HQ's own call is top
     expect(discState(sup({status: 'idle'}), 2, true)).toBe('needsYou'); // workers outrank resource
-    expect(discState(sup({status: 'idle'}), 0, true)).toBe('resource');
+    expect(discState(sup({status: 'idle'}), 0, true)).toBe('resource'); // 3rd arg = a RED-tier bottleneck only
     expect(discState(sup({status: 'working'}), 0, false)).toBe('working');
     expect(discState(sup({status: 'idle'}), 0, false)).toBe('normal');
+  });
+
+  it('a soft (non-critical) resource condition does NOT redden the disc', () => {
+    // resourceCritical is false for a mere amber — the disc stays on HQ's own state
+    // (working/normal), never the red "resource" bottleneck. This is the 37GB-free case.
+    expect(discState(sup({status: 'idle'}), 0, false)).toBe('normal');
+    expect(discState(sup({status: 'working'}), 0, false)).toBe('working');
   });
 });
 
@@ -85,14 +96,20 @@ describe('HQDisc ring + badge per state', () => {
     expect(badgeText(tree)).toBe('2');
   });
 
-  it('resource bottleneck → red ring + ⚠ (when nothing needs a decision)', async () => {
-    const tree = await render({hq: sup(), agents: [mk({status: 'idle'})], resourceWarn: 'disk 3% free'});
+  it('resource bottleneck (red tier) → red ring + ⚠ (when nothing needs a decision)', async () => {
+    const tree = await render({hq: sup(), agents: [mk({status: 'idle'})], resourceCritical: true});
     expect(ringColor(tree)).toBe(StatusColor.waiting);
-    expect(badgeText(tree)).toBe('⚠');
+    expect(badgeText(tree)?.startsWith('⚠')).toBe(true);
+  });
+
+  it('a soft resource warn does NOT redden the disc → green, no badge', async () => {
+    const tree = await render({hq: sup(), agents: [mk({status: 'idle'})], resourceCritical: false});
+    expect(ringColor(tree)).toBe(StatusColor.idle);
+    expect(badgeText(tree)).toBeNull();
   });
 
   it('HQ itself needs you → red ring + "!" (outranks a worker + resource)', async () => {
-    const tree = await render({hq: sup({status: 'waiting'}), agents: [mk({status: 'waiting'})], resourceWarn: 'x'});
+    const tree = await render({hq: sup({status: 'waiting'}), agents: [mk({status: 'waiting'})], resourceCritical: true});
     expect(ringColor(tree)).toBe(StatusColor.waiting);
     expect(badgeText(tree)).toBe('!');
   });

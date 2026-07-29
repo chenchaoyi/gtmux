@@ -35,10 +35,14 @@ export function RadarScreen({navigation}: any) {
   const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [refreshing, setRefreshing] = useState(false);
-  // Resource warning (disk/mem/usage cap) feeds the HQ disc's "resource bottleneck"
-  // state. Polled slowly (it changes on a human/machine cadence, not per frame), owner
-  // only — /api/usage is an owner surface. `undefined` = healthy.
-  const [resWarn, setResWarn] = useState<string | undefined>();
+  // Genuine resource BOTTLENECK (the machine's "red" tier: disk critically low / memory
+  // critical / load pinned) feeds the HQ disc's red "resource" state. A soft "amber"
+  // heads-up (e.g. 37GB free — below the amber line but nowhere near empty) does NOT
+  // redden the disc: red is reserved for "act now / needs your call", so a background
+  // disk note must not read like a session waiting on you (低噪). Polled slowly (it
+  // changes on a human/machine cadence, not per frame), owner only — /api/usage is an
+  // owner surface. `false` = no bottleneck.
+  const [resCrit, setResCrit] = useState(false);
   useEffect(() => {
     if (isGuest) return;
     let alive = true;
@@ -47,7 +51,7 @@ export function RadarScreen({navigation}: any) {
         .usage()
         .then(u => {
           if (!alive) return;
-          setResWarn(u?.resource?.machine?.warn || u?.limits?.warn || undefined);
+          setResCrit(u?.resource?.machine?.tier === 'red');
         })
         .catch(() => {});
     load();
@@ -236,7 +240,7 @@ export function RadarScreen({navigation}: any) {
           agents={agents}
           pal={pal}
           lang={lang}
-          resourceWarn={resWarn}
+          resourceCritical={resCrit}
           onOpen={() => hq && navigation.navigate('HQ', {agent: hq})}
         />
       )}
