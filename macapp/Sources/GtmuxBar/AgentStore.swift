@@ -1,6 +1,25 @@
 import AppKit
 import SwiftUI
 
+/// HQState is the supervisor's at-a-glance state on the HQ medallion — the SAME
+/// six-state model as the mobile HQ disc (MOBILE §17), so the two surfaces read the
+/// supervisor identically. Resolved by `AgentStore.hqState(...)`.
+enum HQState: Equatable {
+    case absent    // no supervisor session (grey, start affordance)
+    case hqCall    // the supervisor itself is waiting on you (red + "!")
+    case needsYou  // ≥1 worker is waiting (red + count)
+    case resource  // the machine is at the RED resource tier (red + "⚠")
+    case working   // the supervisor is processing a turn (cyan)
+    case normal    // all quiet (green)
+}
+
+/// The `gtmux resource --json` machine snapshot (only the fields the medallion needs).
+/// `tier` is omitempty in Go → optional here (a missing tier decodes to nil = healthy).
+struct ResourceReport: Decodable {
+    struct Machine: Decodable { var tier: String? }
+    var machine: Machine
+}
+
 /// Status is the agent state language (DESIGN §1). Color is the ONLY status
 /// channel (never used for agent identity); shape + glyph carry it too.
 enum Status: String, CaseIterable {
@@ -187,6 +206,12 @@ final class AgentStore: ObservableObject {
     /// footer row can expand into the actual pending sessions. nil the rest of the time.
     @Published private(set) var restorePlan: RestorePlan?
 
+    /// The machine's resource severity tier ("" | "amber" | "red"), from a slow
+    /// `gtmux resource --json` poll. Feeds the HQ medallion's `resource` state — which
+    /// reddens ONLY on "red" (a genuine bottleneck), never a soft "amber" (低噪, in
+    /// parity with the mobile HQ disc).
+    @Published private(set) var machineTier: String = ""
+
     func refresh() {
         DispatchQueue.global(qos: .userInitiated).async {
             let data = GtmuxCLI.capture(["agents", "--json"]) ?? Data("[]".utf8)
@@ -207,8 +232,24 @@ final class AgentStore: ObservableObject {
         }
     }
 
+    /// Poll the machine resource tier (a SECOND, slow shell-out — the machine changes on
+    /// a human/hardware cadence, not per fast tick). Driven by its own ~25s timer, not
+    /// the fast agents refresh. `gtmux resource --json` is cheap (df/sysctl/ps) and does
+    /// NOT trigger the expensive `/usage` command.
+    func refreshResource() {
+        DispatchQueue.global(qos: .utility).async {
+            let tier = (GtmuxCLI.capture(["resource", "--json"])
+                .flatMap { try? JSONDecoder().decode(ResourceReport.self, from: $0) }?
+                .machine.tier) ?? ""
+            DispatchQueue.main.async { self.machineTier = tier }
+        }
+    }
+
     /// Test seam: inject agents synchronously (used by unit tests).
     func setForTesting(_ a: [Agent]) { agents = a }
+
+    /// Test seam: inject the resource tier synchronously.
+    func setTierForTesting(_ t: String) { machineTier = t }
 
     // counts
     var total: Int { agents.count }
@@ -259,6 +300,29 @@ final class AgentStore: ObservableObject {
     /// The live supervisor (中控) session, if any — rendered as the HQ card above
     /// the sections (its own layer, per the hq-presentation change).
     var supervisor: Agent? { agents.first { $0.isSupervisor } }
+
+    /// Non-supervisor, non-native sessions waiting on you — the count that drives the HQ
+    /// medallion's `needsYou` state (mirrors the mobile disc's worker filter).
+    var workerWaiting: Int {
+        agents.filter { !$0.isSupervisor && !$0.isNative && $0.state == .waiting }.count
+    }
+
+    /// The HQ medallion's state — the same six-state model + priority as the mobile HQ
+    /// disc (MOBILE §17). Resource reddens ONLY on the RED tier (a soft amber does not).
+    var hqState: HQState {
+        AgentStore.hqState(supervisor: supervisor, waiting: workerWaiting, resourceCritical: machineTier == "red")
+    }
+
+    /// Pure HQ-state resolver (priority-ordered) — mirrors the mobile `discState` so both
+    /// surfaces read the supervisor identically. Static + pure for unit testing.
+    static func hqState(supervisor: Agent?, waiting: Int, resourceCritical: Bool) -> HQState {
+        guard let hq = supervisor else { return .absent }
+        if hq.state == .waiting { return .hqCall }   // HQ's own call is top
+        if waiting > 0 { return .needsYou }          // a worker waiting outranks resource
+        if resourceCritical { return .resource }     // a genuine bottleneck (red tier only)
+        if hq.state == .working { return .working }
+        return .normal
+    }
 
     /// Sensed non-tmux (native) sessions — their own category, most-recent first.
     /// Sense-only: no jump/reply; adoptable ones can be pulled into tmux.
