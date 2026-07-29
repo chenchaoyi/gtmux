@@ -32,9 +32,31 @@ function summary(c: ReturnType<typeof counts>, agentsWord: string, lang: Lang): 
 }
 
 export function RadarScreen({navigation}: any) {
-  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [refreshing, setRefreshing] = useState(false);
+  // Resource warning (disk/mem/usage cap) feeds the HQ disc's "resource bottleneck"
+  // state. Polled slowly (it changes on a human/machine cadence, not per frame), owner
+  // only — /api/usage is an owner surface. `undefined` = healthy.
+  const [resWarn, setResWarn] = useState<string | undefined>();
+  useEffect(() => {
+    if (isGuest) return;
+    let alive = true;
+    const load = () =>
+      client
+        .usage()
+        .then(u => {
+          if (!alive) return;
+          setResWarn(u?.resource?.machine?.warn || u?.limits?.warn || undefined);
+        })
+        .catch(() => {});
+    load();
+    const id = setInterval(load, 25000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client, isGuest]);
   // Collapsed sections persist across launches (MOBILE §3).
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
   // "Waiting only" narrows the list to the panes needing you (MOBILE §3/§8) — a fast
@@ -205,9 +227,18 @@ export function RadarScreen({navigation}: any) {
         ListEmptyComponent={Empty}
       />
       {/* HQ floats over the list as a disc (the meta-layer, above the fleet) — always
-          reachable, never scrolls away. Owner-only; a guest has no HQ. */}
-      {hq && !isGuest && (
-        <HQDisc hq={hq} agents={agents} pal={pal} lang={lang} onPress={() => navigation.navigate('HQ', {agent: hq})} />
+          reachable, never scrolls away. Owner-only (a guest has no HQ). Shown even when
+          HQ isn't started yet (a grey disc that explains how to start it), but only once
+          connected so it doesn't flash "not started" mid-connect. */}
+      {!isGuest && (hq || conn === 'live') && (
+        <HQDisc
+          hq={hq}
+          agents={agents}
+          pal={pal}
+          lang={lang}
+          resourceWarn={resWarn}
+          onOpen={() => hq && navigation.navigate('HQ', {agent: hq})}
+        />
       )}
     </SafeAreaView>
   );
