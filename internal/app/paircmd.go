@@ -142,7 +142,11 @@ func pairList(base, token string) int {
 		if d.LastSeen > 0 {
 			last = fmtAgo(d.LastSeen)
 		}
-		fmt.Printf("  %s  %-24s  %s\n", d.ID, deviceDisplayName(d.Name), last)
+		label := deviceDisplayName(d.Name)
+		if d.Platform != "" {
+			label += " (" + d.Platform + ")"
+		}
+		fmt.Printf("  %s  %-30s  %s\n", d.ID, label, last)
 	}
 	i18n.Say("Revoke one: gtmux pair revoke <id>   ·   guests: gtmux share status",
 		"吊销某台：gtmux pair revoke <id>   ·   分享链接看：gtmux share status")

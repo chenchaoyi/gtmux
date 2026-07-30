@@ -16,7 +16,7 @@ import type {Agent} from '../api/types';
 import type {GuestLink, PairedDevice, ShareConfig} from '../api/client';
 import {displayDeviceName} from '../pairing/deviceName';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
-import {SIcon} from '../ui/SettingsIcons';
+import {SIcon, IconName} from '../ui/SettingsIcons';
 import {ContentColumn} from '../ui/ContentColumn';
 import {nextLinkScope} from '../state/shareScope';
 
@@ -36,6 +36,17 @@ function deviceSub(platform: string | undefined, lastSeen: number | undefined, z
   if (platform) parts.push(platform);
   if (lastSeen) parts.push(relSeen(lastSeen, zh));
   return parts.length ? parts.join(' · ') : undefined;
+}
+
+// deviceIcon picks a leading glyph matching what the device IS, so the roster reads at a
+// glance: a phone, a browser, or a Mac/other. Prefers the platform tag ("iOS 17.5",
+// "Safari · macOS"); falls back to the name for a device that hasn't reported one yet.
+function deviceIcon(name: string, platform: string | undefined): IconName {
+  const p = (platform ?? '').toLowerCase();
+  const n = (name ?? '').toLowerCase();
+  if (/^(ios|ipados|android)/.test(p) || /iphone|ipad|android/.test(n)) return 'phone';
+  if (p.includes(' · ') || /safari|chrome|firefox|edge/.test(p) || n === 'browser') return 'globe';
+  return 'server';
 }
 
 export function ManageMacScreen({navigation}: any) {
@@ -236,7 +247,7 @@ export function ManageMacScreen({navigation}: any) {
               devices.map((d, idx) => (
                 <SettingsRow
                   key={d.id}
-                  icon="server"
+                  icon={deviceIcon(d.name, d.platform)}
                   label={displayDeviceName(d.name)}
                   sub={deviceSub(d.platform, d.lastSeen, zh)}
                   pal={pal}

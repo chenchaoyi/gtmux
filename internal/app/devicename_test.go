@@ -11,9 +11,13 @@ func TestDeviceDisplayNameDropsTheLegacyPrefix(t *testing.T) {
 		"gtmux · iPad":              "iPad",
 		"gtmux iPhone":              "iPhone",
 		"GTMUX • iPhone · iOS 18.5": "iPhone · iOS 18.5",
+		// a bare generic kind is title-cased so it doesn't read as a lowercase word
+		"browser":  "Browser",
+		"terminal": "Terminal",
 		// untouched
 		"iPhone · iOS 18.5": "iPhone · iOS 18.5",
 		"ccy-mbp.local":     "ccy-mbp.local",
+		"ccy":               "ccy",
 		// a device legitimately named after the tool keeps something to show
 		"gtmux": "gtmux",
 		"":      "",
