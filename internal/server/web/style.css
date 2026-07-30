@@ -458,12 +458,27 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .tile-btn { background: none; border: none; color: var(--fg3); font-size: 12px; cursor: pointer; padding: 0 2px; }
 .tile-btn:hover { color: var(--fg); }
 .tile-body { flex: 1 1 auto; min-height: 0; position: relative; overflow: hidden; }
-/* per-tile shared-input row (web-shared-input) — sits under the tile terminal */
-.tile-input { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; padding: 5px 7px; border-top: 1px solid var(--divider); background: #141416; }
-.tile-input input { flex: 1 1 auto; min-width: 0; padding: 5px 7px; font: inherit; font-size: 11.5px; color: var(--fg); background: #0e0e10; border: 1px solid var(--divider); border-radius: 6px; outline: none; }
-.tile-input input:focus { border-color: var(--accent, #06b6d4); }
-.tile-input button { flex: 0 0 auto; padding: 4px 6px; font-size: 11px; color: var(--fg2); background: transparent; border: 1px solid var(--divider); border-radius: 6px; cursor: pointer; }
-.tile-input button:hover { color: var(--fg); border-color: var(--fg3, var(--fg2)); }
+/* Shared composer (WEB §11, aligned with the mobile app's Composer): a multiline
+   auto-grow textarea flanked by attach (image/file upload) + send, with the special
+   keys on their OWN subtle row below — so they no longer crowd the text field. Used by
+   BOTH the single-pane input and the workbench tiles (compact `.composer-sm`). */
+.composer { flex: 0 0 auto; display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; border-top: 1px solid var(--divider); background: var(--bg2, var(--bg)); }
+.cx-row { display: flex; align-items: flex-end; gap: 7px; }
+.cx-input { flex: 1 1 auto; min-width: 0; resize: none; overflow-y: auto; padding: 8px 10px; font: inherit; font-size: 13px; line-height: 1.4; color: var(--fg); background: var(--bg); border: 1px solid var(--divider); border-radius: 9px; outline: none; }
+.cx-input:focus { border-color: var(--accent, #06b6d4); }
+.cx-attach, .cx-send { flex: none; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 17px; line-height: 1; color: var(--fg2); background: var(--bg); border: 1px solid var(--divider); border-radius: 9px; cursor: pointer; }
+.cx-attach:hover, .cx-send:hover { color: var(--fg); border-color: var(--fg3, var(--fg2)); }
+.cx-send { color: var(--fg); font-weight: 700; }
+.cx-attach:disabled { opacity: .5; cursor: default; }
+.cx-keys { display: flex; gap: 5px; padding-left: 41px; }
+.cx-keys button { flex: none; padding: 3px 9px; font-size: 11px; color: var(--fg3, var(--fg2)); background: transparent; border: 1px solid var(--divider); border-radius: 6px; cursor: pointer; }
+.cx-keys button:hover { color: var(--fg); border-color: var(--fg2); }
+.composer-sm { padding: 5px 6px; gap: 4px; background: #141416; }
+.composer-sm .cx-row { gap: 5px; }
+.composer-sm .cx-input { font-size: 11.5px; padding: 5px 7px; border-radius: 7px; background: #0e0e10; }
+.composer-sm .cx-attach, .composer-sm .cx-send { width: 28px; height: 28px; font-size: 14px; border-radius: 7px; background: #0e0e10; }
+.composer-sm .cx-keys { padding-left: 33px; gap: 4px; }
+.composer-sm .cx-keys button { padding: 2px 6px; font-size: 10px; }
 .tile-body .xt { position: absolute; inset: 0; padding: 6px 8px; }
 .tile-body .tile-chat { position: absolute; inset: 0; overflow: auto; padding: 4px 0; }
 .tile-body .tile-diff { position: absolute; inset: 0; overflow: auto; margin: 0; padding: 10px 12px; font-family: Menlo, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre; color: var(--fg2); }
@@ -490,6 +505,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 }
 #jump .jdot { width: 6px; height: 6px; border-radius: 50%; background: #fff; }
 #pane.has-reply #jump { bottom: 60px; }
+#pane.has-input #jump { bottom: 92px; }
 
 #reply-bar {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 15;
@@ -498,29 +514,14 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   font-size: 11.5px; color: var(--fg2);
 }
 /* shared-input row (web-shared-input): shown only for host-allowlisted panes */
-#pane-input {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 16;
-  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
-  border-top: 1px solid var(--divider); background: var(--bg2, var(--bg));
-}
-#pane-input #pin {
-  flex: 1; min-width: 0; padding: 8px 10px; font: inherit; font-size: 13px;
-  color: var(--fg); background: var(--bg); border: 1px solid var(--divider);
-  border-radius: 8px; outline: none;
-}
-#pane-input #pin:focus { border-color: var(--accent, #06b6d4); }
-#pane-input button {
-  flex: none; padding: 8px 10px; font-size: 12px; color: var(--fg2);
-  background: var(--bg); border: 1px solid var(--divider); border-radius: 8px; cursor: pointer;
-}
-#pane-input button:hover { color: var(--fg); border-color: var(--fg3, var(--fg2)); }
-#pane-input #pin-send { color: var(--fg); font-weight: 600; }
+/* #pane-input is just the positioned mount; the .composer inside owns the layout. */
+#pane-input { position: absolute; left: 0; right: 0; bottom: 0; z-index: 16; }
 #pane.has-reply #term { bottom: 44px; }
 /* WEB §11: when a bottom input/read-only row is present, the reply bar stacks
    ABOVE it (typable waiting pane = live 1/2/3 chips over the composer row). */
-#pane.has-input #term { bottom: 44px; }
-#pane.has-input #reply-bar { bottom: 44px; }
-#pane.has-input.has-reply #term { bottom: 88px; }
+#pane.has-input #term { bottom: 82px; }
+#pane.has-input #reply-bar { bottom: 82px; }
+#pane.has-input.has-reply #term { bottom: 126px; }
 .rb-lead { color: var(--fg2); }
 .rb-opts { display: inline-flex; gap: 6px; }
 .rb-opts .rb-opt { font-size: 11px; color: var(--fg3); border: 1px solid var(--divider); border-radius: 6px; padding: 4px 10px; cursor: not-allowed; }

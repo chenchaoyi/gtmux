@@ -704,6 +704,83 @@
     }).then(function (j) { if (!j) return; setConn(true); writePane(j.text); hidePaneLoader(); })
       .catch(function () { setConn(false); });
   }
+
+  // makeComposer builds the shared web composer (WEB §11, aligned with the mobile app's
+  // Composer): a multiline auto-grow textarea (⏎ send · ⇧⏎/⌥⏎ newline), an attach button
+  // that uploads an image/file via /api/upload and inserts its saved path, a send button,
+  // and a subtle key strip (⇥/esc/^C/↑/↓) on its OWN row below — so the keys no longer
+  // crowd the text field. `getId()` yields the target pane; `echo(text)` renders the
+  // post-send screen. `small` = the compact workbench-tile variant.
+  function makeComposer(getId, echo, small) {
+    echo = echo || function () {};
+    var root = document.createElement('div');
+    root.className = 'composer' + (small ? ' composer-sm' : '');
+
+    var file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*'; file.hidden = true;
+
+    var attach = document.createElement('button');
+    attach.type = 'button'; attach.className = 'cx-attach'; attach.textContent = '＋';
+    attach.title = '上传图片 / 文件';
+    attach.onclick = function (e) { e.stopPropagation(); file.click(); };
+    file.onchange = function () { var f = file.files && file.files[0]; if (f) uploadInto(f); file.value = ''; };
+
+    var ta = document.createElement('textarea');
+    ta.className = 'cx-input'; ta.rows = 1; ta.placeholder = '输入…';
+    ta.autocomplete = 'off'; ta.spellcheck = false;
+    function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(small ? 92 : 128, Math.max(small ? 30 : 38, ta.scrollHeight)) + 'px'; }
+    ta.addEventListener('input', grow);
+    ta.addEventListener('keydown', function (e) {
+      // ⏎ sends; ⇧⏎ / ⌥⏎ = newline (WEB §11). e.stopPropagation so a maximized-tile
+      // Escape/global key handler doesn't hijack typing.
+      if (e.key === 'Enter' && !e.shiftKey && !e.altKey) { e.preventDefault(); submit(); }
+      e.stopPropagation();
+    });
+
+    var send = document.createElement('button');
+    send.type = 'button'; send.className = 'cx-send'; send.textContent = '↵'; send.title = '发送 ⏎';
+    send.onclick = function (e) { e.stopPropagation(); submit(); };
+
+    var row = document.createElement('div'); row.className = 'cx-row';
+    row.appendChild(attach); row.appendChild(file); row.appendChild(ta); row.appendChild(send);
+
+    var keys = document.createElement('div'); keys.className = 'cx-keys';
+    [['Tab', '⇥', 'Tab'], ['Escape', 'esc', 'Esc'], ['C-c', '^C', 'Ctrl-C'], ['Up', '↑', 'Up'], ['Down', '↓', 'Down']].forEach(function (k) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = k[1]; b.title = k[2];
+      b.onclick = function (e) { e.stopPropagation(); postSend(getId(), {key: k[0]}).then(then); ta.focus(); };
+      keys.appendChild(b);
+    });
+
+    root.appendChild(row); root.appendChild(keys);
+
+    function then(r) {
+      if (!r) return;
+      if (r.status === 403) { ta.placeholder = '此 pane 未开放输入'; return; }
+      if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
+      if (!r.ok) return;
+      r.json().then(function (j) { if (j && typeof j.text === 'string') echo(j.text); });
+    }
+    function submit() {
+      var v = ta.value; ta.value = ''; grow();
+      if (!v.trim()) return;
+      postSend(getId(), {text: v, enter: true}).then(then);
+    }
+    function uploadInto(f) {
+      attach.disabled = true; attach.textContent = '…';
+      var form = new FormData(); form.append('file', f);
+      api('/api/upload', {method: 'POST', body: form}).then(function (r) {
+        attach.disabled = false; attach.textContent = '＋';
+        if (r && r.status === 403) { ta.placeholder = '此 pane 未开放输入'; return null; }
+        if (!r || !r.ok) { ta.placeholder = '上传失败，重试'; return null; }
+        return r.json();
+      }).then(function (j) {
+        if (j && j.path) { ta.value = (ta.value && !/\s$/.test(ta.value) ? ta.value + ' ' : ta.value) + j.path + ' '; grow(); ta.focus(); }
+      }).catch(function () { attach.disabled = false; attach.textContent = '＋'; });
+    }
+
+    return {el: root, focus: function () { ta.focus(); }, input: ta};
+  }
+
   // openAgent enters the pane view for an agent; the selected tab (terminal mirror
   // vs chat history) is remembered across agents (gtmux.paneMode).
   var focusFromWB = false;
@@ -1220,17 +1297,11 @@
     var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = '关闭'; cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; head.appendChild(cl);
     el.appendChild(head);
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
-    // shared-input row (web-shared-input): shown for a term-mode tile the host allowed.
-    var tin = document.createElement('div'); tin.className = 'tile-input'; tin.hidden = true; t.inputEl = tin;
-    var tpin = document.createElement('input'); tpin.type = 'text'; tpin.placeholder = 'type…'; tpin.autocomplete = 'off'; tpin.spellcheck = false;
-    tpin.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var v = tpin.value; tpin.value = ''; tpin.placeholder = 'type…'; postSend(t.id, {text: v, enter: true}).then(tileSendThen(t, tpin)); } });
-    tin.appendChild(tpin);
-    [['C-c', '^C'], ['Escape', 'esc'], ['Tab', '⇥'], ['Up', '↑'], ['Down', '↓']].forEach(function (k) {
-      var b = document.createElement('button'); b.textContent = k[1]; b.title = k[0];
-      b.onclick = function (e) { e.stopPropagation(); postSend(t.id, {key: k[0]}).then(tileSendThen(t, tpin)); tpin.focus(); };
-      tin.appendChild(b);
-    });
-    el.appendChild(tin);
+    // shared-input row (web-shared-input): the SAME composer as the single-pane view,
+    // in its compact variant — shown for a term-mode tile the host allowed.
+    var tc = makeComposer((function (tid) { return function () { return tid; }; })(t.id), function (text) { if (t.term) tileWrite(t, text); }, true);
+    tc.el.hidden = true; t.inputEl = tc.el;
+    el.appendChild(tc.el);
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
     ro.textContent = '🔒 host 未授予此 pane 的输入权限'; t.roEl = ro; el.appendChild(ro);
@@ -1427,17 +1498,11 @@
     $('copy-screen').onclick = copyScreen;
     $('pane-prev').onclick = function () { cyclePane(-1); };
     $('pane-next').onclick = function () { cyclePane(1); };
-    // Shared-input row: text+Enter and the allowlisted control keys → POST /api/send.
-    var pin = $('pin');
-    if (pin) {
-      pin.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); var t = pin.value; pin.value = ''; pin.placeholder = 'type into this pane…'; sendPane({text: t, enter: true}); }
-      });
-    }
-    if ($('pin-send')) $('pin-send').onclick = function () { var t = pin ? pin.value : ''; if (pin) pin.value = ''; sendPane({text: t, enter: true}); };
-    Array.prototype.forEach.call(document.querySelectorAll('.pin-k'), function (b) {
-      b.onclick = function () { sendPane({key: b.getAttribute('data-key')}); if (pin) pin.focus(); };
-    });
+    // Shared composer (multiline + attach/upload + key strip) → POST /api/send. The
+    // server gate (guest consent + allowlist) stays authoritative; this just targets
+    // the current pane and echoes the post-send screen.
+    var paneComposer = makeComposer(function () { return curPane; }, function (text) { writePane(text); hidePaneLoader(); }, false);
+    if ($('pane-input')) $('pane-input').appendChild(paneComposer.el);
     $('jump').onclick = function () { if (term) term.scrollToBottom(); updateJump(false); };
   }
 
