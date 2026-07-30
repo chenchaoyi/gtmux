@@ -666,15 +666,52 @@ func TestPasteAndSubmit_ProseWithStaleChip_NotMistakenForDelivery(t *testing.T) 
 }
 
 func TestStripImagePathLines(t *testing.T) {
-	rest, had := stripImagePathLines("body line\n/a/b/c-photo.HEIC\n/a/b/d.png")
-	if !had || rest != "body line" {
-		t.Fatalf("paths stripped, prose kept; got had=%v rest=%q", had, rest)
+	rest, imgs := stripImagePathLines("body line\n/a/b/c-photo.HEIC\n/a/b/d.png")
+	if len(imgs) != 2 || rest != "body line" {
+		t.Fatalf("paths stripped, prose kept; got imgs=%v rest=%q", imgs, rest)
 	}
-	rest, had = stripImagePathLines("no attachments here")
-	if had || rest != "no attachments here" {
-		t.Fatalf("prose untouched; got had=%v rest=%q", had, rest)
+	rest, imgs = stripImagePathLines("no attachments here")
+	if len(imgs) != 0 || rest != "no attachments here" {
+		t.Fatalf("prose untouched; got imgs=%v rest=%q", imgs, rest)
 	}
-	if _, had = stripImagePathLines("look at /a/b.png please"); had {
+	if _, imgs = stripImagePathLines("look at /a/b.png please"); len(imgs) != 0 {
 		t.Fatalf("a prose line mentioning a path is not a bare path line")
+	}
+}
+
+func TestPasteAndSubmit_LiteralWrappedImagePath_Submits(t *testing.T) {
+	// The pane kept the pasted image path LITERAL (no [Image #N] chip) and the long path
+	// WRAPPED in the input box — so the draft shows a space at the wrap the path never
+	// had, and the whole-text tail check misses. It must still submit: prose present +
+	// the path present literally (matched whitespace-free). This is the "text + image,
+	// everything is in the box but Not-sent" report.
+	text := "paired devices info is thin, no iOS/browser version?\n" +
+		"/Users/ccy/.local/share/gtmux/uploads/f163a4fc-markup.png"
+	// draft: prose, then the path wrapped after "f163a4fc-" (a newline the capture renders
+	// mid-token) — normalizeSpace would turn that wrap into a space.
+	draft := boxDraftLines(
+		"paired devices info is thin, no iOS/browser version?",
+		"/Users/ccy/.local/share/gtmux/uploads/f163a4fc-",
+		"markup.png",
+	)
+	f := &fakeIO{caps: []string{draft}}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, text)
+	if !ok || f.enterCalls != 1 {
+		t.Fatalf("literal wrapped path + prose = placed; want submit, got ok=%v enters=%d", ok, f.enterCalls)
+	}
+	if f.pasteCalls != 1 {
+		t.Fatalf("no destructive re-paste on a placed delivery; pastes=%d", f.pasteCalls)
+	}
+}
+
+func TestDraftHoldsImagePaths_TruncatedPathIsNotHeld(t *testing.T) {
+	// A path only PARTLY in the draft (the tail never arrived) must NOT count as placed —
+	// the wrap-tolerant match must not paper over a genuine fragment.
+	full := []string{"/Users/x/.local/share/gtmux/uploads/abcd1234-markup.png"}
+	if draftHoldsImagePaths("❯ /Users/x/.local/share/gtmux/uploads/abcd1234-", full) {
+		t.Fatalf("a truncated path must not be reported as held")
+	}
+	if !draftHoldsImagePaths("❯ /Users/x/.local/share/gtmux/uploads/abcd1234-\nmarkup.png", full) {
+		t.Fatalf("a wrapped-but-complete path must be reported as held")
 	}
 }

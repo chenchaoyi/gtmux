@@ -2,6 +2,7 @@ package dispatch
 
 import (
 	"strings"
+	"unicode"
 )
 
 // State is the deterministic outcome of a delivery.
@@ -417,15 +418,17 @@ func draftHasDelivery(draft, text string) bool {
 	if ContainsHead(draft, text) && ContainsTail(draft, text) {
 		return true
 	}
-	// Attachment-aware: an agent TUI (Claude Code) folds a pasted image PATH into an
-	// "[Image #N]" chip the instant it lands, so the path text can never be found in
-	// the draft verbatim — the guard called a perfectly-placed photo a fragment and
-	// refused the submit (the phone's "uploaded image never sends" bug). When the
-	// only lines the head/tail match is missing are image paths and the draft shows
-	// an attachment chip, the delivery is placed: any remaining prose must still
-	// match head+tail on its own.
-	rest, hadImages := stripImagePathLines(text)
-	if !hadImages || !looksAttachmentChip(draft) {
+	// Attachment-aware: a pasted image PATH lands in one of two shapes. Claude Code
+	// usually FOLDS it into an "[Image #N]" chip, so the path text is never in the draft
+	// verbatim (the "uploaded image never sends" bug). But it also sometimes keeps the
+	// path LITERAL — and a long path WRAPS in the input box, so normalizeSpace injects a
+	// space the path never had and the whole-text head/tail check above misses its tail
+	// (the "text + image, everything is in the box but Not-sent" report). So when the
+	// only lines the head/tail match is missing are image paths, the images count as
+	// placed if the draft shows a chip OR holds every path literally (matched
+	// whitespace-free, wrap-tolerant); any remaining prose must still match head+tail.
+	rest, images := stripImagePathLines(text)
+	if len(images) == 0 || !(looksAttachmentChip(draft) || draftHoldsImagePaths(draft, images)) {
 		return false
 	}
 	if strings.TrimSpace(rest) == "" {
@@ -450,19 +453,50 @@ func looksAttachmentChip(draft string) bool {
 // paste — the formats the phone's photo/screenshot flow produces.
 var imageExts = []string{".png", ".jpg", ".jpeg", ".gif", ".webp", ".heic", ".heif"}
 
-// stripImagePathLines removes the lines of text that are bare image paths (the shape
-// the mobile composer appends after the typed body: one absolute path per line) and
-// reports whether any were present.
-func stripImagePathLines(text string) (rest string, hadImages bool) {
+// stripImagePathLines splits the lines that are bare image paths (the shape the mobile
+// composer appends after the typed body: one absolute path per line) from the rest of
+// the prose, returning the prose and the image paths (nil = none).
+func stripImagePathLines(text string) (rest string, images []string) {
 	var kept []string
 	for _, line := range strings.Split(text, "\n") {
 		if isImagePathLine(line) {
-			hadImages = true
+			images = append(images, strings.TrimSpace(line))
 			continue
 		}
 		kept = append(kept, line)
 	}
-	return strings.Join(kept, "\n"), hadImages
+	return strings.Join(kept, "\n"), images
+}
+
+// draftHoldsImagePaths reports whether every image path is present in the draft as
+// LITERAL text (Claude keeps a pasted path literal on some panes instead of folding it
+// into an [Image #N] chip). Matched WHITESPACE-FREE: a long path WRAPS in the input box
+// and normalizeSpace turns the wrap into a space the path never had — stripping all
+// whitespace from both sides recovers the wrapped path (paths have no interior spaces).
+func draftHoldsImagePaths(draft string, paths []string) bool {
+	if len(paths) == 0 {
+		return false
+	}
+	ns := removeAllSpace(draft)
+	for _, p := range paths {
+		if !strings.Contains(ns, removeAllSpace(p)) {
+			return false
+		}
+	}
+	return true
+}
+
+// removeAllSpace strips every whitespace rune (not merely collapsing runs, as
+// normalizeSpace does) — for matching a token that must not contain spaces (a path)
+// against a draft where a line wrap injected one.
+func removeAllSpace(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if !unicode.IsSpace(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // isImagePathLine reports whether a single line is nothing but a path to an image
