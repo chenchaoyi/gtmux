@@ -1,3 +1,4 @@
-• Reach any tmux pane, not just agents — a new pane browser.
-• The HQ is now a floating disc: the whole fleet's state at a glance.
-• Fixes and polish across the radar, terminal, notifications, and Live Activity.
+• Sending a message into a busy agent no longer gets cut off, and sending text together with an image now lands reliably.
+• The paired-devices list shows what each device is — iOS version or browser — with a matching icon and when it was last seen.
+• Fixed the QR pairing scanner on notch / Dynamic Island phones.
+• Assorted input and stability fixes.

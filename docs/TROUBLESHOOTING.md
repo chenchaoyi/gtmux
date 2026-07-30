@@ -433,3 +433,38 @@ ceiling. Secondary: the `uploads/` dir (phone images) and the per-pane churn mar
   running, nothing trims — start it, or manually `: > ~/.local/share/gtmux/tunnel.log`.
 - `events.seq` is a single monotonic integer — never delete it to reclaim space; a reset
   would break every consumer's durable cursor.
+
+---
+
+## Radar / process sampling
+
+### Menu bar frozen + phone shows "0 agents" after a network switch (wedged `ps`)
+**Symptom:** right after changing networks (office ↔ home, VPN up/down) the menu bar
+stops updating and the phone shows the server connected but **0 agents**. `ps aux` in a
+shell ALSO hangs. `pgrep -f "gtmux agents"` shows dozens/hundreds piled up.
+**Root cause:** a background system process — classically a **corporate VPN/EDR agent**
+(seen: `medrAgent`) — wedges in **uninterruptible kernel sleep (`U`/"stuck")** during the
+network transition. The radar samples processes with a full-table `ps -axo …command=`,
+which reads every process's argv (`KERN_PROCARGS2`); reading the wedged process's args
+blocks **forever**, and a `ps` stuck in `U` can't be killed (SIGKILL/SIGALRM stay pending)
+nor reaped. The menu bar shells out to `gtmux agents` every poll, so each poll spawns
+another undying `ps` — observed **137+ stuck `ps`**, a frozen bar, and the serve (which
+samples through the same call) returning an empty agent list to the phone.
+**Diagnose (do NOT use full `ps` — it wedges too; each call adds another stuck `ps`):**
+- `top -l 1 -stats pid,state,command -n 800 | awk '$2=="stuck"'` — `top` uses libproc and
+  does NOT block. The **only non-`ps` "stuck" row is the culprit** (`ps` reading its argv
+  is why everything else hangs). A **targeted** `ps -p <pid>` still works — it's only the
+  full-table `-axo …command=` walk that blocks.
+- The wedged process usually self-heals when its stuck kernel op (network) completes; it
+  may flap stuck↔running as the network settles. You can't `kill -9` it while it's `U`.
+**Fix (shipped v0.43.11, `internal/radar/agents.go` `boundedOutput`):** the full-table
+`ps` runs with a hard timeout that **truly abandons** a hung child — read+`Wait` in a
+goroutine, `select` against a timer, on timeout best-effort `Kill` and **return** a
+degraded (empty) snapshot. A degraded snapshot loses only the CPU "working" signal +
+bare-`node` (idle Codex) detection; **title-identified agents still show**, so the radar
+keeps working through a wedge. ⚠️ **`exec.CommandContext` + `WaitDelay` is NOT sufficient**
+— `WaitDelay` closes the I/O pipes but `Cmd.Wait` still blocks in `wait4()` on the
+unreapable child (v0.43.10 shipped this and still hung). You must abandon the `Wait`.
+**Recover a live wedge on an OLD build:** `gtmux update` restarts the serve+menu bar with
+the fixed binary — `gtmux agents` then returns in ~4s even while the process is still
+wedged. The leftover stuck `ps` drain when the wedged agent finally unblocks.
