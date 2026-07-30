@@ -333,6 +333,50 @@ func TestClientInfoIdentity(t *testing.T) {
 	}
 }
 
+// clientPlatform is the lean roster label: the app's self-reported X-Gtmux-Client tag
+// wins; a browser (no tag) falls back to a User-Agent sniff. It differs from clientInfo
+// only in being a bare string for the paired-device list.
+func TestClientPlatform(t *testing.T) {
+	s := New(Config{Addr: "x", Token: "master"}, Deps{})
+
+	rp := httptest.NewRequest(http.MethodGet, "/api/agents", nil)
+	rp.Header.Set("X-Gtmux-Client", "iOS 17.5")
+	if got := s.clientPlatform(rp); got != "iOS 17.5" {
+		t.Errorf("app tag → %q, want 'iOS 17.5'", got)
+	}
+
+	rb := httptest.NewRequest(http.MethodGet, "/api/agents", nil)
+	rb.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15")
+	if got := s.clientPlatform(rb); got != "Safari · macOS" {
+		t.Errorf("browser UA → %q, want 'Safari · macOS'", got)
+	}
+}
+
+// SetPlatform records a device's platform in-memory, ignores blanks (so a header-less
+// request never clobbers a known tag), and only writes on a change.
+func TestSetPlatform(t *testing.T) {
+	en := NewEnrollManager([]EnrolledDevice{{ID: "a", Token: "tok", Name: "Phone"}}, nil)
+
+	en.SetPlatform("tok", "iOS 17.5")
+	if d, _ := en.DeviceByToken("tok"); d.Platform != "iOS 17.5" {
+		t.Fatalf("after set → %q, want 'iOS 17.5'", d.Platform)
+	}
+	// A blank tag (request without the header) must not erase the known one.
+	en.SetPlatform("tok", "")
+	if d, _ := en.DeviceByToken("tok"); d.Platform != "iOS 17.5" {
+		t.Errorf("blank set clobbered → %q, want 'iOS 17.5'", d.Platform)
+	}
+	// An unknown token is a silent no-op.
+	en.SetPlatform("nope", "Android 14")
+	if _, ok := en.DeviceByToken("nope"); ok {
+		t.Errorf("unknown token created an entry")
+	}
+	// The roster surfaces the platform.
+	if got := en.Devices(); len(got) != 1 || got[0].Platform != "iOS 17.5" {
+		t.Errorf("roster = %+v, want one device with platform 'iOS 17.5'", got)
+	}
+}
+
 func TestEventsSSEStream(t *testing.T) {
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
 		AgentStatuses: func() []AgentStatus { return nil },

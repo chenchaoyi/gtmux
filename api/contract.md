@@ -488,12 +488,16 @@ body: {"enrollCode":"<code>","name":"<device label>"}
 ### `GET /api/devices` — list enrolled devices (no tokens)
 
 ```
-200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?,"scope":"…"?}, …]}
+200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?,"platform":"…"?,"scope":"…"?}, …]}
 503 {"error":"enrollment not configured"}
 ```
 
 `scope` is `"guest"` for a share link, absent/empty for an owner device (guest entries
-also carry `viewPanes`/`inputPanes`/`expiresAt`, below).
+also carry `viewPanes`/`inputPanes`/`expiresAt`, below). `platform` is the device's
+self-reported client tag (`"iOS 17.5"`, sent as the `X-Gtmux-Client` request header) or,
+for a browser that sends none, a coarse `"<Browser> · <OS>"` sniff of the User-Agent —
+so the roster shows WHAT a device is, not just its name. Absent until the device's first
+authenticated request after this server version.
 
 ### `POST /api/devices/revoke` — revoke a device's token now
 

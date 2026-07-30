@@ -2,8 +2,18 @@
 // Mirrors api/contract.md. `focus` selects a pane; `send` types into one (a WRITE
 // gated only by the bearer token).
 
+import {Platform} from 'react-native';
 import {Agent, PaneResponse, PaneRow, ReplyOption, TermTheme, toAgent} from './types';
 import {Debug} from '../debug';
+
+// clientTag is the device's self-reported platform, sent on every request as
+// `X-Gtmux-Client` so the Mac's paired-device roster can show "iOS 17.5" instead of a
+// bare "iPhone". Shared with the SSE stream (api/events).
+export function clientTag(): string {
+  if (Platform.OS === 'ios') return `iOS ${Platform.Version}`;
+  if (Platform.OS === 'android') return `Android ${Platform.Version}`;
+  return '';
+}
 
 export interface SendPayload {
   text?: string;
@@ -46,6 +56,7 @@ export interface PairedDevice {
   name: string;
   enrolledAt: number;
   lastSeen?: number;
+  platform?: string; // "iOS 17.5" / "Safari · macOS" — what the device is
 }
 
 // DigestRow mirrors internal/radar DigestRow (GET /api/digest) — the fleet's
@@ -181,7 +192,7 @@ export class GtmuxClient {
   ) {}
 
   private h(): Record<string, string> {
-    return {Authorization: `Bearer ${this.token}`};
+    return {Authorization: `Bearer ${this.token}`, 'X-Gtmux-Client': clientTag()};
   }
 
   // Unauthenticated reachability check.
@@ -482,7 +493,7 @@ export class GtmuxClient {
           expiresAt: d.expiresAt ?? 0,
         });
       } else {
-        devices.push({id: d.id ?? '', name: d.name ?? '', enrolledAt: d.enrolledAt ?? 0, lastSeen: d.lastSeen});
+        devices.push({id: d.id ?? '', name: d.name ?? '', enrolledAt: d.enrolledAt ?? 0, lastSeen: d.lastSeen, platform: d.platform});
       }
     }
     return {guests, devices};

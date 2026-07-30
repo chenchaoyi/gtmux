@@ -20,6 +20,24 @@ import {SIcon} from '../ui/SettingsIcons';
 import {ContentColumn} from '../ui/ContentColumn';
 import {nextLinkScope} from '../state/shareScope';
 
+// The paired-device subtitle: platform (e.g. "iOS 17.5", "Safari · macOS") joined
+// with a relative last-seen ("2m ago"). Either half may be missing on an older Mac
+// serve (no platform capture) or a device that never checked in.
+function relSeen(unixSec: number, zh: boolean): string {
+  const s = Math.max(0, Math.floor(Date.now() / 1000) - unixSec);
+  if (s < 60) return zh ? '刚刚在线' : 'just now';
+  if (s < 3600) return zh ? `${Math.floor(s / 60)} 分钟前` : `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return zh ? `${Math.floor(s / 3600)} 小时前` : `${Math.floor(s / 3600)}h ago`;
+  return zh ? `${Math.floor(s / 86400)} 天前` : `${Math.floor(s / 86400)}d ago`;
+}
+
+function deviceSub(platform: string | undefined, lastSeen: number | undefined, zh: boolean): string | undefined {
+  const parts: string[] = [];
+  if (platform) parts.push(platform);
+  if (lastSeen) parts.push(relSeen(lastSeen, zh));
+  return parts.length ? parts.join(' · ') : undefined;
+}
+
 export function ManageMacScreen({navigation}: any) {
   const {lang, pal, mac} = useApp();
   const {client, agents} = useAgents();
@@ -220,7 +238,7 @@ export function ManageMacScreen({navigation}: any) {
                   key={d.id}
                   icon="server"
                   label={displayDeviceName(d.name)}
-                  sub={d.lastSeen ? (zh ? '最近在线' : 'recently seen') : undefined}
+                  sub={deviceSub(d.platform, d.lastSeen, zh)}
                   pal={pal}
                   divider={idx < devices.length - 1}
                 />
