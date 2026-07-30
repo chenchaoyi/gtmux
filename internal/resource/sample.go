@@ -1,7 +1,7 @@
 package resource
 
 import (
-	"context"
+	"io"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -121,17 +121,41 @@ type proc struct {
 	comm             string
 }
 
-// sampleProcs takes one `ps -axo pid,ppid,rss,pcpu,comm` snapshot. The full-table `ps`
-// gets a hard timeout + WaitDelay so a process wedged in uninterruptible kernel sleep (a
-// corp VPN/EDR agent during a network switch) can't hang the serve's resource tick — it
-// abandons a stuck `ps` and returns a degraded (nil) sample instead of blocking forever.
-func sampleProcs() []proc {
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "ps", "-axo", "pid=,ppid=,rss=,pcpu=,comm=")
-	cmd.WaitDelay = time.Second
-	out, err := cmd.Output()
+// boundedPSOutput runs `ps <args>` with a hard timeout and truly ABANDONS it if it
+// overruns. A process wedged in uninterruptible kernel sleep (a corp VPN/EDR agent during
+// a network switch) makes `ps` unkillable and unreapable, so CommandContext+Cmd.Wait
+// would block forever in wait4. We read+Wait in a goroutine and select against a timer:
+// on timeout we best-effort Kill and return nil, leaving the goroutine parked (buffered
+// send) until the child finally dies. nil on any error or timeout.
+func boundedPSOutput(timeout time.Duration, args ...string) []byte {
+	cmd := exec.Command("ps", args...)
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		return nil
+	}
+	if err := cmd.Start(); err != nil {
+		return nil
+	}
+	done := make(chan []byte, 1)
+	go func() {
+		b, _ := io.ReadAll(stdout)
+		_ = cmd.Wait()
+		done <- b
+	}()
+	select {
+	case b := <-done:
+		return b
+	case <-time.After(timeout):
+		_ = cmd.Process.Kill()
+		return nil
+	}
+}
+
+// sampleProcs takes one `ps -axo pid,ppid,rss,pcpu,comm` snapshot, bounded so a wedged
+// process can't hang the serve's resource tick (degrades to a nil sample instead).
+func sampleProcs() []proc {
+	out := boundedPSOutput(4*time.Second, "-axo", "pid=,ppid=,rss=,pcpu=,comm=")
+	if out == nil {
 		return nil
 	}
 	var ps []proc

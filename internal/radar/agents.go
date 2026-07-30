@@ -7,9 +7,9 @@
 package radar
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -350,17 +350,40 @@ func boundedPS(args ...string) ([]byte, error) {
 	return boundedOutput(psSnapshotTimeout, "ps", args...)
 }
 
-// boundedOutput runs name+args and returns its stdout, but ABANDONS it if it overruns
-// timeout: the context cancels + kills, and WaitDelay makes Output() return by closing
-// the pipes rather than blocking forever on a child that won't die (a process in
-// uninterruptible kernel sleep ignores SIGKILL until it unblocks). The caller gets an
-// error instead of hanging.
+// boundedOutput runs name+args and returns its stdout, but truly ABANDONS it if it
+// overruns timeout. It must survive a child stuck in uninterruptible kernel sleep (a
+// wedged VPN/EDR agent makes `ps` do this) — and such a child can't be killed
+// (SIGKILL stays pending) nor reaped (wait4 never returns). CommandContext+WaitDelay is
+// NOT enough: WaitDelay closes the I/O pipes but Cmd.Wait still blocks in wait4 on the
+// unreapable child. So we read + Wait in a goroutine and select against a timer: on
+// timeout we best-effort Kill and RETURN, leaving the goroutine parked in the (buffered)
+// send until the child eventually dies and is reaped — no leak of anything but one parked
+// goroutine, and the CALLER never blocks.
 func boundedOutput(timeout time.Duration, name string, args ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.WaitDelay = time.Second
-	return cmd.Output()
+	cmd := exec.Command(name, args...)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+	type result struct {
+		b   []byte
+		err error
+	}
+	done := make(chan result, 1) // buffered so the goroutine never blocks sending
+	go func() {
+		b, _ := io.ReadAll(stdout)
+		done <- result{b, cmd.Wait()}
+	}()
+	select {
+	case r := <-done:
+		return r.b, r.err
+	case <-time.After(timeout):
+		_ = cmd.Process.Kill() // best-effort; a U-state process ignores it until it unblocks
+		return nil, fmt.Errorf("%s timed out after %s", name, timeout)
+	}
 }
 
 // snapshotProcs returns pid → {ppid, cpu, argv} for every process (one `ps`
