@@ -334,6 +334,10 @@ func (s *Server) auth(next http.Handler) http.Handler {
 				return
 			}
 			scope = sc // scopeDevice | scopeGuest
+			// Refresh the device's platform ("iOS 17.5" / "Safari · macOS") from this
+			// request so the paired-device roster shows what it IS — the phone sends
+			// X-Gtmux-Client, a browser is sniffed from the User-Agent.
+			s.deps.Enroll.SetPlatform(tok, s.clientPlatform(r))
 			// A guest's request carries ITS link (per-link scope) so every gate
 			// downstream checks the caller's own allowlists, not a global set.
 			if scope == scopeGuest {

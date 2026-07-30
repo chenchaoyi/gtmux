@@ -579,6 +579,16 @@ func (s *Server) clientInfo(r *http.Request) ClientInfo {
 	return info
 }
 
+// clientPlatform is the lean platform string for the paired-device roster: the phone's
+// self-reported tag ("iOS 17.5") if present, else the browser sniffed from the
+// User-Agent ("Safari · macOS"). "" when neither is known.
+func (s *Server) clientPlatform(r *http.Request) string {
+	if tag := sanitizeClientTag(r.Header.Get("X-Gtmux-Client")); tag != "" {
+		return tag
+	}
+	return browserPlatform(r.Header.Get("User-Agent"))
+}
+
 // sanitizeClientTag cleans the phone's self-reported "X-Gtmux-Client" tag before
 // it's shown in the Mac's UI: keep only a short, printable "iOS 17.5"-shaped
 // string (letters/digits/dot/space), so a hostile client can't inject control

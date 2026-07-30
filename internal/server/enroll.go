@@ -25,6 +25,10 @@ type EnrolledDevice struct {
 	Token      string `json:"token"`
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen,omitempty"`
+	// Platform is the device's self-reported client tag ("iOS 17.5") or its sniffed
+	// browser ("Safari · macOS") — refreshed on each authed request so the paired-device
+	// roster shows what a device IS, not just a generic "browser"/"iPhone". Additive.
+	Platform string `json:"platform,omitempty"`
 	// Scope is "" (a paired device — the owner's own surface, unrestricted input) or
 	// "guest" (a share link — input-restricted by the share gate). Additive/back-compat.
 	Scope string `json:"scope,omitempty"`
@@ -339,6 +343,23 @@ func (m *EnrollManager) ValidToken(tok string) bool {
 	return true
 }
 
+// SetPlatform records a device's self-reported client tag / sniffed browser platform
+// (e.g. "iOS 17.5", "Safari · macOS") from the current request, so the paired-device
+// roster shows what a device IS, not a generic name. In-memory + best-effort (like
+// LastSeen); an empty value is ignored so a request without the header never clobbers a
+// known one, and it only writes on a CHANGE (cheap on the hot auth path).
+func (m *EnrollManager) SetPlatform(tok, platform string) {
+	if tok == "" || platform == "" {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if d, ok := m.devices[tok]; ok && d.Platform != platform {
+		d.Platform = platform
+		m.devices[tok] = d
+	}
+}
+
 // Devices returns the roster (without tokens would be nicer for display, but the
 // CLI that lists them runs out-of-process off the file; in-process callers get all).
 func (m *EnrollManager) Devices() []EnrolledDevice {
@@ -450,6 +471,7 @@ type deviceInfo struct {
 	Name       string `json:"name"`
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen,omitempty"`
+	Platform   string `json:"platform,omitempty"` // "iOS 17.5" / "Safari · macOS" — what the device IS
 	Scope      string `json:"scope,omitempty"`
 	// Per-link guest scope (pair-share-model), additive: absent on owner devices.
 	ViewPanes  []string `json:"viewPanes,omitempty"`
@@ -471,7 +493,7 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]deviceInfo, 0)
 	for _, d := range s.deps.Enroll.Devices() {
-		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Scope: d.Scope,
+		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Platform: d.Platform, Scope: d.Scope,
 			ViewPanes: d.ViewPanes, InputPanes: d.InputPanes, ExpiresAt: d.ExpiresAt})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"devices": out})
