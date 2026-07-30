@@ -1,9 +1,11 @@
 package resource
 
 import (
+	"context"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // sampleMachine gathers the whole-machine numbers (best-effort; a missing source
@@ -119,9 +121,16 @@ type proc struct {
 	comm             string
 }
 
-// sampleProcs takes one `ps -axo pid,ppid,rss,pcpu,comm` snapshot.
+// sampleProcs takes one `ps -axo pid,ppid,rss,pcpu,comm` snapshot. The full-table `ps`
+// gets a hard timeout + WaitDelay so a process wedged in uninterruptible kernel sleep (a
+// corp VPN/EDR agent during a network switch) can't hang the serve's resource tick — it
+// abandons a stuck `ps` and returns a degraded (nil) sample instead of blocking forever.
 func sampleProcs() []proc {
-	out, err := exec.Command("ps", "-axo", "pid=,ppid=,rss=,pcpu=,comm=").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "ps", "-axo", "pid=,ppid=,rss=,pcpu=,comm=")
+	cmd.WaitDelay = time.Second
+	out, err := cmd.Output()
 	if err != nil {
 		return nil
 	}

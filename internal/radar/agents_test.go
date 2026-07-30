@@ -3,6 +3,7 @@ package radar
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -269,5 +270,33 @@ func TestParseCPUTime(t *testing.T) {
 		if got := parseCPUTime(c.in); got != c.want {
 			t.Errorf("parseCPUTime(%q) = %v, want %v", c.in, got, c.want)
 		}
+	}
+}
+
+// boundedOutput must ABANDON a command that overruns its timeout and return promptly,
+// instead of blocking on it — the guard that stops a wedged `ps` (a process stuck in
+// uninterruptible kernel sleep) from freezing the menu bar / serve.
+func TestBoundedOutputAbandonsAHang(t *testing.T) {
+	start := time.Now()
+	_, err := boundedOutput(200*time.Millisecond, "sleep", "10")
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatal("a sleep 10 bounded to 200ms should error, not succeed")
+	}
+	// It must return far sooner than the command's own 10s — allow generous slack for
+	// the kill + WaitDelay, but nowhere near 10s.
+	if elapsed > 3*time.Second {
+		t.Errorf("boundedOutput blocked %v — the timeout did not abandon the hang", elapsed)
+	}
+}
+
+// A well-behaved command still returns its output within the timeout.
+func TestBoundedOutputPassesThroughAFastCommand(t *testing.T) {
+	out, err := boundedOutput(4*time.Second, "echo", "ok")
+	if err != nil {
+		t.Fatalf("fast command errored: %v", err)
+	}
+	if strings.TrimSpace(string(out)) != "ok" {
+		t.Errorf("output = %q, want \"ok\"", out)
 	}
 }

@@ -7,6 +7,7 @@
 package radar
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -331,12 +332,44 @@ type procInfo struct {
 	command string
 }
 
+// psSnapshotTimeout bounds the full-table `ps`. A normal run is <100ms; 4s is far
+// above any healthy machine yet short enough that a hung poll degrades fast.
+const psSnapshotTimeout = 4 * time.Second
+
+// boundedPS runs `ps <args>` with a hard timeout and ABANDONS it if it overruns.
+// `ps -axo …command=` reads every process's argv (KERN_PROCARGS2); if ANY process is
+// stuck in an uninterruptible kernel wait — a corporate VPN/EDR agent wedged during a
+// network switch has done exactly this — that read blocks indefinitely, and the wedged
+// reader can't even be killed (SIGKILL/SIGALRM stay pending on a U-state process). The
+// context timeout cancels + kills, and WaitDelay makes Output() RETURN after the delay by
+// closing the I/O pipes rather than waiting forever on an unreapable child. Without this
+// one wedged process froze the whole menu bar (which polls this every refresh) and piled
+// up 100+ stuck `ps`. The abandoned `ps` is reparented to launchd and reaped when it
+// finally unblocks; the caller degrades (empty snapshot) instead of hanging.
+func boundedPS(args ...string) ([]byte, error) {
+	return boundedOutput(psSnapshotTimeout, "ps", args...)
+}
+
+// boundedOutput runs name+args and returns its stdout, but ABANDONS it if it overruns
+// timeout: the context cancels + kills, and WaitDelay makes Output() return by closing
+// the pipes rather than blocking forever on a child that won't die (a process in
+// uninterruptible kernel sleep ignores SIGKILL until it unblocks). The caller gets an
+// error instead of hanging.
+func boundedOutput(timeout time.Duration, name string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.WaitDelay = time.Second
+	return cmd.Output()
+}
+
 // snapshotProcs returns pid → {ppid, cpu, argv} for every process (one `ps`
 // call), so we can look inside a pane's process tree and sum its CPU. Empty on
-// any failure.
+// any failure OR a timeout — a degraded snapshot loses only the CPU "working"
+// signal and bare-`node` agent detection; title-identified agents still appear.
 func snapshotProcs() map[int]procInfo {
 	out := map[int]procInfo{}
-	b, err := exec.Command("ps", "-axo", "pid=,ppid=,cputime=,command=").Output()
+	b, err := boundedPS("-axo", "pid=,ppid=,cputime=,command=")
 	if err != nil {
 		return out
 	}
