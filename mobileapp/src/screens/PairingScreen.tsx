@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
 import {EnrollError, enrollDevice, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
@@ -235,8 +235,13 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      {/* A Modal renders OUTSIDE the app's SafeAreaProvider, so the scanner's own
+          SafeAreaView would see 0 insets and its title would sit under the Dynamic
+          Island. Re-establish the provider inside the modal so the top inset is real. */}
       <Modal visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
-        <ScanScreen onClose={() => setScanning(false)} onScanned={onScanned} />
+        <SafeAreaProvider>
+          <ScanScreen onClose={() => setScanning(false)} onScanned={onScanned} />
+        </SafeAreaProvider>
       </Modal>
     </SafeAreaView>
   );

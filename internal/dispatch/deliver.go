@@ -282,6 +282,16 @@ const (
 // passed with no match.
 func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 	budget := settleFrames(opts.PasteSettle, text)
+	// A BUSY pane (an agent mid-render) draws a long paste PROGRESSIVELY: the draft
+	// fills in frame by frame while the agent's own output competes for redraws. A fixed
+	// window read the half-rendered draft, called it a fragment, and CLEARED it — which
+	// truncated a send into a churning pane and refused to submit (the "into a working
+	// pane, only the first words land" report). So while the draft is still GROWING toward
+	// the target, keep waiting; declare a fragment only once BOTH the settle budget has
+	// passed AND the draft has STALLED (stopped advancing) for a few frames — with a hard
+	// ceiling so a pathological pane can't stall a send forever.
+	prevLen, stall := -1, 0
+	ceiling := budget + pasteStallCeiling
 	for i := 0; ; i++ {
 		_, draft, structured := SplitInputRegion(io.Capture())
 		if !structured {
@@ -290,7 +300,12 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 		if draftHasDelivery(draft, text) {
 			return pasteInDraft
 		}
-		if i >= budget {
+		if n := len(normalizeSpace(draft)); n > prevLen {
+			prevLen, stall = n, 0 // still arriving — do not clear a paste mid-render
+		} else {
+			stall++
+		}
+		if i >= ceiling || (i >= budget && stall >= pasteStallFrames) {
 			return pasteFragment
 		}
 		io.Sleep()
@@ -331,6 +346,14 @@ const (
 	// draft is not merely slow, and the caller is better served by a reported failure
 	// than an unbounded stall.
 	settleMaxExtraFrames = 20
+	// pasteStallFrames: consecutive frames with NO further draft growth before a
+	// still-unmatched draft is called a fragment (a busy pane renders progressively, so
+	// a couple of static frames — not one — is the real "it stopped arriving" signal).
+	pasteStallFrames = 3
+	// pasteStallCeiling caps how long the growth-tracking can extend the settle window
+	// beyond the base budget (~6s more at a 300ms poll), so a pane that dribbles output
+	// forever still fails in bounded time rather than hanging the send.
+	pasteStallCeiling = 20
 )
 
 // clearedForRetry clears a fragmented draft and reports whether the box is now

@@ -118,8 +118,9 @@ func TestDeliver_HookHappyPath_NoScreenNeeded(t *testing.T) {
 func TestDeliver_Fragment_ClearedThenRePastedOnce(t *testing.T) {
 	f := &fakeIO{
 		caps: []string{
-			boxDraft("cl"),              // paste guard: fragment…
-			boxDraft("cl"),              // …still a fragment after the settle window
+			// A fragment is now called only once the draft STOPS growing (pasteStallFrames)
+			// — so the same "cl" must hold for a few static frames before the clear.
+			boxDraft("cl"), boxDraft("cl"), boxDraft("cl"), boxDraft("cl"), // fragment, stalled
 			boxEmpty("history"),         // ClearDraft worked: the box is empty
 			boxEmpty("history"),         // retry re-reads: nothing in the draft to keep
 			boxDraft(taskText),          // paste #2: full text
@@ -213,6 +214,42 @@ func TestDeliver_FragmentNeverCompletes_Fails(t *testing.T) {
 	}
 	if f.enterCalls != 0 {
 		t.Fatalf("must not submit a fragment; enterCalls=%d", f.enterCalls)
+	}
+}
+
+func TestDeliver_BusyPaneProgressiveRender_WaitsAndLands(t *testing.T) {
+	// A BUSY pane (agent mid-render) draws a long paste PROGRESSIVELY — the draft grows
+	// over several frames before the full text is in the box. confirmPaste must WAIT while
+	// it keeps growing (never clear a still-arriving paste) and submit once complete. This
+	// is the "sending into a working pane only lands the first words, Not-sent" fix.
+	// PasteSettle:1 so the OLD fixed window would have expired on frame 1 (a fragment) and
+	// cleared the draft before the render finished.
+	pfx := func(n int) string {
+		r := []rune(taskText)
+		if n > len(r) {
+			n = len(r)
+		}
+		return string(r[:n])
+	}
+	f := &fakeIO{
+		caps: []string{
+			boxDraft(pfx(3)),            // head only, still arriving
+			boxDraft(pfx(8)),            // grew
+			boxDraft(pfx(15)),           // grew
+			boxDraft(taskText),          // FULL — head+tail match
+			boxEmpty("me: " + taskText), // landed
+			boxEmpty("me: " + taskText), // landed (agree)
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 20, PasteSettle: 1, PasteRetries: 2}, taskText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("a progressively-rendering paste should land, got %+v", r)
+	}
+	if f.clearCalls != 0 {
+		t.Fatalf("must NOT clear a still-arriving paste (that is the truncation); clearCalls=%d", f.clearCalls)
+	}
+	if f.pasteCalls != 1 {
+		t.Fatalf("one paste, no destructive re-paste; pasteCalls=%d", f.pasteCalls)
 	}
 }
 
