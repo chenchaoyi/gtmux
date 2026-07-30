@@ -150,7 +150,7 @@ func listPush(base, token string) int {
 			}
 			mark = fmt.Sprintf("✓ push %s·%s", env, kinds)
 		}
-		fmt.Printf("  %s  %-24s  %s\n", d.ID, d.Name, mark)
+		fmt.Printf("  %s  %-24s  %s\n", d.ID, deviceDisplayName(d.Name), mark)
 	}
 	if len(orphans) > 0 {
 		fmt.Println()
@@ -209,7 +209,11 @@ type deviceListEntry struct {
 	Name       string `json:"name"`
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen"`
-	Scope      string `json:"scope,omitempty"`
+	// Platform is what the device IS — "iOS 17.5" (the app's self-reported tag) or
+	// "Safari · macOS" (a browser, sniffed from the User-Agent). Absent until the
+	// device's first authenticated request after the serve learned to record it.
+	Platform string `json:"platform,omitempty"`
+	Scope    string `json:"scope,omitempty"`
 	// Per-link guest scope (pair-share-model); absent on owner devices.
 	ViewPanes  []string `json:"viewPanes,omitempty"`
 	InputPanes []string `json:"inputPanes,omitempty"`
@@ -272,7 +276,11 @@ func listDevices(base, token string) int {
 	i18n.Say(fmt.Sprintf("%d paired device(s):", len(out.Devices)),
 		fmt.Sprintf("已配对 %d 台设备：", len(out.Devices)))
 	for _, d := range out.Devices {
-		fmt.Printf("  %s  %-24s  paired %s%s\n", d.ID, deviceDisplayName(d.Name), fmtAgo(d.EnrolledAt), lastSeenSuffix(d.LastSeen))
+		label := deviceDisplayName(d.Name)
+		if d.Platform != "" {
+			label += " (" + d.Platform + ")"
+		}
+		fmt.Printf("  %s  %-30s  paired %s%s\n", d.ID, label, fmtAgo(d.EnrolledAt), lastSeenSuffix(d.LastSeen))
 	}
 	i18n.Say("Revoke one:  gtmux devices revoke <id>", "吊销某台：  gtmux devices revoke <id>")
 	return 0

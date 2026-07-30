@@ -7,6 +7,7 @@ import Svg, {Path, Circle, Rect, Line} from 'react-native-svg';
 
 export type IconName =
   | 'server'
+  | 'phone'
   | 'palette'
   | 'font'
   | 'layout'
@@ -30,6 +31,13 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
             <Rect x="3" y="13" width="18" height="7" rx="1.5" {...s} />
             <Line x1="7" y1="7.5" x2="7.01" y2="7.5" {...s} />
             <Line x1="7" y1="16.5" x2="7.01" y2="16.5" {...s} />
+          </>
+        );
+      case 'phone':
+        return (
+          <>
+            <Rect x="6.5" y="3" width="11" height="18" rx="2.4" {...s} />
+            <Line x1="10.5" y1="18" x2="13.5" y2="18" {...s} />
           </>
         );
       case 'palette':

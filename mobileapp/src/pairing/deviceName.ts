@@ -33,11 +33,15 @@ export function deviceLabel(os: string, version?: string | number, idiom?: strin
 // LEGACY_PREFIX matches the old `gtmux • ` / `gtmux · ` / `gtmux ` naming.
 const LEGACY_PREFIX = /^gtmux\s*[•·]?\s*/i;
 
+// A bare generic auto-assigned kind ("browser") is title-cased so it reads as a proper
+// label instead of an unpolished lowercase word; a user's own name passes through.
+const GENERIC_KINDS: Record<string, string> = {browser: 'Browser', terminal: 'Terminal'};
+
 // displayDeviceName cleans a roster entry for display. Entries paired before the rename
 // still carry the old prefix on the Mac — stripping it at DISPLAY time means the list
 // tidies itself up without asking anyone to re-pair. Falls back to a dash rather than
 // rendering an empty row if a name is somehow blank.
 export function displayDeviceName(raw: string): string {
-  const cleaned = (raw ?? '').replace(LEGACY_PREFIX, '').trim();
-  return cleaned || (raw ?? '').trim() || '—';
+  const cleaned = (raw ?? '').replace(LEGACY_PREFIX, '').trim() || (raw ?? '').trim();
+  return GENERIC_KINDS[cleaned.toLowerCase()] ?? (cleaned || '—');
 }

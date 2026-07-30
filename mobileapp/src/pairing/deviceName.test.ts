@@ -42,6 +42,12 @@ describe('roster rows tidy up without a re-pair', () => {
   test('a name without the prefix is untouched', () => {
     expect(displayDeviceName('iPhone · iOS 18.5')).toBe('iPhone · iOS 18.5');
     expect(displayDeviceName('ccy-mbp.local')).toBe('ccy-mbp.local');
+    expect(displayDeviceName('ccy')).toBe('ccy');
+  });
+
+  test('a bare generic kind is title-cased, not left as a lowercase word', () => {
+    expect(displayDeviceName('browser')).toBe('Browser');
+    expect(displayDeviceName('terminal')).toBe('Terminal');
   });
 
   test('a row never renders empty', () => {
