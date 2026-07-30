@@ -133,15 +133,9 @@
       <span id="reply-size" class="rb-size"></span>
     </div>
     <!-- shared input: shown ONLY for panes the host consented + allowlisted (GET /api/share) -->
-    <div id="pane-input" hidden>
-      <input id="pin" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="type into this pane…" />
-      <button id="pin-send" title="Enter">↵</button>
-      <button class="pin-k" data-key="C-c" title="Ctrl-C">^C</button>
-      <button class="pin-k" data-key="Escape" title="Esc">esc</button>
-      <button class="pin-k" data-key="Tab" title="Tab">⇥</button>
-      <button class="pin-k" data-key="Up" title="Up">↑</button>
-      <button class="pin-k" data-key="Down" title="Down">↓</button>
-    </div>
+    <!-- the shared composer (multiline + attach/upload + key strip) is built by
+         makeComposer() in app.js and mounted here -->
+    <div id="pane-input" hidden></div>
     <!-- read-only pane: an explicit one-line explanation, never an empty textbox -->
     <div id="pane-ro" hidden>🔒 host 未授予此 pane 的输入权限</div>
   </section>
