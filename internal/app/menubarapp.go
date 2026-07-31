@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/servermode"
 )
 
 // The menu-bar app (Gtmux.app, bundle id com.gtmux.menubar) is the native Swift
@@ -66,6 +67,17 @@ func cmdUninstallApp(args []string) int {
 		if a == "-h" || a == "--help" {
 			usage()
 			return 0
+		}
+	}
+	// Server mode outlives the app by design (the guard is a system daemon), so
+	// uninstalling has to stand it down explicitly — otherwise a user could remove
+	// gtmux and be left with a Mac that will not sleep and nothing left to explain
+	// why. The marker is unprivileged, so this needs no password: the guard sees it
+	// and restores sleep on its next tick, then deletes itself.
+	if servermode.SleepDisabled() {
+		if err := servermode.Revoke(); err == nil {
+			i18n.Say("· server mode stood down — sleep will be restored shortly",
+				"· 已请求关闭服务器模式 —— 睡眠很快会恢复")
 		}
 	}
 	runQuiet("launchctl", "unload", "-w", launchAgentPath())

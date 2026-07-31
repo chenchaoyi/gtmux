@@ -236,6 +236,26 @@ user's real terminal (see the `terminal-theme` capability). `source` is
 503 {"error":"theme not available"}   // Theme dep not wired
 ```
 
+### `GET /api/servermode` — is this Mac being kept awake? (read-only, OWNER only)
+
+Returns the same document as `gtmux server-mode status --json`: `state`
+(`on|off|lapsed`), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
+`system_disablesleep` (the LIVE kernel reading), `persisted_disablesleep` (survives a
+reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason?,os_version?}`.
+Guests get `403` — this is a machine-level control, not a per-pane one.
+
+### `POST /api/servermode` — turn it OFF (WRITE, OWNER only, one direction)
+
+| field | type | meaning |
+| --- | --- | --- |
+| `on` | bool | must be `false`. `true` (or omitted) is **always refused with `403`** |
+
+**Enabling is not reachable remotely, for any client, including a paired owner device.**
+It requires an interactive administrator authorization typed at the Mac; an unattended
+machine has nobody to answer it, and a wrong remote enable would keep a laptop awake in a
+bag until the battery is flat. Turning it OFF is the safe direction and stays available
+from anywhere — restoring sleep must never depend on someone being present.
+
 ### `GET /api/digest` — the fleet's cognitive digest (read-only, OWNER only)
 
 Byte-identical to `gtmux digest --json`: one row per agent carrying what a supervisor

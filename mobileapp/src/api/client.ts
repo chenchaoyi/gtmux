@@ -3,7 +3,7 @@
 // gated only by the bearer token).
 
 import {Platform} from 'react-native';
-import {Agent, PaneResponse, PaneRow, ReplyOption, TermTheme, toAgent} from './types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent} from './types';
 import {Debug} from '../debug';
 
 // clientTag is the device's self-reported platform, sent on every request as
@@ -311,6 +311,25 @@ export class GtmuxClient {
   // digest: the fleet's cognitive digest (GET /api/digest) — one row per agent
   // with goal/last/ask + state, the gtmux HQ command center's situational-
   // awareness source. [] on failure (the board just shows empty).
+  // serverMode: read the lid-closed keep-awake state (owner scope only; a guest
+  // token gets 403 and sees nothing, by design — this is a machine-level control).
+  async serverMode(): Promise<ServerMode | null> {
+    const r = await tfetch(`${this.base}/api/servermode`, {headers: this.h()});
+    if (!r.ok) return null;
+    return (await r.json().catch(() => null)) as ServerMode | null;
+  }
+
+  // serverModeOff: the ONLY direction the phone may move this state. There is no
+  // corresponding "on" — the server refuses it for every client, including this one.
+  async serverModeOff(): Promise<boolean> {
+    const r = await tfetch(`${this.base}/api/servermode`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({on: false}),
+    });
+    return r.ok;
+  }
+
   async digest(): Promise<DigestRow[]> {
     const r = await tfetch(`${this.base}/api/digest`, {headers: this.h()});
     if (!r.ok) return [];

@@ -39,6 +39,10 @@ Commands:
                           layered thresholds and ahead-of-time warnings
   limits [--json]         real subscription-window remaining (5h session +
                           weekly), from the agent's own /usage (cached)
+  server-mode [on|off]    keep this Mac working with the lid closed, so serve /
+                          the tunnel / the phone keep answering. "on" asks for
+                          your admin password once and verifies it took effect;
+                          it stays on until you turn it off. --json for status
   restore                 one terminal tab per session, attach all
     restore --pick|-p     list & choose (numbers / Enter=all / q=cancel)
     restore <name>        attach that session by name in THIS tab
@@ -152,6 +156,9 @@ const usageZH = `快速开始：
                           提前预警（撞墙前告诉你）
   limits [--json]         真实订阅窗口余量（5 小时会话 + 周额度），来自 agent
                           自己的 /usage（有缓存）
+  server-mode [on|off]    让这台 Mac 合盖也继续工作，serve/隧道/手机端保持可用。
+                          on 需输入一次管理员密码并确认真的生效；开启后一直有效，
+                          直到你关闭。--json 看状态
   restore                 每个 session 一个终端 tab，全部接回
     restore --pick|-p     列出来选（编号 / 回车=全部 / q=取消）
     restore <名字>         按名字把当前 tab 接回指定 session

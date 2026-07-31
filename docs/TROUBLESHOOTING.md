@@ -161,6 +161,68 @@ body 正是 PR 描述。整条链路不报错，只是悄悄换了内容。
   用 `fastlane metadata skip_metadata:true` 单独补截图（Fastfile 注释里已写）。
 
 
+## 「我的 Mac 不睡了」：`disablesleep` 是个隐形开关（2026-07-31）
+
+**症状** —— 合盖不休眠、电池莫名掉光、机器在包里发烫。翻遍 系统设置 › 电池 也看不出问题，
+`pmset -g` 也一切正常。
+
+**根因** —— `sudo pmset -a disablesleep 1` 设的是内核标志 `SleepDisabled`，它:
+
+1. **跨重启保留**（写在 `/Library/Preferences/com.apple.PowerManagement.plist`）;
+2. **在 `pmset` 的任何报告命令里都看不到** —— `-g` / `-g custom` / `-g live` 三个都不显示这一项，
+   开着关着都不显示。所以「没有异常输出」根本不能证明它是关的。
+
+于是任何设过它又没恢复的工具（或你自己手跑的一条命令），都会让这台 Mac **永久不睡且无人察觉**。
+
+**必查（按可信度排序）**
+
+```sh
+# ① 内核活状态 —— 唯一权威、实时、不需要 root
+ioreg -r -c IOPMrootDomain -d 1 -w0 | grep SleepDisabled     # = Yes 就是不会睡
+
+# ② 落盘设置 —— 回答「重启后还算不算数」，但【滞后】于刚做的修改
+plutil -extract SystemPowerSettings.SleepDisabled raw -o - \
+  /Library/Preferences/com.apple.PowerManagement.plist
+
+# ③ 恢复
+sudo pmset -a disablesleep 0
+```
+
+**三个会咬人的细节**
+
+- **别信 `pmset` 的退出码。** 非 root 跑它会打印 "must be run as root" 然后 **exit 0**。写完必须
+  用上面 ① 读回确认，否则你会以为已经恢复了。
+- **关闭态是 `false`，不是「key 不存在」。** 恢复过的机器 key 还在、值为 false；从没设过的机器才没有
+  这个 key。用「key 在不在」判断会得出相反结论。
+- **`pmset -c`（只写 AC 档）不被这个设置尊重** —— 值落在 plist 的 `SystemPowerSettings` 顶层，
+  是全局的，电池供电时同样生效。所以别指望「拔掉电源内核会自动恢复睡眠」。
+
+`gtmux doctor` 现在会报告这个状态（只在这台机器真的碰过它时才出现），`gtmux server-mode status`
+会同时给出活状态与落盘值。**gtmux 只回滚自己设的那一个** —— 没有 gtmux 归属戳的设置只报告、给出
+上面的手动命令，绝不替你改。
+
+---
+
+## `make check` 本地绿、CI 的 `test` 红:Go 测试跑在 **Linux** 上（2026-07-31）
+
+**症状** —— `make check` 在你的 Mac 上全过,PR 上的 `test` job 却挂了,报的是一个"这台机器应该
+支持 X"之类的断言。
+
+**根因** —— gtmux 是 macOS 产品,但 CI 的 `test` job 是 `runs-on: ubuntu-latest`
+（只有 `menu-bar app build` 在 macos-latest）。任何**读真实系统**的测试 —— `ioreg`、`pmset`、
+`sw_vers`、`/Library/...`、`runtime.GOOS` —— 在那里的行为和你的 Mac 完全不同,而本地永远测不出来。
+
+**必查 / 写法**
+
+- 读系统的测试要么**按 `runtime.GOOS` 分支**,要么用纯函数 + fixture(首选:解析逻辑独立成纯函数,
+  喂真实输出的字符串)。
+- 分支时**两个方向都断言**,而不是在非 macOS 上 `t.Skip` —— CI 的 Linux 环境是免费的"不支持
+  平台"样本,正好验证你的兼容性门禁真的会**拒绝**,而不是瘸着继续跑。`servermode.Supported()`
+  的测试就是这么写的。
+- 提 PR 前想验证:`GOOS=linux go vet ./...` 能抓编译期问题;行为差异只能靠上面两条写法预防。
+
+---
+
 ## Release / git-ops
 
 ### Never inline backtick-containing prose into a shell-substituted string

@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/servermode"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -158,7 +160,7 @@ func doctorSections() []dsection {
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
 		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
-		{i18n.Tr("Remote access", "远程访问"), []dcheck{rowCloudflared()}},
+		{i18n.Tr("Remote access", "远程访问"), append([]dcheck{rowCloudflared()}, sleepSettingChecks()...)},
 		{i18n.Tr("Storage", "存储"), []dcheck{rowDiskUsage()}},
 	}
 }
@@ -483,5 +485,63 @@ func humanBytes(n int64) string {
 		return strconv.FormatInt(n>>10, 10) + " KB"
 	default:
 		return strconv.FormatInt(n, 10) + " B"
+	}
+}
+
+// --- server mode (openspec change server-mode) ---
+
+// sleepSettingChecks reports on the system sleep-disable setting. It is SILENT on a
+// machine that has never had it touched, so users who don't use server mode see no
+// extra rows (the same courtesy rowCodexHook extends to non-Codex users).
+//
+// It exists because this state is otherwise invisible: the setting survives reboot
+// and `pmset`'s reporting commands never mention it, so a Mac left unable to sleep
+// stays that way silently — for months, if nobody thinks to look. Making it legible
+// is the whole point.
+//
+// gtmux reverts only what gtmux owns. An unstamped setting is somebody else's
+// deliberate choice and is reported with the manual command, never changed.
+func sleepSettingChecks() []dcheck {
+	stale := true
+	if rec, ok := servermode.LoadState(); ok {
+		stale = rec.Stale(time.Now())
+	}
+	return sleepChecksFor(servermode.Current(), stale)
+}
+
+// sleepChecksFor is the pure decision half, so every branch is testable without
+// touching the machine.
+func sleepChecksFor(st servermode.Status, stale bool) []dcheck {
+	if !st.SystemDisableSleep && !st.PersistedDisableSleep && !st.OwnedByGtmux {
+		return nil // never used here — say nothing
+	}
+	label := i18n.Tr("sleep setting", "睡眠设置")
+	manual := i18n.Tr("undo it with: sudo pmset -a disablesleep 0",
+		"手动恢复：sudo pmset -a disablesleep 0")
+
+	switch {
+	case st.State == servermode.StateLapsed:
+		return []dcheck{{stRec, label, i18n.Tr("lapsed", "已失效"),
+			i18n.Tr("gtmux thinks server mode is on but the kernel disabled it — treat the closed-lid session as over",
+				"gtmux 以为服务器模式开着，但内核已关闭 —— 请认为合盖会话已结束")}}
+
+	case st.SystemDisableSleep && !st.OwnedByGtmux:
+		return []dcheck{{stRec, label, i18n.Tr("this Mac will not sleep", "这台 Mac 不会睡眠"),
+			i18n.Tr("not set by gtmux — reported only, never changed for you. ", "不是 gtmux 设的 —— 只报告、不代改。") + manual}}
+
+	case st.SystemDisableSleep:
+		// Ours. Fresh heartbeat = server mode in use; stale = left behind.
+		if !stale {
+			return []dcheck{{stOK, label, i18n.Tr("server mode on", "服务器模式开启中"),
+				i18n.Tr("deliberate — the lid may close", "有意为之 —— 合盖不会睡")}}
+		}
+		return []dcheck{{stMiss, label, i18n.Tr("left disabled by gtmux", "被 gtmux 留在关闭睡眠状态"),
+			i18n.Tr("no live server mode — this Mac cannot sleep. ", "没有在运行的服务器模式 —— 这台 Mac 无法睡眠。") + manual}}
+
+	default:
+		// Live sleep is fine but the persisted value would disable it again.
+		return []dcheck{{stRec, label, i18n.Tr("persisted as disabled", "落盘为禁止睡眠"),
+			i18n.Tr("sleeps now, but the stored setting would disable it after a reboot. ",
+				"现在能睡，但落盘的设置会在重启后再次禁止。") + manual}}
 	}
 }

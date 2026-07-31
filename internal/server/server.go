@@ -169,6 +169,13 @@ type Deps struct {
 
 	// DigestJSON returns the marshaled agent-digest array — byte-identical to
 	// `gtmux digest --json` (the supervisor's fleet view: goal/last/ask per row).
+	// ServerModeJSON / ServerModeOff back GET+POST /api/servermode. Optional: nil →
+	// the endpoint is 503 rather than pretending the machine has no such state.
+	// There is deliberately no "turn on" hook: enabling needs a local administrator
+	// authorization, and an unattended machine has nobody to answer it.
+	ServerModeJSON func() ([]byte, error)
+	ServerModeOff  func() error
+
 	// Additive to AgentsJSON. Optional: nil → GET /api/digest is 503.
 	DigestJSON func() ([]byte, error)
 
@@ -252,6 +259,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/panes", s.auth(http.HandlerFunc(s.handlePanes)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
+	mux.Handle("/api/servermode", s.auth(http.HandlerFunc(s.handleServerMode)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
 	mux.Handle("/api/hq/board", s.auth(http.HandlerFunc(s.handleHQBoard)))   // owner: the supervisor's situation board
 	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents))) // owner: severity-floored event ledger
@@ -790,4 +798,56 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// handleServerMode serves and revokes server mode (the lid-closed keep-awake state).
+//
+// The asymmetry this enforces is the feature's core safety property: a remote client
+// may READ the state and may turn it OFF, but can never turn it ON. Enabling requires
+// an interactive administrator authorization at the machine — there is nobody at an
+// unattended Mac to answer it, and a wrong remote enable burns a laptop's battery in a
+// bag for days. De-escalation is the safe direction and stays available from anywhere.
+//
+// Guests cannot see it at all: this is a machine-level control, not a per-pane one.
+func (s *Server) handleServerMode(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		if s.deps.ServerModeJSON == nil {
+			writeJSON(w, http.StatusServiceUnavailable, errBody("server mode unavailable"))
+			return
+		}
+		b, err := s.deps.ServerModeJSON()
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, errBody("server mode error"))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(b)
+	case http.MethodPost:
+		var body struct {
+			On *bool `json:"on"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body.On == nil || *body.On {
+			// Refused for every client, owner devices included — see the doc comment.
+			writeJSON(w, http.StatusForbidden,
+				errBody("server mode can only be enabled at the Mac: it needs an administrator authorization typed there"))
+			return
+		}
+		if s.deps.ServerModeOff == nil {
+			writeJSON(w, http.StatusServiceUnavailable, errBody("server mode unavailable"))
+			return
+		}
+		if err := s.deps.ServerModeOff(); err != nil {
+			writeJSON(w, http.StatusInternalServerError, errBody("could not turn server mode off"))
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+	}
 }
