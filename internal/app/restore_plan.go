@@ -146,7 +146,7 @@ func planGoal(agent, sessionID string) string {
 	return radar.Snip(turns[len(turns)-1].Prompt, 80)
 }
 
-// agentCount is the total resumable-agent count across the plan.
+// agentCount is the TOTAL agent count across the plan (resumable ↻ + dead ×).
 func (p restorePlan) agentCount() int {
 	n := 0
 	for _, s := range p.Sessions {
@@ -154,6 +154,25 @@ func (p restorePlan) agentCount() int {
 	}
 	return n
 }
+
+// resumableCount is how many agents will ACTUALLY come back — the ↻ ones whose
+// transcript is still on disk. It's the number the end-of-restore "resumed N" reports,
+// so the header should show this (not agentCount) or the two read as an off-by-one.
+func (p restorePlan) resumableCount() int {
+	n := 0
+	for _, s := range p.Sessions {
+		for _, a := range s.Agents {
+			if a.Alive {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+// deadCount is the rest: agents listed with a × because their conversation is gone from
+// disk and can't be resumed. Shown separately so a "17 → 16" never reads as a failure.
+func (p restorePlan) deadCount() int { return p.agentCount() - p.resumableCount() }
 
 // printRestorePlanJSON writes the plan as JSON (the menu bar's source). Always emits
 // a well-formed object, `{"savePath":"","sessions":null}` when nothing is saved.
@@ -170,9 +189,16 @@ func printRestorePlan(p restorePlan) {
 		i18n.Say("Nothing saved to restore.", "没有可恢复的存档。")
 		return
 	}
-	i18n.Say(
-		fmt.Sprintf("%d session(s), %d agent conversation(s) to bring back:", len(p.Sessions), p.agentCount()),
-		fmt.Sprintf("待恢复：%d 个 session，%d 个 agent 会话：", len(p.Sessions), p.agentCount()))
+	// Count the RESUMABLE (↻) agents in the headline — that's the number that will
+	// actually come back (and that the "resumed N" line reports). Any dead (×) ones are
+	// noted separately so the two counts never look like a silent failure.
+	headEN := fmt.Sprintf("%d session(s), %d agent conversation(s) to bring back", len(p.Sessions), p.resumableCount())
+	headZH := fmt.Sprintf("待恢复：%d 个 session，%d 个 agent 会话", len(p.Sessions), p.resumableCount())
+	if dead := p.deadCount(); dead > 0 {
+		headEN += fmt.Sprintf(" (+%d with no saved transcript, shown ×)", dead)
+		headZH += fmt.Sprintf("（另有 %d 个无存档记录，标记 ×）", dead)
+	}
+	i18n.Say(headEN+":", headZH+"：")
 	for _, s := range p.Sessions {
 		i18n.Say(
 			fmt.Sprintf("  • %s — %d window(s), %d pane(s)", s.Name, s.Windows, s.Panes),

@@ -67,6 +67,15 @@ func TestBuildRestorePlan(t *testing.T) {
 	if plan.agentCount() != 2 {
 		t.Fatalf("agentCount = %d, want 2", plan.agentCount())
 	}
+	// s-00 is claude with NO transcript on disk → dead (×); s-10 is codex → always
+	// resumable (we can't inspect its store). So the headline should count 1 resumable
+	// and note 1 with-no-transcript, matching the eventual "resumed 1".
+	if got := plan.resumableCount(); got != 1 {
+		t.Fatalf("resumableCount = %d, want 1 (only the codex agent is resumable)", got)
+	}
+	if got := plan.deadCount(); got != 1 {
+		t.Fatalf("deadCount = %d, want 1 (the claude agent has no transcript)", got)
+	}
 }
 
 func TestBuildRestorePlan_NoSave(t *testing.T) {
