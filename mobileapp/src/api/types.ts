@@ -175,3 +175,33 @@ export interface TermTheme {
   fontFamily: string;
   fontSize: number;
 }
+
+// Server mode — the Mac kept running with the lid closed (openspec change server-mode).
+//
+// The phone is deliberately asymmetric here: it can SEE this state and can turn it
+// OFF, but can never turn it ON. Enabling needs an administrator authorization typed
+// at the Mac, and an unattended machine has nobody to answer it — a wrong remote
+// enable would burn a laptop's battery in a bag for days.
+//
+// Every field Go marks `omitempty` is absent when zero, so it is optional here.
+export interface ServerMode {
+  state: 'on' | 'off' | 'lapsed';
+  tier?: string;
+  since?: number;
+  power: 'ac' | 'battery';
+  battery_pct?: number;
+  guard: {installed: boolean; healthy: boolean};
+  system_disablesleep: boolean;
+  owned_by_gtmux: boolean;
+  last_exit?: {at: number; reason: string};
+  platform: {ok: boolean; verified: boolean; reason?: string; os_version?: string};
+}
+
+// serverModeNeedsAttention: red is reserved for "a human should look at this" —
+// the same discipline the HQ disc uses, where a soft amber must not read as red.
+export function serverModeNeedsAttention(m: ServerMode): boolean {
+  if (m.state === 'lapsed') return true;
+  if (m.system_disablesleep && !m.guard.healthy) return true;
+  if (m.system_disablesleep && m.power === 'battery' && (m.battery_pct ?? 100) <= 30) return true;
+  return false;
+}

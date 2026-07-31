@@ -437,6 +437,50 @@ Set `limitsCommand` with an env prefix if your network needs it
 `limitsWarnPct` marks amber and wakes a live HQ once (`» gtmux·limits·warn …`).
 The `limits` block also rides `gtmux usage` and `GET /api/usage`.
 
+## `gtmux server-mode` — keep working with the lid closed
+
+```
+server mode = off  ·  power ac 100%
+  This Mac sleeps normally (closing the lid sleeps it).
+  guard: not installed
+```
+
+Closing a MacBook's lid sleeps the system, which drops the tunnel and freezes every
+agent mid-turn — so "command your Mac from your phone" only works while the lid stays
+open. `server-mode` is the switch that changes that. **This build ships sensing only**
+(`status`); turning it on/off needs the privileged half and says so rather than
+pretending.
+
+Two tiers, never conflated: `awake` holds a sleep assertion (idle sleep only — **a
+closed lid still sleeps**), `clamshell` disables sleep outright so the lid may close.
+Only the second does what the feature promises, and it needs root — measured, not
+assumed: with an assertion held, a closed lid slept after 133 s.
+
+**Reading the state is the subtle part**, and getting it wrong is this feature's worst
+failure (announcing "sleep restored" on a Mac that cannot sleep):
+
+| source | use it? |
+|---|---|
+| `pmset -g` / `-g custom` / `-g live` | ❌ never reports `disablesleep`, in either state |
+| the power-management plist | ⚠️ lags a write; answers "would it survive a reboot" |
+| `ioreg -r -c IOPMrootDomain` → `SleepDisabled` | ✅ the live, unprivileged truth |
+
+`status --json` reports both readings plus `owned_by_gtmux` — the ownership stamp.
+**gtmux reverts only what gtmux set**: a `disablesleep` it did not stamp is reported
+with the manual undo command and never changed for you (the same report-only
+discipline `gtmux reap` applies to an unclean worktree). `gtmux doctor` surfaces the
+same finding, and stays silent on machines that have never touched the setting.
+
+Battery is a supported case, not a hazard to be avoided: carrying a closed laptop
+between rooms keeps working (measured — unplugged, lid shut, zero sleeps). What ends
+server mode is **remaining charge**, not losing the adapter.
+
+**Boundary, stated plainly:** `gtmux serve` runs as a per-user LaunchAgent, so after a
+reboot it only starts once someone logs in. On a FileVault Mac with nobody there, the
+heartbeat never resumes and sleep is restored — the right fail-safe (an unreachable
+machine should sleep), but it means server mode does **not** survive an unattended
+reboot. gtmux will not "fix" that by touching FileVault or auto-login.
+
 ## `gtmux restore`
 
 Quitting your terminal leaves the tmux server and all sessions alive — only the

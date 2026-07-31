@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -208,5 +208,54 @@ describe('secondary', () => {
 
   it('returns "" for an empty tmux agent', () => {
     expect(secondary(toAgent({}))).toBe('');
+  });
+});
+
+describe('server mode', () => {
+  const base = {
+    state: 'on' as const,
+    power: 'ac' as const,
+    guard: {installed: true, healthy: true},
+    system_disablesleep: true,
+    owned_by_gtmux: true,
+    platform: {ok: true, verified: true},
+  };
+
+  // Red is reserved for "a human should look at this". A healthy session running on
+  // mains power must stay quiet, or the indicator becomes noise and gets ignored —
+  // which defeats the one job it has.
+  it('stays quiet while healthy', () => {
+    expect(serverModeNeedsAttention(base)).toBe(false);
+  });
+
+  it('reddens when the safety guard is missing', () => {
+    // Nothing would restore sleep if gtmux went away — the user must know.
+    expect(
+      serverModeNeedsAttention({...base, guard: {installed: false, healthy: false}}),
+    ).toBe(true);
+  });
+
+  it('reddens on a low battery, not merely on battery', () => {
+    expect(serverModeNeedsAttention({...base, power: 'battery', battery_pct: 80})).toBe(false);
+    expect(serverModeNeedsAttention({...base, power: 'battery', battery_pct: 25})).toBe(true);
+  });
+
+  it('reddens when the setting lapsed', () => {
+    expect(
+      serverModeNeedsAttention({...base, state: 'lapsed', system_disablesleep: false}),
+    ).toBe(true);
+  });
+
+  // Go omits zero-valued fields, so the optional ones must decode absent.
+  it('tolerates the fields Go omits', () => {
+    const minimal = {
+      state: 'off' as const,
+      power: 'ac' as const,
+      guard: {installed: false, healthy: false},
+      system_disablesleep: false,
+      owned_by_gtmux: false,
+      platform: {ok: true, verified: true},
+    };
+    expect(serverModeNeedsAttention(minimal)).toBe(false);
   });
 });

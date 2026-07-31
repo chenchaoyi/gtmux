@@ -6,7 +6,8 @@ import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Alert as AlertType, SectionKey} from '../api/types';
+import {Alert as AlertType, SectionKey, serverModeNeedsAttention} from '../api/types';
+import type {ServerMode} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
@@ -107,6 +108,26 @@ export function RadarScreen({navigation}: any) {
   // absent → no disc (starting one needs the Mac; no dead control).
   const hq = agents.find(a => a.role === 'supervisor');
 
+  // Server mode is a MACHINE state, not an agent state, so it never becomes a radar
+  // row — it rides the header as a quiet chip, present only while true. This is the
+  // "you can always tell" half of the feature: the menu bar has its own indicator,
+  // and the phone needs one too, or a user away from their Mac has no way to know
+  // it is being kept awake. Slow poll: it changes when a human decides it does.
+  const [srv, setSrv] = useState<ServerMode | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const tick = () => {
+      client.serverMode().then(m => alive && setSrv(m)).catch(() => {});
+    };
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client]);
+  const srvOn = !!srv && (srv.system_disablesleep || srv.state === 'lapsed');
+
   const Header = (
     <View style={styles.header}>
       <View style={styles.headerTop}>
@@ -152,6 +173,27 @@ export function RadarScreen({navigation}: any) {
         <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
           {summary(c, t('agents'), lang)}
         </Text>
+        {srvOn && srv && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={lang === 'zh' ? '服务器模式' : 'server mode'}
+            onPress={() => navigation.navigate('ManageMac')}
+            hitSlop={hit}
+            style={[
+              styles.filterChip,
+              serverModeNeedsAttention(srv)
+                ? {backgroundColor: StatusColor.waiting + '1F', borderColor: StatusColor.waiting}
+                : {borderColor: pal.divider},
+            ]}>
+            <Text
+              style={{
+                fontSize: 11,
+                color: serverModeNeedsAttention(srv) ? StatusColor.waiting : pal.fg2,
+              }}>
+              {lang === 'zh' ? '服务器模式' : 'server mode'}
+            </Text>
+          </TouchableOpacity>
+        )}
         {(c.waiting > 0 || waitingOnly) && (
           <TouchableOpacity
             testID={TestIds.radar.waitingOnly}

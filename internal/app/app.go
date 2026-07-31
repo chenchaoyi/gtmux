@@ -80,6 +80,8 @@ func Run(argv []string) int {
 		return cmdLimits(args)
 	case "quiet":
 		return cmdQuiet(args)
+	case "server-mode":
+		return cmdServerMode(args)
 	case "config":
 		return cmdConfig(args)
 	case "share":

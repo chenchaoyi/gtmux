@@ -22,6 +22,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/server"
+	"github.com/chenchaoyi/gtmux/internal/servermode"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -166,10 +167,17 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		DigestJSON: radar.DigestJSONBytes,
 		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
 		UsageJSON: radar.UsageJSONBytes,
+		// Server mode: readable remotely, revocable remotely, never enablable remotely
+		// (enabling needs an authorization typed at the Mac).
+		ServerModeJSON: func() ([]byte, error) { return json.Marshal(servermode.Current()) },
+		ServerModeOff:  servermode.Disable,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
 		// Also backstops the tmux-resurrect save: if continuum's autosave is disarmed,
 		// gtmux keeps the save fresh itself (a no-op when the save is already recent).
-		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave() },
+		// serverModeTick rides the same single-writer cadence: heartbeat (what keeps
+		// the guard from restoring sleep), the battery warning that must reach a user
+		// who is away, and detection of a closed-lid session that silently died.
+		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave(); serverModeTick() },
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: hq.DrainHQNudges,
