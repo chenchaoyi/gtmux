@@ -60,6 +60,29 @@ goes offline → live, which is the trigger.
 - **THEN** the app re-POSTs its current Live Activity token to `POST /api/push/activity`,
   and lock-screen tally updates resume — no app relaunch needed
 
+### Requirement: Live Activity goes stale when the server is unreachable
+
+A Live Activity update SHALL carry a stale-date so a dead/unreachable server (which stops
+pushing) lets iOS mark the lock-screen card stale on its own, and the widget SHALL render
+a distinct "offline" state (dimmed + an offline marker) instead of a frozen tally that
+reads as live. To keep a healthy-but-idle server from going stale between changes, the
+serve SHALL re-push the last tally on a heartbeat shorter than the stale-date window. Both
+the relay push (`aps.stale-date`) and the app's local updates (`ActivityContent.staleDate`)
+set the date, so the killed-app (push-only) and foreground (app-driven) paths both hold.
+
+#### Scenario: Server dies with the app closed
+
+- **WHEN** the paired Mac stops reaching the phone (network switch, serve killed) and the
+  app is backgrounded/killed, so no more Live Activity pushes arrive
+- **THEN** iOS marks the activity stale at the last push's stale-date, and the widget dims
+  the tally and shows an "offline" marker — rather than showing the frozen counts forever
+
+#### Scenario: Healthy but idle server
+
+- **WHEN** the serve is alive but the tally hasn't changed for a while (no on-change push)
+- **THEN** the serve's heartbeat re-pushes the last tally within the stale-date window, so
+  the card stays live (never falsely shows "offline")
+
 ### Requirement: Server-derived alerts drive push
 
 The system SHALL derive `waiting`/`done` alerts from its own ~1.5s diff loop (not

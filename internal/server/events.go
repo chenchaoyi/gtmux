@@ -30,6 +30,11 @@ const renudgeInterval = 5 * time.Minute
 // the resource·warn/limits·warn nudge) — much slower than the SSE tick.
 const slowTickInterval = 20 * time.Second
 
+// liveActivityBeat is how often a healthy-but-idle serve re-pushes the last tally to
+// refresh the Live Activity stale-date. Under liveActivityStale (40m) so the card never
+// goes stale while the server lives; a dead server stops beating and the card dims.
+const liveActivityBeat = 30 * time.Minute
+
 // fastTickInterval paces the HQ nudge drain. A wake queued behind a half-typed HQ
 // draft is flushed on the next empty box, and this ticker is its unconditional
 // backstop — so the wait is ~3s rather than the slow tick's 20s, which is paced by
@@ -179,16 +184,17 @@ func (c ClientInfo) dedupKey() string {
 // waiting/done transition. onAlert (optional) lets a push manager hook the same
 // transitions without re-deriving them.
 type hub struct {
-	statuses   func() []AgentStatus
-	onAlert    func(Alert)
-	onTally    func(Tally)        // fired when the status tally changes (Live Activity push)
-	onClients  func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
-	interval   time.Duration
-	onSlowTick func()           // resource/limits evaluator, single-goroutine (no nudge race)
-	onFastTick func()           // HQ nudge drain, same goroutine — cheap-gated, ~3s
-	fastEvery  time.Duration    // onFastTick's cadence (fastTickInterval; tests shorten it)
-	renudge    time.Duration    // re-alert a still-waiting pane after this long
-	now        func() time.Time // injectable clock (tests)
+	statuses    func() []AgentStatus
+	onAlert     func(Alert)
+	onTally     func(Tally)        // fired when the status tally changes (Live Activity push)
+	onTallyBeat func(Tally)        // periodic re-push of the last tally, to refresh the Live Activity stale-date
+	onClients   func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
+	interval    time.Duration
+	onSlowTick  func()           // resource/limits evaluator, single-goroutine (no nudge race)
+	onFastTick  func()           // HQ nudge drain, same goroutine — cheap-gated, ~3s
+	fastEvery   time.Duration    // onFastTick's cadence (fastTickInterval; tests shorten it)
+	renudge     time.Duration    // re-alert a still-waiting pane after this long
+	now         func() time.Time // injectable clock (tests)
 
 	mu   sync.Mutex
 	subs map[chan sseEvent]ClientInfo
@@ -479,10 +485,12 @@ func (h *hub) run(ctx context.Context) {
 	ping := time.NewTicker(pingInterval)
 	slow := time.NewTicker(slowTickInterval)
 	fast := time.NewTicker(h.fastEvery)
+	beat := time.NewTicker(liveActivityBeat)
 	defer t.Stop()
 	defer ping.Stop()
 	defer slow.Stop()
 	defer fast.Stop()
+	defer beat.Stop()
 	if h.onSlowTick != nil {
 		h.onSlowTick() // an initial evaluation right away
 	}
@@ -501,6 +509,13 @@ func (h *hub) run(ctx context.Context) {
 		case <-fast.C:
 			if h.onFastTick != nil {
 				h.onFastTick()
+			}
+		case <-beat.C:
+			// Keepalive: re-push the last tally so a healthy-but-idle server keeps the
+			// Live Activity stale-date fresh. h.lastTally is touched only in this run
+			// goroutine (tick + here), so no lock is needed.
+			if h.onTallyBeat != nil && h.tallyKnown {
+				h.onTallyBeat(h.lastTally)
 			}
 		}
 	}

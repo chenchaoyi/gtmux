@@ -10,6 +10,12 @@ class LiveActivityModule: RCTEventEmitter {
 
   private var lastToken: String?
 
+  // How far ahead each update marks the activity stale. iOS dims a stale card to the
+  // widget's "offline" state, so a dead server (no more pushes refreshing this) stops
+  // showing a frozen tally forever. Must match the serve's stale-date window (40m) —
+  // set locally too so a foreground app-driven update doesn't wipe the server's date.
+  private let staleWindow: TimeInterval = 40 * 60
+
   override static func requiresMainQueueSetup() -> Bool { false }
   override func supportedEvents() -> [String]! { ["onActivityPushToken"] }
 
@@ -53,6 +59,7 @@ class LiveActivityModule: RCTEventEmitter {
         return
       }
       let srv = server as String
+      let st = state(waiting, working, idle, title, session, items)
       // Reuse the running activity ONLY if it tracks the SAME server. After a
       // server switch (end + start can race), a leftover activity for the OLD Mac
       // must be replaced — its static server name can't be updated in place.
@@ -60,7 +67,7 @@ class LiveActivityModule: RCTEventEmitter {
         if existing.attributes.server == srv {
           observeToken(existing)
           Task {
-            await existing.update(using: state(waiting, working, idle, title, session, items))
+            await applyUpdate(existing, st)
             resolve(existing.id)
           }
           return
@@ -68,10 +75,18 @@ class LiveActivityModule: RCTEventEmitter {
         Task { for act in Activity<GtmuxActivityAttributes>.activities { await act.end(dismissalPolicy: .immediate) } }
       }
       do {
-        let act = try Activity.request(
-          attributes: GtmuxActivityAttributes(server: srv),
-          contentState: state(waiting, working, idle, title, session, items),
-          pushType: .token)
+        let act: Activity<GtmuxActivityAttributes>
+        if #available(iOS 16.2, *) {
+          act = try Activity.request(
+            attributes: GtmuxActivityAttributes(server: srv),
+            content: ActivityContent(state: st, staleDate: Date().addingTimeInterval(staleWindow)),
+            pushType: .token)
+        } else {
+          act = try Activity.request(
+            attributes: GtmuxActivityAttributes(server: srv),
+            contentState: st,
+            pushType: .token)
+        }
         observeToken(act)
         resolve(act.id)
       } catch {
@@ -88,9 +103,22 @@ class LiveActivityModule: RCTEventEmitter {
       let s = state(waiting, working, idle, title, session, items)
       Task {
         for act in Activity<GtmuxActivityAttributes>.activities {
-          await act.update(using: s)
+          await applyUpdate(act, s)
         }
       }
+    }
+  }
+
+  // applyUpdate pushes a new content state AND a fresh stale-date (iOS 16.2+), so a
+  // local/foreground update never wipes the stale-date the server's push set — keeping
+  // the "offline after a dead server" behavior intact. On 16.1 it degrades to the plain
+  // update (no stale-date available there).
+  @available(iOS 16.1, *)
+  private func applyUpdate(_ act: Activity<GtmuxActivityAttributes>, _ s: GtmuxActivityAttributes.ContentState) async {
+    if #available(iOS 16.2, *) {
+      await act.update(ActivityContent(state: s, staleDate: Date().addingTimeInterval(staleWindow)))
+    } else {
+      await act.update(using: s)
     }
   }
 

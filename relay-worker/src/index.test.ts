@@ -9,7 +9,7 @@
 //   node --experimental-strip-types --test src/index.test.ts
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buildApnsRequest} from './index.ts';
+import {buildApnsRequest, buildLiveActivityAps} from './index.ts';
 
 const JWT = 'jwt-abc';
 const TOPIC = 'com.gtmux.app';
@@ -73,4 +73,23 @@ test('empty optionals default cleanly (no undefined leaks in the wire body)', ()
     kind: '',
     server: '',
   });
+});
+
+test('live activity → timestamp + event + content-state + stale-date', () => {
+  const aps = buildLiveActivityAps(
+    {token: 'act', liveActivity: true, event: 'update', contentState: {waiting: 2}, staleDate: 1_700_002_400},
+    1_700_000_000,
+  );
+  assert.deepEqual(aps, {
+    timestamp: 1_700_000_000,
+    event: 'update',
+    'content-state': {waiting: 2},
+    'stale-date': 1_700_002_400,
+  });
+});
+
+test('live activity without a stale-date omits the key (no undefined leak)', () => {
+  const aps = buildLiveActivityAps({token: 'act', liveActivity: true, contentState: {}}, 1_700_000_000);
+  assert.deepEqual(aps, {timestamp: 1_700_000_000, event: 'update', 'content-state': {}});
+  assert.equal('stale-date' in aps, false);
 });

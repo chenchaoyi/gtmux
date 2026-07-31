@@ -29,6 +29,10 @@ interface PushIntent {
   liveActivity?: boolean;
   event?: string; // "update" | "end"
   contentState?: Record<string, unknown>;
+  // staleDate (unix seconds): iOS marks the activity stale after this, so the widget
+  // dims to "offline". Refreshed on every push + a 30m heartbeat; a dead server stops
+  // refreshing it and the card goes stale on its own instead of freezing forever.
+  staleDate?: number;
   // Silent badge/dismiss sync (6a): a content-available push with no alert, used to
   // keep the app-icon badge correct across ALL devices and collapse a resolved
   // agent's banner. badge = absolute waiting count; collapseId = the agent's pane.
@@ -66,13 +70,7 @@ export default {
     // Live Activity push-to-update: a different topic + push-type, and an
     // aps.content-state that replaces the activity's state even with the app killed.
     if (intent.liveActivity) {
-      const laPayload = JSON.stringify({
-        aps: {
-          timestamp: Math.floor(Date.now() / 1000),
-          event: intent.event ?? 'update',
-          'content-state': intent.contentState ?? {},
-        },
-      });
+      const laPayload = JSON.stringify({aps: buildLiveActivityAps(intent, Math.floor(Date.now() / 1000))});
       const lr = await fetch(base + '/3/device/' + intent.token, {
         method: 'POST',
         headers: {
@@ -100,6 +98,22 @@ export default {
     return json({error: 'apns', status: r.status, detail}, 502);
   },
 };
+
+// buildLiveActivityAps builds the `aps` object for a Live Activity push-to-update. Pure
+// (clock injected) so index.test.ts can pin its shape. `stale-date` is emitted only when
+// the intent carries one — it tells iOS when to dim the card to "offline", so a dead
+// server (no more pushes refreshing it) stops showing a frozen tally forever.
+export function buildLiveActivityAps(intent: PushIntent, nowSec: number): Record<string, unknown> {
+  const aps: Record<string, unknown> = {
+    timestamp: nowSec,
+    event: intent.event ?? 'update',
+    'content-state': intent.contentState ?? {},
+  };
+  if (typeof intent.staleDate === 'number' && intent.staleDate > 0) {
+    aps['stale-date'] = intent.staleDate;
+  }
+  return aps;
+}
 
 // buildApnsRequest builds the {payload, headers} for a standard alert/silent push.
 // This payload SHAPE is a cross-runtime contract that MUST stay in sync with the Go
