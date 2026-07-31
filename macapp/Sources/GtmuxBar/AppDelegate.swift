@@ -10,6 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// "gtmux is doing something". The ring is neutral, so the mark's colour still
     /// means only what it has always meant: the fleet's most urgent agent state.
     private let serverMode = ServerModeStore.shared
+    /// Drives the awake dot's breathing. It exists ONLY while server mode is on —
+    /// gtmux is otherwise a zero-animation app (DESIGN §10) and must not burn a timer
+    /// redrawing a static icon. 8fps is plenty for a slow fade and costs nothing.
+    private var awakeTimer: Timer?
+    private var awakePhase: CGFloat = 0
     private let popover = NSPopover()
     private let store = AgentStore()
     private let l10n = L10n.shared
@@ -188,8 +193,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             waitingPanes: Set(agents.filter { $0.state == .waiting }.map { $0.paneID }))
 
         let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let awake = serverMode.status?.isOn == true
+        syncAwakeTimer(awake)
         button.image = StatusItemGlyph.image(mostUrgent: urgent, empty: empty, dark: dark,
-                                            awake: serverMode.status?.isOn == true)
+                                            awake: awake, phase: awakePhase)
         let badge = displayMode == .dot ? "" : store.badge
         button.title = badge.isEmpty ? "" : " \(badge)"
         button.imagePosition = badge.isEmpty ? .imageOnly : .imageLeft
@@ -258,6 +265,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// rather than letting a user quit into a Mac that silently never sleeps with no
     /// visible sign of why. Quitting anyway is fine: `gtmux serve` keeps the heartbeat
     /// and the CLI/phone can still see and end it.
+    /// Start the breathing timer when server mode turns on, and — just as important —
+    /// tear it down the moment it turns off, so an idle gtmux is idle.
+    private func syncAwakeTimer(_ awake: Bool) {
+        if awake, awakeTimer == nil {
+            awakeTimer = Timer.scheduledTimer(withTimeInterval: 0.125, repeats: true) { [weak self] _ in
+                guard let self, let button = self.statusItem.button else { return }
+                // 2.4s cycle: slow enough to read as breathing rather than blinking.
+                self.awakePhase += 0.125 / 2.4
+                if self.awakePhase > 1 { self.awakePhase -= 1 }
+                let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+                button.image = StatusItemGlyph.image(
+                    mostUrgent: self.store.mostUrgent, empty: self.store.total == 0,
+                    dark: dark, awake: true, phase: self.awakePhase)
+            }
+        } else if !awake, let t = awakeTimer {
+            t.invalidate()
+            awakeTimer = nil
+            awakePhase = 0
+        }
+    }
+
     @objc private func quitApp() {
         if serverMode.status?.isOn == true {
             let a = NSAlert()

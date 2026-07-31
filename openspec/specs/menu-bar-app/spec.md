@@ -412,38 +412,46 @@ max-width popover would add width jitter with no legibility gain.
 - **AND** the wider frame reveals more of the string but does not add a second line
   or change the popover width
 
-### Requirement: Server mode shows a persistent, always-visible indicator
+### Requirement: Server mode marks the existing glyph, and only Preferences changes it
 
-While server mode is on, the app SHALL show a dedicated, persistent menu-bar indicator —
-its own status item, in the shape of a recording indicator: present for exactly as long as
-the state is on, gone the moment it ends. Because server mode has no expiry and ends only
-when the user ends it, this indicator is the mechanism that keeps the state from being
-forgotten, so it SHALL NOT be hideable: it SHALL remain visible even under the
-hide-when-idle status-item preference, which governs the agent radar's status item only.
-Clicking the indicator SHALL open a small menu that states the tier, how long it has been
-on, and — as its primary action — turns server mode off.
+While server mode is on, the app SHALL indicate it by modifying the EXISTING menu-bar
+glyph and SHALL NOT add a second status item. Two icons read as two applications; one
+icon in a different state reads as the same application doing something.
 
-The indicator SHALL NOT alter or overlay the existing agent status item, whose glyph
-continues to encode the fleet's most-urgent AGENT state only, and server mode SHALL NOT
-appear as a row or section in the agent radar.
+The indication SHALL borrow the recording-indicator language — a small lit dot that
+breathes slowly — because that is the one visual convention users already read as "this
+is still running, you left it on", and being forgotten is this feature's central risk.
+This is a deliberate exception to the rules that colour encodes agent state and that the
+product animates only once, and it SHALL be bounded so it cannot be mistaken for a
+waiting agent: the dot SHALL be small and sit ON the mark (a waiting agent turns the
+WHOLE mark, a different silhouette at a glance), its motion SHALL be slow and shallow
+enough to read as "alive" rather than "alarm", and it SHALL stay legible when the mark
+beneath it carries the waiting colour.
 
-#### Scenario: On and unmissable
+The animation SHALL exist only while server mode is on — no timer and no repainting when
+it is off. Server mode SHALL NOT appear as a row or section in the agent radar.
+
+Every surface MAY show this state; only Preferences SHALL be able to change it, because
+every path to changing it ends at an administrator password typed at the machine. The
+popover MAY state it alongside the agent summary, read-only.
+
+#### Scenario: On and visible without adding an icon
 
 - **WHEN** server mode is on
-- **THEN** a dedicated indicator is visible in the menu bar alongside (not on top of) the
-  agent status item, and it stays visible even when the user has chosen to hide the status
-  item while idle
+- **THEN** the existing glyph carries a slowly breathing dot, the menu bar gains no
+  additional status item, and the glyph's own colour still reflects only the agent state
 
-#### Scenario: Turning it off from the indicator
+#### Scenario: Not confusable with an agent waiting
 
-- **WHEN** the user clicks the indicator and chooses to turn server mode off
-- **THEN** sleep is restored and the indicator disappears
+- **WHEN** server mode is on and an agent is also waiting
+- **THEN** the mark carries the waiting colour AND the dot remains distinguishable on top
+  of it, so both states are readable at once
 
-#### Scenario: Off leaves no trace
+#### Scenario: Off costs nothing
 
-- **WHEN** server mode is not on
-- **THEN** no server-mode indicator is present, and the menu bar looks exactly as it did
-  before the feature existed
+- **WHEN** server mode is off
+- **THEN** no animation timer is running and the glyph is drawn exactly as it was before
+  the feature existed
 
 ### Requirement: The server-mode indicator encodes state by shape, colour only for attention
 
@@ -472,8 +480,12 @@ removes itself, that it will not run on battery and ends if the machine is unplu
 a closed lid dissipates heat worse, and that the machine stays remotely reachable for the
 duration. The copy SHALL follow the design system's first-run tone rule — factual, no
 marketing phrasing — and SHALL be provided in both English and Chinese. Server mode SHALL
-also be manageable from Preferences alongside remote access, showing the live tier, how
-long it has been on, and a way to turn it off.
+be manageable from Preferences ONLY, in its own titled section placed before the
+remote-access, pairing and sharing sections — those three form one continuous run about
+who may reach the machine and SHALL NOT be split. The section SHALL show the live state,
+how long it has been on, charge when on battery, guard health, and the platform verdict,
+and SHALL offer an explanation of what server mode is for someone meeting the term for
+the first time.
 
 #### Scenario: First enable
 
