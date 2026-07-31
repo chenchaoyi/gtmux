@@ -188,6 +188,14 @@ private func primaryStatus(_ st: GtmuxActivityAttributes.ContentState) -> AgentS
   return .idle
 }
 
+// isStale reads the activity's stale flag, guarded: the flag is iOS 16.2+ while this
+// widget target is 16.1. On 16.1 there's no stale-date mechanism, so it's never stale.
+@available(iOS 16.1, *)
+private func isStale(_ context: ActivityViewContext<GtmuxActivityAttributes>) -> Bool {
+  if #available(iOS 16.2, *) { return context.isStale }
+  return false
+}
+
 @main
 struct GtmuxWidgetBundle: WidgetBundle {
   var body: some Widget {
@@ -207,14 +215,14 @@ struct GtmuxLiveActivity: Widget {
         // Header: which Mac this activity tracks (static per activity) + an OFFLINE
         // marker when the content is stale — the server stopped refreshing it, so the
         // tally below is old and must not read as live.
-        if !context.attributes.server.isEmpty || context.isStale {
+        if !context.attributes.server.isEmpty || isStale(context) {
           HStack(spacing: 6) {
             if !context.attributes.server.isEmpty {
               Text(context.attributes.server)
                 .font(.caption2).fontWeight(.semibold)
-                .foregroundColor(.white.opacity(context.isStale ? 0.4 : 0.55)).lineLimit(1)
+                .foregroundColor(.white.opacity(isStale(context) ? 0.4 : 0.55)).lineLimit(1)
             }
-            if context.isStale { OfflineTag() }
+            if isStale(context) { OfflineTag() }
           }
         }
         // The live part dims when stale so a frozen tally reads as "not current".
@@ -234,7 +242,7 @@ struct GtmuxLiveActivity: Widget {
             .font(.caption).foregroundColor(.white.opacity(0.62)).lineLimit(1)
         }
       }
-      .opacity(context.isStale ? 0.6 : 1)
+      .opacity(isStale(context) ? 0.6 : 1)
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
       .activityBackgroundTint(Color.black.opacity(0.55))
@@ -253,12 +261,12 @@ struct GtmuxLiveActivity: Widget {
               if !context.attributes.server.isEmpty {
                 Text(context.attributes.server).font(.caption2).fontWeight(.semibold).foregroundColor(.secondary).lineLimit(1)
               }
-              if context.isStale { OfflineTag() }
+              if isStale(context) { OfflineTag() }
             }
             Text(headline(context.state)).font(.callout).fontWeight(.semibold).lineLimit(1)
             Text(subtitle(context.state)).font(.caption2).foregroundColor(.secondary).lineLimit(1)
           }
-          .opacity(context.isStale ? 0.6 : 1)
+          .opacity(isStale(context) ? 0.6 : 1)
         }
         DynamicIslandExpandedRegion(.bottom) {
           Group {
@@ -268,7 +276,7 @@ struct GtmuxLiveActivity: Widget {
               MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
             }
           }
-          .opacity(context.isStale ? 0.6 : 1)
+          .opacity(isStale(context) ? 0.6 : 1)
         }
       } compactLeading: {
         StatusBadge(status: primaryStatus(context.state), size: 16)
