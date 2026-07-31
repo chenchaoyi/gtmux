@@ -18,6 +18,11 @@ export interface Env {
   LOCAL_SERVICE: string; // e.g. "http://localhost:8765"
   CF_ACCOUNT_ID: string;
   CF_ZONE_ID: string;
+  // Abuse caps + reaper thresholds (strings from wrangler [vars]; parsed with defaults).
+  PROVISION_IP_CAP?: string;
+  PROVISION_GLOBAL_CAP?: string;
+  REAP_NEVER_CONNECTED_H?: string;
+  REAP_IDLE_DAYS?: string;
   // Paid "Direct" tunnel unlock. A code the user bought/received is validated HERE
   // (not in the open client), and only on a hit do we hand back the Direct server
   // config — so the chisel secret never ships in the (public) binary.
@@ -53,6 +58,13 @@ export default {
     }
     return json({ error: "not found" }, 404);
   },
+
+  // Daily reaper (cron in wrangler.toml): delete inactive/never-connected tunnels +
+  // their DNS so abuse (mass-create via the binary-extractable REG_SECRET) can't
+  // accumulate, and refresh the global active count so its ceiling self-corrects.
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(reapTunnels(env));
+  },
 };
 
 async function provision(req: Request, env: Env): Promise<Response> {
@@ -76,6 +88,8 @@ async function provision(req: Request, env: Env): Promise<Response> {
   const name = (body.name || "Mac").slice(0, 64);
 
   // Idempotent: reuse the device's existing tunnel, just hand back a fresh token.
+  // This path creates NOTHING, so it is never rate-capped — a legit Mac re-provisions
+  // freely, only the FIRST provision for a new deviceId can be gated below.
   const existing = await env.TUNNELS.get<TunnelRecord>(deviceId, "json");
   if (existing) {
     const token = await getTunnelToken(env, existing.tunnelId);
@@ -84,6 +98,12 @@ async function provision(req: Request, env: Env): Promise<Response> {
     }
     // Token fetch failed (tunnel deleted out-of-band?) — fall through and recreate.
   }
+
+  // We're about to CREATE real Cloudflare resources. Cap it: REG_SECRET ships in the
+  // public binary, so anyone can call this — bound mass-create abuse per IP + globally.
+  const ip = req.headers.get("CF-Connecting-IP") || "unknown";
+  const capped = await overCap(env, ip);
+  if (capped) return capped;
 
   // 1) Create a remotely-managed named tunnel.
   const label = randomLabel();
@@ -125,9 +145,11 @@ async function provision(req: Request, env: Env): Promise<Response> {
     return json({ error: "dns route failed", detail: dns.errors }, 502);
   }
 
-  // 4) Remember it for idempotent re-provision, then return the connector token.
+  // 4) Remember it for idempotent re-provision, count it against the caps, then return
+  //    the connector token.
   const rec: TunnelRecord = { tunnelId, label, hostname };
   await env.TUNNELS.put(deviceId, JSON.stringify(rec));
+  await bumpCap(env, ip);
 
   const token = await getTunnelToken(env, tunnelId);
   if (!token) {
@@ -139,6 +161,113 @@ async function provision(req: Request, env: Env): Promise<Response> {
 async function getTunnelToken(env: Env, tunnelId: string): Promise<string | null> {
   const r = await cf<string>(env, "GET", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${tunnelId}/token`);
   return r.ok && typeof r.result === "string" ? r.result : null;
+}
+
+// --- abuse caps ----------------------------------------------------------------
+// KV counters (approximate is fine for a soft gate). Keys use a "cap:" prefix, which
+// is disjoint from deviceId keys (deviceId = [A-Za-z0-9_-], no colon), so they share
+// the TUNNELS namespace safely.
+
+function num(v: string | undefined, dflt: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : dflt;
+}
+
+// overCap returns a 429 Response when this IP's 24h new-tunnel count or the global
+// active count is at its ceiling, else null. ONLY the create path calls it (idempotent
+// re-provision is free), so a legit one-tunnel-per-Mac user never hits it.
+async function overCap(env: Env, ip: string): Promise<Response | null> {
+  const ipCount = Number((await env.TUNNELS.get(`cap:ip:${ip}`)) ?? "0") || 0;
+  if (ipCount >= num(env.PROVISION_IP_CAP, 5)) {
+    return json({ error: "rate limited: too many new tunnels from your network today" }, 429);
+  }
+  const active = Number((await env.TUNNELS.get("cap:active")) ?? "0") || 0;
+  if (active >= num(env.PROVISION_GLOBAL_CAP, 500)) {
+    return json({ error: "tunnel service at capacity, try again later" }, 429);
+  }
+  return null;
+}
+
+// bumpCap records one newly-created tunnel: a per-IP 24h counter + the global active
+// count. Best-effort (KV is eventually consistent; the daily reaper resets cap:active
+// to the true count, so drift self-corrects).
+async function bumpCap(env: Env, ip: string): Promise<void> {
+  const ipKey = `cap:ip:${ip}`;
+  const ipCount = Number((await env.TUNNELS.get(ipKey)) ?? "0") || 0;
+  await env.TUNNELS.put(ipKey, String(ipCount + 1), { expirationTtl: 86400 });
+  const active = Number((await env.TUNNELS.get("cap:active")) ?? "0") || 0;
+  await env.TUNNELS.put("cap:active", String(active + 1));
+}
+
+// --- reaper --------------------------------------------------------------------
+interface CFTunnel {
+  id: string;
+  name: string;
+  created_at: string; // ISO
+  conns_active_at?: string | null; // ISO of the last active connection; null if never connected
+}
+
+// shouldReap: reap a `gtmux-` tunnel that either NEVER connected and is older than
+// neverConnectedH (abuse junk — the mass-create attacker never runs cloudflared), OR
+// whose last connection was more than idleDays ago (a truly abandoned real tunnel).
+// Pure, so it is unit-tested without the CF API.
+export function shouldReap(t: CFTunnel, nowMs: number, neverConnectedH: number, idleDays: number): boolean {
+  if (!t.name?.startsWith("gtmux-")) return false;
+  if (!t.conns_active_at) {
+    const createdMs = Date.parse(t.created_at);
+    return Number.isFinite(createdMs) && nowMs - createdMs > neverConnectedH * 3600_000;
+  }
+  const lastMs = Date.parse(t.conns_active_at);
+  return Number.isFinite(lastMs) && nowMs - lastMs > idleDays * 86400_000;
+}
+
+async function reapTunnels(env: Env): Promise<void> {
+  const neverH = num(env.REAP_NEVER_CONNECTED_H, 24);
+  const idleDays = num(env.REAP_IDLE_DAYS, 90);
+  const now = Date.now();
+  let page = 1;
+  let active = 0;
+  for (let guard = 0; guard < 100; guard++) {
+    const list = await cf<CFTunnel[]>(
+      env, "GET",
+      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel?is_deleted=false&per_page=100&page=${page}`,
+    );
+    if (!list.ok || !list.result || list.result.length === 0) break;
+    for (const t of list.result) {
+      if (!t.name?.startsWith("gtmux-")) continue;
+      if (shouldReap(t, now, neverH, idleDays)) {
+        await deleteTunnelAndDNS(env, t);
+      } else {
+        active++;
+      }
+    }
+    if (list.result.length < 100) break;
+    page++;
+  }
+  // Refresh the global active count so the create-path ceiling self-corrects.
+  await env.TUNNELS.put("cap:active", String(active));
+}
+
+// deleteTunnelAndDNS removes a tunnel's DNS CNAME, then its connections, then the
+// tunnel (CF refuses to delete a tunnel that still has live connections). Best-effort:
+// one failure must not abort the whole sweep — the next run retries.
+async function deleteTunnelAndDNS(env: Env, t: CFTunnel): Promise<void> {
+  try {
+    const host = `${t.name}.${env.ZONE_NAME}`;
+    const rec = await cf<Array<{ id: string }>>(
+      env, "GET",
+      `/zones/${env.CF_ZONE_ID}/dns_records?type=CNAME&name=${encodeURIComponent(host)}`,
+    );
+    if (rec.ok && rec.result) {
+      for (const r of rec.result) {
+        await cf(env, "DELETE", `/zones/${env.CF_ZONE_ID}/dns_records/${r.id}`);
+      }
+    }
+    await cf(env, "DELETE", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${t.id}/connections`);
+    await cf(env, "DELETE", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${t.id}`);
+  } catch {
+    // best-effort; the next sweep retries
+  }
 }
 
 interface CFResp<T> {

@@ -115,6 +115,30 @@ jobs:
       - name: golden payload test
         run: cd relay-worker && npm test
 
+  tunnel-worker:
+    name: tunnel worker (typecheck + reaper test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tunnel-worker/package-lock.json
+
+      # The tunnel control-plane Worker (api.gtmux.ccy.dev). Deployed manually via
+      # `wrangler deploy`, so this can't ship a tag — but it guards the abuse caps +
+      # the daily reaper's decision function against a silent regression.
+      - name: install deps
+        run: cd tunnel-worker && npm ci
+
+      - name: typecheck (tsc)
+        run: cd tunnel-worker && npm run typecheck
+
+      - name: reaper test
+        run: cd tunnel-worker && npm test
+
   menubar:
     name: menu-bar app build (macOS)
     runs-on: macos-latest

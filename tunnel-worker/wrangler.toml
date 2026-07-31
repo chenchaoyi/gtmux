@@ -43,3 +43,17 @@ LOCAL_SERVICE = "http://localhost:8765"
 # Non-secret account/zone ids (the runtime CF_API_TOKEN secret carries the auth).
 CF_ACCOUNT_ID = "e6ad9be63f53997c5844317404a4b043"
 CF_ZONE_ID = "18e9882c3234f0f2a76ac6dcd0cf29ae"
+# Abuse caps on NEW-tunnel creation (REG_SECRET ships in the public binary, so it's
+# only a soft gate). A legit Mac creates ONE tunnel per stable deviceId and every
+# re-provision is idempotent (no new resource, not counted) — so these ceilings are
+# far above any real single-user need. Tune here; no redeploy of the CLI needed.
+PROVISION_IP_CAP = "5"       # max NEW tunnels per client IP per 24h
+PROVISION_GLOBAL_CAP = "500" # max total active gtmux tunnels
+# Reaper (daily cron below): delete abuse junk fast, real-but-abandoned tunnels slowly.
+REAP_NEVER_CONNECTED_H = "24" # a tunnel that never connected + older than this → reap
+REAP_IDLE_DAYS = "90"         # a tunnel idle (last connection) longer than this → reap
+
+# Daily reaper: prune inactive/never-connected tunnels + their DNS so abuse can't
+# accumulate and the global count self-corrects.
+[triggers]
+crons = ["0 4 * * *"]
