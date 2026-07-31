@@ -14,8 +14,6 @@ import {useAgents} from '../state/AgentsContext';
 import {primary} from '../api/types';
 import type {Agent} from '../api/types';
 import type {GuestLink, PairedDevice, ShareConfig} from '../api/client';
-import type {ServerMode} from '../api/types';
-import {serverModeNeedsAttention} from '../api/types';
 import {displayDeviceName} from '../pairing/deviceName';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
 import {SIcon, IconName} from '../ui/SettingsIcons';
@@ -59,7 +57,6 @@ export function ManageMacScreen({navigation}: any) {
   const [cfg, setCfg] = useState<ShareConfig | null>(null);
   const [guests, setGuests] = useState<GuestLink[]>([]);
   const [devices, setDevices] = useState<PairedDevice[]>([]);
-  const [srv, setSrv] = useState<ServerMode | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<string>('');
 
@@ -68,15 +65,10 @@ export function ManageMacScreen({navigation}: any) {
 
   const load = useCallback(async () => {
     try {
-      const [c, d, sm] = await Promise.all([
-        client.shareConfig(),
-        client.devices(),
-        client.serverMode(),
-      ]);
+      const [c, d] = await Promise.all([client.shareConfig(), client.devices()]);
       setCfg(c);
       setGuests(d.guests);
       setDevices(d.devices);
-      setSrv(sm);
     } catch {
       // An auth/network blip leaves the last-known state; the pull-to-retry is a re-open.
     }
@@ -163,49 +155,10 @@ export function ManageMacScreen({navigation}: any) {
 
       <ScrollView contentContainerStyle={styles.body}>
         <ContentColumn>
-          {/* SERVER MODE — a machine-level state, so it leads. The phone may SEE it
-              and turn it OFF, never on: enabling needs an administrator password
-              typed at the Mac, and offering a switch that always fails would be a
-              lie. See openspec change server-mode §4. */}
-          {srv && (srv.system_disablesleep || srv.state === 'lapsed') && (
-            <SettingsGroup title={zh ? '服务器模式' : 'Server mode'} pal={pal}>
-              <SettingsRow
-                icon="server"
-                label={
-                  srv.state === 'lapsed'
-                    ? zh ? '已失效 —— 合盖会休眠' : 'Lapsed — the lid will sleep it'
-                    : zh ? '开启中 —— 合盖不会休眠' : 'On — the lid may stay closed'
-                }
-                sub={serverModeSub(srv, zh)}
-                pal={pal}
-                danger={serverModeNeedsAttention(srv)}
-                divider
-              />
-              <SettingsRow
-                icon="return"
-                label={zh ? '关闭服务器模式' : 'Turn server mode off'}
-                sub={zh ? '让这台 Mac 恢复正常睡眠' : 'Let this Mac sleep normally again'}
-                pal={pal}
-                danger
-                onPress={() =>
-                  Alert.alert(
-                    zh ? '关闭服务器模式？' : 'Turn server mode off?',
-                    zh
-                      ? '这台 Mac 会恢复正常睡眠；合上盖子就会休眠，远程连接也会随之断开。'
-                      : 'This Mac will sleep normally again. Closing the lid will sleep it, and your remote session ends with it.',
-                    [
-                      {text: zh ? '取消' : 'Cancel', style: 'cancel'},
-                      {
-                        text: zh ? '关闭' : 'Turn off',
-                        style: 'destructive',
-                        onPress: () => run(() => client.serverModeOff()),
-                      },
-                    ],
-                  )
-                }
-              />
-            </SettingsGroup>
-          )}
+          {/* Server mode is deliberately NOT controllable from here. Enabling needs an
+              administrator password typed at the Mac, and even turning it OFF would
+              raise a prompt on an unattended screen. The phone shows the state as a
+              ring on the connection dot (RadarScreen) and leaves it alone. */}
 
           {/* CONSENT — the typing master switch. */}
           <SettingsGroup title={zh ? '分享' : 'Sharing'} pal={pal}>
@@ -346,30 +299,3 @@ const styles = StyleSheet.create({
   actionLink: {fontSize: 14, fontWeight: '500'},
   actionDanger: {color: '#EF4444'},
 });
-
-// serverModeSub is the one line that has to carry the limits a user away from their
-// Mac actually needs: how long it has been running, and — when on battery — how much
-// is left before sleep comes back on its own.
-function serverModeSub(m: ServerMode, zh: boolean): string {
-  const parts: string[] = [];
-  if (m.since) {
-    const mins = Math.max(0, Math.floor(Date.now() / 1000) - m.since) / 60;
-    const dur = mins < 60 ? `${Math.floor(mins)}m` : `${Math.floor(mins / 60)}h${Math.floor(mins % 60)}m`;
-    parts.push(zh ? `已开启 ${dur}` : `on for ${dur}`);
-  }
-  if (m.power === 'battery' && m.battery_pct != null) {
-    parts.push(
-      zh
-        ? `电池 ${m.battery_pct}% · 到 20% 自动恢复睡眠`
-        : `battery ${m.battery_pct}% · sleep returns at 20%`,
-    );
-  } else if (m.power === 'ac') {
-    parts.push(zh ? '接通电源' : 'on power');
-  }
-  if (m.state === 'lapsed') {
-    parts.push(zh ? '设置已不再生效' : 'the setting is no longer in force');
-  } else if (!m.guard.healthy) {
-    parts.push(zh ? '⚠ 恢复睡眠的守护缺失' : '⚠ the safety guard is missing');
-  }
-  return parts.join(' · ');
-}

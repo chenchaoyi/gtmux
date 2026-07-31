@@ -145,6 +145,14 @@ struct PreferencesView: View {
                 }
             }
 
+            // Server mode: a property of THIS MACHINE (does it stay awake), not of who
+            // may reach it. It gets its own titled section ahead of the reachability
+            // trio — Remote access → Pair → Sharing are one continuous run (door, then
+            // identity) and must not be interrupted.
+            Section(l10n.tr("Server mode", "服务器模式")) {
+                serverModeRow
+            }
+
             // THE DOOR — is this Mac reachable, and how (mode + tunnel backend). It's a
             // SHARED reachability layer: BOTH your own paired devices AND shared
             // collaborators come through it, so it's its own section above Pair and
@@ -184,12 +192,6 @@ struct PreferencesView: View {
                         .textSelection(.enabled)
                 }
                 connectedDevices
-                // Server mode belongs INSIDE this section, not between Pair and
-                // Sharing: those two are the identity layer and are one group. Server
-                // mode is part of the door itself — a shut laptop that sleeps takes
-                // the tunnel down with it, so "reachable" is worth nothing without it.
-                Divider().padding(.vertical, 2)
-                serverModeRow
             }
 
             // YOUR DEVICES (PAIR) — your own phone / browser / terminal, full control.

@@ -170,7 +170,10 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// Server mode: readable remotely, revocable remotely, never enablable remotely
 		// (enabling needs an authorization typed at the Mac).
 		ServerModeJSON: func() ([]byte, error) { return json.Marshal(servermode.Current()) },
-		ServerModeOff:  servermode.Disable,
+		// DisableRemote, not Disable: a remote caller must never raise a password
+		// prompt on an unattended Mac (nobody would answer it, and the handler would
+		// block waiting). The marker is enough — the guard finishes the job.
+		ServerModeOff: servermode.DisableRemote,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
 		// Also backstops the tmux-resurrect save: if continuum's autosave is disarmed,
 		// gtmux keeps the save fresh itself (a no-op when the save is already recent).

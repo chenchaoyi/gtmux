@@ -727,7 +727,11 @@ as a broken button.
 
 The serve API SHALL expose the server-mode state to OWNER-scoped clients only
 (`GET /api/awake`, the same document `gtmux awake --json` returns), and
-SHALL accept an OWNER-scoped request that turns server mode OFF. A request to turn server
+SHALL accept an OWNER-scoped request that turns server mode OFF, which SHALL stand the
+state down WITHOUT raising any authorization prompt — a remote caller is by definition not
+at the machine, so a prompt would sit unanswered on an unattended screen and block the
+request. (Client surfaces need not expose this; the capability exists because
+de-escalation must always be possible.) A request to turn server
 mode ON SHALL be refused by the server with an explicit reason, regardless of client,
 because enabling requires a local interactive administrator authorization and an
 unattended machine has nobody to answer it. GUEST tokens SHALL NOT be able to read or

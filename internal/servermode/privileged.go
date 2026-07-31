@@ -148,7 +148,20 @@ func installScript(guard, plist string) string {
 		base64.StdEncoding.EncodeToString([]byte(plist)), GuardPlistPath, GuardLabel)
 }
 
-// Disable turns server mode off.
+// DisableRemote stands server mode down WITHOUT any authorization prompt: it writes
+// the unprivileged marker and lets the guard do the rest on its next tick.
+//
+// This is the only correct behaviour for a request that did not come from someone
+// sitting at the Mac. Raising an authorization dialog for a remote caller would put a
+// password prompt on an unattended screen with nobody to answer it — and block the
+// serve request handler waiting for a reply that never comes. The phone tapping
+// "turn off" must not be able to hang the Mac's UI.
+//
+// It is slower (bounded by the guard's interval) and that is the right trade: the
+// marker is already down, so the outcome is guaranteed either way.
+func DisableRemote() error { return Revoke() }
+
+// Disable turns server mode off from the machine itself, where a human is present.
 //
 // The stand-down marker is written FIRST, unprivileged, so that even if the user
 // dismisses the password prompt the guard still restores sleep within its next tick.

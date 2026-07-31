@@ -6,7 +6,7 @@ import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Alert as AlertType, SectionKey, serverModeNeedsAttention} from '../api/types';
+import {Alert as AlertType, SectionKey} from '../api/types';
 import type {ServerMode} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
@@ -148,7 +148,7 @@ export function RadarScreen({navigation}: any) {
           </Text>
         </TouchableOpacity>
         <View style={styles.headerRight}>
-          <ConnDot conn={conn} t={t} pal={pal} lang={lang} />
+          <ConnDot conn={conn} t={t} pal={pal} lang={lang} awake={srvOn} />
           {/* Browse ALL panes (tiered-pane-control): the opt-in secondary surface —
               reach a pane in a session with no agent. Kept off the radar itself so the
               agent-first list stays clean. Guests reach only their shared panes. */}
@@ -173,27 +173,6 @@ export function RadarScreen({navigation}: any) {
         <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
           {summary(c, t('agents'), lang)}
         </Text>
-        {srvOn && srv && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={lang === 'zh' ? '服务器模式' : 'server mode'}
-            onPress={() => navigation.navigate('ManageMac')}
-            hitSlop={hit}
-            style={[
-              styles.filterChip,
-              serverModeNeedsAttention(srv)
-                ? {backgroundColor: StatusColor.waiting + '1F', borderColor: StatusColor.waiting}
-                : {borderColor: pal.divider},
-            ]}>
-            <Text
-              style={{
-                fontSize: 11,
-                color: serverModeNeedsAttention(srv) ? StatusColor.waiting : pal.fg2,
-              }}>
-              {lang === 'zh' ? '服务器模式' : 'server mode'}
-            </Text>
-          </TouchableOpacity>
-        )}
         {(c.waiting > 0 || waitingOnly) && (
           <TouchableOpacity
             testID={TestIds.radar.waitingOnly}
@@ -290,7 +269,7 @@ export function RadarScreen({navigation}: any) {
   );
 }
 
-function ConnDot({conn, t, pal, lang}: any) {
+function ConnDot({conn, t, pal, lang, awake}: any) {
   // D9: server name (shown in the chip) + a status dot — no "live" word; only an
   // abnormal state adds text (amber reconnecting / red offline / red rejected).
   const isRed = conn === 'offline' || conn === 'unauthorized';
@@ -307,8 +286,19 @@ function ConnDot({conn, t, pal, lang}: any) {
     conn === 'offline' ? (lang === 'zh' ? '离线' : 'offline') :
     (lang === 'zh' ? '重连中' : 'reconnecting');
   return (
-    <View style={styles.conn} accessibilityRole="text" accessibilityLabel={(lang === 'zh' ? '连接：' : 'Connection: ') + a11y}>
+    <View
+      style={styles.conn}
+      accessibilityRole="text"
+      accessibilityLabel={
+        (lang === 'zh' ? '连接：' : 'Connection: ') + a11y +
+        (awake ? (lang === 'zh' ? '，服务器模式开启' : ', server mode on') : '')
+      }>
       <View style={[styles.connDot, {backgroundColor: color}]} />
+      {/* Server mode: a hairline ring around the connection dot, present only while
+          it is on. Read-only by design — enabling needs a password typed at the Mac,
+          and even turning it OFF from here would leave a prompt on an unattended
+          screen. So the phone SHOWS the state and never touches it. */}
+      {awake ? <View style={[styles.connAwake, {borderColor: color}]} /> : null}
       {label ? <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text> : null}
     </View>
   );
@@ -354,6 +344,12 @@ const styles = StyleSheet.create({
   gear: {marginLeft: 14},
   conn: {flexDirection: 'row', alignItems: 'center'},
   connDot: {width: 7, height: 7, borderRadius: 3.5, marginRight: 5},
+  // A ring OUTSIDE the dot: same colour, so it reads as the same indicator in a
+  // different state rather than as a second thing to decode.
+  connAwake: {
+    position: 'absolute', left: -3, top: -3, width: 13, height: 13,
+    borderRadius: 6.5, borderWidth: 1, opacity: 0.75,
+  },
   connText: {fontSize: 11},
   // Always-dark banner → FIXED light text (never pal.fg, which is near-black in light mode).
   authBanner: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 2, gap: 4},

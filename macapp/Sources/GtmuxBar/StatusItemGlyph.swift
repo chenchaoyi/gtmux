@@ -26,9 +26,30 @@ enum StatusItemGlyph {
 
     /// The brand grid tinted by the most-urgent state, or a quiet neutral grid
     /// when empty / only running (nothing needs you).
-    static func image(mostUrgent: Status, empty: Bool, dark: Bool) -> NSImage {
+    /// - Parameter awake: server mode is on (the Mac is being kept awake). It is drawn
+    ///   as a thin ring AROUND the existing mark rather than as a second status item:
+    ///   one gtmux presence in the menu bar, in a slightly different state. A second
+    ///   icon reads as a second app.
+    static func image(mostUrgent: Status, empty: Bool, dark: Bool, awake: Bool = false) -> NSImage {
         let lit: Status? = (empty || mostUrgent == .running) ? nil : mostUrgent
-        return draw { _, full in grid(full, dark: dark, lit: lit) }
+        return draw { _, full in
+            grid(full, dark: dark, lit: lit)
+            if awake { awakeRing(full, dark: dark) }
+        }
+    }
+
+    /// The awake ring: a hairline enclosing the mark, drawn in the 1pt margin the
+    /// glyph already reserves, so it costs no extra width in the bar.
+    ///
+    /// Deliberately NEUTRAL, never a status colour — colour encodes the fleet's agent
+    /// state (DESIGN §9) and server mode is a machine state. Shape carries this
+    /// signal, exactly as the design language says it should. No animation.
+    private static func awakeRing(_ full: CGRect, dark: Bool) {
+        let r = full.insetBy(dx: -1, dy: -1)
+        let path = NSBezierPath(roundedRect: r, xRadius: 4, yRadius: 4)
+        path.lineWidth = 1
+        (dark ? NSColor.white : NSColor.black).withAlphaComponent(dark ? 0.65 : 0.5).setStroke()
+        path.stroke()
     }
 
     // MARK: pane grid
