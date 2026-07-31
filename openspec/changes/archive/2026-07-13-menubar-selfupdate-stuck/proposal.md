@@ -16,8 +16,8 @@ Tracing the flow (`Updater.swift` → detached `gtmux update` → `runInstaller`
    "…/Gtmux.app"` runs, LaunchServices sees the still-registered `com.gtmux.menubar`
    instance and just **activates the dying old one instead of launching the swapped
    binary** — so the new version never comes up. This is the exact footgun the
-   sibling **multipilot-companion** app hit ("stuck in updating forever") and fixed
-   by switching its relaunch to `open -n` (≥0.2.234, `Sources/MPBar/Updater.swift`):
+   sibling menu-bar app hit ("stuck in updating forever") and fixed
+   by switching its relaunch to `open -n`:
    `-n` force-starts a *new* instance of the swapped bundle regardless of the old
    one's state.
 
@@ -43,7 +43,7 @@ The common failure mode: **exit:0 recorded, but this GtmuxBar process is still a
 The fix makes the self-update **always terminate in a defined state** — relaunched to
 the new version, or a retryable error — never a stuck spinner. Three prongs:
 
-- **`install.sh`: relaunch with `open -n`** (port the multipilot fix). The bare `open`
+- **`install.sh`: relaunch with `open -n`** (port a sibling app's fix). The bare `open`
   on the app-swap path becomes `open -n "${APP_DIR}/Gtmux.app"`, so the freshly-swapped
   binary is force-launched even if the old instance lingers. The app **already has a
   newest-wins single-instance guard** (`AppDelegate.terminateOtherInstances()`), so the
@@ -61,7 +61,7 @@ the new version, or a retryable error — never a stuck spinner. Three prongs:
     flip to `.updateFailed` with a retry, exactly like a non-zero exit.
 
   The decision is a **pure, unit-tested function** (`postExitZeroAction`), mirroring
-  multipilot's testable `duplicateInstancePIDs`. The existing 180s hard timeout stays
+  a sibling app's testable `duplicateInstancePIDs`. The existing 180s hard timeout stays
   as the backstop for the pre-`exit` window (a download that wedges before the status
   file is even written).
 

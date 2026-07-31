@@ -1,4 +1,4 @@
-# Widen the menu-bar popover to match MPBar (320 → 420)
+# Widen the menu-bar popover to a companion-app baseline (320 → 420)
 
 ## Why
 
@@ -7,11 +7,9 @@ DESIGN §3), the single-line rows — session/task, and especially the HQ card's
 last/ask digest line — tail-truncate early, so a lot of the useful text disappears
 behind `…` even when there is screen room to show it.
 
-MPBar (multipilot's menu-bar companion, `~/meituan/hss-saac/multipilot-companion`)
-solved the same problem: `MenuView.swift` sets `.frame(width: 420)`, with an explicit
-comment that 360/430 were tried and **420** was the calibrated value. We adopt that
-same width so the two companions read as one visual family and gtmux's digest text
-has room to breathe.
+A companion menu-bar app solved the same problem: it sets a popover `.frame(width: 420)`,
+with 360/430 tried and **420** the calibrated value. We adopt that same width so it reads
+as one visual family and gtmux's digest text has room to breathe.
 
 ## What Changes
 
@@ -24,8 +22,8 @@ has room to breathe.
   benefits. Wider = strictly more text before truncation, no reflow risk.
 - **Adaptive width — evaluated, declined.** Since every row is single-line
   tail-truncated, no content "wants" to be wider than the frame; a content-driven /
-  max-width popover would add jitter for zero legibility gain, and MPBar itself uses a
-  fixed 420. We keep a **fixed constant** (the design-token model), matching MPBar.
+  max-width popover would add jitter for zero legibility gain, and the companion app
+  itself uses a fixed 420. We keep a **fixed constant** (the design-token model).
 - **Spec + docs synced.** DESIGN §3 size table (`popover 宽`) and this capability spec
   record 420; a test pins `popoverWidth == 420`.
 

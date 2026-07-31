@@ -1,6 +1,6 @@
 # 研究笔记:从 cmux 借鉴什么 + 多路复用器(mux)适配
 
-> 2026-06 调研。基于 cmux 源码(`/Users/ccy/meituan/manaflow-ai/cmux`,只读)。
+> 2026-06 调研。基于 cmux 源码(`manaflow-ai/cmux`,只读)。
 > 两个目标:① 找出值得反哺 gtmux 的高价值点;② 评估以**扩展/适配器**方式
 > 顺带支持其他主流 "mux"(让用户群更大),gtmux 仍以原生 tmux 为主。
 

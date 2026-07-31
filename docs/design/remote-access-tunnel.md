@@ -176,9 +176,8 @@ public exposure should be a conscious choice and stay visible:
   and kill it on every protocol (see the debug runbook).
 - **`self`** — a WebSocket-over-443 tunnel (Chisel) to **your own VPS + domain**,
   indistinguishable from ordinary HTTPS, so it survives that hijack. You run the
-  server side (chisel + a TLS reverse proxy, coexisting with anything already on 443
-  via an SNI router) — see **`deploy/self-tunnel/`** for the versioned config +
-  install/migration scripts. Config is manual (your own server):
+  server side (chisel + Caddy for TLS on a dedicated VPS) — see **`deploy/self-tunnel/`**
+  for the versioned config + install/migration scripts. Config is manual (your own server):
   `GTMUX_SELFTUNNEL_URL` (`https://tunnel.example.com`) + `GTMUX_SELFTUNNEL_SECRET`
   (chisel `user:pass`). The client is the **jpillora/chisel library run in-process**
   — no standalone binary on the Mac (nothing to download/manage, and no separate

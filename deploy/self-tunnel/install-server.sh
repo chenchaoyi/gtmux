@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Idempotent installer for the gtmux self-hosted tunnel server (Debian 12).
-# Sets up the SNI router (nginx) + Caddy (TLS) + chisel (reverse tunnel). Does NOT
-# touch mail (postfix/dovecot) or SSH. Re-runnable. See README.md.
+# Idempotent installer for the gtmux self-hosted tunnel server (Debian 12), on a
+# DEDICATED VPS where Caddy can own :443. Sets up Caddy (TLS on :443, ACME on :80)
+# + chisel (reverse tunnel on loopback). Re-runnable. See README.md.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,9 +11,9 @@ say() { echo "[gtmux-self-tunnel] $*"; }
 
 # --- packages -----------------------------------------------------------------
 export DEBIAN_FRONTEND=noninteractive
-say "installing nginx + stream, chisel, caddy…"
+say "installing chisel + caddy…"
 apt-get -qq update >/dev/null
-apt-get -y -qq install nginx libnginx-mod-stream curl gnupg debian-keyring debian-archive-keyring apt-transport-https >/dev/null
+apt-get -y -qq install curl gnupg debian-keyring debian-archive-keyring apt-transport-https >/dev/null
 
 if ! command -v chisel >/dev/null; then
   V=1.10.1
@@ -46,24 +46,10 @@ systemctl daemon-reload
 systemctl enable --now chisel-server >/dev/null
 say "chisel-server: $(systemctl is-active chisel-server) on 127.0.0.1:8080"
 
-# --- nginx SNI router on :443 (do this FIRST so :80 is freed before Caddy) -----
-rm -f /etc/nginx/sites-enabled/default   # frees :80 for Caddy's ACME
-install -d -m 755 /etc/nginx/stream.d
-install -m 644 "$HERE/nginx-stream-sni.conf" /etc/nginx/stream.d/gtmux-sni.conf
-# Add a top-level stream{} include to nginx.conf once (idempotent).
-if ! grep -q 'stream.d/\*.conf' /etc/nginx/nginx.conf; then
-  printf '\nstream {\n    include /etc/nginx/stream.d/*.conf;\n}\n' >> /etc/nginx/nginx.conf
-  say "added stream{} include to nginx.conf"
-fi
-nginx -t
-systemctl reload nginx || systemctl restart nginx
-say "nginx SNI router active on :443 (tunnel.ccy.dev → Caddy; default → xray 127.0.0.1:8443)"
-
-# --- Caddy (:80 now free) -----------------------------------------------------
+# --- Caddy (owns :443 + :80 directly) -----------------------------------------
 install -m 644 "$HERE/Caddyfile" /etc/caddy/Caddyfile
 systemctl enable caddy >/dev/null
 systemctl restart caddy
-say "caddy restarted (ACME pends until tunnel.ccy.dev resolves to this host)"
+say "caddy restarted, owns :443 (ACME pends until tunnel.ccy.dev resolves to this host)"
 
-say "DONE. Next: (1) add DNS tunnel.ccy.dev → this IP (DNS-only); (2) run xray-integrate.sh to restore VLESS behind the router."
-say "Untouched: mail (25/110/143/993/995), SSH (22)."
+say "DONE. Next: add DNS tunnel.ccy.dev → this IP (DNS-only) so Caddy can issue the cert."
