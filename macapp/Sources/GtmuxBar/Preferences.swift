@@ -149,8 +149,20 @@ struct PreferencesView: View {
             // may reach it. It gets its own titled section ahead of the reachability
             // trio — Remote access → Pair → Sharing are one continuous run (door, then
             // identity) and must not be interrupted.
-            Section(l10n.tr("Server mode", "服务器模式")) {
+            Section {
                 serverModeRow
+            } header: {
+                HStack(spacing: 4) {
+                    Text(l10n.tr("Server mode", "服务器模式"))
+                    // What it is, for someone who has never heard the term. A tooltip
+                    // rather than a subtitle: the answer is one sentence, and it should
+                    // not take up room for people who already know.
+                    Image(systemName: "questionmark.circle")
+                        .foregroundStyle(.tertiary)
+                        .help(l10n.tr(
+                            "Keeps this Mac running with the lid closed, so your agents, the tunnel and your phone keep working while you carry it around. It stays on until you turn it off; on battery, sleep comes back on its own at 20%.",
+                            "让这台 Mac 合上盖子也继续运行 —— 带着走的时候，agent、隧道和手机端都不中断。开启后一直有效，直到你自己关闭；用电池时电量到 20% 会自动恢复睡眠。"))
+                }
             }
 
             // THE DOOR — is this Mac reachable, and how (mode + tunnel backend). It's a
@@ -365,27 +377,27 @@ struct PreferencesView: View {
     private func confirmServerModeOn() {
         let a = NSAlert()
         a.messageText = l10n.tr("Turn on server mode?", "开启服务器模式？")
-        a.informativeText = l10n.tr(
-            """
-            Your Mac keeps running with the lid shut, so agents and your phone keep working.
-
-            • Stays on until you turn it off — a menu-bar icon shows it the whole time
-            • Works on battery too; sleep comes back on its own at 20%
-            • Runs hotter with the lid shut — hard surface, not in a bag
-            • Stays remotely reachable while unattended
-
-            Asks for your password once.
-            """,
-            """
-            合上盖子 Mac 也继续跑，agent 和手机端都不中断。
-
-            • 一直有效，直到你关闭 —— 菜单栏会一直显示标记
-            • 用电池也能跑；电量到 20% 会自动恢复睡眠
-            • 合盖更热 —— 放硬质平面，别塞进包里
-            • 无人值守期间保持可远程访问
-
-            需要输入一次管理员密码。
-            """)
+        // NSAlert has no width API and defaults to a narrow column, which turned this
+        // into a tall ribbon of two-word lines. A fixed-width accessory view sets the
+        // dialog's width, so the same text reads in far fewer lines.
+        let body = l10n.tr(
+            "Your Mac keeps running with the lid shut, so agents and your phone keep working.\n\n"
+            + "•  Stays on until you turn it off — the menu-bar icon shows it the whole time\n"
+            + "•  Works on battery too; sleep comes back on its own at 20%\n"
+            + "•  Runs hotter with the lid shut — hard surface, not in a bag\n"
+            + "•  Stays remotely reachable while unattended\n\n"
+            + "Asks for your password once.",
+            "合上盖子 Mac 也继续跑，agent 和手机端都不中断。\n\n"
+            + "•  一直有效，直到你关闭 —— 菜单栏图标会一直显示\n"
+            + "•  用电池也能跑；电量到 20% 会自动恢复睡眠\n"
+            + "•  合盖更热 —— 放硬质平面，别塞进包里\n"
+            + "•  无人值守期间保持可远程访问\n\n"
+            + "需要输入一次管理员密码。")
+        let label = NSTextField(wrappingLabelWithString: body)
+        label.font = .systemFont(ofSize: 12)
+        label.frame = NSRect(x: 0, y: 0, width: 420, height: 0)
+        label.setFrameSize(NSSize(width: 420, height: label.fittingSize.height))
+        a.accessoryView = label
         a.addButton(withTitle: l10n.tr("Continue", "继续"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         guard a.runModal() == .alertFirstButtonReturn else { return }

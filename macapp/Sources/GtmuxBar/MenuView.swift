@@ -11,6 +11,7 @@ enum MenuAction {
 /// you", and stay calm elsewhere.
 struct MenuView: View {
     @ObservedObject var store: AgentStore
+    @ObservedObject var serverMode = ServerModeStore.shared
     @ObservedObject var l10n: L10n
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject var share = ShareStore.shared
@@ -112,7 +113,21 @@ struct MenuView: View {
                     .textFieldStyle(.plain).font(.system(size: 12)).foregroundStyle(p.fg)
                     .focused($searchFocused)
             } else {
-                HStack { Text(summaryText).font(Theme.Font.summary).foregroundStyle(p.fg2); Spacer() }
+                HStack(spacing: 6) {
+                    Text(summaryText).font(Theme.Font.summary).foregroundStyle(p.fg2)
+                    // Server mode, stated where the eye already lands. Read-only: this
+                    // is the ambient half (the glyph carries it in the bar), and every
+                    // way to CHANGE it lives in Preferences, because it ends at a
+                    // password typed here.
+                    if serverMode.status?.isOn == true {
+                        Text("·").font(Theme.Font.summary).foregroundStyle(p.fg3)
+                        Text(l10n.tr("lid may close", "合盖不睡"))
+                            .font(Theme.Font.summary)
+                            .foregroundStyle(serverMode.status?.needsAttention == true
+                                             ? Theme.Status.waiting : p.fg2)
+                    }
+                    Spacer()
+                }
             }
         }
         .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 7)
