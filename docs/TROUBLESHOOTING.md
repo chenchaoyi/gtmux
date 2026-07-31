@@ -223,6 +223,35 @@ sudo pmset -a disablesleep 0
 
 ---
 
+## 生成 shell 脚本时,内容必须走 base64 —— 又一次反引号事故(2026-07-31)
+
+**症状** —— 菜单栏点「开启服务器模式」,输入密码后弹「authorization declined — nothing was
+changed」。但用户**确实**输了密码、也点了 OK。
+
+**根因(两个叠加)** —— 特权 payload 是「一段 shell 脚本,用来写出另一段 shell 脚本」。内层内容
+当时是用 Go 的 `%q` 插进 shell 双引号里的:
+
+1. **`%q` 是 Go 语法,不是 shell 语法。** 它把换行写成 `\n` 两个字符,而 shell 双引号**不解释**
+   `\n` —— 写出去的守护脚本会变成带字面 `\n` 的一整行,彻底坏掉。
+2. **被写的脚本注释里有反引号**(`` `gtmux awake on` ``)。shell 在双引号内会**执行**反引号里的
+   内容。配合 `set -e`,那一行一失败整个安装就中止。
+
+于是 osascript 返回非零,而调用方把**所有**非零都归类成"授权被拒绝",把排查引向完全错误的方向。
+
+**规则**
+
+- **把文件内容传进 shell,一律用 base64**:`echo <base64> | base64 -d > file`。base64 的字母表里
+  没有任何 shell 特殊字符,这类 bug 结构上不可能再发生。永远不要用 `%q`/手工引号拼 shell。
+- **区分"用户拒绝"和"脚本失败"**:osascript 的 `-128` / "User canceled" 才是拒绝;其余是执行
+  失败,必须把真实报错显示出来。把两者压成一个错误会让人查错地方。
+- **测 round trip,不测引号写法**:让 payload 真的跑一遍,再把落盘的文件和原文逐字节比对
+  (`TestInstallPayloadReproducesTheGuardExactly`)。任何"看起来对"的引号都骗不过它。
+
+这是 CLAUDE.md 里 `--body "$(…)"` 那条反引号 footgun 的同族 —— 换了个场景又踩一次。判据一样:
+**只要有一段文本要穿过 shell,就问它里面有没有反引号/换行/引号;有就 base64。**
+
+---
+
 ## Release / git-ops
 
 ### Never inline backtick-containing prose into a shell-substituted string
