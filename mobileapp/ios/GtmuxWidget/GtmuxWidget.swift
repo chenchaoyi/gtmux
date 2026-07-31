@@ -73,6 +73,18 @@ struct BrandMark: View {
   }
 }
 
+// OfflineTag — a small muted-red marker for a STALE activity (the server stopped
+// refreshing it, so the tally is old). Makes a frozen card unmistakably not-live.
+private struct OfflineTag: View {
+  var body: some View {
+    HStack(spacing: 3) {
+      Circle().fill(statusColor(.waiting)).frame(width: 5, height: 5)
+      Text("offline").font(.caption2).fontWeight(.semibold)
+        .foregroundColor(statusColor(.waiting).opacity(0.95)).lineLimit(1)
+    }
+  }
+}
+
 // MiniTally — the small "[badge]N · [badge]M · [badge]K" detail line; a bucket
 // dims to near-zero when empty so the row stays stable and uncluttered.
 private struct MiniTally: View {
@@ -192,13 +204,20 @@ struct GtmuxLiveActivity: Widget {
       //            prompt  (dim)
       //   ───────  N waiting · M working · K idle  ───────
       VStack(alignment: .leading, spacing: 10) {
-        // Which Mac this activity tracks — a small header label so a phone paired to
-        // several servers knows whose tally this is (static per activity).
-        if !context.attributes.server.isEmpty {
-          Text(context.attributes.server)
-            .font(.caption2).fontWeight(.semibold)
-            .foregroundColor(.white.opacity(0.55)).lineLimit(1)
+        // Header: which Mac this activity tracks (static per activity) + an OFFLINE
+        // marker when the content is stale — the server stopped refreshing it, so the
+        // tally below is old and must not read as live.
+        if !context.attributes.server.isEmpty || context.isStale {
+          HStack(spacing: 6) {
+            if !context.attributes.server.isEmpty {
+              Text(context.attributes.server)
+                .font(.caption2).fontWeight(.semibold)
+                .foregroundColor(.white.opacity(context.isStale ? 0.4 : 0.55)).lineLimit(1)
+            }
+            if context.isStale { OfflineTag() }
+          }
         }
+        // The live part dims when stale so a frozen tally reads as "not current".
         HStack(alignment: .center, spacing: 12) {
           StatusBadge(status: primaryStatus(context.state), size: 26)
           Text(summaryLine(context.state))
@@ -215,6 +234,7 @@ struct GtmuxLiveActivity: Widget {
             .font(.caption).foregroundColor(.white.opacity(0.62)).lineLimit(1)
         }
       }
+      .opacity(context.isStale ? 0.6 : 1)
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
       .activityBackgroundTint(Color.black.opacity(0.55))
@@ -229,19 +249,26 @@ struct GtmuxLiveActivity: Widget {
         }
         DynamicIslandExpandedRegion(.center) {
           VStack(spacing: 2) {
-            if !context.attributes.server.isEmpty {
-              Text(context.attributes.server).font(.caption2).fontWeight(.semibold).foregroundColor(.secondary).lineLimit(1)
+            HStack(spacing: 6) {
+              if !context.attributes.server.isEmpty {
+                Text(context.attributes.server).font(.caption2).fontWeight(.semibold).foregroundColor(.secondary).lineLimit(1)
+              }
+              if context.isStale { OfflineTag() }
             }
             Text(headline(context.state)).font(.callout).fontWeight(.semibold).lineLimit(1)
             Text(subtitle(context.state)).font(.caption2).foregroundColor(.secondary).lineLimit(1)
           }
+          .opacity(context.isStale ? 0.6 : 1)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          if !context.state.items.isEmpty {
-            SessionList(items: context.state.items, more: context.state.more, maxRows: 2)
-          } else {
-            MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+          Group {
+            if !context.state.items.isEmpty {
+              SessionList(items: context.state.items, more: context.state.more, maxRows: 2)
+            } else {
+              MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+            }
           }
+          .opacity(context.isStale ? 0.6 : 1)
         }
       } compactLeading: {
         StatusBadge(status: primaryStatus(context.state), size: 16)

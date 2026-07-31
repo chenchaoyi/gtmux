@@ -220,6 +220,12 @@ func TestPushLiveActivity(t *testing.T) {
 		if in.Token != "act-tok-1" && in.Token != "act-tok-2" {
 			t.Fatalf("unexpected token %q", in.Token)
 		}
+		// Every LA push carries a future stale-date (~40m ahead) so a dead server's
+		// card dims to "offline" instead of freezing forever.
+		now := time.Now().Unix()
+		if in.StaleDate < now+25*60 || in.StaleDate > now+55*60 {
+			t.Fatalf("StaleDate = %d, want ~40m ahead of now=%d", in.StaleDate, now)
+		}
 	}
 }
 

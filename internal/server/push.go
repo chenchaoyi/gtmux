@@ -60,6 +60,11 @@ type PushIntent struct {
 	LiveActivity bool           `json:"liveActivity,omitempty"`
 	Event        string         `json:"event,omitempty"` // "update" | "end"
 	ContentState map[string]any `json:"contentState,omitempty"`
+	// StaleDate (unix seconds) is when iOS should consider a Live Activity update
+	// STALE — after which the widget dims to an "offline" state. Refreshed on every
+	// push + a periodic heartbeat, so a dead server (no more pushes) lets the card go
+	// stale on its own instead of showing a frozen tally forever. Live Activity only.
+	StaleDate int64 `json:"staleDate,omitempty"`
 	// Silent badge/dismiss sync (6a): a content-available push (no alert) that keeps
 	// the app-icon badge correct on every device and collapses a resolved agent's
 	// banner. Badge is the absolute waiting count; CollapseID is the agent's pane.
@@ -253,12 +258,19 @@ func (p *PushManager) PushLiveActivity(t Tally) {
 		"waitingTitle": t.WaitingTitle, "waitingSession": t.WaitingSession,
 		"items": items, "more": t.More,
 	}
+	stale := time.Now().Add(liveActivityStale).Unix()
 	go func() {
 		for _, tk := range toks {
-			_ = p.relay.Send(PushIntent{Token: tk.token, Env: tk.env, LiveActivity: true, Event: "update", ContentState: cs})
+			_ = p.relay.Send(PushIntent{Token: tk.token, Env: tk.env, LiveActivity: true, Event: "update", ContentState: cs, StaleDate: stale})
 		}
 	}()
 }
+
+// liveActivityStale is how far ahead each Live Activity push sets its stale-date. It
+// must exceed the heartbeat interval (else a healthy but idle server would let the card
+// go stale between beats); the margin absorbs push latency/jitter. A dead server's card
+// therefore dims to "offline" 10–40 min after the last push (heartbeat is 30 min).
+const liveActivityStale = 40 * time.Minute
 
 // OnAlert is wired as the hub's alert hook. It dispatches asynchronously so a
 // slow relay never stalls the SSE diff loop.
