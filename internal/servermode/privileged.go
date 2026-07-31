@@ -25,7 +25,30 @@ var (
 	ErrNotVerified  = errors.New("the sleep setting did not take effect")
 	ErrGuardMissing = errors.New("the de-escalation guard could not be installed")
 	ErrNoAuth       = errors.New("administrator authorization was declined or unavailable")
+	// ErrPrivilegedFailed: the user DID authorize, but the privileged script failed.
+	// A separate error because the remedy is completely different.
+	ErrPrivilegedFailed = errors.New("the privileged step failed after you authorized it")
 )
+
+// isUserCancelled recognises the dialog being dismissed. osascript reports it as
+// error -128 ("User canceled"); a headless session (no GUI to show the dialog) also
+// lands here, which is the correct outcome — enabling needs a human at the machine.
+func isUserCancelled(out string) bool {
+	return strings.Contains(out, "-128") ||
+		strings.Contains(strings.ToLower(out), "user canceled") ||
+		strings.Contains(strings.ToLower(out), "user cancelled")
+}
+
+func firstLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return s[:i]
+	}
+	if s == "" {
+		return "no output"
+	}
+	return s
+}
 
 // runPrivileged executes a shell script as root via one macOS authorization prompt.
 //
@@ -41,12 +64,16 @@ func runPrivileged(script, prompt string) (string, error) {
 		`do shell script "echo %s | /usr/bin/base64 -d | /bin/sh" with prompt "%s" with administrator privileges`,
 		enc, strings.ReplaceAll(prompt, `"`, `'`))
 	out, err := exec.Command("osascript", "-e", osa).CombinedOutput()
-	if err != nil {
-		// -128 is the user cancelling the dialog; a headless session fails here too,
-		// which is the correct outcome — enabling requires a human at the machine.
+	if err == nil {
+		return string(out), nil
+	}
+	// Distinguish "the user said no" from "the script blew up". Reporting a failed
+	// install as a declined authorization sends the user looking in exactly the wrong
+	// place — it cost a debugging session to learn that.
+	if isUserCancelled(string(out)) {
 		return string(out), fmt.Errorf("%w: %v", ErrNoAuth, err)
 	}
-	return string(out), nil
+	return string(out), fmt.Errorf("%w: %s", ErrPrivilegedFailed, firstLine(string(out)))
 }
 
 // Enable turns on the clamshell tier: it disables sleep AND installs the guard in
@@ -96,19 +123,29 @@ func Enable() error {
 // then disable sleep. Order matters — the guard is in place BEFORE sleep is
 // disabled, so there is never a window where the Mac cannot sleep and nothing is
 // watching.
+//
+// File contents are embedded as BASE64, never as shell-quoted text. An earlier
+// version interpolated them with Go's %q, which produced two failures at once: Go
+// quoting is not shell quoting (its `\n` stays a literal backslash-n inside shell
+// double quotes, so the guard was written as one broken line), and the guard's own
+// comments contain BACKTICKS — which the shell executes inside double quotes. With
+// `set -e` that aborted the whole install, and the caller reported it as "authorization
+// declined". Base64's alphabet has no character the shell treats specially, so this
+// class of bug cannot recur. (Same footgun as the `--body "$(…)"` one in CLAUDE.md.)
 func installScript(guard, plist string) string {
 	return fmt.Sprintf(`set -e
 /bin/mkdir -p %[1]q
-/usr/bin/printf '%%s' %[2]q > %[3]q
+/bin/echo %[2]q | /usr/bin/base64 -d > %[3]q
 /usr/sbin/chown -R root:wheel %[1]q
 /bin/chmod 755 %[3]q
-/usr/bin/printf '%%s' %[4]q > %[5]q
+/bin/echo %[4]q | /usr/bin/base64 -d > %[5]q
 /usr/sbin/chown root:wheel %[5]q
 /bin/chmod 644 %[5]q
 /bin/launchctl bootout system/%[6]s 2>/dev/null || true
 /bin/launchctl bootstrap system %[5]q
 /usr/bin/pmset -a disablesleep 1
-`, GuardDir, guard, GuardScriptPath, plist, GuardPlistPath, GuardLabel)
+`, GuardDir, base64.StdEncoding.EncodeToString([]byte(guard)), GuardScriptPath,
+		base64.StdEncoding.EncodeToString([]byte(plist)), GuardPlistPath, GuardLabel)
 }
 
 // Disable turns server mode off.

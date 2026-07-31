@@ -184,19 +184,16 @@ struct PreferencesView: View {
                         .textSelection(.enabled)
                 }
                 connectedDevices
+                // Server mode belongs INSIDE this section, not between Pair and
+                // Sharing: those two are the identity layer and are one group. Server
+                // mode is part of the door itself — a shut laptop that sleeps takes
+                // the tunnel down with it, so "reachable" is worth nothing without it.
+                Divider().padding(.vertical, 2)
+                serverModeRow
             }
 
             // YOUR DEVICES (PAIR) — your own phone / browser / terminal, full control.
             // They reach the Mac through the door above.
-            // Server mode sits right under Remote access because that is WHY it
-            // exists: a shut laptop that sleeps takes the tunnel and every agent turn
-            // down with it. It is a machine state, so it belongs in a management
-            // surface — the menu-bar indicator is the ambient half, this is the
-            // deliberate half (and the only place it can be switched ON, since that
-            // needs a password typed here).
-            Section(l10n.tr("Server mode", "服务器模式")) {
-                serverModeRow
-            }
 
             Section(l10n.tr("Your devices · Pair", "我的设备 · 配对")) {
                 pairSection
@@ -365,24 +362,27 @@ struct PreferencesView: View {
     /// exposure — plus the fact that it never expires on its own.
     private func confirmServerModeOn() {
         let a = NSAlert()
-        a.messageText = l10n.tr("Keep this Mac working with the lid closed?",
-                                "让这台 Mac 合盖也继续工作？")
+        a.messageText = l10n.tr("Turn on server mode?", "开启服务器模式？")
         a.informativeText = l10n.tr(
             """
-            gtmux will ask for your administrator password once, then verify the setting actually took effect.
+            Your Mac keeps running with the lid shut, so agents and your phone keep working.
 
-            • It stays on until you turn it off — it does not expire. A menu-bar indicator stays visible the whole time, and clicking it turns this off.
-            • On battery it keeps going (you can carry the closed laptop around). You are warned at 30%, and sleep is restored on its own at 20%.
-            • A closed lid dissipates heat worse — hard surface, not in a bag. A fanless MacBook Air suffers most.
-            • This Mac stays remotely reachable, unattended, for as long as it is on. Your screen lock is unaffected.
+            • Stays on until you turn it off — a menu-bar icon shows it the whole time
+            • Works on battery too; sleep comes back on its own at 20%
+            • Runs hotter with the lid shut — hard surface, not in a bag
+            • Stays remotely reachable while unattended
+
+            Asks for your password once.
             """,
             """
-            gtmux 会要求输入一次管理员密码，然后确认设置真的生效。
+            合上盖子 Mac 也继续跑，agent 和手机端都不中断。
 
-            • 开启后一直有效，直到你自己关闭 —— 不会自动到期。菜单栏会一直显示一个标记，点它即可关闭。
-            • 用电池时也继续跑（可以合盖带着走）。到 30% 会提醒你，到 20% 会自动恢复睡眠。
-            • 合盖散热更差 —— 请放硬质平面、别塞进包里；无风扇的 MacBook Air 影响最大。
-            • 开启期间这台 Mac 会长时间无人值守地保持可远程访问。屏幕锁不受影响。
+            • 一直有效，直到你关闭 —— 菜单栏会一直显示标记
+            • 用电池也能跑；电量到 20% 会自动恢复睡眠
+            • 合盖更热 —— 放硬质平面，别塞进包里
+            • 无人值守期间保持可远程访问
+
+            需要输入一次管理员密码。
             """)
         a.addButton(withTitle: l10n.tr("Continue", "继续"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))

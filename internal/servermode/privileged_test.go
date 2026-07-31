@@ -1,6 +1,8 @@
 package servermode
 
 import (
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -38,5 +40,66 @@ func TestPrivilegedPayloadIsNotStringInterpolated(t *testing.T) {
 	// the transport to osascript is base64, so AppleScript escaping never applies.
 	if !strings.Contains(s, `\"`) && !strings.Contains(s, "'") {
 		t.Log("payload quoting relies on Go quoting plus the base64 transport")
+	}
+}
+
+// The install payload is a shell script that WRITES another shell script. That
+// nesting is where an earlier version broke in two ways at once — Go's %q quoting is
+// not shell quoting, and the guard's own comments contain backticks, which the shell
+// executes inside double quotes. The install aborted under `set -e` and surfaced as
+// "authorization declined", sending debugging in the wrong direction entirely.
+//
+// So this runs the payload for real (against a temp dir, unprivileged) and compares
+// what landed on disk with what we meant to write. A round trip is the only assertion
+// that cannot be fooled by clever-looking quoting.
+func TestInstallPayloadReproducesTheGuardExactly(t *testing.T) {
+	guard := GuardScript("/tmp/state.json", "/tmp/revoke")
+	payload := installScript(guard, GuardPlist())
+
+	// Keep ONLY the two decode lines, retargeted at a temp dir: the rest of the
+	// payload needs root (chown, launchctl, pmset) and is not what this pins.
+	dir := t.TempDir()
+	var lines []string
+	for _, ln := range strings.Split(payload, "\n") {
+		if strings.Contains(ln, "base64 -d") {
+			ln = strings.ReplaceAll(ln, GuardScriptPath, dir+"/guard.sh")
+			ln = strings.ReplaceAll(ln, GuardPlistPath, dir+"/guard.plist")
+			lines = append(lines, ln)
+		}
+	}
+	if len(lines) != 2 {
+		t.Fatalf("expected two file-writing lines in the payload, got %d", len(lines))
+	}
+	cmd := exec.Command("/bin/sh", "-s")
+	cmd.Stdin = strings.NewReader(strings.Join(lines, "\n"))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("payload failed to run: %v\n%s", err, out)
+	}
+
+	got, err := os.ReadFile(dir + "/guard.sh")
+	if err != nil {
+		t.Fatalf("guard was not written: %v", err)
+	}
+	if string(got) != guard {
+		t.Errorf("the guard on disk differs from the guard we generated\n"+
+			"first 120 bytes written: %.120q\nwanted:                  %.120q", got, guard)
+	}
+	// The specific regression: backticks must survive as text, not be executed.
+	if !strings.Contains(string(got), "`gtmux awake on`") {
+		t.Error("backticked prose did not survive the payload — the shell ate it")
+	}
+	plist, err := os.ReadFile(dir + "/guard.plist")
+	if err != nil || string(plist) != GuardPlist() {
+		t.Error("the plist on disk differs from the one we generated")
+	}
+}
+
+// Whatever the payload does, it must remain valid shell — a syntax error would abort
+// the install midway, and `set -e` means the failure could land anywhere.
+func TestInstallPayloadIsValidShell(t *testing.T) {
+	cmd := exec.Command("/bin/sh", "-n")
+	cmd.Stdin = strings.NewReader(installScript(GuardScript("/s", "/r"), GuardPlist()))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("install payload is not valid shell: %v\n%s", err, out)
 	}
 }
