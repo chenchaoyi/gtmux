@@ -30,7 +30,7 @@ func TestServerModeRemoteEnableIsRefused(t *testing.T) {
 	called := false
 	s := serverModeTestServer(t, &called)
 	for _, body := range []string{`{"on":true}`, `{}`, ``} {
-		req := httptest.NewRequest(http.MethodPost, "/api/servermode", strings.NewReader(body))
+		req := httptest.NewRequest(http.MethodPost, "/api/awake", strings.NewReader(body))
 		req.Header.Set("Authorization", "Bearer t0ken")
 		w := httptest.NewRecorder()
 		s.Handler().ServeHTTP(w, req)
@@ -51,7 +51,7 @@ func TestServerModeRemoteEnableIsRefused(t *testing.T) {
 func TestServerModeRemoteOffIsAllowed(t *testing.T) {
 	called := false
 	s := serverModeTestServer(t, &called)
-	req := httptest.NewRequest(http.MethodPost, "/api/servermode", strings.NewReader(`{"on":false}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/awake", strings.NewReader(`{"on":false}`))
 	req.Header.Set("Authorization", "Bearer t0ken")
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, req)
@@ -65,7 +65,7 @@ func TestServerModeRemoteOffIsAllowed(t *testing.T) {
 
 func TestServerModeOwnerCanRead(t *testing.T) {
 	s := serverModeTestServer(t, nil)
-	req := httptest.NewRequest(http.MethodGet, "/api/servermode", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/awake", nil)
 	req.Header.Set("Authorization", "Bearer t0ken")
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, req)
@@ -79,7 +79,7 @@ func TestServerModeOwnerCanRead(t *testing.T) {
 
 func TestServerModeUnauthenticatedIsRejected(t *testing.T) {
 	s := serverModeTestServer(t, nil)
-	req := httptest.NewRequest(http.MethodGet, "/api/servermode", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/awake", nil)
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, req)
 	if w.Code == http.StatusOK {

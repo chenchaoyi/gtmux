@@ -169,7 +169,7 @@ type Deps struct {
 
 	// DigestJSON returns the marshaled agent-digest array — byte-identical to
 	// `gtmux digest --json` (the supervisor's fleet view: goal/last/ask per row).
-	// ServerModeJSON / ServerModeOff back GET+POST /api/servermode. Optional: nil →
+	// ServerModeJSON / ServerModeOff back GET+POST /api/awake. Optional: nil →
 	// the endpoint is 503 rather than pretending the machine has no such state.
 	// There is deliberately no "turn on" hook: enabling needs a local administrator
 	// authorization, and an unattended machine has nobody to answer it.
@@ -259,7 +259,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/agents", s.auth(http.HandlerFunc(s.handleAgents)))
 	mux.Handle("/api/panes", s.auth(http.HandlerFunc(s.handlePanes)))
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
-	mux.Handle("/api/servermode", s.auth(http.HandlerFunc(s.handleServerMode)))
+	mux.Handle("/api/awake", s.auth(http.HandlerFunc(s.handleServerMode)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
 	mux.Handle("/api/hq/board", s.auth(http.HandlerFunc(s.handleHQBoard)))   // owner: the supervisor's situation board
 	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents))) // owner: severity-floored event ledger

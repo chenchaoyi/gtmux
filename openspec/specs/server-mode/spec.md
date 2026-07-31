@@ -27,13 +27,13 @@ No component gtmux installs SHALL expose an interface that can be asked to escal
 
 #### Scenario: Enabling from a headless session
 
-- **WHEN** `gtmux server-mode on --tier clamshell` is run over SSH with no GUI session
+- **WHEN** `gtmux awake on --tier clamshell` is run over SSH with no GUI session
 - **THEN** it fails with an explicit message that enabling requires an administrator
   authorization at the machine, and the system's sleep settings are left unchanged
 
 #### Scenario: Disabling needs no authorization
 
-- **WHEN** `gtmux server-mode off` is run while server mode is on
+- **WHEN** `gtmux awake off` is run while server mode is on
 - **THEN** sleep is restored with no password prompt, and the status reports
   `state:"off"` with `last_exit.reason:"revoked"`
 
@@ -228,7 +228,7 @@ sleep rather than to continue.
 
 #### Scenario: Enabling with almost no charge
 
-- **WHEN** `gtmux server-mode on` is run on battery below the warn threshold
+- **WHEN** `gtmux awake on` is run on battery below the warn threshold
 - **THEN** it refuses, states the remaining charge in plain language, and changes no
   system setting
 
@@ -242,7 +242,7 @@ stamp shows gtmux owns it and no live heartbeat exists, gtmux SHALL restore it.
 #### Scenario: Someone else's setting
 
 - **WHEN** sleep is disabled system-wide but no gtmux ownership stamp exists
-- **THEN** `gtmux server-mode status` reports `owned_by_gtmux:false` alongside
+- **THEN** `gtmux awake` reports `owned_by_gtmux:false` alongside
   `system_disablesleep:true`, and gtmux does not modify the setting
 
 #### Scenario: Our own state, abandoned
@@ -254,21 +254,21 @@ stamp shows gtmux owns it and no live heartbeat exists, gtmux SHALL restore it.
 
 ### Requirement: Two honestly-labelled keep-awake tiers
 
-The system SHALL distinguish an unprivileged `awake` tier (a sleep assertion held for as long as
+The system SHALL distinguish an unprivileged `lid-open` tier (a sleep assertion held for as long as
 server mode is on, which prevents idle sleep only and requires the lid to stay open) from the
 privileged `clamshell` tier (the lid may close). Every surface that shows server mode SHALL
-show which tier is live, and SHALL NOT present the `awake` tier as surviving a closed lid.
+show which tier is live, and SHALL NOT present the `lid-open` tier as surviving a closed lid.
 
 #### Scenario: Assertion-only tier is not overstated
 
-- **WHEN** server mode is on at the `awake` tier
-- **THEN** the status and every surface report the `awake` tier and state that closing the
+- **WHEN** server mode is on at the `lid-open` tier
+- **THEN** the status and every surface report the `lid-open` tier and state that closing the
   lid will still sleep the machine
 
 ### Requirement: Machine-readable server-mode status
 
 The system SHALL expose the server-mode state as a deterministic, machine-readable
-document via `gtmux server-mode status --json`, carrying at least: `state`
+document via `gtmux awake --json`, carrying at least: `state`
 (`on|off|ended`), `tier`, `since`, `heartbeat_at`, `power`, `battery_pct` (omitted when
 there is no internal battery), `guard.installed`, `guard.healthy`,
 `system_disablesleep` (the raw readback, which SHALL be read from the power-management

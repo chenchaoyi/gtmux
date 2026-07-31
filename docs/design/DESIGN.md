@@ -347,7 +347,7 @@ Dato/itsycal（轻量原生贴合）· CCMenu（状态+列表+跳转成熟范式
 合盖会让 macOS 休眠，隧道随之断开、agent 的回合当场冻结 —— 所以「手机远程指挥」在盖子合上的
 那一刻就失效了。服务器模式是那个开关。底层是一项 **Apple 未公开文档**的内核设置
 （`disablesleep` → `IOPMrootDomain.SleepDisabled`），需要一次管理员授权；实测确认
-**合盖、甚至拔掉电源用电池走动，都能继续服务**（openspec change `server-mode`、
+**合盖、甚至拔掉电源用电池走动，都能继续服务**（命令 `gtmux awake`；openspec change `server-mode`、
 `docs/design/server-mode-research.md`）。
 
 **指示器 = 独立状态项，参照录屏指示器**（不是 popover 底栏 chip —— 那要点开才看得见，

@@ -46,7 +46,7 @@ const (
 )
 
 // RevokePath is the unprivileged marker that asks the guard to stand down. Writing
-// it needs no privilege, which is what makes "turn it off" free.
+// it needs no privilege, which is what makes `gtmux awake off` free.
 func RevokePath() string { return filepath.Join(StateDir(), "revoke") }
 
 // GuardScript renders the guard. Pure, so its exact content is pinned by a golden
@@ -55,7 +55,7 @@ func GuardScript(statePath, revokePath string) string {
 	return fmt.Sprintf(`#!/bin/sh
 # gtmux sleep guard — DE-ESCALATION ONLY.
 #
-# Installed by `+"`gtmux server-mode on`"+` in the same administrator authorization that
+# Installed by `+"`gtmux awake on`"+` in the same administrator authorization that
 # disabled sleep. Its only power is to give sleep back and then delete itself. There
 # is deliberately no code path here that disables sleep: the worst thing this file
 # can be tricked into doing is letting the Mac sleep.

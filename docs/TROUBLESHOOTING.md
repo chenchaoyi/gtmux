@@ -197,7 +197,7 @@ sudo pmset -a disablesleep 0
 - **`pmset -c`（只写 AC 档）不被这个设置尊重** —— 值落在 plist 的 `SystemPowerSettings` 顶层，
   是全局的，电池供电时同样生效。所以别指望「拔掉电源内核会自动恢复睡眠」。
 
-`gtmux doctor` 现在会报告这个状态（只在这台机器真的碰过它时才出现），`gtmux server-mode status`
+`gtmux doctor` 现在会报告这个状态（只在这台机器真的碰过它时才出现），`gtmux awake`
 会同时给出活状态与落盘值。**gtmux 只回滚自己设的那一个** —— 没有 gtmux 归属戳的设置只报告、给出
 上面的手动命令，绝不替你改。
 

@@ -437,19 +437,19 @@ Set `limitsCommand` with an env prefix if your network needs it
 `limitsWarnPct` marks amber and wakes a live HQ once (`» gtmux·limits·warn …`).
 The `limits` block also rides `gtmux usage` and `GET /api/usage`.
 
-## `gtmux server-mode` — keep working with the lid closed
+## `gtmux awake` — keep working with the lid closed
 
 ```
-server mode = off  ·  power ac 100%
+awake = off  ·  power ac 100%
   This Mac sleeps normally (closing the lid sleeps it).
   guard: not installed
 ```
 
 Closing a MacBook's lid sleeps the system, which drops the tunnel and freezes every
 agent mid-turn — so "command your Mac from your phone" only works while the lid stays
-open. `server-mode` is the switch that changes that. **This build ships sensing only**
-(`status`); turning it on/off needs the privileged half and says so rather than
-pretending.
+open. `gtmux awake` is the switch that changes that. (It shipped as `gtmux server-mode` in
+v0.44.0; the old name still works. The feature is still called server mode — the
+command is just shorter, and it was the only day-to-day command with a hyphen.)
 
 Two tiers, never conflated: `awake` holds a sleep assertion (idle sleep only — **a
 closed lid still sleeps**), `clamshell` disables sleep outright so the lid may close.
@@ -465,7 +465,7 @@ failure (announcing "sleep restored" on a Mac that cannot sleep):
 | the power-management plist | ⚠️ lags a write; answers "would it survive a reboot" |
 | `ioreg -r -c IOPMrootDomain` → `SleepDisabled` | ✅ the live, unprivileged truth |
 
-`status --json` reports both readings plus `owned_by_gtmux` — the ownership stamp.
+`gtmux awake --json` reports both readings plus `owned_by_gtmux` — the ownership stamp.
 **gtmux reverts only what gtmux set**: a `disablesleep` it did not stamp is reported
 with the manual undo command and never changed for you (the same report-only
 discipline `gtmux reap` applies to an unclean worktree). `gtmux doctor` surfaces the

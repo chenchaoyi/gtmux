@@ -39,7 +39,7 @@ Commands:
                           layered thresholds and ahead-of-time warnings
   limits [--json]         real subscription-window remaining (5h session +
                           weekly), from the agent's own /usage (cached)
-  server-mode [on|off]    keep this Mac working with the lid closed, so serve /
+  awake [on|off]          keep this Mac working with the lid closed, so serve /
                           the tunnel / the phone keep answering. "on" asks for
                           your admin password once and verifies it took effect;
                           it stays on until you turn it off. --json for status
@@ -100,10 +100,11 @@ Commands:
                           does this); --agent <codex|cursor|gemini|copilot|kiro>
                           wires another agent (codex via its additive hooks system,
                           coexisting with any existing notify)
-  uninstall-hooks         reverse install-hooks; --agent <key> for another agent
+  uninstall [hooks|app]   remove what gtmux installed. No target = it asks:
+                          hooks (the radar stops seeing agents) | app (no more
+                          desktop notifications) | all
   app                     launch the menu-bar app (Gtmux.app) — the status dot
                           appears in the top-right menu bar (also: menubar)
-  uninstall-app           remove the menu-bar app (Gtmux.app) + its login item
                           (install it via the curl installer or macapp/build.sh)
   hook                    internal: run BY Claude Code as a hook (reads stdin);
                           writes pane state + fires the notification
@@ -156,7 +157,7 @@ const usageZH = `快速开始：
                           提前预警（撞墙前告诉你）
   limits [--json]         真实订阅窗口余量（5 小时会话 + 周额度），来自 agent
                           自己的 /usage（有缓存）
-  server-mode [on|off]    让这台 Mac 合盖也继续工作，serve/隧道/手机端保持可用。
+  awake [on|off]          让这台 Mac 合盖也继续工作，serve/隧道/手机端保持可用。
                           on 需输入一次管理员密码并确认真的生效；开启后一直有效，
                           直到你关闭。--json 看状态
   restore                 每个 session 一个终端 tab，全部接回
@@ -209,10 +210,10 @@ const usageZH = `快速开始：
   install-hooks [--yes]   直接注册 Claude hook（doctor --fix 也会做这件事）；
                           --agent <codex|cursor|gemini|copilot|kiro> 接入其他
                           agent（codex 走追加式 hooks 系统，与已有 notify 并存）
-  uninstall-hooks         撤销 install-hooks；--agent <key> 注销其他 agent
+  uninstall [hooks|app]   卸载 gtmux 装过的东西。不给参数就问你：
+                          hooks（雷达将看不到 agent）| app（桌面通知停止）| all
   app                     启动菜单栏 app（Gtmux.app）—— 状态点出现在右上角
                           菜单栏（别名：menubar）
-  uninstall-app           删除菜单栏 app（Gtmux.app）及登录项
                           （安装请用 curl 安装脚本或 macapp/build.sh）
   hook                    内部命令：由 Claude Code 作为 hook 调用（读 stdin）；
                           写入 pane 状态并触发通知

@@ -1,4 +1,4 @@
-// `gtmux server-mode` — keep this Mac working with the lid closed so `serve`,
+// `gtmux awake` — keep this Mac working with the lid closed so `serve`,
 // the tunnel and the phone keep answering (openspec change server-mode).
 //
 // This phase ships SENSING only: `status` reports the truth about the machine and
@@ -23,8 +23,15 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 )
 
-// cmdServerMode implements `gtmux server-mode [status|on|off] [--json]`.
-func cmdServerMode(args []string) int {
+// cmdServerMode implements `gtmux awake [status|on|off] [--json]`.
+//
+// `server-mode` was the name it shipped under in v0.44.0 and still works — it is the
+// only day-to-day command that ever carried a hyphen, which is why it was shortened.
+func cmdServerMode(invokedAs string, args []string) int {
+	if invokedAs == "server-mode" {
+		i18n.Say("note: `gtmux server-mode` is now `gtmux awake` (the old name still works).",
+			"提示：`gtmux server-mode` 已改名为 `gtmux awake`（旧名仍可用）。")
+	}
 	jsonOut, yes := false, false
 	sub := "status"
 	for _, a := range args {
@@ -38,8 +45,8 @@ func cmdServerMode(args []string) int {
 		case "status", "on", "off":
 			sub = a
 		default:
-			i18n.Sae("gtmux server-mode: unknown option '"+a+"'",
-				"gtmux server-mode: 未知选项 '"+a+"'")
+			i18n.Sae("gtmux awake: unknown option '"+a+"'",
+				"gtmux awake: 未知选项 '"+a+"'")
 			return serverModeUsage()
 		}
 	}
@@ -61,7 +68,10 @@ func serverModeStatus(jsonOut bool) int {
 	}
 
 	// Headline: state · tier · how long · power.
-	head := i18n.Tr("server mode", "服务器模式") + " = " + serverModeStateLabel(st.State)
+	// The headline names the COMMAND, not the feature: someone who typed `gtmux awake`
+	// should read `awake = …` back. The longer "server mode" framing lives in help and
+	// docs, where there is room to explain it.
+	head := i18n.Tr("awake", "保持唤醒") + " = " + serverModeStateLabel(st.State)
 	if st.Tier != "" {
 		head += " (" + st.Tier + ")"
 	}
@@ -166,8 +176,8 @@ func serverModePlatformLine(p servermode.Support) string {
 }
 
 func serverModeUsage() int {
-	i18n.Say("usage: gtmux server-mode [status|on|off] [--json] [--yes]",
-		"用法：gtmux server-mode [status|on|off] [--json] [--yes]")
+	i18n.Say("usage: gtmux awake [status|on|off] [--json] [--yes]",
+		"用法：gtmux awake [status|on|off] [--json] [--yes]")
 	i18n.Say("  Keep this Mac working with the lid closed, so serve/tunnel/the phone keep answering.",
 		"  让这台 Mac 合盖也继续工作，serve/隧道/手机端保持可用。")
 	i18n.Say("  status  the real state: sleep setting, who owns it, power, guard health, platform.",
@@ -188,7 +198,7 @@ func serverModeOn(yes bool) int {
 	st := servermode.Current()
 	if st.SystemDisableSleep {
 		if st.OwnedByGtmux {
-			i18n.Say("server mode is already on.", "服务器模式已经开着。")
+			i18n.Say("awake is already on — the lid may close.", "已经开着了 —— 合盖不会睡。")
 			return 0
 		}
 		i18n.Sae("sleep is already disabled on this Mac, but not by gtmux — refusing to take it over.",
@@ -203,8 +213,8 @@ func serverModeOn(yes bool) int {
 	}
 
 	// What the user is about to accept, in the terms that actually matter to them.
-	i18n.Say("Server mode keeps this Mac running with the lid closed.",
-		"服务器模式让这台 Mac 合上盖子也继续运行。")
+	i18n.Say("This keeps the Mac running with the lid closed (server mode).",
+		"这会让 Mac 合上盖子也继续运行（服务器模式）。")
 	i18n.Say("  · It stays on until you turn it off — it does not expire.",
 		"  · 开启后会一直生效，直到你自己关闭 —— 不会自动到期。")
 	fmt.Printf("  · %s\n", i18n.Tr(
@@ -223,14 +233,14 @@ func serverModeOn(yes bool) int {
 	if !st.Platform.Verified {
 		fmt.Println("  " + serverModePlatformLine(st.Platform))
 	}
-	if !yes && !confirm(i18n.Tr("Turn server mode on?", "开启服务器模式？")) {
+	if !yes && !confirm(i18n.Tr("Turn it on?", "开启？")) {
 		return 1
 	}
 
 	switch err := servermode.Enable(); {
 	case err == nil:
-		i18n.Say("server mode is on — verified against the kernel, not just requested.",
-			"服务器模式已开启 —— 已向内核确认生效，不只是发了个命令。")
+		i18n.Say("awake is on — verified against the kernel, not just requested.",
+			"已开启 —— 已向内核确认生效，不只是发了个命令。")
 		if !st.Platform.Verified {
 			i18n.Say("  Please verify once: close the lid for 2 minutes, then check it kept serving.",
 				"  请验证一次：合盖 2 分钟，再看它是否一直在服务。")
@@ -257,7 +267,7 @@ func serverModeOn(yes bool) int {
 			"  gtmux 不会让一台 Mac 处于「不能睡、又没人能恢复」的状态。")
 		return 1
 	default:
-		i18n.Sae("gtmux server-mode on: "+err.Error(), "gtmux server-mode on: "+err.Error())
+		i18n.Sae("gtmux awake on: "+err.Error(), "gtmux awake on: "+err.Error())
 		return 1
 	}
 }
@@ -266,11 +276,11 @@ func serverModeOn(yes bool) int {
 // privilege, so even a declined password prompt cannot leave the Mac awake.
 func serverModeOff() int {
 	if !servermode.Current().SystemDisableSleep && !servermode.GuardInstalled() {
-		i18n.Say("server mode is already off.", "服务器模式已经是关闭的。")
+		i18n.Say("awake is already off — this Mac sleeps normally.", "已经是关闭的 —— 这台 Mac 正常睡眠。")
 		return 0
 	}
 	if err := servermode.Disable(); err != nil {
-		i18n.Sae("gtmux server-mode off: "+err.Error(), "gtmux server-mode off: "+err.Error())
+		i18n.Sae("gtmux awake off: "+err.Error(), "gtmux awake off: "+err.Error())
 		return 1
 	}
 	if servermode.SleepDisabled() {
@@ -278,8 +288,8 @@ func serverModeOff() int {
 			"已请求关闭 —— 守护会在很短时间内恢复睡眠。")
 		return 0
 	}
-	i18n.Say("server mode is off — this Mac sleeps normally again.",
-		"服务器模式已关闭 —— 这台 Mac 恢复正常睡眠。")
+	i18n.Say("awake is off — this Mac sleeps normally again.",
+		"已关闭 —— 这台 Mac 恢复正常睡眠。")
 	return 0
 }
 

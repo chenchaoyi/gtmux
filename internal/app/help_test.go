@@ -18,7 +18,7 @@ func TestUsageTextBilingualComplete(t *testing.T) {
 	for _, cmd := range []string{
 		"overview", "agents", "restore", "focus", "new",
 		"serve", "tunnel", "doctor", "update",
-		"install-hooks", "uninstall-hooks", "uninstall-app", "hook",
+		"install-hooks", "uninstall", "hook", "awake",
 	} {
 		if !strings.Contains(usageEN, cmd) {
 			t.Errorf("usageEN missing command %q", cmd)

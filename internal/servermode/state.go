@@ -22,6 +22,10 @@ type Record struct {
 	HeartbeatAt int64  `json:"heartbeat_at"`
 }
 
+// StateDir holds gtmux's own view. The directory keeps the "server-mode" name even
+// though the command is `gtmux awake` — the FEATURE is still server mode, and
+// renaming a state path would need a migration for no user-visible gain.
+//
 // StateDir holds gtmux's own view. The guard's record lives elsewhere (see
 // GuardExitPath) because the guard runs as root with no user session.
 func StateDir() string {
