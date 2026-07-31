@@ -47,6 +47,12 @@ New to tmux? Start with the official
 - **Web** — any browser opens your radar and a terminal mirror; guest links you share open here too.
 - **Another computer** — `gtmux attach` bridges a tmux session from your Mac into the terminal in front of you.
 
+Every remote path above assumes one thing: the Mac is awake. Close the lid and it sleeps,
+taking the tunnel and every agent's turn with it. **`gtmux awake`** keeps it running with
+the lid shut — one admin authorization, a pulsing dot in the menu bar for as long as it
+lasts, and no password to turn it off. It works on battery too, and gives sleep back on
+its own at 20%.
+
 <div align="center">
 <img src="docs/assets/surface-menubar.png" width="280" alt="Menu-bar app — popover + status dot" />
 <img src="docs/assets/surface-mobile.png" width="230" alt="Mobile app — the agent radar on iOS" />

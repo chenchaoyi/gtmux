@@ -4,12 +4,12 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>GtmuxNotificationService</string>
-	<key>CFBundleName</key>
-	<string>GtmuxNotificationService</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleName</key>
+	<string>GtmuxNotificationService</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -23,5 +23,7 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).NotificationService</string>
 	</dict>
+	<key>RCTNewArchEnabled</key>
+	<true/>
 </dict>
 </plist>

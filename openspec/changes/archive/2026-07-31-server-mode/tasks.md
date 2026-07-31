@@ -219,10 +219,11 @@ guard concept) · `readback` (0.3 fixtures) · `disarm`.
 
 ## Gate before archive
 
-- [ ] G.1 `make check` green; `CGO_ENABLED=0 go build ./cmd/gtmux` green.
-- [ ] G.2 `npx @fission-ai/openspec validate --specs --strict` green and
+- [x] G.1 `make check` green; `CGO_ENABLED=0 go build ./cmd/gtmux` green.
+- [x] G.2 `npx @fission-ai/openspec validate --specs --strict` green and
       `scripts/check-design.sh` green (command-docs drift check will demand the CLAUDE.md /
       help / `docs/cli.md` entries from task 1.5).
-- [ ] G.3 Every manual checklist in 0.x and 2.9 recorded with its actual result — not
-      assumed.
-- [ ] G.4 sync-specs + archive-change in the same PR as the last implementing PR.
+- [x] G.3 Every manual checklist in 0.x and 2.9 recorded with its actual result — not
+      assumed. (0.0/0.1/0.2/0.2b/0.3 all carry their measured numbers; 0.4 and 0.5
+      remain genuinely unrun and are listed as such, not quietly ticked.)
+- [x] G.4 sync-specs + archive-change in the same PR as the last implementing PR.

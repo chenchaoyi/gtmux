@@ -39,3 +39,10 @@ ios/build-sim/
 ios/build-sim.log
 vendor/
 fastlane/report.xml
+
+# Device/archive build output. `fastlane` and `xcodebuild -exportArchive` drop a
+# multi-megabyte .ipa + dSYM here, and nothing ignored them — so any `git add -A`
+# during a release would have committed ~24 MB of binaries into history.
+build/
+*.ipa
+*.dSYM.zip
