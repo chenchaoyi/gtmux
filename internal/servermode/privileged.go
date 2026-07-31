@@ -99,7 +99,7 @@ func Enable() error {
 		return err
 	}
 
-	install := installScript(GuardScript(StatePath(), RevokePath()), GuardPlist())
+	install := installScript(GuardScript(StatePath(), RevokePath()), GuardPlist(StateDir()))
 	if _, err := runPrivileged(install,
 		"gtmux needs your administrator password to keep this Mac awake with the lid closed."); err != nil {
 		return err
@@ -161,28 +161,36 @@ func installScript(guard, plist string) string {
 // marker is already down, so the outcome is guaranteed either way.
 func DisableRemote() error { return Revoke() }
 
-// Disable turns server mode off from the machine itself, where a human is present.
+// Disable turns server mode off. It asks for NO password in the normal case.
 //
-// The stand-down marker is written FIRST, unprivileged, so that even if the user
-// dismisses the password prompt the guard still restores sleep within its next tick.
-// The privileged call is only there to make it immediate. Turning it off must never
-// be able to fail in a way that leaves the Mac awake.
+// Writing the stand-down marker needs no privilege, and the daemon watches that path,
+// so it wakes within about a second and restores sleep as root. Making the user
+// authenticate to make their machine SAFER was a mistake in the first version: it put
+// a password prompt in front of the one action that must never be able to fail, and
+// it was purely to save a few seconds of waiting.
+//
+// The privileged fallback survives for the one case that needs it — the guard is
+// missing (someone removed it, or the sleep setting was never ours), where nothing
+// else can restore sleep.
 func Disable() error {
 	if err := Revoke(); err != nil {
 		return err
 	}
-	script := `/usr/bin/pmset -a disablesleep 0
-/bin/launchctl bootout system/` + GuardLabel + ` 2>/dev/null || true
-/bin/rm -f ` + fmt.Sprintf("%q %q", GuardScriptPath, GuardPlistPath)
+	if GuardInstalled() {
+		// The daemon does the work. Wait briefly so callers can report the result,
+		// but a timeout is NOT a failure: the marker is down and it will act.
+		if awaitSleepDisabled(false, 8*time.Second) {
+			clearStamp()
+			ClearRevoke()
+		}
+		return nil
+	}
+	// No guard: only a privileged write can put this right.
+	script := `/usr/bin/pmset -a disablesleep 0`
 	out, err := runPrivileged(script, "gtmux needs your administrator password to let this Mac sleep again.")
 	if err == nil && !WriteRefused(out) && awaitSleepDisabled(false, 3*time.Second) {
 		clearStamp()
 		ClearRevoke()
-		return nil
-	}
-	// Authorization declined or ineffective: the marker is already down, so the
-	// guard will finish the job unattended. Say so rather than reporting failure.
-	if GuardInstalled() {
 		return nil
 	}
 	return err
