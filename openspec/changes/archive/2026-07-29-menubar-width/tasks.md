@@ -1,7 +1,7 @@
 # Tasks — Widen the menu-bar popover (320 → 420)
 
-- [x] 1. Measure MPBar's target width (`multipilot-companion` `MenuView.swift` → `.frame(width: 420)`)
-- [x] 2. `Theme.Size.popoverWidth` 320 → 420, with a comment citing the MPBar baseline
+- [x] 1. Measure a companion menu-bar app's target width (`.frame(width: 420)`)
+- [x] 2. `Theme.Size.popoverWidth` 320 → 420, with a comment citing the companion-app baseline
 - [x] 3. Confirm long content (goal/last/ask) needs no layout change — all rows already single-line tail-truncated
 - [x] 4. DESIGN §3 size table: `popover 宽` 320 → 420
 - [x] 5. `menu-bar-app` spec: record the width + single-line-truncation legibility requirement

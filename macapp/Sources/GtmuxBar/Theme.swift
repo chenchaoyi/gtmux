@@ -24,9 +24,9 @@ enum Theme {
 
     // MARK: layout (DESIGN §3)
     enum Size {
-        // Calibrated to match MPBar's popover (multipilot-companion MenuView.swift
-        // `.frame(width: 420)`), so the two menu-bar companions read as one family
-        // and the HQ digest / session-task lines get room before tail-truncation.
+        // Calibrated to a companion menu-bar app's popover (a fixed 420pt), so it reads
+        // as one family and the HQ digest / session-task lines get room before
+        // tail-truncation.
         static let popoverWidth: CGFloat = 420
         static let radiusPopover: CGFloat = 13
         static let radiusRow: CGFloat = 8

@@ -15,10 +15,10 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(hex(Theme.Status.noneNS), "8E8E93", "none/running")
     }
 
-    /// Popover width MUST equal DESIGN §3's size table (420, calibrated to MPBar).
+    /// Popover width MUST equal DESIGN §3's size table (420, a companion-app baseline).
     /// Pins the single width token so a drift from the spec fails the build.
     func testPopoverWidthMatchesDesign() {
-        XCTAssertEqual(Theme.Size.popoverWidth, 420, "popover width (DESIGN §3, MPBar baseline)")
+        XCTAssertEqual(Theme.Size.popoverWidth, 420, "popover width (DESIGN §3, companion-app baseline)")
     }
 
     /// Every status maps to a color (color is the status-only channel, DESIGN §1).

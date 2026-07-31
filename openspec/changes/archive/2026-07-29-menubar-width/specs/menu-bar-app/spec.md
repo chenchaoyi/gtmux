@@ -7,7 +7,7 @@
 The menu-bar popover SHALL use a fixed content width (a single design token,
 `Theme.Size.popoverWidth`) wide enough that the digest text — the HQ card's
 goal/last/ask line and each agent row's session/task line — is legible before
-tail-truncation. The width SHALL be **420pt**, matching the MPBar companion so the
+tail-truncation. The width SHALL be **420pt**, matching a companion menu-bar app so the
 two menu-bar apps read as one visual family. Every row SHALL inherit this width (via
 the popover frame or `maxWidth: .infinity`); no per-row width may be hardcoded.
 

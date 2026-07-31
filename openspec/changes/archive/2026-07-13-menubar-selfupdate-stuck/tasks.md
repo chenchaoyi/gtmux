@@ -3,7 +3,7 @@
 - [x] 1. Confirm root cause across `Updater.swift` → `update.go` → `install.sh`
        (bare `open` re-activates lingering old instance; app step exits 0 on skip;
        watchdog waits forever on any recorded `exit`)
-- [x] 2. Port the multipilot fix: `install.sh` app relaunch `open` → `open -n`
+- [x] 2. Port the sibling-app fix: `install.sh` app relaunch `open` → `open -n`
 - [x] 3. `Updater.swift`: add pure `postExitZeroAction(secondsSinceExitZero:grace:runningVersion:installedVersion:)`
 - [x] 4. `Updater.swift`: track `exitZeroAt`, apply grace + version-aware self-heal in `pollUpdate`
 - [x] 5. `Updater.swift`: `relaunchInstalledApp()` (`open -n` installed bundle + terminate) + installed-path/version helpers
