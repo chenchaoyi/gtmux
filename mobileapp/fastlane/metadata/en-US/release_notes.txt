@@ -1,4 +1,3 @@
-• Sending a message into a busy agent no longer gets cut off, and sending text together with an image now lands reliably.
-• The paired-devices list shows what each device is — iOS version or browser — with a matching icon and when it was last seen.
-• Fixed the QR pairing scanner on notch / Dynamic Island phones.
-• Assorted input and stability fixes.
+• When the Mac loses connection, the lock-screen Live Activity now dims to an "offline" state instead of freezing on a stale, live-looking tally.
+• The Servers list now shows when a Mac is set to keep running with its lid closed.
+• Assorted polish and stability fixes.
