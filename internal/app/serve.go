@@ -564,7 +564,7 @@ func diffForPane(id string) (string, error) {
 // serverDisplayName is this Mac's human name, shown as the push notification's
 // subtitle so a phone paired to several Macs can tell WHICH one an alert came from.
 // Prefers the macOS ComputerName (matches the pairing QR's Host.localizedName —
-// e.g. "Chaoyi's MacBook Pro"); falls back to the network hostname, then "Mac".
+// e.g. "Alex's MacBook Pro"); falls back to the network hostname, then "Mac".
 // cgo-free (shells out to scutil).
 func serverDisplayName() string {
 	if out, err := exec.Command("scutil", "--get", "ComputerName").Output(); err == nil {
