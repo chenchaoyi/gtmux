@@ -299,6 +299,15 @@ the authorization card.
 
 **Still open**
 
+- **R7 — does launchd still schedule the guard when the battery is nearly flat?** The
+  charge floor assumes the daemon keeps getting its 30-second tick down to 20%. macOS
+  throttles background activity under Low Power Mode and near empty, and I have not
+  measured whether `StartInterval` survives that. If it is throttled, the rescue is
+  *late*, not absent — the floor is set at 20% partly for this margin, and the setting
+  itself is what keeps the machine awake, so there is no state where the guard is needed
+  and the machine is off. Worth measuring on a real drain; recorded rather than assumed
+  because "I promised to note this" is exactly the kind of thing that otherwise evaporates.
+
 - **G13 (lapsed-state detection) keeps its place but loses its original justification.**
   It was motivated by the Apple-Silicon power-transition breakage, which did NOT reproduce
   here. Retain it — cheap, and the setting can still be changed by an MDM profile, an OS

@@ -217,6 +217,21 @@ guard concept) · `readback` (0.3 fixtures) · `disarm`.
       playbook teaching block, and an `hqPlaybookVersion` bump; decide separately.
 - [ ] 5.5 "You have an external display attached — you may not need this" hint.
 
+## Post-release verification (2026-07-31, on the user's own machine)
+
+- [x] **The full enable path, end to end — CONFIRMED at v0.44.7.** Authorization →
+      guard installed root:wheel → setting written → kernel readback → ownership stamp.
+      Observed state afterwards: `awake = on (clamshell) · guard: installed · healthy`.
+      This was the one blocking item CI could never reach, and it had failed twice before
+      (no entry point in 0.44.2; the shell-mangled payload in 0.44.3).
+- [x] **Turning it off, then on again — CONFIRMED.** `last exit: revoked` recorded
+      correctly rather than `lapsed`, which also validates the stamp-clearing fix.
+- [ ] R7 (research §7): whether launchd keeps scheduling the guard when the battery is
+      nearly flat. Only a real drain answers it; the 20% floor leaves margin either way.
+- [ ] 0.5 / R6: reboot with nobody logging in on a FileVault Mac — a documented boundary
+      to confirm, not a bug to fix.
+- [ ] 0.4: whether the admin prompt accepts Touch ID. UX curiosity only.
+
 ## Gate before archive
 
 - [x] G.1 `make check` green; `CGO_ENABLED=0 go build ./cmd/gtmux` green.
