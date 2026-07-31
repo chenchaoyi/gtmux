@@ -27,29 +27,36 @@ enum StatusItemGlyph {
     /// The brand grid tinted by the most-urgent state, or a quiet neutral grid
     /// when empty / only running (nothing needs you).
     /// - Parameter awake: server mode is on (the Mac is being kept awake). It is drawn
-    ///   as a thin ring AROUND the existing mark rather than as a second status item:
+    ///   as a small bar UNDER the existing mark rather than as a second status item:
     ///   one gtmux presence in the menu bar, in a slightly different state. A second
     ///   icon reads as a second app.
     static func image(mostUrgent: Status, empty: Bool, dark: Bool, awake: Bool = false) -> NSImage {
         let lit: Status? = (empty || mostUrgent == .running) ? nil : mostUrgent
         return draw { _, full in
-            grid(full, dark: dark, lit: lit)
-            if awake { awakeRing(full, dark: dark) }
+            // Awake lifts the mark by 2pt so the bar has room without the glyph
+            // growing — the item's width must not jump when server mode toggles.
+            let box = awake ? full.offsetBy(dx: 0, dy: 2).insetBy(dx: 1, dy: 1) : full
+            grid(box, dark: dark, lit: lit)
+            if awake { awakeBar(box, dark: dark) }
         }
     }
 
-    /// The awake ring: a hairline enclosing the mark, drawn in the 1pt margin the
-    /// glyph already reserves, so it costs no extra width in the bar.
+    /// The awake mark: a short bar UNDER the glyph, like a stand the machine rests on
+    /// — it reads as "this one is up and staying up".
+    ///
+    /// An earlier attempt drew a rectangle enclosing the whole mark. At 18pt that is
+    /// just a white box: it says nothing about being awake and looks like a rendering
+    /// artefact. A baseline is smaller, quieter and actually means something.
     ///
     /// Deliberately NEUTRAL, never a status colour — colour encodes the fleet's agent
-    /// state (DESIGN §9) and server mode is a machine state. Shape carries this
-    /// signal, exactly as the design language says it should. No animation.
-    private static func awakeRing(_ full: CGRect, dark: Bool) {
-        let r = full.insetBy(dx: -1, dy: -1)
-        let path = NSBezierPath(roundedRect: r, xRadius: 4, yRadius: 4)
-        path.lineWidth = 1
-        (dark ? NSColor.white : NSColor.black).withAlphaComponent(dark ? 0.65 : 0.5).setStroke()
-        path.stroke()
+    /// state (DESIGN §9) and server mode is a machine state, so SHAPE carries it. No
+    /// animation (DESIGN §10 allows exactly one, and it is not this).
+    private static func awakeBar(_ full: CGRect, dark: Bool) {
+        let w = full.width * 0.62
+        let h: CGFloat = 1.5
+        let r = CGRect(x: full.midX - w / 2, y: full.minY - h - 0.5, width: w, height: h)
+        (dark ? NSColor.white : NSColor.black).withAlphaComponent(dark ? 0.7 : 0.55).setFill()
+        NSBezierPath(roundedRect: r, xRadius: h / 2, yRadius: h / 2).fill()
     }
 
     // MARK: pane grid
