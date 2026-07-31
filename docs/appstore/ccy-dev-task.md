@@ -12,7 +12,7 @@ bilingual `data-i18n="en"` + `data-i18n="zh"` article structure (so **ccy.dev le
 with English, ccy.pub / SITE_TARGET=cn leads with Chinese**, exactly like rodi).
 
 1. **`privacy.astro`** — the privacy policy. Use the content in
-   `/Users/ccy/meituan/chenchaoyi/gtmux/docs/appstore/privacy-policy.md` **verbatim**:
+   `/Users/x/meituan/chenchaoyi/gtmux/docs/appstore/privacy-policy.md` **verbatim**:
    the "## English" section → the `data-i18n="en"` article, the "## 中文" section →
    the `data-i18n="zh"` article. Keep the headings/structure; convert Markdown to the
    same HTML markup rodi's privacy.astro uses. Title like "gtmux · privacy · ccy.dev".

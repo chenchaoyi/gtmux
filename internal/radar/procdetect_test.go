@@ -10,7 +10,7 @@ func TestAgentFromCommand(t *testing.T) {
 	cases := []struct {
 		cmd, want string
 	}{
-		{"node /Users/ccy/.nvm/versions/node/v22.22.0/bin/codex", "Codex"},
+		{"node /Users/x/.nvm/versions/node/v22.22.0/bin/codex", "Codex"},
 		{"node /opt/homebrew/lib/node_modules/.bin/claude --resume", "Claude Code"},
 		{"codex", "Codex"},                // run directly (first token)
 		{"-bash", ""},                     // a shell
@@ -30,9 +30,9 @@ func TestAgentFromCommand(t *testing.T) {
 // Walking the pane's process subtree must find it.
 func TestAgentInSubtree(t *testing.T) {
 	procs := map[int]procInfo{
-		100: {ppid: 1, command: "-bash"},                                // the pane shell
-		101: {ppid: 100, command: "node /Users/ccy/.nvm/.../bin/codex"}, // codex CLI (child)
-		200: {ppid: 1, command: "-bash"},                                // an unrelated shell
+		100: {ppid: 1, command: "-bash"},                              // the pane shell
+		101: {ppid: 100, command: "node /Users/x/.nvm/.../bin/codex"}, // codex CLI (child)
+		200: {ppid: 1, command: "-bash"},                              // an unrelated shell
 	}
 	children := map[int][]int{1: {100, 200}, 100: {101}}
 

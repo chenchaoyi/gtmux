@@ -24,7 +24,7 @@ func TestMatchKnowledgeSurfacesHits(t *testing.T) {
 	writeKB(t, "workflows", "# Workflows\n\n- release: tag vX.Y.Z then wait for the app job.\n")
 
 	// Match by repo name (cwd base).
-	out := MatchKnowledge("/Users/ccy/src/gtmux", "add a widget")
+	out := MatchKnowledge("/Users/x/src/gtmux", "add a widget")
 	if !strings.Contains(out, "gtmux serve") {
 		t.Errorf("repo-name match should surface the gtmux pitfall; got %q", out)
 	}

@@ -686,12 +686,12 @@ func TestPasteAndSubmit_LiteralWrappedImagePath_Submits(t *testing.T) {
 	// the path present literally (matched whitespace-free). This is the "text + image,
 	// everything is in the box but Not-sent" report.
 	text := "paired devices info is thin, no iOS/browser version?\n" +
-		"/Users/ccy/.local/share/gtmux/uploads/f163a4fc-markup.png"
+		"/Users/x/.local/share/gtmux/uploads/f163a4fc-markup.png"
 	// draft: prose, then the path wrapped after "f163a4fc-" (a newline the capture renders
 	// mid-token) — normalizeSpace would turn that wrap into a space.
 	draft := boxDraftLines(
 		"paired devices info is thin, no iOS/browser version?",
-		"/Users/ccy/.local/share/gtmux/uploads/f163a4fc-",
+		"/Users/x/.local/share/gtmux/uploads/f163a4fc-",
 		"markup.png",
 	)
 	f := &fakeIO{caps: []string{draft}}

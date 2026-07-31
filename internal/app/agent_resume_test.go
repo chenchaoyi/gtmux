@@ -73,7 +73,7 @@ func TestIsShellCommand(t *testing.T) {
 // that merely shared a project directory. pickCwdFallback now requires the record's
 // original window.pane position to match, so a never-agent pane gets nothing.
 func TestPickCwdFallback(t *testing.T) {
-	proj := "/Users/ccy/proj/gtmux"
+	proj := "/Users/x/proj/gtmux"
 	all := []resume.Located{
 		{Loc: "gtmux dev:0.0", Record: resume.Record{SessionID: "sess-00", Cwd: proj, UpdatedAt: 300}},
 		{Loc: "old name:0.0", Record: resume.Record{SessionID: "sess-old00", Cwd: proj, UpdatedAt: 200}},
