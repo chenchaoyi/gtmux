@@ -253,7 +253,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = nil // left-click must keep opening the popover
     }
 
-    @objc private func quitApp() { NSApp.terminate(nil) }
+    /// Quitting hides the server-mode indicator while the STATE persists — the guard
+    /// and the heartbeat own it, not this app. So warn, and offer to switch it off,
+    /// rather than letting a user quit into a Mac that silently never sleeps with no
+    /// visible sign of why. Quitting anyway is fine: `gtmux serve` keeps the heartbeat
+    /// and the CLI/phone can still see and end it.
+    @objc private func quitApp() {
+        if serverMode.status?.isOn == true {
+            let a = NSAlert()
+            a.messageText = l10n.tr("Server mode is still on",
+                                    "服务器模式仍然开着")
+            a.informativeText = l10n.tr(
+                "Quitting hides the indicator, but this Mac will keep running with the lid closed. You can still turn it off with `gtmux awake off` or from your phone.",
+                "退出只是隐藏了标记，这台 Mac 仍会合盖继续运行。你之后可以用 `gtmux awake off` 或在手机上关闭它。")
+            a.addButton(withTitle: l10n.tr("Turn off and quit", "关闭并退出"))
+            a.addButton(withTitle: l10n.tr("Quit anyway", "仍然退出"))
+            a.addButton(withTitle: l10n.tr("Cancel", "取消"))
+            switch a.runModal() {
+            case .alertFirstButtonReturn:
+                serverMode.turnOff { NSApp.terminate(nil) }
+                return
+            case .alertThirdButtonReturn:
+                return
+            default:
+                break
+            }
+        }
+        NSApp.terminate(nil)
+    }
 
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
@@ -332,7 +359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .browsePanes:
             popover.performClose(nil)
             PaneBrowserController.shared.show(l10n: l10n)
-        case .quit:       NSApp.terminate(nil)
+        case .quit:       quitApp()
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }
         if action != .quit && action != .preferences && action != .pairPhone && action != .newSession && action != .browsePanes {

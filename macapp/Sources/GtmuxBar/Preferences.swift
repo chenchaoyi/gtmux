@@ -29,6 +29,7 @@ struct PreferencesView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var settings: AppSettings
     @ObservedObject var remote = RemoteAccess.shared
+    @ObservedObject var serverMode = ServerModeStore.shared
     @ObservedObject var ent = Entitlements.shared
     @ObservedObject var updater = Updater.shared
     @ObservedObject var share = ShareStore.shared
@@ -187,6 +188,16 @@ struct PreferencesView: View {
 
             // YOUR DEVICES (PAIR) — your own phone / browser / terminal, full control.
             // They reach the Mac through the door above.
+            // Server mode sits right under Remote access because that is WHY it
+            // exists: a shut laptop that sleeps takes the tunnel and every agent turn
+            // down with it. It is a machine state, so it belongs in a management
+            // surface — the menu-bar indicator is the ambient half, this is the
+            // deliberate half (and the only place it can be switched ON, since that
+            // needs a password typed here).
+            Section(l10n.tr("Server mode", "服务器模式")) {
+                serverModeRow
+            }
+
             Section(l10n.tr("Your devices · Pair", "我的设备 · 配对")) {
                 pairSection
             }
@@ -210,7 +221,7 @@ struct PreferencesView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 640)
-        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck() }
+        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh() }
         .sheet(isPresented: $showPairSheet) {
             PairDeviceSheet(l10n: l10n) { showPairSheet = false; pairStore.refresh() }
         }
@@ -284,6 +295,111 @@ struct PreferencesView: View {
     // borderless ⟳ — no separate "Check for updates" button on its own line. Only a
     // genuinely actionable state (an update is ready to install, or it failed) earns
     // its own emphasized row with a prominent button.
+    @ViewBuilder private var serverModeRow: some View {
+        let st = serverMode.status
+        let on = st?.isOn ?? false
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "laptopcomputer")
+                    .foregroundStyle(on ? (st?.needsAttention == true
+                                           ? Theme.Status.waiting : Theme.Status.idle)
+                                        : Color.secondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(on ? l10n.tr("On — the lid may close", "开启中 —— 合盖不会睡")
+                            : l10n.tr("Off — closing the lid sleeps this Mac",
+                                      "关闭 —— 合盖会让这台 Mac 休眠"))
+                        .font(.system(size: 12))
+                    if let sub = serverModeDetail(st) {
+                        Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
+                    }
+                }
+                Spacer()
+                if on {
+                    Button(l10n.tr("Turn off", "关闭")) {
+                        serverMode.turnOff {}
+                    }
+                } else {
+                    // Enabling is the only action that needs a password, so it is the
+                    // only one that gets an explainer first (DESIGN §17): the limits
+                    // are stated BEFORE the system dialog, never after.
+                    Button(l10n.tr("Turn on…", "开启…")) { confirmServerModeOn() }
+                        .disabled(st?.platform.ok == false)
+                }
+            }
+            if let p = st?.platform, !p.ok || !p.verified {
+                Text(serverModePlatformNote(p))
+                    .font(.system(size: 10))
+                    .foregroundStyle(p.ok ? .secondary : Color(Theme.Status.waitingNS))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func serverModeDetail(_ st: ServerModeStatus?) -> String? {
+        guard let st, st.isOn else { return nil }
+        var parts: [String] = []
+        if let since = st.since {
+            let m = max(0, Int(Date().timeIntervalSince1970) - since) / 60
+            parts.append(l10n.tr("on for \(m < 60 ? "\(m)m" : "\(m/60)h\(m%60)m")",
+                                 "已开启 \(m < 60 ? "\(m)分钟" : "\(m/60)小时\(m%60)分")"))
+        }
+        if st.power == "battery", let pct = st.batteryPct {
+            parts.append(l10n.tr("battery \(pct)% · sleep returns at 20%",
+                                 "电池 \(pct)% · 到 20% 自动恢复睡眠"))
+        }
+        if let r = st.attentionReason { parts.append("⚠ " + r) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func serverModePlatformNote(_ p: ServerModeStatus.Platform) -> String {
+        if !p.ok {
+            return l10n.tr("Not supported on this system — gtmux will not manage a sleep setting it cannot verify.",
+                           "此系统不支持 —— gtmux 不会去管理一个它无法验证的睡眠设置。")
+        }
+        return l10n.tr("Unverified on macOS \(p.osVersion ?? "?") — it relies on an undocumented setting. Verify once: turn it on, shut the lid for two minutes, check it kept serving.",
+                       "macOS \(p.osVersion ?? "?") 未经验证 —— 它依赖一项未公开文档的系统设置。请验证一次：开启后合盖两分钟，再看是否一直在服务。")
+    }
+
+    /// The explainer that must precede the macOS password dialog. It states the three
+    /// limits a user needs BEFORE committing — charge, heat, and the standing remote
+    /// exposure — plus the fact that it never expires on its own.
+    private func confirmServerModeOn() {
+        let a = NSAlert()
+        a.messageText = l10n.tr("Keep this Mac working with the lid closed?",
+                                "让这台 Mac 合盖也继续工作？")
+        a.informativeText = l10n.tr(
+            """
+            gtmux will ask for your administrator password once, then verify the setting actually took effect.
+
+            • It stays on until you turn it off — it does not expire. A menu-bar indicator stays visible the whole time, and clicking it turns this off.
+            • On battery it keeps going (you can carry the closed laptop around). You are warned at 30%, and sleep is restored on its own at 20%.
+            • A closed lid dissipates heat worse — hard surface, not in a bag. A fanless MacBook Air suffers most.
+            • This Mac stays remotely reachable, unattended, for as long as it is on. Your screen lock is unaffected.
+            """,
+            """
+            gtmux 会要求输入一次管理员密码，然后确认设置真的生效。
+
+            • 开启后一直有效，直到你自己关闭 —— 不会自动到期。菜单栏会一直显示一个标记，点它即可关闭。
+            • 用电池时也继续跑（可以合盖带着走）。到 30% 会提醒你，到 20% 会自动恢复睡眠。
+            • 合盖散热更差 —— 请放硬质平面、别塞进包里；无风扇的 MacBook Air 影响最大。
+            • 开启期间这台 Mac 会长时间无人值守地保持可远程访问。屏幕锁不受影响。
+            """)
+        a.addButton(withTitle: l10n.tr("Continue", "继续"))
+        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
+        guard a.runModal() == .alertFirstButtonReturn else { return }
+        serverMode.turnOn { ok, err in
+            guard !ok else { return }
+            let f = NSAlert()
+            f.alertStyle = .warning
+            f.messageText = l10n.tr("Server mode could not be turned on",
+                                    "服务器模式未能开启")
+            f.informativeText = err.isEmpty
+                ? l10n.tr("Nothing was changed.", "什么都没有改动。")
+                : err
+            f.runModal()
+        }
+    }
+
     @ViewBuilder private var updateRow: some View {
         switch updater.state {
         case .available(let v):

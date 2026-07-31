@@ -156,12 +156,22 @@ guard concept) · `readback` (0.3 fixtures) · `disarm`.
 
 ## 3. Menu bar (PR 3, Swift)
 
+> **Ticking discipline, learned here the hard way.** 3.2/3.3/3.4 were marked done in
+> the same sweep as 3.1 without being written — the menu bar shipped able to turn
+> server mode OFF but never ON, which was the user's first stated requirement. Tick a
+> task only after the thing it names has been run or read back, never as part of a
+> batch "phase complete" edit.
+
+
 - [x] 3.1 A dedicated `NSStatusItem` (recording-indicator model): present iff server mode
       is on, **not** suppressed by the hide-when-idle preference, distinct glyph, neutral
       `Theme.Status.none` / red `Theme.Status.waiting` only on a tripped guardrail, no
       animation, never overlaid on the agent status item. Assert against the existing
       colour-token consistency test.
-- [x] 3.2 The explainer card (en+zh, DESIGN §5 tone) shown before the system dialog;
+- [x] 3.2 (CORRECTED 2026-07-31: was marked done before it existed — the menu bar
+      could only turn server mode OFF, never on, and no card was shown. Landed in a
+      follow-up after the user asked "can I control this from the menu bar?")
+      The explainer card (en+zh, DESIGN §5 tone) shown before the system dialog;
       declining changes nothing. It must state the three limits with LIVE numbers
       substituted — charge (floor/warn/estimated time), heat (naming the fanless Air case),
       and the standing remote-access exposure — plus the "stays on until you turn it off"
@@ -171,10 +181,11 @@ guard concept) · `readback` (0.3 fixtures) · `disarm`.
       lid, confirm it kept serving), record the result, and stop warning on that machine
       afterwards. This is how an unverified macOS becomes verified FOR THIS USER without
       waiting on a gtmux release.
-- [x] 3.3 Preferences section next to 远程访问: tier, how long it has been on, turn off.
+- [x] 3.3 (CORRECTED 2026-07-31 — same follow-up; it did not exist when first ticked.)
+      Preferences section next to 远程访问: tier, how long it has been on, turn off.
 - [x] 3.3b Click-menu on the indicator: tier · elapsed · reason-if-red · 关闭服务器模式 as the
       primary action.
-- [x] 3.4 Quit-while-on: warn and offer to turn it off, since quitting hides the indicator
+- [x] 3.4 (CORRECTED 2026-07-31 — same follow-up.) Quit-while-on: warn and offer to turn it off, since quitting hides the indicator
       while the state persists (Q1). Quitting anyway leaves it on — `serve` keeps the
       heartbeat and the CLI/phone can still see and end it.
 - [x] 3.5 `docs/design/DESIGN.md` gains the server-mode section (dedicated indicator, the
