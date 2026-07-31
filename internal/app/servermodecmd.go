@@ -184,8 +184,8 @@ func serverModeUsage() int {
 		"  status  真实状态：睡眠设置、归属、电源、守护健康度、平台支持情况。")
 	i18n.Say("  on      asks for your administrator password once, then verifies it took effect.",
 		"  on      需要输入一次管理员密码，之后会确认确实生效。")
-	i18n.Say("  off     restores sleep. Works even if you dismiss the prompt — the guard finishes it.",
-		"  off     恢复睡眠。即使你取消密码框也没关系 —— 守护会把它做完。")
+	i18n.Say("  off     restores sleep. No password: the guard does it, woken by an unprivileged marker.",
+		"  off     恢复睡眠。不需要密码 —— 由守护完成，一个免特权的标记就能立刻唤醒它。")
 	i18n.Say("  It stays on until you turn it off. On battery it runs down to 20%, warning at 30%.",
 		"  开启后一直生效，直到你关闭。用电池时会跑到 20% 才恢复睡眠，30% 时提醒。")
 	return 0

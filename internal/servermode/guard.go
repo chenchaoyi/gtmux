@@ -79,6 +79,11 @@ restore() {
   "$PMSET" -a disablesleep 0
   /bin/mkdir -p "$(/usr/bin/dirname "$EXITLOG")" 2>/dev/null
   /bin/echo "{\"at\":$now,\"reason\":\"$1\"}" > "$EXITLOG" 2>/dev/null
+  # Clear gtmux's ownership record too. Without this the stamp outlives the state it
+  # describes, and the next status read sees "we think it is on, the kernel says it is
+  # off" — reporting a normal shutdown as a LAPSE. The state is genuinely over; the
+  # record must go with it.
+  /bin/rm -f "$STATE" "$REVOKE"
   /bin/rm -f "$SELF_SCRIPT" "$SELF_PLIST"
   /bin/launchctl bootout system/%s 2>/dev/null
   exit 0
@@ -115,9 +120,17 @@ exit 0
 		batteryFloorPct, bootGraceSeconds, staleSeconds, bootGraceSeconds)
 }
 
-// GuardPlist renders the LaunchDaemon. RunAtLoad covers the reboot path;
-// StartInterval covers everything else.
-func GuardPlist() string {
+// GuardPlist renders the LaunchDaemon.
+//
+//   - RunAtLoad covers the reboot path.
+//   - WatchPaths makes "turn it off" IMMEDIATE without any authorization: writing the
+//     unprivileged stand-down marker wakes the daemon within a second, so the user
+//     never has to type a password to make their Mac safer. Before this, turning it
+//     off raised a password prompt purely to avoid waiting for the next tick — a bad
+//     trade nobody asked for.
+//   - StartInterval remains the backstop for everything WatchPaths cannot see
+//     (charge falling, a heartbeat going stale, an abandoned boot).
+func GuardPlist(watchDir string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -126,10 +139,12 @@ func GuardPlist() string {
 	<key>ProgramArguments</key>
 	<array><string>/bin/sh</string><string>%s</string></array>
 	<key>RunAtLoad</key><true/>
+	<key>WatchPaths</key>
+	<array><string>%s</string></array>
 	<key>StartInterval</key><integer>%d</integer>
 </dict>
 </plist>
-`, GuardLabel, GuardScriptPath, guardInterval)
+`, GuardLabel, GuardScriptPath, watchDir, guardInterval)
 }
 
 // GuardInstalled reports whether both halves are present. One without the other

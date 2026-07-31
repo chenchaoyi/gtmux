@@ -10,7 +10,7 @@ import (
 // The install payload is privileged. These pin the ordering and safety properties
 // that make it survivable when it fails halfway.
 func TestInstallScriptOrdersGuardBeforeDisablingSleep(t *testing.T) {
-	s := installScript(GuardScript("/s.json", "/r"), GuardPlist())
+	s := installScript(GuardScript("/s.json", "/r"), GuardPlist("/tmp/watch"))
 	iBootstrap := strings.Index(s, "bootstrap system")
 	iDisable := strings.Index(s, "disablesleep 1")
 	if iBootstrap < 0 || iDisable < 0 {
@@ -32,7 +32,7 @@ func TestInstallScriptOrdersGuardBeforeDisablingSleep(t *testing.T) {
 // AppleScript escaping is a classic injection surface; base64 removes it entirely.
 func TestPrivilegedPayloadIsNotStringInterpolated(t *testing.T) {
 	// A guard path containing quotes must not be able to break out of the payload.
-	s := installScript(GuardScript(`/tmp/a"b'c`, "/r"), GuardPlist())
+	s := installScript(GuardScript(`/tmp/a"b'c`, "/r"), GuardPlist("/tmp/watch"))
 	if strings.Contains(s, `"; rm`) {
 		t.Error("payload appears to interpolate unescaped input")
 	}
@@ -54,7 +54,7 @@ func TestPrivilegedPayloadIsNotStringInterpolated(t *testing.T) {
 // that cannot be fooled by clever-looking quoting.
 func TestInstallPayloadReproducesTheGuardExactly(t *testing.T) {
 	guard := GuardScript("/tmp/state.json", "/tmp/revoke")
-	payload := installScript(guard, GuardPlist())
+	payload := installScript(guard, GuardPlist("/tmp/watch"))
 
 	// Keep ONLY the two decode lines, retargeted at a temp dir: the rest of the
 	// payload needs root (chown, launchctl, pmset) and is not what this pins.
@@ -89,7 +89,7 @@ func TestInstallPayloadReproducesTheGuardExactly(t *testing.T) {
 		t.Error("backticked prose did not survive the payload — the shell ate it")
 	}
 	plist, err := os.ReadFile(dir + "/guard.plist")
-	if err != nil || string(plist) != GuardPlist() {
+	if err != nil || string(plist) != GuardPlist("/tmp/watch") {
 		t.Error("the plist on disk differs from the one we generated")
 	}
 }
@@ -98,7 +98,7 @@ func TestInstallPayloadReproducesTheGuardExactly(t *testing.T) {
 // the install midway, and `set -e` means the failure could land anywhere.
 func TestInstallPayloadIsValidShell(t *testing.T) {
 	cmd := exec.Command("/bin/sh", "-n")
-	cmd.Stdin = strings.NewReader(installScript(GuardScript("/s", "/r"), GuardPlist()))
+	cmd.Stdin = strings.NewReader(installScript(GuardScript("/s", "/r"), GuardPlist("/tmp/watch")))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("install payload is not valid shell: %v\n%s", err, out)
 	}

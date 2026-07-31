@@ -173,9 +173,12 @@ away. The system SHALL either complete the installation or undo the setting and 
 
 ### Requirement: Turning it off never depends on a password being available
 
-A user-initiated switch-off MAY prompt for administrator authorization when a human is
-present, but the system SHALL NOT make restoring sleep *conditional* on that prompt being
-answered: the guard SHALL be able to restore sleep with no authorization at all. This is a
+Turning server mode off SHALL NOT ask for authorization at all in the normal case. The
+stand-down marker is unprivileged, and the guard SHALL observe it promptly — asking a user
+to authenticate in order to make their machine SAFER puts a password prompt in front of the
+one action that must never be able to fail. An authorization prompt SHALL appear only when
+there is no guard to act (it was removed, or the sleep setting is not gtmux's), where
+nothing else can restore sleep. This is a
 safety property, not a convenience — the situations that most need sleep back (charge
 approaching empty, gtmux crashed, the machine uninstalled, nobody at the keyboard) are
 exactly the situations where no one can type a password.
@@ -187,9 +190,15 @@ exactly the situations where no one can type a password.
 
 #### Scenario: The user switches it off at the machine
 
-- **WHEN** the user turns server mode off in person
-- **THEN** sleep is restored promptly, whether or not an authorization prompt was involved,
-  and the state reported afterwards reflects the verified live reading
+- **WHEN** the user turns server mode off in person while the guard is installed
+- **THEN** sleep is restored promptly with NO password prompt, and the state reported
+  afterwards reflects the verified live reading
+
+#### Scenario: Nothing of ours outlives the state
+
+- **WHEN** sleep is restored for any reason
+- **THEN** gtmux's ownership record is cleared along with it, so a later status read
+  reports the state as simply off rather than as a lapse that never happened
 
 ### Requirement: Battery guardrails keyed to remaining charge, not to the power source
 

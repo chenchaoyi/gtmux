@@ -30,6 +30,7 @@ struct PreferencesView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject var serverMode = ServerModeStore.shared
+    @State private var showServerModeConfirm = false
     @ObservedObject var ent = Entitlements.shared
     @ObservedObject var updater = Updater.shared
     @ObservedObject var share = ShareStore.shared
@@ -230,6 +231,19 @@ struct PreferencesView: View {
                 updateRow
             }
         }
+        .sheet(isPresented: $showServerModeConfirm) {
+            ServerModeConfirmView(
+                l10n: l10n,
+                unverifiedOS: serverMode.status?.platform.verified == false
+                    ? (serverMode.status?.platform.osVersion ?? "?") : nil,
+                onConfirm: {
+                    showServerModeConfirm = false
+                    serverMode.turnOn { ok, err in
+                        if !ok { reportServerModeFailure(err) }
+                    }
+                },
+                onCancel: { showServerModeConfirm = false })
+        }
         .formStyle(.grouped)
         .frame(width: 460, height: 640)
         .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh() }
@@ -371,47 +385,19 @@ struct PreferencesView: View {
                        "macOS \(p.osVersion ?? "?") 未经验证 —— 它依赖一项未公开文档的系统设置。请验证一次：开启后合盖两分钟，再看是否一直在服务。")
     }
 
-    /// The explainer that must precede the macOS password dialog. It states the three
-    /// limits a user needs BEFORE committing — charge, heat, and the standing remote
-    /// exposure — plus the fact that it never expires on its own.
-    private func confirmServerModeOn() {
-        let a = NSAlert()
-        a.messageText = l10n.tr("Turn on server mode?", "开启服务器模式？")
-        // NSAlert has no width API and defaults to a narrow column, which turned this
-        // into a tall ribbon of two-word lines. A fixed-width accessory view sets the
-        // dialog's width, so the same text reads in far fewer lines.
-        let body = l10n.tr(
-            "Your Mac keeps running with the lid shut, so agents and your phone keep working.\n\n"
-            + "•  Stays on until you turn it off — the menu-bar icon shows it the whole time\n"
-            + "•  Works on battery too; sleep comes back on its own at 20%\n"
-            + "•  Runs hotter with the lid shut — hard surface, not in a bag\n"
-            + "•  Stays remotely reachable while unattended\n\n"
-            + "Asks for your password once.",
-            "合上盖子 Mac 也继续跑，agent 和手机端都不中断。\n\n"
-            + "•  一直有效，直到你关闭 —— 菜单栏图标会一直显示\n"
-            + "•  用电池也能跑；电量到 20% 会自动恢复睡眠\n"
-            + "•  合盖更热 —— 放硬质平面，别塞进包里\n"
-            + "•  无人值守期间保持可远程访问\n\n"
-            + "需要输入一次管理员密码。")
-        let label = NSTextField(wrappingLabelWithString: body)
-        label.font = .systemFont(ofSize: 12)
-        label.frame = NSRect(x: 0, y: 0, width: 420, height: 0)
-        label.setFrameSize(NSSize(width: 420, height: label.fittingSize.height))
-        a.accessoryView = label
-        a.addButton(withTitle: l10n.tr("Continue", "继续"))
-        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
-        guard a.runModal() == .alertFirstButtonReturn else { return }
-        serverMode.turnOn { ok, err in
-            guard !ok else { return }
-            let f = NSAlert()
-            f.alertStyle = .warning
-            f.messageText = l10n.tr("Server mode could not be turned on",
-                                    "服务器模式未能开启")
-            f.informativeText = err.isEmpty
-                ? l10n.tr("Nothing was changed.", "什么都没有改动。")
-                : err
-            f.runModal()
-        }
+    /// Presenting the explainer. The dialog itself is ServerModeConfirmView — a sheet
+    /// rather than a widened NSAlert, which centres its title once it gets wide and
+    /// ends up mixing alignments.
+    private func confirmServerModeOn() { showServerModeConfirm = true }
+
+    /// Failures stay an NSAlert: a short message in a narrow alert is exactly what
+    /// that control is for, and it is the one shape macOS lays out well by default.
+    private func reportServerModeFailure(_ err: String) {
+        let f = NSAlert()
+        f.alertStyle = .warning
+        f.messageText = l10n.tr("Server mode could not be turned on", "服务器模式未能开启")
+        f.informativeText = err.isEmpty ? l10n.tr("Nothing was changed.", "什么都没有改动。") : err
+        f.runModal()
     }
 
     @ViewBuilder private var updateRow: some View {
