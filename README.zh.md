@@ -42,6 +42,10 @@ agent 之上的雷达和遥控。用 tmux 管理多个 agent（各自命名、�
 - **网页**：任何浏览器打开你的雷达和终端镜像；发给协作者的访客链接也开在这里。
 - **别的电脑**：`gtmux attach` 把 Mac 上的 tmux 会话原样接到眼前这台终端里。
 
+上面每一条远程路径都有一个前提：**Mac 得醒着**。合上盖子它就睡了，隧道随之断开、每个 agent 的
+回合当场冻结。**`gtmux awake`** 让它合盖也继续跑 —— 一次管理员授权，开启期间菜单栏一直有一个
+缓慢呼吸的红点，**关闭不需要密码**。用电池也能跑，电量到 20% 会自己恢复睡眠。
+
 <div align="center">
 <img src="docs/assets/surface-menubar.png" width="280" alt="菜单栏 app —— 弹层 + 状态点" />
 <img src="docs/assets/surface-mobile.png" width="230" alt="移动端 app —— iOS 上的 agent 雷达" />

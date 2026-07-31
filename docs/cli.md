@@ -441,24 +441,48 @@ The `limits` block also rides `gtmux usage` and `GET /api/usage`.
 ## `gtmux awake` — keep working with the lid closed
 
 ```
-awake = off  ·  power ac 100%
-  This Mac sleeps normally (closing the lid sleeps it).
-  guard: not installed
+gtmux awake on       # asks for your admin password once, then verifies it took effect
+gtmux awake          # awake = on (clamshell) · up 2h13m · power battery 74%
+gtmux awake off      # no password — immediate
 ```
 
 Closing a MacBook's lid sleeps the system, which drops the tunnel and freezes every
-agent mid-turn — so "command your Mac from your phone" only works while the lid stays
-open. `gtmux awake` is the switch that changes that. (It shipped as `gtmux server-mode` in
-v0.44.0; the old name still works. The feature is still called server mode — the
-command is just shorter, and it was the only day-to-day command with a hyphen.)
+agent mid-turn — so "command your Mac from your phone" only worked while the lid stayed
+open. This is the switch that changes that. (It shipped as `gtmux server-mode` in
+v0.44.0; the old name still works. The *feature* is still called server mode — the
+command is just shorter.)
 
-Two tiers, never conflated: `awake` holds a sleep assertion (idle sleep only — **a
-closed lid still sleeps**), `clamshell` disables sleep outright so the lid may close.
-Only the second does what the feature promises, and it needs root — measured, not
-assumed: with an assertion held, a closed lid slept after 133 s.
+**Turning it on costs one password. Turning it off costs nothing.** That asymmetry is
+the whole design: escalation is local, interactive and deliberately visible for as long
+as it lasts; de-escalation is free, automatic and always possible — including when gtmux
+is dead, which is exactly when it matters most.
 
-**Reading the state is the subtle part**, and getting it wrong is this feature's worst
-failure (announcing "sleep restored" on a Mac that cannot sleep):
+What makes that work is a small root-owned **guard** installed in the same authorization.
+It contains no code path that disables sleep — its only power is to give it back — and it
+restores sleep and deletes itself when any of these happens:
+
+| trigger | what it means |
+|---|---|
+| you turn it off | an unprivileged marker; the guard wakes on it within about a second |
+| charge reaches 20% | you are warned at 30%, on the Mac and on your phone |
+| gtmux stops running | crash, force-quit, `brew uninstall` — nothing needs to survive |
+| a reboot with nobody logging in | after a startup grace, so a normal restart does not kill your session |
+
+**It never expires.** It runs until you turn it off. Instead of a timer, the menu-bar
+icon carries a slowly pulsing red dot the whole time — the same visual language as a
+screen recording, because the risk this feature actually has is being forgotten.
+
+**Battery is a supported case, not a hazard**: carrying a closed laptop between rooms
+keeps working (measured — unplugged, lid shut, zero sleeps). What ends it is *remaining
+charge*, not losing the adapter.
+
+**gtmux reverts only what gtmux set.** A `disablesleep` it did not stamp is reported with
+the manual undo command and never changed for you — the same report-only discipline
+`gtmux reap` applies to an unclean worktree. `gtmux doctor` surfaces the same finding, and
+stays silent on machines that have never touched the setting.
+
+**Where to read the state** — this is the subtle part, and getting it wrong is the
+feature's worst failure (announcing "sleep restored" on a Mac that cannot sleep):
 
 | source | use it? |
 |---|---|
@@ -466,21 +490,25 @@ failure (announcing "sleep restored" on a Mac that cannot sleep):
 | the power-management plist | ⚠️ lags a write; answers "would it survive a reboot" |
 | `ioreg -r -c IOPMrootDomain` → `SleepDisabled` | ✅ the live, unprivileged truth |
 
-`gtmux awake --json` reports both readings plus `owned_by_gtmux` — the ownership stamp.
-**gtmux reverts only what gtmux set**: a `disablesleep` it did not stamp is reported
-with the manual undo command and never changed for you (the same report-only
-discipline `gtmux reap` applies to an unclean worktree). `gtmux doctor` surfaces the
-same finding, and stays silent on machines that have never touched the setting.
+`gtmux awake --json` reports both readings plus `owned_by_gtmux`, `guard`, and a
+`platform` verdict. On a macOS the project has not verified, `on` says so plainly rather
+than failing quietly; where the mechanism is absent it refuses **before** asking for a
+password.
 
-Battery is a supported case, not a hazard to be avoided: carrying a closed laptop
-between rooms keeps working (measured — unplugged, lid shut, zero sleeps). What ends
-server mode is **remaining charge**, not losing the adapter.
+**Two boundaries, stated rather than papered over:**
 
-**Boundary, stated plainly:** `gtmux serve` runs as a per-user LaunchAgent, so after a
-reboot it only starts once someone logs in. On a FileVault Mac with nobody there, the
-heartbeat never resumes and sleep is restored — the right fail-safe (an unreachable
-machine should sleep), but it means server mode does **not** survive an unattended
-reboot. gtmux will not "fix" that by touching FileVault or auto-login.
+- `gtmux serve` is a per-user LaunchAgent, so after a reboot it starts only once someone
+  logs in. On a FileVault Mac with nobody there the heartbeat never resumes and sleep is
+  restored — the right fail-safe, but it means server mode does **not** survive an
+  unattended reboot. gtmux will not "fix" that by touching FileVault or auto-login.
+- The underlying setting is **undocumented by Apple**. It is verified on macOS 26 and
+  detected at runtime; if a future macOS drops it, `on` refuses with a reason instead of
+  silently doing nothing.
+
+Your phone can **see** this state (a ring on the connection dot, and a row in Servers /
+Manage Mac) but never change it — every path to changing it ends at a password typed at
+the Mac, so a remote switch that could only turn it off would send you back to the laptop
+anyway.
 
 ## `gtmux restore`
 
