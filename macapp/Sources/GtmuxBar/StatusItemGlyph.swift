@@ -27,36 +27,43 @@ enum StatusItemGlyph {
     /// The brand grid tinted by the most-urgent state, or a quiet neutral grid
     /// when empty / only running (nothing needs you).
     /// - Parameter awake: server mode is on (the Mac is being kept awake). It is drawn
-    ///   as a small bar UNDER the existing mark rather than as a second status item:
-    ///   one gtmux presence in the menu bar, in a slightly different state. A second
-    ///   icon reads as a second app.
-    static func image(mostUrgent: Status, empty: Bool, dark: Bool, awake: Bool = false) -> NSImage {
+    ///   as a small RED DOT on the mark, borrowing the recording-indicator language:
+    ///   a lit dot that breathes says "still running" in a way nothing else does, and
+    ///   being impossible to forget is precisely this feature's job.
+    /// - Parameter phase: 0…1 breathing phase for that dot.
+    static func image(mostUrgent: Status, empty: Bool, dark: Bool,
+                      awake: Bool = false, phase: CGFloat = 0) -> NSImage {
         let lit: Status? = (empty || mostUrgent == .running) ? nil : mostUrgent
         return draw { _, full in
-            // Awake lifts the mark by 2pt so the bar has room without the glyph
-            // growing — the item's width must not jump when server mode toggles.
-            let box = awake ? full.offsetBy(dx: 0, dy: 2).insetBy(dx: 1, dy: 1) : full
-            grid(box, dark: dark, lit: lit)
-            if awake { awakeBar(box, dark: dark) }
+            grid(full, dark: dark, lit: lit)
+            if awake { awakeDot(full, dark: dark, phase: phase) }
         }
     }
 
-    /// The awake mark: a short bar UNDER the glyph, like a stand the machine rests on
-    /// — it reads as "this one is up and staying up".
+    /// The awake dot — a deliberate, documented exception to two design rules.
     ///
-    /// An earlier attempt drew a rectangle enclosing the whole mark. At 18pt that is
-    /// just a white box: it says nothing about being awake and looks like a rendering
-    /// artefact. A baseline is smaller, quieter and actually means something.
+    /// DESIGN §9 reserves colour for agent state and §10 allows exactly one animation
+    /// in the whole product. A red breathing dot breaks both. It is allowed here
+    /// because the recording indicator is the one visual language every user already
+    /// reads as "this is still running, you left it on", and server mode's whole risk
+    /// is being forgotten. The exception is bounded so it cannot be mistaken for a
+    /// waiting agent:
     ///
-    /// Deliberately NEUTRAL, never a status colour — colour encodes the fleet's agent
-    /// state (DESIGN §9) and server mode is a machine state, so SHAPE carries it. No
-    /// animation (DESIGN §10 allows exactly one, and it is not this).
-    private static func awakeBar(_ full: CGRect, dark: Bool) {
-        let w = full.width * 0.62
-        let h: CGFloat = 1.5
-        let r = CGRect(x: full.midX - w / 2, y: full.minY - h - 0.5, width: w, height: h)
-        (dark ? NSColor.white : NSColor.black).withAlphaComponent(dark ? 0.7 : 0.55).setFill()
-        NSBezierPath(roundedRect: r, xRadius: h / 2, yRadius: h / 2).fill()
+    ///   * it is a SMALL DOT ON the mark — waiting turns the WHOLE mark red, which is
+    ///     a completely different silhouette at a glance;
+    ///   * it breathes slowly and shallowly (alpha 0.55…1.0), so it reads as "alive",
+    ///     not as "alarm" — nothing else in gtmux moves at all;
+    ///   * a hairline halo keeps it legible when the mark underneath is itself red.
+    private static func awakeDot(_ full: CGRect, dark: Bool, phase: CGFloat) {
+        let d: CGFloat = 5.5
+        let r = CGRect(x: full.midX - d / 2, y: full.midY - d / 2 + 1, width: d, height: d)
+        // Ring first: separates the dot from whatever colour the mark is.
+        let halo = NSBezierPath(ovalIn: r.insetBy(dx: -1, dy: -1))
+        (dark ? NSColor.black : NSColor.white).withAlphaComponent(0.75).setFill()
+        halo.fill()
+        let alpha = 0.55 + 0.45 * (0.5 - 0.5 * cos(phase * 2 * .pi))
+        Theme.Status.waitingNS.withAlphaComponent(alpha).setFill()
+        NSBezierPath(ovalIn: r).fill()
     }
 
     // MARK: pane grid

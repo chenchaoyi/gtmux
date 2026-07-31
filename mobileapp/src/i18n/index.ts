@@ -91,6 +91,7 @@ const S: Dict = {
   },
   noServers: {en: 'No servers yet — add one to start.', zh: '还没有服务器，先加一台。'},
   connectedLabel: {en: 'Connected', zh: '已连接'},
+  serverModeShort: {en: 'server mode', zh: '服务器模式'},
   switchServer: {en: 'Switch server', zh: '切换服务器'},
   terminalFont: {en: 'Terminal font', zh: '终端字体'},
   fontAuto: {en: 'Match terminal', zh: '跟随终端'},

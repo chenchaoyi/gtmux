@@ -216,7 +216,8 @@ export function useAgents(): AgentsContextValue {
 }
 
 // Optional variant: returns null instead of throwing when there is NO
-// AgentsProvider — e.g. the pre-pairing Demo screen, which reuses the radar row.
+// AgentsProvider — e.g. the pre-pairing Demo screen, which reuses the radar row, or
+// the Servers connection page, which renders before anything is connected.
 // Callers that only OPTIONALLY need the client (AgentAvatar's icon fetch) use
 // this so they render fine outside a paired session (falling back gracefully).
 export function useAgentsOptional(): AgentsContextValue | null {

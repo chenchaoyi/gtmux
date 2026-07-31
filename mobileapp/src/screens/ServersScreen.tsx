@@ -4,7 +4,7 @@
 // pushed from the radar's server chip while connected (has `navigation`, so it
 // can go back). Adding a Mac reuses PairingScreen in a modal.
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Alert,
   Modal,
@@ -18,6 +18,8 @@ import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {splitServers} from '../pairing/store';
 import {PairedMac} from '../pairing/qr';
+import type {ServerMode} from '../api/types';
+import {useAgentsOptional} from '../state/AgentsContext';
 import {BrandMark} from '../ui/BrandMark';
 import {ContentColumn} from '../ui/ContentColumn';
 import {StatusColor} from '../ui/theme';
@@ -27,6 +29,28 @@ import {TestIds} from '../constants/testIds';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
   const {t, pal, servers, activeUrl, selectServer, removeServer, disconnect} = useApp();
+  // May be null: this page also renders before anything is connected.
+  const agentsCtx = useAgentsOptional();
+  const client = agentsCtx?.client;
+
+  // Server mode for the Mac we are CONNECTED to. Only that one — a paired Mac we are
+  // not talking to right now cannot be asked, and inventing a state for it would be
+  // worse than showing none. Slow poll: this changes when a human decides it does.
+  const [srv, setSrv] = useState<ServerMode | null>(null);
+  useEffect(() => {
+    if (!client) return;
+    let alive = true;
+    const tick = () => {
+      client.serverMode().then(m => alive && setSrv(m)).catch(() => {});
+    };
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client, activeUrl]);
+  const srvOn = !!srv && (srv.system_disablesleep || srv.state === 'lapsed');
   // First run (no servers) opens the add sheet straight away — same as before.
   const [adding, setAdding] = useState(servers.length === 0);
   // The read-only demo tour (from the pairing screen's "See a demo"). Only ever
@@ -52,18 +76,27 @@ export function ServersScreen({navigation}: {navigation?: any}) {
           i < count - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
         ]}>
         <TouchableOpacity style={styles.rowMain} onPress={() => onPick(s.url)} hitSlop={hit}>
-          <View
-            style={[
-              styles.dot,
-              {backgroundColor: active ? StatusColor.idle : pal.fg3, opacity: active ? 1 : 0.35},
-            ]}
-          />
+          <View>
+            <View
+              style={[
+                styles.dot,
+                {backgroundColor: active ? StatusColor.idle : pal.fg3, opacity: active ? 1 : 0.35},
+              ]}
+            />
+            {/* Server mode: the same ring the radar puts around the connection dot, so
+                it reads as one language across the app rather than a new symbol to
+                learn. Only ever on the connected Mac — see the poll above. */}
+            {active && srvOn ? (
+              <View style={[styles.dotAwake, {borderColor: StatusColor.idle}]} />
+            ) : null}
+          </View>
           <View style={styles.rowText}>
             <Text style={[styles.name, {color: pal.fg}]} numberOfLines={1}>
               {s.name}
             </Text>
             <Text style={[styles.url, {color: pal.fg3}]} numberOfLines={1}>
               {active ? `${t('connectedLabel')} · ` : ''}
+              {active && srvOn ? `${t('serverModeShort')} · ` : ''}
               {guest ? `${t('guestRowLabel')} · ` : ''}
               {s.url}
             </Text>
@@ -187,6 +220,12 @@ const styles = StyleSheet.create({
   row: {flexDirection: 'row', alignItems: 'center'},
   rowMain: {flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 14, minWidth: 0},
   dot: {width: 9, height: 9, borderRadius: 4.5, marginRight: 12},
+  // A ring OUTSIDE the connection dot — same shape the radar uses, positioned against
+  // the dot's own box so it tracks it exactly.
+  dotAwake: {
+    position: 'absolute', left: -3, top: -3, width: 15, height: 15,
+    borderRadius: 7.5, borderWidth: 1, opacity: 0.75,
+  },
   rowText: {flex: 1, minWidth: 0},
   name: {fontSize: 15.5, fontWeight: '600'},
   url: {fontSize: 12.5, marginTop: 2},
