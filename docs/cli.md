@@ -10,7 +10,8 @@
 | `new [name]` | start a new tmux session in a fresh terminal tab |
 | `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
 | `doctor [--fix [--yes]]` | health check grouped by concern; on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
-| `install-hooks [--agent <key>]` | register the notification hook — Claude by default; `--agent codex\|cursor\|gemini\|copilot\|kiro` for others |
+| `install [hooks\|app\|all]` | install what gtmux needs; with no target it asks. `install hooks --agent codex\|cursor\|gemini\|copilot\|kiro` wires another agent |
+| `uninstall [hooks\|app\|all]` | remove it again; with no target it asks (the two have very different consequences) |
 | `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); see [phone.md](phone.md) |
 | `pair [list\|revoke <id>]` | enroll YOUR OWN devices (full control): one one-time code as phone QR / browser link / a one-line `gtmux attach` |
@@ -720,9 +721,10 @@ state files under `~/.local/share/gtmux/`. gtmux ships that hook built in — no
 external script needed:
 
 ```sh
-gtmux install-hooks                 # Claude, one-time setup (macOS)
-gtmux install-hooks --agent codex   # or cursor|gemini|copilot|kiro
-gtmux uninstall-hooks [--agent …]   # reverse it
+gtmux install                       # asks: hooks | app | all
+gtmux install hooks                 # Claude, one-time setup (macOS)
+gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro
+gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
 `install-hooks` registers `gtmux hook` in `~/.claude/settings.json` on the

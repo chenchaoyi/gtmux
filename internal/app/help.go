@@ -96,7 +96,10 @@ Commands:
                           (--check only reports; --cli-only skips the app)
   whatsnew [--since v]    what changed for YOU, per release (update prints a
                           short summary; this is the full list)
-  install-hooks [--yes]   register the Claude hook directly (doctor --fix also
+  install [hooks|app]     install what gtmux needs. No target = it asks: hooks
+                          (how the radar sees who's waiting) | app (it delivers
+                          desktop notifications) | all.
+    install hooks [--yes] register the Claude hook directly (doctor --fix also
                           does this); --agent <codex|cursor|gemini|copilot|kiro>
                           wires another agent (codex via its additive hooks system,
                           coexisting with any existing notify)
@@ -207,7 +210,9 @@ const usageZH = `快速开始：
   update [--check]        自我更新到最新版，含 CLI + 菜单栏 app（--check 只检查；
                           --cli-only 只更新 CLI 不动 app）
   whatsnew [--since v]    每个版本对你而言的变化（update 只印摘要，这里是全部）
-  install-hooks [--yes]   直接注册 Claude hook（doctor --fix 也会做这件事）；
+  install [hooks|app]     安装 gtmux 需要的东西。不给参数就问你：hooks（雷达靠它
+                          知道谁在等你）| app（桌面通知由它发出）| all。
+    install hooks [--yes] 直接注册 Claude hook（doctor --fix 也会做这件事）；
                           --agent <codex|cursor|gemini|copilot|kiro> 接入其他
                           agent（codex 走追加式 hooks 系统，与已有 notify 并存）
   uninstall [hooks|app]   卸载 gtmux 装过的东西。不给参数就问你：

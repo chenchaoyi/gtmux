@@ -132,7 +132,9 @@ func Run(argv []string) int {
 		return cmdUpdate(args)
 	case "whatsnew":
 		return cmdWhatsnew(args)
-	case "install-hooks":
+	case "install":
+		return cmdInstall(args)
+	case "install-hooks": // pre-0.44.1 name, still accepted
 		return cmdInstallHooks(args)
 	case "uninstall":
 		return cmdUninstall(args)
