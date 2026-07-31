@@ -80,8 +80,8 @@ func Run(argv []string) int {
 		return cmdLimits(args)
 	case "quiet":
 		return cmdQuiet(args)
-	case "server-mode":
-		return cmdServerMode(args)
+	case "awake", "server-mode": // server-mode: the pre-0.44.1 name, still accepted
+		return cmdServerMode(sub, args)
 	case "config":
 		return cmdConfig(args)
 	case "share":
@@ -132,9 +132,13 @@ func Run(argv []string) int {
 		return cmdUpdate(args)
 	case "whatsnew":
 		return cmdWhatsnew(args)
-	case "install-hooks":
+	case "install":
+		return cmdInstall(args)
+	case "install-hooks": // pre-0.44.1 name, still accepted
 		return cmdInstallHooks(args)
-	case "uninstall-hooks":
+	case "uninstall":
+		return cmdUninstall(args)
+	case "uninstall-hooks": // pre-0.44.1 name, still accepted
 		return cmdUninstallHooks(args)
 	case "app", "menubar":
 		return cmdApp(args)

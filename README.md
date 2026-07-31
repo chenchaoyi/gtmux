@@ -139,7 +139,7 @@ gtmux update                 # self-update the CLI + menu-bar app (the app also
                              # offers one-click "check for updates")
 ```
 
-> Just want notifications and nothing else? `gtmux install-hooks` registers only
+> Just want notifications and nothing else? `gtmux install hooks` registers only
 > the agent hook — but `gtmux doctor` is the recommended path (it does that
 > **and** the set-titles focus/restore depend on). For non-Claude agents, add
 > `--agent codex|cursor|gemini|copilot|kiro` (Codex wires via its own hooks system,

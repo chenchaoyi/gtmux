@@ -726,7 +726,7 @@ as a broken button.
 ### Requirement: Server mode is remotely visible and remotely revocable, never remotely enablable
 
 The serve API SHALL expose the server-mode state to OWNER-scoped clients only
-(`GET /api/servermode`, the same document `gtmux server-mode status --json` returns), and
+(`GET /api/awake`, the same document `gtmux awake --json` returns), and
 SHALL accept an OWNER-scoped request that turns server mode OFF. A request to turn server
 mode ON SHALL be refused by the server with an explicit reason, regardless of client,
 because enabling requires a local interactive administrator authorization and an

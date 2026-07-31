@@ -314,7 +314,7 @@ export class GtmuxClient {
   // serverMode: read the lid-closed keep-awake state (owner scope only; a guest
   // token gets 403 and sees nothing, by design — this is a machine-level control).
   async serverMode(): Promise<ServerMode | null> {
-    const r = await tfetch(`${this.base}/api/servermode`, {headers: this.h()});
+    const r = await tfetch(`${this.base}/api/awake`, {headers: this.h()});
     if (!r.ok) return null;
     return (await r.json().catch(() => null)) as ServerMode | null;
   }
@@ -322,7 +322,7 @@ export class GtmuxClient {
   // serverModeOff: the ONLY direction the phone may move this state. There is no
   // corresponding "on" — the server refuses it for every client, including this one.
   async serverModeOff(): Promise<boolean> {
-    const r = await tfetch(`${this.base}/api/servermode`, {
+    const r = await tfetch(`${this.base}/api/awake`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({on: false}),

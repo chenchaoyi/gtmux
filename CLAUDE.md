@@ -4,9 +4,8 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`, `panes`,
-  `digest`, `hq`, `hq-feed`, `quiet`, `capture`, `usage`, `limits`, `events`, `resource`, `server-mode`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
-  `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install-hooks`, `uninstall-hooks`,
-  `uninstall-app`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
+  `digest`, `hq`, `hq-feed`, `quiet`, `capture`, `usage`, `limits`, `events`, `resource`, `awake`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
+  `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install`, `uninstall`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
   (`GET /api/attach`, scope-gated), raw passthrough; owner or guest. See
   `openspec/changes/remote-terminal-client` + `docs/design/remote-attach-research.md`. Logic lives in `internal/`: the command layer is `internal/app` (CLI dispatch + thin command shims + spawn/send/serve/tunnel), over the extracted, compiler-enforced clusters — `internal/radar` (the pane-data KERNEL: the `agents`/`digest`/`usage` producers + their JSON shapes + `CurrentResource`/`PreflightResource`), `internal/hq` (the supervisor subsystem — the 10 `hq`/`slowtick`/`selfcheck`/`distill`/`diskhygiene`/`tiergate`/`watchdog`/`tasks`/`events`/`hq-feed` files), `internal/dispatchbridge` (the tmux/events dispatch adapter), and the `internal/panefocus` pane-jump leaf. Import rule is strictly acyclic — `app → hq → {radar, dispatchbridge} → leaves`; **`hq` NEVER imports `app`**, nothing below `app` imports it (see openspec change `decompose-app-package`). `digest`+`hq` = the supervisor

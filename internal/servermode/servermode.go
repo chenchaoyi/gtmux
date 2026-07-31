@@ -23,11 +23,12 @@
 // reading back.
 package servermode
 
-// Tiers. `awake` holds a sleep assertion (idle sleep only — a closed lid still
-// sleeps); `clamshell` disables sleep outright so the lid may close. Surfaces must
-// never present `awake` as surviving a closed lid.
+// Tiers, named for what the LID can do — the only distinction a user cares about.
+// `lid-open` holds a sleep assertion (idle sleep only: a closed lid still sleeps);
+// `clamshell` disables sleep outright so the lid may close. Surfaces must never
+// present `lid-open` as surviving a closed lid.
 const (
-	TierAwake     = "awake"
+	TierLidOpen   = "lid-open"
 	TierClamshell = "clamshell"
 )
 
@@ -79,7 +80,7 @@ type Exit struct {
 }
 
 // Status is the machine-readable server-mode document — the shape behind
-// `gtmux server-mode status --json` and `GET /api/servermode`.
+// `gtmux awake --json` and `GET /api/awake`.
 //
 // There is deliberately NO expiry field: server mode runs until the user turns it
 // off or a guardrail ends it.

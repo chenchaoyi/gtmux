@@ -10,7 +10,8 @@
 | `new [name]` | start a new tmux session in a fresh terminal tab |
 | `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
 | `doctor [--fix [--yes]]` | health check grouped by concern; on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
-| `install-hooks [--agent <key>]` | register the notification hook — Claude by default; `--agent codex\|cursor\|gemini\|copilot\|kiro` for others |
+| `install [hooks\|app\|all]` | install what gtmux needs; with no target it asks. `install hooks --agent codex\|cursor\|gemini\|copilot\|kiro` wires another agent |
+| `uninstall [hooks\|app\|all]` | remove it again; with no target it asks (the two have very different consequences) |
 | `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); see [phone.md](phone.md) |
 | `pair [list\|revoke <id>]` | enroll YOUR OWN devices (full control): one one-time code as phone QR / browser link / a one-line `gtmux attach` |
@@ -437,19 +438,19 @@ Set `limitsCommand` with an env prefix if your network needs it
 `limitsWarnPct` marks amber and wakes a live HQ once (`» gtmux·limits·warn …`).
 The `limits` block also rides `gtmux usage` and `GET /api/usage`.
 
-## `gtmux server-mode` — keep working with the lid closed
+## `gtmux awake` — keep working with the lid closed
 
 ```
-server mode = off  ·  power ac 100%
+awake = off  ·  power ac 100%
   This Mac sleeps normally (closing the lid sleeps it).
   guard: not installed
 ```
 
 Closing a MacBook's lid sleeps the system, which drops the tunnel and freezes every
 agent mid-turn — so "command your Mac from your phone" only works while the lid stays
-open. `server-mode` is the switch that changes that. **This build ships sensing only**
-(`status`); turning it on/off needs the privileged half and says so rather than
-pretending.
+open. `gtmux awake` is the switch that changes that. (It shipped as `gtmux server-mode` in
+v0.44.0; the old name still works. The feature is still called server mode — the
+command is just shorter, and it was the only day-to-day command with a hyphen.)
 
 Two tiers, never conflated: `awake` holds a sleep assertion (idle sleep only — **a
 closed lid still sleeps**), `clamshell` disables sleep outright so the lid may close.
@@ -465,7 +466,7 @@ failure (announcing "sleep restored" on a Mac that cannot sleep):
 | the power-management plist | ⚠️ lags a write; answers "would it survive a reboot" |
 | `ioreg -r -c IOPMrootDomain` → `SleepDisabled` | ✅ the live, unprivileged truth |
 
-`status --json` reports both readings plus `owned_by_gtmux` — the ownership stamp.
+`gtmux awake --json` reports both readings plus `owned_by_gtmux` — the ownership stamp.
 **gtmux reverts only what gtmux set**: a `disablesleep` it did not stamp is reported
 with the manual undo command and never changed for you (the same report-only
 discipline `gtmux reap` applies to an unclean worktree). `gtmux doctor` surfaces the
@@ -720,9 +721,10 @@ state files under `~/.local/share/gtmux/`. gtmux ships that hook built in — no
 external script needed:
 
 ```sh
-gtmux install-hooks                 # Claude, one-time setup (macOS)
-gtmux install-hooks --agent codex   # or cursor|gemini|copilot|kiro
-gtmux uninstall-hooks [--agent …]   # reverse it
+gtmux install                       # asks: hooks | app | all
+gtmux install hooks                 # Claude, one-time setup (macOS)
+gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro
+gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
 `install-hooks` registers `gtmux hook` in `~/.claude/settings.json` on the

@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-/// Server mode as the menu bar sees it: a pure consumer of `gtmux server-mode --json`,
+/// Server mode as the menu bar sees it: a pure consumer of `gtmux awake --json`,
 /// exactly like AgentStore consumes `gtmux agents --json`. No logic is duplicated here —
 /// the CLI stays the single source of truth for what the machine is doing.
 ///
@@ -96,7 +96,7 @@ final class ServerModeStore: ObservableObject {
 
     func refresh() {
         DispatchQueue.global(qos: .utility).async {
-            guard let data = GtmuxCLI.capture(["server-mode", "--json"]),
+            guard let data = GtmuxCLI.capture(["awake", "--json"]),
                   let decoded = try? JSONDecoder().decode(ServerModeStatus.self, from: data)
             else { return }
             DispatchQueue.main.async { self.status = decoded }
@@ -108,14 +108,14 @@ final class ServerModeStore: ObservableObject {
     /// purpose is to be the off switch.
     func turnOff(completion: @escaping () -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
-            _ = GtmuxCLI.captureResult(["server-mode", "off", "--yes"])
+            _ = GtmuxCLI.captureResult(["awake", "off", "--yes"])
             DispatchQueue.main.async { self.refresh(); completion() }
         }
     }
 
     func turnOn(completion: @escaping (Bool, String) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
-            let r = GtmuxCLI.captureResult(["server-mode", "on", "--yes"])
+            let r = GtmuxCLI.captureResult(["awake", "on", "--yes"])
             DispatchQueue.main.async { self.refresh(); completion(r.status == 0, r.stderr) }
         }
     }

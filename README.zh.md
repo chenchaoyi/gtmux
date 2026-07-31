@@ -125,7 +125,7 @@ gtmux app                    # 启动菜单栏 app（别名：menubar）
 gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持一键「检查更新」）
 ```
 
-> 只想要通知？`gtmux install-hooks` 只注册 agent hook —— 但推荐走 `gtmux doctor`
+> 只想要通知？`gtmux install hooks` 只注册 agent hook —— 但推荐走 `gtmux doctor`
 > （它会做这个**并且**配好 focus/restore 依赖的 set-titles）。非 Claude 的 agent 加
 > `--agent codex|cursor|gemini|copilot|kiro`（Codex 走它自己的 hooks 系统，与已有的
 > `notify` 并存）。
