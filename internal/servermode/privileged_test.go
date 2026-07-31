@@ -103,3 +103,21 @@ func TestInstallPayloadIsValidShell(t *testing.T) {
 		t.Fatalf("install payload is not valid shell: %v\n%s", err, out)
 	}
 }
+
+// A remote "turn off" must never raise an authorization dialog: the Mac is by
+// definition unattended, so the prompt would sit unanswered on a locked screen while
+// the serve handler blocked waiting for it. The marker alone is sufficient — the
+// guard acts on its next tick — so DisableRemote does exactly that and nothing more.
+func TestDisableRemoteNeverPrompts(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	if err := DisableRemote(); err != nil {
+		t.Fatalf("DisableRemote: %v", err)
+	}
+	if _, err := os.Stat(RevokePath()); err != nil {
+		t.Fatalf("the stand-down marker should exist: %v", err)
+	}
+	// The guarantee is structural: DisableRemote's body is the marker write, with no
+	// path to runPrivileged. Assert that by source inspection would be brittle; what
+	// matters here is that it completes with no GUI and leaves the marker behind.
+}

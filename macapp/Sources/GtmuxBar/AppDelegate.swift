@@ -5,12 +5,10 @@ import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    /// Server mode gets its OWN status item, modelled on the screen-recording
-    /// indicator: present for exactly as long as the state is, and it IS the off
-    /// switch. It is deliberately separate from the agent status item because that
-    /// glyph means "the fleet's most urgent AGENT state" — overlaying a machine
-    /// state on it would break the palette rule and dilute waiting-red.
-    private var serverModeItem: NSStatusItem?
+    /// Server mode shows as a thin ring on the EXISTING brand mark — not as a second
+    /// status item. Two icons read as two apps; one icon in a different state reads as
+    /// "gtmux is doing something". The ring is neutral, so the mark's colour still
+    /// means only what it has always meant: the fleet's most urgent agent state.
     private let serverMode = ServerModeStore.shared
     private let popover = NSPopover()
     private let store = AgentStore()
@@ -57,9 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Server mode: poll slowly and mirror it into a dedicated indicator.
         serverMode.start()
+        // A server-mode change only needs the mark redrawn — the ring is part of it.
         serverMode.$status
             .receive(on: RunLoop.main)
-            .sink { [weak self] in self?.renderServerMode($0) }
+            .sink { [weak self] _ in self?.renderIcon(self?.store.agents ?? []) }
             .store(in: &cancellables)
 
         popover.behavior = .transient
@@ -189,7 +188,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             waitingPanes: Set(agents.filter { $0.state == .waiting }.map { $0.paneID }))
 
         let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        button.image = StatusItemGlyph.image(mostUrgent: urgent, empty: empty, dark: dark)
+        button.image = StatusItemGlyph.image(mostUrgent: urgent, empty: empty, dark: dark,
+                                            awake: serverMode.status?.isOn == true)
         let badge = displayMode == .dot ? "" : store.badge
         button.title = badge.isEmpty ? "" : " \(badge)"
         button.imagePosition = badge.isEmpty ? .imageOnly : .imageLeft
@@ -435,110 +435,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pendingReopenFocus = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
         return true
-    }
-}
-
-// MARK: - Server mode indicator
-
-extension AppDelegate {
-    /// Show the indicator iff server mode is on, and never otherwise — when it is off
-    /// the menu bar looks exactly as it did before this feature existed.
-    ///
-    /// It is NOT subject to the hide-when-idle preference. That preference exists so an
-    /// idle FLEET does not nag; this is a machine state the user deliberately left
-    /// running, and forgetting about it is the failure mode the indicator prevents.
-    /// macOS makes the same call for screen recording and location use.
-    func renderServerMode(_ st: ServerModeStatus?) {
-        guard let st, st.isOn else {
-            if let item = serverModeItem { NSStatusBar.system.removeStatusItem(item) }
-            serverModeItem = nil
-            return
-        }
-        let item = serverModeItem ?? {
-            let i = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-            i.button?.target = self
-            i.button?.action = #selector(serverModeClicked)
-            serverModeItem = i
-            return i
-        }()
-        guard let button = item.button else { return }
-
-        // Shape carries presence; colour is reserved for attention. No animation —
-        // a permanently-present indicator that pulses would be intolerable.
-        let cfg = NSImage.SymbolConfiguration(pointSize: 13, weight: .medium)
-        let img = NSImage(systemSymbolName: "laptopcomputer",
-                          accessibilityDescription: l10n.tr("server mode on", "服务器模式开启"))?
-            .withSymbolConfiguration(cfg)
-        img?.isTemplate = false
-        button.image = img?.tinted(st.needsAttention ? Theme.Status.waitingNS : Theme.Status.noneNS)
-        button.toolTip = serverModeSummary(st)
-    }
-
-    private func serverModeSummary(_ st: ServerModeStatus) -> String {
-        var parts = [l10n.tr("Server mode on — the lid may close", "服务器模式开启 —— 可以合盖")]
-        if let r = st.attentionReason { parts.append(r) }
-        return parts.joined(separator: "\n")
-    }
-
-    @objc func serverModeClicked() {
-        guard let st = serverMode.status, let item = serverModeItem else { return }
-        let menu = NSMenu()
-
-        let head = NSMenuItem(title: l10n.tr("Server mode is on — the lid may close",
-                                             "服务器模式开启中 —— 合盖不会睡"),
-                              action: nil, keyEquivalent: "")
-        head.isEnabled = false
-        menu.addItem(head)
-
-        if let since = st.since {
-            let mins = max(0, Int(Date().timeIntervalSince1970) - since) / 60
-            let dur = mins < 60 ? "\(mins)m" : "\(mins / 60)h\(mins % 60)m"
-            menu.addItem(disabledItem(l10n.tr("on for \(dur)", "已开启 \(dur)")))
-        }
-        if st.power == "battery", let pct = st.batteryPct {
-            menu.addItem(disabledItem(l10n.tr("on battery · \(pct)% — sleep returns at 20%",
-                                              "电池供电 · \(pct)% —— 掉到 20% 会自动恢复睡眠")))
-        }
-        if let reason = st.attentionReason {
-            menu.addItem(disabledItem("⚠ " + reason))
-        }
-        menu.addItem(.separator())
-
-        // The primary action. The indicator IS the off switch — that is the whole
-        // point of modelling it on the recording indicator.
-        let off = NSMenuItem(title: l10n.tr("Turn off server mode", "关闭服务器模式"),
-                             action: #selector(turnOffServerMode), keyEquivalent: "")
-        off.target = self
-        menu.addItem(off)
-
-        item.menu = menu
-        item.button?.performClick(nil)
-        item.menu = nil
-    }
-
-    private func disabledItem(_ title: String) -> NSMenuItem {
-        let i = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        i.isEnabled = false
-        return i
-    }
-
-    @objc private func turnOffServerMode() {
-        serverMode.turnOff { [weak self] in self?.serverMode.refresh() }
-    }
-}
-
-private extension NSImage {
-    /// Tint a symbol to an exact palette colour. Status colours are authoritative
-    /// (DESIGN §9) — never approximate them with a system tint.
-    func tinted(_ color: NSColor) -> NSImage {
-        let out = NSImage(size: size)
-        out.lockFocus()
-        color.set()
-        let rect = NSRect(origin: .zero, size: size)
-        draw(in: rect)
-        rect.fill(using: .sourceAtop)
-        out.unlockFocus()
-        out.isTemplate = false
-        return out
     }
 }
