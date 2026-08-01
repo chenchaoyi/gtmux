@@ -324,6 +324,36 @@ final class AgentStore: ObservableObject {
         return .normal
     }
 
+    /// The HQ intelligence headline's KIND — a pure, testable classification of the
+    /// chief-of-staff conclusion the view renders as a sentence. Extracted from the view
+    /// so it is unit-testable AND can't silently disagree with the medallion color: EVERY
+    /// red state (.hqCall / .needsYou / .resource) maps to a non-`allNormal` kind, so the
+    /// row never shows red next to "all normal — nothing needs you". Fixes the reported
+    /// contradiction where a red resource tier still read "all normal".
+    enum FleetHeadline: Equatable {
+        case call                              // HQ itself needs your decision
+        case worker(name: String, others: Int) // exactly one worker waiting on you
+        case workers(Int)                      // N workers waiting on you
+        case resource                          // machine under resource pressure (red tier)
+        case allNormal                         // a quiet fleet
+    }
+
+    /// Pure resolver for the HQ headline (hq-meta-layer). Priority mirrors hqState: HQ
+    /// call > worker(s) waiting > resource pressure > all normal. Keying the resource
+    /// branch HERE is what stops the "red row + 'all normal' text" divergence.
+    static func fleetHeadline(state: HQState, agents: [Agent]) -> FleetHeadline {
+        if state == .hqCall { return .call }
+        let workers = agents.filter { !$0.isSupervisor && $0.source != "native" }
+        let waiting = workers.filter { $0.state == .waiting }
+        if waiting.count == 1 {
+            let f = waiting[0]
+            return .worker(name: f.session.isEmpty ? f.primary : f.session, others: workers.count - 1)
+        }
+        if waiting.count > 1 { return .workers(waiting.count) }
+        if state == .resource { return .resource }
+        return .allNormal
+    }
+
     /// Sensed non-tmux (native) sessions — their own category, most-recent first.
     /// Sense-only: no jump/reply; adoptable ones can be pulled into tmux.
     func nativeSessions(query: String) -> [Agent] {

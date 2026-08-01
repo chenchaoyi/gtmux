@@ -594,12 +594,23 @@ func GatherAgents() []Pane {
 	hqStamps := map[string]string{}         // pane id → its @gtmux_hq_home stamp (role precedence)
 	livePanes := map[string]bool{}          // every live tmux pane id (agents or not) — for orphan-marker GC
 	paneFieldsByID := map[string][]string{} // pane id → its raw field slice (for watched-pane rows)
+	seenPane := map[string]bool{}           // pane ids already turned into a row — dedup linked/shared windows
 	for _, line := range paneSource() {
 		f := strings.SplitN(line, "\t", 12)
 		if len(f) < 7 {
 			continue
 		}
 		livePanes[f[0]] = true
+		// A window linked into more than one session (or a shared/attached window) is
+		// listed by `list-panes -a` ONCE PER SESSION, so the same pane_id arrives on
+		// multiple lines with different session/window fields. Emit ONE radar row per
+		// pane — the first wins — else the phone showed the same session twice (e.g. a
+		// worker appearing under both its own session and a linked "HQ" one). role
+		// precedence still resolves correctly afterward (it's keyed by pane_id stamp).
+		if seenPane[f[0]] {
+			continue
+		}
+		seenPane[f[0]] = true
 		paneFieldsByID[f[0]] = f
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex

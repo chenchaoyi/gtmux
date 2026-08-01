@@ -115,3 +115,38 @@ export function linkify(text: string): Array<{text: string; url?: string}> {
   if (last < text.length) out.push({text: text.slice(last)});
   return out;
 }
+
+// linkSegsForLines flattens rendered lines into the tap-segments the TRANSPARENT
+// selection overlay needs. That overlay sits ON TOP and is the ONLY layer that receives
+// touches, so it must carry EVERY link the color layer draws: an OSC 8 hyperlink
+// (span.href — e.g. an anchor-text link like a Wikipedia title; tmux 3.7b's
+// `capture-pane -e` preserves OSC 8) AND a bare URL the agent printed as text. The
+// earlier overlay only linkified bare URLs, so anchor-text OSC 8 links were swallowed
+// (bare URLs tapped through, hyperlinks didn't). Non-href runs are linkified per LINE
+// (joined) so a bare URL split across SGR spans is still caught. The concatenated
+// segment text equals the joined plain text (linkify drops nothing, lines join on '\n'),
+// so the overlay stays aligned with the color layer; kept flat so the iOS selection
+// highlight still paints.
+export function linkSegsForLines(lines: AnsiLine[]): Array<{text: string; url?: string}> {
+  const out: Array<{text: string; url?: string}> = [];
+  lines.forEach((spans, i) => {
+    let run = '';
+    const flush = () => {
+      if (run) {
+        for (const seg of linkify(run)) out.push(seg);
+        run = '';
+      }
+    };
+    for (const s of spans) {
+      if (s.href && /^https?:\/\//i.test(s.href)) {
+        flush();
+        out.push({text: s.text, url: s.href});
+      } else {
+        run += s.text;
+      }
+    }
+    flush();
+    if (i < lines.length - 1) out.push({text: '\n'});
+  });
+  return out;
+}

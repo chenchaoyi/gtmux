@@ -199,7 +199,7 @@ struct MenuView: View {
                                 // chief-of-staff conclusion — names who needs you + how many
                                 // others are normal — REPLACING the anonymous fleet pips (pure
                                 // redundancy with the list) and the unreliable pane-title.
-                                Text(fleetHeadline(hqWaiting: state == .hqCall))
+                                Text(fleetHeadlineText(state))
                                     .font(.system(size: 11))
                                     .foregroundStyle(attention ? Theme.Status.waiting : p.fg2)
                                     .lineLimit(1).truncationMode(.tail)
@@ -236,28 +236,27 @@ struct MenuView: View {
         }
     }
 
-    // fleetHeadline is the deterministic chief-of-staff conclusion shown as the HQ card
-    // subtitle (hq-meta-layer): when HQ itself needs a decision → "your call"; else it
-    // names the one worker that needs you + how many others are normal, or reads as "all
-    // normal" when the fleet is quiet. Zero LLM, single-source with the mobile card.
-    private func fleetHeadline(hqWaiting: Bool) -> String {
-        if hqWaiting {
+    // fleetHeadlineText renders the deterministic chief-of-staff conclusion shown as the
+    // HQ card subtitle (hq-meta-layer). The KIND decision lives in AgentStore.fleetHeadline
+    // (pure + unit-tested) so it stays consistent with the medallion color — crucially a
+    // red .resource tier now SPEAKS ("machine under pressure") instead of falsely reading
+    // "all normal — nothing needs you" while the row is red. Zero LLM, single-source with
+    // the mobile card.
+    private func fleetHeadlineText(_ state: HQState) -> String {
+        switch AgentStore.fleetHeadline(state: state, agents: store.agents) {
+        case .call:
             return l10n.tr("needs your call", "请你拍板")
-        }
-        let workers = store.agents.filter { !$0.isSupervisor && $0.source != "native" }
-        let waiting = workers.filter { $0.state == .waiting }
-        if waiting.isEmpty {
+        case .worker(let name, let others):
+            return others > 0
+                ? l10n.tr("\(name) needs you · \(others) others normal", "\(name) 在等你拍板 · 其余 \(others) 个正常")
+                : l10n.tr("\(name) needs you", "\(name) 在等你拍板")
+        case .workers(let n):
+            return l10n.tr("\(n) sessions need you", "\(n) 个会话在等你拍板")
+        case .resource:
+            return l10n.tr("machine under pressure — check disk/memory", "机器资源紧张 · 查看磁盘/内存")
+        case .allNormal:
             return l10n.tr("all normal — nothing needs you", "都正常 · 无需你介入")
         }
-        let first = waiting[0]
-        let name = first.session.isEmpty ? first.primary : first.session
-        if waiting.count == 1 {
-            let rest = workers.count - 1
-            return rest > 0
-                ? l10n.tr("\(name) needs you · \(rest) others normal", "\(name) 在等你拍板 · 其余 \(rest) 个正常")
-                : l10n.tr("\(name) needs you", "\(name) 在等你拍板")
-        }
-        return l10n.tr("\(waiting.count) sessions need you", "\(waiting.count) 个会话在等你拍板")
     }
 
     // A framed, faintly-elevated panel. The 1px border is the primary "not a row"
