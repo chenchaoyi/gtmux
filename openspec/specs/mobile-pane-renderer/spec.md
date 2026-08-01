@@ -47,6 +47,21 @@ content jump and no mode switch.
 - **THEN** a translucent highlight appears over the selected colored text and the
   Copy callout is offered, with no layout jump
 
+### Requirement: Tappable URLs
+
+The renderer SHALL make http(s) links in the pane tappable, opening them in the system
+default browser. This covers BOTH an OSC 8 terminal hyperlink (the whole declared span)
+AND a bare URL an agent merely printed as plain text (auto-detected per span). A tapped
+link SHALL be underlined to signal it is tappable, keeping its terminal color; trailing
+sentence punctuation is excluded from the link. A non-web scheme (e.g. `file://`) SHALL
+render as plain, non-tappable text.
+
+#### Scenario: Bare URL in output is tappable
+
+- **WHEN** the pane shows a line like `see https://example.com/x now` (no OSC 8 escape)
+- **THEN** `https://example.com/x` is underlined and tapping it opens the system browser,
+  while `see ` and ` now` stay plain
+
 ### Requirement: Freeze the snapshot while touching
 
 The system SHALL freeze the rendered snapshot (text AND cursor) while the user is

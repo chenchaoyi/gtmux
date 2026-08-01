@@ -87,3 +87,31 @@ export function cursorSpans(spans: AnsiLine, x: number, curColor: string, bg: st
   }
   return out;
 }
+
+// A bare http(s) URL in terminal output. Stops at whitespace and the bracket/quote
+// characters that normally delimit a URL. Hyphens/dots/slashes/query chars stay IN.
+const URL_RE = /https?:\/\/[^\s<>"'`|\\^{}]+/gi;
+
+// linkify splits a string into text segments, tagging bare http(s) URLs with a `url`
+// so the terminal renderer can make them tappable — the same open-in-browser behavior
+// an OSC 8 hyperlink already gets, but for URLs an agent merely PRINTED as plain text.
+// Trailing sentence punctuation / a wrapping close-bracket is kept OUT of the link (a
+// URL ending a sentence shouldn't swallow the period). Returns one plain segment when
+// there's no URL, so callers can fast-path the common line.
+export function linkify(text: string): Array<{text: string; url?: string}> {
+  const out: Array<{text: string; url?: string}> = [];
+  let last = 0;
+  for (const m of text.matchAll(URL_RE)) {
+    const start = m.index ?? 0;
+    let url = m[0];
+    const trail = url.match(/[.,;:!?)\]}>"'»]+$/)?.[0] ?? '';
+    if (trail) url = url.slice(0, url.length - trail.length);
+    if (start > last) out.push({text: text.slice(last, start)});
+    out.push({text: url, url});
+    if (trail) out.push({text: trail});
+    last = start + m[0].length;
+  }
+  if (out.length === 0) return [{text}];
+  if (last < text.length) out.push({text: text.slice(last)});
+  return out;
+}
