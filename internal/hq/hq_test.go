@@ -127,6 +127,26 @@ func TestPlaybookTeachesTheConsumptionWatermark(t *testing.T) {
 	}
 }
 
+// v15 (hq-battery-watch): HQ also monitors POWER/BATTERY, not just disk/memory/CPU +
+// tokens. The playbook must name the field, say a low charge counts only while draining
+// (never on AC), and tell HQ to warn the user to plug in before the fleet dies.
+func TestPlaybookTeachesBatteryWatch(t *testing.T) {
+	pb := hqInstructions
+	for _, want := range []string{
+		"POWER/BATTERY",   // the resource-tool description names it
+		"machine.battery", // the field consumers read
+		"WATCH POWER too", // the dispatch-time instruction
+		"plug in",         // the concrete action on a low, draining battery
+	} {
+		if !strings.Contains(pb, want) {
+			t.Errorf("v15 playbook must teach power/battery watch; missing %q", want)
+		}
+	}
+	if hqPlaybookVersion < 15 {
+		t.Errorf("hqPlaybookVersion = %d, want ≥ 15 (hq-battery-watch)", hqPlaybookVersion)
+	}
+}
+
 // A fresh seed writes a VERSIONED, managed AGENTS.md (the marker + playbook + LOCAL
 // import), the CLAUDE.md import, and a seed-once LOCAL.md; a re-run at the SAME
 // version is idempotent (no rewrite, no backup) — versioned-hq-playbook.

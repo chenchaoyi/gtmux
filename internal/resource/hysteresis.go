@@ -30,6 +30,10 @@ func relaxed(cfg config) config {
 	if out.LoadRed < 0 {
 		out.LoadRed = 0
 	}
+	// Battery is a floor (lower % = worse), so the exit line sits ABOVE the entry line:
+	// enter amber under 20%, clear only once it charges back past 23%.
+	out.BatteryAmberPct += cfg.BatteryHysteresisPct
+	out.BatteryRedPct += cfg.BatteryHysteresisPct
 	return out
 }
 

@@ -10,17 +10,31 @@ disk free and capacity% (via `df` on the WRITABLE data volume — macOS
 `/System/Volumes/Data`, falling back to `/` where that is absent, so capacity%
 reflects real user usage and not the near-empty read-only system volume), memory
 pressure (via `memory_pressure -Q`, mapping its normal/warn/critical to the warn
-tiers), and CPU saturation (loadavg ÷ core count). A source that is unavailable
-SHALL degrade to an empty field without failing the rest. The snapshot SHALL also
-expose an overall severity `tier` (`amber` | `red`; omitted when normal) — the worst
-of the disk/memory/load tiers — so a consumer can distinguish a soft heads-up from a
-genuine bottleneck without re-deriving thresholds.
+tiers), CPU saturation (loadavg ÷ core count), and POWER/BATTERY (via `pmset -g
+batt` on macOS: charge %, on-AC vs draining, state, and time-left; absent on a
+battery-less host). A source that is unavailable SHALL degrade to an empty field
+without failing the rest. The snapshot SHALL also expose an overall severity `tier`
+(`amber` | `red`; omitted when normal) — the worst of the disk/memory/load/battery
+tiers — so a consumer can distinguish a soft heads-up from a genuine bottleneck
+without re-deriving thresholds. A LOW battery charge SHALL count toward the warn/tier
+ONLY while the machine is drawing from the battery (never on AC), so a plugged-in
+laptop is never flagged for its charge level.
 
 #### Scenario: Snapshot reflects the machine
 
 - **WHEN** `gtmux resource` is run
 - **THEN** it reports disk free + capacity% on the writable data volume, the
-  memory-pressure tier, load ÷ cores, and an overall `tier` when not normal
+  memory-pressure tier, load ÷ cores, the battery (charge % · on-AC/draining · time
+  left) when present, and an overall `tier` when not normal
+
+#### Scenario: A draining low battery warns, on AC it does not
+
+- **WHEN** the machine is on battery power and the charge falls below the battery
+  amber/red threshold
+- **THEN** the snapshot's `warn` names the battery and the overall `tier` reflects it
+  (so it rides the existing `resource·warn` nudge to HQ)
+- **AND WHEN** the same low charge is seen while plugged into AC
+- **THEN** the battery contributes nothing to `warn`/`tier`
 
 ### Requirement: Per-agent resource attribution
 

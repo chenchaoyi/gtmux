@@ -45,6 +45,19 @@ type Machine struct {
 	// only "red" is an act-now bottleneck (the mobile HQ disc reddens on "red" alone,
 	// never on a soft "amber" — a 37GB-free amber is not an emergency).
 	Tier string `json:"tier,omitempty"`
+	// Battery is the power/charge snapshot (macOS `pmset`; nil on a desktop / Linux with
+	// no battery). A LOW charge counts toward Warn/Tier only while ON BATTERY — on AC the
+	// level is irrelevant. So HQ (and the surfaces) know to plug in before the fleet dies.
+	Battery *Battery `json:"battery,omitempty"`
+}
+
+// Battery is the machine's power/charge state (macOS `pmset -g batt`).
+type Battery struct {
+	Present  bool   `json:"present"`             // an internal battery exists (false on a desktop)
+	Percent  int    `json:"percent"`             // charge 0–100
+	OnAC     bool   `json:"on_ac"`               // drawing from AC power (charging or topped up)
+	State    string `json:"state,omitempty"`     // charging | discharging | charged | …(pmset's word)
+	TimeLeft string `json:"time_left,omitempty"` // "H:MM" to empty (discharging) / full (charging); "" if none
 }
 
 // AgentUse is one agent's attributed resource use (its pane process tree).
@@ -107,7 +120,31 @@ func evalMachine(m Machine, cfg config) string {
 	case TierAmber:
 		return fmt.Sprintf("load %.1f×cores", m.LoadRatio)
 	}
+	switch batteryTier(m, cfg) {
+	case TierRed:
+		return fmt.Sprintf("battery %d%% (red)", m.Battery.Percent)
+	case TierAmber:
+		return fmt.Sprintf("battery %d%%", m.Battery.Percent)
+	}
 	return ""
+}
+
+// batteryTier reports the battery's severity — but ONLY while on battery power. On AC
+// (charging or topped up) the charge level is not a concern, so it never warns. nil /
+// no battery (a desktop) is always normal.
+func batteryTier(m Machine, cfg config) Tier {
+	b := m.Battery
+	if b == nil || !b.Present || b.OnAC || b.Percent <= 0 {
+		return TierNormal
+	}
+	switch {
+	case b.Percent < cfg.BatteryRedPct:
+		return TierRed
+	case b.Percent < cfg.BatteryAmberPct:
+		return TierAmber
+	default:
+		return TierNormal
+	}
 }
 
 func diskTier(m Machine, cfg config) Tier {
@@ -150,6 +187,9 @@ func (m Machine) WarnTier(cfg config) Tier {
 		t = x
 	}
 	if x := loadTier(m.LoadRatio, cfg); x > t {
+		t = x
+	}
+	if x := batteryTier(m, cfg); x > t {
 		t = x
 	}
 	return t
