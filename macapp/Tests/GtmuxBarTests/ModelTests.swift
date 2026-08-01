@@ -190,6 +190,22 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 0, resourceCritical: false), .normal)
     }
 
+    /// The HQ headline must AGREE with the medallion color: a red `.resource` tier (idle
+    /// HQ, no worker waiting) must NOT read "all normal" — it reddens the row, so the
+    /// sentence has to explain WHY (the resource condition). Pins the fix for the reported
+    /// "red icon + red text next to 'all normal — nothing needs you'" contradiction.
+    func testFleetHeadlineResourceSpeaksInsteadOfAllNormal() {
+        let hq = sup("idle")
+        XCTAssertEqual(AgentStore.fleetHeadline(state: .resource, agents: [hq]), .resource)
+        // A genuinely quiet fleet (no red tier) still reads all-normal.
+        XCTAssertEqual(AgentStore.fleetHeadline(state: .normal, agents: [hq]), .allNormal)
+        // HQ's own call and a waiting worker still take priority and name the situation.
+        XCTAssertEqual(AgentStore.fleetHeadline(state: .hqCall, agents: [hq]), .call)
+        let worker = try! JSONDecoder().decode([Agent].self,
+            from: Data(#"[{"pane_id":"%9","session":"api","status":"waiting"}]"#.utf8))[0]
+        XCTAssertEqual(AgentStore.fleetHeadline(state: .needsYou, agents: [hq, worker]), .worker(name: "api", others: 0))
+    }
+
     /// A soft "amber" resource tier must NOT redden the medallion — only "red" reaches
     /// the resource state (低噪, matching the disc). Also pins the store's tier wiring.
     func testHQStateSoftAmberStaysGreen() {

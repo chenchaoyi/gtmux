@@ -87,6 +87,37 @@ func TestGatherAgentsFixture(t *testing.T) {
 	}
 }
 
+// TestGatherAgents_DedupsSharedWindow pins the fix for the "same pane appears twice" bug:
+// a window shared across sessions (a tmux session group / linked window — the reported
+// "multi-attach" case) makes `list-panes -a` list the SAME pane once PER session, with
+// only session/window differing. GatherAgents must emit ONE row per pane_id, not a
+// duplicate (which showed a worker under both its own session AND a linked "HQ" one).
+func TestGatherAgents_DedupsSharedWindow(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	lines := []string{
+		// %26: the worker's own session first, then the same pane as seen via a linked
+		// "HQ" session — byte-identical except session/window.
+		paneLine("%26", "distill-trigger", "1", "0", "⠋ building the trigger", "claude", 1700000100, 900026, "/tmp/wt"),
+		paneLine("%26", "HQ", "1", "0", "⠋ building the trigger", "claude", 1700000100, 900026, "/tmp/wt"),
+		paneLine("%2", "work", "0", "0", "✳ ready", "claude", 1700000200, 900002, "/tmp/nope"),
+	}
+	var got []Pane
+	withFixture(t, lines, func() { got = GatherAgents() })
+
+	dup := 0
+	for _, p := range got {
+		if p.PaneID == "%26" {
+			dup++
+		}
+	}
+	if dup != 1 {
+		t.Fatalf("shared window %%26 must yield ONE row, got %d copies: %+v", dup, got)
+	}
+	if len(got) != 2 {
+		t.Fatalf("want 2 rows (%%26 deduped + %%2), got %d: %+v", len(got), got)
+	}
+}
+
 // TestGatherDigestFixtureLedgerJoin pins the dispatch-ledger join in GatherDigest over
 // a fixture radar: a pane tracked by a dispatch task surfaces that task's goal + a
 // lifecycle status derived from the pane's radar state; an untracked pane carries none.

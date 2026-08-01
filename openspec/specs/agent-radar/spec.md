@@ -25,6 +25,13 @@ plain shell (a stale title is not a live agent).
   (e.g. a resurrect-restored pane whose agent was never relaunched)
 - **THEN** the pane is NOT reported as an agent
 
+#### Scenario: A window shared across sessions yields one row
+
+- **WHEN** a tmux window is shared across sessions (a session group or linked window),
+  so `list-panes -a` lists the same pane once per session
+- **THEN** the pane is reported as a SINGLE row, deduplicated by `pane_id` — not once
+  per session (which showed the same session twice on every consuming surface)
+
 ### Requirement: Classify agent status
 
 The system SHALL classify each detected agent as `working`, `waiting`, `idle`,

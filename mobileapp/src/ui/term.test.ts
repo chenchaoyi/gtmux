@@ -1,4 +1,4 @@
-import {cursorSpans, linkify, nativeFontFamily, normalizeGlyphs, DOT_REC, DOT_CIRCLE} from './term';
+import {cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -133,5 +133,49 @@ describe('linkify', () => {
 
   it('does not linkify a non-http scheme (file:// stays plain)', () => {
     expect(linkify('file:///Users/x/a.png')).toEqual([{text: 'file:///Users/x/a.png'}]);
+  });
+});
+
+describe('linkSegsForLines', () => {
+  it('makes an OSC 8 hyperlink span (anchor text) tappable via its href', () => {
+    // The reported bug: bare URLs tapped through but anchor-text (OSC 8) links did not,
+    // because the overlay only carried linkify(bare). Now span.href rides the overlay.
+    const lines: AnsiLine[] = [
+      [
+        {text: 'see ', color: '#fff'},
+        {text: 'Wikipedia', color: '#5af', href: 'https://en.wikipedia.org/wiki/Sonder'},
+        {text: ' now', color: '#fff'},
+      ],
+    ];
+    expect(linkSegsForLines(lines)).toEqual([
+      {text: 'see '},
+      {text: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Sonder'},
+      {text: ' now'},
+    ]);
+  });
+
+  it('still tags a bare URL the agent printed as plain text', () => {
+    const lines: AnsiLine[] = [[{text: 'open https://foo.com/x here', color: '#fff'}]];
+    expect(linkSegsForLines(lines)).toEqual([
+      {text: 'open '},
+      {text: 'https://foo.com/x', url: 'https://foo.com/x'},
+      {text: ' here'},
+    ]);
+  });
+
+  it('catches a bare URL split across SGR spans within a line', () => {
+    const lines: AnsiLine[] = [[{text: 'https://foo.com/', color: '#f00'}, {text: 'a-b', color: '#0f0'}]];
+    expect(linkSegsForLines(lines).filter(s => s.url).map(s => s.url)).toEqual(['https://foo.com/a-b']);
+  });
+
+  it('ignores a non-web OSC 8 href (file:// image ref stays plain, not tappable)', () => {
+    const lines: AnsiLine[] = [[{text: 'img', color: '#fff', href: 'file:///a.png'}]];
+    expect(linkSegsForLines(lines)).toEqual([{text: 'img'}]);
+  });
+
+  it('joins lines with newline and preserves the plain text exactly', () => {
+    const lines: AnsiLine[] = [[{text: 'a', color: '#fff'}], [{text: 'b', color: '#fff'}]];
+    const segs = linkSegsForLines(lines);
+    expect(segs.map(s => s.text).join('')).toBe('a\nb');
   });
 });

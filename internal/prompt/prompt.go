@@ -142,17 +142,34 @@ var bootBanners = map[string][]string{
 	},
 }
 
-// hasBootBanner reports whether the capture shows a still-booting banner for the agent
-// (default set + the named agent's own). A booting pane is not yet ready to take a goal.
+// hasBootBanner reports whether the BOTTOM of the capture shows a still-booting banner
+// for the agent (default set + the named agent's own). A booting pane is not yet ready
+// to take a goal.
+//
+// Scope + anchoring both matter. An earlier version did strings.Contains over the WHOLE
+// capture for bare words like "Loading"/"Connecting", so ANY pane whose scrollback or
+// agent output merely MENTIONED those words permanently failed readiness — every
+// `gtmux send` (CLI, --message-file, and the mobile POST /api/send) refused forever and
+// the phone's send bar wedged with no recovery (root-caused 2026-08-01 on a dev pane
+// whose transcript was literally discussing "still connecting / loading"). A boot banner
+// is bottom chrome shown WHERE the composer will be, so we scan only the bottom region
+// (like hasPromptLine), and a one-word spinner signature must ANCHOR the line — the line
+// IS "Connecting…", not prose that happens to contain "connecting". Multi-word
+// signatures ("MCP servers need authentication") are specific enough to match anywhere
+// on a bottom line.
 func hasBootBanner(capture, agent string) bool {
-	for _, sig := range bootBanners[""] {
-		if strings.Contains(capture, sig) {
-			return true
-		}
-	}
+	sigs := bootBanners[""]
 	if agent != "" {
-		for _, sig := range bootBanners[agent] {
-			if strings.Contains(capture, sig) {
+		sigs = append(append([]string(nil), sigs...), bootBanners[agent]...)
+	}
+	for _, raw := range bottomLines(capture, 14) {
+		s := strings.TrimLeft(ansi.Strip(raw), "│╭╰╮╯─ \t")
+		for _, sig := range sigs {
+			if strings.ContainsRune(sig, ' ') {
+				if strings.Contains(s, sig) { // specific multi-word banner
+					return true
+				}
+			} else if strings.HasPrefix(s, sig) { // generic one-word spinner: must start the line
 				return true
 			}
 		}

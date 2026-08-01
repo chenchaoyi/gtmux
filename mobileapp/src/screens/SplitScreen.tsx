@@ -197,13 +197,14 @@ export function SplitScreen({navigation, route}: any) {
   );
 }
 
-function ConnDot({conn, t, pal}: any) {
+function ConnDot({conn, t}: any) {
   const color = conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B';
   const label = conn === 'live' ? '' : conn === 'offline' ? t('offline') : t('reconnecting');
   return (
     <View style={styles.conn}>
       <View style={[styles.connDot, {backgroundColor: color}]} />
-      {label ? <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text> : null}
+      {/* readable state color (amber/red), not pal.fg3 which was nearly invisible */}
+      {label ? <Text style={[styles.connText, {color}]}>{label}</Text> : null}
     </View>
   );
 }

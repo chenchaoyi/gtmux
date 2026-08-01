@@ -269,7 +269,7 @@ export function RadarScreen({navigation}: any) {
   );
 }
 
-function ConnDot({conn, t, pal, lang, awake}: any) {
+function ConnDot({conn, t, lang, awake}: any) {
   // D9: server name (shown in the chip) + a status dot — no "live" word; only an
   // abnormal state adds text (amber reconnecting / red offline / red rejected).
   const isRed = conn === 'offline' || conn === 'unauthorized';
@@ -299,7 +299,10 @@ function ConnDot({conn, t, pal, lang, awake}: any) {
           and even turning it OFF from here would leave a prompt on an unattended
           screen. So the phone SHOWS the state and never touches it. */}
       {awake ? <View style={[styles.connAwake, {borderColor: color}]} /> : null}
-      {label ? <Text style={[styles.connText, {color: pal.fg3}]}>{label}</Text> : null}
+      {/* The word is shown only for an abnormal state (reconnecting/offline/rejected);
+          color it with the STATE color (amber/red, same as the dot) so it is actually
+          READABLE and severity-coded — pal.fg3 (34% opacity) rendered it nearly invisible. */}
+      {label ? <Text style={[styles.connText, {color}]}>{label}</Text> : null}
     </View>
   );
 }

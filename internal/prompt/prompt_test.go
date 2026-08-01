@@ -199,6 +199,19 @@ func TestIsComposerReady(t *testing.T) {
 	if IsComposerReady("2 MCP servers need authentication\n❯ ", "Claude Code") {
 		t.Error("a named agent should still match the default boot-banner set")
 	}
+	// REGRESSION (2026-08-01 send-wedge): a READY composer must NOT be vetoed just
+	// because the transcript/scrollback MENTIONS a boot word. hasBootBanner used to
+	// substring-scan the WHOLE capture for bare words, so a dev pane whose own output
+	// said "still connecting / Loading" refused every send forever (CLI + --message-file
+	// + mobile POST /api/send, the phone bar wedged with no recovery).
+	if !IsComposerReady("user asked why the still connecting / Loading text is so dim\n\n❯ ", "") {
+		t.Error("a boot word MID-PROSE must not veto a ready composer (the send-wedge)")
+	}
+	// The same word far up in scrollback (outside the bottom region) must not veto either.
+	scrolledUp := "Loading assets\n" + strings.Repeat("output line\n", 20) + "❯ "
+	if !IsComposerReady(scrolledUp, "") {
+		t.Error("a boot word up in scrollback must not veto a ready composer")
+	}
 }
 
 // hasBootBanner matches the default set and a named agent's own phrases.
@@ -208,6 +221,19 @@ func TestHasBootBanner(t *testing.T) {
 	}
 	if hasBootBanner("normal idle\n❯ ", "") {
 		t.Error("a clean idle screen has no boot banner")
+	}
+	// A boot word appearing MID-LINE as prose (not the start of a bottom line) is not a
+	// banner — anchoring the one-word signatures is what unwedged everyday `gtmux send`.
+	if hasBootBanner("we were Loading and Connecting earlier, all done now\n❯ ", "") {
+		t.Error("mid-prose boot words must not read as a boot banner")
+	}
+	// But a genuine bottom spinner line still counts.
+	if !hasBootBanner("Connecting to MCP server…\n", "") {
+		t.Error("a real bottom 'Connecting…' line is still a boot banner")
+	}
+	// A boot word up in scrollback (outside the bottom region) is not a banner.
+	if hasBootBanner("Loading models\n"+strings.Repeat("x\n", 20)+"❯ ", "") {
+		t.Error("a boot word up in scrollback must not read as a boot banner")
 	}
 }
 
