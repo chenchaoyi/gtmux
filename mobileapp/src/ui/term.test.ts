@@ -1,4 +1,4 @@
-import {cursorSpans, nativeFontFamily, normalizeGlyphs, DOT_REC, DOT_CIRCLE} from './term';
+import {cursorSpans, linkify, nativeFontFamily, normalizeGlyphs, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -99,5 +99,39 @@ describe('cursorSpans', () => {
     expect(txt(out)).toBe('redgrn');
     const cell = out.find(s => s.bg === CUR);
     expect(cell!.text).toBe('g');
+  });
+});
+
+describe('linkify', () => {
+  it('leaves URL-free text as one plain segment', () => {
+    expect(linkify('just some output')).toEqual([{text: 'just some output'}]);
+    expect(linkify('')).toEqual([{text: ''}]);
+  });
+
+  it('detects a bare https URL incl. hyphens, keeping surrounding text', () => {
+    const url = 'https://claude.ai/code/artifact/7528ce32-2fa8-4064-a4c0-e6f7680d6831';
+    expect(linkify(`see ${url} now`)).toEqual([{text: 'see '}, {text: url, url}, {text: ' now'}]);
+  });
+
+  it('keeps trailing sentence punctuation OUT of the link', () => {
+    expect(linkify('open https://foo.com/x.')).toEqual([
+      {text: 'open '},
+      {text: 'https://foo.com/x', url: 'https://foo.com/x'},
+      {text: '.'},
+    ]);
+    expect(linkify('(https://foo.com)')).toEqual([
+      {text: '('},
+      {text: 'https://foo.com', url: 'https://foo.com'},
+      {text: ')'},
+    ]);
+  });
+
+  it('handles multiple URLs and http as well as https', () => {
+    const out = linkify('a http://x.io b https://y.io c');
+    expect(out.filter(s => s.url).map(s => s.url)).toEqual(['http://x.io', 'https://y.io']);
+  });
+
+  it('does not linkify a non-http scheme (file:// stays plain)', () => {
+    expect(linkify('file:///Users/x/a.png')).toEqual([{text: 'file:///Users/x/a.png'}]);
   });
 });

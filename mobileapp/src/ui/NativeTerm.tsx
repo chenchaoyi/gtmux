@@ -25,7 +25,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Linking, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {JumpToBottom} from './JumpToBottom';
 import {parseAnsi} from './ansi';
-import {cursorSpans, nativeFontFamily, normalizeGlyphs} from './term';
+import {cursorSpans, linkify, nativeFontFamily, normalizeGlyphs} from './term';
 import {TermTheme} from '../api/types';
 
 interface PaneCursor {
@@ -190,21 +190,44 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
       {rendered.map((spans, i) => (
         <Text key={i}>
           {spans.map((s, j) => {
-            // An OSC 8 hyperlink (tiered/terminal-hyperlink): a web link is underlined
-            // + tappable (opens in the browser); a non-web href (e.g. file:// image
-            // refs from the Mac) shows as clean text — it isn't openable on the phone.
-            const web = !!s.href && /^https?:\/\//i.test(s.href);
+            const base = {
+              color: s.color,
+              backgroundColor: s.bg,
+              fontWeight: (s.bold ? '700' : '400') as '700' | '400',
+            };
+            // An OSC 8 hyperlink (tiered/terminal-hyperlink): the WHOLE span is one
+            // agent-declared link — underlined + tappable (opens in the browser). A
+            // non-web href (e.g. file:// image refs from the Mac) shows as clean text.
+            const oscWeb = !!s.href && /^https?:\/\//i.test(s.href);
+            if (oscWeb) {
+              return (
+                <Text key={j} onPress={() => Linking.openURL(s.href!)} style={{...base, textDecorationLine: 'underline'}}>
+                  {s.text}
+                </Text>
+              );
+            }
+            // Otherwise auto-detect BARE http(s) URLs the agent merely printed as text
+            // and make each one tappable (open in the system browser), same as an OSC 8
+            // link. The common no-URL line renders as a single <Text> (fast path).
+            const segs = linkify(s.text);
+            if (segs.length === 1 && !segs[0].url) {
+              return (
+                <Text key={j} style={base}>
+                  {s.text}
+                </Text>
+              );
+            }
             return (
-              <Text
-                key={j}
-                onPress={web ? () => Linking.openURL(s.href!) : undefined}
-                style={{
-                  color: s.color,
-                  backgroundColor: s.bg,
-                  fontWeight: s.bold ? '700' : '400',
-                  textDecorationLine: web ? 'underline' : 'none',
-                }}>
-                {s.text}
+              <Text key={j} style={base}>
+                {segs.map((seg, k) =>
+                  seg.url ? (
+                    <Text key={k} onPress={() => Linking.openURL(seg.url!)} style={styles.link}>
+                      {seg.text}
+                    </Text>
+                  ) : (
+                    <Text key={k}>{seg.text}</Text>
+                  ),
+                )}
               </Text>
             );
           })}
@@ -251,6 +274,9 @@ const styles = StyleSheet.create({
   fill: {flex: 1},
   pad: {padding: 6},
   mono: {fontFamily: MONO},
+  // Auto-detected URL: inherits the span's terminal color/weight, adds the underline
+  // that marks it tappable (mirrors the OSC 8 hyperlink treatment).
+  link: {textDecorationLine: 'underline'},
   // color layer (bottom) defines the height; the transparent selectable layer is
   // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
   layerWrap: {position: 'relative', overflow: 'visible'},
