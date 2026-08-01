@@ -575,13 +575,13 @@ export function DetailView({
           <View style={styles.loadingOverlay}>
             <BrandLoader
               size={40}
-              neutral={pal.fg3}
+              neutral={pal.fg2}
               label={
                 slow
                   ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
                   : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'
               }
-              labelColor={pal.fg3}
+              labelColor={pal.fg2}
             />
           </View>
         )}
@@ -591,7 +591,7 @@ export function DetailView({
           switches are an instant opacity toggle), so it covers just that. */}
       {switching && (
         <View style={[styles.loadingOverlay, {backgroundColor: pal.bg, zIndex: 5}]} pointerEvents="none">
-          <BrandLoader size={40} neutral={pal.fg3} />
+          <BrandLoader size={40} neutral={pal.fg2} />
         </View>
       )}
       {/* full-screen exit pill — at body level so it floats over EITHER mode (the
