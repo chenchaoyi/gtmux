@@ -581,7 +581,7 @@ export function DetailView({
                   ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
                   : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'
               }
-              labelColor={pal.fg2}
+              labelColor={pal.fg}
             />
           </View>
         )}
