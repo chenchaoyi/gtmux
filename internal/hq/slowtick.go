@@ -81,6 +81,11 @@ func SlowTickEval() {
 	// outcome-level changes accumulated (the zero-change gate — a quiet interval
 	// injects nothing and costs no tokens).
 	hqSummaryTick(time.Now().Unix())
+	// Completeness net (hq-watermark-wakes): knock when the stream has moved past HQ's
+	// consumption watermark and stayed there. Deliberately LAST of the wake-raising
+	// sensors — everything above has already had its chance to knock about the specific
+	// events it recognizes, so this only ever speaks about what none of them claimed.
+	unreadSensor(time.Now().Unix())
 	// Disk hygiene (resource-watch): cap the never-rotated launchd logs + prune the
 	// uploads sink so gtmux can't fill the disk with its own output. Time-gated to
 	// ≤ 1/30 min; silent housekeeping (no HQ nudge).

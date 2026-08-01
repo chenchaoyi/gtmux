@@ -3,7 +3,11 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 )
 
 // TestRenderSectionsTally checks the ok/recommended/blocking tally across status
@@ -168,5 +172,41 @@ func writeMarker(t *testing.T, home, name, body string) {
 	}
 	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// The consumption row is the observability half of the wake watermark: perception is
+// silent in BOTH directions, so an HQ that stopped consuming looks exactly like a fleet
+// where nothing happened. Before this row the only detector was the commander noticing
+// that a finished job went unremarked.
+func TestHQConsumptionCheck(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	const now = 10_000_000
+
+	if got := hqConsumptionCheck(now); got.status != stInfo {
+		t.Errorf("no watermark yet: status %d, want a neutral note", got.status)
+	}
+
+	// Caught up → ✓.
+	hqwake.Consume(0)
+	if got := hqConsumptionCheck(now); got.status != stOK {
+		t.Errorf("caught up: status %d, want stOK", got.status)
+	}
+
+	// Behind, and standing far too long → ⚠, naming both the count and the age.
+	for i := 0; i < 3; i++ {
+		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%16"})
+	}
+	if err := os.WriteFile(filepath.Join(home, ".local", "share", "gtmux", "hqwake", "unread-state"),
+		[]byte("0 9996400 0"), 0o644); err != nil { // standing an hour
+		t.Fatal(err)
+	}
+	got := hqConsumptionCheck(now)
+	if got.status != stRec {
+		t.Errorf("an hour behind: status %d, want stRec", got.status)
+	}
+	if !strings.Contains(got.value, "3") {
+		t.Errorf("value %q should report how far behind HQ is", got.value)
 	}
 }

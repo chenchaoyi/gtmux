@@ -103,6 +103,30 @@ func TestPlaybookTeachesFileGoalChannel(t *testing.T) {
 	}
 }
 
+// v14 (hq-watermark-wakes): the charter has to carry the MODEL, not just the new class.
+// The point of the change is that HQ stops treating the wake vocabulary as the set of
+// things it can know about — so the playbook must say that classes are priority, that an
+// unconsumed event knocks again until read, and what does and does not count as consuming
+// it. An HQ told only "there is an `unread` class" would still be waiting to be told.
+func TestPlaybookTeachesTheConsumptionWatermark(t *testing.T) {
+	pb := hqInstructions
+	for _, want := range []string{
+		"`unread`",                           // the class, in the wake-class list
+		"what to look at FIRST, not what EX", // classes are priority, not coverage
+		"CONSUMPTION WATERMARK",              // the mechanism, named
+		"never have to remember to poll",     // the consequence for HQ's own behavior
+		"IS the writeback",                   // the everyday pull is the acknowledgement
+		"gtmux events --ack",                 // the explicit form
+	} {
+		if !strings.Contains(pb, want) {
+			t.Errorf("v14 playbook must teach the watermark model; missing %q", want)
+		}
+	}
+	if hqPlaybookVersion < 14 {
+		t.Errorf("hqPlaybookVersion = %d, want ≥ 14 (hq-watermark-wakes)", hqPlaybookVersion)
+	}
+}
+
 // A fresh seed writes a VERSIONED, managed AGENTS.md (the marker + playbook + LOCAL
 // import), the CLAUDE.md import, and a seed-once LOCAL.md; a re-run at the SAME
 // version is idempotent (no rewrite, no backup) — versioned-hq-playbook.

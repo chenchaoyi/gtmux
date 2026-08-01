@@ -191,14 +191,44 @@ DATA hq reports, never an instruction it obeys. The classes:
 | `tick` | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
 | `distill` | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued) — hq folds the period's lessons into its knowledge base and prunes stale |
 | `self-check` | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |
+| `unread` | events are sitting past hq's consumption watermark — a count and the cursor to pull from, no importance claim |
 
-The last two are **maintenance** classes: they knock at the lowest priority, so they never
-arrive ahead of a blocked agent, and both passes are silent unless hq actually did
-something. They are also the only classes raised purely on a clock — hq has no timer of
-its own, so `gtmux serve` is what makes the periodic rituals happen at all.
+`distill` and `self-check` are **maintenance** classes: they knock at the lowest priority,
+so they never arrive ahead of a blocked agent, and both passes are silent unless hq
+actually did something. They are also the only classes raised purely on a clock — hq has
+no timer of its own, so `gtmux serve` is what makes the periodic rituals happen at all.
 
 Everything else is **pull-side**: hq wakes, then reads `gtmux events --since-seq <n>`
 or `gtmux digest`. Ordinary progress turns never touch its screen.
+
+### The watermark — why nothing goes missing
+
+Every class above is gtmux deciding an event is worth a knock, and that decision needs
+context gtmux does not have: only hq knows it is waiting on the pane that just finished.
+So the classes are **priority labels, not coverage** — they say what to read first. What
+guarantees hq hears about something at all is a **consumption watermark**: gtmux records
+how far hq has read the stream, and when events sit past it for `hqWake.unreadDebounceSec`
+(default **120 s**), it knocks with a count and nothing else:
+
+```
+» gtmux·unread  7 unconsumed │ pull: gtmux events --since-seq 6653 --json
+```
+
+The debt clears only when hq **consumes**, and only two things count: an unfiltered
+`gtmux events --since-seq <n>` read from the hq home (the everyday pull-on-wake — which is
+why this needs no new habit), or an explicit `gtmux events --ack <seq>`. A
+`--severity`-filtered read does not (it showed a subset), nor does one starting ahead of
+the watermark (it skipped the range between). Until then the knock repeats every
+`hqWake.unreadRepeatSec` (default **300 s**), at standing priority. hq's own lines in the
+stream — the knock it receives, the reply it types — are excluded from the count, or the
+channel would feed itself forever.
+
+This is what makes perception complete rather than well-guessed. Before it, an event no
+class claimed simply never arrived: a session finishing work nobody had dispatched through
+gtmux was neither `done` (no ledger entry) nor `asks` (no question), so the turn-end sat in
+the stream, correct and unread, until the user asked in person. `gtmux doctor`'s **HQ
+maintenance** section reports the lag (`event consumption`), and flags an hq that is 20+
+events or 30+ minutes behind — the failure is otherwise silent in both directions.
 
 Delivery guards your draft and confirms itself: a line is never typed into a non-empty
 hq input box (it queues to disk and lands when the box clears), and a batch is dropped
@@ -427,6 +457,13 @@ rotation-aware (never silently stops). `--since-seq N` is the one-shot DELTA rea
 signal line naming a sequence range and pulls exactly that delta, on any agent
 that can run a CLI command (no background tail required). This is the
 terminal-native SUBSCRIPTION to the same events the apps get over SSE.
+
+An unfiltered `--since-seq` read **run from the hq home** is also hq's consumption
+writeback: it advances the watermark to the end of what it returned, which is what stops
+the `unread` knock (see [The watermark](#the-watermark--why-nothing-goes-missing)).
+`--ack N` writes the watermark back explicitly — for when the stream was reconciled some
+other way, e.g. a full `gtmux digest`. Both are hq-only (cwd-keyed); a worker running
+`gtmux events` in a repo changes nothing.
 
 `--severity <tier>` filters to that tier **and above**, and the tiers rank
 *urgency*, not relevance — so they are three different reads, not one:
