@@ -34,6 +34,16 @@ over one Go core (gtmux-core is the single data source):
   tick (10 min / burst 5, zero-change gate = zero cost) delivers the periodic brief;
   playbook v2 teaches enrollment (建联, goal-aware dossiers) and works on any agent
   (no background tail). `gtmux hq` also MIGRATES legacy CLAUDE.md-only homes now.
+  **Those classes are PRIORITY, not coverage** (change `hq-watermark-wakes`,
+  `internal/hqwake/watermark.go` + `internal/hq/unread.go`): deciding *which* events
+  deserve a knock needs context only HQ has, so gtmux stopped deciding. It tracks HQ's
+  CONSUMPTION WATERMARK and knocks `unread` (count + pull cursor, NO severity claim) for
+  anything past it — 120s debounce, 300s repeat, PriorityStanding — so an event no class
+  claims can no longer vanish (a `gtmux send`-driven session's turn-end did exactly that
+  on 2026-08-01). **Only HQ consuming advances the watermark**: an UNFILTERED
+  `events --since-seq` from the HQ home, or `gtmux events --ack <seq>`; a filtered or
+  skip-ahead read does not. HQ's own pane records are excluded from the count (else the
+  knock feeds itself). `gtmux doctor`'s `event consumption` row flags a lagging HQ.
   **Wake DELIVERY is acked** (change `hq-wake-reliability`, `internal/hqnudge`): paste
   + Enter as separate steps, and a claim (`.txt` → `.sending` rename) is deleted ONLY
   on confirmation. The ack is three layers (agent-drivers P2): the DRIVER RECEIPT
