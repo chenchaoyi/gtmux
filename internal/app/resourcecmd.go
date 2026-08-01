@@ -40,10 +40,23 @@ func cmdResource(args []string) int {
 	if m.Warn != "" {
 		warn = "   ⚠ " + m.Warn
 	}
-	fmt.Printf("%s %dGB free · %s %d%% free (%s) · %s %.2f×%d cores%s\n",
+	batt := ""
+	if b := m.Battery; b != nil && b.Present {
+		var st string
+		switch {
+		case b.OnAC:
+			st = i18n.Tr("AC", "电源")
+		case b.TimeLeft != "":
+			st = i18n.Tr("battery", "电池") + " " + b.TimeLeft
+		default:
+			st = i18n.Tr("battery", "电池")
+		}
+		batt = fmt.Sprintf(" · %s %d%% (%s)", i18n.Tr("power", "电量"), b.Percent, st)
+	}
+	fmt.Printf("%s %dGB free · %s %d%% free (%s) · %s %.2f×%d cores%s%s\n",
 		i18n.Tr("disk", "磁盘"), m.DiskFreeGB,
 		i18n.Tr("mem", "内存"), m.MemFreePct, memTierLabel(m.MemTier),
-		i18n.Tr("load", "负载"), m.LoadRatio, m.NCPU, warn)
+		i18n.Tr("load", "负载"), m.LoadRatio, m.NCPU, batt, warn)
 	if len(rep.Agents) > 0 {
 		fmt.Println(i18n.Tr("per-agent (RSS · CPU):", "按 agent（RSS · CPU）："))
 		for pane, u := range rep.Agents {

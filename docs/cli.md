@@ -491,7 +491,7 @@ cadence (shown only on a machine that has an hq home).
 ## `gtmux resource` — local machine resource watch
 
 ```
-disk 40GB free · mem 38% free (warn) · load 0.64×14 cores   ⚠ disk 40GB free
+disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk 40GB free
 per-agent (RSS · CPU):
   %26    252MB · 9.2%
 reclaim candidates (orphans no live agent owns):
@@ -500,13 +500,15 @@ reclaim candidates (orphans no live agent owns):
 ```
 
 Disk (`df`), memory (`memory_pressure -Q` free % + the kernel `kern.memorystatus_vm_pressure_level`
-normal/warn/critical tier), CPU (loadavg÷cores). **Per-agent RSS/CPU** by walking
-each pane's process tree (isomorphic to token accounting), and **reclaim
+normal/warn/critical tier), CPU (loadavg÷cores), and **power/battery** (`pmset -g batt`:
+charge % · on-AC vs draining · time left; absent on a battery-less host — a LOW charge
+counts toward the warn/tier ONLY while draining, never on AC). **Per-agent RSS/CPU** by
+walking each pane's process tree (isomorphic to token accounting), and **reclaim
 candidates** — heavy processes no live pane owns, named with pid + how to reclaim
 (a leftover iOS Simulator runtime aggregates into one entry; dev servers/tmux
 strays surface individually). Thresholds in `~/.config/gtmux/config.json`'s
 `resource` object (diskAmberGB 50 / diskRedGB 15 / loadAmber 1.0 / loadRed 1.5 /
-orphanRssMB 300). A resource block rides `GET /api/usage`; the serve tick emits a
+orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10). A resource block rides `GET /api/usage`; the serve tick emits a
 `resource·warn` nudge to HQ (single-writer — one per crossing); `gtmux hq`/`new`
 warn at a red line before adding load.
 
@@ -517,6 +519,7 @@ re-alert (the readout stays raw — `gtmux resource` always reports what it meas
 |---|---|---|
 | `diskHysteresisGB` | 2 | GB of headroom above the entry line before a disk tier clears (red at <15 GB clears at ≥17) |
 | `loadHysteresis` | 0.15 | load÷cores below the entry line before a load tier clears (amber at ≥1.0 clears below 0.85) |
+| `batteryHysteresisPct` | 3 | % of charge above the entry line before a battery tier clears (amber at <20% clears at ≥23%) |
 | `confirmSamples` | 3 | consecutive agreeing samples before a tier change is believed |
 | `minRestateMinutes` | 30 | quiet period before the same tier warns again — an escalation to a worse tier is exempt and always warns |
 

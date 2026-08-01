@@ -5,11 +5,19 @@
 // Detail (view + type), exactly like an agent. No agent status is invented for a
 // plain pane — it's a first-class pane, not an "unknown agent".
 //
+// Structure (redesign): each SESSION is a COLLAPSIBLE card whose header carries a
+// status ROLLUP (waiting/working/idle pips, joined from the live radar), so you sense
+// the whole fleet's shape at a glance — fold everything and 10 sessions fit one screen.
+// Window is shown as the compact `w·p` loc chip on each row (NOT a full-width "WIN N"
+// label row, which duplicated it and doubled every pane's height).
+//
 // Data: GET /api/panes (client.panes()), the superset of the radar. A guest sees
 // only the panes shared with them (the server scopes /api/panes to the guest's
-// allowlist), so this never leaks the host's full session list.
+// allowlist), so this never leaks the host's full session list. Per-pane STATUS is
+// not in /api/panes, so agent-tier rows are joined to the live radar agents (by
+// pane_id) for their real waiting/working/idle state.
 
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   SectionList,
   StyleSheet,
@@ -20,12 +28,16 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
-import {PaneRow, paneRowToAgent} from '../api/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Agent, PaneRow, StatusName, paneRowToAgent} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {AgentAvatar} from '../ui/AgentAvatar';
+import {StatusBadge} from '../ui/StatusBadge';
 import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
+
+const COLLAPSED_KEY = 'panes.collapsed';
 
 // Basename of a cwd path — the folder you'd recognize, without the long prefix.
 function base(p?: string): string {
@@ -35,7 +47,7 @@ function base(p?: string): string {
   return i >= 0 ? t.slice(i + 1) : t;
 }
 
-// window.pane tail from "session:win.pane" (the loc), for the mono position chip.
+// window·pane tail from "session:win.pane" (the loc), for the mono position chip.
 function wp(row: PaneRow): string {
   const i = row.loc.lastIndexOf(':');
   return i >= 0 ? row.loc.slice(i + 1) : row.loc;
@@ -51,19 +63,61 @@ function plainLabel(title: string | undefined, command: string): string {
   return t;
 }
 
-interface Section {
+interface Roll {
+  waiting: number;
+  working: number;
+  idle: number;
+}
+interface Group {
   title: string; // session name
   agentCount: number;
-  data: PaneRow[];
+  roll: Roll;
+  all: PaneRow[];
+}
+interface Section extends Group {
+  data: PaneRow[]; // [] when the session is collapsed → only the header renders
+}
+
+// statusOf returns an agent-tier pane's REAL status from the live radar join, or
+// undefined for a plain pane / an agent not currently on the radar.
+function statusOf(row: PaneRow, byPane: Map<string, Agent>): StatusName | undefined {
+  if (row.tier !== 'agent') return undefined;
+  return byPane.get(row.pane_id)?.status;
 }
 
 export function PaneBrowserScreen({navigation}: any) {
-  const {client, isGuest} = useAgents();
+  const {client, isGuest, agents} = useAgents();
   const {pal, lang, mac} = useApp();
   const [panes, setPanes] = useState<PaneRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [q, setQ] = useState('');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  // Collapsed sessions persist across launches (mirrors the radar, MOBILE §3).
+  useEffect(() => {
+    AsyncStorage.getItem(COLLAPSED_KEY).then(raw => {
+      if (!raw) return;
+      try {
+        setCollapsed(new Set(JSON.parse(raw) as string[]));
+      } catch {
+        // ignore a corrupt value — start expanded
+      }
+    });
+  }, []);
+  const persist = (next: Set<string>) => {
+    setCollapsed(next);
+    AsyncStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next]));
+  };
+  const toggle = (name: string) => {
+    const next = new Set(collapsed);
+    if (next.has(name)) {
+      next.delete(name);
+    } else {
+      next.add(name);
+    }
+    persist(next);
+  };
 
   const load = useCallback(() => {
     client
@@ -91,9 +145,16 @@ export function PaneBrowserScreen({navigation}: any) {
     setTimeout(() => setRefreshing(false), 500);
   };
 
-  // Filter across the fields you'd search by (session / window / command / title /
-  // cwd / agent), then group session → (first-seen order), preserving pane order.
-  const sections: Section[] = useMemo(() => {
+  // pane_id → live radar agent, so an agent-tier row shows its REAL status.
+  const byPane = useMemo(() => {
+    const m = new Map<string, Agent>();
+    for (const a of agents) m.set(a.pane_id, a);
+    return m;
+  }, [agents]);
+
+  // Group session → panes (first-seen order, stable so the layout is learnable),
+  // filtered by the query, with a per-session status rollup. Independent of collapse.
+  const groups: Group[] = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const match = (r: PaneRow) =>
       !needle ||
@@ -110,17 +171,35 @@ export function PaneBrowserScreen({navigation}: any) {
       byS.get(r.session)!.push(r);
     }
     return order.map(s => {
-      const data = byS.get(s)!;
-      return {title: s, data, agentCount: data.filter(r => r.tier === 'agent').length};
+      const all = byS.get(s)!;
+      const roll: Roll = {waiting: 0, working: 0, idle: 0};
+      let agentCount = 0;
+      for (const r of all) {
+        if (r.tier !== 'agent') continue;
+        agentCount++;
+        const st = statusOf(r, byPane);
+        if (st === 'waiting') roll.waiting++;
+        else if (st === 'working') roll.working++;
+        else if (st === 'idle') roll.idle++;
+      }
+      return {title: s, all, agentCount, roll};
     });
-  }, [panes, q]);
+  }, [panes, q, byPane]);
+
+  const sections: Section[] = useMemo(
+    () => groups.map(g => ({...g, data: collapsed.has(g.title) ? [] : g.all})),
+    [groups, collapsed],
+  );
 
   const total = panes.length;
-  const shown = sections.reduce((n, s) => n + s.data.length, 0);
+  const shown = groups.reduce((n, g) => n + g.all.length, 0);
+  const needsYou = groups.reduce((n, g) => n + g.roll.waiting, 0);
+  const allCollapsed = groups.length > 0 && groups.every(g => collapsed.has(g.title));
+  const toggleAll = () => persist(allCollapsed ? new Set() : new Set(groups.map(g => g.title)));
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.panes.screen}>
-      {/* header: back · title · count */}
+      {/* header: back · title · count · collapse-all */}
       <View style={[styles.header, {borderBottomColor: pal.divider}]}>
         <TouchableOpacity
           testID={TestIds.panes.back}
@@ -137,9 +216,23 @@ export function PaneBrowserScreen({navigation}: any) {
           <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
             {(q ? `${shown}/${total}` : `${total}`) +
               ' ' +
-              (lang === 'zh' ? `个 pane · ${sections.length} 个会话` : `pane${total === 1 ? '' : 's'} · ${sections.length} session${sections.length === 1 ? '' : 's'}`)}
+              (lang === 'zh'
+                ? `个 pane · ${groups.length} 个会话`
+                : `pane${total === 1 ? '' : 's'} · ${groups.length} session${groups.length === 1 ? '' : 's'}`)}
+            {needsYou > 0 && (
+              <Text style={{color: StatusColor.waiting}}>
+                {lang === 'zh' ? ` · ${needsYou} 个等你` : ` · ${needsYou} need you`}
+              </Text>
+            )}
           </Text>
         </View>
+        {groups.length > 1 && (
+          <TouchableOpacity onPress={toggleAll} hitSlop={hit} style={styles.foldAll}>
+            <Text style={[styles.foldAllText, {color: pal.fg3}]}>
+              {allCollapsed ? (lang === 'zh' ? '展开' : 'Expand') : (lang === 'zh' ? '折叠' : 'Fold')}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* search */}
@@ -167,39 +260,31 @@ export function PaneBrowserScreen({navigation}: any) {
         onRefresh={onRefresh}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={sections.length === 0 ? styles.emptyPad : styles.listPad}
-        renderSectionHeader={({section}) => (
-          <View style={[styles.sectionHeader, {backgroundColor: pal.bg, borderBottomColor: pal.divider}]}>
-            <Text style={[styles.sessionName, {color: pal.fg2}]} numberOfLines={1}>
-              {section.title}
-            </Text>
-            <Text style={[styles.sessionMeta, {color: pal.fg3}]}>
-              {(section as Section).agentCount > 0
-                ? `${(section as Section).data.length} · ${(section as Section).agentCount} ${lang === 'zh' ? 'agent' : 'agent'}`
-                : `${(section as Section).data.length}`}
-            </Text>
-          </View>
-        )}
-        renderItem={({item, index, section}) => {
-          // A thin window sub-label when the window changes within a session — so
-          // multi-window sessions read as a tree, not a flat pile.
-          const prev = (section as Section).data[index - 1];
-          const newWindow = !prev || prev.window !== item.window;
+        renderSectionHeader={({section}) => {
+          const s = section as Section;
+          const isCollapsed = collapsed.has(s.title);
           return (
-            <>
-              {newWindow && (
-                <Text style={[styles.windowLabel, {color: pal.fg3}]} numberOfLines={1}>
-                  {(lang === 'zh' ? '窗口 ' : 'win ') + item.window}
-                </Text>
-              )}
-              <PaneRowView
-                row={item}
-                pal={pal}
-                lang={lang}
-                onPress={() => navigation.navigate('Detail', {agent: paneRowToAgent(item)})}
-              />
-            </>
+            <TouchableOpacity
+              activeOpacity={0.65}
+              onPress={() => toggle(s.title)}
+              accessibilityLabel={`${TestIds.panes.section}-${s.title}`}
+              style={[styles.sectionHeader, {backgroundColor: pal.bg, borderBottomColor: pal.divider}]}>
+              <Text style={[styles.chev, {color: pal.fg3}]}>{isCollapsed ? '▸' : '▾'}</Text>
+              <Text style={[styles.sessionName, {color: pal.fg}]} numberOfLines={1}>
+                {s.title}
+              </Text>
+              <SessionRollup group={s} pal={pal} lang={lang} />
+            </TouchableOpacity>
           );
         }}
+        renderItem={({item}) => (
+          <PaneRowView
+            row={item}
+            status={statusOf(item, byPane)}
+            pal={pal}
+            onPress={() => navigation.navigate('Detail', {agent: paneRowToAgent(item)})}
+          />
+        )}
         ListEmptyComponent={
           loaded ? (
             <View style={styles.empty}>
@@ -225,22 +310,49 @@ export function PaneBrowserScreen({navigation}: any) {
   );
 }
 
+// SessionRollup — the panoramic signal on a session header: pane · agent count, then a
+// per-status pip (badge + count) for each non-zero agent state. Waiting is red, so a
+// session that needs you stands out even collapsed.
+function SessionRollup({group, pal, lang}: {group: Group; pal: any; lang: string}) {
+  const {all, agentCount, roll} = group;
+  const pips: Array<{status: StatusName; n: number}> = [];
+  if (roll.waiting) pips.push({status: 'waiting', n: roll.waiting});
+  if (roll.working) pips.push({status: 'working', n: roll.working});
+  if (roll.idle) pips.push({status: 'idle', n: roll.idle});
+  return (
+    <View style={styles.rollWrap}>
+      <Text style={[styles.rollCount, {color: pal.fg3}]}>
+        {agentCount > 0
+          ? `${all.length} · ${agentCount} ${lang === 'zh' ? '个 agent' : agentCount === 1 ? 'agent' : 'agents'}`
+          : `${all.length}`}
+      </Text>
+      {pips.map(p => (
+        <View key={p.status} style={styles.pip}>
+          <StatusBadge status={p.status} size={11} />
+          <Text style={[styles.pipCount, {color: StatusColor[p.status]}]}>{p.n}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function PaneRowView({
   row,
+  status,
   pal,
-  lang,
   onPress,
 }: {
   row: PaneRow;
+  status?: StatusName;
   pal: any;
-  lang: string;
   onPress: () => void;
 }) {
   const isAgent = row.tier === 'agent';
   const label = isAgent ? row.agent || row.command : plainLabel(row.title, row.command);
   const dir = base(row.cwd);
-  // sub line: window.pane position · dir · (command, when it isn't already the label)
-  const bits = [wp(row)];
+  // sub line: dir · (command, when it isn't already the label). The window·pane is a
+  // separate mono chip at the front so the tree position reads at a glance.
+  const bits: string[] = [];
   if (dir) bits.push(dir);
   if (row.command && row.command !== label) bits.push(row.command);
   return (
@@ -263,18 +375,19 @@ function PaneRowView({
           <Text style={[styles.rowLabel, {color: pal.fg}]} numberOfLines={1}>
             {label}
           </Text>
-          {isAgent && (
-            <View style={[styles.agentTag, {borderColor: StatusColor.working}]}>
-              <Text style={[styles.agentTagText, {color: StatusColor.working}]}>
-                {lang === 'zh' ? '在雷达' : 'on radar'}
-              </Text>
-            </View>
-          )}
-          {row.active && <View style={[styles.activeDot, {backgroundColor: StatusColor.idle}]} />}
+          {/* an agent's REAL status (from the radar join); a plain pane shows nothing
+              here — its avatar monogram already says "plain pane". */}
+          {isAgent && status && <StatusBadge status={status} size={13} />}
+          {!isAgent && row.active && <View style={[styles.activeDot, {backgroundColor: StatusColor.idle}]} />}
         </View>
-        <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
-          {bits.join('  ·  ')}
-        </Text>
+        <View style={styles.rowSubRow}>
+          <Text style={[styles.wpChip, {color: pal.fg2, backgroundColor: pal.surface}]}>{wp(row)}</Text>
+          {bits.length > 0 && (
+            <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
+              {bits.join('  ·  ')}
+            </Text>
+          )}
+        </View>
       </View>
       <Text style={[styles.chevron, {color: pal.fg3}]}>›</Text>
     </TouchableOpacity>
@@ -291,23 +404,30 @@ const styles = StyleSheet.create({
   titleWrap: {flex: 1, marginLeft: 2},
   title: {fontSize: 18, fontWeight: '800'},
   sub: {fontSize: 11.5, marginTop: 1},
+  foldAll: {paddingHorizontal: 10, paddingVertical: 6},
+  foldAllText: {fontSize: 12, fontWeight: '600'},
   searchWrap: {flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginTop: 8, marginBottom: 4, paddingHorizontal: 10, height: 36, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth},
   searchGlyph: {fontSize: 16, marginRight: 6},
   search: {flex: 1, fontSize: 14, padding: 0},
   listPad: {paddingBottom: 40},
   emptyPad: {flexGrow: 1},
-  sectionHeader: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 12, paddingBottom: 5, borderBottomWidth: StyleSheet.hairlineWidth},
-  sessionName: {fontSize: 12.5, fontWeight: '700', flexShrink: 1, marginRight: 8},
-  sessionMeta: {fontSize: 11, fontWeight: '600'},
-  windowLabel: {fontSize: 10, fontWeight: '600', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 2, textTransform: 'uppercase', letterSpacing: 0.4},
+  // session card header — a strong container: the name in full fg weight, a fold
+  // chevron, and the status rollup right-aligned.
+  sectionHeader: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 13, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
+  chev: {fontSize: 11, width: 16},
+  sessionName: {fontSize: 15, fontWeight: '800', flexShrink: 1, marginRight: 8},
+  rollWrap: {flexDirection: 'row', alignItems: 'center', marginLeft: 'auto'},
+  rollCount: {fontSize: 11, fontWeight: '600'},
+  pip: {flexDirection: 'row', alignItems: 'center', marginLeft: 7},
+  pipCount: {fontSize: 11, fontWeight: '700', marginLeft: 3},
   row: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth},
   rowMain: {flex: 1, marginLeft: 11},
   rowTop: {flexDirection: 'row', alignItems: 'center'},
-  rowLabel: {fontSize: 14, fontWeight: '600', flexShrink: 1},
-  agentTag: {marginLeft: 7, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5, borderWidth: StyleSheet.hairlineWidth},
-  agentTagText: {fontSize: 8.5, fontWeight: '700'},
-  activeDot: {width: 6, height: 6, borderRadius: 3, marginLeft: 7},
-  rowSub: {fontSize: 11.5, marginTop: 2},
+  rowLabel: {fontSize: 14, fontWeight: '600', flexShrink: 1, marginRight: 7},
+  activeDot: {width: 6, height: 6, borderRadius: 3},
+  rowSubRow: {flexDirection: 'row', alignItems: 'center', marginTop: 3},
+  wpChip: {fontSize: 10.5, fontWeight: '600', fontFamily: 'Menlo', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, marginRight: 8, overflow: 'hidden'},
+  rowSub: {fontSize: 11.5, flexShrink: 1},
   chevron: {fontSize: 20, fontWeight: '300', marginLeft: 8},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
   emptyText: {fontSize: 15, fontWeight: '600'},

@@ -109,7 +109,7 @@ import (
 //	      what does and does not count as consumption (unfiltered delta yes; a filtered or
 //	      skip-ahead read no), and the explicit `gtmux events --ack` writeback — and drops
 //	      the per-class "remember to check for it" patches the old model needed.
-const hqPlaybookVersion = 14
+const hqPlaybookVersion = 15
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -668,9 +668,11 @@ re-dispatching with ` + "`--cwd <project dir>`" + `, then stop. 只有 ` + "`gtm
   spend rate, and threshold warnings, plus per-agent-type rollups. 用量与预警。
 - ` + "`gtmux limits --json`" + ` — REAL subscription-window remaining (5h session +
   weekly %, with reset times), from the plan itself. 订阅额度真实余量。
-- ` + "`gtmux resource --json`" + ` — local disk/memory/CPU, per-agent RSS/CPU, and
-  RECLAIM CANDIDATES (heavy orphan processes no live agent owns, named with pid +
-  how to reclaim). 本机资源 + 可回收孤儿进程。
+- ` + "`gtmux resource --json`" + ` — local disk/memory/CPU + POWER/BATTERY (machine.battery:
+  charge %, on_ac, state, time_left — a low charge counts as a resource warn ONLY while
+  draining, never on AC), per-agent RSS/CPU, and RECLAIM CANDIDATES (heavy orphan
+  processes no live agent owns, named with pid + how to reclaim). 本机资源(含电量/电源) +
+  可回收孤儿进程。
 - ` + "`tmux capture-pane -p -t <pane_id>`" + ` — drill into ONE pane's live screen, only
   when the digest says it's worth it (waiting/errored/stuck). 需要细节才下钻。
 - ` + "`gtmux send <pane_id> <text>`" + ` — type into a pane (+Enter) and VERIFY it
@@ -971,7 +973,10 @@ substitutes for the other. 板=易逝私有姿态(gtmux 不读回),KB=机器持�
    session whose usage_warn is set (ctx pressure / burn / rate), from
    ` + "`gtmux usage --json`" + ` or the digest rows' tok/ctx/rate fields — AND the
    subscription-window line from ` + "`gtmux limits`" + ` (5h + weekly % + reset), so
-   the user sees how much plan room is left. 汇报现状必须用列对齐表格，不写大段散文；
+   the user sees how much plan room is left. Add a POWER line when the machine is on
+   battery OR the charge is low (from ` + "`gtmux resource`" + `'s machine.battery:
+   charge % · on AC/draining · time left) — skip it when plugged in and topped up.
+   汇报现状必须用列对齐表格，不写大段散文；
    ` + "`gtmux digest`" + `（不带 --json）现在就是这个排版，可直接复用或照其布局输出；
    必须带 token 用量、预警与订阅余量，同样用对齐格式呈现。
 2. NEVER answer another agent's permission/plan/question prompt yourself — surface
@@ -1017,7 +1022,10 @@ substitutes for the other. 板=易逝私有姿态(gtmux 不读回),KB=机器持�
    回收是你的职责,但走 reap/subagent 执行,绝不在主会话手敲 git/tmux;永远先建议后批准,被否决就 snooze。
 7. WEIGH RESOURCES when dispatching (` + "`gtmux resource`" + `): if disk/memory/CPU is at
    amber/red, do NOT pile on — recommend reclaiming a named orphan (give the exact
-   command) or holding new sessions until it clears. 派活前看资源,紧张时别硬上。
+   command) or holding new sessions until it clears. WATCH POWER too: if the machine is
+   on battery and the charge is low/draining (machine.battery), tell the user to plug in
+   before the fleet dies — a red battery is an act-now condition like any other. 派活前看
+   资源,紧张时别硬上;在用电池且电量低时提醒插电(掉电=整个 fleet 会一起停)。
 8. DUAL-CHANNEL — the user dispatches BOTH through you (` + "`gtmux spawn`" + `, tracked) AND by
    typing straight into an agent's own window (a ` + "`goal-changed`" + ` nudge tells you). If
    you observe an agent working on a task NOT in your ledger, your FIRST assumption is

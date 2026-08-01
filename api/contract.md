@@ -280,10 +280,12 @@ resource snapshot (`resource-watch`). Owner-only — it exposes the whole fleet'
 `resource.machine` carries an optional additive `tier` (`amber` | `red`, omitted when
 normal) — the overall severity — so a client (e.g. the mobile HQ disc) can redden ONLY
 on a genuine `red` bottleneck, never on a soft amber. `disk_use_pct` is the writable
-data volume's capacity.
+data volume's capacity. It also carries an optional additive `battery` object
+(`{present, percent, on_ac, state?, time_left?}`, omitted on a battery-less host); a low
+charge feeds `warn`/`tier` ONLY while draining (`on_ac:false`), never on AC.
 
 ```
-200 {"sessions":[…],"limits":{"windows":[{"label":"week (all models)","pct_used":41,"reset_at":"…"}]},"resource":{"machine":{"warn":"disk 36GB free","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn"}}}
+200 {"sessions":[…],"limits":{"windows":[{"label":"week (all models)","pct_used":41,"reset_at":"…"}]},"resource":{"machine":{"warn":"disk 36GB free","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn","battery":{"present":true,"percent":74,"on_ac":false,"state":"discharging","time_left":"2:13"}}}}
 403 {"error":"forbidden: not shared"}
 503 {"error":"usage unavailable"}
 ```

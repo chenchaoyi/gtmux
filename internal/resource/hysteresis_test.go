@@ -14,6 +14,28 @@ func load(ratio float64) Machine {
 	return Machine{DiskFreeGB: 500, MemTier: "normal", LoadRatio: ratio, NCPU: 8}
 }
 
+func bat(pct int) Machine {
+	return Machine{DiskFreeGB: 500, MemTier: "normal", NCPU: 8, Battery: &Battery{Present: true, Percent: pct, State: "discharging"}}
+}
+
+// A battery % reading jitters ±1% around a boundary; enter amber under 20%, and clear
+// only once it charges back past 23% (20 + a 3% margin) — so a session isn't re-nudged
+// while it dithers on the line.
+func TestMachineTierSticky_BatteryHysteresis(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if got := MachineTierSticky(TierNormal, bat(18)); got != TierAmber {
+		t.Fatalf("18%% on battery crosses the amber line; got %v", got)
+	}
+	for _, pct := range []int{20, 21, 22} { // at/above entry (20), inside the exit band (< 23)
+		if got := MachineTierSticky(TierAmber, bat(pct)); got != TierAmber {
+			t.Fatalf("%d%% is inside amber's exit band — hold; got %v", pct, got)
+		}
+	}
+	if got := MachineTierSticky(TierAmber, bat(23)); got != TierNormal {
+		t.Fatalf("23%% clears amber (20 + 3); got %v", got)
+	}
+}
+
 // Defaults: disk red under 15 GB, clearing at 17 (15 + a 2 GB margin). The dither
 // that was re-alerting — 15.1 → 14.9 → 15.1 — must hold red the whole way.
 func TestMachineTierSticky_DiskHysteresis(t *testing.T) {

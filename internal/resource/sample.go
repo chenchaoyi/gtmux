@@ -18,7 +18,58 @@ func sampleMachine() Machine {
 	if la := loadavg1(); la > 0 && m.NCPU > 0 {
 		m.LoadRatio = la / float64(m.NCPU)
 	}
+	m.Battery = sampleBattery()
 	return m
+}
+
+// sampleBattery reads `pmset -g batt` (macOS). nil on Linux / no pmset (a battery-less
+// host reads as "no power concern"). Pure parsing is split into parseBattery for tests.
+func sampleBattery() *Battery {
+	out, err := exec.Command("pmset", "-g", "batt").Output()
+	if err != nil {
+		return nil
+	}
+	return parseBattery(string(out))
+}
+
+// parseBattery turns `pmset -g batt` text into a Battery. Shape:
+//
+//	Now drawing from 'AC Power'
+//	 -InternalBattery-0 (id=…)\t100%; charged; 0:00 remaining present: true
+//
+// Returns Present=false (but OnAC from line 1) when there is no internal-battery line
+// (a desktop). nil is reserved for "pmset unavailable" (handled by the caller).
+func parseBattery(text string) *Battery {
+	b := &Battery{OnAC: strings.Contains(text, "'AC Power'")}
+	for _, ln := range strings.Split(text, "\n") {
+		pctIdx := strings.IndexByte(ln, '%')
+		if pctIdx < 0 || !strings.Contains(ln, "InternalBattery") {
+			continue
+		}
+		// the run of digits ending right before '%' is the charge
+		j := pctIdx
+		for j > 0 && ln[j-1] >= '0' && ln[j-1] <= '9' {
+			j--
+		}
+		pct, err := strconv.Atoi(ln[j:pctIdx])
+		if err != nil {
+			continue
+		}
+		b.Present = true
+		b.Percent = pct
+		// after "NN%": "; <state>; <H:MM> remaining present: true"
+		fields := strings.Split(ln[pctIdx+1:], ";")
+		if len(fields) >= 2 {
+			b.State = strings.TrimSpace(fields[1])
+		}
+		if len(fields) >= 3 {
+			if tf := strings.Fields(strings.TrimSpace(fields[2])); len(tf) > 0 && strings.Contains(tf[0], ":") && tf[0] != "0:00" {
+				b.TimeLeft = tf[0]
+			}
+		}
+		break
+	}
+	return b
 }
 
 // diskPath is the volume to sample for disk pressure. On macOS the writable user

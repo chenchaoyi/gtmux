@@ -10,6 +10,11 @@ type config struct {
 	LoadAmber   float64 `json:"loadAmber"`   // amber when load÷cores >= this
 	LoadRed     float64 `json:"loadRed"`     // red   when load÷cores >= this
 	OrphanRSSMB int     `json:"orphanRssMB"` // a proc is a reclaim candidate only if RSS >= this
+	// Battery thresholds apply ONLY while ON BATTERY (discharging); on AC the charge
+	// level is irrelevant. amber/red are the percent floors, hysteresis the exit margin.
+	BatteryAmberPct      int `json:"batteryAmberPct"`      // amber when on-battery charge < this (%)
+	BatteryRedPct        int `json:"batteryRedPct"`        // red   when on-battery charge < this (%)
+	BatteryHysteresisPct int `json:"batteryHysteresisPct"` // % above the entry line before it clears
 	// Anti-flap (hq-wake-reliability). A threshold is entered at its value above and
 	// left only past the hysteresis margin; a change must survive ConfirmSamples
 	// consecutive samples; and a tier stays quiet for MinRestateMinutes after it
@@ -28,6 +33,7 @@ type config struct {
 var defaultConfig = config{
 	DiskAmberGB: 50, DiskRedGB: 15, LoadAmber: 1.0, LoadRed: 1.5, OrphanRSSMB: 300,
 	DiskHysteresisGB: 2, LoadHysteresis: 0.15, ConfirmSamples: 3, MinRestateMinutes: 30,
+	BatteryAmberPct: 20, BatteryRedPct: 10, BatteryHysteresisPct: 3,
 }
 
 func loadConfig() config {
@@ -68,6 +74,15 @@ func loadConfig() config {
 	}
 	if r.MinRestateMinutes <= 0 {
 		r.MinRestateMinutes = defaultConfig.MinRestateMinutes
+	}
+	if r.BatteryAmberPct <= 0 {
+		r.BatteryAmberPct = defaultConfig.BatteryAmberPct
+	}
+	if r.BatteryRedPct <= 0 {
+		r.BatteryRedPct = defaultConfig.BatteryRedPct
+	}
+	if r.BatteryHysteresisPct <= 0 {
+		r.BatteryHysteresisPct = defaultConfig.BatteryHysteresisPct
 	}
 	return r
 }

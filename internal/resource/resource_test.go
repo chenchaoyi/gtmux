@@ -32,6 +32,67 @@ func TestEvalMachine(t *testing.T) {
 	}
 }
 
+func TestParseBattery(t *testing.T) {
+	ac := parseBattery("Now drawing from 'AC Power'\n -InternalBattery-0 (id=123)\t100%; charged; 0:00 remaining present: true\n")
+	if !ac.Present || !ac.OnAC || ac.Percent != 100 || ac.State != "charged" || ac.TimeLeft != "" {
+		t.Errorf("AC-charged parse = %+v", ac)
+	}
+	dis := parseBattery("Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\t8%; discharging; 0:23 remaining present: true\n")
+	if !dis.Present || dis.OnAC || dis.Percent != 8 || dis.State != "discharging" || dis.TimeLeft != "0:23" {
+		t.Errorf("discharging parse = %+v", dis)
+	}
+	// A desktop (no internal-battery line): present=false, but the AC source is still read.
+	desk := parseBattery("Now drawing from 'AC Power'\n")
+	if desk.Present || !desk.OnAC {
+		t.Errorf("desktop (no battery) = %+v", desk)
+	}
+}
+
+func TestBatteryTier(t *testing.T) {
+	c := cfg()
+	onBat := func(pct int) Machine {
+		return Machine{Battery: &Battery{Present: true, Percent: pct, State: "discharging"}}
+	}
+	if batteryTier(onBat(8), c) != TierRed {
+		t.Error("8% on battery → red")
+	}
+	if batteryTier(onBat(15), c) != TierAmber {
+		t.Error("15% on battery → amber")
+	}
+	if batteryTier(onBat(80), c) != TierNormal {
+		t.Error("80% on battery → normal")
+	}
+	// ON AC a low charge is NOT a concern — it's charging, not dying.
+	if batteryTier(Machine{Battery: &Battery{Present: true, Percent: 8, OnAC: true, State: "charging"}}, c) != TierNormal {
+		t.Error("8% on AC → normal")
+	}
+	// A desktop / nil battery is always normal.
+	if batteryTier(Machine{Battery: &Battery{Present: false, OnAC: true}}, c) != TierNormal {
+		t.Error("no internal battery → normal")
+	}
+	if batteryTier(Machine{}, c) != TierNormal {
+		t.Error("nil battery → normal")
+	}
+}
+
+func TestEvalMachineBattery(t *testing.T) {
+	c := cfg()
+	// An otherwise-healthy machine on a low DISCHARGING battery: the warn names it and
+	// the overall tier reddens (so it rides the existing resource·warn nudge to HQ).
+	m := Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 0.3, Battery: &Battery{Present: true, Percent: 8, State: "discharging"}}
+	if w := evalMachine(m, c); w != "battery 8% (red)" {
+		t.Errorf("low discharging battery warn = %q, want %q", w, "battery 8% (red)")
+	}
+	if m.WarnTier(c) != TierRed {
+		t.Error("low discharging battery → machine tier red")
+	}
+	// Same charge but plugged in → not a concern, no warn.
+	m.Battery.OnAC = true
+	if w := evalMachine(m, c); w != "" {
+		t.Errorf("low battery ON AC should not warn: %q", w)
+	}
+}
+
 // The mobile HQ disc reddens on the exact wire string `"tier":"red"` (and the API
 // contract documents `amber`|`red`), so both the json tag and Tier.String()'s output
 // are a cross-language contract — renaming either (e.g. "red" → "critical" to match

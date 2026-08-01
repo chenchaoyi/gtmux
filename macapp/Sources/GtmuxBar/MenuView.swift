@@ -253,7 +253,10 @@ struct MenuView: View {
         case .workers(let n):
             return l10n.tr("\(n) sessions need you", "\(n) 个会话在等你拍板")
         case .resource:
-            return l10n.tr("machine under pressure — check disk/memory", "机器资源紧张 · 查看磁盘/内存")
+            // Cause-agnostic on purpose: the red resource tier can now be disk, memory,
+            // load, OR a draining low battery (resource-watch battery). Tapping through
+            // to `gtmux resource` shows the specific reason.
+            return l10n.tr("machine under pressure", "机器资源紧张")
         case .allNormal:
             return l10n.tr("all normal — nothing needs you", "都正常 · 无需你介入")
         }
