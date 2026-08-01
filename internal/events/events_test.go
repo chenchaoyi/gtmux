@@ -3,6 +3,7 @@ package events
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -188,6 +189,38 @@ func TestAppendStampsSeverity(t *testing.T) {
 	}
 	if all[2].Severity != SevImportant {
 		t.Errorf("explicit severity clobbered: %q", all[2].Severity)
+	}
+}
+
+// A gtmux control record is bookkeeping, not fleet activity — the distinction the HQ
+// maintenance sensors use to avoid feeding their own gates (hq-maintenance-triggers).
+func TestIsControl(t *testing.T) {
+	if !IsControl(Record{Event: "gtmux:distill"}) || !IsControl(Record{Event: "gtmux:self-check"}) {
+		t.Error("gtmux:* records must classify as control")
+	}
+	for _, ev := range []string{"Stop", "Waiting", "UserPromptSubmit", "", "gtmux"} {
+		if IsControl(Record{Event: ev}) {
+			t.Errorf("%q must NOT classify as a control record", ev)
+		}
+	}
+}
+
+// A control record carries no pane/loc/state columns, so the shared formatter must render
+// its tag + event + summary instead of a row of blanks — otherwise a maintenance trigger
+// is in `gtmux events` but unreadable, which is no audit trail at all.
+func TestFormatControlRecord(t *testing.T) {
+	line := Format(Record{Ts: 1_700_000_000, Event: "gtmux:distill",
+		Summary: "due (weekly) — distil the period into the KB", Severity: SevNotable})
+	for _, want := range []string{"[CONTROL gtmux:distill]", "due (weekly)"} {
+		if !strings.Contains(line, want) {
+			t.Errorf("Format = %q, want it to contain %q", line, want)
+		}
+	}
+	// An ordinary lifecycle record keeps the column layout untouched.
+	if got := Format(Record{Ts: 1_700_000_000, Event: "Stop", State: "idle", Loc: "web:1.0",
+		Agent: "claude", Pane: "%3"}); !strings.Contains(got, "web:1.0") ||
+		strings.Contains(got, "CONTROL") {
+		t.Errorf("lifecycle Format = %q, want the ordinary columns", got)
 	}
 }
 

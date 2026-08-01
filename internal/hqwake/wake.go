@@ -46,6 +46,15 @@ const (
 	ClassUsageWarn    = "usage·warn"
 	ClassFeedDegraded = "feed-degraded"
 	ClassWakeDegraded = "wake-degraded"
+	// ClassDistill / ClassSelfCheck are the periodic MAINTENANCE knocks raised by the
+	// serve slow-tick's own sensors. They were originally spec'd as feed-only control
+	// records — "a low-urgency maintenance signal, NOT a typed wake line" — which, for a
+	// purely event-driven HQ with no clock of its own, meant delivered to nobody: over
+	// 13 days of correctly-fired triggers, zero passes ran. They knock now, but at the
+	// LOWEST priority, so the original intent (never interrupt decision traffic) is kept
+	// by the queue order rather than by silence.
+	ClassDistill   = "distill"
+	ClassSelfCheck = "self-check"
 )
 
 // Sigil opens every injected line. U+00BB — Latin-1-safe, so it survives the
@@ -84,6 +93,10 @@ var classPriority = map[string]int{
 	ClassResourceWarn: PriorityStanding,
 	ClassLimitsWarn:   PriorityStanding,
 	ClassUsageWarn:    PriorityStanding,
+	// Maintenance is the definition of a standing condition: it re-fires on its own
+	// cadence, so it must both drain LAST and be evicted FIRST at the queue cap.
+	ClassDistill:   PriorityStanding,
+	ClassSelfCheck: PriorityStanding,
 }
 
 // PriorityOf reads a wake line's class out of its own `» gtmux·<class>` prefix and

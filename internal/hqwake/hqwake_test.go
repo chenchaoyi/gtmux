@@ -203,6 +203,12 @@ func TestPriorityOf(t *testing.T) {
 		{Line(ClassTick, ""), PriorityOutcome},
 		{Line(ClassResourceWarn, "", "disk 14GB free"), PriorityStanding},
 		{Line(ClassLimitsWarn, "", "week (fable) 93%"), PriorityStanding},
+		// Periodic maintenance is the archetypal standing condition — it re-fires on its
+		// own cadence, so it drains last and is evicted first. It must never sit at the
+		// default (outcome) priority, which would let a weekly housekeeping knock queue
+		// ahead of an agent that is blocked right now.
+		{Line(ClassDistill, "due (weekly)", "distil the period into the KB"), PriorityStanding},
+		{Line(ClassSelfCheck, "due (daily)", "review feed/ledger health"), PriorityStanding},
 	}
 	for _, c := range cases {
 		if got := PriorityOf(c.line); got != c.want {

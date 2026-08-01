@@ -17,7 +17,7 @@ import (
 func TestPlaybookTeachesDistill(t *testing.T) {
 	pb := hqInstructions
 	for _, want := range []string{
-		"[CONTROL gtmux:distill]", "DISTILL:", "Iterate (now TRIGGERED", // distill
+		"[CONTROL gtmux:distill]", "DISTILL:", "Iterate (TRIGGERED", // distill
 		"PERCEPTION SELF-HEAL DISCIPLINE", "VERIFY BY PULL", // perception self-heal
 	} {
 		if !strings.Contains(pb, want) {
@@ -54,6 +54,28 @@ func TestPlaybookTeachesCaptureLoop(t *testing.T) {
 	}
 	if hqPlaybookVersion < 9 {
 		t.Errorf("hqPlaybookVersion = %d, want ≥ 9 (hq-capture-loop PR2)", hqPlaybookVersion)
+	}
+}
+
+// v12 (hq-maintenance-triggers): the playbook must TEACH the two maintenance classes it
+// now receives as wake lines, and must state the fact that fixes the original bug — a
+// clockless HQ never self-initiates a periodic ritual, so the trigger is gtmux's job, and
+// a knock missed on the wake channel is recoverable from the event stream rather than
+// lost. Without the class in the charter, HQ gets a knock nothing explains.
+func TestPlaybookTeachesMaintenanceWakes(t *testing.T) {
+	pb := hqInstructions
+	for _, want := range []string{
+		"`distill` / `self-check`",      // the classes, in the wake-class list
+		"maintenance triggers are ALSO", // both a knock and a stream record
+		"You have no timer of your own", // why gtmux raises it, not HQ
+		"[CONTROL gtmux:self-check]",    // the stream form is still named
+	} {
+		if !strings.Contains(pb, want) {
+			t.Errorf("v12 playbook must teach the maintenance wakes; missing %q", want)
+		}
+	}
+	if hqPlaybookVersion < 12 {
+		t.Errorf("hqPlaybookVersion = %d, want ≥ 12 (hq-maintenance-triggers)", hqPlaybookVersion)
 	}
 }
 

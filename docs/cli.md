@@ -189,6 +189,13 @@ DATA hq reports, never an instruction it obeys. The classes:
 | `usage·warn` | a session crossed a context/burn layer (see `gtmux usage`) |
 | `feed-degraded` / `wake-degraded` | perception itself broke: the spool daemon died, or wakes stopped landing |
 | `tick` | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
+| `distill` | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued) — hq folds the period's lessons into its knowledge base and prunes stale |
+| `self-check` | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |
+
+The last two are **maintenance** classes: they knock at the lowest priority, so they never
+arrive ahead of a blocked agent, and both passes are silent unless hq actually did
+something. They are also the only classes raised purely on a clock — hq has no timer of
+its own, so `gtmux serve` is what makes the periodic rituals happen at all.
 
 Everything else is **pull-side**: hq wakes, then reads `gtmux events --since-seq <n>`
 or `gtmux digest`. Ordinary progress turns never touch its screen.
@@ -211,6 +218,12 @@ gtmux capture "<one-line lesson> @<topic>"   # topic ∈ accounts | workflows | 
 gtmux capture --list                         # show the pending-distill queue
 ```
 
+```
+last distill: 3d ago
+2 pending-distill candidate(s):
+  [pitfalls] wrangler TLS-resets from the office network — retry
+```
+
 Writing a polished knowledge-base entry mid-work is expensive and gets skipped, so
 `capture` decouples **noticing** (one line, in the moment) from **writing it up well**
 (batched, at HQ's distill pass). It is a **public** command by design — any worker, not
@@ -225,6 +238,11 @@ A candidate is **not** a knowledge-base entry: hq's distill pass is the quality 
 decides what is durable, files it under the right topic, and prunes — so opening the
 input is safe (worst case a candidate is dropped at distill time). This is layer ② of the
 capture loop; see `openspec/changes/hq-capture-loop`.
+
+`--list` heads the queue with **when the queue was last drained**, because the depth alone
+can't tell you whether the loop is alive: an empty queue reads the same whether distill
+drained it yesterday or has never run. Five queued candidates also **pull the next distill
+forward** — a captured lesson is filed within a day rather than waiting out the week.
 
 ## `gtmux spawn` / `gtmux tasks` / `gtmux reap` — verified dispatch
 
@@ -378,6 +396,21 @@ the unfiltered `--since-seq` delta is what you **reconcile** with;
 session — `origin:"instruction"` — plus turn-ends and lifecycle);
 `--severity important` is the **escalation** subset (blocked · asking · crashed),
 to triage first. A filter is a triage shortcut, never the whole picture.
+
+The stream also carries gtmux's own **control records** — the periodic maintenance
+triggers it raises for hq — rendered as `[CONTROL <event>]` with their reason:
+
+```
+09:57:16  [CONTROL gtmux:self-check]  due (daily) — review feed/ledger/memory health…
+04:33:49  [CONTROL gtmux:distill]     due (weekly) — distil the period into the KB…
+```
+
+That makes "did the periodic pass actually run?" answerable directly —
+`gtmux events --since 30d | grep distill`. It is worth knowing because both passes are
+silent by design: without a record, an hq that never distilled looks exactly like one that
+had nothing to distil. `gtmux doctor` renders the same answer as a verdict — its **HQ
+maintenance** rows show when each pass last ran and flag one that has slipped past its
+cadence (shown only on a machine that has an hq home).
 
 ## `gtmux resource` — local machine resource watch
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -155,13 +156,57 @@ func doctorSections() []dsection {
 		agents = append(agents, rowCodexHook())
 	}
 	agents = append(agents, rowApp())
-	return []dsection{
+	secs := []dsection{
 		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
 		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
 		{i18n.Tr("Remote access", "远程访问"), append([]dcheck{rowCloudflared()}, sleepSettingChecks()...)},
 		{i18n.Tr("Storage", "存储"), []dcheck{rowDiskUsage()}},
+	}
+	// Only for a machine that actually runs a supervisor — on any other install these
+	// rows would report a cadence for a thing that does not exist.
+	if fileExists(state.HQHome()) {
+		secs = append(secs, dsection{i18n.Tr("HQ maintenance", "中控维护"),
+			hqMaintenanceChecks(time.Now().Unix())})
+	}
+	return secs
+}
+
+// hqMaintenanceChecks reports whether HQ's two periodic rituals are actually running.
+// They are raised by the resident serve process, so a stalled cadence means something
+// systemic (serve down, the HQ pane unresolvable, a wedged sensor) — and it is otherwise
+// invisible: both passes are silent by design, so "it has not distilled in three weeks"
+// looks exactly like "nothing needed distilling". This row is the difference.
+func hqMaintenanceChecks(now int64) []dcheck {
+	distill, selfCheck := hq.MaintenanceStatus(now)
+	return []dcheck{
+		maintenanceRow(distill,
+			i18n.Tr("knowledge distill", "知识蒸馏"),
+			i18n.Tr("weekly pass folds the fleet's lessons into the knowledge base",
+				"每周把舰队的教训沉淀进知识库"),
+			i18n.Tr("no distill for over a week+grace — is `gtmux serve` running with a live HQ?",
+				"超过一周+宽限没有蒸馏 —— `gtmux serve` 还在跑、中控还活着吗？")),
+		maintenanceRow(selfCheck,
+			i18n.Tr("HQ self-check", "中控自检"),
+			i18n.Tr("daily pass checks ledger / feed / memory health", "每日自检账本、感知与记忆健康"),
+			i18n.Tr("no self-check for over a day+grace — is `gtmux serve` running with a live HQ?",
+				"超过一天+宽限没有自检 —— `gtmux serve` 还在跑、中控还活着吗？")),
+	}
+}
+
+// maintenanceRow renders one cadence verdict. A pass inside its floor is OK; one in the
+// grace window is a neutral note (the zero-change gate legitimately skips quiet periods);
+// past that it is a ⚠, because the cadence itself has stopped.
+func maintenanceRow(r hq.MaintenanceRow, label, okNote, slipNote string) dcheck {
+	switch r.State {
+	case hq.MaintenanceNever:
+		return dcheck{stInfo, label, i18n.Tr("never run", "从未运行"),
+			i18n.Tr("no pass raised yet — expected on a fresh HQ", "尚未触发过 —— 新装中控属正常")}
+	case hq.MaintenanceSlipped:
+		return dcheck{stRec, label, hq.HumanAgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), slipNote}
+	default:
+		return dcheck{stOK, label, hq.HumanAgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), okNote}
 	}
 }
 
