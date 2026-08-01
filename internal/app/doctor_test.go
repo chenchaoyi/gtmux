@@ -123,3 +123,50 @@ func TestCodexNotifyIsGtmux(t *testing.T) {
 		t.Error("gtmux+codex notify → wired")
 	}
 }
+
+// The HQ-maintenance rows are the visible half of the periodic distill/self-check
+// cadence: both passes are SILENT by design, so without this "it has not distilled in
+// three weeks" is indistinguishable from "nothing needed distilling". A slipped cadence
+// must read as ⚠ (stRec), a healthy one as ✓, and a never-run one as a neutral note.
+func TestHQMaintenanceChecks(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	const now = 10_000_000
+
+	rows := hqMaintenanceChecks(now)
+	if len(rows) != 2 {
+		t.Fatalf("want 2 maintenance rows, got %d", len(rows))
+	}
+	for _, r := range rows {
+		if r.status != stInfo {
+			t.Errorf("%s: fresh install should be a neutral note, got status %d", r.label, r.status)
+		}
+	}
+
+	// Distill 3 days ago (inside its weekly floor) → OK. Self-check 40h ago (past the
+	// daily floor + 12h grace) → needs attention.
+	writeMarker(t, home, "last-distill", "9740800 42") // now - 3d
+	writeMarker(t, home, "last-self-check", "9856000") // now - 40h
+	rows = hqMaintenanceChecks(now)
+	if rows[0].status != stOK {
+		t.Errorf("distill 3d ago: status %d, want stOK", rows[0].status)
+	}
+	if rows[1].status != stRec {
+		t.Errorf("self-check 40h ago: status %d, want stRec (slipped)", rows[1].status)
+	}
+	if rows[1].value == "" {
+		t.Error("a slipped row must still report how long ago the last pass ran")
+	}
+}
+
+// writeMarker plants one hq-feed marker file for the maintenance rows to read.
+func writeMarker(t *testing.T, home, name, body string) {
+	t.Helper()
+	dir := filepath.Join(home, ".local", "share", "gtmux", "hq-feed")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}

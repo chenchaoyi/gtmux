@@ -199,13 +199,27 @@ func readCandidates() ([]captureCandidate, error) {
 	return out, sc.Err()
 }
 
-// captureList renders the pending-distill queue.
+// pendingCandidateCount is the spool depth the distill sensor's spool floor reads. An
+// unreadable spool counts as 0 — a sensor must never fire on an I/O error.
+func pendingCandidateCount() int {
+	cands, err := readCandidates()
+	if err != nil {
+		return 0
+	}
+	return len(cands)
+}
+
+// captureList renders the pending-distill queue, headed by when the queue was last
+// DRAINED. The queue depth alone can't tell you whether the loop is alive: an empty queue
+// reads identically whether distill drained it yesterday or has never run at all — which
+// is exactly how a 13-day distill outage stayed invisible.
 func captureList() int {
 	cands, err := readCandidates()
 	if err != nil {
 		i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
 		return 1
 	}
+	fmt.Println(captureListHeader(time.Now().Unix()))
 	if len(cands) == 0 {
 		i18n.Say("pending-distill queue is empty", "待蒸馏队列为空")
 		return 0
@@ -216,6 +230,21 @@ func captureList() int {
 		fmt.Printf("  [%s] %s\n", c.Topic, c.Lesson)
 	}
 	return 0
+}
+
+// captureListHeader is the one-line "is the drain alive?" banner above the queue.
+func captureListHeader(now int64) string {
+	d, _ := MaintenanceStatus(now)
+	switch d.State {
+	case MaintenanceNever:
+		return i18n.Tr("last distill: never run", "上次蒸馏:从未运行")
+	case MaintenanceSlipped:
+		return i18n.Tr("last distill: "+HumanAgeShort(d.AgeSec)+" ago — SLIPPED past its weekly cadence",
+			"上次蒸馏:"+HumanAgeShort(d.AgeSec)+"前 —— 已滑过每周节拍")
+	default:
+		return i18n.Tr("last distill: "+HumanAgeShort(d.AgeSec)+" ago",
+			"上次蒸馏:"+HumanAgeShort(d.AgeSec)+"前")
+	}
 }
 
 func captureUsage() int {

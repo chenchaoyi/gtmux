@@ -65,6 +65,18 @@ type Record struct {
 // typed prose or a slash command. See Record.Origin: author-agnostic by design.
 const OriginInstruction = "instruction"
 
+// ControlPrefix namespaces gtmux's OWN control records (`gtmux:distill`,
+// `gtmux:self-check`, `gtmux:reconcile`, …) apart from the agent lifecycle events the
+// hook appends. They ride the same Record shape so one line format serves every reader.
+const ControlPrefix = "gtmux:"
+
+// IsControl reports whether a record is gtmux's own bookkeeping rather than fleet
+// activity. Sensors MUST exclude control records from the deltas they measure: a
+// maintenance trigger that counted itself would satisfy its own zero-change gate
+// forever, and a raised self-check would read as "the user was recently pinged" and
+// suppress the very idle condition that raised it.
+func IsControl(r Record) bool { return strings.HasPrefix(r.Event, ControlPrefix) }
+
 // Severity levels (attention tiers), lowest → highest.
 const (
 	SevRoutine   = "routine"
@@ -249,7 +261,19 @@ func readFile(path string, cutoff int64) []Record {
 
 // Format renders a record as one compact human line (shared by the CLI printer
 // and any consumer): "HH:MM:SS  state·kind  loc  agent  (event)".
+//
+// A CONTROL record carries none of those columns — it has no pane, loc or state — so it
+// renders as its tag + event + summary instead. Without this branch a raised maintenance
+// trigger printed as a row of blanks, which is why `gtmux events` could not answer "did
+// the periodic distill run?" even once the record was in the journal.
 func Format(r Record) string {
+	if IsControl(r) {
+		line := clock(r.Ts) + "  [CONTROL " + r.Event + "]"
+		if r.Summary != "" {
+			line += "  " + r.Summary
+		}
+		return line
+	}
 	var b strings.Builder
 	b.WriteString(clock(r.Ts))
 	b.WriteString("  ")

@@ -15,6 +15,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -61,8 +62,15 @@ func shouldSelfCheck(now, lastCheck int64, recentAttention bool, openLedger int,
 
 // recentAttentionEvent reports whether any notable-or-important event landed in the
 // last idle-quiet window — the LLM-free proxy for "the user was recently pinged".
+//
+// gtmux's OWN control records are excluded: a self-check trigger is notable-severity and
+// now lands in the journal, so counting it would mean each raised self-check suppressed
+// the next one's idle condition for two hours — the sensor silencing itself.
 func recentAttentionEvent(now int64) bool {
 	for _, r := range events.Read(selfCheckIdleQuiet, now) {
+		if events.IsControl(r) {
+			continue
+		}
 		if events.SeverityRank(r.Severity) >= events.SeverityRank(events.SevNotable) {
 			return true
 		}
@@ -74,7 +82,8 @@ func recentAttentionEvent(now int64) bool {
 // slow-tick; only with a live HQ (nothing to trigger otherwise), and the expensive
 // condition reads run only after the cheap rate-limit gate passes.
 func selfCheckSensor(now int64) {
-	if hqpane.Find() == "" {
+	pane := hqpane.Find()
+	if pane == "" {
 		return
 	}
 	lastCheck := readSelfCheckAt()
@@ -94,7 +103,7 @@ func selfCheckSensor(now int64) {
 	if journalOver || gap {
 		sev = events.SevImportant // a broken log / cursor gap is a severe finding — surface it
 	}
-	hqfeed.EmitControl(hqfeed.ControlSelfCheck,
-		"self-check due ("+reason+") — review feed/ledger/memory health, clean silently, brief only on real action",
-		sev, now)
+	raiseMaintenance(pane, hqwake.ClassSelfCheck, hqfeed.ControlSelfCheck, "due ("+reason+")",
+		"review feed/ledger/memory health, clean silently, brief only on real action",
+		"", sev, now)
 }

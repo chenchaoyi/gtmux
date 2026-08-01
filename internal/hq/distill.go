@@ -16,6 +16,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -31,6 +32,12 @@ const (
 	// current 20 MB (~×2) event log; reconcile with the events-retention work (%84)
 	// once its final retention sizing lands.
 	distillVolumeFloor = 5000
+	// distillSpoolFloor is the pending-candidate count that forces a distill before the
+	// weekly floor (hq-capture-loop layer ③(c), default N=5). Without it a lesson someone
+	// took the trouble to `gtmux capture` can sit unfiled for up to a week — long enough
+	// for the next agent to hit the same footgun, which is the whole thing capture exists
+	// to prevent. Still behind the ≤1/day rate limit.
+	distillSpoolFloor = 5
 )
 
 func distillMarkPath() string { return filepath.Join(state.Dir(), "hq-feed", "last-distill") }
@@ -53,17 +60,23 @@ func writeDistillMark(at, seq int64) {
 }
 
 // shouldDistill is the pure decision (testable without tmux/disk). Precedence once past
-// the rate limit: the ZERO-CHANGE gate (nothing notable accrued → never fire), then the
-// VOLUME floor (a busy period — distil before the log rotates), then the WEEKLY floor.
+// the rate limit: the ZERO-CHANGE gate (nothing accrued and nothing captured → never
+// fire), then the SPOOL floor (someone captured a lesson — file it), then the VOLUME
+// floor (a busy period — distil before the log rotates), then the WEEKLY floor.
 //
-//	notable  = notable-or-above events accrued since the watermark (the zero-change gate)
-//	newCount = ALL events accrued since the watermark (curSeq - lastSeq; rotation pressure)
-func shouldDistill(now, lastAt int64, notable, newCount int) (bool, string) {
+//	notable  = notable-or-above FLEET events accrued since the watermark (gtmux's own
+//	           control records excluded — see events.IsControl)
+//	newCount = ALL fleet events accrued since the watermark (rotation pressure)
+//	pending  = candidates sitting in the pending-distill spool
+func shouldDistill(now, lastAt int64, notable, newCount, pending int) (bool, string) {
 	if now-lastAt < distillMinInterval {
 		return false, "" // rate limited
 	}
-	if notable == 0 {
-		return false, "" // zero-change gate — a pure-routine (or empty) period has nothing to distil
+	if notable == 0 && pending == 0 {
+		return false, "" // zero-change gate — nothing happened and nothing was captured
+	}
+	if pending >= distillSpoolFloor {
+		return true, "spool"
 	}
 	if newCount >= distillVolumeFloor {
 		return true, "volume"
@@ -78,7 +91,8 @@ func shouldDistill(now, lastAt int64, notable, newCount int) (bool, string) {
 // slow-tick; only with a live HQ, and the expensive event scan runs only after the
 // cheap rate-limit gate passes.
 func distillSensor(now int64) {
-	if hqpane.Find() == "" {
+	pane := hqpane.Find()
+	if pane == "" {
 		return
 	}
 	lastAt, lastSeq := readDistillMark()
@@ -87,24 +101,35 @@ func distillSensor(now int64) {
 	}
 	// The event DELTA since the watermark: how many accrued (rotation pressure) and how
 	// many are notable-or-above (the zero-change gate). Mirrors recentAttentionEvent's
-	// use of the stored severity.
+	// use of the stored severity. gtmux's OWN control records are excluded from both
+	// counts — the previous distill's record is not something to distil, and counting it
+	// would keep the zero-change gate permanently satisfied on a dead-quiet fleet.
 	recs, _ := events.ReadSince(lastSeq)
 	curSeq := lastSeq
-	notable := 0
+	notable, fleet := 0, 0
 	for _, r := range recs {
 		if r.Seq > curSeq {
 			curSeq = r.Seq
 		}
+		if events.IsControl(r) {
+			continue
+		}
+		fleet++
 		if events.SeverityRank(r.Severity) >= events.SeverityRank(events.SevNotable) {
 			notable++
 		}
 	}
-	fire, reason := shouldDistill(now, lastAt, notable, len(recs))
+	pending := pendingCandidateCount()
+	fire, reason := shouldDistill(now, lastAt, notable, fleet, pending)
 	if !fire {
 		return
 	}
 	writeDistillMark(now, curSeq)
-	hqfeed.EmitControl(hqfeed.ControlDistill,
-		"distill due ("+reason+") — distil the period's fleet activity into the KB (update-over-append) and prune stale; silent unless real curation",
-		events.SevNotable, now)
+	hint := "then: gtmux capture --list"
+	if pending == 0 {
+		hint = "then: gtmux events --since-seq " + strconv.FormatInt(lastSeq, 10)
+	}
+	raiseMaintenance(pane, hqwake.ClassDistill, hqfeed.ControlDistill, "due ("+reason+")",
+		"distil the period into the KB (update-over-append) + prune stale; silent unless real curation",
+		hint, events.SevNotable, now)
 }

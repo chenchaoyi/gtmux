@@ -84,7 +84,17 @@ import (
 //	     candidate by its (topic, dedup-key) into the matching topic file, HQ being the
 //	     quality gate — then truncate it. (The engineering ships the command + spool; this
 //	     bump carries the playbook half so existing homes learn to drain the queue.)
-const hqPlaybookVersion = 11
+//	v10 — standard-window-title (#525): the spawn window-title convention + live locator
+//	      handle, so HQ names and addresses a session the same way the fleet does.
+//	v11 — hq-home-quarantine (#579): the identity self-check — a worker that finds itself
+//	      inside the HQ home is NOT the supervisor, and the stamp beats the cwd.
+//	v12 — hq-maintenance-triggers: `distill` and `self-check` become real WAKE CLASSES.
+//	      Both were spec'd as feed-only control records ("not a typed wake line"), which
+//	      for a clockless, event-driven HQ meant delivered to nobody: the sensors fired
+//	      correctly for 13 days and ZERO passes ran. They now knock at the LOWEST priority
+//	      (behind every blocked agent) AND land in `gtmux events`, so a missed knock is
+//	      recoverable by pull instead of lost — the playbook teaches both facts.
+const hqPlaybookVersion = 12
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -738,7 +748,9 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   subscription, or session-usage threshold crossed) · ` + "`feed-degraded`" + ` (perception
   outage — surface at once, NEVER quieted) · ` + "`wake-degraded`" + ` (the KNOCK itself is
   not landing — you may have missed wakes; reconcile by PULL, ` + "`gtmux digest --json`" + `
-  + the event delta, and surface it) · ` + "`tick`" + ` (summary due — emit ONE brief).
+  + the event delta, and surface it) · ` + "`tick`" + ` (summary due — emit ONE brief) ·
+  ` + "`distill` / `self-check`" + ` (a periodic MAINTENANCE pass is due — the two rituals
+  below; they arrive LAST, behind every decision knock, and are silent by default).
 - **A repeated ` + "`#<id>`" + ` is a RE-SEND, not a second event.** Every wake batch ends
   with a short id (` + "`… · #a3f1c2`" + `). Delivery is confirmed on screen and retried when
   the confirmation is missed, so the same batch can arrive twice — carrying the SAME id.
@@ -752,13 +764,22 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
 - Record what you don't print in the ATTENTION LEDGER (` + "`gtmux tasks`" + `): a QUIET item
   goes in silently and can be PROMOTED later if related events accrue.
   ` + "`gtmux tasks --verbose`" + ` retro-queries the full ledger. 不 print 的入账本。
-- SELF-CHECK: on a ` + "`[CONTROL gtmux:self-check]`" + ` record, run a maintenance pass on
-  your OWN artifacts (ledger archival, stale memory, log health). Default SILENT;
-  one line only if you did real work; severe findings surface CRITICAL. 静默自检。
-- DISTILL: on a ` + "`[CONTROL gtmux:distill]`" + ` record, run a periodic knowledge pass:
-  distil what the FLEET did since the last distill into the knowledge base and prune
-  stale (see the Knowledge-base §). Distinct from self-check (that is HQ's own-artifact
-  health; this is the KB). Default SILENT; one line only on real curation. 定期蒸馏沉淀。
+- SELF-CHECK: on a ` + "`self-check`" + ` wake (or a ` + "`[CONTROL gtmux:self-check]`" + `
+  record in the stream), run a maintenance pass on your OWN artifacts (ledger archival,
+  stale memory, log health). Default SILENT; one line only if you did real work; severe
+  findings surface CRITICAL. 静默自检。
+- DISTILL: on a ` + "`distill`" + ` wake (or a ` + "`[CONTROL gtmux:distill]`" + ` record),
+  run a periodic knowledge pass: distil what the FLEET did since the last distill into the
+  knowledge base and prune stale (see the Knowledge-base §). Distinct from self-check (that
+  is HQ's own-artifact health; this is the KB). Default SILENT; one line only on real
+  curation. 定期蒸馏沉淀。
+- **BOTH maintenance triggers are ALSO stream records**, not just knocks: gtmux raises them
+  from its resident serve process on a fixed cadence (distill ≈ weekly or when the capture
+  queue fills, self-check ≈ daily), and each one is appended to the event log. So a knock
+  you missed is NOT lost — a ` + "`[CONTROL gtmux:…]`" + ` line in your ` + "`--since-seq`" + `
+  delta means that pass is still owed; run it then. You have no timer of your own: a
+  periodic ritual happens because gtmux raises it, never because you remembered.
+  两个维护触发既是唤醒线、也是事件流记录:漏了敲门不算作废,增量里看到 CONTROL 行就把这次补上。
 - PERCEPTION SELF-HEAL DISCIPLINE: on ` + "`feed-degraded`" + ` / ` + "`wake-degraded`" + `, gtmux's
   OWN mechanical self-heal has ALREADY run — the wake is a report, not a request to
   restart. Do NOT reflexively nag the user to restart. First VERIFY BY PULL
@@ -980,8 +1001,9 @@ Discipline:
   capture trigger: record the fact afterward so the next occurrence is covered. (This never
   loosens #2 — you still never answer another agent's permission/plan/design choice.)
   咨询是硬前置:建议/派活前必先查 KB 主题并注明依据;无覆盖的空白本身就是沉淀触发点。
-- **Iterate (now TRIGGERED, not just "periodically"):** on a ` + "`[CONTROL gtmux:distill]`" + `
-  record, run a RETROSPECTIVE distillation over the fleet's activity since the last
+- **Iterate (TRIGGERED, never "when you remember"):** on a ` + "`distill`" + ` wake — or the
+  matching ` + "`[CONTROL gtmux:distill]`" + ` record if you find one unactioned in your event
+  delta — run a RETROSPECTIVE distillation over the fleet's activity since the last
   distill. TWO data sources: (1) the event DELTA (gtmux watermarks the last distill), and
   (2) the pending-distill SPOOL that ` + "`gtmux capture`" + ` fills — anyone on this machine can
   drop a candidate there (` + "`gtmux capture --list`" + ` to see the queue). DRAIN the spool:
