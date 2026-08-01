@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"runtime"
@@ -51,10 +52,10 @@ type spawnJSON struct {
 // and records the dispatch in the ledger. See openspec agent-dispatch.
 func cmdSpawn(args []string) int {
 	var (
-		paneFlag, worktree, model, agent, cwd, title string
-		noOpen, headless, oneshot, force, asJSON     bool
-		timeout                                      time.Duration
-		goalParts                                    []string
+		paneFlag, worktree, model, agent, cwd, title, goalFile string
+		noOpen, headless, oneshot, force, asJSON               bool
+		timeout                                                time.Duration
+		goalParts                                              []string
 	)
 	agent = "claude"
 	for i := 0; i < len(args); i++ {
@@ -81,6 +82,10 @@ func cmdSpawn(args []string) int {
 			cwd = next()
 		case a == "--title":
 			title = next()
+		case a == "--goal-file":
+			goalFile = next()
+		case strings.HasPrefix(a, "--goal-file="):
+			goalFile = strings.TrimPrefix(a, "--goal-file=")
 		case a == "--no-open":
 			noOpen = true
 		case a == "--headless":
@@ -110,9 +115,9 @@ func cmdSpawn(args []string) int {
 			goalParts = append(goalParts, a)
 		}
 	}
-	goal := strings.TrimSpace(strings.Join(goalParts, " "))
-	if goal == "" {
-		return spawnUsage()
+	goal, rc := spawnGoal(goalFile, goalParts, os.Stdin)
+	if rc != 0 {
+		return rc
 	}
 	// --oneshot is accepted ONLY for an agent whose driver has the headless
 	// capability — an explicit refusal, never a silent degrade to an interactive
@@ -149,8 +154,9 @@ func cmdSpawn(args []string) int {
 		spawnPreflight(model, cwd, goal)
 	}
 
-	// Target a pane: reuse --pane, or create a fresh session (optionally in a worktree).
-	pane, session, ownSession, wtPath, branch, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, oneshot, asJSON)
+	// Target a pane: reuse --pane, RESUME a previous attempt's undelivered session, or
+	// create a fresh session (optionally in a worktree).
+	pane, session, ownSession, wtPath, branch, resumeID, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, oneshot, asJSON)
 	if rc != 0 {
 		return rc
 	}
@@ -161,14 +167,12 @@ func cmdSpawn(args []string) int {
 	// records; the dispatch is tracked and reapable like any other.
 	if oneshot {
 		res := dispatch.Result{Delivered: true, State: dispatch.StateLanded,
-			JudgedBy: dispatch.JudgedByDriver, Evidence: "one-shot: goal delivered as argv"}
+			JudgedBy: dispatch.JudgedByDriver, Evidence: "one-shot: goal delivered to the runner"}
 		dispatch.MarkAwaited(pane)
-		taskID := dispatch.NewID(time.Now().UnixNano())
-		_ = dispatch.AddTask(dispatch.Task{
-			ID: taskID, Pane: pane, Session: session, Agent: agent, Model: model,
+		taskID := recordDispatch(resumeID, dispatch.Task{
+			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
-			CreatedAt: time.Now().Unix(), Delivered: true, OwnSession: ownSession,
-			Source: dispatch.SourceHQDispatched,
+			Delivered: true, OwnSession: ownSession, Source: dispatch.SourceHQDispatched,
 		})
 		return spawnReport(asJSON, taskID, pane, session, res)
 	}
@@ -180,9 +184,18 @@ func cmdSpawn(args []string) int {
 	// that truncates it and swallows the Enter. On timeout we FAIL with the pane's
 	// capture as evidence and never paste into a not-ready pane.
 	if !dispatchbridge.WaitAgentReady(pane, agent, time.Duration(tune.ReadyTimeout)*time.Second) {
-		return spawnFail(asJSON, "", pane, session, dispatch.Result{
-			State:    dispatch.StateFailed,
-			Evidence: "agent composer not ready within the ready timeout\n" + tmux.CaptureFull(pane)})
+		// The ledger entry is written even here. A ready-timeout leaves a live, EMPTY
+		// session behind, and an unrecorded one is invisible to both `gtmux reap` and the
+		// resume path above — which is precisely how two failed dispatches left two orphan
+		// sessions nobody could reclaim. Recorded, the next identical spawn adopts it.
+		res := dispatch.Result{State: dispatch.StateFailed,
+			Evidence: "agent composer not ready within the ready timeout\n" + tmux.CaptureFull(pane)}
+		taskID := recordDispatch(resumeID, dispatch.Task{
+			Pane: pane, Session: session, Agent: agent, Model: model,
+			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
+			Delivered: false, OwnSession: ownSession, Source: dispatch.SourceHQDispatched,
+		})
+		return spawnFail(asJSON, taskID, pane, session, res)
 	}
 
 	// content-verified + submitted: Deliver pastes atomically (bracketed paste-buffer),
@@ -201,16 +214,69 @@ func cmdSpawn(args []string) int {
 	// Record the dispatch (even on failure, so a created session/worktree is reclaimable).
 	taskID := ""
 	if ownSession || wtPath != "" || res.Delivered {
-		taskID = dispatch.NewID(time.Now().UnixNano())
-		_ = dispatch.AddTask(dispatch.Task{
-			ID: taskID, Pane: pane, Session: session, Agent: agent, Model: model,
+		taskID = recordDispatch(resumeID, dispatch.Task{
+			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
-			CreatedAt: time.Now().Unix(), Delivered: res.Delivered, OwnSession: ownSession,
+			Delivered: res.Delivered, OwnSession: ownSession,
 			Source: dispatch.SourceHQDispatched,
 		})
 	}
 
 	return spawnReport(asJSON, taskID, pane, session, res)
+}
+
+// spawnGoal resolves the dispatch goal from either the FILE channel (`--goal-file
+// <path|->`) or the positional argv words — never both.
+//
+// The file channel exists because argv is not a safe carrier for a natural-language
+// instruction: the caller's shell parses it first, so a backtick spans gets EXECUTED
+// inside double quotes, a `$word` is expanded, and a newline ends the command. The file
+// path has no shell on it at all — bytes go file → here → `tmux load-buffer -` (a pipe)
+// → the agent's input box. A conflict is an ERROR rather than a precedence rule: when a
+// caller supplies both, which one they meant is genuinely unknown.
+func spawnGoal(goalFile string, goalParts []string, stdin io.Reader) (string, int) {
+	positional := strings.TrimSpace(strings.Join(goalParts, " "))
+	if goalFile == "" {
+		if positional == "" {
+			return "", spawnUsage()
+		}
+		return positional, 0
+	}
+	if positional != "" {
+		i18n.Sae("gtmux spawn: --goal-file and a positional goal are mutually exclusive — pass one",
+			"gtmux spawn: --goal-file 与位置参数任务只能二选一")
+		return "", 2
+	}
+	goal, err := dispatch.ReadPayload(goalFile, stdin)
+	if err != nil {
+		i18n.Sae("gtmux spawn: --goal-file: "+err.Error(), "gtmux spawn: --goal-file: "+err.Error())
+		return "", 2
+	}
+	return goal, 0
+}
+
+// recordDispatch writes the ledger entry for this dispatch, UPDATING the entry of a
+// resumed prior attempt (id != "") instead of adding a second one. A retry has to
+// converge on ONE ledger row per dispatch — otherwise every failed attempt leaves its
+// own row and `gtmux tasks` accumulates ghosts of the same task. The original
+// CreatedAt/FirstSeen are preserved so the attention ledger keeps the dispatch's real age.
+func recordDispatch(id string, t dispatch.Task) string {
+	now := time.Now()
+	if id != "" {
+		if prev, ok := dispatch.LoadTask(id); ok {
+			t.ID, t.CreatedAt, t.FirstSeen = prev.ID, prev.CreatedAt, prev.FirstSeen
+			t.Tier, t.Priority, t.SnoozeUntil = prev.Tier, prev.Priority, prev.SnoozeUntil
+		}
+	}
+	if t.ID == "" {
+		t.ID = dispatch.NewID(now.UnixNano())
+	}
+	if t.CreatedAt == 0 {
+		t.CreatedAt = now.Unix()
+	}
+	t.LastUpdate = now.Unix()
+	_ = dispatch.AddTask(t)
+	return t.ID
 }
 
 // spawnTarget resolves the destination pane, creating a session/worktree as needed
@@ -244,7 +310,7 @@ func spawnDirInHQHome(paneFlag, cwd string) (dir string, bad bool) {
 	return "", false
 }
 
-func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch string, rc int) {
+func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch, resumeID string, rc int) {
 	launch := func(pane string) { launchAgent(pane, agent, model) }
 	if oneshot {
 		launch = func(pane string) { oneshotLaunch(pane, agent, model, goal) }
@@ -253,7 +319,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	if paneFlag != "" {
 		if tmux.Display(paneFlag, "#{pane_id}") == "" {
 			i18n.Sae("gtmux spawn: pane "+paneFlag+" not found", "gtmux spawn: 找不到 pane "+paneFlag)
-			return "", "", false, "", "", 1
+			return "", "", false, "", "", "", 1
 		}
 		pane = tmux.Display(paneFlag, "#{pane_id}")
 		session = tmux.Display(paneFlag, "#{session_name}")
@@ -264,33 +330,62 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		if oneshot && !bareShell {
 			i18n.Sae("gtmux spawn: --oneshot needs a bare-shell pane ("+pane+" is running something)",
 				"gtmux spawn: --oneshot 需要空 shell 的 pane（"+pane+" 正在运行程序）")
-			return "", "", false, "", "", 1
+			return "", "", false, "", "", "", 1
 		}
 		// If the pane already runs an agent, deliver into it (skip launch); else launch.
 		if bareShell {
 			launch(pane)
 		}
 		nameDispatchWindow(pane, spawnSlug(title, "", goal), headless) // task-named for a readable fleet
-		return pane, session, false, "", "", 0
+		return pane, session, false, "", "", "", 0
 	}
 
-	// Create a worktree if requested.
+	// Acquire a worktree if requested. AddWorktree is idempotent, so re-running a
+	// dispatch whose first attempt already created the worktree ADOPTS it instead of
+	// failing on the occupied path.
 	runDir := cwd
+	var wt dispatch.Worktree
 	if worktree != "" {
-		p, b, err := dispatch.AddWorktree(cwd, worktree)
+		acquired, err := dispatch.AddWorktree(cwd, worktree)
 		if err != nil {
 			i18n.Sae("gtmux spawn: worktree: "+err.Error(), "gtmux spawn: worktree 失败："+err.Error())
-			return "", "", false, "", "", 1
+			return "", "", false, "", "", "", 1
 		}
-		wtPath, branch, runDir = p, b, p
+		wt = acquired
+		wtPath, branch, runDir = wt.Path, wt.Branch, wt.Path
 		if !asJSON {
-			i18n.Say("• worktree "+p+" ("+b+")", "• 已建 worktree "+p+"（"+b+"）")
+			if wt.Reused {
+				i18n.Say("• worktree "+wt.Path+" ("+wt.Branch+") — reused",
+					"• 复用已有 worktree "+wt.Path+"（"+wt.Branch+"）")
+			} else {
+				i18n.Say("• worktree "+wt.Path+" ("+wt.Branch+")", "• 已建 worktree "+wt.Path+"（"+wt.Branch+"）")
+			}
+		}
+	}
+
+	// RESUME a previous attempt that created a session but never delivered its goal —
+	// the state a crashed/timed-out dispatch leaves behind. Without this, re-running the
+	// identical command parked a SECOND empty session beside the first (the session name
+	// was merely uniquified), and every retry made the cleanup bigger.
+	name := spawnSessionName(title, branch, goal)
+	if prev, ok := dispatch.ResumableTask(wtPath, name); ok {
+		if live := tmux.Display(prev.Pane, "#{pane_id}"); live == prev.Pane {
+			if !asJSON {
+				i18n.Say("• resuming the previous attempt in "+prev.Pane+" (goal was never delivered)",
+					"• 复用上次未送达的派活 "+prev.Pane+"（目标此前没投递成功）")
+			}
+			// The prior attempt may have died before or during launch, leaving a bare
+			// shell; relaunch then. A pane already running the agent is left alone.
+			if dispatchbridge.ShellCommands[tmux.Display(prev.Pane, "#{pane_current_command}")] {
+				launch(prev.Pane)
+			}
+			nameDispatchWindow(prev.Pane, spawnSlug(title, branch, goal), headless)
+			return prev.Pane, tmux.Display(prev.Pane, "#{session_name}"), true, wtPath, branch, prev.ID, 0
 		}
 	}
 
 	// Create a detached session (named from the branch/goal), optionally in runDir.
-	name := uniqueSessionName(spawnSessionName(title, branch, goal), sessionExists)
-	create := newSessionArgs(name)
+	create := newSessionArgs(uniqueSessionName(name, sessionExists))
 	if runDir != "" {
 		create = append(create, "-c", runDir)
 	}
@@ -304,8 +399,10 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		created, err = tmux.Run(auto...)
 	}
 	if err != nil || created == "" {
+		// Nothing survived that a re-run could adopt, so roll back what THIS call made.
+		rollbackWorktree(wt, asJSON)
 		i18n.Sae("gtmux spawn: failed to create a session", "gtmux spawn: 创建 session 失败")
-		return "", "", false, "", "", 1
+		return "", "", false, "", "", "", 1
 	}
 	pane = tmux.Display(created, "#{pane_id}")
 	launch(pane)
@@ -316,7 +413,31 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		term := terminal.Active()
 		_, _ = term.SpawnTabs([]string{created}, false)
 	}
-	return pane, created, true, wtPath, branch, 0
+	return pane, created, true, wtPath, branch, "", 0
+}
+
+// rollbackWorktree undoes a worktree (and branch) that THIS invocation created, after a
+// later step failed with no pane to hand back. It deliberately touches neither a REUSED
+// worktree nor a pre-existing branch: those belong to an earlier attempt (or to the
+// user), and destroying them is how a cleanup turns into data loss.
+func rollbackWorktree(wt dispatch.Worktree, asJSON bool) {
+	if wt.Path == "" || wt.Reused {
+		return
+	}
+	main := dispatch.MainRepo(wt.Path) // resolve BEFORE removal — afterwards there is no dir to ask
+	if err := dispatch.RemoveWorktree(wt.Path, false); err != nil {
+		if !asJSON {
+			i18n.Sae("• could not roll back the worktree "+wt.Path+": "+err.Error(),
+				"• 回滚 worktree 失败 "+wt.Path+"："+err.Error())
+		}
+		return
+	}
+	if wt.NewBranch {
+		_ = dispatch.DeleteBranch(main, wt.Branch, true)
+	}
+	if !asJSON {
+		i18n.Say("• rolled back the worktree "+wt.Path, "• 已回滚 worktree "+wt.Path)
+	}
 }
 
 // nameDispatchWindow names the dispatch's window + pane after the task slug so a glance
@@ -570,7 +691,7 @@ func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) i
 }
 
 func spawnUsage() int {
-	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--oneshot] [--no-open] [--force] [--json] <goal…>",
-		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--oneshot] [--no-open] [--force] [--json] <任务…>")
+	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <path|-> | <goal…>)\n  --goal-file reads the goal from a file (or - for stdin) — use it for any goal that is\n  more than one short line: a goal passed as an argument must survive shell parsing first,\n  and backticks/$/quotes/newlines do not.",
+		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <文件|-> | <任务…>)\n  --goal-file 从文件（或 - 即 stdin）读取任务内容——凡是超过一行的指令都用它：\n  作为命令行参数传的任务必须先过 shell 解析，反引号/$/引号/换行都活不下来。")
 	return 2
 }

@@ -499,6 +499,30 @@ swallowed and needs a manual re-press — and `gtmux send` still reports `NOT de
 -s lab; tmux send-keys -t lab claude Enter`, then send a 3-line instruction and read
 the box. A unit test with single-line fixtures passes either way.
 
+### 派活时反引号被 shell 执行,spawn 直接挂掉(2026-08-01)
+
+**症状** —— HQ 执行 `gtmux spawn … "<一大段中文 goal,里面有反引号包着的代码标识符>"`,
+shell 报 `command substitution: syntax error near unexpected token 'done'`,spawn 根本没跑起来。
+**副作用更麻烦**:worktree 和分支已经建了、session 没起;重试时 `git worktree add` 报
+`exit status 128`;两次尝试留下两个空 session(goal 一个都没投递)。
+
+**根因** —— goal 走的是 **argv**,那就必然先过调用方的 shell:双引号内反引号会被**执行**、
+`$x` 会被展开、换行会截断命令。够长的自然语言指令迟早会含这些字符,所以「每次小心引号」
+不是一个系统能持有的性质 —— 事实佐证:这条坑在 HQ 知识库里已经记过**两次**,当天上午还刚被
+推广成通则,几小时后照样踩。这是接口问题,不是记性问题。
+
+**修复(本次)**
+
+- `gtmux spawn --goal-file <path|->` / `gtmux send --message-file <path|->`:调用方写文件,
+  gtmux 读字节,路径上没有 shell。只做一个明说的归一化:最多去掉一个结尾换行(heredoc 都会带)。
+- `gtmux spawn --oneshot` 的 goal 也改走暂存文件(原先 shell-quote + 折叠空白,多行会被压成一行)。
+- **失败可重入**:worktree 已存在则复用(不再 128)、上次没投递成功的 session 会被接管、
+  这次建了没用上的 worktree/分支会回滚。**重跑同一条命令即可收敛**,不要手工清理。
+
+**规则(与 base64 那条同源)** —— 只要一段文本要穿过 shell,就问它里面有没有反引号/换行/引号/`$`;
+有就别走 argv。给工具一个**文件通道**,比给调用方一条纪律更可靠。测试要断言 **round trip 逐字节
+一致**,不要只断言「命令没报错」——引号写法「看起来对」是骗得过人的。
+
 ---
 
 ## Disk / storage

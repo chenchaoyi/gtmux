@@ -94,7 +94,15 @@ import (
 //	      correctly for 13 days and ZERO passes ran. They now knock at the LOWEST priority
 //	      (behind every blocked agent) AND land in `gtmux events`, so a missed knock is
 //	      recoverable by pull instead of lost — the playbook teaches both facts.
-const hqPlaybookVersion = 12
+//	v13 — dispatch-file-channel: the STANDARD ACTION for carrying a goal into a dispatch.
+//	      A goal passed as a command-line argument is parsed by a shell first, so a
+//	      backticked identifier inside `"…"` is EXECUTED — a real dispatch died on
+//	      `command substitution: syntax error near unexpected token 'done'`. The footgun
+//	      was already in the knowledge base twice and had been generalized into a rule
+//	      that same morning, which is the evidence that a caution is not a mechanism. The
+//	      playbook now teaches write-file → `--goal-file` (and `send --message-file`) as
+//	      the default posture, plus the re-run-converges guarantee.
+const hqPlaybookVersion = 13
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -661,10 +669,36 @@ re-dispatching with ` + "`--cwd <project dir>`" + `, then stop. 只有 ` + "`gtm
 - ` + "`gtmux send <pane_id> <text>`" + ` — type into a pane (+Enter) and VERIFY it
   landed (default). ` + "`--key <name>`" + ` for a control key. DRIVES another agent —
   deliberate use only. 代用户驱动,默认校验送达。
+  - Anything longer than one short line goes through ` + "`--message-file <path|->`" + `,
+    for the same reason ` + "`spawn`" + ` has ` + "`--goal-file`" + ` (see below).
+    超过一行的内容一律走 --message-file。
 - ` + "`gtmux spawn <goal>`" + ` — DISPATCH new work: launch an agent (new session /
   ` + "`--pane`" + ` / ` + "`--worktree <branch>`" + ` / ` + "`--model`" + `), proxied by construction, and
   deliver the task WITH land-verification. This is how you start work — never a
   hand-typed ` + "`send-keys`" + ` launch (that skips the proxy → 403). 派活的唯一正道。
+  - **THE STANDARD ACTION — write the goal to a FILE, never inline it.** Anything longer
+    than one short line: write it out, then dispatch with ` + "`--goal-file`" + `.
+
+    ` + "```" + `
+    cat > /tmp/goal-<slug>.txt <<'EOF'
+    <the goal, verbatim — backticks, $, quotes, newlines, 中文, whatever>
+    EOF
+    gtmux spawn --title <slug> --cwd <project dir> --goal-file /tmp/goal-<slug>.txt
+    ` + "```" + `
+
+    WHY, so you can re-derive it instead of remembering it: a goal passed as a
+    command-line ARGUMENT is parsed by a shell before gtmux sees it. Inside ` + "`\"…\"`" + `
+    a backticked span is EXECUTED, ` + "`$x`" + ` is expanded, a newline ends the command.
+    A real dispatch of yours died exactly this way —
+    ` + "`command substitution: syntax error near unexpected token 'done'`" + ` — with the
+    footgun already recorded in your own knowledge base TWICE. That is the proof that
+    "quote it carefully" is not a mechanism: any long enough natural-language goal
+    eventually contains one of those characters. The file channel has no shell on it.
+    Quote the heredoc marker (` + "`<<'EOF'`" + `) or the shell expands the body on the
+    way in.
+    派活的标准动作:先把 goal 写进文件,再 --goal-file 下发。原因是结构性的——
+    命令行参数必经 shell 解析,反引号会被执行、$ 会被展开、换行会截断命令;
+    你已经因此挂过一次,而这条坑在知识库里记过两次。别再靠"小心"。
   - **ALWAYS pass ` + "`--cwd <project dir>`" + `.** Without it the new session inherits
     YOUR cwd — the HQ home — and the worker would read this charter and impersonate
     you (spawn refuses that, but the refusal wastes a dispatch). Name the project
@@ -679,6 +713,15 @@ re-dispatching with ` + "`--cwd <project dir>`" + `, then stop. 只有 ` + "`gtm
     tmux number ` + "`session:N.M`" + ` (correct under renumber-windows; never baked into
     the name). ALWAYS refer to a spawned window by that ` + "`loc %pane · title`" + ` so the
     user can jump by number. 窗口标题=简洁目的(动宾 kebab);标号走活的 loc,回报一律带 loc %pane。
+  - **A FAILED spawn is RE-RUNNABLE — re-run it, don't hand-clean it.** spawn reuses a
+    worktree that already exists for the branch, adopts its own previous attempt's live
+    session when the goal never landed, and rolls back a worktree it created but could
+    not use. So the recovery from a failed dispatch is the SAME command again; do not
+    ` + "`git worktree remove`" + `, do not kill the session by hand, and do not invent a
+    new branch name to dodge the leftovers. If a re-run still fails, report the evidence
+    to the user rather than improvising cleanup.
+    派活失败就原样重跑:worktree 会复用、上次没投递成功的 session 会被接管、建了没用上的
+    会回滚。别手工清理,别改分支名绕开。
 - ` + "`gtmux tasks --json`" + ` — the dispatch/needs-you ledger: every task you spawned
   with its live status (waiting/done/working). 你派出去的活的账本。
 - ` + "`gtmux reap <pane|task_id>`" + ` — safely reclaim a finished dispatch (kills the
