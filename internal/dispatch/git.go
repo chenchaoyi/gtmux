@@ -28,21 +28,45 @@ func SanitizeBranch(b string) string {
 	return strings.NewReplacer("/", "-", ":", "-", " ", "-").Replace(strings.Trim(b, "/"))
 }
 
-// AddWorktree adds a git worktree for branch off the repo containing dir, creating
-// the branch if it doesn't exist. Returns (path, branch).
-func AddWorktree(dir, branch string) (string, string, error) {
+// Worktree describes what AddWorktree acquired — and, for the rollback path, how much
+// of it this call is responsible for.
+type Worktree struct {
+	Path      string
+	Branch    string
+	Reused    bool // an existing worktree already served this branch; we adopted it
+	NewBranch bool // the branch did not exist and was created here
+}
+
+// AddWorktree acquires a git worktree for branch off the repo containing dir, creating
+// the branch if it doesn't exist.
+//
+// It is IDEMPOTENT by design: a worktree that already serves that branch is REUSED
+// rather than reported as a failure. The old behaviour turned every retry of a dispatch
+// that had failed after creating its worktree into `exit status 128` — the second
+// failure was caused entirely by the first one's leftovers, so re-running the identical
+// command could never converge. A path occupied by something that is NOT a worktree for
+// this branch stays a hard error: silently adopting an unrelated directory would be
+// worse than the 128 it replaces.
+func AddWorktree(dir, branch string) (Worktree, error) {
 	if dir == "" {
 		dir, _ = os.Getwd()
 	}
 	top, err := gitOutput(dir, "rev-parse", "--show-toplevel")
 	if err != nil || top == "" {
-		return "", "", fmt.Errorf("not a git repository: %s", dir)
+		return Worktree{}, fmt.Errorf("not a git repository: %s", dir)
+	}
+	// Already checked out somewhere → adopt it (this is the retry path).
+	if p, ok := worktreeForBranch(top, branch); ok {
+		return Worktree{Path: resolvePath(p), Branch: branch, Reused: true}, nil
 	}
 	base := os.Getenv("GTMUX_WORKTREE_DIR")
 	if base == "" {
 		base = top + "-wt"
 	}
 	path := filepath.Join(base, SanitizeBranch(branch))
+	if _, statErr := os.Stat(path); statErr == nil {
+		return Worktree{}, fmt.Errorf("%s already exists but is not a worktree for %s", path, branch)
+	}
 	exists := gitRun(top, "rev-parse", "--verify", "--quiet", "refs/heads/"+branch) == nil
 	if exists {
 		err = gitRun(top, "worktree", "add", path, branch)
@@ -50,9 +74,45 @@ func AddWorktree(dir, branch string) (string, string, error) {
 		err = gitRun(top, "worktree", "add", "-b", branch, path)
 	}
 	if err != nil {
-		return "", "", err
+		return Worktree{}, err
 	}
-	return path, branch, nil
+	return Worktree{Path: resolvePath(path), Branch: branch, NewBranch: !exists}, nil
+}
+
+// resolvePath normalizes a worktree path through its symlinks. Both acquisition paths
+// must agree byte-for-byte: the CREATE path builds the name from the repo root while the
+// REUSE path reads it back from `git worktree list`, and on macOS those differ by the
+// /var → /private/var symlink alone. Since the ledger matches a resumable attempt by this
+// exact string, an unnormalized pair would make a retry miss its own worktree and start
+// a second session — the very failure this is here to prevent.
+func resolvePath(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil && r != "" {
+		return r
+	}
+	return filepath.Clean(p)
+}
+
+// worktreeForBranch returns the LINKED worktree currently checked out on branch, if any.
+// The main working tree is deliberately excluded — `--worktree main` from a repo sitting
+// on main must not "reuse" (and later hand to reap) the main checkout itself.
+func worktreeForBranch(top, branch string) (string, bool) {
+	out, err := gitOutput(top, "worktree", "list", "--porcelain")
+	if err != nil {
+		return "", false
+	}
+	cur := ""
+	for _, line := range strings.Split(out, "\n") {
+		switch {
+		case strings.HasPrefix(line, "worktree "):
+			cur = strings.TrimPrefix(line, "worktree ")
+		case strings.HasPrefix(line, "branch "):
+			if strings.TrimPrefix(line, "branch ") == "refs/heads/"+branch &&
+				cur != "" && resolvePath(cur) != resolvePath(top) {
+				return cur, true
+			}
+		}
+	}
+	return "", false
 }
 
 // WorktreeContext resolves, from a directory, the enclosing git worktree root, its
@@ -169,6 +229,11 @@ func DeleteBranch(wt, branch string, force bool) error {
 	}
 	return gitRun(mainRepo(wt), "branch", flag, branch)
 }
+
+// MainRepo is mainRepo for callers outside the package — a rollback has to resolve the
+// main repo BEFORE it removes the worktree, since afterwards there is no directory left
+// to ask.
+func MainRepo(wt string) string { return mainRepo(wt) }
 
 // mainRepo returns the main working tree for a linked worktree (parent of the
 // shared git dir), so worktree/branch commands run from the main repo.

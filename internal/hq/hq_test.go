@@ -79,6 +79,30 @@ func TestPlaybookTeachesMaintenanceWakes(t *testing.T) {
 	}
 }
 
+// v13 (dispatch-file-channel): the charter must fix the STANDARD ACTION for carrying a
+// goal into a dispatch — write it to a file, pass `--goal-file` — and must carry the
+// REASON, because the caution alone demonstrably did not hold: this footgun sat in HQ's
+// knowledge base twice and had been generalized into a rule hours before it recurred. It
+// must also teach that a failed spawn is re-runnable, so HQ stops hand-cleaning
+// leftovers it is not allowed to touch.
+func TestPlaybookTeachesFileGoalChannel(t *testing.T) {
+	pb := hqInstructions
+	for _, want := range []string{
+		"--goal-file",       // the flag itself
+		"--message-file",    // the send-side twin
+		"<<'EOF'",           // the quoted heredoc — an unquoted one expands on the way in
+		"parsed by a shell", // the REASON, in the charter and not only in the docs
+		"RE-RUNNABLE",       // recovery is the same command, not manual cleanup
+	} {
+		if !strings.Contains(pb, want) {
+			t.Errorf("v13 playbook must teach the file goal channel; missing %q", want)
+		}
+	}
+	if hqPlaybookVersion < 13 {
+		t.Errorf("hqPlaybookVersion = %d, want ≥ 13 (dispatch-file-channel)", hqPlaybookVersion)
+	}
+}
+
 // A fresh seed writes a VERSIONED, managed AGENTS.md (the marker + playbook + LOCAL
 // import), the CLAUDE.md import, and a seed-once LOCAL.md; a re-run at the SAME
 // version is idempotent (no rewrite, no backup) — versioned-hq-playbook.

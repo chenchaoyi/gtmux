@@ -79,6 +79,62 @@ func TestLedger_Source(t *testing.T) {
 	}
 }
 
+// ResumableTask is what stops a retry from parking a SECOND empty session beside the
+// first. It must find only a previous attempt at THIS dispatch that never delivered its
+// goal — and must not reach for a landed dispatch, a borrowed pane, or someone else's
+// worktree.
+func TestResumableTask(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	landed := Task{ID: NewID(1000), Pane: "%1", Session: "s", Worktree: "/wt/x",
+		CreatedAt: 10, Delivered: true, OwnSession: true}
+	borrowed := Task{ID: NewID(2000), Pane: "%2", Session: "s", Worktree: "/wt/x",
+		CreatedAt: 20, Delivered: false, OwnSession: false} // --pane reuse: nothing spawn owns
+	other := Task{ID: NewID(3000), Pane: "%3", Session: "s", Worktree: "/wt/other",
+		CreatedAt: 30, Delivered: false, OwnSession: true}
+	old := Task{ID: NewID(4000), Pane: "%4", Session: "s", Worktree: "/wt/x",
+		CreatedAt: 40, Delivered: false, OwnSession: true}
+	newest := Task{ID: NewID(5000), Pane: "%5", Session: "s", Worktree: "/wt/x",
+		CreatedAt: 50, Delivered: false, OwnSession: true}
+	for _, task := range []Task{landed, borrowed, other, old, newest} {
+		if err := AddTask(task); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, ok := ResumableTask("/wt/x", "")
+	if !ok || got.ID != newest.ID {
+		t.Fatalf("ResumableTask(/wt/x) = %+v ok=%v, want the newest undelivered own-session entry (%s)", got, ok, newest.ID)
+	}
+	if _, ok := ResumableTask("/wt/nothing", ""); ok {
+		t.Error("an unrelated worktree must not resume")
+	}
+
+	// With no worktree, the derived session NAME is the key — and it must not match an
+	// entry that belongs to a worktree dispatch.
+	t.Setenv("HOME", t.TempDir())
+	plain := Task{ID: NewID(6000), Pane: "%6", Session: "fix-auth", CreatedAt: 60, OwnSession: true}
+	wtSame := Task{ID: NewID(7000), Pane: "%7", Session: "fix-auth", Worktree: "/wt/y",
+		CreatedAt: 70, OwnSession: true}
+	_ = AddTask(plain)
+	_ = AddTask(wtSame)
+	got, ok = ResumableTask("", "fix-auth")
+	if !ok || got.ID != plain.ID {
+		t.Fatalf("ResumableTask(\"\", fix-auth) = %+v ok=%v, want the worktree-less entry", got, ok)
+	}
+	if _, ok := ResumableTask("", "some-other-session"); ok {
+		t.Error("a different session name must not resume")
+	}
+
+	// An archived entry is closed business.
+	t.Setenv("HOME", t.TempDir())
+	_ = AddTask(Task{ID: NewID(8000), Pane: "%8", Session: "fix-auth", CreatedAt: 80,
+		OwnSession: true, Archived: true})
+	if _, ok := ResumableTask("", "fix-auth"); ok {
+		t.Error("an archived entry must not resume")
+	}
+}
+
 func TestNewID_Unique(t *testing.T) {
 	if NewID(1) == NewID(2) {
 		t.Fatalf("distinct timestamps should yield distinct ids")

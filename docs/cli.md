@@ -257,6 +257,43 @@ gtmux spawn --pane %14 "keep going, then run the tests"
 gtmux spawn --json "…"   # → {task_id, pane_id, loc, title, session, delivered, state, judged_by, evidence}
 ```
 
+**Write the goal to a FILE — that is the standard action.** Anything longer than one
+short line goes through `--goal-file <path>` (or `--goal-file -` for stdin), and
+`gtmux send` has the same channel as `--message-file <path|->`:
+
+```
+cat > /tmp/goal.txt <<'EOF'
+把 `hqPlaybookVersion` 提到 13，并且：
+1. 运行 `make check`
+2. 别让 shell 碰 $HOME 或 `for f in *; do echo $f; done`
+EOF
+gtmux spawn --title bump-playbook --cwd ~/src/gtmux --goal-file /tmp/goal.txt
+gtmux send %14 --message-file /tmp/reply.txt
+```
+
+The reason is structural, not stylistic: **a goal passed as a command-line argument is
+parsed by your shell before gtmux ever sees it.** Inside `"…"` a backticked span is
+EXECUTED, `$foo` is expanded, and a newline ends the command — so a goal like the one
+above dies with `command substitution: syntax error near unexpected token 'done'` and
+dispatches nothing. Any sufficiently long natural-language instruction eventually
+contains one of those characters, which is why "quote it carefully each time" is not a
+property you can rely on. The file channel has no shell on it at all: the bytes go file
+→ gtmux → `tmux load-buffer -` (a pipe) → the agent's input box. Exactly one
+normalization is applied and it is specified — at most one trailing newline is stripped,
+because every heredoc appends one. Passing both a file and a positional goal is an
+error, not a precedence rule. The positional form stays perfectly good for short
+instructions (`gtmux spawn --pane %14 "keep going"`).
+
+**Re-running a failed dispatch converges.** A spawn that dies partway used to leave a
+worktree the retry then tripped over (`exit status 128`) and an empty session per
+attempt. Now: `--worktree` REUSES a worktree that already serves that branch (a path
+held by a *different* branch is still a hard error); before creating a session, spawn
+looks for its own previous attempt — a ledger entry that owns its session, never got its
+goal delivered, and still has a live pane — and adopts that pane instead of parking a
+second one beside it, updating the SAME ledger row; and when a step fails with nothing
+resumable, a worktree/branch this invocation created is rolled back. Re-running the
+identical command therefore lands on one worktree, one session, one ledger entry.
+
 **Window-title standard.** `--title` names the window's PURPOSE — a concise verb-object
 kebab slug (`fix-auth-mw`, `review-pr-518`), which becomes the window + pane name across
 tmux, the radar, and the app. On success `spawn` reports the **standard handle**
@@ -320,7 +357,9 @@ soon as it confirms, so a healthy send stays fast); `--no-verify` opts out,
 (`{delivered, state, judged_by, evidence}` — verified sends only). What `--no-verify` and the mobile `POST /api/send`
 skip is the CONFIRMATION, not the mechanics: every text path pastes and then sends
 Enter as its own key, so an unverified send can't split a multi-line message either.
-`--key` remains a single keystroke.
+`--key` remains a single keystroke. For anything longer than a short line, use
+`--message-file <path|->` for the same reason `spawn` has `--goal-file`: text passed as
+an argument has to survive your shell first.
 
 `gtmux tasks [--json]` is the **dispatch / needs-you ledger**: every task you spawned
 with its live status (waiting / done / working / gone), needs-you first.

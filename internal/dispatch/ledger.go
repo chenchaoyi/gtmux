@@ -143,6 +143,41 @@ func TaskForPane(pane string) (Task, bool) {
 	return found, ok
 }
 
+// ResumableTask finds a PREVIOUS ATTEMPT at this same dispatch — one that created a
+// session but never got its goal into the agent — so a re-run can adopt it instead of
+// minting a second empty session beside it. Match rules, all required:
+//
+//   - `delivered:false` — a dispatch that landed is finished work, never something to
+//     silently re-enter; re-running after a success is a genuinely new dispatch.
+//   - `own_session` — spawn created that session, so spawn may reuse it. A `--pane`
+//     dispatch borrowed someone else's pane and has nothing to resume.
+//   - the same TARGET: the worktree path when this dispatch uses one (the strongest
+//     key — a worktree is per-branch), else the session name spawn derives from
+//     title/branch/goal, which is deterministic for the same command.
+//
+// Liveness is deliberately NOT checked here: the ledger records what was created, and
+// the pane is the source of truth for what survived. The caller checks the pane and
+// falls through to a fresh session when it is gone.
+func ResumableTask(worktree, session string) (Task, bool) {
+	var found Task
+	ok := false
+	for _, t := range ListTasks() {
+		if t.Delivered || !t.OwnSession || t.Pane == "" || t.Archived {
+			continue
+		}
+		match := false
+		if worktree != "" {
+			match = t.Worktree == worktree
+		} else {
+			match = t.Worktree == "" && session != "" && t.Session == session
+		}
+		if match && (!ok || t.CreatedAt > found.CreatedAt) {
+			found, ok = t, true
+		}
+	}
+	return found, ok
+}
+
 // RemoveTask deletes a ledger entry (and its reap-suggested marker).
 func RemoveTask(id string) {
 	state.Remove(taskPath(id))

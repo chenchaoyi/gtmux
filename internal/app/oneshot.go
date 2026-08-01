@@ -2,13 +2,16 @@ package app
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -30,7 +33,7 @@ import (
 //
 // usage (plumbing, not a user command): gtmux oneshot-run --agent <key> [--model <m>] -- <goal…>
 func cmdOneshotRun(args []string) int {
-	agent, model := "", ""
+	agent, model, goalFile := "", "", ""
 	var goalParts []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -44,6 +47,11 @@ func cmdOneshotRun(args []string) int {
 				i++
 				model = args[i]
 			}
+		case "--goal-file":
+			if i+1 < len(args) {
+				i++
+				goalFile = args[i]
+			}
 		case "--":
 			goalParts = append(goalParts, args[i+1:]...)
 			i = len(args)
@@ -52,6 +60,14 @@ func cmdOneshotRun(args []string) int {
 		}
 	}
 	goal := strings.TrimSpace(strings.Join(goalParts, " "))
+	if goalFile != "" {
+		g, err := readGoalFile(goalFile)
+		if err != nil {
+			i18n.Sae("gtmux oneshot-run: --goal-file: "+err.Error(), "gtmux oneshot-run: --goal-file: "+err.Error())
+			return 2
+		}
+		goal = g
+	}
 	spec := driver.For(agent).Headless
 	if spec == nil || goal == "" {
 		i18n.Sae("gtmux oneshot-run: needs a headless-capable --agent and a goal",
@@ -194,16 +210,63 @@ func cwdOf(pane string) string {
 }
 
 // oneshotLaunch types the runner command into a pane's shell, proxy-wrapped by
-// construction like any spawn launch. The goal is shell-quoted (and whitespace-
-// normalized — it is typed as ONE line into a shell) so it survives as a single
-// argv element.
+// construction like any spawn launch.
+//
+// The goal reaches the runner as FILE CONTENT whenever it is more than one short line.
+// The inline form shell-quotes AND whitespace-collapses the goal — it is typed as one
+// line into a shell — so a multi-line instruction silently lost its structure, and a long
+// one made an unreadable command line. A short single-line goal keeps the inline form
+// because seeing the actual command in the pane is worth something.
 func oneshotLaunch(pane, agent, model, goal string) {
 	cmd := "gtmux oneshot-run --agent " + agent
 	if model != "" {
 		cmd += " --model " + shellQuote(model)
 	}
-	cmd += " -- " + shellQuote(strings.Join(strings.Fields(goal), " "))
+	if path, err := stageGoalFile(goal); err == nil {
+		cmd += " --goal-file " + shellQuote(path)
+	} else {
+		cmd += " -- " + shellQuote(strings.Join(strings.Fields(goal), " "))
+	}
 	_ = tmux.SendText(pane, agentenv.Wrap(cmd), true)
+}
+
+// stageGoalFile writes a one-shot goal to a private file for the runner to read, so the
+// bytes never become a shell word. A short single-line goal is refused (err) so the
+// caller keeps the readable inline form.
+func stageGoalFile(goal string) (string, error) {
+	if !strings.Contains(goal, "\n") && len(goal) <= oneshotInlineMax {
+		return "", errInlineGoal
+	}
+	dir := filepath.Join(state.Dir(), "dispatch", "goals")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	f, err := os.CreateTemp(dir, "goal-*.txt")
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	if _, err := f.WriteString(goal); err != nil {
+		return "", err
+	}
+	return f.Name(), nil
+}
+
+// oneshotInlineMax is how long a single-line goal may be before it is staged to a file
+// rather than typed onto the launch line.
+const oneshotInlineMax = 200
+
+var errInlineGoal = errors.New("goal is short enough to pass inline")
+
+// readGoalFile reads a staged goal and removes the file — the runner is its only
+// consumer, and a goal left on disk is a stale copy of an instruction.
+func readGoalFile(path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	_ = os.Remove(path)
+	return dispatch.TrimPayload(string(b)), nil
 }
 
 // shellQuote single-quotes s for a POSIX shell, escaping embedded single quotes.

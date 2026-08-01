@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -27,10 +28,19 @@ func cmdSend(args []string) int {
 	force := false
 	asJSON := false
 	key := ""
+	msgFile := ""
 	var rest []string
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
+		case a == "--message-file":
+			if i+1 >= len(args) {
+				return sendUsage()
+			}
+			i++
+			msgFile = args[i]
+		case strings.HasPrefix(a, "--message-file="):
+			msgFile = strings.TrimPrefix(a, "--message-file=")
 		case a == "--no-enter":
 			enter = false
 			verify = false // nothing was submitted to verify
@@ -66,6 +76,29 @@ func cmdSend(args []string) int {
 	}
 	pane := rest[0]
 	text := strings.Join(rest[1:], " ")
+	// The SHELL-FREE message channel. `gtmux send <pane> <text…>` makes the caller hand
+	// a shell a safe rendering of arbitrary prose — a guarantee no caller can hold, since
+	// a backtick inside double quotes is EXECUTED rather than sent. --message-file takes
+	// the bytes straight off disk (or stdin), and they reach the pane's input box
+	// verbatim via the paste buffer's pipe.
+	if msgFile != "" {
+		if text != "" {
+			i18n.Sae("gtmux send: --message-file and positional text are mutually exclusive — pass one",
+				"gtmux send: --message-file 与位置参数文本只能二选一")
+			return 2
+		}
+		if key != "" {
+			i18n.Sae("gtmux send: --message-file cannot be combined with --key",
+				"gtmux send: --message-file 不能与 --key 同时使用")
+			return 2
+		}
+		m, err := dispatch.ReadPayload(msgFile, os.Stdin)
+		if err != nil {
+			i18n.Sae("gtmux send: --message-file: "+err.Error(), "gtmux send: --message-file: "+err.Error())
+			return 2
+		}
+		text = m
+	}
 
 	if tmux.Bin == "" || tmux.Display(pane, "#{pane_id}") == "" {
 		i18n.Sae("gtmux send: pane not found", "gtmux send: 找不到该 pane")
@@ -178,8 +211,8 @@ type sendJSON struct {
 }
 
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--json] [--key NAME]",
-		"用法：gtmux send <pane> <text…> [--no-enter] [--no-verify] [--force] [--json] [--key 键名]")
+	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin) — use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.",
+		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息——超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。")
 	return 2
 }
 
