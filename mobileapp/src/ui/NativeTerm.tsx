@@ -149,6 +149,12 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
   // Plain (ANSI-stripped) text of the same capped lines — the content of the
   // transparent selection layer. Cursor cell is intentionally excluded.
   const plainText = useMemo(() => lines.map(spans => spans.map(s => s.text).join('')).join('\n'), [lines]);
+  // linkify the SAME plain text so the tappable URL spans live on the TOP (selection)
+  // layer — the only layer that actually receives touches. The color layer underneath
+  // just draws the underline; its onPress never fires because this overlay is on top,
+  // so the tap MUST be handled here (verified on-device: a color-layer onPress was
+  // swallowed by this selectable overlay).
+  const plainSegs = useMemo(() => linkify(plainText), [plainText]);
 
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
   // follow-live behavior. Both track the same "near the tail" test.
@@ -261,7 +267,17 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
               tints the colored text behind it; Copy works; FLAT text so the
               highlight paints on-device. */}
           <Text selectable selectionColor="rgba(52,120,247,0.5)" style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
-            {plainText}
+            {plainSegs.length === 1 && !plainSegs[0].url
+              ? plainText
+              : plainSegs.map((seg, i) =>
+                  seg.url ? (
+                    <Text key={i} onPress={() => Linking.openURL(seg.url!)}>
+                      {seg.text}
+                    </Text>
+                  ) : (
+                    seg.text
+                  ),
+                )}
           </Text>
         </View>
       </ScrollView>
