@@ -44,3 +44,16 @@ func nextSeq() int64 {
 	}
 	return next
 }
+
+// CurrentSeq returns the last sequence number ASSIGNED — a single small file read,
+// with no parsing of the log at all. `LatestSeq` answers the same question by scanning
+// every retained record (tens of MB), which is fine once per pull but not on a 20 s
+// tick: the unconsumed-watermark sensor compares the stream's end against HQ's cursor
+// on EVERY tick, and a full-log scan there would make perception cost more than the
+// events it is watching.
+//
+// It is >= LatestSeq by construction — the counter never rewinds, while the record
+// carrying its value can rotate away — which is the correct bias for a watermark: a
+// consumer is behind until it says otherwise. 0 when the counter has never been written
+// (no event has ever been appended).
+func CurrentSeq() int64 { return state.ReadInt64Marker(seqPath()) }

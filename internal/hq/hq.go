@@ -102,7 +102,14 @@ import (
 //	      that same morning, which is the evidence that a caution is not a mechanism. The
 //	      playbook now teaches write-file → `--goal-file` (and `send --message-file`) as
 //	      the default posture, plus the re-run-converges guarantee.
-const hqPlaybookVersion = 13
+//	v14 — hq-watermark-wakes: perception stops being a whitelist. gtmux tracks HQ's
+//	      CONSUMPTION WATERMARK and knocks `unread` for anything past it, so the wake
+//	      classes are demoted to PRIORITY labels — what to read first, never what exists.
+//	      The playbook teaches the guarantee (an unconsumed event re-knocks until read),
+//	      what does and does not count as consumption (unfiltered delta yes; a filtered or
+//	      skip-ahead read no), and the explicit `gtmux events --ack` writeback — and drops
+//	      the per-class "remember to check for it" patches the old model needed.
+const hqPlaybookVersion = 14
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -793,7 +800,26 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   not landing — you may have missed wakes; reconcile by PULL, ` + "`gtmux digest --json`" + `
   + the event delta, and surface it) · ` + "`tick`" + ` (summary due — emit ONE brief) ·
   ` + "`distill` / `self-check`" + ` (a periodic MAINTENANCE pass is due — the two rituals
-  below; they arrive LAST, behind every decision knock, and are silent by default).
+  below; they arrive LAST, behind every decision knock, and are silent by default) ·
+  ` + "`unread`" + ` (the completeness net — below).
+- **The classes tell you what to look at FIRST, not what EXISTS.** A class is a PRIORITY
+  label, never the set of things you know about. gtmux cannot judge which events matter to
+  you — only you know what you are waiting on — so it does not try. It tracks a
+  CONSUMPTION WATERMARK (how far you have read the stream) and knocks
+  ` + "`» gtmux·unread  K unconsumed │ pull: gtmux events --since-seq <n> --json`" + ` whenever
+  events sit past it. **Therefore you never have to remember to poll.** Anything you have
+  not consumed knocks again, and keeps knocking, until you do. A class that did not fire is
+  not a thing that did not happen. 类只决定先看什么,不决定你知不知道;没消费的会一直敲。
+- **Your unfiltered ` + "`--since-seq`" + ` delta IS the writeback.** Running
+  ` + "`gtmux events --since-seq <n> --json`" + ` from this directory advances the watermark to
+  the end of what it returned — the everyday loop already does it, no new step. Two things
+  do NOT advance it, both on purpose: a ` + "`--severity`" + `-FILTERED read (you saw a subset,
+  so the rest is still owed — the "a filter is a triage shortcut" rule, mechanized), and a
+  read that starts AHEAD of your watermark (a peek at the tail skips the range between).
+  If you reconciled some other way — a full ` + "`gtmux digest --json`" + ` — write it back
+  explicitly with ` + "`gtmux events --ack <seq>`" + `. Not writing back is not an error; it
+  just means you still owe the read, and you will be told so again.
+  过滤读/跳读不算消费;用别的方式对完账就 ` + "`--ack`" + ` 显式回写。
 - **A repeated ` + "`#<id>`" + ` is a RE-SEND, not a second event.** Every wake batch ends
   with a short id (` + "`… · #a3f1c2`" + `). Delivery is confirmed on screen and retried when
   the confirmation is missed, so the same batch can arrive twice — carrying the SAME id.
@@ -818,11 +844,19 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   curation. 定期蒸馏沉淀。
 - **BOTH maintenance triggers are ALSO stream records**, not just knocks: gtmux raises them
   from its resident serve process on a fixed cadence (distill ≈ weekly or when the capture
-  queue fills, self-check ≈ daily), and each one is appended to the event log. So a knock
-  you missed is NOT lost — a ` + "`[CONTROL gtmux:…]`" + ` line in your ` + "`--since-seq`" + `
-  delta means that pass is still owed; run it then. You have no timer of your own: a
-  periodic ritual happens because gtmux raises it, never because you remembered.
-  两个维护触发既是唤醒线、也是事件流记录:漏了敲门不算作废,增量里看到 CONTROL 行就把这次补上。
+  queue fills, self-check ≈ daily), and each one is appended to the event log — so a
+  ` + "`[CONTROL gtmux:…]`" + ` line in your delta means that pass is still owed; run it then.
+  Like everything else in the stream, it is covered by the watermark: a missed knock is
+  recoverable by pull, and it is not you who has to remember that.
+  You have no timer of your own — a periodic ritual happens because gtmux raises it.
+  维护触发既是唤醒线也是事件流记录,同样受水位保底:漏敲不作废,增量里补上即可。
+- UNREAD: on an ` + "`unread`" + ` wake, do exactly what the loop always does — pull the delta
+  it names, judge it, act. It carries a COUNT and nothing else, on purpose: gtmux is telling
+  you that events exist which it could not classify for you, not that they are urgent. Most
+  will be routine; the point is that the ones that are not can no longer go missing. If it
+  repeats with the same count, YOU DID NOT CONSUME — check that your pull is the unfiltered
+  ` + "`--since-seq`" + ` form (a filtered read does not clear the debt).
+  ` + "`unread`" + ` 只报条数、不报重要性:照常拉增量判读;同样的数字反复出现说明你没真消费。
 - PERCEPTION SELF-HEAL DISCIPLINE: on ` + "`feed-degraded`" + ` / ` + "`wake-degraded`" + `, gtmux's
   OWN mechanical self-heal has ALREADY run — the wake is a report, not a request to
   restart. Do NOT reflexively nag the user to restart. First VERIFY BY PULL

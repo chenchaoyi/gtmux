@@ -57,6 +57,7 @@ func CmdEvents(args []string) int {
 	follow, jsonOut := false, false
 	since := int64(0)
 	sinceSeq := int64(-1) // -1 = not given (0 is a valid cursor: "everything retained")
+	ackSeq := int64(-1)   // -1 = not given (0 is a valid ack: "back to the start")
 	minSeverity := ""     // "" = no filter
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -89,6 +90,22 @@ func CmdEvents(args []string) int {
 				return eventsUsage()
 			}
 			sinceSeq = n
+		case a == "--ack":
+			if i+1 >= len(args) {
+				return eventsUsage()
+			}
+			i++
+			n, err := strconv.ParseInt(strings.TrimSpace(args[i]), 10, 64)
+			if err != nil || n < 0 {
+				return eventsUsage()
+			}
+			ackSeq = n
+		case strings.HasPrefix(a, "--ack="):
+			n, err := strconv.ParseInt(strings.TrimSpace(strings.TrimPrefix(a, "--ack=")), 10, 64)
+			if err != nil || n < 0 {
+				return eventsUsage()
+			}
+			ackSeq = n
 		case a == "--severity":
 			if i+1 >= len(args) {
 				return eventsUsage()
@@ -112,6 +129,10 @@ func CmdEvents(args []string) int {
 		}
 	}
 
+	if ackSeq >= 0 {
+		return cmdEventsAck(ackSeq) // explicit writeback; reads nothing
+	}
+
 	// Filter to "this level and above" so a supervisor can triage without reading every
 	// raw line (an absent severity on a legacy record ranks as routine). A filtered read
 	// is a SHORTCUT, not a complete picture: `important` is the escalation subset, and
@@ -133,12 +154,27 @@ func CmdEvents(args []string) int {
 		// Sequence-filtered delta read (hq-perception-v2): everything retained with
 		// seq strictly greater than the cursor, oldest first — the pull-on-wake
 		// primitive. Combinable with --severity/--json; --follow is ignored (one-shot).
+		maxSeq := sinceSeq
 		for _, r := range events.Read(0, time.Now().Unix()) {
 			if r.Seq > sinceSeq {
+				if r.Seq > maxSeq {
+					maxSeq = r.Seq
+				}
 				print(r)
 			}
 		}
 		stampHQPull()
+		// This delta read IS HQ's consumption writeback (hq-watermark-wakes): the everyday
+		// path needs no new discipline, because pulling on a wake is what HQ already does.
+		//
+		// A FILTERED read deliberately does not count. `--severity important` shows the
+		// escalation subset, so treating it as consumption would let HQ mark a range read
+		// while never seeing most of it — the playbook's "a filter is a triage shortcut,
+		// never your model of the world" turned from advice into mechanism. Reading
+		// filtered simply leaves the debt standing, and the next knock names it again.
+		if minSeverity == "" {
+			consumeHQRead(sinceSeq, maxSeq)
+		}
 		return 0
 	}
 
@@ -166,8 +202,8 @@ func CmdEvents(args []string) int {
 }
 
 func eventsUsage() int {
-	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important]",
-		"用法：gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important]")
+	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
+		"用法：gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
 	i18n.Say("  The live stream of every session's lifecycle events — the subscription",
 		"  每个 session 生命周期事件的实时流 —— gtmux HQ 及脚本的订阅入口。")
 	i18n.Say("  gtmux HQ and scripts tail it. Bare form shows the last hour.",
@@ -182,6 +218,14 @@ func eventsUsage() int {
 		"  --since-seq N：一次性读取序号 N 之后的全部事件(唤醒后拉增量用)。")
 	i18n.Say("  (the pull-on-wake primitive — HQ reads exactly the delta a wake covered).",
 		"  (即唤醒线覆盖区间的增量拉取原语)。")
+	i18n.Say("  An UNFILTERED --since-seq read from the HQ home advances HQ's consumption",
+		"  从中控目录运行的不过滤 --since-seq 读取会推进中控的消费水位;")
+	i18n.Say("  watermark; anything past it re-knocks as `unread` until consumed.",
+		"  水位之后仍未消费的事件会以 `unread` 反复敲门,直到被消费。")
+	i18n.Say("  --ack N: write the watermark back explicitly (HQ home only), for when the",
+		"  --ack N：显式回写水位(仅中控目录),用于以别的方式(如 digest 全量对账)")
+	i18n.Say("  stream was reconciled another way (a full `gtmux digest`).",
+		"  完成消费的场合。")
 	return 0
 }
 
@@ -189,7 +233,43 @@ func eventsUsage() int {
 // home (cwd-keyed — the same role rule the radar uses). Any other caller is not
 // the supervisor and must not refresh its consumer stamp.
 func stampHQPull() {
-	if cwd, err := os.Getwd(); err == nil && cwd == state.HQHome() {
+	if fromHQHome() {
 		hqwake.StampPull()
 	}
+}
+
+// fromHQHome reports whether this invocation is the supervisor speaking — the cwd-keyed
+// role rule the radar and the pull stamp already use. HQ's watermark is HQ's alone: a
+// worker running `gtmux events` in some repo must never be able to declare the
+// supervisor caught up.
+func fromHQHome() bool {
+	cwd, err := os.Getwd()
+	return err == nil && cwd == state.HQHome()
+}
+
+// consumeHQRead advances HQ's consumption watermark for a completed delta read.
+func consumeHQRead(from, to int64) {
+	if fromHQHome() {
+		hqwake.ConsumeRead(from, to)
+	}
+}
+
+// cmdEventsAck implements `gtmux events --ack <seq>`: the EXPLICIT writeback, for when HQ
+// consumed the stream some way other than an unfiltered delta read (a full `gtmux digest`
+// reconcile, a filtered read it judged complete). It performs no read of its own — it only
+// moves the cursor, monotonically, and never past the end of the stream, so a mistyped
+// value cannot blind HQ to everything up to it.
+func cmdEventsAck(seq int64) int {
+	if !fromHQHome() {
+		i18n.Sae("gtmux events --ack: only the HQ session can acknowledge its own watermark (run it from "+state.HQHome()+")",
+			"gtmux events --ack：只有中控会话能回写自己的消费水位（请在 "+state.HQHome()+" 下运行）")
+		return 1
+	}
+	if latest := events.CurrentSeq(); seq > latest {
+		seq = latest
+	}
+	hqwake.Consume(seq)
+	i18n.Say("consumed through seq "+strconv.FormatInt(hqwake.Consumed(), 10),
+		"已消费至序号 "+strconv.FormatInt(hqwake.Consumed(), 10))
+	return 0
 }

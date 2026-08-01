@@ -168,9 +168,44 @@ func doctorSections() []dsection {
 	// rows would report a cadence for a thing that does not exist.
 	if fileExists(state.HQHome()) {
 		secs = append(secs, dsection{i18n.Tr("HQ maintenance", "中控维护"),
-			hqMaintenanceChecks(time.Now().Unix())})
+			append([]dcheck{hqConsumptionCheck(time.Now().Unix())},
+				hqMaintenanceChecks(time.Now().Unix())...)})
 	}
 	return secs
+}
+
+// hqConsumptionCheck reports whether HQ is keeping up with the event stream — the
+// observability half of the consumption watermark (hq-watermark-wakes). Perception is
+// silent by design in BOTH directions: a knock leaves no trace on any screen the user
+// reads, and so does a knock that never lands. Before this row, "HQ has consumed nothing
+// for two hours" was indistinguishable from "nothing happened for two hours", and the only
+// detector was the commander noticing that a finished job went unremarked — which is
+// exactly how the 2026-08-01 miss surfaced.
+func hqConsumptionCheck(now int64) dcheck {
+	label := i18n.Tr("event consumption", "事件消费")
+	c := hq.ConsumptionStatus(now)
+	switch c.State {
+	case hq.MaintenanceNever:
+		return dcheck{stInfo, label, i18n.Tr("no watermark yet", "尚无水位"),
+			i18n.Tr("HQ has not pulled the stream yet — expected before its first wake",
+				"中控还没拉过事件流 —— 首次唤醒前属正常")}
+	case hq.MaintenanceSlipped:
+		value := strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费")
+		if c.StandingSec > 0 {
+			value += " · " + hq.HumanAgeShort(c.StandingSec)
+		}
+		return dcheck{stRec, label, value,
+			i18n.Tr("HQ is not consuming what it is knocked about — check the HQ pane for a stuck draft",
+				"中控没在消费敲给它的事件 —— 检查中控窗格输入框是否卡住")}
+	default:
+		if c.Unread == 0 {
+			return dcheck{stOK, label, i18n.Tr("caught up", "已跟上"),
+				i18n.Tr("HQ has read the stream through its end", "中控已读到事件流末尾")}
+		}
+		return dcheck{stOK, label, strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费"),
+			i18n.Tr("a normal in-flight delta — it re-knocks until consumed",
+				"正常在途增量 —— 未消费会持续敲门")}
+	}
 }
 
 // hqMaintenanceChecks reports whether HQ's two periodic rituals are actually running.

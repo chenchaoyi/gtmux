@@ -55,6 +55,14 @@ const (
 	// by the queue order rather than by silence.
 	ClassDistill   = "distill"
 	ClassSelfCheck = "self-check"
+	// ClassUnread is the COMPLETENESS net, and the only class that is not about a kind of
+	// event at all: it fires when the stream has moved past HQ's consumption watermark and
+	// stayed there. Every other class is a judgment gtmux makes about an event's
+	// importance — a judgment it lacks the context to make, which is why each unanticipated
+	// scenario went silently missing until a whitelist entry was added for it. This one
+	// asks only "is HQ behind?", which needs no context, and so it cannot have a blind
+	// spot. It carries no severity claim, just a count and the cursor to pull from.
+	ClassUnread = "unread"
 )
 
 // Sigil opens every injected line. U+00BB — Latin-1-safe, so it survives the
@@ -97,6 +105,10 @@ var classPriority = map[string]int{
 	// cadence, so it must both drain LAST and be evicted FIRST at the queue cap.
 	ClassDistill:   PriorityStanding,
 	ClassSelfCheck: PriorityStanding,
+	// Unread is standing by the same definition — it re-fires as long as the debt stands,
+	// so evicting it costs nothing, and it must never arrive ahead of the decision knock
+	// it is the backstop for.
+	ClassUnread: PriorityStanding,
 }
 
 // PriorityOf reads a wake line's class out of its own `» gtmux·<class>` prefix and
