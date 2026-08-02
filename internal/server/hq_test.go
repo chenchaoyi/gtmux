@@ -165,7 +165,7 @@ func TestTranscriptAnnouncesDroppedTurns(t *testing.T) {
 // way to learn otherwise was to walk over to the Mac.
 func TestSendReportsAMessageThatWasNotSubmitted(t *testing.T) {
 	s := hqTestServer(t, Deps{
-		Send: func(_, text, _ string, _ bool) error {
+		Send: func(_, text, _ string, _ bool, _ string) error {
 			if text == "a very long message" {
 				return errSendNotSubmitted
 			}

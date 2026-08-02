@@ -115,7 +115,17 @@ func Deliver(io IO, opts Opts, text string) Result {
 	start := io.Now()
 
 	// 2·3 · Paste with the fragment guard (incident ③).
-	if !pasteWithGuard(io, opts, text) {
+	//
+	// For a HOOK-EQUIPPED agent we DO NOT abort on the guard's "settled fragment" verdict:
+	// on a busy pane that verdict is usually a redraw race where the FULL paste actually
+	// landed, and letting the fragile pre-submit screen scrape be the final word is the
+	// recurring false "input box didn't confirm the full message". Submit anyway and let the
+	// deterministic receipt below judge — the UserPromptSubmit event is matched on the FULL
+	// needle, so a complete paste confirms (StateLanded) and a genuinely truncated one won't
+	// match (StateFailed). A hook-LESS agent has no receipt, so the draft scrape stays its
+	// only confirmation and a settled fragment must still fail (submitting a known-truncated
+	// draft is worse than reporting it).
+	if !pasteWithGuard(io, opts, text) && !opts.HookEquipped {
 		return Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), JudgedBy: JudgedByScreen}
 	}
 	if io.RecordSend != nil {

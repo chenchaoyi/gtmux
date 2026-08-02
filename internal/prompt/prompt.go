@@ -174,15 +174,16 @@ var bootBanners = map[string][]string{
 //
 // Scope + anchoring both matter. An earlier version did strings.Contains over the WHOLE
 // capture for bare words like "Loading"/"Connecting", so ANY pane whose scrollback or
-// agent output merely MENTIONED those words permanently failed readiness — every
-// `gtmux send` (CLI, --message-file, and the mobile POST /api/send) refused forever and
-// the phone's send bar wedged with no recovery (root-caused 2026-08-01 on a dev pane
-// whose transcript was literally discussing "still connecting / loading"). A boot banner
-// is bottom chrome shown WHERE the composer will be, so we scan only the bottom region
-// (like hasPromptLine), and a one-word spinner signature must ANCHOR the line — the line
-// IS "Connecting…", not prose that happens to contain "connecting". Multi-word
-// signatures ("MCP servers need authentication") are specific enough to match anywhere
-// on a bottom line.
+// agent output merely MENTIONED those words permanently failed IsComposerReady — which
+// gates `gtmux spawn` and HQ's briefing dispatch (their READY handshake before pasting a
+// goal). NB: it does NOT gate `gtmux send` / `POST /api/send`; those never call
+// IsComposerReady — a phone "input box didn't confirm" is the pre-submit paste guard, a
+// different scrape. Root-caused 2026-08-01 on a dev pane whose transcript was literally
+// discussing "still connecting / loading". A boot banner is bottom chrome shown WHERE the
+// composer will be, so we scan only the bottom region (like hasPromptLine), and a one-word
+// spinner signature must ANCHOR the line — the line IS "Connecting…", not prose that
+// happens to contain "connecting". Multi-word signatures ("MCP servers need
+// authentication") are specific enough to match anywhere on a bottom line.
 func hasBootBanner(capture, agent string) bool {
 	sigs := bootBanners[""]
 	if agent != "" {

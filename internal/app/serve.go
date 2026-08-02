@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -685,7 +686,7 @@ func turnsWithinBudget(turns []transcript.Turn, budget int) (kept []transcript.T
 // submitted a multi-line reply truncated (or left an unterminated paste that ate the
 // Enter). The pre-submit confirm removes that race without the CLI's post-submit
 // verify budget, so the phone path stays fast (a healthy paste confirms in a frame).
-func sendToPane(id, text, key string, enter bool) error {
+func sendToPane(id, text, key string, enter bool, sendID string) error {
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
 		return fmt.Errorf("pane not found")
 	}
@@ -699,18 +700,35 @@ func sendToPane(id, text, key string, enter bool) error {
 		return tmux.SendKey(id, key)
 	}
 	if text != "" && enter {
-		// Confirm-then-submit: never race Enter against a still-rendering paste.
-		//
-		// REPORT the verdict. This return used to be a bare nil, so when the guard
-		// correctly refused to submit an unconfirmed draft the API still answered
-		// success — the phone showed the message as sent while it sat in the box,
-		// unsubmitted, with no way for the user to learn that except by looking at the
-		// Mac. A delivery we could not confirm is a failure, and the caller has to hear
-		// about it to offer a retry.
-		if !dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text) {
-			return fmt.Errorf("not submitted: the pane's input box did not settle on the full message")
+		// send-idempotent-receipt. The phone send now goes through the FULL verified state
+		// machine (`Deliver`), not the fire-and-pre-confirm `PasteAndSubmit`, for two reasons:
+		//   • IDEMPOTENCY (A): a phone RETRY reuses the same sendID, so a send that already
+		//     landed returns success WITHOUT re-injecting — killing the double-send an
+		//     ambiguous network timeout used to cause. A sendID is the dedup key (force the
+		//     interlock off so a LEGIT repeat with a fresh id still sends); an old client with
+		//     no sendID falls back to the payload-hash interlock (RefusedDup → success).
+		//   • RECEIPT-BACKED (B): the deterministic UserPromptSubmit receipt is the truth, not
+		//     the fragile pre-submit draft scrape that produced the recurring false "input box
+		//     didn't confirm the full message".
+		if sendID != "" && sendCacheSucceeded(sendID) {
+			return nil // already landed under this id — idempotent no-op
 		}
-		return nil
+		agentCmd := tmux.Display(id, "#{pane_current_command}")
+		force := sendID != "" // a sendID dedups; without one, keep the payload-hash interlock
+		res := dispatch.Deliver(dispatchbridge.DispatchIO(id),
+			dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning()), text)
+		switch res.State {
+		case dispatch.StateLanded, dispatch.StateQueued, dispatch.StateRefusedDup:
+			if res.Delivered {
+				dispatch.MarkAwaited(id)
+			}
+			if sendID != "" {
+				sendCacheRecord(sendID)
+			}
+			return nil
+		default: // StateFailed
+			return fmt.Errorf("not confirmed: the pane's input box did not settle on the full message")
+		}
 	}
 	if text != "" {
 		// A SINGLE-LINE send with no submit is a KEYSTROKE, not a paste. An agent's
@@ -740,6 +758,36 @@ func sendToPane(id, text, key string, enter bool) error {
 // newlines don't reach the TUI as bare Returns that submit each line separately.
 func keystrokeText(text string) bool {
 	return text != "" && !strings.Contains(text, "\n")
+}
+
+// sendCache remembers which client send-ids already LANDED (send-idempotent-receipt), so a
+// phone RETRY after an ambiguous network failure returns success WITHOUT re-injecting the
+// message. Only successes are cached — a failed id stays retryable — and it is TTL-pruned so
+// it can't grow unbounded.
+var (
+	sendCacheMu  sync.Mutex
+	sendCacheMap = map[string]int64{} // sendID → unix seconds it landed
+)
+
+const sendCacheTTLSec = 5 * 60
+
+func sendCacheSucceeded(id string) bool {
+	sendCacheMu.Lock()
+	defer sendCacheMu.Unlock()
+	ts, ok := sendCacheMap[id]
+	return ok && time.Now().Unix()-ts < sendCacheTTLSec
+}
+
+func sendCacheRecord(id string) {
+	now := time.Now().Unix()
+	sendCacheMu.Lock()
+	defer sendCacheMu.Unlock()
+	sendCacheMap[id] = now
+	for k, ts := range sendCacheMap { // opportunistic prune
+		if now-ts >= sendCacheTTLSec {
+			delete(sendCacheMap, k)
+		}
+	}
 }
 
 // saveUpload writes an uploaded file under ~/.local/share/gtmux/uploads with a

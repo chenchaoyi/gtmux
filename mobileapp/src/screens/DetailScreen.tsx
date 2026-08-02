@@ -50,6 +50,12 @@ const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
 // remembered across panes/sessions, so A−/A+ in either mode adjusts both and sticks.
 const FONT_IDX_KEY = 'detail.fontIdx';
 
+// newSendId mints a client idempotency token for one send (reused across a Retry). Not
+// security-sensitive — just unique-enough that the server can dedup a retried delivery.
+function newSendId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
 export function DetailScreen({route, navigation}: any) {
@@ -266,16 +272,21 @@ export function DetailView({
   // (the big win over a remote tunnel). Late bumps catch a slow TUI redraw.
   const sendPane = useCallback(
     (payload: SendPayload) => {
+      // Attach a client idempotency token the FIRST time. A Retry re-sends this SAME
+      // payload object (send_id preserved), so an ambiguous network failure — where the
+      // send may have landed on the Mac but the response never came back — can be retried
+      // without double-sending: the server no-ops a send_id that already landed.
+      const p: SendPayload = payload.send_id ? payload : {...payload, send_id: newSendId()};
       setFailedSend(null);
       client
-        .send(agent.pane_id, payload)
+        .send(agent.pane_id, p)
         .then(snap => {
           // null = the server refused (it could not confirm the full message reached
           // the input box, so it declined to press Enter). Surface it and KEEP the
           // text: a silently dropped message is the one failure the user can't recover
           // from without retyping.
           if (!snap) {
-            setFailedSend(payload);
+            setFailedSend(p);
             setPendingPrompt('');
             return;
           }
@@ -284,7 +295,7 @@ export function DetailView({
             if (snap.cursor) setCursor(snap.cursor);
           }
         })
-        .catch(() => setFailedSend(payload))
+        .catch(() => setFailedSend(p))
         .finally(bumpPane);
     },
     [client, agent.pane_id, bumpPane],

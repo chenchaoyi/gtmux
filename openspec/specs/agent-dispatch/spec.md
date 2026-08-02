@@ -548,32 +548,46 @@ SHALL also surface WHY via a kind (`startup` / `draft`).
 - **THEN** the ghost text is not read as an undelivered draft, so the completion is NOT
   suppressed as a stuck `draft`
 
-### Requirement: Unverified send paths confirm the draft before submitting
+### Requirement: The unverified send path confirms the draft before submitting
 
 The system SHALL confirm that the input draft holds the FULL delivered text (head
 AND tail, or a collapsed-paste placeholder) before sending Enter on the unverified
-text paths — `POST /api/send` (the phone / menu-bar reply) and `gtmux send` with
-verification skipped — using the same draft-content check as the verified dispatch. These
-paths SHALL still skip the post-submit LANDED verification (to stay within the
-phone's latency budget), so they differ from verified dispatch only in whether they
-confirm the landing AFTER submit — not in whether they race paste against Enter. The
-pre-submit confirmation SHALL be bounded by the same settle window (a healthy paste
-confirms within a frame, so the fast path stays fast); if the window elapses without
-a full-draft match, the path MAY still send Enter best-effort but SHALL NOT be
-required to report success.
+text path — `gtmux send` with verification skipped (`--no-verify`) — using the same
+draft-content check as the verified dispatch, so it does not race paste against Enter.
+It SHALL skip the post-submit LANDED verification by design. (The phone's `POST /api/send`
+is NOT this path — it goes through the verified, idempotent dispatch; see below.)
 
-#### Scenario: The phone reply does not race paste against Enter
+#### Scenario: An unverified send does not race paste against Enter
 
-- **WHEN** a multi-line reply is sent via `POST /api/send` with `enter:true`
+- **WHEN** a multi-line reply is sent via `gtmux send --no-verify` with Enter
 - **THEN** the text is pasted and the Enter is withheld until the draft is confirmed
-  to hold the full text (or the settle window elapses), so the reply submits as one
-  whole message rather than a truncated fragment
+  to hold the full text, so the reply submits whole rather than as a truncated fragment
 
-#### Scenario: A short single-line send stays fast
+### Requirement: The phone send is verified, receipt-backed, and idempotent
 
-- **WHEN** a short line is sent via `POST /api/send` and renders in the draft within
-  one frame
-- **THEN** the confirmation passes immediately and Enter follows without added delay
+`POST /api/send` with `text`+`enter` SHALL go through the FULL verified delivery
+(`dispatch.Deliver`), not a fire-and-pre-confirm path. For a HOOK-EQUIPPED agent the
+deterministic `UserPromptSubmit` receipt — matched on the full needle — SHALL be the
+authority for landing; a "fragment" verdict from the fragile pre-submit draft scrape (a
+redraw race on a busy pane) SHALL NOT by itself fail the send (it submits and lets the
+receipt judge), because that false verdict was the recurring "input box did not confirm the
+full message". A send MAY carry a client `send_id`; a `send_id` that already LANDED SHALL
+return success WITHOUT re-injecting, so a retry after an ambiguous network failure never
+double-sends. A hook-LESS agent keeps failing a genuinely-unconfirmed draft (no receipt to
+trust), and a send without a `send_id` falls back to the payload-hash re-send interlock.
+
+#### Scenario: A hook-equipped fragment defers to the receipt
+
+- **WHEN** the phone sends to a hook-equipped agent and the pre-submit draft scrape cannot
+  confirm the full draft, but the agent DID receive and submit the full message
+- **THEN** the receipt confirms the landing and the send reports success (not a false
+  "input box did not confirm")
+
+#### Scenario: A retried send does not double-send
+
+- **WHEN** a send lands on the Mac but the response is lost, and the phone retries the SAME
+  `send_id`
+- **THEN** the server returns success without re-injecting the message
 
 ### Requirement: A dispatch registers its target pane as awaited
 
