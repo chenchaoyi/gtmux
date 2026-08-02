@@ -255,6 +255,8 @@ if [ -d "/Applications/Gtmux.app" ] && [ ! -d "${HOME}/Applications/Gtmux.app" ]
   APP_DIR="/Applications"
 fi
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+APP_UPDATED="" # set to 1 ONLY when the menu-bar app is actually downloaded + swapped —
+# NOT just because an old Gtmux.app is present, so a failed app download reports honestly.
 if [ -z "${GTMUX_NO_APP:-}" ]; then
   APP_ZIP="Gtmux-${NUM_VERSION}-macos.zip"
   APP_URL="https://github.com/${REPO_SLUG}/releases/download/${VERSION}/${APP_ZIP}"
@@ -306,6 +308,7 @@ PLIST
     # app always starts with a clean environment and self-update can reach the latest.
     env -u GTMUX_VERSION open -n "${APP_DIR}/Gtmux.app" 2>/dev/null || true
     step 5 "Menu bar" "${APP_DIR}/Gtmux.app"
+    APP_UPDATED=1
   else
     note "menu-bar app: download/unzip failed — CLI is installed; retry or skip with GTMUX_NO_APP=1"
   fi
@@ -313,11 +316,20 @@ fi
 
 # ---- PATH hint ----
 printf '\n  %sInstalled.%s  %sgtmux %s%s\n' "$BOLD" "$RESET" "$DIM" "$VERSION" "$RESET"
-if [ -z "${GTMUX_NO_APP:-}" ] && [ -d "${APP_DIR}/Gtmux.app" ]; then
-  case "$LOCALE" in
-    zh) printf '  菜单栏 app 已启动 — 看右上角的 gtmux 标记(有状态时着色，左键点开)\n' ;;
-    *)  printf '  menu-bar app launched — look for the gtmux mark up top (it tints when agents need you; left-click it)\n' ;;
-  esac
+if [ -z "${GTMUX_NO_APP:-}" ]; then
+  if [ -n "$APP_UPDATED" ]; then
+    case "$LOCALE" in
+      zh) printf '  菜单栏 app 已启动 — 看右上角的 gtmux 标记(有状态时着色，左键点开)\n' ;;
+      *)  printf '  menu-bar app launched — look for the gtmux mark up top (it tints when agents need you; left-click it)\n' ;;
+    esac
+  else
+    # The CLI updated but the app download/unzip failed — the OLD app is still running, so
+    # say so plainly instead of implying the app is now current (the reported confusion).
+    case "$LOCALE" in
+      zh) printf '  菜单栏 app 未更新(下载失败) — 仍是旧版本;联网后重试(CN 网络可走代理，如 HTTPS_PROXY=…)，或 GTMUX_NO_APP=1 只更新 CLI\n' ;;
+      *)  printf '  menu-bar app NOT updated (download failed) — still the previous version; retry when reachable (behind a proxy on a CN network, e.g. HTTPS_PROXY=…), or GTMUX_NO_APP=1 for CLI-only\n' ;;
+    esac
+  fi
 fi
 case ":$PATH:" in
   *":${BIN_DIR}:"*)
