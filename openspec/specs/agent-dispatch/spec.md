@@ -135,6 +135,26 @@ so a misjudgment can be attributed to its layer.
   recorded head, so the match succeeds whenever the event genuinely records the
   delivered payload
 
+### Requirement: Hook-equipped identity resolves from the pane's process subtree
+
+Whether a pane is hook-equipped (and thus whether the deterministic receipt path
+applies) SHALL be decided from the AGENT running under the pane, resolved by walking
+the pane's process SUBTREE — NOT from `pane_current_command`. An agent frequently does
+not present its own name as the foreground command: Claude Code renames its process to
+its VERSION (e.g. `2.1.220`) and several agents run as a bare `node`, so keying
+hook-equipped off the raw foreground command misidentifies a hook-equipped agent as
+hook-less, silently disabling the receipt path for the exact panes it is meant to
+serve. The same subtree resolution the radar uses to identify these panes SHALL be used
+by the send/dispatch path.
+
+#### Scenario: A renamed-process agent is still recognized as hook-equipped
+
+- **WHEN** a send targets a Claude Code pane whose `pane_current_command` reads as a
+  version string (`2.1.220`) rather than `claude`, but the pane's process subtree
+  contains the real `claude` command
+- **THEN** the pane is treated as hook-equipped and the receipt path applies (the send
+  is not forced onto the fragile screen-only fallback)
+
 ### Requirement: Landing is the only success; fragments and swallowed Enter are handled
 
 Delivery SHALL be considered successful ONLY when the delivery is confirmed landed

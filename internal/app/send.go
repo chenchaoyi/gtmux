@@ -10,6 +10,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -121,7 +122,13 @@ func cmdSend(args []string) int {
 	// healthy send stays fast.
 	if verify && enter {
 		paneID := tmux.Display(pane, "#{pane_id}")
-		agentCmd := tmux.Display(paneID, "#{pane_current_command}")
+		// Resolve the agent from the pane's process subtree (Claude Code reports its
+		// version as pane_current_command, so the foreground command misses "claude" and
+		// hook-equipped would wrongly be false — see radar.AgentDriverKey).
+		agentCmd := radar.AgentDriverKey(paneID)
+		if agentCmd == "" {
+			agentCmd = tmux.Display(paneID, "#{pane_current_command}")
+		}
 		tune := dispatch.LoadTuning()
 		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
 		if res.Delivered {

@@ -713,7 +713,15 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 		if sendID != "" && sendCacheSucceeded(sendID) {
 			return nil // already landed under this id — idempotent no-op
 		}
-		agentCmd := tmux.Display(id, "#{pane_current_command}")
+		// Resolve the agent from the pane's PROCESS SUBTREE, not pane_current_command —
+		// Claude Code renames its process to its version (e.g. "2.1.220"), so the raw
+		// foreground command misses "claude" and hook-equipped would wrongly be false,
+		// disabling the receipt path and forcing the fragile screen scrape. (Fall back
+		// to the foreground command only when the subtree yields nothing.)
+		agentCmd := radar.AgentDriverKey(id)
+		if agentCmd == "" {
+			agentCmd = tmux.Display(id, "#{pane_current_command}")
+		}
 		force := sendID != "" // a sendID dedups; without one, keep the payload-hash interlock
 		res := dispatch.Deliver(dispatchbridge.DispatchIO(id),
 			dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning()), text)
