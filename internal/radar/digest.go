@@ -142,7 +142,12 @@ func GatherDigest() []DigestRow {
 		}
 		if p.Status == "waiting" && p.PaneID != "" {
 			row.Kind = state.ReadMarker(state.WaitingPath(p.PaneID))
-			row.Ask = joinAsk(prompt.ParseOptions(tmux.CapturePane(p.PaneID)))
+			// Only surface an Ask line for a CLEAN, replyable menu — a rich picker
+			// (AskUserQuestion beside preview panels) parses to garbage labels, so it
+			// gets no fake "1.x · 2.y" ask (the user replies in the terminal).
+			if opts := prompt.ParseOptions(tmux.CapturePane(p.PaneID)); prompt.OptionsReplyable(opts) {
+				row.Ask = joinAsk(opts)
+			}
 		}
 		hooked, content := false, false
 		if agentKey, sessionID := sessionRef(p); sessionID != "" {

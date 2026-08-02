@@ -75,6 +75,24 @@ func ParseOptions(text string) []Option {
 	return opts
 }
 
+// OptionsReplyable reports whether a parsed option run is a CLEAN, tap-to-reply menu —
+// the kind a bare number-send actually drives (a permission dialog). It is FALSE for a
+// rich picker: Claude Code's AskUserQuestion renders each option BESIDE a preview panel
+// on the SAME line, split by a box rule, so the parsed label swallows the preview
+// ("整洁树 │ ‹ All panes 19 panes …") — an interior box rule (clean() only strips the
+// EDGE one) or an implausibly long label marks a picker a number-send can't drive and
+// whose labels are garbage. Callers that offer a one-tap reply card (the mobile
+// ApprovalCard, the digest Ask) gate on this; the readiness detector (hasPromptLine)
+// deliberately does NOT — a picker is still "a menu, not a goal-ready composer".
+func OptionsReplyable(opts []Option) bool {
+	for _, o := range opts {
+		if strings.ContainsRune(o.Label, '│') || strings.ContainsRune(o.Label, '┃') || len([]rune(o.Label)) > 100 {
+			return false
+		}
+	}
+	return len(opts) > 0
+}
+
 // selectorGlyphs are the cursor marks interactive TUI choice menus put on the
 // highlighted row (Claude ❯, Codex ›, others ▶ ▸ →). A numbered list in prose
 // output has none — so requiring one tells an ACTIVE approval menu apart from a
