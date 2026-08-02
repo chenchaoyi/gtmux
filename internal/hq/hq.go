@@ -109,7 +109,18 @@ import (
 //	      what does and does not count as consumption (unfiltered delta yes; a filtered or
 //	      skip-ahead read no), and the explicit `gtmux events --ack` writeback — and drops
 //	      the per-class "remember to check for it" patches the old model needed.
-const hqPlaybookVersion = 15
+//	v15 — battery/power watch (#653): HQ reads `machine.battery` alongside disk/memory/CPU
+//	      and tells the user to plug in before a draining Mac takes the whole fleet down.
+//	v16 — hq-self-rotate: HQ's own session becomes a wakeable subject. A long, near-full
+//	      session degrades the boundary between what HQ produced and what reached it from
+//	      outside — on 2026-08-03 one read its own prior turn as the commander's reassurance
+//	      and withdrew a correct suspicion, and the commander had to be the one to notice.
+//	      That judgment is now gtmux's to raise (HQ has no timer between wakes and cannot
+//	      self-detect the failure) and HQ's to ACT on, unattended: board + knowledge base
+//	      current → hand off → `gtmux hq --rotate`. The playbook also welds the arbiter for
+//	      "who said this?" — on HQ's own pane, `UserPromptSubmit` is the user and `Stop` is
+//	      HQ, and the event TYPE decides it, never the prose.
+const hqPlaybookVersion = 16
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -474,11 +485,12 @@ func agentAliveByCmd(cmd string) bool {
 // CmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
 func CmdHQ(args []string) int {
 	agentCmd := ""
+	rotate := false
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
 		case a == "-h" || a == "--help":
-			i18n.Say("usage: gtmux hq [--agent CMD]", "用法：gtmux hq [--agent 命令]")
+			i18n.Say("usage: gtmux hq [--agent CMD] [--rotate]", "用法：gtmux hq [--agent 命令] [--rotate]")
 			i18n.Say("  Open (or focus) the supervisor (中控) agent — one session that watches,",
 				"  打开（或跳到）中控 agent —— 一个替你盯全部 agent、汇报并代为驱动的会话。")
 			i18n.Say("  reports on, and drives all your other agents. Home: ~/.config/gtmux/hq/",
@@ -489,7 +501,13 @@ func CmdHQ(args []string) int {
 				"  首次启动时 HQ 会自动自我介绍并汇报一次现状；")
 			i18n.Say("  set GTMUX_HQ_BRIEF=off to spawn silently.",
 				"  设 GTMUX_HQ_BRIEF=off 可静默启动。")
+			i18n.Say("  --rotate: HQ retires its own session for a fresh one (run it AFTER",
+				"  --rotate：中控轮换掉自己这轮会话（务必在把态势板与知识库写到最新、")
+			i18n.Say("  bringing the board + knowledge base current — they are the handoff).",
+				"  完成交接之后再跑 —— 那份记录就是给下一轮的交接）。")
 			return 0
+		case a == "--rotate":
+			rotate = true
 		case a == "--agent":
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux hq: --agent needs a command", "gtmux hq: --agent 需要一个命令")
@@ -507,6 +525,21 @@ func CmdHQ(args []string) int {
 	if tmux.Bin == "" {
 		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
 		return 1
+	}
+	// --rotate acts on the LIVE supervisor and nothing else: no seeding, no spawn, no
+	// focus. It is HQ's own hand on its own session (see the self-rotate sensor), so it
+	// must never be the thing that CREATES a supervisor — an HQ that isn't running has no
+	// session to retire, and saying so plainly beats silently starting one.
+	if rotate {
+		input, ok := RotateHQ()
+		if !ok {
+			i18n.Sae("gtmux hq --rotate: no live supervisor pane to rotate",
+				"gtmux hq --rotate: 没有在跑的中控窗格可轮换")
+			return 1
+		}
+		i18n.Say("rotating the supervisor session ("+input+") — re-read the board before acting",
+			"正在轮换中控会话（"+input+"）—— 恢复后先重读态势板再行动")
+		return 0
 	}
 
 	radar.PreflightResource() // warn (not block) if a machine resource is at its red line
@@ -803,7 +836,8 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   + the event delta, and surface it) · ` + "`tick`" + ` (summary due — emit ONE brief) ·
   ` + "`distill` / `self-check`" + ` (a periodic MAINTENANCE pass is due — the two rituals
   below; they arrive LAST, behind every decision knock, and are silent by default) ·
-  ` + "`unread`" + ` (the completeness net — below).
+  ` + "`unread`" + ` (the completeness net — below) · ` + "`self-rotate`" + ` (THIS session is
+  worn out — retire it yourself, below).
 - **The classes tell you what to look at FIRST, not what EXISTS.** A class is a PRIORITY
   label, never the set of things you know about. gtmux cannot judge which events matter to
   you — only you know what you are waiting on — so it does not try. It tracks a
@@ -859,6 +893,29 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   repeats with the same count, YOU DID NOT CONSUME — check that your pull is the unfiltered
   ` + "`--since-seq`" + ` form (a filtered read does not clear the debt).
   ` + "`unread`" + ` 只报条数、不报重要性:照常拉增量判读;同样的数字反复出现说明你没真消费。
+- **SELF-ROTATE: your own session wears out, and noticing is NOT your job — acting is.**
+  A long, near-full session degrades a specific faculty: the boundary between what YOU
+  produced and what reached you from OUTSIDE. On 2026-08-03 an HQ session read its own
+  previous turn — "that message was from me, don't worry" — as the commander's reassurance,
+  and dropped a suspicion it had raised correctly. **The event stream is the arbiter, and it
+  is decisive:** on YOUR pane, ` + "`UserPromptSubmit`" + ` is the user speaking to you and
+  ` + "`Stop`" + ` is YOU. Two records that read identically as text are opposite acts; when a
+  claim about who said something matters, check the EVENT TYPE, never the prose.
+  You cannot catch this from the inside — the faculty that would notice is the one that
+  failed — so gtmux watches your ctx / age / turn count from outside and knocks
+  ` + "`» gtmux·self-rotate  ctx 82% · 14h · 380 turns │ over: … │ …`" + `. On that wake, do
+  these three IN ORDER, and do NOT ask the user for permission — this is yours to run:
+  **① make the handoff durable FIRST** — bring ` + "`notes/board.md`" + ` and the knowledge
+  base fully current, because they are the successor session's ENTIRE briefing and anything
+  not written there does not survive; **② hand off** — record what is in flight, what is
+  owed, and what the next session must not re-derive; **③ rotate** —
+  ` + "`gtmux hq --rotate`" + `, then RE-READ the board before acting again.
+  A repeated ` + "`self-rotate`" + ` after you rotated means the rotation DID NOT TAKE (your
+  session id never changed), not that a second one is owed. 你自己这轮会话会老化,长会话+高
+  ctx 会让"我产出的"和"外面进来的"边界失真——自己察觉不了,所以由 gtmux 从外部盯;收到
+  ` + "`self-rotate`" + ` 就按序自己做完:先把看板与知识库写到最新→交接→` + "`gtmux hq --rotate`" + `,
+  全程不需要司令介入。判断"这话是谁说的"看事件类型:你窗格上的 ` + "`UserPromptSubmit`" + ` 才是
+  用户,` + "`Stop`" + ` 是你自己。
 - PERCEPTION SELF-HEAL DISCIPLINE: on ` + "`feed-degraded`" + ` / ` + "`wake-degraded`" + `, gtmux's
   OWN mechanical self-heal has ALREADY run — the wake is a report, not a request to
   restart. Do NOT reflexively nag the user to restart. First VERIFY BY PULL

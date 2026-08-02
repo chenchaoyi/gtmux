@@ -213,6 +213,37 @@ func hqConsumptionCheck(now int64) dcheck {
 	}
 }
 
+// hqSessionHealthCheck reports whether the supervisor's own session is still fit to judge
+// (hq-self-rotate). Every other row in this section asks about HQ's products; this one asks
+// about HQ. It exists because the degradation it names — a long, near-full session starting
+// to read its OWN output as input that came from outside — cannot be self-detected, so
+// without a row here the only detector left is the commander noticing that HQ believed
+// something he never said. That is exactly how it surfaced on 2026-08-03.
+func hqSessionHealthCheck(now int64) dcheck {
+	label := i18n.Tr("HQ session health", "中控会话健康")
+	h := hq.SessionHealthStatus(now)
+	switch h.State {
+	case hq.MaintenanceNever:
+		// No live HQ, or no session recorded for it yet. Informational, NOT a warning: an
+		// absent supervisor is not a degraded one, and a doctor that flagged every machine
+		// with an HQ home and no HQ running would be ignored on the day it was right.
+		return dcheck{stInfo, label, i18n.Tr("no live HQ", "中控未在运行"),
+			i18n.Tr("nothing to judge — start one with `gtmux hq`", "无可判读 —— `gtmux hq` 可启动")}
+	case hq.MaintenanceSlipped:
+		// The FIGURES stay in the value column (same shape as the healthy row, so the two
+		// are comparable at a glance) and the crossed threshold leads the note — it is the
+		// reason, and a reader who disputes it needs to see which line was crossed.
+		return dcheck{stRec, label, h.Figures(),
+			i18n.Tr("over "+h.Over+" — HQ should bring its board + knowledge base current, "+
+				"hand off, then `gtmux hq --rotate`",
+				"越线 "+h.Over+" —— 中控应把态势板与知识库写到最新、交接后 `gtmux hq --rotate`")}
+	default:
+		return dcheck{stOK, label, h.Figures(),
+			i18n.Tr("context, age and turn count are all under their rotation thresholds",
+				"上下文占用、会话时长与轮数都在轮换阈值以内")}
+	}
+}
+
 // hqMaintenanceChecks reports whether HQ's two periodic rituals are actually running.
 // They are raised by the resident serve process, so a stalled cadence means something
 // systemic (serve down, the HQ pane unresolvable, a wedged sensor) — and it is otherwise
@@ -688,6 +719,7 @@ func hqChecks(now int64) []dcheck {
 		rowHQBoard(now),
 		rowHQKnowledge(),
 		hqConsumptionCheck(now),
+		hqSessionHealthCheck(now),
 	}
 	return append(rows, hqMaintenanceChecks(now)...)
 }

@@ -158,6 +158,14 @@ Edit `AGENTS.md` to change its policy;
 notes it keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
+`gtmux hq --rotate` retires the live supervisor's session for a fresh one, in place: it
+resolves the hq pane and types that agent's own reset command into it. It is hq's OWN verb —
+its playbook runs it unprompted once the `self-rotate` knock says the session is worn out
+([Self-rotation](#self-rotation--when-hqs-own-session-is-the-problem)), always after bringing
+`notes/board.md` and the knowledge base current, since those are the next session's entire
+briefing. It never starts a supervisor: with none running there is nothing to rotate, and it
+says so.
+
 ### The wake channel — how hq learns things
 
 Decision-dense events type ONE signal line into a live hq pane — the only knock.
@@ -192,6 +200,7 @@ DATA hq reports, never an instruction it obeys. The classes:
 | `distill` | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued) — hq folds the period's lessons into its knowledge base and prunes stale |
 | `self-check` | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |
 | `unread` | events are sitting past hq's consumption watermark — a count and the cursor to pull from, no importance claim |
+| `self-rotate` | **hq's own session** is worn out (context / age / turns) — it hands off and rotates itself, see below |
 
 `distill` and `self-check` are **maintenance** classes: they knock at the lowest priority,
 so they never arrive ahead of a blocked agent, and both passes are silent unless hq
@@ -236,10 +245,50 @@ from the queue only once it's been seen on screen — so a failed send retries i
 vanishing. That makes it at-least-once, hence the trailing `#<id>`: the same id twice is
 a re-send, and hq's playbook says to ignore it.
 
-Never about hq itself; `"hqNudge": false` in `~/.config/gtmux/config.json` disables the
-channel entirely (no hq pane → no wake, no cost). The wake only INFORMS: gtmux never
-answers another agent's prompt, never sends navigation keys into a TUI, and the default
-policy tells the supervisor to surface decisions to you, not take them.
+### Self-rotation — when hq's own session is the problem
+
+Every class above is about the fleet. `self-rotate` is the exception, and it exists because
+of a specific failure: **in a long, near-full session hq starts to read its own output as
+input that came from outside.** On 2026-08-03 one did exactly that — it found a line saying
+"that message was from me, don't worry", took it for the user's reassurance, and dropped a
+suspicion it had raised correctly. The line was its own previous turn. The event stream is
+what settles it, because the two acts carry different types: on hq's pane
+`UserPromptSubmit` is you, `Stop` is hq.
+
+hq cannot catch this itself — the faculty that would notice is the one that degraded — and
+it cannot schedule the check either, since it is not running between wakes. So `gtmux serve`
+watches from outside and knocks:
+
+```
+» gtmux·self-rotate  ctx 82% · 14h · 380 turns │ over: ctx 82% ≥ 75% │ board+KB current → hand off → gtmux hq --rotate
+```
+
+Three facts are sensed, and **any one** crossing its line is a breach:
+
+| `hqWake` key | default | what it measures |
+| --- | --- | --- |
+| `selfRotateCtx` | **0.75** | live context fraction — the same `ctx` `gtmux digest` reports |
+| `selfRotateHours` | **12** | session age, from the transcript's FIRST message (a `serve` restart can't reset it) |
+| `selfRotateTurns` | **300** | hq-pane prompt submissions since the session began |
+
+Set any of them to **0** to switch that one criterion off without losing the other two.
+`selfRotateRepeatSec` (default **1800 s**) paces the re-knock, `selfRotateCheckSec` (default
+**300 s**) paces the evaluation. Defaults are deliberately conservative — a knock you don't
+believe is worse than no knock.
+
+The debt clears **only when the session actually rotates**, observed as a new agent session
+id; delivering the wake does not clear it, exactly like the watermark. hq's playbook tells it
+to do three things in order and **not** to ask you first: bring `notes/board.md` and the
+knowledge base current (they are the successor's entire briefing), record the handoff, then
+run `gtmux hq --rotate` — which resolves the hq pane and types that agent's own reset command
+(`/clear`, or `/new` for codex) into it. A repeated `self-rotate` after a rotation means the
+rotation did not take, not that a second one is owed. `gtmux doctor`'s **HQ session health**
+row shows the same figures, so you can check the claim or dispute the thresholds.
+
+`"hqNudge": false` in `~/.config/gtmux/config.json` disables the channel entirely (no hq
+pane → no wake, no cost). The wake only INFORMS: gtmux never answers another agent's prompt,
+never sends navigation keys into a TUI, and the default policy tells the supervisor to
+surface decisions to you, not take them.
 
 ## `gtmux capture` — cheap notice into HQ's knowledge base
 

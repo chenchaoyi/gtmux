@@ -180,6 +180,37 @@ func TestConfigDefaultsAndParse(t *testing.T) {
 	}
 }
 
+// The self-rotate thresholds break the "ignore a non-positive value" rule ON PURPOSE: 0 is
+// meaningful here, switching ONE criterion off while the other two keep watching. The
+// cadences keep the rule, because a non-positive repeat would turn a standing hint into the
+// per-tick noise it is designed not to be.
+func TestConfigSelfRotate(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+
+	d := Defaults()
+	if d.SelfRotateCtx != 0.75 || d.SelfRotateHours != 12 || d.SelfRotateTurns != 300 ||
+		d.SelfRotateRepeatSec != 1800 || d.SelfRotateCheckSec != 300 {
+		t.Fatalf("conservative defaults changed: %+v", d)
+	}
+	_ = os.WriteFile(path, []byte(`{"hqWake":{"selfRotateCtx":0.6,"selfRotateHours":6,`+
+		`"selfRotateTurns":150,"selfRotateRepeatSec":600,"selfRotateCheckSec":60}}`), 0o644)
+	got := loadFrom(path)
+	if got.SelfRotateCtx != 0.6 || got.SelfRotateHours != 6 || got.SelfRotateTurns != 150 ||
+		got.SelfRotateRepeatSec != 600 || got.SelfRotateCheckSec != 60 {
+		t.Fatalf("parsed = %+v", got)
+	}
+	// A zeroed THRESHOLD must be honoured (that criterion is off); a zeroed CADENCE must not.
+	_ = os.WriteFile(path, []byte(`{"hqWake":{"selfRotateTurns":0,"selfRotateRepeatSec":0}}`), 0o644)
+	got = loadFrom(path)
+	if got.SelfRotateTurns != 0 {
+		t.Errorf("a 0 threshold must disable that criterion, got %d", got.SelfRotateTurns)
+	}
+	if got.SelfRotateRepeatSec != 1800 || got.SelfRotateCtx != 0.75 {
+		t.Errorf("a 0 cadence must fall back, and other criteria must stand: %+v", got)
+	}
+}
+
 // ── delivery priority (hq-wake-reliability) ──────────────────────────────────
 
 // The queue drains by priority, so every class this package can build must have a
@@ -209,6 +240,10 @@ func TestPriorityOf(t *testing.T) {
 		// ahead of an agent that is blocked right now.
 		{Line(ClassDistill, "due (weekly)", "distil the period into the KB"), PriorityStanding},
 		{Line(ClassSelfCheck, "due (daily)", "review feed/ledger health"), PriorityStanding},
+		// Self-rotate is standing too, and deliberately not decision priority despite what
+		// it is about: a supervisor too heavy to judge well still has to unblock the agent
+		// waiting on a human right now. Its own hygiene goes behind that.
+		{Line(ClassSelfRotate, "ctx 82% · 14h · 380 turns", "over: ctx 82% ≥ 75%"), PriorityStanding},
 	}
 	for _, c := range cases {
 		if got := PriorityOf(c.line); got != c.want {

@@ -456,6 +456,36 @@ func TestLastMessageTime(t *testing.T) {
 	}
 }
 
+// TestFirstMessageTime: the wall-clock of the FIRST logged message — how long the
+// conversation has actually been running. It reads the log's HEAD, so it is independent of
+// when any observer started watching: the HQ session-health sensor needs a serve restart NOT
+// to reset a twelve-hour-old session's age to zero, which is exactly when a worn-out
+// supervisor most needs to be told to rotate.
+func TestFirstMessageTime(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "aaaa2222-bbbb-cccc-dddd-eeeeeeeeeeee"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","timestamp":"2026-07-03T09:00:00.000Z","message":{"role":"user","content":"hi"}}`,
+		`{"type":"assistant","timestamp":"2026-07-03T15:33:53.950Z","message":{"role":"assistant","content":[{"type":"text","text":"done"}]}}`,
+	})
+	first, _ := time.Parse(time.RFC3339Nano, "2026-07-03T09:00:00.000Z")
+	if got := FirstMessageTime("claude", sid); got != first.Unix() {
+		t.Errorf("FirstMessageTime = %d, want the FIRST message's timestamp %d", got, first.Unix())
+	}
+	// The pair must disagree on a session with history — a FirstMessageTime that quietly
+	// returned the tail would report every long session as brand new.
+	if FirstMessageTime("claude", sid) == LastMessageTime("claude", sid) {
+		t.Error("first and last must differ on a multi-message log")
+	}
+	if FirstMessageTime("claude", "no-such-session") != 0 {
+		t.Error("unknown session should return 0")
+	}
+	if FirstMessageTime("claude", "") != 0 {
+		t.Error("empty session should return 0")
+	}
+}
+
 // LastMessageError: a session ENDED on an error iff its last real message is an
 // isApiErrorMessage entry; mid-turn errors that recovered don't count.
 func TestLastMessageError(t *testing.T) {
