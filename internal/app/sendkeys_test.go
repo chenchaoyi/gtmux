@@ -45,11 +45,11 @@ func TestSendToPaneNoTmuxRejects(t *testing.T) {
 	tmux.Bin = ""
 	t.Cleanup(func() { tmux.Bin = saved })
 
-	if err := sendToPane("%1", "hello", "", false); err == nil {
+	if err := sendToPane("%1", "hello", "", false, ""); err == nil {
 		t.Errorf("sendToPane with no tmux should error (pane not found)")
 	}
 	// A disallowed key with no tmux still errors (the bin guard fires first).
-	if err := sendToPane("%1", "", "C-x", false); err == nil {
+	if err := sendToPane("%1", "", "C-x", false, ""); err == nil {
 		t.Errorf("sendToPane with no tmux + bad key should error")
 	}
 }
@@ -72,5 +72,21 @@ func TestKeystrokeText(t *testing.T) {
 		if got := keystrokeText(c.in); got != c.want {
 			t.Errorf("keystrokeText(%q) = %v, want %v", c.in, got, c.want)
 		}
+	}
+}
+
+// sendCache makes a phone retry idempotent: a send-id that already landed returns success
+// without re-injecting (send-idempotent-receipt). Only successes are remembered.
+func TestSendCacheIdempotency(t *testing.T) {
+	const id = "gtmux-test-send-abc123"
+	if sendCacheSucceeded(id) {
+		t.Error("an unknown send id must not read as already-landed")
+	}
+	sendCacheRecord(id)
+	if !sendCacheSucceeded(id) {
+		t.Error("a recorded send id must read as landed (a retry returns success, no re-send)")
+	}
+	if sendCacheSucceeded("some-other-id") {
+		t.Error("a different id must be independent")
 	}
 }

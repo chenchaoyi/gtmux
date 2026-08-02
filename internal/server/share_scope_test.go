@@ -24,7 +24,7 @@ func scopeServer(t *testing.T) (h http.Handler, alice, bob string, share *ShareM
 		Share:      share,
 		AgentsJSON: func() ([]byte, error) { return []byte(agents), nil },
 		PaneText:   func(id string) (string, bool) { return "screen of " + id, true },
-		Send:       func(id, text, key string, enter bool) error { return nil },
+		Send:       func(id, text, key string, enter bool, sendID string) error { return nil },
 	})
 	a := enroll.MintGuest("alice", []string{"%1"}, []string{"%1"}, 0)
 	b := enroll.MintGuest("bob", []string{"%2"}, nil, 0)

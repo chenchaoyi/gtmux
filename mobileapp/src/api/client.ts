@@ -19,6 +19,11 @@ export interface SendPayload {
   text?: string;
   key?: string;
   enter?: boolean;
+  // A client idempotency token, reused across a Retry of the SAME send, so an ambiguous
+  // network failure can be retried without double-sending — the server no-ops a send_id
+  // that already landed (send-idempotent-receipt). Only the server's verified text+Enter
+  // path uses it.
+  send_id?: string;
 }
 
 // ShareCapability mirrors GET /api/share — the CALLER's own scope. `all:true` ⇒ a

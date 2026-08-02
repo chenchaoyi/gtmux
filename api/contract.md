@@ -123,13 +123,23 @@ Types into a pane via `tmux send-keys`. JSON body — supply **exactly one** of:
 | field | type | meaning |
 | --- | --- | --- |
 | `id` | string | the target pane id (`%N`), required |
-| `key` | string | a NAMED control key, allow-listed: `Enter`, `C-c`, `Escape`, `Tab`, `Up`, `Down`, `Left`, `Right`, `BSpace`, `C-d`, `C-z`, `C-l` |
+| `key` | string | a NAMED control key, allow-listed: `Enter`, `C-c`, `Escape`, `Tab`, `Up`, `Down`, `Left`, `Right`, `Space`, `BSpace`, `C-d`, `C-z`, `C-l` |
 | `text` | string | literal text typed with `send-keys -l` (never interpreted as keys) |
 | `enter` | bool | with `text`: also press Enter afterward |
+| `send_id` | string | OPTIONAL client idempotency token (reused across a retry) |
+
+A `text`+`enter` send goes through the FULL verified state machine (`dispatch.Deliver`):
+the deterministic `UserPromptSubmit` hook receipt is the truth (a hook-equipped agent is not
+failed by a flaky pre-submit draft scrape — the recurring false "input box didn't confirm").
+`send_id` makes a retry idempotent: a token that already LANDED returns `200` WITHOUT
+re-injecting, so an ambiguous network timeout (the send may have landed on the Mac while the
+response was lost) can be retried without double-sending. A `400` "not confirmed" leaves the
+id retryable. An old client that omits `send_id` falls back to the payload-hash re-send
+interlock.
 
 ```
 200 {"status":"ok"}
-400 {"error":"missing id" | "nothing to send" | "send failed: …"}  // gone pane / key not allowed
+400 {"error":"missing id" | "nothing to send" | "send failed: …"}  // gone pane / key not allowed / not confirmed
 405 {"error":"method not allowed"}                                 // non-POST
 503 {"error":"input not available"}                                // Send not wired
 ```

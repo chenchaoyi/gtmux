@@ -715,3 +715,38 @@ func TestDraftHoldsImagePaths_TruncatedPathIsNotHeld(t *testing.T) {
 		t.Fatalf("a wrapped-but-complete path must be reported as held")
 	}
 }
+
+// B (send-idempotent-receipt): a HOOK-EQUIPPED agent whose pre-submit draft scrape never
+// confirms the full paste (a persistent "fragment" verdict — the redraw race behind the
+// recurring false "input box didn't confirm") must NOT abort. It submits and defers to the
+// UserPromptSubmit receipt, which confirms the full delivery landed.
+func TestDeliver_HookEquipped_FragmentDefersToReceipt(t *testing.T) {
+	f := &fakeIO{
+		caps: []string{
+			boxDraft("frag"), boxDraft("frag"), boxDraft("frag"), boxDraft("frag"), // stalled fragment
+		},
+		evs: []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10, PasteRetries: 0, PasteSettle: 1}, taskText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("hook-equipped: a fragment verdict must defer to the receipt (landed), got %+v", r)
+	}
+	if r.JudgedBy != JudgedByDriver {
+		t.Errorf("landing should be judged by the receipt, got %q", r.JudgedBy)
+	}
+	if len(f.recorded) != 1 {
+		t.Errorf("the send should still be recorded for the interlock; got %v", f.recorded)
+	}
+}
+
+// A hook-LESS agent has no receipt, so a settled fragment must still FAIL (submitting a
+// known-truncated draft is worse than reporting it). B changes only the hook-equipped path.
+func TestDeliver_HookLess_FragmentStillFails(t *testing.T) {
+	f := &fakeIO{
+		caps: []string{boxDraft("frag"), boxDraft("frag"), boxDraft("frag"), boxDraft("frag")},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10, PasteRetries: 0, PasteSettle: 1}, taskText)
+	if r.Delivered || r.State != StateFailed {
+		t.Fatalf("hook-less: a settled fragment must still fail (no receipt to trust), got %+v", r)
+	}
+}

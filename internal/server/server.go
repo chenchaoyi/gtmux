@@ -94,7 +94,7 @@ type Deps struct {
 	// key sends that NAMED key (validated against an allowlist by the impl); else
 	// text is typed literally, plus Enter when enter is true. err if the pane is
 	// gone or the key isn't allowed. Optional: nil → POST /api/send returns 503.
-	Send func(id, text, key string, enter bool) error
+	Send func(id, text, key string, enter bool, sendID string) error
 
 	// Upload saves an uploaded file on the Mac and returns its local path (so the
 	// phone can hand a photo/file to an agent by path). Optional: nil → POST
@@ -590,6 +590,10 @@ type sendRequest struct {
 	Text  string `json:"text"`
 	Key   string `json:"key"`
 	Enter bool   `json:"enter"`
+	// SendID is a client-generated idempotency token (reused across a retry) so an
+	// ambiguous network failure can be retried without double-sending (send-idempotent-
+	// receipt). Optional — an old client that omits it falls back to the payload interlock.
+	SendID string `json:"send_id,omitempty"`
 }
 
 func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
@@ -626,7 +630,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("nothing to send"))
 		return
 	}
-	if err := s.deps.Send(req.ID, req.Text, req.Key, req.Enter); err != nil {
+	if err := s.deps.Send(req.ID, req.Text, req.Key, req.Enter, req.SendID); err != nil {
 		writeJSON(w, http.StatusBadRequest, errBody("send failed: "+err.Error()))
 		return
 	}

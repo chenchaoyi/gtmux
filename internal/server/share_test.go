@@ -35,7 +35,7 @@ func shareServer(t *testing.T) (h http.Handler, share *ShareManager, sent *[]str
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
 		Enroll: enroll,
 		Share:  share,
-		Send:   func(id, text, key string, enter bool) error { calls = append(calls, id); return nil },
+		Send:   func(id, text, key string, enter bool, sendID string) error { calls = append(calls, id); return nil },
 	})
 	dev, _ := enroll.Redeem(enroll.Mint(), "phone")
 	return s.Handler(), share, &calls, dev.Token, enroll.MintGuest("guest", nil, nil, 0).Token

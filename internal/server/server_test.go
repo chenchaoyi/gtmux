@@ -70,7 +70,7 @@ func TestSendReturnsPaneSnapshot(t *testing.T) {
 
 	var sent []string
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
-		Send: func(id, text, key string, enter bool) error {
+		Send: func(id, text, key string, enter bool, sendID string) error {
 			sent = append(sent, id+"|"+text)
 			return nil
 		},
