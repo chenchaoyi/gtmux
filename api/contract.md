@@ -217,7 +217,11 @@ predating this ignores the header instead of failing to decode.
 
 Parses a pane that is `waiting` on a numbered prompt (the SAME parser the
 menu-bar/CLI use) into its `1/2/3` options, for the approval card. `options` is
-`[]` when nothing parses.
+`[]` when nothing parses — AND when the prompt is a rich picker rather than a clean
+tap-to-reply menu: Claude Code's `AskUserQuestion` renders each option beside a preview
+panel on the same line, so the parsed labels are contaminated (an interior box rule) and
+a bare number-send can't drive that UI. Serving `[]` there means the phone shows no
+broken card; the user replies in the terminal (arrows/enter/free text) instead.
 
 ```
 200 {"options":[{"n":1,"label":"Yes"},{"n":2,"label":"Yes, and don't ask again"},{"n":3,"label":"No"}]}

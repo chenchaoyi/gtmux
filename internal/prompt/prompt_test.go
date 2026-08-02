@@ -25,6 +25,45 @@ func TestParseOptions_ClaudeBox(t *testing.T) {
 	}
 }
 
+// A rich picker (Claude Code's AskUserQuestion) renders each option BESIDE a preview
+// panel on the same line, split by a box rule, so the parsed label swallows the preview.
+// It is not a tap-to-reply menu — a bare number-send can't drive it and the labels are
+// garbage — so OptionsReplyable is FALSE and the card layer offers nothing. But it still
+// PARSES (non-nil) so the readiness detector treats it as "a menu, not a goal-ready
+// composer". Pins the reported "选取后无法输入 / 选项解析错了" bug.
+func TestOptionsReplyable_RejectsSideBySidePreviewPicker(t *testing.T) {
+	picker := "❯ 1. Collapsible cards          │  ‹ All panes    19 panes · 10 sessions\n" +
+		"  2. Clean tree                 │  ▾ Diting        3 · 2 agents  ■1 ✓1\n"
+	opts := ParseOptions(picker)
+	if len(opts) == 0 {
+		t.Fatal("the picker must still PARSE (non-nil) so readiness sees a menu, not a composer")
+	}
+	if OptionsReplyable(opts) {
+		t.Error("a side-by-side preview picker is NOT tap-to-reply (interior box rule); OptionsReplyable must be false")
+	}
+	if WaitingOptions(picker) == nil {
+		t.Error("WaitingOptions must still DETECT the picker (for hasPromptLine)")
+	}
+	// A genuinely long single-column label also reads as not-a-simple-menu.
+	if OptionsReplyable([]Option{{1, strings.Repeat("x", 120)}, {2, "no"}}) {
+		t.Error("an implausibly long option label is not replyable")
+	}
+	// A MULTI-select picker marks each option with a checkbox — the one-tap card can't
+	// express "check 1 AND 3, submit", so it parses but is NOT replyable.
+	multi := ParseOptions("❯ 1. [ ] point one\n  2. [ ] point two\n  3. [ ] point three\n")
+	if len(multi) == 0 {
+		t.Fatal("the multi-select picker must still PARSE so readiness sees a menu")
+	}
+	if OptionsReplyable(multi) {
+		t.Error("a multi-select checkbox picker is NOT tap-to-reply; OptionsReplyable must be false")
+	}
+	// Regression: a CLEAN permission menu is both parsed AND replyable.
+	clean := ParseOptions("❯ 1. Yes\n  2. No, and tell Claude what to do (esc)\n")
+	if len(clean) != 2 || !OptionsReplyable(clean) {
+		t.Errorf("a clean menu must parse AND be replyable; got %#v replyable=%v", clean, OptionsReplyable(clean))
+	}
+}
+
 func TestParseOptions_PlainAndSelectorVariants(t *testing.T) {
 	text := "Continue?\n  1. Yes\n> 2. No"
 	got := ParseOptions(text)

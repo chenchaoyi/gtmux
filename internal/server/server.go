@@ -553,6 +553,13 @@ func (s *Server) handleOptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	opts := prompt.ParseOptions(text)
+	// Only offer a tap-to-reply card for a CLEAN menu a number-send can actually drive.
+	// A rich picker (Claude Code's AskUserQuestion, options beside preview panels) parses
+	// to contaminated, undriveable labels — serve NO options so the phone shows no broken
+	// card; the user replies in the terminal (arrows/enter/free text) instead.
+	if !prompt.OptionsReplyable(opts) {
+		opts = nil
+	}
 	if opts == nil {
 		opts = []prompt.Option{}
 	}

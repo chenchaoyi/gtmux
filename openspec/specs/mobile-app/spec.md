@@ -369,8 +369,15 @@ highlighted row with a selector; prose never does. Being blocked on the user is 
 sufficient evidence, because an agent can be waiting on a free-form question while its
 recent output happens to contain a numbered list — presenting that list as choices offers
 options the agent never made, on a control that invites a single keypress to answer with.
-Where no menu can be identified the system SHALL present no card, leaving the user to
-reply in their own words.
+The system SHALL further present a card ONLY for a CLEAN, SINGLE-select, tap-to-reply menu
+a bare number-send can drive. It SHALL NOT present a card for a RICH picker the one-tap
+card cannot express: a side-by-side preview picker (Claude Code's `AskUserQuestion`
+renders each option beside a preview panel on the same line, so the parsed label swallows
+the preview via an interior box rule, and it navigates by arrows/enter rather than a bare
+number), OR a MULTI-select picker (each option marked with a `[ ]` / `[x]` checkbox — the
+card can only single-tap-and-submit, so it cannot express "check 1 and 3, then submit").
+Where no replyable menu can be identified the system SHALL present no card, leaving the
+user to reply in their own words / in the terminal.
 
 #### Scenario: A numbered list in prose
 
@@ -381,6 +388,20 @@ reply in their own words.
 
 - **WHEN** the output contains both a numbered list and a genuine menu
 - **THEN** the card offers the menu's choices
+
+#### Scenario: A rich preview picker is not offered as a card
+
+- **WHEN** a waiting session shows a rich picker (options rendered beside preview panels
+  on the same line, driven by arrows/enter — e.g. `AskUserQuestion`)
+- **THEN** no approval card is shown (its parsed labels are contaminated and a bare
+  number-send cannot drive it), and the user replies in the terminal instead
+
+#### Scenario: A multi-select picker is not offered as a one-tap card
+
+- **WHEN** a waiting session shows a multi-select picker (options marked with `[ ]` / `[x]`
+  checkboxes, toggled then submitted)
+- **THEN** no approval card is shown (a one-tap-and-submit card cannot express a
+  multi-selection), and the user replies in the terminal instead
 
 ### Requirement: A full-screen reader is escapable and clear of system UI
 
