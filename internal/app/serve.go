@@ -514,7 +514,7 @@ func randToken() string {
 var allowedSendKeys = map[string]bool{
 	"Enter": true, "C-c": true, "Escape": true, "Tab": true,
 	"Up": true, "Down": true, "Left": true, "Right": true,
-	"Space": true, // toggle a checkbox in a multi-select TUI picker (AskUserQuestion)
+	"Space":  true, // toggle a checkbox in a multi-select TUI picker (AskUserQuestion)
 	"BSpace": true, "C-d": true, "C-z": true, "C-l": true,
 }
 

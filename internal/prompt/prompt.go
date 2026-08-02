@@ -84,6 +84,7 @@ func ParseOptions(text string) []Option {
 //     EDGE rule but not an INTERIOR one; an implausibly long label is the same smell.
 //   - a MULTI-select picker (each option marked with a "[ ] …" / "[x] …" checkbox): the
 //     card can only single-tap-and-submit, so it can't express "check 1 AND 3, submit".
+//
 // Callers that offer a one-tap reply card (the mobile ApprovalCard, the digest Ask) gate
 // on this; the readiness detector (hasPromptLine) deliberately does NOT — a picker is
 // still "a menu, not a goal-ready composer".
