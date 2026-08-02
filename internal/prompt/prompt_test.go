@@ -48,6 +48,15 @@ func TestOptionsReplyable_RejectsSideBySidePreviewPicker(t *testing.T) {
 	if OptionsReplyable([]Option{{1, strings.Repeat("x", 120)}, {2, "no"}}) {
 		t.Error("an implausibly long option label is not replyable")
 	}
+	// A MULTI-select picker marks each option with a checkbox — the one-tap card can't
+	// express "check 1 AND 3, submit", so it parses but is NOT replyable.
+	multi := ParseOptions("❯ 1. [ ] point one\n  2. [ ] point two\n  3. [ ] point three\n")
+	if len(multi) == 0 {
+		t.Fatal("the multi-select picker must still PARSE so readiness sees a menu")
+	}
+	if OptionsReplyable(multi) {
+		t.Error("a multi-select checkbox picker is NOT tap-to-reply; OptionsReplyable must be false")
+	}
 	// Regression: a CLEAN permission menu is both parsed AND replyable.
 	clean := ParseOptions("❯ 1. Yes\n  2. No, and tell Claude what to do (esc)\n")
 	if len(clean) != 2 || !OptionsReplyable(clean) {
