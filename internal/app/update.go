@@ -26,15 +26,45 @@ type updateCheckJSON struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// updateCheckPayload builds the --json result from the current + latest versions.
-// An empty latest means the release API was unreachable (surfaced via `error`, and
-// `update` stays false so the app never prompts on a failed check).
-func updateCheckPayload(cur, latest string) updateCheckJSON {
-	out := updateCheckJSON{Current: cur, Latest: latest, Update: latest != "" && latest != cur}
+// updateCheckPayload builds the --json result. `update` is true when `latest` is newer
+// than EITHER the CLI (`cur`) OR the installed menu-bar app (`app`, "" when absent) — so a
+// STALE app still surfaces the prompt even when the CLI is already current. Without this,
+// a CLI-ahead-of-app machine reported "no update" and the app could never escape being
+// behind (the reported version-inconsistency loop). An empty latest means the release API
+// was unreachable (`error` set, `update` stays false so the app never prompts on failure).
+func updateCheckPayload(cur, app, latest string) updateCheckJSON {
+	behind := latest != "" && (latest != cur || (app != "" && latest != app))
+	out := updateCheckJSON{Current: cur, Latest: latest, Update: behind}
 	if latest == "" {
 		out.Error = "couldn't reach the release API"
 	}
 	return out
+}
+
+// installedAppVersion reads the on-disk menu-bar bundle's CFBundleShortVersionString
+// (~/Applications preferred, /Applications fallback — where install.sh and the Homebrew
+// cask put Gtmux.app). "" if no app / unreadable / not macOS. Read from the plist, not any
+// in-memory value, so it reflects the ACTUAL installed app — the input that lets
+// `gtmux update` refresh a stale app while the CLI is already current.
+func installedAppVersion() string {
+	if runtime.GOOS != "darwin" {
+		return ""
+	}
+	home, _ := os.UserHomeDir()
+	for _, dir := range []string{filepath.Join(home, "Applications"), "/Applications"} {
+		plist := filepath.Join(dir, "Gtmux.app", "Contents", "Info.plist")
+		if _, err := os.Stat(plist); err != nil {
+			continue
+		}
+		out, err := exec.Command("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
+		if err != nil {
+			continue
+		}
+		if v := strings.TrimSpace(string(out)); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // cmdUpdate implements `gtmux update` — self-update to the latest release by
@@ -74,8 +104,9 @@ func cmdUpdate(args []string) int {
 	latest := strings.TrimPrefix(latestTag, "v")
 
 	if jsonOut {
-		// Machine-readable check for the menu-bar app's "check for updates".
-		b, _ := json.Marshal(updateCheckPayload(cur, latest))
+		// Machine-readable check for the menu-bar app's "check for updates" — factors in
+		// the app's OWN version so a stale app (CLI already current) still prompts.
+		b, _ := json.Marshal(updateCheckPayload(cur, installedAppVersion(), latest))
 		fmt.Println(string(b))
 		return 0
 	}
@@ -95,13 +126,28 @@ func cmdUpdate(args []string) int {
 		return 0
 	}
 
-	if latest != "" && latest == cur {
+	// The menu-bar app updates via THIS command, so "already up to date" must consider
+	// the app too — else a stale app (CLI already current) short-circuits here and the app
+	// can never refresh itself (the reported loop: click update → "already up to date" →
+	// app never swapped → "Update failed"). When the app is behind, fall through and run
+	// the installer's app step. (--cli-only ignores the app by design.)
+	appV := ""
+	if !cliOnly {
+		appV = installedAppVersion()
+	}
+	appBehind := appV != "" && latest != "" && appV != latest
+
+	if latest != "" && latest == cur && !appBehind {
 		i18n.Say("gtmux is already up to date ("+cur+").", "gtmux 已是最新（"+cur+"）。")
 		return 0
 	}
-	if latest != "" {
+	switch {
+	case latest != "" && latest == cur && appBehind:
+		i18n.Say("Updating the menu-bar app "+appV+" → "+latest+" (CLI already "+cur+") …",
+			"正在更新菜单栏 app "+appV+" → "+latest+"（CLI 已是 "+cur+"）…")
+	case latest != "":
 		i18n.Say("Updating gtmux "+cur+" → "+latest+" …", "正在更新 gtmux "+cur+" → "+latest+" …")
-	} else {
+	default:
 		i18n.Say("Updating gtmux to the latest release…", "正在更新 gtmux 到最新版…")
 	}
 

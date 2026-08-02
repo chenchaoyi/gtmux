@@ -38,28 +38,31 @@ func TestParseJsdelivrLatest(t *testing.T) {
 }
 
 // updateCheckPayload feeds the menu-bar app's "check for updates": `update` is
-// true ONLY when a real newer tag exists; an unreachable API reports an error and
-// never claims an update (so the app can't prompt on a failed check).
+// true when a real newer tag exists than EITHER the CLI or the installed app; an
+// unreachable API reports an error and never claims an update (so the app can't
+// prompt on a failed check).
 func TestUpdateCheckPayload(t *testing.T) {
 	cases := []struct {
-		cur, latest string
-		wantUpdate  bool
-		wantErr     bool
+		cur, app, latest string
+		wantUpdate       bool
+		wantErr          bool
 	}{
-		{"0.12.1", "0.12.2", true, false},  // newer available
-		{"0.12.1", "0.12.1", false, false}, // already current
-		{"0.12.1", "", false, true},        // API unreachable → no update, error set
+		{"0.12.1", "0.12.1", "0.12.2", true, false},  // both behind → update
+		{"0.12.1", "0.12.1", "0.12.1", false, false}, // both current → no update
+		{"0.12.1", "0.12.1", "", false, true},        // API unreachable → no update, error set
+		{"0.12.2", "0.12.1", "0.12.2", true, false},  // CLI current, APP behind → update (the fix)
+		{"0.12.2", "", "0.12.2", false, false},       // CLI current, no app installed → no update
 	}
 	for _, c := range cases {
-		got := updateCheckPayload(c.cur, c.latest)
+		got := updateCheckPayload(c.cur, c.app, c.latest)
 		if got.Current != c.cur || got.Latest != c.latest {
-			t.Errorf("payload(%q,%q) echoed wrong versions: %+v", c.cur, c.latest, got)
+			t.Errorf("payload(%q,%q,%q) echoed wrong versions: %+v", c.cur, c.app, c.latest, got)
 		}
 		if got.Update != c.wantUpdate {
-			t.Errorf("payload(%q,%q).Update = %v, want %v", c.cur, c.latest, got.Update, c.wantUpdate)
+			t.Errorf("payload(%q,%q,%q).Update = %v, want %v", c.cur, c.app, c.latest, got.Update, c.wantUpdate)
 		}
 		if (got.Error != "") != c.wantErr {
-			t.Errorf("payload(%q,%q).Error = %q, wantErr %v", c.cur, c.latest, got.Error, c.wantErr)
+			t.Errorf("payload(%q,%q,%q).Error = %q, wantErr %v", c.cur, c.app, c.latest, got.Error, c.wantErr)
 		}
 		// must round-trip to the {current,latest,update} contract the app parses
 		b, err := json.Marshal(got)
