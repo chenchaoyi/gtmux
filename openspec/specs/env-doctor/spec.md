@@ -146,7 +146,8 @@ restores an ancient snapshot.
 #### Scenario: Autosave trigger present
 
 - **WHEN** the continuum plugin is installed and `status-right` contains the `continuum_save` trigger
-- **THEN** doctor reports the autosave as armed (OK)
+- **THEN** doctor reports the autosave as OK (shown as `installed`, one consistent
+  install-state word with the hooks/plugins/app — not a bespoke `armed`/`wired`)
 
 #### Scenario: Autosave trigger missing
 
@@ -226,3 +227,85 @@ SHALL also report whether the privileged sleep guard is installed and healthy.
 - **WHEN** the sleep-disable setting is applied but carries no gtmux ownership stamp
 - **THEN** doctor reports it as informational with the manual command to undo it, and
   `--fix` leaves it untouched
+
+### Requirement: Reports the gtmux install (versions + config) first
+
+`gtmux doctor` SHALL open with a "gtmux" section that reports the CLI's version and its
+on-disk path, the installed menu-bar app's version, and whether `~/.config/gtmux/config.json`
+parses. When the app's version differs from the CLI's it SHALL flag the drift (recommended,
+with `run gtmux update`), because a CLI ahead of the app is a real, confusing state
+(`gtmux update` refreshes a stale app). A menu-bar bundle whose `CFBundleShortVersionString`
+carries a leading `v` SHALL be normalized so a current app is never mis-read as behind.
+
+#### Scenario: CLI ahead of the app
+
+- **WHEN** the CLI version is newer than the installed menu-bar app's version
+- **THEN** the "gtmux" section shows both versions and flags the app as behind, pointing at
+  `gtmux update`
+
+#### Scenario: Malformed config
+
+- **WHEN** `~/.config/gtmux/config.json` exists but is not valid JSON
+- **THEN** doctor flags it as invalid (settings are silently ignored otherwise); an absent
+  config reports "defaults" (neutral)
+
+### Requirement: Consistent install-state vocabulary
+
+Rows that report an install-like state (plugins, hooks, the resurrect autosave, the
+menu-bar app) SHALL use the SINGLE word `installed`, not per-check synonyms (`armed`,
+`wired`). Runtime toggles (tmux options) keep `on`. This is a presentation invariant so the
+report reads uniformly.
+
+#### Scenario: Codex hook and autosave read as installed
+
+- **WHEN** the Codex hook is wired and the resurrect autosave trigger is present
+- **THEN** both report the value `installed` (matching the Claude Code hook / plugins / app)
+
+### Requirement: Menu-bar app as its own section
+
+`gtmux doctor` SHALL report the menu-bar app in a dedicated "Menu-bar app" section (not
+folded into "Agents & notifications") showing its install state, version, on-disk path, and
+whether it is up to date with the CLI.
+
+#### Scenario: App section detail
+
+- **WHEN** the menu-bar app is installed
+- **THEN** a "Menu-bar app" section reports its version + on-disk path, and flags it if it is
+  behind the CLI
+
+### Requirement: Terminal landscape beyond the host
+
+Beyond the host terminal (the one gtmux drives), `gtmux doctor` SHALL detect which OTHER
+known terminals are installed and mark each as supported (a gtmux driver exists →
+focus/restore/new work) or sensed-only (hosts tmux + agents fine, but no driver).
+
+#### Scenario: Other terminals listed
+
+- **WHEN** terminals besides the host are installed (e.g. iTerm2 + Apple Terminal)
+- **THEN** doctor lists them, each marked supported or sensed-only
+
+### Requirement: Live serve, phone uploads, and HQ health
+
+`gtmux doctor` SHALL, additionally: report whether a local `gtmux serve` is actually
+LISTENING (the phone's endpoint — installed-tunnel-without-a-serve still can't answer the
+phone); surface the phone image-upload staging dir (`~/.local/share/gtmux/uploads`) with its
+size + file count and clear it via `--fix` (the images were already delivered); and, when an
+HQ home exists, report HQ's health in detail — its home, the situation board's freshness, and
+the knowledge base's shape (topic count + pending-distill queue) — alongside the existing
+consumption/distill/self-check cadences.
+
+#### Scenario: Serve not running
+
+- **WHEN** no local server is listening on the serve port
+- **THEN** doctor reports the serve as not running (the phone can't reach this Mac)
+
+#### Scenario: Phone uploads cleanup
+
+- **WHEN** the phone-upload dir holds staged images and the user runs `doctor --fix`
+- **THEN** after consent it clears them and reports how many were removed
+
+#### Scenario: HQ health detail
+
+- **WHEN** an HQ home exists
+- **THEN** the "HQ" section reports the board's freshness and the knowledge base's shape in
+  addition to the maintenance cadences
