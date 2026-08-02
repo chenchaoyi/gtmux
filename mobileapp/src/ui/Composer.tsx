@@ -98,11 +98,17 @@ type Attachment = {id: string; uri: string; name: string; type: string; isImage:
 // choice or completes its ghost suggestion; ⏎ then SUBMITS that line — a bare
 // Enter to the pane, NOT the same as Send (↑), which only submits text typed into
 // the composer field. Tab→⏎ sit adjacent so "accept the suggestion, then send it"
-// is two taps in the resting row, with no detour through the input box. Ctrl-C
-// interrupts, Esc cancels. Directional nav stays removed.
+// is two taps in the resting row, with no detour through the input box. ↑/↓ navigate
+// and ␣ toggles — so an interactive TUI picker (Claude Code's AskUserQuestion, single
+// OR multi-select) is DRIVABLE from the phone: ↑/↓ to move, ␣ to check a box, ⏎ to
+// submit. (Those pickers get no one-tap ApprovalCard — a number-send can't drive them —
+// so the terminal keys ARE the reply path.) Ctrl-C interrupts, Esc cancels.
 const CONTROL_KEYS: {label: string; key: string}[] = [
   {label: 'Tab', key: 'Tab'},
   {label: '⏎', key: 'Enter'},
+  {label: '↑', key: 'Up'},
+  {label: '↓', key: 'Down'},
+  {label: '␣', key: 'Space'},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
 ];

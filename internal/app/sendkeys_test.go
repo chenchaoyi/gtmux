@@ -13,6 +13,7 @@ func TestAllowedSendKeysWhitelist(t *testing.T) {
 	allowed := []string{
 		"Enter", "C-c", "Escape", "Tab",
 		"Up", "Down", "Left", "Right",
+		"Space",
 		"BSpace", "C-d", "C-z", "C-l",
 	}
 	for _, k := range allowed {

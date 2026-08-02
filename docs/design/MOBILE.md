@@ -152,7 +152,9 @@ pane 浏览器(按 session 分组)覆盖,手机侧则用这条 —— 都基于�
 
 - **上下文快捷键（agent 化）**：waiting 时直接给 `1·Yes / 2·Always / 3·No`；其它状态给
   `继续 / ⏎ / 停止`。
-- **控制键排**：`⏎ Ctrl-C Esc Tab ↑ ↓`。
+- **控制键排**：`Tab ⏎ ↑ ↓ ␣ Ctrl-C Esc`（横向可滚）。`↑/↓` 导航、`␣` 勾选、`⏎` 提交 ——
+  这样交互式 TUI picker（Claude Code 的 AskUserQuestion，单选/多选）能在终端里被驱动。这类
+  富 picker **不出一键 ApprovalCard**（裸数字驱动不了它），终端键排就是它的回复通道。
 - **自由输入框 + 发送**：任意文本兜底。
 - 全部走 `POST /api/send`（send-keys），**写权限门控**：未授权时 composer 置灰并标注
   `Phase 2 · 写入需一次性授权`。
