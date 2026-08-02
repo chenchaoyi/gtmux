@@ -60,7 +60,11 @@ func installedAppVersion() string {
 		if err != nil {
 			continue
 		}
-		if v := strings.TrimSpace(string(out)); v != "" {
+		// Normalize a leading "v": the app bundle's CFBundleShortVersionString carries the
+		// git tag verbatim ("v0.44.10") while the CLI's Version is v-stripped, so an
+		// un-normalized compare would read a CURRENT app as "behind" (never matching) and
+		// double-"v" it in doctor. Strip it so both sides speak the same form.
+		if v := strings.TrimPrefix(strings.TrimSpace(string(out)), "v"); v != "" {
 			return v
 		}
 	}

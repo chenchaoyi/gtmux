@@ -210,3 +210,61 @@ func TestHQConsumptionCheck(t *testing.T) {
 		t.Errorf("value %q should report how far behind HQ is", got.value)
 	}
 }
+
+// rowConfig: absent → neutral defaults, valid JSON → OK, malformed → recommended.
+func TestRowConfig(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if r := rowConfig(); r.status != stInfo {
+		t.Errorf("missing config → stInfo, got %d", r.status)
+	}
+	dir := filepath.Join(home, ".config", "gtmux")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(`{"a":1}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if r := rowConfig(); r.status != stOK {
+		t.Errorf("valid config → stOK, got %d", r.status)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(`{bad`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if r := rowConfig(); r.status != stRec {
+		t.Errorf("invalid config → stRec, got %d", r.status)
+	}
+}
+
+// dirCountSize counts files + bytes across a tree; absent dir → 0,0.
+func TestDirCountSize(t *testing.T) {
+	dir := t.TempDir()
+	if n, sz := dirCountSize(filepath.Join(dir, "nope")); n != 0 || sz != 0 {
+		t.Errorf("absent dir → 0,0; got %d,%d", n, sz)
+	}
+	_ = os.WriteFile(filepath.Join(dir, "a"), []byte("hello"), 0o644)  // 5
+	_ = os.WriteFile(filepath.Join(dir, "b"), []byte("world!"), 0o644) // 6
+	_ = os.MkdirAll(filepath.Join(dir, "sub"), 0o755)
+	_ = os.WriteFile(filepath.Join(dir, "sub", "c"), []byte("x"), 0o644) // 1
+	if n, sz := dirCountSize(dir); n != 3 || sz != 12 {
+		t.Errorf("dirCountSize = %d files, %d bytes; want 3, 12", n, sz)
+	}
+}
+
+// terminalInstalled finds a .app bundle in ~/Applications; absent → false. Uses a
+// fake bundle name so a real terminal in /Applications (which a temp HOME can't
+// isolate) doesn't make the negative case flaky.
+func TestTerminalInstalled(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	const fake = "ZzGtmuxDoctorTest.app" // won't exist in /Applications
+	if terminalInstalled(fake) {
+		t.Error("no such app → false")
+	}
+	if err := os.MkdirAll(filepath.Join(home, "Applications", fake), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if !terminalInstalled(fake) {
+		t.Error("bundle present in ~/Applications → true")
+	}
+}

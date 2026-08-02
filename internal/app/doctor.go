@@ -3,7 +3,9 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -149,27 +151,30 @@ func renderSections(secs []dsection) (ok, rec, miss int) {
 
 // doctorSections runs every check and groups the rows by concern.
 func doctorSections() []dsection {
+	now := time.Now().Unix()
 	agents := []dcheck{rowClaudeHook()}
 	// Only surface Codex when it's actually present (~/.codex exists), so users
 	// who don't run Codex aren't shown an irrelevant row.
 	if fileExists(filepath.Join(homeDir(), ".codex")) {
 		agents = append(agents, rowCodexHook())
 	}
-	agents = append(agents, rowApp())
 	secs := []dsection{
+		// The gtmux install itself, FIRST — CLI + menu-bar app versions (a drift is the
+		// first thing you see) + config validity.
+		{i18n.Tr("gtmux", "gtmux"), versionChecks()},
 		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
-		{i18n.Tr("Terminal", "终端"), []dcheck{rowTerminal()}},
+		{i18n.Tr("Terminal", "终端"), terminalChecks()},
 		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
-		{i18n.Tr("Remote access", "远程访问"), append([]dcheck{rowCloudflared()}, sleepSettingChecks()...)},
-		{i18n.Tr("Storage", "存储"), []dcheck{rowDiskUsage()}},
+		// The menu-bar app is its own concern — install state + version + on-disk path.
+		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks()},
+		{i18n.Tr("Remote access", "远程访问"), remoteChecks()},
+		{i18n.Tr("Storage", "存储"), []dcheck{rowDiskUsage(), rowUploads()}},
 	}
 	// Only for a machine that actually runs a supervisor — on any other install these
 	// rows would report a cadence for a thing that does not exist.
 	if fileExists(state.HQHome()) {
-		secs = append(secs, dsection{i18n.Tr("HQ maintenance", "中控维护"),
-			append([]dcheck{hqConsumptionCheck(time.Now().Unix())},
-				hqMaintenanceChecks(time.Now().Unix())...)})
+		secs = append(secs, dsection{i18n.Tr("HQ", "中控"), hqChecks(now)})
 	}
 	return secs
 }
@@ -286,7 +291,12 @@ func rowTmux() dcheck {
 	if v := tmux.Lines("-V"); len(v) > 0 {
 		ver = strings.TrimPrefix(v[0], "tmux ")
 	}
-	return dcheck{stOK, i18n.Tr("tmux", "tmux"), ver, ""}
+	note := ""
+	if newer := brewOutdatedVersion("tmux"); newer != "" {
+		note = i18n.Tr("newer available: "+newer+" — brew upgrade tmux",
+			"有新版 "+newer+" —— brew upgrade tmux")
+	}
+	return dcheck{stOK, i18n.Tr("tmux", "tmux"), ver, note}
 }
 
 // rowLocale flags when the environment's locale isn't UTF-8. Without a UTF-8
@@ -393,7 +403,7 @@ func rowAutoSave() dcheck {
 		"continuum 需周期保存,重启才能恢复")
 	switch n := continuumTriggerCount(tmuxOpt("status-right")); {
 	case n == 1:
-		return dcheck{stOK, label, i18n.Tr("armed", "已武装"), note}
+		return dcheck{stOK, label, i18n.Tr("installed", "已装"), note}
 	case n > 1:
 		// Two triggers = every interval runs the save twice, forever, silently. It comes
 		// from a path-FORM mismatch: continuum looks for its own ABSOLUTE path, so a
@@ -436,18 +446,18 @@ func rowClaudeHook() dcheck {
 
 func rowCodexHook() dcheck {
 	label := i18n.Tr("Codex hook", "Codex hook")
-	// Wired via the preferred hooks system (precise state), or the legacy notify.
+	// Installed via the preferred hooks system (precise state), or the legacy notify.
 	if codexHooksWired() {
-		return dcheck{stOK, label, i18n.Tr("wired", "已接"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
+		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 	}
 	if codexNotifyIsGtmux() {
-		return dcheck{stOK, label, i18n.Tr("wired (notify)", "已接（notify）"), i18n.Tr("turn-done notifications", "turn 结束通知")}
+		return dcheck{stOK, label, i18n.Tr("installed (notify)", "已装（notify）"), i18n.Tr("turn-done notifications", "turn 结束通知")}
 	}
 	// Only reached when ~/.codex EXISTS (this row isn't added otherwise), so Codex is
 	// in use — an un-wired hook is a real improvement (`--fix` offers it), not a
 	// neutral note. Detection still works without it, but you miss precise per-event
 	// state + notifications.
-	return dcheck{stRec, label, i18n.Tr("not wired", "未接"), i18n.Tr("wire for precise state + notifications", "接入以获精准状态 + 通知")}
+	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("install for precise state + notifications", "接入以获精准状态 + 通知")}
 }
 
 // rowCloudflared surfaces the optional tunnel client. It's only needed for
@@ -463,12 +473,296 @@ func rowCloudflared() dcheck {
 		i18n.Tr("optional — only for `gtmux tunnel`", "可选，仅 `gtmux tunnel` 需要")}
 }
 
-func rowApp() dcheck {
-	label := i18n.Tr("menu-bar app", "菜单栏 app")
-	if _, err := os.Stat(gtmuxAppPath()); err == nil {
-		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("delivers desktop notifications", "负责发桌面通知")}
+// --- gtmux install (version + config) ---
+
+// versionChecks is the FIRST section: the gtmux install itself. CLI + menu-bar app
+// versions (so a drift between them is the first thing you see — after the recent
+// CLI-ahead-of-app confusion), plus config validity.
+func versionChecks() []dcheck {
+	cli := strings.TrimPrefix(Version, "v")
+	rows := []dcheck{{stOK, i18n.Tr("cli", "命令行"), "v" + cli, cliPathNote()}}
+	app := installedAppVersion()
+	switch {
+	case app == "":
+		rows = append(rows, dcheck{stInfo, i18n.Tr("app", "app"), i18n.Tr("not installed", "未装"),
+			i18n.Tr("menu-bar app not installed — `gtmux update`", "菜单栏 app 未装 —— `gtmux update`")})
+	case app == cli:
+		rows = append(rows, dcheck{stOK, i18n.Tr("app", "app"), "v" + app,
+			i18n.Tr("menu-bar app matches the CLI", "菜单栏 app 与 CLI 一致")})
+	default:
+		rows = append(rows, dcheck{stRec, i18n.Tr("app", "app"), "v" + app,
+			i18n.Tr("menu-bar app is behind the CLI (v"+cli+") — run `gtmux update`",
+				"菜单栏 app 落后于 CLI（v"+cli+"）—— 跑 `gtmux update`")})
 	}
-	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("needed for notifications", "通知需要它")}
+	return append(rows, rowConfig())
+}
+
+// cliPathNote is the on-disk location of the running gtmux binary (falls back to the
+// standard install path if the executable path can't be resolved).
+func cliPathNote() string {
+	if p, err := os.Executable(); err == nil && p != "" {
+		return p
+	}
+	return filepath.Join(homeDir(), ".local", "bin", "gtmux")
+}
+
+// rowConfig validates ~/.config/gtmux/config.json parses — a malformed config is silently
+// ignored (defaults used), so a typo can quietly drop every setting.
+func rowConfig() dcheck {
+	label := i18n.Tr("config", "配置")
+	path := filepath.Join(homeDir(), ".config", "gtmux", "config.json")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return dcheck{stInfo, label, i18n.Tr("defaults", "默认"),
+			i18n.Tr("no config.json — all defaults", "无 config.json —— 全用默认")}
+	}
+	if !json.Valid(b) {
+		return dcheck{stRec, label, i18n.Tr("invalid JSON", "JSON 有误"),
+			i18n.Tr("config.json isn't valid JSON — settings are ignored; fix or delete it",
+				"config.json 不是合法 JSON —— 设置被忽略；修好或删掉")}
+	}
+	return dcheck{stOK, label, i18n.Tr("valid", "合法"), "~/.config/gtmux/config.json"}
+}
+
+// --- terminal detection ---
+
+// knownTerminals: the terminals gtmux recognizes, and whether it can DRIVE each
+// (focus/restore/new) via a registered driver. A sensed-only terminal hosts tmux + agents
+// fine; gtmux just can't focus/restore it.
+var knownTerminals = []struct{ name, bundle, driver string }{
+	{"Ghostty", "Ghostty.app", "ghostty"},
+	{"iTerm2", "iTerm.app", "iterm2"},
+	{"Apple Terminal", "Terminal.app", ""},
+	{"kitty", "kitty.app", ""},
+	{"WezTerm", "WezTerm.app", ""},
+	{"Alacritty", "Alacritty.app", ""},
+	{"Warp", "Warp.app", ""},
+}
+
+func terminalChecks() []dcheck { return []dcheck{rowTerminal(), rowOtherTerminals()} }
+
+// terminalInstalled reports whether a terminal .app bundle is present in the usual dirs.
+func terminalInstalled(bundle string) bool {
+	dirs := []string{"/Applications", filepath.Join(homeDir(), "Applications")}
+	if bundle == "Terminal.app" { // Apple Terminal ships in the system utilities
+		dirs = append(dirs, "/System/Applications/Utilities", "/Applications/Utilities")
+	}
+	for _, d := range dirs {
+		if fileExists(filepath.Join(d, bundle)) {
+			return true
+		}
+	}
+	return false
+}
+
+// rowOtherTerminals lists terminals installed BESIDES the current host, each marked
+// supported (has a gtmux driver → focus/restore/new work) or sensed-only.
+func rowOtherTerminals() dcheck {
+	label := i18n.Tr("other terminals", "其它终端")
+	host := terminal.DetectedName()
+	var parts []string
+	for _, t := range knownTerminals {
+		if t.driver != "" && t.driver == host {
+			continue // the host is the row above
+		}
+		if !terminalInstalled(t.bundle) {
+			continue
+		}
+		if t.driver != "" && terminal.HasDriver(t.driver) {
+			parts = append(parts, t.name+i18n.Tr(" (supported)", "（支持）"))
+		} else {
+			parts = append(parts, t.name+i18n.Tr(" (sensed)", "（仅感知）"))
+		}
+	}
+	if len(parts) == 0 {
+		return dcheck{stInfo, label, i18n.Tr("none", "无"),
+			i18n.Tr("only the host terminal is installed", "只装了宿主终端")}
+	}
+	return dcheck{stInfo, label, strconv.Itoa(len(parts)), strings.Join(parts, " · ")}
+}
+
+// --- menu-bar app (its own section) ---
+
+// appChecks is the menu-bar app as its own concern: install state + version + on-disk
+// path, and whether it's current with the CLI (the version-inconsistency the recent update
+// fix now resolves).
+func appChecks() []dcheck {
+	path := gtmuxAppPath()
+	if _, err := os.Stat(path); err != nil {
+		alt := "/Applications/Gtmux.app" // Homebrew cask default
+		if _, e2 := os.Stat(alt); e2 != nil {
+			return []dcheck{{stRec, i18n.Tr("installed", "安装"), i18n.Tr("not installed", "未装"),
+				i18n.Tr("needed for desktop notifications — `gtmux update`", "桌面通知需要它 —— `gtmux update`")}}
+		}
+		path = alt
+	}
+	app := installedAppVersion()
+	ver := i18n.Tr("unknown", "未知")
+	if app != "" {
+		ver = "v" + app
+	}
+	rows := []dcheck{
+		{stOK, i18n.Tr("installed", "安装"), ver, i18n.Tr("delivers desktop notifications", "负责发桌面通知")},
+		{stOK, i18n.Tr("path", "路径"), path, i18n.Tr("on-disk bundle", "磁盘上的 bundle")},
+	}
+	cli := strings.TrimPrefix(Version, "v")
+	if app != "" && cli != "" && app != cli {
+		rows = append(rows, dcheck{stRec, i18n.Tr("up to date", "是否最新"), i18n.Tr("behind CLI", "落后 CLI"),
+			i18n.Tr("app v"+app+" < CLI v"+cli+" — `gtmux update` (now refreshes a stale app)",
+				"app v"+app+" < CLI v"+cli+" —— `gtmux update`（现在能更新滞后的 app）")})
+	}
+	return rows
+}
+
+// --- remote access ---
+
+func remoteChecks() []dcheck {
+	rows := append([]dcheck{rowCloudflared()}, sleepSettingChecks()...)
+	return append(rows, rowServeRunning())
+}
+
+// rowServeRunning reports whether a local gtmux serve is actually LISTENING (the phone's
+// endpoint), not just whether cloudflared is installed — an installed tunnel with no serve
+// behind it still can't answer the phone.
+func rowServeRunning() dcheck {
+	label := i18n.Tr("serve", "服务")
+	c, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", defaultServePort), 400*time.Millisecond)
+	if err != nil {
+		return dcheck{stInfo, label, i18n.Tr("not running", "未运行"),
+			i18n.Tr("no local server on :8765 — the phone can't reach this Mac (start it from the menu-bar app or `gtmux awake`)",
+				"本机 :8765 无服务 —— 手机连不上（用菜单栏 app 或 `gtmux awake` 开启）")}
+	}
+	_ = c.Close()
+	return dcheck{stOK, label, i18n.Tr("running :8765", "运行中 :8765"),
+		i18n.Tr("the phone can reach this Mac", "手机可连到本机")}
+}
+
+// --- storage: phone uploads ---
+
+// rowUploads surfaces the phone image-upload staging dir (a picture the phone sends into a
+// pane lands here first). It grows silently; this makes it visible + `doctor --fix` clears
+// it. Neutral until it's large enough to bother clearing.
+func rowUploads() dcheck {
+	label := i18n.Tr("phone uploads", "手机上传")
+	n, size := dirCountSize(uploadsDir())
+	if n == 0 {
+		return dcheck{stInfo, label, i18n.Tr("empty", "空"),
+			i18n.Tr("images the phone sends into a pane stage here", "手机发进 pane 的图片暂存在此")}
+	}
+	note := uploadsDir() + i18n.Tr(" — `gtmux doctor --fix` clears it", " —— `gtmux doctor --fix` 可清理")
+	val := fmt.Sprintf("%s (%d)", humanBytes(size), n)
+	if size >= 100<<20 { // 100 MB — worth clearing
+		return dcheck{stRec, label, val, note}
+	}
+	return dcheck{stInfo, label, val, note}
+}
+
+// uploadsDir is the phone image-upload staging dir (mirrors serve.go's saveUpload).
+func uploadsDir() string { return filepath.Join(homeDir(), ".local", "share", "gtmux", "uploads") }
+
+// dirCountSize returns the file count + total bytes of a directory tree (0,0 if absent).
+func dirCountSize(dir string) (int, int64) {
+	var n int
+	var size int64
+	_ = filepath.WalkDir(dir, func(_ string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		n++
+		if info, e := d.Info(); e == nil {
+			size += info.Size()
+		}
+		return nil
+	})
+	return n, size
+}
+
+// --- HQ (supervisor health, detailed) ---
+
+// hqChecks reports the supervisor's own health in more detail than a single cadence line:
+// its home, the situation board's freshness, the knowledge base's shape, and the
+// maintenance cadences. Only assembled when an HQ home exists.
+func hqChecks(now int64) []dcheck {
+	rows := []dcheck{
+		{stOK, i18n.Tr("home", "家目录"), i18n.Tr("present", "存在"), state.HQHome()},
+		rowHQBoard(now),
+		rowHQKnowledge(),
+		hqConsumptionCheck(now),
+	}
+	return append(rows, hqMaintenanceChecks(now)...)
+}
+
+// rowHQBoard reports the situation board's freshness — HQ's persistent memory that
+// survives context resets.
+func rowHQBoard(now int64) dcheck {
+	label := i18n.Tr("board", "看板")
+	info, err := os.Stat(hq.BoardPath())
+	if err != nil {
+		return dcheck{stInfo, label, i18n.Tr("none yet", "尚无"),
+			i18n.Tr("notes/board.md not written yet — HQ writes it as it works", "notes/board.md 尚未写入 —— HQ 干活时会写")}
+	}
+	val := hq.HumanAgeShort(now-info.ModTime().Unix()) + i18n.Tr(" ago · ", "前 · ") + humanBytes(info.Size())
+	return dcheck{stOK, label, val, i18n.Tr("HQ's persistent situation board (survives resets)", "HQ 的常驻情况看板（跨重置保存）")}
+}
+
+// rowHQKnowledge reports the knowledge base's shape: curated topics + how much is queued
+// for the next distill pass (the learning loop's inbox).
+func rowHQKnowledge() dcheck {
+	label := i18n.Tr("knowledge base", "知识库")
+	kdir := filepath.Join(state.HQHome(), "knowledge")
+	topics := 0
+	entries, _ := os.ReadDir(kdir)
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
+			topics++
+		}
+	}
+	if topics == 0 {
+		return dcheck{stInfo, label, i18n.Tr("none", "无"),
+			i18n.Tr("no knowledge topics yet — HQ distills lessons here", "尚无知识主题 —— HQ 会在此沉淀教训")}
+	}
+	pending := countNonEmptyLines(filepath.Join(kdir, ".pending-distill.jsonl"))
+	val := fmt.Sprintf(i18n.Tr("%d topics", "%d 主题"), topics)
+	note := fmt.Sprintf(i18n.Tr("curated lessons; %d pending distill", "沉淀的教训；%d 条待蒸馏"), pending)
+	return dcheck{stOK, label, val, note}
+}
+
+// countNonEmptyLines counts non-blank lines in a file (0 if absent).
+func countNonEmptyLines(path string) int {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	n := 0
+	for _, ln := range strings.Split(string(b), "\n") {
+		if strings.TrimSpace(ln) != "" {
+			n++
+		}
+	}
+	return n
+}
+
+// brewOutdatedVersion returns the newer version Homebrew has for a formula, or "" when
+// it's current / not brew-managed / brew absent. `brew outdated --json=v2` reads the local
+// formula cache (no network), so it degrades to "" on any error rather than blocking.
+func brewOutdatedVersion(formula string) string {
+	brew := lookTool("brew")
+	if brew == "" {
+		return ""
+	}
+	out, err := exec.Command(brew, "outdated", "--json=v2", formula).Output()
+	if err != nil {
+		return ""
+	}
+	var parsed struct {
+		Formulae []struct {
+			CurrentVersion string `json:"current_version"`
+		} `json:"formulae"`
+	}
+	if json.Unmarshal(out, &parsed) != nil || len(parsed.Formulae) == 0 {
+		return ""
+	}
+	return parsed.Formulae[0].CurrentVersion
 }
 
 // --- shared probes (also used by doctorFix) ---
