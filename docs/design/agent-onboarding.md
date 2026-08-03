@@ -139,6 +139,15 @@ manifest's `Content` key, and wire it in the driver's content map. Now the diges
   (opencode was in the whitelist for months with no installer).
 - [ ] **Plugin vs command-hook model.** Don't assume a JSON "run a command on event" file
   exists. opencode is plugin-only; forcing it into a command-hook format fails.
+- [ ] **A plugin that shells `gtmux hook` MUST redirect its stdin (`< /dev/null`).** A JS
+  plugin's subprocess inherits the AGENT's controlling TTY as stdin, and `gtmux hook`
+  drains stdin — `io.ReadAll` on a TTY never EOFs, so the hook hangs in the agent's
+  foreground process group and **steals its keyboard input** (opencode's composer went
+  dead after the first send; every subsequent `gtmux send` silently failed `not confirmed`).
+  `gtmux hook` now guards this (`stdinIsTerminal` skips a char-device stdin), but the
+  plugin must still redirect so an old binary is safe. Pipe-fed calls (`echo … | gtmux
+  hook … UserPromptSubmit`) are already safe — the pipe, not the TTY, is stdin. *(Cost a
+  full debugging session; the tell is a `gtmux hook` process stuck in state `S+`.)*
 - [ ] **Locale/glyph loss over daemon-spawned PTYs.** A `launchd`-spawned `gtmux serve` has
   no `TERM`/locale, so a PTY it spawns mangles CJK and TUI glyphs to dashes/`_`. Force
   `-u` + `LC_CTYPE` and pass `TERM`. This also breaks the radar's glyph classification.
@@ -148,9 +157,17 @@ manifest's `Content` key, and wire it in the driver's content map. Now the diges
 - [ ] **Idle-glyph classification needs LIVE confirmation.** A leftover title glyph on a
   dead shell must NOT classify as a running agent — the classifier requires the process to
   be live (or the subtree to match), not just the title.
-- [ ] **No third-party trademarks in icons.** Point `Icon` at the vendor's installed desktop
-  app (`/Applications/<App>.app`) so the OS supplies the real logo, or ship a neutral
-  letter mark. Never bundle a vendor logo.
+- [ ] **Agent icons: committed built-in, OR the vendor's installed app, else a letter mark.**
+  §6 now permits a committed official mark for *identification* (nominative use) — drop
+  `<key>.png` in `assets/agent-icons/` with provenance in `SOURCES.md`; the serve hands it
+  to every surface via `/api/icon`. For agents with a desktop app you can instead point
+  `Icon` at `/Applications/<App>.app`. **Gotcha:** the mobile only fetches `/api/icon` when
+  `agents --json` reports a NON-EMPTY `icon`, so `radar.IconFor` returns a `builtin:<key>`
+  hint whenever a committed icon exists even though the profile `Icon` path is empty —
+  without that the phone shows the monogram despite the icon shipping. *(This is exactly
+  how opencode showed "OC" until fixed.)* The local menu-bar surface still resolves icons
+  itself (install-time drop into `~/.config/gtmux/icons`), so a committed icon reaches it
+  only after that follow-up lands.
 - [ ] **Approval event vs pre-tool event.** If the agent raises a distinct approval event,
   keep its pre-tool event as telemetry (dedicated table). Otherwise every tool would flag
   "needs you," or real approvals would be dropped (Kiro's lowercase events must be

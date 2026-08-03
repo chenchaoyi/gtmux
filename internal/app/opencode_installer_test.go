@@ -34,12 +34,12 @@ func TestOpencodeInstallerWritesAndRemovesPlugin(t *testing.T) {
 	js := string(data)
 	for _, want := range []string{
 		"export const",
-		"event: async ({ event })",         // opencode's real single event hook (not per-name keys)
-		"\"chat.message\": async",          // the user-submit hook (send receipt)
-		"hook --agent opencode ${event}",   // generic event fire
-		"UserPromptSubmit",                 // receipt path
-		"JSON.stringify({ prompt: text })", // prompt piped to stdin so eventSummary records the needle
-		"\"session.idle\": \"Stop\"",       // turn-done → Stop (verified against opencode 1.18.11)
+		"event: async ({ event })",                   // opencode's real single event hook (not per-name keys)
+		"\"chat.message\": async",                    // the user-submit hook (send receipt)
+		"hook --agent opencode ${event} < /dev/null", // stdin redirect: never hand the hook opencode's TTY (the input-wedge guard)
+		"UserPromptSubmit",                           // receipt path
+		"JSON.stringify({ prompt: text })",           // prompt piped to stdin so eventSummary records the needle
+		"\"session.idle\": \"Stop\"",                 // turn-done → Stop (verified against opencode 1.18.11)
 		"\"permission.asked\": \"PermissionRequest\"",
 	} {
 		if !strings.Contains(js, want) {
