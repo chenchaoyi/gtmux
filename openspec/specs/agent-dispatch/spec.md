@@ -583,25 +583,26 @@ is NOT this path — it goes through the verified, idempotent dispatch; see belo
 - **THEN** the text is pasted and the Enter is withheld until the draft is confirmed
   to hold the full text, so the reply submits whole rather than as a truncated fragment
 
-### Requirement: The phone send is verified, receipt-backed, and idempotent
+### Requirement: The phone send returns fast (echo not blocked on verification) and is idempotent
 
-`POST /api/send` with `text`+`enter` SHALL go through the FULL verified delivery
-(`dispatch.Deliver`), not a fire-and-pre-confirm path. For a HOOK-EQUIPPED agent the
-deterministic `UserPromptSubmit` receipt — matched on the full needle — SHALL be the
-authority for landing; a "fragment" verdict from the fragile pre-submit draft scrape (a
-redraw race on a busy pane) SHALL NOT by itself fail the send (it submits and lets the
-receipt judge), because that false verdict was the recurring "input box did not confirm the
-full message". A send MAY carry a client `send_id`; a `send_id` that already LANDED SHALL
-return success WITHOUT re-injecting, so a retry after an ambiguous network failure never
-double-sends. A hook-LESS agent keeps failing a genuinely-unconfirmed draft (no receipt to
-trust), and a send without a `send_id` falls back to the payload-hash re-send interlock.
+`POST /api/send` with `text`+`enter` SHALL return as soon as the keystrokes LAND — the
+paste→confirm→submit core (`PasteAndSubmit`): the full draft is confirmed present, then Enter
+is sent once. It SHALL NOT block the response on the post-submit landing-verification loop,
+because the response carries the input ECHO and blocking it there delays the typed text until
+the client's next poll cycle. Landing reliability comes from resolving the agent's identity
+from its process subtree (so hook-equipped agents are correctly detected) and the pre-submit
+paste guard's per-agent composer detection — not from a blocking receipt. A genuinely
+un-placeable draft (a settled fragment) SHALL still fail synchronously so the client keeps the
+text; only the post-submit landing confirmation is dropped from the response path. A send MAY
+carry a client `send_id`; a `send_id` that already LANDED SHALL return success WITHOUT
+re-injecting, so a retry after an ambiguous network failure never double-sends.
 
-#### Scenario: A hook-equipped fragment defers to the receipt
+#### Scenario: The echo is not delayed by verification
 
-- **WHEN** the phone sends to a hook-equipped agent and the pre-submit draft scrape cannot
-  confirm the full draft, but the agent DID receive and submit the full message
-- **THEN** the receipt confirms the landing and the send reports success (not a false
-  "input box did not confirm")
+- **WHEN** the phone sends text to a pane
+- **THEN** the response (with the post-send screen) returns once the keystrokes land, not
+  after a multi-frame landing-verification loop — so the typed input echoes back promptly
+  rather than only on the next poll
 
 #### Scenario: A retried send does not double-send
 
