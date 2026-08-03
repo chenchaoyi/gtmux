@@ -922,10 +922,12 @@ other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
 runs it, you don't — and writes state purely by event **timing**, telling a
 permission request from an idle nudge without reading message text.
 
-**Other agents:** `--agent codex|cursor|gemini|copilot|kiro` wires that agent's
-own hooks file instead. **Codex** uses its additive hooks system
+**Other agents:** `--agent codex|cursor|gemini|copilot|kiro|opencode` wires that
+agent's own hooks file instead. **Codex** uses its additive hooks system
 (`~/.codex/hooks.json` + `features.hooks`), so it **coexists with any existing
-`notify`** (e.g. computer-use) rather than replacing it. `gtmux doctor --fix`
+`notify`** (e.g. computer-use) rather than replacing it. **opencode** has no
+command-hook file, so gtmux installs a small JS plugin
+(`~/.config/opencode/plugin/gtmux.js`) that forwards its events. `gtmux doctor --fix`
 offers to wire whatever agents it detects.
 
 Notifications are delivered by the menu-bar app — no `terminal-notifier` needed.

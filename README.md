@@ -43,7 +43,7 @@ New to tmux? Start with the official
 
 - **CLI** — the base. `gtmux agents` lists every agent (`--watch` is a live dashboard); `focus` jumps, `spawn` dispatches — all inside tmux.
 - **Menu-bar app** — an always-visible status dot (red / cyan / green) with a popover and a `⌘⌥G` palette; desktop banners when an agent needs you.
-- **iPhone app** — the same radar on iOS: lock-screen push, reply into a pane, Dynamic Island. Remote management — and remote collaboration.
+- **iPhone app** ([App Store](https://apps.apple.com/app/id6791144062)) — the same radar on iOS: lock-screen push, reply into a pane, Dynamic Island. Remote management — and remote collaboration.
 - **Web** — any browser opens your radar and a terminal mirror; guest links you share open here too.
 - **Another computer** — `gtmux attach` bridges a tmux session from your Mac into the terminal in front of you.
 
@@ -148,14 +148,13 @@ gtmux update                 # self-update the CLI + menu-bar app (the app also
 > Just want notifications and nothing else? `gtmux install hooks` registers only
 > the agent hook — but `gtmux doctor` is the recommended path (it does that
 > **and** the set-titles focus/restore depend on). For non-Claude agents, add
-> `--agent codex|cursor|gemini|copilot|kiro` (Codex wires via its own hooks system,
-> coexisting with any existing `notify`).
+> `--agent codex|cursor|gemini|copilot|kiro|opencode` (Codex wires via its own hooks
+> system, coexisting with any existing `notify`; opencode installs a small plugin).
 
 To watch from your phone, run `gtmux serve` (same Wi-Fi) or `gtmux tunnel`
 (anywhere) and pair the iOS app. **Anywhere** comes in two flavors: **Standard**
 (zero-config, free) and **Direct** — through gtmux's own server over 443, for
-networks that block Cloudflare's edge; a paid unlock via
-`gtmux tunnel --redeem <code>`. See **[docs/phone.md](docs/phone.md)**.
+networks that block Cloudflare's edge. See **[docs/phone.md](docs/phone.md)**.
 
 > **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+ **or** iTerm2 for the
 > jump features (`focus` / `restore` / `new`); `agents` / `overview` work under

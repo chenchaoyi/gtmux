@@ -62,10 +62,9 @@ and works office↔home.
 > `http://<mac-ip>:8765/api/health` in the phone's browser; if it doesn't load,
 > you need Tailscale (or a tunnel).
 >
-> **Mainland China:** Tailscale is a VPN-category app and is generally **not in
-> the China App Store**. Install it with a non-mainland Apple ID, **or** skip the
-> VPN app entirely with the tunnel below (the phone connects to a normal
-> `https://…` URL — no VPN app needed).
+> **Tailscale not available in your region's App Store?** Use `gtmux tunnel`
+> below instead — the phone just opens a normal `https://…` URL, so there's no
+> mesh/VPN app to install at all.
 
 ## From anywhere — `gtmux tunnel` (no VPN app)
 
@@ -93,8 +92,8 @@ no app). Open the mobile app → **Add a server → Scan** → connected from an
   stable `https://<id>.gtmux.ccy.dev` via gtmux's control plane, so the phone
   **pairs once** and keeps working across restarts. No account or domain on your side.
 - **Direct (`--backend self`)** — a chisel tunnel through **gtmux's own server** over
-  443, for networks that DNS-hijack or block Cloudflare's tunnel edge (some corp /
-  China networks). It's a **paid unlock**: get an access code at
+  443, for restrictive networks that can't reach Cloudflare's tunnel edge (some
+  corporate networks). It's a **paid unlock**: get an access code at
   <https://ccy.dev/projects/gtmux/direct>, redeem it with
   `gtmux tunnel --redeem <code>` (or the menu bar's **Anywhere → Direct**, which
   prompts for one), then use `--backend self`. Direct is multi-tenant — each Mac gets
