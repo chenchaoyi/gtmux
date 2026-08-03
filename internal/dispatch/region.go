@@ -81,8 +81,13 @@ func SplitInputRegion(capture string) (history, draft string, structured bool) {
 		}
 	}
 	if top < 0 {
-		// A single border (e.g. only a top rule over the input) — treat everything
-		// below it as draft, above as history.
+		// A single border, two shapes:
+		//   - a left-edge box CLOSED by a bottom rule (opencode: "┃  text" lines above
+		//     a "╹▀▀▀" border) — the draft is the ┃/│-prefixed block ABOVE the border;
+		//   - a lone TOP rule over the input — the draft is BELOW it.
+		if edge := leftEdgeBlockStart(lines, bottom); edge >= 0 {
+			return strings.Join(lines[:edge], "\n"), stripBoxChrome(lines[edge:bottom]), true
+		}
 		return strings.Join(lines[:bottom], "\n"), stripBoxChrome(lines[bottom+1:]), true
 	}
 	history = strings.Join(lines[:top], "\n")
@@ -122,16 +127,40 @@ func isBoxBorder(line string) bool {
 	horiz := 0
 	for _, r := range t {
 		switch r {
-		case '─', '━', '═', '╌', '╍', '┄', '┅', '┈', '┉':
+		case '─', '━', '═', '╌', '╍', '┄', '┅', '┈', '┉',
+			// half-block rules some TUIs draw the input box with (opencode's
+			// bottom border is "╹▀▀▀▀…"). NOT the full block '█', which the
+			// opencode/ASCII banners are made of — those must stay non-borders.
+			'▀', '▄', '▔', '▁':
 			horiz++
 		case '╭', '╮', '╰', '╯', '┌', '┐', '└', '┘', '├', '┤', '┬', '┴', '┼',
-			'│', '┃', '║', ' ', '\t':
+			'│', '┃', '║', '╹', '╻', '╺', '╸', ' ', '\t':
 			// allowed border furniture, but not itself a "horizontal run"
 		default:
 			return false
 		}
 	}
 	return horiz >= 2 // require a real horizontal run, not just corners/pipes
+}
+
+// leftEdgeBlockStart returns the first index of the consecutive block of left-edge
+// box lines ("┃ …" / "│ …") immediately above the border at `bottom`, or -1 when the
+// line directly above the border is not a left-edge line (so the border is a plain
+// top rule, not the bottom of a left-edge box). This locates opencode's composer,
+// whose input box is drawn with a left ┃ edge and a ╹▀▀▀ bottom rule but NO top rule.
+func leftEdgeBlockStart(lines []string, bottom int) int {
+	isLeftEdge := func(s string) bool {
+		t := strings.TrimSpace(s)
+		return strings.HasPrefix(t, "┃") || strings.HasPrefix(t, "│")
+	}
+	if bottom-1 < 0 || !isLeftEdge(lines[bottom-1]) {
+		return -1
+	}
+	start := bottom - 1
+	for start-1 >= 0 && isLeftEdge(lines[start-1]) {
+		start--
+	}
+	return start
 }
 
 // isPromptLine reports whether a line looks like an input prompt (a leading ❯/›/>,
