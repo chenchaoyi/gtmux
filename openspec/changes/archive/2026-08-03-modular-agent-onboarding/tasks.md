@@ -8,9 +8,9 @@
 
 - [x] 2.1 `internal/driver`: derive `hookEquippedAgents` + registry capabilities from manifests; delete the private lists.
 - [x] 2.2 `internal/radar`: derive `defaultProfiles` (Name/Commands/IdleGlyph/Icon) from manifests.
-- [~] 2.3 RE-SCOPED (kept domain-local): classify semantics tables stay in internal/hook (the `semantic` enum is hook-domain — moving it is over-abstraction); registry-keyed + conformance-checked + documented in the playbook.
+- [x] 2.3 RE-SCOPED (kept domain-local): classify semantics tables stay in internal/hook (the `semantic` enum is hook-domain — moving it is over-abstraction); registry-keyed + conformance-checked + documented in the playbook.
 - [x] 2.4 `internal/resume` + `internal/resource`: derive resume commands + attribution names from manifests.
-- [~] 2.5 RE-SCOPED (kept domain-local): prompt boot/ready signatures stay in internal/prompt; registry-keyed + documented. See design.md over-abstraction note.
+- [x] 2.5 RE-SCOPED (kept domain-local): prompt boot/ready signatures stay in internal/prompt; registry-keyed + documented. See design.md over-abstraction note.
 - [x] 2.6 `internal/app/agent_hooks.go` (+ codex_hooks/hooks): derive `agentInstallers` from the manifest install specs.
 
 ## 3. Generalize the install spec (plugin model)
@@ -32,5 +32,5 @@
 
 ## 6. Spec sync
 
-- [ ] 6.1 Run `openspec validate --specs --strict` + `make check` + `check-design.sh` green.
-- [ ] 6.2 sync-specs (fold the `agent-integration` capability into `openspec/specs/`) + archive-change.
+- [x] 6.1 Run `openspec validate --specs --strict` + `make check` + `check-design.sh` green.
+- [x] 6.2 sync-specs (fold the `agent-integration` capability into `openspec/specs/`) + archive-change.
