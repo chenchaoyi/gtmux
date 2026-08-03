@@ -599,7 +599,7 @@ export function HQScreen({route, navigation}: any) {
         <View style={[styles.root, {backgroundColor: pal.bg}]}>
           <View style={[styles.sheetHead, {borderBottomColor: pal.divider}]}>
             <View style={styles.stripMid}>
-              <Text style={[styles.title, {color: pal.fg}]}>{t('Situation board', '作战态势板')}</Text>
+              <Text style={[styles.title, {color: pal.fg}]}>{t('Situation board', '态势板')}</Text>
               <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
                 {boardFreshness(board.updated_at, now, zh)} · {t('read-only', '只读')}
               </Text>

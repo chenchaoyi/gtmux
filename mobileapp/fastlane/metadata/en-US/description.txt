@@ -16,7 +16,7 @@ ALSO
 • English and 简体中文.
 
 HOW IT WORKS
-gtmux talks to a small server (gtmux serve) on your own Mac, over your own network — like an SSH or terminal client for your own machine. Nothing is uploaded to us, there is no account, and no code runs on your phone. Access is gated by a token you control and can revoke anytime.
+gtmux talks to a small server (gtmux serve) on your own Mac, over your own network — like an SSH or terminal client for your own machine. Nothing is uploaded to us, there is no account, and your agents run on your Mac, never on your phone. Access is gated by a token you control and can revoke anytime.
 
 PRIVACY
 gtmux collects no data. Your sessions and tokens stay on your device and your Mac.

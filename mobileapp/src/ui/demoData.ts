@@ -266,7 +266,7 @@ export function demoHQReply(lang: 'en' | 'zh', text: string): string {
 // is the failure this design replaced.
 export function demoBoard(zh: boolean): {exists: boolean; updated_at: number; text: string} {
   const text = zh
-    ? `# gtmux HQ — 作战态势板
+    ? `# gtmux HQ — 态势板
 
 _最近刷新：刚刚_
 

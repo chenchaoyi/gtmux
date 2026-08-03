@@ -38,7 +38,7 @@ agent 之上的雷达和遥控。用 tmux 管理多个 agent（各自命名、�
 
 - **CLI**：基座。`gtmux agents` 列出每个 agent（`--watch` 是实时看板），`focus` 跳转、`spawn` 派活，都在 tmux 里。
 - **菜单栏 app**：常驻状态点（红 / 青 / 绿），带弹层和 `⌘⌥G` 命令面板；agent 等你时弹桌面通知。
-- **iPhone app**：同一块雷达搬到 iOS——锁屏推送、往 pane 里回话、灵动岛。远程管理，也能远程协作。
+- **iPhone app**（[App Store](https://apps.apple.com/app/id6791144062)）：同一块雷达搬到 iOS——锁屏推送、往 pane 里回话、灵动岛。远程管理，也能远程协作。
 - **网页**：任何浏览器打开你的雷达和终端镜像；发给协作者的访客链接也开在这里。
 - **别的电脑**：`gtmux attach` 把 Mac 上的 tmux 会话原样接到眼前这台终端里。
 
@@ -131,12 +131,12 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 
 > 只想要通知？`gtmux install hooks` 只注册 agent hook —— 但推荐走 `gtmux doctor`
 > （它会做这个**并且**配好 focus/restore 依赖的 set-titles）。非 Claude 的 agent 加
-> `--agent codex|cursor|gemini|copilot|kiro`（Codex 走它自己的 hooks 系统，与已有的
-> `notify` 并存）。
+> `--agent codex|cursor|gemini|copilot|kiro|opencode`（Codex 走它自己的 hooks 系统，
+> 与已有的 `notify` 并存；opencode 装一个小插件）。
 
 想用手机看，跑 `gtmux serve`（同一 Wi-Fi）或 `gtmux tunnel`（任意网络），再配对 iOS app。
 **任意网络**分两档：**Standard**（零配置、免费）与 **Direct**（走 gtmux 自己的服务器、443，
-穿透屏蔽 Cloudflare 边缘的网络 —— 付费解锁，`gtmux tunnel --redeem <码>`）。
+适用于无法直连 Cloudflare 边缘的网络 —— 付费解锁，`gtmux tunnel --redeem <码>`）。
 见 **[docs/phone.md](docs/phone.md)**。
 
 > **需要** macOS + [Ghostty](https://ghostty.org) 1.3+ **或** iTerm2 才能用跳转功能
