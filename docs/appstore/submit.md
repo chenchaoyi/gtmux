@@ -152,13 +152,32 @@ Apple to finish processing if it's not selectable yet).
 - **Sign-In Information → UNCHECK "Sign-in required".** gtmux has NO account/login; it
   pairs to the user's own Mac via a one-time code, so there is no username/password to
   give a reviewer. Leave User name / Password blank.
-- **Notes** — the reviewer has no Mac to pair with, so point them at **Demo mode** (this
-  is exactly why Demo mode exists). Paste:
+- **Notes** — one single, non-localized field, read by the review team (not users). Since
+  the app ships to **mainland China** (reviewed by Apple's China team, who read Chinese),
+  paste this **bilingual** block — 中文 first, then English. The reviewer has no Mac to
+  pair with, so it points them at **Demo mode** (this is exactly why Demo mode exists):
 
-  > gtmux is a companion app that pairs with the user's OWN Mac (running the open-source
-  > `gtmux serve`) to monitor and reply to coding-agent sessions in their tmux — analogous
-  > to an SSH / remote-terminal client for a machine you control. There is no account or
-  > login: pairing is done via a one-time QR/code shown by the user's Mac.
+  > 【中文】gtmux 是一个配套 app：它与用户自己的 Mac 配对（Mac 上运行开源的 `gtmux serve`），
+  > 用来查看并回复用户 tmux 里编程 agent 的会话——类似连接自己机器的 SSH／远程终端客户端。
+  > 没有账号、无需登录，配对通过用户 Mac 上显示的一次性二维码/配对码完成。
+  >
+  > 无需 Mac 即可审核：在首个「服务器」页，点 **"No Mac? See a demo"（没有 Mac？看演示）**。
+  > 会打开一个完全自包含的演示（示例数据，带 DEMO 标记），覆盖整个 app——agent 雷达、打开会话
+  > 终端、1/2/3 审批卡、以及 HQ 指挥页。无需服务器、网络或任何凭据。
+  >
+  > 远程终端输入只发往用户自己配对的机器，由用户掌握的 bearer token 把关；不向任何第三方发送数据。
+  >
+  > 关于 VPN：gtmux 不含任何 VPN 功能（无 NetworkExtension 框架、无 VPN 权限、不配置设备网络）。
+  > 它只是连接用户自己 Mac 上服务的普通 HTTPS/SSE/WebSocket 客户端。app 不提供 VPN，也不收集任何数据。
+  >
+  > 已完成 ICP App 备案：京ICP备2026034584号-3A。
+  >
+  > ---
+  >
+  > [English] gtmux is a companion app that pairs with the user's OWN Mac (running the
+  > open-source `gtmux serve`) to monitor and reply to coding-agent sessions in their tmux —
+  > analogous to an SSH / remote-terminal client for a machine you control. There is no
+  > account or login: pairing is done via a one-time QR/code shown by the user's Mac.
   >
   > TO REVIEW WITHOUT A MAC: on the first "Servers" screen, tap **"No Mac? See a demo"**.
   > This opens a fully self-contained demo (sample data, marked with a DEMO badge) covering
@@ -171,12 +190,12 @@ Apple to finish processing if it's not selectable yet).
   > Clarification re: VPN — gtmux has no VPN functionality (no NetworkExtension
   > framework, no VPN entitlements, no device network configuration). It is a plain
   > HTTPS/SSE/WebSocket client to a server the user runs on their own Mac. The app
-  > provides no VPN and collects no data.
+  > provides no VPN and collects no data. ICP App filing: 京ICP备2026034584号-3A.
 
   (The VPN paragraph exists because the v0.41.0 review was auto-flagged "contains VPN
   functionality" — triggered by the word "VPN" in the description, since removed from
-  the metadata. Keep the clarification in the notes so the flag never stalls a review
-  again.)
+  the metadata. Keep the clarification — in BOTH languages — so the flag never stalls a
+  review again. 中文块放前面，因为大陆区由中国审核团队审。)
 
 - **Contact Information** — the developer's real name / phone / email (Apple contacts you
   about the review). Not app data.

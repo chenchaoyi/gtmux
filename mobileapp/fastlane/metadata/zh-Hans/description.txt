@@ -1,12 +1,12 @@
-gtmux 是你 Mac 上 tmux 里 agent 的雷达与指挥中心——既包括 Claude、Codex 这样的编码 agent，也包括任何跑在终端里的 agent。在 Mac 上运行 gtmux serve，手机配对一次，就能把整支舰队随身带走。
+gtmux 是你 Mac 上 tmux 里的 agent 雷达与指挥中心——既包括 Claude、Codex 这样的编码 agent，也包括 tmux 窗口。在 Mac 上安装并运行 gtmux serve，手机配对，就能把整支舰队随身带走或分享给别人协作。
 
-看见（SEE）
+感知
 把每个 tmux 窗格和 CLI agent 汇成一张实时雷达，用颜色区分状态——等你输入、正在工作、空闲。一眼就知道谁在等你。
 
-操控（STEER）
+操控
 从手机直接回话，或把命令发到终端。把某个 agent 拉到眼前。不用走回 Mac 前就能解堵。
 
-中控（SUPERVISE）
+中控
 一个帮你盯全局的中控：它消化每个 agent 在做什么，只把真正需要你处理的浮上来，还能替你分诊、派活——让繁忙的舰队在不重要时保持安静。
 
 此外
@@ -16,7 +16,7 @@ gtmux 是你 Mac 上 tmux 里 agent 的雷达与指挥中心——既包括 Clau
 • 支持英文与简体中文。
 
 工作原理
-这个 app 是 Mac 上免费开源 gtmux 的手机端——你得先在 Mac 上装好 gtmux，app 才连得上，单独用没有意义。安装和两分钟上手见 ccy.pub/projects/gtmux。它走你自己的网络连接你的 Mac，就像连接你自己机器的 SSH／终端客户端。任何数据都不会上传给我们，没有账号，你的 agent 只在 Mac 上运行、不在手机上跑。访问由你掌握、可随时撤销的 token 把关。
+这个 app 是 Mac 上免费开源 gtmux 的手机端——你得先在 Mac 上装好 gtmux，app 才连得上。安装和两分钟上手见 ccy.pub/projects/gtmux。它走你自己的网络连接你的 Mac，就像连接你自己机器的 SSH／终端客户端。任何数据都不会上传，没有账号，你的 agent 只在 Mac 上运行、不在手机上跑。访问由你掌握、可随时撤销的 token 把关。
 
 隐私
 gtmux 不收集任何数据。你的会话与 token 只保存在你的设备和你的 Mac 上。
