@@ -154,8 +154,7 @@ gtmux update                 # self-update the CLI + menu-bar app (the app also
 To watch from your phone, run `gtmux serve` (same Wi-Fi) or `gtmux tunnel`
 (anywhere) and pair the iOS app. **Anywhere** comes in two flavors: **Standard**
 (zero-config, free) and **Direct** — through gtmux's own server over 443, for
-networks that block Cloudflare's edge; a paid unlock via
-`gtmux tunnel --redeem <code>`. See **[docs/phone.md](docs/phone.md)**.
+networks that block Cloudflare's edge. See **[docs/phone.md](docs/phone.md)**.
 
 > **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+ **or** iTerm2 for the
 > jump features (`focus` / `restore` / `new`); `agents` / `overview` work under

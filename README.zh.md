@@ -136,8 +136,7 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 
 想用手机看，跑 `gtmux serve`（同一 Wi-Fi）或 `gtmux tunnel`（任意网络），再配对 iOS app。
 **任意网络**分两档：**Standard**（零配置、免费）与 **Direct**（走 gtmux 自己的服务器、443，
-适用于无法直连 Cloudflare 边缘的网络 —— 付费解锁，`gtmux tunnel --redeem <码>`）。
-见 **[docs/phone.md](docs/phone.md)**。
+适用于无法直连 Cloudflare 边缘的网络）。见 **[docs/phone.md](docs/phone.md)**。
 
 > **需要** macOS + [Ghostty](https://ghostty.org) 1.3+ **或** iTerm2 才能用跳转功能
 > （`focus` / `restore` / `new`）；`agents` / `overview` 在任何承载 tmux 的终端下都能用。

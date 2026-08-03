@@ -1,6 +1,6 @@
 # gtmux — Privacy Policy / 隐私政策
 
-_Last updated / 最后更新: 2026-07-08_
+_Last updated / 最后更新: 2026-08-03_
 
 Canonical content for the ccy.dev / ccy.pub privacy pages (App Store URLs). Mirror the
 rodi setup: one Astro page under `src/pages/projects/gtmux/`, with a `data-i18n="en"`
@@ -68,7 +68,7 @@ notification — a short status line plus your device's push token.**
   own terms.
 - The **gtmux push relay** and the optional **tunnel** run on infrastructure (Cloudflare
   Workers / a VPS). They carry the transient data described above and store none of it
-  persistently, aside from the push token your Mac registers so it can be reached.
+  persistently.
 
 ### Data retention & deletion
 
@@ -123,7 +123,7 @@ Mac 之间流转。我们不做任何分析统计、不设账号、也没有任�
 
 - **Apple 推送服务（APNs）** 负责送达推送通知，遵循 Apple 自身条款。
 - **gtmux 推送中继**和可选的**隧道**运行在基础设施上（Cloudflare Workers / 一台 VPS）。它们承载上述
-  临时数据，除了为可达而由你 Mac 注册的推送 token 外，不做持久化存储。
+  临时数据，不做持久化存储。
 
 ### 数据保留与删除
 
