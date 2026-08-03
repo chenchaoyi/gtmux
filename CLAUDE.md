@@ -44,6 +44,21 @@ over one Go core (gtmux-core is the single data source):
   `events --since-seq` from the HQ home, or `gtmux events --ack <seq>`; a filtered or
   skip-ahead read does not. HQ's own pane records are excluded from the count (else the
   knock feeds itself). `gtmux doctor`'s `event consumption` row flags a lagging HQ.
+  **HQ's OWN SESSION is watched too** (change `hq-self-rotate`,
+  `internal/hq/selfrotate.go`): a long, near-full session degrades the boundary between what
+  HQ produced and what reached it — on 2026-08-03 one read its own `Stop` output as the
+  commander's `UserPromptSubmit` and withdrew a correct suspicion. HQ can neither self-detect
+  it (the failing faculty is the one that would notice) nor self-schedule the check (no timer
+  between wakes), so the serve slow tick senses **ctx / age (from the transcript's FIRST
+  message, so a serve restart can't reset it) / turn count** and knocks `self-rotate` at
+  standing priority when any crosses its line (`hqWake.selfRotate{Ctx 0.75, Hours 12, Turns
+  300, RepeatSec 1800, CheckSec 300}`; a 0 THRESHOLD disables that criterion alone). Same
+  shape as the watermark — **only the act clears the debt**: a NEW agent session id, never
+  the knock. Playbook v16 makes it unattended (board+KB current → hand off → `gtmux hq
+  --rotate`, which types the agent's own `/clear`|`/new` so HQ never touches tmux and the
+  role whitelist stands). Deliberately NOT folded into `self-check`, which audits HQ's
+  PRODUCTS silently at ≤1/h; this audits the JUDGE and must be heard. `gtmux doctor`'s
+  `HQ session health` row shows the figures.
   **Wake DELIVERY is acked** (change `hq-wake-reliability`, `internal/hqnudge`): paste
   + Enter as separate steps, and a claim (`.txt` → `.sending` rename) is deleted ONLY
   on confirmation. The ack is three layers (agent-drivers P2): the DRIVER RECEIPT

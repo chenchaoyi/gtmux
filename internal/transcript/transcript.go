@@ -62,6 +62,42 @@ func LastMessageTime(agent, sessionID string) int64 {
 	return 0
 }
 
+// FirstMessageTime returns the wall-clock (unix seconds) of the FIRST message logged
+// in an agent's session — i.e. when the conversation actually STARTED. It is the
+// head-read twin of LastMessageTime, and it exists so a session's AGE can be read from
+// the agent's own record rather than from when gtmux happened to start watching: a
+// serve restart must not reset a twelve-hour-old session's age to zero, which is
+// exactly the moment a stale supervisor most needs to be told to rotate.
+//
+// Only the head is read (the first timestamp is on the log's first lines), so this
+// costs one small read no matter how large the log has grown. 0 when the log or a
+// timestamp can't be found.
+func FirstMessageTime(agent, sessionID string) int64 {
+	path, _ := resolveLog(agent, sessionID)
+	if path == "" {
+		return 0
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	const head = 64 << 10
+	buf := make([]byte, head)
+	n, err := f.Read(buf)
+	if n == 0 || (err != nil && err != io.EOF) {
+		return 0
+	}
+	m := tsField.FindStringSubmatch(string(buf[:n]))
+	if len(m) != 2 {
+		return 0
+	}
+	if t, err := time.Parse(time.RFC3339Nano, m[1]); err == nil {
+		return t.Unix()
+	}
+	return 0
+}
+
 // LastMessageError reports whether an agent's session ENDED on an API/tool error —
 // i.e. the LAST real message in its Claude Code transcript is an entry flagged
 // `isApiErrorMessage:true` (e.g. "API Error: Unable to connect to API"). It returns

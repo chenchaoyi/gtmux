@@ -55,6 +55,15 @@ const (
 	// by the queue order rather than by silence.
 	ClassDistill   = "distill"
 	ClassSelfCheck = "self-check"
+	// ClassSelfRotate is the SESSION-HEALTH knock, and the only class whose subject is the
+	// supervisor itself. Every other class asks "what happened out in the fleet?"; this one
+	// asks "is the thing that answers that question still fit to?". It exists because the
+	// degradation it watches for is invisible from the inside: on 2026-08-03 an HQ session
+	// deep into its context read its OWN prior turn as the commander's input and withdrew a
+	// correct suspicion on the strength of it. The faculty that would have to notice is the
+	// one that failed. So gtmux watches from outside, and — since HQ is not running between
+	// wakes and owns no timer — the resident tick is the only thing that can.
+	ClassSelfRotate = "self-rotate"
 	// ClassUnread is the COMPLETENESS net, and the only class that is not about a kind of
 	// event at all: it fires when the stream has moved past HQ's consumption watermark and
 	// stayed there. Every other class is a judgment gtmux makes about an event's
@@ -105,6 +114,11 @@ var classPriority = map[string]int{
 	// cadence, so it must both drain LAST and be evicted FIRST at the queue cap.
 	ClassDistill:   PriorityStanding,
 	ClassSelfCheck: PriorityStanding,
+	// Self-rotate is standing for the same reason, and deliberately NOT decision priority
+	// despite what it is about: a supervisor too heavy to judge well still has to unblock
+	// the agent that is waiting on a human RIGHT NOW. Its own hygiene goes behind that, and
+	// it loses nothing by being evicted at the cap — the breach re-knocks until it rotates.
+	ClassSelfRotate: PriorityStanding,
 	// Unread is standing by the same definition — it re-fires as long as the debt stands,
 	// so evicting it costs nothing, and it must never arrive ahead of the decision knock
 	// it is the backstop for.

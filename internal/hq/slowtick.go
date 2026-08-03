@@ -86,6 +86,12 @@ func SlowTickEval() {
 	// sensors — everything above has already had its chance to knock about the specific
 	// events it recognizes, so this only ever speaks about what none of them claimed.
 	unreadSensor(time.Now().Unix())
+	// HQ session health (hq-self-rotate): the one sensor whose subject is the supervisor
+	// itself — is this session still fit to judge, or is it long/full enough that its own
+	// output starts reading back as input? HQ cannot self-detect that (the failing faculty
+	// is the one that would have to notice) and cannot self-schedule it (no timer between
+	// wakes), so the resident tick asks on its behalf and HQ does the rotation.
+	selfRotateSensor(time.Now().Unix())
 	// Disk hygiene (resource-watch): cap the never-rotated launchd logs + prune the
 	// uploads sink so gtmux can't fill the disk with its own output. Time-gated to
 	// ≤ 1/30 min; silent housekeeping (no HQ nudge).
