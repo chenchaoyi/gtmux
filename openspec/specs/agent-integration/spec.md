@@ -80,6 +80,23 @@ uninstall.
 - **THEN** the gtmux-written hooks or plugin are removed and any pre-existing user
   configuration for that agent is left intact
 
+### Requirement: A logless agent reaches Tier 2 via a gtmux-owned transcript
+
+An agent that persists no readable conversation log on disk SHALL still be able to reach Tier 2
+(digest goal/last/ask) by having gtmux keep the transcript itself: the agent's plugin streams
+the user prompt and the final assistant text through `gtmux hook` alongside the agent's session
+id, and gtmux appends them to its own per-session store that the transcript parser reads.
+Setting the manifest's transcript-parser key SHALL auto-wire the digest content channel, and the
+session id the plugin pipes SHALL be the key that lines the store up with the resume record the
+digest resolves.
+
+#### Scenario: opencode's digest renders goal/last with no on-disk log
+
+- **WHEN** an opencode session runs a turn with the gtmux plugin installed
+- **THEN** gtmux records the user prompt and the final assistant reply to its own transcript
+  store, keyed by the session id the plugin piped, and the digest renders that turn's goal/last
+  with perception tier `driver`
+
 ### Requirement: Agent identity is resolved from the process subtree
 
 The identity of the agent running in a pane SHALL be resolved by inspecting the pane's process

@@ -121,8 +121,21 @@ pitfalls). Install, drive a real session, confirm `waiting`/`done` and a receipt
 ### Step 2 — Transcript parser (Tier 2)
 
 Add `internal/transcript/<agent>.go` reading the agent's session log into `[]Turn`, set the
-manifest's `Content` key, and wire it in the driver's content map. Now the digest renders
-`goal`/`last`/`ask` for the agent.
+manifest's `Content` key (that alone auto-wires `driver.Content` — see `agents.ContentKeys()`),
+and add the `resolveLog` + `normalizeAgent` cases. Now the digest renders `goal`/`last`/`ask`.
+The pane→session mapping is free: the hook writes a `resume` record from the session id, and
+`sessionRef` reads it — so a resumable agent whose hook receives the session id needs no extra
+wiring.
+
+**If the agent keeps NO readable transcript on disk** (opencode 1.18.x persists only a
+`session_diff`, not messages), gtmux keeps its OWN: the plugin streams the user prompt and the
+final assistant text through `gtmux hook` (piping `{session_id, prompt}` / `{session_id,
+assistant}` on stdin), the hook appends them via `transcript.AppendOpencode` as
+`{timestamp, role, text}` JSONL under `~/.local/share/gtmux/octrans/<session>.jsonl`, and the
+parser reads that. Two subtleties paid for: (a) assistant text arrives as a STREAM of
+`message.part.updated` events (`part.text` is the full text so far) — accumulate per
+message-id and flush the newest on `session.idle`; (b) key the file by the agent's own session
+id (piped alongside the prompt) so it lines up with the `resume` record `sessionRef` resolves.
 
 ---
 

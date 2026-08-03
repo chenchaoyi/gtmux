@@ -80,7 +80,7 @@ var manifests = []Manifest{
 		Key: "opencode", Label: "opencode",
 		Detect: []string{"opencode"},
 		Resume: []string{"opencode", "--session"}, Resource: "opencode",
-		HookDisplay: true, Hooked: true,
+		HookDisplay: true, Hooked: true, Content: "opencode",
 	},
 	{
 		Key: "copilot", Label: "Copilot",
