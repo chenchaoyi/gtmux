@@ -539,3 +539,54 @@ func TestErrorSummaryTruncates(t *testing.T) {
 		t.Fatalf("summary not truncated: %q (len=%d)", got, len(got))
 	}
 }
+
+// opencode has no on-disk log — gtmux keeps its own transcript, written by
+// AppendOpencode from the plugin-piped hook payload. This is the full round-trip:
+// append user + assistant lines, then Load parses them into turns for the digest.
+func TestLoadOpencodeRoundTrip(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "ses_3718401d3ffeLOahrVtyEuSOih"
+
+	// no transcript yet → "no history", not an error.
+	if turns, err := Load("opencode", sid, 10); err != nil || len(turns) != 0 {
+		t.Fatalf("cold opencode load: turns=%v err=%v (want empty)", turns, err)
+	}
+
+	AppendOpencode(sid, "user", "fix the build")
+	AppendOpencode(sid, "assistant", "Looking now")
+	AppendOpencode(sid, "assistant", "Done — fixed it.")
+	AppendOpencode(sid, "user", "now run tests")
+	AppendOpencode(sid, "assistant", "All green.")
+	// empties + unknown roles are dropped, never a stray turn.
+	AppendOpencode(sid, "assistant", "   ")
+	AppendOpencode(sid, "tool", "ignored role")
+	AppendOpencode("", "user", "no session → dropped")
+
+	turns, err := Load("opencode", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(turns) != 2 {
+		t.Fatalf("want 2 turns, got %d: %+v", len(turns), turns)
+	}
+	if turns[0].Prompt != "fix the build" || turns[0].Response != "Looking now\n\nDone — fixed it." {
+		t.Fatalf("turn0 mismatch: %+v", turns[0])
+	}
+	if turns[1].Prompt != "now run tests" || turns[1].Response != "All green." {
+		t.Fatalf("turn1 mismatch: %+v", turns[1])
+	}
+	// the digest's goal/last derive from these turns; the closing response is "last".
+	if turns[1].Time == "" {
+		t.Error("opencode turn should carry the append timestamp (LastMessageTime relies on it)")
+	}
+}
+
+// The display name "opencode" (and the key) both resolve to the opencode parser.
+func TestOpencodeNormalizeAgent(t *testing.T) {
+	for _, name := range []string{"opencode", "opencode "} {
+		if got := normalizeAgent(name); got != "opencode" {
+			t.Errorf("normalizeAgent(%q)=%q, want opencode", name, got)
+		}
+	}
+}

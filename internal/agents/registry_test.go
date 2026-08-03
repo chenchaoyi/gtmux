@@ -81,12 +81,13 @@ func TestResourceNames_matchesLegacy(t *testing.T) {
 }
 
 func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
-	// internal/driver/driver.go Content + Headless are wired for claude+codex only
-	want := []string{"claude", "codex"}
-	if got := sortedSet(ContentKeys()); !reflect.DeepEqual(got, want) {
+	// Content parsers: claude + codex read the agent's own on-disk log; opencode has
+	// no readable log, so gtmux keeps its OWN transcript (internal/transcript/opencode.go,
+	// fed by the plugin via `gtmux hook`). Headless one-shot stays claude+codex only.
+	if got, want := sortedSet(ContentKeys()), []string{"claude", "codex", "opencode"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ContentKeys()=%v, want %v", got, want)
 	}
-	if got := sortedSet(HeadlessKeys()); !reflect.DeepEqual(got, want) {
+	if got, want := sortedSet(HeadlessKeys()), []string{"claude", "codex"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("HeadlessKeys()=%v, want %v", got, want)
 	}
 }

@@ -248,6 +248,8 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 		return claudeLogPath(sessionID), claudeStep
 	case "codex":
 		return codexLogPath(sessionID), codexStep
+	case "opencode":
+		return opencodeLogPath(sessionID), opencodeStep
 	}
 	return "", nil
 }
@@ -471,6 +473,8 @@ func normalizeAgent(agent string) string {
 		return "claude"
 	case strings.Contains(a, "codex"):
 		return "codex"
+	case strings.Contains(a, "opencode"):
+		return "opencode"
 	}
 	return a
 }

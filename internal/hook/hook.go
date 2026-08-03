@@ -383,6 +383,7 @@ func Run(stdin io.Reader, args []string) int {
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
 		Prompt           string `json:"prompt"`            // the submitted prompt text (Claude UserPromptSubmit) — for the dispatch-verify head
+		Assistant        string `json:"assistant"`         // the final assistant text (opencode Stop) — gtmux-owned transcript (Tier 2)
 		Error            string `json:"error"`             // StopFailure's error text (best-effort; absent → generic crash wake)
 		// Claude's Stop/SubagentStop payload lists in-flight background work still
 		// registered in the session ("running/pending + backgrounded"), so a hook can
@@ -435,6 +436,20 @@ func Run(stdin io.Reader, args []string) int {
 	if event == "" {
 		debugf("telemetry no-op: agent=%s raw=%q tool=%q", agentKey, rawEvent, payload.ToolName)
 		return 0
+	}
+
+	// opencode has no on-disk conversation log, so gtmux keeps its OWN transcript:
+	// the plugin pipes the user prompt (UserPromptSubmit) and the final assistant
+	// text (Stop) alongside the session id, and we append them for the digest's
+	// goal/last/ask (Tier 2). Empty text/session is a no-op; other agents read their
+	// own logs and never take this path.
+	if agentKey == "opencode" && agentSession != "" {
+		switch rawEvent {
+		case "UserPromptSubmit":
+			transcript.AppendOpencode(agentSession, "user", payload.Prompt)
+		case "Stop":
+			transcript.AppendOpencode(agentSession, "assistant", payload.Assistant)
+		}
 	}
 
 	// The pane id ($TMUX_PANE, e.g. %12) is the state key. Outside tmux we can't
