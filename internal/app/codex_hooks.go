@@ -55,6 +55,12 @@ func installCodexHooks(yes bool) int {
 		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
 			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}
+	// Codex ≥ ~0.146 gates each newly-registered hook behind a one-time trust prompt
+	// ("New hook - review required — press t to trust"). Until you trust them, the
+	// hooks never fire and gtmux sees nothing (no waiting/done, no digest) — so call
+	// this out explicitly, it's the difference between "installed" and "working".
+	i18n.Say("• first launch: recent Codex asks you to review each hook — press 't' to trust the gtmux hooks (else they never fire).",
+		"• 首次启动：较新版 Codex 会让你逐个确认 hook —— 按 't' 信任 gtmux 的 hook（否则不会触发）。")
 	i18n.Say("Done. Restart Codex to load the hooks.", "完成。重启 Codex 以加载 hook。")
 	return 0
 }
