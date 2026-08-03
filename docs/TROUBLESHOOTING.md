@@ -11,6 +11,29 @@ rake. Keep entries short and action-first.
 
 ---
 
+## 长中文句子发送被截断:换行插入的空格打断了指纹匹配(2026-08-03)
+
+**症状:** 手机上发一条**较长的中文**消息,app 弹 "Not sent — the input box didn't
+confirm the full message",但 agent 又**收到了被截断+重复**的一段(开头出现两次、尾巴丢
+失)。短消息、纯英文长消息都正常 —— 只有**无空格的长中文单行**触发。之前几次都复现不出来
+(用 ASCII 测到 37K 字符都没事)。
+
+**根因:** dispatch 的粘贴确认 `draftHasDelivery` 要求草稿里**同时**出现正文的 head(前 40
+runes)和 tail(后 40 runes)指纹。一行**没有空格的中文**在 composer 里会**折行**,而
+`normalizeSpace` 把折行的 `\n` 变成一个**空格** —— 于是草稿里是 "我们 正在",而 tail 指纹是
+"我们正在"(无空格),tail 跨越折行点就永远匹配不上。确认失败 → 触发**清空重粘**的补偿逻辑 →
+把好草稿清了、重粘叠加 → 截断+重复。英文因为有空格会**按词折行**,tail 落在下一行仍连续,所以
+不中招;中文没有断点 → 单行折在正文中间。
+
+**修复(内部 dispatch,`internal/dispatch/deliver.go`):** head+tail 普通匹配失败后,再做一次
+**去掉所有空白**的 head+tail 匹配(`containsSpaceless`),折行插入的空格被抹掉、跨折行的指纹就
+恢复了 —— 与图片路径早就用的 whitespace-free 技巧同源。40-rune 指纹去空白后原样重现不会误判。
+回归测试:`TestPasteAndSubmit_WrappedCJKLine_ConfirmsNotChurns`。
+
+**MUST-CHECK:** 任何"发送/粘贴确认"逻辑改动,都要用一条**长中文无空格单行**验证(不是只用英文)。
+
+---
+
 ## 菜单栏切不到 Anywhere：GUI 进程的 PATH 没有 Homebrew 前缀
 
 **症状** —— 菜单栏偏好设置里点「任意网络」，确认弹窗出现，点 Enable 后**弹窗直接消失、开关弹回、

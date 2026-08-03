@@ -428,6 +428,17 @@ func draftHasDelivery(draft, text string) bool {
 	if ContainsHead(draft, text) && ContainsTail(draft, text) {
 		return true
 	}
+	// Wrap-tolerant head+tail: a long run with no break points (a no-space CJK line)
+	// is WRAPPED by the composer, and the break reads back from the capture as a space
+	// that never existed in the text — so a head or tail fingerprint straddling the
+	// wrap point misses (the CJK long-message "Not sent, then truncated+re-pasted"
+	// bug). Retry the same head+tail match with ALL whitespace stripped from both
+	// sides, which recovers a fingerprint split by a wrap (same technique the image
+	// paths below already use). Space-free matching can't fabricate a match: a 40-rune
+	// fingerprint reappearing verbatim is the delivery, not coincidence.
+	if containsSpaceless(draft, NormalizeHead(text)) && containsSpaceless(draft, NormalizeTail(text)) {
+		return true
+	}
 	// Attachment-aware: a pasted image PATH lands in one of two shapes. Claude Code
 	// usually FOLDS it into an "[Image #N]" chip, so the path text is never in the draft
 	// verbatim (the "uploaded image never sends" bug). But it also sometimes keeps the
@@ -445,6 +456,30 @@ func draftHasDelivery(draft, text string) bool {
 		return true
 	}
 	return ContainsHead(draft, rest) && ContainsTail(draft, rest)
+}
+
+// containsSpaceless reports whether haystack contains needle once ALL whitespace is
+// stripped from both. It recovers a fingerprint the composer split with a wrap-induced
+// space (a no-space CJK line breaks mid-run, and the break reads back as a space). An
+// empty needle never matches.
+func containsSpaceless(haystack, needle string) bool {
+	n := stripAllSpace(needle)
+	if n == "" {
+		return false
+	}
+	return strings.Contains(stripAllSpace(haystack), n)
+}
+
+// stripAllSpace removes every whitespace rune (unlike normalizeSpace, which only
+// collapses runs) so a wrap-inserted space between two runs that were adjacent in the
+// text disappears.
+func stripAllSpace(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, s)
 }
 
 // looksCollapsedPaste reports whether a draft shows a folded large-paste placeholder.

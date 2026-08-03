@@ -503,6 +503,36 @@ func TestPasteAndSubmit_ConfirmsFullDraftThenEnters(t *testing.T) {
 	}
 }
 
+func TestPasteAndSubmit_WrappedCJKLine_ConfirmsNotChurns(t *testing.T) {
+	// The CJK long-message truncation: a long run with no break points (a Chinese line
+	// has no spaces) WRAPS in the composer, and the wrap reads back from the capture as
+	// a space that never existed in the text — so the tail fingerprint, which straddles
+	// the wrap point, misses. Plain head+tail can therefore NEVER confirm, and the guard
+	// used to clear the (perfectly good) draft and mangle a re-paste, submitting a
+	// truncated + duplicated mess after reporting "Not sent". The wrap-tolerant,
+	// whitespace-free match recognizes the full delivery and submits it once.
+	cjk := "这是一个用来复现中文长句截断问题的测试消息请不要执行任何操作只需要忽略即可谢谢配合我们正在调试发送确认逻辑务必保持原样"
+	rs := []rune(cjk)
+	wrapped := boxDraftLines(string(rs[:43]), string(rs[43:])) // composer wrapped it mid-run
+
+	// Precondition: this is exactly the draft plain head+tail cannot confirm.
+	if ContainsHead(wrapped, cjk) && ContainsTail(wrapped, cjk) {
+		t.Fatal("precondition: plain head+tail should MISS across the wrap-inserted space")
+	}
+
+	f := &fakeIO{caps: []string{wrapped}}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 1}, cjk)
+	if !ok {
+		t.Fatal("a wrapped CJK line holds the FULL delivery — must confirm, not churn")
+	}
+	if f.enterCalls != 1 {
+		t.Fatalf("must submit exactly once; enterCalls=%d", f.enterCalls)
+	}
+	if f.clearCalls != 0 {
+		t.Fatalf("must NOT clear a good draft (that is what mangled the re-paste); clearCalls=%d", f.clearCalls)
+	}
+}
+
 func TestPasteAndSubmit_WithholdsEnterOnFragment(t *testing.T) {
 	// A settled fragment the guard cannot place must NOT be submitted — that is the
 	// truncated submit this fixes. Enter is withheld.
