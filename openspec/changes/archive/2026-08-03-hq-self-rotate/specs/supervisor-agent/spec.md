@@ -61,16 +61,27 @@ Without these rows a stalled ritual is invisible: both passes are silent by desi
 has not distilled in three weeks" is indistinguishable from "nothing needed distilling", and
 a session too heavy to judge looks exactly like a quiet one.
 
+#### Scenario: A slipped distill is visible at a glance
+
+- **WHEN** no distill pass has run for longer than its weekly floor plus the grace window
+- **THEN** `gtmux doctor` reports the distill row as needing attention, with the age of the
+  last pass
+
+#### Scenario: A healthy cadence reads as healthy
+
+- **WHEN** the last distill is within its floor
+- **THEN** `gtmux doctor` reports the row as OK with the age of the last pass
+
+#### Scenario: A never-run pass is not an error
+
+- **WHEN** an HQ home exists but no distill has ever been raised
+- **THEN** the row reports "never run" as a neutral note rather than a failure
+
 #### Scenario: A stalled cadence is flagged
 
 - **WHEN** no `self-check` pass has been raised for over a day plus its grace window
 - **THEN** `gtmux doctor` flags the `HQ self-check` row with a hint to check that
   `gtmux serve` is running with a live HQ
-
-#### Scenario: A fresh pass reads OK
-
-- **WHEN** a `distill` pass ran within the last week
-- **THEN** the `knowledge distill` row reads OK with the age of the last pass
 
 #### Scenario: A heavy HQ session is flagged
 
