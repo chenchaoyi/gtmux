@@ -1,8 +1,8 @@
 ## 1. The registry (source of truth)
 
-- [ ] 1.1 Add `internal/agents` with the `AgentManifest` type (Key/Aliases/Display/Commands/IdleGlyph/Icon/Resume/ResourceNames/Install/EventSemantics/Transcript/Driver/PromptSignatures) and a `Register`/`For`/`All` API; leaf-only imports so driver/radar/hook/app can consume it without an import cycle.
-- [ ] 1.2 Author manifests for the current agents (claude, codex, gemini, cursor, cursor-agent, opencode, copilot, kiro) reproducing today's values exactly.
-- [ ] 1.3 Golden test: assert the registry reproduces every existing per-agent map (driver caps, profiles, installers, semantics, resume, resource, prompt signatures) byte-for-byte before any subsystem switches.
+- [x] 1.1 Add `internal/agents` with the `AgentManifest` type (Key/Aliases/Display/Commands/IdleGlyph/Icon/Resume/ResourceNames/Install/EventSemantics/Transcript/Driver/PromptSignatures) and a `Register`/`For`/`All` API; leaf-only imports so driver/radar/hook/app can consume it without an import cycle.
+- [x] 1.2 Author manifests for the current agents (claude, codex, gemini, cursor, cursor-agent, opencode, copilot, kiro) reproducing today's values exactly.
+- [x] 1.3 Golden test: assert the registry reproduces every existing per-agent map (driver caps, profiles, installers, semantics, resume, resource, prompt signatures) byte-for-byte before any subsystem switches.
 
 ## 2. Migrate subsystems to read the registry (one per commit, tests green each step)
 
