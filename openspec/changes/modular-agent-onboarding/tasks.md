@@ -6,10 +6,10 @@
 
 ## 2. Migrate subsystems to read the registry (one per commit, tests green each step)
 
-- [ ] 2.1 `internal/driver`: derive `hookEquippedAgents` + registry capabilities from manifests; delete the private lists.
-- [ ] 2.2 `internal/radar`: derive `defaultProfiles` (Name/Commands/IdleGlyph/Icon) from manifests.
+- [x] 2.1 `internal/driver`: derive `hookEquippedAgents` + registry capabilities from manifests; delete the private lists.
+- [x] 2.2 `internal/radar`: derive `defaultProfiles` (Name/Commands/IdleGlyph/Icon) from manifests.
 - [ ] 2.3 `internal/hook`: derive `agentDisplay` + per-agent `classify` semantics from manifests (keep the generic table as the fallback).
-- [ ] 2.4 `internal/resume` + `internal/resource`: derive resume commands + attribution names from manifests.
+- [x] 2.4 `internal/resume` + `internal/resource`: derive resume commands + attribution names from manifests.
 - [ ] 2.5 `internal/prompt`: derive bootBanners / promptGlyphs / selector signatures from manifests.
 - [ ] 2.6 `internal/app/agent_hooks.go` (+ codex_hooks/hooks): derive `agentInstallers` from the manifest install specs.
 

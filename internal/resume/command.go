@@ -1,21 +1,16 @@
 package resume
 
-import "strings"
+import (
+	"strings"
 
-// resumeArgv is each agent's "continue a specific conversation" command, ported
-// from cmux's AgentResumeArgv. The session id is appended as the final argument.
-// An agent absent here can't be resumed by id (we won't relaunch it).
-var resumeArgv = map[string][]string{
-	"claude":       {"claude", "--resume"},
-	"codex":        {"codex", "resume"},
-	"cursor":       {"cursor-agent", "--resume"},
-	"gemini":       {"gemini", "--resume"},
-	"kiro":         {"kiro-cli", "chat", "--resume-id"},
-	"copilot":      {"copilot", "--resume"},
-	"opencode":     {"opencode", "--session"},
-	"hermes-agent": {"hermes", "--resume"},
-	"grok":         {"grok", "-r"},
-}
+	"github.com/chenchaoyi/gtmux/internal/agents"
+)
+
+// resumeArgv is each agent's "continue a specific conversation" command. The
+// session id is appended as the final argument. An agent absent here can't be
+// resumed by id (we won't relaunch it). Sourced from the agent registry, the
+// single source of truth (agents.ResumeArgv).
+var resumeArgv = agents.ResumeArgv()
 
 // Resumable reports whether an agent can be relaunched by session id.
 func Resumable(agent string) bool {

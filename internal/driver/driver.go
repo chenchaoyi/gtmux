@@ -17,6 +17,7 @@
 package driver
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
@@ -70,33 +71,26 @@ type Driver struct {
 	Headless *HeadlessSpec
 }
 
-// hookEquippedAgents are the agents whose installers wire gtmux hooks, so their
-// prompt submissions land on the session-events stream — the former
-// dispatchbridge whitelist. They all share the SAME events-backed Receipt: the
-// evidence is the stream record gtmux's own hook writes, not anything
-// agent-specific, so registering one is registering all (the commander's P1
-// ruling covered the sparse-events case explicitly: Codex ships in the same
-// batch as Claude — low event density only lowers the hit rate, and NoEvidence
-// falls to Layer 1).
-var hookEquippedAgents = []string{
-	"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "copilot", "kiro",
-}
-
-// registry holds the built-in drivers, keyed by agent key. Further capabilities
-// arrive per phase (content wiring in P4, headless in P5). Ready, like Receipt,
-// is shared by every hook-equipped agent: the hook NORMALIZES each agent's
-// session-start-ish raw event (SessionStart / session_start / on_session_start /
-// agentSpawn, …) to one `SessionStart` stream record, so the evidence is
-// agent-agnostic — an agent whose hook never emits it simply never
-// short-circuits, which changes nothing (I2).
+// registry holds the built-in drivers, keyed by agent key. The hook-equipped set
+// (agents whose installers wire gtmux hooks, so their prompt submissions land on
+// the session-events stream) now comes from the agent registry
+// (agents.HookEquippedKeys) — the single source of truth. They all share the SAME
+// events-backed Receipt: the evidence is the stream record gtmux's own hook
+// writes, not anything agent-specific, so registering one is registering all (the
+// P1 ruling covered the sparse-events case: Codex ships in the same batch as
+// Claude — low event density only lowers the hit rate, and NoEvidence falls to
+// Layer 1). Ready, like Receipt, is shared: the hook NORMALIZES each agent's
+// session-start-ish raw event to one `SessionStart` record, so an agent whose
+// hook never emits it simply never short-circuits (I2).
 var registry = func() map[string]Driver {
-	m := make(map[string]Driver, len(hookEquippedAgents))
-	for _, k := range hookEquippedAgents {
+	hooked := agents.HookEquippedKeys()
+	m := make(map[string]Driver, len(hooked))
+	for _, k := range hooked {
 		m[k] = Driver{Name: k, Receipt: eventsReceipt, Ready: eventsReady}
 	}
 	// Content only where a transcript parser exists (internal/transcript's
 	// per-agent log readers) — a pure re-wiring of today's transcript.Load.
-	for _, k := range []string{"claude", "codex"} {
+	for _, k := range agents.ContentKeys() {
 		d := m[k]
 		key := k
 		d.Content = func(sessionID string, maxTurns int) ([]transcript.Turn, error) {

@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -85,16 +86,16 @@ type agentProfile struct {
 // precedence. Default icons point at the vendor's installed desktop app, so the
 // avatar shows the real official logo when that app is present — without
 // bundling any trademark.
-var builtinProfiles = []agentProfile{
-	{Name: "Claude Code", Commands: []string{"claude"}, IdleGlyph: "✳", Icon: "/Applications/Claude.app"},
-	{Name: "Codex", Commands: []string{"codex"}, Icon: "/Applications/Codex.app"},
-	{Name: "Gemini", Commands: []string{"gemini"}},
-	{Name: "Aider", Commands: []string{"aider"}},
-	{Name: "opencode", Commands: []string{"opencode"}},
-	{Name: "Crush", Commands: []string{"crush"}},
-	{Name: "Cursor", Commands: []string{"cursor-agent", "cursor"}, Icon: "/Applications/Cursor.app"},
-	{Name: "Amp", Commands: []string{"amp"}},
-}
+// builtinProfiles is derived from the agent registry (the single source of
+// truth); it maps each registry Profile to the radar's agentProfile shape.
+var builtinProfiles = func() []agentProfile {
+	ps := agents.Profiles()
+	out := make([]agentProfile, len(ps))
+	for i, p := range ps {
+		out[i] = agentProfile{Name: p.Label, Commands: p.Commands, IdleGlyph: p.IdleGlyph, Icon: p.Icon}
+	}
+	return out
+}()
 
 func LoadProfiles() []agentProfile {
 	profiles := builtinProfiles
