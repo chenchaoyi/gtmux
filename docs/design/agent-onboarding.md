@@ -150,6 +150,11 @@ id (piped alongside the prompt) so it lines up with the `resume` record `session
   driver's hook-equipped set is necessary but not sufficient — without an installer that
   actually wires the agent's config/plugin, it emits no events and Tier 1 is a no-op
   (opencode was in the whitelist for months with no installer).
+- [ ] **Installed ≠ trusted.** Some agents gate a newly-registered hook behind a one-time
+  user confirmation before it will fire — Codex ≥ ~0.146 shows "New hook - review required —
+  press t to trust". Until the user trusts it, gtmux sees nothing (no waiting/done, no
+  digest) even though the config is correct. The installer must SAY so; don't debug a
+  "silent hook" without checking the agent isn't just waiting to be trusted.
 - [ ] **Plugin vs command-hook model.** Don't assume a JSON "run a command on event" file
   exists. opencode is plugin-only; forcing it into a command-hook format fails.
 - [ ] **A plugin that shells `gtmux hook` MUST redirect its stdin (`< /dev/null`).** A JS
