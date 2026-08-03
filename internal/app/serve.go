@@ -700,43 +700,38 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 		return tmux.SendKey(id, key)
 	}
 	if text != "" && enter {
-		// send-idempotent-receipt. The phone send now goes through the FULL verified state
-		// machine (`Deliver`), not the fire-and-pre-confirm `PasteAndSubmit`, for two reasons:
-		//   • IDEMPOTENCY (A): a phone RETRY reuses the same sendID, so a send that already
-		//     landed returns success WITHOUT re-injecting — killing the double-send an
-		//     ambiguous network timeout used to cause. A sendID is the dedup key (force the
-		//     interlock off so a LEGIT repeat with a fresh id still sends); an old client with
-		//     no sendID falls back to the payload-hash interlock (RefusedDup → success).
-		//   • RECEIPT-BACKED (B): the deterministic UserPromptSubmit receipt is the truth, not
-		//     the fragile pre-submit draft scrape that produced the recurring false "input box
-		//     didn't confirm the full message".
+		// FAST ECHO. The phone send returns as soon as the keystrokes LAND
+		// (paste→confirm→submit via PasteAndSubmit); it does NOT block on the post-submit
+		// verify loop. Routing this through the verified `Deliver` regressed /api/send: the
+		// response — which carries the input echo — waited for the receipt/screen
+		// confirmation, so the typed text appeared only on the next poll cycle. That
+		// blocking verify is redundant now that #659 fixed hook-equipped detection: the
+		// pre-submit paste guard (with #659/#672's correct per-agent composer detection)
+		// confirms the full draft reliably, and the agent's own submit still lands on the
+		// event stream for anyone who wants it. IDEMPOTENCY (A) is preserved — a retry with
+		// a sendID that already landed is a no-op — and MarkAwaited still arms the done-wake.
 		if sendID != "" && sendCacheSucceeded(sendID) {
 			return nil // already landed under this id — idempotent no-op
 		}
-		// Resolve the agent from the pane's PROCESS SUBTREE, not pane_current_command —
-		// Claude Code renames its process to its version (e.g. "2.1.220"), so the raw
-		// foreground command misses "claude" and hook-equipped would wrongly be false,
-		// disabling the receipt path and forcing the fragile screen scrape. (Fall back
-		// to the foreground command only when the subtree yields nothing.)
+		// Resolve the agent from the pane's PROCESS SUBTREE, not pane_current_command
+		// (Claude renames its process to its version, so the foreground command misses
+		// "claude" — see radar.AgentDriverKey); the paste guard uses it to select the
+		// per-agent composer signatures. Fall back to the foreground command if the
+		// subtree yields nothing.
 		agentCmd := radar.AgentDriverKey(id)
 		if agentCmd == "" {
 			agentCmd = tmux.Display(id, "#{pane_current_command}")
 		}
-		force := sendID != "" // a sendID dedups; without one, keep the payload-hash interlock
-		res := dispatch.Deliver(dispatchbridge.DispatchIO(id),
-			dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning()), text)
-		switch res.State {
-		case dispatch.StateLanded, dispatch.StateQueued, dispatch.StateRefusedDup:
-			if res.Delivered {
-				dispatch.MarkAwaited(id)
-			}
-			if sendID != "" {
-				sendCacheRecord(sendID)
-			}
-			return nil
-		default: // StateFailed
+		force := sendID != ""
+		opts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
+		if !dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), opts, text) {
 			return fmt.Errorf("not confirmed: the pane's input box did not settle on the full message")
 		}
+		dispatch.MarkAwaited(id)
+		if sendID != "" {
+			sendCacheRecord(sendID)
+		}
+		return nil
 	}
 	if text != "" {
 		// A SINGLE-LINE send with no submit is a KEYSTROKE, not a paste. An agent's
