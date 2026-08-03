@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
@@ -35,16 +36,7 @@ import (
 // known-agent gate + display name; per-agent EVENT SEMANTICS live in classify.go
 // (each agent's own table, else the generic table). Install support for each is
 // in install-hooks.
-var agentDisplay = map[string]string{
-	"claude":       "Claude Code",
-	"codex":        "Codex",
-	"gemini":       "Gemini",
-	"cursor":       "Cursor",
-	"opencode":     "opencode",
-	"copilot":      "Copilot",
-	"hermes-agent": "Hermes",
-	"kiro":         "Kiro",
-}
+var agentDisplay = agents.DisplayNames()
 
 // extractEvent returns the raw event from a positional hook arg: the token
 // itself, or — when it's a JSON object (e.g. Codex's notify payload) — its

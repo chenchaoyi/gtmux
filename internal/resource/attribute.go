@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/agents"
 )
 
 // agentVersionRe matches a bare semver command like "2.1.207" — how Claude Code
@@ -91,7 +93,7 @@ func isAgentProcess(comm string) bool {
 	if agentVersionRe.MatchString(c) {
 		return true
 	}
-	for _, a := range []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp"} {
+	for _, a := range agents.ResourceNames() {
 		if c == a {
 			return true
 		}
