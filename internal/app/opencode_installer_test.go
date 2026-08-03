@@ -33,12 +33,23 @@ func TestOpencodeInstallerWritesAndRemovesPlugin(t *testing.T) {
 	}
 	js := string(data)
 	for _, want := range []string{
-		"export const", "hook --agent opencode ${event}",
-		"\"session.idle\"", "\"Stop\"", "\"permission.asked\"", "\"PermissionRequest\"",
+		"export const",
+		"event: async ({ event })",         // opencode's real single event hook (not per-name keys)
+		"\"chat.message\": async",          // the user-submit hook (send receipt)
+		"hook --agent opencode ${event}",   // generic event fire
+		"UserPromptSubmit",                 // receipt path
+		"JSON.stringify({ prompt: text })", // prompt piped to stdin so eventSummary records the needle
+		"\"session.idle\": \"Stop\"",       // turn-done → Stop (verified against opencode 1.18.11)
+		"\"permission.asked\": \"PermissionRequest\"",
 	} {
 		if !strings.Contains(js, want) {
 			t.Errorf("generated plugin missing %q", want)
 		}
+	}
+	// Guard against the wrong-API regression: opencode does NOT use per-event-name
+	// hook keys, so a bare "session.idle": async () => key would silently never fire.
+	if strings.Contains(js, "\"session.idle\": async") {
+		t.Error("plugin uses per-event-name hook keys — opencode's API is a single `event` hook")
 	}
 
 	if rc := uninstallAgentHooks(inst); rc != 0 {
