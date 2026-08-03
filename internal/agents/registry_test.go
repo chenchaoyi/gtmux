@@ -30,7 +30,7 @@ func TestProfiles_matchesLegacy(t *testing.T) {
 	// internal/radar/agents.go builtinProfiles
 	want := []Profile{
 		{Label: "Claude Code", Commands: []string{"claude"}, IdleGlyph: "✳", Icon: "/Applications/Claude.app"},
-		{Label: "Codex", Commands: []string{"codex"}, Icon: "/Applications/Codex.app"},
+		{Label: "Codex", Commands: []string{"codex"}, Icon: "/Applications/ChatGPT.app"},
 		{Label: "Gemini", Commands: []string{"gemini"}},
 		{Label: "Aider", Commands: []string{"aider"}},
 		{Label: "opencode", Commands: []string{"opencode"}},
