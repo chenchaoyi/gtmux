@@ -126,3 +126,64 @@ func TestDraftOfColored_ExcludesFaintGhost(t *testing.T) {
 		t.Fatalf("mixed draft must keep only the bright input; got %q", draft)
 	}
 }
+
+// opencode's composer is a LEFT-EDGE box: "┃  text" lines closed by a "╹▀▀▀"
+// bottom rule with NO top rule — so the draft sits ABOVE the border, and the
+// border uses half-block runes. Both were invisible to the region detector
+// (task ②: gtmux send to opencode couldn't confirm the paste → flaky delivery).
+func TestSplitInputRegion_OpencodeLeftEdgeBox(t *testing.T) {
+	cap := strings.Join([]string{
+		"  history line one",
+		"  history line two",
+		"  ┃",
+		"  ┃  OPENCODE_DRAFT_xyz",
+		"  ┃",
+		"  ┃  Build · GPT-5 Mini OpenAI",
+		"  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
+		"   /private/tmp        ctrl+p commands",
+	}, "\n")
+	history, draft, structured := SplitInputRegion(cap)
+	if !structured {
+		t.Fatal("opencode composer must be structured (it has a ╹▀▀▀ bottom rule)")
+	}
+	if !strings.Contains(draft, "OPENCODE_DRAFT_xyz") {
+		t.Errorf("draft = %q; must contain the pasted text from the ┃ block above the border", draft)
+	}
+	if strings.Contains(draft, "history line") {
+		t.Errorf("draft leaked history: %q", draft)
+	}
+	if strings.Contains(draft, "ctrl+p commands") {
+		t.Errorf("draft wrongly took the below-border status line: %q", draft)
+	}
+	if !strings.Contains(history, "history line two") {
+		t.Errorf("history = %q; must include the lines above the box", history)
+	}
+}
+
+func TestIsBoxBorder_OpencodeRuleNotBanner(t *testing.T) {
+	if !isBoxBorder("╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀") {
+		t.Error("opencode's ╹▀▀▀ bottom rule must count as a box border")
+	}
+	if !isBoxBorder("▀▀▀▀▀▀▀▀▀▀") {
+		t.Error("a bare half-block rule must count as a box border")
+	}
+	// the opencode / ASCII banners are made of the FULL block █ — must NOT be borders,
+	// or history would be mis-split.
+	if isBoxBorder("█▀▀█ █▀▀█ █▀▀█ █▀▀▄") {
+		t.Error("a full-block █ banner line must NOT be a box border")
+	}
+}
+
+// A lone TOP rule (no left-edge box below its own line) keeps the old behavior:
+// the draft is BELOW the rule.
+func TestSplitInputRegion_TopRuleDraftBelowUnchanged(t *testing.T) {
+	cap := strings.Join([]string{
+		"history above",
+		"────────────────────",
+		"❯ draft below the rule",
+	}, "\n")
+	_, draft, structured := SplitInputRegion(cap)
+	if !structured || !strings.Contains(draft, "draft below the rule") {
+		t.Fatalf("top-rule case regressed: structured=%v draft=%q", structured, draft)
+	}
+}
