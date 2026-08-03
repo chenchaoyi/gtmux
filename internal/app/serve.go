@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/assets"
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/hq"
@@ -837,6 +839,13 @@ func sanitizeFilename(name string) string {
 // installed .app via sips (cached by app mtime), or nil. Read-only; uses the
 // user's installed app — nothing third-party is bundled (DESIGN §6).
 func agentIconPNG(name string) []byte {
+	// Prefer the COMMITTED, embedded icon (agents keyed by the registry key) — the
+	// out-of-box source that ships in the binary, so mobile/web show an agent's icon
+	// with no installed app and no drop-in. Falls back to the installed-app icon / a
+	// direct path when no committed icon exists (see CLAUDE.md §6).
+	if b := assets.AgentIcon(agents.KeyForLabel(name)); b != nil {
+		return b
+	}
 	hint := radar.IconFor(name, radar.LoadProfiles())
 	if hint == "" {
 		return nil
