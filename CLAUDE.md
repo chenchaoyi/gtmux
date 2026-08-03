@@ -347,6 +347,7 @@ agent 官方图标 —— **主来源现为仓库内置**（`assets/agent-icons/
 仍解析 `agents --json` 的 `icon`:`.app` 路径走 `NSWorkspace` 取**已装应用真图标**、
 图片路径直接加载、`~/.config/gtmux/icons/<agent-key>.png` 免配置投放,都取不到才回退
 中性单字标。内置图标**仅用于标识对应 agent**、来源记于 `assets/agent-icons/SOURCES.md`
-(见 §6);gtmux 自身不绘制第三方商标。内置默认仍把 Claude/Codex/Cursor 指向
-`/Applications/*.app`。**TODO:菜单栏本地面也从内置图标取(装机时 drop 到
+(见 §6);gtmux 自身不绘制第三方商标。内置默认:Claude/Cursor 指向各自
+`/Applications/*.app`,**Codex 指向 `/Applications/ChatGPT.app`**(Codex 已并入 ChatGPT,
+无独立 Codex.app)。**TODO:菜单栏本地面也从内置图标取(装机时 drop 到
 `~/.config/gtmux/icons/` 或打包进 app)——目前内置图标只经 serve 覆盖手机/浏览器。**

@@ -60,7 +60,7 @@ var manifests = []Manifest{
 	},
 	{
 		Key: "codex", Label: "Codex",
-		Detect: []string{"codex"}, Icon: "/Applications/Codex.app",
+		Detect: []string{"codex"}, Icon: "/Applications/ChatGPT.app",
 		Resume: []string{"codex", "resume"}, Resource: "codex",
 		HookDisplay: true, Hooked: true, Content: "codex", Headless: "codex", Semantics: true,
 	},
