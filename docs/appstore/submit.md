@@ -98,18 +98,45 @@ If it dies early with a one-line gym log, that's the formatter — the lane alre
 
 ## 3. Push listing text + screenshots
 
-Screenshots live in `mobileapp/fastlane/screenshots/{en-US,zh-Hans}/` (3 each, 1320×2868).
-Regenerate them from a v-current simulator build with the Appium harness — see
-[Regenerating screenshots](#regenerating-screenshots) below.
+Screenshots live in `mobileapp/fastlane/screenshots/{en-US,zh-Hans}/` (6 each, 1320×2868,
+the 6.9" `APP_IPHONE_67` slot). Regenerate them from a v-current simulator build with the
+Appium harness — see [Regenerating screenshots](#regenerating-screenshots) below.
 
 ```sh
-bundle exec fastlane metadata                    # text (en+zh) + creates the version record
-bundle exec fastlane metadata skip_metadata:true # screenshots only
+bundle exec fastlane metadata                     # text (en+zh) + screenshots + version record
+bundle exec fastlane metadata skip_metadata:true  # screenshots ONLY
+bundle exec fastlane metadata skip_screenshots:true # text ONLY (won't touch screenshots)
 ```
 
 The **two-step** is required for a NEW version: `deliver` uploads the text fine, then hits
 a fastlane bug (`No data`, reading a not-yet-existing review detail) *before* screenshots.
 The `skip_metadata:true` re-run pushes the screenshots. (Both steps are idempotent.)
+
+**⚠ Screenshot upload DUPLICATES on retry (verify the count).** `deliver` logs `Failed to
+upload all screenshots... Tries remaining: N`, then `Successfully uploaded` — the retry
+re-uploads the ones it *thinks* failed but actually landed, leaving e.g. `02.png` twice
+in one locale. `overwrite_screenshots: true` only clears state at the START of a run, not
+across the in-run retry, so a "successful" run can still leave a dup. And an ASC-side
+`Server error got 500` loop can stall the run mid-upload after it already deleted the old
+set — kill it and retry (Apple's 500s are transient). ALWAYS verify the final count on ASC
+(6 per locale) and delete extras — via the ASC UI, or the App Store Connect API:
+
+```ruby
+# ruby-with ASC_KEY_ID/ASC_ISSUER_ID/ASC_KEY_PATH in env; counts + dedups by file_name
+require 'spaceship'
+Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+  key_id: ENV['ASC_KEY_ID'], issuer_id: ENV['ASC_ISSUER_ID'],
+  filepath: File.expand_path(ENV['ASC_KEY_PATH']))
+app = Spaceship::ConnectAPI::App.find('com.gtmux.app')
+ver = app.get_edit_app_store_version(platform: 'IOS')
+ver.get_app_store_version_localizations.each do |loc|
+  loc.get_app_screenshot_sets(includes: 'appScreenshots').each do |set|
+    seen = {}
+    set.app_screenshots.each { |s| (seen[s.file_name] ? s.delete! : seen[s.file_name] = true) }
+    puts "#{loc.locale} #{set.screenshot_display_type}: #{seen.size} unique"
+  end
+end
+```
 
 ---
 
