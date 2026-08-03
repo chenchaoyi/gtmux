@@ -30,6 +30,19 @@ func Profiles() []Profile {
 	return out
 }
 
+// KeyForLabel resolves an agent's canonical key from its display label (e.g.
+// "Claude Code" → "claude", "opencode" → "opencode"). "" when no manifest matches.
+// Used where a surface has only the display name (the icon endpoint) but needs the
+// key to look up a committed icon.
+func KeyForLabel(label string) string {
+	for _, a := range manifests {
+		if a.Label == label {
+			return a.Key
+		}
+	}
+	return ""
+}
+
 // DisplayNames maps each hook-registered key to its display label (the hook-time
 // known-agent gate).
 func DisplayNames() map[string]string {

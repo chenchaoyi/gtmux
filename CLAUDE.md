@@ -319,7 +319,7 @@ gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一
   idle=绿圆·✓ / running=灰圆·点。颜色**只**表达状态，状态色用权威值（见下方「代码位置对照」/
   `mobileapp/src/ui/theme.ts`）。
 - **层级**：waiting 响、idle 静。分区顺序 needs-you→working→idle→running。
-- **agent 身份**用中性单字标，官方图标走 `agents.json` 的 `icon` 字段；**不在代码里绘制第三方商标**。
+- **agent 身份**图标:官方图标**内置在 `assets/agent-icons/<key>.png`**(嵌入二进制,`gtmux update` 随发,三端统一从这里取,开箱即显示),仅用于**标识对应 agent**(nominative use),来源与授权逐条记在 `assets/agent-icons/SOURCES.md`;已装官方桌面 app 时仍可用系统真图标,都取不到才回退中性单字标。**gtmux 自身不绘制任何第三方商标**;这是「仓库不放第三方商标」的**明确例外**(见下方 §6 细则)。
 - **双语** en/zh（跟随 `GTMUX_LANG` / 设备语言），CJK 不换行用省略号；语言三态（跟随系统/EN/中文）即时生效。
 - **动效最小**：只允许 idle→waiting 一次脉冲；加载环不旋转；空闲零动画。
 - **视觉克制**：无彩虹渐变、无彩色发光阴影；文案平实、禁止营销腔（尤其首次运行/权限卡）。
@@ -341,8 +341,12 @@ gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一
 | `internal/menubar/model.go`（`agents --json` 契约 / Agent shape） | 产出端 `internal/radar/agents.go`（`agentJSON`）；消费端 `macapp/Sources/GtmuxBar/AgentStore.swift`（`Agent`）。 |
 | `cmd/gtmux-menubar/`（cgo systray 入口） | 已废弃；菜单栏 app 现为 `macapp/`（Swift）。systray 不再使用。 |
 
-`agents.json` 的 `icon` 字段（官方图标）**已实现**（v0.0.22+）：profile 的 `icon`
-经 `agents --json` 透传，菜单栏 app `AgentIcons` 解析为头像图标 —— `.app` 路径走
-`NSWorkspace` 取**用户已装应用的真实官方图标**（不在仓库内置/绘制第三方商标，符合
-§6），图片路径直接加载，亦支持 `~/.config/gtmux/icons/<agent-key>.png` 免配置投放；
-取不到时回退中性单字标。内置默认把 Claude/Codex/Cursor 指向 `/Applications/*.app`。
+agent 官方图标 —— **主来源现为仓库内置**（`assets/agent-icons/<key>.png`,经
+`assets` 包 `//go:embed` 嵌入 CLI）：`GET /api/icon`(serve)优先返回内置图标,
+手机/浏览器**开箱即显示**,无需装桌面 app、无需运行时联网。菜单栏 app `AgentIcons`
+仍解析 `agents --json` 的 `icon`:`.app` 路径走 `NSWorkspace` 取**已装应用真图标**、
+图片路径直接加载、`~/.config/gtmux/icons/<agent-key>.png` 免配置投放,都取不到才回退
+中性单字标。内置图标**仅用于标识对应 agent**、来源记于 `assets/agent-icons/SOURCES.md`
+(见 §6);gtmux 自身不绘制第三方商标。内置默认仍把 Claude/Codex/Cursor 指向
+`/Applications/*.app`。**TODO:菜单栏本地面也从内置图标取(装机时 drop 到
+`~/.config/gtmux/icons/` 或打包进 app)——目前内置图标只经 serve 覆盖手机/浏览器。**

@@ -107,3 +107,12 @@ func TestForResolvesAliases(t *testing.T) {
 		t.Fatalf("For(nope) should be not-found")
 	}
 }
+
+func TestKeyForLabel(t *testing.T) {
+	cases := map[string]string{"opencode": "opencode", "Claude Code": "claude", "Gemini": "gemini", "Grok": "grok", "nope": ""}
+	for label, want := range cases {
+		if got := KeyForLabel(label); got != want {
+			t.Errorf("KeyForLabel(%q)=%q, want %q", label, got, want)
+		}
+	}
+}
