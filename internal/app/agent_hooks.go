@@ -194,7 +194,12 @@ func opencodePluginJS(bin string) string {
 	b.WriteString("// falls back to its screen read; absence of an event is never a failure).\n")
 	b.WriteString("export const GtmuxHook = async ({ $ }) => {\n")
 	b.WriteString("  const BIN = " + strconv.Quote(bin) + ";\n")
-	b.WriteString("  const fire = (event) => $" + bt + "${BIN} hook --agent opencode ${event}" + bt + ".quiet().catch(() => {});\n")
+	// `< /dev/null` is load-bearing: without it Bun's $ hands `gtmux hook` opencode's
+	// controlling TTY as stdin, and the hook (which drains stdin) would block forever on
+	// a TTY and steal opencode's keyboard input — every send after the first then fails.
+	// gtmux hook now guards against this too, but keep the redirect so an OLD binary is
+	// also safe. (submit pipes via echo, so its stdin is never the TTY.)
+	b.WriteString("  const fire = (event) => $" + bt + "${BIN} hook --agent opencode ${event} < /dev/null" + bt + ".quiet().catch(() => {});\n")
 	b.WriteString("  const submit = (text) => $" + bt + "echo ${JSON.stringify({ prompt: text })} | ${BIN} hook --agent opencode UserPromptSubmit" + bt + ".quiet().catch(() => {});\n")
 	b.WriteString("  const MAP = {\n")
 	b.WriteString("    \"session.idle\": \"Stop\",\n")

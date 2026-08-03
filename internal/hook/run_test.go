@@ -1,8 +1,10 @@
 package hook
 
 import (
+	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -45,6 +47,62 @@ func TestRunAlwaysZero(t *testing.T) {
 				t.Errorf("Run(%q, %v) = %d, want 0", c.stdin, c.args, got)
 			}
 		})
+	}
+}
+
+// TestStdinIsTerminal pins the char-device guard: a TTY or /dev/null is a character
+// device (never drained — reading a TTY blocks forever and steals the agent's input),
+// while a pipe or an in-memory reader carries a real payload and must be drained.
+func TestStdinIsTerminal(t *testing.T) {
+	// /dev/null is a character device — the guard must report true so Run skips it.
+	devnull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatalf("open /dev/null: %v", err)
+	}
+	defer devnull.Close()
+	if !stdinIsTerminal(devnull) {
+		t.Error("/dev/null (a character device, like a TTY) must be treated as terminal → not drained")
+	}
+
+	// A pipe is NOT a character device — a real payload flows through it, so it is drained.
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe: %v", err)
+	}
+	defer r.Close()
+	defer w.Close()
+	if stdinIsTerminal(r) {
+		t.Error("a pipe must NOT be treated as terminal — the hook payload arrives this way")
+	}
+
+	// An in-memory reader is not an *os.File at all → drained.
+	if stdinIsTerminal(strings.NewReader("payload")) {
+		t.Error("a non-*os.File reader must not be treated as terminal")
+	}
+}
+
+// TestRunDoesNotBlockOnTTYStdin is the opencode-plugin-wedge regression: when a plugin
+// runs `gtmux hook` without redirecting stdin, the hook inherits the agent's controlling
+// TTY. io.ReadAll on a TTY never EOFs, so a pre-fix Run would hang here (holding the
+// pane's input). We stand in a character device (/dev/null) for the TTY and assert Run
+// returns promptly instead of blocking.
+func TestRunDoesNotBlockOnTTYStdin(t *testing.T) {
+	hermeticEnv(t)
+	devnull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatalf("open /dev/null: %v", err)
+	}
+	defer devnull.Close()
+
+	done := make(chan int, 1)
+	go func() { done <- Run(devnull, []string{"--agent", "opencode", "Stop"}) }()
+	select {
+	case got := <-done:
+		if got != 0 {
+			t.Errorf("Run over a char-device stdin = %d, want 0", got)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("Run blocked on a character-device stdin — the TTY-drain guard regressed")
 	}
 }
 

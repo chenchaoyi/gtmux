@@ -324,16 +324,42 @@ func applyState(d decision, pane string) {
 	}
 }
 
+// stdinIsTerminal reports whether stdin is a character device (a TTY or /dev/null) —
+// the case where io.ReadAll must NOT be called: a TTY read blocks forever (never
+// EOFs) and would steal the agent's keyboard input, and /dev/null yields nothing
+// anyway. A real pipe (echo | gtmux hook, Claude's settings.json) or a file redirect
+// is NOT a character device, so its payload is still drained. cgo-free (os only).
+func stdinIsTerminal(stdin io.Reader) bool {
+	f, ok := stdin.(*os.File)
+	if !ok {
+		return false
+	}
+	fi, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
 // Run executes one hook invocation. args come after `gtmux hook`:
 //   - `--agent <key>` selects the agent (default "claude" — Claude's settings.json
 //     calls `gtmux hook` with no args, so the default keeps it working unchanged).
 //   - a positional token is the raw event name (e.g. Codex passes "turn-ended");
 //     otherwise the event is read from stdin's JSON `hook_event_name` (Claude).
 //
-// stdin is always drained (an unread pipe can block the caller). Always returns 0
-// — a hook must never fail the agent's turn.
+// stdin is drained when it carries a payload (an unread pipe can block the caller),
+// but NEVER when it is a terminal: a plugin that runs `gtmux hook` without redirecting
+// stdin inherits the AGENT's controlling TTY, and io.ReadAll on a TTY never EOFs — the
+// hook would hang in the agent's foreground process group and STEAL its keyboard input
+// (the opencode-plugin wedge: every send after the first silently failed because a
+// blocked `gtmux hook … Stop` held the pane's input). A TTY carries no JSON payload
+// anyway (the event is the positional arg), so skip it. Always returns 0 — a hook must
+// never fail the agent's turn.
 func Run(stdin io.Reader, args []string) int {
-	raw, _ := io.ReadAll(stdin) // drain the pipe regardless of what we do next
+	var raw []byte
+	if !stdinIsTerminal(stdin) {
+		raw, _ = io.ReadAll(stdin) // drain the pipe regardless of what we do next
+	}
 
 	agentKey := "claude"
 	rawEvent := ""

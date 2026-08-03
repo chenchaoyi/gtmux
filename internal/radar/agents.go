@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
@@ -118,12 +119,22 @@ func FileMtime(path string) int64 {
 }
 
 // IconFor returns the icon hint for the agent named name (first matching profile,
-// so user overrides win). "" when none is configured.
+// so user overrides win). When a profile has no icon path but the binary ships a
+// committed built-in icon for that agent, it returns a "builtin:<key>" hint so the
+// icon field is NON-EMPTY — surfaces that gate the /api/icon fetch on a truthy
+// `icon` (the mobile AgentAvatar) then still fetch it, and the serve serves the
+// committed PNG. "" only when there is no icon of any kind.
 func IconFor(name string, profiles []agentProfile) string {
 	for i := range profiles {
 		if profiles[i].Name == name {
-			return profiles[i].Icon
+			if profiles[i].Icon != "" {
+				return profiles[i].Icon
+			}
+			break
 		}
+	}
+	if key := agents.KeyForLabel(name); key != "" && assets.AgentIcon(key) != nil {
+		return "builtin:" + key
 	}
 	return ""
 }
