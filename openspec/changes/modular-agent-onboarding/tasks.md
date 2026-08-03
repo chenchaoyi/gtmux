@@ -26,8 +26,8 @@
 
 ## 5. Playbook + conformance
 
-- [ ] 5.1 Write `docs/design/agent-onboarding.md`: the step-by-step process (author manifest → register → verify each subsystem) and the pitfalls checklist (subtree identity, hook-must-be-installed, plugin vs JSON model, locale/glyph over daemon PTYs, sparse-events→screen, idle-glyph needs live confirmation, no third-party trademarks, the Swift/RN mark+icon sites).
-- [ ] 5.2 Reference the playbook from `CLAUDE.md` (the agent-support section).
+- [x] 5.1 Write `docs/design/agent-onboarding.md`: the step-by-step process (author manifest → register → verify each subsystem) and the pitfalls checklist (subtree identity, hook-must-be-installed, plugin vs JSON model, locale/glyph over daemon PTYs, sparse-events→screen, idle-glyph needs live confirmation, no third-party trademarks, the Swift/RN mark+icon sites).
+- [x] 5.2 Reference the playbook from `CLAUDE.md` (the agent-support section).
 - [ ] 5.3 Extend `scripts/check-design.sh`: fail if a hook-equipped agent has no manifest, or if a migrated subsystem reintroduces a private per-agent list (registry file allowlisted).
 
 ## 6. Spec sync

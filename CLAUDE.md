@@ -309,6 +309,7 @@ gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一
 
 - 改 **菜单栏 app**（`NSStatusItem + NSPopover + SwiftUI`）→ 先读 `docs/design/DESIGN.md`。
 - 改 **移动端 app**（bare React Native，`mobileapp/`）→ 先读 `docs/design/MOBILE.md`。
+- **接入一个新 coding agent**（或迭代已有的）→ 先读 `docs/design/agent-onboarding.md`（支持分层、身份唯一来源 `internal/agents` 注册表、逐步流程 + 踩坑清单）。
 - 落地总入口 / 顺序 / 验收 → `docs/design/HANDOFF.md`；可视参照 `docs/design/mockup/`。
 
 要点（两块屏统一）：
