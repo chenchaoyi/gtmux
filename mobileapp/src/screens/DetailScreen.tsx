@@ -50,6 +50,14 @@ const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
 // remembered across panes/sessions, so A−/A+ in either mode adjusts both and sticks.
 const FONT_IDX_KEY = 'detail.fontIdx';
 
+// The terminal-loading overlay ("Still connecting… slow network") renders ON the
+// terminal, which is ALWAYS dark (#17171a) regardless of the app theme — so its
+// colors are FIXED light-on-dark, never theme (pal.fg is near-black in light mode
+// and made this text invisible on the dark terminal, a bug reported repeatedly).
+// Kept clearly legible (not the faint 0.5 default) since it's a "please wait" line.
+const TERM_LOADER_LABEL = 'rgba(235,235,245,0.78)';
+const TERM_LOADER_MARK = 'rgba(235,235,245,0.34)';
+
 // newSendId mints a client idempotency token for one send (reused across a Retry). Not
 // security-sensitive — just unique-enough that the server can dedup a retried delivery.
 function newSendId(): string {
@@ -586,13 +594,18 @@ export function DetailView({
           <View style={styles.loadingOverlay}>
             <BrandLoader
               size={40}
-              neutral={pal.fg2}
+              // This overlay sits ON the terminal, which is ALWAYS dark (#17171a),
+              // regardless of the app's light/dark theme. So it must use FIXED
+              // on-dark colors — NOT pal.fg/pal.fg2, which are near-black in light
+              // mode and made "Still connecting…" invisible on the dark terminal
+              // (the recurring dark-surface trap). Do not swap these back to pal.*.
+              neutral={TERM_LOADER_MARK}
               label={
                 slow
                   ? lang === 'zh' ? '仍在连接…网络较慢' : 'Still connecting… slow network'
                   : lang === 'zh' ? '正在拉取屏幕…' : 'Loading screen…'
               }
-              labelColor={pal.fg}
+              labelColor={TERM_LOADER_LABEL}
             />
           </View>
         )}
