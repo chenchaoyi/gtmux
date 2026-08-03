@@ -35,6 +35,7 @@ import {useApp} from '../state/AppContext';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {StatusBadge} from '../ui/StatusBadge';
 import {StatusColor} from '../ui/theme';
+import {Chevron, FoldAllIcon} from '../ui/Icons';
 import {TestIds} from '../constants/testIds';
 
 const COLLAPSED_KEY = 'panes.collapsed';
@@ -227,10 +228,14 @@ export function PaneBrowserScreen({navigation}: any) {
           </Text>
         </View>
         {groups.length > 1 && (
-          <TouchableOpacity onPress={toggleAll} hitSlop={hit} style={styles.foldAll}>
-            <Text style={[styles.foldAllText, {color: pal.fg3}]}>
-              {allCollapsed ? (lang === 'zh' ? '展开' : 'Expand') : (lang === 'zh' ? '折叠' : 'Fold')}
-            </Text>
+          <TouchableOpacity
+            onPress={toggleAll}
+            hitSlop={hit}
+            style={styles.foldAll}
+            accessibilityLabel={
+              allCollapsed ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')
+            }>
+            <FoldAllIcon size={22} color={pal.fg2} collapsed={allCollapsed} />
           </TouchableOpacity>
         )}
       </View>
@@ -269,7 +274,9 @@ export function PaneBrowserScreen({navigation}: any) {
               onPress={() => toggle(s.title)}
               accessibilityLabel={`${TestIds.panes.section}-${s.title}`}
               style={[styles.sectionHeader, {backgroundColor: pal.bg, borderBottomColor: pal.divider}]}>
-              <Text style={[styles.chev, {color: pal.fg3}]}>{isCollapsed ? '▸' : '▾'}</Text>
+              <View style={styles.chevBox}>
+                <Chevron size={15} color={pal.fg2} open={!isCollapsed} />
+              </View>
               <Text style={[styles.sessionName, {color: pal.fg}]} numberOfLines={1}>
                 {s.title}
               </Text>
@@ -404,8 +411,7 @@ const styles = StyleSheet.create({
   titleWrap: {flex: 1, marginLeft: 2},
   title: {fontSize: 18, fontWeight: '800'},
   sub: {fontSize: 11.5, marginTop: 1},
-  foldAll: {paddingHorizontal: 10, paddingVertical: 6},
-  foldAllText: {fontSize: 12, fontWeight: '600'},
+  foldAll: {paddingHorizontal: 8, paddingVertical: 6},
   searchWrap: {flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginTop: 8, marginBottom: 4, paddingHorizontal: 10, height: 36, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth},
   searchGlyph: {fontSize: 16, marginRight: 6},
   search: {flex: 1, fontSize: 14, padding: 0},
@@ -414,7 +420,7 @@ const styles = StyleSheet.create({
   // session card header — a strong container: the name in full fg weight, a fold
   // chevron, and the status rollup right-aligned.
   sectionHeader: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 13, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
-  chev: {fontSize: 11, width: 16},
+  chevBox: {width: 22, alignItems: 'center', justifyContent: 'center'},
   sessionName: {fontSize: 15, fontWeight: '800', flexShrink: 1, marginRight: 8},
   rollWrap: {flexDirection: 'row', alignItems: 'center', marginLeft: 'auto'},
   rollCount: {fontSize: 11, fontWeight: '600'},

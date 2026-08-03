@@ -103,6 +103,31 @@ export function ExpandIcon({size = 20, color = '#fff'}: {size?: number; color?: 
   );
 }
 
+// A disclosure chevron for a collapsible section: points RIGHT when collapsed,
+// rotates to point DOWN when open. Crisp at small sizes (the unicode ▸/▾ rendered
+// tiny and faint). Same thin-stroke language as the rest of the set.
+export function Chevron({size = 15, color = '#fff', open = false}: {size?: number; color?: string; open?: boolean}) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{transform: [{rotate: open ? '90deg' : '0deg'}]}}>
+      <Path d="M9.5 6 L15.5 12 L9.5 18" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+// Collapse-all / expand-all: two chevrons. When things are expanded (tap = fold),
+// they converge toward the center; when collapsed (tap = expand), they spread apart.
+// Replaces a bare "Fold" / "Expand" text label so the control matches the icon set.
+export function FoldAllIcon({size = 20, color = '#fff', collapsed = false}: {size?: number; color?: string; collapsed?: boolean}) {
+  const top = collapsed ? 'M7 11 L12 7 L17 11' : 'M7 7 L12 11 L17 7';
+  const bottom = collapsed ? 'M7 13 L12 17 L17 13' : 'M7 17 L12 13 L17 17';
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d={top} stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d={bottom} stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 // Panes: a window split into a big left pane + two stacked right panes — the tmux
 // "all panes" glyph (tiered-pane-control). For the radar's Browse-all-panes entry.
 export function PanesIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
