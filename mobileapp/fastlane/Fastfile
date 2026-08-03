@@ -172,6 +172,10 @@ platform :ios do
       app_version: version,
       skip_binary_upload: true,
       skip_metadata: options[:skip_metadata].to_s == "true",
+      # skip_screenshots: pass `skip_screenshots:true` to push ONLY the text and
+      # leave the screenshots untouched — used to update the description without
+      # re-running the flaky screenshot upload (which can duplicate on a retry).
+      skip_screenshots: options[:skip_screenshots].to_s == "true",
       submit_for_review: false,
       overwrite_screenshots: true,
       run_precheck_before_submit: false,
