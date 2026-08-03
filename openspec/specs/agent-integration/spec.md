@@ -1,32 +1,40 @@
-## Purpose
+# agent-integration Specification
 
+## Purpose
 Define how a coding agent is integrated into gtmux: one per-agent manifest that is the single
 source of truth for every subsystem, a declared support tier, an install mechanism that admits
 both command-hook and plugin extension models, and a documented onboarding process whose
 pitfalls checklist keeps new integrations from re-hitting known traps.
+## Requirements
+### Requirement: An agent's identity is defined by one manifest that is the single source of truth
 
-## ADDED Requirements
+Each supported coding agent SHALL be defined by exactly one manifest that is the single source
+of truth for its IDENTITY and cross-cutting MEMBERSHIP: its keys and aliases, display label,
+detection commands, idle glyph, icon, resume command, resource-attribution name, whether it
+feeds the hook event stream, and which shared capabilities it has (transcript, headless). Each
+subsystem that consumes these SHALL derive its list from the registry rather than keep its own
+agent-keyed copy; adding an agent's identity SHALL require authoring one manifest and
+registering it, with no edit to those subsystems.
 
-### Requirement: An agent is defined by one manifest that is the single source of truth
+DOMAIN-specific behavior — the classifier's event-semantics tables, the prompt/ready
+signatures, and the hook-install artifact — MAY remain in its own package (keyed by the
+manifest's agent key), because relocating a domain type into the pure identity registry is
+over-abstraction. Where it does, a conformance check SHALL bind it back to the registry so it
+cannot silently drift or be forgotten (e.g. every hook-equipped agent MUST have an install
+path), and the onboarding playbook SHALL enumerate these touchpoints.
 
-Each supported coding agent SHALL be defined by exactly one manifest. Every per-agent behavior
-a subsystem needs — display name, detection commands, idle glyph, icon, resume command,
-resource-attribution names, hook-install spec, hook-event semantics, transcript parser, driver
-capabilities, and prompt/ready signatures — SHALL be read from that manifest rather than from a
-per-subsystem list keyed independently by the agent's name. Adding a new agent SHALL require
-authoring one manifest and registering it, with no edit to the individual subsystems.
-
-#### Scenario: A new agent is added in one place
+#### Scenario: A new agent's identity is added in one place
 
 - **WHEN** a coding agent is added by authoring and registering one manifest
-- **THEN** it is detected by the radar, resumable, hook-installable, and classified — with no
-  change to the driver, radar, hook, resume, resource, or prompt subsystems themselves
+- **THEN** it is detected by the radar, resumable, resource-attributed, and — if hook-equipped
+  — known to the driver, with no change to the driver, radar, hook, resume, or resource
+  subsystems themselves
 
-#### Scenario: No subsystem keeps a private agent list
+#### Scenario: A hook-equipped agent cannot ship dark
 
-- **WHEN** the design conformance check runs
-- **THEN** it fails if any subsystem reintroduces an agent-keyed list the manifest registry is
-  meant to own, or if a hook-equipped agent has no manifest
+- **WHEN** the conformance check runs
+- **THEN** it fails if an agent the registry marks hook-equipped has no install path (its
+  event layer would otherwise stay dark, as opencode's did before it had an installer)
 
 ### Requirement: A manifest declares its support tier and degrades gracefully
 
@@ -102,3 +110,4 @@ referenced from the repository's contributor guide.
 - **WHEN** a contributor opens the onboarding playbook to add a new agent
 - **THEN** it lists every manifest field to fill, the order to verify them, and the pitfalls
   checklist to check against before the integration is considered done
+
