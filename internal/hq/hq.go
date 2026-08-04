@@ -495,8 +495,10 @@ func CmdHQ(args []string) int {
 				"  打开（或跳到）中控 agent —— 一个替你盯全部 agent、汇报并代为驱动的会话。")
 			i18n.Say("  reports on, and drives all your other agents. Home: ~/.config/gtmux/hq/",
 				"  常驻目录：~/.config/gtmux/hq/（AGENTS.md 守则可自行编辑，知识随会话沉淀）")
-			i18n.Say("  --agent CMD: which agent to run (default claude; e.g. --agent codex).",
-				"  --agent 命令：用哪个 agent 当中控（默认 claude；如 --agent codex）。")
+			i18n.Say("  --agent CMD: which agent to run (e.g. --agent codex). With no --agent, a",
+				"  --agent 命令：用哪个 agent 当中控（如 --agent codex）。不带 --agent 时，")
+			i18n.Say("  fresh HQ asks which INSTALLED agent to use and remembers it (GTMUX_HQ_AGENT overrides).",
+				"  首次启动会让你从已安装的 agent 里选一个并记住（也可用 GTMUX_HQ_AGENT 覆盖）。")
 			i18n.Say("  On a fresh spawn HQ opens with a self-intro + status briefing;",
 				"  首次启动时 HQ 会自动自我介绍并汇报一次现状；")
 			i18n.Say("  set GTMUX_HQ_BRIEF=off to spawn silently.",
@@ -574,11 +576,10 @@ func CmdHQ(args []string) int {
 			}
 			return 0
 		}
-		// Stamped but dead → relaunch the agent in the same pane, then focus.
-		rawCmd := agentCmd
-		if rawCmd == "" {
-			rawCmd = hqAgentCommand()
-		}
+		// Stamped but dead → relaunch the agent in the same pane, then focus. Reuse the
+		// remembered choice (resolveHQLaunchAgent) so a revive doesn't silently fall back to
+		// claude after the user picked another agent.
+		rawCmd := resolveHQLaunchAgent(agentCmd)
 		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
 		_ = panefocus.FocusPaneByID(pane)
 		i18n.Say("The supervisor had exited — relaunched it in its pane.",
@@ -597,10 +598,10 @@ func CmdHQ(args []string) int {
 		i18n.Sae("failed to create the supervisor tmux session", "创建中控 tmux session 失败")
 		return 1
 	}
-	rawCmd := agentCmd
-	if rawCmd == "" {
-		rawCmd = hqAgentCommand()
-	}
+	// Resolve the agent to launch: --agent flag › GTMUX_HQ_AGENT › remembered choice ›
+	// interactive picker of the installed agents (at a TTY) › claude. Fixes HQ silently
+	// starting claude on a machine only signed into Codex.
+	rawCmd := resolveHQLaunchAgent(agentCmd)
 	// Auto-apply the network proxy so the agent starts correctly on whatever
 	// network the user is on (home VPN vs office intranet) — no manual toggling.
 	cmd := agentenv.Wrap(rawCmd)

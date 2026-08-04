@@ -93,6 +93,39 @@ focus a dead prompt while claiming the supervisor is running.
 - **THEN** `gtmux hq` prints a warning naming the redundant/broken doc and how to
   resolve it, rather than silently proceeding
 
+### Requirement: HQ agent selection
+
+`gtmux hq` SHALL resolve WHICH agent runs the supervisor rather than always launching
+`claude`, so a machine signed into a different agent does not get an HQ stuck on "Not
+logged in · Please run /login". Resolution order on a spawn or relaunch SHALL be: the
+`--agent` flag (an explicit choice, remembered), then the `GTMUX_HQ_AGENT` env override
+(transient, not remembered), then a REMEMBERED prior choice, then — only at an interactive
+terminal and only when no choice has been made — an interactive PICKER of the agents that
+are actually installed (the hook-equipped agents whose launch binary is on PATH, so the
+supervisor gets its wake/event stream), then `claude`. The picker's result SHALL be
+remembered so the user is asked at most once; a non-interactive caller SHALL never block
+and SHALL fall back to the default. Selection SHALL run only on launch/relaunch — focusing
+an already-live supervisor SHALL NOT prompt.
+
+#### Scenario: A fresh HQ asks which installed agent to run
+
+- **WHEN** `gtmux hq` spawns a new supervisor at an interactive terminal with no `--agent`,
+  no `GTMUX_HQ_AGENT`, no remembered choice, and more than one hook-equipped agent installed
+- **THEN** it lists the installed agents and launches the one the user picks, and remembers
+  that choice for the next `gtmux hq`
+
+#### Scenario: Only one installed agent needs no prompt
+
+- **WHEN** exactly one hook-equipped agent is installed (e.g. only Codex)
+- **THEN** `gtmux hq` launches that agent without prompting — there is no choice to make
+
+#### Scenario: Non-interactive or explicit selection never prompts
+
+- **WHEN** `gtmux hq` runs with `--agent`/`GTMUX_HQ_AGENT` set, or from a non-terminal
+  stdin, or with a remembered choice already on file
+- **THEN** the resolved agent is used with no picker shown; focusing a live supervisor is
+  likewise never a prompt
+
 ### Requirement: Supervisor visibility in the radar
 
 A supervisor session SHALL appear in the radar like any agent, additionally
