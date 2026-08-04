@@ -13,6 +13,7 @@ delete `<key>.png`; a missing icon simply falls back to the neutral monogram.
 | file (registry key) | agent | owner |
 |---|---|---|
 | `opencode.png` | opencode | SST / opencode |
+| `codex.png` | Codex | OpenAI |
 | `gemini.png` | Gemini CLI | Google |
 | `grok.png` | Grok | xAI |
 | `glm.png` | GLM | Zhipu AI |
