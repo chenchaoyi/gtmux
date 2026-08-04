@@ -35,6 +35,19 @@ func boxDraftLines(lines ...string) string {
 	return out + "╰────────────────────────────────────────╯"
 }
 
+// busyBox renders a CHURNING pane: a transcript above the input box that keeps moving
+// (histTag differs frame to frame — the agent is mid-turn, rendering), with a box whose
+// draft reads back as only a PREFIX of the payload (< headRunes, so head/tail never
+// confirm amid the churn). This is the "%pane mid-answer" shape where the paste landed
+// but the box scrape never caught a clean frame.
+func busyBox(histTag, draftPrefix string) string {
+	return "streaming output " + histTag + "\n" +
+		"more output " + histTag + "\n" +
+		"╭────────────────────────────────────────╮\n" +
+		"│ ❯ " + draftPrefix + " │\n" +
+		"╰────────────────────────────────────────╯"
+}
+
 const taskText = "implement the verified dispatch state machine with layered checks"
 
 // multiText is a multi-line instruction — the payload shape that exposed the
@@ -543,6 +556,98 @@ func TestPasteAndSubmit_WithholdsEnterOnFragment(t *testing.T) {
 	}
 	if f.enterCalls != 0 {
 		t.Fatalf("must not submit a fragment; enterCalls=%d", f.enterCalls)
+	}
+}
+
+func TestConfirmPaste_BusyPaneReturnsPasteBusy(t *testing.T) {
+	// A CHURNING transcript (histTag differs every frame — the agent is mid-turn) with a
+	// placed-but-unconfirmable draft is the busy-pane verdict, NOT a fragment.
+	f := &fakeIO{caps: []string{
+		busyBox("t0", "implement the"),
+		busyBox("t1", "implement the"),
+		busyBox("t2", "implement the"),
+		busyBox("t3", "implement the"),
+	}}
+	if v := confirmPaste(f.io(), Opts{PasteSettle: 1}, taskText); v != pasteBusy {
+		t.Fatalf("churning pane with a placed paste must be pasteBusy, got %v", v)
+	}
+}
+
+func TestConfirmPaste_QuietFragmentStaysFragment(t *testing.T) {
+	// The SAME short draft on a QUIET pane (static transcript, no churn) is still a real
+	// fragment — the busy carve-out must not swallow the truncation guard.
+	f := &fakeIO{caps: []string{boxDraft("cl")}} // fixed history → churn stays 0
+	if v := confirmPaste(f.io(), Opts{PasteSettle: 1}, taskText); v != pasteFragment {
+		t.Fatalf("quiet short draft must stay pasteFragment, got %v", v)
+	}
+}
+
+func TestConfirmPaste_MultilineGrewThenFragment_StaysFragment(t *testing.T) {
+	// A multi-line paste GROWS the input box: its top border eats a transcript line each
+	// frame, so the history region changes for a frame or two before everything settles.
+	// That early growth-churn must NOT be read as a busy (mid-turn) pane — once the box
+	// stops growing the transcript holds still and a still-short draft is a real fragment.
+	// (The busy signal keys on RECENT transcript motion, not cumulative, exactly so this
+	// case is not mistaken for a churning pane.)
+	grew0 := "h1\nh2\nh3\n╭──────────────╮\n│ ❯ implement the │\n╰──────────────╯"
+	grew1 := "h1\nh2\n╭──────────────╮\n│ ❯ implement the │\n│  verified disp │\n╰──────────────╯"
+	f := &fakeIO{caps: []string{grew0, grew1, grew1, grew1, grew1}}
+	if v := confirmPaste(f.io(), Opts{PasteSettle: 1}, taskText); v != pasteFragment {
+		t.Fatalf("a multi-line paste that grew then settled short is a fragment, got %v", v)
+	}
+}
+
+func TestPasteAndSubmit_BusyPaneSubmitsBestEffort(t *testing.T) {
+	// The %pane-mid-turn bug: a churning pane never yields a clean frame where the box
+	// read confirms the full head+tail, but the paste DID land. With the real PasteRetries=2
+	// the old guard CLEARED the draft (C-u kills a line of the user's good paste) and then
+	// reported failure — so the send both failed AND mangled the composer against a working
+	// pane. It must now submit best-effort with NO destructive clear.
+	f := &fakeIO{caps: []string{
+		busyBox("t0", "implement the"),
+		busyBox("t1", "implement the"),
+		busyBox("t2", "implement the"),
+		busyBox("t3", "implement the"),
+		busyBox("t4", "implement the"),
+	}}
+	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 2, PasteSettle: 1}, taskText)
+	if !ok {
+		t.Fatal("a busy pane holding the paste must submit best-effort, not withhold")
+	}
+	if f.enterCalls != 1 {
+		t.Fatalf("must submit exactly once; enterCalls=%d", f.enterCalls)
+	}
+	if f.clearCalls != 0 {
+		t.Fatalf("must NOT clear a good paste on a busy pane (C-u mangles it); clearCalls=%d", f.clearCalls)
+	}
+	if f.pasteCalls != 1 {
+		t.Fatalf("must NOT re-paste (that would duplicate); pasteCalls=%d", f.pasteCalls)
+	}
+}
+
+func TestDeliver_BusyHookPane_SubmitsThenReceiptLands(t *testing.T) {
+	// End-to-end: the same churn that stalls the phone send also hit verified dispatch
+	// (HQ's own dispatches go through Deliver). It must submit and let the UserPromptSubmit
+	// receipt judge — landing, not failing with the paste stuck in the box and the draft
+	// cleared by the retry.
+	f := &fakeIO{
+		caps: []string{
+			busyBox("t0", "implement the"),
+			busyBox("t1", "implement the"),
+			busyBox("t2", "implement the"),
+			busyBox("t3", "implement the"),
+		},
+		evs: []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, PasteRetries: 2, PasteSettle: 1, DeliverTimeout: 30}, taskText)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("busy hook pane: want landed via receipt, got %+v", r)
+	}
+	if f.clearCalls != 0 {
+		t.Fatalf("must NOT clear a good paste on a busy pane; clearCalls=%d", f.clearCalls)
+	}
+	if f.enterCalls < 1 {
+		t.Fatalf("must submit; enterCalls=%d", f.enterCalls)
 	}
 }
 

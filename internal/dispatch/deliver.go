@@ -221,11 +221,14 @@ func submitConfirmed(io IO, opts Opts, head string, since int64) bool {
 // only in whether they confirm the landing AFTER submit — not in whether they confirm
 // the DRAFT before it.
 //
-// Enter is sent whenever the paste was PLACED — a confirmed full draft, or a pane with
-// no locatable input region (a plain shell, where the draft can't be validated and a
-// bare command must still submit). It is WITHHELD only when the guard positively
-// settled on a fragment it could not place in full: submitting a known-truncated draft
-// is exactly what this fixes. Returns whether the full draft was confirmed.
+// Enter is sent whenever the paste was PLACED — a confirmed full draft, a pane with no
+// locatable input region (a plain shell, where the draft can't be validated and a bare
+// command must still submit), or a CHURNING pane whose box read never settled but whose
+// non-empty draft shows the paste landed (a busy %pane; submitting best-effort beats
+// silently dropping the send — the receipt still lands on the event stream). It is
+// WITHHELD only when the guard positively settled on a fragment it could not place in
+// full ON A QUIET pane: submitting a known-truncated draft is exactly what this fixes.
+// Returns whether Enter was sent (true once the paste was placed by any of the above).
 func PasteAndSubmit(io IO, opts Opts, text string) bool {
 	opts.fillDefaults()
 	if !pasteWithGuard(io, opts, text) {
@@ -265,7 +268,12 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 			return false
 		}
 		switch confirmPaste(io, opts, text) {
-		case pasteInDraft, pasteUnverifiable:
+		case pasteInDraft, pasteUnverifiable, pasteBusy:
+			// pasteBusy: the pane is churning and the box read never confirmed, but the
+			// paste is placed. Return placed (do NOT clear+retry — that would destroy a
+			// good paste) and let the submit go through; the receipt / post-submit verify
+			// is the authority. Withholding here is the "message never sent into a working
+			// pane" bug.
 			return true
 		}
 		// A settled fragment. Retry only while a retry can't duplicate anything.
@@ -282,6 +290,7 @@ const (
 	pasteInDraft      pasteVerdict = iota // the full delivery is in the draft
 	pasteFragment                         // the draft settled on less than the delivery
 	pasteUnverifiable                     // no locatable draft — nothing to validate against
+	pasteBusy                             // the pane kept redrawing (agent busy), so the box read never confirmed — but the paste is placed
 )
 
 // confirmPaste waits for a paste to RENDER in the draft. paste-buffer returns as soon
@@ -291,6 +300,17 @@ const (
 // case, and it keeps a healthy send fast); "fragment" is the verdict that authorizes
 // destroying and re-pasting, so it is returned only after the whole settle window has
 // passed with no match.
+//
+// A CHURNING pane (the agent mid-turn, redrawing its transcript continuously — an HQ
+// session mid-answer is the recurring case) is a THIRD outcome, distinct from a
+// fragment. The paste lands in the box, but the box-region scrape never catches a clean
+// frame that reads back the full head+tail — the transcript above the box keeps moving
+// and races every read. Calling that a fragment (and clearing / withholding Enter)
+// silently drops the send into a working pane; the user watched their message never
+// submit against a busy %pane. So when the settle window expires with the transcript
+// still churning AND a non-empty draft (the paste demonstrably reached the box), return
+// pasteBusy — placed, submit best-effort, let the receipt / post-submit verify judge.
+// A QUIET pane whose draft simply stalled short is still a real fragment.
 func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 	budget := settleFrames(opts.PasteSettle, text)
 	// A BUSY pane (an agent mid-render) draws a long paste PROGRESSIVELY: the draft
@@ -303,20 +323,47 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 	// ceiling so a pathological pane can't stall a send forever.
 	prevLen, stall := -1, 0
 	ceiling := budget + pasteStallCeiling
+	peak := 0           // max non-empty draft length seen (the paste reached the box)
+	var prevHist string // last frame's transcript region (above the box)
+	histSeen := false   // have we captured a transcript baseline to diff against
+	histStall := 0      // consecutive frames the transcript held STILL (agent not rendering)
 	for i := 0; ; i++ {
-		_, draft, structured := SplitInputRegion(io.Capture())
+		history, draft, structured := SplitInputRegion(io.Capture())
 		if !structured {
 			return pasteUnverifiable
 		}
 		if draftHasDelivery(draft, text) {
 			return pasteInDraft
 		}
-		if n := len(normalizeSpace(draft)); n > prevLen {
+		switch {
+		case !histSeen:
+			// first frame — no baseline to diff against yet
+		case history != prevHist:
+			histStall = 0 // the transcript moved — the agent is actively rendering
+		default:
+			histStall++ // the transcript held still this frame
+		}
+		prevHist, histSeen = history, true
+		n := len(normalizeSpace(draft))
+		if n > prevLen {
 			prevLen, stall = n, 0 // still arriving — do not clear a paste mid-render
 		} else {
 			stall++
 		}
+		if n > peak {
+			peak = n
+		}
 		if i >= ceiling || (i >= budget && stall >= pasteStallFrames) {
+			// The draft has stopped growing. Decide by what the TRANSCRIPT is doing: if it
+			// held still through the stall window (histStall ≥ pasteStallFrames), the pane is
+			// quiet and a short draft is a genuine fragment. If it is STILL moving (the agent
+			// is mid-turn), the box scrape can't win a clean read — a non-empty draft here is
+			// PLACED-on-a-busy-pane, submit best-effort rather than clear/withhold. Keying on
+			// recent transcript motion (not cumulative) keeps a multi-line paste that merely
+			// grew the box a frame or two early from being mistaken for a busy pane.
+			if peak > 0 && histSeen && histStall < pasteStallFrames {
+				return pasteBusy
+			}
 			return pasteFragment
 		}
 		io.Sleep()

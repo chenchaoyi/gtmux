@@ -170,7 +170,14 @@ attachment chip (e.g. Claude Code's `[Image #N]`) standing in for it — the TUI
 a pasted image path into the chip immediately, so the path text itself never appears
 in the draft; any remaining prose in the payload must still match head AND tail on
 its own, and a chip SHALL NOT vouch for a payload that had no image-path lines. A partial/fragment paste SHALL be retried or reported as failed,
-never submitted as-is. A submission whose Enter was swallowed (the text remains in
+never submitted as-is. The fragment verdict SHALL be reserved for a QUIET pane whose
+draft settled short: a paste that demonstrably reached the box (a non-empty draft) on a
+pane whose transcript is STILL redrawing frame-to-frame (the target agent mid-turn, so no
+clean frame ever reads back the full head+tail) SHALL NOT be treated as a fragment —
+clearing or withholding there silently drops the send into a working pane and the
+destructive draft-clear mangles the good paste — but SHALL be submitted best-effort,
+leaving the post-submit landing check (verified paths) or the agent's own submit receipt
+(fast path) as the authority. A submission whose Enter was swallowed (the text remains in
 the draft and no submit event arrived) SHALL be resubmitted with backoff, and each
 resubmit SHALL re-confirm the draft STILL holds the full text first — the system
 SHALL NOT re-send Enter blindly against a draft that is empty (already submitted) or
@@ -190,6 +197,18 @@ SHALL report `delivered:false` (`state:"failed"`) together with on-screen eviden
   has not rendered yet
 - **THEN** submission waits for the tail within the settle window; a draft holding
   only the head is treated as a fragment, not submitted as the complete task
+
+#### Scenario: A churning pane's placed paste submits best-effort, not treated as a fragment
+
+- **WHEN** the paste has reached the input box (the draft is non-empty) but the pane's
+  transcript keeps redrawing every frame — the target agent is mid-turn — so no clean
+  frame ever reads back the full head+tail within the settle window
+- **THEN** the delivery is judged a busy pane, not a fragment: the draft is NOT cleared
+  and Enter IS sent (best-effort), and the landing is decided by the submit receipt /
+  post-submit check — a send into a working `%pane` is neither silently withheld nor
+  mangled by a destructive draft-clear
+- **AND WHEN** instead the pane is quiet (its transcript is static) and the draft settled
+  short, the fragment handling above still applies — retried or reported, never submitted
 
 #### Scenario: An image path folded into an attachment chip still submits
 
