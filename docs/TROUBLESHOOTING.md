@@ -129,6 +129,48 @@ gtmux × resurrect × 真 server 的交互里，mock 会把它删掉。
 - 断言 tmux layout 字符串时，**永远先归一化 pane id**，否则你测的是 pane 编号不是布局。
 
 
+## restore 往「本来没有 agent 的 pane」注入 `claude --resume`（2026-08-04）
+
+**症状**：重启 + restore 之后，某些一直是普通 shell 的 pane 里凭空出现 `{ cd -- '…'; } &&
+claude --resume '<uuid>'`，停在信任门。一次重启把舰队从 **10 个 agent pane 变成 16 个**；多出来的
+会话 goal 都是几天前的旧事，其中一个自带 33.7M token，直接触发 `usage·warn burn`。**同一个 pane
+会跨多次重启反复中**。
+
+**根因**：resume 记录由 agent 的 hook 写入、**从不清理**，它只能证明「这个 locator 历史上跑过
+agent」。restore 却把它当成「这里当时正在跑 agent」，于是任何跑过一次 agent 的 pane 就成了永久的
+注入目标。而且它**自我延续**：注入出来的会话会重新写一遍那条记录（下一次 autosave 还会把它写进
+`pane_full_command`），于是下次重启的「证据」更充分了 —— 任何基于「记录多旧」的启发式都拦不住，
+因为记录的时间戳恰恰是被上一次注入刷新的。
+
+**修法（v0.45.x，`internal/app/restoresave.go`）**：判据改成 tmux-resurrect 存档里那一行 pane 记录的
+`pane_current_command` / `pane_full_command` —— 存档是重启前几分钟的快照，也是**唯一还活着的证人**
+（进程早就没了）。存档说是 shell 的 pane 一律不碰；「无法判定」（存档没记全）才放行并记日志（宁可
+多恢复一个，也不能丢一个真在跑的会话）。
+
+**⚠️ 必查：tmux-resurrect 存档有两种字段布局（空 pane 标题会整体左移一格）**
+resurrect 的 `save.sh` 用 `while IFS=$d read …` 回读自己 dump 的行，分隔符是 **TAB**，而 tab 属于 IFS
+**空白**字符 —— bash 会把连续的空白分隔符**合并成一个**。于是**标题为空的 pane 那一行会少一个字段，
+后面所有字段左移一格**：固定列上读到的「命令」其实是 **pane 的 pid**，而末尾的 full command 是
+resurrect 拿错 pid 算出来的垃圾。事故里 6 个幽灵会话有 4 个就在这种行上（包括被报的那个）：按固定列
+读，`日常更新:0.0` 的命令是 `77304`，不是 shell，于是照样放行 —— **不处理这个位移，这个 bug 修不掉**。
+判别方法：格式里目录字段带 `:` 前缀，正常在 index 7、位移后在 index 6；位移行的 full command 必须丢弃。
+（同一个位移也让 resurrect **恢复不出这些 pane 的目录**，它们会回到 `/` —— 那是上游行为。）
+
+**不用重启就能验**：
+```sh
+mkdir -p /tmp/probe/tmux/resurrect && cd /tmp/probe/tmux/resurrect
+cp ~/.local/share/tmux/resurrect/tmux_resurrect_<戳>.txt . && ln -sf tmux_resurrect_<戳>.txt last
+XDG_DATA_HOME=/tmp/probe gtmux restore --plan   # 只读；列出的就是会被恢复的会话
+# 对照存档里真正在跑 agent 的 pane：
+awk -F'\t' '/^pane/{ if (substr($8,1,1)==":") print $2":"$3"."$6" "$10" "$11; else print $2":"$3"."$6" "$9" (shifted)" }' \
+  ~/.local/share/tmux/resurrect/tmux_resurrect_<戳>.txt
+```
+端到端契约（真 tmux + 真 resurrect，私有 server）：
+`GTMUX_RESTORE_E2E=1 go test ./internal/app/ -run TestRestoreResumesOnlyPanesThatWereRunningAnAgent`
+
+**已经被注入出来的僵尸会话怎么办**：它们是真的在跑（在烧额度），gate 只防新的。手动 `tmux kill-pane`
+或在 pane 里退出即可；`~/.local/share/gtmux/resume/` 里的历史记录不必手工清（gate 之后无害）。
+
 ## release 里拿不到 tag message（`{{ .TagBody }}` 变成了 PR 描述）
 
 **症状** —— tag 上明明写了 `user:` 段（`git tag -l --format='%(contents:body)' vX` 本地看得到），

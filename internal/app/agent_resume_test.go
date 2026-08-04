@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/resume"
 )
@@ -80,10 +81,11 @@ func TestPickCwdFallback(t *testing.T) {
 		{Loc: "gtmux dev:0.1", Record: resume.Record{SessionID: "sess-01", Cwd: proj, UpdatedAt: 100}},
 	}
 	used := map[string]bool{}
+	noAge := time.Time{} // no dated save to compare against → age check off
 
 	// A restored pane at window.pane 0.0 whose session was renamed: matches records at
 	// position 0.0 (same dir). Newest wins (sess-00).
-	rec, cands := pickCwdFallback("renamed:0.0", proj, all, used)
+	rec, cands := pickCwdFallback("renamed:0.0", proj, all, used, noAge)
 	if rec == nil || rec.SessionID != "sess-00" {
 		t.Fatalf("position 0.0 should recover the newest 0.0 record; got %+v", rec)
 	}
@@ -94,24 +96,54 @@ func TestPickCwdFallback(t *testing.T) {
 	// THE BUG: a bare shell pane at position 0.9 that only shares the project dir —
 	// no record ever lived at 0.9, so it must recover NOTHING (was: injected a
 	// historical conversation).
-	if rec, _ := pickCwdFallback("gtmux dev:0.9", proj, all, used); rec != nil {
+	if rec, _ := pickCwdFallback("gtmux dev:0.9", proj, all, used, noAge); rec != nil {
 		t.Fatalf("a pane at a position no agent ever used must not be injected; got %+v", rec)
 	}
 
 	// A different directory with no matching record → nothing.
-	if rec, _ := pickCwdFallback("gtmux dev:0.0", "/other/dir", all, used); rec != nil {
+	if rec, _ := pickCwdFallback("gtmux dev:0.0", "/other/dir", all, used, noAge); rec != nil {
 		t.Fatalf("no record in this dir → no recovery; got %+v", rec)
 	}
 
 	// used dedup: once sess-00 is consumed, position 0.0 falls through to sess-old00.
 	used["sess-00"] = true
-	if rec, _ := pickCwdFallback("renamed:0.0", proj, all, used); rec == nil || rec.SessionID != "sess-old00" {
+	if rec, _ := pickCwdFallback("renamed:0.0", proj, all, used, noAge); rec == nil || rec.SessionID != "sess-old00" {
 		t.Fatalf("a used record is skipped; got %+v", rec)
 	}
 
 	// empty cwd never matches (a pane with no dir can't be recovered by dir).
-	if rec, _ := pickCwdFallback("x:0.0", "", all, used); rec != nil {
+	if rec, _ := pickCwdFallback("x:0.0", "", all, used, noAge); rec != nil {
 		t.Fatalf("empty cwd must not match; got %+v", rec)
+	}
+}
+
+// The fallback is a GUESS — the record it finds belonged to a different locator. A
+// record nobody has touched in weeks is far likelier to be one of the ghost locators
+// that accumulate in the store (117 of them on the reporting machine) than the
+// conversation that was live when the machine went down.
+func TestPickCwdFallbackAgeBelt(t *testing.T) {
+	proj := "/Users/x/proj/gtmux"
+	saveTime := time.Date(2026, 8, 4, 7, 22, 0, 0, time.UTC)
+	fresh := saveTime.Add(-2 * time.Hour).Unix()
+	ancient := saveTime.Add(-30 * 24 * time.Hour).Unix()
+
+	all := []resume.Located{
+		{Loc: "ghost:0.0", Record: resume.Record{SessionID: "sess-ancient", Cwd: proj, UpdatedAt: ancient}},
+		{Loc: "old name:0.0", Record: resume.Record{SessionID: "sess-fresh", Cwd: proj, UpdatedAt: fresh}},
+	}
+	// Newest-first ordering is the store's contract; the ancient one is only reachable
+	// if the age belt lets it through.
+	rec, cands := pickCwdFallback("renamed:0.0", proj, all[1:], map[string]bool{}, saveTime)
+	if rec == nil || rec.SessionID != "sess-fresh" || cands != 1 {
+		t.Fatalf("a recently-touched record must still be recovered; got %+v cands=%d", rec, cands)
+	}
+	if rec, cands := pickCwdFallback("renamed:0.0", proj, all[:1], map[string]bool{}, saveTime); rec != nil || cands != 0 {
+		t.Fatalf("a month-old record must not be guessed into a pane; got %+v cands=%d", rec, cands)
+	}
+	// A record with no timestamp at all is not evidence of staleness — don't invent it.
+	undated := []resume.Located{{Loc: "x:0.0", Record: resume.Record{SessionID: "sess-undated", Cwd: proj}}}
+	if rec, _ := pickCwdFallback("renamed:0.0", proj, undated, map[string]bool{}, saveTime); rec == nil {
+		t.Fatal("an undated record must not be dropped by the age belt")
 	}
 }
 

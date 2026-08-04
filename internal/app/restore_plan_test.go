@@ -8,11 +8,19 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/resume"
 )
 
-// A resurrect save line for one pane: session, window index, pane index. The
-// title/cwd/command fields are filled with plausible placeholders — the plan only
-// reads fields 1 (session), 2 (window), 5 (pane).
+// A resurrect save line for one pane that was RUNNING AN AGENT at save time (the
+// plan lists a conversation only for those — see savedPane.evidence).
 func savePane(session, win, pane string) string {
-	return "pane\t" + session + "\t" + win + "\t1\t:\t" + pane + "\t✳ title\t:/some/dir\t1\tclaude\t123\t:claude"
+	return savePaneCmd(session, win, pane, "/some/dir", "2.1.220", ":claude")
+}
+
+// A resurrect save line for a pane that was sitting at a bare shell.
+func saveShellPane(session, win, pane, dir string) string {
+	return savePaneCmd(session, win, pane, dir, "bash", ":")
+}
+
+func savePaneCmd(session, win, pane, dir, cmd, full string) string {
+	return "pane\t" + session + "\t" + win + "\t1\t:\t" + pane + "\t✳ title\t:" + dir + "\t1\t" + cmd + "\t123\t" + full
 }
 
 func TestBuildRestorePlan(t *testing.T) {
@@ -75,6 +83,54 @@ func TestBuildRestorePlan(t *testing.T) {
 	}
 	if got := plan.deadCount(); got != 1 {
 		t.Fatalf("deadCount = %d, want 1 (the claude agent has no transcript)", got)
+	}
+}
+
+// The plan is a promise about what restore will do, so it must apply the SAME
+// liveness gate: a pane that was a bare shell when the layout was saved gets no
+// conversation listed, however well-remembered its locator is. (Before this, the
+// plan happily advertised the phantom conversations the resume path then injected.)
+func TestBuildRestorePlan_shellPaneIsNotPromisedAnAgent(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	save := filepath.Join(t.TempDir(), "resurrect.txt")
+	body := saveShellPane("日常更新", "0", "0", "/Users/ccy") + "\n" +
+		savePane("Diting", "1", "0") + "\n"
+	if err := os.WriteFile(save, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Both panes have a record; only the one the save shows running an agent counts.
+	_ = resume.Save("日常更新:0.0", resume.Record{Agent: "codex", SessionID: "phantom", Cwd: "/Users/ccy", UpdatedAt: 300})
+	_ = resume.Save("Diting:1.0", resume.Record{Agent: "codex", SessionID: "real", Cwd: "/some/dir", UpdatedAt: 300})
+
+	plan := buildRestorePlanFrom(save)
+	for _, s := range plan.Sessions {
+		for _, a := range s.Agents {
+			if a.SessionID == "phantom" {
+				t.Fatalf("a pane the save shows at a shell must not be listed: %+v", a)
+			}
+		}
+	}
+	if plan.agentCount() != 1 {
+		t.Fatalf("only the live agent pane should be listed, got %d: %+v", plan.agentCount(), plan.Sessions)
+	}
+}
+
+// The other half of the same evidence: a pane that WAS running an agent but whose
+// resume record is missing recovers its conversation from the save's own command
+// line, instead of coming back as an empty shell.
+func TestBuildRestorePlan_recoversIDFromTheSavedCommand(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	save := filepath.Join(t.TempDir(), "resurrect.txt")
+	line := savePaneCmd("gtmux dev", "0", "0", "/p/gtmux", "2.1.220", ":claude --resume affb005b")
+	if err := os.WriteFile(save, []byte(line+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	plan := buildRestorePlanFrom(save) // no resume records at all
+	if plan.agentCount() != 1 {
+		t.Fatalf("want the conversation recovered from the saved command line, got %+v", plan.Sessions)
+	}
+	if a := plan.Sessions[0].Agents[0]; a.SessionID != "affb005b" || a.Agent != "claude" {
+		t.Fatalf("agent = %+v", a)
 	}
 }
 

@@ -693,6 +693,25 @@ preview on its own: it reads the last resurrect save + the resume records and st
 no tmux (safe to run or poll anytime). An agent line marked `×` is a conversation
 whose transcript is gone from disk and won't resume.
 
+**Which panes get an agent back.** Only the ones that were actually RUNNING one when
+the layout was saved — restore reads that from the save's own record of each pane's
+command, not from "an agent lived here once". A pane that was a plain shell at save
+time comes back a plain shell, even if you ran an agent in it last week. (It used to
+come back with `claude --resume …` typed into it: the resume records are written by
+the agent's hooks and never pruned, so every pane that had ever hosted a conversation
+was a permanent target — one reboot turned 10 live agent panes into 16.) Which
+conversation a live pane gets is still the resume record for that pane; if the record
+is missing, restore reads the id out of the `--resume` the save recorded it running.
+
+Diagnosing it needs no reboot — point `XDG_DATA_HOME` at a copy of any save and
+preview it read-only:
+
+```sh
+mkdir -p /tmp/probe/tmux/resurrect && cd /tmp/probe/tmux/resurrect
+cp ~/.local/share/tmux/resurrect/tmux_resurrect_<stamp>.txt . && ln -sf tmux_resurrect_<stamp>.txt last
+XDG_DATA_HOME=/tmp/probe gtmux restore --plan     # what restore would bring back from THAT save
+```
+
 The first run pops an Automation permission dialog ("wants to control Ghostty") —
 click Allow. **After a reboot** the tmux server is gone too; `gtmux restore`
 starts tmux and explicitly drives

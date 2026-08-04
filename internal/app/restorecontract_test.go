@@ -36,6 +36,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/resume"
 )
 
 // restoreEnv is an isolated tmux+resurrect world. Every helper below runs inside it.
@@ -327,4 +329,76 @@ func TestRestoreRecoversSessionsMissingFromARunningServer(t *testing.T) {
 
 	after := e.snap()
 	assertDimension(t, "the sessions missing from a running server", before.sessions, after.sessions)
+}
+
+// The phantom-session regression, end to end: after a reboot, panes that were plain
+// SHELLS came back with `claude --resume <id>` typed into them, because a resume
+// record is written once by the agent's hooks and never pruned — "an agent ran here
+// once" was being read as "an agent was running here". On 2026-08-04 that turned 10
+// live agent panes into 16, and one phantom carried a four-day-old 33.7M-token
+// conversation.
+//
+// This drives the real path: a pane running an agent and a pane sitting at a shell,
+// BOTH with a resume record, saved and restored for real. Only the first may come
+// back with a resume command in it.
+func TestRestoreResumesOnlyPanesThatWereRunningAnAgent(t *testing.T) {
+	e := newRestoreEnv(t)
+
+	// A stand-in agent: what matters is that `ps` reports a command line whose
+	// executable name is one gtmux knows, exactly as a real `claude --resume …` does.
+	bin := t.TempDir()
+	fake := filepath.Join(bin, "claude")
+	// No `exec`: exec'ing would REPLACE this process with `sleep`, and resurrect's
+	// save records the pane child's own argv — which must stay the agent's.
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\nsleep 600\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Both conversations exist on disk, so a resume that DOESN'T happen can only be
+	// the gate's doing (a missing transcript would skip it for an unrelated reason).
+	for _, id := range []string{"live-id", "ghost-id"} {
+		dir := filepath.Join(e.home, ".claude", "projects", "-tmp-"+id)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, id+".jsonl"),
+			[]byte(`{"cwd":"/tmp","type":"user"}`+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	dir := t.TempDir()
+	e.tmuxCmd("new-session", "-d", "-s", "probe", "-n", "agent", "-c", dir)
+	e.tmuxCmd("new-window", "-t", "probe", "-n", "shell", "-c", dir)
+	e.tmuxCmd("send-keys", "-t", "probe:0.0", fake+" --resume live-id", "Enter")
+	time.Sleep(1500 * time.Millisecond) // let ps see the child before the save reads it
+
+	// The record store as the bug leaves it: BOTH panes remembered, including the
+	// shell pane where an agent ran at some point in the past.
+	if err := resume.Save("probe:0.0", resume.Record{
+		Agent: "claude", SessionID: "live-id", Cwd: dir, UpdatedAt: time.Now().Unix()}); err != nil {
+		t.Fatal(err)
+	}
+	if err := resume.Save("probe:1.0", resume.Record{
+		Agent: "claude", SessionID: "ghost-id", Cwd: dir, UpdatedAt: time.Now().Unix()}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pre-fill instead of running: the assertion is about what restore TYPES, and a
+	// test must not launch anything into the sandbox.
+	restoreResumeFlag = "type"
+	t.Cleanup(func() { restoreResumeFlag = "" })
+	e.saveAndRestart()
+
+	agentPane := e.tmuxCmd("capture-pane", "-p", "-t", "probe:0.0")
+	shellPane := e.tmuxCmd("capture-pane", "-p", "-t", "probe:1.0")
+
+	if !strings.Contains(agentPane, "--resume 'live-id'") {
+		t.Errorf("the pane that WAS running an agent must get its conversation back; pane:\n%s", agentPane)
+	}
+	if strings.Contains(shellPane, "resume") {
+		t.Errorf("a pane that was a bare shell at save time must be left alone; pane:\n%s", shellPane)
+	}
+	if strings.Contains(shellPane, "ghost-id") {
+		t.Errorf("the phantom conversation was injected into a shell pane:\n%s", shellPane)
+	}
 }
