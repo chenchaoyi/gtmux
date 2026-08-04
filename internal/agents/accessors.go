@@ -66,6 +66,27 @@ func ResumeArgv() map[string][]string {
 	return out
 }
 
+// CommandKeys maps every EXECUTABLE NAME that identifies an agent to its canonical
+// key — the radar's detection commands plus the binary each resume argv launches
+// ("claude"→claude, "cursor-agent"→cursor, "kiro-cli"→kiro).
+//
+// It exists for the one place gtmux has to identify an agent from a command line it
+// cannot inspect as a process: the `pane_full_command` recorded in a tmux-resurrect
+// save, read at restore time when that process is long dead. Identity stays in the
+// registry rather than a private table in the restore code.
+func CommandKeys() map[string]string {
+	out := make(map[string]string)
+	for _, a := range manifests {
+		for _, c := range a.Detect {
+			out[c] = a.Key
+		}
+		if len(a.Resume) > 0 {
+			out[a.Resume[0]] = a.Key
+		}
+	}
+	return out
+}
+
 // ResourceNames returns the agent names the resource attributor scans, in order.
 func ResourceNames() []string {
 	out := make([]string, 0, len(resourceOrder))

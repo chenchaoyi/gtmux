@@ -1,10 +1,8 @@
 package app
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -47,81 +45,80 @@ func buildRestorePlan() restorePlan { return buildRestorePlanFrom(resurrectLastS
 
 // buildRestorePlanFrom is buildRestorePlan over an explicit save path (the seam for
 // tests); the resume records + transcripts still come from the ambient state dir.
+//
+// It walks the SAVE, not the resume store, and applies the same liveness gate and
+// the same conversation-picking order as resumeAgents — the plan is a promise about
+// what restore will do, so the two must not be able to disagree. (They used to: the
+// plan listed a conversation for any pane position that had ever hosted one, which
+// is exactly the phantom the resume path was injecting.)
 func buildRestorePlanFrom(save string) restorePlan {
 	if save == "" {
 		return restorePlan{}
 	}
+	layout := loadSavedLayout(save)
 	plan := restorePlan{SavePath: save}
 
-	// Parse the save: session order of first appearance, and the set of window.pane
-	// positions each session holds. Only fields 2 (window index) and 5 (pane index)
-	// are read — both are fixed early positions BEFORE the variable title/cwd fields,
-	// so they're the robust part of the resurrect format. The positions set both
-	// counts the layout AND gates the agent list to panes that actually exist now.
-	type acc struct {
-		windows   map[string]bool
-		positions map[string]bool // "window.pane"
-	}
-	order := []string{}
-	byName := map[string]*acc{}
-	if f, err := os.Open(save); err == nil {
-		sc := bufio.NewScanner(f)
-		sc.Buffer(make([]byte, 1<<20), 1<<20)
-		for sc.Scan() {
-			line := sc.Text()
-			if !strings.HasPrefix(line, "pane\t") {
-				continue
-			}
-			fields := strings.Split(line, "\t")
-			if len(fields) < 6 {
-				continue
-			}
-			name := fields[1]
-			if name == "" {
-				continue
-			}
-			a := byName[name]
-			if a == nil {
-				a = &acc{windows: map[string]bool{}, positions: map[string]bool{}}
-				byName[name] = a
-				order = append(order, name)
-			}
-			a.windows[fields[2]] = true
-			a.positions[fields[2]+"."+fields[5]] = true
+	// Session rows in first-appearance order, counting distinct windows and distinct
+	// window.pane positions (a set, so a duplicated save line can't inflate a count).
+	at := map[string]int{}
+	windows := map[string]map[string]bool{}
+	positions := map[string]map[string]bool{}
+	for _, sp := range layout.Panes {
+		i, seen := at[sp.Session]
+		if !seen {
+			plan.Sessions = append(plan.Sessions, restorePlanSession{Name: sp.Session})
+			i = len(plan.Sessions) - 1
+			at[sp.Session] = i
+			windows[sp.Session] = map[string]bool{}
+			positions[sp.Session] = map[string]bool{}
 		}
-		f.Close()
+		windows[sp.Session][sp.Window] = true
+		positions[sp.Session][sp.Window+"."+sp.Pane] = true
+		plan.Sessions[i].Windows = len(windows[sp.Session])
+		plan.Sessions[i].Panes = len(positions[sp.Session])
 	}
 
-	// Agents per session: a resume record counts ONLY when its locator's window.pane
-	// position still exists in the saved layout. A stale record for a pane that's
-	// since gone (locators accumulate — the store isn't pruned when a pane closes)
-	// must NOT be listed as "will be restored" — that's exactly the historical
-	// conversation the user doesn't want surfaced.
+	// Only panes the save shows running an agent get a conversation listed — a pane
+	// that was a plain shell when the layout was saved is coming back as a plain
+	// shell, whatever its (never-pruned) resume record remembers.
 	records := resume.AllLocated()
-	for _, name := range order {
-		a := byName[name]
-		s := restorePlanSession{Name: name, Windows: len(a.windows), Panes: len(a.positions)}
-		usedIDs := map[string]bool{}
-		for i := range records {
-			r := records[i]
-			if locSession(r.Loc) != name || r.SessionID == "" || usedIDs[r.SessionID] {
-				continue
-			}
-			if !a.positions[posSuffix(r.Loc)] {
-				continue // locator's pane no longer in the saved layout
-			}
-			usedIDs[r.SessionID] = true
-			_, alive := resume.Resolve(r.Record)
-			s.Agents = append(s.Agents, restorePlanAgent{
-				Agent:     r.Agent,
-				Loc:       r.Loc,
-				Cwd:       r.Cwd,
-				SessionID: r.SessionID,
-				Goal:      planGoal(r.Agent, r.SessionID),
-				Alive:     alive,
-			})
+	used := map[string]bool{}
+	add := func(sp savedPane, rec resume.Record) {
+		if rec.SessionID == "" || used[rec.SessionID] {
+			return
 		}
-		plan.Sessions = append(plan.Sessions, s)
+		used[rec.SessionID] = true
+		_, alive := resume.Resolve(rec)
+		i := at[sp.Session]
+		plan.Sessions[i].Agents = append(plan.Sessions[i].Agents, restorePlanAgent{
+			Agent:     rec.Agent,
+			Loc:       sp.Loc,
+			Cwd:       rec.Cwd,
+			SessionID: rec.SessionID,
+			Goal:      planGoal(rec.Agent, rec.SessionID),
+			Alive:     alive,
+		})
+	}
+
+	var pending []savedPane
+	for _, sp := range layout.Panes {
+		if !sp.evidence().allowsResume() {
+			continue
+		}
+		if rec, ok := resume.Load(sp.Loc); ok && rec.SessionID != "" {
+			add(sp, rec)
+			continue
+		}
+		if agent, id := sp.savedSessionID(); id != "" {
+			add(sp, resume.Record{Agent: agent, SessionID: id, Cwd: sp.Dir})
+			continue
+		}
+		pending = append(pending, sp)
+	}
+	for _, sp := range pending {
+		if rec, _ := pickCwdFallback(sp.Loc, sp.Dir, records, used, layout.Ref); rec != nil {
+			add(sp, *rec)
+		}
 	}
 	return plan
 }

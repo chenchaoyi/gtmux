@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -55,16 +56,24 @@ func autoResumeEnabled() bool {
 
 // resumeAgents relaunches captured agent conversations into freshly-restored
 // panes (#4). tmux-resurrect restores layout/dirs but NOT running programs, so a
-// restored pane sits at a shell; for each such pane that has a resume record, we
-// rebuild its `<agent> --resume <id>` command (with a cd into the original dir)
-// and either run it (auto) or pre-fill it (type). Panes already running a program
-// are skipped so re-running restore never clobbers a live agent.
+// restored pane sits at a shell; for each such pane that WAS RUNNING AN AGENT when
+// the layout was saved, we rebuild its `<agent> --resume <id>` command (with a cd
+// into the original dir) and either run it (auto) or pre-fill it (type). Panes
+// already running a program are skipped so re-running restore never clobbers a live
+// agent.
 //
-// Matching is two-pass: first the exact locator (session:window.pane, the key the
-// hook saved), then a fallback (pickCwdFallback) that recovers a conversation only
-// when a saved record shares the pane's cwd AND its window.pane position — so a
-// session renamed since the save still resumes, but a bare shell pane that merely
-// shares a project dir is never injected with a historical conversation.
+// Two questions, two sources — keeping them apart is the whole design:
+//
+//   - "was an agent ALIVE in this pane?" — the tmux-resurrect save (restoresave.go).
+//     It is a snapshot of the fleet minutes before the machine went down, and the
+//     only witness to what was running. A pane the save shows at a bare shell is
+//     never touched, no matter what its resume record remembers.
+//   - "WHICH conversation?" — the resume record at the pane's locator, which the
+//     hooks keep current (it follows /clear and compaction; the save's command line
+//     only knows the id the process was launched with). When a pane with agent
+//     evidence has no record, the save's own `--resume <id>` is the fallback, and
+//     only then does the cwd+position guess run.
+//
 // A conversation is used at most once (dedup by session id).
 func resumeAgents() {
 	mode := effectiveResumeMode()
@@ -85,7 +94,35 @@ func resumeAgents() {
 		}
 		panes = append(panes, shellPane{id: f[0], loc: f[2], cwd: f[3]})
 	}
-	restoreLogf("resumeAgents: mode=%d shellPanes=%d", mode, len(panes))
+
+	// The liveness gate. With no parseable save there is no evidence to gate on, so
+	// behave exactly as before rather than refusing every resume — a missing save
+	// must degrade to the old behavior, not to silence.
+	layout := loadSavedLayout(resurrectLastSave())
+	gated := len(layout.Panes) > 0
+	restoreLogf("resumeAgents: mode=%d shellPanes=%d savedPanes=%d liveness-gate=%v",
+		mode, len(panes), len(layout.Panes), gated)
+	if gated {
+		eligible := panes[:0:0]
+		for _, p := range panes {
+			sp, ok := layout.ByLoc[p.loc]
+			ev := evidenceMissing
+			if ok {
+				ev = sp.evidence()
+			}
+			if !ev.allowsResume() {
+				restoreLogf("resume[not-live] pane=%s loc=%s cwd=%s — save says %s (cmd=%q full=%q shifted=%v); not resuming",
+					p.id, p.loc, p.cwd, ev, sp.Cmd, sp.Full, sp.Shifted)
+				continue
+			}
+			if ev == evidenceUnclear {
+				restoreLogf("resume[unclear] pane=%s loc=%s — save can't name what ran (cmd=%q shifted=%v); allowing the resume",
+					p.id, p.loc, sp.Cmd, sp.Shifted)
+			}
+			eligible = append(eligible, p)
+		}
+		panes = eligible
+	}
 
 	used := map[string]bool{} // session ids already resumed — never resume one twice
 	n := 0
@@ -114,32 +151,48 @@ func resumeAgents() {
 		return false
 	}
 
-	// Pass 1 — exact locator match; collect the misses for the CWD fallback.
+	// Pass 1 — the pane's own evidence: its exact-locator record (hook-fresh), else
+	// the conversation id the SAVE recorded this very pane resuming. Both are about
+	// THIS pane; the guess in pass 2 is not, so it must not run first and claim a
+	// conversation another pane can prove is its own.
 	var pending []shellPane
 	for _, p := range panes {
-		if rec, ok := resume.Load(p.loc); ok {
-			ran := run(p.id, rec)
-			restoreLogf("resume[exact] pane=%s loc=%s cwd=%s → session=%s ran=%v", p.id, p.loc, p.cwd, rec.SessionID, ran)
-			if ran {
-				n++
+		rec, ok := resume.Load(p.loc)
+		src := "exact"
+		if !ok {
+			if agent, id := layout.ByLoc[p.loc].savedSessionID(); id != "" {
+				rec, ok, src = resume.Record{Agent: agent, SessionID: id, Cwd: layout.ByLoc[p.loc].Dir}, true, "save-cmd"
 			}
-		} else {
+		}
+		if !ok {
 			pending = append(pending, p)
+			continue
+		}
+		ran := run(p.id, rec)
+		restoreLogf("resume[%s] pane=%s loc=%s cwd=%s → session=%s ran=%v", src, p.id, p.loc, p.cwd, rec.SessionID, ran)
+		if ran {
+			n++
 		}
 	}
-	// Pass 2 — fallback for panes whose exact locator had no record: recover a
-	// conversation ONLY when a saved record shares this pane's cwd AND its original
-	// window.pane layout position (see pickCwdFallback). The position requirement is
-	// what stops the "multiple cc sessions after restore" bug: a bare shell pane that
-	// merely sits in a project dir (never hosted an agent) has no record at its
-	// position, so it correctly gets nothing — the old cwd-only match injected a
-	// historical conversation into every such pane.
+	// Pass 2 — fallback for panes whose exact locator had no record and whose saved
+	// command line carried no id: recover a conversation ONLY when a saved record
+	// shares this pane's cwd AND its original window.pane layout position (see
+	// pickCwdFallback). This pass is a GUESS — the record it finds belonged to some
+	// other locator — so on top of the liveness gate it also refuses records nobody
+	// has touched in weeks.
 	if len(pending) > 0 {
 		all := resume.AllLocated() // most-recent first, each with its original locator
 		for _, p := range pending {
-			chosen, cands := pickCwdFallback(p.loc, p.cwd, all, used)
+			// Prefer the directory the SAVE recorded for this pane: it is the
+			// pre-reboot truth, while the live cwd is "/" whenever resurrect failed
+			// to restore the pane's directory (which the shifted-line bug causes).
+			cwd := p.cwd
+			if d := layout.ByLoc[p.loc].Dir; d != "" {
+				cwd = d
+			}
+			chosen, cands := pickCwdFallback(p.loc, cwd, all, used, layout.Ref)
 			if chosen == nil {
-				restoreLogf("resume[no-match] pane=%s loc=%s cwd=%s (no exact record; no cwd+position candidate)", p.id, p.loc, p.cwd)
+				restoreLogf("resume[no-match] pane=%s loc=%s cwd=%s (no exact record; no cwd+position candidate)", p.id, p.loc, cwd)
 				continue
 			}
 			ran := run(p.id, *chosen)
@@ -148,7 +201,7 @@ func resumeAgents() {
 				amb = fmt.Sprintf(" AMBIGUOUS(%d cwd+position candidates)", cands)
 			}
 			restoreLogf("resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v%s",
-				p.id, p.loc, p.cwd, chosen.SessionID, ran, amb)
+				p.id, p.loc, cwd, chosen.SessionID, ran, amb)
 			if ran {
 				n++
 			}
@@ -159,6 +212,13 @@ func resumeAgents() {
 	reportResume(mode, n)
 }
 
+// fallbackMaxAge bounds how old a record may be to be recovered by the CWD FALLBACK
+// (never by an exact-locator match, which is evidence rather than a guess). Measured
+// against the save's own timestamp, so it asks "had anyone touched this conversation
+// in the fortnight before the machine went down?" — a guess drawn from an older
+// record is far likelier to be a ghost locator than the conversation that was live.
+const fallbackMaxAge = 14 * 24 * time.Hour
+
 // pickCwdFallback chooses the record to recover into a restored pane whose exact
 // locator had no saved record. A candidate must share the pane's cwd AND the same
 // window.pane layout position (session may have been renamed, but tmux-resurrect
@@ -168,7 +228,10 @@ func resumeAgents() {
 // what stops historical conversations being injected into every project-dir pane
 // after a restore. Records are most-recent first; the newest matching one wins.
 // candidates counts the position+cwd matches so an ambiguous recovery stays logged.
-func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool) (rec *resume.Record, candidates int) {
+//
+// ref is the save's timestamp; candidates older than fallbackMaxAge before it are
+// skipped. A zero ref disables that check (no dated evidence to compare against).
+func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool, ref time.Time) (rec *resume.Record, candidates int) {
 	if cwd == "" {
 		return nil, 0
 	}
@@ -178,12 +241,23 @@ func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool
 		if r.Cwd != cwd || used[r.SessionID] || posSuffix(r.Loc) != wp {
 			continue
 		}
+		if tooStaleToGuess(r.Record, ref) {
+			continue
+		}
 		candidates++
 		if rec == nil {
 			rec = &all[i].Record
 		}
 	}
 	return rec, candidates
+}
+
+// tooStaleToGuess reports whether a record is too old to be worth guessing from.
+func tooStaleToGuess(r resume.Record, ref time.Time) bool {
+	if ref.IsZero() || r.UpdatedAt == 0 {
+		return false // nothing to compare — don't invent a reason to drop it
+	}
+	return ref.Sub(time.Unix(r.UpdatedAt, 0)) > fallbackMaxAge
 }
 
 // posSuffix returns the window.pane part of a locator ("session:window.pane" →

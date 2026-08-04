@@ -117,3 +117,37 @@ func TestKeyForLabel(t *testing.T) {
 		}
 	}
 }
+
+// CommandKeys is what identifies an agent from a command line no process backs any
+// more — the `pane_full_command` a tmux-resurrect save recorded before a reboot.
+// Every resumable agent must be findable by the binary its own resume argv launches,
+// or restore cannot tell "an agent was running here" from "a shell was".
+func TestCommandKeys(t *testing.T) {
+	got := CommandKeys()
+	for _, c := range []struct{ cmd, key string }{
+		{"claude", "claude"},
+		{"codex", "codex"},
+		{"cursor-agent", "cursor"}, // the binary, mapped to the canonical key
+		{"cursor", "cursor"},
+		{"opencode", "opencode"},
+		{"kiro-cli", "kiro"},
+		{"aider", "aider"}, // detect-only agents are identifiable too
+	} {
+		if got[c.cmd] != c.key {
+			t.Errorf("CommandKeys()[%q]=%q, want %q", c.cmd, got[c.cmd], c.key)
+		}
+	}
+	for _, cmd := range []string{"bash", "zsh", "vim", "node", ""} {
+		if k, ok := got[cmd]; ok {
+			t.Errorf("CommandKeys() must not claim %q (got %q)", cmd, k)
+		}
+	}
+	for _, a := range manifests {
+		if len(a.Resume) == 0 {
+			continue
+		}
+		if got[a.Resume[0]] != a.Key {
+			t.Errorf("%s: its resume binary %q must map back to it", a.Key, a.Resume[0])
+		}
+	}
+}
