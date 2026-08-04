@@ -293,8 +293,9 @@ iPad **不是「放大的手机」**——大画布用 **split-view（侧栏雷�
 之上），所以它**浮**在列表上、不随滚动移走，而不是当作「又一张卡」挤在顶部（那样太像一个 session）。
 **可自由拖到屏幕任何位置**，落点持久化（`AsyncStorage`，跨启动记住）；轻点=进 HQ、拖动=移动（靠位移阈值
 区分）。圆盘内=gtmux 品牌标 **+「HQ」字标**堆叠（只有 logo 指向性不够，字标点明是 HQ，logo 保留）。
-圆盘放不下那句合成头条,故**情报头条移到 HQ 页**（无障碍标签仍念出当前状态）。**仅手机雷达**用圆盘；
-iPad 侧栏（`SplitScreen`）与 Demo 仍用 `HQCard`（浮窗不适合常驻侧栏/教学面）。
+圆盘放不下那句合成头条,故**情报头条移到 HQ 页**（无障碍标签仍念出当前状态）。**手机雷达（真实 + Demo）**
+都用圆盘——Demo 是给新用户看真实雷达长什么样的，理应与真机一致（早先 Demo 保留 `HQCard`，结果 app 换成浮窗后
+Demo 就落后了，用户会当成两套 UI）。**只有 iPad 侧栏（`SplitScreen`）仍用 `HQCard`**（浮窗不适合常驻侧栏）。
 
 **圆盘状态模型（`HQDisc` 的 `discState`，按优先级取最高一个；铁律 色=状态）**——红=需要注意（决策或
 **真·资源瓶颈**），角标区分是哪种：
@@ -330,7 +331,7 @@ resource 同样只在 red 档才红、软 amber 不红)。差异仅在容器:手
 ---
 
 ## 对齐实现补记（2026-07 · F 轮）
-见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ⏎ Ctrl-C Esc|快捷短语▾ 历史，写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；iPad/Demo 仍 `HQCard`，见 hq-meta-layer）。
+见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ⏎ Ctrl-C Esc|快捷短语▾ 历史，写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；Demo 与真机雷达一致用 `HQDisc`，仅 iPad 侧栏仍 `HQCard`，见 hq-meta-layer）。
 
 - **Demo 模式**（mockup §18）：全功能无 server 演示（App Review 路径）。铁律：明示样例（DEMO chip 全程）、永不混入真实（Servers 无条目）、每次进入重置、每步引导「配对你的 Mac」。剧本主线 = 30 秒核心循环：看到等你 → 点进 → 按 1 批准 → 测试跑完 → 雷达变绿挂 latest。优化项见 ITERATIONS §F7。
 

@@ -36,9 +36,9 @@ describe('demo status arc', () => {
   });
 });
 
-// F7③: the demo world includes a supervisor row (→ HQCard) and a canned digest.
+// F7③: the demo world includes a supervisor row (→ HQDisc) and a canned digest.
 describe('demo HQ', () => {
-  it('sampleAgents carries a supervisor for the chief-of-staff card', () => {
+  it('sampleAgents carries a supervisor for the chief-of-staff disc', () => {
     expect(sampleAgents().some(a => a.role === 'supervisor')).toBe(true);
   });
 

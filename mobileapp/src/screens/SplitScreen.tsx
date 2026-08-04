@@ -67,8 +67,9 @@ export function SplitScreen({navigation, route}: any) {
 
   const c = counts(agents);
 
-  // Same chief-of-staff entry as the phone radar (ui/HQCard): the wide sidebar
-  // must not be a second-class surface — tap → HQScreen (pushed over the split).
+  // The iPad sidebar keeps the framed HQCard (the phone radar floats the HQDisc; a
+  // wide sidebar suits the card): the sidebar must not be a second-class surface —
+  // tap → HQScreen (pushed over the split).
   const hq = agents.find(a => a.role === 'supervisor');
 
   const onToggle = (st: SectionKey) =>

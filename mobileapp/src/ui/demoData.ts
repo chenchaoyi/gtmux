@@ -23,8 +23,8 @@ export function sampleAgents(): Agent[] {
   const now = Math.floor(Date.now() / 1000);
   const base = {window: '0', pane: '0', loc: '', activity: false, latest: false};
   const rows: Agent[] = [
-    // The chief-of-staff card joins the demo (F7③): a supervisor row renders the
-    // HQCard above the list (never a section row — theme.sections excludes it).
+    // The chief-of-staff joins the demo (F7③): a supervisor row renders the floating
+    // HQDisc over the list (never a section row — theme.sections excludes it).
     {...base, pane_id: '%1', session: 'hq', loc: 'hq:0.0', agent: 'Claude Code',
       role: 'supervisor', status: 'working', task: 'api is waiting on you · rest normal',
       source: 'tmux', since: now - 3600},

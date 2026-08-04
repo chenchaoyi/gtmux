@@ -19,8 +19,8 @@
 // Red = "attention" (a decision or a real resource bottleneck); the badge/glyph says
 // which. The
 // full intelligence headline (a disc can't hold a sentence) lives on the HQ page;
-// VoiceOver speaks the disc's state via its accessibility label. Phone radar only —
-// the iPad sidebar (SplitScreen) and Demo keep the HQCard.
+// VoiceOver speaks the disc's state via its accessibility label. Phone radar (real +
+// Demo) uses this disc; only the iPad sidebar (SplitScreen) keeps the HQCard.
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
