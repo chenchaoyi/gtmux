@@ -1,3 +1,3 @@
-• When the Mac loses connection, the lock-screen Live Activity now dims to an "offline" state instead of freezing on a stale, live-looking tally.
-• The Servers list now shows when a Mac is set to keep running with its lid closed.
+• Clearer collapse controls when browsing all panes — the section arrows are easier to see, and "fold all" is now an icon.
+• The in-app demo now matches the live radar, with the floating HQ control.
 • Assorted polish and stability fixes.
