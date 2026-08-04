@@ -115,16 +115,27 @@ func splitByPrompt(lines []string) (history, draft string, structured bool) {
 	return strings.Join(lines[:mark], "\n"), stripBoxChrome(lines[mark:]), true
 }
 
-// isBoxBorder reports whether a line is a horizontal box-drawing border (the
-// top/bottom of an input box): made up solely of box-drawing runes, corners, and
-// spacing, and long enough not to be a stray single glyph. A content line inside
-// the box ("│ > hello │") contains letters, so it is NOT a border.
+// labeledBorderMinRun is the shortest CONTIGUOUS run of horizontal rule characters that
+// makes a line carrying label text still a border. A titled box rule (Claude Code 2.x
+// titles the input box, e.g. "──────── SAT ──" or "──── Context left …: 41% ──") always
+// spans much of the width, so its rule run is long; a real content line has at most a
+// stray dash or two scattered among its text, never an 8-long run. 8 sits far below any
+// real border and far above any content line.
+const labeledBorderMinRun = 8
+
+// isBoxBorder reports whether a line is a horizontal box-drawing border (the top/bottom
+// of an input box): a horizontal box-drawing RUN (with corners, pipes, and spacing),
+// long enough not to be a stray single glyph. A pure content line ("│ > hello │") has no
+// rule and is NOT a border. A TITLED rule ("──── SAT ──") IS a border — the label is
+// tolerated only when a long contiguous rule run is present, because a mis-recognized
+// titled top border was splitting the draft into the status footer and failing every
+// send into a Claude Code 2.x pane ("the input box didn't confirm the full message").
 func isBoxBorder(line string) bool {
 	t := strings.TrimSpace(line)
 	if utf8.RuneCountInString(t) < 3 {
 		return false
 	}
-	horiz := 0
+	horiz, label, run, maxRun := 0, 0, 0, 0
 	for _, r := range t {
 		switch r {
 		case '─', '━', '═', '╌', '╍', '┄', '┅', '┈', '┉',
@@ -133,14 +144,26 @@ func isBoxBorder(line string) bool {
 			// opencode/ASCII banners are made of — those must stay non-borders.
 			'▀', '▄', '▔', '▁':
 			horiz++
+			run++
+			if run > maxRun {
+				maxRun = run
+			}
 		case '╭', '╮', '╰', '╯', '┌', '┐', '└', '┘', '├', '┤', '┬', '┴', '┼',
 			'│', '┃', '║', '╹', '╻', '╺', '╸', ' ', '\t':
 			// allowed border furniture, but not itself a "horizontal run"
+			run = 0
 		default:
-			return false
+			label++ // embedded label text (a titled box rule, e.g. "──── SAT ──")
+			run = 0
 		}
 	}
-	return horiz >= 2 // require a real horizontal run, not just corners/pipes
+	if horiz < 2 { // require a real horizontal run, not just corners/pipes
+		return false
+	}
+	// A pure rule / furniture line is a border (the original behavior). A line that ALSO
+	// carries label text is a border only if it has a long CONTIGUOUS rule run — the
+	// title of a box, not a content line that happens to hold a dash or two.
+	return label == 0 || maxRun >= labeledBorderMinRun
 }
 
 // leftEdgeBlockStart returns the first index of the consecutive block of left-edge

@@ -84,6 +84,62 @@ func TestIsBoxBorder(t *testing.T) {
 	}
 }
 
+func TestIsBoxBorder_TitledRule(t *testing.T) {
+	// Claude Code 2.x titles the input box in its top rule: "──────── SAT ──". The label
+	// must NOT stop it being recognized as a border.
+	rule := strings.Repeat("─", 80)
+	for _, ok := range []string{rule + " SAT ──", rule + " Context left until auto-compact: 41% ──", "── plan ──" + rule} {
+		if !isBoxBorder(ok) {
+			t.Fatalf("a titled rule must be a border: %q", ok)
+		}
+	}
+	// But a CONTENT line that merely carries a dash or two must stay a non-border, or the
+	// draft/history split breaks the other way.
+	for _, no := range []string{
+		"─ Read 1 file, recalled 1 memory (ctrl+o to expand)",
+		"a ─ b ─ c ─ d ─ e ─ f ─ g ─ h ─ i", // scattered dashes among text
+		"│ ❯ 这题是什么意思？出错了吧？ │",
+	} {
+		if isBoxBorder(no) {
+			t.Fatalf("a content line must NOT be a border: %q", no)
+		}
+	}
+}
+
+func TestSplitInputRegion_TitledTopBorder(t *testing.T) {
+	// The real "Not sent — the input box didn't confirm the full message" bug: Claude Code
+	// 2.x's input box has a TITLED top border ("──── SAT ──") and a status footer BELOW the
+	// bottom border. When the titled top rule wasn't recognized, SplitInputRegion split the
+	// draft into the footer and lumped the real draft into history — so draftHasDelivery
+	// never matched and every send failed. The titled rule must now bound the box.
+	rule := strings.Repeat("─", 80)
+	capture := "history line one\n" +
+		"history line two\n" +
+		rule + " SAT ──\n" + // titled TOP border
+		"❯ 这题是什么意思？出错了吧？\n" + // the draft
+		rule + "\n" + // pure BOTTOM border
+		"  ~/meituan/chenchaoyi/sat-monitor │ ⎇ main │ Opus 5 (1M context) │ 591.6K 59%\n" +
+		"  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents\n" +
+		"  ⧉  trove-proposal"
+	history, draft, structured := SplitInputRegion(capture)
+	if !structured {
+		t.Fatal("a titled input box must still be structured")
+	}
+	if draft != "这题是什么意思？出错了吧？" {
+		t.Fatalf("draft mis-extracted (footer leaked in / draft lost): %q", draft)
+	}
+	if strings.Contains(history, "这题是什么意思") {
+		t.Fatalf("the draft leaked into history: %q", history)
+	}
+	if !strings.Contains(history, "history line") {
+		t.Fatalf("history should hold the transcript above the box: %q", history)
+	}
+	// End to end: the draft holds the full delivery, so a send confirms and submits.
+	if !draftHasDelivery(draft, "这题是什么意思？出错了吧？") {
+		t.Fatal("draftHasDelivery should confirm the full message in the titled box")
+	}
+}
+
 // esc is the ANSI escape byte, kept out of the raw string literals below.
 const esc = "\x1b"
 
