@@ -8,8 +8,9 @@
 //
 // F7: the fake world is now ALIVE enough to show the core loop — approving the
 // hero's permission walks it waiting→working→idle(+latest) on this very radar
-// (demoClient pushes fresh agents through setAgents), and the chief-of-staff card
-// (ui/HQCard) opens the real HQScreen over a canned digest + one preset exchange.
+// (demoClient pushes fresh agents through setAgents), and the chief-of-staff disc
+// (ui/HQDisc, the same floating control the real radar shows) opens the real HQScreen
+// over a canned digest + one preset exchange.
 
 import React, {useMemo, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -18,7 +19,6 @@ import {Agent, SectionKey} from '../api/types';
 import {Debug} from '../debug';
 import {useApp} from '../state/AppContext';
 import {DemoAgentsProvider} from '../state/AgentsContext';
-import {HQCard} from '../ui/HQCard';
 import {HQDisc} from '../ui/HQDisc';
 import {SectionList} from '../ui/SectionList';
 import {StatusColor} from '../ui/theme';
@@ -57,14 +57,6 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
           <Text style={[styles.bannerText, {color: pal.fg2}]}>
             {lang === 'zh' ? '样例数据 —— 不是真的 Mac。点任意一行进去看看。' : 'Sample data — not a real Mac. Tap any row to explore.'}
           </Text>
-        </View>
-      )}
-      {/* The shipped demo keeps the HQ CARD (MOBILE §17); App Store SHOT_MODE renders the
-          real floating DISC instead (rendered as an overlay below), so the capture matches
-          what a real user's radar shows. */}
-      {hq && !Debug.shotMode && (
-        <View style={styles.hqWrap}>
-          <HQCard hq={hq} agents={agents} pal={pal} lang={lang} onPress={() => setShowHQ(true)} />
         </View>
       )}
     </View>
@@ -125,9 +117,10 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
             </TouchableOpacity>
           )}
 
-          {/* SHOT_MODE: the real floating HQ disc over the demo radar, so the App Store
-              capture shows the current UI (not the demo's HQ card). */}
-          {hq && Debug.shotMode && (
+          {/* HQ renders as the floating DISC over the radar — same as the real
+              RadarScreen (MOBILE §17). The demo used to show a framed HQ card here; that
+              diverged from the shipped UI, so it now matches: one floating disc. */}
+          {hq && (
             <HQDisc hq={hq} agents={agents} pal={pal} lang={lang} onOpen={() => setShowHQ(true)} />
           )}
         </SafeAreaView>
@@ -145,7 +138,6 @@ const styles = StyleSheet.create({
   pill: {borderWidth: 1, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1},
   pillText: {fontSize: 10, fontWeight: '700', letterSpacing: 0.06},
   bannerText: {flex: 1, fontSize: 12},
-  hqWrap: {paddingHorizontal: 14, paddingBottom: 4, marginTop: -6},
   cta: {margin: 16, borderRadius: 12, paddingVertical: 14, alignItems: 'center'},
   ctaText: {color: '#04141a', fontSize: 15, fontWeight: '700'},
 });
