@@ -91,7 +91,14 @@ scrollback margin (never a tail sample), locate the input region STRUCTURALLY (b
 separator/box line, so "❯ text" is unambiguously draft vs submitted), find evidence by
 PATTERN SEARCH rather than a fixed line offset, and require TWO consecutive consistent
 frames before declaring a delivery not-landed (a single frame has misread a transient
-context-usage figure and an in-progress compaction bar).
+context-usage figure and an in-progress compaction bar). The box-line detector SHALL
+recognize a TITLED border — a rule that carries a label, e.g. Claude Code's
+"──── SAT ──" or "──── Context left …: 41% ──" input-box top — as a border, not reject
+it for containing letters: a mis-recognized titled top rule split the draft into the
+status footer below the box and lumped the real draft into history, so the pre-submit
+confirm never matched and EVERY send into such a pane failed with "the input box didn't
+confirm the full message". A line is a border when a long contiguous rule run is present
+(a title), never a content line that merely carries a dash or two.
 
 Arbitration between the layers SHALL be positive-monotonic: a stream-confirmed
 landing is FINAL and SHALL NOT be overturned by any screen read; before declaring
@@ -107,6 +114,14 @@ so a misjudgment can be attributed to its layer.
 - **WHEN** a task is delivered to a Claude Code pane and a `UserPromptSubmit` event
   with a matching content head appears on the stream
 - **THEN** the delivery is confirmed landed WITHOUT reading the screen
+
+#### Scenario: A titled input-box border still bounds the draft
+
+- **WHEN** the agent draws its input box with a titled top border (a long rule with a
+  label in it, e.g. `──── SAT ──`) and a status footer below the bottom border
+- **THEN** the titled rule is recognized as the box's top border, so the draft between
+  the borders is extracted correctly (the footer is NOT mistaken for the draft, and the
+  draft is NOT lumped into history) and a send whose full text is in the box confirms
 
 #### Scenario: A single transient frame is not a verdict
 
