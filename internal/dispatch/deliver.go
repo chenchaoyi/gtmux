@@ -301,16 +301,19 @@ const (
 // destroying and re-pasting, so it is returned only after the whole settle window has
 // passed with no match.
 //
-// A CHURNING pane (the agent mid-turn, redrawing its transcript continuously — an HQ
-// session mid-answer is the recurring case) is a THIRD outcome, distinct from a
-// fragment. The paste lands in the box, but the box-region scrape never catches a clean
-// frame that reads back the full head+tail — the transcript above the box keeps moving
-// and races every read. Calling that a fragment (and clearing / withholding Enter)
-// silently drops the send into a working pane; the user watched their message never
-// submit against a busy %pane. So when the settle window expires with the transcript
-// still churning AND a non-empty draft (the paste demonstrably reached the box), return
-// pasteBusy — placed, submit best-effort, let the receipt / post-submit verify judge.
-// A QUIET pane whose draft simply stalled short is still a real fragment.
+// A CHURNING pane (the agent mid-turn, still redrawing — an HQ session mid-answer, or a
+// Codex turn ticking its footer timer, is the recurring case) is a THIRD outcome, distinct
+// from a fragment. The paste lands in the box, but the box-region scrape never catches a
+// clean frame that reads back the full head+tail — the pane keeps redrawing and races every
+// read. Calling that a fragment (and clearing / withholding Enter) silently drops the send
+// into a working pane; the user watched their message never submit against a busy %pane. So
+// the "is it still rendering?" signal watches the WHOLE capture, not just the transcript
+// ABOVE the box: Codex draws its working state — an elapsed-time counter and a spinner — in
+// the status footer BELOW the box, so a transcript-only diff read a working Codex as "quiet"
+// and false-failed every send into it ("the input box didn't confirm the full message").
+// When the settle window expires with the pane still moving AND a non-empty draft (the paste
+// demonstrably reached the box), return pasteBusy — placed, submit best-effort, let the
+// receipt / post-submit verify judge. A pane that goes and STAYS still is a real fragment.
 func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 	budget := settleFrames(opts.PasteSettle, text)
 	// A BUSY pane (an agent mid-render) draws a long paste PROGRESSIVELY: the draft
@@ -323,12 +326,13 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 	// ceiling so a pathological pane can't stall a send forever.
 	prevLen, stall := -1, 0
 	ceiling := budget + pasteStallCeiling
-	peak := 0           // max non-empty draft length seen (the paste reached the box)
-	var prevHist string // last frame's transcript region (above the box)
-	histSeen := false   // have we captured a transcript baseline to diff against
-	histStall := 0      // consecutive frames the transcript held STILL (agent not rendering)
+	peak := 0            // max non-empty draft length seen (the paste reached the box)
+	var prevFrame string // last frame's FULL capture, to sense motion ANYWHERE on screen
+	frameSeen := false   // have we captured a baseline frame to diff against
+	renderStall := 0     // consecutive frames the WHOLE pane held STILL (agent not rendering)
 	for i := 0; ; i++ {
-		history, draft, structured := SplitInputRegion(io.Capture())
+		frame := io.Capture()
+		_, draft, structured := SplitInputRegion(frame)
 		if !structured {
 			return pasteUnverifiable
 		}
@@ -336,14 +340,14 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 			return pasteInDraft
 		}
 		switch {
-		case !histSeen:
+		case !frameSeen:
 			// first frame — no baseline to diff against yet
-		case history != prevHist:
-			histStall = 0 // the transcript moved — the agent is actively rendering
+		case frame != prevFrame:
+			renderStall = 0 // something on screen moved — the agent is actively rendering
 		default:
-			histStall++ // the transcript held still this frame
+			renderStall++ // the whole pane held still this frame
 		}
-		prevHist, histSeen = history, true
+		prevFrame, frameSeen = frame, true
 		n := len(normalizeSpace(draft))
 		if n > prevLen {
 			prevLen, stall = n, 0 // still arriving — do not clear a paste mid-render
@@ -353,18 +357,30 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 		if n > peak {
 			peak = n
 		}
-		if i >= ceiling || (i >= budget && stall >= pasteStallFrames) {
-			// The draft has stopped growing. Decide by what the TRANSCRIPT is doing: if it
-			// held still through the stall window (histStall ≥ pasteStallFrames), the pane is
-			// quiet and a short draft is a genuine fragment. If it is STILL moving (the agent
-			// is mid-turn), the box scrape can't win a clean read — a non-empty draft here is
-			// PLACED-on-a-busy-pane, submit best-effort rather than clear/withhold. Keying on
-			// recent transcript motion (not cumulative) keeps a multi-line paste that merely
-			// grew the box a frame or two early from being mistaken for a busy pane.
-			if peak > 0 && histSeen && histStall < pasteStallFrames {
+		// The motion signal is the WHOLE capture, not just the transcript above the box, so a
+		// Codex ticking its footer timer reads as busy (see the doc comment). Two asymmetric
+		// thresholds decide, and they must not share one sample: a QUIET pane's frame goes
+		// static and its renderStall climbs in lockstep with `stall`, so a single sample at
+		// the stall point can't tell "quiet" from "mid-gap between two slow footer ticks".
+		if i >= ceiling {
+			// Hard cap: still moving + placed ⇒ busy (submit best-effort); else a fragment.
+			if peak > 0 && renderStall < renderMotionFrames {
 				return pasteBusy
 			}
 			return pasteFragment
+		}
+		if i >= budget && stall >= pasteStallFrames {
+			// The draft stopped growing. Moving RIGHT NOW (renderStall short) + placed ⇒ busy
+			// immediately — keeps a Claude mid-turn / just-ticked Codex send fast. Held STILL
+			// across a full footer-tick window ⇒ a genuinely quiet pane, so a short draft is a
+			// real fragment. In between (a gap between slow footer ticks), keep looping: the
+			// next tick resets renderStall→busy, or sustained stillness→fragment.
+			if renderStall < pasteStallFrames && peak > 0 {
+				return pasteBusy
+			}
+			if renderStall >= renderMotionFrames {
+				return pasteFragment
+			}
 		}
 		io.Sleep()
 	}
@@ -412,6 +428,14 @@ const (
 	// beyond the base budget (~6s more at a 300ms poll), so a pane that dribbles output
 	// forever still fails in bounded time rather than hanging the send.
 	pasteStallCeiling = 20
+	// renderMotionFrames: how many consecutive STILL frames prove the whole pane is quiet
+	// (nothing left rendering) before an unmatched draft is called a fragment. Sized to span
+	// a ~1s footer clock at the ~300ms poll cadence — Codex draws its working state (an
+	// elapsed-time counter + spinner) in the status footer BELOW the input box, which ticks
+	// about every 3-4 frames, so fewer still-frames than this can just be a gap between ticks,
+	// not a quiet pane. Deliberately larger than pasteStallFrames: draft-growth (stall) and
+	// whole-frame motion (renderStall) are different signals with different windows.
+	renderMotionFrames = 6
 )
 
 // clearedForRetry clears a fragmented draft and reports whether the box is now

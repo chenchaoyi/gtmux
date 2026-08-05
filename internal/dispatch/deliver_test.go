@@ -48,6 +48,23 @@ func busyBox(histTag, draftPrefix string) string {
 		"╰────────────────────────────────────────╯"
 }
 
+// codexBox renders a Codex-shaped capture: a STATIC transcript above the input box, the
+// box drawn as two full-width horizontal rules with "❯ draft" between them, and a status
+// FOOTER below it whose elapsed-time counter (footerTag) changes frame to frame while the
+// agent works. The transcript never moves — the ONLY motion is in the footer — so a
+// transcript-only busy heuristic reads this working pane as "quiet". The whole-frame diff
+// must see the footer tick. (Real Codex 0.146.0 shape, captured live.)
+func codexBox(footerTag, draftPrefix string) string {
+	rule := strings.Repeat("─", 60)
+	return "static transcript line one\n" +
+		"static transcript line two\n" +
+		rule + "\n" +
+		"❯ " + draftPrefix + "\n" +
+		rule + "\n" +
+		"  /tmp │ Opus 5 (1M) │ Baked for " + footerTag + "   new task? /clear\n" +
+		"  ⏸ manual mode on"
+}
+
 const taskText = "implement the verified dispatch state machine with layered checks"
 
 // multiText is a multi-line instruction — the payload shape that exposed the
@@ -131,9 +148,11 @@ func TestDeliver_HookHappyPath_NoScreenNeeded(t *testing.T) {
 func TestDeliver_Fragment_ClearedThenRePastedOnce(t *testing.T) {
 	f := &fakeIO{
 		caps: []string{
-			// A fragment is now called only once the draft STOPS growing (pasteStallFrames)
-			// — so the same "cl" must hold for a few static frames before the clear.
-			boxDraft("cl"), boxDraft("cl"), boxDraft("cl"), boxDraft("cl"), // fragment, stalled
+			// A fragment is called only once the draft stops growing AND the WHOLE pane holds
+			// still through the render-motion window (renderMotionFrames) — so the same "cl"
+			// must hold for that many static frames before the clear.
+			boxDraft("cl"), boxDraft("cl"), boxDraft("cl"), boxDraft("cl"),
+			boxDraft("cl"), boxDraft("cl"), boxDraft("cl"), // 7 static frames: a genuine fragment
 			boxEmpty("history"),         // ClearDraft worked: the box is empty
 			boxEmpty("history"),         // retry re-reads: nothing in the draft to keep
 			boxDraft(taskText),          // paste #2: full text
@@ -147,6 +166,38 @@ func TestDeliver_Fragment_ClearedThenRePastedOnce(t *testing.T) {
 	}
 	if f.pasteCalls != 2 || f.clearCalls != 1 {
 		t.Fatalf("a CONFIRMED-clear fragment should re-paste exactly once; paste=%d clear=%d", f.pasteCalls, f.clearCalls)
+	}
+}
+
+func TestConfirmPaste_CodexFooterMotion_IsBusy(t *testing.T) {
+	// Codex draws its working state (an elapsed-time counter) in the status footer BELOW the
+	// input box; the transcript ABOVE holds still. The old transcript-only motion diff read
+	// that working pane as quiet and false-failed the send with "the input box didn't confirm
+	// the full message". The whole-frame diff must see the footer tick → pasteBusy (placed,
+	// submit best-effort), not pasteFragment. Footer ticks every 4 frames (a ~1s clock at the
+	// poll cadence), so renderStall keeps resetting before it can reach renderMotionFrames.
+	var caps []string
+	for i := 0; i < 30; i++ {
+		caps = append(caps, codexBox(string(rune('0'+(i/4)%10))+"s", "implement the"))
+	}
+	f := &fakeIO{caps: caps}
+	if v := confirmPaste(f.io(), Opts{Pane: "%1", PasteSettle: 1}, taskText); v != pasteBusy {
+		t.Fatalf("a Codex ticking its footer is busy; want pasteBusy, got %v", v)
+	}
+}
+
+func TestConfirmPaste_FullyQuiet_IsFragment(t *testing.T) {
+	// The other direction: a pane where NOTHING moves — same frame every read, draft only a
+	// short prefix that never matches — is a genuine fragment. The whole-frame diff must still
+	// reach that verdict, so the fix did not turn every unmatched draft into a best-effort
+	// submit (which would resurrect the truncated-send bug on a quiet pane).
+	var caps []string
+	for i := 0; i < 30; i++ {
+		caps = append(caps, codexBox("5s", "implement the")) // identical every frame: quiet
+	}
+	f := &fakeIO{caps: caps}
+	if v := confirmPaste(f.io(), Opts{Pane: "%1", PasteSettle: 1}, taskText); v != pasteFragment {
+		t.Fatalf("a fully static pane is a fragment; want pasteFragment, got %v", v)
 	}
 }
 
