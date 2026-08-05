@@ -72,12 +72,58 @@ func doctorFix(yes bool) int {
 	applied += s.stepUploads()
 
 	fmt.Println()
-	if applied == 0 {
-		i18n.Say("Nothing was changed.", "未做任何改动。")
-	} else {
+	// After the mechanical steps, name anything doctor STILL flags that --fix can't
+	// resolve on its own — an advisory that needs a deliberate action (e.g. HQ session
+	// health → `gtmux hq --rotate` after HQ brings its board current), NOT a config
+	// change. A bare "Nothing was changed" read as "the fix failed" when the one
+	// 'to improve' item simply isn't a mechanical fix. Re-checking (not a hard-coded
+	// list) keeps this honest as checks come and go.
+	remaining := advisoryRemaining(doctorSections())
+	switch {
+	case applied == 0 && len(remaining) == 0:
+		i18n.Say("Nothing to fix — everything's already set.", "没什么要修的 —— 都配好了。")
+	case applied == 0:
+		i18n.Say("Nothing here is auto-fixable — these need a deliberate step, not a config change:",
+			"这些不是能自动修的配置项 —— 需要你或中控主动处理：")
+		printAdvisory(remaining)
+	case len(remaining) == 0:
 		i18n.Say("Done — re-run `gtmux doctor` to confirm.", "完成，重新跑 `gtmux doctor` 确认。")
+	default:
+		i18n.Say("Done with the automatic fixes. Still needs a deliberate step (not a config change):",
+			"自动能修的都修好了。剩下这些得你或中控主动处理，不是配置项：")
+		printAdvisory(remaining)
 	}
 	return s.rc
+}
+
+// advisoryRemaining returns the rows doctor still flags (recommend / blocking) after the
+// mechanical --fix steps — the items that need a deliberate action rather than a config
+// change (HQ session-health rotation is the canonical one). Pure over the sections so it
+// is testable without running the live checks.
+func advisoryRemaining(secs []dsection) []dcheck {
+	var out []dcheck
+	for _, sec := range secs {
+		for _, r := range sec.rows {
+			if r.status == stRec || r.status == stMiss {
+				out = append(out, r)
+			}
+		}
+	}
+	return out
+}
+
+// printAdvisory prints each still-flagged row as "<glyph> <label> — <why + what to do>",
+// reusing doctor's own note (which already carries the guidance, e.g. `gtmux hq --rotate`).
+func printAdvisory(rows []dcheck) {
+	for _, r := range rows {
+		glyph, color := statusGlyph(r.status)
+		note := r.note
+		if note == "" {
+			note = r.value
+		}
+		fmt.Printf("    %s%s%s  %s — %s%s%s\n",
+			color, glyph, i18n.Reset, r.label, i18n.Dim, note, i18n.Reset)
+	}
 }
 
 // ask prints a step heading + explanation and returns whether to apply it.

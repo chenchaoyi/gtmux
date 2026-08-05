@@ -26,6 +26,31 @@ func TestRenderSectionsTally(t *testing.T) {
 	}
 }
 
+func TestAdvisoryRemaining(t *testing.T) {
+	// advisoryRemaining keeps only the still-flagged rows (recommend + blocking), in
+	// order — the items --fix's "Nothing was changed" used to hide (e.g. HQ session
+	// health). OK / info rows are dropped.
+	secs := []dsection{
+		{"tmux", []dcheck{{stOK, "locale", "", ""}, {stInfo, "config", "", ""}}},
+		{"HQ", []dcheck{
+			{stOK, "board", "", ""},
+			{stRec, "HQ session health", "ctx 20% · 24h", "over age 24h — `gtmux hq --rotate`"},
+		}},
+		{"x", []dcheck{{stMiss, "tmux", "", "install it"}}},
+	}
+	got := advisoryRemaining(secs)
+	if len(got) != 2 {
+		t.Fatalf("want 2 flagged rows, got %d: %+v", len(got), got)
+	}
+	if got[0].label != "HQ session health" || got[1].label != "tmux" {
+		t.Fatalf("wrong rows/order: %q, %q", got[0].label, got[1].label)
+	}
+	// All-OK sections yield nothing (the "everything's already set" branch).
+	if n := len(advisoryRemaining([]dsection{{"y", []dcheck{{stOK, "a", "", ""}, {stInfo, "b", "", ""}}}})); n != 0 {
+		t.Fatalf("all-OK should yield 0 remaining, got %d", n)
+	}
+}
+
 // TestIsUTF8Locale covers the charset sniff used by rowLocale / stepLocale.
 func TestIsUTF8Locale(t *testing.T) {
 	for _, v := range []string{"en_US.UTF-8", "zh_CN.UTF-8", "C.utf8", "en_US.utf-8"} {
