@@ -37,6 +37,11 @@ struct PreferencesView: View {
     @ObservedObject var store: AgentStore
     @ObservedObject var pairStore = PairStore.shared
     @State private var showPaywall = false
+    // Presents the shared DirectCodeSheet (same "Unlock Direct" flow as the pairing
+    // window). backendRevert snaps the Standard/Direct picker back when an unlock is
+    // canceled (the segmented control renders its tap optimistically).
+    @State private var showDirectCode = false
+    @State private var backendRevert = 0
     @State private var showPairSheet = false
     @State private var showNewShareSheet = false
     // The share link whose per-link scope editor is expanded ("" = none).
@@ -260,6 +265,9 @@ struct PreferencesView: View {
             PaywallView(l10n: l10n,
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
                         onClose: { showPaywall = false })
+        }
+        .sheet(isPresented: $showDirectCode) {
+            DirectCodeSheet(l10n: l10n, remote: remote, isPresented: $showDirectCode)
         }
         .alert(
             l10n.tr("Revoke access?", "吊销访问？"),
@@ -494,49 +502,55 @@ struct PreferencesView: View {
     }
 
     // TUNNEL BACKEND — "Anywhere" reaches the Mac over a tunnel, and there are two:
-    // Standard (zero-config hosted Cloudflare) and Direct (a chisel tunnel straight
-    // over 443 — access-code unlock, or self-hosted). The picker was hiding this choice. When Direct is configured on this Mac, offer a
-    // Standard | Direct switch; otherwise show which backend is active (read-only) plus
-    // how to set Direct up — so it's never a mystery which tunnel you're on.
+    // Standard (zero-config hosted Cloudflare) and Direct (a chisel tunnel straight over
+    // 443 — access-code unlock, or self-hosted). ALWAYS offer the Standard | Direct switch
+    // (matches the pairing window): picking Direct on a Mac that hasn't unlocked it opens
+    // the shared DirectCodeSheet, so Settings and pairing no longer diverge (Settings used
+    // to be read-only here, pointing you at the CLI).
     @ViewBuilder private var tunnelBackendRow: some View {
         if remote.mode == .anywhere {
-            if remote.selfTunnelConfigured {
-                LabeledContent {
-                    Picker("", selection: backendBinding) {
-                        Text(l10n.tr("Standard", "标准")).tag(TunnelBackend.cloudflare)
-                        Text(l10n.tr("Direct", "直连")).tag(TunnelBackend.selfHosted)
-                    }
-                    .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
-                } label: {
-                    prefLabel("Tunnel", "隧道", symbol: "network")
+            LabeledContent {
+                Picker("", selection: backendBinding) {
+                    Text(l10n.tr("Standard", "标准")).tag(TunnelBackend.cloudflare)
+                    Text(l10n.tr("Direct", "直连")).tag(TunnelBackend.selfHosted)
                 }
-                Text(backendSubtitle)
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Text(l10n.tr("Tunnel: Standard (zero-config, hosted). Direct — straight over 443 where the hosted edge is blocked — unlock: `gtmux tunnel --redeem <code>` (or self-host).",
-                             "隧道：Standard（零配置托管）。Direct —— 443 直连，托管边缘被封的网络用 —— `gtmux tunnel --redeem <码>` 解锁（或自托管）。"))
-                    .font(.system(size: 11)).foregroundStyle(.tertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Link(l10n.tr("Get an access code →", "获取访问码 →"),
-                     destination: URL(string: "https://ccy.dev/projects/gtmux/direct")!)
-                    .font(.system(size: 11))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                .id(backendRevert)
+                .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
+            } label: {
+                prefLabel("Tunnel", "隧道", symbol: "network")
             }
+            Text(backendSubtitle)
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     // Switching backend re-runs the tunnel service on the chosen backend (both are the
     // already-consented "Anywhere" exposure, so no extra confirm — the user picked it).
+    // Direct is the paid tunnel: if it isn't unlocked on this Mac yet, picking it opens the
+    // shared "Unlock Direct" sheet instead of switching (backendRevert snaps the control
+    // back so it doesn't rest on Direct while Standard is what's actually running).
     private var backendBinding: Binding<TunnelBackend> {
         Binding(
             get: { remote.backend == .selfHosted ? .selfHosted : .cloudflare },
-            set: { b in remote.enableAnywhere(selfHosted: b == .selfHosted) })
+            set: { b in
+                if b == .selfHosted && !remote.selfTunnelConfigured {
+                    showDirectCode = true
+                    backendRevert += 1
+                    return
+                }
+                remote.enableAnywhere(selfHosted: b == .selfHosted)
+            })
     }
 
     private var backendSubtitle: String {
+        // Direct not yet unlocked on this Mac → say so + how (picking Direct opens the
+        // unlock sheet). Otherwise describe the active backend.
+        if !remote.selfTunnelConfigured {
+            return l10n.tr("Standard is a zero-config hosted tunnel. Direct — straight over 443 where the hosted edge is blocked — needs an access code; pick Direct to unlock (or self-host).",
+                           "标准是零配置托管隧道。直连 —— 443 直连，托管边缘被封的网络用 —— 需要访问码；选「直连」即可解锁（或自托管）。")
+        }
         switch remote.backend {
         case .selfHosted:
             return l10n.tr("Direct — straight over 443 (works where the hosted edge is blocked).", "直连 —— 443 直连（托管边缘被封的网络也可达）。")

@@ -187,11 +187,8 @@ struct PairingView: View {
     @State private var codeReady = false // mint attempt finished (success or fallback)
     @State private var showPaywall = false
     @State private var wantSelfHosted = false // which backend the Anywhere toggle uses
-    @State private var showDirectCode = false // the "enter Direct access code" sheet
-    @State private var directCodeInput = ""
+    @State private var showDirectCode = false // presents the shared DirectCodeSheet
     @State private var backendRevert = 0 // bumped to snap the backend picker back (see backendChooser)
-    @State private var directCodeError: String?
-    @State private var redeemingDirect = false
 
     var body: some View {
         VStack(spacing: 13) {
@@ -247,7 +244,9 @@ struct PairingView: View {
                         onUnlock: { ent.unlockFree(); showPaywall = false; confirmAnywhere() },
                         onClose: { showPaywall = false })
         }
-        .sheet(isPresented: $showDirectCode) { directCodeSheet }
+        .sheet(isPresented: $showDirectCode) {
+            DirectCodeSheet(l10n: l10n, remote: remote, isPresented: $showDirectCode)
+        }
     }
 
     // modeChooser — the merged remote-access control: Off / Wi-Fi (free LAN serve)
@@ -438,7 +437,6 @@ struct PairingView: View {
                 // config the CLI needs). Standard, and an already-unlocked Direct, switch
                 // straight through.
                 if self_ && !remote.selfTunnelConfigured {
-                    directCodeError = nil
                     showDirectCode = true
                     // Snap the segmented control back to Standard: nothing switched, so
                     // the control must not REST on Direct. The control renders its tap
@@ -463,51 +461,8 @@ struct PairingView: View {
                       "两条 gtmux 隧道：标准隧道在大多数网络可用；直连隧道（凭访问码解锁）在屏蔽标准隧道的受限网络下也能穿透。"))
     }
 
-    // directCodeSheet — enter a paid Direct access code to unlock it on this Mac. On
-    // success the CLI has written the config; switch Anywhere to Direct.
-    @ViewBuilder private var directCodeSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(l10n.tr("Unlock Direct", "解锁 Direct")).font(.headline)
-            wrap(l10n.tr("Direct routes through gtmux's own server — useful when a network blocks the standard tunnel. Enter your access code.",
-                         "Direct 走 gtmux 自己的服务器 —— 当网络屏蔽标准隧道时有用。请输入你的访问码。"), size: 12, color: .secondary)
-            TextField(l10n.tr("access code", "访问码"), text: $directCodeInput)
-                .textFieldStyle(.roundedBorder)
-                .disableAutocorrection(true)
-                .onSubmit { submitDirectCode() }
-            Link(l10n.tr("Don't have a code? Get one →", "还没有访问码？获取一个 →"),
-                 destination: URL(string: "https://ccy.dev/projects/gtmux/direct")!)
-                .font(.system(size: 11))
-            if let e = directCodeError {
-                Text(e).font(.system(size: 11)).foregroundStyle(.red)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            HStack {
-                Spacer()
-                Button(l10n.tr("Cancel", "取消")) { showDirectCode = false }
-                Button(l10n.tr("Unlock", "解锁")) { submitDirectCode() }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(redeemingDirect || directCodeInput.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-        }
-        .padding(20).frame(width: 320)
-    }
-
-    private func submitDirectCode() {
-        guard !redeemingDirect else { return }
-        redeemingDirect = true
-        directCodeError = nil
-        remote.redeemDirect(directCodeInput) { err in
-            redeemingDirect = false
-            if let err = err {
-                directCodeError = err
-                return
-            }
-            showDirectCode = false
-            directCodeInput = ""
-            wantSelfHosted = true
-            remote.enableAnywhere(selfHosted: true) // now unlocked → switch to Direct
-        }
-    }
+    // The "Unlock Direct" access-code sheet is now the shared DirectCodeSheet (also used
+    // by Preferences), presented from the .sheet(isPresented: $showDirectCode) above.
 
     private func probe(_ url: String) {
         guard let u = URL(string: url + "/api/health") else { reachable = false; dnsBlocked = false; return }
