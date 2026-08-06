@@ -348,16 +348,29 @@ func (s *fixState) stepClaudeHook() int {
 // it's additive — no destructive replace — it's a normal [Y/n] step, safe under
 // --yes. Only offered when Codex is present (~/.codex exists) and not already wired.
 func (s *fixState) stepCodexHook() int {
-	if !fileExists(codexHome()) || codexHooksWired() {
+	if !fileExists(codexHome()) {
+		return 0
+	}
+	// A wired hook still marked async (written by an older gtmux) is STALE: Codex 0.146.0
+	// skips async hooks, so it never fires. Don't skip that case — reinstall it synchronously.
+	stale := codexHooksWired() && codexHooksStale()
+	if codexHooksWired() && !stale {
 		return 0
 	}
 	inst := agentInstallers["codex"]
 	hooksPath := inst.configPath()
 	cfgPath := codexConfigPath()
+	title := i18n.Tr("Codex hook  (hooks system — coexists with your notify)", "Codex hook（hooks 系统 —— 与你的 notify 并存）")
 	detail := i18n.Tr(
 		"  Wire Codex via its hooks system — precise per-event state, and it COEXISTS with any\n  existing `notify` (e.g. computer-use), which is left untouched. Writes "+tildeify(hooksPath)+"\n  and enables features.hooks in "+tildeify(cfgPath)+". (backed up first)",
 		"  用 Codex 的 hooks 系统接入 —— 每事件状态精准，且与现有 `notify`（如 computer-use）并存、\n  保持不动。写入 "+tildeify(hooksPath)+" 并在 "+tildeify(cfgPath)+" 启用 features.hooks。（会先备份）")
-	if !s.ask(i18n.Tr("Codex hook  (hooks system — coexists with your notify)", "Codex hook（hooks 系统 —— 与你的 notify 并存）"), detail) {
+	if stale {
+		title = i18n.Tr("Codex hook  (upgrade: async → sync so it actually fires)", "Codex hook（升级：async → sync 才会触发）")
+		detail = i18n.Tr(
+			"  Your Codex hooks are marked async — Codex 0.146.0 SKIPS those, so they never fire.\n  Reinstall them synchronously (rewrites "+tildeify(hooksPath)+", replacing the async entries).",
+			"  你的 Codex hooks 被标成 async —— Codex 0.146.0 会跳过，永不触发。\n  重装为同步（重写 "+tildeify(hooksPath)+"，替换掉 async 条目）。")
+	}
+	if !s.ask(title, detail) {
 		return 0
 	}
 	if err := updateAgentSettings(inst, hooksPath, selfPath(), true); err != nil {
@@ -366,11 +379,12 @@ func (s *fixState) stepCodexHook() int {
 		return 0
 	}
 	ensureCodexFeaturesHooks(cfgPath)
-	// Report the ACTUAL end state — the hooks entries are written, but wiring only
-	// counts if features.hooks also got enabled. Don't claim success blindly.
-	if codexHooksWired() {
-		i18n.Say("  ✓ wired Codex via the hooks system — restart Codex to load it",
-			"  ✓ 已用 hooks 系统接入 Codex，重启 Codex 以加载")
+	// Report the ACTUAL end state — the entries are written, but wiring only counts if
+	// features.hooks is enabled AND they are sync (Codex skips async). Don't claim success
+	// blindly. The hooks.json changed, so Codex re-prompts to trust on next launch.
+	if codexHooksWired() && !codexHooksStale() {
+		i18n.Say("  ✓ wired Codex via the hooks system (sync) — restart Codex and press 't' to trust the changed hooks",
+			"  ✓ 已用 hooks 系统接入 Codex（sync）—— 重启 Codex 并按 't' 信任变更后的 hooks")
 	} else {
 		i18n.Sae("  ⚠ wrote the hooks, but couldn't enable features.hooks — add `hooks = true` under [features] in "+tildeify(cfgPath)+", then restart Codex",
 			"  ⚠ 已写入 hooks，但未能自动启用 features.hooks —— 请在 "+tildeify(cfgPath)+" 的 [features] 下加 `hooks = true`，再重启 Codex")
