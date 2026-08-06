@@ -229,15 +229,17 @@ func TestInstallCodexHooks(t *testing.T) {
 	if got := firstCommand(t, m, "PermissionRequest"); got != testBin+" hook --agent codex PermissionRequest" {
 		t.Errorf("PermissionRequest cmd = %q", got)
 	}
-	// timeout is in SECONDS (10000ms / 1000 = 10), and async:true keeps it off the
-	// turn's critical path.
-	if to := nestedTimeout(t, m, "Stop"); to != 10 {
-		t.Errorf("codex Stop timeout = %d, want 10 (SECONDS)", to)
+	// timeout is in SECONDS and small: Codex 0.146.0 does NOT support async hooks, so we
+	// install SYNC — a small timeout backstops a wedged `gtmux hook`.
+	if to := nestedTimeout(t, m, "Stop"); to != codexHookTimeoutSec {
+		t.Errorf("codex Stop timeout = %d, want %d (SECONDS, sync backstop)", to, codexHookTimeoutSec)
 	}
 	hooks, _ := m["hooks"].(map[string]any)
 	e := asArray(hooks["Stop"])[0].(map[string]any)["hooks"].([]any)[0].(map[string]any)
-	if e["async"] != true {
-		t.Errorf("codex handler must set async:true, got %v", e["async"])
+	// NO async: Codex SKIPS async:true handlers ("async hooks are not supported yet"), so a
+	// synchronous entry (async absent) is the only shape that actually fires.
+	if _, hasAsync := e["async"]; hasAsync {
+		t.Errorf("codex handler must NOT set async (Codex skips async hooks); got %v", e["async"])
 	}
 	if n := countAgentHooks(t, m, "PreToolUse"); n != 1 {
 		t.Errorf("foreign PreToolUse hook must survive, got %d", n)
