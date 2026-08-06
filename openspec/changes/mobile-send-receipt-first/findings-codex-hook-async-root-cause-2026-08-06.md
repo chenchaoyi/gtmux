@@ -87,7 +87,17 @@ PRs. Confirms the root cause AND surfaces a cost the async choice was hiding:
   `join_all`). So "drop async" is not enough on its own: **`gtmux hook` MUST return fast**
   (record the event, detach/fork any slow work) **and the codex entry's `timeout` should be
   SMALL** (the live one is 10s — shrink it), or every `UserPromptSubmit`/`Stop` adds latency /
-  a hang risk to Codex's turn. Verify `gtmux hook`'s codex path is already fast before shipping.
+  a hang risk to Codex's turn.
+- **VERIFIED (2026-08-06): `gtmux hook` is NOT instant and does NOT detach.** Synchronously it
+  runs a `ps` subprocess (process-ancestry, `hook.go:169`) + several `tmux` calls (`Display`,
+  `Attended`, `list-panes -a`), and the **Stop/done path does TWO full captures**
+  (`tmux.CaptureFull` + `tmux.CaptureFullColor`, `nudge.go:184/192`) + `DraftOfColored` — no
+  goroutine/process detach; it returns only after all of it. Typically tens–hundreds of ms
+  (heaviest on Stop), with a wedge-stall risk (a stuck `ps`/tmux once froze the radar). So a
+  clean sync fix is THREE parts, not one: (1) drop `async:true`; (2) small codex `timeout`
+  (2–3s); (3) **make the codex hook path record-and-DETACH** (return immediately, do the
+  captures/nudges in a backgrounded process) — otherwise every Codex turn start/end eats that
+  latency and inherits the wedge risk. Minimal-viable = (1)+(2), accepting the per-event delay.
 - **`notify` is NOT a substitute** for the receipt: it fires only `agent-turn-complete`
   (turn-end), never prompt-submit; docs say *"New integrations should use the hooks.json
   system."* The `UserPromptSubmit` hook delivers the **prompt text** (stdin JSON `"prompt"`) and
