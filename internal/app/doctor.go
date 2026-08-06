@@ -479,6 +479,12 @@ func rowCodexHook() dcheck {
 	label := i18n.Tr("Codex hook", "Codex hook")
 	// Installed via the preferred hooks system (precise state), or the legacy notify.
 	if codexHooksWired() {
+		if codexHooksStale() {
+			// Present but marked async, which Codex 0.146.0 skips — it reports "installed"
+			// yet never fires. A real fix, not a note.
+			return dcheck{stRec, label, i18n.Tr("stale (async — Codex skips it)", "陈旧（async —— Codex 会跳过）"),
+				i18n.Tr("run `gtmux doctor --fix` to reinstall as sync (else it never fires)", "跑 `gtmux doctor --fix` 重装为 sync（否则永不触发）")}
+		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 	}
 	if codexNotifyIsGtmux() {

@@ -205,3 +205,38 @@ func codexHooksWired() bool {
 	}
 	return codexHooksHasGtmux(agentInstallers["codex"].configPath()) && codexHooksFeatureEnabled(content)
 }
+
+// codexHooksStale reports whether gtmux's Codex hook entries are present but marked
+// `async: true` — the shape older gtmux versions wrote. Codex 0.146.0 does NOT support
+// async hooks and SKIPS them ("async hooks are not supported yet"), so such entries never
+// fire and the receipt is dead even though codexHooksWired() reports "installed". gtmux now
+// installs them SYNC, so a stale async entry must be reinstalled (doctor flags it, --fix
+// rewrites it).
+func codexHooksStale() bool {
+	return codexHooksHasAsync(agentInstallers["codex"].configPath())
+}
+
+func codexHooksHasAsync(path string) bool {
+	m, err := loadJSONObject(path)
+	if err != nil {
+		return false
+	}
+	for _, v := range asObject(m["hooks"]) {
+		for _, raw := range asArray(v) {
+			grp, ok := raw.(map[string]any)
+			if !ok {
+				continue
+			}
+			for _, h := range asArray(grp["hooks"]) {
+				hm, ok := h.(map[string]any)
+				if !ok || !isGtmuxHookCommand(asString(hm["command"])) {
+					continue
+				}
+				if a, ok := hm["async"].(bool); ok && a {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
