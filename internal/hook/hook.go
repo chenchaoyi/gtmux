@@ -6,6 +6,7 @@
 package hook
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -355,6 +357,42 @@ func stdinIsTerminal(stdin io.Reader) bool {
 // blocked `gtmux hook … Stop` held the pane's input). A TTY carries no JSON payload
 // anyway (the event is the positional arg), so skip it. Always returns 0 — a hook must
 // never fail the agent's turn.
+// shouldDetachCodexHook reports whether this invocation should re-exec itself detached: a
+// codex hook (installed SYNC, so it blocks the turn) that is not already the detached
+// worker. Pure, so the decision is unit-testable without spawning a process.
+func shouldDetachCodexHook(agentKey string, args []string) bool {
+	return agentKey == "codex" && !argsHave(args, "--detached")
+}
+
+func argsHave(args []string, flag string) bool {
+	for _, a := range args {
+		if a == flag {
+			return true
+		}
+	}
+	return false
+}
+
+// startDetachedHookWorker re-execs `gtmux hook --detached <args>` in its OWN session
+// (setsid, so it survives this process exiting) with the buffered payload on stdin, and
+// returns immediately — so a Codex SYNC hook does not block Codex's turn on the tmux
+// captures/nudges. Returns false if it could not start (caller then runs synchronously).
+// darwin-only build (goreleaser targets darwin), so SysProcAttr.Setsid is available.
+func startDetachedHookWorker(args []string, payload []byte) bool {
+	exe, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	cmd := exec.Command(exe, append([]string{"hook", "--detached"}, args...)...)
+	cmd.Stdin = bytes.NewReader(payload) // discard stdout/stderr (nil)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	if err := cmd.Start(); err != nil {
+		return false
+	}
+	_ = cmd.Process.Release() // don't wait/reap — let it run free
+	return true
+}
+
 func Run(stdin io.Reader, args []string) int {
 	var raw []byte
 	if !stdinIsTerminal(stdin) {
@@ -375,6 +413,15 @@ func Run(stdin io.Reader, args []string) int {
 				rawEvent = extractEvent(args[i])
 			}
 		}
+	}
+	// Codex hooks are installed SYNC (Codex 0.146.0 SKIPS async hooks — see
+	// agent_hooks.go), so a codex hook BLOCKS Codex's turn until this process returns. Keep
+	// the turn fast: re-exec ourselves DETACHED to do the slow (tmux-capturing) work and
+	// return immediately. `--detached` marks the worker so it never re-detaches; gated to
+	// codex so Claude/others' hook path is untouched. On any detach failure we fall through
+	// and run synchronously with the already-buffered `raw`.
+	if shouldDetachCodexHook(agentKey, args) && startDetachedHookWorker(args, raw) {
+		return 0
 	}
 	var payload struct {
 		HookEventName    string `json:"hook_event_name"`

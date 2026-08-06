@@ -402,6 +402,13 @@ func updateAgentSettings(inst agentInstaller, path, bin string, install bool) er
 	return writeJSONObject(path, m)
 }
 
+// codexHookTimeoutSec bounds a Codex SYNC command hook (in SECONDS). Codex 0.146.0 does not
+// support async hooks, so gtmux installs codex hooks synchronously; a sync hook blocks the
+// turn until it returns, so this is a small backstop for the case a `gtmux hook` invocation
+// wedges (the normal path detaches its slow work and returns in milliseconds). 3s matches
+// Codex's own SessionEnd timeout clamp.
+const codexHookTimeoutSec = 3
+
 // entry builds the install entry for a binding in the installer's format.
 func (inst agentInstaller) entry(bin string, b agentHookBinding) map[string]any {
 	cmd := inst.hookCommand(bin, b)
@@ -411,10 +418,15 @@ func (inst agentInstaller) entry(bin string, b agentHookBinding) map[string]any 
 			"type": "command", "command": cmd, "timeout": inst.timeoutFor(b),
 		}}}
 	case formatCodex:
-		// Same nesting as formatNested, but Codex's `timeout` is in SECONDS, and
-		// async:true keeps the fire-and-forget `gtmux hook` off the turn's critical path.
+		// Codex's `timeout` is in SECONDS. Codex 0.146.0 does NOT support async command hooks
+		// ("async hooks are not supported yet" — it SKIPS every async:true handler except
+		// SessionEnd), so async:true meant UserPromptSubmit/Stop NEVER fired and the receipt
+		// channel was dead. Install SYNC (no async) — the only way they fire. A sync hook
+		// BLOCKS Codex's turn until it returns, so `gtmux hook`'s codex path record-and-DETACHES
+		// its slow work (see hook.Run / detachIfCodex) and we cap the timeout small (matching
+		// Codex's own SessionEnd 3s clamp) as a wedge backstop.
 		return map[string]any{"hooks": []any{map[string]any{
-			"type": "command", "command": cmd, "timeout": inst.timeoutFor(b) / 1000, "async": true,
+			"type": "command", "command": cmd, "timeout": codexHookTimeoutSec,
 		}}}
 	case formatKiro:
 		return map[string]any{"command": cmd, "timeout_ms": inst.timeoutFor(b)}
