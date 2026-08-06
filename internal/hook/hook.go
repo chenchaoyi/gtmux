@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
@@ -393,6 +394,26 @@ func startDetachedHookWorker(args []string, payload []byte) bool {
 	return true
 }
 
+// notifyAgentIcon returns a PNG path for agentKey's committed built-in icon (embedded
+// assets/agent-icons/<key>.png), cached under the state dir, or "" when the agent has no
+// built-in icon (Claude/Cursor use their .app icon, cached separately as state.IconPath).
+// Written fresh each call so a gtmux update's new icon takes effect.
+func notifyAgentIcon(agentKey string) string {
+	b := assets.AgentIcon(agentKey)
+	if len(b) == 0 {
+		return ""
+	}
+	dir := filepath.Join(state.Dir(), "notify-icons")
+	if os.MkdirAll(dir, 0o755) != nil {
+		return ""
+	}
+	p := filepath.Join(dir, agentKey+".png")
+	if os.WriteFile(p, b, 0o644) != nil {
+		return ""
+	}
+	return p
+}
+
 func Run(stdin io.Reader, args []string) int {
 	var raw []byte
 	if !stdinIsTerminal(stdin) {
@@ -724,6 +745,12 @@ func Run(stdin io.Reader, args []string) int {
 	icon := ""
 	if state.Exists(state.IconPath()) {
 		icon = state.IconPath()
+	}
+	// Per-agent thumbnail: an agent with a committed built-in icon (Codex, Gemini, …) gets
+	// ITS icon, not the single cached Claude icon (state.IconPath) — else EVERY non-Claude
+	// notification showed the Claude logo (a Codex session's banner used CC's mark).
+	if p := notifyAgentIcon(agentKey); p != "" {
+		icon = p
 	}
 	// Differentiate copy/sound: "finished" (calm) vs "needs your input" (urgent).
 	// The session name is the bold title; the agent name is the subtitle.
