@@ -112,7 +112,17 @@ func splitByPrompt(lines []string) (history, draft string, structured bool) {
 		// confidently a draft), so a landing must show up in history to count.
 		return strings.Join(lines, "\n"), "", false
 	}
-	return strings.Join(lines[:mark], "\n"), stripBoxChrome(lines[mark:]), true
+	// The draft is the prompt line and its CONTIGUOUS continuation lines, stopping at the
+	// first blank line below it. A no-box composer (Codex) draws a status FOOTER below the
+	// input — model · cwd, a mode line — separated from it by a blank row; taking the whole
+	// tail (lines[mark:]) swallowed that footer as a phantom draft, so an idle Codex read as
+	// holding an unsubmitted draft forever (a stuck `waiting`). A real multi-line draft
+	// renders contiguously (no blank between its lines), so it survives.
+	end := mark + 1
+	for end < len(lines) && strings.TrimSpace(lines[end]) != "" {
+		end++
+	}
+	return strings.Join(lines[:mark], "\n"), stripBoxChrome(lines[mark:end]), true
 }
 
 // labeledBorderMinRun is the shortest CONTIGUOUS run of horizontal rule characters that
