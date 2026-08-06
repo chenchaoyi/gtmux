@@ -71,6 +71,31 @@ Codex version support). Then `UserPromptSubmit` / `Stop` fire, and the receipt c
   payload on stdin and closes it, so `io.ReadAll` should return — but this MUST be verified
   with a real sync install + a live Codex before trusting it.
 
+## Documentation-confirmed (official Codex docs, web research 2026-08-06)
+
+Cross-checked against `learn.chatgpt.com/docs/hooks`, the config-reference, and openai/codex
+PRs. Confirms the root cause AND surfaces a cost the async choice was hiding:
+
+- **`async` is documented-but-unimplemented.** Doc, verbatim: *"The `async` option is parsed,
+  but asynchronous command hooks aren't supported yet."* Codex **skips** `async:true` handlers
+  for every event **except `SessionEnd`** (run synchronously with a warning; default timeout 1s,
+  hard-capped 3s — PR #33895). Exactly our 0.146.0 log.
+- **Fix confirmed: install SYNC** — omit `async` or set `async:false`; **the default when
+  absent is `false` (synchronous)**. `async:true` is the ONE value Codex skips.
+- **⚠ Cost the async flag was hiding — a SYNC command hook BLOCKS the turn** until it returns
+  or hits `timeout` (default **600s** for most events; Codex awaits matched handlers via
+  `join_all`). So "drop async" is not enough on its own: **`gtmux hook` MUST return fast**
+  (record the event, detach/fork any slow work) **and the codex entry's `timeout` should be
+  SMALL** (the live one is 10s — shrink it), or every `UserPromptSubmit`/`Stop` adds latency /
+  a hang risk to Codex's turn. Verify `gtmux hook`'s codex path is already fast before shipping.
+- **`notify` is NOT a substitute** for the receipt: it fires only `agent-turn-complete`
+  (turn-end), never prompt-submit; docs say *"New integrations should use the hooks.json
+  system."* The `UserPromptSubmit` hook delivers the **prompt text** (stdin JSON `"prompt"`) and
+  `Stop` delivers `last_assistant_message` — both are what a receipt / land-verify needs.
+- **No Codex release has landed async support** as of 0.146.0 (docs still mark it reserved).
+- Sources: https://learn.chatgpt.com/docs/hooks · https://github.com/openai/codex/pull/33895 ·
+  https://learn.chatgpt.com/docs/config-file/config-reference
+
 ## Related, also unfixed (pointers, so nothing is lost to compaction)
 
 - **New this session — interlock poisons retry:** `gtmux send` returns
