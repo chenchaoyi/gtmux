@@ -307,26 +307,38 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // just because this component did.
   const [selText, setSelText] = useState<string | null>(null);
   const [selRange, setSelRange] = useState<{start: number; end: number} | undefined>(undefined);
+  const pendingSel = useRef<{start: number; end: number} | undefined>(undefined);
   const selInputRef = useRef<TextInput>(null);
   const linesRef = useRef(lines);
   linesRef.current = lines;
+  // The slice starts AT the long-pressed line (2 lines of context above), so the
+  // sheet's first screen IS what you pressed — no scroll-hunting for the band. The
+  // pre-selection is NOT set at mount: a controlled `selection` races the fresh
+  // UITextView (native reports its own initial selection and clobbers ours — the
+  // band landed on the wrong text). It's applied in onShow, after the view exists.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const openSelectAt = useCallback((touched: number) => {
     const all = linesRef.current;
     const n = all.length;
     if (n === 0) return;
     const line = Math.max(0, Math.min(n - 1, touched));
-    const startIdx = Math.max(0, line - 100);
+    const startIdx = Math.max(0, line - 2);
     const plain = all.slice(startIdx).map(spans => spans.map(s => s.text).join(''));
     let off = 0;
     for (let i = 0; i < line - startIdx; i++) off += plain[i].length + 1;
+    pendingSel.current = {start: off, end: off + (plain[line - startIdx]?.length ?? 0)};
+    setSelRange(undefined); // uncontrolled at mount — see the race note above
     setSelText(plain.join('\n'));
-    setSelRange({start: off, end: off + (plain[line - startIdx]?.length ?? 0)});
     freeze();
   }, []);
+  const onSelectShown = () => {
+    selInputRef.current?.focus(); // first responder → the band + handles render
+    setTimeout(() => setSelRange(pendingSel.current), 120);
+  };
   const closeSelect = () => {
     setSelText(null);
     setSelRange(undefined);
+    pendingSel.current = undefined;
     thawSoon();
   };
 
@@ -395,7 +407,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
         /* iOS select sheet: the ONLY visible layer while up, so UITextView's own
            layout is the truth — the band always lands on the text you see. Content
            is a frozen snapshot; polls can't yank it mid-selection. */
-        <Modal visible animationType="fade" onRequestClose={closeSelect} onShow={() => selInputRef.current?.focus()}>
+        <Modal visible animationType="fade" onRequestClose={closeSelect} onShow={onSelectShown}>
           <View style={[styles.fill, {backgroundColor: bg, paddingTop: insets.top}]}>
             <View style={styles.selBar}>
               <Text style={[styles.selHint, {color: fg}]} numberOfLines={1}>
