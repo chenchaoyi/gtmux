@@ -24,8 +24,9 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {JumpToBottom} from './JumpToBottom';
-import {parseAnsi} from './ansi';
+import {AnsiLine} from './ansi';
 import {cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs} from './term';
+import {makeLineCache, parseLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 
 interface PaneCursor {
@@ -69,6 +70,61 @@ const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each li
 // VERBATIM as the band behind this overlay's transparent glyphs, so an opaque value
 // would paint a solid slab over the color layer below — keep the translucent one there.
 const SELECTION_TINT = Platform.select({ios: '#3478F7', default: 'rgba(52,120,247,0.5)'});
+
+// One line of the color layer. Memoized: the per-line parse cache hands back a STABLE
+// spans identity for a line whose raw text didn't change, so React bails on that row —
+// a busy pane's in-place repaint re-renders only the changed rows (plus the cursor
+// row, whose spans are freshly spliced each poll). `last` carries the joining newline
+// so the flattened text still equals the overlay's plainText exactly.
+const TermLine = React.memo(function TermLine({spans, last}: {spans: AnsiLine; last: boolean}) {
+  return (
+    <Text>
+      {spans.map((s, j) => {
+        const base = {
+          color: s.color,
+          backgroundColor: s.bg,
+          fontWeight: (s.bold ? '700' : '400') as '700' | '400',
+        };
+        // An OSC 8 hyperlink (tiered/terminal-hyperlink): the WHOLE span is one
+        // agent-declared link — underlined + tappable (opens in the browser). A
+        // non-web href (e.g. file:// image refs from the Mac) shows as clean text.
+        const oscWeb = !!s.href && /^https?:\/\//i.test(s.href);
+        if (oscWeb) {
+          return (
+            <Text key={j} onPress={() => Linking.openURL(s.href!)} style={{...base, textDecorationLine: 'underline'}}>
+              {s.text}
+            </Text>
+          );
+        }
+        // Otherwise auto-detect BARE http(s) URLs the agent merely printed as text
+        // and make each one tappable (open in the system browser), same as an OSC 8
+        // link. The common no-URL line renders as a single <Text> (fast path).
+        const segs = linkify(s.text);
+        if (segs.length === 1 && !segs[0].url) {
+          return (
+            <Text key={j} style={base}>
+              {s.text}
+            </Text>
+          );
+        }
+        return (
+          <Text key={j} style={base}>
+            {segs.map((seg, k) =>
+              seg.url ? (
+                <Text key={k} onPress={() => Linking.openURL(seg.url!)} style={styles.link}>
+                  {seg.text}
+                </Text>
+              ) : (
+                <Text key={k}>{seg.text}</Text>
+              ),
+            )}
+          </Text>
+        );
+      })}
+      {last ? '' : '\n'}
+    </Text>
+  );
+});
 
 export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Props) {
   const bg = theme?.background || DEF_BG;
@@ -139,10 +195,15 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
   // lines of scrollback; one big selectable <Text> of that many nested spans is
   // heavy enough to hitch a working pane's re-render and, at the extreme, crash the
   // app). The bottom is preserved, so the cursor's bottom-relative `up` still maps.
+  // Parsed through the per-line cache: a line whose raw text is unchanged keeps its
+  // exact span-array identity across polls, so the memoized <TermLine> rows below
+  // bail — an in-place repaint (a spinner/footer tick on a busy pane) re-parses and
+  // re-renders only the rows that actually changed (see termLineCache.ts).
+  const cacheRef = useRef(makeLineCache());
   const lines = useMemo(() => {
     const nl = normalizeGlyphs(shown).split('\n');
-    const capped = nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES).join('\n') : nl.join('\n');
-    return parseAnsi(capped, {palette: theme?.palette, base: fg, bg: true});
+    const capped = nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES) : nl;
+    return parseLinesCached(capped, {palette: theme?.palette, base: fg, bg: true}, cacheRef.current);
   }, [shown, theme?.palette, fg]);
 
   // place the cursor: capture-pane ends rows with "\n" (trailing empty line), and
@@ -207,51 +268,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
   const colorLayer = (
     <Text style={[styles.mono, {fontSize, color: fg}]}>
       {rendered.map((spans, i) => (
-        <Text key={i}>
-          {spans.map((s, j) => {
-            const base = {
-              color: s.color,
-              backgroundColor: s.bg,
-              fontWeight: (s.bold ? '700' : '400') as '700' | '400',
-            };
-            // An OSC 8 hyperlink (tiered/terminal-hyperlink): the WHOLE span is one
-            // agent-declared link — underlined + tappable (opens in the browser). A
-            // non-web href (e.g. file:// image refs from the Mac) shows as clean text.
-            const oscWeb = !!s.href && /^https?:\/\//i.test(s.href);
-            if (oscWeb) {
-              return (
-                <Text key={j} onPress={() => Linking.openURL(s.href!)} style={{...base, textDecorationLine: 'underline'}}>
-                  {s.text}
-                </Text>
-              );
-            }
-            // Otherwise auto-detect BARE http(s) URLs the agent merely printed as text
-            // and make each one tappable (open in the system browser), same as an OSC 8
-            // link. The common no-URL line renders as a single <Text> (fast path).
-            const segs = linkify(s.text);
-            if (segs.length === 1 && !segs[0].url) {
-              return (
-                <Text key={j} style={base}>
-                  {s.text}
-                </Text>
-              );
-            }
-            return (
-              <Text key={j} style={base}>
-                {segs.map((seg, k) =>
-                  seg.url ? (
-                    <Text key={k} onPress={() => Linking.openURL(seg.url!)} style={styles.link}>
-                      {seg.text}
-                    </Text>
-                  ) : (
-                    <Text key={k}>{seg.text}</Text>
-                  ),
-                )}
-              </Text>
-            );
-          })}
-          {i < rendered.length - 1 ? '\n' : ''}
-        </Text>
+        <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
       ))}
     </Text>
   );
