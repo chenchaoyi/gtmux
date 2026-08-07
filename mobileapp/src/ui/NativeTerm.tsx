@@ -27,8 +27,7 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Linking, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {GestureResponderEvent, Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
@@ -108,7 +107,7 @@ const TermLine = React.memo(function TermLine({
   fontSize?: number;
   color?: string;
   index?: number;
-  onLongPressLine?: (line: number) => void;
+  onLongPressLine?: (line: number, e: GestureResponderEvent) => void;
 }) {
   const body = spans.map((s, j) => {
         const base = {
@@ -157,7 +156,7 @@ const TermLine = React.memo(function TermLine({
       <Text
         style={[styles.mono, {fontSize, color}]}
         suppressHighlighting
-        onLongPress={onLongPressLine ? () => onLongPressLine(index) : undefined}>
+        onLongPress={onLongPressLine ? e => onLongPressLine(index, e) : undefined}>
         {spans.length ? body : ' '}
       </Text>
     );
@@ -174,7 +173,6 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
-  const insets = useSafeAreaInsets();
   const ref = useRef<ScrollView>(null);
   const stick = useRef(true); // follow the bottom unless the user scrolled up
   const frozen = useRef(false);
@@ -279,12 +277,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
   // follow-live behavior. Both track the same "near the tail" test.
   const [atBottom, setAtBottom] = useState(true);
-  // Last-seen scroll metrics — the select sheet estimates the first VISIBLE line
-  // from them so its content can line up with what's on screen (in-place morph).
-  const viewport = useRef({y: 0, contentH: 0});
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
-    viewport.current = {y: contentOffset.y, contentH: contentSize.height};
     const bottom = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
     stick.current = bottom;
     setAtBottom(bottom);
@@ -299,19 +293,24 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     flushPending();
     ref.current?.scrollToEnd({animated: true});
   };
-  const onContentSizeChange = (_w: number, h: number) => {
-    viewport.current.contentH = h;
+  const onContentSizeChange = () => {
     if (stick.current) ref.current?.scrollToEnd({animated: false});
   };
 
-  // iOS select sheet — an IN-PLACE morph, not a jump: the sheet's content starts at
-  // the terminal's first VISIBLE line and its text is offset to the terminal's own
-  // on-screen position (measureInWindow), the modal swaps in with NO animation, and
-  // the long-pressed line opens pre-selected. Visually the terminal just "freezes
-  // into selection mode" with the band appearing under your finger — the earlier
-  // put-the-pressed-line-at-top version yanked the whole screen and read as a jarring
-  // jump. linesRef + [] deps keep the callback identity STABLE so the memoized
-  // TermLine blocks never re-render just because this component did.
+  // iOS selection — measured, never estimated. Earlier versions tried to line the
+  // sheet's content up with the terminal by ESTIMATING the first visible line
+  // (logical-line ↔ visual-row proportionality breaks completely on wrapped CJK
+  // lines): deep-history presses opened the sheet screens away, UITextView then
+  // auto-scrolled to the pre-selection ("the page flipped several times"), and a
+  // full-screen modal left a dead black region above. This version uses only EXACT
+  // geometry from the long-press itself: pageY (finger in window) − locationY
+  // (finger within the pressed block) − root's window Y = the pressed line's top,
+  // measured, wrap-proof. The selection surface then REPLACES the terminal from
+  // that line DOWN (the pressed line renders at the very top of the UITextView, so
+  // the pre-selection is always in view — nothing ever auto-scrolls), while the
+  // rows ABOVE stay visible behind a dim veil (context, not a black void; tapping
+  // it closes). One honest rule instead of alignment math: the selection starts at
+  // the pressed line and extends DOWN — to start higher, long-press higher.
   const [selText, setSelText] = useState<string | null>(null);
   const [selRange, setSelRange] = useState<{start: number; end: number} | undefined>(undefined);
   const [selTop, setSelTop] = useState(0);
@@ -320,46 +319,48 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   const rootRef = useRef<View>(null);
   const linesRef = useRef(lines);
   linesRef.current = lines;
-  // The pre-selection is NOT set at mount: a controlled `selection` races the fresh
-  // UITextView (native reports its own initial selection and clobbers ours — the
-  // band landed on the wrong text). It's applied in onShow, after the view exists.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const openSelectAt = useCallback((touched: number) => {
+  const openSelectAt = useCallback((touched: number, e: GestureResponderEvent) => {
     const all = linesRef.current;
     const n = all.length;
     if (n === 0) return;
     const line = Math.max(0, Math.min(n - 1, touched));
-    // First visible line (proportional estimate — lines are near-uniform height);
-    // never below the pressed line so the selection is always inside the slice.
-    const {y, contentH} = viewport.current;
-    let first = contentH > 0 ? Math.floor((y / contentH) * n) : Math.max(0, n - 40);
-    first = Math.max(0, Math.min(line, first));
-    const plain = all.slice(first).map(spans => spans.map(s => s.text).join(''));
-    let off = 0;
-    for (let i = 0; i < line - first; i++) off += plain[i].length + 1;
-    pendingSel.current = {start: off, end: off + (plain[line - first]?.length ?? 0)};
-    setSelRange(undefined); // uncontrolled at mount — see the race note above
-    const open = () => {
+    const {pageY, locationY} = e.nativeEvent;
+    const plain = all.slice(line).map(spans => spans.map(s => s.text).join(''));
+    // Pre-select the pressed line: it sits at char 0 of the slice = the top of the
+    // selection surface, so applying it can never trigger an auto-scroll. NOT set
+    // at mount — a controlled `selection` races the fresh UITextView (native
+    // reports its own initial selection and clobbers ours); applied post-mount.
+    pendingSel.current = {start: 0, end: plain[0]?.length ?? 0};
+    setSelRange(undefined);
+    const node = rootRef.current;
+    const open = (top: number) => {
+      setSelTop(Math.max(0, top));
       setSelText(plain.join('\n'));
       freeze();
     };
-    // Align the sheet's text with the terminal's on-screen position so the morph
-    // is seamless; fall back to opening unaligned if the measure never fires.
-    const node = rootRef.current;
     if (node?.measureInWindow) {
-      node.measureInWindow((_x, winY) => {
-        setSelTop(Math.max(0, winY));
-        open();
+      node.measureInWindow((_x, rootY, _w, rootH) => {
+        // The pressed BLOCK's top edge, exact: finger-in-window minus finger-in-block
+        // minus the terminal's own window offset. Cap so at least a few rows of the
+        // selection surface stay visible when pressing near the bottom edge.
+        const top = pageY - rootY - locationY;
+        open(Math.min(top, Math.max(0, rootH - 120)));
       });
     } else {
-      setSelTop(0);
-      open();
+      open(0);
     }
   }, []);
-  const onSelectShown = () => {
-    selInputRef.current?.focus(); // first responder → the band + handles render
-    setTimeout(() => setSelRange(pendingSel.current), 120);
-  };
+  // Apply the pre-selection + first-responder AFTER the surface exists (the mount
+  // race above); the band + drag handles then render immediately on the top line.
+  useEffect(() => {
+    if (selText == null) return;
+    const t = setTimeout(() => {
+      selInputRef.current?.focus();
+      setSelRange(pendingSel.current);
+    }, 90);
+    return () => clearTimeout(t);
+  }, [selText]);
   const closeSelect = () => {
     setSelText(null);
     setSelRange(undefined);
@@ -429,39 +430,35 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
       </ScrollView>
       <JumpToBottom visible={!atBottom} onPress={jumpToBottom} />
       {selText != null && (
-        /* iOS select sheet: an in-place morph — no animation, content aligned to the
-           terminal's on-screen position (selTop), first line = first visible line —
-           so the band appears under your finger instead of the screen jumping. The
-           ONLY visible layer while up, so UITextView's own layout is the truth; the
-           snapshot is frozen, so polls can't yank it mid-selection. */
-        <Modal visible animationType="none" onRequestClose={closeSelect} onShow={onSelectShown}>
-          <View style={[styles.fill, {backgroundColor: bg}]}>
-            {/* Opens with the long-pressed line pre-selected (`selection`); focus on
-                show makes UITextView first responder so the band + handles render.
-                onSelectionChange keeps the controlled prop following the user's drag
-                instead of fighting it. editable=false → no keyboard. */}
-            <TextInput
-              ref={selInputRef}
-              multiline
-              editable={false}
-              scrollEnabled
-              caretHidden
-              autoCorrect={false}
-              spellCheck={false}
-              selectionColor={SELECTION_TINT}
-              selection={selRange}
-              onSelectionChange={e => setSelRange(e.nativeEvent.selection)}
-              value={selText}
-              style={[styles.mono, styles.selInput, {fontSize, color: fg, backgroundColor: bg, marginTop: selTop}]}
-            />
-            <TouchableOpacity
-              onPress={closeSelect}
-              hitSlop={{top: 10, bottom: 10, left: 12, right: 12}}
-              style={[styles.selDoneChip, {bottom: Math.max(16, insets.bottom + 10)}]}>
-              <Text style={styles.selDone}>{lang === 'zh' ? '完成' : 'Done'}</Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
+        /* iOS selection surface — an overlay INSIDE the terminal area (no modal, no
+           full-screen takeover, app chrome stays). Above the pressed line: the
+           frozen terminal shows through a dim veil (context; tap to cancel). From
+           the pressed line down: the selectable UITextView, its first line exactly
+           where the pressed line was (measured), pre-selected — the band appears
+           under your finger and nothing ever auto-scrolls. */
+        <View style={StyleSheet.absoluteFill}>
+          <Pressable style={[styles.selVeil, {height: selTop}]} onPress={closeSelect} />
+          <TextInput
+            ref={selInputRef}
+            multiline
+            editable={false}
+            scrollEnabled
+            caretHidden
+            autoCorrect={false}
+            spellCheck={false}
+            selectionColor={SELECTION_TINT}
+            selection={selRange}
+            onSelectionChange={e => setSelRange(e.nativeEvent.selection)}
+            value={selText}
+            style={[styles.mono, styles.selInput, {fontSize, color: fg, backgroundColor: bg}]}
+          />
+          <TouchableOpacity
+            onPress={closeSelect}
+            hitSlop={{top: 10, bottom: 10, left: 12, right: 12}}
+            style={styles.selDoneChip}>
+            <Text style={styles.selDone}>{lang === 'zh' ? '完成' : 'Done'}</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -484,10 +481,14 @@ const styles = StyleSheet.create({
   selDoneChip: {
     position: 'absolute',
     right: 16,
+    bottom: 16,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: 'rgba(120,120,128,0.24)',
+    backgroundColor: 'rgba(120,120,128,0.28)',
   },
-  selInput: {flex: 1, paddingHorizontal: 6, paddingTop: 6},
+  // The dim veil over the not-selectable rows above the pressed line: the frozen
+  // terminal stays readable through it (context), and a tap on it cancels.
+  selVeil: {backgroundColor: 'rgba(0,0,0,0.45)'},
+  selInput: {flex: 1, paddingHorizontal: 6, paddingTop: 0},
 });
