@@ -82,7 +82,7 @@ gtmux is a developer tool and is not directed at children under 13.
 
 ### Contact
 
-Questions about this policy: **ccy.chenchaoyi@gmail.com**.
+Questions about this policy: **gtmux@ccy.dev**.
 
 ---
 
@@ -136,4 +136,4 @@ gtmux 是一款开发者工具，不面向 13 岁以下儿童。
 
 ### 联系方式
 
-关于本政策的问题：**ccy.chenchaoyi@gmail.com**。
+关于本政策的问题：**gtmux@ccy.dev**。

@@ -99,7 +99,7 @@ homebrew_casks:
     description: "tmux/Ghostty session overview for macOS"
     commit_author:
       name: chenchaoyi
-      email: ccy.chenchaoyi@gmail.com
+      email: gtmux@ccy.dev
     # The release binary is unsigned; strip the quarantine bit so the CLI runs
     # without a Gatekeeper prompt after `brew install`.
     hooks:
