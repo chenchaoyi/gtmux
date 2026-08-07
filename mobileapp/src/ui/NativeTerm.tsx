@@ -7,17 +7,20 @@
 //   • a tap doesn't focus a hidden <textarea> → NO soft-keyboard pop-up;
 //   • long-press gives REAL range selection. iOS history (device-confirmed
 //     2026-08-07): RN <Text selectable> is menu-only there (no band/handles, Copy
-//     grabs the WHOLE buffer), and an always-on transparent UITextView overlay
-//     both MISALIGNED (its TextKit layout drifts from the Text layer's on
-//     CJK/wrapped lines — the band painted up-right of the touch) and JANKED
-//     (full relayout of the 1000-line buffer on every poll). So on iOS a
-//     long-press opens a SELECT SHEET: a read-only UITextView of the plain text
-//     sliced from the pressed grid row down — native band + handles + range
-//     Copy, no alignment constraint (it's the only visible layer), zero standing
-//     cost (transitional: mobile-native-term-selection Stage 2 replaces it with a
-//     native UITextInput layer over the uniform row grid Stage 1 built here).
-//     Android keeps the transparent <Text selectable> overlay, which
-//     selects properly there;
+//     grabs the WHOLE buffer), an always-on transparent UITextView overlay both
+//     MISALIGNED (its TextKit layout drifts from the Text layer's on CJK/wrapped
+//     lines) and JANKED (full relayout of the 1000-line buffer on every poll),
+//     and the interim full-screen/in-place select sheets each broke a different
+//     way (auto-scroll drift / down-only selection). So iOS now mounts a NATIVE
+//     UITextInput overlay (mobile-native-term-selection Stage 2,
+//     ios/TermSelection/): a transparent view over the Stage 1 uniform row grid
+//     that supplies row/char geometry (row = y ÷ rowHeight, x via Core Text
+//     advances on the SAME font) to the system selection machinery — the
+//     system band + both-direction lollipop handles + loupe draw directly over
+//     our colored rendering, Copy comes from the system edit menu, and the
+//     view passes every touch through until a long-press activates it
+//     (links/scroll unaffected, zero standing cost). Android keeps the
+//     transparent <Text selectable> overlay, which selects properly there;
 //   • native ScrollView momentum (no DOM/canvas repaint jank);
 //   • no WebGL/canvas/DOM renderer fragility (the ~10-PR webview saga);
 //   • pure JS → the same renderer works on iOS AND Android.
@@ -28,14 +31,37 @@
 // truecolor) + the pane's text cursor (drawn as a reverse-video cell). Monospace
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {GestureResponderEvent, Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
-import {colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine} from './term';
+import {PAD, colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
+
+// The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
+// transparent view mounted absoluteFill over the block stack that implements a
+// read-only UITextInput from the props below — the system selection UI (band +
+// handles + loupe + edit menu) then draws over our colored rows. It is
+// registered as a legacy view manager (`TermSelectionViewManager`), which RN's
+// new-arch interop layer hosts.
+interface TermSelectionProps {
+  style?: StyleProp<ViewStyle>;
+  pointerEvents?: 'box-none';
+  text: string; // the grid's PLAIN text: visual rows joined by '\n' (raw, not cursor-spliced)
+  rowHeight: number; // rowHeightFor(fontSize) — row i's top edge is i × rowHeight
+  fontSize: number;
+  fontName: string;
+  padTop: number; // overlay-relative offsets of row (0,0) — 0: it shares the
+  padLeft: number; // block stack's origin inside layerWrap (PAD sits outside)
+  // "#RRGGBB" — a plain hex STRING parsed natively (a processColor number
+  // arrives byte-swapped through the new-arch interop layer: ARGB read as RGBA)
+  selectionTint?: string;
+  menuLang: string; // 'en' | 'zh' — the edit menu's Copy label
+  onSelectionActive?: (e: NativeSyntheticEvent<{active: boolean}>) => void;
+}
+const TermSelection = Platform.OS === 'ios' ? requireNativeComponent<TermSelectionProps>('TermSelectionView') : null;
 
 interface PaneCursor {
   x: number;
@@ -49,7 +75,7 @@ interface Props {
   cursor?: PaneCursor;
   theme?: TermTheme;
   fontPref?: string; // accepted for config-parity with the font picker; native uses Menlo
-  lang?: Lang; // for the iOS select sheet's chrome
+  lang?: Lang; // for the iOS selection overlay's edit menu (Copy / 拷贝)
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 
@@ -70,7 +96,7 @@ const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each li
 // dial down if a fast-updating pane janks on older hardware. The bottom is preserved
 // so the bottom-anchored cursor still maps; the full transcript lives in Chat mode.
 
-// Selection tint. iOS: the select sheet's UITextView tintColor — the system paints
+// Selection tint. iOS: the native selection overlay's tintColor — the system paints
 // the range band (at its own ~20% alpha) and the drag handles from it, so pass it
 // OPAQUE. Android: its transparent <Text selectable> overlay draws the band verbatim
 // behind the glyphs, so keep it translucent there (opaque would slab over the color
@@ -91,11 +117,11 @@ const SELECTION_TINT = Platform.select({ios: '#3478F7', default: 'rgba(52,120,24
 //     arithmetic (what Stage 2's native selection layer consumes). A changed row
 //     re-measures ONLY its own block natively; the old single-paragraph form re-ran
 //     TextKit over the whole 1000-line buffer on every poll of a working pane, and
-//     that main-thread stall is exactly what made Composer typing hitch. Blocks also
-//     carry the long-press per row, so the select sheet knows the EXACT touched
-//     row (no coordinate math). Only possible because iOS has no overlay needing
-//     paragraph-exact alignment. An empty row renders ' ' (an empty block collapses
-//     to zero height). All block props are per-poll-stable so memo still bails.
+//     that main-thread stall is exactly what made Composer typing hitch. Only
+//     possible because the standing overlay (the Stage 2 selection layer) needs
+//     ROW-exact geometry, not paragraph-exact TextKit alignment. An empty row
+//     renders ' ' (an empty block collapses to zero height). All block props are
+//     per-poll-stable so memo still bails.
 //   • nested (Android) — a child of the single paragraph its transparent selectable
 //     overlay aligns to; `last` carries the joining newline so the flattened text
 //     still equals the overlay's plainText exactly. No lineHeight/wrap here —
@@ -107,8 +133,6 @@ const TermLine = React.memo(function TermLine({
   fontSize,
   lineHeight,
   color,
-  index = 0,
-  onLongPressLine,
 }: {
   spans: AnsiLine;
   last: boolean;
@@ -116,8 +140,6 @@ const TermLine = React.memo(function TermLine({
   fontSize?: number;
   lineHeight?: number;
   color?: string;
-  index?: number;
-  onLongPressLine?: (line: number, e: GestureResponderEvent) => void;
 }) {
   const body = spans.map((s, j) => {
         const base = {
@@ -163,10 +185,7 @@ const TermLine = React.memo(function TermLine({
       });
   if (block) {
     return (
-      <Text
-        style={[styles.mono, {fontSize, lineHeight, color}]}
-        suppressHighlighting
-        onLongPress={onLongPressLine ? e => onLongPressLine(index, e) : undefined}>
+      <Text style={[styles.mono, {fontSize, lineHeight, color}]} suppressHighlighting>
         {spans.length ? body : ' '}
       </Text>
     );
@@ -206,6 +225,11 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
       setShownCursor(cursor);
     }
   }, [text, cursor]);
+  // TRUE while the native selection overlay holds an active selection. A flush
+  // while it's held would swap the text under the band (the native layer clears
+  // its selection when the text prop changes), so flushPending refuses to run
+  // until the overlay reports the selection cleared.
+  const selActive = useRef(false);
   const freeze = () => {
     frozen.current = true;
     if (thawTimer.current) {
@@ -214,6 +238,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     }
   };
   const flushPending = () => {
+    if (selActive.current) return; // never clobber a held selection
     frozen.current = false;
     if (thawTimer.current) {
       clearTimeout(thawTimer.current);
@@ -296,14 +321,27 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // identity differs from the cached logical line — is wrapped fresh each render
   // (one line, cheap). Keys are lineIdx-rowIdx: stable for a line whose wrap
   // count changes above others (in-place repaint keeps keys aligned).
-  const gridRows = useMemo(() => {
+  //
+  // Alongside the rows it builds the selection overlay's TEXT: the same visual
+  // rows as PLAIN text, joined by '\n' — from the RAW (non-cursor-spliced) rows,
+  // so the reverse-video cursor cell's padding never leaks into a Copy. The
+  // splice only APPENDS to its line (cursorSpans keeps existing chars), so raw
+  // row boundaries match the displayed ones; in the rare case the appended cells
+  // add a wrap row, empty rows pad the text so row COUNT — the geometry both
+  // layers share — always equals the rendered stack's.
+  const grid = useMemo(() => {
     if (Platform.OS !== 'ios') return null;
     const out: Array<{key: string; spans: AnsiLine}> = [];
+    const sel: string[] = [];
     rendered.forEach((spans, i) => {
-      const wrapped = parsed.rows && spans === lines[i] ? parsed.rows[i] : wrapLine(spans, cols);
-      for (let j = 0; j < wrapped.length; j++) out.push({key: `${i}-${j}`, spans: wrapped[j]});
+      const raw = parsed.rows ? parsed.rows[i] : wrapLine(lines[i] || [], cols);
+      const wrapped = spans === lines[i] ? raw : wrapLine(spans, cols);
+      for (let j = 0; j < wrapped.length; j++) {
+        out.push({key: `${i}-${j}`, spans: wrapped[j]});
+        sel.push(j < raw.length ? raw[j].map(s => s.text).join('') : '');
+      }
     });
-    return out;
+    return {rows: out, text: sel.join('\n')};
   }, [rendered, lines, parsed.rows, cols]);
 
   // ANDROID-ONLY (iOS has no standing overlay — links tap through to the color layer
@@ -342,93 +380,31 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     if (stick.current) ref.current?.scrollToEnd({animated: false});
   };
 
-  // iOS selection — measured, never estimated. Earlier versions tried to line the
-  // sheet's content up with the terminal by ESTIMATING the first visible line
-  // (logical-line ↔ visual-row proportionality breaks completely on wrapped CJK
-  // lines): deep-history presses opened the sheet screens away, UITextView then
-  // auto-scrolled to the pre-selection ("the page flipped several times"), and a
-  // full-screen modal left a dead black region above. This version uses only EXACT
-  // geometry from the long-press itself: pageY (finger in window) − locationY
-  // (finger within the pressed block) − root's window Y = the pressed line's top,
-  // measured, wrap-proof. The selection surface then REPLACES the terminal from
-  // that line DOWN (the pressed line renders at the very top of the UITextView, so
-  // the pre-selection is always in view — nothing ever auto-scrolls), while the
-  // rows ABOVE stay visible behind a dim veil (context, not a black void; tapping
-  // it closes). One honest rule instead of alignment math: the selection starts at
-  // the pressed line and extends DOWN — to start higher, long-press higher.
-  // Since Stage 1 (uniform grid) this operates on VISUAL ROWS: the long-press
-  // reports the flattened grid-row index, the sheet slices the rows array, and the
-  // pre-selection is the pressed ROW's text. Pre-wrapped rows also mean the sheet's
-  // UITextView can't re-wrap them differently. (Transitional — Stage 2's native
-  // UITextInput layer replaces this sheet entirely.)
-  const [selText, setSelText] = useState<string | null>(null);
-  const [selRange, setSelRange] = useState<{start: number; end: number} | undefined>(undefined);
-  const [selTop, setSelTop] = useState(0);
-  const pendingSel = useRef<{start: number; end: number} | undefined>(undefined);
-  const selInputRef = useRef<TextInput>(null);
-  const rootRef = useRef<View>(null);
-  const linesRef = useRef<AnsiLine[]>(lines);
-  linesRef.current = gridRows ? gridRows.map(r => r.spans) : lines;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const openSelectAt = useCallback((touched: number, e: GestureResponderEvent) => {
-    const all = linesRef.current;
-    const n = all.length;
-    if (n === 0) return;
-    const line = Math.max(0, Math.min(n - 1, touched));
-    const {pageY, locationY} = e.nativeEvent;
-    const plain = all.slice(line).map(spans => spans.map(s => s.text).join(''));
-    // Pre-select the pressed line: it sits at char 0 of the slice = the top of the
-    // selection surface, so applying it can never trigger an auto-scroll. NOT set
-    // at mount — a controlled `selection` races the fresh UITextView (native
-    // reports its own initial selection and clobbers ours); applied post-mount.
-    pendingSel.current = {start: 0, end: plain[0]?.length ?? 0};
-    setSelRange(undefined);
-    const node = rootRef.current;
-    const open = (top: number) => {
-      setSelTop(Math.max(0, top));
-      setSelText(plain.join('\n'));
-      freeze();
-    };
-    if (node?.measureInWindow) {
-      node.measureInWindow((_x, rootY, _w, rootH) => {
-        // The pressed BLOCK's top edge, exact: finger-in-window minus finger-in-block
-        // minus the terminal's own window offset. Cap so at least a few rows of the
-        // selection surface stay visible when pressing near the bottom edge.
-        const top = pageY - rootY - locationY;
-        open(Math.min(top, Math.max(0, rootH - 120)));
-      });
-    } else {
-      open(0);
-    }
-  }, []);
-  // Apply the pre-selection + first-responder AFTER the surface exists (the mount
-  // race above); the band + drag handles then render immediately on the top line.
-  useEffect(() => {
-    if (selText == null) return;
-    const t = setTimeout(() => {
-      selInputRef.current?.focus();
-      setSelRange(pendingSel.current);
-    }, 90);
-    return () => clearTimeout(t);
-  }, [selText]);
-  const closeSelect = () => {
-    setSelText(null);
-    setSelRange(undefined);
-    pendingSel.current = undefined;
-    thawSoon();
+  // iOS selection — the native overlay reports activation so JS can freeze the
+  // snapshot under it (a text-prop change while a selection is held would clear
+  // the band). The overlay itself owns ALL selection behavior natively: a
+  // long-press (recognized on the enclosing scroll view, so the pass-through
+  // overlay never blocks links or scrolling) selects the word under the finger,
+  // the system draws the band + both-direction handles + loupe + edit menu over
+  // the colored rows, Copy writes the exact banded range, tap-away clears.
+  const onSelectionActive = (e: NativeSyntheticEvent<{active: boolean}>) => {
+    const active = !!e.nativeEvent.active;
+    selActive.current = active;
+    if (active) freeze();
+    else thawSoon();
   };
 
   // LAYERS. iOS: a STACK of per-ROW <Text> blocks (see TermLine's block shape) —
   // the uniform grid: pre-wrapped visual rows at an explicit shared lineHeight, the
-  // only always-on layer; link taps land on it directly, and each block carries
-  // the long-press that opens the select sheet at exactly that grid row. Android:
+  // only always-on layer; link taps land on it directly (the selection overlay
+  // above it passes touches through until a long-press activates it). Android:
   // the single paragraph its FLAT transparent <Text selectable> overlay aligns to —
   // the overlay draws the selection band properly there and carries the link taps.
   const colorLayer =
     Platform.OS === 'ios' ? (
       <View>
-        {gridRows!.map((r, i) => (
-          <TermLine key={r.key} spans={r.spans} last block index={i} fontSize={fontSize} lineHeight={rowH} color={fg} onLongPressLine={openSelectAt} />
+        {grid!.rows.map(r => (
+          <TermLine key={r.key} spans={r.spans} last block fontSize={fontSize} lineHeight={rowH} color={fg} />
         ))}
       </View>
     ) : (
@@ -440,7 +416,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     );
 
   return (
-    <View ref={rootRef} style={[styles.fill, {backgroundColor: bg}]}>
+    <View style={[styles.fill, {backgroundColor: bg}]}>
       {/* Always wrap to the phone width (character-grid stays aligned in monospace).
           A no-wrap + horizontal-scroll mode is a later addition — a horizontal
           ScrollView nested in this vertical one collapses/blank-renders on iOS. */}
@@ -459,6 +435,27 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
         onContentSizeChange={onContentSizeChange}>
         <View style={styles.layerWrap}>
           {colorLayer}
+          {Platform.OS === 'ios' && TermSelection && grid && (
+            /* The Stage 2 native selection layer, absoluteFill over the block
+               stack (same origin — row i's top edge is exactly i × rowH in its
+               coordinates, so padTop/padLeft are 0; PAD lives OUTSIDE layerWrap
+               on the scroll content). pointerEvents box-none + the native
+               point(inside:) gate make it invisible to touches until its
+               long-press activates a selection. */
+            <TermSelection
+              style={StyleSheet.absoluteFill}
+              pointerEvents="box-none"
+              text={grid.text}
+              rowHeight={rowH}
+              fontSize={fontSize}
+              fontName={MONO}
+              padTop={0}
+              padLeft={0}
+              selectionTint={SELECTION_TINT}
+              menuLang={lang}
+              onSelectionActive={onSelectionActive}
+            />
+          )}
           {Platform.OS === 'android' && (
             /* Android-only: FLAT selectable Text draws the band properly there;
                nested Text keeps OSC 8 / bare-URL taps. iOS has NO standing overlay
@@ -480,44 +477,13 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
         </View>
       </ScrollView>
       <JumpToBottom visible={!atBottom} onPress={jumpToBottom} />
-      {selText != null && (
-        /* iOS selection surface — an overlay INSIDE the terminal area (no modal, no
-           full-screen takeover, app chrome stays). Above the pressed line: the
-           frozen terminal shows through a dim veil (context; tap to cancel). From
-           the pressed line down: the selectable UITextView, its first line exactly
-           where the pressed line was (measured), pre-selected — the band appears
-           under your finger and nothing ever auto-scrolls. */
-        <View style={StyleSheet.absoluteFill}>
-          <Pressable style={[styles.selVeil, {height: selTop}]} onPress={closeSelect} />
-          <TextInput
-            ref={selInputRef}
-            multiline
-            editable={false}
-            scrollEnabled
-            caretHidden
-            autoCorrect={false}
-            spellCheck={false}
-            selectionColor={SELECTION_TINT}
-            selection={selRange}
-            onSelectionChange={e => setSelRange(e.nativeEvent.selection)}
-            value={selText}
-            style={[styles.mono, styles.selInput, {fontSize, color: fg, backgroundColor: bg}]}
-          />
-          <TouchableOpacity
-            onPress={closeSelect}
-            hitSlop={{top: 10, bottom: 10, left: 12, right: 12}}
-            style={styles.selDoneChip}>
-            <Text style={styles.selDone}>{lang === 'zh' ? '完成' : 'Done'}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   fill: {flex: 1},
-  pad: {padding: 6},
+  pad: {padding: PAD}, // couples to colsFor's usable-width math — change PAD in term.ts
   mono: {fontFamily: MONO},
   // Auto-detected URL: inherits the span's terminal color/weight, adds the underline
   // that marks it tappable (mirrors the OSC 8 hyperlink treatment).
@@ -526,20 +492,4 @@ const styles = StyleSheet.create({
   // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
   layerWrap: {position: 'relative', overflow: 'visible'},
   overlay: {position: 'absolute', top: 0, left: 0, right: 0},
-  // iOS select sheet chrome. selInput's padding mirrors the terminal's content
-  // padding (styles.pad = 6) so the morphed text sits where the terminal's did.
-  selDone: {fontSize: 15, fontWeight: '600', color: '#3478F7'},
-  selDoneChip: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: 'rgba(120,120,128,0.28)',
-  },
-  // The dim veil over the not-selectable rows above the pressed line: the frozen
-  // terminal stays readable through it (context), and a tap on it cancels.
-  selVeil: {backgroundColor: 'rgba(0,0,0,0.45)'},
-  selInput: {flex: 1, paddingHorizontal: 6, paddingTop: 0},
 });

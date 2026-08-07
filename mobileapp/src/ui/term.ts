@@ -112,14 +112,20 @@ export function cellWidthFor(fontSize: number): number {
   return Math.round(fontSize * 0.602 * 100) / 100;
 }
 
-// colsFor: how many CELLS fit a terminal row at this view width. −12 is the
-// terminal's horizontal content padding (styles.pad = 6 each side in
+// PAD is the terminal's content padding (styles.pad in NativeTerm, each side).
+// Named here because THREE consumers must agree on it: NativeTerm's padding
+// style, colsFor's usable-width math below, and Stage 2's native selection
+// overlay geometry (its padTop/padLeft props). Change it in one place only.
+export const PAD = 6;
+
+// colsFor: how many CELLS fit a terminal row at this view width. −2×PAD is the
+// terminal's horizontal content padding (styles.pad = PAD each side in
 // NativeTerm); the extra −1 is the CONSERVATIVE margin the proposal requires —
 // a row must NEVER be wide enough for RN Text to native-wrap it (a CJK glyph's
 // true advance can slightly exceed 2× the Menlo cell), because a native wrap
 // would break the row = grid-row invariant Stage 2's geometry depends on.
 export function colsFor(viewWidth: number, fontSize: number): number {
-  return Math.max(4, Math.floor((viewWidth - 12) / cellWidthFor(fontSize)) - 1);
+  return Math.max(4, Math.floor((viewWidth - PAD * 2) / cellWidthFor(fontSize)) - 1);
 }
 
 // charCells is the terminal cell cost of one code point (the wcwidth the grid

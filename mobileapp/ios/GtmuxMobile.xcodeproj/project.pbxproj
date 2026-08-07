@@ -16,7 +16,9 @@
 		3545525E293EB9EBC669898D /* GtmuxActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */; };
 		428A2C66713EBF3B5094D188 /* GtmuxNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8C33A1DEFD37FCD54FCBB330 /* GtmuxNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		43F2CAF95925B646D7809AB3 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */; };
+		50B8E5CA296B6F03F6B84ECB /* TermSelectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 471385D5B115EF46A41392AC /* TermSelectionManager.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		796520A51FA5C1C9E776A832 /* TermSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		9362A88EBB6225D84FBAA822 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6450CBE20B8C88B43F242B3C /* Foundation.framework */; };
 		9B1C87A523DBCCFF3901E6DB /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */; };
@@ -25,6 +27,7 @@
 		A871636895EC61F9183130BE /* LiveActivityModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 2608DA1E53D84193347DD36A /* LiveActivityModule.m */; };
 		AC3D7DC67DBD368B6E0BE2B8 /* GtmuxWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D5E11FEF927BEFA4B1338A /* GtmuxWidget.swift */; };
 		B67B43A4AABD1CBA3AF68F95 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 20D906467D450616BB69C208 /* Assets.xcassets */; };
+		D146AEE5CD3CADCF570FDE12 /* TermSelection.m in Sources */ = {isa = PBXBuildFile; fileRef = 0DE4F217AE1C55AC5BC16A0B /* TermSelection.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +63,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0DE4F217AE1C55AC5BC16A0B /* TermSelection.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = TermSelection.m; sourceTree = "<group>"; };
 		12685C65B3B24D76DCD8E1FC /* DebugSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DebugSettings.swift; path = GtmuxMobile/DebugSettings.swift; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* GtmuxMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GtmuxMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = GtmuxMobile/Images.xcassets; sourceTree = "<group>"; };
@@ -69,6 +73,7 @@
 		2608DA1E53D84193347DD36A /* LiveActivityModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = LiveActivityModule.m; path = GtmuxMobile/LiveActivityModule.m; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-GtmuxMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.debug.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.debug.xcconfig"; sourceTree = "<group>"; };
 		41E53ADB1CC55C63E0F70B7C /* DebugSettings.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = DebugSettings.m; path = GtmuxMobile/DebugSettings.m; sourceTree = "<group>"; };
+		471385D5B115EF46A41392AC /* TermSelectionManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TermSelectionManager.swift; sourceTree = "<group>"; };
 		4ECA7D8A49AE1F83D34BAA70 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-GtmuxMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GtmuxMobile.release.xcconfig"; path = "Target Support Files/Pods-GtmuxMobile/Pods-GtmuxMobile.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-GtmuxMobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-GtmuxMobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -83,6 +88,7 @@
 		D1819D8849B51096E179E069 /* GtmuxActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GtmuxActivityAttributes.swift; sourceTree = "<group>"; };
 		D6534B8BD6B0B1AC648A6992 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TermSelectionView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +135,17 @@
 			name = GtmuxMobile;
 			sourceTree = "<group>";
 		};
+		2894C57B689AF715A87AC7F9 /* TermSelection */ = {
+			isa = PBXGroup;
+			children = (
+				F72C64B2FB140D5F0520CA0D /* TermSelectionView.swift */,
+				471385D5B115EF46A41392AC /* TermSelectionManager.swift */,
+				0DE4F217AE1C55AC5BC16A0B /* TermSelection.m */,
+			);
+			name = TermSelection;
+			path = TermSelection;
+			sourceTree = "<group>";
+		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -164,6 +181,7 @@
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
 				C3ECC1BD2307C0A643A96A7C /* GtmuxWidget */,
 				AA2A85A60DAF96D974DC690A /* GtmuxNotificationService */,
+				2894C57B689AF715A87AC7F9 /* TermSelection */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -419,6 +437,9 @@
 				A871636895EC61F9183130BE /* LiveActivityModule.m in Sources */,
 				43F2CAF95925B646D7809AB3 /* DebugSettings.swift in Sources */,
 				1E8B7D833636D41EE5F3645B /* DebugSettings.m in Sources */,
+				796520A51FA5C1C9E776A832 /* TermSelectionView.swift in Sources */,
+				50B8E5CA296B6F03F6B84ECB /* TermSelectionManager.swift in Sources */,
+				D146AEE5CD3CADCF570FDE12 /* TermSelection.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

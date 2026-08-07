@@ -1,4 +1,4 @@
-import {cellWidthFor, charCells, colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
+import {PAD, cellWidthFor, charCells, colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -197,10 +197,13 @@ describe('grid metrics', () => {
     expect(cellWidthFor(14)).toBe(8.43);
   });
 
-  it('colsFor bakes in the −12 padding and the conservative −1 cell', () => {
+  it('colsFor bakes in the −2×PAD padding and the conservative −1 cell', () => {
     // 390pt phone at 12pt: (390−12)/7.22 = 52.35… → 52 − 1 = 51
     expect(colsFor(390, 12)).toBe(51);
-    expect(colsFor(390, 12)).toBe(Math.floor((390 - 12) / cellWidthFor(12)) - 1);
+    expect(colsFor(390, 12)).toBe(Math.floor((390 - PAD * 2) / cellWidthFor(12)) - 1);
+    // PAD is the shared constant three consumers couple through (styles.pad,
+    // colsFor, the native selection overlay's pad props) — pin its value.
+    expect(PAD).toBe(6);
   });
 
   it('colsFor never goes below 4 (degenerate widths stay renderable)', () => {
