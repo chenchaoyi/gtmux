@@ -22,7 +22,7 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Linking, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {JumpToBottom} from './JumpToBottom';
 import {parseAnsi} from './ansi';
 import {cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs} from './term';
@@ -59,6 +59,16 @@ const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each li
 // this stays half the buffer) while holding under the flat-ScrollView mount hitch —
 // dial down if a fast-updating pane janks on older hardware. The bottom is preserved
 // so the bottom-anchored cursor still maps; the full transcript lives in Chat mode.
+
+// Selection-highlight tint for the overlay. iOS multiplies the tint by its OWN system
+// selection alpha (~20%), so feeding it an already-translucent rgba(…,0.5) painted a
+// ~10%-alpha blue over the near-black terminal bg — a band the eye can't see. That was
+// the on-device "selection doesn't show" bug: the Copy callout appeared (selection was
+// live) but the highlight was invisible. Pass the tint OPAQUE and let iOS apply its one
+// translucency — the standard visible band. Android is different: it uses the value
+// VERBATIM as the band behind this overlay's transparent glyphs, so an opaque value
+// would paint a solid slab over the color layer below — keep the translucent one there.
+const SELECTION_TINT = Platform.select({ios: '#3478F7', default: 'rgba(52,120,247,0.5)'});
 
 export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Props) {
   const bg = theme?.background || DEF_BG;
@@ -269,7 +279,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
           {/* transparent selectable layer on top → the blue selection highlight
               tints the colored text behind it; Copy works; FLAT text so the
               highlight paints on-device. */}
-          <Text selectable selectionColor="rgba(52,120,247,0.5)" style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
+          <Text selectable selectionColor={SELECTION_TINT} style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
             {!overlayHasLink
               ? plainText
               : overlaySegs.map((seg, i) =>
