@@ -318,7 +318,7 @@
                   <div style="background:{{ P.surface }}; border:0.5px solid {{ P.divider }}; border-radius:12px; overflow:hidden;">
                     <div style="padding:13px 14px;">
                       <div style="font-size:15px; color:{{ P.fg }};">Ada's MacBook</div>
-                      <div class="gt-mono" style="font-size:12px; color:{{ P.fg3 }}; margin-top:2px;">https://100.92.14.7:8765</div>
+                      <div class="gt-mono" style="font-size:12px; color:{{ P.fg3 }}; margin-top:2px;">https://100.100.100.100:8765</div>
                     </div>
                     <div onClick="{{ goPairing }}" style="padding:13px 14px; border-top:0.5px solid {{ P.divider }}; cursor:pointer;"><span style="font-size:15px; color:#EF4444;">{{ lblRemoveMac }}</span></div>
                   </div>
@@ -1944,15 +1944,15 @@ class Component extends DCLogic {
       one: [ P('Claude Code', 'Pica', 'agent', '%7', 'waiting', 'now', 'permission to run tests', { taskZh: '请求运行测试的权限' }) ],
       five: [
         P('Claude Code', 'Pica', 'agent', '%7', 'waiting', 'now', 'permission to run tests', { taskZh: '请求运行测试的权限' }),
-        P('Claude Code', 'ccy-workspace', 'main', '%11', 'working', '1m', 'Auto-attach tmux sessions', { taskZh: '自动挂载 tmux 会话' }),
+        P('Claude Code', 'dev-workspace', 'main', '%11', 'working', '1m', 'Auto-attach tmux sessions', { taskZh: '自动挂载 tmux 会话' }),
         P('Codex', 'api-gateway', 'tests', '%14', 'working', '3m', 'Refactoring the auth middleware', { taskZh: '重构鉴权中间件' }),
         P('Claude Code', 'Rodi', 'dev', '%8', 'idle', '6m', 'Rodi feature dev', { latest: true, taskZh: 'Rodi 功能开发' }),
-        P('Gemini', 'Diting', 'main', '%1', 'idle', '22m', '', {}),
+        P('Gemini', 'Aurora', 'main', '%1', 'idle', '22m', '', {}),
       ],
       many: [
         P('Claude Code', 'Pica', 'agent', '%7', 'waiting', 'now', 'permission to run tests', { taskZh: '请求运行测试的权限' }),
         P('Codex', 'billing-svc', 'migrations', '%23', 'waiting', '2m', 'approve: delete migration 0014_drop_orders', { taskZh: '确认删除迁移 0014_drop_orders' }),
-        P('Claude Code', 'ccy-workspace', 'main', '%11', 'working', 'now', 'Auto-attach tmux sessions', { taskZh: '自动挂载 tmux 会话' }),
+        P('Claude Code', 'dev-workspace', 'main', '%11', 'working', 'now', 'Auto-attach tmux sessions', { taskZh: '自动挂载 tmux 会话' }),
         P('Codex', 'api-gateway', 'tests', '%14', 'working', '1m', 'Refactoring the auth middleware and adding tests', { taskZh: '重构鉴权中间件并补充测试' }),
         P('Aider', 'etl-pipeline', 'backfill', '%31', 'working', '4m', 'Backfilling the analytics warehouse', { taskZh: '回填分析数仓数据' }),
         P('Gemini', 'mobile-app', 'onboarding', '%18', 'working', '5m', 'Wiring the onboarding flow', { taskZh: '打通新用户引导流程' }),
@@ -1961,7 +1961,7 @@ class Component extends DCLogic {
         P('Cursor', 'design-system', 'tokens', '%5', 'idle', '12m', 'Token audit complete', { taskZh: '设计令牌审计完成' }),
         P('Crush', 'infra-tf', 'plan', '%27', 'idle', '18m', 'terraform plan reviewed', { taskZh: '已审阅 terraform plan' }),
         P('Amp', 'payments', 'webhooks', '%12', 'idle', '25m', 'Stripe webhook retries', { taskZh: 'Stripe webhook 重试' }),
-        P('Gemini', 'Diting', 'main', '%1', 'idle', '34m', '', {}),
+        P('Gemini', 'Aurora', 'main', '%1', 'idle', '34m', '', {}),
         P('Claude Code', 'search-svc', 'reindex', '%20', 'idle', '47m', 'Reindex job shipped', { taskZh: '重建索引任务已上线' }),
         P('Codex', 'ml-train', 'eval', '%33', 'idle', '1h', 'Eval run finished', { taskZh: '评测任务完成' }),
         P('Claude Code', 'sandbox', 'main', '%2', 'running', '3m', '', {}),

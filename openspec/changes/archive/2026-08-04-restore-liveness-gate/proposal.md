@@ -8,7 +8,7 @@ On 2026-08-04 the fleet came back as **16 agent panes from 10**. The reported on
 > A pane in session `日常更新`, window `0:Daily Binary Update`, doing routine binary
 > upgrades in a plain shell (opencode 1.18.9 → 1.18.11, `claude update`). After the
 > reboot gtmux typed
-> `{ cd -- '/Users/ccy' …; } && claude --resume '369b78a0-…'` into it, and it sat at
+> `{ cd -- '/Users/x' …; } && claude --resume '369b78a0-…'` into it, and it sat at
 > Claude's trust gate. *"This pane had no cc session before the restore and does after.
 > This has been happening all along."*
 

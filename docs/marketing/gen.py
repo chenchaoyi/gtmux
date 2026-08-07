@@ -66,10 +66,10 @@ def cli_stage():
             + cell("&nbsp;— 6 agents · 1 waiting · 1 working · 4 idle", "#8A8A90"))
     rows = [
         row("⏸", RED, "waiting", RED, "Claude Code", "Pica:0.0", "permission to run tests", "%7"),
-        row("⠿", CYAN, "working", CYAN, "Claude Code", "ccy-workspace:1.0", "gtmux.app dev", "%14"),
+        row("⠿", CYAN, "working", CYAN, "Claude Code", "dev-workspace:1.0", "gtmux.app dev", "%14"),
         row("✳", GREEN, "idle", GREEN, "Claude Code", "Hammer:0.0", "Add auto-update", "%8",
             latest=cell("&nbsp;&nbsp;✓ latest", GREEN)),
-        row("✳", GREEN, "idle", GREEN, "Codex", "Diting:0.0", "BLE scan timeout", "%3"),
+        row("✳", GREEN, "idle", GREEN, "Codex", "Aurora:0.0", "optimize config loading", "%3"),
     ]
     foot = cell("jump: gtmux focus %7", "#6E6E74")
     body = head + "<br><br>" + "<br>".join(rows) + "<br><br>" + foot

@@ -31,7 +31,7 @@ menu-bar); mobile and web keep it as an internal key. (Note the trap: the existi
 Observed on a real fleet (13 sessions / 21 panes) while designing this: 8 of 12 active
 windows had window index `0` — under an index scheme every tab/row would read `…:0`,
 indistinguishable; every plain shell pane's `pane_title` was the same host name string
-(`ccy-MBP2024-…`) — proof that `pane_title` is not a usable per-pane name. The unique,
+(`dev-mbp.local`) — proof that `pane_title` is not a usable per-pane name. The unique,
 stable `@`/`%` ids are the only thing that tells them apart.
 
 ## What changes
@@ -53,8 +53,8 @@ Applied to the surfaces:
   `@id window-name` → `%id label`. Every tmux-level line wears its sigil'd id; hierarchy is
   carried by indentation AND the sigils. Surface `%N` on every row (menu-bar already does;
   mobile/web currently keep it as a key), tappable to copy `gtmux focus %N`.
-- **Terminal tab title** — carry the ACTIVE pane's `%N` (`#S #{pane_id} #W`, e.g. `MP %11
-  multipilot-companion`), because the pane is the unit of work and HQ refers to panes by
+- **Terminal tab title** — carry the ACTIVE pane's `%N` (`#S #{pane_id} #W`, e.g. `WEB %11
+  companion-app`), because the pane is the unit of work and HQ refers to panes by
   `%N`; a tab showing only a window id could not be matched to what HQ names. A tab is a
   viewport onto the active window's active pane, so the `%N` is live (moves with focus).
 - **tmux pane border** (`pane-border-format` / `pane-border-status`) — label each pane's

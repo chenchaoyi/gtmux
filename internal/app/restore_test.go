@@ -61,7 +61,7 @@ func TestEnsureServerRestoresViaResurrect(t *testing.T) {
 func TestSaveHasLayout(t *testing.T) {
 	dir := t.TempDir()
 	rich := filepath.Join(dir, "rich.txt")
-	os.WriteFile(rich, []byte("pane\tDiting\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n"), 0o644)
+	os.WriteFile(rich, []byte("pane\tAurora\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n"), 0o644)
 	if !saveHasLayout(rich) {
 		t.Error("save with a pane line should report a layout")
 	}
@@ -114,7 +114,7 @@ func TestSanitizeLast(t *testing.T) {
 	dir := filepath.Join(home, ".local/share/tmux/resurrect")
 	os.MkdirAll(dir, 0o755)
 
-	pane := []byte("pane\tDiting\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n")
+	pane := []byte("pane\tAurora\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n")
 	older := "tmux_resurrect_20260617T090000.txt"
 	good := "tmux_resurrect_20260617T091940.txt"  // newest WITH a layout
 	empty := "tmux_resurrect_20260618T112958.txt" // newest overall, but 0 bytes
@@ -145,7 +145,7 @@ func TestSanitizeLastKeepsGood(t *testing.T) {
 	os.MkdirAll(dir, 0o755)
 
 	good := "tmux_resurrect_20260617T091940.txt"
-	os.WriteFile(filepath.Join(dir, good), []byte("pane\tDiting\t0\t0\t:\t0\tt\t:/tmp\t1\tbash\t:x\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, good), []byte("pane\tAurora\t0\t0\t:\t0\tt\t:/tmp\t1\tbash\t:x\n"), 0o644)
 	last := filepath.Join(dir, "last")
 	os.Symlink(good, last)
 
@@ -180,13 +180,13 @@ func TestSplitAttached(t *testing.T) {
 
 // keepUnattached drops sessions that gained a client since the list was built —
 // the guard against opening a duplicate tab (the "two identical terminals" bug when
-// a reopened terminal re-attached "HSS AI Workspace" between listing and spawning).
+// a reopened terminal re-attached "Team Workspace" between listing and spawning).
 func TestKeepUnattached(t *testing.T) {
-	list := []string{"HSS AI Workspace", "ccy-workspace", "main"}
-	// "HSS AI Workspace" got attached (a reopened tab beat us) → dropped; order kept.
-	live := map[string]bool{"ccy-workspace": true, "main": true}
+	list := []string{"Team Workspace", "dev-workspace", "main"}
+	// "Team Workspace" got attached (a reopened tab beat us) → dropped; order kept.
+	live := map[string]bool{"dev-workspace": true, "main": true}
 	got := keepUnattached(list, live)
-	want := []string{"ccy-workspace", "main"}
+	want := []string{"dev-workspace", "main"}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
@@ -199,7 +199,7 @@ func TestKeepUnattached(t *testing.T) {
 	if len(keepUnattached(list, map[string]bool{})) != 0 {
 		t.Error("all-attached should drop everything")
 	}
-	all := map[string]bool{"HSS AI Workspace": true, "ccy-workspace": true, "main": true}
+	all := map[string]bool{"Team Workspace": true, "dev-workspace": true, "main": true}
 	if len(keepUnattached(list, all)) != 3 {
 		t.Error("none-attached should keep everything")
 	}
@@ -230,7 +230,7 @@ func TestPaneIDRe(t *testing.T) {
 // just wasn't the one that came back on its own. Recovering alongside live sessions is
 // safe: resurrect only creates sessions/windows that don't already exist.
 func TestShouldRecover(t *testing.T) {
-	saved := []string{"Diting", "Pica", "Rodi"}
+	saved := []string{"Aurora", "Pica", "Rodi"}
 	cases := []struct {
 		name string
 		live map[string]bool
@@ -242,7 +242,7 @@ func TestShouldRecover(t *testing.T) {
 			map[string]bool{"Pica": true}, true},
 		{"a saved session live plus a stray", map[string]bool{"Pica": true, "main": true}, true},
 		{"all saved sessions live (normal reattach — nothing to do)",
-			map[string]bool{"Diting": true, "Pica": true, "Rodi": true}, false},
+			map[string]bool{"Aurora": true, "Pica": true, "Rodi": true}, false},
 	}
 	for _, c := range cases {
 		if got := shouldRecover(saved, c.live); got != c.want {
@@ -259,13 +259,13 @@ func TestShouldRecover(t *testing.T) {
 func TestSavedSessionNames(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "save.txt")
-	content := "window\tDiting\t0\t...\npane\tDiting\t0\t:\t...\nwindow\tPica\t1\t...\npane\tPica\t1\t:\t...\nstate\tDiting\t\n"
+	content := "window\tAurora\t0\t...\npane\tAurora\t0\t:\t...\nwindow\tPica\t1\t...\npane\tPica\t1\t:\t...\nstate\tAurora\t\n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	got := savedSessionNames(path)
-	if len(got) != 2 || got[0] != "Diting" || got[1] != "Pica" {
-		t.Errorf("savedSessionNames = %v, want [Diting Pica]", got)
+	if len(got) != 2 || got[0] != "Aurora" || got[1] != "Pica" {
+		t.Errorf("savedSessionNames = %v, want [Aurora Pica]", got)
 	}
 }
 

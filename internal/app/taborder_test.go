@@ -34,7 +34,7 @@ func TestOrderByTabOrder(t *testing.T) {
 // bootstrap 'main', or an empty AppleScript read) must NOT overwrite the richer
 // recorded order, but any genuine change (new session) must go through.
 func TestShrinksTabOrder(t *testing.T) {
-	full := []string{"日常更新", "Diting", "ccy-workspace", "Hammer", "main"}
+	full := []string{"日常更新", "Aurora", "dev-workspace", "Hammer", "main"}
 	cases := []struct {
 		name       string
 		next, prev []string
@@ -42,9 +42,9 @@ func TestShrinksTabOrder(t *testing.T) {
 	}{
 		{"post-reboot main-only clobbers full", []string{"main"}, full, true},
 		{"applescript-failed empty clobbers full", nil, full, true},
-		{"pure removal", []string{"Diting", "main"}, full, true},
+		{"pure removal", []string{"Aurora", "main"}, full, true},
 		{"unchanged", full, full, false},
-		{"reorder, same set", []string{"main", "Hammer", "Diting", "ccy-workspace", "日常更新"}, full, false},
+		{"reorder, same set", []string{"main", "Hammer", "Aurora", "dev-workspace", "日常更新"}, full, false},
 		{"a new session appeared", []string{"main", "NewProj"}, full, false},
 		{"grew", append([]string{"NewProj"}, full...), full, false},
 		{"no prior record", full, nil, false},

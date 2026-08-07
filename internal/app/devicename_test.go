@@ -16,7 +16,7 @@ func TestDeviceDisplayNameDropsTheLegacyPrefix(t *testing.T) {
 		"terminal": "Terminal",
 		// untouched
 		"iPhone · iOS 18.5": "iPhone · iOS 18.5",
-		"ccy-mbp.local":     "ccy-mbp.local",
+		"dev-mbp.local":     "dev-mbp.local",
 		"ccy":               "ccy",
 		// a device legitimately named after the tool keeps something to show
 		"gtmux": "gtmux",
