@@ -290,9 +290,14 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // for why an always-on selection overlay is unworkable there). Android adds a
   // FLAT transparent <Text selectable> overlay on top, which draws the selection
   // band properly there and carries the link taps instead.
+  // suppressHighlighting: a pressable Text (the onLongPress) otherwise paints iOS's
+  // press highlight — the WHOLE 1000-line paragraph dims grey on every touch-down,
+  // which read as a hitch + grey flash at the start of each scroll. Suppress the
+  // visual; the long-press gesture itself still fires.
   const colorLayer = (
     <Text
       style={[styles.mono, {fontSize, color: fg}]}
+      suppressHighlighting
       onLongPress={Platform.OS === 'ios' ? openSelect : undefined}>
       {rendered.map((spans, i) => (
         <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
