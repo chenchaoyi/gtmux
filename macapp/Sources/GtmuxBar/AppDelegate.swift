@@ -67,7 +67,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .store(in: &cancellables)
 
         popover.behavior = .transient
-        popover.animates = true
+        // NO frame animation: the list resizes while the popover is OPEN (agents come
+        // and go every poll), and NSPopover animating a contentSize change under an
+        // NSHostingController mis-draws the SwiftUI content mid-transition — the whole
+        // popover rendered shifted/clipped (seen live 2026-08-08). Instant resize also
+        // matches the design language (DESIGN.md: 动效最小).
+        popover.animates = false
         popover.contentViewController = NSHostingController(
             rootView: MenuView(
                 store: store, l10n: l10n,
