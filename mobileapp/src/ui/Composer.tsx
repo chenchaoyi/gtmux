@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   Image,
   InputAccessoryView,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -238,6 +239,10 @@ export function Composer({
     setAttachments([]);
     setProgress({});
     setSendError(null);
+    // Collapse the keyboard once the message is on its way — after a send you're
+    // watching the pane/terminal, not still typing, so the taller view is what you want.
+    // Only reached on a successful send (uploads-failed and the early guards return above).
+    Keyboard.dismiss();
   };
 
   // Paste is image-aware: if the clipboard holds an image, open the markup editor

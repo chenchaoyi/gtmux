@@ -54,10 +54,11 @@ const MONO = nativeFontFamily();
 // cap how many trailing capture lines we render as one selectable <Text> — enough
 // scrollback for a phone glance, light enough not to hitch/crash. Deeper history
 // lives in Chat mode (the full transcript).
-const MAX_LINES = 350; // dual-layer (color + selectable overlay) makes each line
-// cost twice; 350 keeps a deep-enough phone glance while cutting the mount hitch on
-// a mode switch (full history lives in Chat mode). The bottom is preserved so the
-// bottom-anchored cursor still maps.
+const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each line
+// cost twice; 1000 gives a deep phone scrollback (the server capture sends 2000, so
+// this stays half the buffer) while holding under the flat-ScrollView mount hitch —
+// dial down if a fast-updating pane janks on older hardware. The bottom is preserved
+// so the bottom-anchored cursor still maps; the full transcript lives in Chat mode.
 
 export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Props) {
   const bg = theme?.background || DEF_BG;
