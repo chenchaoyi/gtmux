@@ -1,5 +1,6 @@
 import {parseAnsi} from './ansi';
-import {makeLineCache, parseLinesCached} from './termLineCache';
+import {charCells, wrapLine} from './term';
+import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 
 const OPTS = {base: '#D6D6DA', bg: true};
 const E = '\u001b';
@@ -76,5 +77,83 @@ describe('parseLinesCached', () => {
     const c = parseLinesCached(['gone', 'stays'], OPTS, cache);
     expect(c[0]).not.toBe(a[0]); // re-parsed after eviction
     expect(c[1]).toBe(a[1]); // never left, identity preserved throughout
+  });
+});
+
+// ————— Wrapped-rows cache (mobile-native-term-selection Stage 1, iOS grid) —————
+
+const LAYOUT = {cols: 10, fontSize: 12};
+const WRAP_SAMPLE = [
+  ...SAMPLE,
+  '这是一行没有空格的中文长内容会被硬折行成多个视觉行', // no-space CJK long line (the classic wrap case)
+  'a plain ASCII line long enough to need several visual rows at ten cells',
+];
+
+describe('wrapLinesCached', () => {
+  it('parity: joined rows text equals the logical line text; no row exceeds cols', () => {
+    const {lines, rows} = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, makeLineCache());
+    const txt = (spans: {text: string}[]) => spans.map(s => s.text).join('');
+    lines.forEach((line, i) => {
+      expect(rows[i].map(txt).join('')).toBe(txt(line)); // no loss
+      for (const row of rows[i]) {
+        const c = row.reduce((n, s) => n + [...s.text].reduce((m, ch) => m + charCells(ch), 0), 0);
+        expect(c).toBeLessThanOrEqual(LAYOUT.cols);
+      }
+    });
+  });
+
+  it('rows match an uncached wrapLine of the parsed spans', () => {
+    const {lines, rows} = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, makeLineCache());
+    lines.forEach((line, i) => expect(rows[i]).toEqual(wrapLine(line, LAYOUT.cols)));
+  });
+
+  it('unchanged lines keep BOTH spans and rows identities across calls', () => {
+    const cache = makeLineCache();
+    const a = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, cache);
+    const b = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, cache);
+    b.lines.forEach((spans, i) => expect(spans).toBe(a.lines[i]));
+    b.rows.forEach((rows, i) => expect(rows).toBe(a.rows[i]));
+  });
+
+  it('re-wraps only the changed line; neighbors keep rows identity', () => {
+    const cache = makeLineCache();
+    const a = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, cache);
+    const changed = [...WRAP_SAMPLE];
+    changed[1] = 'a different line';
+    const b = wrapLinesCached(changed, OPTS, LAYOUT, cache);
+    expect(b.rows[0]).toBe(a.rows[0]);
+    expect(b.rows[1]).not.toBe(a.rows[1]);
+    expect(b.rows[5]).toBe(a.rows[5]);
+  });
+
+  it('a cols change invalidates the wrapped rows', () => {
+    const cache = makeLineCache();
+    const a = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, cache);
+    const b = wrapLinesCached(WRAP_SAMPLE, OPTS, {...LAYOUT, cols: 20}, cache);
+    expect(b.rows[5]).not.toBe(a.rows[5]);
+    expect(b.rows[5].length).toBeLessThan(a.rows[5].length); // wider → fewer visual rows
+  });
+
+  it('a fontSize change invalidates too (part of the signature)', () => {
+    const cache = makeLineCache();
+    const a = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, cache);
+    const b = wrapLinesCached(WRAP_SAMPLE, OPTS, {...LAYOUT, fontSize: 16}, cache);
+    expect(b.rows[0]).not.toBe(a.rows[0]);
+  });
+
+  it('shifted lines (scroll) still reuse rows identity — content-addressed', () => {
+    const cache = makeLineCache();
+    const a = wrapLinesCached(WRAP_SAMPLE, OPTS, LAYOUT, cache);
+    const scrolled = [...WRAP_SAMPLE.slice(1), 'new bottom line'];
+    const b = wrapLinesCached(scrolled, OPTS, LAYOUT, cache);
+    for (let i = 0; i < WRAP_SAMPLE.length - 1; i++) {
+      expect(b.lines[i]).toBe(a.lines[i + 1]);
+      expect(b.rows[i]).toBe(a.rows[i + 1]);
+    }
+  });
+
+  it('an empty logical line still owns one (empty) visual row', () => {
+    const {rows} = wrapLinesCached([''], OPTS, LAYOUT, makeLineCache());
+    expect(rows[0]).toEqual([[]]);
   });
 });

@@ -1,4 +1,4 @@
-import {cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, DOT_REC, DOT_CIRCLE} from './term';
+import {cellWidthFor, charCells, colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -177,5 +177,125 @@ describe('linkSegsForLines', () => {
     const lines: AnsiLine[] = [[{text: 'a', color: '#fff'}], [{text: 'b', color: '#fff'}]];
     const segs = linkSegsForLines(lines);
     expect(segs.map(s => s.text).join('')).toBe('a\nb');
+  });
+});
+
+// ————— Uniform grid (mobile-native-term-selection Stage 1) —————
+
+// cell cost of a row, by the same arithmetic the wrapper uses
+const cells = (l: AnsiLine) => l.reduce((n, s) => n + [...s.text].reduce((m, ch) => m + charCells(ch), 0), 0);
+
+describe('grid metrics', () => {
+  it('rowHeightFor = round(fontSize * 1.6) — one uniform row height', () => {
+    expect(rowHeightFor(12)).toBe(19);
+    expect(rowHeightFor(14)).toBe(22);
+    expect(rowHeightFor(16)).toBe(26);
+  });
+
+  it('cellWidthFor = Menlo advance ratio 0.602, 2 decimals', () => {
+    expect(cellWidthFor(12)).toBe(7.22);
+    expect(cellWidthFor(14)).toBe(8.43);
+  });
+
+  it('colsFor bakes in the −12 padding and the conservative −1 cell', () => {
+    // 390pt phone at 12pt: (390−12)/7.22 = 52.35… → 52 − 1 = 51
+    expect(colsFor(390, 12)).toBe(51);
+    expect(colsFor(390, 12)).toBe(Math.floor((390 - 12) / cellWidthFor(12)) - 1);
+  });
+
+  it('colsFor never goes below 4 (degenerate widths stay renderable)', () => {
+    expect(colsFor(0, 12)).toBe(4);
+    expect(colsFor(20, 40)).toBe(4);
+  });
+});
+
+describe('charCells', () => {
+  it('East-Asian wide/fullwidth chars cost 2 cells', () => {
+    for (const ch of ['中', '文', '。', '、', '「', 'あ', 'ア', '한', 'Ａ', '１', '，', '😀']) {
+      expect(charCells(ch)).toBe(2);
+    }
+  });
+
+  it('Latin/ASCII costs 1 cell', () => {
+    for (const ch of ['a', 'Z', ' ', '-', '⏸']) {
+      expect(charCells(ch)).toBe(1);
+    }
+  });
+
+  it('variation selectors and ZWJ cost 0 (they modify a base glyph)', () => {
+    expect(charCells('︎')).toBe(0);
+    expect(charCells('️')).toBe(0);
+    expect(charCells('‍')).toBe(0);
+  });
+});
+
+describe('wrapLine', () => {
+  const S = (text: string, extra: Partial<AnsiLine[number]> = {}): AnsiLine[number] => ({text, color: '#fff', ...extra});
+  const rowTxt = (rows: AnsiLine[]) => rows.map(r => r.map(s => s.text).join(''));
+
+  it('loses nothing: joined rows equal the original line text', () => {
+    const line = [S('hello '), S('世界 and 更多的中文内容 mixed in', {color: '#0f0'})];
+    const rows = wrapLine(line, 8);
+    expect(rowTxt(rows).join('')).toBe('hello 世界 and 更多的中文内容 mixed in');
+  });
+
+  it('no row exceeds the cell budget', () => {
+    const line = [S('abc 中文混排 def 一二三四五六七八九十 ghi jkl mno')];
+    for (const cols of [4, 7, 10, 33]) {
+      for (const row of wrapLine(line, cols)) {
+        expect(cells(row)).toBeLessThanOrEqual(cols);
+      }
+    }
+  });
+
+  it('splits MID-SPAN and preserves color/bold/bg/href on both halves', () => {
+    const line = [S('abcdefgh', {bold: true, bg: '#222', href: 'https://x.io'})];
+    const rows = wrapLine(line, 4);
+    expect(rowTxt(rows)).toEqual(['abcd', 'efgh']);
+    for (const row of rows) {
+      expect(row).toHaveLength(1);
+      expect(row[0].color).toBe('#fff');
+      expect(row[0].bold).toBe(true);
+      expect(row[0].bg).toBe('#222');
+      expect(row[0].href).toBe('https://x.io');
+    }
+  });
+
+  it('CJK counts 2 cells', () => {
+    expect(rowTxt(wrapLine([S('一二三四五')], 4))).toEqual(['一二', '三四', '五']);
+  });
+
+  it('a wide char that does not fit the remaining cell moves whole to the next row', () => {
+    // 'abc' = 3 cells, '中' would be 5 > 4 → next row (never half a glyph).
+    expect(rowTxt(wrapLine([S('abc中')], 4))).toEqual(['abc', '中']);
+  });
+
+  it('variation selectors ride their base glyph at 0 cells', () => {
+    // 一(2)+FE0F(0)+二(2) fills cols=4 exactly; 三 wraps.
+    expect(rowTxt(wrapLine([S('一️二三')], 4))).toEqual(['一️二', '三']);
+  });
+
+  it('ZWJ costs 0 cells', () => {
+    expect(rowTxt(wrapLine([S('a‍b')], 2))).toEqual(['a‍b']);
+  });
+
+  it('empty line yields ONE empty row (the grid still owns its height)', () => {
+    expect(wrapLine([], 8)).toEqual([[]]);
+  });
+
+  it('an exact fit stays one row', () => {
+    expect(rowTxt(wrapLine([S('abcd')], 4))).toEqual(['abcd']);
+  });
+
+  it('a break landing on a span edge keeps each span whole', () => {
+    const rows = wrapLine([S('ab', {color: '#f00'}), S('cd', {color: '#0f0'})], 2);
+    expect(rowTxt(rows)).toEqual(['ab', 'cd']);
+    expect(rows[0][0].color).toBe('#f00');
+    expect(rows[1][0].color).toBe('#0f0');
+  });
+
+  it('never splits a surrogate pair (code-point iteration)', () => {
+    const rows = wrapLine([S('a😀b')], 3); // a(1)+😀(2)=3 → 'b' wraps
+    expect(rowTxt(rows)).toEqual(['a😀', 'b']);
   });
 });

@@ -11,10 +11,12 @@
 //     both MISALIGNED (its TextKit layout drifts from the Text layer's on
 //     CJK/wrapped lines — the band painted up-right of the touch) and JANKED
 //     (full relayout of the 1000-line buffer on every poll). So on iOS a
-//     long-press opens a SELECT SHEET: a read-only UITextView of the same plain
-//     text windowed from the first visible line — native band + handles + range
+//     long-press opens a SELECT SHEET: a read-only UITextView of the plain text
+//     sliced from the pressed grid row down — native band + handles + range
 //     Copy, no alignment constraint (it's the only visible layer), zero standing
-//     cost. Android keeps the transparent <Text selectable> overlay, which
+//     cost (transitional: mobile-native-term-selection Stage 2 replaces it with a
+//     native UITextInput layer over the uniform row grid Stage 1 built here).
+//     Android keeps the transparent <Text selectable> overlay, which
 //     selects properly there;
 //   • native ScrollView momentum (no DOM/canvas repaint jank);
 //   • no WebGL/canvas/DOM renderer fragility (the ~10-PR webview saga);
@@ -27,12 +29,12 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {GestureResponderEvent, Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {GestureResponderEvent, Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions} from 'react-native';
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
-import {cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs} from './term';
-import {makeLineCache, parseLinesCached} from './termLineCache';
+import {colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine} from './term';
+import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 
 interface PaneCursor {
@@ -81,22 +83,29 @@ const SELECTION_TINT = Platform.select({ios: '#3478F7', default: 'rgba(52,120,24
 // row, whose spans are freshly spliced each poll).
 //
 // Two render shapes:
-//   • block (iOS) — its OWN top-level <Text>, stacked in a View. A changed row then
+//   • block (iOS) — ONE VISUAL ROW of the uniform grid as its own top-level <Text>,
+//     stacked in a View. Since Stage 1 of mobile-native-term-selection, blocks are
+//     pre-wrapped visual rows (cell arithmetic in JS — see wrapLine) with an explicit
+//     uniform `lineHeight` (rowHeightFor), so a row can never native-wrap and CJK
+//     rows are the same height as Latin ones: row geometry is y = index * rowH, pure
+//     arithmetic (what Stage 2's native selection layer consumes). A changed row
 //     re-measures ONLY its own block natively; the old single-paragraph form re-ran
 //     TextKit over the whole 1000-line buffer on every poll of a working pane, and
 //     that main-thread stall is exactly what made Composer typing hitch. Blocks also
-//     carry the long-press per line, so the select sheet knows the EXACT touched
-//     line (no coordinate math). Only possible because iOS has no overlay needing
-//     paragraph-exact alignment. An empty line renders ' ' (an empty block collapses
+//     carry the long-press per row, so the select sheet knows the EXACT touched
+//     row (no coordinate math). Only possible because iOS has no overlay needing
+//     paragraph-exact alignment. An empty row renders ' ' (an empty block collapses
 //     to zero height). All block props are per-poll-stable so memo still bails.
 //   • nested (Android) — a child of the single paragraph its transparent selectable
 //     overlay aligns to; `last` carries the joining newline so the flattened text
-//     still equals the overlay's plainText exactly.
+//     still equals the overlay's plainText exactly. No lineHeight/wrap here —
+//     Android's path is untouched by Stage 1 (its selection works as-is).
 const TermLine = React.memo(function TermLine({
   spans,
   last,
   block,
   fontSize,
+  lineHeight,
   color,
   index = 0,
   onLongPressLine,
@@ -105,6 +114,7 @@ const TermLine = React.memo(function TermLine({
   last: boolean;
   block?: boolean;
   fontSize?: number;
+  lineHeight?: number;
   color?: string;
   index?: number;
   onLongPressLine?: (line: number, e: GestureResponderEvent) => void;
@@ -154,7 +164,7 @@ const TermLine = React.memo(function TermLine({
   if (block) {
     return (
       <Text
-        style={[styles.mono, {fontSize, color}]}
+        style={[styles.mono, {fontSize, lineHeight, color}]}
         suppressHighlighting
         onLongPress={onLongPressLine ? e => onLongPressLine(index, e) : undefined}>
         {spans.length ? body : ' '}
@@ -234,6 +244,18 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     if (thawTimer.current) clearTimeout(thawTimer.current);
   }, []);
 
+  // iOS uniform grid geometry (mobile-native-term-selection Stage 1). The window
+  // width stands in for the terminal's width — the pane spans the screen — and
+  // colsFor bakes in the content padding (−12) plus the conservative −1 cell so a
+  // pre-wrapped row can NEVER native-wrap (the grid invariant Stage 2's selection
+  // geometry depends on). rowH is the explicit uniform lineHeight every block row
+  // gets: CJK rows and Latin rows render the SAME height, so a row's y is
+  // index * rowH, pure arithmetic. A rotation/font change just recomputes both
+  // (and invalidates the wrap cache via its signature).
+  const {width: winW} = useWindowDimensions();
+  const cols = Platform.OS === 'ios' ? colsFor(winW, fontSize) : 0;
+  const rowH = rowHeightFor(fontSize);
+
   // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
   // lines of scrollback; one big selectable <Text> of that many nested spans is
   // heavy enough to hitch a working pane's re-render and, at the extreme, crash the
@@ -241,16 +263,23 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // Parsed through the per-line cache: a line whose raw text is unchanged keeps its
   // exact span-array identity across polls, so the memoized <TermLine> rows below
   // bail — an in-place repaint (a spinner/footer tick on a busy pane) re-parses and
-  // re-renders only the rows that actually changed (see termLineCache.ts).
+  // re-renders only the rows that actually changed (see termLineCache.ts). On iOS
+  // the same cache ALSO holds each line's hard-wrapped visual rows for the current
+  // grid (cols × fontSize), identity-stable for unchanged lines too.
   const cacheRef = useRef(makeLineCache());
-  const lines = useMemo(() => {
+  const parsed = useMemo(() => {
     const nl = normalizeGlyphs(shown).split('\n');
     const capped = nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES) : nl;
-    return parseLinesCached(capped, {palette: theme?.palette, base: fg, bg: true}, cacheRef.current);
-  }, [shown, theme?.palette, fg]);
+    const opts = {palette: theme?.palette, base: fg, bg: true};
+    if (Platform.OS === 'ios') return wrapLinesCached(capped, opts, {cols, fontSize}, cacheRef.current);
+    return {lines: parseLinesCached(capped, opts, cacheRef.current), rows: null};
+  }, [shown, theme?.palette, fg, cols, fontSize]);
+  const lines = parsed.lines;
 
   // place the cursor: capture-pane ends rows with "\n" (trailing empty line), and
-  // `up` = rows above the bottom content line.
+  // `up` = rows above the bottom content line. This stays on LOGICAL lines — the
+  // capture's bottom-anchored `up` counts logical lines, not visual rows — the
+  // spliced line is wrapped fresh below.
   const rendered = useMemo(() => {
     if (!shownCursor || shownCursor.visible === false) return lines;
     let last = lines.length - 1;
@@ -260,6 +289,22 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     copy[row] = cursorSpans(copy[row] || [], shownCursor.x | 0, curColor, bg);
     return copy;
   }, [lines, shownCursor, curColor, bg]);
+
+  // iOS: flatten logical lines into the VISUAL ROWS the block stack renders (row
+  // index = grid row). Unchanged lines reuse their cached rows arrays (per-row
+  // memo identity); ONLY the cursor-spliced line — recognizable because its spans
+  // identity differs from the cached logical line — is wrapped fresh each render
+  // (one line, cheap). Keys are lineIdx-rowIdx: stable for a line whose wrap
+  // count changes above others (in-place repaint keeps keys aligned).
+  const gridRows = useMemo(() => {
+    if (Platform.OS !== 'ios') return null;
+    const out: Array<{key: string; spans: AnsiLine}> = [];
+    rendered.forEach((spans, i) => {
+      const wrapped = parsed.rows && spans === lines[i] ? parsed.rows[i] : wrapLine(spans, cols);
+      for (let j = 0; j < wrapped.length; j++) out.push({key: `${i}-${j}`, spans: wrapped[j]});
+    });
+    return out;
+  }, [rendered, lines, parsed.rows, cols]);
 
   // ANDROID-ONLY (iOS has no standing overlay — links tap through to the color layer
   // directly, selection lives in the select sheet): the transparent overlay is the TOP
@@ -311,14 +356,19 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // rows ABOVE stay visible behind a dim veil (context, not a black void; tapping
   // it closes). One honest rule instead of alignment math: the selection starts at
   // the pressed line and extends DOWN — to start higher, long-press higher.
+  // Since Stage 1 (uniform grid) this operates on VISUAL ROWS: the long-press
+  // reports the flattened grid-row index, the sheet slices the rows array, and the
+  // pre-selection is the pressed ROW's text. Pre-wrapped rows also mean the sheet's
+  // UITextView can't re-wrap them differently. (Transitional — Stage 2's native
+  // UITextInput layer replaces this sheet entirely.)
   const [selText, setSelText] = useState<string | null>(null);
   const [selRange, setSelRange] = useState<{start: number; end: number} | undefined>(undefined);
   const [selTop, setSelTop] = useState(0);
   const pendingSel = useRef<{start: number; end: number} | undefined>(undefined);
   const selInputRef = useRef<TextInput>(null);
   const rootRef = useRef<View>(null);
-  const linesRef = useRef(lines);
-  linesRef.current = lines;
+  const linesRef = useRef<AnsiLine[]>(lines);
+  linesRef.current = gridRows ? gridRows.map(r => r.spans) : lines;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const openSelectAt = useCallback((touched: number, e: GestureResponderEvent) => {
     const all = linesRef.current;
@@ -368,16 +418,17 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     thawSoon();
   };
 
-  // LAYERS. iOS: a STACK of per-line <Text> blocks (see TermLine's block shape) —
-  // the only always-on layer; link taps land on it directly, and each block carries
-  // the long-press that opens the select sheet at exactly that line. Android: the
-  // single paragraph its FLAT transparent <Text selectable> overlay aligns to — the
-  // overlay draws the selection band properly there and carries the link taps.
+  // LAYERS. iOS: a STACK of per-ROW <Text> blocks (see TermLine's block shape) —
+  // the uniform grid: pre-wrapped visual rows at an explicit shared lineHeight, the
+  // only always-on layer; link taps land on it directly, and each block carries
+  // the long-press that opens the select sheet at exactly that grid row. Android:
+  // the single paragraph its FLAT transparent <Text selectable> overlay aligns to —
+  // the overlay draws the selection band properly there and carries the link taps.
   const colorLayer =
     Platform.OS === 'ios' ? (
       <View>
-        {rendered.map((spans, i) => (
-          <TermLine key={i} spans={spans} last block index={i} fontSize={fontSize} color={fg} onLongPressLine={openSelectAt} />
+        {gridRows!.map((r, i) => (
+          <TermLine key={r.key} spans={r.spans} last block index={i} fontSize={fontSize} lineHeight={rowH} color={fg} onLongPressLine={openSelectAt} />
         ))}
       </View>
     ) : (

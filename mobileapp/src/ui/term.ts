@@ -88,6 +88,102 @@ export function cursorSpans(spans: AnsiLine, x: number, curColor: string, bg: st
   return out;
 }
 
+// ————— Uniform grid (mobile-native-term-selection Stage 1, iOS) —————
+//
+// The iOS terminal renders a TRUE uniform grid: every visual row has the same
+// explicit height, and logical lines are pre-wrapped into visual rows by CELL
+// ARITHMETIC in JS (never by RN Text's own layout). Stage 2's native selection
+// layer (UITextInput) then computes row geometry as pure arithmetic:
+// row = floor(y / rowHeightFor(fontSize)). These helpers are the SINGLE source
+// of those numbers — Stage 2 must consume the same values, never re-derive.
+
+// rowHeightFor is the explicit per-row lineHeight for the terminal grid.
+// 1.6× comfortably contains both Menlo (Latin) and the PingFang CJK fallback at
+// the same size — no glyph clipping — and makes a CJK row and a Latin row the
+// SAME height (Core Text's mixed-font line-height variance was one poison of
+// every selection-alignment bug; an explicit lineHeight kills it).
+export function rowHeightFor(fontSize: number): number {
+  return Math.round(fontSize * 1.6);
+}
+
+// cellWidthFor is Menlo's monospace advance at `fontSize` (measured ratio
+// ≈ 0.602×; rounded to 2 decimals so the number is stable across JS engines).
+export function cellWidthFor(fontSize: number): number {
+  return Math.round(fontSize * 0.602 * 100) / 100;
+}
+
+// colsFor: how many CELLS fit a terminal row at this view width. −12 is the
+// terminal's horizontal content padding (styles.pad = 6 each side in
+// NativeTerm); the extra −1 is the CONSERVATIVE margin the proposal requires —
+// a row must NEVER be wide enough for RN Text to native-wrap it (a CJK glyph's
+// true advance can slightly exceed 2× the Menlo cell), because a native wrap
+// would break the row = grid-row invariant Stage 2's geometry depends on.
+export function colsFor(viewWidth: number, fontSize: number): number {
+  return Math.max(4, Math.floor((viewWidth - 12) / cellWidthFor(fontSize)) - 1);
+}
+
+// charCells is the terminal cell cost of one code point (the wcwidth the grid
+// arithmetic uses): 2 for East-Asian wide/fullwidth (CJK unified + extensions,
+// Hangul, Kana, fullwidth forms, CJK punctuation, emoji — the common ranges),
+// 0 for the variation selectors (U+FE0E/U+FE0F) and ZWJ that modify a base
+// glyph without occupying a cell, else 1.
+export function charCells(ch: string): number {
+  const cp = ch.codePointAt(0) ?? 0;
+  if (cp === 0xfe0e || cp === 0xfe0f || cp === 0x200d) return 0;
+  if (
+    (cp >= 0x1100 && cp <= 0x115f) || // Hangul Jamo
+    (cp >= 0x2e80 && cp <= 0x303e) || // CJK radicals, Kangxi, CJK symbols/punctuation (、。「」…)
+    (cp >= 0x3041 && cp <= 0x33ff) || // Hiragana, Katakana, CJK compatibility
+    (cp >= 0x3400 && cp <= 0x4dbf) || // CJK ext A
+    (cp >= 0x4e00 && cp <= 0x9fff) || // CJK unified
+    (cp >= 0xa000 && cp <= 0xa4cf) || // Yi
+    (cp >= 0xac00 && cp <= 0xd7a3) || // Hangul syllables
+    (cp >= 0xf900 && cp <= 0xfaff) || // CJK compatibility ideographs
+    (cp >= 0xfe30 && cp <= 0xfe4f) || // CJK compatibility forms
+    (cp >= 0xff00 && cp <= 0xff60) || // fullwidth forms
+    (cp >= 0xffe0 && cp <= 0xffe6) || // fullwidth signs
+    (cp >= 0x1f300 && cp <= 0x1faff) || // emoji blocks (2 cells in terminals)
+    (cp >= 0x20000 && cp <= 0x3fffd) // CJK ext B+
+  ) {
+    return 2;
+  }
+  return 1;
+}
+
+// wrapLine hard-wraps ONE parsed logical line into visual rows at cell
+// boundaries — exactly how a terminal char-wraps a pane (tmux does the same on
+// the Mac; word-wrap would drift from it). Splits MID-SPAN when the boundary
+// falls inside one, preserving the span's color/bold/bg/href on both halves.
+// Zero-width chars (selectors/ZWJ) ride with their base glyph; a wide char that
+// doesn't fit the remaining cells moves whole to the next row. An empty line
+// yields ONE empty row (the grid still owns that row's height). Iterates by
+// code point, so surrogate pairs never split.
+export function wrapLine(spans: AnsiLine, cols: number): AnsiLine[] {
+  const rows: AnsiLine[] = [];
+  let row: AnsiLine = [];
+  let used = 0;
+  for (const s of spans) {
+    let buf = '';
+    for (const ch of s.text) {
+      const w = charCells(ch);
+      if (used > 0 && used + w > cols) {
+        if (buf) {
+          row.push({...s, text: buf});
+          buf = '';
+        }
+        rows.push(row);
+        row = [];
+        used = 0;
+      }
+      buf += ch;
+      used += w;
+    }
+    if (buf) row.push({...s, text: buf});
+  }
+  rows.push(row);
+  return rows;
+}
+
 // A bare http(s) URL in terminal output. Stops at whitespace and the bracket/quote
 // characters that normally delimit a URL. Hyphens/dots/slashes/query chars stay IN.
 const URL_RE = /https?:\/\/[^\s<>"'`|\\^{}]+/gi;
