@@ -588,6 +588,25 @@ var paneSource = func() []string {
 // glyph-less-agent subtree path deterministic.
 var procSnapshot = snapshotProcs
 
+// stripDefaultTitle blanks a pane title that is just tmux's DEFAULT — the machine's
+// hostname — so an agent that never sets a terminal title (codex) doesn't surface
+// the HOSTNAME as its "session name" on every UI. With the title blanked, Task stays
+// empty and the phone/menu-bar row falls back to the tmux session name, which is
+// what the user actually named. (Seen live 2026-08-07: a codex row's primary line
+// read "MBP-….local".) Matching ignores case and a trailing ".local" on either side
+// — macOS reports "Foo.local" while tmux may render either form.
+func stripDefaultTitle(title, host string) string {
+	t := strings.ToLower(strings.TrimSpace(title))
+	h := strings.ToLower(strings.TrimSpace(host))
+	if t == "" || h == "" {
+		return title
+	}
+	if strings.TrimSuffix(t, ".local") == strings.TrimSuffix(h, ".local") {
+		return ""
+	}
+	return title
+}
+
 func GatherAgents() []Pane {
 	profiles := LoadProfiles()
 	lastFinished := state.ReadLastFinished()
@@ -597,6 +616,7 @@ func GatherAgents() []Pane {
 	// One process snapshot per gather, so we can look inside a pane's tree to
 	// catch agents that run as `node …/codex` (comm=node, no title glyph).
 	procs := procSnapshot()
+	hostname, _ := os.Hostname() // for stripDefaultTitle (tmux's default pane_title)
 	children := map[int][]int{}
 	for pid, info := range procs {
 		children[info.ppid] = append(children[info.ppid], pid)
@@ -623,6 +643,9 @@ func GatherAgents() []Pane {
 			continue
 		}
 		seenPane[f[0]] = true
+		// Blank a hostname-default title IN PLACE so every downstream consumer
+		// (classify → Task, watched-pane rows) sees "no title", not the hostname.
+		f[4] = stripDefaultTitle(f[4], hostname)
 		paneFieldsByID[f[0]] = f
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
