@@ -93,14 +93,14 @@ func TestBuildRestorePlan(t *testing.T) {
 func TestBuildRestorePlan_shellPaneIsNotPromisedAnAgent(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	save := filepath.Join(t.TempDir(), "resurrect.txt")
-	body := saveShellPane("日常更新", "0", "0", "/Users/ccy") + "\n" +
-		savePane("Diting", "1", "0") + "\n"
+	body := saveShellPane("日常更新", "0", "0", "/Users/x") + "\n" +
+		savePane("Aurora", "1", "0") + "\n"
 	if err := os.WriteFile(save, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Both panes have a record; only the one the save shows running an agent counts.
-	_ = resume.Save("日常更新:0.0", resume.Record{Agent: "codex", SessionID: "phantom", Cwd: "/Users/ccy", UpdatedAt: 300})
-	_ = resume.Save("Diting:1.0", resume.Record{Agent: "codex", SessionID: "real", Cwd: "/some/dir", UpdatedAt: 300})
+	_ = resume.Save("日常更新:0.0", resume.Record{Agent: "codex", SessionID: "phantom", Cwd: "/Users/x", UpdatedAt: 300})
+	_ = resume.Save("Aurora:1.0", resume.Record{Agent: "codex", SessionID: "real", Cwd: "/some/dir", UpdatedAt: 300})
 
 	plan := buildRestorePlanFrom(save)
 	for _, s := range plan.Sessions {

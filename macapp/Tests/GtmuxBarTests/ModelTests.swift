@@ -101,16 +101,16 @@ final class ModelTests: XCTestCase {
     /// tmux session so the row is never blank.
     func testAgentSessionNameLeadsRow() throws {
         let withTitle = try JSONDecoder().decode([Agent].self, from: Data("""
-        [{"pane_id":"%22","session":"HSS Eval Framework","status":"idle",
-          "task":"评估智能化能力评测框架的整体方案"}]
+        [{"pane_id":"%22","session":"Team Eval Framework","status":"idle",
+          "task":"优化配置加载性能"}]
         """.utf8))[0]
-        XCTAssertEqual(withTitle.primary, "评估智能化能力评测框架的整体方案") // agent session name
-        XCTAssertEqual(withTitle.secondary, "HSS Eval Framework · %22")     // tmux location
+        XCTAssertEqual(withTitle.primary, "优化配置加载性能") // agent session name
+        XCTAssertEqual(withTitle.secondary, "Team Eval Framework · %22")    // tmux location
 
         let noTitle = try JSONDecoder().decode([Agent].self, from: Data("""
-        [{"pane_id":"%1","session":"Diting","status":"idle","task":""}]
+        [{"pane_id":"%1","session":"Aurora","status":"idle","task":""}]
         """.utf8))[0]
-        XCTAssertEqual(noTitle.primary, "Diting") // falls back to the tmux session
+        XCTAssertEqual(noTitle.primary, "Aurora") // falls back to the tmux session
     }
 
     // MARK: agent identity icon (DESIGN §6)
@@ -279,13 +279,13 @@ final class ModelTests: XCTestCase {
 
     func testNotifyRequestDecode() throws {
         let json = """
-        {"kind":"input","title":"Diting","subtitle":"Claude Code",
-         "body":"Needs your input","pane":"%12","session":"Diting",
+        {"kind":"input","title":"Aurora","subtitle":"Claude Code",
+         "body":"Needs your input","pane":"%12","session":"Aurora",
          "icon":"/tmp/icon.png","ts":1700000000}
         """
         let r = try JSONDecoder().decode(NotificationManager.Request.self, from: Data(json.utf8))
         XCTAssertEqual(r.kind, "input")
-        XCTAssertEqual(r.title, "Diting")
+        XCTAssertEqual(r.title, "Aurora")
         XCTAssertEqual(r.pane, "%12")
         XCTAssertEqual(r.icon, "/tmp/icon.png")
         XCTAssertEqual(r.ts, 1_700_000_000)
@@ -308,15 +308,15 @@ final class ModelTests: XCTestCase {
     /// index instead of the real matches.
     func testSearchFindsIdleAgents() throws {
         let json = """
-        [{"pane_id":"%1","session":"HSS Eval Framework","status":"working","task":"eval"},
+        [{"pane_id":"%1","session":"Team Eval Framework","status":"working","task":"eval"},
          {"pane_id":"%2","session":"ccy_dev","status":"idle","task":"ccy.dev"},
-         {"pane_id":"%3","session":"ccy-workspace","status":"idle","task":"workspace"}]
+         {"pane_id":"%3","session":"dev-workspace","status":"idle","task":"workspace"}]
         """
         let s = AgentStore()
         s.setForTesting(try JSONDecoder().decode([Agent].self, from: Data(json.utf8)))
-        let hit = s.ordered(query: "ccy")
-        XCTAssertEqual(hit.map { $0.session }, ["ccy_dev", "ccy-workspace"]) // both idle, sorted
-        XCTAssertFalse(hit.contains { $0.session == "HSS Eval Framework" })  // non-match excluded
+        let hit = s.ordered(query: "dev")
+        XCTAssertEqual(hit.map { $0.session }, ["ccy_dev", "dev-workspace"]) // both idle, sorted
+        XCTAssertFalse(hit.contains { $0.session == "Team Eval Framework" }) // non-match excluded
     }
 
     func testPaletteWrapNavigation() {

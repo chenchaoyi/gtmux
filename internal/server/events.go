@@ -211,7 +211,7 @@ type hub struct {
 }
 
 // waitSession is the session name for a waiting agent — the part of loc before
-// ':' (e.g. "ccy-workspace" from "ccy-workspace:1.0"), else the whole loc, else
+// ':' (e.g. "dev-workspace" from "dev-workspace:1.0"), else the whole loc, else
 // the agent name. Shown as the Live Activity's bold headline (WHERE to look).
 func waitSession(a AgentStatus) string {
 	if i := indexByte(a.Loc, ':'); i > 0 {

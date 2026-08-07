@@ -17,11 +17,11 @@ func TestSendWritesQueueRequest(t *testing.T) {
 
 	Send(Options{
 		Kind:     "input",
-		Title:    "Diting",
+		Title:    "Aurora",
 		Subtitle: "Claude Code",
 		Message:  "Needs your input",
 		Pane:     "%12",
-		Session:  "Diting",
+		Session:  "Aurora",
 		IconPath: "/tmp/icon.png",
 	})
 
@@ -51,7 +51,7 @@ func TestSendWritesQueueRequest(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("queued json is invalid: %v", err)
 	}
-	if got.Kind != "input" || got.Title != "Diting" || got.Pane != "%12" {
+	if got.Kind != "input" || got.Title != "Aurora" || got.Pane != "%12" {
 		t.Errorf("fields not preserved: %+v", got)
 	}
 	if got.Body != "Needs your input" || got.Icon != "/tmp/icon.png" {

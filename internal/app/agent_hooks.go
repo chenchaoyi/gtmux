@@ -43,8 +43,11 @@ const (
 	// ({"hooks":{"<Event>":[{"hooks":[{type,command}]}]}}, verified against Codex's
 	// HooksFile: events MUST sit under a top-level "hooks" object, root-level event
 	// keys are rejected). Two differences from formatNested: Codex's `timeout` is in
-	// SECONDS (not ms), and we set `async:true` so `gtmux hook` never blocks the turn
-	// boundary. Enabled by `features.hooks = true` in ~/.codex/config.toml.
+	// SECONDS (not ms), and we install SYNCHRONOUSLY (no `async` key) with a small
+	// codexHookTimeoutSec backstop — Codex 0.146 SKIPS async hooks, so `async:true`
+	// meant UserPromptSubmit/Stop never fired; the sync hook instead records and
+	// detaches its own slow work so it returns in milliseconds (see entry / hook.Run).
+	// Enabled by `features.hooks = true` in ~/.codex/config.toml.
 	formatCodex
 )
 

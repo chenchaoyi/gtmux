@@ -57,8 +57,8 @@ func SessionsFromTitles(s string) []string {
 			continue
 		}
 		// Strip any leading decoration the terminal prepends to a background tab's
-		// title — notably Ghostty's bell/activity glyph (🔔) — so "🔔 ccy-workspace"
-		// still maps to the session "ccy-workspace" (else tab-order can't match it).
+		// title — notably Ghostty's bell/activity glyph (🔔) — so "🔔 dev-workspace"
+		// still maps to the session "dev-workspace" (else tab-order can't match it).
 		name := strings.TrimSpace(strings.TrimLeftFunc(t[:i], func(r rune) bool {
 			return !unicode.IsLetter(r) && !unicode.IsDigit(r)
 		}))

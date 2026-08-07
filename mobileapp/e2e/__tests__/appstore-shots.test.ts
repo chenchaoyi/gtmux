@@ -79,7 +79,7 @@ gated('app store demo shots', () => {
     //    (no active → the app lands on the two-track Servers page); SHOT_MODE greens the
     //    first row's connected dot.
     const servers = JSON.stringify([
-      {url: 'ccy-mbp.local:8765', token: 'demo', name: 'MacBook Pro'},
+      {url: 'dev-mbp.local:8765', token: 'demo', name: 'MacBook Pro'},
       {url: 'studio.local:8765', token: 'demo', name: 'Mac Studio'},
       {url: 'mac-mini.local:8765', token: 'demo', name: 'Office mini'},
       {url: 'ana-mac.local:8765', token: 'demo', name: "Ana's Mac", scope: 'guest'},

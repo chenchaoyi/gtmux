@@ -188,8 +188,8 @@ func TestDriverName(t *testing.T) {
 // a background tab's title; the session-name extraction must strip it so tab-order
 // can still match the session.
 func TestSessionsFromTitlesStripsBellGlyph(t *testing.T) {
-	got := strings.Join(SessionsFromTitles("Diting — Diting Dev\n🔔 ccy-workspace — ccy\n日常更新 — kb\n"), ",")
-	if got != "Diting,ccy-workspace,日常更新" {
+	got := strings.Join(SessionsFromTitles("Aurora — Aurora Dev\n🔔 dev-workspace — ccy\n日常更新 — kb\n"), ",")
+	if got != "Aurora,dev-workspace,日常更新" {
 		t.Fatalf("bell glyph not stripped: %q", got)
 	}
 }

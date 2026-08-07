@@ -719,7 +719,7 @@
             <!-- a collapsed working row below, for context -->
             <div style="display:flex; align-items:center; gap:11px; padding:7px 9px; margin-top:2px;">
               <div style="position:relative; width:30px; height:30px; flex:none;"><div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.11);color:rgba(235,235,245,0.78);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">CC</div><div style="position:absolute;right:-4px;bottom:-4px;width:15px;height:15px;border-radius:50%;background:#06B6D4;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #1c1c1f;"><span style="width:8px;height:8px;border:1.5px solid #fff;border-top-color:transparent;border-radius:50%;"></span></div></div>
-              <div style="flex:1; min-width:0;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-weight:590;font-size:13px;color:#fff;">ccy-workspace</span><span style="font-size:11.5px;color:rgba(235,235,245,0.34);">· main</span></div><div style="font-size:12px;color:rgba(235,235,245,0.62);">Auto-attach tmux sessions</div></div>
+              <div style="flex:1; min-width:0;"><div style="display:flex;align-items:center;gap:6px;"><span style="font-weight:590;font-size:13px;color:#fff;">dev-workspace</span><span style="font-size:11.5px;color:rgba(235,235,245,0.34);">· main</span></div><div style="font-size:12px;color:rgba(235,235,245,0.62);">Auto-attach tmux sessions</div></div>
               <span style="font-size:13px;color:rgba(235,235,245,0.34);">›</span>
             </div>
           </div>
@@ -850,7 +850,7 @@
           <!-- host/token -->
           <div style="padding:0 16px 8px;">
             <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border-radius:8px; padding:8px 11px;">
-              <span class="gt-mono" style="flex:1; font-size:11.5px; color:rgba(235,235,245,0.78);">https://100.92.14.7:8765</span>
+              <span class="gt-mono" style="flex:1; font-size:11.5px; color:rgba(235,235,245,0.78);">https://100.100.100.100:8765</span>
               <span style="font-size:11px; color:#06B6D4;">复制</span>
             </div>
           </div>
@@ -871,7 +871,7 @@
         <div style="background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:15px 16px;">
           <div class="gt-mono" style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#a8a8ae; margin-bottom:9px;">二维码 schema · v1</div>
           <pre class="gt-mono" style="margin:0; font-size:11.5px; line-height:1.5; color:#3a3a40; white-space:pre-wrap;">{ "v": 1,
-  "url": "https://100.92.14.7:8765",
+  "url": "https://100.100.100.100:8765",
   "token": "&lt;serve-token&gt;",
   "name": "Ada's MacBook" }</pre>
           <div style="font-size:11px; color:#9a9aa0; margin-top:9px; line-height:1.45;">与移动端 PairingScreen 的解析完全对齐,手机扫码 → 校验 <span class="gt-mono" style="font-size:11px;">v===1</span> → health 自检 → 存 Keychain → 进雷达。</div>
@@ -1126,15 +1126,15 @@ class Component extends DCLogic {
       ],
       five: [
         { agent: 'Claude Code', session: 'Pica', window: 'agent', loc: 'Pica:0.0', pane: '%7', source: 'tmux', status: 'waiting', mins: 0, task: { en: 'permission to run tests', zh: '请求运行测试的权限' } },
-        { agent: 'Claude Code', session: 'ccy-workspace', window: 'main', loc: 'ccy-workspace:0.0', pane: '%11', source: 'tmux', status: 'working', mins: 1, task: { en: 'Auto-attach tmux sessions', zh: '自动挂载 tmux 会话' } },
+        { agent: 'Claude Code', session: 'dev-workspace', window: 'main', loc: 'dev-workspace:0.0', pane: '%11', source: 'tmux', status: 'working', mins: 1, task: { en: 'Auto-attach tmux sessions', zh: '自动挂载 tmux 会话' } },
         { agent: 'Codex', project: 'scratch-cli', terminal: 'Terminal', source: 'native', status: 'working', mins: 3, task: { en: 'Prototyping a CLI arg parser', zh: '写 CLI 参数解析原型' } },
         { agent: 'Claude Code', session: 'Rodi', window: 'dev', loc: 'Rodi:0.0', pane: '%8', source: 'tmux', status: 'idle', mins: 6, latest: true, task: { en: 'Rodi feature dev', zh: 'Rodi 功能开发' } },
-        { agent: 'Gemini', session: 'Diting', window: 'main', loc: 'Diting:0.0', pane: '%1', source: 'tmux', status: 'idle', mins: 22, task: { en: '', zh: '' } },
+        { agent: 'Gemini', session: 'Aurora', window: 'main', loc: 'Aurora:0.0', pane: '%1', source: 'tmux', status: 'idle', mins: 22, task: { en: '', zh: '' } },
       ],
       many: [
         { agent: 'Claude Code', session: 'Pica', window: 'agent', loc: 'Pica:0.0', pane: '%7', source: 'tmux', status: 'waiting', mins: 0, task: { en: 'permission to run tests', zh: '请求运行测试的权限' } },
         { agent: 'Codex', session: 'billing-svc', window: 'migrations', loc: 'billing-svc:2.1', pane: '%23', source: 'tmux', status: 'waiting', mins: 2, task: { en: 'approve: delete migration 0014_drop_orders', zh: '确认删除迁移 0014_drop_orders' } },
-        { agent: 'Claude Code', session: 'ccy-workspace', window: 'main', loc: 'ccy-workspace:0.0', pane: '%11', source: 'tmux', status: 'working', mins: 0, task: { en: 'Auto-attach tmux sessions', zh: '自动挂载 tmux 会话' } },
+        { agent: 'Claude Code', session: 'dev-workspace', window: 'main', loc: 'dev-workspace:0.0', pane: '%11', source: 'tmux', status: 'working', mins: 0, task: { en: 'Auto-attach tmux sessions', zh: '自动挂载 tmux 会话' } },
         { agent: 'Codex', session: 'api-gateway', window: 'tests', loc: 'api-gateway:1.2', pane: '%14', source: 'tmux', status: 'working', mins: 1, task: { en: 'Refactoring the auth middleware and adding tests', zh: '重构鉴权中间件并补充测试用例' } },
         { agent: 'Aider', session: 'etl-pipeline', window: 'backfill', loc: 'etl-pipeline:0.3', pane: '%31', source: 'tmux', status: 'working', mins: 4, task: { en: 'Backfilling the analytics warehouse', zh: '回填分析数仓数据' } },
         { agent: 'opencode', project: 'docs-site', terminal: 'iTerm2', source: 'native', status: 'working', mins: 8, task: { en: 'Migrating MDX components', zh: '迁移 MDX 组件' } },
@@ -1143,7 +1143,7 @@ class Component extends DCLogic {
         { agent: 'Cursor', session: 'design-system', window: 'tokens', loc: 'design-system:0.1', pane: '%5', source: 'tmux', status: 'idle', mins: 12, task: { en: 'Token audit complete', zh: '设计令牌审计完成' } },
         { agent: 'Crush', session: 'infra-tf', window: 'plan', loc: 'infra-tf:3.0', pane: '%27', source: 'tmux', status: 'idle', mins: 18, task: { en: 'terraform plan reviewed', zh: '已审阅 terraform plan' } },
         { agent: 'Amp', project: 'payments-api', terminal: 'Ghostty', source: 'native', status: 'idle', mins: 25, task: { en: 'Stripe webhook retries', zh: 'Stripe webhook 重试逻辑' } },
-        { agent: 'Gemini', session: 'Diting', window: 'main', loc: 'Diting:0.0', pane: '%1', source: 'tmux', status: 'idle', mins: 34, task: { en: '', zh: '' } },
+        { agent: 'Gemini', session: 'Aurora', window: 'main', loc: 'Aurora:0.0', pane: '%1', source: 'tmux', status: 'idle', mins: 34, task: { en: '', zh: '' } },
         { agent: 'Claude Code', session: 'search-svc', window: 'reindex', loc: 'search-svc:1.1', pane: '%20', source: 'tmux', status: 'idle', mins: 47, task: { en: 'Reindex job shipped', zh: '重建索引任务已上线' } },
         { agent: 'Codex', session: 'ml-train', window: 'eval', loc: 'ml-train:0.0', pane: '%33', source: 'tmux', status: 'idle', mins: 62, task: { en: 'Eval run finished', zh: '评测任务完成' } },
         { agent: 'Aider', session: 'legacy-php', window: 'deps', loc: 'legacy-php:0.0', pane: '%41', source: 'tmux', status: 'idle', mins: 95, task: { en: 'Dependency bump merged', zh: '依赖升级已合并' } },

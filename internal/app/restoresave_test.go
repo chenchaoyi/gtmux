@@ -14,13 +14,13 @@ import (
 const (
 	// A live Claude Code pane. Note pane_current_command is the agent's VERSION,
 	// not its name — the identity has to come from the full command.
-	realLiveAgentLine = "pane\tDiting\t1\t0\t:##\t0\t✳ BLE设备扫描频率和移除超时配置\t:/Users/ccy/meituan/chenchaoyi/diting-mobile\t1\t2.1.220\t:claude --resume d644ae48-4379-41f7-abf9-fe4bb23627df"
+	realLiveAgentLine = "pane\tAurora\t1\t0\t:##\t0\t✳ 优化配置加载性能\t:/Users/x/proj/aurora-mobile\t1\t2.1.220\t:claude --resume d644ae48-4379-41f7-abf9-fe4bb23627df"
 	// A plain shell pane (someone's extra terminal inside a project).
-	realShellLine = "pane\tMP\t0\t0\t:##-\t1\tccy-MBP2024-M4-Office.local\t:/Users/ccy/meituan/hss-saac/multipilot\t0\tbash\t:"
+	realShellLine = "pane\tMP\t0\t0\t:##-\t1\tdev-mbp.local\t:/Users/x/proj/companion\t0\tbash\t:"
 	// THE reported pane: routine binary upgrades in a bare shell — and a SHIFTED
 	// line (empty pane title), so its command sits one field to the left and the
 	// trailing "full command" field is resurrect's own garbage.
-	realShiftedShellLine = "pane\t日常更新\t0\t1\t:*\t0\t:/Users/ccy\t1\tbash\t77304\t:"
+	realShiftedShellLine = "pane\t日常更新\t0\t1\t:*\t0\t:/Users/x\t1\tbash\t77304\t:"
 )
 
 func TestParseSavedPaneLine_normalLayout(t *testing.T) {
@@ -28,10 +28,10 @@ func TestParseSavedPaneLine_normalLayout(t *testing.T) {
 	if !ok {
 		t.Fatal("a normal pane line must parse")
 	}
-	if sp.Loc != "Diting:1.0" {
-		t.Errorf("Loc = %q, want Diting:1.0", sp.Loc)
+	if sp.Loc != "Aurora:1.0" {
+		t.Errorf("Loc = %q, want Aurora:1.0", sp.Loc)
 	}
-	if sp.Dir != "/Users/ccy/meituan/chenchaoyi/diting-mobile" {
+	if sp.Dir != "/Users/x/proj/aurora-mobile" {
 		t.Errorf("Dir = %q", sp.Dir)
 	}
 	if sp.Cmd != "2.1.220" {
@@ -61,8 +61,8 @@ func TestParseSavedPaneLine_shiftedLayout(t *testing.T) {
 	if sp.Loc != "日常更新:0.0" {
 		t.Errorf("Loc = %q", sp.Loc)
 	}
-	if sp.Dir != "/Users/ccy" {
-		t.Errorf("Dir = %q, want /Users/ccy", sp.Dir)
+	if sp.Dir != "/Users/x" {
+		t.Errorf("Dir = %q, want /Users/x", sp.Dir)
 	}
 	if sp.Cmd != "bash" {
 		t.Errorf("Cmd = %q, want bash (NOT the pid that sits in the fixed column)", sp.Cmd)
@@ -91,7 +91,7 @@ func TestParseSavedPaneLine_rejects(t *testing.T) {
 // A pane title that itself starts with ':' (bash title prologues write exactly
 // that) must NOT be mistaken for the shifted layout — index 7 decides.
 func TestParseSavedPaneLine_colonTitleIsNotAShift(t *testing.T) {
-	line := "pane\tDiting\t0\t0\t:-\t0\t:/Users/ccy/some/title\t:/Users/ccy/work\t1\tbash\t:"
+	line := "pane\tAurora\t0\t0\t:-\t0\t:/Users/x/some/title\t:/Users/x/work\t1\tbash\t:"
 	sp, ok := parseSavedPaneLine(line)
 	if !ok {
 		t.Fatal("must parse")
@@ -99,15 +99,15 @@ func TestParseSavedPaneLine_colonTitleIsNotAShift(t *testing.T) {
 	if sp.Shifted {
 		t.Fatal("a ':'-prefixed TITLE is not a field shift")
 	}
-	if sp.Dir != "/Users/ccy/work" || sp.Cmd != "bash" {
+	if sp.Dir != "/Users/x/work" || sp.Cmd != "bash" {
 		t.Fatalf("dir/cmd read from the wrong columns: %+v", sp)
 	}
 }
 
 func TestParseSavedPaneLine_escapedSpacesInDir(t *testing.T) {
-	line := "pane\tS\t0\t0\t:-\t0\ttitle\t:/Users/ccy/My\\ Docs\t1\tbash\t:"
+	line := "pane\tS\t0\t0\t:-\t0\ttitle\t:/Users/x/My\\ Docs\t1\tbash\t:"
 	sp, _ := parseSavedPaneLine(line)
-	if sp.Dir != "/Users/ccy/My Docs" {
+	if sp.Dir != "/Users/x/My Docs" {
 		t.Errorf("Dir = %q, want the un-escaped path", sp.Dir)
 	}
 }
@@ -184,8 +184,8 @@ func TestLoadSavedLayout(t *testing.T) {
 	if _, ok := l.ByLoc["日常更新:0.0"]; !ok {
 		t.Fatalf("locator index missing the reported pane: %v", l.ByLoc)
 	}
-	if got := l.ByLoc["Diting:1.0"].evidence(); got != evidenceAgent {
-		t.Errorf("Diting:1.0 evidence = %v, want agent", got)
+	if got := l.ByLoc["Aurora:1.0"].evidence(); got != evidenceAgent {
+		t.Errorf("Aurora:1.0 evidence = %v, want agent", got)
 	}
 	if got := l.ByLoc["MP:0.1"].evidence(); got != evidenceShell {
 		t.Errorf("MP:0.1 evidence = %v, want shell", got)
@@ -209,9 +209,9 @@ func TestIncidentSaveClassification(t *testing.T) {
 	phantoms := map[string]string{
 		"日常更新:0.0":      realShiftedShellLine,
 		"MP:0.1":        realShellLine,
-		"gtmux dev:0.1": "pane\tgtmux dev\t0\t1\t:*\t1\t:/Users/ccy/meituan/chenchaoyi/gtmux\t1\tbash\t75856\t:",
-		"HQ:1.0":        "pane\tHQ\t1\t0\t:##\t0\t:/Users/ccy/meituan/chenchaoyi/gtmux-wt/feat-hq-distill-trigger\t1\tbash\t77885\t:",
-		"Diting:2.0":    "pane\tDiting\t2\t1\t:*\t0\t:/private/tmp\t1\tbash\t70016\t:",
+		"gtmux dev:0.1": "pane\tgtmux dev\t0\t1\t:*\t1\t:/Users/x/proj/gtmux\t1\tbash\t75856\t:",
+		"HQ:1.0":        "pane\tHQ\t1\t0\t:##\t0\t:/Users/x/proj/gtmux-wt/feat-hq-distill-trigger\t1\tbash\t77885\t:",
+		"Aurora:2.0":    "pane\tAurora\t2\t1\t:*\t0\t:/private/tmp\t1\tbash\t70016\t:",
 	}
 	for loc, line := range phantoms {
 		sp, ok := parseSavedPaneLine(line)

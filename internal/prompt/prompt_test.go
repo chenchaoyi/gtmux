@@ -33,7 +33,7 @@ func TestParseOptions_ClaudeBox(t *testing.T) {
 // composer". Pins the reported "选取后无法输入 / 选项解析错了" bug.
 func TestOptionsReplyable_RejectsSideBySidePreviewPicker(t *testing.T) {
 	picker := "❯ 1. Collapsible cards          │  ‹ All panes    19 panes · 10 sessions\n" +
-		"  2. Clean tree                 │  ▾ Diting        3 · 2 agents  ■1 ✓1\n"
+		"  2. Clean tree                 │  ▾ Aurora        3 · 2 agents  ■1 ✓1\n"
 	opts := ParseOptions(picker)
 	if len(opts) == 0 {
 		t.Fatal("the picker must still PARSE (non-nil) so readiness sees a menu, not a composer")

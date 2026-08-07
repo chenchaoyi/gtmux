@@ -118,7 +118,7 @@ func TestSplitInputRegion_TitledTopBorder(t *testing.T) {
 		rule + " SAT ──\n" + // titled TOP border
 		"❯ 这题是什么意思？出错了吧？\n" + // the draft
 		rule + "\n" + // pure BOTTOM border
-		"  ~/meituan/chenchaoyi/sat-monitor │ ⎇ main │ Opus 5 (1M context) │ 591.6K 59%\n" +
+		"  ~/proj/svc-monitor │ ⎇ main │ Opus 5 (1M context) │ 591.6K 59%\n" +
 		"  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents\n" +
 		"  ⧉  trove-proposal"
 	history, draft, structured := SplitInputRegion(capture)

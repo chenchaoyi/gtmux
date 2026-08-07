@@ -43,7 +43,7 @@ final class PairedDeviceNameTests: XCTestCase {
 
     func testANameWithoutThePrefixIsUntouched() {
         XCTAssertEqual(dev("iPhone · iOS 18.5").displayName, "iPhone · iOS 18.5")
-        XCTAssertEqual(dev("ccy-mbp.local").displayName, "ccy-mbp.local")
+        XCTAssertEqual(dev("dev-mbp.local").displayName, "dev-mbp.local")
         // A device legitimately NAMED after the tool keeps something to show, rather
         // than being stripped to an empty row.
         XCTAssertEqual(dev("gtmux").displayName, "gtmux")
@@ -53,6 +53,6 @@ final class PairedDeviceNameTests: XCTestCase {
         XCTAssertEqual(dev("iPhone · iOS 18.5").kind, "iphone")
         XCTAssertEqual(dev("iPad · iOS 18.5").kind, "iphone")
         XCTAssertEqual(dev("Safari").kind, "globe")
-        XCTAssertEqual(dev("ccy-mbp.local").kind, "laptopcomputer")
+        XCTAssertEqual(dev("dev-mbp.local").kind, "laptopcomputer")
     }
 }
