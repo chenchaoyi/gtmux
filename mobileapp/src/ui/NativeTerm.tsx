@@ -26,7 +26,7 @@
 // truecolor) + the pane's text cursor (drawn as a reverse-video cell). Monospace
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Linking, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Lang} from '../i18n';
@@ -79,12 +79,38 @@ const SELECTION_TINT = Platform.select({ios: '#3478F7', default: 'rgba(52,120,24
 // One line of the color layer. Memoized: the per-line parse cache hands back a STABLE
 // spans identity for a line whose raw text didn't change, so React bails on that row —
 // a busy pane's in-place repaint re-renders only the changed rows (plus the cursor
-// row, whose spans are freshly spliced each poll). `last` carries the joining newline
-// so the flattened text still equals the overlay's plainText exactly.
-const TermLine = React.memo(function TermLine({spans, last}: {spans: AnsiLine; last: boolean}) {
-  return (
-    <Text>
-      {spans.map((s, j) => {
+// row, whose spans are freshly spliced each poll).
+//
+// Two render shapes:
+//   • block (iOS) — its OWN top-level <Text>, stacked in a View. A changed row then
+//     re-measures ONLY its own block natively; the old single-paragraph form re-ran
+//     TextKit over the whole 1000-line buffer on every poll of a working pane, and
+//     that main-thread stall is exactly what made Composer typing hitch. Blocks also
+//     carry the long-press per line, so the select sheet knows the EXACT touched
+//     line (no coordinate math). Only possible because iOS has no overlay needing
+//     paragraph-exact alignment. An empty line renders ' ' (an empty block collapses
+//     to zero height). All block props are per-poll-stable so memo still bails.
+//   • nested (Android) — a child of the single paragraph its transparent selectable
+//     overlay aligns to; `last` carries the joining newline so the flattened text
+//     still equals the overlay's plainText exactly.
+const TermLine = React.memo(function TermLine({
+  spans,
+  last,
+  block,
+  fontSize,
+  color,
+  index = 0,
+  onLongPressLine,
+}: {
+  spans: AnsiLine;
+  last: boolean;
+  block?: boolean;
+  fontSize?: number;
+  color?: string;
+  index?: number;
+  onLongPressLine?: (line: number) => void;
+}) {
+  const body = spans.map((s, j) => {
         const base = {
           color: s.color,
           backgroundColor: s.bg,
@@ -125,7 +151,20 @@ const TermLine = React.memo(function TermLine({spans, last}: {spans: AnsiLine; l
             )}
           </Text>
         );
-      })}
+      });
+  if (block) {
+    return (
+      <Text
+        style={[styles.mono, {fontSize, color}]}
+        suppressHighlighting
+        onLongPress={onLongPressLine ? () => onLongPressLine(index) : undefined}>
+        {spans.length ? body : ' '}
+      </Text>
+    );
+  }
+  return (
+    <Text>
+      {body}
       {last ? '' : '\n'}
     </Text>
   );
@@ -240,12 +279,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
   // follow-live behavior. Both track the same "near the tail" test.
   const [atBottom, setAtBottom] = useState(true);
-  // Last-seen scroll metrics — the select sheet uses them to estimate the first
-  // VISIBLE line at long-press time (proportional: lines are near-uniform height).
-  const viewport = useRef({y: 0, contentH: 0});
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
-    viewport.current = {y: contentOffset.y, contentH: contentSize.height};
     const bottom = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
     stick.current = bottom;
     setAtBottom(bottom);
@@ -264,46 +299,56 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     if (stick.current) ref.current?.scrollToEnd({animated: false});
   };
 
-  // iOS select sheet: long-press snapshots the plain text from the first visible
-  // line to the end of the buffer (what you're looking at + everything newer), and
-  // freezes the terminal underneath so polls can't shift it while the sheet is up.
+  // iOS select sheet: a long-press on a LINE opens the sheet with THAT line already
+  // selected (handles ready to drag — no second long-press), showing ~100 lines of
+  // context above it through the end of the buffer, and freezes the terminal
+  // underneath so polls can't shift it while the sheet is up. linesRef + [] deps
+  // keep the callback identity STABLE so the memoized TermLine blocks never re-render
+  // just because this component did.
   const [selText, setSelText] = useState<string | null>(null);
-  const openSelect = () => {
-    const n = lines.length;
+  const [selRange, setSelRange] = useState<{start: number; end: number} | undefined>(undefined);
+  const selInputRef = useRef<TextInput>(null);
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const openSelectAt = useCallback((touched: number) => {
+    const all = linesRef.current;
+    const n = all.length;
     if (n === 0) return;
-    const {y, contentH} = viewport.current;
-    // Proportional first-visible-line estimate; before any scroll event we're
-    // pinned to the live tail, so fall back to roughly a screenful above the end.
-    let first = contentH > 0 ? Math.floor((y / contentH) * n) : n - 40;
-    first = Math.max(0, Math.min(n - 1, first - 2)); // keep a couple lines of context
-    setSelText(lines.slice(first).map(spans => spans.map(s => s.text).join('')).join('\n'));
+    const line = Math.max(0, Math.min(n - 1, touched));
+    const startIdx = Math.max(0, line - 100);
+    const plain = all.slice(startIdx).map(spans => spans.map(s => s.text).join(''));
+    let off = 0;
+    for (let i = 0; i < line - startIdx; i++) off += plain[i].length + 1;
+    setSelText(plain.join('\n'));
+    setSelRange({start: off, end: off + (plain[line - startIdx]?.length ?? 0)});
     freeze();
-  };
+  }, []);
   const closeSelect = () => {
     setSelText(null);
+    setSelRange(undefined);
     thawSoon();
   };
 
-  // LAYERS. The color layer (colored <Text>) is the display + defines height. iOS:
-  // it's the ONLY always-on layer — link taps land on it directly (OSC 8 + bare
-  // URLs both work), and a long-press opens the select sheet (see header comment
-  // for why an always-on selection overlay is unworkable there). Android adds a
-  // FLAT transparent <Text selectable> overlay on top, which draws the selection
-  // band properly there and carries the link taps instead.
-  // suppressHighlighting: a pressable Text (the onLongPress) otherwise paints iOS's
-  // press highlight — the WHOLE 1000-line paragraph dims grey on every touch-down,
-  // which read as a hitch + grey flash at the start of each scroll. Suppress the
-  // visual; the long-press gesture itself still fires.
-  const colorLayer = (
-    <Text
-      style={[styles.mono, {fontSize, color: fg}]}
-      suppressHighlighting
-      onLongPress={Platform.OS === 'ios' ? openSelect : undefined}>
-      {rendered.map((spans, i) => (
-        <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
-      ))}
-    </Text>
-  );
+  // LAYERS. iOS: a STACK of per-line <Text> blocks (see TermLine's block shape) —
+  // the only always-on layer; link taps land on it directly, and each block carries
+  // the long-press that opens the select sheet at exactly that line. Android: the
+  // single paragraph its FLAT transparent <Text selectable> overlay aligns to — the
+  // overlay draws the selection band properly there and carries the link taps.
+  const colorLayer =
+    Platform.OS === 'ios' ? (
+      <View>
+        {rendered.map((spans, i) => (
+          <TermLine key={i} spans={spans} last block index={i} fontSize={fontSize} color={fg} onLongPressLine={openSelectAt} />
+        ))}
+      </View>
+    ) : (
+      <Text style={[styles.mono, {fontSize, color: fg}]}>
+        {rendered.map((spans, i) => (
+          <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
+        ))}
+      </Text>
+    );
 
   return (
     <View style={[styles.fill, {backgroundColor: bg}]}>
@@ -350,17 +395,22 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
         /* iOS select sheet: the ONLY visible layer while up, so UITextView's own
            layout is the truth — the band always lands on the text you see. Content
            is a frozen snapshot; polls can't yank it mid-selection. */
-        <Modal visible animationType="fade" onRequestClose={closeSelect}>
+        <Modal visible animationType="fade" onRequestClose={closeSelect} onShow={() => selInputRef.current?.focus()}>
           <View style={[styles.fill, {backgroundColor: bg, paddingTop: insets.top}]}>
             <View style={styles.selBar}>
               <Text style={[styles.selHint, {color: fg}]} numberOfLines={1}>
-                {lang === 'zh' ? '长按选中，拖动手柄调整' : 'Long-press to select, drag the handles'}
+                {lang === 'zh' ? '拖动手柄调整选区' : 'Drag the handles to adjust'}
               </Text>
               <TouchableOpacity onPress={closeSelect} hitSlop={{top: 10, bottom: 10, left: 12, right: 12}}>
                 <Text style={styles.selDone}>{lang === 'zh' ? '完成' : 'Done'}</Text>
               </TouchableOpacity>
             </View>
+            {/* Opens with the long-pressed line pre-selected (`selection`); focus on
+                show makes UITextView first responder so the band + handles render.
+                onSelectionChange keeps the controlled prop following the user's drag
+                instead of fighting it. editable=false → no keyboard. */}
             <TextInput
+              ref={selInputRef}
               multiline
               editable={false}
               scrollEnabled
@@ -368,6 +418,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
               autoCorrect={false}
               spellCheck={false}
               selectionColor={SELECTION_TINT}
+              selection={selRange}
+              onSelectionChange={e => setSelRange(e.nativeEvent.selection)}
               value={selText}
               style={[styles.mono, styles.selInput, {fontSize, color: fg, backgroundColor: bg}]}
             />
