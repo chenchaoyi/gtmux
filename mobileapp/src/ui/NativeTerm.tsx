@@ -5,12 +5,17 @@
 //
 // Why native instead of xterm-in-webview:
 //   • a tap doesn't focus a hidden <textarea> → NO soft-keyboard pop-up;
-//   • long-press gives iOS text selection + the Copy callout (web-like arbitrary
-//     selection — the thing xterm can't do on touch). NOTE: a colored, deeply-nested
-//     <Text selectable> selects+copies but draws NO visible highlight on-device, so
-//     selection rides a separate FLAT, single-color <Text selectable> with
-//     TRANSPARENT glyphs overlaid on the colored layer — the iOS highlight (its own
-//     translucent layer) then tints the colors behind it (see the dual-layer body);
+//   • long-press gives REAL range selection. iOS history (device-confirmed
+//     2026-08-07): RN <Text selectable> is menu-only there (no band/handles, Copy
+//     grabs the WHOLE buffer), and an always-on transparent UITextView overlay
+//     both MISALIGNED (its TextKit layout drifts from the Text layer's on
+//     CJK/wrapped lines — the band painted up-right of the touch) and JANKED
+//     (full relayout of the 1000-line buffer on every poll). So on iOS a
+//     long-press opens a SELECT SHEET: a read-only UITextView of the same plain
+//     text windowed from the first visible line — native band + handles + range
+//     Copy, no alignment constraint (it's the only visible layer), zero standing
+//     cost. Android keeps the transparent <Text selectable> overlay, which
+//     selects properly there;
 //   • native ScrollView momentum (no DOM/canvas repaint jank);
 //   • no WebGL/canvas/DOM renderer fragility (the ~10-PR webview saga);
 //   • pure JS → the same renderer works on iOS AND Android.
@@ -22,7 +27,9 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Linking, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
 import {cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs} from './term';
@@ -41,6 +48,7 @@ interface Props {
   cursor?: PaneCursor;
   theme?: TermTheme;
   fontPref?: string; // accepted for config-parity with the font picker; native uses Menlo
+  lang?: Lang; // for the iOS select sheet's chrome
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 
@@ -61,14 +69,11 @@ const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each li
 // dial down if a fast-updating pane janks on older hardware. The bottom is preserved
 // so the bottom-anchored cursor still maps; the full transcript lives in Chat mode.
 
-// Selection-highlight tint for the overlay. iOS multiplies the tint by its OWN system
-// selection alpha (~20%), so feeding it an already-translucent rgba(…,0.5) painted a
-// ~10%-alpha blue over the near-black terminal bg — a band the eye can't see. That was
-// the on-device "selection doesn't show" bug: the Copy callout appeared (selection was
-// live) but the highlight was invisible. Pass the tint OPAQUE and let iOS apply its one
-// translucency — the standard visible band. Android is different: it uses the value
-// VERBATIM as the band behind this overlay's transparent glyphs, so an opaque value
-// would paint a solid slab over the color layer below — keep the translucent one there.
+// Selection tint. iOS: the select sheet's UITextView tintColor — the system paints
+// the range band (at its own ~20% alpha) and the drag handles from it, so pass it
+// OPAQUE. Android: its transparent <Text selectable> overlay draws the band verbatim
+// behind the glyphs, so keep it translucent there (opaque would slab over the color
+// layer beneath).
 const SELECTION_TINT = Platform.select({ios: '#3478F7', default: 'rgba(52,120,247,0.5)'});
 
 // One line of the color layer. Memoized: the per-line parse cache hands back a STABLE
@@ -126,10 +131,11 @@ const TermLine = React.memo(function TermLine({spans, last}: {spans: AnsiLine; l
   );
 });
 
-export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
+  const insets = useSafeAreaInsets();
   const ref = useRef<ScrollView>(null);
   const stick = useRef(true); // follow the bottom unless the user scrolled up
   const frozen = useRef(false);
@@ -218,23 +224,28 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
     return copy;
   }, [lines, shownCursor, curColor, bg]);
 
-  // Plain (ANSI-stripped) text of the same capped lines — the content of the
-  // transparent selection layer. Cursor cell is intentionally excluded.
-  const plainText = useMemo(() => lines.map(spans => spans.map(s => s.text).join('')).join('\n'), [lines]);
-  // The transparent overlay is the TOP layer and the ONLY one that receives touches, so
-  // EVERY link the color layer draws must be tappable here — both a bare URL (linkify)
-  // and an OSC 8 hyperlink (span.href, e.g. anchor-text links). Built from the same
-  // `lines` spans as plainText so the flattened text still equals plainText exactly
-  // (same wrapping/alignment). The earlier overlay only carried linkify'd BARE urls, so
-  // bare URLs tapped through but anchor-text OSC 8 links were swallowed (fixed 2026-08-01).
-  const overlaySegs = useMemo(() => linkSegsForLines(lines), [lines]);
+  // ANDROID-ONLY (iOS has no standing overlay — links tap through to the color layer
+  // directly, selection lives in the select sheet): the transparent overlay is the TOP
+  // layer and the ONLY one that receives touches there, so EVERY link the color layer
+  // draws must be tappable on it — both a bare URL (linkify) and an OSC 8 hyperlink
+  // (span.href). Built from the same `lines` spans as plainText so the flattened text
+  // still equals plainText exactly (same wrapping/alignment). Cursor cell excluded.
+  const plainText = useMemo(
+    () => (Platform.OS === 'android' ? lines.map(spans => spans.map(s => s.text).join('')).join('\n') : ''),
+    [lines],
+  );
+  const overlaySegs = useMemo(() => (Platform.OS === 'android' ? linkSegsForLines(lines) : []), [lines]);
   const overlayHasLink = useMemo(() => overlaySegs.some(s => s.url), [overlaySegs]);
 
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
   // follow-live behavior. Both track the same "near the tail" test.
   const [atBottom, setAtBottom] = useState(true);
+  // Last-seen scroll metrics — the select sheet uses them to estimate the first
+  // VISIBLE line at long-press time (proportional: lines are near-uniform height).
+  const viewport = useRef({y: 0, contentH: 0});
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
+    viewport.current = {y: contentOffset.y, contentH: contentSize.height};
     const bottom = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
     stick.current = bottom;
     setAtBottom(bottom);
@@ -253,20 +264,36 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
     if (stick.current) ref.current?.scrollToEnd({animated: false});
   };
 
-  // Two STACKED, always-on layers solve "read in color, select with a VISIBLE
-  // highlight" without any mode switch (the earlier TextInput-toggle jumped the
-  // layout and only showed a cursor loupe, no real selection):
-  //   • color layer (bottom) — the colored <Text>, display only, defines height.
-  //   • selection layer (top) — a FLAT, single-color <Text selectable> of the same
-  //     plain text, absolutely overlaid, with TRANSPARENT glyphs. iOS draws the
-  //     selection HIGHLIGHT as its own translucent layer independent of glyph color,
-  //     so the blue band shows and tints the colored text behind it; Copy works
-  //     (Text selectable gives the callout). Crucially the selection text is FLAT
-  //     (not the per-span nested <Text> that suppresses the highlight on-device).
-  // Both layers are <Text> with identical font/size/wrapping, so they align exactly
-  // — no ghosting, no jump. selectionColor is translucent so colors stay readable.
+  // iOS select sheet: long-press snapshots the plain text from the first visible
+  // line to the end of the buffer (what you're looking at + everything newer), and
+  // freezes the terminal underneath so polls can't shift it while the sheet is up.
+  const [selText, setSelText] = useState<string | null>(null);
+  const openSelect = () => {
+    const n = lines.length;
+    if (n === 0) return;
+    const {y, contentH} = viewport.current;
+    // Proportional first-visible-line estimate; before any scroll event we're
+    // pinned to the live tail, so fall back to roughly a screenful above the end.
+    let first = contentH > 0 ? Math.floor((y / contentH) * n) : n - 40;
+    first = Math.max(0, Math.min(n - 1, first - 2)); // keep a couple lines of context
+    setSelText(lines.slice(first).map(spans => spans.map(s => s.text).join('')).join('\n'));
+    freeze();
+  };
+  const closeSelect = () => {
+    setSelText(null);
+    thawSoon();
+  };
+
+  // LAYERS. The color layer (colored <Text>) is the display + defines height. iOS:
+  // it's the ONLY always-on layer — link taps land on it directly (OSC 8 + bare
+  // URLs both work), and a long-press opens the select sheet (see header comment
+  // for why an always-on selection overlay is unworkable there). Android adds a
+  // FLAT transparent <Text selectable> overlay on top, which draws the selection
+  // band properly there and carries the link taps instead.
   const colorLayer = (
-    <Text style={[styles.mono, {fontSize, color: fg}]}>
+    <Text
+      style={[styles.mono, {fontSize, color: fg}]}
+      onLongPress={Platform.OS === 'ios' ? openSelect : undefined}>
       {rendered.map((spans, i) => (
         <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
       ))}
@@ -293,25 +320,55 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
         onContentSizeChange={onContentSizeChange}>
         <View style={styles.layerWrap}>
           {colorLayer}
-          {/* transparent selectable layer on top → the blue selection highlight
-              tints the colored text behind it; Copy works; FLAT text so the
-              highlight paints on-device. */}
-          <Text selectable selectionColor={SELECTION_TINT} style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
-            {!overlayHasLink
-              ? plainText
-              : overlaySegs.map((seg, i) =>
-                  seg.url ? (
-                    <Text key={i} onPress={() => Linking.openURL(seg.url!)}>
-                      {seg.text}
-                    </Text>
-                  ) : (
-                    seg.text
-                  ),
-                )}
-          </Text>
+          {Platform.OS === 'android' && (
+            /* Android-only: FLAT selectable Text draws the band properly there;
+               nested Text keeps OSC 8 / bare-URL taps. iOS has NO standing overlay
+               — selection lives in the long-press select sheet. */
+            <Text selectable selectionColor={SELECTION_TINT} style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
+              {!overlayHasLink
+                ? plainText
+                : overlaySegs.map((seg, i) =>
+                    seg.url ? (
+                      <Text key={i} onPress={() => Linking.openURL(seg.url!)}>
+                        {seg.text}
+                      </Text>
+                    ) : (
+                      seg.text
+                    ),
+                  )}
+            </Text>
+          )}
         </View>
       </ScrollView>
       <JumpToBottom visible={!atBottom} onPress={jumpToBottom} />
+      {selText != null && (
+        /* iOS select sheet: the ONLY visible layer while up, so UITextView's own
+           layout is the truth — the band always lands on the text you see. Content
+           is a frozen snapshot; polls can't yank it mid-selection. */
+        <Modal visible animationType="fade" onRequestClose={closeSelect}>
+          <View style={[styles.fill, {backgroundColor: bg, paddingTop: insets.top}]}>
+            <View style={styles.selBar}>
+              <Text style={[styles.selHint, {color: fg}]} numberOfLines={1}>
+                {lang === 'zh' ? '长按选中，拖动手柄调整' : 'Long-press to select, drag the handles'}
+              </Text>
+              <TouchableOpacity onPress={closeSelect} hitSlop={{top: 10, bottom: 10, left: 12, right: 12}}>
+                <Text style={styles.selDone}>{lang === 'zh' ? '完成' : 'Done'}</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              multiline
+              editable={false}
+              scrollEnabled
+              caretHidden
+              autoCorrect={false}
+              spellCheck={false}
+              selectionColor={SELECTION_TINT}
+              value={selText}
+              style={[styles.mono, styles.selInput, {fontSize, color: fg, backgroundColor: bg}]}
+            />
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -327,4 +384,9 @@ const styles = StyleSheet.create({
   // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
   layerWrap: {position: 'relative', overflow: 'visible'},
   overlay: {position: 'absolute', top: 0, left: 0, right: 0},
+  // iOS select sheet chrome.
+  selBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10},
+  selHint: {flex: 1, fontSize: 13, opacity: 0.6, marginRight: 12},
+  selDone: {fontSize: 15, fontWeight: '600', color: '#3478F7'},
+  selInput: {flex: 1, paddingHorizontal: 10, paddingTop: 4},
 });
