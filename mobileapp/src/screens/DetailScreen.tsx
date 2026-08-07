@@ -105,6 +105,10 @@ export function DetailView({
   // is meaningless: only the live terminal makes sense. `live.agent` is empty for a
   // plain pane (it isn't in the agents list, so `live` is the paneRowToAgent snapshot).
   const isPlainPane = live.source === 'tmux' && !live.agent;
+  // NATIVE session defense-in-depth: the radar list and the push deep-link both
+  // gate native rows away from this screen, but if one ever lands here anyway,
+  // never offer input — a native session has no tmux pane, so a send can only fail.
+  const isNative = live.source === 'native';
   // Neighbor panes (tiered-pane-control): the OTHER panes in this pane's tmux
   // session — the shell next to your agent, a dev server, a log tail. Tapping one
   // opens it in Detail (any pane is view/typeable). Guests without extra shared panes
@@ -660,20 +664,28 @@ export function DetailView({
           onDismiss={() => setFailedSend(null)}
         />
       )}
-      <Composer
-        pal={pal}
-        lang={lang}
-        demo={demo}
-        enabled={!isGuest || inputPanes.includes(agent.pane_id)}
-        returnSends={returnSends}
-        onSend={p => {
-          sendPane(p);
-          // optimistic echo in 对话 mode: show the sent text immediately as a
-          // pending bubble until the transcript refetch confirms it.
-          if (p.text) setPendingPrompt(p.text);
-        }}
-        onUpload={(uri, name, type, onProgress) => client.upload(uri, name, type, onProgress)}
-      />
+      {isNative ? (
+        <Text style={{color: pal.fg3, fontSize: 12, textAlign: 'center', paddingVertical: 10}}>
+          {lang === 'zh'
+            ? '原生会话（不在 tmux）— 只读；在 Mac 上 gtmux adopt 后可远程输入'
+            : 'Native session (not in tmux) — read-only; gtmux adopt on the Mac to type remotely'}
+        </Text>
+      ) : (
+        <Composer
+          pal={pal}
+          lang={lang}
+          demo={demo}
+          enabled={!isGuest || inputPanes.includes(agent.pane_id)}
+          returnSends={returnSends}
+          onSend={p => {
+            sendPane(p);
+            // optimistic echo in 对话 mode: show the sent text immediately as a
+            // pending bubble until the transcript refetch confirms it.
+            if (p.text) setPendingPrompt(p.text);
+          }}
+          onUpload={(uri, name, type, onProgress) => client.upload(uri, name, type, onProgress)}
+        />
+      )}
 
       {/* "what did the agent change" — git diff of the pane's cwd */}
       <DiffModal

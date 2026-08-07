@@ -10,7 +10,7 @@ import {
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import React, {useEffect, useRef} from 'react';
-import {StatusBar, useWindowDimensions} from 'react-native';
+import {Alert, StatusBar, useWindowDimensions} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {Splash} from './src/ui/Splash';
@@ -41,7 +41,7 @@ function RadarRoute(props: any) {
 // Renders nothing.
 function PushBridge({navRef}: {navRef: any}) {
   const {client, agents, isGuest} = useAgents();
-  const {pushEnabled, pushKinds, servers, activeUrl, selectServer, pendingPane, setPendingPane} = useApp();
+  const {pushEnabled, pushKinds, servers, activeUrl, selectServer, pendingPane, setPendingPane, lang} = useApp();
   const {width} = useWindowDimensions();
   const wideRef = useRef(width >= 768);
   wideRef.current = width >= 768;
@@ -60,11 +60,27 @@ function PushBridge({navRef}: {navRef: any}) {
   // the split Radar; narrow screens push Detail (a placeholder agent is fine — the
   // screen fetches the pane by id).
   const openPane = (pane: string) => {
+    const found = agents.find(a => a.pane_id === pane);
+    // A NATIVE (non-tmux) session — an agent running in a plain Warp/Terminal
+    // window. Sense-only by design: there is no tmux pane to capture or type
+    // into, so Detail would show an empty terminal and every send would fail.
+    // The radar list gates its taps; this push deep-link must too — a waiting
+    // push for a native session used to land in Detail and offer a composer
+    // that could never deliver (the "Warp sessions always fail to send"
+    // report, 2026-08-07). Explain + point at the adopt path instead.
+    if (found?.source === 'native') {
+      Alert.alert(
+        lang === 'zh' ? '原生会话（不在 tmux）' : 'Native session (not in tmux)',
+        lang === 'zh'
+          ? '这个会话直接跑在终端窗口里，手机只能感知它的状态，无法查看屏幕或输入。想远程控制：在 Mac 上运行 gtmux adopt 把它收进 tmux。'
+          : "This session runs in a plain terminal window — the phone can sense its state but can't view or type into it. To control it remotely, adopt it into tmux on the Mac with gtmux adopt.",
+      );
+      return;
+    }
     if (wideRef.current) {
       navRef.navigate('Radar', {selectPane: pane});
       return;
     }
-    const found = agents.find(a => a.pane_id === pane);
     const agent: Agent =
       found ?? {
         pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
