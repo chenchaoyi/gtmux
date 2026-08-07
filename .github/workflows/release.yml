@@ -235,7 +235,7 @@ jobs:
           CASK
           cd "$TAP"
           git config user.name chenchaoyi
-          git config user.email ccy.chenchaoyi@gmail.com
+          git config user.email gtmux@ccy.dev
           git add Casks/gtmux-app.rb
           if git diff --cached --quiet; then
             echo "cask unchanged"
