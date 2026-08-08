@@ -96,20 +96,22 @@ type Attachment = {id: string; uri: string; name: string; type: string; isImage:
 // different option set — so it's removed; the card is the single, accurate reply UI.
 
 // Permanent control-key pills. Tab accepts the agent's highlighted/recommended
-// choice or completes its ghost suggestion; ⏎ then SUBMITS that line — a bare
-// Enter to the pane, NOT the same as Send (↑), which only submits text typed into
-// the composer field. Tab→⏎ sit adjacent so "accept the suggestion, then send it"
-// is two taps in the resting row, with no detour through the input box. ↑/↓ navigate
-// and ␣ toggles — so an interactive TUI picker (Claude Code's AskUserQuestion, single
-// OR multi-select) is DRIVABLE from the phone: ↑/↓ to move, ␣ to check a box, ⏎ to
-// submit. (Those pickers get no one-tap ApprovalCard — a number-send can't drive them —
-// so the terminal keys ARE the reply path.) Ctrl-C interrupts, Esc cancels.
+// choice or completes its ghost suggestion; ↑/↓ navigate an interactive TUI
+// picker (Claude Code's AskUserQuestion); ⏎ then SUBMITS the highlighted line —
+// a bare Enter to the pane, NOT the same as Send (↑ in the input row), which only
+// submits text typed into the composer field. The order follows that flow:
+// navigate (↑/↓) → commit (⏎) → erase (⌫) → interrupt (Ctrl-C) / cancel (Esc).
+// (Those pickers get no one-tap ApprovalCard — a number-send can't drive them —
+// so the terminal keys ARE the reply path.) ⌫ erases in the pane's own input —
+// the fix-a-typo key when driving the agent's prompt directly. The ␣ Space pill
+// was REMOVED (2026-08-08, user call): it did nothing useful in practice, and a
+// literal space is typable from the composer field anyway.
 const CONTROL_KEYS: {label: string; key: string}[] = [
   {label: 'Tab', key: 'Tab'},
-  {label: '⏎', key: 'Enter'},
   {label: '↑', key: 'Up'},
   {label: '↓', key: 'Down'},
-  {label: '␣', key: 'Space'},
+  {label: '⏎', key: 'Enter'},
+  {label: '⌫', key: 'BSpace'},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
 ];
@@ -377,7 +379,7 @@ export function Composer({
       </Key>
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
       {CONTROL_KEYS.map(k => (
-        <Key key={k.label} onPress={() => send({key: k.key})}>
+        <Key key={k.label} onPress={() => send({key: k.key})} testID={`${TestIds.composer.controlKey}-${k.key}`}>
           {k.label}
         </Key>
       ))}

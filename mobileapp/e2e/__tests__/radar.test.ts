@@ -60,8 +60,17 @@ gated('radar (live, debug-driven)', () => {
     const paths = net.map(e => String(e.path));
     expect(paths.some(p => p.startsWith('/api/agents'))).toBe(true);
     expect(paths.some(p => p.startsWith('/api/pane'))).toBe(true);
-    // None should be a client/server error.
-    const bad = net.filter(e => typeof e.status === 'number' && (e.status as number) >= 400);
+    // None should be a client/server error — EXCEPT tolerated version skew: the
+    // app probes optional endpoints that an older live serve may not have yet
+    // (e.g. /api/awake shipped after 0.43.x; the client maps its 404 to "no
+    // server-mode chip" and moves on). A 404 there is graceful degradation, not
+    // a defect — while a 404 on a core surface (/api/agents, /api/pane) or any
+    // 5xx must still fail the test.
+    const versionSkewOk = (e: Record<string, unknown>) =>
+      e.status === 404 && String(e.path).startsWith('/api/awake');
+    const bad = net.filter(
+      e => typeof e.status === 'number' && (e.status as number) >= 400 && !versionSkewOk(e),
+    );
     if (bad.length) {
       // eslint-disable-next-line no-console
       console.error('[radar] non-2xx API calls:', JSON.stringify(bad));

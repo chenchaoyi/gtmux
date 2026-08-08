@@ -54,6 +54,9 @@ export const TestIds = {
     input: 'composer-input',
     send: 'composer-send',
     keyboard: 'composer-kbd',
+    // one per resting-row control key; suffixed with the tmux key name it sends →
+    // `${composer.controlKey}-Tab` / `-Up` / `-Down` / `-Enter` / `-BSpace` / `-C-c` / `-Escape`
+    controlKey: 'composer-key',
     snippets: 'composer-snippets',
     snippetSheet: 'composer-snippet-sheet',
     history: 'composer-history',

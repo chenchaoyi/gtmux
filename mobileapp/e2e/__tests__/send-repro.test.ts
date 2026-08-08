@@ -49,9 +49,14 @@ gated('send repro (live, debug-driven)', () => {
     }
     await screenshot('sr-1-detail');
 
+    // waitForExist, NOT waitForDisplayed: on a busy pane the terminal's hundreds
+    // of <Text> rows overwhelm WDA's AX visibility queries ("Cannot determine
+    // visiblity … Defaulting to: 0", 2-4s per probe), so isDisplayed returns a
+    // false negative for a button that is plainly on screen (2026-08-08 run).
+    // Existence + click is reliable — the click itself fails if it can't land.
     const kbd = driver.$(`~${TestIds.composer.keyboard}`);
     try {
-      await kbd.waitForDisplayed({timeout: 8_000});
+      await kbd.waitForExist({timeout: 10_000});
       await kbd.click();
       await settle(700);
     } catch (err) {

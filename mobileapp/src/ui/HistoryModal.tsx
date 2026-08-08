@@ -21,6 +21,9 @@ import {Palette} from './theme';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 const DELETE_W = 78; // revealed delete-button width
+// Destructive-action red (same value as the row Delete background + SettingsRow
+// `danger`). Fixed, not theme-derived: it must stay red in both themes.
+const DANGER = '#EF4444';
 
 // Clearing ALL history is destructive → confirm first.
 function confirmClear(lang: Lang, onClear: () => void) {
@@ -115,8 +118,16 @@ export function HistoryModal({
           <View style={styles.head}>
             <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '历史' : 'History'}</Text>
             {history.length > 0 && (
-              <TouchableOpacity onPress={() => confirmClear(lang, onClear)} hitSlop={hit}>
-                <Text style={[styles.clear, {color: pal.fg3}]}>{lang === 'zh' ? '清空' : 'Clear'}</Text>
+              <TouchableOpacity
+                onPress={() => confirmClear(lang, onClear)}
+                hitSlop={hit}
+                accessibilityRole="button"
+                testID="history-clear">
+                {/* Danger red, NOT pal.fg3 — the tertiary tone (~34%) made a live,
+                    tappable button read as permanently disabled (user report). Red
+                    matches the row Delete action + SettingsRow `danger`: this is a
+                    destructive control, and it must LOOK enabled. */}
+                <Text style={[styles.clear, {color: DANGER}]}>{lang === 'zh' ? '清空' : 'Clear'}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -156,7 +167,7 @@ const styles = StyleSheet.create({
   row: {paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth},
   rowText: {fontSize: 14, lineHeight: 19},
   // delete action sits BEHIND the row, revealed as it slides left.
-  deleteBg: {position: 'absolute', top: 0, bottom: 0, right: 0, width: DELETE_W, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EF4444'},
+  deleteBg: {position: 'absolute', top: 0, bottom: 0, right: 0, width: DELETE_W, alignItems: 'center', justifyContent: 'center', backgroundColor: DANGER},
   deleteBtn: {flex: 1, width: DELETE_W, alignItems: 'center', justifyContent: 'center'},
   deleteText: {color: '#fff', fontSize: 13, fontWeight: '700'},
 });
