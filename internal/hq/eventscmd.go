@@ -54,7 +54,7 @@ func validSeverity(level string) bool {
 // CmdEvents implements `gtmux events [--follow] [--json] [--since <dur>]
 // [--since-seq <n>] [--severity <level>]`.
 func CmdEvents(args []string) int {
-	follow, jsonOut := false, false
+	follow, jsonOut, all := false, false, false
 	since := int64(0)
 	sinceSeq := int64(-1) // -1 = not given (0 is a valid cursor: "everything retained")
 	ackSeq := int64(-1)   // -1 = not given (0 is a valid ack: "back to the start")
@@ -66,6 +66,8 @@ func CmdEvents(args []string) int {
 			follow = true
 		case a == "--json":
 			jsonOut = true
+		case a == "--all":
+			all = true
 		case a == "--since":
 			if i+1 >= len(args) {
 				return eventsUsage()
@@ -154,15 +156,21 @@ func CmdEvents(args []string) int {
 		// Sequence-filtered delta read (hq-perception-v2): everything retained with
 		// seq strictly greater than the cursor, oldest first — the pull-on-wake
 		// primitive. Combinable with --severity/--json; --follow is ignored (one-shot).
+		var delta []events.Record
 		maxSeq := sinceSeq
 		for _, r := range events.Read(0, time.Now().Unix()) {
 			if r.Seq > sinceSeq {
 				if r.Seq > maxSeq {
 					maxSeq = r.Seq
 				}
-				print(r)
+				delta = append(delta, r)
 			}
 		}
+		shown, hidden := pullView(delta, minSeverity == "" && !all)
+		for _, r := range shown {
+			print(r)
+		}
+		noteHiddenEcho(hidden)
 		stampHQPull()
 		// This delta read IS HQ's consumption writeback (hq-watermark-wakes): the everyday
 		// path needs no new discipline, because pulling on a wake is what HQ already does.
@@ -202,8 +210,8 @@ func CmdEvents(args []string) int {
 }
 
 func eventsUsage() int {
-	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
-		"用法：gtmux events [--follow|-f] [--json] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
+	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--all] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
+		"用法：gtmux events [--follow|-f] [--json] [--all] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
 	i18n.Say("  The live stream of every session's lifecycle events — the subscription",
 		"  每个 session 生命周期事件的实时流 —— gtmux HQ 及脚本的订阅入口。")
 	i18n.Say("  gtmux HQ and scripts tail it. Bare form shows the last hour.",
@@ -222,6 +230,10 @@ func eventsUsage() int {
 		"  从中控目录运行的不过滤 --since-seq 读取会推进中控的消费水位;")
 	i18n.Say("  watermark; anything past it re-knocks as `unread` until consumed.",
 		"  水位之后仍未消费的事件会以 `unread` 反复敲门,直到被消费。")
+	i18n.Say("  That pull shows exactly the DEBT: HQ's own records and pane-less blinks are",
+		"  该增量只显示「债务」本身：你自己的记录与无 pane 闪断会被隐藏(它们本就不计数),")
+	i18n.Say("  hidden (they never counted) — `--all` includes them, and still consumes.",
+		"  需要全量加 `--all`(同样计入消费)。")
 	i18n.Say("  --ack N: write the watermark back explicitly (HQ home only), for when the",
 		"  --ack N：显式回写水位(仅中控目录),用于以别的方式(如 digest 全量对账)")
 	i18n.Say("  stream was reconciled another way (a full `gtmux digest`).",
@@ -265,6 +277,56 @@ func insideHQHome() bool {
 	}
 	home := state.HQHome()
 	return home != "" && cwd != home && strings.HasPrefix(cwd, home+string(os.PathSeparator))
+}
+
+// pullView applies the SUPERVISOR'S PULL VIEW: the delta HQ reads to clear its debt shows
+// exactly the records that made up that debt, and nothing else. It returns what to print
+// and how many records it withheld.
+//
+// This closes an asymmetry that was, measured, the single largest cost in HQ perception
+// (hq-unread-noise audit, 2026-08-08): the COUNT excluded HQ's own records and pane-less
+// blinks, while the READ that clears it returned everything — so 68.7 % of what a knock
+// sent HQ to read was its own echo (75.1 % for the ≤2-event knocks that are 79 % of them),
+// and the median knock spent a whole HQ turn reading ~3.4 records to find ONE new fact.
+// One set said what HQ owed; a larger, different set was what HQ had to read.
+//
+// It is NOT a filter in the sense the consumption rule forbids. A `--severity` read shows a
+// SUBSET of what HQ owes, which is why it cannot count; this shows precisely what HQ owes,
+// so consumption is untouched. `--all` restores the raw view for the times HQ needs to see
+// its own trail (and still consumes — it is a superset).
+//
+// HQ's own records are identified by the CALLER'S OWN `$TMUX_PANE`, never by resolving the
+// HQ pane through tmux: an agent running this from its pane already knows which pane it is,
+// and reading an env var keeps the read path free of the tmux round-trips whose wedging
+// once froze the radar. (That is also why the B9 warning does not key on the pane — see
+// insideHQHome: knowing your own pane tells you nothing about whether you are the
+// supervisor, which is the question that one has to answer.)
+func pullView(delta []events.Record, apply bool) (shown []events.Record, hidden int) {
+	if !apply || !fromHQHome() {
+		return delta, 0
+	}
+	own := os.Getenv("TMUX_PANE")
+	blink := unreadBlinks(delta)
+	for i, r := range delta {
+		if (own != "" && r.Pane == own) || blink[i] {
+			hidden++
+			continue
+		}
+		shown = append(shown, r)
+	}
+	return shown, hidden
+}
+
+// noteHiddenEcho tells HQ what the pull view withheld. Silent hiding would be the same
+// failure as the silent non-consumption B9 fixed: a read that quietly shows less than it
+// says is one HQ cannot reason about. stdout stays the read's product; this goes to stderr.
+func noteHiddenEcho(hidden int) {
+	if hidden <= 0 {
+		return
+	}
+	n := strconv.Itoa(hidden)
+	i18n.Sae(n+" of your own records and pane-less blinks hidden (they are not debt) — `--all` to include them",
+		n+" 条你自己的记录与无 pane 闪断已隐藏（它们不计入债务）—— 需要全量请加 `--all`")
 }
 
 // consumeHQRead advances HQ's consumption watermark for a completed delta read, and — when

@@ -512,8 +512,10 @@ class-wake channel fires only for a pane, making the `unread` knock the ONLY cha
 have. A pane-less `SessionStart` that is not quickly matched by an end SHALL keep counting
 too: it is a native session coming online.
 
-Excluded records SHALL remain in the stream and in every unfiltered read — the exclusion is
-only from the "owes HQ a read" tally.
+Excluded records SHALL remain in the stream: the exclusion is from the "owes HQ a read"
+tally, never from the log. The supervisor's own delta pull SHALL show the SAME set the
+count defines (see "Consumption is HQ's own explicit act"), and any other read SHALL return
+them unchanged.
 
 The `unread` line SHALL name the composition of its count — a compact by-source breakdown
 alongside the total — so an echo-dominated or single-source accumulation is diagnosable
@@ -562,8 +564,8 @@ rather than reporting the entire retained history as unconsumed.
 
 - **WHEN** the only records past the watermark are same-second `SessionStart`/`SessionEnd`
   pairs with an empty `pane` from a short-lived subprocess
-- **THEN** no `unread` wake is delivered, and those records still appear in an unfiltered
-  `gtmux events --since-seq` read
+- **THEN** no `unread` wake is delivered, and those records remain in the log — returned by
+  `gtmux events --since-seq --all` and by any non-supervisor read
 
 #### Scenario: A pane-less agent's work is still a backlog
 
@@ -595,6 +597,22 @@ A `--severity`-FILTERED read SHALL NOT advance the watermark, since it showed HQ
 neither SHALL a read whose cursor starts AHEAD of the current watermark, since it skipped
 the range between. Both remain permitted — they simply leave the debt standing. An
 invocation from anywhere other than the HQ home SHALL NOT move the watermark.
+
+The supervisor's own delta pull SHALL show the SAME set the count defines: an UNFILTERED
+`--since-seq` read run from the HQ home SHALL omit the records the tally excludes — the
+caller's own pane records and the pane-less blinks — and SHALL report on stderr how many it
+withheld, so the omission is never silent. `--all` SHALL restore the raw view. Both forms
+SHALL advance the watermark: neither is a `--severity` filter showing a SUBSET of what HQ
+owes; one shows exactly that set and the other a superset of it. Any read that is not the
+supervisor's SHALL be returned unchanged.
+
+This exists because the two sets disagreeing was, measured, the largest single cost in HQ
+perception: 68.7 % of the records a knock's pull returned were HQ's own, so the median
+knock spent an HQ turn reading its own trail to find one new fact.
+
+The caller's own pane SHALL be identified from its environment (`$TMUX_PANE`), never by
+resolving the HQ pane through tmux — the read path must stay free of tmux round-trips,
+whose wedging has frozen a producer before.
 
 A non-counting read SHALL fail loud when it plausibly IS the supervisor: an unfiltered
 `--since-seq` read invoked from a cwd STRICTLY INSIDE the HQ home (a subdirectory such as
@@ -637,6 +655,25 @@ meaning no longer have opposite failure modes.
 
 - **WHEN** an unfiltered `--since-seq` read runs from a cwd unrelated to the HQ home
 - **THEN** no warning is emitted and the watermark does not move
+
+#### Scenario: The pull shows the debt, not HQ's own trail
+
+- **WHEN** HQ pulls a delta from its home whose range holds its own wake echo, its own
+  reply, a pane-less blink pair, and one turn-end from a worker pane
+- **THEN** only the worker's turn-end is printed, stderr names how many records were
+  withheld, and the watermark still advances to the end of the range
+
+#### Scenario: --all restores the raw view and still consumes
+
+- **WHEN** HQ pulls the same delta with `--all`
+- **THEN** every record in the range is printed, nothing is reported as withheld, and the
+  watermark advances
+
+#### Scenario: A bystander's pull is not reshaped
+
+- **WHEN** an unfiltered `--since-seq` read runs from a cwd unrelated to the HQ home
+- **THEN** every record in the range is printed — the pull view is the supervisor's view of
+  its own debt, and a caller with no debt has no echo to hide
 
 ### Requirement: A degraded HQ session wakes itself to rotate
 

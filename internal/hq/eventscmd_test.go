@@ -255,6 +255,85 @@ func TestUnrelatedCwdReadNeitherWarnsNorConsumes(t *testing.T) {
 	}
 }
 
+// The supervisor's pull shows exactly the DEBT (hq-unread-noise task 6.1). Measured, 68.7 %
+// of what a knock sent HQ to read was its own echo — the count excluded those records, the
+// read returned them, and HQ spent a turn per knock digging one new fact out of its own
+// trail. Now the two sets are the same set.
+func TestSupervisorPullHidesItsOwnEcho(t *testing.T) {
+	asHQ(t)
+	t.Setenv("TMUX_PANE", "%4") // HQ reads from its own pane; no tmux round-trip needed
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+
+	events.Append(events.Record{Ts: now, Event: "UserPromptSubmit", Pane: "%4",
+		Summary: "#a3f1c2"}) // the wake echoed back
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%4"}) // HQ's reply
+	events.Append(events.Record{Ts: now, Event: "SessionStart", Agent: "Claude Code"})
+	events.Append(events.Record{Ts: now, Event: "SessionEnd", Agent: "Claude Code"}) // a blink
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21", Loc: "web:1.0"})
+	latest := events.CurrentSeq()
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if strings.Contains(out, "#a3f1c2") {
+		t.Errorf("the pull showed HQ its own echo:\n%s", out)
+	}
+	if !strings.Contains(out, "web:1.0") {
+		t.Errorf("the pull must still show the actual debt:\n%s", out)
+	}
+	if strings.Count(out, "\n") != 1 {
+		t.Errorf("want exactly the 1 debt record, got:\n%s", out)
+	}
+	// Hiding must never be silent — that was B9's failure mode in a new place.
+	if !strings.Contains(errs, "4") {
+		t.Errorf("stderr must say how many records were withheld, got %q", errs)
+	}
+	// And it is NOT a filtered read: it showed precisely what HQ owed, so it consumes.
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("watermark = %d, want the pull still counted as consumption (%d)", got, latest)
+	}
+}
+
+// --all is the escape hatch for when HQ needs its own trail back, and it consumes too —
+// it is a superset of the debt, not a subset.
+func TestPullAllShowsEverythingAndStillConsumes(t *testing.T) {
+	asHQ(t)
+	t.Setenv("TMUX_PANE", "%4")
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%4", Loc: "hq:0.0"})
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21", Loc: "web:1.0"})
+	latest := events.CurrentSeq()
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0", "--all"}) })
+	if !strings.Contains(out, "hq:0.0") || !strings.Contains(out, "web:1.0") {
+		t.Errorf("--all must show everything past the cursor:\n%s", out)
+	}
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("--all hides nothing, so it must say nothing; got %q", errs)
+	}
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("watermark = %d, want %d", got, latest)
+	}
+}
+
+// A non-supervisor read is untouched: the pull view is the SUPERVISOR's view of its own
+// debt, and a worker tailing the stream in a repo has no debt and no echo to hide.
+func TestNonSupervisorPullIsUnfiltered(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(t.TempDir())
+	t.Setenv("TMUX_PANE", "%4")
+	now := time.Now().Unix()
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%4", Loc: "hq:0.0"})
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if !strings.Contains(out, "hq:0.0") {
+		t.Errorf("a bystander's read must not be reshaped by HQ's debt rules:\n%s", out)
+	}
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("…and must stay silent; got %q", errs)
+	}
+}
+
 // A worker running `gtmux events` in its own repo must not be able to declare the
 // supervisor caught up.
 func TestEventsAckRefusedOutsideHQHome(t *testing.T) {

@@ -67,8 +67,12 @@ over one Go core (gtmux-core is the single data source):
   PAIRING, never on the empty pane alone**: native (non-tmux) agents' turns and gtmux's own
   `gtmux:*` triggers are pane-less too, and since every CLASS wake is gated on `pane != ""`,
   `unread` is their only channel. The knock line names its composition
-  (`7 unconsumed (%21 ×4 · control)`). `gtmux doctor`'s `event consumption` row flags a
-  lagging HQ.
+  (`7 unconsumed (%21 ×4 · control)`). **HQ's PULL shows that same set** — the supervisor's
+  unfiltered `--since-seq` omits what the count omits (measured: 68.7% of a knock's pull was
+  HQ's own echo), reports the withheld count on stderr, and `--all` restores the raw view;
+  both still consume (neither shows LESS than the debt — that is what disqualifies a
+  `--severity` read). Nothing leaves the log; a non-supervisor read is untouched.
+  `gtmux doctor`'s `event consumption` row flags a lagging HQ.
   **HQ's OWN SESSION is watched too** (change `hq-self-rotate`,
   `internal/hq/selfrotate.go`): a long, near-full session degrades the boundary between what
   HQ produced and what reached it — on 2026-08-03 one read its own `Stop` output as the

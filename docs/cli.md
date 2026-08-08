@@ -239,13 +239,20 @@ why this needs no new habit), or an explicit `gtmux events --ack <seq>`. A
 the watermark (it skipped the range between). Until then the knock repeats every
 `hqWake.unreadRepeatSec` (default **300 s**), at standing priority.
 
-Two kinds of record are excluded from the **count** (never from the stream — an unfiltered
-read still returns them): hq's own lines, or the channel would feed itself forever; and a
-pane-less lifecycle **blink** — a `SessionStart` with no pane whose `SessionEnd` follows
-within seconds, i.e. a short-lived subprocess hq can neither act on nor attribute. The
-blink rule keys on that Start/End **pairing**, never on the empty pane alone: a native
-(non-tmux) agent's turns and gtmux's own `gtmux:*` triggers are pane-less too, and for them
-this knock is the *only* channel there is — the class wakes all require a pane.
+Two kinds of record are excluded from the **count**: hq's own lines, or the channel would
+feed itself forever; and a pane-less lifecycle **blink** — a `SessionStart` with no pane
+whose `SessionEnd` follows within seconds, i.e. a short-lived subprocess hq can neither act
+on nor attribute. The blink rule keys on that Start/End **pairing**, never on the empty pane
+alone: a native (non-tmux) agent's turns and gtmux's own `gtmux:*` triggers are pane-less
+too, and for them this knock is the *only* channel there is — the class wakes all require a
+pane.
+
+**hq's pull shows that same set** — the debt, not hq's own trail. Measured on a week of one
+fleet, 68.7 % of what a knock sent hq to read was its own echo, so a knock about *one* new
+fact cost a whole turn to read. The count and the read now name the same records; `--all`
+gets the raw view back, and both still count as consumption (one is exactly what hq owes,
+the other a superset). Nothing is ever removed from the log, and a non-supervisor read is
+returned untouched.
 
 This is what makes perception complete rather than well-guessed. Before it, an event no
 class claimed simply never arrived: a session finishing work nobody had dispatched through
@@ -545,6 +552,12 @@ used to be silent, so hq read the delta, believed it had consumed, and watched t
 cursor re-knock; it now warns on stderr, naming the home to run from, while stdout and the
 exit code stay exactly the same. A read from an unrelated directory stays silent — it owns
 no watermark to miss.
+
+hq's own delta pull is also **scoped to the debt**: it omits the records that never counted
+(hq's own pane's lines and pane-less blinks) and says on stderr how many it withheld.
+`--all` restores the raw view; both forms consume, because neither shows hq *less* than it
+owes — which is exactly what disqualifies a `--severity` read. Anyone else's read is
+unchanged.
 
 `--severity <tier>` filters to that tier **and above**, and the tiers rank
 *urgency*, not relevance — so they are three different reads, not one:

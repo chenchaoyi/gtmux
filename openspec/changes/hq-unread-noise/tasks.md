@@ -71,9 +71,19 @@ maintenance triggers #647 shipped to reach HQ. Adopted rule: liveness pairing.
 - [ ] 5.3 Archive this change once implemented; HQ moves ledger C7/C14/B9(tool half) and
       the verified-fixed B3 to 已关闭 in its own notes (not this repo).
 
-## 6. Audit-driven, NOT in this change (commander's call)
+## 6. The pull shows the debt (audit-driven — folded in on the commander's call)
 
-- [ ] 6.1 The pull's exclusion set should equal the count's — the 68.7 % echo. Scoped in
-      the proposal under "Audit-driven addition"; needs a `--all` escape hatch and a
-      playbook edit (hence an `hqPlaybookVersion` bump), so it is a companion change, not
-      a quiet extension of this one.
+- [x] 6.1 `internal/hq/eventscmd.go` `pullView`: an unfiltered `--since-seq` read run from
+      the HQ home omits what `unreadScan` omits — the caller's own pane records and the
+      paired blinks — and reports the withheld count on stderr. `--all` restores the raw
+      view. Both still consume: neither shows LESS than the debt, which is the property a
+      `--severity` read lacks. A non-supervisor read is returned unchanged.
+- [x] 6.2 The caller's own pane comes from `$TMUX_PANE`, never from resolving the HQ pane
+      through tmux — the read path stays free of the round-trips whose wedging froze the
+      radar once. (Consistent with 4.2: knowing your OWN pane is free; knowing whether you
+      are the SUPERVISOR is what would have cost a tmux call.)
+- [x] 6.3 Tests: the pull hides HQ's echo + blinks, prints only the debt, names the withheld
+      count, and still advances the watermark; `--all` shows everything, says nothing, and
+      also consumes; a bystander's read is unreshaped and silent.
+- [x] 6.4 Playbook v17 (`hqPlaybookVersion` bumped, per the repo rule) teaches the new pull
+      shape + `--all`, and the cwd rule behind the B9 warning.
