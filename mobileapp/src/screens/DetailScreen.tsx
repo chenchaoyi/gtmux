@@ -115,6 +115,7 @@ export function DetailView({
   // just see none. Fetched off /api/panes (a convenience surface — [] on failure).
   const [neighbors, setNeighbors] = useState<PaneRow[]>([]);
   const [neighborH, setNeighborH] = useState(0); // measured once, for the collapse animation
+  const [segH, setSegH] = useState(0); // Chat/Terminal segmented — same collapse treatment
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
@@ -503,9 +504,25 @@ export function DetailView({
         </Animated.View>
       )}
 
-      {/* B1: 对话 ↔ 终端 segmented — hidden for a PLAIN pane (no chat, terminal only) */}
+      {/* B1: 对话 ↔ 终端 segmented — hidden for a PLAIN pane (no chat, terminal only).
+          Auto-collapses on scroll-away with the SAME `collapse` driver as the header/
+          neighbor strip (one gesture, all top chrome folds together); reveals on
+          flicking back to the live tail. */}
       {!fullscreen && !isPlainPane && (
-        <View style={styles.segWrap}>
+        <Animated.View
+          style={{
+            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+            height: segH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [segH, 0]}) : undefined,
+            overflow: 'hidden',
+          }}>
+        <View
+          onLayout={e => {
+            // Measure ONCE at natural height (same rule as headerH: a re-measure
+            // during collapse would capture a shrunken value).
+            const h = e.nativeEvent.layout.height;
+            if (segH === 0 && h > 0) setSegH(h);
+          }}
+          style={styles.segWrap}>
           <View style={[styles.seg, {backgroundColor: pal.surface, borderColor: pal.divider}, isWide && styles.segWide]}>
             <Seg
               label={lang === 'zh' ? '对话' : 'Chat'}
@@ -523,6 +540,7 @@ export function DetailView({
             />
           </View>
         </View>
+        </Animated.View>
       )}
 
       {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen */}
