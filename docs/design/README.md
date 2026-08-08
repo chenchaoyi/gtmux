@@ -20,7 +20,6 @@
 | `WEB.md` | Web 浏览器镜像权威规范(工作台 / 只读红线 / 对话模式 / 头像 / 键盘)。 |
 | `ITERATIONS-2026-06.md` | 本轮所有变更清单(现状→改动→落地点)。 |
 | `REVIEW-mobile-01.md` | 实拍走查(P0/P1/P2)。 |
-| `CLAUDE.snippet.md` | 合并进仓库根 `CLAUDE.md`,让后续会话持续遵守。 |
 | `mockup/gtmux-menubar.dc.html` | 菜单栏可交互原型(终版,§00–§11)。 |
 | `mockup/gtmux-mobile.dc.html` | 移动端可交互原型(§01–§16)。 |
 | `mockup/gtmux-web.dc.html` | Web 浏览器镜像设计(独立)。 |
