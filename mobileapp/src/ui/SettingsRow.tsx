@@ -8,6 +8,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {SIcon, IconName} from './SettingsIcons';
+import {TestIds} from '../constants/testIds';
 
 const ACCENT = '#06B6D4';
 const SELECTED_TINT = 'rgba(6,182,212,0.12)'; // current option's row highlight
@@ -146,7 +147,13 @@ export function PickerSheet<T extends string>({
         {/* sheet: an ELEVATED surface (pal.surface, lighter than the page) that slides
             up from the bottom; measured once so the slide starts fully off-screen. */}
         <Animated.View style={[styles.sheetWrap, {transform: [{translateY}]}]}>
+          {/* accessible={false}: a Pressable is an accessibility element by DEFAULT,
+              and this one (a tap-catcher so sheet touches don't fall through to the
+              dismissing dim) was swallowing every child into ONE merged AX element
+              ("Language, System, English, ✓, 中文") — unreadable to VoiceOver and
+              untargetable by UI automation. The options below are the real elements. */}
           <Pressable
+            accessible={false}
             onLayout={e => setSheetH(e.nativeEvent.layout.height)}
             style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider}]}
             onPress={() => {}}>
@@ -161,6 +168,15 @@ export function PickerSheet<T extends string>({
                 return (
                   <TouchableOpacity
                     key={o.key}
+                    // each option is its OWN accessibility element: a button whose
+                    // label carries the option (+ sub) and whose state says selected —
+                    // VoiceOver reads "System, selected, button", and Appium can tap
+                    // one option instead of the whole merged sheet.
+                    accessible
+                    accessibilityRole="button"
+                    accessibilityLabel={o.sub ? `${o.label}, ${o.sub}` : o.label}
+                    accessibilityState={{selected: sel}}
+                    testID={`${TestIds.settings.pickerOption}-${o.key}`}
                     activeOpacity={0.6}
                     onPress={() => {
                       onSelect(o.key);

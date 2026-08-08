@@ -36,7 +36,7 @@ import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, 
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
-import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor} from './term';
+import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 
@@ -79,7 +79,11 @@ interface Props {
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 
-const DEF_BG = '#17171a';
+// The terminal surface's default (always-dark) background. Exported so the
+// Detail full-screen path can paint its safe-area backdrop the SAME dark —
+// regardless of the app theme — instead of showing a light band above the pane.
+export const TERM_BG = '#17171a';
+const DEF_BG = TERM_BG;
 const DEF_FG = '#d4d2cc';
 
 // iOS system monospace (covers Latin + falls back to PingFang for CJK at 2-cell
@@ -322,19 +326,27 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   }, [shown, theme?.palette, fg, cols, fs]);
   const lines = parsed.lines;
 
-  // place the cursor: capture-pane ends rows with "\n" (trailing empty line), and
-  // `up` = rows above the bottom content line. This stays on LOGICAL lines — the
-  // capture's bottom-anchored `up` counts logical lines, not visual rows — the
-  // spliced line is wrapped fresh below.
+  // Trim the trailing all-blank rows from the RENDER and place the cursor.
+  // capture-pane keeps the pane grid's blank tail (the bottom-anchored cursor
+  // math needs the row count), but rendering it pinned a mostly-empty tall
+  // pane's few content lines above the viewport — the all-black-pane bug. So
+  // renderView computes the cursor's logical line on the UNTRIMMED array
+  // (capture-pane ends rows with "\n" — trailing empty line — and `up` counts
+  // LOGICAL lines, not visual rows) and how many leading lines to keep: down to
+  // the last visible content, never cutting the cursor's own row. The spliced
+  // line is wrapped fresh below.
+  const view = useMemo(() => renderView(lines, shownCursor), [lines, shownCursor]);
+  const vLines = useMemo(() => (view.keep < lines.length ? lines.slice(0, view.keep) : lines), [lines, view.keep]);
+  const vRows = useMemo(
+    () => (parsed.rows ? (view.keep < parsed.rows.length ? parsed.rows.slice(0, view.keep) : parsed.rows) : null),
+    [parsed.rows, view.keep],
+  );
   const rendered = useMemo(() => {
-    if (!shownCursor || shownCursor.visible === false) return lines;
-    let last = lines.length - 1;
-    if (last > 0 && lines[last].length === 0) last--; // skip the trailing-newline blank
-    const row = Math.max(0, Math.min(last, last - (shownCursor.up | 0)));
-    const copy = lines.slice();
-    copy[row] = cursorSpans(copy[row] || [], shownCursor.x | 0, curColor, bg);
+    if (view.cursorRow < 0 || !shownCursor) return vLines;
+    const copy = vLines.slice();
+    copy[view.cursorRow] = cursorSpans(copy[view.cursorRow] || [], shownCursor.x | 0, curColor, bg);
     return copy;
-  }, [lines, shownCursor, curColor, bg]);
+  }, [vLines, view.cursorRow, shownCursor, curColor, bg]);
 
   // iOS: flatten logical lines into the VISUAL ROWS the block stack renders (row
   // index = grid row). Unchanged lines reuse their cached rows arrays (per-row
@@ -347,8 +359,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // in term.ts — extracted so the overlay-rows == stack-rows invariant is
   // unit-tested against the real builder).
   const grid = useMemo(
-    () => (Platform.OS === 'ios' ? flattenGrid(rendered, lines, parsed.rows, cols) : null),
-    [rendered, lines, parsed.rows, cols],
+    () => (Platform.OS === 'ios' ? flattenGrid(rendered, vLines, vRows, cols) : null),
+    [rendered, vLines, vRows, cols],
   );
 
   // ANDROID-ONLY (iOS has no standing overlay — links tap through to the color layer
@@ -358,10 +370,10 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // (span.href). Built from the same `lines` spans as plainText so the flattened text
   // still equals plainText exactly (same wrapping/alignment). Cursor cell excluded.
   const plainText = useMemo(
-    () => (Platform.OS === 'android' ? lines.map(spans => spans.map(s => s.text).join('')).join('\n') : ''),
-    [lines],
+    () => (Platform.OS === 'android' ? vLines.map(spans => spans.map(s => s.text).join('')).join('\n') : ''),
+    [vLines],
   );
-  const overlaySegs = useMemo(() => (Platform.OS === 'android' ? linkSegsForLines(lines) : []), [lines]);
+  const overlaySegs = useMemo(() => (Platform.OS === 'android' ? linkSegsForLines(vLines) : []), [vLines]);
   const overlayHasLink = useMemo(() => overlaySegs.some(s => s.url), [overlaySegs]);
 
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the

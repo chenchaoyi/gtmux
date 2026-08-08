@@ -1,4 +1,4 @@
-import {PAD, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
+import {PAD, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -300,6 +300,77 @@ describe('wrapLine', () => {
   it('never splits a surrogate pair (code-point iteration)', () => {
     const rows = wrapLine([S('a😀b')], 3); // a(1)+😀(2)=3 → 'b' wraps
     expect(rowTxt(rows)).toEqual(['a😀', 'b']);
+  });
+});
+
+// ————— Trailing-blank trim (the all-black mostly-empty pane bug) —————
+
+describe('isBlankLine', () => {
+  const S = (text: string, extra: Partial<AnsiLine[number]> = {}): AnsiLine[number] => ({text, color: '#fff', ...extra});
+
+  it('empty / whitespace-only lines are blank', () => {
+    expect(isBlankLine([])).toBe(true);
+    expect(isBlankLine([S('')])).toBe(true);
+    expect(isBlankLine([S('   ')])).toBe(true);
+  });
+
+  it('any glyph makes it content', () => {
+    expect(isBlankLine([S('  x ')])).toBe(false);
+  });
+
+  it('a bg-painted run of spaces is VISIBLE content (TUI statusline), not blank', () => {
+    expect(isBlankLine([S('    ', {bg: '#222'})])).toBe(false);
+  });
+});
+
+describe('renderView', () => {
+  const S = (text: string): AnsiLine[number] => ({text, color: '#fff'});
+  // capture-pane shape: grid rows then the trailing-newline blank ('') line.
+  const capture = (rows: string[]): AnsiLine[] => [...rows.map(t => (t ? [S(t)] : [])), []];
+
+  it('trims the blank tail of a mostly-empty tall pane (content starts visible)', () => {
+    // 5 content lines + 45 blank grid rows: rendering all 50 bottom-anchored the
+    // viewport into the blanks → the all-black pane. Keep only the content.
+    const lines = capture(['a', 'b', 'c', 'd', 'e', ...Array(45).fill('')]);
+    expect(renderView(lines)).toEqual({keep: 5, cursorRow: -1});
+  });
+
+  it('cursor mapping is computed on the UNTRIMMED array (bottom-anchored up)', () => {
+    // cursor on the last content line: up = 45 blank rows below it.
+    const lines = capture(['a', 'b', 'c', 'd', 'e', ...Array(45).fill('')]);
+    expect(renderView(lines, {x: 0, up: 45, visible: true})).toEqual({keep: 5, cursorRow: 4});
+  });
+
+  it('after `clear`: cursor on the TOP row, everything below blank → keep 1', () => {
+    const lines = capture(['$ ', ...Array(49).fill('')]);
+    expect(renderView(lines, {x: 2, up: 49, visible: true})).toEqual({keep: 1, cursorRow: 0});
+  });
+
+  it('never trims the cursor row even when it sits BELOW the last content line', () => {
+    // content rows 0..4, cursor resting on blank row 6 → rows 5..6 must survive.
+    const lines = capture(['a', 'b', 'c', 'd', 'e', ...Array(45).fill('')]);
+    expect(renderView(lines, {x: 0, up: 43, visible: true})).toEqual({keep: 7, cursorRow: 6});
+  });
+
+  it('a full pane (content on the bottom row) trims nothing but the newline blank', () => {
+    const lines = capture(['a', 'b', 'c', 'prompt $']);
+    expect(renderView(lines, {x: 8, up: 0, visible: true})).toEqual({keep: 4, cursorRow: 3});
+  });
+
+  it('a hidden cursor still trims (alt-screen TUIs hide it)', () => {
+    const lines = capture(['a', '', '']);
+    expect(renderView(lines, {x: 0, up: 0, visible: false})).toEqual({keep: 1, cursorRow: -1});
+    expect(renderView(lines)).toEqual({keep: 1, cursorRow: -1});
+  });
+
+  it('an all-blank capture keeps one row (the grid never renders empty)', () => {
+    expect(renderView(capture(['', '', '']))).toEqual({keep: 1, cursorRow: -1});
+    expect(renderView([[]])).toEqual({keep: 1, cursorRow: -1});
+  });
+
+  it('a bg-painted blank row anchors the trim (statusline at the bottom survives)', () => {
+    const lines: AnsiLine[] = [[S('top')], [{text: '   ', color: '#fff', bg: '#333'}], [], []];
+    expect(renderView(lines)).toEqual({keep: 2, cursorRow: -1});
   });
 });
 

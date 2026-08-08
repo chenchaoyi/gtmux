@@ -45,7 +45,7 @@ done 态不带计数；计数=waiting 数否则 working 数（`BadgeText`）且*
 
 ### 移动端 F 轮（ITERATIONS §F，对照现有实现查漏补缺）
 - F1 计费全部移出手机：无付费墙；添加 server = 扫码主路径（`#c=`我的 Mac / `#g=`访客）；Servers 两轨分组（我的 MAC / 访客连接）、移除=清 Keychain+撤推送 token。
-- F2 Composer：静息键条 `⌨ | Tab ⏎ Ctrl-C Esc | 快捷短语▾ 历史`；写死 1/2/3 移除，waiting 回应由 **ApprovalCard**（`/api/options` 真实选项 1..N）承担；回车=换行、↑ 发送、⤢ 全屏撰写；附件先暂存后发送（上传带 %、失败重试、图片先过标注器）。
+- F2 Composer：静息键条 `⌨ | Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc | 常用语▾ 历史`（用户可见文案 2026-08 起「常用语 / Quick replies」）；写死 1/2/3 移除，waiting 回应由 **ApprovalCard**（`/api/options` 真实选项 1..N）承担；回车=换行、↑ 发送、⤢ 全屏撰写；附件先暂存后发送（上传带 %、失败重试、图片先过标注器）。
 - F3 通知：category 固定三键 1·Yes/2·Always/3·No，后台 `/api/send` **数字不带 Enter**；点按深链（payload 带 server 名先切服务器）；角标=waiting 数。
 - F4 设置页：Moshi 分组 + PickerSheet（行显当前值+›）；连接/终端/通知/通用/关于；**访客隐藏 owner 专属项**。
 - F5 iPad：SplitScreen 宽度≥768、侧栏 320 复用 SectionList、原地换主区、推送深链=选中行。
