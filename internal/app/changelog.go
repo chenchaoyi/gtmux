@@ -23,6 +23,10 @@ import (
 //	- spawn --title now names the session
 //	- restore returns you to the window you were on
 //
+//	user-zh:
+//	- spawn --title 现在会命名会话
+//	- restore 会把你带回原来的窗口
+//
 // goreleaser copies the tag body into the release, and this file reads it back. Two rules
 // make it trustworthy:
 //
@@ -32,9 +36,18 @@ import (
 //   - It is SILENT when it has nothing. No release notes, no network — print nothing.
 //     A "couldn't fetch the changelog" error after a successful install is noise about a
 //     cosmetic step, and reads as though the update itself went wrong.
+//
+// The `user-zh:` block is OPTIONAL. Tags were authored sometimes in English, sometimes in
+// Chinese, so the changelog language flipped between releases; two named blocks let the
+// reader's language (the same resolution every other gtmux string uses) pick the right
+// one, and either block stands in for a missing other — an old single-block tag keeps
+// working unchanged.
 
-// userLinePrefix marks the section of a tag message written for users.
+// userLinePrefix marks the section of a tag message written for users (English).
 const userLinePrefix = "user:"
+
+// userZhLinePrefix marks the optional Chinese twin of the `user:` block.
+const userZhLinePrefix = "user-zh:"
 
 // changelogMax is how many lines `gtmux update` prints. The reader just ran an update and
 // is on their way somewhere else; past a handful this stops being a summary. The rest is
@@ -66,10 +79,43 @@ func fetchReleases() []release {
 	return out
 }
 
-// userLines extracts the `user:` block from a release body: the lines after the marker,
-// up to the first blank line or the generated changelog heading. Bullet markers are
+// userLines extracts the user-facing notes from a release body in the reader's language
+// (the same resolution every other gtmux string uses): zh prefers the `user-zh:` block,
+// en prefers `user:`, and each falls back to the other when its own is absent — so an
+// old single-block tag keeps working unchanged, whichever language it was written in.
+func userLines(body string) []string { return userLinesFor(body, i18n.Lang()) }
+
+// userLinesFor is userLines with the language explicit (tests exercise both without
+// touching the process-global language).
+func userLinesFor(body, lang string) []string {
+	primary, fallback := userLinePrefix, userZhLinePrefix
+	if lang == "zh" {
+		primary, fallback = userZhLinePrefix, userLinePrefix
+	}
+	if l := markerLines(body, primary); len(l) > 0 {
+		return l
+	}
+	return markerLines(body, fallback)
+}
+
+// matchedMarker reports which user marker (if any) the trimmed line t opens, plus any
+// inline content on the marker line itself. `user-zh:` is checked first only for
+// tidiness — the two markers are not prefixes of each other.
+func matchedMarker(t string) (marker, rest string, ok bool) {
+	lt := strings.ToLower(t)
+	for _, m := range []string{userZhLinePrefix, userLinePrefix} {
+		if lt == m || strings.HasPrefix(lt, m+" ") {
+			return m, strings.TrimSpace(t[len(m):]), true
+		}
+	}
+	return "", "", false
+}
+
+// markerLines extracts one named block from a release body: the lines after its marker,
+// up to the first blank line, the generated changelog heading, or the OTHER language's
+// marker (the two blocks may sit back to back in either order). Bullet markers are
 // stripped so the caller controls presentation.
-func userLines(body string) []string {
+func markerLines(body, marker string) []string {
 	lines := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n")
 	var out []string
 	in, fenced := false, false
@@ -91,17 +137,21 @@ func userLines(body string) []string {
 			continue
 		}
 		if !in {
-			if strings.EqualFold(t, userLinePrefix) || strings.HasPrefix(strings.ToLower(t), userLinePrefix+" ") {
+			if m, rest, ok := matchedMarker(t); ok && m == marker {
 				in = true
 				// `user: one thing` on the marker line itself is that one thing.
-				if rest := strings.TrimSpace(t[len(userLinePrefix):]); rest != "" {
+				if rest != "" {
 					out = append(out, rest)
 				}
 			}
 			continue
 		}
-		// The block ends at a blank line or at the generated section below it.
+		// The block ends at a blank line, the generated section below it, or the other
+		// block's marker.
 		if t == "" || strings.HasPrefix(t, "#") {
+			break
+		}
+		if _, _, ok := matchedMarker(t); ok {
 			break
 		}
 		out = append(out, strings.TrimSpace(strings.TrimLeft(t, "-*• \t")))
