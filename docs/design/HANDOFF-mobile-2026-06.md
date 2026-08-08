@@ -1,3 +1,5 @@
+> **HISTORICAL (2026-06)** — the one-time handoff that bootstrapped the mobile app; the app has since shipped to the App Store and this file's "authoritative implementation state" claims are stale. Superseded by `docs/design/HANDOFF.md` + the root `CLAUDE.md`. Kept for the audit trail only.
+
 # HANDOFF — gtmux 手机远程联动(branch: `claude/tmux-agent-remote-app-kgk3u3`)
 
 > **给在用户 MacBook 上接手的 Claude Code:** 这份文档是你的工作交接。后端(Go)

@@ -150,6 +150,24 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 - **[安装说明](docs/install.md)**：锁版本、从源码装、中国大陆 / 镜像兜底。
 - **设计规范**：`docs/design/`（菜单栏 `DESIGN.md`、移动端 `MOBILE.md`），在途变更看 `openspec/`。
 
+## 仓库地图
+
+| 路径 | 是什么 |
+|---|---|
+| `cmd/gtmux` + `internal/` | Go CLI 核心（零 cgo）——雷达、HQ 中控、派发、`serve` |
+| `macapp/` | 原生 macOS 菜单栏 app（Swift/AppKit）——只消费 `gtmux agents --json` |
+| `mobileapp/` | iOS app（bare React Native）——第三块屏 |
+| `relay-worker/` | **线上推送中继**（Cloudflare Worker，`gtmux-relay.ccy.dev` 背后） |
+| `relay/` | 推送中继的 Go **自托管参考实现**——不是线上跑的那个 |
+| `tunnel-worker/` | **线上托管隧道开通服务**（Cloudflare Worker，`api.gtmux.ccy.dev` 背后） |
+| `deploy/self-tunnel/` | 自托管隧道服务器配置 + 文档（Caddy、chisel） |
+| `api/contract.md` | `gtmux serve` 与各端之间的 v0 HTTP/SSE 契约 |
+| `assets/agent-icons/` | 内置 agent 身份图标，嵌入二进制（来源见 `SOURCES.md`） |
+| `docs/` | 用户文档（`cli.md`、`phone.md`、`install.md`）+ `docs/design/` 设计权威 |
+| `openspec/` | 能力规格（已建成的事实）+ 在途变更提案 |
+| `scripts/` | CI 一致性门禁（`check-design.sh`） |
+| `install.sh` | curl 安装脚本 |
+
 ## 它有何不同
 
 claude-squad、uzi、dmux 这类工具**孵化** agent、把它们放进 git worktree 沙盒。gtmux 正相反：

@@ -1,5 +1,22 @@
 # gtmux — repo guide for Claude Code
 
+## Repo map (which twin is the deployed one — don't edit the wrong side)
+
+| Path | Role |
+|---|---|
+| `cmd/gtmux` + `internal/` | the Go CLI core (cgo-free) — the single data source |
+| `macapp/` | macOS menu-bar app (Swift/AppKit), pure consumer of `agents --json` |
+| `mobileapp/` | iOS app (bare RN, `com.gtmux.app`), third surface |
+| `relay-worker/` | **DEPLOYED push relay** (Cloudflare Worker, `gtmux-relay.ccy.dev`) — changes need `npx wrangler deploy` |
+| `relay/` | Go **self-host reference impl** of the relay — NEVER deployed; keep payload shape in sync with `relay-worker/` |
+| `tunnel-worker/` | **DEPLOYED tunnel provisioner** (Cloudflare Worker, `api.gtmux.ccy.dev`) |
+| `deploy/self-tunnel/` | self-host tunnel-server configs/docs (Caddy + chisel) |
+| `api/contract.md` | v0 HTTP/SSE contract (serve ↔ apps) |
+| `docs/design/` | the design authority (DESIGN/MOBILE/HANDOFF + research) |
+| `openspec/` | `specs/` = what IS built · `changes/` = in-flight only |
+| `scripts/check-design.sh` | CI design/architecture conformance gate |
+| `ops/` | untracked, operator-private (secrets/runbooks) — never commit |
+
 **gtmux** is a command center for tmux sessions and coding agents. Two surfaces
 over one Go core (gtmux-core is the single data source):
 
