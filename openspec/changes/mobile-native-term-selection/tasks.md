@@ -14,8 +14,9 @@
       line (+ cols/fontSize in the cache signature; both identities stable for
       unchanged lines). Parity test: joined rows == logical line text; no row
       exceeds capacity (termLineCache.test.ts + term.test.ts).
-- [ ] 1.4 Device check: grid looks right (CJK alignment, cursor row, wrapped
-      long lines), busy-pane typing still smooth.
+- [x] 1.4 Device check: grid looks right (CJK alignment, cursor row, wrapped
+      long lines), busy-pane typing still smooth. ACCEPTED on device 2026-08-08
+      (iPhone 15 Pro Max, real serve data).
 
 ## Stage 2 — native module (iOS)
 - [x] 2.1 `TermSelectionView.swift`: UITextInput read-only subset over
@@ -65,10 +66,13 @@
       extra-large AND large: live-tail last row, bottom-screen rows, old
       boundary region, deep history — band+handles+Copy everywhere, pbpaste
       byte-exact at the bottom row (/tmp/selfix-*.png).
-- [ ] 2.5b DEVICE verification (remainder that a sim can't honestly cover):
+- [x] 2.5b DEVICE verification (remainder that a sim can't honestly cover):
       loupe visibility during drags (implemented via UITextLoupeSession;
       mid-gesture sim screenshot inconclusive), real-finger feel of the handle
       grab zones, typing/scroll smoothness under a streaming pane on hardware,
       link taps still opening with the overlay mounted (pass-through verified
       for scroll/long-press/composer on sim, not for a link tap).
-- [ ] 2.6 Docs: MOBILE.md selection section; memory update; archive change.
+      ACCEPTED on device 2026-08-08 (iPhone 15 Pro Max).
+- [x] 2.6 Docs: MOBILE.md "Terminal text selection（iOS 终端文本选中）" section
+      (how it works + the five traps) added with device acceptance 2026-08-08;
+      memory update + archive-change follow post-merge.
