@@ -27,7 +27,7 @@ const gated = url && token ? describe : describe.skip;
 const SESSION = 'qa-keyrow';
 const tmux = (...args: string[]): string => {
   try {
-    return execFileSync('tmux', args, {encoding: 'utf8'});
+    return execFileSync('tmux', args, {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
   } catch {
     return '';
   }
@@ -94,10 +94,30 @@ gated('composer key row (live, debug-driven)', () => {
 
     // 3. ⌫ end-to-end: seed "abc" into the pane's input (literal, no Enter),
     // tap the pill, and the pane's line must lose exactly the "c".
+    //
+    // The tap is a RAW W3C pointer tap at the pill's frame center — NOT
+    // element.click(). WDA's element click on these small pills in the
+    // horizontal ScrollView is unreliable: its AX snapshot sometimes carries
+    // stale/duplicated frames (observed: Down and C-c reporting the identical
+    // rect), and the click then lands on a neighboring pill (2026-08-08 run:
+    // click 200 but NO /api/send ever left the app). The frame we tap was just
+    // sanity-checked by the strict x-ordering above, so its center is the
+    // visually-correct pill; a real finger taps what it sees, and so does this.
+    const bs = driver.$(`~${keyId('BSpace')}`);
+    const loc = await bs.getLocation();
+    const size = await bs.getSize();
+    const tapX = Math.round(loc.x + size.width / 2);
+    const tapY = Math.round(loc.y + size.height / 2);
     tmux('send-keys', '-t', SESSION, '-l', 'abc');
     await settle(800);
     const before = tmux('capture-pane', '-t', SESSION, '-p').trimEnd();
-    await driver.$(`~${keyId('BSpace')}`).click();
+    await driver
+      .action('pointer', {parameters: {pointerType: 'touch'}})
+      .move({x: tapX, y: tapY})
+      .down()
+      .pause(80)
+      .up()
+      .perform();
     await settle(1800); // /api/send + tmux + the pane poll
     const after = tmux('capture-pane', '-t', SESSION, '-p').trimEnd();
     const lastLine = (s: string) => s.split('\n').filter(l => l.trim() !== '').pop() || '';
