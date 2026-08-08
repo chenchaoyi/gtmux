@@ -128,9 +128,15 @@ Types into a pane via `tmux send-keys`. JSON body — supply **exactly one** of:
 | `enter` | bool | with `text`: also press Enter afterward |
 | `send_id` | string | OPTIONAL client idempotency token (reused across a retry) |
 
-A `text`+`enter` send goes through the FULL verified state machine (`dispatch.Deliver`):
-the deterministic `UserPromptSubmit` hook receipt is the truth (a hook-equipped agent is not
-failed by a flaky pre-submit draft scrape — the recurring false "input box didn't confirm").
+A `text`+`enter` send into an AGENT pane goes through the paste→confirm→submit core
+(`dispatch.PasteAndSubmit`): the full draft is confirmed present in the agent's input box,
+then Enter is sent — the response does NOT block on the post-submit landing-verification
+loop (it carries the input echo, which must return fast). A **plain terminal pane** (no
+coding agent in the pane's process subtree, a bare shell in the foreground) has no input
+box to confirm, so it is typed into DIRECTLY — text (keystrokes when single-line, the
+bracketed paste buffer when multi-line) then Enter, no box-confirm. Running the box-confirm
+against a shell false-failed whenever stale box-drawing sat in the pane's scrollback (a
+pane that used to run an agent): "not confirmed" for a send that would have worked.
 `send_id` makes a retry idempotent: a token that already LANDED returns `200` WITHOUT
 re-injecting, so an ambiguous network timeout (the send may have landed on the Mac while the
 response was lost) can be retried without double-sending. A `400` "not confirmed" leaves the

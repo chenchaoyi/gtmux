@@ -662,8 +662,10 @@ SHALL never render an entry as blank.
 ### Requirement: A message that was not submitted is reported as a failure
 
 The system SHALL report a message it declined to submit as a FAILURE, never as success.
-It pastes into a pane's input box and confirms the full message landed before submitting;
-when it cannot confirm, it does not submit. Reporting success for a message that was never
+For an AGENT pane it pastes into the pane's input box and confirms the full message
+landed before submitting; when it cannot confirm, it does not submit. (A PLAIN terminal
+pane — a bare shell with no coding agent — has no input box to confirm and is typed
+into directly; see the agent-dispatch spec.) Reporting success for a message that was never
 submitted is worse than the refusal it hides: the message sits unsent in the box on the
 host while every remote surface shows it as delivered, and the sender can only discover
 this by inspecting the host directly. The time allowed for a paste to render before it is
@@ -686,6 +688,12 @@ without retyping.
 
 - **WHEN** a send is reported as failed
 - **THEN** the client shows the failure and keeps the text available to retry
+
+#### Scenario: A plain terminal pane has no input box to confirm
+
+- **WHEN** the send targets a plain terminal pane (a bare shell, no coding agent)
+- **THEN** the text is typed directly and submitted rather than failed for an
+  unconfirmable input box
 
 ### Requirement: Helper tools are found where they are installed, not only on PATH
 
