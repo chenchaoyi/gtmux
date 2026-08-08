@@ -65,6 +65,50 @@ jobs:
           GTMUX_TUNNEL_REG: ${{ secrets.GTMUX_TUNNEL_REG }}
           GTMUX_RELAY_TOKEN: ${{ secrets.GTMUX_RELAY_TOKEN }}
 
+      # GoReleaser DELETES every apostrophe from {{ .TagBody }}. It reads the body with
+      # `git tag -l --format='%(contents:body)'` — passing the quotes as LITERAL characters,
+      # since it execs git rather than going through a shell — and then strips `'` from the
+      # output to undo them, which takes the body's own apostrophes with it. So a note
+      # written "HQ's own pull" reached the user as "HQs own pull" (v0.46.0), and the
+      # release body is what `gtmux update` / `gtmux whatsnew` read back.
+      #
+      # We cannot fix it upstream from here, so the body is REPAIRED after the fact: take
+      # the true tag body (these quotes are the shell's, so git gets a clean format string),
+      # keep GoReleaser's generated `## Changelog` section below it, and rewrite the notes.
+      #
+      # Deliberately best-effort. The header is already present and merely mangled, so a
+      # failed repair degrades to today's behavior; failing the release over punctuation
+      # after the assets have shipped would be the worse trade. continue-on-error still
+      # annotates the run, so it cannot rot silently.
+      - name: Repair release notes (GoReleaser strips apostrophes)
+        if: startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git tag -l --format='%(contents:body)' "$TAG" > tagbody.md
+          if [ ! -s tagbody.md ]; then
+            echo "tag $TAG has no body — nothing to repair"; exit 0
+          fi
+          gh release view "$TAG" --json body -q .body > published.md
+          # Everything from GoReleaser's generated heading onward; empty if it wrote none.
+          awk '/^## /{f=1} f' published.md > generated.md
+          if [ ! -s generated.md ]; then
+            echo "no generated section found — leaving the body as GoReleaser wrote it"; exit 0
+          fi
+          { cat tagbody.md; echo; cat generated.md; } > notes.md
+          gh release edit "$TAG" --notes-file notes.md
+          # Verify against the one character we know goes missing, so a future change to
+          # either side shows up here rather than in a user's terminal.
+          want=$(grep -c "'" tagbody.md || true)
+          got=$(gh release view "$TAG" --json body -q .body | grep -c "'" || true)
+          echo "apostrophe-bearing lines — tag: $want · published: $got"
+          if [ "$want" -gt "$got" ]; then
+            echo "::warning::release notes still lost apostrophes after repair"
+          fi
+
       - name: GoReleaser (snapshot dry-run on dispatch)
         if: github.event_name == 'workflow_dispatch'
         uses: goreleaser/goreleaser-action@v7

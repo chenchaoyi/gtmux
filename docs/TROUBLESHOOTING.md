@@ -335,6 +335,26 @@ it in.
 - After any PR-create that warned or errored, run
   `ps aux | grep -E 'gtmux serve|<cmds you backticked>'` and kill stray processes.
 
+### GoReleaser deletes every apostrophe from the release notes (2026-08-09)
+**Symptom:** `gtmux update` prints the release notes with apostrophes missing —
+"gtmux HQs own pull", "a real non-tmux agents work" — while the tag message reads
+correctly. Only `'` is affected: em dashes, quotes, `·` and `%` all survive.
+**Root cause:** GoReleaser reads `{{ .TagBody }}` with
+`git tag -l --format='%(contents:body)'`, passing those quotes as **literal characters**
+(it execs git, no shell to strip them), then removes `'` from the output to undo them —
+which takes the body's own apostrophes with it. The mangled text lands in the GitHub
+release body, which is exactly what `gtmux update` / `gtmux whatsnew` read back.
+**Fix (shipped):** `release.yml` REPAIRS the notes after GoReleaser runs — the true tag
+body (shell quotes this time, so git gets a clean format string) + GoReleaser's generated
+`## Changelog` section, written back with `gh release edit --notes-file`. Deliberately
+`continue-on-error`: the header is already there and merely mangled, so a failed repair
+degrades to the old behavior instead of failing a release whose assets already shipped.
+**Must-check:** this is upstream behavior we work around, not something we control — if
+the workflow step is ever removed or GoReleaser's header stops being `{{ .TagBody }}`,
+apostrophes go missing again. To repair a release by hand:
+`git tag -l --format='%(contents:body)' vX.Y.Z` → prepend to the `## Changelog` section →
+`gh release edit vX.Y.Z --notes-file <file>`.
+
 ### A code change isn't shipped until the right delivery path runs
 Four artifacts, **three** paths (git tag ≠ device build ≠ `wrangler deploy`). Editing
 `relay-worker/` or `tunnel-worker/` and merging changes **nothing live** until you
