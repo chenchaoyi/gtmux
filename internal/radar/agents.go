@@ -979,13 +979,26 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 
 // displayForKey maps a hook agent key (claude/codex/…) to its profile display
 // name + icon (matching on the profile's command list), else the raw key.
+//
+// The icon goes through IconFor rather than reading `p.Icon` directly, and that is the
+// whole point: a profile carries an icon PATH only for an agent that ships a desktop app
+// (Claude, Cursor), while Codex — a CLI with no .app — relies on IconFor's `builtin:<key>`
+// fallback to the committed PNG. Reading p.Icon raw returned "" for exactly those agents,
+// so every NATIVE Codex row arrived at the phone with no icon field and rendered as the
+// neutral "Cx" monogram, while the same agent in a tmux pane (which has always gone
+// through IconFor) showed its real mark two rows above.
 func displayForKey(key string, profiles []agentProfile) (name, icon string) {
 	for _, p := range profiles {
 		for _, c := range p.Commands {
 			if c == key {
-				return p.Name, p.Icon
+				return p.Name, IconFor(p.Name, profiles)
 			}
 		}
+	}
+	// No profile claims this key. It is still the AGENT KEY, so the committed icon can be
+	// looked up directly — a sensed agent gtmux has no profile for still gets its mark.
+	if assets.AgentIcon(key) != nil {
+		return key, "builtin:" + key
 	}
 	return key, ""
 }
