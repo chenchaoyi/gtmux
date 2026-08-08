@@ -375,8 +375,8 @@ export function DetailView({
     [live, lines, fontSize, pal, lang, turns, droppedTurns, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
   );
   const termEl = useMemo(
-    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} onLiveEdge={onLiveEdge} />,
-    [text, fontSize, cursor, theme, fontPref, onLiveEdge],
+    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={onLiveEdge} />,
+    [text, fontSize, cursor, theme, fontPref, lang, onLiveEdge],
   );
 
   // Load the sibling panes in this pane's session, refreshed on a slow cadence

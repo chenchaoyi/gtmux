@@ -141,6 +141,48 @@ pane 浏览器(按 session 分组)覆盖,手机侧则用这条 —— 都基于�
   pane 真实列宽/行高，做出来只能是合成值 —— 需先加一个 pane 尺寸字段（契约变更）才有意义。
 - 等宽字体；离线时显示最后一帧。
 
+### Terminal text selection（iOS 终端文本选中）
+
+iOS 端选中/复制是**原生实现**（Android 保持 `<Text selectable>` 平铺 overlay 不动）。四次
+失败尝试（RN selectable 只有菜单、UITextView overlay 错位+卡顿、全屏 select sheet 估算漂移、
+只能向下拖）之后定案：**统一网格 + 自实现 UITextInput 只读子集**，让系统选中 UI（band +
+双向手柄 + 放大镜 + Copy 菜单）直接画在我们自己的彩色渲染上，几何完全由我们提供 → 零错位。
+设计与验证记录见 `openspec/changes/mobile-native-term-selection/`（设备验收 2026-08-08）。
+
+怎么工作：
+
+- **Stage 1 · 统一网格（JS，`term.ts`/`NativeTerm.tsx`）**：每个可视行显式同高
+  `rowHeightFor(fs)`（1.6×，Menlo 与 PingFang CJK 同高）；逻辑行在 JS 里按**格子算术硬换行**
+  （`charCells` CJK=2、选择符/ZWJ=0；`colsFor` 容量保守 −1，行永不被 RN Text 原生再折行）。
+  于是行几何是纯算术 `row = ⌊y / rowH⌋`，且 char-wrap 与 tmux 自己的折行方式一致。
+- **Stage 2 · 原生层（`mobileapp/ios/TermSelection/`）**：透明 `TermSelectionView`
+  absoluteFill 盖在行栈上，实现 UITextInput **只读子集**（positions/ranges/`caretRect`/
+  `selectionRects`/`closestPosition`…；行内 x↔char 用缓存 CTLine 的 Core Text advance —— 与
+  RN Text 同一 shaping 引擎、同一字体，CJK fallback 的 advance 是量出来的不是假设 2×cell）。
+  系统件：band+双手柄 = `UITextSelectionDisplayInteraction`（iOS 17+）、放大镜 =
+  `UITextLoupeSession`、Copy 菜单 = `UIEditMenuInteraction`（en/zh）。手势全部自驱：激活长按挂在
+  外层 scroll view 上，未激活时 overlay 对触摸隐形（`point(inside:)` false + box-none），链接
+  点按/滚动不受影响；选中期间 JS 冻结快照（`onSelectionActive` → freeze/thaw）。
+
+五个坑（改这块前先读，每个都真踩过）：
+
+1. **有效字号必须处处折算 Dynamic Type**：`fs = fontSize × PixelRatio.getFontScale()`（代码取
+   `useWindowDimensions().fontScale`），wrap cols、rowH、块行字体、overlay 的 CTLine 字体**全部**
+   从这一个数派生，块行再设 `allowFontScaling={false}` 防二次缩放。RN Text 默认按 fontScale 缩放
+   而网格算术不缩 → 字号档位 > Large 的真机上渲染栈超出 rows×rowH，底部 (scale−1)/scale 的屏幕
+   长按全是死区（1.0-scale 的 sim 复现不了；`simctl ui content_size extra-large` 可复现）。
+2. **不要挂 UITextInteraction**：它的内部手势会在 handle 拖动中每帧清空 `selectedTextRange`，
+   拖动即断（sim 实证）。band/手柄/放大镜/菜单用上面三个公开件显式实现；系统 handle view 还要
+   `isUserInteractionEnabled = false`，否则旋钮吞掉触摸、拖不动。
+3. **跨 interop 传色用 hex 字符串**（`"#RRGGBB"` prop，原生侧自己解析）：`processColor` 打包
+   ARGB 而新架构 interop 层按 RGBA 解码 → 蓝色选中带变成红色。
+4. **overlay 文本必须与渲染同源**：`flattenGrid` 用同一次 wrap 同时产出行栈与 overlay 文本，
+   不变式 overlay 行数 == 栈行数（unit-tested）；光标 splice 追加的补位空格取 RAW 行、绝不漏进
+   Copy。行数一漂移，其下每一行的选中都错位。
+5. **Swift 只消费 props、绝不自算**：rowHeight/fontSize/padTop/padLeft 全部来自 JS
+   （`rowHeightFor`/`PAD` 是唯一数值源）；在原生侧用 UIFont metrics 自推行高，就是把
+   UITextView 时代的错位事故重演一遍。
+
 ### 顶栏
 
 - 返回 ‹ + 状态徽章 + primary/secondary。（手机侧 **Focus on Mac 已移除**（#85）—— 顶栏不再放该

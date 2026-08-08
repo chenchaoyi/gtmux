@@ -5,12 +5,22 @@
 //
 // Why native instead of xterm-in-webview:
 //   • a tap doesn't focus a hidden <textarea> → NO soft-keyboard pop-up;
-//   • long-press gives iOS text selection + the Copy callout (web-like arbitrary
-//     selection — the thing xterm can't do on touch). NOTE: a colored, deeply-nested
-//     <Text selectable> selects+copies but draws NO visible highlight on-device, so
-//     selection rides a separate FLAT, single-color <Text selectable> with
-//     TRANSPARENT glyphs overlaid on the colored layer — the iOS highlight (its own
-//     translucent layer) then tints the colors behind it (see the dual-layer body);
+//   • long-press gives REAL range selection. iOS history (device-confirmed
+//     2026-08-07): RN <Text selectable> is menu-only there (no band/handles, Copy
+//     grabs the WHOLE buffer), an always-on transparent UITextView overlay both
+//     MISALIGNED (its TextKit layout drifts from the Text layer's on CJK/wrapped
+//     lines) and JANKED (full relayout of the 1000-line buffer on every poll),
+//     and the interim full-screen/in-place select sheets each broke a different
+//     way (auto-scroll drift / down-only selection). So iOS now mounts a NATIVE
+//     UITextInput overlay (mobile-native-term-selection Stage 2,
+//     ios/TermSelection/): a transparent view over the Stage 1 uniform row grid
+//     that supplies row/char geometry (row = y ÷ rowHeight, x via Core Text
+//     advances on the SAME font) to the system selection machinery — the
+//     system band + both-direction lollipop handles + loupe draw directly over
+//     our colored rendering, Copy comes from the system edit menu, and the
+//     view passes every touch through until a long-press activates it
+//     (links/scroll unaffected, zero standing cost). Android keeps the
+//     transparent <Text selectable> overlay, which selects properly there;
 //   • native ScrollView momentum (no DOM/canvas repaint jank);
 //   • no WebGL/canvas/DOM renderer fragility (the ~10-PR webview saga);
 //   • pure JS → the same renderer works on iOS AND Android.
@@ -22,12 +32,36 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
+import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
-import {cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs} from './term';
-import {makeLineCache, parseLinesCached} from './termLineCache';
+import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor} from './term';
+import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
+
+// The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
+// transparent view mounted absoluteFill over the block stack that implements a
+// read-only UITextInput from the props below — the system selection UI (band +
+// handles + loupe + edit menu) then draws over our colored rows. It is
+// registered as a legacy view manager (`TermSelectionViewManager`), which RN's
+// new-arch interop layer hosts.
+interface TermSelectionProps {
+  style?: StyleProp<ViewStyle>;
+  pointerEvents?: 'box-none';
+  text: string; // the grid's PLAIN text: visual rows joined by '\n' (raw, not cursor-spliced)
+  rowHeight: number; // rowHeightFor(fontSize) — row i's top edge is i × rowHeight
+  fontSize: number;
+  fontName: string;
+  padTop: number; // overlay-relative offsets of row (0,0) — 0: it shares the
+  padLeft: number; // block stack's origin inside layerWrap (PAD sits outside)
+  // "#RRGGBB" — a plain hex STRING parsed natively (a processColor number
+  // arrives byte-swapped through the new-arch interop layer: ARGB read as RGBA)
+  selectionTint?: string;
+  menuLang: string; // 'en' | 'zh' — the edit menu's Copy label
+  onSelectionActive?: (e: NativeSyntheticEvent<{active: boolean}>) => void;
+}
+const TermSelection = Platform.OS === 'ios' ? requireNativeComponent<TermSelectionProps>('TermSelectionView') : null;
 
 interface PaneCursor {
   x: number;
@@ -41,6 +75,7 @@ interface Props {
   cursor?: PaneCursor;
   theme?: TermTheme;
   fontPref?: string; // accepted for config-parity with the font picker; native uses Menlo
+  lang?: Lang; // for the iOS selection overlay's edit menu (Copy / 拷贝)
   onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
 }
 
@@ -61,25 +96,52 @@ const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each li
 // dial down if a fast-updating pane janks on older hardware. The bottom is preserved
 // so the bottom-anchored cursor still maps; the full transcript lives in Chat mode.
 
-// Selection-highlight tint for the overlay. iOS multiplies the tint by its OWN system
-// selection alpha (~20%), so feeding it an already-translucent rgba(…,0.5) painted a
-// ~10%-alpha blue over the near-black terminal bg — a band the eye can't see. That was
-// the on-device "selection doesn't show" bug: the Copy callout appeared (selection was
-// live) but the highlight was invisible. Pass the tint OPAQUE and let iOS apply its one
-// translucency — the standard visible band. Android is different: it uses the value
-// VERBATIM as the band behind this overlay's transparent glyphs, so an opaque value
-// would paint a solid slab over the color layer below — keep the translucent one there.
+// Selection tint. iOS: the native selection overlay's tintColor — the system paints
+// the range band (at its own ~20% alpha) and the drag handles from it, so pass it
+// OPAQUE. Android: its transparent <Text selectable> overlay draws the band verbatim
+// behind the glyphs, so keep it translucent there (opaque would slab over the color
+// layer beneath).
 const SELECTION_TINT = Platform.select({ios: '#3478F7', default: 'rgba(52,120,247,0.5)'});
 
 // One line of the color layer. Memoized: the per-line parse cache hands back a STABLE
 // spans identity for a line whose raw text didn't change, so React bails on that row —
 // a busy pane's in-place repaint re-renders only the changed rows (plus the cursor
-// row, whose spans are freshly spliced each poll). `last` carries the joining newline
-// so the flattened text still equals the overlay's plainText exactly.
-const TermLine = React.memo(function TermLine({spans, last}: {spans: AnsiLine; last: boolean}) {
-  return (
-    <Text>
-      {spans.map((s, j) => {
+// row, whose spans are freshly spliced each poll).
+//
+// Two render shapes:
+//   • block (iOS) — ONE VISUAL ROW of the uniform grid as its own top-level <Text>,
+//     stacked in a View. Since Stage 1 of mobile-native-term-selection, blocks are
+//     pre-wrapped visual rows (cell arithmetic in JS — see wrapLine) with an explicit
+//     uniform `lineHeight` (rowHeightFor), so a row can never native-wrap and CJK
+//     rows are the same height as Latin ones: row geometry is y = index * rowH, pure
+//     arithmetic (what Stage 2's native selection layer consumes). A changed row
+//     re-measures ONLY its own block natively; the old single-paragraph form re-ran
+//     TextKit over the whole 1000-line buffer on every poll of a working pane, and
+//     that main-thread stall is exactly what made Composer typing hitch. Only
+//     possible because the standing overlay (the Stage 2 selection layer) needs
+//     ROW-exact geometry, not paragraph-exact TextKit alignment. An empty row
+//     renders ' ' (an empty block collapses to zero height). All block props are
+//     per-poll-stable so memo still bails.
+//   • nested (Android) — a child of the single paragraph its transparent selectable
+//     overlay aligns to; `last` carries the joining newline so the flattened text
+//     still equals the overlay's plainText exactly. No lineHeight/wrap here —
+//     Android's path is untouched by Stage 1 (its selection works as-is).
+const TermLine = React.memo(function TermLine({
+  spans,
+  last,
+  block,
+  fontSize,
+  lineHeight,
+  color,
+}: {
+  spans: AnsiLine;
+  last: boolean;
+  block?: boolean;
+  fontSize?: number;
+  lineHeight?: number;
+  color?: string;
+}) {
+  const body = spans.map((s, j) => {
         const base = {
           color: s.color,
           backgroundColor: s.bg,
@@ -120,13 +182,28 @@ const TermLine = React.memo(function TermLine({spans, last}: {spans: AnsiLine; l
             )}
           </Text>
         );
-      })}
+      });
+  if (block) {
+    // allowFontScaling OFF: the iOS grid honors Dynamic Type by folding the OS
+    // fontScale into the fontSize/lineHeight props themselves (NativeTerm's
+    // `fs`) — letting RN scale them AGAIN would grow the rendered pitch past
+    // rowH and break the row = y ÷ rowH invariant the selection overlay's
+    // geometry (and the bottom rows' selectability) depends on.
+    return (
+      <Text style={[styles.mono, {fontSize, lineHeight, color}]} suppressHighlighting allowFontScaling={false}>
+        {spans.length ? body : ' '}
+      </Text>
+    );
+  }
+  return (
+    <Text>
+      {body}
       {last ? '' : '\n'}
     </Text>
   );
 });
 
-export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
@@ -153,6 +230,11 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
       setShownCursor(cursor);
     }
   }, [text, cursor]);
+  // TRUE while the native selection overlay holds an active selection. A flush
+  // while it's held would swap the text under the band (the native layer clears
+  // its selection when the text prop changes), so flushPending refuses to run
+  // until the overlay reports the selection cleared.
+  const selActive = useRef(false);
   const freeze = () => {
     frozen.current = true;
     if (thawTimer.current) {
@@ -161,6 +243,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
     }
   };
   const flushPending = () => {
+    if (selActive.current) return; // never clobber a held selection
     frozen.current = false;
     if (thawTimer.current) {
       clearTimeout(thawTimer.current);
@@ -191,6 +274,34 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
     if (thawTimer.current) clearTimeout(thawTimer.current);
   }, []);
 
+  // iOS uniform grid geometry (mobile-native-term-selection Stage 1). The window
+  // width stands in for the terminal's width — the pane spans the screen — and
+  // colsFor bakes in the content padding (−12) plus the conservative −1 cell so a
+  // pre-wrapped row can NEVER native-wrap (the grid invariant Stage 2's selection
+  // geometry depends on). rowH is the explicit uniform lineHeight every block row
+  // gets: CJK rows and Latin rows render the SAME height, so a row's y is
+  // index * rowH, pure arithmetic. A rotation/font change just recomputes both
+  // (and invalidates the wrap cache via its signature).
+  //
+  // `fs` is the EFFECTIVE font size — the fontSize prop × the OS Dynamic Type
+  // scale — and it is the ONLY size the iOS grid path may consume. RN Text
+  // scales fontSize AND lineHeight by fontScale (allowFontScaling defaults
+  // true), so a device set above Large rendered a taller/wider stack than the
+  // unscaled arithmetic predicted: the real row pitch beat rowH, scaled glyphs
+  // overflowed the computed cols into native wraps, and every press below
+  // rows×rowH clamped to the trailing blank row — the REAL-DEVICE "bottom
+  // screens don't select" dead zone (a clean boundary, nothing below it; the
+  // 1.0-scale sim couldn't reproduce it). Folding the scale in here keeps the
+  // user's Dynamic Type size EXACTLY as rendered before while every consumer —
+  // wrap cols, row height, the block rows' own font, the overlay's CTLine
+  // font — derives from the same scaled number; the block rows then set
+  // allowFontScaling={false} so RN cannot apply the scale a SECOND time.
+  // useWindowDimensions makes a Settings change re-derive everything live.
+  const {width: winW, fontScale} = useWindowDimensions();
+  const fs = Platform.OS === 'ios' ? fontSize * (fontScale || 1) : fontSize;
+  const cols = Platform.OS === 'ios' ? colsFor(winW, fs) : 0;
+  const rowH = rowHeightFor(fs);
+
   // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
   // lines of scrollback; one big selectable <Text> of that many nested spans is
   // heavy enough to hitch a working pane's re-render and, at the extreme, crash the
@@ -198,16 +309,23 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
   // Parsed through the per-line cache: a line whose raw text is unchanged keeps its
   // exact span-array identity across polls, so the memoized <TermLine> rows below
   // bail — an in-place repaint (a spinner/footer tick on a busy pane) re-parses and
-  // re-renders only the rows that actually changed (see termLineCache.ts).
+  // re-renders only the rows that actually changed (see termLineCache.ts). On iOS
+  // the same cache ALSO holds each line's hard-wrapped visual rows for the current
+  // grid (cols × fontSize), identity-stable for unchanged lines too.
   const cacheRef = useRef(makeLineCache());
-  const lines = useMemo(() => {
+  const parsed = useMemo(() => {
     const nl = normalizeGlyphs(shown).split('\n');
     const capped = nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES) : nl;
-    return parseLinesCached(capped, {palette: theme?.palette, base: fg, bg: true}, cacheRef.current);
-  }, [shown, theme?.palette, fg]);
+    const opts = {palette: theme?.palette, base: fg, bg: true};
+    if (Platform.OS === 'ios') return wrapLinesCached(capped, opts, {cols, fontSize: fs}, cacheRef.current);
+    return {lines: parseLinesCached(capped, opts, cacheRef.current), rows: null};
+  }, [shown, theme?.palette, fg, cols, fs]);
+  const lines = parsed.lines;
 
   // place the cursor: capture-pane ends rows with "\n" (trailing empty line), and
-  // `up` = rows above the bottom content line.
+  // `up` = rows above the bottom content line. This stays on LOGICAL lines — the
+  // capture's bottom-anchored `up` counts logical lines, not visual rows — the
+  // spliced line is wrapped fresh below.
   const rendered = useMemo(() => {
     if (!shownCursor || shownCursor.visible === false) return lines;
     let last = lines.length - 1;
@@ -218,16 +336,32 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
     return copy;
   }, [lines, shownCursor, curColor, bg]);
 
-  // Plain (ANSI-stripped) text of the same capped lines — the content of the
-  // transparent selection layer. Cursor cell is intentionally excluded.
-  const plainText = useMemo(() => lines.map(spans => spans.map(s => s.text).join('')).join('\n'), [lines]);
-  // The transparent overlay is the TOP layer and the ONLY one that receives touches, so
-  // EVERY link the color layer draws must be tappable here — both a bare URL (linkify)
-  // and an OSC 8 hyperlink (span.href, e.g. anchor-text links). Built from the same
-  // `lines` spans as plainText so the flattened text still equals plainText exactly
-  // (same wrapping/alignment). The earlier overlay only carried linkify'd BARE urls, so
-  // bare URLs tapped through but anchor-text OSC 8 links were swallowed (fixed 2026-08-01).
-  const overlaySegs = useMemo(() => linkSegsForLines(lines), [lines]);
+  // iOS: flatten logical lines into the VISUAL ROWS the block stack renders (row
+  // index = grid row). Unchanged lines reuse their cached rows arrays (per-row
+  // memo identity); ONLY the cursor-spliced line — recognizable because its spans
+  // identity differs from the cached logical line — is wrapped fresh each render
+  // (one line, cheap). Keys are lineIdx-rowIdx: stable for a line whose wrap
+  // count changes above others (in-place repaint keeps keys aligned).
+  //
+  // Alongside the rows it builds the selection overlay's TEXT (see flattenGrid
+  // in term.ts — extracted so the overlay-rows == stack-rows invariant is
+  // unit-tested against the real builder).
+  const grid = useMemo(
+    () => (Platform.OS === 'ios' ? flattenGrid(rendered, lines, parsed.rows, cols) : null),
+    [rendered, lines, parsed.rows, cols],
+  );
+
+  // ANDROID-ONLY (iOS has no standing overlay — links tap through to the color layer
+  // directly, selection lives in the select sheet): the transparent overlay is the TOP
+  // layer and the ONLY one that receives touches there, so EVERY link the color layer
+  // draws must be tappable on it — both a bare URL (linkify) and an OSC 8 hyperlink
+  // (span.href). Built from the same `lines` spans as plainText so the flattened text
+  // still equals plainText exactly (same wrapping/alignment). Cursor cell excluded.
+  const plainText = useMemo(
+    () => (Platform.OS === 'android' ? lines.map(spans => spans.map(s => s.text).join('')).join('\n') : ''),
+    [lines],
+  );
+  const overlaySegs = useMemo(() => (Platform.OS === 'android' ? linkSegsForLines(lines) : []), [lines]);
   const overlayHasLink = useMemo(() => overlaySegs.some(s => s.url), [overlaySegs]);
 
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
@@ -253,25 +387,40 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
     if (stick.current) ref.current?.scrollToEnd({animated: false});
   };
 
-  // Two STACKED, always-on layers solve "read in color, select with a VISIBLE
-  // highlight" without any mode switch (the earlier TextInput-toggle jumped the
-  // layout and only showed a cursor loupe, no real selection):
-  //   • color layer (bottom) — the colored <Text>, display only, defines height.
-  //   • selection layer (top) — a FLAT, single-color <Text selectable> of the same
-  //     plain text, absolutely overlaid, with TRANSPARENT glyphs. iOS draws the
-  //     selection HIGHLIGHT as its own translucent layer independent of glyph color,
-  //     so the blue band shows and tints the colored text behind it; Copy works
-  //     (Text selectable gives the callout). Crucially the selection text is FLAT
-  //     (not the per-span nested <Text> that suppresses the highlight on-device).
-  // Both layers are <Text> with identical font/size/wrapping, so they align exactly
-  // — no ghosting, no jump. selectionColor is translucent so colors stay readable.
-  const colorLayer = (
-    <Text style={[styles.mono, {fontSize, color: fg}]}>
-      {rendered.map((spans, i) => (
-        <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
-      ))}
-    </Text>
-  );
+  // iOS selection — the native overlay reports activation so JS can freeze the
+  // snapshot under it (a text-prop change while a selection is held would clear
+  // the band). The overlay itself owns ALL selection behavior natively: a
+  // long-press (recognized on the enclosing scroll view, so the pass-through
+  // overlay never blocks links or scrolling) selects the word under the finger,
+  // the system draws the band + both-direction handles + loupe + edit menu over
+  // the colored rows, Copy writes the exact banded range, tap-away clears.
+  const onSelectionActive = (e: NativeSyntheticEvent<{active: boolean}>) => {
+    const active = !!e.nativeEvent.active;
+    selActive.current = active;
+    if (active) freeze();
+    else thawSoon();
+  };
+
+  // LAYERS. iOS: a STACK of per-ROW <Text> blocks (see TermLine's block shape) —
+  // the uniform grid: pre-wrapped visual rows at an explicit shared lineHeight, the
+  // only always-on layer; link taps land on it directly (the selection overlay
+  // above it passes touches through until a long-press activates it). Android:
+  // the single paragraph its FLAT transparent <Text selectable> overlay aligns to —
+  // the overlay draws the selection band properly there and carries the link taps.
+  const colorLayer =
+    Platform.OS === 'ios' ? (
+      <View>
+        {grid!.rows.map(r => (
+          <TermLine key={r.key} spans={r.spans} last block fontSize={fs} lineHeight={rowH} color={fg} />
+        ))}
+      </View>
+    ) : (
+      <Text style={[styles.mono, {fontSize, color: fg}]}>
+        {rendered.map((spans, i) => (
+          <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
+        ))}
+      </Text>
+    );
 
   return (
     <View style={[styles.fill, {backgroundColor: bg}]}>
@@ -293,22 +442,45 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
         onContentSizeChange={onContentSizeChange}>
         <View style={styles.layerWrap}>
           {colorLayer}
-          {/* transparent selectable layer on top → the blue selection highlight
-              tints the colored text behind it; Copy works; FLAT text so the
-              highlight paints on-device. */}
-          <Text selectable selectionColor={SELECTION_TINT} style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
-            {!overlayHasLink
-              ? plainText
-              : overlaySegs.map((seg, i) =>
-                  seg.url ? (
-                    <Text key={i} onPress={() => Linking.openURL(seg.url!)}>
-                      {seg.text}
-                    </Text>
-                  ) : (
-                    seg.text
-                  ),
-                )}
-          </Text>
+          {Platform.OS === 'ios' && TermSelection && grid && (
+            /* The Stage 2 native selection layer, absoluteFill over the block
+               stack (same origin — row i's top edge is exactly i × rowH in its
+               coordinates, so padTop/padLeft are 0; PAD lives OUTSIDE layerWrap
+               on the scroll content). pointerEvents box-none + the native
+               point(inside:) gate make it invisible to touches until its
+               long-press activates a selection. */
+            <TermSelection
+              style={StyleSheet.absoluteFill}
+              pointerEvents="box-none"
+              text={grid.text}
+              rowHeight={rowH}
+              fontSize={fs}
+              fontName={MONO}
+              padTop={0}
+              padLeft={0}
+              selectionTint={SELECTION_TINT}
+              menuLang={lang}
+              onSelectionActive={onSelectionActive}
+            />
+          )}
+          {Platform.OS === 'android' && (
+            /* Android-only: FLAT selectable Text draws the band properly there;
+               nested Text keeps OSC 8 / bare-URL taps. iOS has NO standing overlay
+               — selection lives in the long-press select sheet. */
+            <Text selectable selectionColor={SELECTION_TINT} style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
+              {!overlayHasLink
+                ? plainText
+                : overlaySegs.map((seg, i) =>
+                    seg.url ? (
+                      <Text key={i} onPress={() => Linking.openURL(seg.url!)}>
+                        {seg.text}
+                      </Text>
+                    ) : (
+                      seg.text
+                    ),
+                  )}
+            </Text>
+          )}
         </View>
       </ScrollView>
       <JumpToBottom visible={!atBottom} onPress={jumpToBottom} />
@@ -318,7 +490,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, onLiveEdge}: Pro
 
 const styles = StyleSheet.create({
   fill: {flex: 1},
-  pad: {padding: 6},
+  pad: {padding: PAD}, // couples to colsFor's usable-width math — change PAD in term.ts
   mono: {fontFamily: MONO},
   // Auto-detected URL: inherits the span's terminal color/weight, adds the underline
   // that marks it tappable (mirrors the OSC 8 hyperlink treatment).
