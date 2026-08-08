@@ -65,6 +65,9 @@ func TestWarpViewingMatch(t *testing.T) {
 }
 
 func TestWarpLaunchYAML(t *testing.T) {
+	oldCwd := warpLaunchCwd
+	warpLaunchCwd = func() string { return "/Users/x" }
+	defer func() { warpLaunchCwd = oldCwd }()
 	y := warpLaunchYAML("gtmux-restore", [][2]string{
 		{"dev", "bash /x/gtmux-attach.sh 'dev'"},
 		{`we"ird`, `bash /x/gtmux-attach.sh 'we"ird'`},
@@ -72,12 +75,20 @@ func TestWarpLaunchYAML(t *testing.T) {
 	for _, want := range []string{
 		"name: gtmux-restore",
 		"- title: \"dev\"",
+		// Warp v0.2026.08+ REJECTS a pane template without cwd (must be an
+		// absolute path) — omitting it makes the whole config invisible to
+		// warp://launch, so restore/new silently open nothing (verified live).
+		"cwd: \"/Users/x\"",
 		"- exec: \"bash /x/gtmux-attach.sh 'dev'\"",
 		"- title: \"we\\\"ird\"", // quotes escaped for the double-quoted YAML scalar
 	} {
 		if !strings.Contains(y, want) {
 			t.Errorf("launch YAML missing %q:\n%s", want, y)
 		}
+	}
+	// cwd must appear once per tab, before its commands.
+	if got := strings.Count(y, "cwd: \"/Users/x\""); got != 2 {
+		t.Errorf("want cwd in each of 2 tab layouts, got %d:\n%s", got, y)
 	}
 }
 

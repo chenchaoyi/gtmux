@@ -131,14 +131,30 @@ func warpYAMLQuote(s string) string {
 	return strings.ReplaceAll(s, `"`, `\"`)
 }
 
+// warpLaunchCwd is the absolute cwd written into every generated launch-config
+// pane. Warp v0.2026.08 made `cwd` REQUIRED in the pane template (its untagged
+// PaneTemplateType enum matches no variant without it): a commands-only layout
+// — which v0.2026.06 accepted and ran — now fails to parse, and an unparseable
+// config is silently invisible to `warp://launch/<name>` ("couldn't find a
+// matching file path", warp.log), so restore/new opened NOTHING. Docs say the
+// value must be an absolute path (no `~`). Overridable for tests.
+var warpLaunchCwd = func() string {
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		return home
+	}
+	return "/"
+}
+
 // warpLaunchYAML builds a Warp launch configuration: one window, one tab per
 // entry, each tab exec'ing its command.
 func warpLaunchYAML(name string, tabs [][2]string) string {
+	cwd := warpLaunchCwd()
 	var b strings.Builder
 	b.WriteString("---\nname: " + name + "\nwindows:\n  - tabs:\n")
 	for _, t := range tabs {
 		b.WriteString("      - title: \"" + warpYAMLQuote(t[0]) + "\"\n")
 		b.WriteString("        layout:\n")
+		b.WriteString("          cwd: \"" + warpYAMLQuote(cwd) + "\"\n")
 		b.WriteString("          commands:\n")
 		b.WriteString("            - exec: \"" + warpYAMLQuote(t[1]) + "\"\n")
 	}
