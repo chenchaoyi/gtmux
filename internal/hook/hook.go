@@ -573,6 +573,10 @@ func Run(stdin io.Reader, args []string) int {
 				_ = native.Save(native.Record{
 					Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
 					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
+					// The hook runs under the agent, under the shell, under the terminal
+					// app — so its own env/ancestry names the hosting terminal (Warp,
+					// Ghostty, …) for the radar row's `terminal` field.
+					Terminal: terminal.HostAppName(),
 				})
 			}
 		}

@@ -121,6 +121,31 @@ func terminalFromAncestry(pid int) string {
 	return ""
 }
 
+// displayNames maps driver names (detect.go keys) to the terminal app's
+// human-readable name, as surfaced on native radar rows and in doctor output.
+var displayNames = map[string]string{
+	"ghostty":       "Ghostty",
+	"iterm2":        "iTerm2",
+	"appleterminal": "Apple Terminal",
+	"kitty":         "kitty",
+	"wezterm":       "WezTerm",
+	"warp":          "Warp",
+}
+
+// HostAppName returns the display name of the terminal app hosting THIS
+// process — this process's terminal env, else its own process ancestry — or ""
+// when none is recognized. Used by the hook to record which terminal a native
+// (non-tmux) agent session runs in.
+func HostAppName() string {
+	if n := fromTermEnv(); n != "" {
+		return displayNames[n]
+	}
+	if n := terminalFromAncestry(os.Getpid()); n != "" {
+		return displayNames[n]
+	}
+	return ""
+}
+
 // terminalFromCommand maps a process command line to a terminal driver name.
 func terminalFromCommand(cmd string) string {
 	lc := strings.ToLower(cmd)

@@ -63,7 +63,7 @@ hard prerequisite for all terminals (the `doctor` must verify it).
 | **Apple Terminal** | AppleScript | ✅ |
 | **kitty** | `kitty @ ls` (JSON tabs+titles) + `kitty @ focus-tab` | ✅ needs `allow_remote_control` |
 | **WezTerm** | `wezterm cli list` + `wezterm cli activate-tab` | ✅ |
-| **Warp** | weak automation, poor tmux fit | ⚠️ unsupported |
+| **Warp** | no AppleScript dictionary — but `warp://` URIs (`action/new_tab`, `session/<uuid>` per-tab focus) + launch configs (`warp://launch/<name>`, execs a command per tab) | ⚠️ best-effort driver (shipped): precise focus only when the tab's `$WARP_TERMINAL_SESSION_UUID` was recorded into the tmux session env (gtmux's own attach script does; other processes' env is unreadable on modern macOS), else app-activate; IsViewing keys on Warp's real process name `stable` |
 | **Alacritty** | no tabs / no scripting | ❌ unsupported |
 
 Unsupported host → degrade gracefully: the agents list/status still works (that's

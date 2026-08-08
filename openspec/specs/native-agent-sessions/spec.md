@@ -4,7 +4,7 @@
 TBD - created by archiving change native-agent-sessions. Update Purpose after archive.
 ## Requirements
 ### Requirement: Sense agent sessions running outside tmux
-The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}` — plus the agent process's pid and command name, used by the liveness reap below — where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes. The system SHALL NOT record an agent's internal warm-spare/pool process (e.g. Claude's `bg-spare`), which fires a hook but is never a real user-facing session.
+The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}` — plus the agent process's pid and command name, used by the liveness reap below, and the hosting terminal app's display name ("Warp", "Ghostty", …) sensed best-effort from the hook's own environment/ancestry ("" when unrecognized) — where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes. The system SHALL NOT record an agent's internal warm-spare/pool process (e.g. Claude's `bg-spare`), which fires a hook but is never a real user-facing session.
 
 #### Scenario: Hook fires with no tmux pane
 - **WHEN** `gtmux hook` runs with an empty `$TMUX_PANE` and a payload carrying `session_id` and `cwd`
@@ -19,11 +19,15 @@ The system SHALL record the existence and state of an agent session that invokes
 - **THEN** the record's `state` SHALL move working → idle following the same transitions as a tmux-keyed session, and its idle "finished" time SHALL be derivable session-independently of any tmux window activity
 
 ### Requirement: Native sessions appear in the radar as source "native"
-`gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, and an idle "finished N ago" time. These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins).
+`gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins).
 
 #### Scenario: Native session listed alongside tmux ones
 - **WHEN** a native session has a current record and no matching live tmux pane
 - **THEN** `agents --json` SHALL include one row for it with `source: "native"` and no focusable locator
+
+#### Scenario: Row names the hosting terminal
+- **WHEN** a native session's hook fired from a recognized terminal app (e.g. a plain Warp window)
+- **THEN** its radar row SHALL carry `terminal` with that app's display name (e.g. "Warp"), so the surfaces can label where the out-of-tmux agent lives
 
 #### Scenario: De-dupe against a tmux twin
 - **WHEN** a session_id present in the native store also appears as a live tmux pane (e.g. after it was adopted)

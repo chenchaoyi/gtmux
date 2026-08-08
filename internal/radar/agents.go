@@ -966,7 +966,8 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		out = append(out, Pane{
 			Agent: name, Status: r.State, source: "native",
 			cwd: r.Cwd, role: roleForCwd(r.Cwd),
-			project: project, branch: branch, icon: icon,
+			terminal: r.Terminal,
+			project:  project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			// Adopt only an IDLE, resumable session with a real on-disk conversation —
 			// never one mid-turn (working): resuming it would fight the live instance.

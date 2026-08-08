@@ -772,6 +772,15 @@ is — which is how a notification click drops you on the agent that just finish
 > the format `focus` matches. If another tool also writes the tab title, disable
 > that so titles stay authoritative.
 
+Host terminals: **Ghostty** and **iTerm2** are fully driven (exact tab via
+AppleScript). **Warp** is best-effort — it has no AppleScript dictionary, so
+`focus` jumps to the exact tab only when that tab's Warp session uuid was
+recorded into the tmux session env (gtmux's own restore/new attach does this;
+or add `WARP_TERMINAL_SESSION_UUID` to tmux's `update-environment` to cover
+hand-opened tabs), and otherwise just activates the Warp app; `restore`/`new`
+open Warp tabs via launch configurations. Other terminals fall back to the
+Ghostty driver.
+
 ## `gtmux attach` — work in a remote session from another machine's terminal
 
 Where `focus` jumps to a LOCAL tab, `attach` opens a REMOTE pane in your current
