@@ -1,8 +1,17 @@
 # ROOT CAUSE of Finding A — Codex fires no hooks because gtmux installs them ASYNC and Codex 0.146.0 does not support async hooks yet (2026-08-06)
 
-> Evidence appendix to `mobile-send-receipt-first`. Not implemented; captured to survive
-> context compaction. This closes the open question left in
+> Evidence appendix to `mobile-send-receipt-first`. This closes the open question left in
 > `findings-codex-real-machine-2026-08-06.md` ("why does Codex fire zero hook events?").
+>
+> **STATUS — the root cause below is FIXED (PR #703, merged 2026-08-06).** This note is now
+> the EVIDENCE RECORD, not an open ticket. #703 landed all three parts the analysis called
+> for: codex hooks install SYNC (no `async:true`), a small `codexHookTimeoutSec` = 3s, and
+> `hook.Run` re-execs itself detached (`setsid`, codex-only) so the tmux captures/nudges
+> never block Codex's turn. Live-confirmed on this Mac: a fresh Codex session now fires
+> `SessionStart`/`UserPromptSubmit`/`Stop` into `gtmux events` (it fired **0** before).
+> Existing installs need `gtmux install hooks --agent codex`; Codex re-prompts to TRUST the
+> changed `hooks.json` (press `t`). The "Related, also unfixed" items at the bottom are
+> **NOT** covered by #703 and remain open.
 
 ## The decisive evidence — Codex's own startup, transcribed from a screenshot
 
@@ -98,6 +107,8 @@ PRs. Confirms the root cause AND surfaces a cost the async choice was hiding:
   (2–3s); (3) **make the codex hook path record-and-DETACH** (return immediately, do the
   captures/nudges in a backgrounded process) — otherwise every Codex turn start/end eats that
   latency and inherits the wedge risk. Minimal-viable = (1)+(2), accepting the per-event delay.
+  *(Superseded by #703, which took all three — including the detach; the paragraph above
+  describes the pre-#703 code.)*
 - **`notify` is NOT a substitute** for the receipt: it fires only `agent-turn-complete`
   (turn-end), never prompt-submit; docs say *"New integrations should use the hooks.json
   system."* The `UserPromptSubmit` hook delivers the **prompt text** (stdin JSON `"prompt"`) and
@@ -119,4 +130,6 @@ PRs. Confirms the root cause AND surfaces a cost the async choice was hiding:
   (confirmPaste races the slow render → fragment → C-u clears it); to a WORKING Codex it
   lands (pasteBusy best-effort, no C-u → Codex queues it). #697 fixed the working half; the
   idle half is still broken.
-- Boundary: no implementation changed, no release; the fix is the commander's call.
+- Boundary: this note changed no implementation. The hook-async root cause it identified was
+  then fixed by **#703** (see the STATUS block at the top); everything in THIS section is
+  outside that fix and still open.
