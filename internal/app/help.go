@@ -122,9 +122,11 @@ Notes:
     permission/approval — sorts to the top) · ✳ idle (finished its turn, your
     move). waiting needs claude-notify (Claude Code's permission Notification);
     its idle-timeout nudge does NOT mark waiting, so long-idle stays idle.
-  - restore/focus drive your host terminal (Ghostty 1.3+ or iTerm2) via
-    AppleScript: the first run asks for Automation permission ("wants to control
-    …") — allow it. The terminal is auto-detected (override: GTMUX_TERMINAL).
+  - restore/focus drive your host terminal: Ghostty 1.3+ and iTerm2 in full
+    (exact tab, via AppleScript — the first run asks for Automation permission
+    ("wants to control …"); allow it); Warp best-effort (exact tab only for
+    gtmux-opened tabs, else it activates the app). Auto-detected (override:
+    GTMUX_TERMINAL=ghostty|iterm2|warp).
   - After a reboot, restore starts tmux and waits for tmux-continuum to restore
     the last autosave (layout/dirs/screen text — not running programs).
 `
@@ -232,9 +234,10 @@ const usageZH = `快速开始：
   - "agents" 状态：⠿ 运行中（忙）· ⏸ 等输入（卡在等你批准 / 授权，排最前）·
     ✳ 空闲（完成一轮，轮到你）。⏸ 需要 claude-notify（Claude Code 的权限
     Notification）；它的空闲提醒不标 ⏸，所以久置会停在 idle。
-  - restore/focus 通过 AppleScript 控制宿主终端（Ghostty 1.3+ 或 iTerm2）：首次
-    运行会弹自动化授权（提示「想要控制…」），点允许。终端会自动识别（可用
-    GTMUX_TERMINAL 覆盖）。
+  - restore/focus 驱动宿主终端：Ghostty 1.3+ 与 iTerm2 完整支持（AppleScript
+    精确到 tab；首次运行会弹自动化授权，提示「想要控制…」，点允许）；Warp 尽力
+    而为（只有 gtmux 开的 tab 能精确聚焦，否则只激活应用）。终端会自动识别
+    （可用 GTMUX_TERMINAL=ghostty|iterm2|warp 覆盖）。
   - 电脑重启后，restore 会启动 tmux 并等 tmux-continuum 恢复最近一次自动存档
     （布局 / 目录 / 屏幕文本，不含正在运行的程序）。
 `

@@ -139,7 +139,8 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 适用于无法直连 Cloudflare 边缘的网络）。见 **[docs/phone.md](docs/phone.md)**。
 
 > **需要** macOS + [Ghostty](https://ghostty.org) 1.3+ **或** iTerm2 才能用跳转功能
-> （`focus` / `restore` / `new`）；`agents` / `overview` 在任何承载 tmux 的终端下都能用。
+> （`focus` / `restore` / `new`）；Warp 也可用，但尽力而为（只有 gtmux 开的 tab 能
+> 精确聚焦，否则只激活应用）；`agents` / `overview` 在任何承载 tmux 的终端下都能用。
 > 中国大陆 / GitHub 不稳：见 [安装说明](docs/install.md)。
 
 ## 文档

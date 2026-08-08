@@ -46,8 +46,8 @@ ancestry** (same trick that cleanly separated native vs tmux earlier):
 `tmux list-clients -F '#{client_pid}'` → walk the parent chain → the terminal
 app bundle (`…/Ghostty.app/…`, `…/iTerm.app/…`, `kitty`, `wezterm-gui`, …).
 - Cache the result (re-detect on miss).
-- Overrides: `GTMUX_TERMINAL=ghostty|iterm2|…`; and `$TERM_PROGRAM` when a command
-  *is* run inside a terminal.
+- Overrides: `GTMUX_TERMINAL=ghostty|iterm2|warp|…`; and `$TERM_PROGRAM` when a
+  command *is* run inside a terminal.
 - No client attached (fully detached): fall back to the last known / configured.
 
 ### "Find the tab by title"
@@ -59,10 +59,10 @@ hard prerequisite for all terminals (the `doctor` must verify it).
 | terminal | focus / spawn mechanism | status |
 |---|---|---|
 | **Ghostty** | AppleScript (existing) | driver #1, no behavior change |
-| **iTerm2** | AppleScript (rich tab/session API) | ✅ high |
-| **Apple Terminal** | AppleScript | ✅ |
-| **kitty** | `kitty @ ls` (JSON tabs+titles) + `kitty @ focus-tab` | ✅ needs `allow_remote_control` |
-| **WezTerm** | `wezterm cli list` + `wezterm cli activate-tab` | ✅ |
+| **iTerm2** | AppleScript (rich tab/session API) | ✅ shipped driver — full matrix live-verified on 3.6.11 (#718) |
+| **Apple Terminal** | AppleScript | ✅ feasible (no driver yet — sensed-only) |
+| **kitty** | `kitty @ ls` (JSON tabs+titles) + `kitty @ focus-tab` | ✅ feasible, needs `allow_remote_control` (no driver yet — sensed-only) |
+| **WezTerm** | `wezterm cli list` + `wezterm cli activate-tab` | ✅ feasible (no driver yet — sensed-only) |
 | **Warp** | no AppleScript dictionary — but `warp://` URIs (`action/new_tab`, `session/<uuid>` per-tab focus) + launch configs (`warp://launch/<name>`, execs a command per tab) | ⚠️ best-effort driver (shipped): precise focus only when the tab's `$WARP_TERMINAL_SESSION_UUID` was recorded into the tmux session env (gtmux's own attach script does; other processes' env is unreadable on modern macOS), else app-activate; IsViewing keys on Warp's real process name `stable` |
 | **Alacritty** | no tabs / no scripting | ❌ unsupported |
 

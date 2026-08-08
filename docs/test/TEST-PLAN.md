@@ -32,8 +32,9 @@ L1–L3 在 CI 全自动；L4 是发版前的人工验收清单（见 §3）。
 1. **回看测试设计**：本功能触及哪一层？是否需要新纯函数以便单测？
 2. **更新用例**：新增/调整 L1/L2 用例；若引入新的 DESIGN 可量化点，加进 L3。
 3. **更新跟随矩阵**：在 [`DESIGN-TRACEABILITY.md`](DESIGN-TRACEABILITY.md) 标注该 DESIGN 小节的实现/测试/状态。
-4. **架构合理性 review**：确认未破坏不变量（消费方、cgo-free、终端耦合只在 `internal/ghostty`/未来 `Terminal`
-   驱动里、Theme 是唯一 token 权威）。`scripts/check-design.sh` 守机器可判定的部分，其余在 PR 描述里自评。
+4. **架构合理性 review**：确认未破坏不变量（消费方、cgo-free、终端耦合只在 `internal/terminal`
+   的 `Terminal` 驱动里（ghostty / iterm2 / warp）、Theme 是唯一 token 权威）。
+   `scripts/check-design.sh` 守机器可判定的部分，其余在 PR 描述里自评。
 5. **跑全闸门**：`make check` + `cd macapp && swift test` + `./scripts/check-design.sh`，CI 必绿。
 
 ## 3. 人工验收清单（L4，发版前）

@@ -295,7 +295,7 @@ squash-merge — they can't be fully automated).
   title (often suffixed `" (tmux)"` → drivers prefix-match). iTerm2's AX window
   title is empty, so `IsViewing` asks iTerm directly (`frontmost` + current
   session `name`) instead of System Events. Add new terminals as drivers
-  (kitty/WezTerm/Apple Terminal feasible; Warp/Alacritty not) — see
+  (kitty/WezTerm/Apple Terminal feasible; Alacritty not — no tabs/scripting) — see
   `docs/design/multi-agent-multi-terminal.md`.
 - **Verifying the status item / popover on macOS** (screen capture is
   permission-blocked): query the accessibility tree, e.g. `osascript -e 'tell
