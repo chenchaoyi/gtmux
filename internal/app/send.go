@@ -10,7 +10,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
-	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -125,9 +124,23 @@ func cmdSend(args []string) int {
 		// Resolve the agent from the pane's process subtree (Claude Code reports its
 		// version as pane_current_command, so the foreground command misses "claude" and
 		// hook-equipped would wrongly be false — see radar.AgentDriverKey).
-		agentCmd := radar.AgentDriverKey(paneID)
-		if agentCmd == "" {
-			agentCmd = tmux.Display(paneID, "#{pane_current_command}")
+		agentCmd, plain := resolvePaneAgent(paneID)
+		if plain {
+			// PLAIN TERMINAL: no agent input box to verify against — the box-confirm
+			// pipeline false-fails on stale box borders in scrollback (see plainsend.go).
+			// Type + Enter directly. No re-send interlock either: running the same shell
+			// command twice in a row is normal shell usage, not a double-dispatch. No
+			// MarkAwaited — there is no agent whose completion could be awaited.
+			_ = tmux.ExitCopyMode(paneID)
+			if err := typePlain(paneID, text); err != nil {
+				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
+				return 1
+			}
+			if asJSON {
+				b, _ := json.Marshal(sendJSON{Delivered: true, State: statePlainSent})
+				fmt.Println(string(b))
+			}
+			return 0
 		}
 		tune := dispatch.LoadTuning()
 		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
@@ -173,6 +186,16 @@ func cmdSend(args []string) int {
 	_ = tmux.ExitCopyMode(pane)
 	if text != "" && enter {
 		id := paneID(pane)
+		// A plain terminal takes the direct type path here too — the draft-confirm
+		// inside PasteAndSubmit trips on the same stale-scrollback-box false negative
+		// and silently withholds the Enter (see plainsend.go).
+		if _, plain := resolvePaneAgent(id); plain {
+			if err := typePlain(id, text); err != nil {
+				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
+				return 1
+			}
+			return 0
+		}
 		dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
 		return 0
 	}
@@ -209,7 +232,13 @@ func paneID(pane string) string {
 	return pane
 }
 
-// sendJSON is the `gtmux send --json` contract (verified sends only).
+// statePlainSent is the `--json` state reported for a PLAIN-TERMINAL send: the keys
+// were delivered to the pane and Enter was sent, but there is no agent input box or
+// receipt to verify a landing against, so the verified states don't apply.
+const statePlainSent = "sent"
+
+// sendJSON is the `gtmux send --json` contract (verified sends, plus the
+// plain-terminal "sent" state — see statePlainSent).
 type sendJSON struct {
 	Delivered bool   `json:"delivered"`
 	State     string `json:"state"`

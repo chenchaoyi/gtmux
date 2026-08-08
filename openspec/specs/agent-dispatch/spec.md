@@ -644,6 +644,44 @@ re-injecting, so a retry after an ambiguous network failure never double-sends.
   `send_id`
 - **THEN** the server returns success without re-injecting the message
 
+### Requirement: A plain terminal pane is typed into directly, not box-confirmed
+
+The send pipeline's draft confirmation validates a delivery against an AGENT's input
+box. A PLAIN terminal pane — no known coding agent in the pane's process subtree and a
+bare shell in the foreground — has no input box, and running the box-confirm against
+one false-fails whenever the pane's scrollback holds stale box-drawing: a pane that
+previously ran an agent keeps the agent's old input-box borders inside the capture
+margin, the region detector locks onto that stale box while the shell echoes the paste
+BELOW it (invisible to the draft check), and the clear-retry then wipes the user's
+typed line. Both send surfaces (`gtmux send`, `POST /api/send`) SHALL therefore
+deliver text+Enter to a plain terminal pane DIRECTLY — text (keystrokes when
+single-line, the bracketed paste buffer when multi-line), then Enter — with no
+input-box confirmation and no re-send interlock (repeating a shell command is normal
+shell usage, not a double-dispatch). The plain classification SHALL fail SAFE: a pane
+not provably a plain shell — an agent whose process the subtree scan missed and whose
+foreground command is its version string, a full-screen non-agent TUI, a remote shell
+— keeps the agent delivery pipeline unchanged. A verified `gtmux send --json` into a
+plain pane SHALL report the distinct state `sent` (delivered; nothing to land-verify)
+rather than claiming a verified landing.
+
+#### Scenario: A bare shell pane with stale agent borders in scrollback
+
+- **WHEN** text+Enter is sent to a bash pane whose scrollback still holds a previous
+  agent session's input-box borders
+- **THEN** the text is typed directly and submitted — the send is not failed by the
+  box-confirm and the user's typed line is never cleared
+
+#### Scenario: An ambiguous pane keeps the agent pipeline
+
+- **WHEN** the pane's process scan finds no agent but the foreground command is not a
+  known shell (an agent's version-named process, vim, ssh)
+- **THEN** the send takes the agent delivery pipeline exactly as before
+
+#### Scenario: A plain send is reported honestly in --json
+
+- **WHEN** `gtmux send --json` targets a plain terminal pane
+- **THEN** the result reports `state:"sent"` and claims no judging layer
+
 ### Requirement: A dispatch registers its target pane as awaited
 
 The system SHALL register a dispatch's target pane as AWAITED — a durable marker that

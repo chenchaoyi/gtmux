@@ -720,9 +720,20 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 		// "claude" — see radar.AgentDriverKey); the paste guard uses it to select the
 		// per-agent composer signatures. Fall back to the foreground command if the
 		// subtree yields nothing.
-		agentCmd := radar.AgentDriverKey(id)
-		if agentCmd == "" {
-			agentCmd = tmux.Display(id, "#{pane_current_command}")
+		agentCmd, plain := resolvePaneAgent(id)
+		if plain {
+			// PLAIN TERMINAL (a bare-shell pane from the pane browser): no agent input
+			// box exists, and the box-confirm pipeline false-fails on stale box borders
+			// in the pane's scrollback (see plainsend.go). Type + Enter directly; the
+			// shell's echo in the response snapshot is the confirmation. No MarkAwaited
+			// — there is no agent whose completion could be awaited.
+			if err := typePlain(id, text); err != nil {
+				return err
+			}
+			if sendID != "" {
+				sendCacheRecord(sendID)
+			}
+			return nil
 		}
 		force := sendID != ""
 		opts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())

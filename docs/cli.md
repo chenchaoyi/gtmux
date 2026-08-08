@@ -444,6 +444,16 @@ Enter as its own key, so an unverified send can't split a multi-line message eit
 `--message-file <path|->` for the same reason `spawn` has `--goal-file`: text passed as
 an argument has to survive your shell first.
 
+A **plain terminal pane** — no coding agent in the pane's process subtree, a bare
+shell (bash/zsh/…) in the foreground — is typed into DIRECTLY: text then Enter, no
+input-box confirm and no re-send interlock (running the same shell command twice is
+normal usage, not a double-dispatch). There is no agent composer to verify against,
+and running the box-confirm against a shell false-failed whenever stale box-drawing
+sat in the pane's scrollback (a pane that used to run an agent). `--json` reports such
+a send as `{"delivered":true,"state":"sent"}` — sent, with nothing to land-verify.
+Anything not provably a plain shell (vim, ssh, an agent the process scan missed)
+keeps the agent pipeline.
+
 `gtmux tasks [--json]` is the **dispatch / needs-you ledger**: every task you spawned
 with its live status (waiting / done / working / gone), needs-you first.
 
