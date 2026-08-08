@@ -152,6 +152,10 @@ func terminalFromCommand(cmd string) string {
 	switch {
 	case strings.Contains(lc, "ghostty"):
 		return "ghostty"
+	// "/iterm" (not just the app bundle) is load-bearing: an iTerm2 3.6+ tmux
+	// client's real ancestor is the restoration daemon iTermServer, whose
+	// command is ~/Library/Application Support/iTerm2/iTermServer-<v> — no
+	// "iterm.app" in it (verified live; pinned by TestITerm2ServerAncestry).
 	case strings.Contains(lc, "iterm.app") || strings.Contains(lc, "/iterm"):
 		return "iterm2"
 	case strings.Contains(cmd, "Terminal.app"):

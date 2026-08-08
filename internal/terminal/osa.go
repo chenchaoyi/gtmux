@@ -6,8 +6,9 @@ import (
 )
 
 // osa runs an AppleScript and returns trimmed stdout. Shared by the AppleScript
-// drivers in this package.
-func osa(script string) (string, error) {
+// drivers in this package. A var so driver tests can intercept the script and
+// simulate the terminal's replies without a live app.
+var osa = func(script string) (string, error) {
 	out, err := exec.Command("/usr/bin/osascript", "-e", script).Output()
 	return strings.TrimSpace(string(out)), err
 }

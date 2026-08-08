@@ -12,10 +12,15 @@ import (
 // session's `name` (which iTerm2 may suffix with " (tmux)" — the prefix-match
 // absorbs it).
 //
-// Two name gotchas, both verified on a real iTerm2: the AppleScript target is
-// "iTerm" — NOT "iTerm2", which resolves to the bundle but loads no scripting
-// dictionary, so every command errors — while the macOS *process* name is
-// "iTerm2" (so IsViewing keys on that).
+// Two name gotchas, both verified on a real iTerm2 (full driver matrix
+// re-verified live on 3.6.11: focus across tabs AND windows, IsViewing
+// true/false, TabOrder, SpawnTabs/OpenWindow, native sensing): the AppleScript
+// target is "iTerm" — NOT "iTerm2", which resolves to the bundle but loads no
+// scripting dictionary, so every command errors — while the macOS *process*
+// name is "iTerm2" (so IsViewing keys on that). A third, for ancestry-based
+// detection: a tmux client's real ancestor is the session-restoration daemon
+// iTermServer (~/Library/Application Support/iTerm2/iTermServer-<v>), not
+// iTerm.app — detect.go matches that command line.
 type iterm2 struct{}
 
 func (iterm2) Name() string { return "iTerm2" }
