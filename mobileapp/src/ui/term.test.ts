@@ -1,4 +1,4 @@
-import {PAD, cellWidthFor, charCells, colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
+import {PAD, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -300,5 +300,64 @@ describe('wrapLine', () => {
   it('never splits a surrogate pair (code-point iteration)', () => {
     const rows = wrapLine([S('a😀b')], 3); // a(1)+😀(2)=3 → 'b' wraps
     expect(rowTxt(rows)).toEqual(['a😀', 'b']);
+  });
+});
+
+describe('flattenGrid', () => {
+  const S = (text: string): AnsiLine[number] => ({text, color: '#fff'});
+  const CURSOR = '#bbc1ff';
+  const DARK = '#17171a';
+
+  // Build the sandwich exactly the way NativeTerm does: parse-free lines, a
+  // cursor spliced into ONE of them (identity distinguishes it), wrap at cols.
+  const build = (rawLines: string[], cursorLine: number, cursorX: number, cols: number) => {
+    const lines: AnsiLine[] = rawLines.map(t => (t ? [S(t)] : []));
+    const rendered = lines.slice();
+    rendered[cursorLine] = cursorSpans(rendered[cursorLine] || [], cursorX, CURSOR, DARK);
+    return flattenGrid(rendered, lines, null, cols);
+  };
+
+  it('THE invariant: overlay text rows == rendered stack rows, cursor padding included', () => {
+    // cursor x=7 on a 4-char line at cols=4: the padded spliced line wraps into
+    // 2 visual rows where the raw line wraps into 1 — the overlay must pad.
+    const g = build(['abcd', 'xy', ''], 0, 7, 4);
+    expect(g.text.split('\n')).toHaveLength(g.rows.length);
+  });
+
+  it('pads the EXTRA cursor wrap rows with empty overlay rows (no cursor-cell leak)', () => {
+    const g = build(['abcd'], 0, 7, 4);
+    // stack: 'abcd' + the padded cursor row; overlay: 'abcd' + ''.
+    expect(g.rows.map(r => r.spans.map(s => s.text).join(''))).toEqual(['abcd', '    ']);
+    expect(g.text).toBe('abcd\n');
+  });
+
+  it('non-cursor rows pass through raw (identity) with matching texts', () => {
+    const g = build(['hello world', '中文内容测试', ''], 2, 0, 6);
+    const stack = g.rows.map(r => r.spans.map(s => s.text).join(''));
+    const overlay = g.text.split('\n');
+    expect(overlay).toHaveLength(stack.length);
+    // every NON-padded overlay row equals its stack row's text
+    overlay.forEach((t, i) => {
+      if (t !== '') expect(t).toBe(stack[i]);
+    });
+  });
+
+  it('a cursor INSIDE the line changes no row boundaries', () => {
+    const g = build(['abcdefgh', 'tail'], 0, 2, 4);
+    expect(g.text.split('\n')).toEqual(['abcd', 'efgh', 'tail']);
+    expect(g.rows).toHaveLength(3);
+  });
+
+  it('CJK wrap + trailing blank line keep counts aligned', () => {
+    const g = build(['一二三四五', '', 'abc', ''], 3, 10, 4);
+    expect(g.text.split('\n')).toHaveLength(g.rows.length);
+  });
+
+  it('uses cachedRows when provided (identity path)', () => {
+    const lines: AnsiLine[] = [[S('abcdefgh')], []];
+    const cached = lines.map(l => wrapLine(l, 4));
+    const g = flattenGrid(lines, lines, cached, 4);
+    expect(g.rows.map(r => r.spans)).toEqual([...cached[0], ...cached[1]]);
+    expect(g.text).toBe('abcd\nefgh\n');
   });
 });

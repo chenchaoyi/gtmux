@@ -190,6 +190,41 @@ export function wrapLine(spans: AnsiLine, cols: number): AnsiLine[] {
   return rows;
 }
 
+// flattenGrid builds BOTH sides of the iOS selection sandwich from the same
+// wrap pass: the visual-row stack the color layer renders (from the
+// CURSOR-SPLICED lines) and the native selection overlay's plain text (from the
+// RAW lines — the reverse-video cursor cell pads its line with spaces, and that
+// padding must never leak into a Copy). The one invariant Stage 2's native
+// geometry depends on: overlay text rows == rendered stack rows, ALWAYS — the
+// native layer maps row = y ÷ rowHeight into the overlay text, so a count drift
+// desynchronizes every row below it. The splice only APPENDS to its line
+// (cursorSpans keeps existing chars), so raw row boundaries match the displayed
+// ones; when the appended cells add a wrap row, empty strings pad the overlay
+// text so the count still matches (term.test.ts pins this).
+//
+// `rendered` = logical lines with the cursor spliced into one of them; `lines` =
+// the same array WITHOUT the splice (identity-shared for every other line —
+// that's how the spliced line is recognized); `cachedRows` = per-line wrapped
+// rows from the line cache (or null to wrap here); `cols` = the grid capacity.
+export function flattenGrid(
+  rendered: AnsiLine[],
+  lines: AnsiLine[],
+  cachedRows: AnsiLine[][] | null,
+  cols: number,
+): {rows: Array<{key: string; spans: AnsiLine}>; text: string} {
+  const out: Array<{key: string; spans: AnsiLine}> = [];
+  const sel: string[] = [];
+  rendered.forEach((spans, i) => {
+    const raw = cachedRows ? cachedRows[i] : wrapLine(lines[i] || [], cols);
+    const wrapped = spans === lines[i] ? raw : wrapLine(spans, cols);
+    for (let j = 0; j < wrapped.length; j++) {
+      out.push({key: `${i}-${j}`, spans: wrapped[j]});
+      sel.push(j < raw.length ? raw[j].map(s => s.text).join('') : '');
+    }
+  });
+  return {rows: out, text: sel.join('\n')};
+}
+
 // A bare http(s) URL in terminal output. Stops at whitespace and the bracket/quote
 // characters that normally delimit a URL. Hyphens/dots/slashes/query chars stay IN.
 const URL_RE = /https?:\/\/[^\s<>"'`|\\^{}]+/gi;

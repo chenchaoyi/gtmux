@@ -36,7 +36,7 @@ import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, 
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
-import {PAD, colsFor, cursorSpans, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor, wrapLine} from './term';
+import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, rowHeightFor} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 
@@ -184,8 +184,13 @@ const TermLine = React.memo(function TermLine({
         );
       });
   if (block) {
+    // allowFontScaling OFF: the iOS grid honors Dynamic Type by folding the OS
+    // fontScale into the fontSize/lineHeight props themselves (NativeTerm's
+    // `fs`) — letting RN scale them AGAIN would grow the rendered pitch past
+    // rowH and break the row = y ÷ rowH invariant the selection overlay's
+    // geometry (and the bottom rows' selectability) depends on.
     return (
-      <Text style={[styles.mono, {fontSize, lineHeight, color}]} suppressHighlighting>
+      <Text style={[styles.mono, {fontSize, lineHeight, color}]} suppressHighlighting allowFontScaling={false}>
         {spans.length ? body : ' '}
       </Text>
     );
@@ -277,9 +282,25 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // gets: CJK rows and Latin rows render the SAME height, so a row's y is
   // index * rowH, pure arithmetic. A rotation/font change just recomputes both
   // (and invalidates the wrap cache via its signature).
-  const {width: winW} = useWindowDimensions();
-  const cols = Platform.OS === 'ios' ? colsFor(winW, fontSize) : 0;
-  const rowH = rowHeightFor(fontSize);
+  //
+  // `fs` is the EFFECTIVE font size — the fontSize prop × the OS Dynamic Type
+  // scale — and it is the ONLY size the iOS grid path may consume. RN Text
+  // scales fontSize AND lineHeight by fontScale (allowFontScaling defaults
+  // true), so a device set above Large rendered a taller/wider stack than the
+  // unscaled arithmetic predicted: the real row pitch beat rowH, scaled glyphs
+  // overflowed the computed cols into native wraps, and every press below
+  // rows×rowH clamped to the trailing blank row — the REAL-DEVICE "bottom
+  // screens don't select" dead zone (a clean boundary, nothing below it; the
+  // 1.0-scale sim couldn't reproduce it). Folding the scale in here keeps the
+  // user's Dynamic Type size EXACTLY as rendered before while every consumer —
+  // wrap cols, row height, the block rows' own font, the overlay's CTLine
+  // font — derives from the same scaled number; the block rows then set
+  // allowFontScaling={false} so RN cannot apply the scale a SECOND time.
+  // useWindowDimensions makes a Settings change re-derive everything live.
+  const {width: winW, fontScale} = useWindowDimensions();
+  const fs = Platform.OS === 'ios' ? fontSize * (fontScale || 1) : fontSize;
+  const cols = Platform.OS === 'ios' ? colsFor(winW, fs) : 0;
+  const rowH = rowHeightFor(fs);
 
   // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
   // lines of scrollback; one big selectable <Text> of that many nested spans is
@@ -296,9 +317,9 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     const nl = normalizeGlyphs(shown).split('\n');
     const capped = nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES) : nl;
     const opts = {palette: theme?.palette, base: fg, bg: true};
-    if (Platform.OS === 'ios') return wrapLinesCached(capped, opts, {cols, fontSize}, cacheRef.current);
+    if (Platform.OS === 'ios') return wrapLinesCached(capped, opts, {cols, fontSize: fs}, cacheRef.current);
     return {lines: parseLinesCached(capped, opts, cacheRef.current), rows: null};
-  }, [shown, theme?.palette, fg, cols, fontSize]);
+  }, [shown, theme?.palette, fg, cols, fs]);
   const lines = parsed.lines;
 
   // place the cursor: capture-pane ends rows with "\n" (trailing empty line), and
@@ -322,27 +343,13 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // (one line, cheap). Keys are lineIdx-rowIdx: stable for a line whose wrap
   // count changes above others (in-place repaint keeps keys aligned).
   //
-  // Alongside the rows it builds the selection overlay's TEXT: the same visual
-  // rows as PLAIN text, joined by '\n' — from the RAW (non-cursor-spliced) rows,
-  // so the reverse-video cursor cell's padding never leaks into a Copy. The
-  // splice only APPENDS to its line (cursorSpans keeps existing chars), so raw
-  // row boundaries match the displayed ones; in the rare case the appended cells
-  // add a wrap row, empty rows pad the text so row COUNT — the geometry both
-  // layers share — always equals the rendered stack's.
-  const grid = useMemo(() => {
-    if (Platform.OS !== 'ios') return null;
-    const out: Array<{key: string; spans: AnsiLine}> = [];
-    const sel: string[] = [];
-    rendered.forEach((spans, i) => {
-      const raw = parsed.rows ? parsed.rows[i] : wrapLine(lines[i] || [], cols);
-      const wrapped = spans === lines[i] ? raw : wrapLine(spans, cols);
-      for (let j = 0; j < wrapped.length; j++) {
-        out.push({key: `${i}-${j}`, spans: wrapped[j]});
-        sel.push(j < raw.length ? raw[j].map(s => s.text).join('') : '');
-      }
-    });
-    return {rows: out, text: sel.join('\n')};
-  }, [rendered, lines, parsed.rows, cols]);
+  // Alongside the rows it builds the selection overlay's TEXT (see flattenGrid
+  // in term.ts — extracted so the overlay-rows == stack-rows invariant is
+  // unit-tested against the real builder).
+  const grid = useMemo(
+    () => (Platform.OS === 'ios' ? flattenGrid(rendered, lines, parsed.rows, cols) : null),
+    [rendered, lines, parsed.rows, cols],
+  );
 
   // ANDROID-ONLY (iOS has no standing overlay — links tap through to the color layer
   // directly, selection lives in the select sheet): the transparent overlay is the TOP
@@ -404,7 +411,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     Platform.OS === 'ios' ? (
       <View>
         {grid!.rows.map(r => (
-          <TermLine key={r.key} spans={r.spans} last block fontSize={fontSize} lineHeight={rowH} color={fg} />
+          <TermLine key={r.key} spans={r.spans} last block fontSize={fs} lineHeight={rowH} color={fg} />
         ))}
       </View>
     ) : (
@@ -447,7 +454,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
               pointerEvents="box-none"
               text={grid.text}
               rowHeight={rowH}
-              fontSize={fontSize}
+              fontSize={fs}
               fontName={MONO}
               padTop={0}
               padLeft={0}

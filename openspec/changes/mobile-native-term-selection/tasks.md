@@ -45,6 +45,26 @@
       slow handle drag lost to the long-press recognizer (fixed by
       touch-reception routing), processColor ARGB decoded as RGBA by the
       interop layer (tint now a hex-string prop).
+- [x] 2.5c REAL-DEVICE bottom-dead-zone fix (found on an iPhone 15 Pro Max, real
+      serve data): long-press in the bottom screens produced NO selection with a
+      clean boundary — above it fine, below dead. Root cause: RN Text scales
+      fontSize AND lineHeight by the iOS Dynamic Type fontScale (allowFontScaling
+      defaults true), while the grid arithmetic (rowHeightFor/colsFor) and the
+      native overlay (rowHeight prop + CTLine font) used the UNSCALED size — on
+      any device set above Large the rendered stack outgrew rows×rowH (scaled
+      pitch + scaled glyphs overflowing cols into native wraps), so presses in
+      the bottom (scale−1)/scale of the buffer clamped to the trailing blank row.
+      Reproduced deterministically on the sim via `simctl ui content_size
+      extra-large` (overlay bounds 45377pt vs expected 33159pt). Fix: NativeTerm
+      folds fontScale into the ONE effective font size (`fs`) every iOS grid
+      consumer derives from — wrap cols, rowH, block-row font, overlay font —
+      and the block rows set allowFontScaling={false} so the scale can't apply
+      twice; Dynamic Type is honored at exactly the size the user saw before.
+      flattenGrid extracted to term.ts with the overlay-rows == stack-rows
+      invariant unit-tested (cursor-padding wrap included). Sim-verified at
+      extra-large AND large: live-tail last row, bottom-screen rows, old
+      boundary region, deep history — band+handles+Copy everywhere, pbpaste
+      byte-exact at the bottom row (/tmp/selfix-*.png).
 - [ ] 2.5b DEVICE verification (remainder that a sim can't honestly cover):
       loupe visibility during drags (implemented via UITextLoupeSession;
       mid-gesture sim screenshot inconclusive), real-finger feel of the handle

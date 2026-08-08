@@ -19,6 +19,16 @@ the user sees regardless of CJK content or line wrapping.
 - **THEN** the selection band tracks the touched glyphs exactly, the terminal
   does not jump or auto-scroll, and Copy yields precisely the banded text.
 
+#### Scenario: Any Dynamic Type size
+
+- **WHEN** the device's text size (Dynamic Type) is set to any value — below,
+  at, or above the default — and the user long-presses anywhere in the buffer,
+  including the bottom-most rows at the live tail
+- **THEN** selection works identically across the whole buffer: the rendered
+  terminal honors the OS text size, and every geometry consumer (row wrap,
+  row height, the selection overlay's font) derives from the same effective
+  font size, so no region of the buffer is dead to selection.
+
 #### Scenario: Zero standing cost
 
 - **WHEN** no selection is active
