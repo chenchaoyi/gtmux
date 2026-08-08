@@ -59,8 +59,20 @@ over one Go core (gtmux-core is the single data source):
   claims can no longer vanish (a `gtmux send`-driven session's turn-end did exactly that
   on 2026-08-01). **Only HQ consuming advances the watermark**: an UNFILTERED
   `events --since-seq` from the HQ home, or `gtmux events --ack <seq>`; a filtered or
-  skip-ahead read does not. HQ's own pane records are excluded from the count (else the
-  knock feeds itself). `gtmux doctor`'s `event consumption` row flags a lagging HQ.
+  skip-ahead read does not — and a read from a SUBDIRECTORY of the home (the measured
+  `cd`-drift after writing `notes/`) now WARNS on stderr instead of silently not counting
+  (change `hq-unread-noise`). Excluded from the count (never from the stream): HQ's own
+  pane records (else the knock feeds itself) and a pane-less lifecycle BLINK — a
+  `SessionStart` whose `SessionEnd` pairs within 10s. **The blink rule keys on that
+  PAIRING, never on the empty pane alone**: native (non-tmux) agents' turns and gtmux's own
+  `gtmux:*` triggers are pane-less too, and since every CLASS wake is gated on `pane != ""`,
+  `unread` is their only channel. The knock line names its composition
+  (`7 unconsumed (%21 ×4 · control)`). **HQ's PULL shows that same set** — the supervisor's
+  unfiltered `--since-seq` omits what the count omits (measured: 68.7% of a knock's pull was
+  HQ's own echo), reports the withheld count on stderr, and `--all` restores the raw view;
+  both still consume (neither shows LESS than the debt — that is what disqualifies a
+  `--severity` read). Nothing leaves the log; a non-supervisor read is untouched.
+  `gtmux doctor`'s `event consumption` row flags a lagging HQ.
   **HQ's OWN SESSION is watched too** (change `hq-self-rotate`,
   `internal/hq/selfrotate.go`): a long, near-full session degrades the boundary between what
   HQ produced and what reached it — on 2026-08-03 one read its own `Stop` output as the

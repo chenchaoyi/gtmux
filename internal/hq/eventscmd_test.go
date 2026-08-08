@@ -2,6 +2,7 @@ package hq
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -183,6 +184,153 @@ func TestEventsAck(t *testing.T) {
 	captureStdout(t, func() { CmdEvents([]string{"--ack", "0"}) })
 	if got := hqwake.Consumed(); got != latest {
 		t.Errorf("an ack rewound the watermark to %d", got)
+	}
+}
+
+// B9 (hq-unread-noise): the cd-drift that fails LOUDLY now. HQ's Bash cwd persists across
+// calls, so after writing the board (`notes/`) or the KB (`knowledge/`) its next pull ran
+// from a SUBDIRECTORY, consumed nothing, and the same cursor re-knocked — reproduced five
+// times, the fifth in the very turn after HQ wrote the note about it. The read still
+// succeeds and still prints; it just stops pretending it counted.
+func TestDriftedReadWarnsAndDoesNotConsume(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+
+	// The exact failure shape: cwd inside the home rather than at it.
+	sub := filepath.Join(state.HQHome(), "knowledge")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(sub)
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0", "--json"}) })
+	if got := hqwake.Consumed(); got != 0 {
+		t.Errorf("a drifted read advanced the watermark to %d", got)
+	}
+	if !strings.Contains(errs, "NOT counted") && !strings.Contains(errs, "未计入") {
+		t.Errorf("a drifted read must warn on stderr, got %q", errs)
+	}
+	if !strings.Contains(errs, state.HQHome()) {
+		t.Errorf("the warning must name the home to run from, got %q", errs)
+	}
+	// stdout is the read's product and must be untouched by the warning.
+	if !strings.Contains(out, "web:1.0") {
+		t.Errorf("the read itself must still print its delta, got %q", out)
+	}
+}
+
+// The same read from the home consumes and says nothing: a warning on the happy path would
+// train HQ to ignore the channel.
+func TestHomeReadConsumesSilently(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+
+	_, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if got := hqwake.Consumed(); got != events.CurrentSeq() {
+		t.Errorf("watermark = %d, want the read counted", got)
+	}
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("the supervisor's own correct read must be silent, got %q", errs)
+	}
+}
+
+// A bystander owns no watermark and must never be nagged about one. This is why the
+// warning keys on "inside the HQ home", not on "did not consume".
+func TestUnrelatedCwdReadNeitherWarnsNorConsumes(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(t.TempDir())
+	now := time.Now().Unix()
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+
+	_, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("a non-supervisor read must stay silent, got %q", errs)
+	}
+	if got := hqwake.Consumed(); got != hqwake.WatermarkUnset {
+		t.Errorf("a non-supervisor read moved the watermark to %d", got)
+	}
+}
+
+// The supervisor's pull shows exactly the DEBT (hq-unread-noise task 6.1). Measured, 68.7 %
+// of what a knock sent HQ to read was its own echo — the count excluded those records, the
+// read returned them, and HQ spent a turn per knock digging one new fact out of its own
+// trail. Now the two sets are the same set.
+func TestSupervisorPullHidesItsOwnEcho(t *testing.T) {
+	asHQ(t)
+	t.Setenv("TMUX_PANE", "%4") // HQ reads from its own pane; no tmux round-trip needed
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+
+	events.Append(events.Record{Ts: now, Event: "UserPromptSubmit", Pane: "%4",
+		Summary: "#a3f1c2"}) // the wake echoed back
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%4"}) // HQ's reply
+	events.Append(events.Record{Ts: now, Event: "SessionStart", Agent: "Claude Code"})
+	events.Append(events.Record{Ts: now, Event: "SessionEnd", Agent: "Claude Code"}) // a blink
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21", Loc: "web:1.0"})
+	latest := events.CurrentSeq()
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if strings.Contains(out, "#a3f1c2") {
+		t.Errorf("the pull showed HQ its own echo:\n%s", out)
+	}
+	if !strings.Contains(out, "web:1.0") {
+		t.Errorf("the pull must still show the actual debt:\n%s", out)
+	}
+	if strings.Count(out, "\n") != 1 {
+		t.Errorf("want exactly the 1 debt record, got:\n%s", out)
+	}
+	// Hiding must never be silent — that was B9's failure mode in a new place.
+	if !strings.Contains(errs, "4") {
+		t.Errorf("stderr must say how many records were withheld, got %q", errs)
+	}
+	// And it is NOT a filtered read: it showed precisely what HQ owed, so it consumes.
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("watermark = %d, want the pull still counted as consumption (%d)", got, latest)
+	}
+}
+
+// --all is the escape hatch for when HQ needs its own trail back, and it consumes too —
+// it is a superset of the debt, not a subset.
+func TestPullAllShowsEverythingAndStillConsumes(t *testing.T) {
+	asHQ(t)
+	t.Setenv("TMUX_PANE", "%4")
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%4", Loc: "hq:0.0"})
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21", Loc: "web:1.0"})
+	latest := events.CurrentSeq()
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0", "--all"}) })
+	if !strings.Contains(out, "hq:0.0") || !strings.Contains(out, "web:1.0") {
+		t.Errorf("--all must show everything past the cursor:\n%s", out)
+	}
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("--all hides nothing, so it must say nothing; got %q", errs)
+	}
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("watermark = %d, want %d", got, latest)
+	}
+}
+
+// A non-supervisor read is untouched: the pull view is the SUPERVISOR's view of its own
+// debt, and a worker tailing the stream in a repo has no debt and no echo to hide.
+func TestNonSupervisorPullIsUnfiltered(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(t.TempDir())
+	t.Setenv("TMUX_PANE", "%4")
+	now := time.Now().Unix()
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%4", Loc: "hq:0.0"})
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if !strings.Contains(out, "hq:0.0") {
+		t.Errorf("a bystander's read must not be reshaped by HQ's debt rules:\n%s", out)
+	}
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("…and must stay silent; got %q", errs)
 	}
 }
 

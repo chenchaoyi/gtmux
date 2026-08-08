@@ -120,7 +120,14 @@ import (
 //	      current → hand off → `gtmux hq --rotate`. The playbook also welds the arbiter for
 //	      "who said this?" — on HQ's own pane, `UserPromptSubmit` is the user and `Stop` is
 //	      HQ, and the event TYPE decides it, never the prose.
-const hqPlaybookVersion = 16
+//	v17 — hq-unread-noise: the delta pull changed under HQ, so the playbook must say so.
+//	      It now shows the DEBT — HQ's own pane records and pane-less blinks are omitted,
+//	      because measured, 68.7% of what a knock sent HQ to read was its own echo — with
+//	      `--all` to get the raw view back, and both forms still consume. Also teaches the
+//	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
+//	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
+//	      can fix where it stands.
+const hqPlaybookVersion = 17
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -857,6 +864,16 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   explicitly with ` + "`gtmux events --ack <seq>`" + `. Not writing back is not an error; it
   just means you still owe the read, and you will be told so again.
   过滤读/跳读不算消费;用别的方式对完账就 ` + "`--ack`" + ` 显式回写。
+  Run it from THIS directory — a read from a subdirectory (` + "`notes/`" + `, ` + "`knowledge/`" + `,
+  where you land after writing) does NOT count; it now says so on stderr instead of failing
+  silently, but the fix is yours: ` + "`cd`" + ` back, or prefix the call. 从本目录跑,子目录不算。
+- **That pull shows the DEBT, not your own trail.** Your unfiltered delta omits the records
+  that never counted as debt — YOUR OWN pane's lines (the wake echoed back, your reply) and
+  pane-less lifecycle blinks — and tells you on stderr how many it withheld. It is not a
+  filter: it is exactly the set you were knocked about, which is why it still counts as
+  consumption. When you need your own trail back (reconstructing what you said, auditing a
+  suspected loop), add ` + "`--all`" + ` — it shows everything and also consumes.
+  增量默认只显示「债务」,隐藏你自己的记录与无 pane 闪断;要全量加 ` + "`--all`" + `(同样计入消费)。
 - **A repeated ` + "`#<id>`" + ` is a RE-SEND, not a second event.** Every wake batch ends
   with a short id (` + "`… · #a3f1c2`" + `). Delivery is confirmed on screen and retried when
   the confirmation is missed, so the same batch can arrive twice — carrying the SAME id.

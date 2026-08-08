@@ -19,7 +19,9 @@
 package hq
 
 import (
+	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -101,29 +103,151 @@ func unreadDecide(now, latest, watermark int64, st unreadState, debounce, repeat
 	return unreadEvaluate, st
 }
 
-// unreadCount counts the events past the watermark that HQ actually has to consume, and
-// returns them with the highest sequence it scanned.
+// unreadBlinkPairSec bounds the liveness pairing that separates a pane-less process BLINK
+// from a native session coming online. Measured on the live stream (hq-unread-noise audit,
+// 2026-08-08): a 5 s and a 60 s window catch the identical 15 of 28 pane-less starts, so
+// this constant sits on the flat part of the curve rather than being tuned to it.
+const unreadBlinkPairSec = 10
+
+// unreadMaxGroups bounds the knock line's composition. One delivery is capped at 800 chars
+// across up to 8 lines, so the breakdown gets a small budget and says "+N more" past it.
+const unreadMaxGroups = 3
+
+// unreadGroup is one source's contribution to the debt (`%21 ×2`).
+type unreadGroup struct {
+	Key string
+	N   int
+}
+
+// unreadTally is what a scan of the debt found: how much HQ owes, how far the scan reached,
+// and — the diagnosability half — WHAT the debt is made of.
+type unreadTally struct {
+	N      int
+	MaxSeq int64
+	Groups []unreadGroup // most numerous first, then by key; deterministic
+}
+
+// unreadSourceOf names the source a debt record is attributed to in the knock line. The
+// three tokens are gtmux vocabulary (like the class names), not prose — they are not
+// translated, so the line reads identically to an HQ in either language.
+func unreadSourceOf(r events.Record) string {
+	switch {
+	case strings.HasPrefix(r.Event, "gtmux:"):
+		return "control" // gtmux's own maintenance triggers
+	case r.Pane != "":
+		return r.Pane
+	default:
+		return "native" // a non-tmux agent session — real work, just not in a pane
+	}
+}
+
+// unreadBlinks marks the pane-less lifecycle BLINKS in a scanned delta: a `SessionStart`
+// with no pane whose matching pane-less `SessionEnd` from the same agent lands within the
+// pairing window, plus that end. A short-lived child process or subagent whose hook fires
+// without a pane is not something HQ can act on or attribute, so it is not a read HQ owes.
+//
+// The pairing — not the empty pane — is the whole criterion, and that is the load-bearing
+// part. An empty pane is NOT a blink signature: it is carried just as much by every native
+// (non-tmux) agent's turns and by gtmux's own `gtmux:*` control records, and the `session`
+// field cannot tell them apart because it holds the tmux session name and is therefore
+// empty on every pane-less record by construction (hook.go: session is read only when a
+// pane exists). Excluding by empty pane would have stopped counting 39 real agent turns and
+// the 9 maintenance triggers #647 shipped precisely so they would reach HQ — and those are
+// the records that can LEAST afford it, because the class-wake channel fires only for a
+// pane (hook.go: `if pane != ""`), which makes this knock their only channel at all.
+func unreadBlinks(recs []events.Record) []bool {
+	blink := make([]bool, len(recs))
+	var ends []int
+	for i, r := range recs {
+		if r.Pane == "" && r.Event == "SessionEnd" {
+			ends = append(ends, i)
+		}
+	}
+	used := make([]bool, len(ends))
+	for i, s := range recs {
+		if s.Pane != "" || s.Event != "SessionStart" {
+			continue
+		}
+		for j, ei := range ends {
+			if used[j] {
+				continue
+			}
+			if e := recs[ei]; e.Agent == s.Agent && e.Ts >= s.Ts && e.Ts-s.Ts <= unreadBlinkPairSec {
+				used[j], blink[i], blink[ei] = true, true, true
+				break
+			}
+		}
+	}
+	return blink
+}
+
+// unreadScan counts the events past the watermark that HQ actually has to consume, tallies
+// what they are, and reports the highest sequence it scanned.
 //
 // It excludes the HQ pane's OWN records, and that exclusion is load-bearing rather than
 // cosmetic: every knock is typed into the HQ pane, so it lands back in the stream as a
 // UserPromptSubmit, and HQ's reply lands as a Stop. Counting those would make the sensor
 // self-feeding — knock → two new events → debt → knock — a perpetual-motion machine that
-// would knock forever on a fleet where nothing whatsoever happened. Everything else counts,
-// including gtmux's own control records: a maintenance trigger IS something HQ owes a pass
-// on, and it is rare enough (≈1/day) to never be the loop's fuel.
-func unreadCount(watermark int64, hqPane string) (n int, maxSeq int64) {
+// would knock forever on a fleet where nothing whatsoever happened. It also excludes
+// pane-less blinks (see unreadBlinks). Everything else counts, including gtmux's own
+// control records: a maintenance trigger IS something HQ owes a pass on, and it is rare
+// enough (≈1/day) to never be the loop's fuel.
+func unreadScan(watermark int64, hqPane string) unreadTally {
 	recs, _ := events.ReadSince(watermark)
-	maxSeq = watermark
-	for _, r := range recs {
-		if r.Seq > maxSeq {
-			maxSeq = r.Seq
+	blink := unreadBlinks(recs)
+	t := unreadTally{MaxSeq: watermark}
+	by := map[string]int{}
+	for i, r := range recs {
+		if r.Seq > t.MaxSeq {
+			t.MaxSeq = r.Seq
 		}
 		if hqPane != "" && r.Pane == hqPane {
 			continue // HQ's own echo — it wrote it, it does not need to read it
 		}
-		n++
+		if blink[i] {
+			continue
+		}
+		t.N++
+		by[unreadSourceOf(r)]++
 	}
-	return n, maxSeq
+	for k, n := range by {
+		t.Groups = append(t.Groups, unreadGroup{Key: k, N: n})
+	}
+	sort.Slice(t.Groups, func(i, j int) bool {
+		if t.Groups[i].N != t.Groups[j].N {
+			return t.Groups[i].N > t.Groups[j].N
+		}
+		return t.Groups[i].Key < t.Groups[j].Key
+	})
+	return t
+}
+
+// composition renders the tally as ` (%21 ×2 · control ×1)` for the knock line — the
+// diagnosability half of this sensor. A bare "1 unconsumed" cost HQ four rounds and a
+// manual stream read to see the shape of a suspected feedback loop on 2026-08-04; naming
+// the sources makes an echo-dominated or single-source accumulation visible from the
+// delivered line itself, and often answers the question without a pull at all.
+func (t unreadTally) composition() string {
+	if len(t.Groups) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(" (")
+	for i, g := range t.Groups {
+		if i >= unreadMaxGroups {
+			fmt.Fprintf(&b, " · +%d more", len(t.Groups)-i)
+			break
+		}
+		if i > 0 {
+			b.WriteString(" · ")
+		}
+		b.WriteString(g.Key)
+		if g.N > 1 {
+			fmt.Fprintf(&b, " ×%d", g.N)
+		}
+	}
+	b.WriteString(")")
+	return b.String()
 }
 
 // unreadSensor is the slow-tick entry point. Cheap by construction: the common case (HQ
@@ -167,16 +291,16 @@ func unreadSensorFor(pane string, now int64) {
 	if v != unreadEvaluate {
 		return
 	}
-	n, maxSeq := unreadCount(wm, pane)
-	if n == 0 {
-		// Everything past the watermark is HQ's own echo. Nothing to say — and step the
-		// watermark over it, so this scan is not repeated every interval for the rest of
-		// the day on a fleet that is genuinely quiet.
-		hqwake.Consume(maxSeq)
+	t := unreadScan(wm, pane)
+	if t.N == 0 {
+		// Everything past the watermark is HQ's own echo or a pane-less blink. Nothing to
+		// say — and step the watermark over it, so this scan is not repeated every interval
+		// for the rest of the day on a fleet that is genuinely quiet.
+		hqwake.Consume(t.MaxSeq)
 		return
 	}
 	hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassUnread,
-		strconv.Itoa(n)+i18n.Tr(" unconsumed", " 条未消费"),
+		strconv.Itoa(t.N)+i18n.Tr(" unconsumed", " 条未消费")+t.composition(),
 		"pull: gtmux events --since-seq "+strconv.FormatInt(wm, 10)+" --json"))
 }
 
@@ -207,7 +331,7 @@ func ConsumptionStatus(now int64) ConsumptionRow {
 	if wm == hqwake.WatermarkUnset {
 		return ConsumptionRow{State: MaintenanceNever}
 	}
-	n, _ := unreadCount(wm, hqpane.Find())
+	n := unreadScan(wm, hqpane.Find()).N
 	if n == 0 {
 		return ConsumptionRow{State: MaintenanceOK}
 	}
