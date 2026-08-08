@@ -41,6 +41,36 @@ terminal, with a `GTMUX_TERMINAL` override.
 - **WHEN** the host terminal is Ghostty (1.3+) or iTerm2
 - **THEN** focus/restore/new work via that driver's AppleScript
 
+### Requirement: Warp is driven best-effort (no per-tab scripting)
+
+Warp ships no AppleScript scripting dictionary, so the tab-title iteration the
+other drivers use is impossible. The system SHALL still register a Warp driver
+(detected via `TERM_PROGRAM=WarpTerminal` or a `Warp.app` process ancestry) so a
+Warp-hosted session is never driven through another terminal's driver. The
+driver SHALL focus by opening `warp://session/<uuid>` when the session's tmux
+environment carries a recorded `WARP_TERMINAL_SESSION_UUID`, and SHALL fall back
+to activating the Warp app otherwise. `restore`/`new` SHALL work via Warp launch
+configurations (`~/.warp/launch_configurations` + `warp://launch/<name>`), whose
+attach step records each tab's Warp session uuid into the tmux session
+environment — making later focus precise for gtmux-opened tabs. `IsViewing`
+SHALL match the frontmost process by Warp's real process name (`stable`) and the
+window title, answering false when the title cannot confirm the session (never
+wrongly suppressing a notification). `gtmux doctor` SHALL state the best-effort
+limits rather than claiming full support.
+
+#### Scenario: Focus a Warp-hosted session
+
+- **WHEN** `gtmux focus` targets a session whose tmux client runs inside Warp
+- **THEN** the Warp driver is used (never a fallback driver aimed at another
+  app): the exact tab via `warp://session/<uuid>` when a uuid is recorded, else
+  the Warp app is activated
+
+#### Scenario: Restore into Warp tabs
+
+- **WHEN** `gtmux restore` runs with Warp as the host terminal
+- **THEN** a launch configuration opens one tab per session, each attaching its
+  tmux session and recording that tab's Warp session uuid for later focus
+
 ### Requirement: Tab matching by title
 
 The system SHALL match a session's tab by the tmux title `#S — #W`, and therefore

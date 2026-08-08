@@ -9,12 +9,12 @@ import (
 
 func TestSaveLoadRemove(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	r := Record{Agent: "claude", SessionID: "sid-1", Cwd: "/x", State: "working", UpdatedAt: 100}
+	r := Record{Agent: "claude", SessionID: "sid-1", Cwd: "/x", State: "working", UpdatedAt: 100, Terminal: "Warp"}
 	if err := Save(r); err != nil {
 		t.Fatal(err)
 	}
 	got, ok := Load("sid-1")
-	if !ok || got.State != "working" || got.Agent != "claude" {
+	if !ok || got.State != "working" || got.Agent != "claude" || got.Terminal != "Warp" {
 		t.Fatalf("Load = %+v, %v", got, ok)
 	}
 	Remove("sid-1")

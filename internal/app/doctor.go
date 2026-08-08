@@ -461,6 +461,12 @@ func rowAutoRestore() dcheck {
 func rowTerminal() dcheck {
 	name := terminal.DetectedName()
 	label := i18n.Tr("host", "宿主终端")
+	if name == "warp" {
+		// Warp has no per-tab scripting: restore/new work (launch configs), focus
+		// lands on the app (exact tab only for gtmux-opened tabs). Be honest here.
+		return dcheck{stOK, label, name, i18n.Tr("restore / new supported; focus is best-effort (Warp has no tab scripting)",
+			"restore / new 可用；focus 尽力而为（Warp 无 tab 脚本接口）")}
+	}
 	if terminal.HasDriver(name) {
 		return dcheck{stOK, label, name, i18n.Tr("focus / restore / new supported", "focus / restore / new 可用")}
 	}
@@ -573,7 +579,7 @@ var knownTerminals = []struct{ name, bundle, driver string }{
 	{"kitty", "kitty.app", ""},
 	{"WezTerm", "WezTerm.app", ""},
 	{"Alacritty", "Alacritty.app", ""},
-	{"Warp", "Warp.app", ""},
+	{"Warp", "Warp.app", "warp"},
 }
 
 func terminalChecks() []dcheck { return []dcheck{rowTerminal(), rowOtherTerminals()} }
@@ -605,7 +611,9 @@ func rowOtherTerminals() dcheck {
 		if !terminalInstalled(t.bundle) {
 			continue
 		}
-		if t.driver != "" && terminal.HasDriver(t.driver) {
+		if t.driver == "warp" && terminal.HasDriver(t.driver) {
+			parts = append(parts, t.name+i18n.Tr(" (best-effort)", "（尽力支持）"))
+		} else if t.driver != "" && terminal.HasDriver(t.driver) {
 			parts = append(parts, t.name+i18n.Tr(" (supported)", "（支持）"))
 		} else {
 			parts = append(parts, t.name+i18n.Tr(" (sensed)", "（仅感知）"))

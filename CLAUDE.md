@@ -279,8 +279,11 @@ squash-merge — they can't be fully automated).
   *jump*) remains deferred — `source/terminal/tab` + `focus --terminal/--tab` are
   latent groundwork for it.
 - **Terminal coupling** goes through the `internal/terminal.Terminal` interface
-  (`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`); `internal/ghostty.Driver`
-  and `terminal.iterm2` are the two impls. `terminal.Active()` resolves the host
+  (`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`); `internal/ghostty.Driver`,
+  `terminal.iterm2`, and `terminal.warp` are the impls (Warp is BEST-EFFORT: no
+  AppleScript dictionary — focus = `warp://session/<uuid>` when gtmux's own
+  attach recorded the uuid into the tmux session env, else app-activate;
+  restore/new via launch configs; its macOS process name is `stable`). `terminal.Active()` resolves the host
   driver via `detect.go` (`GTMUX_TERMINAL` override → `$TERM_PROGRAM` → tmux
   client process ancestry → Ghostty fallback). Callers
   (`focus`/`restore`/`new`/`hook`) use `terminal.Active()`, never a terminal

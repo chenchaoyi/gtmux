@@ -33,6 +33,10 @@ type Record struct {
 	Cwd       string `json:"cwd,omitempty"`
 	State     string `json:"state"`     // working | waiting | idle
 	UpdatedAt int64  `json:"updatedAt"` // unix seconds, last hook update
+	// Terminal is the app hosting the session ("Warp", "Ghostty", …), sensed from
+	// the hook's own environment/ancestry at record time. "" when unrecognized.
+	// Display-only (the radar row's `terminal` field); native jump stays deferred.
+	Terminal string `json:"terminal,omitempty"`
 	// PID/Comm identify the agent PROCESS that fired the hook, so a "move to tmux"
 	// can exit the original once the resumed session is up. Comm guards against PID
 	// reuse (kill only if the pid is still that command). 0 = unknown (don't kill).
