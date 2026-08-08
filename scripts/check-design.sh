@@ -119,9 +119,9 @@ retired_check() {  # $1=token  $2=retired-by  $3=exempt files
   done
 }
 retired_check '[gtmux] '        'hq-perception-v2 (the wake format is now `» gtmux·<class>`)' \
-  'openspec/specs/chat-transcript/spec.md docs/design/DESIGN.md docs/design/HANDOFF.md docs/design/CLAUDE.snippet.md'
+  'openspec/specs/chat-transcript/spec.md docs/design/DESIGN.md docs/design/HANDOFF.md'
 retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is gone)' \
-  'CLAUDE.md docs/design/DESIGN.md docs/design/HANDOFF.md docs/design/CLAUDE.snippet.md'
+  'CLAUDE.md docs/design/DESIGN.md docs/design/HANDOFF.md'
 
 if [ "$fail" = 0 ]; then
   note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired"
