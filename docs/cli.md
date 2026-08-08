@@ -919,7 +919,7 @@ Per release, the lines written **for users** — not commit subjects. `gtmux upd
 the first few of these automatically after installing; this is the full list.
 
 The source is a `user:` block in the release's **tag message**, which goreleaser copies
-into the release body:
+into the release body. An optional `user-zh:` twin carries the same notes in Chinese:
 
 ```
 git tag -a v0.40.0 -m "v0.40.0 — …
@@ -927,8 +927,18 @@ git tag -a v0.40.0 -m "v0.40.0 — …
 user:
 - spawn --title now names the session
 - restore returns you to the window you were on
+
+user-zh:
+- spawn --title 现在会命名会话
+- restore 会把你带回原来的窗口
 "
 ```
+
+Both `gtmux update` and `gtmux whatsnew` print the block matching your language
+(`GTMUX_LANG`): zh prefers `user-zh:`, en prefers `user:`, and either falls back to
+the other when a tag carries only one — so older single-block tags keep working,
+whichever language they were written in. The blocks may appear in either order; each
+ends at a blank line, a heading, or the other block's marker.
 
 A release with no `user:` block contributes nothing — deliberately. A version where
 nothing changed for users should say nothing, rather than paraphrasing a commit subject

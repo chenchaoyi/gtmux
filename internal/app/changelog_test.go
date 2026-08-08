@@ -3,6 +3,8 @@ package app
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // `gtmux update` ended at "Installed. gtmux v0.39.0" — never saying what you got. These
@@ -147,5 +149,82 @@ func TestUserLinesTakesTheRealBlockNotTheQuotedOne(t *testing.T) {
 	got := userLines(body)
 	if len(got) != 1 || got[0] != "the real change" {
 		t.Errorf("got %#v; want just the real change", got)
+	}
+}
+
+// Tags were authored sometimes in English, sometimes in Chinese, so the changelog
+// language flipped between releases. Two named blocks fix that: the reader's language
+// picks its own block.
+func TestBilingualBodyServesEachReaderTheirOwnBlock(t *testing.T) {
+	body := "user:\n- spawn --title now names the session\n\n" +
+		"user-zh:\n- spawn --title 现在会命名会话\n\n" +
+		"## Changelog\n* abc: feat: x\n"
+	if got := userLinesFor(body, "en"); len(got) != 1 || got[0] != "spawn --title now names the session" {
+		t.Errorf("en → %#v; want the user: block only", got)
+	}
+	if got := userLinesFor(body, "zh"); len(got) != 1 || got[0] != "spawn --title 现在会命名会话" {
+		t.Errorf("zh → %#v; want the user-zh: block only", got)
+	}
+}
+
+// A tag with only ONE block serves it to BOTH languages — a note in the wrong language
+// beats silence, and every pre-existing single-block tag keeps working unchanged.
+func TestSingleBlockTagsFallBackAcrossLanguages(t *testing.T) {
+	enOnly := "user:\n- only in English\n"
+	zhOnly := "user-zh:\n- 只有中文\n"
+	if got := userLinesFor(enOnly, "zh"); len(got) != 1 || got[0] != "only in English" {
+		t.Errorf("zh over an en-only tag → %#v; want the user: block as fallback", got)
+	}
+	if got := userLinesFor(zhOnly, "en"); len(got) != 1 || got[0] != "只有中文" {
+		t.Errorf("en over a zh-only tag → %#v; want the user-zh: block as fallback", got)
+	}
+	// And each language still prefers its own when scanning a single-block body of its
+	// own language (the common old-tag case).
+	if got := userLinesFor(enOnly, "en"); len(got) != 1 || got[0] != "only in English" {
+		t.Errorf("en over an en-only tag → %#v", got)
+	}
+	if got := userLinesFor(zhOnly, "zh"); len(got) != 1 || got[0] != "只有中文" {
+		t.Errorf("zh over a zh-only tag → %#v", got)
+	}
+}
+
+// The two blocks may sit in either order, back to back with no blank line between —
+// each block must end at the other's marker, never absorb it as a bullet.
+func TestBlocksTolerateEitherOrderAndNoSeparator(t *testing.T) {
+	for name, body := range map[string]string{
+		"en-first back-to-back": "user:\n- en line\nuser-zh:\n- 中文行\n",
+		"zh-first back-to-back": "user-zh:\n- 中文行\nuser:\n- en line\n",
+		"zh-first blank-separated": "v0.46.0 — dev summary\n\n" +
+			"user-zh:\n- 中文行\n\nuser:\n- en line\n",
+	} {
+		if got := userLinesFor(body, "en"); len(got) != 1 || got[0] != "en line" {
+			t.Errorf("%s: en → %#v; want just the en line", name, got)
+		}
+		if got := userLinesFor(body, "zh"); len(got) != 1 || got[0] != "中文行" {
+			t.Errorf("%s: zh → %#v; want just the zh line", name, got)
+		}
+	}
+}
+
+// `user-zh: 一件事` inline on the marker line works like `user: one thing` does.
+func TestZhMarkerLineCarriesInlineContent(t *testing.T) {
+	if got := userLinesFor("user-zh: 一件事\n", "zh"); len(got) != 1 || got[0] != "一件事" {
+		t.Errorf("got %#v; want the inline zh note", got)
+	}
+}
+
+// userLines (no explicit language) follows the process language — the seam update/
+// whatsnew actually go through.
+func TestUserLinesFollowsTheResolvedLanguage(t *testing.T) {
+	body := "user:\n- english\n\nuser-zh:\n- 中文\n"
+	old := i18n.Lang()
+	defer i18n.SetLang(old)
+	i18n.SetLang("zh")
+	if got := userLines(body); len(got) != 1 || got[0] != "中文" {
+		t.Errorf("zh process language → %#v; want the user-zh: block", got)
+	}
+	i18n.SetLang("en")
+	if got := userLines(body); len(got) != 1 || got[0] != "english" {
+		t.Errorf("en process language → %#v; want the user: block", got)
 	}
 }

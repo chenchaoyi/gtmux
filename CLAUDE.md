@@ -144,7 +144,11 @@ over one Go core (gtmux-core is the single data source):
   `gtmux update` prints after installing and `gtmux whatsnew` lists. Write them for the
   USER (what moved that they'd notice), not as commit subjects; goreleaser copies the tag
   body into the release, and the CLI reads it back. A release with no `user:` block shows
-  nothing, which is correct only when nothing changed for users.
+  nothing, which is correct only when nothing changed for users. A `user-zh:` twin block
+  is **optional but encouraged** (tags used to flip language between releases): the CLI
+  serves the block matching the reader's language (`GTMUX_LANG`) and falls back to the
+  other when one is absent, so old single-block tags keep working. Blocks may appear in
+  either order; each ends at a blank line, a `#` heading, or the other block's marker.
 
   ```
   git tag -a v0.40.0 -m "v0.40.0 — <one-line dev summary>
@@ -152,6 +156,10 @@ over one Go core (gtmux-core is the single data source):
   user:
   - spawn --title now names the session
   - restore returns you to the window you were on
+
+  user-zh:
+  - spawn --title 现在会命名会话
+  - restore 会把你带回原来的窗口
   "
   ```
 - **git-ops footgun:** never build a `gh pr create` / `git commit` body via
