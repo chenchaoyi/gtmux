@@ -35,8 +35,9 @@ import {ChatView} from '../ui/ChatView';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {BrandLoader} from '../ui/BrandLoader';
 import {ApprovalCard} from '../ui/ApprovalCard';
-import {NativeTerm} from '../ui/NativeTerm';
+import {NativeTerm, TERM_BG} from '../ui/NativeTerm';
 import {DiffModal} from '../ui/DiffModal';
+import {agentLabel} from './PaneBrowserScreen';
 import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 
@@ -401,10 +402,17 @@ export function DetailView({
     };
   }, [client, demo, live.session, live.pane_id]);
 
+  // Full-screen TERMINAL keeps the top safe-area inset (the exit pill must clear
+  // the notch), but the inset strip must be painted the TERMINAL's dark, not the
+  // app theme — in light mode pal.bg drew a light band above the always-dark pane
+  // (the recurring hardcoded-dark-surface trap, in backdrop form). Chat is themed
+  // like the page, so its full-screen backdrop stays pal.bg.
+  const backdrop = fullscreen && mode === 'terminal' ? theme?.background || TERM_BG : pal.bg;
+
   return (
     <KeyboardAvoidingView
       testID={TestIds.detail.screen}
-      style={[styles.safe, {backgroundColor: pal.bg}]}
+      style={[styles.safe, {backgroundColor: backdrop}]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar hidden={fullscreen} />
       {/* keep the top safe-area inset even in full-screen so the floating control
@@ -495,7 +503,9 @@ export function DetailView({
                   {n.tier === 'agent' ? '▸' : '›'}
                 </Text>
                 <Text style={[styles.neighborLabel, {color: pal.fg2}]} numberOfLines={1}>
-                  {n.tier === 'agent' ? n.agent || n.command : n.command}
+                  {/* agentLabel, not `agent || command`: a Claude 2.x pane's command is
+                      its VERSION string (#659) — join the live radar name first. */}
+                  {n.tier === 'agent' ? agentLabel(n, agents.find(a => a.pane_id === n.pane_id)) : n.command}
                 </Text>
                 <Text style={[styles.neighborLoc, {color: pal.fg3}]}>{n.pane_id}</Text>
               </TouchableOpacity>
@@ -682,7 +692,11 @@ export function DetailView({
           onDismiss={() => setFailedSend(null)}
         />
       )}
-      {isNative ? (
+      {/* Full-screen = a READING mode (阅读空间最大化): only the content shows —
+          the composer/key row (and the native read-only notice) hide with the rest
+          of the chrome and return on exit. The ApprovalCard/SendFailedBar above are
+          exceptional-state alerts, not chrome, so they still surface. */}
+      {fullscreen ? null : isNative ? (
         <Text style={{color: pal.fg3, fontSize: 12, textAlign: 'center', paddingVertical: 10}}>
           {lang === 'zh'
             ? '原生会话（不在 tmux）— 只读；在 Mac 上 gtmux adopt 后可远程输入'

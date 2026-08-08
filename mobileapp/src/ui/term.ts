@@ -225,6 +225,48 @@ export function flattenGrid(
   return {rows: out, text: sel.join('\n')};
 }
 
+// ————— Trailing-blank trim (short buffers must not render as a black screen) —————
+//
+// capture-pane KEEPS the pane grid's trailing blank rows (internal/tmux
+// CapturePaneColor preserves them so the bottom-anchored cursor row-count math
+// holds). Rendering that blank tail verbatim pinned a mostly-empty tall pane's
+// few content lines ABOVE the viewport — the terminal ScrollView follows the
+// bottom, so a fresh 200×50 pane with 5 content lines (or any pane right after
+// `clear`) showed as an ALL-BLACK screen. The RENDER therefore trims the blank
+// tail; the cursor mapping still runs on the UNTRIMMED array (`up` counts from
+// the capture's bottom row) and the trim never cuts the row the cursor sits on
+// (a cursor can rest BELOW the last content line, or on the top row after
+// `clear` when everything under it is blank).
+
+export interface BottomCursor {
+  x: number;
+  up: number; // rows above the capture's bottom grid row (pane_height−1−cursor_y)
+  visible: boolean;
+}
+
+// isBlankLine: this parsed line renders nothing visible — only whitespace text
+// and no background fill (a bg-painted run of spaces IS visible, e.g. a TUI
+// statusline, so it counts as content and is never trimmed).
+export function isBlankLine(spans: AnsiLine): boolean {
+  return spans.every(s => !s.bg && s.text.trim() === '');
+}
+
+// renderView: how many leading logical lines to render (`keep`) and which of
+// them carries the cursor (`cursorRow`, −1 when hidden). The cursor mapping is
+// the pre-existing bottom-anchored one — skip the capture's trailing-newline
+// blank, then count `up` LOGICAL lines up from the bottom grid row — computed
+// BEFORE the trim so it can protect the cursor's row. keep ≥ 1: an all-blank
+// capture still renders one (empty) row.
+export function renderView(lines: AnsiLine[], cursor?: BottomCursor): {keep: number; cursorRow: number} {
+  let last = lines.length - 1;
+  if (last > 0 && lines[last].length === 0) last--; // the trailing-newline blank
+  const hasCursor = !!cursor && cursor.visible !== false;
+  const cursorRow = hasCursor ? Math.max(0, Math.min(last, last - (cursor!.up | 0))) : -1;
+  let content = last + 1;
+  while (content > 1 && isBlankLine(lines[content - 1] || [])) content--;
+  return {keep: Math.max(content, cursorRow + 1), cursorRow};
+}
+
 // A bare http(s) URL in terminal output. Stops at whitespace and the bracket/quote
 // characters that normally delimit a URL. Hyphens/dots/slashes/query chars stay IN.
 const URL_RE = /https?:\/\/[^\s<>"'`|\\^{}]+/gi;

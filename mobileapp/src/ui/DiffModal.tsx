@@ -62,15 +62,21 @@ export function DiffModal({
             {lang === 'zh' ? '没有改动（或这个目录不是 git 仓库）。' : 'No changes (or the directory isn’t a git repo).'}
           </Text>
         ) : (
-          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-            <ScrollView horizontal showsHorizontalScrollIndicator>
-              <View>
-                {lines.map((ln, i) => (
-                  <Text key={i} style={[styles.line, {color: diffLineColor(ln)}]}>
-                    {ln === '' ? ' ' : ln}
-                  </Text>
-                ))}
-              </View>
+          /* Wide diff lines scroll in their OWN container instead of truncating.
+             Nesting order matters: the HORIZONTAL scroller is the OUTER one (its
+             content container grows to the widest line; the vertical list rides
+             inside) — the old inverse nesting (horizontal INSIDE vertical) is the
+             shape that collapses/misbehaves on iOS (see NativeTerm's wrap note),
+             and it clipped every line at the screen edge with no way to pan.
+             numberOfLines={1} keeps each diff line a single row (no soft wrap), so
+             the per-line +/- colors stay line-accurate. */
+          <ScrollView horizontal style={styles.body} contentContainerStyle={styles.hContent} showsHorizontalScrollIndicator>
+            <ScrollView contentContainerStyle={styles.bodyContent} nestedScrollEnabled>
+              {lines.map((ln, i) => (
+                <Text key={i} numberOfLines={1} style={[styles.line, {color: diffLineColor(ln)}]}>
+                  {ln === '' ? ' ' : ln}
+                </Text>
+              ))}
             </ScrollView>
           </ScrollView>
         )}
@@ -97,6 +103,9 @@ const styles = StyleSheet.create({
   center: {marginTop: 60},
   empty: {fontSize: 14, textAlign: 'center', marginTop: 60, paddingHorizontal: 24},
   body: {flex: 1, backgroundColor: '#0A0A0C'},
-  bodyContent: {padding: 12},
+  // horizontal content must at least fill the screen so a narrow diff doesn't
+  // leave a void to its right (the dark body bg still covers, but edges snap).
+  hContent: {flexGrow: 1, minWidth: '100%'},
+  bodyContent: {padding: 12, paddingBottom: 40},
   line: {fontFamily: 'Menlo', fontSize: 11, lineHeight: 15},
 });

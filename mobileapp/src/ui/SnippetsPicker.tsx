@@ -1,5 +1,7 @@
-// SnippetsPicker — pick a saved quick-phrase to send (or jump to manage). A proper
-// branded bottom sheet (mirrors HistoryModal), replacing the bare iOS action sheet.
+// SnippetsPicker — pick a saved quick reply (常用语) to send (or jump to manage). A
+// proper branded bottom sheet (mirrors HistoryModal), replacing the bare iOS action
+// sheet. User-facing copy says "Quick replies" / 「常用语」 (2026-08 rename — "Snippets"
+// is developer jargon); the file/testID/internal names deliberately keep `snippets`.
 
 import React from 'react';
 import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -26,17 +28,21 @@ export function SnippetsPicker({
 }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} testID={TestIds.composer.snippetSheet}>
-        <TouchableOpacity activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+      {/* accessible={false} on both touchables: they're tap-catchers (dismiss /
+          swallow), and a Touchable is an AX element by DEFAULT — without the
+          opt-out the whole sheet merged into ONE unreadable element (the same
+          PickerSheet a11y bug). The title/rows below stay individual elements. */}
+      <TouchableOpacity accessible={false} style={styles.backdrop} activeOpacity={1} onPress={onClose} testID={TestIds.composer.snippetSheet}>
+        <TouchableOpacity accessible={false} activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
           <View style={styles.head}>
-            <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '快捷短语' : 'Snippets'}</Text>
+            <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '常用语' : 'Quick replies'}</Text>
             <TouchableOpacity onPress={onManage} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
               <Text style={[styles.manage, {color: '#06B6D4'}]}>{lang === 'zh' ? '管理' : 'Manage'}</Text>
             </TouchableOpacity>
           </View>
           {snippets.length === 0 ? (
             <Text style={[styles.empty, {color: pal.fg3}]}>
-              {lang === 'zh' ? '还没有快捷短语，点「管理」添加常用指令' : 'No snippets yet — tap Manage to add common commands'}
+              {lang === 'zh' ? '还没有常用语，点「管理」添加常用指令' : 'No quick replies yet — tap Manage to add common commands'}
             </Text>
           ) : (
             <ScrollView style={styles.list} keyboardShouldPersistTaps="always">

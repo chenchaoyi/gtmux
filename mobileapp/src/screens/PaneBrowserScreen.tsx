@@ -58,10 +58,20 @@ function wp(row: PaneRow): string {
 // with a colon, e.g. ":/Users/…"), which is both ugly and redundant with the dir shown
 // in the sub-line. So: strip a leading colon; if what remains is a filesystem path
 // (or empty), fall back to the command (bash/vim/…), which reads far cleaner.
-function plainLabel(title: string | undefined, command: string): string {
+// Exported for tests.
+export function plainLabel(title: string | undefined, command: string): string {
   const t = (title || '').replace(/^:+\s*/, '').trim();
   if (!t || t.startsWith('/') || t.startsWith('~')) return command;
   return t;
+}
+
+// Label for an AGENT pane. `row.agent` normally names it, but the raw command is
+// NEVER a good fallback for an agent row: a Claude 2.x pane's pane_current_command
+// is its VERSION string ("2.1.220", the #659 fact), so an agent row whose `agent`
+// field arrives empty showed a bare version number. Prefer the LIVE radar join's
+// agent name; the command remains only as the last resort. Exported for tests.
+export function agentLabel(row: PaneRow, joined?: Agent): string {
+  return row.agent || joined?.agent || row.command;
 }
 
 interface Roll {
@@ -287,6 +297,7 @@ export function PaneBrowserScreen({navigation}: any) {
         renderItem={({item}) => (
           <PaneRowView
             row={item}
+            joined={byPane.get(item.pane_id)}
             status={statusOf(item, byPane)}
             pal={pal}
             onPress={() => navigation.navigate('Detail', {agent: paneRowToAgent(item)})}
@@ -345,23 +356,27 @@ function SessionRollup({group, pal, lang}: {group: Group; pal: any; lang: string
 
 function PaneRowView({
   row,
+  joined,
   status,
   pal,
   onPress,
 }: {
   row: PaneRow;
+  joined?: Agent; // the live radar agent at this pane_id (agent-tier rows)
   status?: StatusName;
   pal: any;
   onPress: () => void;
 }) {
   const isAgent = row.tier === 'agent';
-  const label = isAgent ? row.agent || row.command : plainLabel(row.title, row.command);
+  const label = isAgent ? agentLabel(row, joined) : plainLabel(row.title, row.command);
   const dir = base(row.cwd);
-  // sub line: dir · (command, when it isn't already the label). The window·pane is a
+  // sub line: dir · (for a PLAIN pane, the command when it isn't already the label).
+  // An agent row never repeats its command here — the label already names the agent
+  // and the command can be a meaningless version string (#659). The window·pane is a
   // separate mono chip at the front so the tree position reads at a glance.
   const bits: string[] = [];
   if (dir) bits.push(dir);
-  if (row.command && row.command !== label) bits.push(row.command);
+  if (!isAgent && row.command && row.command !== label) bits.push(row.command);
   return (
     <TouchableOpacity
       testID={`${TestIds.panes.row}-${row.pane_id}`}

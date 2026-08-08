@@ -106,12 +106,14 @@ type Attachment = {id: string; uri: string; name: string; type: string; isImage:
 // the fix-a-typo key when driving the agent's prompt directly. The ␣ Space pill
 // was REMOVED (2026-08-08, user call): it did nothing useful in practice, and a
 // literal space is typable from the composer field anyway.
-const CONTROL_KEYS: {label: string; key: string}[] = [
+// `glyph` renders the label at the bigger glyph size: U+232B ⌫ draws small inside
+// its em box, so at the text size it looked dwarfed next to ↑/↓/⏎ (user report).
+const CONTROL_KEYS: {label: string; key: string; glyph?: boolean}[] = [
   {label: 'Tab', key: 'Tab'},
   {label: '↑', key: 'Up'},
   {label: '↓', key: 'Down'},
   {label: '⏎', key: 'Enter'},
-  {label: '⌫', key: 'BSpace'},
+  {label: '⌫', key: 'BSpace', glyph: true},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
 ];
@@ -144,7 +146,6 @@ export function Composer({
 }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
-  const [inputH, setInputH] = useState(0); // measured content height, for 1→6 line auto-grow
   // Staged attachments (iMessage-style): picked/edited but NOT uploaded yet. They
   // upload on SEND, together with the typed text — never on pick. `sending` guards
   // the upload; `progress` is the per-attachment fraction; `sendError` surfaces a
@@ -359,7 +360,7 @@ export function Composer({
   // The key row (context shortcuts + control keys + arrows + snippets). Always
   // visible — when composing it sits just above the input field, so the special
   // keys AND the ▾ dismiss stay reachable while the keyboard is up.
-  // Resting row — decluttered + grouped: ⌨ | Tab ⏎ Ctrl-C Esc | 快捷短语▾ 历史.
+  // Resting row — decluttered + grouped: ⌨ | Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc | 常用语▾ 历史.
   // Waiting responses live in the ApprovalCard (real /api/options choices), never
   // as hardcoded keys here. Snippets are a picker (not a flat list); attach/
   // compose/paste live in the input row + attach sheet; directional keypads were
@@ -379,13 +380,13 @@ export function Composer({
       </Key>
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
       {CONTROL_KEYS.map(k => (
-        <Key key={k.label} onPress={() => send({key: k.key})} testID={`${TestIds.composer.controlKey}-${k.key}`}>
+        <Key key={k.label} glyph={k.glyph} onPress={() => send({key: k.key})} testID={`${TestIds.composer.controlKey}-${k.key}`}>
           {k.label}
         </Key>
       ))}
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
       <Key onPress={() => setSnippetsOpen(true)} testID={TestIds.composer.snippets}>
-        {lang === 'zh' ? '快捷短语 ▾' : 'Snippets ▾'}
+        {lang === 'zh' ? '常用语 ▾' : 'Quick replies ▾'}
       </Key>
       <Key onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}>
         <HistoryIcon size={28} color={pal.fg2} />
@@ -462,10 +463,17 @@ export function Composer({
         inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
         // D7 core fix: multiline so Return inserts a newline; sending is the ↑
         // button only (unless the user opted into "Return sends"). Auto-grows
-        // 1→6 lines, then scrolls inside.
+        // 1→~6 lines (minHeight→maxHeight), then scrolls inside. Growth is
+        // NATIVE (Fabric auto-sizes an unfixed-height multiline TextInput):
+        // the old onContentSizeChange→height math under-counted the padding
+        // and lagged a line behind fast input, so a grown box clipped its
+        // first line and read sloppy next to the accessory buttons (user
+        // report). Native sizing keeps the box exactly content+padding, so
+        // the bottom-aligned 40pt circles' centers sit on the LAST LINE's
+        // center (10 pad + half a ~20pt line = 20 = circle radius) at every
+        // height — the iMessage/WeChat accessory pattern — with no jump.
         multiline
         textAlignVertical="top"
-        onContentSizeChange={e => setInputH(e.nativeEvent.contentSize.height)}
         returnKeyType={returnSends ? 'send' : 'default'}
         onSubmitEditing={returnSends ? () => sendText(true) : undefined}
         blurOnSubmit={false}
@@ -475,7 +483,6 @@ export function Composer({
             backgroundColor: pal.surface,
             borderColor: pal.divider,
             color: pal.fg,
-            height: Math.min(132, Math.max(40, inputH + 16)),
           },
         ]}
       />
@@ -670,7 +677,10 @@ const styles = StyleSheet.create({
   inputRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 8},
   attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
   attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
-  input: {flex: 1, minHeight: 40, borderWidth: StyleSheet.hairlineWidth, borderRadius: 11, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
+  // minHeight matches the 40pt accessory circles (single line centers align);
+  // maxHeight ≈ 6 lines, then the field scrolls inside. No explicit height —
+  // see the auto-grow note at the TextInput.
+  input: {flex: 1, minHeight: 40, maxHeight: 132, borderWidth: StyleSheet.hairlineWidth, borderRadius: 11, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
   // Full-screen-compose button: its own style (not `attach`) so its gaps stay EVEN —
   // owns the 8pt gap to its left (the input) and lets `send`'s marginLeft own the gap
   // to its right, so + · input · ⤢ · ↑ are all 8pt apart (was 8 · 0 · 16).

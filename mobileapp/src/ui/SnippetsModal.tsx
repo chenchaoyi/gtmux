@@ -1,5 +1,7 @@
-// SnippetsModal — manage the composer's saved snippets (MOBILE §4): add a new
-// one, delete existing. A light bottom sheet; the parent persists the result.
+// SnippetsModal — manage the composer's saved quick replies (常用语, MOBILE §4):
+// add a new one, delete existing. A light bottom sheet; the parent persists the
+// result. User-facing copy says "Quick replies" / 「常用语」 (2026-08 rename —
+// "Snippets" is developer jargon); file/testID/internal names keep `snippets`.
 
 import React, {useState} from 'react';
 import {Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
@@ -34,12 +36,15 @@ export function SnippetsModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
+      {/* accessible={false}: tap-catchers must not merge the sheet's children
+          into one AX element (the PickerSheet a11y bug, same class). */}
+      <TouchableOpacity accessible={false} style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity
+          accessible={false}
           activeOpacity={1}
           style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
           <View style={styles.headerRow}>
-            <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '快捷短语' : 'Snippets'}</Text>
+            <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '常用语' : 'Quick replies'}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={hit}>
               <Text style={styles.done}>{lang === 'zh' ? '完成' : 'Done'}</Text>
             </TouchableOpacity>
@@ -49,7 +54,7 @@ export function SnippetsModal({
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              placeholder={lang === 'zh' ? '新增短语…' : 'New snippet…'}
+              placeholder={lang === 'zh' ? '新增常用语…' : 'New quick reply…'}
               placeholderTextColor={pal.fg3}
               autoCapitalize="none"
               returnKeyType="done"
@@ -66,7 +71,7 @@ export function SnippetsModal({
 
           <ScrollView style={styles.list} keyboardShouldPersistTaps="always">
             {snippets.length === 0 && (
-              <Text style={[styles.empty, {color: pal.fg3}]}>{lang === 'zh' ? '还没有短语' : 'No snippets yet'}</Text>
+              <Text style={[styles.empty, {color: pal.fg3}]}>{lang === 'zh' ? '还没有常用语' : 'No quick replies yet'}</Text>
             )}
             {snippets.map(s => (
               <View key={s} style={[styles.item, {borderBottomColor: pal.divider}]}>

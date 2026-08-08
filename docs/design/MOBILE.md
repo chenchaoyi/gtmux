@@ -139,6 +139,10 @@ pane 浏览器(按 session 分组)覆盖,手机侧则用这条 —— 都基于�
   ①**换行 / 滚动**切换与③顶部 `cols × rows · live` 指示 **暂缓**：① iOS 上嵌套横向 `ScrollView`
   会白屏（NativeTerm 现固定按手机宽度软换行，见其注释）；③ 服务器 `/api/pane`/`agents` 目前不下发
   pane 真实列宽/行高，做出来只能是合成值 —— 需先加一个 pane 尺寸字段（契约变更）才有意义。
+- **短缓冲不黑屏**：capture 会保留 pane 网格的**尾部空行**（服务端为底锚光标的行数数学而保留，
+  见 `internal/tmux` CapturePaneColor），渲染端必须把全空尾行裁掉再显示（`term.ts renderView`：
+  光标行号先在**未裁剪**数组上算、裁剪永不切到光标所在行）——否则一个大而空的 pane（200×50 只有
+  5 行内容）或 `clear` 之后，跟随底部的滚动视图停在空行区，整屏全黑。
 - 等宽字体；离线时显示最后一帧。
 
 ### Terminal text selection（iOS 终端文本选中）
@@ -220,6 +224,14 @@ iOS 端选中/复制是**原生实现**（Android 保持 `<Text selectable>` 平
 
 图标要表达**动作**，不是形状：退出全屏用 `✕`（关闭），不要用 `⤡`（对角缩放箭头 —— 读作
 "变大变小"，不是"离开"），并且配全词（"退出全屏"），不留猜测空间。
+
+### 全屏模式 = 阅读态
+
+全屏的定位是**阅读空间最大化**：只留内容（终端/对话）——顶部 chrome **和底部
+composer/键条**全部隐藏，退出即恢复（2026-08 用户定）。ApprovalCard / 发送失败条是
+**异常态提醒**、不是 chrome，仍会浮现。终端全屏时，安全区背板必须用**终端自身的深色**
+（`TERM_BG` / 终端主题背景），不随 app 主题 —— 浅色模式下 `pal.bg` 曾在永远深色的终端
+上方画出一条亮带（dark-surface 陷阱的背板变体）；对话全屏背板仍随主题（对话面本身就随主题）。
 
 ## 5. iPad / 平板与自适应布局
 
@@ -375,7 +387,7 @@ resource 同样只在 red 档才红、软 amber 不红)。差异仅在容器:手
 ---
 
 ## 对齐实现补记（2026-07 · F 轮）
-见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ⏎ Ctrl-C Esc|快捷短语▾ 历史，写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；Demo 与真机雷达一致用 `HQDisc`，仅 iPad 侧栏仍 `HQCard`，见 hq-meta-layer）。
+见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc|常用语▾ 历史（用户可见文案 2026-08 起为「常用语 / Quick replies」，代码内部名保持 snippets），写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；Demo 与真机雷达一致用 `HQDisc`，仅 iPad 侧栏仍 `HQCard`，见 hq-meta-layer）。
 
 - **Demo 模式**（mockup §18）：全功能无 server 演示（App Review 路径）。铁律：明示样例（DEMO chip 全程）、永不混入真实（Servers 无条目）、每次进入重置、每步引导「配对你的 Mac」。剧本主线 = 30 秒核心循环：看到等你 → 点进 → 按 1 批准 → 测试跑完 → 雷达变绿挂 latest。优化项见 ITERATIONS §F7。
 

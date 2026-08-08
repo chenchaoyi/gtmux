@@ -50,6 +50,11 @@ export const TestIds = {
     chatThinking: 'detail-chat-thinking',
     jumpBottom: 'detail-jump-bottom',
   },
+  settings: {
+    // one per PickerSheet option; suffixed with the option key →
+    // `${settings.pickerOption}-<key>` (e.g. `picker-option-en`)
+    pickerOption: 'picker-option',
+  },
   composer: {
     input: 'composer-input',
     send: 'composer-send',
