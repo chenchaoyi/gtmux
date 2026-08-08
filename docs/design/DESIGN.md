@@ -194,7 +194,7 @@ gtmux 不只支持 tmux 里的 agent，也要支持**直接跑在原生终端**�
 | 来源 | 主标识 | 次标识 | 跳转目标 |
 | --- | --- | --- | --- |
 | `tmux` | `session` | `window` | `gtmux focus <pane_id>`（`%N`） |
-| `native` | `project`（cwd basename） | `terminal`（Ghostty / Terminal / iTerm2…） | 聚焦 `terminal` app 中标题为 `tab` 的标签页（AppleScript） |
+| `native` | `project`（cwd basename） | `terminal`（Ghostty / iTerm2 / Warp / Terminal…） | 聚焦 `terminal` app 中标题为 `tab` 的标签页（AppleScript） |
 
 - 原生终端 agent **没有 tmux session/window/pane**；行首主标识改用 `project`，次标识用 `terminal`，
   并加一个小 `native` 标记。

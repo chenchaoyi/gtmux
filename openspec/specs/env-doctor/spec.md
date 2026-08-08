@@ -277,12 +277,22 @@ whether it is up to date with the CLI.
 
 Beyond the host terminal (the one gtmux drives), `gtmux doctor` SHALL detect which OTHER
 known terminals are installed and mark each as supported (a gtmux driver exists →
-focus/restore/new work) or sensed-only (hosts tmux + agents fine, but no driver).
+focus/restore/new work), best-effort (a driver exists but cannot fully drive the
+terminal — today Warp: restore/new work, focus is exact only for gtmux-opened tabs), or
+sensed-only (hosts tmux + agents fine, but no driver). The host-terminal row SHALL be
+equally honest: when the host is only best-effort driven, its row SHALL say what works
+and what degrades instead of claiming full support.
 
 #### Scenario: Other terminals listed
 
 - **WHEN** terminals besides the host are installed (e.g. iTerm2 + Apple Terminal)
-- **THEN** doctor lists them, each marked supported or sensed-only
+- **THEN** doctor lists them, each marked supported, best-effort, or sensed-only
+
+#### Scenario: Warp marked best-effort, never fully supported
+
+- **WHEN** Warp is the host terminal (or installed besides it)
+- **THEN** its row states the best-effort limits (restore/new supported; focus
+  best-effort — Warp has no tab scripting) rather than a plain "supported"
 
 ### Requirement: Live serve, phone uploads, and HQ health
 

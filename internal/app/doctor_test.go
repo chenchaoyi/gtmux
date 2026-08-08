@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // TestRenderSectionsTally checks the ok/recommended/blocking tally across status
@@ -279,6 +280,65 @@ func TestDirCountSize(t *testing.T) {
 // terminalInstalled finds a .app bundle in ~/Applications; absent → false. Uses a
 // fake bundle name so a real terminal in /Applications (which a temp HOME can't
 // isolate) doesn't make the negative case flaky.
+// forceEnglish pins the output language to "en" for note-wording assertions,
+// restoring the prior language on cleanup.
+func forceEnglish(t *testing.T) {
+	t.Helper()
+	old := i18n.Lang()
+	i18n.SetLang("en")
+	t.Cleanup(func() { i18n.SetLang(old) })
+}
+
+// TestRowTerminalHonestPerHost pins the env-doctor spec's "Terminal landscape"
+// honesty tiers on the HOST row: a fully-driven host (Ghostty/iTerm2) claims
+// focus/restore/new; the best-effort Warp host states its limits (restore/new
+// work, focus is best-effort) and never claims full support; an undriven host
+// says agents still work but focus/restore don't.
+func TestRowTerminalHonestPerHost(t *testing.T) {
+	forceEnglish(t)
+
+	t.Setenv("GTMUX_TERMINAL", "ghostty")
+	if d := rowTerminal(); d.status != stOK || !strings.Contains(d.note, "focus / restore / new supported") {
+		t.Errorf("ghostty host: got status=%d note=%q", d.status, d.note)
+	}
+
+	t.Setenv("GTMUX_TERMINAL", "warp")
+	d := rowTerminal()
+	if d.status != stOK {
+		t.Errorf("warp host: status=%d, want stOK", d.status)
+	}
+	for _, want := range []string{"restore / new supported", "best-effort"} {
+		if !strings.Contains(d.note, want) {
+			t.Errorf("warp host note %q lacks %q", d.note, want)
+		}
+	}
+	if strings.Contains(d.note, "focus / restore / new supported") {
+		t.Errorf("warp host must not claim full support: %q", d.note)
+	}
+
+	t.Setenv("GTMUX_TERMINAL", "alacritty")
+	if d := rowTerminal(); d.status != stRec || !strings.Contains(d.note, "no driver") {
+		t.Errorf("undriven host: got status=%d note=%q", d.status, d.note)
+	}
+}
+
+// TestOtherTerminalsWarpBestEffort pins the OTHER-terminals row's third tier:
+// an installed Warp is marked "(best-effort)" — not "(supported)", which would
+// overclaim, and not "(sensed)", which would hide the driver it has.
+func TestOtherTerminalsWarpBestEffort(t *testing.T) {
+	forceEnglish(t)
+	t.Setenv("GTMUX_TERMINAL", "ghostty") // host ≠ warp, so Warp lists among the others
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(filepath.Join(home, "Applications", "Warp.app"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	d := rowOtherTerminals()
+	if !strings.Contains(d.note, "Warp (best-effort)") {
+		t.Errorf("other-terminals row %q must mark Warp best-effort", d.note)
+	}
+}
+
 func TestTerminalInstalled(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)

@@ -157,9 +157,10 @@ To watch from your phone, run `gtmux serve` (same Wi-Fi) or `gtmux tunnel`
 networks that block Cloudflare's edge. See **[docs/phone.md](docs/phone.md)**.
 
 > **Requires** macOS + [Ghostty](https://ghostty.org) 1.3+ **or** iTerm2 for the
-> jump features (`focus` / `restore` / `new`); `agents` / `overview` work under
-> any terminal that hosts tmux. Mainland China / unstable GitHub: see the
-> [install notes](docs/install.md).
+> jump features (`focus` / `restore` / `new`); Warp works too, best-effort
+> (exact-tab focus only for tabs gtmux opened, else it activates the app);
+> `agents` / `overview` work under any terminal that hosts tmux. Mainland China /
+> unstable GitHub: see the [install notes](docs/install.md).
 
 ## Docs
 
