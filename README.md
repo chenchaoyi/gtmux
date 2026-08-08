@@ -169,6 +169,24 @@ networks that block Cloudflare's edge. See **[docs/phone.md](docs/phone.md)**.
 - **[Install notes](docs/install.md)** — pinning a version, building from source, and the China / mirror fallback.
 - **Design specs** — `docs/design/` (menu-bar `DESIGN.md`, mobile `MOBILE.md`) and `openspec/` for in-flight changes.
 
+## Repo map
+
+| Path | What it is |
+|---|---|
+| `cmd/gtmux` + `internal/` | the Go CLI core (cgo-free) — radar, HQ supervisor, dispatch, `serve` |
+| `macapp/` | native macOS menu-bar app (Swift/AppKit) — a pure consumer of `gtmux agents --json` |
+| `mobileapp/` | the iOS app (bare React Native) — the third surface |
+| `relay-worker/` | the **deployed push relay** (Cloudflare Worker behind `gtmux-relay.ccy.dev`) |
+| `relay/` | Go **self-host reference implementation** of the push relay — not the deployed one |
+| `tunnel-worker/` | the **deployed hosted-tunnel provisioner** (Cloudflare Worker behind `api.gtmux.ccy.dev`) |
+| `deploy/self-tunnel/` | self-host tunnel-server configs + docs (Caddy, chisel) |
+| `api/contract.md` | the v0 HTTP/SSE contract between `gtmux serve` and the apps |
+| `assets/agent-icons/` | built-in agent identity icons, embedded in the binary (sources in `SOURCES.md`) |
+| `docs/` | user docs (`cli.md`, `phone.md`, `install.md`) + the design authority in `docs/design/` |
+| `openspec/` | capability specs (what IS built) + in-flight change proposals |
+| `scripts/` | CI conformance gate (`check-design.sh`) |
+| `install.sh` | the curl installer |
+
 ## How it's different
 
 Tools like claude-squad, uzi, and dmux *spawn* agents and sandbox them in git
