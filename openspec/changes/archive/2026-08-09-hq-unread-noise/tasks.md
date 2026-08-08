@@ -1,6 +1,6 @@
 # Tasks — hq-unread-noise
 
-Status: IN PROGRESS. Perception-layer change — implement behind review, never
+Status: COMPLETE — shipped in #728, archived. Perception-layer change — implement behind review, never
 direct-to-main; a wrong exclusion silently blinds the completeness net.
 
 ## 1. Echo audit (settles the C14 residual before touching mechanism) — DONE
@@ -68,8 +68,9 @@ maintenance triggers #647 shipped to reach HQ. Adopted rule: liveness pairing.
 - [x] 5.1 Sync this change's delta into `openspec/specs/hq-wake-protocol/spec.md`.
 - [x] 5.2 Update the `docs/cli.md` `gtmux events` section (warning behavior) and the
       CLAUDE.md watermark paragraph if wording drifts.
-- [ ] 5.3 Archive this change once implemented; HQ moves ledger C7/C14/B9(tool half) and
-      the verified-fixed B3 to 已关闭 in its own notes (not this repo).
+- [x] 5.3 Archived after #728 merged. HQ still owes its own side: move ledger C7 / C14 /
+      B9 (tool half) and the verified-fixed B3 to 已关闭 in its notes — that is HQ's
+      knowledge base, not this repo.
 
 ## 6. The pull shows the debt (audit-driven — folded in on the commander's call)
 
