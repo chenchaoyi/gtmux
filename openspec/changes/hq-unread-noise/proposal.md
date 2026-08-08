@@ -7,6 +7,12 @@ backlog out of HQ's notes and into the repo. Companion changes from the same bat
 (presentation). All three are proposals only — the perception layer is what keeps HQ
 seeing; it changes via review, not directly.
 
+**Task 1's audit is done — read `audit-echo-2026-08-08.md` first.** It settles the two open
+questions below and CORRECTS two things this proposal originally got wrong: C7 is ~2 % of
+the debt (not a major noise source) and its literal rule would have caused a regression;
+and the ~70 % echo is real but belongs to the PULL, not the knock. Sections below carry
+`AUDIT:` notes where the measurement overrode the original text.
+
 ## Why
 
 The `unread` watermark knock (change `hq-watermark-wakes`, #650) is HQ perception's
@@ -50,6 +56,13 @@ running the #650 binary (a `gtmux update` swaps the binary but the resident serv
 running the old code until restarted) — the audit task below settles this before any
 further mechanism is blamed.
 
+> **AUDIT (settled):** it was NOT a pre-#650 serve. The first `unread` knock in the stream
+> is seq 7039, 2026-08-02 — two days before the loop — so the sensor and its pane filter
+> were live. The residual is real. Instrumented, it is **68.7 % of the records each knock's
+> pull returns are HQ's own** (75.1 % for the `≤2 unconsumed` case that is 79 % of knocks),
+> against a knock volume of only ~8/day at a median of 1 event. Point 2 above is therefore
+> the dominant cost, not points 1 and 3 — see "Audit-driven addition" below.
+
 ### C7 — empty-pane session events are counted as consumable (confirmed at HEAD)
 
 Ledger evidence (measured ×2): `SessionStart`/`SessionEnd` arriving as same-second
@@ -60,11 +73,26 @@ each stamped `severity:"notable"`.
 
 At HEAD these records **count toward the unread debt**: `unreadCount` excludes only
 `r.Pane == hqPane`, and an empty pane never equals the HQ pane. HQ gets knocked to pull
-a delta whose content is a process blink it can neither act on nor attribute. The
-ledger's cheap criterion stands: **a session event with an empty `pane` is not
-countable debt** (it stays in the stream — the tick summary and other consumers still
-see it; only the "owes HQ a read" count skips it). The original >10 s minimum-liveness
-gate remains a fallback if empty-pane proves insufficient.
+a delta whose content is a process blink it can neither act on nor attribute.
+
+> **AUDIT (criterion corrected — the ledger's cheap rule is unsafe).** "A session event
+> with an empty `pane` is not countable debt" was the original criterion. Measured, an
+> empty pane is not a blink signature at all: of 98 pane-less records in the window, **39
+> are real agent turns** (Claude Code 27, Codex 12 — pane-less native sessions, growing)
+> and **9 are gtmux's own maintenance triggers** (`gtmux:self-check` ×8, `gtmux:distill`)
+> which #647 shipped specifically so they would reach HQ. Excluding by empty pane would
+> silently un-ship #647 and blind HQ to every native agent — and per §1.3 of the audit
+> those records have NO other channel, because the whole class-wake path is gated on
+> `pane != ""`. The `session` field cannot rescue the rule either: `session` is the tmux
+> session_name, empty by construction on every pane-less record.
+>
+> **Adopted instead — the liveness pairing** (the ledger's own fallback, promoted to the
+> rule): a pane-less `SessionStart` is excluded only when a pane-less `SessionEnd` from the
+> same agent lands within ≤ 10 s; both are then excluded. 5 s and 60 s windows catch the
+> identical 15/28 starts, so the constant sits on the flat part of the curve. Size: **30
+> records = 1.9 % of the debt, ≤ 8 solo knocks over 6.6 days.** Worth fixing because it is
+> noise HQ can never act on — not because it is large. Excluded records stay in the stream
+> and in every other consumer's view.
 
 ### B9 — a `cd`-drifted read silently fails to consume, while `--ack` fails loudly
 
@@ -96,26 +124,28 @@ No work item; the ledger entry should move to 已关闭 (HQ's own edit, not this
 
 ## What changes
 
-1. **Empty-pane session events do not count** (C7). `unreadCount` skips records whose
-   `pane` is empty when tallying the debt; they remain in the stream and in every other
-   consumer's view. Pin with a test built from the seq 8472–8475 shape (same-second
-   Start/End pairs, empty pane).
+1. **Pane-less lifecycle BLINKS do not count** (C7, criterion corrected by the audit).
+   `unreadCount` skips a pane-less `SessionStart` whose pane-less `SessionEnd` from the
+   same agent arrives within `unreadBlinkPairSec` (10 s), and that end with it. Everything
+   else pane-less — native agents' turns, gtmux's control records, a `SessionStart` that
+   is NOT quickly matched (a native session coming online) — keeps counting. Excluded
+   records remain in the stream and in every other consumer's view. Pin with a test built
+   from the seq 8472–8475 shape AND with the three populations the blunt rule would have
+   eaten.
 
 2. **The knock line names its composition** (C14 residual, diagnosability). The
    `unread` line carries a compact by-pane/kind breakdown (e.g.
    `3 unconsumed (%21 ×2 · control ×1)`) so a self-feeding or echo-dominated loop is
    visible from the line itself, instead of costing four turns and a manual stream read.
 
-3. **Echo audit before further mechanism** (C14 residual). One task audits, against the
-   live stream and today's ~70%-echo figure, (a) whether the 2026-08-04 loop predated
-   the running serve picking up #650, and (b) how much of the current debt volume is
-   events already delivered as driver-ack'd class wakes. **Open design question,
-   deliberately NOT pre-decided here:** whether an event that was itself delivered as an
-   ack'd wake batch line should count as consumption-equivalent for the debt. Arguments
-   both ways — the wake line is a summary, not the record, and "only reading clears" is
-   the completeness guarantee's whole shape; but a knock that re-collects what the
-   priority channel already delivered-and-ack'd is the double-knock HQ measures as ~70%
-   of its wakes. The audit's numbers decide.
+3. **Echo audit before further mechanism** (C14 residual) — **DONE**, see
+   `audit-echo-2026-08-08.md`. The open design question it was to decide — does an event
+   delivered inside an ack'd wake batch count as consumption-equivalent? — is **decided
+   NO**: the measured cost is the pull's composition, not the knock count (8/day, median 1
+   event); up to 78 % of the debt is class-eligible while the 21.8 % no class claims is
+   exactly what the net exists for; a wake line is a summary, not the record; and pane-less
+   records can never be delivered as a class wake at all (`hook.go:679`), so "delivered ⇒
+   read" would eventually blind the one population that has no other channel.
 
 4. **A non-counting read that looks like HQ warns loudly** (B9). An unfiltered
    `--since-seq` read that does NOT advance the watermark, invoked from a cwd
@@ -127,6 +157,26 @@ No work item; the ledger entry should move to 已关闭 (HQ's own edit, not this
    own. Whether to ALSO key on `$TMUX_PANE == HQ pane` (catching a drift to an
    unrelated cwd entirely) is an open question for implementation — it widens coverage
    but couples the read path to pane resolution.
+
+## Audit-driven addition — NOT implemented, the commander's call
+
+The audit's headline number has no work item in the four above, because the proposal was
+written before the measurement: **68.7 % of what a knock's pull returns is HQ's own
+records**. The cause is an asymmetry inside the mechanism — `unreadCount` excludes HQ's own
+pane when defining the debt (`unread.go:121`), while `gtmux events --since-seq` returns
+everything when clearing it (`eventscmd.go:153-165`). One set says what HQ owes; a larger,
+different set is what HQ must read.
+
+The fix that follows from the audit is to **make the read's exclusion set equal the
+count's**: an unfiltered `--since-seq` pull run from the HQ home hides exactly what the
+counter already excludes (HQ's own pane records, and the paired blinks), with an opt-in
+flag to see everything. That is defensible against the "a filtered read is not consumption"
+invariant precisely because it is not a filter on what HQ owes — it IS what HQ owes; the
+debt definition and the read that clears it would finally name the same set.
+
+It is held back from this change on purpose: it changes what a documented command returns
+for the supervisor, needs a `--all` escape hatch, and touches the playbook (hence
+`hqPlaybookVersion`). Scoped as a companion change if the commander wants it.
 
 ## Impact
 

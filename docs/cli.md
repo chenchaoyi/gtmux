@@ -223,18 +223,29 @@ guarantees hq hears about something at all is a **consumption watermark**: gtmux
 how far hq has read the stream, and when events sit past it for `hqWake.unreadDebounceSec`
 (default **120 s**), it knocks with a count and nothing else:
 
+<!-- gtmux:rendered unread-line -->
 ```
-» gtmux·unread  7 unconsumed │ pull: gtmux events --since-seq 6653 --json
+» gtmux·unread  7 unconsumed (%21 ×4 · %13 ×2 · control) │ pull: gtmux events --since-seq 6653 --json
 ```
+
+The line names **what** it counted, by source (`control` = gtmux's own maintenance
+triggers, `native` = a non-tmux agent session), most numerous first and folded to
+`+N more` past three — so an accumulation dominated by one pane is visible without a pull.
 
 The debt clears only when hq **consumes**, and only two things count: an unfiltered
 `gtmux events --since-seq <n>` read from the hq home (the everyday pull-on-wake — which is
 why this needs no new habit), or an explicit `gtmux events --ack <seq>`. A
 `--severity`-filtered read does not (it showed a subset), nor does one starting ahead of
 the watermark (it skipped the range between). Until then the knock repeats every
-`hqWake.unreadRepeatSec` (default **300 s**), at standing priority. hq's own lines in the
-stream — the knock it receives, the reply it types — are excluded from the count, or the
-channel would feed itself forever.
+`hqWake.unreadRepeatSec` (default **300 s**), at standing priority.
+
+Two kinds of record are excluded from the **count** (never from the stream — an unfiltered
+read still returns them): hq's own lines, or the channel would feed itself forever; and a
+pane-less lifecycle **blink** — a `SessionStart` with no pane whose `SessionEnd` follows
+within seconds, i.e. a short-lived subprocess hq can neither act on nor attribute. The
+blink rule keys on that Start/End **pairing**, never on the empty pane alone: a native
+(non-tmux) agent's turns and gtmux's own `gtmux:*` triggers are pane-less too, and for them
+this knock is the *only* channel there is — the class wakes all require a pane.
 
 This is what makes perception complete rather than well-guessed. Before it, an event no
 class claimed simply never arrived: a session finishing work nobody had dispatched through
@@ -527,6 +538,13 @@ the `unread` knock (see [The watermark](#the-watermark--why-nothing-goes-missing
 `--ack N` writes the watermark back explicitly — for when the stream was reconciled some
 other way, e.g. a full `gtmux digest`. Both are hq-only (cwd-keyed); a worker running
 `gtmux events` in a repo changes nothing.
+
+Because the rule is the exact cwd, a read from a **subdirectory** of the hq home
+(`notes/`, `knowledge/` — where hq lands after writing its board) does not count. That
+used to be silent, so hq read the delta, believed it had consumed, and watched the same
+cursor re-knock; it now warns on stderr, naming the home to run from, while stdout and the
+exit code stay exactly the same. A read from an unrelated directory stays silent — it owns
+no watermark to miss.
 
 `--severity <tier>` filters to that tier **and above**, and the tiers rank
 *urgency*, not relevance — so they are three different reads, not one:

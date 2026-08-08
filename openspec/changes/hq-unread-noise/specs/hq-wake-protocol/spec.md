@@ -21,12 +21,23 @@ Records authored by the HQ pane itself SHALL be excluded from the count: every d
 wake re-enters the stream as HQ's own submission and its reply as HQ's own turn-end, so
 counting them would make the sensor a perpetual source of its own input.
 
-Session lifecycle records with an EMPTY `pane` field SHALL also be excluded from the
-count: a short-lived child process or subagent whose hook fires without a pane (measured
-as same-second `SessionStart`/`SessionEnd` pairs with no pane and no session) is not
-something HQ can act on or attribute, so it is not a read HQ owes. Excluded records SHALL
-remain in the stream and in every unfiltered read — the exclusion is only from the
-"owes HQ a read" tally.
+A pane-less lifecycle BLINK SHALL also be excluded from the count: a `SessionStart` with
+no pane whose matching pane-less `SessionEnd` from the same agent arrives within a short
+pairing window SHALL be excluded, and that end with it. A short-lived child process or
+subagent whose hook fires without a pane is not something HQ can act on or attribute, so
+it is not a read HQ owes.
+
+The exclusion SHALL be defined by that PAIRING, never by the empty `pane` alone. An empty
+pane is not a blink signature: it is also carried by every native (non-tmux) agent's turns
+and by gtmux's own `gtmux:*` maintenance trigger records, and the `session` field cannot
+discriminate because it holds the tmux session name and is empty on every pane-less record
+by construction. Those two populations SHALL keep counting — decisively so, because the
+class-wake channel fires only for a pane, making the `unread` knock the ONLY channel they
+have. A pane-less `SessionStart` that is not quickly matched by an end SHALL keep counting
+too: it is a native session coming online.
+
+Excluded records SHALL remain in the stream and in every unfiltered read — the exclusion is
+only from the "owes HQ a read" tally.
 
 The `unread` line SHALL name the composition of its count — a compact by-pane/kind
 breakdown alongside the total — so an echo-dominated or self-feeding accumulation is
@@ -72,10 +83,18 @@ rather than reporting the entire retained history as unconsumed.
 
 #### Scenario: A pane-less process blink is not a backlog
 
-- **WHEN** the only records past the watermark are session lifecycle events with an empty
-  `pane` (same-second `SessionStart`/`SessionEnd` pairs from a short-lived subprocess)
+- **WHEN** the only records past the watermark are same-second `SessionStart`/`SessionEnd`
+  pairs with an empty `pane` from a short-lived subprocess
 - **THEN** no `unread` wake is delivered, and those records still appear in an unfiltered
   `gtmux events --since-seq` read
+
+#### Scenario: A pane-less agent's work is still a backlog
+
+- **WHEN** the records past the watermark are a pane-less agent's turn events, a `gtmux:*`
+  maintenance trigger, or a pane-less `SessionStart` with no matching end in the pairing
+  window
+- **THEN** they count toward the debt and an `unread` wake is delivered — the blink
+  exclusion keys on the Start/End pairing, never on the empty `pane` alone
 
 #### Scenario: The knock names what it counted
 

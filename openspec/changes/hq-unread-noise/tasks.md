@@ -1,51 +1,79 @@
 # Tasks — hq-unread-noise
 
-Status: PROPOSED (not started). Perception-layer change — implement behind review, never
+Status: IN PROGRESS. Perception-layer change — implement behind review, never
 direct-to-main; a wrong exclusion silently blinds the completeness net.
 
-## 1. Echo audit (settles the C14 residual before touching mechanism)
+## 1. Echo audit (settles the C14 residual before touching mechanism) — DONE
 
-- [ ] 1.1 Determine whether the 2026-08-04 self-excitation loop (cursor 8439→8450) ran on
-      a pre-#650 resident serve: correlate the machine's serve start time / binary
-      version against the v0.44.10 install date. If yes, record it in the proposal and
-      narrow the residual to double-knock + composition only.
-- [ ] 1.2 Measure, over a representative window of the live stream, what fraction of
-      unread-debt events had already been delivered inside a driver-ack'd wake batch
-      (HQ's 2026-08-07 estimate: ~70% of wakes are echoes; get the instrumented number).
-- [ ] 1.3 With 1.2's number, decide the open question: does an ack'd-wake-delivered event
-      count as consumption-equivalent for the debt? Write the verdict + reasoning back
-      into this change before implementing anything that depends on it.
+Results: `audit-echo-2026-08-08.md`.
 
-## 2. Empty-pane session events stop counting (C7)
+- [x] 1.1 Determine whether the 2026-08-04 self-excitation loop (cursor 8439→8450) ran on
+      a pre-#650 resident serve. **Verdict: NO** — the first `unread` knock in the stream
+      is seq 7039 / 2026-08-02, two days earlier, so the sensor and its pane filter were
+      live. Residual narrowed to double-knock + composition, as the proposal predicted.
+- [x] 1.2 Measure what fraction of the debt had already been delivered in a driver-ack'd
+      wake batch. The stream cannot answer it directly (a delivery records only its batch
+      id), so the audit measured the two quantities that bound it: class-wake ELIGIBILITY
+      of the debt (78.2 % upper bound, 21.8 % claimed by no class) and the actual echo —
+      **68.7 % of the records a knock's pull returns are HQ's own** (75.1 % for the ≤2 case).
+      HQ's ~70 % estimate is confirmed as a number and re-attributed to the PULL.
+- [x] 1.3 Verdict on the open question: **an ack'd-wake-delivered event is NOT
+      consumption-equivalent.** Four reasons recorded in the audit §1.3 and summarised in
+      the proposal — decisively, pane-less records can never be delivered as a class wake
+      (`hook.go:679`), so "delivered ⇒ read" would blind the one population with no other
+      channel.
 
-- [ ] 2.1 `internal/hq/unread.go` `unreadCount`: skip records with an empty `pane` when
-      tallying; keep them in `maxSeq` advancement and in every stream read.
-- [ ] 2.2 Test pinned to the measured shape: same-second `SessionStart`/`SessionEnd`
-      pairs with empty pane/session (seq 8472–8475 form) produce zero debt; the same
-      records still appear in `events.ReadSince`.
+## 2. Pane-less lifecycle BLINKS stop counting (C7 — criterion corrected by 1.x)
+
+The audit overrode this task's original wording ("skip records with an empty `pane`"),
+which would have stopped counting 39 real pane-less agent turns and the 9 `gtmux:*`
+maintenance triggers #647 shipped to reach HQ. Adopted rule: liveness pairing.
+
+- [x] 2.1 `internal/hq/unread.go` `unreadScan` (was `unreadCount` — it now returns a tally, not a bare count): skip a pane-less `SessionStart` when a
+      pane-less `SessionEnd` from the same agent lands within `unreadBlinkPairSec` (10 s),
+      and skip that end with it. Keep them in `maxSeq` advancement and in every stream read.
+- [x] 2.2 Test pinned to the measured shape: same-second `SessionStart`/`SessionEnd` pairs
+      with empty pane (seq 8472–8475 form) produce zero debt; the same records still appear
+      in `events.ReadSince`.
+- [x] 2.3 Anti-regression tests for the three populations the blunt rule would have eaten:
+      a pane-less agent TURN counts, a `gtmux:*` control record counts (extend the existing
+      `TestUnreadCountsControlRecords`), and an UNPAIRED pane-less `SessionStart` (a native
+      session coming online — 13/28 of them) counts.
 
 ## 3. Knock-line composition (diagnosability)
 
-- [ ] 3.1 `unreadCount` returns a compact by-pane/kind tally; `unreadSensorFor` renders it
+- [x] 3.1 `unreadScan` returns a compact by-pane/kind tally; `unreadSensorFor` renders it
       into the `unread` line (`3 unconsumed (%21 ×2 · control ×1)` form), bounded so a
       wide fleet cannot bloat the line past the wake-line cap.
-- [ ] 3.2 Fixture test for the line format (the wake-line grammar is pinned by fixtures —
+- [x] 3.2 Fixture test for the line format (the wake-line grammar is pinned by fixtures —
       extend, don't fork).
 
 ## 4. Loud non-counting read (B9 tool side)
 
-- [ ] 4.1 `internal/hq/eventscmd.go`: an unfiltered `--since-seq` read from a cwd strictly
+- [x] 4.1 `internal/hq/eventscmd.go`: an unfiltered `--since-seq` read from a cwd strictly
       inside the HQ home (subdir ≠ home) that does not advance the watermark warns on
       stderr, naming the home to run from; exit code unchanged.
-- [ ] 4.2 Decide (implementation-time) whether to also key on `$TMUX_PANE == HQ pane`;
-      document the verdict either way.
-- [ ] 4.3 Tests: subdir read warns and does not consume; HQ-home read consumes silently;
+- [x] 4.2 Whether to ALSO key on `$TMUX_PANE == HQ pane`: **NO** — it would put tmux
+      resolution on a path that today touches no tmux at all, and a wedged tmux hanging the
+      pull HQ makes on every wake is the exact failure mode that froze the radar once
+      already. The measured B9 evidence is 5 for 5 INSIDE the home, so the cwd rule covers
+      every observed case; a cwd fully outside the home is indistinguishable from a
+      bystander's read, which must stay silent. Verdict recorded in `insideHQHome`'s doc
+      comment, where the next reader will meet it.
+- [x] 4.3 Tests: subdir read warns and does not consume; HQ-home read consumes silently;
       an unrelated-cwd read neither warns nor consumes; `--ack` behavior unchanged.
 
 ## 5. Consistency (per the repo rule)
 
-- [ ] 5.1 Sync this change's delta into `openspec/specs/hq-wake-protocol/spec.md`.
-- [ ] 5.2 Update the `docs/cli.md` `gtmux events` section (warning behavior) and the
+- [x] 5.1 Sync this change's delta into `openspec/specs/hq-wake-protocol/spec.md`.
+- [x] 5.2 Update the `docs/cli.md` `gtmux events` section (warning behavior) and the
       CLAUDE.md watermark paragraph if wording drifts.
 - [ ] 5.3 Archive this change once implemented; HQ moves ledger C7/C14/B9(tool half) and
       the verified-fixed B3 to 已关闭 in its own notes (not this repo).
+
+## 6. Audit-driven, NOT in this change (commander's call)
+
+- [ ] 6.1 The pull's exclusion set should equal the count's — the 68.7 % echo. Scoped in
+      the proposal under "Audit-driven addition"; needs a `--all` escape hatch and a
+      playbook edit (hence an `hqPlaybookVersion` bump), so it is a companion change, not
+      a quiet extension of this one.

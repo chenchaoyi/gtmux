@@ -247,10 +247,43 @@ func fromHQHome() bool {
 	return err == nil && cwd == state.HQHome()
 }
 
-// consumeHQRead advances HQ's consumption watermark for a completed delta read.
+// insideHQHome reports the cd-DRIFT shape: a cwd strictly inside the HQ home (`notes/`,
+// `knowledge/`, …) rather than at it. Nobody but HQ works in there, so a read from there
+// is HQ's read — made from the wrong directory.
+//
+// This is deliberately the ONLY widening of the role rule. Keying on `$TMUX_PANE == the HQ
+// pane` as well would catch a drift to an unrelated cwd, but it would put tmux resolution
+// on a path that today touches no tmux at all — and a wedged tmux hanging the pull HQ makes
+// on every wake is the exact failure mode that froze the radar once already. The measured
+// B9 evidence is 5 for 5 inside the home, so the cheap rule covers every observed case; a
+// cwd fully outside the home is indistinguishable from a bystander's read, which must stay
+// silent.
+func insideHQHome() bool {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return false
+	}
+	home := state.HQHome()
+	return home != "" && cwd != home && strings.HasPrefix(cwd, home+string(os.PathSeparator))
+}
+
+// consumeHQRead advances HQ's consumption watermark for a completed delta read, and — when
+// the caller plainly IS the supervisor but stood in the wrong directory — says so instead
+// of failing silently.
+//
+// That asymmetry is the whole point (B9): `--ack` from the wrong cwd refuses LOUDLY, while
+// this path just skipped the writeback and returned 0. Two paths with one meaning and
+// opposite failure modes, so HQ read the delta, believed it had consumed, and watched the
+// same cursor re-knock — reproduced five times, once in the very turn after writing the
+// note about it. A discipline that fails silently is not a discipline.
 func consumeHQRead(from, to int64) {
 	if fromHQHome() {
 		hqwake.ConsumeRead(from, to)
+		return
+	}
+	if insideHQHome() {
+		i18n.Sae("gtmux events: this read was NOT counted as consumption (run it from "+state.HQHome()+", or `gtmux events --ack <seq>`)",
+			"gtmux events：本次读取未计入消费水位（请在 "+state.HQHome()+" 下运行，或用 `gtmux events --ack <seq>` 回写）")
 	}
 }
 

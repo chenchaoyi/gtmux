@@ -43,6 +43,14 @@ var Examples = map[string]func() string{
 				`goal:"fix the login bug"`, `tail:"tests pass"`) + " · #a3f1c2",
 		}, "\n")
 	},
+	// docs/cli.md — "The watermark" — the completeness net's own line. Its head carries the
+	// count AND the by-source composition (hq-unread-noise), which is the part a reader
+	// most easily copies wrong; the composition's own rendering is pinned separately by
+	// TestUnreadKnockNamesItsComposition.
+	"unread-line": func() string {
+		return hqwake.Line(hqwake.ClassUnread, "7 unconsumed (%21 ×4 · %13 ×2 · control)",
+			"pull: gtmux events --since-seq 6653 --json")
+	},
 }
 
 // Render returns the registered rendering for id.

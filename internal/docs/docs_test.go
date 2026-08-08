@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -65,6 +66,27 @@ const sample = "intro\n" +
 	"```\n" +
 	"outro\n"
 
+// fullSample is a synthetic doc carrying one stale region per REGISTERED id, built from the
+// registry rather than written out. The tests that call Check on a whole document need every
+// id present (a registered id with no region is itself a finding), and a hand-written
+// fixture would make registering a second example fail these tests for no reason — which is
+// exactly what happened when `unread-line` was added.
+func fullSample(t *testing.T) string {
+	t.Helper()
+	ids := make([]string, 0, len(Examples))
+	for id := range Examples {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	var b strings.Builder
+	b.WriteString("intro\n")
+	for _, id := range ids {
+		b.WriteString(marker + id + " -->\n```\nLINE ONE\nLINE TWO\n```\n")
+	}
+	b.WriteString("outro\n")
+	return b.String()
+}
+
 func TestRegions_ParsesTheFenceBody(t *testing.T) {
 	got, err := Regions(sample)
 	if err != nil {
@@ -102,14 +124,20 @@ func TestCheck_CatchesAStaleExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(bad) != 1 || bad[0].ID != "wake-lines" {
+	var got *Mismatch
+	for i, m := range bad {
+		if m.ID == "wake-lines" {
+			got = &bad[i]
+		}
+	}
+	if got == nil {
 		t.Fatalf("a stale region must be reported; got %+v", bad)
 	}
-	if !strings.Contains(bad[0].Produced, "» gtmux·waiting·permission") {
-		t.Errorf("the report must show what the code DOES produce; got %q", bad[0].Produced)
+	if !strings.Contains(got.Produced, "» gtmux·waiting·permission") {
+		t.Errorf("the report must show what the code DOES produce; got %q", got.Produced)
 	}
-	if !strings.Contains(bad[0].Documented, "[gtmux]") {
-		t.Errorf("…and what the doc claims; got %q", bad[0].Documented)
+	if !strings.Contains(got.Documented, "[gtmux]") {
+		t.Errorf("…and what the doc claims; got %q", got.Documented)
 	}
 }
 
@@ -148,7 +176,7 @@ func TestCheck_CatchesAnUnregisteredRegion(t *testing.T) {
 
 // Rewrite touches the region and NOTHING else, and is idempotent.
 func TestRewrite_OnlyTheRegion(t *testing.T) {
-	out, err := Rewrite(sample)
+	out, err := Rewrite(fullSample(t))
 	if err != nil {
 		t.Fatal(err)
 	}

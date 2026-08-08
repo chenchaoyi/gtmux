@@ -2,6 +2,7 @@ package hq
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -183,6 +184,74 @@ func TestEventsAck(t *testing.T) {
 	captureStdout(t, func() { CmdEvents([]string{"--ack", "0"}) })
 	if got := hqwake.Consumed(); got != latest {
 		t.Errorf("an ack rewound the watermark to %d", got)
+	}
+}
+
+// B9 (hq-unread-noise): the cd-drift that fails LOUDLY now. HQ's Bash cwd persists across
+// calls, so after writing the board (`notes/`) or the KB (`knowledge/`) its next pull ran
+// from a SUBDIRECTORY, consumed nothing, and the same cursor re-knocked — reproduced five
+// times, the fifth in the very turn after HQ wrote the note about it. The read still
+// succeeds and still prints; it just stops pretending it counted.
+func TestDriftedReadWarnsAndDoesNotConsume(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+
+	// The exact failure shape: cwd inside the home rather than at it.
+	sub := filepath.Join(state.HQHome(), "knowledge")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(sub)
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0", "--json"}) })
+	if got := hqwake.Consumed(); got != 0 {
+		t.Errorf("a drifted read advanced the watermark to %d", got)
+	}
+	if !strings.Contains(errs, "NOT counted") && !strings.Contains(errs, "未计入") {
+		t.Errorf("a drifted read must warn on stderr, got %q", errs)
+	}
+	if !strings.Contains(errs, state.HQHome()) {
+		t.Errorf("the warning must name the home to run from, got %q", errs)
+	}
+	// stdout is the read's product and must be untouched by the warning.
+	if !strings.Contains(out, "web:1.0") {
+		t.Errorf("the read itself must still print its delta, got %q", out)
+	}
+}
+
+// The same read from the home consumes and says nothing: a warning on the happy path would
+// train HQ to ignore the channel.
+func TestHomeReadConsumesSilently(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+
+	_, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if got := hqwake.Consumed(); got != events.CurrentSeq() {
+		t.Errorf("watermark = %d, want the read counted", got)
+	}
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("the supervisor's own correct read must be silent, got %q", errs)
+	}
+}
+
+// A bystander owns no watermark and must never be nagged about one. This is why the
+// warning keys on "inside the HQ home", not on "did not consume".
+func TestUnrelatedCwdReadNeitherWarnsNorConsumes(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(t.TempDir())
+	now := time.Now().Unix()
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+
+	_, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("a non-supervisor read must stay silent, got %q", errs)
+	}
+	if got := hqwake.Consumed(); got != hqwake.WatermarkUnset {
+		t.Errorf("a non-supervisor read moved the watermark to %d", got)
 	}
 }
 

@@ -3,6 +3,7 @@ package hq
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -246,8 +247,129 @@ func TestUnreadCountsControlRecords(t *testing.T) {
 	hqwake.Consume(0)
 	events.Append(events.Record{Ts: now, Event: hqfeed.ControlDistill,
 		Summary: "due (weekly)", Severity: events.SevNotable})
-	if n, _ := unreadCount(0, testHQPane); n != 1 {
+	if n := unreadScan(0, testHQPane).N; n != 1 {
 		t.Errorf("unread count = %d, want the maintenance record to count as owed work", n)
+	}
+}
+
+// TestUnreadSkipsPaneLessBlinks is C7 (hq-unread-noise), pinned to the measured shape: two
+// same-second SessionStart/SessionEnd pairs with no pane (the seq 8472-8475 form), from a
+// short-lived subprocess whose hook fired without a pane. HQ can neither act on nor
+// attribute them, so they are not a read it owes — but they stay in the stream, because
+// every other consumer (the tick summary, a manual read) still has business with them.
+func TestUnreadSkipsPaneLessBlinks(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(10_000_000)
+
+	hqwake.Consume(0)
+	for i := 0; i < 2; i++ {
+		events.Append(events.Record{Ts: now, Event: "SessionStart", Agent: "Claude Code",
+			Severity: events.SevNotable})
+		events.Append(events.Record{Ts: now, Event: "SessionEnd", Agent: "Claude Code",
+			Severity: events.SevNotable})
+	}
+	if n := unreadScan(0, testHQPane).N; n != 0 {
+		t.Errorf("unread count = %d, want 0 — a pane-less process blink is not owed work", n)
+	}
+	// The exclusion is from the tally ONLY. A record that vanished from the stream would
+	// be a silent data loss dressed up as a noise fix.
+	recs, _ := events.ReadSince(0)
+	if len(recs) != 4 {
+		t.Errorf("stream returned %d records, want all 4 blink records still readable", len(recs))
+	}
+
+	// And the debt genuinely clears rather than standing forever: with nothing owed, the
+	// sensor steps the watermark over the blinks instead of rescanning them every interval.
+	d := hqwake.Defaults().UnreadDebounceSec
+	unreadSensorFor(testHQPane, now)
+	unreadSensorFor(testHQPane, now+d)
+	if k := unreadKnocks(t); len(k) != 0 {
+		t.Fatalf("a pane-less blink knocked: %v", k)
+	}
+	if got := hqwake.Consumed(); got != events.CurrentSeq() {
+		t.Errorf("watermark = %d, want it stepped over the blinks to %d", got, events.CurrentSeq())
+	}
+}
+
+// TestUnreadCountsPaneLessWork is the anti-regression for the rule this change ALMOST
+// shipped. The ledger's cheap criterion was "an empty pane is not countable debt"; measured
+// against the live stream (audit-echo-2026-08-08), an empty pane is not a blink signature
+// at all — it is carried by every native (non-tmux) agent's turns, by an unmatched
+// SessionStart (a native session coming ONLINE — 13 of 28 of them), and by gtmux's own
+// maintenance triggers. Those three would have gone silent, and they can least afford it:
+// the class-wake channel fires only for a pane, so this knock is their only channel.
+func TestUnreadCountsPaneLessWork(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(10_000_000)
+
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "UserPromptSubmit", Agent: "Codex",
+		Origin: events.OriginInstruction, Severity: events.SevNotable}) // a native agent's turn
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Agent: "Codex",
+		Severity: events.SevNotable})
+	events.Append(events.Record{Ts: now, Event: hqfeed.ControlSelfCheck,
+		Severity: events.SevNotable}) // gtmux's own maintenance trigger
+	// A pane-less start with no end near it: a native session coming online, not a blink.
+	events.Append(events.Record{Ts: now, Event: "SessionStart", Agent: "Claude Code",
+		Severity: events.SevNotable})
+	// Its end arrives an hour later — far outside the pairing window, so neither is a blink.
+	events.Append(events.Record{Ts: now + 3600, Event: "SessionEnd", Agent: "Claude Code",
+		Severity: events.SevNotable})
+
+	if got := unreadScan(0, testHQPane).N; got != 5 {
+		t.Errorf("unread count = %d, want 5 — pane-less work is still work HQ owes a read", got)
+	}
+}
+
+// TestUnreadKnockNamesItsComposition pins the diagnosability half. "1 unconsumed" — of
+// what, from where? — cost HQ four rounds and a manual stream read to see the shape of a
+// suspected feedback loop on 2026-08-04. The line now carries the sources.
+func TestUnreadKnockNamesItsComposition(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(10_000_000)
+
+	hqwake.Consume(0)
+	for i := 0; i < 2; i++ {
+		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21",
+			Severity: events.SevNotable})
+	}
+	events.Append(events.Record{Ts: now, Event: hqfeed.ControlSelfCheck, Severity: events.SevNotable})
+
+	d := hqwake.Defaults().UnreadDebounceSec
+	unreadSensorFor(testHQPane, now)
+	unreadSensorFor(testHQPane, now+d)
+	knocks := takeUnreadKnocks(t)
+	if len(knocks) != 1 {
+		t.Fatalf("want 1 knock, got %d: %v", len(knocks), knocks)
+	}
+	// Most numerous source first, singletons unadorned — the exact rendered form.
+	if want := "(%21 ×2 · control)"; !strings.Contains(knocks[0], want) {
+		t.Errorf("knock %q must carry the composition %q", knocks[0], want)
+	}
+	// The composition is DATA about gtmux's own stream, never a severity claim.
+	for _, w := range []string{"important", "notable", "routine"} {
+		if strings.Contains(knocks[0], w) {
+			t.Errorf("knock %q must not classify importance (%q)", knocks[0], w)
+		}
+	}
+}
+
+// TestUnreadCompositionIsBounded: one delivery is capped at 800 chars across 8 lines, so a
+// wide fleet must not be able to grow this line without limit.
+func TestUnreadCompositionIsBounded(t *testing.T) {
+	var groups []unreadGroup
+	for i := 0; i < 20; i++ {
+		groups = append(groups, unreadGroup{Key: "%" + strconv.Itoa(i), N: 1})
+	}
+	got := unreadTally{N: 20, Groups: groups}.composition()
+	if strings.Count(got, "·") != unreadMaxGroups {
+		t.Errorf("composition %q must show %d groups then fold the rest", got, unreadMaxGroups)
+	}
+	if !strings.Contains(got, "+17 more") {
+		t.Errorf("composition %q must name how many sources it folded", got)
+	}
+	if len(got) > 64 {
+		t.Errorf("composition %q is %d chars — too much of the batch budget", got, len(got))
 	}
 }
 
