@@ -195,7 +195,8 @@ func cmdSend(args []string) int {
 		// A plain terminal takes the direct type path here too — the draft-confirm
 		// inside PasteAndSubmit trips on the same stale-scrollback-box false negative
 		// and silently withholds the Enter (see plainsend.go).
-		if _, plain := resolvePaneAgent(id); plain {
+		agentCmd, plain := resolvePaneAgent(id)
+		if plain {
 			if err := typePlain(id, text); err != nil {
 				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 				return 1
@@ -204,8 +205,12 @@ func cmdSend(args []string) int {
 		}
 		// The unverified path still protects a draft — skipping VERIFICATION was never a
 		// request to overwrite someone's unsubmitted line. `--force` waives it.
-		if _, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id),
-			dispatch.Opts{Pane: id, PasteRetries: 2, ClobberDraft: force}, text); refused == dispatch.StateRefusedDraft {
+		// Build the opts through the bridge so this path gets the SAME draft-guard gating
+		// (HasComposer) as the verified one — a hand-rolled Opts here is how the two
+		// would drift apart.
+		popts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
+		popts.PasteRetries = 2
+		if _, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), popts, text); refused == dispatch.StateRefusedDraft {
 			i18n.Sae("gtmux send: refused — that pane has UNSENT text in its input box (use --force)",
 				"gtmux send: 已拒发 —— 该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
 			return 1

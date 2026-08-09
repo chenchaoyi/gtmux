@@ -676,7 +676,14 @@ func deliverHQBriefing(pane, agentCmd string) {
 	if !dispatchbridge.WaitAgentReady(pane, agentCmd, time.Duration(tune.ReadyTimeout)*time.Second) {
 		return
 	}
-	_ = dispatch.Deliver(dispatchbridge.DispatchIO(pane), dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
+	// Non-fatal, but not SILENT. A refusal here has a cause the operator can act on — most
+	// plainly a draft already sitting in the box — and swallowing it leaves an HQ that
+	// simply never briefs, with nothing on screen to explain why.
+	if res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
+		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt()); !res.Delivered {
+		i18n.Sae("gtmux hq: the startup briefing was not delivered ("+string(res.State)+") — type to the pane to start it",
+			"gtmux hq: 启动简报未送达（"+string(res.State)+"）—— 直接在该 pane 里说话即可开始")
+	}
 }
 
 // hqInstructions is the generated-once supervisor playbook (bilingual). It is

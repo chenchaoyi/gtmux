@@ -972,7 +972,7 @@ func TestDeliver_RefusesToClobberAUsersDraft(t *testing.T) {
 		caps:     []string{boxEmpty("me: " + taskText)},
 		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
 	}
-	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, HasComposer: true, DeliverTimeout: 10}, taskText)
 	if r.State != StateRefusedDraft {
 		t.Fatalf("want refused-draft against a user's unsubmitted text, got %+v", r)
 	}
@@ -997,7 +997,7 @@ func TestDeliver_ClobberDraftOverridesTheGuard(t *testing.T) {
 		caps:     []string{boxEmpty("me: " + taskText)},
 		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
 	}
-	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, ClobberDraft: true, DeliverTimeout: 10}, taskText)
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, HasComposer: true, ClobberDraft: true, DeliverTimeout: 10}, taskText)
 	if !r.Delivered {
 		t.Fatalf("ClobberDraft must deliver through the draft guard, got %+v", r)
 	}
@@ -1012,7 +1012,7 @@ func TestDeliver_InterlockForceDoesNotWaiveTheDraftGuard(t *testing.T) {
 		preDraft: "half a sentence",
 		caps:     []string{boxEmpty("me: " + taskText)},
 	}
-	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, Force: true, DeliverTimeout: 10}, taskText)
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, HasComposer: true, Force: true, DeliverTimeout: 10}, taskText)
 	if r.State != StateRefusedDraft {
 		t.Fatalf("interlock --force must not waive draft protection, got %+v", r)
 	}
@@ -1022,7 +1022,7 @@ func TestDeliver_InterlockForceDoesNotWaiveTheDraftGuard(t *testing.T) {
 // it was so the phone can tell the user something true.
 func TestPasteAndSubmit_RefusesADraft(t *testing.T) {
 	f := &fakeIO{preDraft: "mid-sentence", caps: []string{boxEmpty("")}}
-	ok, refused := PasteAndSubmit(f.io(), Opts{Pane: "%1"}, taskText)
+	ok, refused := PasteAndSubmit(f.io(), Opts{Pane: "%1", HasComposer: true}, taskText)
 	if ok || refused != StateRefusedDraft {
 		t.Fatalf("want a draft refusal, got ok=%v refused=%q", ok, refused)
 	}
@@ -1040,7 +1040,7 @@ func TestDeliver_OwnDraftIsNotAClobber(t *testing.T) {
 		caps:     []string{boxEmpty("me: " + taskText)},
 		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
 	}
-	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, HasComposer: true, DeliverTimeout: 10}, taskText)
 	if r.State == StateRefusedDraft {
 		t.Fatalf("a draft holding OUR delivery must not be treated as a clobber, got %+v", r)
 	}
@@ -1139,7 +1139,7 @@ func TestDeliver_GhostTextIsNotADraft(t *testing.T) {
 		evs: []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}}}
 	io := f.io()
 	io.CaptureColor = func() string { return boxDraft(ghost) }
-	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, HasComposer: true, DeliverTimeout: 10}, taskText)
 	if r.State == StateRefusedDraft {
 		t.Fatalf("faint ghost text is the agent's suggestion, not a draft; got %+v", r)
 	}
@@ -1153,7 +1153,7 @@ func TestDeliver_RealDraftInAColorCaptureStillRefuses(t *testing.T) {
 	f := &fakeIO{caps: []string{boxEmpty("")}}
 	io := f.io()
 	io.CaptureColor = func() string { return boxDraft("what I was typing") }
-	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, HasComposer: true, DeliverTimeout: 10}, taskText)
 	if r.State != StateRefusedDraft {
 		t.Fatalf("want refused-draft, got %+v", r)
 	}
@@ -1172,8 +1172,101 @@ func TestDeliver_DraftGuardNeedsTwoAgreeingFrames(t *testing.T) {
 		i++
 		return s
 	}
-	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, HasComposer: true, DeliverTimeout: 10}, taskText)
 	if r.State == StateRefusedDraft {
 		t.Fatalf("a single-frame phantom must not refuse a send; got %+v", r)
+	}
+}
+
+// ── the guard's failure behavior: it protects a send, it never blocks one ─────
+
+// A pane with NO agent composer is not guarded. Routing fails safe to the agent pipeline
+// for anything that is neither a known agent nor a bare shell — vim, ssh, a TUI — and on
+// those the no-box degrade path reports the TRANSCRIPT as a draft (measured live: a pane
+// running `diting` yielded 347 characters of log output). Guarding there refuses every
+// send with a reason that is not even true, and the phone has no --force.
+func TestDeliver_NoComposerIsNotGuarded(t *testing.T) {
+	f := &fakeIO{
+		preDraft: "09:07:22 [INSIGHT] some log output that is not a draft",
+		caps:     []string{boxEmpty("me: " + taskText)},
+		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	if r.State == StateRefusedDraft {
+		t.Fatalf("a pane with no composer must not be draft-guarded, got %+v", r)
+	}
+}
+
+// An UNREADABLE pane fails OPEN. An empty capture means the tmux call failed, the pane
+// died, or the server is wedged — none of which is evidence that someone is typing.
+// Fail-closed here would turn one tmux hiccup into a blanket refusal of every send.
+func TestDeliver_UnreadablePaneFailsOpen(t *testing.T) {
+	f := &fakeIO{caps: []string{boxEmpty("me: " + taskText)},
+		evs: []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}}}
+	io := f.io()
+	io.CaptureColor = func() string { return "" } // tmux gave us nothing
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, HasComposer: true, DeliverTimeout: 10}, taskText)
+	if r.State == StateRefusedDraft {
+		t.Fatalf("an unreadable pane must not refuse the send, got %+v", r)
+	}
+	if !r.Delivered {
+		t.Errorf("the send should have proceeded and been judged by the receipt, got %+v", r)
+	}
+}
+
+// A pane in copy/view-mode is showing its SCROLLBACK, not its composer, so the box on
+// screen may be an old one scrolled into view. The guard skips rather than refuse against
+// text nobody is typing; pasteWithGuard drops the mode a moment later.
+func TestDeliver_CopyModePaneIsNotGuarded(t *testing.T) {
+	f := &fakeIO{
+		preDraft: "an old line scrolled into view",
+		caps:     []string{boxEmpty("me: " + taskText)},
+		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+		inMode:   true,
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, HasComposer: true, DeliverTimeout: 10}, taskText)
+	if r.State == StateRefusedDraft {
+		t.Fatalf("a copy-mode pane must not be draft-guarded, got %+v", r)
+	}
+}
+
+// The guard is BOUNDED: at most two reads and one poll interval, never a loop. A pre-check
+// on the send path may cost a known amount; it may not spin, hang, or retry its way into
+// blocking a delivery.
+func TestDraftGuardIsBounded(t *testing.T) {
+	reads, sleeps := 0, 0
+	io := IO{
+		Capture:      func() string { return boxDraft("still typing") },
+		CaptureColor: func() string { reads++; return boxDraft("still typing") },
+		Sleep:        func() { sleeps++ },
+		Now:          func() int64 { return 0 },
+	}
+	blocked, _ := draftBlocked(io, Opts{Pane: "%1", HasComposer: true}, taskText)
+	if !blocked {
+		t.Fatal("setup: a stable non-empty draft should block")
+	}
+	if reads != 2 || sleeps != 1 {
+		t.Errorf("the guard must cost exactly 2 reads + 1 wait, got reads=%d sleeps=%d", reads, sleeps)
+	}
+	// …and the cheap path — an empty box, the common case — costs ONE read and no wait.
+	reads, sleeps = 0, 0
+	io.CaptureColor = func() string { reads++; return boxDraft("") }
+	if blocked, _ := draftBlocked(io, Opts{Pane: "%1", HasComposer: true}, taskText); blocked {
+		t.Fatal("an empty box must not block")
+	}
+	if reads != 1 || sleeps != 0 {
+		t.Errorf("the empty-box path must cost 1 read and no wait, got reads=%d sleeps=%d", reads, sleeps)
+	}
+}
+
+// A missing Sleep (an IO built without the optional clock) must not panic the send path.
+func TestDraftGuardToleratesAMissingSleep(t *testing.T) {
+	io := IO{
+		Capture:      func() string { return boxDraft("typing") },
+		CaptureColor: func() string { return boxDraft("typing") },
+		Now:          func() int64 { return 0 },
+	}
+	if blocked, _ := draftBlocked(io, Opts{Pane: "%1", HasComposer: true}, taskText); !blocked {
+		t.Error("a stable draft should still block without a clock wired")
 	}
 }

@@ -330,26 +330,49 @@ half-written line and both are submitted as one message, without its author ever
 Enter. The refusal SHALL quote enough of the draft for the caller to recognize whose text
 it protected.
 
-Two cases SHALL NOT be treated as a clobber: a draft that already holds THIS delivery (an
-idempotent re-send after a lost acknowledgement), and a pane with no locatable input region
-(a plain shell — there is no draft to protect).
+**Scope — the guard runs ONLY on a pane a KNOWN AGENT drives.** Routing fails safe to the
+agent pipeline for anything that is neither a known agent nor a bare shell (vim, ssh, a TUI
+app), and such a pane has no composer at all: the no-box degrade path locks onto whatever
+prompt-like line is on screen and reports the TRANSCRIPT as a draft, which would refuse
+every send with a reason that is not true. The capability SHALL be off by default, so a
+caller that has not established it gets pre-guard behavior rather than a mystery refusal.
 
-The draft SHALL be read from the COLOR capture, so text the agent renders FAINT — its
-suggested-next-command ghost, which is not input — is excluded; a plain capture cannot
-distinguish the two and refuses sends to panes whose box is in fact empty. The refusal
-SHALL require TWO agreeing reads: one frame caught mid-repaint can show a phantom, and a
-refusal cannot be taken back the way the wake channel's queue-and-retry can.
+**Evidence — the COLOR capture, twice.** The draft SHALL be read from the color capture, so
+text the agent renders FAINT (its suggested-next-command ghost, which is not input) is
+excluded; a plain capture cannot distinguish the two and refuses sends to panes whose box is
+in fact empty. The refusal SHALL require TWO agreeing reads: one frame caught mid-repaint
+can show a phantom, and a refusal cannot be taken back the way the wake channel's
+queue-and-retry can.
 
-The guard SHALL apply to every delivery path, verified and unverified alike, INCLUDING the
-phone's `POST /api/send` — a send from another device into a pane whose owner is typing is
-the case with no one present to undo it. Its override SHALL be a DISTINCT option from the
-re-send interlock's `--force`: the phone sets the interlock override on every send (it
-carries its own idempotency key), and folding the two together would leave that surface
-unprotected. The operator's `gtmux send --force` SHALL waive both.
+**The guard SHALL fail OPEN, and SHALL be bounded.** It exists to protect a send, never to
+block one, so every condition it cannot judge SHALL let the delivery proceed:
+
+| condition | behavior |
+|---|---|
+| the pane has no known agent (no composer) | proceed — nothing meaningful to read |
+| the capture is unreadable (tmux failed, pane gone, server wedged) | proceed — an unreadable pane is not evidence someone is typing |
+| the pane is in copy/view-mode | proceed — the screen shows scrollback, not the composer |
+| no locatable input region (a plain shell) | proceed — there is no draft to protect |
+| the draft already holds THIS delivery | proceed — an idempotent re-send after a lost ack |
+| the override is set | proceed |
+| a non-empty foreign draft, seen twice | REFUSE |
+
+The check SHALL cost at most two reads and one poll interval, and SHALL NOT loop, retry, or
+wait on any condition — a bounded pre-check may add a known cost to a send; it may not spin
+or hang. A delivery refused this way SHALL be reported to its caller and SHALL NOT be
+silently dropped by any call site.
+
+**Overrides.** The draft override SHALL be a DISTINCT option from the re-send interlock's
+`--force`: the phone sets the interlock override on every send (it carries its own
+idempotency key), and folding the two together would leave that surface — a send from
+another device into a pane whose owner is typing — unprotected. The operator's `gtmux send
+--force` SHALL waive both. The guard SHALL apply to every delivery path, verified and
+unverified alike, INCLUDING `POST /api/send`.
 
 #### Scenario: A user's half-written line is not swallowed
 
-- **WHEN** a delivery targets a pane whose input box holds text the user has not submitted
+- **WHEN** a delivery targets an agent pane whose input box holds text the user has not
+  submitted
 - **THEN** nothing is pasted, no Enter is sent, and the delivery is refused as
   `refused-draft` with the draft quoted back
 
@@ -359,6 +382,17 @@ unprotected. The operator's `gtmux send --force` SHALL waive both.
   where a draft would be
 - **THEN** the delivery proceeds — the suggestion is not input
 
+#### Scenario: A pane with no composer is not guarded
+
+- **WHEN** a delivery targets a pane running neither a known agent nor a bare shell, whose
+  on-screen transcript reads back as a draft
+- **THEN** the delivery proceeds — the guard applies only where a draft means something
+
+#### Scenario: An unreadable pane does not block the send
+
+- **WHEN** the pane capture comes back empty because the tmux call failed
+- **THEN** the delivery proceeds and is judged by the post-submit verification
+
 #### Scenario: Our own re-send is not a clobber
 
 - **WHEN** the draft already holds the delivery being sent (a retry after a lost ack)
@@ -366,7 +400,7 @@ unprotected. The operator's `gtmux send --force` SHALL waive both.
 
 #### Scenario: The phone cannot waive draft protection
 
-- **WHEN** `POST /api/send` delivers to a pane holding an unsubmitted draft
+- **WHEN** `POST /api/send` delivers to an agent pane holding an unsubmitted draft
 - **THEN** it is refused and the client is told the pane has unsent text — the interlock
   override the phone always carries does not waive this guard
 

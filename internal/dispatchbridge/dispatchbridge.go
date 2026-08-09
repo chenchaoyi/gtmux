@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -82,7 +83,11 @@ func DeliverOpts(pane, agentCmd string, force bool, tune dispatch.Tuning) dispat
 		// the re-send interlock and the draft guard. The phone's force (it always carries
 		// a sendID) never reaches here — serve builds its own Opts — so a remote send
 		// cannot waive draft protection.
-		ClobberDraft:   force,
+		ClobberDraft: force,
+		// The draft guard applies only where a draft MEANS something: a pane a known agent
+		// drives. Routing fails safe to this pipeline for any non-shell pane (vim, ssh, a
+		// TUI app), and those have no composer for the guard to read.
+		HasComposer:    knownAgent(agentCmd),
 		ResendWindow:   tune.ResendWindow,
 		DeliverTimeout: tune.DeliverTimeout,
 		HookGrace:      tune.HookGrace,
@@ -180,6 +185,13 @@ func (g *readyGate) step(cmd string, capture func() string) bool {
 	}
 	g.prev = c
 	return false
+}
+
+// knownAgent reports whether a launch/foreground command names an agent in the registry —
+// the fact that decides whether a pane has a composer whose draft is worth protecting.
+func knownAgent(agentCmd string) bool {
+	_, ok := agents.For(agentKey(agentCmd))
+	return ok
 }
 
 // agentKey reduces a launch command ("claude --model …") to the basename used to key

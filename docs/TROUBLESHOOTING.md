@@ -580,6 +580,17 @@ a refusal — unlike the wake channel's queue-and-retry — cannot be taken back
 **Must-check when adding any such gate:** run it against a LIVE Claude pane that is showing
 its ghost suggestion, not just against test fixtures. Fixtures carry no SGR, so
 `DraftOfColored` and `SplitInputRegion` agree on them and the bug is invisible in CI.
+**Second false positive, same gate (fixed in the same round):** a pane running neither a
+known agent nor a bare shell (vim, ssh, a TUI — routing fails SAFE to the agent pipeline for
+those) has NO composer, so `SplitInputRegion`'s no-box degrade path returns the TRANSCRIPT as
+a draft — measured live at 347 characters of log output on a pane running `diting`. Any
+"is there a draft?" gate must therefore ALSO be scoped to panes a known agent drives
+(`Opts.HasComposer`, from `radar.AgentDriverKey`), not merely to "not a shell".
+**And the shape of the gate matters as much as its inputs:** it must fail OPEN on every
+condition it cannot judge (unreadable capture, copy-mode, no input region) and be bounded —
+a pre-check on the send path may cost a known amount, it may never loop or hang. The live
+probe to reproduce all of this: build `DeliverOpts` for a pane, call the guard read-only,
+and print `driverKey / hasComposer / refused` across an agent pane, a TUI pane and a shell.
 
 ### One instruction pasted 2–3× and submitted in pieces
 **Symptom:** a dispatched message appears in the agent's box twice or three times, is
