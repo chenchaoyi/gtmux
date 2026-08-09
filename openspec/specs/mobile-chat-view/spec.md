@@ -88,6 +88,44 @@ the whole one.
   reaching the client
 - **THEN** the view states that earlier history is not shown and how many turns that is
 
+### Requirement: A restarted conversation says where it restarts
+
+When the server reports that a session began by starting the conversation over, and no
+turns are being withheld by the window or dropped before reaching the client, the chat
+view SHALL say so — naming the command and, when known, the local clock time — instead of
+presenting a short history with no explanation. It SHALL offer no control to load more,
+because there is nothing left to load: the earlier conversation is in a session log the
+chat endpoint does not read.
+
+Truncation SHALL take precedence over this disclosure: while turns remain loadable or
+were dropped, that is what the reader needs to know, and the restart is only the end of
+the road once nothing else is hidden.
+
+Where the surface has a place the earlier record IS still readable, the view SHALL name
+it. On the HQ page that is the Activity zone, whose event ledger is fed by gtmux rather
+than by the conversation and so cannot be emptied by a reset. A surface with no such
+place SHALL omit the pointer rather than direct the reader somewhere they have not got.
+
+This exists because a cleared conversation and a broken one look identical: a supervisor
+shift that had run for hundreds of turns was cleared and the phone showed three bubbles,
+which was read as a bug in the app.
+
+#### Scenario: Opening a conversation that was cleared
+
+- **WHEN** the session began with a `/clear` and nothing else is hidden
+- **THEN** the view states that this conversation starts there, names the command and the
+  time, and offers no "load earlier" control
+
+#### Scenario: A truncated conversation that also restarted
+
+- **WHEN** turns are windowed away or were dropped by the server
+- **THEN** the view discloses the truncation, not the restart
+
+#### Scenario: An ordinary conversation
+
+- **WHEN** the session was not started over and nothing is hidden
+- **THEN** the view renders no such line at all
+
 ### Requirement: A turn in progress is visible in the conversation
 
 While the agent is working, the chat view SHALL show progress in the conversation itself,

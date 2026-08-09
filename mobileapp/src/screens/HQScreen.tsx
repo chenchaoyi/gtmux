@@ -37,6 +37,7 @@ import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
+import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
@@ -81,6 +82,11 @@ export function HQScreen({route, navigation}: any) {
   const [board, setBoard] = useState<HQBoard>({exists: false});
   const [ledger, setLedger] = useState<HQEvent[]>([]);
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  // Set when the supervisor's session began with a `/clear`/`/new` — including the
+  // `gtmux hq --rotate` HQ performs on itself. The console then shows this shift whole
+  // and the shift before it not at all, which without a word reads as a broken app: on
+  // 2026-08-09 a cleared 400-turn shift showed three bubbles and cost a diagnosis.
+  const [sessionReset, setSessionReset] = useState<SessionReset | undefined>();
   const [loaded, setLoaded] = useState(false);
   const [pending, setPending] = useState<string | undefined>();
   const [selected, setSelected] = useState<DigestRow | null>(null);
@@ -206,9 +212,10 @@ export function HQScreen({route, navigation}: any) {
     let alive = true;
     client
       .transcript(hq.pane_id)
-      .then(({turns: ts}) => {
+      .then(({turns: ts, reset}) => {
         if (!alive) return;
         setTurns(ts);
+        setSessionReset(reset);
         setLoaded(true);
       })
       .catch(() => alive && setLoaded(true));
@@ -535,6 +542,11 @@ export function HQScreen({route, navigation}: any) {
               pal={pal}
               lang={lang}
               turns={turns}
+              sessionReset={sessionReset}
+              // Where the earlier record still IS. The event ledger behind ACTIVITY is
+              // fed by gtmux, not by the conversation, so a reset cannot empty it — the
+              // one place on this page a cleared history is still readable.
+              resetElsewhere={t('Activity', '动态')}
               loading={!loaded}
               pendingPrompt={pending}
               // Header shows at the live tail (newest), hides when you scroll up into

@@ -117,12 +117,10 @@ type Deps struct {
 
 	// Transcript returns the marshaled chat-history turns for a pane (the agent's
 	// conversation parsed into prompt → collapsed steps → final response), as a
-	// JSON array. Empty array (not error) when the pane has no resumable session
-	// or the agent's log isn't found. Optional: nil → GET /api/transcript is 503.
-	// dropped is how many OLDER turns were left out to keep the payload within a size
-	// the client can hold (transcript-render-bounds) — reported so a client can say the
-	// history is truncated instead of showing part of a conversation as the whole one.
-	Transcript func(id string) (turns []byte, dropped int, err error)
+	// JSON array, plus what a client needs to describe what it is NOT showing.
+	// Empty array (not error) when the pane has no resumable session or the agent's
+	// log isn't found. Optional: nil → GET /api/transcript is 503.
+	Transcript func(id string) (turns []byte, meta TranscriptMeta, err error)
 
 	// HQBoard returns the supervisor's situation board — the synthesis it maintains by
 	// hand so its picture of the fleet survives a context reset — plus when it was last
@@ -759,6 +757,25 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, diffResponse{ID: id, Diff: diff})
 }
 
+// TranscriptMeta is everything GET /api/transcript reports ALONGSIDE the turn array —
+// the two reasons the history on screen may not be the whole conversation. Both ride
+// response headers rather than an envelope, so the body stays the plain turn array a
+// client predating either signal already parses.
+type TranscriptMeta struct {
+	// Dropped is how many OLDER turns were left out to keep the payload within a size
+	// the client can hold (transcript-render-bounds) — reported so a client can say the
+	// history is truncated instead of showing part of a conversation as the whole one.
+	Dropped int
+
+	// Reset is set ("clear"/"new") when this session BEGAN by starting the conversation
+	// over, with ResetAt the unix second it happened. The turns served are then complete
+	// for this session and still not the whole story: what came before is in a previous
+	// session log this endpoint does not read. Saying so is what keeps a cleared history
+	// from reading as a broken one.
+	Reset   string
+	ResetAt int64
+}
+
 // handleTranscript serves the pane's parsed chat history (GET /api/transcript?id=%N)
 // as a JSON array of turns. Read-only.
 func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
@@ -771,16 +788,24 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	b, dropped, err := s.deps.Transcript(id)
+	b, meta, err := s.deps.Transcript(id)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, errBody("transcript failed: "+err.Error()))
 		return
 	}
-	// An additive HEADER, not an envelope: the body stays the plain turn array every
+	// Additive HEADERS, not an envelope: the body stays the plain turn array every
 	// existing client (and the web mirror) already parses, so an app build that predates
-	// this simply ignores the signal instead of failing to decode.
-	if dropped > 0 {
-		w.Header().Set("X-Gtmux-Turns-Dropped", strconv.Itoa(dropped))
+	// either signal simply ignores it instead of failing to decode.
+	if meta.Dropped > 0 {
+		w.Header().Set("X-Gtmux-Turns-Dropped", strconv.Itoa(meta.Dropped))
+	}
+	if meta.Reset != "" {
+		w.Header().Set("X-Gtmux-Session-Reset", meta.Reset)
+		// The clock is sent only WITH the kind: a bare timestamp says nothing a client
+		// could phrase, and a kind with an unknown clock is still worth saying.
+		if meta.ResetAt > 0 {
+			w.Header().Set("X-Gtmux-Session-Reset-At", strconv.FormatInt(meta.ResetAt, 10))
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(b)

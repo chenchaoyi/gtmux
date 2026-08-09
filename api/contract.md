@@ -211,9 +211,21 @@ A turn COUNT is not the bound: turns vary in size by orders of magnitude, and a 
 The signal is a header, not an envelope: the body stays the plain turn array, so a client
 predating this ignores the header instead of failing to decode.
 
+**A session that was STARTED OVER is announced too.** This endpoint reads exactly ONE
+session — the pane's current resume record — so a `/clear`, a `/new`, or the `gtmux hq
+--rotate` HQ performs on itself makes the history it can serve begin again at zero.
+Nothing is dropped in that case: the turns ARE the conversation whole, and what came
+before is in a previous session log this endpoint does not read. `X-Gtmux-Session-Reset`
+carries the kind (`clear`/`new`) and `X-Gtmux-Session-Reset-At` the unix second it
+happened (omitted when the log carried no usable clock; the kind is still sent). Both are
+absent for an ordinary session. Claude Code only — its log is the one that records the
+invocation; for other agents no claim is made rather than a wrong one.
+
 ```
 200 [ {turn}, … ]    // application/json
     X-Gtmux-Turns-Dropped: 102     // 102 older turns not included (omitted when 0)
+    X-Gtmux-Session-Reset: clear   // this session began by clearing the one before it
+    X-Gtmux-Session-Reset-At: 1786253049
 400 {"error":"missing id"}
 404 {"error":"transcript failed: <reason>"}
 503 {"error":"transcript not available"}   // Transcript dep not wired

@@ -24,7 +24,7 @@ import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
 import {StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
-import {CHAT_WINDOW, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
+import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 
 interface Props {
   agent: Agent;
@@ -39,6 +39,12 @@ interface Props {
   // How many OLDER turns the server dropped to bound the payload — folded into the one
   // "earlier turns not shown" line so a truncated history is never passed off as whole.
   droppedTurns?: number;
+  // Set when this session BEGAN by starting the conversation over (`/clear`, `/new`,
+  // `gtmux hq --rotate`). Nothing is truncated then — the history simply restarts here,
+  // and saying so is what keeps a cleared conversation from reading as a broken app.
+  // `resetElsewhere` names where the earlier record still is, on a surface that has one.
+  sessionReset?: SessionReset;
+  resetElsewhere?: string;
   loading: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
@@ -101,7 +107,7 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, loading, pendingPrompt, fontPref, workingSince, onLiveEdge}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -202,7 +208,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
   const {shown, hiddenHere} = windowedTurns(turns, windowSize);
   const offset = turns.length - shown.length;
-  const earlier = earlierLabel(hiddenHere, droppedTurns, lang === 'zh');
+  const earlier = earlierLabel(hiddenHere, droppedTurns, lang === 'zh', sessionReset, resetElsewhere);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
