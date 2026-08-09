@@ -58,8 +58,10 @@ env -i HOME="$HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin" gtmux tunnel --service 
 **必查**
 - 调试任何「app 里不行、终端里行」的问题，**先用上面那行 `env -i` 复现**。这是这一类 bug 的
   分水岭，不先做这一步会往错误的方向查很久（网络？token？权限？）。
-- 新增一个 gtmux 要 shell 出去调用的工具时，用 `lookTool()`（`internal/app/toolpath.go`）而不是
-  `exec.LookPath`。
+- 新增一个 gtmux 要 shell 出去调用的工具时，用 `toolpath.Look()`（`internal/toolpath`）而不是
+  `exec.LookPath`。它原本住在 `internal/app`，而下一个需要它的工具（`gh`，在 `internal/dispatch`
+  这个 leaf 里）**够不着** —— 于是同一课被重学了一遍，代价是 `gtmux reap` 把已合并的分支报成未合并
+  （见下方 reap 条目）。**共享的教训必须放在每一层都能取到的地方。**
 - 新增一个能失败的控件时，**在它自己所在的界面**渲染错误。别指望用户去别的面板找原因。
 
 
@@ -548,6 +550,33 @@ evidence appended the full capture (measured: 224 lines / 11.8 KB), so the verdi
 the head of a wall that looks like a boot log. **Rule:** a spawn whose `tasks` row is
 `undelivered` was never dispatched — re-send with `gtmux send %N --message-file <path>`,
 or fix the blocker the evidence names (`/mcp` to authenticate, answer the trust gate, …).
+
+### `gtmux reap` kills the session and worktree but leaves the branch behind
+**Symptom:** you squash-merge a PR, run `gtmux reap`, and it reclaims the session and the
+worktree but reports the branch as **not merged** and keeps it. Meanwhile `gh pr view
+<branch>` from your terminal says `MERGED`. Hit 2026-08-09 on `fix/app-hq-history`.
+**Root cause — TWO faults that compound, which is why it looked like "squash detection is
+broken":**
+1. `defaultBranch` stripped the `origin/` prefix and returned the LOCAL branch name, so
+   both git-side probes judged against a local `main` that nothing had pulled — `gh pr
+   merge` doesn't fetch, and under a worktree layout the local `main` belongs to another
+   checkout that may be pinned for other work. Measured on the branch that hit this: the
+   squash-equivalence scan had an **empty commit range** against local `main` and said no;
+   against `origin/main` the branch tip's tree matched the squash commit exactly.
+2. `prMerged` folded every `gh` failure into `false`. `gh` lives in `/opt/homebrew/bin`;
+   a gtmux started by launchd inherits `/usr/bin:/bin:/usr/sbin:/sbin`. So the last
+   remaining probe was invisible, and its silence became a confident "not merged".
+**Fix (reap-merged-detection):** the base is the remote-tracking ref, `gtmux reap`
+refreshes it before judging (bounded + best-effort; the hook-driven reap-suggest sweep
+still does no network), `gh` resolves through the shared `internal/toolpath` search, and
+the result is three-way — "could not establish" fails the gate CLOSED but says so and
+names the remedy instead of asserting unmerged commits. Verified end-to-end on the two
+real leftover branches: both judge merged, **and still do with `gh` hidden** — the single
+point of failure is gone.
+**Must-check:** `gh` being on YOUR PATH proves nothing about the PATH the failing process
+had. Before concluding a shelled-out tool is "not installed", check it through
+`internal/toolpath` (or `env -i PATH=/usr/bin:/bin sh -c 'command -v <tool>'`), and never
+let a tool's *unavailability* stand in as its *answer*.
 
 ### HQ's startup briefing typed into the input box but never sent
 **Symptom:** `gtmux hq` starts the agent, a long "Startup briefing — make this your very

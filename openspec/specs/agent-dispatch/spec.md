@@ -575,10 +575,28 @@ default branch (true only for a fast-forward/regular merge): a SQUASH merge (e.g
 GitHub's default) rewrites the branch's commits into one new commit on the default
 branch, so it SHALL also be recognized as merged, either via a commit on the default
 branch with a tree identical to the branch tip's, or via the branch's associated PR
-reporting a MERGED state (through `gh`, when available). When `--keep-branch` is
+reporting a MERGED state (through `gh`, when available).
+
+The merge question SHALL be judged against the REMOTE-TRACKING default branch
+(`origin/main`) whenever the repo has one, and the reap COMMAND SHALL refresh that ref
+before judging (best-effort and bounded; the hook-driven reap-suggest sweep SHALL NOT —
+no network on a hook). A merge lands on the remote and nothing pulls it into the local
+branch, so a local base is stale exactly when the answer matters. Only a repo with no
+remote default branch SHALL fall back to the local one, where local history is the whole
+story.
+
+The three probes SHALL yield a THREE-way result: merged, not merged, or NOT
+ESTABLISHED. "No probe could answer" SHALL NOT be reported as "not merged" — in
+particular, a `gh` that is missing, signed out, offline, or has no PR for the branch is
+an ABSENCE of evidence, and `gh` SHALL be resolved through the shared tool-path search
+(a process started by launchd inherits a PATH without the Homebrew prefixes). When
+nothing could establish the answer the gate SHALL still fail CLOSED, but SHALL say the
+merge state could not be confirmed and name the remedy, rather than assert unmerged
+commits that may not exist. When `--keep-branch` is
 given, the branch is never deleted, so its merge state SHALL NOT gate the reclaim —
 only the worktree-clean check still applies. When the gate fails, `reap` SHALL report
-exactly what blocks it (uncommitted changes / unmerged commits) and make NO changes.
+exactly what blocks it (uncommitted changes / unmerged commits / an unconfirmable merge
+state) and make NO changes.
 When the gate passes, it SHALL kill the dispatch's tmux session/window, `git worktree
 remove` the worktree, and delete the branch only when merged (or `--abandon`) and not
 `--keep-branch`, then clear the ledger entry. `reap` SHALL never run automatically —
@@ -608,6 +626,21 @@ only when invoked. `--json` SHALL report the outcome (`reaped`, plus any `blocke
   not an ancestor, but the content landed as one new commit — or the branch's PR
   reports MERGED via `gh`)
 - **THEN** `gtmux reap` still recognizes the branch as merged and reaps it
+
+#### Scenario: A squash merge that only the remote knows about
+
+- **WHEN** a dispatch's branch was squash-merged on the remote and the local default
+  branch has not been updated since
+- **THEN** `gtmux reap` refreshes the remote-tracking ref, judges against it, and
+  recognizes the branch as merged — it does not decide from a base that predates the
+  merge
+
+#### Scenario: An unanswerable merge state is not reported as unmerged
+
+- **WHEN** no probe can establish the merge state (no merge or squash-equivalent commit
+  on the base, and `gh` cannot answer — missing, signed out, or no PR)
+- **THEN** `gtmux reap` reclaims nothing and reports that the merge state could not be
+  confirmed, naming the remedy — it does NOT claim the branch has unmerged commits
 
 #### Scenario: `--keep-branch` is not blocked by an unmerged branch
 

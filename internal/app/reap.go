@@ -85,7 +85,16 @@ func planAndReap(t dispatch.Task, abandon, keepBranch bool, ops reapOps) reapRes
 func liveReapOps() reapOps {
 	return reapOps{
 		worktreeDirty: dispatch.WorktreeDirty,
-		branchMerged:  dispatch.BranchMerged,
+		// Refresh the base ref before judging. A merge lands on the REMOTE and nothing
+		// pulls it down — `gh pr merge` doesn't, and in a worktree layout the local
+		// `main` belongs to another checkout that may be pinned for other work — so the
+		// gate would otherwise decide "is this merged?" from facts predating the merge.
+		// Only the reap COMMAND pays for it: the reap-suggest sweep runs on a hook and
+		// calls BranchMerged directly, with no network.
+		branchMerged: func(wt, branch string) (bool, error) {
+			dispatch.FetchBase(wt)
+			return dispatch.BranchMerged(wt, branch)
+		},
 		killSession: func(session string) error {
 			_, err := tmux.Run("kill-session", "-t", session)
 			return err
