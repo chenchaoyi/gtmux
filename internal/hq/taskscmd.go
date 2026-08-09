@@ -3,6 +3,7 @@ package hq
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -15,23 +16,24 @@ import (
 // status derived from the radar (the pane is the source of truth). The attention-
 // ledger fields (hq-attention-system) are additive/optional.
 type taskJSON struct {
-	ID          string `json:"id"`
-	Pane        string `json:"pane"`
-	Session     string `json:"session,omitempty"`
-	Agent       string `json:"agent,omitempty"`
-	Model       string `json:"model,omitempty"`
-	Goal        string `json:"goal,omitempty"`
-	Status      string `json:"status"` // waiting | done | working | gone | archived
-	Source      string `json:"source"` // hq-dispatched | user-direct | agent-self
-	Worktree    string `json:"worktree,omitempty"`
-	Branch      string `json:"branch,omitempty"`
-	Snoozed     bool   `json:"snoozed,omitempty"`
-	CreatedAt   int64  `json:"created_at,omitempty"`
-	Tier        string `json:"tier,omitempty"`
-	Priority    int    `json:"priority,omitempty"`
-	Surfaced    bool   `json:"surfaced,omitempty"`
-	Disposition string `json:"disposition,omitempty"`
-	Archived    bool   `json:"archived,omitempty"`
+	ID            string `json:"id"`
+	Pane          string `json:"pane"`
+	Session       string `json:"session,omitempty"`
+	Agent         string `json:"agent,omitempty"`
+	Model         string `json:"model,omitempty"`
+	Goal          string `json:"goal,omitempty"`
+	Status        string `json:"status"` // waiting | done | working | gone | archived | pending
+	Source        string `json:"source"` // hq-dispatched | user-direct | agent-self
+	Worktree      string `json:"worktree,omitempty"`
+	Branch        string `json:"branch,omitempty"`
+	Snoozed       bool   `json:"snoozed,omitempty"`
+	CreatedAt     int64  `json:"created_at,omitempty"`
+	Tier          string `json:"tier,omitempty"`
+	Priority      int    `json:"priority,omitempty"`
+	Surfaced      bool   `json:"surfaced,omitempty"`
+	Disposition   string `json:"disposition,omitempty"`
+	AwaitingSince int64  `json:"awaiting_since,omitempty"`
+	Archived      bool   `json:"archived,omitempty"`
 }
 
 // taskStatus maps a tracked pane's live radar status to the ledger lifecycle,
@@ -65,7 +67,8 @@ func rowFor(t dispatch.Task, status string, now int64) taskJSON {
 		Worktree: t.Worktree, Branch: t.Branch,
 		Snoozed: t.Snoozed(now), CreatedAt: t.CreatedAt,
 		Tier: t.Tier, Priority: t.Priority, Surfaced: t.Surfaced,
-		Disposition: t.Disposition, Archived: t.Archived,
+		Disposition: t.Disposition, AwaitingSince: t.AwaitingSince,
+		Archived: t.Archived,
 	}
 }
 
@@ -102,26 +105,77 @@ func gatherArchivedTasks() []taskJSON {
 	return out
 }
 
-// CmdTasks implements `gtmux tasks [--json] [--verbose]` — the attention ledger.
+// CmdTasks implements `gtmux tasks [--json] [--verbose] [--pending]` and the two plate
+// mutations (`--await` / `--resolve`) — the attention ledger and its standing view.
 func CmdTasks(args []string) int {
-	jsonOut, verbose := false, false
-	for _, a := range args {
+	jsonOut, verbose, pending := false, false, false
+	awaitID, resolveID, disposition := "", "", ""
+	next := func(i *int) string { // the value after a flag, "" when it is missing
+		if *i+1 >= len(args) || strings.HasPrefix(args[*i+1], "-") {
+			return ""
+		}
+		*i++
+		return args[*i]
+	}
+	for i := 0; i < len(args); i++ {
+		a := args[i]
 		switch a {
 		case "--json":
 			jsonOut = true
 		case "--verbose", "-v":
 			verbose = true
+		case "--pending":
+			pending = true
+		case "--await":
+			if awaitID = next(&i); awaitID == "" {
+				i18n.Sae("gtmux tasks --await: missing <task_id>", "gtmux tasks --await: 缺少 <task_id>")
+				return 2
+			}
+		case "--resolve":
+			if resolveID = next(&i); resolveID == "" {
+				i18n.Sae("gtmux tasks --resolve: missing <task_id>", "gtmux tasks --resolve: 缺少 <task_id>")
+				return 2
+			}
+			disposition = next(&i) // optional: how it left (decided / withdrawn / …)
 		case "-h", "--help":
-			i18n.Say("usage: gtmux tasks [--json] [--verbose]", "用法：gtmux tasks [--json] [--verbose]")
+			i18n.Say("usage: gtmux tasks [--json] [--verbose] [--pending]", "用法：gtmux tasks [--json] [--verbose] [--pending]")
+			i18n.Say("       gtmux tasks --await <task_id> | --resolve <task_id> [disposition]",
+				"       gtmux tasks --await <task_id> | --resolve <task_id> [处置]")
 			i18n.Say("  The attention ledger (gtmux spawn dispatches + attention items), live",
 				"  注意力账本（gtmux spawn 派活 + 注意力条目），带实时状态，需要你的排在前面。")
 			i18n.Say("  status, needs-you first. --verbose adds archived entries + tier/disposition.",
 				"  --verbose 追加已归档条目 + 分级/处置/surfaced 列。")
+			i18n.Say("  --pending is the standing view: only what awaits YOUR decision, stable order.",
+				"  --pending 是常驻视图：只列待你决定的事项，顺序稳定。")
 			return 0
 		default:
 			i18n.Sae("gtmux tasks: unknown option '"+a+"'", "gtmux tasks: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+	if awaitID != "" || resolveID != "" {
+		now := time.Now().Unix()
+		if awaitID != "" {
+			if code := markPending(awaitID, true, "", now); code != 0 {
+				return code
+			}
+		}
+		if resolveID != "" {
+			if code := markPending(resolveID, false, disposition, now); code != 0 {
+				return code
+			}
+		}
+		return 0
+	}
+	if pending {
+		rows := pendingTasks(dispatch.ListTasks(), time.Now().Unix())
+		if jsonOut {
+			b, _ := json.MarshalIndent(pendingJSON(rows), "", "  ")
+			fmt.Println(string(b))
+			return 0
+		}
+		renderPending(os.Stdout, rows, i18n.ColorEnabled())
+		return 0
 	}
 	rows := gatherTasks()
 	if verbose {
