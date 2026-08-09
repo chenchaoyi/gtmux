@@ -481,3 +481,74 @@ the user sees regardless of CJK content or line wrapping.
 - **THEN** the selection layer performs no text layout and typing/scrolling
   performance is unaffected by its presence.
 
+### Requirement: What's new is shown once after an update, in the reader's language
+
+After the app updates, it SHALL show the release notes for EVERY version the reader crossed
+— not only the newest — ONCE, and SHALL make them reachable again from Settings, because a
+changelog that can be seen only once cannot be gone back to. This is the phone's
+counterpart to `gtmux whatsnew`, and it SHALL follow the same TWO-LAYER shape: the popup is
+a CAPPED summary (someone who just updated is on their way somewhere else), with the full
+list one tap away.
+
+Because a user may skip several releases, the notes SHALL be a PER-VERSION ARCHIVE carried
+in the binary. The App Store metadata cannot serve: it holds only the current submission's
+text. The archive SHALL be generated, not authored a second time, and a conformance check
+SHALL fail when the generated form and the archive disagree — the generation is a release
+step someone will eventually forget.
+
+Versions SHALL be ordered by numeric segment (so 0.10 follows 0.9), newest first, and
+entries newer than the RUNNING build SHALL be excluded — a checkout's archive can be ahead
+of the binary, and promising a user something their build does not have is worse than
+saying less.
+
+When the summary is capped:
+
+- a version SHALL be shown WHOLE or folded — never with a partial list of its bullets,
+  since "3 of 6 changes in 0.46.0" is a claim no reader can act on;
+- the fold SHALL be a SUFFIX, never a gap: once a version does not fit, everything older
+  folds with it, because skipping a version to fit a smaller one behind it would tell the
+  reader that the skipped release changed nothing;
+- the NEWEST version SHALL always be shown, even when it alone exceeds the cap;
+- the remainder SHALL be named with its count and expandable in place.
+
+The bullets SHALL be rendered in the reader's resolved language (the system/EN/中文
+setting), falling back to the other language when its own is absent — the same fallback the
+CLI makes between a tag's `user:` and `user-zh:` blocks — and the cap SHALL count the
+language actually being read.
+
+The popup SHALL NOT appear on a FRESH INSTALL: there is no "new" for someone who has never
+seen the old. That install SHALL be recorded silently, so the first UPDATE is what greets
+them. A version with nothing archived SHALL likewise show nothing and record.
+
+#### Scenario: A multi-version jump reports every version crossed
+
+- **WHEN** the reader last acknowledged 0.45.0 and now runs 0.47.0, with notes archived for
+  0.46.0 and 0.47.0
+- **THEN** both versions' notes are shown, newest first, grouped under their versions
+
+#### Scenario: An ordinary update is not truncated
+
+- **WHEN** a single version's notes fit within the summary cap
+- **THEN** they are all shown and no fold appears
+
+#### Scenario: A long history folds into a counted remainder
+
+- **WHEN** the crossed versions carry more bullets than the cap
+- **THEN** the newest versions are shown whole, the rest are folded as a counted remainder,
+  and expanding it reveals them in place
+
+#### Scenario: A fresh install is not greeted
+
+- **WHEN** the app launches for the first time
+- **THEN** nothing is shown and the running version is recorded silently
+
+#### Scenario: The notes follow the language setting
+
+- **WHEN** the reader's resolved language is Chinese
+- **THEN** the Chinese bullets are shown, falling back to the English ones only if the
+  Chinese notes are absent
+
+#### Scenario: The notes stay readable after dismissal
+
+- **WHEN** the user opens Settings → About
+- **THEN** the full archive can be opened again on demand

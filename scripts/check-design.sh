@@ -123,8 +123,27 @@ retired_check '[gtmux] '        'hq-perception-v2 (the wake format is now `» gt
 retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is gone)' \
   'CLAUDE.md docs/design/DESIGN.md docs/design/HANDOFF.md'
 
+# ── the mobile What's New notes are GENERATED, not authored twice ─────────────
+#
+# mobileapp/src/releaseNotes.ts is produced by mobileapp/scripts/gen-release-notes.sh from
+# the per-version archive in mobileapp/release-notes/. Nothing enforces that at build time,
+# and re-running a *version* script is not an obvious part of "edit the release notes" — so
+# the drift is checked by REGENERATING and diffing. Byte-exact, and none of the un-escaping
+# guesswork that comparing a TS string literal back to its source would need.
+#
+# Not a jest test on purpose: reading the archive needs Node's fs, and the mobile tsconfig
+# deliberately limits itself to jest types so APP code cannot reach for Node APIs.
+NOTES_TS="mobileapp/src/releaseNotes.ts"
+NOTES_GEN="mobileapp/scripts/gen-release-notes.sh"
+if [ -f "$NOTES_TS" ] && [ -f "$NOTES_GEN" ]; then
+  if ! bash "$NOTES_GEN" | diff -q - "$NOTES_TS" >/dev/null 2>&1; then
+    note "$NOTES_TS is stale vs mobileapp/release-notes/ — run mobileapp/scripts/set-version.sh"
+    fail=1
+  fi
+fi
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; mobile release notes generated"
 else
   exit 1
 fi

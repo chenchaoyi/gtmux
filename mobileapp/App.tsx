@@ -14,6 +14,8 @@ import {Alert, StatusBar, useWindowDimensions} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {Splash} from './src/ui/Splash';
+import {WhatsNewModal} from './src/ui/WhatsNewModal';
+import {ReleaseNote} from './src/releaseNotes';
 import {setupPush, reregisterKinds} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
@@ -27,8 +29,53 @@ import {SplitScreen} from './src/screens/SplitScreen';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
 import {AppProvider, useApp, kindsList} from './src/state/AppContext';
 import {serverForPush} from './src/pairing/store';
+import {markSeen, notesSince, readSeen} from './src/state/whatsnew';
+import {APP_VERSION} from './src/version';
 
 const Stack = createNativeStackNavigator();
+
+// WhatsNew shows the notes for every version the reader crossed, ONCE after an update —
+// the phone's `gtmux whatsnew`. It lives at the root rather than on a screen so it is not
+// tied to where the user happens to land, and it renders NOTHING until the stored "last
+// seen" version has been read: deciding before the read would flash a changelog at someone
+// who had already dismissed it.
+function WhatsNew() {
+  const {pal, lang} = useApp();
+  const [entries, setEntries] = React.useState<ReleaseNote[]>([]);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const seen = await readSeen();
+      if (!live) return;
+      const due = notesSince(seen, APP_VERSION);
+      if (due.length > 0) {
+        setEntries(due);
+      } else if (seen !== APP_VERSION) {
+        // A fresh install, or a version with nothing archived to tell a phone user (a
+        // CLI-only release): record it silently so the NEXT update is what greets them.
+        void markSeen();
+      }
+    })();
+    return () => {
+      live = false;
+    };
+    // Once per launch on purpose: re-running on a language switch would re-open a
+    // changelog the user just dismissed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <WhatsNewModal
+      visible={entries.length > 0}
+      entries={entries}
+      pal={pal}
+      lang={lang}
+      onClose={() => {
+        setEntries([]);
+        void markSeen();
+      }}
+    />
+  );
+}
 
 // RadarRoute picks the layout by width (MOBILE §5): a split-view (sidebar radar +
 // inline detail) on iPad / wide windows (≥ 768pt), else the stacked phone radar.
@@ -174,6 +221,7 @@ function Root() {
   return (
     <AgentsProvider key={mac.url} base={mac.url} token={mac.token} name={mac.name} scope={mac.scope}>
       <PushBridge navRef={navRef} />
+      <WhatsNew />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>
           <Stack.Screen name="Radar" component={RadarRoute} />
