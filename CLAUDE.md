@@ -136,6 +136,10 @@ over one Go core (gtmux-core is the single data source):
   phone — a send from another device into a pane whose owner may be typing — unprotected.
   A fragment verdict on a hook-equipped pane where the paste DID land no longer clears the
   draft (the screen can't tell a short render from a short paste; the receipt judges).
+  **The guard reads the COLOR capture (`DraftOfColored`) and needs TWO agreeing frames** —
+  a plain capture strips the SGR-faint markers, so Claude's ghost suggestion reads as a
+  typed draft and refuses legitimate sends (shipped in v0.46.2, fixed v0.46.3; see
+  TROUBLESHOOTING).
   `gtmux send` verifies by default (`--no-verify` opts out — that skips CONFIRMATION, never
   the draft guard); `POST /api/send` stays fast/unverified. `tasks` is the dispatch/needs-you
   ledger; `reap` safely reclaims a finished dispatch (worktree-clean + branch-merged

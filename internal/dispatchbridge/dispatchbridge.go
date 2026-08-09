@@ -56,18 +56,19 @@ func eventsForPane(pane string, sinceTs int64) []dispatch.Ev {
 // DispatchIO builds the live tmux/events I/O for delivering to a pane.
 func DispatchIO(pane string) dispatch.IO {
 	return dispatch.IO{
-		Capture:    func() string { return tmux.CaptureFull(pane) },
-		Paste:      func(text string) error { return tmux.Paste(pane, text) },
-		Enter:      func() error { return tmux.SendKey(pane, "Enter") },
-		ClearDraft: func() error { return tmux.SendKey(pane, "C-u") },
-		InMode:     func() bool { return tmux.InMode(pane) },
-		ExitMode:   func() error { return tmux.ExitCopyMode(pane) },
-		Events:     func(since int64) []dispatch.Ev { return eventsForPane(pane, since) },
-		Now:        func() int64 { return time.Now().Unix() },
-		Sleep:      func() { time.Sleep(pollInterval) },
-		RecentSend: dispatch.RecentSend,
-		RecordSend: dispatch.RecordSend,
-		ForgetSend: dispatch.ForgetSend,
+		Capture:      func() string { return tmux.CaptureFull(pane) },
+		CaptureColor: func() string { return tmux.CaptureFullColor(pane) },
+		Paste:        func(text string) error { return tmux.Paste(pane, text) },
+		Enter:        func() error { return tmux.SendKey(pane, "Enter") },
+		ClearDraft:   func() error { return tmux.SendKey(pane, "C-u") },
+		InMode:       func() bool { return tmux.InMode(pane) },
+		ExitMode:     func() error { return tmux.ExitCopyMode(pane) },
+		Events:       func(since int64) []dispatch.Ev { return eventsForPane(pane, since) },
+		Now:          func() int64 { return time.Now().Unix() },
+		Sleep:        func() { time.Sleep(pollInterval) },
+		RecentSend:   dispatch.RecentSend,
+		RecordSend:   dispatch.RecordSend,
+		ForgetSend:   dispatch.ForgetSend,
 	}
 }
 

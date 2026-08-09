@@ -94,10 +94,17 @@ type fakeIO struct {
 	preDraft string
 }
 
-// io is the seam DELIVER sees: the fixture's frames behind the PRE-PASTE frame that
-// Deliver's draft guard reads before it pastes anything.
+// io is the seam DELIVER sees: the fixture's frames behind the PRE-PASTE frame(s) that
+// Deliver's draft guard reads before it pastes anything. An EMPTY box is settled by one
+// read; a non-empty one is re-read to confirm across two frames (a single frame
+// mid-repaint can show a phantom), so the fake serves exactly as many pre-frames as the
+// guard consumes.
 func (f *fakeIO) io() IO {
-	return f.ioWith(append([]string{boxDraft(f.preDraft)}, f.caps...))
+	pre := []string{boxDraft(f.preDraft)}
+	if strings.TrimSpace(f.preDraft) != "" {
+		pre = append(pre, boxDraft(f.preDraft))
+	}
+	return f.ioWith(append(pre, f.caps...))
 }
 
 // rawIO serves the fixture's frames verbatim — for unit-testing confirmPaste and the
@@ -1118,5 +1125,55 @@ func TestDeliver_HookLessFragmentStillClearsAndRetries(t *testing.T) {
 		PasteRetries: 1, PasteSettle: 1}, taskText)
 	if f.clearCalls == 0 {
 		t.Error("a hook-less agent has no receipt — the fragment retry must still clear")
+	}
+}
+
+// The draft guard must read the COLOR capture, like every other "is there an unsubmitted
+// draft?" caller (region.go says so explicitly). On a PLAIN capture the faint markers are
+// gone, so Claude Code's dim suggested-next-command GHOST text is indistinguishable from a
+// typed draft — and v0.46.2 shipped exactly that: a live agent pane (%7) whose box was
+// EMPTY read back "把评论里 273 改成 265" and refused a legitimate send.
+func TestDeliver_GhostTextIsNotADraft(t *testing.T) {
+	const ghost = "\x1b[2mrun the tests again\x1b[0m" // faint = the agent's suggestion
+	f := &fakeIO{caps: []string{boxEmpty("me: " + taskText)},
+		evs: []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}}}
+	io := f.io()
+	io.CaptureColor = func() string { return boxDraft(ghost) }
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	if r.State == StateRefusedDraft {
+		t.Fatalf("faint ghost text is the agent's suggestion, not a draft; got %+v", r)
+	}
+	if !r.Delivered {
+		t.Errorf("the send should have gone through, got %+v", r)
+	}
+}
+
+// …and real, normal-brightness input in the same position still stops it.
+func TestDeliver_RealDraftInAColorCaptureStillRefuses(t *testing.T) {
+	f := &fakeIO{caps: []string{boxEmpty("")}}
+	io := f.io()
+	io.CaptureColor = func() string { return boxDraft("what I was typing") }
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	if r.State != StateRefusedDraft {
+		t.Fatalf("want refused-draft, got %+v", r)
+	}
+}
+
+// One frame is not enough evidence to refuse: a pane caught mid-repaint can show a phantom
+// draft, and a refusal — unlike the wake channel's queue-and-retry — cannot be taken back.
+func TestDeliver_DraftGuardNeedsTwoAgreeingFrames(t *testing.T) {
+	frames := []string{boxDraft("phantom"), boxEmpty("")} // settles empty on the second read
+	i := 0
+	f := &fakeIO{caps: []string{boxEmpty("me: " + taskText)},
+		evs: []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}}}
+	io := f.io()
+	io.CaptureColor = func() string {
+		s := frames[min(i, len(frames)-1)]
+		i++
+		return s
+	}
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	if r.State == StateRefusedDraft {
+		t.Fatalf("a single-frame phantom must not refuse a send; got %+v", r)
 	}
 }
