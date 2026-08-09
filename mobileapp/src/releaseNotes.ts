@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.48.1',
+    en: [
+      'A conversation that looks empty now explains itself: a session started over with /clear or /new says which moment it starts from, and points at Activity for the record from before. A wiped supervisor history used to read as a broken app.',
+      'The What\'s New card you are reading scrolls properly — it used to barely move — and now carries the gtmux mark and a single version chip instead of printing the version twice.',
+      'Diff appears only where it can work: a pane sitting in a git repository offers it, and one outside a repository no longer shows a control that could only fail.',
+      'Needs gtmux 0.48.1 on the Mac for the cleared-conversation notice; the rest works with what you have.',
+    ],
+    zh: [
+      '看起来空白的会话现在会自己交代来龙去脉：以 /clear 或 /new 重新开始的会话会说明本轮从哪一刻起算，并指向「动态」查看更早的记录。以前中控的历史被清空，看上去就像 app 坏了。',
+      '你正在读的这张「更新内容」卡片能正常滚动了 —— 以前几乎推不动 —— 并且带上了 gtmux 标识，版本号只显示一次，不再重复。',
+      'Diff 只在能用的地方出现：位于 git 仓库里的 pane 才提供它，不在仓库里的 pane 不再显示一个注定失败的按钮。',
+      '「会话已清空」这条提示需要 Mac 端升级到 gtmux 0.48.1；其余改动用现在的版本就能看到。',
+    ],
+  },
+  {
     version: '0.47.0',
     en: [
       'What\'s new: after an update the app tells you what changed — every version you skipped, not just the latest. Read it again any time from Settings.',

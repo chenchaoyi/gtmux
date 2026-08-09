@@ -142,6 +142,37 @@ if [ -f "$NOTES_TS" ] && [ -f "$NOTES_GEN" ]; then
   fi
 fi
 
+# ── …and a stamped version that CHANGED the app must say what changed ─────────
+#
+# The check above enforces CONSISTENCY (the generated file matches the archive). It was
+# green on 2026-08-09 while the app shipped 0.48.0 with three user-visible changes and no
+# notes for any of them: the commander updated, opened What's New, and saw 0.47.0 and
+# 0.45.13 — every version except the one being run. Consistency is not COVERAGE.
+#
+# The rule: the stamped version may legitimately have no notes of its own — the app version
+# follows the gtmux tag, so most stamps cross a CLI-only release the app never shipped, and
+# repeating the previous bullets under a second heading is worse than saying nothing. That
+# is true ONLY while the app itself is unchanged. `<newest>.srchash` records the app the
+# newest notes describe; if the live sources no longer hash to it, the skip is not a
+# CLI-only crossing, it is a release with nothing to say for itself.
+#
+# Fails OPEN on what it cannot establish (no archive, no recorded hash — every entry
+# written before this gate existed): a gate that guesses is worse than one that abstains.
+APP_VER_TS="mobileapp/src/version.ts"
+HASH_SH="mobileapp/scripts/appsrc-hash.sh"
+if [ -f "$APP_VER_TS" ] && [ -f "$HASH_SH" ]; then
+  stamped="$(sed -nE "s/.*APP_VERSION = '([^']*)'.*/\1/p" "$APP_VER_TS")"
+  newest="$(ls mobileapp/release-notes/*.en.txt 2>/dev/null |
+    sed -e 's|.*/||' -e 's|\.en\.txt$||' | sort -Vr | head -1)"
+  recorded="mobileapp/release-notes/${newest}.srchash"
+  if [ -n "$stamped" ] && [ -n "$newest" ] && [ "$stamped" != "$newest" ] && [ -f "$recorded" ]; then
+    if [ "$(bash "$HASH_SH")" != "$(cat "$recorded")" ]; then
+      note "mobileapp is stamped $stamped but the newest release notes are $newest, and the app has CHANGED since those notes — write mobileapp/fastlane/metadata/*/release_notes.txt for $stamped, then re-run mobileapp/scripts/set-version.sh"
+      fail=1
+    fi
+  fi
+fi
+
 if [ "$fail" = 0 ]; then
   note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; mobile release notes generated"
 else
