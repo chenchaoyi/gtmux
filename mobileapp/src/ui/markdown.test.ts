@@ -50,7 +50,49 @@ describe('parseBlocks', () => {
 
   it('parses ordered lists', () => {
     const b = parseBlocks('1. first\n2. second');
-    expect(b[0]).toEqual({t: 'ol', items: [[{t: 'text', s: 'first'}], [{t: 'text', s: 'second'}]]});
+    expect(b[0]).toEqual({t: 'ol', start: 1, items: [[{t: 'text', s: 'first'}], [{t: 'text', s: 'second'}]]});
+  });
+
+  // The bug behind "every item renders as 1." (reported 2026-08-09 against a chat message
+  // whose terminal original read 1, 2, 3, 4, 5): an item's wrapped prose ENDED the list, so
+  // each numbered line became its own single-item block and the renderer's `i + 1` restarted
+  // at 1 every time. A list item owns its continuation lines.
+  it('a list item absorbs its continuation lines instead of ending the list', () => {
+    const b = parseBlocks('1. first item\n   wrapped prose under it\n2. second item\n3. third');
+    expect(b).toHaveLength(1);
+    expect(b[0]).toEqual({
+      t: 'ol',
+      start: 1,
+      items: [
+        [{t: 'text', s: 'first item wrapped prose under it'}],
+        [{t: 'text', s: 'second item'}],
+        [{t: 'text', s: 'third'}],
+      ],
+    });
+  });
+
+  it('bulleted items absorb continuations too', () => {
+    const b = parseBlocks('- first\n  more of first\n- second');
+    expect(b).toHaveLength(1);
+    expect(b[0]).toEqual({
+      t: 'ul',
+      items: [[{t: 'text', s: 'first more of first'}], [{t: 'text', s: 'second'}]],
+    });
+  });
+
+  // A list that genuinely starts at 3 renders 3, 4, 5 — the renderer counts from `start`.
+  it('keeps the first item\'s number as the start', () => {
+    const b = parseBlocks('3. third\n4. fourth');
+    expect(b[0]).toEqual({t: 'ol', start: 3, items: [[{t: 'text', s: 'third'}], [{t: 'text', s: 'fourth'}]]});
+  });
+
+  // Continuation must not swallow the NEXT block — a blank line, a heading, a fence or a
+  // table after an item all still end the list.
+  it('a block starter after an item ends the list', () => {
+    expect(parseBlocks('1. only\n\na separate paragraph').map(x => x.t)).toEqual(['ol', 'p']);
+    expect(parseBlocks('1. only\n## a heading').map(x => x.t)).toEqual(['ol', 'h']);
+    expect(parseBlocks('1. only\n```\ncode\n```').map(x => x.t)).toEqual(['ol', 'code']);
+    expect(parseBlocks('- a\n1. b').map(x => x.t)).toEqual(['ul', 'ol']);
   });
 
   it('parses a GitHub pipe table with alignment and inline cells', () => {

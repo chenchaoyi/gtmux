@@ -22,7 +22,10 @@ export type Block =
   | {t: 'p'; spans: Inline[]}
   | {t: 'code'; lang: string; text: string}
   | {t: 'ul'; items: Inline[][]}
-  | {t: 'ol'; items: Inline[][]}
+  // start is the FIRST item's number, so a list that begins at 3 renders 3, 4, 5 —
+  // and, more importantly, a list the parser had to split still counts on from where
+  // it left off instead of restarting at 1.
+  | {t: 'ol'; items: Inline[][]; start: number}
   | {t: 'quote'; spans: Inline[]}
   | {t: 'table'; align: Align[]; header: Inline[][]; rows: Inline[][][]}
   | {t: 'hr'};
@@ -98,6 +101,23 @@ function isTableStart(lines: string[], i: number): boolean {
 }
 
 // parseBlocks turns Markdown source into a flat list of blocks (line-based).
+// isLazyContinuation reports whether lines[i] continues the list item above it: any
+// non-blank line that does not itself start a block. Kept beside the parser because the
+// set of "block starters" it negates must stay in step with the branches above it.
+function isLazyContinuation(lines: string[], i: number): boolean {
+  const l = lines[i];
+  return (
+    l.trim() !== '' &&
+    !/^\s*```/.test(l) &&
+    !HR.test(l) &&
+    !HEADING.test(l) &&
+    !QUOTE.test(l) &&
+    !BULLET.test(l) &&
+    !ORDERED.test(l) &&
+    !isTableStart(lines, i)
+  );
+}
+
 export function parseBlocks(src: string): Block[] {
   const lines = src.replace(/\r\n/g, '\n').split('\n');
   const blocks: Block[] = [];
@@ -141,22 +161,29 @@ export function parseBlocks(src: string): Block[] {
       blocks.push({t: 'quote', spans: parseInline(q.join(' '))});
       continue;
     }
-    if (BULLET.test(line)) {
+    if (BULLET.test(line) || ORDERED.test(line)) {
+      // One branch for both list kinds, because the thing that was broken is shared: an
+      // item's CONTINUATION lines (the wrapped prose under "1. …") used to end the list.
+      // Every item then became its own single-item block, so an ordered list rendered as
+      // "1." over and over — reported against a chat message whose terminal original read
+      // 1, 2, 3, 4, 5 (2026-08-09).
+      const ordered = ORDERED.test(line);
+      const marker = ordered ? ORDERED : BULLET;
+      const start = ordered ? parseInt(line.match(/\d+/)?.[0] ?? '1', 10) : 1;
       const items: Inline[][] = [];
-      while (i < lines.length && BULLET.test(lines[i])) {
-        items.push(parseInline(lines[i].replace(BULLET, '')));
+      while (i < lines.length && marker.test(lines[i])) {
+        const parts = [lines[i].replace(marker, '')];
         i++;
+        // Lazy continuation, as CommonMark defines it: a following line that starts no
+        // block of its own belongs to the item, indented or not. Only a blank line, a new
+        // item, or another block starter ends it.
+        while (i < lines.length && isLazyContinuation(lines, i)) {
+          parts.push(lines[i].trim());
+          i++;
+        }
+        items.push(parseInline(parts.join(' ')));
       }
-      blocks.push({t: 'ul', items});
-      continue;
-    }
-    if (ORDERED.test(line)) {
-      const items: Inline[][] = [];
-      while (i < lines.length && ORDERED.test(lines[i])) {
-        items.push(parseInline(lines[i].replace(ORDERED, '')));
-        i++;
-      }
-      blocks.push({t: 'ol', items});
+      blocks.push(ordered ? {t: 'ol', items, start} : {t: 'ul', items});
       continue;
     }
     if (isTableStart(lines, i)) {

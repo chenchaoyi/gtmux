@@ -40,6 +40,7 @@ import {DiffModal} from '../ui/DiffModal';
 import {agentLabel} from './PaneBrowserScreen';
 import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
+import {isSplitCanvas} from '../ui/layout';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
 // either mode) so switching modes never jumps the text size. Middle = default.
@@ -91,11 +92,12 @@ export function DetailView({
 }) {
   const {client, agents, conn, isGuest, inputPanes, demo} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
-  // ≥768 means we're embedded in the iPad split-view's main pane (never a narrow
-  // phone). Constrain content so the chat/segmented don't stretch across ~1000pt,
-  // and drop the connection chip the sidebar already shows.
-  const {width} = useWindowDimensions();
-  const isWide = width >= 768;
+  // A split canvas means we're embedded in the iPad split-view's main pane (never a
+  // phone, in either orientation — see isSplitCanvas). Constrain content so the
+  // chat/segmented don't stretch across ~1000pt, and drop the connection chip the sidebar
+  // already shows.
+  const {width, height} = useWindowDimensions();
+  const isWide = isSplitCanvas(width, height);
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -415,9 +417,12 @@ export function DetailView({
       style={[styles.safe, {backgroundColor: backdrop}]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar hidden={fullscreen} />
-      {/* keep the top safe-area inset even in full-screen so the floating control
-          isn't hidden under the notch / Dynamic Island */}
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Keep the top safe-area inset even in full-screen so the floating control isn't
+          hidden under the notch / Dynamic Island — and keep the HORIZONTAL ones too: in
+          landscape the notch is on a SIDE, and with only the top edge applied the terminal
+          and the chat both ran underneath it. Horizontal insets are 0 in portrait, so this
+          is a landscape-only change. */}
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       {/* header: back · badge · title/sub. Auto-collapses to reclaim space while you
           browse history/scrollback; reveals on flicking back to the live tail. */}
       {!fullscreen && (
@@ -610,14 +615,16 @@ export function DetailView({
           hundreds of <Text> nodes — that was the lag). Each is lazily mounted. */}
       <View style={styles.body}>
       {seenChat && (
-        <View style={[styles.layer, mode === 'chat' ? styles.layerOn : styles.layerOff]} pointerEvents={mode === 'chat' ? 'auto' : 'none'}>
+        <View
+          style={[styles.layer, fullscreen && styles.layerFs, mode === 'chat' ? styles.layerOn : styles.layerOff]}
+          pointerEvents={mode === 'chat' ? 'auto' : 'none'}>
           {chatEl}
         </View>
       )}
       {seenTerm && (
       /* pane screen (colored) — native RN <Text> renderer (selectable, no keyboard) */
       <View
-        style={[styles.layer, mode === 'terminal' ? styles.layerOn : styles.layerOff]}
+        style={[styles.layer, fullscreen && styles.layerFs, mode === 'terminal' ? styles.layerOn : styles.layerOff]}
         pointerEvents={mode === 'terminal' ? 'auto' : 'none'}
         testID={TestIds.detail.pane}>
         {termEl}
@@ -778,6 +785,10 @@ function FsBtn({label, onPress, testID}: {label: string; onPress: () => void; te
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
+// fsTopInset clears the floating full-screen exit pill: its 8pt top offset, ~32pt of
+// height, and a small gap. Content in full-screen starts below it.
+const fsTopInset = 46;
+
 const styles = StyleSheet.create({
   safe: {flex: 1},
   header: {
@@ -837,6 +848,12 @@ const styles = StyleSheet.create({
   // Stacked, always-laid-out mode layers (see the body comment). Toggling opacity/
   // zIndex never relayouts — that's what makes switching instant after first mount.
   layer: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
+  // In full-screen the exit pill FLOATS over the content, which meant the top line was
+  // permanently under it — tolerable in portrait, plainly wrong in landscape where the
+  // whole reading area is ~390pt tall (user report, 2026-08-09). The content starts below
+  // the pill instead. It costs ~46pt of the reading space §"全屏模式 = 阅读态" maximises,
+  // and that is the right trade: space you can see beats space that hides a line.
+  layerFs: {top: fsTopInset},
   layerOn: {opacity: 1, zIndex: 1},
   layerOff: {opacity: 0, zIndex: 0},
   termWrap: {flex: 1},
