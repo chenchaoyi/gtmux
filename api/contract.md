@@ -79,6 +79,8 @@ no tmux server is running. A guest is filtered to its view allowlist by the same
 | `active` `in_mode` | bool | the window's active pane / in copy-mode (input swallowed) |
 | `tier` | string | `agent` (a coding-agent pane) \| `plain` (shell/editor/other) |
 | `agent` | string? | display name when `tier==agent` |
+| `icon` | string? | identity-icon hint when `tier==agent` |
+| `project` `branch` | string? | git identity of `cwd`, on EVERY tier — repo-root basename and current branch (or short SHA when detached); both absent outside a repo. A client reads `branch` to know the pane HAS a repo: the phone offers its Diff control only then, since `GET /api/diff` returns `""` for a non-repo cwd |
 
 ### `GET /api/pane?id=%N` — read a pane's screen (read-only)
 

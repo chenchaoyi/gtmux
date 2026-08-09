@@ -58,6 +58,10 @@ export interface PaneRow {
   tier: 'agent' | 'plain';
   agent?: string;
   icon?: string; // official-icon hint for an agent pane → the browser avatar (empty for plain)
+  // Git identity of the pane's cwd, on EVERY tier. `branch` is how a surface knows the
+  // pane has a repo at all — the Diff control is offered only then.
+  project?: string;
+  branch?: string;
 }
 
 // paneRowToAgent adapts a PaneRow into an Agent so a plain (non-agent) pane can open
@@ -76,7 +80,11 @@ export function paneRowToAgent(r: PaneRow): Agent {
     latest: false,
     activity: false,
     source: 'tmux',
+    // `project` here is the pane's CWD, which is what the browser row displays — not the
+    // repo name the radar puts in the same field. `branch` IS the git one, on every tier,
+    // and is how a surface knows the pane even has a repo.
     project: r.cwd,
+    branch: r.branch || undefined,
     // an agent pane shows its OFFICIAL icon (via /api/icon) like the radar; a plain
     // pane has none → AgentAvatar falls back to the $_ monogram.
     icon: r.tier === 'agent' ? r.icon : undefined,

@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary, serverModeNeedsAttention} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -257,5 +257,27 @@ describe('server mode', () => {
       platform: {ok: true, verified: true},
     };
     expect(serverModeNeedsAttention(minimal)).toBe(false);
+  });
+});
+
+// A plain pane's git identity reaches the app, which is what lets a surface gate on it:
+// the Diff control is offered only when the pane's cwd IS a repo, since /api/diff returns
+// nothing outside one.
+describe('paneRowToAgent git identity', () => {
+  const row = (extra: object) =>
+    ({pane_id: '%1', loc: 's:0.0', session: 's', window: '0', pane: '0', command: 'bash', tier: 'plain' as const, ...extra});
+
+  it('carries branch from a plain pane in a repo', () => {
+    expect(paneRowToAgent(row({cwd: '/w/repo', branch: 'main', project: 'repo'})).branch).toBe('main');
+  });
+
+  it('leaves branch undefined outside a repo', () => {
+    expect(paneRowToAgent(row({cwd: '/tmp'})).branch).toBeUndefined();
+  });
+
+  // `project` on a browser row stays the CWD (what the row displays), NOT the repo name
+  // the radar puts in the same field — the two surfaces mean different things by it.
+  it('keeps project as the cwd for display', () => {
+    expect(paneRowToAgent(row({cwd: '/w/repo', project: 'repo'})).project).toBe('/w/repo');
   });
 });

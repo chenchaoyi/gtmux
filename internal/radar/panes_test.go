@@ -2,6 +2,8 @@ package radar
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -85,4 +87,44 @@ func TestPanesJSONBytes_AlwaysArray(t *testing.T) {
 			t.Fatal("output must decode as a JSON array")
 		}
 	})
+}
+
+// Every tier carries the git identity of its cwd, not just agent rows. A surface reads
+// `branch` to know the pane HAS a repo at all — the phone offers its Diff control only
+// then, because `GET /api/diff` returns "" for a non-repo cwd and an ungated button
+// opened an empty sheet. Plain panes are exactly where someone does git by hand, so
+// this is the tier that most needed the answer and was the one not being asked.
+func TestGatherPanes_GitIdentityOnEveryTier(t *testing.T) {
+	repo := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(repo, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, ".git", "HEAD"), []byte("ref: refs/heads/trunk\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	bare := t.TempDir() // no .git anywhere above it
+
+	orig, origAgents := panesSource, agentPaneSet
+	defer func() { panesSource, agentPaneSet = orig, origAgents }()
+	panesSource = func() []string {
+		return []string{
+			"%1\ts\t0\t0\t" + repo + "\tbash\t\t1\t0",
+			"%2\ts\t0\t1\t" + bare + "\tbash\t\t0\t0",
+		}
+	}
+	agentPaneSet = func() (map[string]string, map[string]bool, map[string]string) {
+		return map[string]string{}, map[string]bool{}, map[string]string{}
+	}
+
+	rows := GatherPanes()
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2", len(rows))
+	}
+	if rows[0].Tier != "plain" || rows[0].Branch != "trunk" || rows[0].Project != filepath.Base(repo) {
+		t.Errorf("a plain pane in a repo must carry its git identity, got %+v", rows[0])
+	}
+	// …and a pane outside a repo says so with empty fields, which is what hides the control.
+	if rows[1].Branch != "" || rows[1].Project != "" {
+		t.Errorf("a pane outside a repo must carry no git identity, got %+v", rows[1])
+	}
 }
