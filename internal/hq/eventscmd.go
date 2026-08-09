@@ -140,6 +140,10 @@ func CmdEvents(args []string) int {
 	// is a SHORTCUT, not a complete picture: `important` is the escalation subset, and
 	// reconciling is the unfiltered `--since-seq` delta's job.
 	minRank := events.SeverityRank(minSeverity)
+	// Colour is decided ONCE, not per line: a terminal reader gets the attention grade in
+	// the same palette the wake lines use, and a pipe / file / --json consumer gets the
+	// bytes it always got (hq-signal-ergonomics §6).
+	color := i18n.ColorEnabled()
 	print := func(r events.Record) {
 		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
 			return
@@ -148,7 +152,7 @@ func CmdEvents(args []string) int {
 			b, _ := json.Marshal(r)
 			fmt.Println(string(b))
 		} else {
-			fmt.Println(events.Format(r))
+			fmt.Println(hqwake.GradeOfSeverity(r.Severity).Paint(events.Format(r), color))
 		}
 	}
 

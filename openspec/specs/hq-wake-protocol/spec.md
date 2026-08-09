@@ -132,13 +132,39 @@ entirely: no wake, no injection, no tokens. An accumulation burst threshold
 
 ### Requirement: Signal visual language for injected lines
 
-Every injected wake line SHALL open with the sigil `»` followed by
-`gtmux·<class>` and columnar fields separated by `│`, so signal traffic is
-visually distinct from conversational text in the HQ pane at a glance. The sigil
+Every injected wake line SHALL open with the sigil `»`, then an ATTENTION GRADE glyph in a
+fixed position, then `gtmux·<class>` and columnar fields separated by `│`, so signal
+traffic is visually distinct from conversational text in the HQ pane at a glance AND can be
+read by weight before it is read by words.
+
+The grade SHALL be a three-step scale — decision (needs the commander: irreversible,
+costly, or an explicit ask) · attention (a line is blocked or changed in a way worth
+knowing) · ledger (bookkeeping: recorded and pullable, zero interrupt value) — and SHALL be
+a PROJECTION of the class, defined in ONE place covering every declared class, never a
+second judgment about what fired. A class with no grade SHALL be a build failure. A
+compound class SHALL grade by its stem, the same rule the delivery priority follows.
+
+The grade glyphs SHALL meet the same encoding bar as the sigil and separator: they SHALL
+survive a POSIX/missing locale and a CJK-heavy font, and SHALL NOT be emoji. The scale
+SHALL be readable by SHAPE alone — where a surface adds colour it does so on top, and
+colour SHALL never be the only carrier.
+
+Anything that RECOGNIZES a gtmux-authored line (the delivery ack's batch id, the
+transcript's own-echo filter) SHALL match on the sigil, not on a literal `sigil + class`
+prefix: the grammar has grown once between them and may again, and a recognizer that
+silently stops matching turns HQ's own output into apparent user input, or re-sends every
+wake forever. The sigil
 and separators SHALL be chosen for encoding robustness (survive a missing/POSIX
 locale) and the format SHALL be pinned by a fixture test. Agent-authored content
 in the line (titles, goals, reply tails) SHALL remain quoted-and-labelled as
 DATA per the existing nudge-payload convention.
+
+#### Scenario: The grade leads the line
+
+- **WHEN** a decision-grade class (e.g. `waiting`) and a ledger-grade one (e.g. `unread`)
+  are delivered
+- **THEN** each line carries its grade's glyph immediately after the sigil, before the
+  class, and the class remains parseable behind it
 
 #### Scenario: A wake line is visually distinct
 
