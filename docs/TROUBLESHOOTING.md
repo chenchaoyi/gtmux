@@ -561,6 +561,26 @@ self-check instructions.
 
 ## Driving a pane (dispatch / `gtmux send`)
 
+### An "is there a draft?" check MUST read the COLOR capture (2026-08-09)
+**Symptom:** `gtmux send` refuses with "that pane has unsent text in its input box" against
+a pane whose box is visibly EMPTY. Shipped in v0.46.2, fixed in v0.46.3.
+**Root cause:** Claude Code renders its suggested-next-command as FAINT (SGR 2) ghost text
+inside the input box. `tmux capture-pane` WITHOUT `-e` strips the SGR markers, so the ghost
+comes back as ordinary text and every "is the box empty?" caller reads it as a half-typed
+draft. Measured live on pane `%7`: the plain read returned `把评论里 273 改成 265`, the color
+read correctly returned nothing.
+**Rule:** a caller asking *"is there an unsubmitted draft?"* uses `dispatch.DraftOfColored`
+on a `tmux.CaptureFullColor` capture — never plain `SplitInputRegion`. This is written at
+`internal/dispatch/region.go`'s `DraftOfColored` doc comment, which names the exact failure
+("a stuck `waiting`, a suppressed `done`, a held HQ nudge") — the draft guard became its
+fourth instance. Callers matching a SPECIFIC payload (Deliver's verify, the wake-ack `#id`)
+are exempt: a ghost can never equal their target.
+**Also:** refuse only on TWO agreeing frames. One frame mid-repaint can show a phantom, and
+a refusal — unlike the wake channel's queue-and-retry — cannot be taken back.
+**Must-check when adding any such gate:** run it against a LIVE Claude pane that is showing
+its ghost suggestion, not just against test fixtures. Fixtures carry no SGR, so
+`DraftOfColored` and `SplitInputRegion` agree on them and the bug is invisible in CI.
+
 ### One instruction pasted 2–3× and submitted in pieces
 **Symptom:** a dispatched message appears in the agent's box twice or three times, is
 submitted line by line (the tail lines land as "queued messages"), the Enter looks

@@ -57,17 +57,21 @@ type Ev struct {
 // tests. Every field that Deliver may call must be non-nil except the optional
 // ClearDraft / Events / RecentSend / RecordSend (guarded before use).
 type IO struct {
-	Capture    func() string            // full-screen capture (with scrollback margin)
-	Paste      func(text string) error  // load-buffer + paste-buffer (no Enter)
-	Enter      func() error             // submit
-	ClearDraft func() error             // clear the input draft (C-u); optional
-	InMode     func() bool              // pane is in tmux copy/view-mode (input swallowed); optional
-	ExitMode   func() error             // drop out of copy/view-mode before typing; optional
-	Events     func(sinceTs int64) []Ev // recent lifecycle events for this pane; optional
-	Now        func() int64             // unix seconds (injectable clock)
-	Sleep      func()                   // wait one poll interval (prod sleeps; test advances)
-	RecentSend func(pane string) (string, int64)
-	RecordSend func(pane, hash string, ts int64)
+	Capture func() string // full-screen capture (with scrollback margin)
+	// CaptureColor is the COLOR capture (`capture-pane -e`) the draft guard reads, so
+	// Claude Code's FAINT suggested-next-command ghost text is excluded. Optional; falls
+	// back to Capture, which cannot tell the ghost from a typed draft.
+	CaptureColor func() string
+	Paste        func(text string) error  // load-buffer + paste-buffer (no Enter)
+	Enter        func() error             // submit
+	ClearDraft   func() error             // clear the input draft (C-u); optional
+	InMode       func() bool              // pane is in tmux copy/view-mode (input swallowed); optional
+	ExitMode     func() error             // drop out of copy/view-mode before typing; optional
+	Events       func(sinceTs int64) []Ev // recent lifecycle events for this pane; optional
+	Now          func() int64             // unix seconds (injectable clock)
+	Sleep        func()                   // wait one poll interval (prod sleeps; test advances)
+	RecentSend   func(pane string) (string, int64)
+	RecordSend   func(pane, hash string, ts int64)
 	// ForgetSend drops a pane's interlock record. Called when a delivery ends FAILED, so
 	// the interlock cannot refuse the retry of a send that never landed; optional.
 	ForgetSend func(pane string)
@@ -311,8 +315,38 @@ func draftBlocked(io IO, opts Opts, text string) (bool, string) {
 	if opts.ClobberDraft {
 		return false, ""
 	}
-	_, draft, structured := SplitInputRegion(io.Capture())
-	if !structured || normalizeSpace(draft) == "" || draftHasDelivery(draft, text) {
+	// Read the draft the way every OTHER "is there an unsubmitted draft?" caller does, and
+	// for the reason region.go spells out: on a PLAIN capture the faint markers are gone,
+	// so Claude Code's dim suggested-next-command GHOST text is indistinguishable from a
+	// typed draft. Reading plain here refused real sends to an idle Claude pane whose box
+	// was in fact empty (seen live on %7: plain read "把评论里 273 改成 265", the color read
+	// correctly read nothing). DraftOfColored is identity on plain text, so a caller with
+	// no color capture wired degrades rather than breaks.
+	read := func() (string, bool) {
+		capture := io.CaptureColor
+		if capture == nil {
+			capture = io.Capture
+		}
+		return DraftOfColored(capture())
+	}
+	held := func() (string, bool) {
+		draft, structured := read()
+		// An unlocatable input region is NOT a draft to protect: a plain shell has no
+		// composer, and post-submit verification is the judge there. (The nudge channel
+		// makes the opposite call because it can queue and retry; a refusal cannot.)
+		if !structured || normalizeSpace(draft) == "" || draftHasDelivery(draft, text) {
+			return "", false
+		}
+		return draft, true
+	}
+	if _, blocked := held(); !blocked {
+		return false, ""
+	}
+	// TWO frames must agree, the same discipline the wake channel's guard uses: one frame
+	// mid-repaint can show a phantom, and refusing a legitimate send is not free either.
+	io.Sleep()
+	draft, blocked := held()
+	if !blocked {
 		return false, ""
 	}
 	return true, "input box holds unsubmitted text: " + clampEvidence(draft)

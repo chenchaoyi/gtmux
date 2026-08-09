@@ -334,6 +334,12 @@ Two cases SHALL NOT be treated as a clobber: a draft that already holds THIS del
 idempotent re-send after a lost acknowledgement), and a pane with no locatable input region
 (a plain shell — there is no draft to protect).
 
+The draft SHALL be read from the COLOR capture, so text the agent renders FAINT — its
+suggested-next-command ghost, which is not input — is excluded; a plain capture cannot
+distinguish the two and refuses sends to panes whose box is in fact empty. The refusal
+SHALL require TWO agreeing reads: one frame caught mid-repaint can show a phantom, and a
+refusal cannot be taken back the way the wake channel's queue-and-retry can.
+
 The guard SHALL apply to every delivery path, verified and unverified alike, INCLUDING the
 phone's `POST /api/send` — a send from another device into a pane whose owner is typing is
 the case with no one present to undo it. Its override SHALL be a DISTINCT option from the
@@ -346,6 +352,12 @@ unprotected. The operator's `gtmux send --force` SHALL waive both.
 - **WHEN** a delivery targets a pane whose input box holds text the user has not submitted
 - **THEN** nothing is pasted, no Enter is sent, and the delivery is refused as
   `refused-draft` with the draft quoted back
+
+#### Scenario: The agent's own ghost text is not a draft
+
+- **WHEN** a pane's input box is empty but the agent renders a FAINT suggested-next-command
+  where a draft would be
+- **THEN** the delivery proceeds — the suggestion is not input
 
 #### Scenario: Our own re-send is not a clobber
 
