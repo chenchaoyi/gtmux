@@ -552,3 +552,42 @@ them. A version with nothing archived SHALL likewise show nothing and record.
 
 - **WHEN** the user opens Settings → About
 - **THEN** the full archive can be opened again on demand
+
+### Requirement: The layout adapts to the canvas, in either orientation
+
+The two-column (sidebar + detail) layout SHALL be chosen by the window's WIDTH **and**
+HEIGHT, not width alone. A modern phone in landscape is wider than the width breakpoint and
+barely 400pt tall; giving it the tablet layout is the inverse of the rule that a tablet is
+not a big phone. The height threshold SHALL clear every tablet orientation and no phone.
+
+In FULL-SCREEN reading mode, the floating exit control SHALL NOT cover content: the content
+SHALL begin below it. This costs a little of the reading space full-screen exists to
+maximize, and that is the correct trade — space the reader can see beats space that hides a
+line, which is most acute in landscape where the whole reading area is a few hundred points
+tall.
+
+Safe-area insets SHALL be applied HORIZONTALLY as well as at the top, because in landscape
+the notch/Dynamic Island sits on a side; with only the top edge applied, the terminal and
+the transcript both render underneath it. (Horizontal insets are zero in portrait, so this
+affects landscape alone.)
+
+#### Scenario: A phone in landscape keeps the single-column layout
+
+- **WHEN** the window is wider than the split breakpoint but only a few hundred points tall
+  (a phone rotated to landscape)
+- **THEN** the stacked phone layout is used, not the tablet's sidebar-plus-detail
+
+#### Scenario: A tablet gets the split layout in both orientations
+
+- **WHEN** the window is a tablet canvas in portrait or landscape
+- **THEN** the two-column layout is used
+
+#### Scenario: The full-screen exit control never hides a line
+
+- **WHEN** the reader enters full-screen in either mode
+- **THEN** the content starts below the floating exit control rather than beneath it
+
+#### Scenario: Landscape content clears the notch
+
+- **WHEN** the device is in landscape with the notch on one side
+- **THEN** the content is inset horizontally so nothing renders under it

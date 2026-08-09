@@ -137,7 +137,7 @@ function BlockView({b, c, fs, sel, sc, ff}: {b: Block; c: MdColors; fs: number; 
         <View style={styles.block}>
           {b.items.map((item, i) => (
             <View key={i} style={styles.li}>
-              <Text style={[styles.bullet, {color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${i + 1}. ` : '• '}</Text>
+              <Text style={[styles.bullet, {color: c.dim, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{b.t === 'ol' ? `${b.start + i}. ` : '• '}</Text>
               <Text selectable={sel} selectionColor={sc} style={[styles.liText, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(item, c, fs)}</Text>
             </View>
           ))}

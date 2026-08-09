@@ -16,6 +16,7 @@ import {Agent} from './src/api/types';
 import {Splash} from './src/ui/Splash';
 import {WhatsNewModal} from './src/ui/WhatsNewModal';
 import {ReleaseNote} from './src/releaseNotes';
+import {isSplitCanvas} from './src/ui/layout';
 import {setupPush, reregisterKinds} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
@@ -77,11 +78,13 @@ function WhatsNew() {
   );
 }
 
-// RadarRoute picks the layout by width (MOBILE §5): a split-view (sidebar radar +
-// inline detail) on iPad / wide windows (≥ 768pt), else the stacked phone radar.
+// RadarRoute picks the layout by CANVAS (MOBILE §5): a split-view (sidebar radar +
+// inline detail) on an iPad-sized window, else the stacked phone radar. Height counts as
+// well as width — see isSplitCanvas: a phone in landscape is wide enough and nowhere near
+// tall enough.
 function RadarRoute(props: any) {
-  const {width} = useWindowDimensions();
-  return width >= 768 ? <SplitScreen {...props} /> : <RadarScreen {...props} />;
+  const {width, height} = useWindowDimensions();
+  return isSplitCanvas(width, height) ? <SplitScreen {...props} /> : <RadarScreen {...props} />;
 }
 
 // PushBridge wires APNs registration + tap deep-link once we have a client.
@@ -89,9 +92,9 @@ function RadarRoute(props: any) {
 function PushBridge({navRef}: {navRef: any}) {
   const {client, agents, isGuest} = useAgents();
   const {pushEnabled, pushKinds, servers, activeUrl, selectServer, pendingPane, setPendingPane, lang} = useApp();
-  const {width} = useWindowDimensions();
-  const wideRef = useRef(width >= 768);
-  wideRef.current = width >= 768;
+  const {width, height} = useWindowDimensions();
+  const wideRef = useRef(isSplitCanvas(width, height));
+  wideRef.current = isSplitCanvas(width, height);
   // A ref so setupPush's onRegister always reads the CURRENT kinds without the
   // main effect re-running (which would churn the native listeners).
   const kindsRef = useRef(kindsList(pushKinds));
