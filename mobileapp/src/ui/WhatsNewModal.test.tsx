@@ -40,10 +40,13 @@ describe('WhatsNewModal', () => {
     expect(occurrences(render([note('0.47.0', 2)]), '0.47.0')).toBe(1);
   });
 
-  test('several versions each get a heading, and the newest also fills the chip', () => {
+  // …and when the headings appear, the chip steps aside: printing the newest version
+  // twice, once in the chip and again as the first heading, is not structure but noise
+  // (seen on device, 2026-08-09).
+  test('several versions each get a heading, and none is named twice', () => {
     const tree = render([note('0.47.0', 1), note('0.46.0', 1)]);
-    expect(occurrences(tree, '0.47.0')).toBe(2); // chip + heading
-    expect(occurrences(tree, '0.46.0')).toBe(1); // heading only
+    expect(occurrences(tree, '0.47.0')).toBe(1);
+    expect(occurrences(tree, '0.46.0')).toBe(1);
   });
 
   // The fold is the "you skipped versions" affordance — it must name how many are behind it.
@@ -70,5 +73,39 @@ describe('WhatsNewModal', () => {
   test('renders the reader language, and its buttons', () => {
     expect(texts(render([note('1.0.0', 1)], 'zh'))).toEqual(expect.arrayContaining(['1.0.0 zh 1', '更新内容', '知道了']));
     expect(texts(render([note('1.0.0', 1)], 'en'))).toEqual(expect.arrayContaining(['1.0.0 en 1', "What's new", 'Got it']));
+  });
+});
+
+// The scroll bug, pinned structurally. The card used to be wrapped in the backdrop
+// Pressable (and itself be a Pressable, to stop taps falling through), so a touch was
+// claimed on START by the JS responder and the ScrollView never got the gesture: the card
+// scrolled in fits or not at all. The rule that fixes it is a rule about the TREE, so the
+// test is about the tree — no Pressable may be an ancestor of the ScrollView.
+describe('WhatsNewModal scrolling', () => {
+  test('no Pressable wraps the ScrollView', () => {
+    const tree = render([note('0.47.0', 20)]);
+    const scroll = tree.root.findByType(
+      require('react-native').ScrollView as never,
+    ) as {parent: {type: unknown; parent: unknown} | null};
+    for (let n = scroll.parent; n; n = n.parent as never) {
+      const name = typeof n.type === 'function' ? (n.type as {name?: string}).name : String(n.type);
+      expect(name).not.toBe('Pressable');
+    }
+  });
+
+  // …and the backdrop still dismisses, which is what the wrapping was for.
+  test('tapping the backdrop closes', () => {
+    let closed = false;
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <WhatsNewModal visible entries={[note('1.0.0', 1)]} pal={pal} lang="en" onClose={() => {
+          closed = true;
+        }} />,
+      );
+    });
+    const backdrop = tree!.root.findAll(n => n.props.accessibilityLabel === 'Close')[0];
+    act(() => backdrop.props.onPress());
+    expect(closed).toBe(true);
   });
 });

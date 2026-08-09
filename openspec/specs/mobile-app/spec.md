@@ -511,6 +511,17 @@ When the summary is capped:
 - the NEWEST version SHALL always be shown, even when it alone exceeds the cap;
 - the remainder SHALL be named with its count and expandable in place.
 
+The card SHALL carry the product's own identity rather than generic chrome — the pane-grid
+brand mark that is also the app icon, and versions set in the same monospace the terminal
+uses — and nothing beyond it: no section taxonomy, no accent fills, no animation. A version
+SHALL be named ONCE, so the header's version and the per-version headings never both print
+it.
+
+Nothing SHALL wrap the scrolling region in a pressable: a press responder taken on touch
+START prevents the scroll view from ever claiming the gesture, which makes the card scroll
+in fits or not at all. A dismiss-on-backdrop affordance SHALL therefore be a SIBLING behind
+the card, never an ancestor of it.
+
 The bullets SHALL be rendered in the reader's resolved language (the system/EN/中文
 setting), falling back to the other language when its own is absent — the same fallback the
 CLI makes between a tag's `user:` and `user-zh:` blocks — and the cap SHALL count the
@@ -547,6 +558,17 @@ them. A version with nothing archived SHALL likewise show nothing and record.
 - **WHEN** the reader's resolved language is Chinese
 - **THEN** the Chinese bullets are shown, falling back to the English ones only if the
   Chinese notes are absent
+
+#### Scenario: The card scrolls
+
+- **WHEN** the notes are longer than the card
+- **THEN** they scroll normally — no pressable is an ancestor of the scrolling region, so
+  the gesture is never stolen on touch start
+
+#### Scenario: A version is named once
+
+- **WHEN** several versions are reported and each carries a heading
+- **THEN** the header does not repeat the newest version's number
 
 #### Scenario: The notes stay readable after dismissal
 

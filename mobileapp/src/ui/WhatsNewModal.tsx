@@ -5,16 +5,19 @@
 // version) and folds the rest behind "show all", which expands the SAME card rather than
 // pushing a screen — the reader asked for more of what they are already looking at.
 //
-// Deliberately plain, per MOBILE §6: a title, the version, the bullets, one button. No
-// section taxonomy (NEW / ENHANCED / FIXED), no accent colour, no animation — a changelog
-// is read once and dismissed, and dressing it up is the marketing tone the design rules
-// rule out.
+// The card carries the product's own vocabulary rather than generic chrome: the pane-grid
+// BrandMark that is also the app icon, and versions set in Menlo, the same monospace the
+// terminal and the branch chips use. That is the whole of the decoration. MOBILE §6 rules
+// out the section taxonomy (NEW / ENHANCED / FIXED), accent fills and animation that
+// changelog cards usually reach for — a changelog is read once and dismissed, and dressing
+// it up is exactly the marketing tone the design rules forbid. Identity, not ornament.
 
 import React, {useState} from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {Lang} from '../i18n';
 import {ReleaseNote} from '../releaseNotes';
 import {capEntries, linesOf} from '../state/whatsnew';
+import {BrandMark} from './BrandMark';
 import {Palette} from './theme';
 
 export function WhatsNewModal({
@@ -36,40 +39,46 @@ export function WhatsNewModal({
 }) {
   const zh = lang === 'zh';
   const [expanded, setExpanded] = useState(showAll);
-  const {shown, omitted} = expanded
-    ? {shown: entries, omitted: 0}
-    : capEntries(entries, lang);
-  // Only worth naming versions when there is more than one — a single-version update is
-  // just "what's new", and a heading over the only group is noise.
+  const {shown, omitted} = expanded ? {shown: entries, omitted: 0} : capEntries(entries, lang);
+  // Version headings earn their place only when there are several. With one, the header
+  // chip already names it — printing it twice (as it did) is not structure, it is noise.
   const grouped = shown.length > 1;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      {/* Tap the scrim to dismiss as well as the button: a changelog must never be
-          something the reader has to hunt for a way out of. */}
-      <Pressable style={s.scrim} onPress={onClose} accessibilityLabel={zh ? '关闭' : 'Close'}>
-        {/* Stop taps inside the card from closing it (a tap on a bullet is not a dismiss). */}
-        <Pressable style={[s.card, {backgroundColor: pal.surface}]} onPress={() => {}}>
-          <View style={s.head}>
+      <View style={s.scrim}>
+        {/* The backdrop is a SIBLING behind the card, never an ancestor of it. As a parent
+            it claimed the touch on start and the ScrollView never got the gesture — the
+            card scrolled in fits or not at all (user report, 2026-08-09). Nothing may wrap
+            a ScrollView in a Pressable. */}
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityLabel={zh ? '关闭' : 'Close'}
+        />
+        <View style={[s.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+          <View style={[s.head, {borderBottomColor: pal.divider}]}>
+            <BrandMark size={19} neutral={pal.fg3} />
             <Text style={[s.title, {color: pal.fg}]}>{zh ? '更新内容' : "What's new"}</Text>
-            {shown.length > 0 && (
-              <Text style={[s.version, {color: pal.fg2, borderColor: pal.divider}]}>
-                {shown[0].version}
-              </Text>
+            <View style={s.spacer} />
+            {!grouped && shown.length > 0 && (
+              <Text style={[s.version, {color: pal.fg2, borderColor: pal.divider}]}>{shown[0].version}</Text>
             )}
           </View>
 
           <ScrollView style={s.body} contentContainerStyle={s.bodyPad} showsVerticalScrollIndicator={false}>
-            {shown.map(note => (
+            {shown.map((note, gi) => (
               <View key={note.version}>
                 {grouped && (
-                  <Text style={[s.group, {color: pal.fg3, borderBottomColor: pal.divider}]}>
-                    {note.version}
-                  </Text>
+                  <View style={[s.group, gi > 0 && s.groupGap]}>
+                    <Text style={[s.groupText, {color: pal.fg2}]}>{note.version}</Text>
+                    <View style={[s.groupRule, {backgroundColor: pal.divider}]} />
+                  </View>
                 )}
                 {linesOf(note, lang).map((line, i) => (
                   <View key={i} style={s.row}>
-                    <Text style={[s.bullet, {color: pal.fg3}]}>·</Text>
+                    {/* One cell of the pane grid: the brand's own unit, at bullet size. */}
+                    <View style={[s.bullet, {backgroundColor: pal.fg3}]} />
                     <Text style={[s.line, {color: pal.fg}]}>{line}</Text>
                   </View>
                 ))}
@@ -82,8 +91,8 @@ export function WhatsNewModal({
               style={({pressed}) => [s.btn, {borderTopColor: pal.divider}, pressed && {backgroundColor: pal.rowSelected}]}
               onPress={() => setExpanded(true)}
               accessibilityRole="button">
-              <Text style={[s.btnText, {color: pal.fg2}]}>
-                {zh ? `还有 ${omitted} 条 —— 全部显示` : `+${omitted} more — show all`}
+              <Text style={[s.btnText, s.btnQuiet, {color: pal.fg2}]}>
+                {zh ? `还有 ${omitted} 条 · 全部显示` : `+${omitted} more · show all`}
               </Text>
             </Pressable>
           )}
@@ -94,8 +103,8 @@ export function WhatsNewModal({
             accessibilityRole="button">
             <Text style={[s.btnText, {color: pal.fg}]}>{zh ? '知道了' : 'Got it'}</Text>
           </Pressable>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -104,18 +113,27 @@ const s = StyleSheet.create({
   scrim: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24},
   // maxHeight, not a fixed height: a one-bullet release gets a small card and a long
   // history scrolls, instead of either padding emptiness or running off the screen.
-  card: {width: '100%', maxWidth: 460, maxHeight: '80%', borderRadius: 14, overflow: 'hidden'},
-  head: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4},
-  title: {fontSize: 20, fontWeight: '700'},
-  version: {fontSize: 12, fontVariant: ['tabular-nums'], borderWidth: StyleSheet.hairlineWidth, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, overflow: 'hidden'},
+  card: {width: '100%', maxWidth: 460, maxHeight: '80%', borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
+  head: {flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 18, paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth},
+  title: {fontSize: 18, fontWeight: '700', letterSpacing: 0.2},
+  spacer: {flex: 1},
+  // Menlo for a version everywhere it appears — the same monospace the terminal, the
+  // branch chips and the HQ figures use. A version is a token, not prose.
+  version: {fontFamily: 'Menlo', fontSize: 11, borderWidth: StyleSheet.hairlineWidth, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3, overflow: 'hidden'},
   body: {flexGrow: 0},
-  bodyPad: {paddingHorizontal: 20, paddingTop: 12, paddingBottom: 18},
-  group: {fontSize: 12, fontVariant: ['tabular-nums'], letterSpacing: 0.5, marginTop: 6, marginBottom: 10, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth},
-  row: {flexDirection: 'row', marginBottom: 12},
-  bullet: {width: 14, fontSize: 15, lineHeight: 21},
+  bodyPad: {paddingHorizontal: 18, paddingTop: 14, paddingBottom: 16},
+  group: {flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 11},
+  groupGap: {marginTop: 18},
+  groupText: {fontFamily: 'Menlo', fontSize: 11},
+  groupRule: {flex: 1, height: StyleSheet.hairlineWidth},
+  row: {flexDirection: 'row', marginBottom: 13},
+  // A pane cell, not a typographic dot: 5pt, rounded like the BrandMark's cells, and
+  // nudged down to sit on the first line's optical centre.
+  bullet: {width: 5, height: 5, borderRadius: 1.5, marginTop: 8, marginRight: 11},
   // A changelog line WRAPS — it is prose, not a status row, so the CJK
   // ellipsis-truncation rule (which is about list rows) does not apply here.
-  line: {flex: 1, fontSize: 15, lineHeight: 21},
+  line: {flex: 1, fontSize: 15, lineHeight: 22},
   btn: {alignItems: 'center', paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth},
   btnText: {fontSize: 16, fontWeight: '600'},
+  btnQuiet: {fontSize: 14, fontWeight: '500'},
 });
