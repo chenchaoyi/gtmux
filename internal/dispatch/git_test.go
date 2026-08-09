@@ -354,3 +354,81 @@ func TestPrMergeState_UnavailableIsNotNo(t *testing.T) {
 		t.Errorf("the error must say it could not confirm and name the way out, got %q", err)
 	}
 }
+
+// `git branch -d` runs its OWN merge check, and that check only accepts an ancestor of
+// HEAD/upstream — it cannot see a SQUASH merge. So DeleteBranch's force flag is not just
+// "the user said --abandon": it is how a caller whose gate already established the merge
+// (BranchMerged, which accepts squash-equivalence and gh's PR state) stops git's weaker
+// re-check from silently overruling it. Without this, `gtmux reap` passed its gate and
+// the branch survived anyway, on every squash-merged branch — the repo's normal case.
+func TestDeleteBranch_SquashMergedNeedsForce(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	run := func(dir string, args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		cmd.Env = gitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "-C", repo, "init", "-b", "main").CombinedOutput(); err != nil {
+		t.Skipf("git init -b unsupported: %v\n%s", err, out)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "f"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	run(repo, "add", ".")
+	run(repo, "commit", "-m", "init")
+	run(repo, "checkout", "-b", "feat/x")
+	if err := os.WriteFile(filepath.Join(repo, "g"), []byte("y"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	run(repo, "add", ".")
+	run(repo, "commit", "-m", "work")
+	run(repo, "checkout", "main")
+	run(repo, "merge", "--squash", "feat/x")
+	run(repo, "commit", "-m", "squash: feat/x")
+
+	// Unforced: git refuses, and the error must CARRY git's reason. `exit status 1`
+	// alone is what let this failure hide — it says nothing a user could act on.
+	err := DeleteBranch(repo, "feat/x", false)
+	if err == nil {
+		t.Fatal("`git branch -d` should refuse a squash-merged branch (it is an ancestor of nothing)")
+	}
+	if !strings.Contains(err.Error(), "not fully merged") {
+		t.Errorf("the error must carry git's own reason, got %q", err)
+	}
+
+	// Forced (what a passed merge gate authorizes): actually gone.
+	if err := DeleteBranch(repo, "feat/x", true); err != nil {
+		t.Fatalf("forced delete: %v", err)
+	}
+	if exec.Command("git", "-C", repo, "rev-parse", "--verify", "--quiet", "refs/heads/feat/x").Run() == nil {
+		t.Fatal("feat/x survived a forced delete")
+	}
+}
+
+// DeleteBranch must accept an ALREADY-RESOLVED main repo, not only a linked worktree —
+// reap has to resolve it before removing the worktree (afterwards there is no directory
+// left to ask), so mainRepo has to be idempotent on its own output.
+func TestDeleteBranch_AcceptsAnAlreadyResolvedRepo(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "-C", repo, "init", "-b", "main").CombinedOutput(); err != nil {
+		t.Skipf("git init -b unsupported: %v\n%s", err, out)
+	}
+	if resolved := mainRepo(mainRepo(repo)); resolved != mainRepo(repo) {
+		t.Fatalf("mainRepo is not idempotent: %q vs %q", resolved, mainRepo(repo))
+	}
+	// And a path that no longer exists resolves to nothing useful — which is exactly
+	// why the resolution cannot be deferred until after the worktree is removed.
+	gone := filepath.Join(t.TempDir(), "removed-worktree")
+	if got := mainRepo(gone); got != gone {
+		t.Errorf("mainRepo(%q) = %q; a vanished worktree can only fall back to itself", gone, got)
+	}
+}

@@ -619,6 +619,36 @@ self-check instructions.
 
 ---
 
+## Reclaiming a dispatch (`gtmux reap`)
+
+### `reap` 删了 session + worktree，分支还在，而且**一个字都没说**（2026-08-09）
+**Symptom:** `gtmux reap <id>` 输出 `✓ reaped:` 两行（killed session / removed worktree），
+**没有 `deleted branch` 那一行，也没有任何解释**，退出码 0。分支原地不动。发生在 v0.48.1 上，
+也就是 PR #746（"a merged branch stops being reported as unmerged"）已经在生效路径上之后。
+**Root cause —— 三个缺陷叠在一起，都在 gate 的下游：**
+1. `planAndReap` 先 `removeWorktree`，再调 `deleteBranch(t.Worktree, …)`；`DeleteBranch`
+   要用 `mainRepo(wt)` 找主仓库，而它是 **从 wt 目录里问 git** 的 —— 目录刚被删掉，于是
+   `git -C <已删目录> branch -d` → `fatal: cannot change to '<path>'` → exit 128。
+   （`spawn` 的 `rollbackWorktree` 早就写对了：`MainRepo` 就是**为这个顺序**导出的，注释里
+   写着 "resolve BEFORE removal"。reap 从来没采用。）
+2. 就算路径对了，`git branch -d` 会跑**它自己的**合并判据，而那个判据只认「是 HEAD/upstream
+   的祖先」—— 它结构上看不见 **squash 合并**，也就是本仓库（和 GitHub 默认）每天产出的形态。
+   于是 gate 判 merged，git 仍然拒绝。
+3. 三步执行全是 `if op(…) == nil { 记一条 action }` —— **只记成功，对失败绝对沉默**。所以
+   失败的唯一痕迹是「少了一行」，还照样 `✓` + exit 0。
+**为什么 #746 没发现**（这条比 bug 本身更值钱）：#746 修的是**判断**，验证的也是**判断函数**
+（`BranchMerged`，拿真分支跑，绿）。而 `internal/app/reap_test.go` 里所有 reap 测试都通过注入
+的 ops 驱动，`deleteBranch` 被 stub 成 `func(...) error { return nil }` —— **构造上不可能失败**，
+断言只能到「这一步被调用了」。两个缺陷正好落在**注入缝以下、`git_test.go` 被测函数以上**的夹层里，
+两边的绿灯都照不到。
+**Rule:** 一个命令的修复，验证必须落在**命令级**（真仓库 + 真 git），不能只到函数级。判断对了
+不等于动作做了。凡是「gate 通过 → 执行副作用」的结构，测试要断言**世界变了**（分支真没了），
+不是「stub 被调用了」。见 `internal/app/reap_live_test.go`。
+**Fix (PR #748):** ① 在删 worktree **之前**解析 repo（新增 `reapOps.mainRepo`）；② gate 确认
+合并后 `deleteBranch` 用 `-D`（gate 严格强于 `-d`；没跑 gate 的路径仍用 `-d`）；③ 新增
+`reapResult.Failed` + `⚠ but these steps failed` 区块 + 有失败则 exit 非零，且 `gitRunLoud`
+把 git 的 stderr 折进 error（`exit status 1` 什么也没告诉用户）。
+
 ## Driving a pane (dispatch / `gtmux send`)
 
 ### An "is there a draft?" check MUST read the COLOR capture (2026-08-09)

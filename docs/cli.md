@@ -566,7 +566,10 @@ an item off the plate, and archiving an entry closes it out of the view.
 FIRST (the worktree must be clean and the branch merged) and only then kills the
 session, removes the worktree, and deletes the merged branch; when the gate fails it
 reports exactly what blocks it and touches nothing (`--abandon` overrides,
-`--keep-branch` keeps the branch). `--snooze [--for <dur>]` silences a reap suggestion
+`--keep-branch` keeps the branch). Every step reports its outcome: one that FAILS is
+named with git's own reason under `⚠ but these steps failed`, and the command exits
+non-zero — a branch that survived a reap is never left to be inferred from a line that
+isn't printed. `--snooze [--for <dur>]` silences a reap suggestion
 for a dispatch you're keeping. When a tracked dispatch looks reclaimable, a live hq
 gets a `» gtmux·reap-suggest … │ gtmux reap <id>` wake — reclaim is always
 suggest → approve → execute, never automatic.

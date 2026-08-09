@@ -22,9 +22,36 @@ func gitOutput(dir string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// gitRun runs git in dir, discarding output.
+// gitRun runs git in dir, discarding output. For PROBES, where a non-zero exit is an
+// expected answer rather than a problem to report.
 func gitRun(dir string, args ...string) error {
 	return exec.Command("git", append([]string{"-C", dir}, args...)...).Run()
+}
+
+// gitRunLoud runs git in dir and folds its stderr INTO the error. For the destructive
+// ops, whose failure a caller has to be able to explain: `exit status 1` alone told a
+// user nothing about why their branch survived a reap, and `fatal: cannot change to
+// '<path>'` says it exactly.
+func gitRunLoud(dir string, args ...string) error {
+	var stderr strings.Builder
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if msg := strings.TrimSpace(stderr.String()); msg != "" {
+			return fmt.Errorf("%s", firstLine(msg))
+		}
+		return err
+	}
+	return nil
+}
+
+// firstLine keeps a git failure to its one meaningful line — the rest is `hint:` prose
+// that would bury the reason in a terminal report.
+func firstLine(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return strings.TrimSpace(s[:i])
+	}
+	return s
 }
 
 // SanitizeBranch makes a branch name safe as a single path element.
@@ -286,16 +313,27 @@ func RemoveWorktree(wt string, force bool) error {
 		args = append(args, "--force")
 	}
 	args = append(args, wt)
-	return gitRun(mainRepo(wt), args...)
+	return gitRunLoud(mainRepo(wt), args...)
 }
 
-// DeleteBranch deletes a branch (from the main repo). force → -D.
-func DeleteBranch(wt, branch string, force bool) error {
+// DeleteBranch deletes a branch. force → -D.
+//
+// `dir` may be the linked worktree OR the main repo: mainRepo is idempotent on a main
+// checkout, so a caller that already resolved it (which it MUST, if it removed the
+// worktree first — see MainRepo) can pass that through unchanged.
+//
+// force is NOT merely "the user said --abandon". `git branch -d` runs its OWN merge
+// check, and that check only accepts an ancestor of HEAD/upstream — it cannot see a
+// SQUASH merge, which is what this repo (and GitHub by default) produces. So a caller
+// whose own gate has already established the merge — reap's, which additionally accepts
+// squash-equivalence and gh's authoritative PR state — must force, or git's weaker
+// re-check silently overrules the stronger one that already passed.
+func DeleteBranch(dir, branch string, force bool) error {
 	flag := "-d"
 	if force {
 		flag = "-D"
 	}
-	return gitRun(mainRepo(wt), "branch", flag, branch)
+	return gitRunLoud(mainRepo(dir), "branch", flag, branch)
 }
 
 // MainRepo is mainRepo for callers outside the package — a rollback has to resolve the
