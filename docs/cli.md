@@ -424,7 +424,18 @@ It launches the agent (a fresh detached session by default, or `--pane <id>` to 
 one, or `--worktree <branch>` to run in an isolated git worktree), **through the
 network proxy by construction** (never a bare, un-proxied launch that would 403),
 waits for the agent to come up, then delivers the task via a tmux **paste buffer** and
-**verifies** it landed. Verification is layered: for a hook-equipped agent (Claude
+**verifies** it landed.
+
+**Waiting for the agent to come up is a real gate, and when it times out it now names
+what blocked it.** The pane is ready only once its composer row is drawn, no trust gate
+or choice menu is up, no boot banner is on screen, and two captures are byte-identical
+(or the agent's session-start event has fired). A boot banner is chrome that RESOLVES BY
+WAITING — `Connecting…`, `Loading…`. A **standing notice** is not: `⚠ N MCP servers need
+authentication · run /mcp` names an action only you can take and never clears, so it does
+NOT hold the gate (it used to, which made spawn impossible on any machine carrying one —
+see TROUBLESHOOTING). On timeout the failure reads
+`✗ NOT delivered → <handle> — evidence: … blocked by: <the line that said no>` followed
+by the pane's bottom region, not its whole scrollback. Verification is layered: for a hook-equipped agent (Claude
 Code, Codex, …) it prefers the deterministic `UserPromptSubmit` event on the #388
 session-events stream (no screen-scraping) — the event's recorded head and the
 verifier's needle come from ONE shared normalization pipeline, so a genuine submit
@@ -513,9 +524,21 @@ Anything not provably a plain shell (vim, ssh, an agent the process scan missed)
 keeps the agent pipeline.
 
 `gtmux tasks [--json]` is the **dispatch / needs-you ledger**: every task you spawned
-with its live status (waiting / done / working / gone), needs-you first. `--verbose`
-adds archived entries and the attention columns (tier · priority · surfaced ·
+with its live status (undelivered / waiting / done / working / gone), needs-you first.
+`--verbose` adds archived entries and the attention columns (tier · priority · surfaced ·
 disposition).
+
+**`undelivered` leads the list, and it is the one status the pane cannot tell you.** A
+dispatch that dies at the ready gate leaves a live, EMPTY, idle agent pane —
+indistinguishable from one that just finished a turn — so a status derived from the pane
+alone rendered a task that never started as green `done`, with the goal you *intended*
+printed beside it. The ledger records the delivery verdict and `tasks` respects it: an
+entry whose goal never reached the agent reads `✗ undelivered` however idle its pane
+looks. A `queued` delivery is not undelivered (the agent accepted it, behind the current
+turn), and a rescue that works closes the record — a `gtmux send` that LANDS that same
+goal in that pane marks the entry delivered, so the workaround below doesn't leave a
+permanently wrong row. Only that goal: an unrelated line typed into the pane doesn't
+launder a dispatch that never happened.
 
 `gtmux tasks --pending` is the **pending-decision standing view** — the one home of
 what is on your plate:

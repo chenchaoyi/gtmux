@@ -68,6 +68,11 @@ func digestBucket(r radar.DigestRow) string {
 	switch {
 	case r.Error != "":
 		return "errored"
+	case r.TaskStatus == radar.TaskStatusUndelivered:
+		// A dispatch whose goal never landed leaves a live, EMPTY, idle agent — so by
+		// pane status alone it files under "completed", which is the same false signal
+		// `gtmux tasks` used to give. It needs you: nothing was ever asked of it.
+		return "needs_input"
 	case r.Status == "waiting":
 		return "needs_input"
 	case r.Status == "idle":

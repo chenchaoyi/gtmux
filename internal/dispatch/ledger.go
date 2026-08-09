@@ -28,6 +28,13 @@ type Task struct {
 	Goal      string `json:"goal"`
 	CreatedAt int64  `json:"created_at"`
 	Delivered bool   `json:"delivered"`
+	// State is the dispatch's delivery VERDICT (a dispatch.State: landed / queued /
+	// failed / refused-*). Additive and optional — a legacy entry has none, and
+	// Undelivered falls back to Delivered alone for it. It exists because `delivered`
+	// is a bool over a three-way outcome: a QUEUED delivery reached the agent (it just
+	// sits behind the current turn) yet is not `delivered:true`, and conflating it with
+	// a ready-timeout would report accepted work as never-dispatched.
+	State string `json:"state,omitempty"`
 	// Source records which dispatch CHANNEL created the entry (dual-channel awareness):
 	// SourceHQDispatched (gtmux spawn — the tracked path), SourceUserDirect (the user
 	// typed a prompt straight into an agent window; HQ back-fills this), or
@@ -76,6 +83,65 @@ func (t Task) SourceOrDefault() string {
 	}
 	return t.Source
 }
+
+// Undelivered reports whether the ledger says this dispatch's goal never reached the
+// agent — the fact every status view must respect, because the pane cannot tell you.
+//
+// A dispatch that dies at the ready gate leaves a live, EMPTY, idle agent pane, and a
+// status derived from that pane alone renders it `done` (idle → done) with the recorded
+// goal — the INTENT, never the result — printed beside it. That is how three dispatches
+// on 2026-08-09 read as finished work while not one of them had received a single word.
+//
+// `queued` is deliberately NOT undelivered: the agent accepted the instruction, it just
+// runs after the current turn.
+func (t Task) Undelivered() bool {
+	if t.Delivered {
+		return false
+	}
+	return t.State != string(StateQueued)
+}
+
+// MarkDelivered records that this pane's tracked dispatch DID land — after the fact and
+// through another channel. The documented rescue for a failed spawn is
+// `gtmux send --message-file <same file>` into the pane spawn left behind; without this
+// the rescue works and the ledger still says the dispatch never landed, so the row would
+// read `undelivered` forever while the worker is busy doing the job.
+//
+// It is gated on the delivered text actually BEING that goal, because the point of the
+// undelivered status is that the ledger tells the truth: an unrelated "keep going" typed
+// into the same pane must not launder a dispatch that never happened. No-op when the
+// pane has no entry, its entry already landed, or the text is something else.
+func MarkDelivered(pane, text string, now int64) bool {
+	t, ok := TaskForPane(pane)
+	if !ok || !t.Undelivered() || !deliversGoal(t.Goal, text) {
+		return false
+	}
+	return updateTask(t.ID, now, func(t *Task) {
+		t.Delivered = true
+		t.State = string(StateLanded)
+	})
+}
+
+// deliversGoal reports whether `text` opens with the goal the ledger recorded. The
+// stored goal is whitespace-collapsed and truncated (radar.Snip 200) — so the comparison
+// is head-only, over the same collapse, with the ellipsis dropped. A prefix rather than
+// an equality because the rescue may add a line ("re-sending the goal below") ahead of
+// nothing and because the stored copy is the truncated one.
+func deliversGoal(goal, text string) bool {
+	head := strings.TrimSuffix(strings.TrimSpace(goal), "…")
+	if head == "" {
+		return false
+	}
+	const n = 80 // enough to be unmistakable, short enough to survive the stored truncation
+	if r := []rune(head); len(r) > n {
+		head = string(r[:n])
+	}
+	return strings.HasPrefix(collapseSpace(text), head)
+}
+
+// collapseSpace mirrors radar.Snip's normalization (Fields+join) — dispatch cannot
+// import radar (radar imports dispatch), and the two must agree or the head never matches.
+func collapseSpace(s string) string { return strings.Join(strings.Fields(s), " ") }
 
 // tasksDir is where ledger entries live.
 func tasksDir() string { return filepath.Join(state.Dir(), "tasks") }

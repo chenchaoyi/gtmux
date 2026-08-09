@@ -46,7 +46,7 @@ type DigestRow struct {
 	// Dispatch ledger (hq-dispatch): a pane dispatched by `gtmux spawn` carries its
 	// task goal + lifecycle status. Additive + omitempty — absent for untracked panes.
 	Task       string `json:"task,omitempty"`
-	TaskStatus string `json:"task_status,omitempty"` // waiting | done | working | gone
+	TaskStatus string `json:"task_status,omitempty"` // undelivered | waiting | done | working | gone
 	Error      string `json:"error,omitempty"`       // errored-idle modifier text
 	Bg         string `json:"bg,omitempty"`          // background-running modifier label
 	Since      int64  `json:"since,omitempty"`       // epoch the current state began
@@ -172,7 +172,7 @@ func GatherDigest() []DigestRow {
 		if p.PaneID != "" {
 			if tsk, ok := dispatch.TaskForPane(p.PaneID); ok {
 				row.Task = tsk.Goal
-				row.TaskStatus = TaskStatusFor(p.Status)
+				row.TaskStatus = TaskStatusOf(tsk, p.Status)
 			}
 		}
 		out = append(out, row)
@@ -203,8 +203,27 @@ func DigestJSONBytes() ([]byte, error) {
 	return json.MarshalIndent(GatherDigest(), "", "  ")
 }
 
+// TaskStatusUndelivered is the ledger lifecycle for a dispatch whose goal never
+// reached the agent. It is NOT derivable from the pane — the pane of a failed
+// dispatch is a live, empty, idle agent, indistinguishable from one that finished.
+const TaskStatusUndelivered = "undelivered"
+
+// TaskStatusOf is the ledger-AWARE mapper — the one every status view should call.
+// The pane is the source of truth for what a dispatch is DOING, but only the ledger
+// knows whether it was ever told to do anything, so a dispatch that never landed keeps
+// its own status regardless of the pane. (Deriving from the pane alone is what rendered
+// three never-delivered dispatches as green `done` on 2026-08-09 — see the
+// spawn-readiness-persistent-banner change.)
+func TaskStatusOf(t dispatch.Task, paneStatus string) string {
+	if t.Undelivered() {
+		return TaskStatusUndelivered
+	}
+	return TaskStatusFor(paneStatus)
+}
+
 // TaskStatusFor maps a pane's radar status to the ledger lifecycle string:
-// waiting (needs you) → done (idle-after-work, review me) → working.
+// waiting (needs you) → done (idle-after-work, review me) → working. It knows only the
+// pane — callers holding a ledger entry want TaskStatusOf.
 func TaskStatusFor(paneStatus string) string {
 	switch paneStatus {
 	case "waiting":

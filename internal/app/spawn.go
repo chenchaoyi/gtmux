@@ -172,7 +172,8 @@ func cmdSpawn(args []string) int {
 		taskID := recordDispatch(resumeID, dispatch.Task{
 			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
-			Delivered: true, OwnSession: ownSession, Source: dispatch.SourceHQDispatched,
+			Delivered: true, State: string(res.State),
+			OwnSession: ownSession, Source: dispatch.SourceHQDispatched,
 		})
 		return spawnReport(asJSON, taskID, pane, session, res)
 	}
@@ -189,11 +190,12 @@ func cmdSpawn(args []string) int {
 		// resume path above — which is precisely how two failed dispatches left two orphan
 		// sessions nobody could reclaim. Recorded, the next identical spawn adopts it.
 		res := dispatch.Result{State: dispatch.StateFailed,
-			Evidence: "agent composer not ready within the ready timeout\n" + tmux.CaptureFull(pane)}
+			Evidence: readyTimeoutEvidence(pane, agent)}
 		taskID := recordDispatch(resumeID, dispatch.Task{
 			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
-			Delivered: false, OwnSession: ownSession, Source: dispatch.SourceHQDispatched,
+			Delivered: false, State: string(res.State),
+			OwnSession: ownSession, Source: dispatch.SourceHQDispatched,
 		})
 		return spawnFail(asJSON, taskID, pane, session, res)
 	}
@@ -217,7 +219,7 @@ func cmdSpawn(args []string) int {
 		taskID = recordDispatch(resumeID, dispatch.Task{
 			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
-			Delivered: res.Delivered, OwnSession: ownSession,
+			Delivered: res.Delivered, State: string(res.State), OwnSession: ownSession,
 			Source: dispatch.SourceHQDispatched,
 		})
 	}
@@ -647,6 +649,28 @@ func spawnLocator(pane string) (loc, title string) {
 	loc = tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
 	title = strings.TrimSpace(tmux.Display(pane, "#{pane_title}"))
 	return loc, title
+}
+
+// readyTimeoutEvidence is what a ready-gate timeout reports. It LEADS with the blocking
+// condition and follows with the pane's bottom region.
+//
+// Both halves are the fix for a measured failure, not polish. The old message was
+// `agent composer not ready within the ready timeout` + the FULL capture — 224 lines /
+// 11.8 KB of live agent TUI on the machine that hit this. It named nothing, so a pane
+// held by a permanent banner read as "the agent is slow" (the misdiagnosis this footgun
+// survived on for months), and the `✗ NOT delivered` line that introduced it was the
+// head of a wall that looked like an ordinary startup log — reported as "spawn didn't
+// error" when it had errored, on stderr, with exit 1.
+func readyTimeoutEvidence(pane, agent string) string {
+	return readyTimeoutEvidenceOf(dispatchbridge.ReadyBlocker(pane, agent))
+}
+
+func readyTimeoutEvidenceOf(blocker, capture string) string {
+	e := "agent composer not ready within the ready timeout — blocked by: " + blocker
+	if tail := dispatch.EvidenceTail(capture); tail != "" {
+		e += "\n" + tail
+	}
+	return e
 }
 
 // spawnReport prints the outcome and returns the exit code (non-zero unless landed).

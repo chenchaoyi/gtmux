@@ -22,7 +22,7 @@ type taskJSON struct {
 	Agent         string `json:"agent,omitempty"`
 	Model         string `json:"model,omitempty"`
 	Goal          string `json:"goal,omitempty"`
-	Status        string `json:"status"` // waiting | done | working | gone | archived | pending
+	Status        string `json:"status"` // undelivered | waiting | done | working | gone | archived | pending
 	Source        string `json:"source"` // hq-dispatched | user-direct | agent-self
 	Worktree      string `json:"worktree,omitempty"`
 	Branch        string `json:"branch,omitempty"`
@@ -36,26 +36,33 @@ type taskJSON struct {
 	Archived      bool   `json:"archived,omitempty"`
 }
 
-// taskStatus maps a tracked pane's live radar status to the ledger lifecycle,
-// "gone" when the pane is no longer live. The "needs-you first" ordering follows.
+// taskStatus maps a tracked dispatch to the ledger lifecycle: "gone" when its pane is
+// no longer live, otherwise the ledger-aware pane mapping (radar.TaskStatusOf — a
+// dispatch that never landed keeps `undelivered` however idle its pane looks). The
+// "needs-you first" ordering follows.
 func taskStatus(t dispatch.Task, live map[string]radar.Pane) string {
 	p, ok := live[t.Pane]
 	if !ok {
 		return "gone"
 	}
-	return radar.TaskStatusFor(p.Status)
+	return radar.TaskStatusOf(t, p.Status)
 }
 
+// taskRank orders the view. `undelivered` leads: a waiting worker is mid-task and a done
+// one produced something, but an undelivered dispatch never started at all — the only
+// row where nothing whatsoever is in flight.
 func taskRank(status string) int {
 	switch status {
-	case "waiting":
+	case radar.TaskStatusUndelivered:
 		return 0
-	case "done":
+	case "waiting":
 		return 1
-	case "working":
+	case "done":
 		return 2
-	default:
+	case "working":
 		return 3
+	default:
+		return 4
 	}
 }
 
@@ -239,6 +246,10 @@ func verboseTail(r taskJSON, verbose bool) string {
 
 func taskGlyph(status string) (glyph, label string) {
 	switch status {
+	case radar.TaskStatusUndelivered:
+		// Red, like `waiting`: this row needs YOU. It is the stronger claim of the two —
+		// a waiting worker is stuck mid-task, this one never received the task at all.
+		return i18n.Red + "✗" + i18n.Reset, i18n.Tr("undelivered", "未送达")
 	case "waiting":
 		return i18n.Yellow + "⏸" + i18n.Reset, i18n.Tr("waiting", "等输入")
 	case "done":
