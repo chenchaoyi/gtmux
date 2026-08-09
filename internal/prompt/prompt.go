@@ -116,6 +116,15 @@ const selectorGlyphs = "❯›▶▸→"
 // codex/gemini/… whose startup gates differ — NOT hardcoded to one agent.
 var startupGates = map[string][]string{
 	"": {"Do you trust the files"}, // Claude trust-folder gate
+	// Codex 0.147.0, live-captured (2026-08-10): both gates render as a numbered
+	// menu with a › selector, so WaitingOptions already refuses them a "ready"
+	// verdict — these signatures make the protection EXPLICIT (a renderer change
+	// can't silently open the gate) and let NotReadyReason name the gate instead
+	// of "a choice menu".
+	"codex": {
+		"Do you trust the contents of this directory", // directory trust gate ("› 1. Yes, continue / 2. No, quit")
+		"Hooks need review",                           // hooks trust gate after a hooks.json change ("› 1. Review hooks / 2. Trust all …")
+	},
 }
 
 // startupPickers are REOPENED-SESSION chrome — the resume picker / theme picker. They
@@ -187,6 +196,19 @@ var bootBanners = map[string][]string{
 		"Starting",
 		"Loading",
 		"Initializing",
+	},
+	// Codex 0.147.0, live-captured (2026-08-10): while its MCP servers connect it
+	// paints "• Starting MCP servers (1/4): … (0s • esc to interrupt)" WITH the
+	// composer already drawn below — so without this signature the ready gate says
+	// yes mid-boot. The default one-word "Starting" can't catch it: that must
+	// PREFIX the line, and Codex's line starts with "• ". Multi-word, so it
+	// matches anywhere on a bottom line, and it RESOLVES BY WAITING (the line is
+	// replaced by the connect result). Its standing siblings ("⚠ MCP startup
+	// incomplete", "⚠ MCP client … failed to start") stay OUT of this list — they
+	// never resolve, and listing one made the gate unsatisfiable once before
+	// (the spawn-readiness-persistent-banner change).
+	"codex": {
+		"Starting MCP servers",
 	},
 }
 
