@@ -994,6 +994,19 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		// with no on-disk conversation can't be resumed ("No conversation found"), so
 		// don't offer Adopt for it.
 		lastMsg := transcript.LastMessageTime(r.Agent, r.SessionID)
+		// Positive-evidence gate: a native row must point at something REAL — a
+		// recorded live process (PID) or an on-disk conversation (lastMsg). A record
+		// with neither is an agent-internal helper call's residue (Codex's
+		// ambient-suggestions generator / safety classifier fire full pane-less hook
+		// lifecycles; the ones whose payload never carries the helper prompt slip
+		// past hook.go's fingerprint filter) — a row nobody can focus, kill, or
+		// adopt. Rather than show a convincing fake, show nothing: a REAL session
+		// out-waits this gate (Claude's hook records its PID; Codex's rollout exists
+		// from the session's first message, so at most its pre-first-message seconds
+		// are unlisted).
+		if r.PID == 0 && lastMsg == 0 {
+			continue
+		}
 		since := r.UpdatedAt
 		if r.State == "idle" && lastMsg > 0 {
 			since = lastMsg

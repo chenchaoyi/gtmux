@@ -4,7 +4,7 @@
 TBD - created by archiving change native-agent-sessions. Update Purpose after archive.
 ## Requirements
 ### Requirement: Sense agent sessions running outside tmux
-The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}` — plus the agent process's pid and command name, used by the liveness reap below, and the hosting terminal app's display name ("Warp", "Ghostty", …) sensed best-effort from the hook's own environment/ancestry ("" when unrecognized) — where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes. The system SHALL NOT record an agent's internal warm-spare/pool process (e.g. Claude's `bg-spare`), which fires a hook but is never a real user-facing session.
+The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}` — plus the agent process's pid and command name, used by the liveness reap below, and the hosting terminal app's display name ("Warp", "Ghostty", …) sensed best-effort from the hook's own environment/ancestry ("" when unrecognized) — where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes. The system SHALL NOT record an agent's internal warm-spare/pool process (e.g. Claude's `bg-spare`), which fires a hook but is never a real user-facing session. The system SHALL likewise NOT sense an agent's internal HELPER call (e.g. Codex's ambient-suggestions generator or auto-mode safety classifier), which fires a full pane-less hook lifecycle under a session id that is nobody's conversation: a pane-less `UserPromptSubmit` whose prompt head matches a known helper system prompt SHALL remove the session's native record, mark the session id, and swallow the session's later events — including from the event stream and the supervisor's unread debt (the already-streamed `SessionStart` is paired with a `SessionEnd` so the pane-less lifecycle-blink exclusion covers it). Detection SHALL rest on that positive prompt evidence, never on the empty pane alone (a real native session is pane-less too).
 
 #### Scenario: Hook fires with no tmux pane
 - **WHEN** `gtmux hook` runs with an empty `$TMUX_PANE` and a payload carrying `session_id` and `cwd`
@@ -14,12 +14,20 @@ The system SHALL record the existence and state of an agent session that invokes
 - **WHEN** a hook fires (no `$TMUX_PANE`, with a `session_id`) but the agent process is an internal warm-spare (its command name is `bg-spare`)
 - **THEN** the system SHALL NOT create a native record for it
 
+#### Scenario: Internal helper call is filtered at the prompt
+- **WHEN** a pane-less `UserPromptSubmit` fires whose prompt head matches a known agent-internal helper system prompt (e.g. Codex's ambient-suggestions generator)
+- **THEN** the system SHALL remove any native record the session's `SessionStart` created, SHALL not stream the event, and SHALL swallow the session's subsequent events
+
+#### Scenario: A real native session is not mistaken for a helper
+- **WHEN** a pane-less `UserPromptSubmit` fires with an ordinary (non-helper) prompt
+- **THEN** the session SHALL be sensed and tracked exactly as before — the empty pane alone is never the filter
+
 #### Scenario: Lifecycle transitions update state
 - **WHEN** successive hooks fire for the same `session_id` (e.g. UserPromptSubmit then Stop)
 - **THEN** the record's `state` SHALL move working → idle following the same transitions as a tmux-keyed session, and its idle "finished" time SHALL be derivable session-independently of any tmux window activity
 
 ### Requirement: Native sessions appear in the radar as source "native"
-`gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins).
+`gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins). A native row SHALL be listed only on positive evidence that something real is behind it — its record names a live process, or its session has an on-disk conversation; a record with neither (an unidentified helper call's residue) SHALL be withheld from every surface rather than shown as a convincing fake.
 
 #### Scenario: Native session listed alongside tmux ones
 - **WHEN** a native session has a current record and no matching live tmux pane
@@ -32,6 +40,10 @@ The system SHALL record the existence and state of an agent session that invokes
 #### Scenario: De-dupe against a tmux twin
 - **WHEN** a session_id present in the native store also appears as a live tmux pane (e.g. after it was adopted)
 - **THEN** only the tmux row SHALL be emitted; the native row SHALL be suppressed
+
+#### Scenario: A record with no evidence behind it is withheld
+- **WHEN** a native record names no live process (no sensed PID) and its session has no on-disk conversation
+- **THEN** no row SHALL be emitted for it on any surface (agents/digest/app) — there is nothing a user could focus, kill, or adopt
 
 #### Scenario: Idle time is tmux-independent
 - **WHEN** a native session is idle

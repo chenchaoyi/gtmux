@@ -759,7 +759,34 @@ ceiling. Secondary: the `uploads/` dir (phone images) and the per-pane churn mar
 
 ## Radar / process sampling
 
-### Menu bar frozen + phone shows "0 agents" after a network switch (wedged `ps`)
+### Ghost native rows: "two codex sessions running" that nobody started (agent-internal helper calls)
+**Symptom:** `gtmux digest --json` / `agents --json` grow `source:"native"` rows —
+seen twice as a working+idle Codex pair, ~1 min apart — for sessions nobody started.
+The `working` one never resolves; "kill it" has no target. Fingerprint of a fake: no
+pane/session/window, no PID, zero tokens in `gtmux usage`, only 5 digest fields
+(agent/source/status/since/sense — no goal/last/cwd), record `cwd:"/"`, and the
+session id is absent from the agent's own session index (`~/.codex/session_index.jsonl`).
+**Root cause:** an agent's INTERNAL helper calls — Codex's ambient-suggestions
+generator (`~/.codex/ambient-suggestions`, prompt head `# Overview Generate 0 to 3
+hyperpersonal…`) and its auto-mode safety classifier (`You are an expert at upholding
+safety…`) — run as full agent sessions: they read `~/.codex/hooks.json` and fire
+pane-less SessionStart/UserPromptSubmit/Stop through `gtmux hook --agent codex`, which
+sensed them as native sessions. The "Codex" attribution is thus FACT, not a fallback
+bug — the helpers really are codex processes. They surfaced only after #703 made codex
+hooks fire at all. `working` sticks because the helper's Stop carries no session id to
+pair back; no PID because the codex hook path re-execs detached (`setsid`), severing
+the ancestry walk.
+**Fix (fix/codex-ghost-rows):** two layers, both on positive evidence — never "pane is
+empty" alone (real native sessions are pane-less too). ① `internal/hook/helper.go`: a
+pane-less UserPromptSubmit whose prompt head matches the known-helper list erases the
+session (record dropped, id marked, later events swallowed; the streamed SessionStart
+gets its pairing SessionEnd so the unread-debt blink exclusion covers it). ② radar
+`nativePanes`: a record with no live PID AND no on-disk conversation is withheld from
+every surface.
+**Must-check when it recurs:** pull the pane-less UserPromptSubmit's summary from
+`gtmux events` — a new helper prompt head means the list in
+`internal/hook/helper.go` needs that fingerprint (copy it verbatim from the event
+summary; same normalization).
 **Symptom:** right after changing networks (office ↔ home, VPN up/down) the menu bar
 stops updating and the phone shows the server connected but **0 agents**. `ps aux` in a
 shell ALSO hangs. `pgrep -f "gtmux agents"` shows dozens/hundreds piled up.
