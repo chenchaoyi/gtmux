@@ -461,10 +461,27 @@ soon as it confirms, so a healthy send stays fast); `--no-verify` opts out,
 box, so if the pane's owner is mid-sentence at the keyboard, delivering would concatenate
 your payload onto their words and submit both. Every path — the CLI, hq, `--no-verify`, and
 the phone — reads the draft first and refuses (`state:"refused-draft"`, nothing written to
-the pane) with the draft quoted back. Your OWN text already in the box is not a clobber: a
-re-send after a lost ack proceeds and confirms idempotently. `--force` waives it, and
-deliberately not the phone's idempotency key — a send from another device is the one with
-nobody present to undo it.
+the pane) with the draft quoted back. `--force` waives it, and deliberately not the phone's
+idempotency key — a send from another device is the one with nobody present to undo it.
+
+The check is deliberately narrow, because **its job is to protect a send, never to block
+one.** It runs only on a pane a KNOWN AGENT drives — a pane running vim, ssh or some other
+TUI has no composer, and reading one there returns the transcript as a "draft". It reads the
+COLOUR capture, so the agent's own dim suggested-next-command isn't mistaken for your typing,
+and it wants to see the same thing in TWO frames before refusing. Everything it cannot judge
+lets the send through:
+
+| what it sees | what it does |
+|---|---|
+| no agent in the pane (no composer) | sends |
+| the capture fails — tmux hiccup, pane gone | sends |
+| the pane is scrolled (copy-mode) | sends |
+| a plain shell, no input box | sends |
+| your own text — the same message being re-sent | sends (idempotent) |
+| someone else's text, seen twice | **refuses** |
+
+It costs at most two reads and one poll interval, and never loops — so it can slow a send by
+a known amount, but it can't hang one.
 
 A send that ends `failed` may be **retried immediately**: the interlock drops the record of
 an attempt that never landed, so the obvious next move is no longer answered with

@@ -87,7 +87,18 @@ type Opts struct {
 	// Force on every send (it carries its own sendID idempotency), and letting that also
 	// waive draft protection would leave the surface most likely to clobber a draft — a
 	// send from another device, into a pane the user may be typing in — unprotected.
-	ClobberDraft   bool
+	ClobberDraft bool
+	// HasComposer says a KNOWN agent drives this pane, so it has a real input composer and
+	// the text below it is a draft worth protecting. The draft guard runs ONLY then.
+	//
+	// Routing fails SAFE to the agent pipeline for anything that is neither a known agent
+	// nor a bare shell — vim, ssh, a TUI app — and those panes have no composer at all. On
+	// them SplitInputRegion's no-box degrade path locks onto whatever prompt-ish line is on
+	// screen and reports the transcript as a "draft" (measured live: a pane running `diting`
+	// yielded 347 characters of log output), which would refuse every send with a reason
+	// that is not even true. Off by default, so a caller that has not thought about it gets
+	// the pre-guard behavior rather than a mystery refusal.
+	HasComposer    bool
 	ResendWindow   int64 // seconds; 0 disables the interlock
 	DeliverTimeout int64 // seconds to confirm before giving up
 	HookGrace      int64 // seconds to wait for a submit event before using the screen fallback
@@ -312,7 +323,15 @@ func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
 // landing idempotently after a lost ack), and a pane with no locatable input region at all
 // (a plain shell — nothing to protect, and post-submit verification judges it).
 func draftBlocked(io IO, opts Opts, text string) (bool, string) {
-	if opts.ClobberDraft {
+	if opts.ClobberDraft || !opts.HasComposer {
+		return false, ""
+	}
+	// A pane in copy/view-mode is showing its SCROLLBACK, not its composer: the box on
+	// screen may be an old one scrolled into view. Reading it would refuse against text
+	// nobody is typing. pasteWithGuard drops the mode a moment later (exitCopyMode), so
+	// skipping here costs nothing — the delivery still happens, unguarded, which is the
+	// pre-guard behavior for a case the guard cannot judge.
+	if io.InMode != nil && io.InMode() {
 		return false, ""
 	}
 	// Read the draft the way every OTHER "is there an unsubmitted draft?" caller does, and
@@ -327,6 +346,12 @@ func draftBlocked(io IO, opts Opts, text string) (bool, string) {
 		if capture == nil {
 			capture = io.Capture
 		}
+		// An UNREADABLE pane fails OPEN. A capture that comes back empty means the tmux
+		// call failed, the pane died, or the server is wedged — none of which is evidence
+		// that someone is typing. DraftOfColored("") reports structured=false, which the
+		// caller below treats as "no draft", so the send proceeds and post-submit
+		// verification judges it. Fail-CLOSED here would turn any tmux hiccup into a
+		// blanket refusal of every send on the machine.
 		return DraftOfColored(capture())
 	}
 	held := func() (string, bool) {
@@ -344,7 +369,13 @@ func draftBlocked(io IO, opts Opts, text string) (bool, string) {
 	}
 	// TWO frames must agree, the same discipline the wake channel's guard uses: one frame
 	// mid-repaint can show a phantom, and refusing a legitimate send is not free either.
-	io.Sleep()
+	//
+	// EXACTLY two reads, never a loop: the guard is a bounded pre-check on the send path,
+	// so it can add a known cost (one capture, or two plus one poll interval on the way to
+	// a refusal) and can never spin, hang, or retry its way into blocking a send.
+	if io.Sleep != nil {
+		io.Sleep()
+	}
 	draft, blocked := held()
 	if !blocked {
 		return false, ""
