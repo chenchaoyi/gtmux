@@ -737,7 +737,13 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 		}
 		force := sendID != ""
 		opts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
-		if !dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), opts, text) {
+		if ok, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), opts, text); !ok {
+			if refused == dispatch.StateRefusedDraft {
+				// Say WHOSE text stopped it. A generic "not confirmed" would read as a gtmux
+				// fault and invite a retry, when the honest answer is that someone is typing
+				// in that pane and the send would have swallowed their line.
+				return fmt.Errorf("not sent: that pane has unsent text in its input box — clear it or send from the Mac")
+			}
 			return fmt.Errorf("not confirmed: the pane's input box did not settle on the full message")
 		}
 		dispatch.MarkAwaited(id)

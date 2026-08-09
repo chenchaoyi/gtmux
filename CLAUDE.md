@@ -126,8 +126,18 @@ over one Go core (gtmux-core is the single data source):
   launches an agent (new session / `--pane` / `--worktree`), proxied by construction,
   and delivers a task with LAND-VERIFICATION (hook-event first via the #388 stream,
   hardened two-frame screen-read as fallback; a re-send interlock refuses a duplicate
-  payload, `--force` overrides). `gtmux send` verifies by default (`--no-verify` opts
-  out); `POST /api/send` stays fast/unverified. `tasks` is the dispatch/needs-you
+  payload, `--force` overrides — but a delivery that ends `failed` DROPS its interlock
+  record, so a send that never landed can be retried without `--force`). **No path ever
+  writes into an unsubmitted draft**: every delivery reads the box first and refuses
+  (`state:"refused-draft"`) when it holds someone else's text — a paste APPENDS, so
+  delivering would submit their half-written line with your payload. The override is
+  `Opts.ClobberDraft`, deliberately SEPARATE from the interlock's `Force`: serve sets Force
+  on every `/api/send` (it has its own sendID idempotency), and merging them would leave the
+  phone — a send from another device into a pane whose owner may be typing — unprotected.
+  A fragment verdict on a hook-equipped pane where the paste DID land no longer clears the
+  draft (the screen can't tell a short render from a short paste; the receipt judges).
+  `gtmux send` verifies by default (`--no-verify` opts out — that skips CONFIRMATION, never
+  the draft guard); `POST /api/send` stays fast/unverified. `tasks` is the dispatch/needs-you
   ledger; `reap` safely reclaims a finished dispatch (worktree-clean + branch-merged
   gate, else report-only; `--snooze` to keep). See `openspec/changes/hq-dispatch`.
 - **Native menu-bar app** — `macapp/` (Swift / AppKit + `NSStatusItem` +
@@ -390,5 +400,8 @@ agent 官方图标 —— **主来源现为仓库内置**（`assets/agent-icons/
 (见 §6);gtmux 自身不绘制第三方商标。内置默认:Claude/Cursor 指向各自
 `/Applications/*.app`,**Codex 用内置 `assets/agent-icons/codex.png`**(Codex 的官方
 mark —— 不是 ChatGPT 的 logo;codex CLI 无独立 .app,曾错抽 ChatGPT.app 的图标)。
-**TODO:菜单栏本地面也从内置图标取(装机时 drop 到
-`~/.config/gtmux/icons/` 或打包进 app)——目前内置图标只经 serve 覆盖手机/浏览器。**
+内置图标现在**三端都能取到**:`radar.IconFor` 会把内置 PNG 落盘到
+`~/.local/share/gtmux/agent-icons/<key>.png` 并把**该路径**作为 `icon` 提示返回(内容变了才
+重写,写入走 rename)。所以菜单栏 app 无需改 Swift —— 它本来就是「把 hint 当文件打开」;
+以前返回的是 `builtin:<key>` 这种不透明 token,手机/浏览器只看非空所以正常,菜单栏打不开就
+回退单字标(Codex 的非 tmux 行显示 "Cx" 即此)。`~/.config/gtmux/icons/<slug>.png` 仍是手动覆盖。

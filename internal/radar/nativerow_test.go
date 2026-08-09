@@ -1,9 +1,13 @@
 package radar
 
 import (
+	"bytes"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/native"
 )
 
@@ -60,5 +64,78 @@ func TestNativePanesCarryIcon(t *testing.T) {
 	// must not disagree about who an agent is.
 	if want := IconFor(panes[0].Agent, LoadProfiles()); panes[0].icon != want {
 		t.Errorf("native icon = %q, want %q (what the tmux row gets)", panes[0].icon, want)
+	}
+}
+
+// The icon hint must be a PATH a reader can OPEN, not a token a reader must be taught.
+// The menu-bar app resolves the hint by opening it as a file, so the old `builtin:<key>`
+// token fell through to the neutral monogram there while the phone and web (which only
+// need a non-empty hint, then fetch the bytes from /api/icon) were fine — Codex had no
+// icon on the menu bar at all.
+func TestBuiltinIconHintIsAnOpenablePath(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	hint := IconFor("Codex", LoadProfiles())
+	if hint == "" {
+		t.Fatal("Codex ships a committed icon — the hint must not be empty")
+	}
+	if strings.HasPrefix(hint, "builtin:") {
+		t.Fatalf("the hint must be a path, not a token; got %q", hint)
+	}
+	b, err := os.ReadFile(hint)
+	if err != nil {
+		t.Fatalf("the hint must be openable: %v", err)
+	}
+	if !bytes.Equal(b, assets.AgentIcon("codex")) {
+		t.Error("the materialized file must be the committed icon, byte for byte")
+	}
+
+	// Idempotent: a second call re-uses the file rather than rewriting it, because this
+	// runs on every radar row of every poll.
+	fi, err := os.Stat(hint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again := IconFor("Codex", LoadProfiles()); again != hint {
+		t.Errorf("the path must be stable across calls: %q then %q", hint, again)
+	}
+	fi2, err := os.Stat(hint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fi2.ModTime().Equal(fi.ModTime()) {
+		t.Error("an unchanged icon must not be rewritten on every call")
+	}
+}
+
+// A gtmux update can ship a NEW icon for an agent; a stale cached PNG must not outlive it.
+func TestBuiltinIconRefreshesWhenTheBytesChange(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	p := BuiltinIconPath("codex")
+	if p == "" {
+		t.Fatal("codex ships a committed icon")
+	}
+	if err := os.WriteFile(p, []byte("a stale icon from an older release"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if again := BuiltinIconPath("codex"); again != p {
+		t.Fatalf("path changed: %q", again)
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(b, assets.AgentIcon("codex")) {
+		t.Error("a stale cached icon must be refreshed from the committed bytes")
+	}
+}
+
+// An agent with no committed icon gets no hint — "" is the honest answer, and it is what
+// tells a surface to draw its neutral monogram.
+func TestBuiltinIconPathEmptyForUnknownAgent(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if got := BuiltinIconPath("no-such-agent"); got != "" {
+		t.Errorf("BuiltinIconPath(unknown) = %q, want empty", got)
 	}
 }

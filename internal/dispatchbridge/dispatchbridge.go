@@ -67,15 +67,21 @@ func DispatchIO(pane string) dispatch.IO {
 		Sleep:      func() { time.Sleep(pollInterval) },
 		RecentSend: dispatch.RecentSend,
 		RecordSend: dispatch.RecordSend,
+		ForgetSend: dispatch.ForgetSend,
 	}
 }
 
 // DeliverOpts builds the verify options for a pane + agent, applying tuning.
 func DeliverOpts(pane, agentCmd string, force bool, tune dispatch.Tuning) dispatch.Opts {
 	return dispatch.Opts{
-		Pane:           pane,
-		HookEquipped:   hookEquipped(agentCmd),
-		Force:          force,
+		Pane:         pane,
+		HookEquipped: hookEquipped(agentCmd),
+		Force:        force,
+		// The operator's `--force` means "send it anyway", which covers BOTH refusals:
+		// the re-send interlock and the draft guard. The phone's force (it always carries
+		// a sendID) never reaches here — serve builds its own Opts — so a remote send
+		// cannot waive draft protection.
+		ClobberDraft:   force,
 		ResendWindow:   tune.ResendWindow,
 		DeliverTimeout: tune.DeliverTimeout,
 		HookGrace:      tune.HookGrace,

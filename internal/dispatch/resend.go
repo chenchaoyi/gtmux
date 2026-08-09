@@ -64,6 +64,14 @@ func RecordSend(pane, hash string, ts int64) {
 	_ = os.WriteFile(filepath.Join(sendsDir(), sanitizePane(pane)+".json"), b, 0o644)
 }
 
+// ForgetSend drops a pane's recent-send record, so the interlock stops recognizing the
+// last payload as already delivered. Deliver calls it when a delivery ends FAILED: the
+// record is written when the paste is PLACED (so a crash mid-flight still can't
+// double-deliver), but a placement that never landed must not refuse its own retry.
+func ForgetSend(pane string) {
+	_ = os.Remove(filepath.Join(sendsDir(), sanitizePane(pane)+".json"))
+}
+
 // isDuplicate reports whether delivering `text` to `pane` now (unix `now`) would
 // repeat the last payload within `window` seconds. window <= 0 disables the check.
 // `recent` is the store lookup (injected in tests). This is the pure decision the

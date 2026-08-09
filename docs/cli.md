@@ -455,7 +455,20 @@ is still a fully interactive session you can attach to and steer.
 `gtmux send <pane> <text>` uses the SAME land-verification by DEFAULT now (returns as
 soon as it confirms, so a healthy send stays fast); `--no-verify` opts out,
 `--force` overrides the interlock, and `--json` prints the verified result
-(`{delivered, state, judged_by, evidence}` — verified sends only). What `--no-verify` and the mobile `POST /api/send`
+(`{delivered, state, judged_by, evidence}` — verified sends only).
+
+**A send never writes into someone else's unsubmitted line.** A paste APPENDS to the input
+box, so if the pane's owner is mid-sentence at the keyboard, delivering would concatenate
+your payload onto their words and submit both. Every path — the CLI, hq, `--no-verify`, and
+the phone — reads the draft first and refuses (`state:"refused-draft"`, nothing written to
+the pane) with the draft quoted back. Your OWN text already in the box is not a clobber: a
+re-send after a lost ack proceeds and confirms idempotently. `--force` waives it, and
+deliberately not the phone's idempotency key — a send from another device is the one with
+nobody present to undo it.
+
+A send that ends `failed` may be **retried immediately**: the interlock drops the record of
+an attempt that never landed, so the obvious next move is no longer answered with
+`refused-duplicate`. A `queued` send keeps its record — the agent already took it. What `--no-verify` and the mobile `POST /api/send`
 skip is the CONFIRMATION, not the mechanics: every text path pastes and then sends
 Enter as its own key, so an unverified send can't split a multi-line message either.
 `--key` remains a single keystroke. For anything longer than a short line, use

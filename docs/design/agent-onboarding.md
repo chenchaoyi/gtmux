@@ -180,12 +180,14 @@ id (piped alongside the prompt) so it lines up with the `resume` record `session
   `<key>.png` in `assets/agent-icons/` with provenance in `SOURCES.md`; the serve hands it
   to every surface via `/api/icon`. For agents with a desktop app you can instead point
   `Icon` at `/Applications/<App>.app`. **Gotcha:** the mobile only fetches `/api/icon` when
-  `agents --json` reports a NON-EMPTY `icon`, so `radar.IconFor` returns a `builtin:<key>`
-  hint whenever a committed icon exists even though the profile `Icon` path is empty —
-  without that the phone shows the monogram despite the icon shipping. *(This is exactly
-  how opencode showed "OC" until fixed.)* The local menu-bar surface still resolves icons
-  itself (install-time drop into `~/.config/gtmux/icons`), so a committed icon reaches it
-  only after that follow-up lands.
+  `agents --json` reports a NON-EMPTY `icon`, so `radar.IconFor` materializes the committed
+  PNG under `~/.local/share/gtmux/agent-icons/<key>.png` and returns THAT PATH whenever the
+  profile `Icon` is empty — without a hint the phone shows the monogram despite the icon
+  shipping. *(This is exactly how opencode showed "OC", and Codex's non-tmux rows showed
+  "Cx", until fixed.)* Because the hint is a real path rather than an opaque token, the
+  menu-bar app — which resolves a hint by opening it as a file — gets the committed icon
+  too, with no app-side change. Its `~/.config/gtmux/icons/<slug>.png` drop-in remains as
+  the manual override.
 - [ ] **Approval event vs pre-tool event.** If the agent raises a distinct approval event,
   keep its pre-tool event as telemetry (dedicated table). Otherwise every tool would flag
   "needs you," or real approvals would be dropped (Kiro's lowercase events must be

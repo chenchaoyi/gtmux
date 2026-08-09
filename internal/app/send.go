@@ -171,6 +171,12 @@ func cmdSend(args []string) int {
 			i18n.Sae("gtmux send: refused (identical payload re-sent within the window; use --force)",
 				"gtmux send: 已拒发（时间窗内重复相同内容，要重发用 --force）")
 			return 1
+		case dispatch.StateRefusedDraft:
+			i18n.Sae("gtmux send: refused — that pane has UNSENT text in its input box; sending would\n"+
+				"append to it and submit both. Clear it, or use --force.\n"+res.Evidence,
+				"gtmux send: 已拒发 —— 该 pane 的输入框里有未提交的内容，发送会拼在它后面一起提交。\n"+
+					"请先清空，或用 --force。\n"+res.Evidence)
+			return 1
 		default:
 			i18n.Sae("gtmux send: NOT delivered — evidence:\n"+res.Evidence,
 				"gtmux send: 未送达 —— 证据：\n"+res.Evidence)
@@ -196,7 +202,14 @@ func cmdSend(args []string) int {
 			}
 			return 0
 		}
-		dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), dispatch.Opts{Pane: id, PasteRetries: 2}, text)
+		// The unverified path still protects a draft — skipping VERIFICATION was never a
+		// request to overwrite someone's unsubmitted line. `--force` waives it.
+		if _, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id),
+			dispatch.Opts{Pane: id, PasteRetries: 2, ClobberDraft: force}, text); refused == dispatch.StateRefusedDraft {
+			i18n.Sae("gtmux send: refused — that pane has UNSENT text in its input box (use --force)",
+				"gtmux send: 已拒发 —— 该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
+			return 1
+		}
 		return 0
 	}
 	if text != "" {

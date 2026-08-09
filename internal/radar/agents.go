@@ -7,6 +7,7 @@
 package radar
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -120,10 +121,15 @@ func FileMtime(path string) int64 {
 
 // IconFor returns the icon hint for the agent named name (first matching profile,
 // so user overrides win). When a profile has no icon path but the binary ships a
-// committed built-in icon for that agent, it returns a "builtin:<key>" hint so the
-// icon field is NON-EMPTY — surfaces that gate the /api/icon fetch on a truthy
-// `icon` (the mobile AgentAvatar) then still fetch it, and the serve serves the
-// committed PNG. "" only when there is no icon of any kind.
+// committed built-in icon for that agent, the committed PNG is materialized on disk and
+// its PATH returned. "" only when there is no icon of any kind.
+//
+// The hint is always a PATH a reader can open, and that is the point. It used to be an
+// opaque `builtin:<key>` token, which every surface had to be taught: the phone and the web
+// only need a NON-EMPTY hint (they fetch the bytes from `/api/icon`), so they worked — but
+// the menu-bar app resolves the hint by opening it as a file, so `builtin:codex` fell
+// through to the neutral monogram and Codex had no icon on that surface at all. Handing out
+// a real path costs one small write and teaches nobody anything.
 func IconFor(name string, profiles []agentProfile) string {
 	for i := range profiles {
 		if profiles[i].Name == name {
@@ -133,10 +139,39 @@ func IconFor(name string, profiles []agentProfile) string {
 			break
 		}
 	}
-	if key := agents.KeyForLabel(name); key != "" && assets.AgentIcon(key) != nil {
-		return "builtin:" + key
+	return BuiltinIconPath(agents.KeyForLabel(name))
+}
+
+// BuiltinIconPath materializes the committed icon for an agent key under the state dir and
+// returns its path, or "" when the binary ships no icon for that key.
+//
+// Written once and refreshed only when the bytes differ, so the common call (every radar
+// row, every poll) is one stat: a plain re-write on every poll would churn the disk and
+// break the file out from under a reader mid-read. The refresh matters because `gtmux
+// update` can ship a new icon, and a stale cached PNG would outlive it.
+func BuiltinIconPath(key string) string {
+	b := assets.AgentIcon(key)
+	if b == nil {
+		return ""
 	}
-	return ""
+	dir := filepath.Join(state.Dir(), "agent-icons")
+	p := filepath.Join(dir, key+".png")
+	if cur, err := os.ReadFile(p); err == nil && bytes.Equal(cur, b) {
+		return p
+	}
+	if os.MkdirAll(dir, 0o755) != nil {
+		return ""
+	}
+	// Write-then-rename: a surface polling this path must never open a half-written PNG.
+	tmp := p + ".tmp"
+	if os.WriteFile(tmp, b, 0o644) != nil {
+		return ""
+	}
+	if os.Rename(tmp, p) != nil {
+		_ = os.Remove(tmp)
+		return ""
+	}
+	return p
 }
 
 type Pane struct {
@@ -982,8 +1017,8 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 //
 // The icon goes through IconFor rather than reading `p.Icon` directly, and that is the
 // whole point: a profile carries an icon PATH only for an agent that ships a desktop app
-// (Claude, Cursor), while Codex — a CLI with no .app — relies on IconFor's `builtin:<key>`
-// fallback to the committed PNG. Reading p.Icon raw returned "" for exactly those agents,
+// (Claude, Cursor), while Codex — a CLI with no .app — relies on IconFor's fallback to the
+// committed PNG. Reading p.Icon raw returned "" for exactly those agents,
 // so every NATIVE Codex row arrived at the phone with no icon field and rendered as the
 // neutral "Cx" monogram, while the same agent in a tmux pane (which has always gone
 // through IconFor) showed its real mark two rows above.
@@ -997,10 +1032,7 @@ func displayForKey(key string, profiles []agentProfile) (name, icon string) {
 	}
 	// No profile claims this key. It is still the AGENT KEY, so the committed icon can be
 	// looked up directly — a sensed agent gtmux has no profile for still gets its mark.
-	if assets.AgentIcon(key) != nil {
-		return key, "builtin:" + key
-	}
-	return key, ""
+	return key, BuiltinIconPath(key)
 }
 
 // sortPanes orders the radar: status groups first (waiting → working → idle/running),

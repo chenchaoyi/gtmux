@@ -13,6 +13,12 @@ const (
 	StateQueued     State = "queued"            // accepted, but behind the current turn
 	StateFailed     State = "failed"            // not confirmed within the timeout
 	StateRefusedDup State = "refused-duplicate" // identical payload re-sent inside the window
+	// StateRefusedDraft: the pane's input box already held UNSUBMITTED text that is not
+	// ours. Pasting appends to a draft — it does not replace it — so delivering would
+	// concatenate someone's half-written sentence onto the payload and submit both as one
+	// message. The nudge channel has refused to type into a non-empty box since
+	// hq-nudge-hardening; this is the same rule for the dispatch channel.
+	StateRefusedDraft State = "refused-draft"
 )
 
 // JudgedBy values — which evidence layer decided a delivery's outcome. Attributed
@@ -62,13 +68,22 @@ type IO struct {
 	Sleep      func()                   // wait one poll interval (prod sleeps; test advances)
 	RecentSend func(pane string) (string, int64)
 	RecordSend func(pane, hash string, ts int64)
+	// ForgetSend drops a pane's interlock record. Called when a delivery ends FAILED, so
+	// the interlock cannot refuse the retry of a send that never landed; optional.
+	ForgetSend func(pane string)
 }
 
 // Opts configures a delivery.
 type Opts struct {
-	Pane           string
-	HookEquipped   bool  // prefer the deterministic event stream over the screen
-	Force          bool  // override the re-send interlock
+	Pane         string
+	HookEquipped bool // prefer the deterministic event stream over the screen
+	Force        bool // override the re-send interlock
+	// ClobberDraft overrides the DRAFT guard — deliver even when the input box holds
+	// someone else's unsubmitted text. Deliberately NOT folded into Force: the phone sets
+	// Force on every send (it carries its own sendID idempotency), and letting that also
+	// waive draft protection would leave the surface most likely to clobber a draft — a
+	// send from another device, into a pane the user may be typing in — unprotected.
+	ClobberDraft   bool
 	ResendWindow   int64 // seconds; 0 disables the interlock
 	DeliverTimeout int64 // seconds to confirm before giving up
 	HookGrace      int64 // seconds to wait for a submit event before using the screen fallback
@@ -112,6 +127,24 @@ func Deliver(io IO, opts Opts, text string) Result {
 		return Result{State: StateRefusedDup, Evidence: "identical payload re-sent within resendWindow"}
 	}
 
+	// 1b · Draft guard: never write into someone else's unsubmitted text.
+	//
+	// A paste APPENDS to the input box. If the user (or the agent's own prompt) has a
+	// half-written line sitting there, delivering concatenates the payload onto it and
+	// submits the pair as one message — the user's sentence is mangled and sent without
+	// them ever pressing Enter. The nudge channel has refused a non-empty box since
+	// hq-nudge-hardening; the dispatch channel never did, so `gtmux send` (CLI, HQ, and
+	// the phone) could silently eat a draft.
+	//
+	// Refusing is the right answer here rather than queueing: unlike a wake, a send has a
+	// caller waiting on a verdict, and a refusal it can see beats a message it cannot
+	// take back. A draft that ALREADY holds this delivery is not someone else's text —
+	// it is our own re-send landing idempotently, so it proceeds. `--force` overrides,
+	// same as the interlock.
+	if blocked, evidence := draftBlocked(io, opts, text); blocked {
+		return Result{State: StateRefusedDraft, Evidence: evidence}
+	}
+
 	start := io.Now()
 
 	// 2·3 · Paste with the fragment guard (incident ③).
@@ -126,7 +159,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// only confirmation and a settled fragment must still fail (submitting a known-truncated
 	// draft is worse than reporting it).
 	if !pasteWithGuard(io, opts, text) && !opts.HookEquipped {
-		return Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), JudgedBy: JudgedByScreen}
+		return failed(io, opts, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
 	}
 	if io.RecordSend != nil {
 		io.RecordSend(opts.Pane, PayloadHash(opts.Pane, text), io.Now())
@@ -189,9 +222,28 @@ func Deliver(io IO, opts Opts, text string) Result {
 			if submitConfirmed(io, opts, head, start) {
 				return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByDriver}
 			}
-			return Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen}
+			return failed(io, opts, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 		}
 	}
+}
+
+// failed finalizes a FAILED delivery by dropping the pane's interlock record, so the
+// obvious next move — send it again — is not refused.
+//
+// The interlock records the payload the moment the paste is placed, which is right: a
+// crash between paste and submit must not let the same instruction be delivered twice. But
+// it recorded "we tried this" and was read as "this was delivered", so a send that failed
+// verification poisoned its own retry — `gtmux send` answered `refused-duplicate` to the
+// one thing the operator obviously wanted, and `--force` was the only way through. Measured
+// against a Codex whose receipt channel was dead, that was every retry.
+//
+// Only StateFailed forgets. StateQueued was ACCEPTED (it sits behind the current turn), and
+// re-sending it would duplicate the instruction — exactly what the interlock exists for.
+func failed(io IO, opts Opts, r Result) Result {
+	if io.ForgetSend != nil {
+		io.ForgetSend(opts.Pane)
+	}
+	return r
 }
 
 // submitConfirmed scans the pane's event stream for a submit event whose recorded
@@ -229,13 +281,41 @@ func submitConfirmed(io IO, opts Opts, head string, since int64) bool {
 // WITHHELD only when the guard positively settled on a fragment it could not place in
 // full ON A QUIET pane: submitting a known-truncated draft is exactly what this fixes.
 // Returns whether Enter was sent (true once the paste was placed by any of the above).
-func PasteAndSubmit(io IO, opts Opts, text string) bool {
+func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
 	opts.fillDefaults()
+	// The UNVERIFIED path needs the draft guard just as much — more, in fact. It is what
+	// `POST /api/send` uses, so it is a send from ANOTHER DEVICE into a pane whose owner
+	// may be mid-sentence at the keyboard: the one case where nobody watching can undo it.
+	if blocked, _ := draftBlocked(io, opts, text); blocked {
+		return false, StateRefusedDraft
+	}
 	if !pasteWithGuard(io, opts, text) {
-		return false // a settled fragment — do not submit a truncated draft
+		return false, StateFailed // a settled fragment — do not submit a truncated draft
 	}
 	_ = io.Enter()
-	return true
+	return true, ""
+}
+
+// draftBlocked reports whether the pane's input box holds someone ELSE's unsubmitted text,
+// which delivering would concatenate onto and submit as one message.
+//
+// A paste APPENDS to the box; it does not replace it. So a half-written line sitting there
+// gets mangled and sent without its author ever pressing Enter. The nudge channel has
+// refused a non-empty box since hq-nudge-hardening; the dispatch channel never did, which
+// left `gtmux send` (CLI, HQ, and the phone) able to eat a draft silently.
+//
+// Two things are NOT a clobber: a box that already holds THIS delivery (our own re-send
+// landing idempotently after a lost ack), and a pane with no locatable input region at all
+// (a plain shell — nothing to protect, and post-submit verification judges it).
+func draftBlocked(io IO, opts Opts, text string) (bool, string) {
+	if opts.ClobberDraft {
+		return false, ""
+	}
+	_, draft, structured := SplitInputRegion(io.Capture())
+	if !structured || normalizeSpace(draft) == "" || draftHasDelivery(draft, text) {
+		return false, ""
+	}
+	return true, "input box holds unsubmitted text: " + clampEvidence(draft)
 }
 
 // pasteWithGuard puts text in the pane's input draft and confirms the FULL text (or
@@ -267,7 +347,24 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 		if err := io.Paste(text); err != nil {
 			return false
 		}
-		switch confirmPaste(io, opts, text) {
+		verdict, placed := confirmPaste(io, opts, text)
+		// A fragment verdict on a pane where something DID reach the box is the one case
+		// where the guard's cure is worse than the disease. The verdict authorizes C-u —
+		// destroying the draft — and the scrape cannot tell "the agent rendered less than
+		// we pasted" from "the agent has not finished rendering what we pasted". On an IDLE
+		// Codex it is reliably the latter: the pane is still (so the busy escape above does
+		// not fire) while the draft renders a beat late, and the guard wiped a perfectly
+		// good paste, re-pasted into the wreckage, and the message was lost.
+		//
+		// So when the agent is hook-equipped, a non-empty draft is treated as PLACED and
+		// submitted: the receipt then judges on the FULL needle, which a genuinely truncated
+		// paste cannot match — the delivery is reported failed instead of silently mangled.
+		// A hook-LESS agent has no receipt, so the scrape stays its only evidence and the
+		// clear-and-retry remains (submitting a known-truncated draft would be worse).
+		if verdict == pasteFragment && opts.HookEquipped && placed {
+			return true
+		}
+		switch verdict {
 		case pasteInDraft, pasteUnverifiable, pasteBusy:
 			// pasteBusy: the pane is churning and the box read never confirmed, but the
 			// paste is placed. Return placed (do NOT clear+retry — that would destroy a
@@ -314,7 +411,7 @@ const (
 // When the settle window expires with the pane still moving AND a non-empty draft (the paste
 // demonstrably reached the box), return pasteBusy — placed, submit best-effort, let the
 // receipt / post-submit verify judge. A pane that goes and STAYS still is a real fragment.
-func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
+func confirmPaste(io IO, opts Opts, text string) (pasteVerdict, bool) {
 	budget := settleFrames(opts.PasteSettle, text)
 	// A BUSY pane (an agent mid-render) draws a long paste PROGRESSIVELY: the draft
 	// fills in frame by frame while the agent's own output competes for redraws. A fixed
@@ -334,10 +431,10 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 		frame := io.Capture()
 		_, draft, structured := SplitInputRegion(frame)
 		if !structured {
-			return pasteUnverifiable
+			return pasteUnverifiable, peak > 0
 		}
 		if draftHasDelivery(draft, text) {
-			return pasteInDraft
+			return pasteInDraft, true
 		}
 		switch {
 		case !frameSeen:
@@ -365,9 +462,9 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 		if i >= ceiling {
 			// Hard cap: still moving + placed ⇒ busy (submit best-effort); else a fragment.
 			if peak > 0 && renderStall < renderMotionFrames {
-				return pasteBusy
+				return pasteBusy, true
 			}
-			return pasteFragment
+			return pasteFragment, peak > 0
 		}
 		if i >= budget && stall >= pasteStallFrames {
 			// The draft stopped growing. Moving RIGHT NOW (renderStall short) + placed ⇒ busy
@@ -376,10 +473,10 @@ func confirmPaste(io IO, opts Opts, text string) pasteVerdict {
 			// real fragment. In between (a gap between slow footer ticks), keep looping: the
 			// next tick resets renderStall→busy, or sustained stillness→fragment.
 			if renderStall < pasteStallFrames && peak > 0 {
-				return pasteBusy
+				return pasteBusy, true
 			}
 			if renderStall >= renderMotionFrames {
-				return pasteFragment
+				return pasteFragment, peak > 0
 			}
 		}
 		io.Sleep()
@@ -658,6 +755,18 @@ func backoff(attempt int) int64 {
 
 // evidenceTail returns the last ~12 non-empty lines of a capture — the on-screen
 // proof attached to a failed delivery so a caller (and HQ) can see what happened.
+// clampEvidence bounds a draft quoted back in a refusal. The draft is the USER's own
+// unsubmitted text, so the refusal shows enough to recognize it ("that's my sentence")
+// without echoing a whole paragraph into a log or a phone toast.
+func clampEvidence(draft string) string {
+	d := normalizeSpace(draft)
+	const n = 60
+	if len([]rune(d)) > n {
+		return string([]rune(d)[:n]) + "…"
+	}
+	return d
+}
+
 func evidenceTail(capture string) string {
 	lines := strings.Split(strings.TrimRight(capture, "\n"), "\n")
 	const n = 12
