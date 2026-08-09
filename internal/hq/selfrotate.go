@@ -288,8 +288,19 @@ func rotateStart(firstMsgAt, now int64) int64 {
 // count only accrues once the sensor has opened a window for this session, and a confident
 // "0 turns" beside a two-day-old session is the kind of small lie that costs a row its
 // credibility.
+//
+// A ZERO ctx is omitted for the same reason, and it matters more. `ctxFracFor` returns 0
+// when there is no usage data — which is EVERY non-Claude agent, because the usage parser
+// reads Claude's log shape. So an HQ running on codex or opencode was told
+// `ctx 0% · 14h · 380 turns`, and "0%" reads as "plenty of room": evidence AGAINST
+// rotating, inside the one mechanism built to catch a judge that cannot self-assess. The
+// criterion itself never misfired (0 is below any threshold); what it did was undercut a
+// correct rotation. A live session never genuinely sits at 0, so omission is unambiguous.
 func rotateFigures(ctxFrac float64, ageSec int64, turns int) string {
-	parts := []string{fmt.Sprintf("ctx %d%%", pct(ctxFrac))}
+	var parts []string
+	if ctxFrac > 0 {
+		parts = append(parts, fmt.Sprintf("ctx %d%%", pct(ctxFrac)))
+	}
 	if ageSec > 0 {
 		parts = append(parts, HumanAgeShort(ageSec))
 	}
