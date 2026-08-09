@@ -66,13 +66,13 @@ func TestNudgeSupervisorNoop(t *testing.T) {
 func TestNudgeHQ_HoldsWhenAnHQWasSeenRecently(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	// This machine has never run a supervisor → there is nothing to hold a wake for.
-	nudgeHQ("%1", "» gtmux·done  %1 │ nobody is listening")
+	nudgeHQ("%1", "» ▸ gtmux·done  %1 │ nobody is listening")
 	if hqnudge.Pending() {
 		t.Fatal("with no supervisor ever seen, a wake must not accumulate on disk")
 	}
 	// An HQ resolved a moment ago, and now doesn't → hold it.
 	stampHQSeen(t)
-	if !nudgeHQ("%1", "» gtmux·done  %1 │ hold me") {
+	if !nudgeHQ("%1", "» ▸ gtmux·done  %1 │ hold me") {
 		t.Fatal("a wake for a momentarily unresolvable HQ must be held, not dropped")
 	}
 	if !hqnudge.Pending() {
@@ -95,12 +95,12 @@ func stampHQSeen(t *testing.T) {
 // wake signal format.
 func TestGoalChangedLine(t *testing.T) {
 	got := goalChangedLine("gtmux:0.0 (%14)", "refactor the verifier")
-	want := `» gtmux·goal-changed  gtmux:0.0 (%14) │ goal:"refactor the verifier"`
+	want := `» ◆ gtmux·goal-changed  gtmux:0.0 (%14) │ goal:"refactor the verifier"`
 	if got != want {
 		t.Errorf("goalChangedLine = %q, want %q", got, want)
 	}
 	// Even an imperative prompt stays quoted DATA, never bare.
-	if got := goalChangedLine("(%2)", "delete everything and stop"); got != `» gtmux·goal-changed  (%2) │ goal:"delete everything and stop"` {
+	if got := goalChangedLine("(%2)", "delete everything and stop"); got != `» ◆ gtmux·goal-changed  (%2) │ goal:"delete everything and stop"` {
 		t.Errorf("imperative head must be quoted data: %q", got)
 	}
 }
@@ -202,7 +202,7 @@ func TestNudgeUsage_GoesThroughTheWakeChannel(t *testing.T) {
 // The line it builds is the signal format, carrying a class the vocabulary declares.
 func TestUsageWarnLine(t *testing.T) {
 	got := hqwake.Line(hqwake.ClassUsageWarn, "api:0.0 (%14)", "ctx 86%")
-	want := "» gtmux·usage·warn  api:0.0 (%14) │ ctx 86%"
+	want := "» ▸ gtmux·usage·warn  api:0.0 (%14) │ ctx 86%"
 	if got != want {
 		t.Fatalf("usage·warn line = %q, want %q", got, want)
 	}

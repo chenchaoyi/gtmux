@@ -178,33 +178,43 @@ scannable at a glance:
 
 <!-- gtmux:rendered wake-lines -->
 ```
-» gtmux·waiting·permission  api:0.0 (%7) │ title:"run the tests?"
-» gtmux·done  web:2.0 (%11) │ 3m │ goal:"fix the login bug" │ tail:"tests pass" · #a3f1c2
+» ◆ gtmux·waiting·permission  api:0.0 (%7) │ title:"run the tests?"
+» ▸ gtmux·done  web:2.0 (%11) │ 3m │ goal:"fix the login bug" │ tail:"tests pass" · #a3f1c2
 ```
 
-`» gtmux·<class>  <loc> (<pane>) │ <field> │ …`, where every agent- or user-authored
-payload is quoted and labelled (`title:` / `goal:` / `tail:` / `ask:` / `err:`) — it is
-DATA hq reports, never an instruction it obeys. The classes:
+`» <grade> gtmux·<class>  <loc> (<pane>) │ <field> │ …`, where every agent- or
+user-authored payload is quoted and labelled (`title:` / `goal:` / `tail:` / `ask:` /
+`err:`) — it is DATA hq reports, never an instruction it obeys.
 
-| class | fires when |
-| --- | --- |
-| `waiting·<kind>` | an agent blocked on you (permission / plan / question) |
-| `resolved` | that wait CLEARED — you answered in-pane, or the agent resumed; hq drops any stale chase |
-| `asks` | a turn-end REPLY asked a question with no menu (a menu-only sensor misses it) |
-| `done` | **any** session reached idle after work — not just a dispatched task. Suppressed when the completion happened in the pane you were watching (`hqWake.done`: `unattended` default \| `always` \| `tick`), and rate-merged per pane |
-| `crash` | the turn DIED on an agent/API error — never read as a finish |
-| `goal-changed` | you submitted a prompt straight into an agent's own window (incl. a slash command), so hq senses work it didn't dispatch |
-| `new-session` | a newly sensed agent pane — enroll it |
-| `reap-suggest` | a dispatch looks reclaimable · carries the exact `gtmux reap <id>` |
-| `stuck·waiting` | a pane has been waiting on you past the timeout — once per waiting episode |
-| `resource·warn` / `limits·warn` | a machine/subscription threshold crossed (damped — see `gtmux resource`) |
-| `usage·warn` | a session crossed a context/burn layer (see `gtmux usage`) |
-| `feed-degraded` / `wake-degraded` | perception itself broke: the spool daemon died, or wakes stopped landing |
-| `tick` | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
-| `distill` | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued) — hq folds the period's lessons into its knowledge base and prunes stale |
-| `self-check` | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |
-| `unread` | events are sitting past hq's consumption watermark — a count and the cursor to pull from, no importance claim |
-| `self-rotate` | **hq's own session** is worn out (context / age / turns) — it hands off and rotates itself, see below |
+The **grade** leads, in a fixed position, so a screen of signal lines reads by weight
+before it reads by words: **`◆` decision** (needs you — irreversible, costly, or an
+explicit ask) · **`▸` attention** (a line is blocked or changed in a way worth knowing) ·
+**`·` ledger** (bookkeeping — recorded and pullable, zero interrupt value). It is a
+PROJECTION of the class, not a second opinion about it: what fires and at what severity is
+decided elsewhere, and this only says how loudly it should read. The glyphs clear the same
+encoding bar as `»` and `│` — no emoji, nothing outside the blocks the grammar already
+uses — because colour is an addition on surfaces that own their rendering, never the only
+carrier. The classes:
+
+| class | grade | fires when |
+| --- | :---: | --- |
+| `waiting·<kind>` | ◆ | an agent blocked on you (permission / plan / question) |
+| `resolved` | ▸ | that wait CLEARED — you answered in-pane, or the agent resumed; hq drops any stale chase |
+| `asks` | ◆ | a turn-end REPLY asked a question with no menu (a menu-only sensor misses it) |
+| `done` | ▸ | **any** session reached idle after work — not just a dispatched task. Suppressed when the completion happened in the pane you were watching (`hqWake.done`: `unattended` default \| `always` \| `tick`), and rate-merged per pane |
+| `crash` | ◆ | the turn DIED on an agent/API error — never read as a finish |
+| `goal-changed` | ◆ | you submitted a prompt straight into an agent's own window (incl. a slash command), so hq senses work it didn't dispatch |
+| `new-session` | ▸ | a newly sensed agent pane — enroll it |
+| `reap-suggest` | ▸ | a dispatch looks reclaimable · carries the exact `gtmux reap <id>` |
+| `stuck·waiting` | ▸ | a pane has been waiting on you past the timeout — once per waiting episode |
+| `resource·warn` / `limits·warn` | ▸ | a machine/subscription threshold crossed (damped — see `gtmux resource`) |
+| `usage·warn` | ▸ | a session crossed a context/burn layer (see `gtmux usage`) |
+| `feed-degraded` / `wake-degraded` | ◆ | perception itself broke: the spool daemon died, or wakes stopped landing |
+| `tick` | · | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
+| `distill` | · | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued) — hq folds the period's lessons into its knowledge base and prunes stale |
+| `self-check` | · | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |
+| `unread` | · | events are sitting past hq's consumption watermark — a count and the cursor to pull from, no importance claim |
+| `self-rotate` | ◆ | **hq's own session** is worn out (context / age / turns) — it hands off and rotates itself, see below |
 
 `distill` and `self-check` are **maintenance** classes: they knock at the lowest priority,
 so they never arrive ahead of a blocked agent, and both passes are silent unless hq
@@ -225,7 +235,7 @@ how far hq has read the stream, and when events sit past it for `hqWake.unreadDe
 
 <!-- gtmux:rendered unread-line -->
 ```
-» gtmux·unread  7 unconsumed (%21 ×4 · %13 ×2 · control) │ pull: gtmux events --since-seq 6653 --json
+» · gtmux·unread  7 unconsumed (%21 ×4 · %13 ×2 · control) │ pull: gtmux events --since-seq 6653 --json
 ```
 
 The line names **what** it counted, by source (`control` = gtmux's own maintenance

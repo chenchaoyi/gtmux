@@ -761,9 +761,9 @@ func TestEvidenceTail(t *testing.T) {
 // scrolled away) ran out the clock and reported NOT delivered. With the single
 // NormalizeNeedle pipeline the event confirms it.
 func TestDeliver_StrippablePrefix_EventStillMatches(t *testing.T) {
-	payload := "» gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地"
+	payload := "» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地"
 	f := &fakeIO{
-		caps: []string{boxDraftLines("» gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"", "继续 P2，按 tasks.md 逐项落地")},
+		caps: []string{boxDraftLines("» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"", "继续 P2，按 tasks.md 逐项落地")},
 		// The event Summary is what the hook records: the needle pipeline's output.
 		evs: []Ev{{Kind: EvSubmit, Head: NormalizeNeedle(payload), Ts: 0}},
 	}

@@ -206,7 +206,14 @@ func ClassifyUserPrompt(s string) (text, kind string) {
 // gtmuxEchoPrefixes are gtmux's own injected lines. Our wake line landing back in a
 // pane's prompt (an echo, a copy-paste) must never read back as a user goal. The `»`
 // form is the current wake format; `[gtmux]` is the retired one, kept for old panes.
-var gtmuxEchoPrefixes = []string{"[gtmux]", Sigil + " gtmux·"}
+//
+// The bare `» ` is deliberate: since hq-signal-ergonomics the line carries an attention
+// GRADE glyph between the sigil and `gtmux·`, so matching `» gtmux·` literally stopped
+// recognising our own lines — and a wake echoed back would have been read as a real user
+// goal (a `goal-changed` wake about ourselves, at instruction severity). Matching the
+// sigil alone is both simpler and robust to the grammar growing again; no user prompt
+// begins with `» ` in practice, and the retired form stays for old panes.
+var gtmuxEchoPrefixes = []string{"[gtmux]", Sigil + " "}
 
 // Sigil is the rune every gtmux wake line opens with (hqwake.Sigil — duplicated here
 // rather than imported, so the transcript parser stays free of the wake channel).

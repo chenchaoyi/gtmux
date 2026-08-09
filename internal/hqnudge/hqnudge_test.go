@@ -150,7 +150,7 @@ func body(t *testing.T, payload string) string {
 func TestDeliver_DraftPresent_QueuesNoSend(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{draft: "hi there"}
-	deliver(f.io(), "%hq", "» gtmux·waiting  %1 — hello")
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %1 — hello")
 	if len(f.sent) != 0 {
 		t.Fatalf("a drafted box must never be typed into; sent=%v", f.sent)
 	}
@@ -235,7 +235,7 @@ func TestBoxEmpty_TwoFrameRace(t *testing.T) {
 func TestDeliver_CopyMode_Queues(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{inMode: true} // box empty, but pane in copy-mode
-	deliver(f.io(), "%hq", "» gtmux·waiting  %1")
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %1")
 	if len(f.sent) != 0 {
 		t.Fatalf("copy-mode must not be injected into; sent=%v", f.sent)
 	}
@@ -245,7 +245,7 @@ func TestDeliver_CopyMode_Queues(t *testing.T) {
 	// User exits copy-mode → box empty → drain delivers.
 	f.inMode = false
 	drain(f.io(), "%hq")
-	if len(f.sent) != 1 || body(t, f.sent[0]) != "» gtmux·waiting  %1" {
+	if len(f.sent) != 1 || body(t, f.sent[0]) != "» ◆ gtmux·waiting  %1" {
 		t.Fatalf("leaving copy-mode should deliver the queued nudge; sent=%v", f.sent)
 	}
 }
@@ -269,14 +269,14 @@ func TestDeliverKeyed_ReplacesInsteadOfAdding(t *testing.T) {
 	f := &fake{draft: "typing"} // drafted → everything stays queued
 	x := f.io()
 	future := int64(1_800_000_000_000_000_000) // due far in the future
-	deliverKeyedAt(x, "%hq", "done-%14", "» gtmux·done  %14 │ v1", future)
-	deliverKeyedAt(x, "%hq", "done-%14", "» gtmux·done  %14 │ v2", future+999)
-	deliverKeyedAt(x, "%hq", "done-%14", "» gtmux·done  %14 │ v3", future+999)
+	deliverKeyedAt(x, "%hq", "done-%14", "» ▸ gtmux·done  %14 │ v1", future)
+	deliverKeyedAt(x, "%hq", "done-%14", "» ▸ gtmux·done  %14 │ v2", future+999)
+	deliverKeyedAt(x, "%hq", "done-%14", "» ▸ gtmux·done  %14 │ v3", future+999)
 	if got := queuedCount(t); got != 1 {
 		t.Fatalf("same key must REPLACE, not add: queued=%d", got)
 	}
 	// A different key queues independently.
-	deliverKeyedAt(x, "%hq", "done-%15", "» gtmux·done  %15 │ v1", future)
+	deliverKeyedAt(x, "%hq", "done-%15", "» ▸ gtmux·done  %15 │ v1", future)
 	if got := queuedCount(t); got != 2 {
 		t.Fatalf("distinct keys are independent: queued=%d", got)
 	}
@@ -381,7 +381,7 @@ func TestDrain_SwallowedEnter_ParksForEnterRepair(t *testing.T) {
 func TestDrain_UnconfirmedAck_RetriesWithTheSameID(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{ackBlind: true}
-	deliver(f.io(), "%hq", "» gtmux·done  %14")
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
 	if len(f.sent) != 1 {
 		t.Fatalf("the line WAS submitted; sent=%v", f.sent)
 	}
@@ -405,7 +405,7 @@ func TestDrain_UnconfirmedAck_RetriesWithTheSameID(t *testing.T) {
 func TestDrain_UnackableEntryStopsAfterMaxAttempts(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{ackBlind: true}
-	deliver(f.io(), "%hq", "» gtmux·done  %14")
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
 	for i := 1; i < maxAckAttempts+2; i++ {
 		drain(f.io(), "%hq")
 	}
@@ -434,7 +434,7 @@ func TestDrain_UnackableEntryStopsAfterMaxAttempts(t *testing.T) {
 func TestDrain_SendErrorRetriesUnbounded(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{pasteErr: errors.New("tmux is down")}
-	deliver(f.io(), "%hq", "» gtmux·waiting  %14")
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
 	for i := 0; i < maxAckAttempts+3; i++ {
 		drain(f.io(), "%hq")
 	}
@@ -443,7 +443,7 @@ func TestDrain_SendErrorRetriesUnbounded(t *testing.T) {
 	}
 	f.pasteErr = nil
 	drain(f.io(), "%hq")
-	if len(f.sent) != 1 || body(t, f.sent[0]) != "» gtmux·waiting  %14" {
+	if len(f.sent) != 1 || body(t, f.sent[0]) != "» ◆ gtmux·waiting  %14" {
 		t.Fatalf("…and lands when tmux comes back; sent=%v", f.sent)
 	}
 }
@@ -457,7 +457,7 @@ func TestDrain_BatchCapsOnPayloadSize(t *testing.T) {
 	x := f.io()
 	long := strings.Repeat("x", 300)
 	for i := 0; i < 6; i++ {
-		deliver(x, "%hq", "» gtmux·done  "+long)
+		deliver(x, "%hq", "» ▸ gtmux·done  "+long)
 	}
 	f.draft = ""
 	drain(x, "%hq")
@@ -491,7 +491,7 @@ func TestAck_MatchesAWrappedSubmittedLine(t *testing.T) {
 		enter: func(string) error { return nil },
 		sleep: func() {},
 	}
-	payload := `» gtmux·done  gtmux:0.0 (%14) │ 3m │ goal:"ship the wake fix" · #a3f1c2`
+	payload := `» ▸ gtmux·done  gtmux:0.0 (%14) │ 3m │ goal:"ship the wake fix" · #a3f1c2`
 	if got := deliverPayload(x, "%hq", payload, "#a3f1c2", 0); got != delivered {
 		t.Fatalf("a wrapped submitted line must still ack; got %v", got)
 	}
@@ -513,8 +513,8 @@ func wrap(s string, n int) []string {
 func TestBatchID_DiffersForANewBatchWithTheSameText(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{}
-	deliver(f.io(), "%hq", "» gtmux·resource·warn  disk 14GB free")
-	deliver(f.io(), "%hq", "» gtmux·resource·warn  disk 14GB free")
+	deliver(f.io(), "%hq", "» ▸ gtmux·resource·warn  disk 14GB free")
+	deliver(f.io(), "%hq", "» ▸ gtmux·resource·warn  disk 14GB free")
 	if len(f.sent) != 2 {
 		t.Fatalf("both wakes should deliver; sent=%v", f.sent)
 	}
@@ -578,15 +578,15 @@ func TestDrain_DecisionWakeOvertakesStandingWarnings(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{draft: "typing"}
 	x := f.io()
-	deliver(x, "%hq", "» gtmux·resource·warn  disk 14GB free")
-	deliver(x, "%hq", "» gtmux·limits·warn  week (fable) 93%")
-	deliver(x, "%hq", "» gtmux·goal-changed  %14 │ goal:\"ship it\"")
+	deliver(x, "%hq", "» ▸ gtmux·resource·warn  disk 14GB free")
+	deliver(x, "%hq", "» ▸ gtmux·limits·warn  week (fable) 93%")
+	deliver(x, "%hq", "» ◆ gtmux·goal-changed  %14 │ goal:\"ship it\"")
 	f.draft = ""
 	drain(x, "%hq")
 	if len(f.sent) != 1 {
 		t.Fatalf("one coalesced delivery expected; sent=%v", f.sent)
 	}
-	if !strings.HasPrefix(f.sent[0], "» gtmux·goal-changed") {
+	if !strings.HasPrefix(f.sent[0], "» ◆ gtmux·goal-changed") {
 		t.Fatalf("the decision-dense wake must lead the line; sent=%q", f.sent[0])
 	}
 }
@@ -596,11 +596,11 @@ func TestDrain_BatchCapHoldsTheRemainder(t *testing.T) {
 	f := &fake{draft: "typing"}
 	x := f.io()
 	for i := 0; i < maxBatchLines+4; i++ {
-		deliver(x, "%hq", fmt.Sprintf("» gtmux·done  %%%d", i))
+		deliver(x, "%hq", fmt.Sprintf("» ▸ gtmux·done  %%%d", i))
 	}
 	f.draft = ""
 	drain(x, "%hq")
-	if n := strings.Count(f.sent[0], "» gtmux·done"); n != maxBatchLines {
+	if n := strings.Count(f.sent[0], "» ▸ gtmux·done"); n != maxBatchLines {
 		t.Fatalf("a batch must cap at %d lines; got %d: %q", maxBatchLines, n, f.sent[0])
 	}
 	if !strings.Contains(f.sent[0], "+4 more queued") {
@@ -610,7 +610,7 @@ func TestDrain_BatchCapHoldsTheRemainder(t *testing.T) {
 		t.Fatalf("the remainder stays queued; queued=%d", queuedCount(t))
 	}
 	drain(x, "%hq") // the next tick drains the rest
-	if len(f.sent) != 2 || strings.Count(f.sent[1], "» gtmux·done") != 4 {
+	if len(f.sent) != 2 || strings.Count(f.sent[1], "» ▸ gtmux·done") != 4 {
 		t.Fatalf("the remainder should drain next; sent=%v", f.sent)
 	}
 }
@@ -633,11 +633,11 @@ func TestEvict_DropsTheLowestPriorityOldest(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{draft: "typing"} // nothing drains; the queue just fills
 	x := f.io()
-	deliver(x, "%hq", "» gtmux·resource·warn  oldest standing")
-	deliver(x, "%hq", "» gtmux·resource·warn  newest standing")
+	deliver(x, "%hq", "» ▸ gtmux·resource·warn  oldest standing")
+	deliver(x, "%hq", "» ▸ gtmux·resource·warn  newest standing")
 	// One write past the cap → exactly one eviction.
 	for i := 0; i < maxQueueEntries-1; i++ {
-		deliver(x, "%hq", fmt.Sprintf("» gtmux·goal-changed  %%%d", i))
+		deliver(x, "%hq", fmt.Sprintf("» ◆ gtmux·goal-changed  %%%d", i))
 	}
 	if n := queuedCount(t); n != maxQueueEntries {
 		t.Fatalf("the queue must fill to its cap and stop; queued=%d", n)
@@ -649,7 +649,7 @@ func TestEvict_DropsTheLowestPriorityOldest(t *testing.T) {
 	if !strings.Contains(all, "newest standing") {
 		t.Fatal("only ONE entry should have been evicted")
 	}
-	if n := strings.Count(all, "» gtmux·goal-changed"); n != maxQueueEntries-1 {
+	if n := strings.Count(all, "» ◆ gtmux·goal-changed"); n != maxQueueEntries-1 {
 		t.Fatalf("a decision-dense wake must never be evicted for a standing warning; kept %d", n)
 	}
 }
@@ -676,7 +676,7 @@ func TestDegraded_AfterConsecutiveFailures(t *testing.T) {
 		if Degraded(now) && i < wakeFailLimit-1 {
 			t.Fatalf("must not read degraded before %d failures (at %d)", wakeFailLimit, i)
 		}
-		deliver(f.io(), "%hq", fmt.Sprintf("» gtmux·waiting  %%%d", i))
+		deliver(f.io(), "%hq", fmt.Sprintf("» ◆ gtmux·waiting  %%%d", i))
 	}
 	if !Degraded(now) {
 		t.Fatalf("%d consecutive unconfirmed deliveries is a degraded channel", wakeFailLimit)
@@ -715,7 +715,7 @@ func TestDegraded_UndueEntryIsNotStuck(t *testing.T) {
 
 func TestEnqueue_QueuesWithoutTyping(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	Enqueue("» gtmux·goal-changed  %14")
+	Enqueue("» ◆ gtmux·goal-changed  %14")
 	if queuedCount(t) != 1 {
 		t.Fatalf("Enqueue should queue the wake; queued=%d", queuedCount(t))
 	}
@@ -724,7 +724,7 @@ func TestEnqueue_QueuesWithoutTyping(t *testing.T) {
 	}
 	f := &fake{base: time.Now().UnixNano()} // Enqueue stamps a real due time
 	drain(f.io(), "%hq")                    // HQ resolves later → the held wake lands
-	if len(f.sent) != 1 || body(t, f.sent[0]) != "» gtmux·goal-changed  %14" {
+	if len(f.sent) != 1 || body(t, f.sent[0]) != "» ◆ gtmux·goal-changed  %14" {
 		t.Fatalf("the held wake should land on the next drain; sent=%v", f.sent)
 	}
 }
@@ -738,7 +738,7 @@ func TestDeliver_FaintGhostDoesNotHoldNudge(t *testing.T) {
 
 	// Ghost-only composer → delivers.
 	ghost := &fake{draft: esc + "[2mping %14 that the charter needs coordinating" + esc + "[0m"}
-	deliver(ghost.io(), "%hq", "» gtmux·done  %14 — landed")
+	deliver(ghost.io(), "%hq", "» ▸ gtmux·done  %14 — landed")
 	if len(ghost.sent) != 1 {
 		t.Fatalf("a faint ghost box must be treated as empty and delivered; sent=%v", ghost.sent)
 	}
@@ -752,7 +752,7 @@ func TestDeliver_FaintGhostDoesNotHoldNudge(t *testing.T) {
 	// Bright half-typed draft → still queues (unchanged guard).
 	t.Setenv("HOME", t.TempDir())
 	real := &fake{draft: "user is half typing this"}
-	deliver(real.io(), "%hq", "» gtmux·waiting  %1 — needs you")
+	deliver(real.io(), "%hq", "» ◆ gtmux·waiting  %1 — needs you")
 	if len(real.sent) != 0 {
 		t.Fatalf("a real bright draft must still hold the nudge; sent=%v", real.sent)
 	}
@@ -771,13 +771,13 @@ func TestDeliver_FaintGhostDoesNotHoldNudge(t *testing.T) {
 func TestDrain_SwallowedEnter_RepairedOnNextTick(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{swallow: true}
-	deliver(f.io(), "%hq", "» gtmux·crash  gtmux:0.2 (%31)")
+	deliver(f.io(), "%hq", "» ◆ gtmux·crash  gtmux:0.2 (%31)")
 	if stuckCount(t) != 1 || len(f.sent) != 0 {
 		t.Fatalf("swallowed Enter must park the batch; stuck=%d sent=%v", stuckCount(t), f.sent)
 	}
 	f.swallow = false // the TUI accepts the next Enter
 	drain(f.io(), "%hq")
-	if len(f.sent) != 1 || body(t, f.sent[0]) != "» gtmux·crash  gtmux:0.2 (%31)" {
+	if len(f.sent) != 1 || body(t, f.sent[0]) != "» ◆ gtmux·crash  gtmux:0.2 (%31)" {
 		t.Fatalf("the repair must SUBMIT the stranded batch; sent=%v", f.sent)
 	}
 	if f.pastes != 1 {
@@ -801,7 +801,7 @@ func TestDrain_SwallowedEnter_RepairedOnNextTick(t *testing.T) {
 func TestRepair_EditedDraft_NeverEnters(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{swallow: true}
-	deliver(f.io(), "%hq", "» gtmux·waiting  %14")
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
 	f.swallow = false
 	f.draft = "user took over the box" // the stranded paste is gone
 	drain(f.io(), "%hq")
@@ -825,7 +825,7 @@ func TestRepair_EditedDraft_NeverEnters(t *testing.T) {
 func TestRepair_UserSubmittedTheBatch_Confirms(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{swallow: true}
-	deliver(f.io(), "%hq", "» gtmux·asks  %14")
+	deliver(f.io(), "%hq", "» ◆ gtmux·asks  %14")
 	f.history = append(f.history, f.draft) // the user hits Enter for us
 	f.draft = ""
 	drain(f.io(), "%hq")
@@ -847,7 +847,7 @@ func TestRepair_UserSubmittedTheBatch_Confirms(t *testing.T) {
 func TestRepair_ExhaustedHandsBack(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{swallow: true}
-	deliver(f.io(), "%hq", "» gtmux·done  %14")
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
 	for i := 0; i < enterRepairMaxAttempts; i++ {
 		drain(f.io(), "%hq")
 	}
@@ -877,7 +877,7 @@ func TestDeliver_ReceiptConfirms_ScreenBlind(t *testing.T) {
 		gotPane, gotNeedle, gotSince = pane, needle, since
 		return driver.Confirmed
 	}
-	deliver(f.io(), "%hq", "» gtmux·done  %14")
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
 	if len(f.sent) != 1 {
 		t.Fatalf("the line was submitted; sent=%v", f.sent)
 	}
@@ -896,7 +896,7 @@ func TestDeliver_ReceiptNoEvidence_ScreenStillJudges(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{}
 	f.receipt = func(string, string, int64) driver.Verdict { return driver.NoEvidence }
-	deliver(f.io(), "%hq", "» gtmux·waiting  %14")
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
 	if len(f.sent) != 1 || queuedCount(t) != 0 || readFailCount() != 0 {
 		t.Fatalf("the screen ack still confirms a healthy delivery; sent=%v queued=%d fails=%d",
 			f.sent, queuedCount(t), readFailCount())
