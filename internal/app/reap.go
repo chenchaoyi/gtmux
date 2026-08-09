@@ -14,12 +14,16 @@ import (
 // reapOps are the side-effecting operations reap performs. Injected so the safety
 // gate + reclamation logic is unit-testable without a real repo/tmux server.
 type reapOps struct {
-	worktreeDirty  func(wt string) (bool, error)
-	branchMerged   func(wt, branch string) (bool, error)
+	worktreeDirty func(wt string) (bool, error)
+	branchMerged  func(wt, branch string) (bool, error)
+	// mainRepo resolves the repo the branch lives in. It is a SEPARATE op because it
+	// must run BEFORE removeWorktree: it answers by asking git from inside the
+	// worktree, and once that directory is gone there is nothing left to ask.
+	mainRepo       func(wt string) string
 	killSession    func(session string) error
 	killWindow     func(pane string) error // reclaim a manual window (bare-pane reap)
 	removeWorktree func(wt string, force bool) error
-	deleteBranch   func(wt, branch string, force bool) error
+	deleteBranch   func(repo, branch string, force bool) error
 }
 
 // reapResult is the outcome of a reclamation attempt.
@@ -27,12 +31,19 @@ type reapResult struct {
 	Reaped    bool     `json:"reaped"`
 	BlockedBy []string `json:"blocked_by,omitempty"`
 	Actions   []string `json:"actions,omitempty"`
+	// Failed names the reclamation steps that ran and did NOT succeed. Every one of
+	// them used to be dropped on the floor — `if op(...) == nil { record it }` records
+	// a success and says nothing at all about a failure — so a reap whose branch delete
+	// died printed a ✓ with the branch line simply absent, and exited 0. Silence is the
+	// one thing a destructive command must never do about work it did not do.
+	Failed []string `json:"failed,omitempty"`
 }
 
 // planAndReap runs the safety gate FIRST (worktree clean + branch merged, unless
 // --abandon) and only on a pass performs the reclamation. On a gate failure it
 // returns what blocks it and touches NOTHING. Pure logic; ops injected.
 func planAndReap(t dispatch.Task, abandon, keepBranch bool, ops reapOps) reapResult {
+	mergeConfirmed := false
 	if t.Worktree != "" && !abandon {
 		var blocked []string
 		if dirty, err := ops.worktreeDirty(t.Worktree); err != nil {
@@ -48,6 +59,8 @@ func planAndReap(t dispatch.Task, abandon, keepBranch bool, ops reapOps) reapRes
 				blocked = append(blocked, "merge state unknown: "+err.Error())
 			} else if !merged {
 				blocked = append(blocked, "branch '"+t.Branch+"' is not merged")
+			} else {
+				mergeConfirmed = true
 			}
 		}
 		if len(blocked) > 0 {
@@ -55,30 +68,50 @@ func planAndReap(t dispatch.Task, abandon, keepBranch bool, ops reapOps) reapRes
 		}
 	}
 	// Gate passed (or --abandon) → execute.
-	var actions []string
+	res := reapResult{Reaped: true}
+	record := func(err error, did, failed string) {
+		if err == nil {
+			res.Actions = append(res.Actions, did)
+			return
+		}
+		res.Failed = append(res.Failed, failed+": "+err.Error())
+	}
 	switch {
 	case t.OwnSession && t.Session != "":
-		if ops.killSession(t.Session) == nil {
-			actions = append(actions, "killed session "+t.Session)
-		}
+		record(ops.killSession(t.Session), "killed session "+t.Session,
+			"could not kill session "+t.Session)
 	case t.Session == "" && t.Pane != "":
 		// Bare-pane reap of a MANUAL window: kill the window, not a whole session
 		// (which could hold sibling windows the user still wants).
-		if ops.killWindow != nil && ops.killWindow(t.Pane) == nil {
-			actions = append(actions, "killed window "+t.Pane)
+		if ops.killWindow != nil {
+			record(ops.killWindow(t.Pane), "killed window "+t.Pane,
+				"could not kill window "+t.Pane)
 		}
+	}
+	// Resolve the branch's repo while the worktree still EXISTS. Removing it first and
+	// then asking git, from inside the directory just deleted, is how the branch step
+	// came to die on `fatal: cannot change to '<worktree>'` — after every reap, for
+	// every branch. (spawn's rollback already resolves first; MainRepo is exported for
+	// exactly this ordering. reap simply never adopted it.)
+	repo := t.Worktree
+	if t.Worktree != "" && ops.mainRepo != nil {
+		repo = ops.mainRepo(t.Worktree)
 	}
 	if t.Worktree != "" {
-		if ops.removeWorktree(t.Worktree, abandon) == nil {
-			actions = append(actions, "removed worktree "+t.Worktree)
-		}
+		record(ops.removeWorktree(t.Worktree, abandon), "removed worktree "+t.Worktree,
+			"could not remove worktree "+t.Worktree)
 	}
 	if t.Branch != "" && !keepBranch {
-		if ops.deleteBranch(t.Worktree, t.Branch, abandon) == nil {
-			actions = append(actions, "deleted branch "+t.Branch)
-		}
+		// Force whenever an authority stronger than `git branch -d`'s own check has
+		// already spoken: --abandon (the user), or our merge gate, which accepts the
+		// squash merge that `-d` structurally cannot see. Without this the gate could
+		// pass and git would still refuse — which it did, on every squash-merged
+		// branch. When NO gate ran (a branch with no worktree), `-d` stays the check.
+		force := abandon || mergeConfirmed
+		record(ops.deleteBranch(repo, t.Branch, force), "deleted branch "+t.Branch,
+			"could not delete branch "+t.Branch)
 	}
-	return reapResult{Reaped: true, Actions: actions}
+	return res
 }
 
 // liveReapOps wires planAndReap to real git/tmux (git ops centralized in dispatch).
@@ -95,6 +128,7 @@ func liveReapOps() reapOps {
 			dispatch.FetchBase(wt)
 			return dispatch.BranchMerged(wt, branch)
 		},
+		mainRepo: dispatch.MainRepo,
 		killSession: func(session string) error {
 			_, err := tmux.Run("kill-session", "-t", session)
 			return err
@@ -219,9 +253,20 @@ func cmdReap(args []string) int {
 		b, _ := json.MarshalIndent(res, "", "  ")
 		fmt.Println(string(b))
 	} else if res.Reaped {
-		i18n.Say("✓ reaped:", "✓ 已回收：")
-		for _, a := range res.Actions {
-			fmt.Println("  · " + a)
+		// Only claim a reap for work that actually happened — a ✓ over an empty list,
+		// with every step in the ⚠ block below it, reads as a success with a footnote.
+		if len(res.Actions) > 0 {
+			i18n.Say("✓ reaped:", "✓ 已回收：")
+			for _, a := range res.Actions {
+				fmt.Println("  · " + a)
+			}
+		}
+		if len(res.Failed) > 0 {
+			i18n.Sae("⚠ but these steps failed — reclaim them by hand:",
+				"⚠ 但以下步骤失败了 —— 需要手动收尾：")
+			for _, f := range res.Failed {
+				fmt.Println("  · " + f)
+			}
 		}
 	} else {
 		i18n.Sae("✗ not reaped — blocked by:", "✗ 未回收 —— 被以下项阻止：")
@@ -229,7 +274,9 @@ func cmdReap(args []string) int {
 			fmt.Println("  · " + b)
 		}
 	}
-	if res.Reaped {
+	// A partial reap is not a success. Exit 0 while a branch the user asked to reclaim
+	// is still there is the same lie the missing report was.
+	if res.Reaped && len(res.Failed) == 0 {
 		return 0
 	}
 	return 1

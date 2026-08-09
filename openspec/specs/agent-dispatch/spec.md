@@ -600,7 +600,19 @@ state) and make NO changes.
 When the gate passes, it SHALL kill the dispatch's tmux session/window, `git worktree
 remove` the worktree, and delete the branch only when merged (or `--abandon`) and not
 `--keep-branch`, then clear the ledger entry. `reap` SHALL never run automatically —
-only when invoked. `--json` SHALL report the outcome (`reaped`, plus any `blocked_by`).
+only when invoked.
+
+Because deleting the branch runs from the main repo, reap SHALL resolve that repo from
+the worktree BEFORE removing the worktree — afterwards the directory git would be asked
+from no longer exists. And because `git branch -d` applies its OWN merge check, which
+accepts only an ancestor of HEAD/upstream and therefore cannot see a squash merge, a
+delete authorized by reap's own (strictly stronger) gate SHALL force. Where no gate ran,
+`-d` SHALL remain the check.
+
+Every reclamation step SHALL report its outcome. A step that fails SHALL be named,
+together with the reason git or tmux gave, and SHALL NOT be silently omitted from the
+reported actions; a reap with any failed step SHALL exit non-zero. `--json` SHALL
+report the outcome (`reaped`, plus any `blocked_by` and any `failed`).
 
 #### Scenario: Dirty worktree is report-only
 
@@ -641,6 +653,21 @@ only when invoked. `--json` SHALL report the outcome (`reaped`, plus any `blocke
   on the base, and `gh` cannot answer — missing, signed out, or no PR)
 - **THEN** `gtmux reap` reclaims nothing and reports that the merge state could not be
   confirmed, naming the remedy — it does NOT claim the branch has unmerged commits
+
+#### Scenario: A reaped merged branch is actually gone
+
+- **WHEN** `gtmux reap` passes its gate on a squash-merged branch in a linked worktree
+- **THEN** the branch is deleted from the repo and the deletion is reported — the repo
+  is resolved before the worktree is removed, and the delete is forced past `git branch
+  -d`'s own ancestor-only check, which the passed gate supersedes
+
+#### Scenario: A failed reclamation step is reported, not swallowed
+
+- **WHEN** a reclamation step (kill / worktree remove / branch delete) fails after the
+  gate passed
+- **THEN** `gtmux reap` names the step and the underlying git/tmux reason, omits it from
+  the successful actions, and exits non-zero — it does NOT print a bare success whose
+  only sign of trouble is a missing line
 
 #### Scenario: `--keep-branch` is not blocked by an unmerged branch
 

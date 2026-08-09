@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -17,16 +18,43 @@ type spyOps struct {
 	winKilled  bool
 	removed    bool
 	branchGone bool
+
+	// The reclamation ops can FAIL. They used to be stubbed as unfailable (`return
+	// nil`, always), which is exactly why every reap test stayed green while the real
+	// branch delete died on every single invocation: the tests asserted the step was
+	// CALLED, and nothing downstream of the call existed to be wrong.
+	deleteBranchErr error
+	removeErr       error
+
+	// What deleteBranch was actually handed — the dir matters as much as the branch
+	// (it must be the repo, resolved while the worktree still existed) and so does
+	// force (a squash merge is invisible to `git branch -d`).
+	deleteDir   string
+	deleteForce bool
+	order       []string // call order, to pin "resolve before remove"
 }
 
 func (s *spyOps) ops() reapOps {
 	return reapOps{
-		worktreeDirty:  func(string) (bool, error) { return s.dirty, s.dirtyErr },
-		branchMerged:   func(string, string) (bool, error) { return s.merged, s.mergedErr },
-		killSession:    func(string) error { s.killed = true; return nil },
-		killWindow:     func(string) error { s.winKilled = true; return nil },
-		removeWorktree: func(string, bool) error { s.removed = true; return nil },
-		deleteBranch:   func(string, string, bool) error { s.branchGone = true; return nil },
+		worktreeDirty: func(string) (bool, error) { return s.dirty, s.dirtyErr },
+		branchMerged:  func(string, string) (bool, error) { return s.merged, s.mergedErr },
+		mainRepo: func(wt string) string {
+			s.order = append(s.order, "mainRepo")
+			return "/repo"
+		},
+		killSession: func(string) error { s.killed = true; return nil },
+		killWindow:  func(string) error { s.winKilled = true; return nil },
+		removeWorktree: func(string, bool) error {
+			s.order = append(s.order, "removeWorktree")
+			s.removed = s.removeErr == nil
+			return s.removeErr
+		},
+		deleteBranch: func(dir, _ string, force bool) error {
+			s.order = append(s.order, "deleteBranch")
+			s.deleteDir, s.deleteForce = dir, force
+			s.branchGone = s.deleteBranchErr == nil
+			return s.deleteBranchErr
+		},
 	}
 }
 
@@ -190,6 +218,65 @@ func TestReap_BarePane_DirtyReportOnly(t *testing.T) {
 	res := planAndReap(task, false, false, s.ops())
 	if res.Reaped || s.winKilled || s.removed {
 		t.Fatalf("a dirty bare-pane worktree must be report-only: reaped=%v %+v", res.Reaped, s)
+	}
+}
+
+// The branch's repo MUST be resolved before the worktree is removed. `git branch` runs
+// from the main repo, and reap resolved it by asking git from inside the worktree it had
+// just deleted — `fatal: cannot change to '<worktree>'`, on every reap, for every branch.
+// (spawn's rollback already resolves first; MainRepo is exported for exactly this.)
+func TestReap_ResolvesTheRepoBeforeRemovingTheWorktree(t *testing.T) {
+	s := &spyOps{dirty: false, merged: true}
+	planAndReap(worktreeTask(), false, false, s.ops())
+	if got := strings.Join(s.order, ","); got != "mainRepo,removeWorktree,deleteBranch" {
+		t.Fatalf("call order = %q, want the repo resolved BEFORE the worktree is removed", got)
+	}
+	if s.deleteDir != "/repo" {
+		t.Errorf("deleteBranch dir = %q, want the resolved repo — a removed worktree is not a dir git can cd into", s.deleteDir)
+	}
+}
+
+// `git branch -d` re-checks the merge itself, and its check only accepts an ancestor of
+// HEAD/upstream — it structurally cannot see a SQUASH merge, which is what this repo (and
+// GitHub by default) produces. So once reap's own, strictly stronger gate has confirmed
+// the merge, the delete must force, or git's weaker re-check silently overrules it.
+func TestReap_MergedGateForcesTheDelete(t *testing.T) {
+	s := &spyOps{dirty: false, merged: true}
+	planAndReap(worktreeTask(), false, false, s.ops())
+	if !s.deleteForce {
+		t.Fatal("a gate-confirmed merge must force the delete; `-d` cannot see a squash merge")
+	}
+}
+
+// …but only because a gate RAN. A branch with no worktree never reaches the merge gate,
+// so nothing has vouched for it and `git branch -d`'s own check stays the last word.
+func TestReap_NoGate_DoesNotForceTheDelete(t *testing.T) {
+	s := &spyOps{}
+	task := dispatch.Task{ID: "t1", Session: "sess", OwnSession: true, Branch: "feat/x"}
+	planAndReap(task, false, false, s.ops())
+	if !s.branchGone {
+		t.Fatal("the branch step should still run")
+	}
+	if s.deleteForce {
+		t.Fatal("no gate ran — forcing here would delete an unvouched-for branch")
+	}
+}
+
+// A reclamation step that FAILS must say so. `if op(...) == nil { record it }` records a
+// success and is silent about a failure, so the reap that could not delete its branch
+// printed a ✓, omitted the branch line, and exited 0 — the user's only signal that
+// anything was wrong was a line that wasn't there.
+func TestReap_FailedStepIsReportedNotSwallowed(t *testing.T) {
+	s := &spyOps{dirty: false, merged: true, deleteBranchErr: errors.New("the branch is not fully merged")}
+	res := planAndReap(worktreeTask(), false, false, s.ops())
+	if len(res.Failed) != 1 || !strings.Contains(res.Failed[0], "feat/x") ||
+		!strings.Contains(res.Failed[0], "not fully merged") {
+		t.Fatalf("a failed step must name the branch and git's reason, got %v", res.Failed)
+	}
+	for _, a := range res.Actions {
+		if strings.Contains(a, "deleted branch") {
+			t.Fatalf("a failed delete must not be reported as an action: %v", res.Actions)
+		}
 	}
 }
 
