@@ -13,6 +13,8 @@ import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet} from '../ui/SettingsRow';
 import {ContentColumn} from '../ui/ContentColumn';
+import {WhatsNewModal} from '../ui/WhatsNewModal';
+import {RELEASE_NOTES} from '../releaseNotes';
 
 type PickerKind = 'lang' | 'theme' | 'mode' | null;
 
@@ -21,6 +23,7 @@ export function SettingsScreen({navigation}: any) {
     useApp();
   const {isGuest} = useAgents();
   const [picker, setPicker] = useState<PickerKind>(null);
+  const [whatsNew, setWhatsNew] = useState(false);
 
   const langs: {key: LangPref; label: string}[] = [
     {key: 'system', label: t('system')},
@@ -114,10 +117,31 @@ export function SettingsScreen({navigation}: any) {
 
         {/* ABOUT */}
         <SettingsGroup title={lang === 'zh' ? '关于' : 'About'} pal={pal}>
-          <SettingsRow icon="info" label={t('version')} value={appVersion} pal={pal} />
+          <SettingsRow icon="info" label={t('version')} value={appVersion} pal={pal} divider />
+          {/* The same notes the update popup showed, on demand — `gtmux whatsnew` has
+              always been readable again after the fact, and a changelog you can only
+              see once is a changelog you cannot go back to. */}
+          <SettingsRow
+            icon="share"
+            label={lang === 'zh' ? '更新内容' : "What's new"}
+            pal={pal}
+            chevron
+            onPress={() => setWhatsNew(true)}
+          />
         </SettingsGroup>
         </ContentColumn>
       </ScrollView>
+
+      {/* Settings opens the FULL history expanded — someone who navigated here asked for
+          it, so folding it behind another tap would only be in the way. */}
+      <WhatsNewModal
+        visible={whatsNew}
+        entries={RELEASE_NOTES}
+        pal={pal}
+        lang={lang}
+        showAll
+        onClose={() => setWhatsNew(false)}
+      />
 
       <PickerSheet visible={picker === 'lang'} title={t('language')} options={langs} selected={langPref} pal={pal} onSelect={setLangPref} onClose={() => setPicker(null)} />
       <PickerSheet visible={picker === 'theme'} title={lang === 'zh' ? '外观' : 'Appearance'} options={themes} selected={themePref} pal={pal} onSelect={setThemePref} onClose={() => setPicker(null)} />

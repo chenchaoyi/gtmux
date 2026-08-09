@@ -1,0 +1,6 @@
+• Native text selection in the terminal — long-press to select with the system handles and magnifier; Copy takes exactly what you selected.
+• The terminal now renders as a true grid — typing and scrolling in a busy pane is much faster, and scrollback goes back 1,000 lines.
+• Send now dismisses the keyboard, and the key row gains a backspace key.
+• Fullscreen is a clean reading mode — the input bar gets out of the way.
+• Polish: empty panes no longer show a black screen, multi-line input is no longer clipped, long diff lines scroll sideways, pane rows show the agent's name, and Snippets are now Quick replies.
+• With gtmux updated on the Mac: typing into a plain (non-agent) pane no longer falsely reports a failure, and the Warp terminal is supported.

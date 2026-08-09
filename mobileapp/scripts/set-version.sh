@@ -31,4 +31,36 @@ if [ -f "$PBX" ]; then
   sed -i '' "s/MARKETING_VERSION = [0-9][0-9.]*;/MARKETING_VERSION = ${VER};/g" "$PBX"
 fi
 
+# ── in-app What's New ────────────────────────────────────────────────────────
+# ARCHIVE this version's store notes, then regenerate the bundled history.
+#
+# The App Store metadata holds only the CURRENT submission's notes (fastlane overwrites it
+# every release), but the in-app popup must show a user who skipped three versions all
+# three — so each stamped version's notes are copied into release-notes/ and the whole
+# archive is compiled into src/releaseNotes.ts. The normal release flow needs no extra
+# step: write the store notes as always, stamp the version, and the archive grows.
+#
+# Archived ONLY when the notes actually changed. The app version follows the gtmux git
+# tag, so most stamps cross a version the mobile app never shipped (a CLI-only release) —
+# copying the notes under each of those would show the reader the SAME bullets under two
+# version headings, which is worse than saying nothing. Comparing against the newest
+# archived entry keeps the history to versions that really said something new, and keeps
+# the flow free of a step anyone has to remember.
+mkdir -p mobileapp/release-notes
+prev="$(ls mobileapp/release-notes/*.en.txt 2>/dev/null | sed -e 's|.*/||' -e 's|\.en\.txt$||' | sort -Vr | head -1)"
+changed=0
+for pair in "en-US:en" "zh-Hans:zh"; do
+  src="mobileapp/fastlane/metadata/${pair%%:*}/release_notes.txt"
+  [ -f "$src" ] || continue
+  old="mobileapp/release-notes/${prev}.${pair##*:}.txt"
+  if [ -z "$prev" ] || [ ! -f "$old" ] || ! cmp -s "$src" "$old"; then changed=1; fi
+done
+if [ "$changed" = 1 ]; then
+  for pair in "en-US:en" "zh-Hans:zh"; do
+    src="mobileapp/fastlane/metadata/${pair%%:*}/release_notes.txt"
+    [ -f "$src" ] && cp "$src" "mobileapp/release-notes/${VER}.${pair##*:}.txt"
+  done
+fi
+bash mobileapp/scripts/gen-release-notes.sh > mobileapp/src/releaseNotes.ts
+
 echo "$VER"
