@@ -1,11 +1,15 @@
 package dispatch
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/toolpath"
 )
 
 // git worktree helpers, centralized here (cgo-free — shelled out) so `gtmux spawn`,
@@ -151,8 +155,16 @@ func WorktreeDirty(wt string) (bool, error) {
 // exactly what a clean squash-merge commit produces; (2) if `gh` is available
 // and resolves a PR for this branch, its MERGED state is authoritative
 // regardless of local history (catches a squash onto a base commit the branch
-// didn't fork from cleanly). Errors only when the default branch itself can't
-// be determined, so a caller can fail SAFE (treat unknown as not-merged).
+// didn't fork from cleanly).
+//
+// The RESULT IS THREE-WAY, not two. It returns an error when no probe could
+// establish anything — which is a different fact from "not merged" and must not be
+// reported as one. Both were once folded into `false`, and the two ways that goes
+// wrong compounded: the git probes read a stale local base (see defaultBranch), and
+// `gh` — by then the only probe left — was invisible under launchd's PATH, so its
+// silent failure WAS the verdict. `gtmux reap` duly told the user a squash-merged
+// branch had unmerged commits and refused to delete it. Callers still fail SAFE
+// (err → don't reclaim); they can now say WHY, and the user gets something to fix.
 func BranchMerged(wt, branch string) (bool, error) {
 	base := defaultBranch(wt)
 	if base == "" {
@@ -164,10 +176,30 @@ func BranchMerged(wt, branch string) (bool, error) {
 	if squashMerged(wt, branch, base) {
 		return true, nil
 	}
-	if prMerged(wt, branch) {
+	switch prMergeState(wt, branch) {
+	case mergeYes:
 		return true, nil
+	case mergeNo:
+		return false, nil // gh gave a real answer: the PR is open/closed, not merged
 	}
-	return false, nil
+	// No remote base to have merged it behind our back: local history is the WHOLE story,
+	// so "not merged" here is a real answer rather than an absence of one. (defaultBranch
+	// falls back to a local name only when the repo has no remote default branch at all.)
+	if !strings.Contains(base, "/") {
+		return false, nil
+	}
+	// NOTHING could judge. That is NOT the same fact as "not merged", and reporting it as
+	// one is how a squash-merged branch got told it had unmerged commits: the git probes
+	// were reading a stale base and `gh` — the only remaining probe — wasn't on the PATH
+	// a launchd-started process inherits, so its failure silently became evidence.
+	// Returning an error keeps the gate CLOSED (callers already treat err as "don't
+	// reclaim") while saying the true thing.
+	hint := "install/authenticate `gh` so the PR state can be read"
+	if ghLook() != "" {
+		hint = "`gh` is installed but could not answer (signed out, offline, or no PR for this branch)"
+	}
+	return false, fmt.Errorf("cannot confirm branch %q was merged into %s: no merge commit and no squash-equivalent tree there, and the PR state is unreadable — %s, or reap with --keep-branch / --abandon",
+		branch, base, hint)
 }
 
 // squashMerged reports whether branch was squash-merged into base: some commit
@@ -194,21 +226,57 @@ func squashMerged(wt, branch, base string) bool {
 	return false
 }
 
-// ghOutput runs `gh` in dir and returns trimmed stdout.
+// ghOutput runs `gh` in dir and returns trimmed stdout. The binary is resolved through
+// toolpath, NOT bare exec: a gtmux started by launchd (the serve LaunchAgent, the
+// menu-bar app shelling out) inherits `/usr/bin:/bin:/usr/sbin:/sbin`, and Homebrew's
+// `gh` is on neither prefix.
+//
+// It is a var so a test can simulate a machine without `gh` — the real toolpath search
+// looks in fixed install dirs, so no amount of $PATH juggling can hide a gh that is
+// actually installed on the developer's Mac.
+var ghLook = func() string { return toolpath.Look("gh") }
+
 func ghOutput(dir string, args ...string) (string, error) {
-	cmd := exec.Command("gh", args...)
+	bin := ghLook()
+	if bin == "" {
+		return "", exec.ErrNotFound
+	}
+	cmd := exec.Command(bin, args...)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	return strings.TrimSpace(string(out)), err
 }
 
-// prMerged asks GitHub CLI whether branch's associated PR has state MERGED.
-// false (not an error) whenever `gh` isn't installed, isn't authenticated, or
-// finds no PR for the branch — those are all "inconclusive", not "not merged",
-// and BranchMerged already has a safe false default for that case.
-func prMerged(wt, branch string) bool {
+// mergeAnswer is what a probe could establish — three values, because "I could not
+// find out" is a different fact from "no", and collapsing them is the bug this triple
+// exists to prevent.
+type mergeAnswer int
+
+const (
+	mergeUnknown mergeAnswer = iota // no evidence either way — never treat as "no"
+	mergeYes
+	mergeNo
+)
+
+// prMergeState asks GitHub CLI whether branch's associated PR is MERGED.
+//
+// It answers mergeUnknown whenever `gh` could not produce a state — missing, signed
+// out, offline, or no PR for that branch. The old version folded every one of those
+// into `false`, so on a machine where `gh` merely wasn't on the PATH the answer to "was
+// this merged?" became a confident NO. It is the last probe, so its silent failure was
+// the whole verdict.
+func prMergeState(wt, branch string) mergeAnswer {
 	state, err := ghOutput(wt, "pr", "view", branch, "--json", "state", "-q", ".state")
-	return err == nil && state == "MERGED"
+	if err != nil {
+		return mergeUnknown
+	}
+	switch state {
+	case "MERGED":
+		return mergeYes
+	case "OPEN", "CLOSED":
+		return mergeNo // a real answer: there IS a PR and it did not merge
+	}
+	return mergeUnknown
 }
 
 // RemoveWorktree removes a linked worktree (from the main repo).
@@ -245,15 +313,52 @@ func mainRepo(wt string) string {
 	return filepath.Dir(common)
 }
 
-// defaultBranch resolves the repo's default branch (origin/HEAD → main → master).
+// defaultBranch resolves the ref to judge "merged into" AGAINST — the REMOTE-TRACKING
+// ref (`origin/main`) whenever the repo has one, and only then the local branch.
+//
+// It used to strip the `origin/` prefix and hand back the local branch name, which made
+// both git-side probes read a base that is stale exactly when it matters: a merge lands
+// on the REMOTE, and nothing pulls it into the local `main` — `gh pr merge` does not,
+// and in a worktree layout the local `main` belongs to a different checkout that may be
+// pinned for other work. Measured on the branch that hit this: judged against the local
+// `main`, the squash-equivalence scan had an EMPTY commit range and said "not merged";
+// against `origin/main` the branch tip's tree matched the squash commit exactly.
+//
+// The local fallback still matters — a repo with no remote (and every test that builds
+// one) has nothing else to compare against.
 func defaultBranch(wt string) string {
 	if head, err := gitOutput(wt, "rev-parse", "--abbrev-ref", "origin/HEAD"); err == nil && head != "" {
-		return strings.TrimPrefix(head, "origin/")
+		return head
 	}
 	for _, b := range []string{"main", "master"} {
+		if gitRun(wt, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+b) == nil {
+			return "origin/" + b
+		}
 		if gitRun(wt, "rev-parse", "--verify", "--quiet", "refs/heads/"+b) == nil {
 			return b
 		}
 	}
 	return ""
+}
+
+// FetchBase refreshes the remote-tracking ref BranchMerged judges against. Best-effort
+// and bounded: a failure (offline, no remote, a local-only base) leaves the existing
+// refs alone and the caller judges on what it has.
+//
+// It is deliberately NOT inside BranchMerged. The reap-suggest sweep calls that on a
+// hook, per candidate, where a network round-trip has no business being; `gtmux reap`
+// is rare, human-invoked and DESTRUCTIVE, so it pays one fetch to judge on current
+// facts. Without it, fixing the base to `origin/main` only helps someone who happened
+// to have fetched since the merge.
+func FetchBase(wt string) {
+	base := defaultBranch(wt)
+	remote, ref, ok := strings.Cut(base, "/")
+	if !ok || remote == "" || ref == "" {
+		return // a local base — nothing to refresh
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "-C", wt, "fetch", "--quiet", remote, ref)
+	cmd.WaitDelay = 2 * time.Second
+	_ = cmd.Run()
 }

@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -185,5 +186,171 @@ func TestBranchMerged_SquashMerge(t *testing.T) {
 
 	if merged, err := BranchMerged(repo, "feat/x"); err != nil || !merged {
 		t.Fatalf("BranchMerged after squash-merge = %v, %v; want true, nil (squash-merge must be detected)", merged, err)
+	}
+}
+
+// gitEnv is a deterministic identity for the throwaway repos below.
+func gitEnv() []string {
+	return append(os.Environ(),
+		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
+		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+}
+
+// TestBranchMerged_SquashMergeOnTheRemote is the failure the tree-identity check was
+// supposed to catch and didn't: the squash lands on the REMOTE, and nothing pulls it
+// into the local `main` — `gh pr merge` doesn't, and under a worktree layout the local
+// `main` belongs to a different checkout that may be pinned for other work. The base
+// therefore has to be the remote-TRACKING ref. Measured on the branch that hit this:
+// against local `main` the scan range was EMPTY and the verdict was "not merged";
+// against `origin/main` the branch tip's tree matched the squash commit exactly.
+func TestBranchMerged_SquashMergeOnTheRemote(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	run := func(dir string, args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir, cmd.Env = dir, gitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+
+	// An "upstream" repo plus a clone — the shape a real dispatch worktree has. Clone
+	// BEFORE upstream moves anywhere, so origin/HEAD resolves to origin/main.
+	upstream := t.TempDir()
+	if out, err := exec.Command("git", "-C", upstream, "init", "-b", "main").CombinedOutput(); err != nil {
+		t.Skipf("git init -b unsupported: %v\n%s", err, out)
+	}
+	if err := os.WriteFile(filepath.Join(upstream, "f"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	run(upstream, "add", ".")
+	run(upstream, "commit", "-m", "init")
+
+	clone := filepath.Join(t.TempDir(), "clone")
+	if out, err := exec.Command("git", "clone", "-q", upstream, clone).CombinedOutput(); err != nil {
+		t.Skipf("git clone unsupported here: %v\n%s", err, out)
+	}
+	if got := defaultBranch(clone); got != "origin/main" {
+		t.Fatalf("defaultBranch(clone) = %q, want origin/main — the base must be the remote ref", got)
+	}
+	run(clone, "checkout", "-b", "feat/x")
+	if err := os.WriteFile(filepath.Join(clone, "g"), []byte("y"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	run(clone, "add", ".")
+	run(clone, "commit", "-m", "feat work")
+
+	if merged, err := BranchMerged(clone, "feat/x"); merged {
+		t.Fatalf("BranchMerged before the merge = true (err=%v); want not-merged", err)
+	}
+
+	// The squash-merge happens UPSTREAM. The local `main` never learns about it — that is
+	// the whole point: judging against it would say "not merged" forever.
+	run(upstream, "fetch", clone, "feat/x")
+	run(upstream, "merge", "--squash", "FETCH_HEAD")
+	run(upstream, "commit", "-m", "squash merge feat/x (#1)")
+
+	FetchBase(clone) // what `gtmux reap` does before judging
+
+	local, _ := gitOutput(clone, "rev-parse", "main")
+	remote, _ := gitOutput(clone, "rev-parse", "origin/main")
+	if local == remote {
+		t.Fatal("test setup is not exercising the bug: local main must still be behind")
+	}
+	if merged, err := BranchMerged(clone, "feat/x"); err != nil || !merged {
+		t.Fatalf("BranchMerged after the upstream squash = %v, %v; want true, nil "+
+			"(the base must be origin/main, not the stale local main)", merged, err)
+	}
+}
+
+// defaultBranch must name the REMOTE-TRACKING ref when there is one, and only fall back
+// to a local branch for a repo that has no remote default at all (where local history
+// is the whole story — and where every fixture repo lives).
+func TestDefaultBranch_PrefersTheRemoteTrackingRef(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	solo := t.TempDir()
+	if out, err := exec.Command("git", "-C", solo, "init", "-b", "main").CombinedOutput(); err != nil {
+		t.Skipf("git init -b unsupported: %v\n%s", err, out)
+	}
+	if err := os.WriteFile(filepath.Join(solo, "f"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"add", "."}, {"commit", "-m", "init"}} {
+		cmd := exec.Command("git", append([]string{"-C", solo}, args...)...)
+		cmd.Env = gitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	if got := defaultBranch(solo); got != "main" {
+		t.Errorf("no remote: defaultBranch = %q, want the local %q", got, "main")
+	}
+	// FetchBase must be a no-op for a local base (nothing to fetch, no hang).
+	FetchBase(solo)
+}
+
+// prMergeState is three-valued because "gh could not answer" is not "not merged".
+// Folding them was the second half of the failure: `gh` sits in /opt/homebrew/bin, a
+// launchd-started gtmux inherits /usr/bin:/bin:/usr/sbin:/sbin, and the resulting
+// "not found" silently became the whole verdict.
+func TestPrMergeState_UnavailableIsNotNo(t *testing.T) {
+	dir := t.TempDir()
+	orig := ghLook
+	ghLook = func() string { return "" } // a machine where gh is not installed
+	t.Cleanup(func() { ghLook = orig })
+
+	if got := prMergeState(dir, "any-branch"); got != mergeUnknown {
+		t.Errorf("gh unavailable → %v, want mergeUnknown (never mergeNo)", got)
+	}
+	// And the caller must surface that as an ERROR, not as a confident "not merged".
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	repo := filepath.Join(dir, "repo")
+	if err := os.MkdirAll(repo, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A repo whose base is a remote ref, so local evidence is NOT the whole story.
+	for _, args := range [][]string{{"init", "-b", "main"}, {"remote", "add", "origin", "https://example.invalid/x.git"}} {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = gitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Skipf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(repo, "f"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"add", "."}, {"commit", "-m", "init"},
+		{"update-ref", "refs/remotes/origin/main", "HEAD"}, {"checkout", "-b", "feat/y"}} {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = gitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(repo, "g"), []byte("y"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"add", "."}, {"commit", "-m", "wip"}} {
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = gitEnv()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	merged, err := BranchMerged(repo, "feat/y")
+	if merged {
+		t.Fatal("an unverifiable branch must not read as merged")
+	}
+	if err == nil {
+		t.Fatal("no probe could judge — that must surface as an error, not a bare false")
+	}
+	if !strings.Contains(err.Error(), "cannot confirm") || !strings.Contains(err.Error(), "--keep-branch") {
+		t.Errorf("the error must say it could not confirm and name the way out, got %q", err)
 	}
 }

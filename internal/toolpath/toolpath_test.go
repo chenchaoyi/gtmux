@@ -1,4 +1,4 @@
-package app
+package toolpath
 
 import (
 	"os"
@@ -19,8 +19,8 @@ func TestLookToolPrefersPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir)
-	if got := lookTool("faketool"); got != bin {
-		t.Errorf("lookTool = %q; want the PATH hit %q", got, bin)
+	if got := Look("faketool"); got != bin {
+		t.Errorf("Look = %q; want the PATH hit %q", got, bin)
 	}
 }
 
@@ -37,8 +37,8 @@ func TestLookToolFindsAnInstallDirMissingFromPath(t *testing.T) {
 	if err := os.WriteFile(bin, []byte("#!/bin/sh\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if got := lookTool("faketool"); got != bin {
-		t.Errorf("lookTool = %q; want %q — a tool outside launchd's PATH must still be found", got, bin)
+	if got := Look("faketool"); got != bin {
+		t.Errorf("Look = %q; want %q — a tool outside launchd's PATH must still be found", got, bin)
 	}
 }
 
@@ -46,8 +46,8 @@ func TestLookToolFindsAnInstallDirMissingFromPath(t *testing.T) {
 func TestLookToolReportsAGenuinelyAbsentTool(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("PATH", t.TempDir())
-	if got := lookTool("definitely-not-a-real-tool-xyzzy"); got != "" {
-		t.Errorf("lookTool = %q; want \"\" for a tool that really isn't installed", got)
+	if got := Look("definitely-not-a-real-tool-xyzzy"); got != "" {
+		t.Errorf("Look = %q; want \"\" for a tool that really isn't installed", got)
 	}
 }
 
@@ -63,7 +63,7 @@ func TestLookToolIgnoresANonExecutable(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(local, "faketool"), []byte("notes"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := lookTool("faketool"); got != "" {
-		t.Errorf("lookTool = %q; want \"\" — a non-executable file is not the tool", got)
+	if got := Look("faketool"); got != "" {
+		t.Errorf("Look = %q; want \"\" — a non-executable file is not the tool", got)
 	}
 }
