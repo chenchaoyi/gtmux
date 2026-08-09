@@ -4,6 +4,7 @@
 
 import {Platform} from 'react-native';
 import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent} from './types';
+import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 
 // clientTag is the device's self-reported platform, sent on every request as
@@ -305,12 +306,26 @@ export class GtmuxClient {
   // size the phone can hold (transcript-render-bounds) — it rides a response HEADER, so
   // the body stays the plain turn array. Surfaced so the view can say the history is
   // truncated instead of showing part of a conversation as the whole one.
-  async transcript(id: string): Promise<{turns: TranscriptTurn[]; dropped: number}> {
+  //
+  // `reset` rides headers the same way, and says the opposite thing: nothing was dropped,
+  // the conversation was STARTED OVER (`/clear`, `/new`, `gtmux hq --rotate`) and what
+  // came before it is in a session log this endpoint never reads. Without it a cleared
+  // history is indistinguishable from a broken one.
+  async transcript(id: string): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset}> {
     const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}`, {headers: this.h()});
     if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);
     const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);
-    return {turns: Array.isArray(j) ? j : [], dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0};
+    const kind = r.headers?.get?.('X-Gtmux-Session-Reset') ?? '';
+    // The clock is optional: a kind with no usable timestamp is still worth saying, so
+    // `at` falls back to 0 and the view drops the time from the phrase rather than the
+    // phrase itself.
+    const at = parseInt(r.headers?.get?.('X-Gtmux-Session-Reset-At') ?? '', 10);
+    return {
+      turns: Array.isArray(j) ? j : [],
+      dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0,
+      reset: kind === 'clear' || kind === 'new' ? {kind, at: Number.isFinite(at) && at > 0 ? at : 0} : undefined,
+    };
   }
 
   // digest: the fleet's cognitive digest (GET /api/digest) — one row per agent

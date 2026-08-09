@@ -98,6 +98,90 @@ func FirstMessageTime(agent, sessionID string) int64 {
 	return 0
 }
 
+// Session-reset kinds — how a conversation was started over. Both are the agent's own
+// slash commands; `gtmux hq --rotate` types one of them, so a supervisor rotation reports
+// the same way a hand-typed reset does.
+const (
+	ResetClear = "clear" // /clear — the conversation before it is in a PREVIOUS session log
+	ResetNew   = "new"   // /new — same effect, different command
+)
+
+// SessionOrigin reports whether a session BEGAN by resetting the conversation before it
+// (`/clear` or `/new`), and when. ("", 0) when it did not, or cannot be told.
+//
+// It exists because the chat view reads exactly ONE session — the pane's current resume
+// record — so a reset makes the history it can show start over at zero. Without this the
+// view has no way to say WHY it went short, and the emptiness reads as a bug: on
+// 2026-08-09 a 400-turn HQ shift was cleared and the phone showed three bubbles, which
+// cost a diagnosis to explain (the first guess, that the view reads tmux scrollback and
+// lost it to history-limit, was wrong in every part).
+//
+// The judgment is the FIRST non-meta user entry, and nothing else: a reset session opens
+// with the slash invocation itself, while an ordinary one opens with a real prompt (or a
+// wake line). That keeps it a HEAD read — one small read no matter how large the log
+// grew — and keeps it from firing on a `/clear` typed mid-session, which would have
+// started its own log anyway.
+//
+// Claude Code only: its log is the one that records the invocation. Other agents return
+// no claim, which the view renders as no hint rather than a wrong one.
+func SessionOrigin(agent, sessionID string) (reset string, at int64) {
+	if normalizeAgent(agent) != "claude" {
+		return "", 0
+	}
+	path, _ := resolveLog(agent, sessionID)
+	if path == "" {
+		return "", 0
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return "", 0
+	}
+	defer f.Close()
+	const head = 64 << 10
+	buf := make([]byte, head)
+	n, err := f.Read(buf)
+	if n == 0 || (err != nil && err != io.EOF) {
+		return "", 0
+	}
+	lines := strings.Split(string(buf[:n]), "\n")
+	for i, ln := range lines {
+		s := strings.TrimSpace(ln)
+		if s == "" {
+			continue
+		}
+		var e claudeLine
+		if json.Unmarshal([]byte(s), &e) != nil {
+			// The head cut the last line in half — anything past it is unparseable,
+			// so stop rather than skipping on to a later entry and mis-reading it as
+			// the first one.
+			if i == len(lines)-1 {
+				break
+			}
+			continue
+		}
+		if e.Type != "user" || e.IsMeta || e.IsSidechain || e.Message == nil {
+			continue
+		}
+		var raw string
+		if json.Unmarshal(e.Message.Content, &raw) != nil || !isSlashWrapper(raw) {
+			return "", 0 // the session opened with something else — not a reset
+		}
+		switch slashCommandName(raw) {
+		case "/clear":
+			reset = ResetClear
+		case "/new":
+			reset = ResetNew
+		default:
+			return "", 0
+		}
+		if t, err := time.Parse(time.RFC3339Nano, e.Timestamp); err == nil {
+			at = t.Unix()
+		}
+		return reset, at
+	}
+	return "", 0
+}
+
 // LastMessageError reports whether an agent's session ENDED on an API/tool error —
 // i.e. the LAST real message in its Claude Code transcript is an entry flagged
 // `isApiErrorMessage:true` (e.g. "API Error: Unable to connect to API"). It returns

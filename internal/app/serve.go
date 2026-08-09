@@ -628,29 +628,35 @@ const transcriptByteBudget = 512 << 10
 // session id, captured by the hooks) → the agent's on-disk conversation log.
 // Always returns a valid JSON array — "[]" when the pane has no resumable
 // session or the agent's log can't be found — never a hard error for those.
-func transcriptForPane(id string) ([]byte, int, error) {
+func transcriptForPane(id string) ([]byte, server.TranscriptMeta, error) {
 	empty := []byte("[]")
+	var meta server.TranscriptMeta
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
-		return empty, 0, nil
+		return empty, meta, nil
 	}
 	loc := tmux.Display(id, "#{session_name}:#{window_index}.#{pane_index}")
 	if loc == "" {
-		return empty, 0, nil
+		return empty, meta, nil
 	}
 	rec, ok := resume.Load(loc)
 	if !ok {
-		return empty, 0, nil
+		return empty, meta, nil
 	}
+	// Read BEFORE the turns and report it even when there are none: a session cleared a
+	// moment ago has an empty transcript, and that is exactly when the reader most needs
+	// to be told why rather than shown a blank screen.
+	meta.Reset, meta.ResetAt = transcript.SessionOrigin(rec.Agent, rec.SessionID)
 	turns, err := transcript.Load(rec.Agent, rec.SessionID, maxTranscriptTurns)
 	if err != nil || len(turns) == 0 {
-		return empty, 0, nil
+		return empty, meta, nil
 	}
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
 	b, err := json.Marshal(kept)
 	if err != nil {
-		return empty, 0, nil
+		return empty, meta, nil
 	}
-	return b, dropped, nil
+	meta.Dropped = dropped
+	return b, meta, nil
 }
 
 // turnsWithinBudget keeps the NEWEST turns that fit `budget` bytes and reports how many

@@ -57,3 +57,53 @@ describe('what is hidden is disclosed', () => {
     expect(earlierLabel(0, 30, true)).toContain('未加载');
   });
 });
+
+// A conversation that was STARTED OVER is the third reason the screen isn't the whole
+// story, and the one that doesn't truncate anything: the turns ARE this conversation
+// whole, and everything before it is in a session log the chat endpoint never reads.
+// On 2026-08-09 a `/clear`ed HQ shift showed three bubbles on the phone and read as a
+// bug — this is the line that would have answered it on the spot.
+describe('a conversation that restarted says so', () => {
+  // 13:24 local on 2026-08-09 — the clear that prompted this.
+  const at = new Date(2026, 7, 9, 13, 24, 9).getTime() / 1000;
+
+  test('names the command and the local clock', () => {
+    const label = earlierLabel(0, 0, false, {kind: 'clear', at});
+    expect(label).toContain('13:24');
+    expect(label).toContain('/clear');
+    expect(canLoadMore(0)).toBe(false); // nothing to load — it offers no control
+  });
+
+  test('/new reads as itself, not as /clear', () => {
+    expect(earlierLabel(0, 0, false, {kind: 'new', at})).toContain('/new');
+    expect(earlierLabel(0, 0, false, {kind: 'new', at})).not.toContain('/clear');
+  });
+
+  test('points at where the earlier record still is, when the surface has one', () => {
+    expect(earlierLabel(0, 0, true, {kind: 'clear', at}, '动态')).toContain('动态');
+    expect(earlierLabel(0, 0, true, {kind: 'clear', at})).not.toContain('动态');
+    expect(earlierLabel(0, 0, false, {kind: 'clear', at}, 'Activity')).toContain('Activity');
+  });
+
+  test('an unknown clock drops the time, never the sentence', () => {
+    const label = earlierLabel(0, 0, false, {kind: 'clear', at: 0});
+    expect(label).toContain('/clear');
+    expect(label).not.toMatch(/\d\d:\d\d/);
+  });
+
+  // Truncation outranks it: while turns are still loadable, THAT is what the reader
+  // needs to know — the restart is only the end of the road once nothing is left.
+  test('truncation still wins the line', () => {
+    expect(earlierLabel(30, 0, false, {kind: 'clear', at})).toMatch(/load earlier/i);
+    expect(earlierLabel(0, 112, false, {kind: 'clear', at})).toContain('112');
+  });
+
+  test('no reset, no line', () => {
+    expect(earlierLabel(0, 0, false, undefined, 'Activity')).toBe('');
+  });
+
+  test('bilingual', () => {
+    expect(earlierLabel(0, 0, true, {kind: 'clear', at})).toContain('本轮对话从 13:24 的 /clear 开始');
+    expect(earlierLabel(0, 0, false, {kind: 'clear', at})).toContain('This conversation starts at 13:24');
+  });
+});

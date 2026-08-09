@@ -146,3 +146,41 @@ serving the part the user is looking at.
 
 - **WHEN** the single most recent turn is by itself larger than the budget
 - **THEN** it is still served, rather than returning an empty history
+
+### Requirement: A conversation that was started over is announced as such
+
+The system SHALL report when a session BEGAN by starting the conversation over — the
+agent's `/clear` or `/new`, including the one `gtmux hq --rotate` types on a supervisor's
+behalf — together with when it happened. This is distinct from truncation and SHALL NOT
+be reported as it: nothing was dropped, the turns served ARE the conversation whole; what
+came before lives in a previous session log, which this capability reads exactly one of
+(the pane's current resume record).
+
+Announcing it is required because otherwise a reset is indistinguishable from a fault. A
+cleared supervisor shift served three reply bubbles where the shift before it had
+hundreds, and the emptiness was diagnosed as a truncation bug that did not exist.
+
+The judgment SHALL be the session's FIRST non-meta user entry — a reset session opens
+with the slash invocation itself — so it stays a bounded read of the log's head however
+large the log has grown, and so a reset typed mid-session (which starts its own log
+anyway) cannot be misattributed to a session that did not begin with one.
+
+Where an agent's log does not record the invocation, the system SHALL make no claim
+rather than an unfounded one.
+
+#### Scenario: A cleared session
+
+- **WHEN** a session's log opens with a `/clear` (or `/new`) invocation
+- **THEN** the transcript response reports the reset kind and the time it happened, and
+  reports nothing as dropped
+
+#### Scenario: An ordinary session
+
+- **WHEN** a session's log opens with a real prompt, or with a slash command that does
+  not start the conversation over
+- **THEN** no reset is reported
+
+#### Scenario: An agent whose log does not record it
+
+- **WHEN** the session belongs to an agent whose log has no record of such an invocation
+- **THEN** no reset is reported, rather than one inferred from other evidence

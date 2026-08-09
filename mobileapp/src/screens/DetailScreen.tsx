@@ -32,6 +32,7 @@ import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
 import {ChatView} from '../ui/ChatView';
+import {SessionReset} from '../ui/chatWindow';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {BrandLoader} from '../ui/BrandLoader';
 import {ApprovalCard} from '../ui/ApprovalCard';
@@ -158,6 +159,9 @@ export function DetailView({
   // How many OLDER turns the server left out to bound the payload — shown by ChatView so
   // a truncated history never reads as the whole conversation (transcript-render-bounds).
   const [droppedTurns, setDroppedTurns] = useState(0);
+  // Set when this session began with a `/clear`/`/new` — the chat then holds the whole
+  // conversation and still isn't the whole story, so the view says where it restarts.
+  const [sessionReset, setSessionReset] = useState<SessionReset | undefined>();
   // A send the server declined to submit. Held (not dropped) so the text survives and
   // can be retried — see SendFailedBar.
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
@@ -352,10 +356,11 @@ export function DetailView({
     let alive = true;
     client
       .transcript(agent.pane_id)
-      .then(({turns: ts, dropped}) => {
+      .then(({turns: ts, dropped, reset}) => {
         if (!alive) return;
         setTurns(ts);
         setDroppedTurns(dropped);
+        setSessionReset(reset);
         setChatLoaded(true);
       })
       .catch(() => alive && setChatLoaded(true));
@@ -374,9 +379,9 @@ export function DetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
     ),
-    [live, lines, fontSize, pal, lang, turns, droppedTurns, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
+    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
   );
   const termEl = useMemo(
     () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={onLiveEdge} />,

@@ -144,13 +144,54 @@ func TestTranscriptAnnouncesDroppedTurns(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			d := tc.dropped
-			s := hqTestServer(t, Deps{Transcript: func(string) ([]byte, int, error) { return body, d, nil }})
+			s := hqTestServer(t, Deps{Transcript: func(string) ([]byte, TranscriptMeta, error) {
+				return body, TranscriptMeta{Dropped: d}, nil
+			}})
 			w := hqGet(t, s, "/api/transcript?id=%251", "master")
 			if w.Code != http.StatusOK {
 				t.Fatalf("status = %d; want 200", w.Code)
 			}
 			if got := w.Header().Get("X-Gtmux-Turns-Dropped"); got != tc.wantHeader {
 				t.Errorf("dropped header = %q; want %q", got, tc.wantHeader)
+			}
+			if w.Body.String() != string(body) {
+				t.Errorf("body = %s; want the turn array unchanged (no envelope)", w.Body.String())
+			}
+		})
+	}
+}
+
+// A conversation that was STARTED OVER must be announced the same way a truncated one
+// is. The turns served are complete for the session and still not the whole story —
+// what came before is in a previous session log this endpoint never reads. Unannounced,
+// a cleared HQ shift reads as a broken app: on 2026-08-09 one showed three bubbles and
+// cost a diagnosis (chat-transcript).
+func TestTranscriptAnnouncesASessionReset(t *testing.T) {
+	body := []byte(`[{"prompt":"hi","response":"yo"}]`)
+	for name, tc := range map[string]struct {
+		meta     TranscriptMeta
+		wantKind string
+		wantAt   string
+	}{
+		"cleared":       {meta: TranscriptMeta{Reset: "clear", ResetAt: 1786253049}, wantKind: "clear", wantAt: "1786253049"},
+		"new":           {meta: TranscriptMeta{Reset: "new", ResetAt: 1786253049}, wantKind: "new", wantAt: "1786253049"},
+		"clock unknown": {meta: TranscriptMeta{Reset: "clear"}, wantKind: "clear", wantAt: ""}, // kind alone is still worth saying
+		"ordinary":      {meta: TranscriptMeta{}, wantKind: "", wantAt: ""},                    // no reset → no headers at all
+	} {
+		t.Run(name, func(t *testing.T) {
+			m := tc.meta
+			s := hqTestServer(t, Deps{Transcript: func(string) ([]byte, TranscriptMeta, error) {
+				return body, m, nil
+			}})
+			w := hqGet(t, s, "/api/transcript?id=%251", "master")
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d; want 200", w.Code)
+			}
+			if got := w.Header().Get("X-Gtmux-Session-Reset"); got != tc.wantKind {
+				t.Errorf("reset header = %q; want %q", got, tc.wantKind)
+			}
+			if got := w.Header().Get("X-Gtmux-Session-Reset-At"); got != tc.wantAt {
+				t.Errorf("reset-at header = %q; want %q", got, tc.wantAt)
 			}
 			if w.Body.String() != string(body) {
 				t.Errorf("body = %s; want the turn array unchanged (no envelope)", w.Body.String())
