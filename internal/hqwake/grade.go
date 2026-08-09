@@ -110,3 +110,43 @@ func GradeOf(class string) Grade {
 	}
 	return GradeAttention
 }
+
+// GradeOfSeverity projects a STREAM record's severity onto the same scale the wake
+// classes use, so an event read in `gtmux events` and the knock that announced it read
+// alike. The severity tiers were built for exactly this question (what deserves
+// interrupting whom), so the mapping is one-to-one rather than a fresh opinion.
+func GradeOfSeverity(sev string) Grade {
+	switch sev {
+	case "important":
+		return GradeDecision
+	case "notable":
+		return GradeAttention
+	default: // routine, or a legacy record with no severity
+		return GradeLedger
+	}
+}
+
+// Color returns the grade's ANSI colour. It reuses the product's existing status
+// palette rather than inventing a second one: decision is the red the radar already
+// uses for "needs you", attention the cyan of work in flight, and ledger is dim —
+// present, and asking for nothing. Callers gate on i18n.ColorEnabled(); the glyph
+// carries the grade on its own, so a colourless terminal loses nothing.
+func (g Grade) Color() string {
+	switch g {
+	case GradeDecision:
+		return "\033[31m" // red
+	case GradeAttention:
+		return "\033[36m" // cyan
+	default:
+		return "\033[2m" // dim
+	}
+}
+
+// Paint wraps s in the grade's colour when on; identity when off, so a non-tty or
+// NO_COLOR caller emits exactly the bytes it emitted before this existed.
+func (g Grade) Paint(s string, on bool) string {
+	if !on || s == "" {
+		return s
+	}
+	return g.Color() + s + "\033[0m"
+}

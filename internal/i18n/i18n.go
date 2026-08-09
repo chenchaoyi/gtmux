@@ -121,3 +121,15 @@ func TruncDisp(s string, width int) string {
 	}
 	return strings.TrimRight(string(r[:i]), " ") + "…"
 }
+
+// ColorEnabled reports whether ANSI styling should be emitted: stdout is a terminal and
+// NO_COLOR is unset. Colour is an ADDITION for a human reading a live screen — a pipe,
+// a file, or a `--json` consumer must get the same bytes it always got, and NO_COLOR is
+// the standing convention for opting out even on a terminal.
+func ColorEnabled() bool {
+	if _, off := os.LookupEnv("NO_COLOR"); off {
+		return false
+	}
+	fi, err := os.Stdout.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+}

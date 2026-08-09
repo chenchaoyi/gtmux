@@ -387,3 +387,40 @@ func TestBatchIDSurvivesTheGradeGlyph(t *testing.T) {
 		t.Fatalf("BatchID through the grade glyph = %q, want #a3f1c2", got)
 	}
 }
+
+// Colour is an ADDITION, never a carrier: with it off the bytes must be exactly what
+// they were before the grade existed, because a pipe, a file and a --json consumer all
+// read this output. The glyph already carries the grade, so a colourless terminal loses
+// nothing.
+func TestGradePaintIsOptIn(t *testing.T) {
+	const line = "12:06:58  idle  gtmux dev  Claude Code (%18)"
+	if got := GradeAttention.Paint(line, false); got != line {
+		t.Errorf("colour off must be byte-identical:\n got %q\nwant %q", got, line)
+	}
+	got := GradeDecision.Paint(line, true)
+	if !strings.HasPrefix(got, "\033[31m") || !strings.HasSuffix(got, "\033[0m") {
+		t.Errorf("colour on must wrap the line: %q", got)
+	}
+	if !strings.Contains(got, line) {
+		t.Errorf("colour must not alter the text: %q", got)
+	}
+	// An empty string stays empty rather than becoming a bare escape pair.
+	if got := GradeLedger.Paint("", true); got != "" {
+		t.Errorf("empty stays empty, got %q", got)
+	}
+}
+
+// Severity and class project onto the SAME scale, so an event read in `gtmux events` and
+// the knock that announced it read alike.
+func TestGradeOfSeverity(t *testing.T) {
+	for sev, want := range map[string]Grade{
+		"important": GradeDecision,
+		"notable":   GradeAttention,
+		"routine":   GradeLedger,
+		"":          GradeLedger, // a legacy record with no severity
+	} {
+		if got := GradeOfSeverity(sev); got != want {
+			t.Errorf("severity %q graded %s, want %s", sev, got.Name(), want.Name())
+		}
+	}
+}

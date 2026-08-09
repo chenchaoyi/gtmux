@@ -1440,3 +1440,34 @@ rotation did not take (the session id did not change), not that a second rotatio
 - **THEN** it explains that a `Stop` record on the HQ pane is HQ's own output and must never
   be read as the user's instruction
 
+### Requirement: HQ reads and answers in the attention grade, and gates its prints by it
+
+The supervisor SHALL read a wake line's ATTENTION GRADE first — it says how loudly the line
+should land before a word of it is read — and SHALL answer in the SAME grade, so the pane
+reads as one scale rather than two vocabularies.
+
+The print gate SHALL be grade-explicit. LEDGER-grade content SHALL go to the situation
+board and the attention ledger and NOT to the screen; ATTENTION-grade content SHALL print
+when the surfacing threshold allows it; DECISION-grade content SHALL always print.
+Recording is not reporting: a thing written to the board has been dealt with, and repeating
+it on screen is noise rather than service — this is the bulk of what previously printed as
+prose and made the screen unreadable.
+
+A periodic brief SHALL name only what CHANGED since the last one. The unchanged part of the
+fleet SHALL be a one-clause pointer, never a re-listing: a brief that repeats itself teaches
+its reader to skip briefs.
+
+#### Scenario: Bookkeeping is recorded, not announced
+
+- **WHEN** HQ judges a routine outcome that needs nothing from the commander
+- **THEN** it is written to the board or ledger and NOT printed to the pane
+
+#### Scenario: A decision is always heard
+
+- **WHEN** a decision-grade signal arrives while the surfacing threshold is quiet
+- **THEN** HQ still prints it
+
+#### Scenario: A brief carries the delta
+
+- **WHEN** a periodic brief is due and most of the fleet is unchanged since the last one
+- **THEN** the brief names the changes and reduces the unchanged remainder to one clause

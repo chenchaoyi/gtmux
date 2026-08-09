@@ -122,3 +122,14 @@ func TestTruncDisp(t *testing.T) {
 		}
 	}
 }
+
+// NO_COLOR wins over everything: it is the standing convention for opting out, and a
+// caller that honours it only when it feels like it does not honour it.
+func TestColorEnabledRespectsNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	if ColorEnabled() {
+		t.Error("NO_COLOR set but colour still enabled")
+	}
+	// (Under `go test` stdout is a pipe, so the tty half of the gate is exercised by the
+	// pty check in the change's verification rather than here.)
+}

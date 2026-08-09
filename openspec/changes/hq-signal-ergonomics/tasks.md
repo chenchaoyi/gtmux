@@ -1,6 +1,7 @@
 # Tasks — hq-signal-ergonomics
 
-Status: IN PROGRESS — sections 1, 2, 3 and 5 landed; 4, 6, 7 remain.
+Status: IN PROGRESS — sections 1, 2, 3, 5 and 6 landed; 4 (pending view) and the
+archive half of 7 remain.
 
 ## 1. The grade projection (one source, no new judgment)
 
@@ -50,13 +51,27 @@ Status: IN PROGRESS — sections 1, 2, 3 and 5 landed; 4, 6, 7 remain.
 
 ## 6. Color on gtmux-owned surfaces
 
-- [ ] 6.1 `events --follow` / `tasks`: grade-colored rendering, tty-gated, `NO_COLOR`
-      respected; non-tty byte-identical to today.
-- [ ] 6.2 Tests for the gating (tty vs pipe vs NO_COLOR).
+- [x] 6.1 `gtmux events` renders each line in its grade's colour — decision red, attention
+      cyan, ledger dim, reusing the product's existing status palette rather than inventing
+      a second one. Gated on `i18n.ColorEnabled()` (stdout is a tty AND `NO_COLOR` unset),
+      decided once per invocation, so a pipe / file / `--json` consumer is byte-identical
+      to before.
+- [x] 6.1b `gtmux tasks` deliberately NOT repainted. Its rows already carry a coloured
+      STATUS glyph (waiting yellow · working cyan · archived dim), which is the same
+      information the grade would add — and a second colour layer on one row would fight
+      the design rule that colour expresses state. The surface already satisfies this
+      section's intent; what it is actually missing is section 4's pending view.
+- [x] 6.2 Tests: `Paint` is byte-identical with colour off and wraps without altering the
+      text when on; empty stays empty; `NO_COLOR` beats everything. The tty half was
+      verified against a real pty (`script -q /dev/null`): coloured on a terminal,
+      suppressed by `NO_COLOR`, clean through a pipe.
 
 ## 7. Consistency (per the repo rule)
 
-- [ ] 7.1 Sync deltas into `openspec/specs/{hq-wake-protocol,supervisor-agent,hq-attention-system}/spec.md`.
-- [ ] 7.2 `docs/cli.md` (`gtmux tasks` section + class table), CLAUDE.md lines citing the
+- [x] 7.1a Synced what SHIPPED: `hq-wake-protocol` (the grade in the line grammar, the
+      one-place projection, the encoding bar, and the recognizer rule that broke twice) and
+      `supervisor-agent` (read/answer in grade, the grade-explicit print gate, delta-only
+      briefs). `hq-attention-system` waits on section 4, which is what changes it.
+- [x] 7.2 `docs/cli.md` (`gtmux tasks` section + class table), CLAUDE.md lines citing the
       signal format if wording drifts; `api/contract.md` untouched (no HTTP change).
 - [ ] 7.3 Archive this change once implemented.
