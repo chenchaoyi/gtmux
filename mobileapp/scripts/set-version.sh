@@ -60,6 +60,13 @@ if [ "$changed" = 1 ]; then
     src="mobileapp/fastlane/metadata/${pair%%:*}/release_notes.txt"
     [ -f "$src" ] && cp "$src" "mobileapp/release-notes/${VER}.${pair##*:}.txt"
   done
+  # Record WHICH app the notes describe. check-design.sh compares this against the live
+  # sources to catch the failure we actually shipped on 2026-08-09: 0.48.0 crossed three
+  # user-visible app changes (#738, #739, #744) with the 0.47.0 notes still in place, so
+  # the archive skipped it and the What's New popup had nothing to say about the version
+  # the user was running. "Notes unchanged" is a legitimate skip ONLY when the app is
+  # unchanged too, and this is what makes that difference checkable.
+  bash mobileapp/scripts/appsrc-hash.sh > "mobileapp/release-notes/${VER}.srchash"
 fi
 bash mobileapp/scripts/gen-release-notes.sh > mobileapp/src/releaseNotes.ts
 
