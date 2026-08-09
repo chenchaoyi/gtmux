@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.47.0',
+    en: [
+      'What\'s new: after an update the app tells you what changed — every version you skipped, not just the latest. Read it again any time from Settings.',
+      'Numbered lists in a reply are numbered again: 1, 2, 3 rather than 1, 1, 1. An item\'s wrapped text used to break the list apart.',
+      'Landscape: the exit-full-screen button no longer covers the first line, content stays clear of the notch, and a phone keeps its single-column layout instead of borrowing the iPad\'s two-column one.',
+      'With gtmux updated on the Mac: sending into a pane where you have unsent text is refused instead of swallowing it, a failed send can be retried straight away, and agents with no desktop app show their real icon.',
+    ],
+    zh: [
+      '更新内容：升级后会告诉你改了什么 —— 你跳过的每个版本都会列出，而不只是最新那条。设置里随时可以再看一遍。',
+      '回复里的有序列表重新会数数了：1、2、3，而不是 1、1、1。以前条目里换行的正文会把列表截断。',
+      '横屏：退出全屏的按钮不再压住第一行；正文避开刘海；手机保持单栏布局，不再套用 iPad 的双栏。',
+      '配合 Mac 端更新：往你有未提交内容的 pane 发消息会被拒绝，而不是把它吞掉；发送失败后可以直接重试；没有桌面 app 的 agent 也能显示真实图标。',
+    ],
+  },
+  {
     version: '0.45.13',
     en: [
       'Native text selection in the terminal — long-press to select with the system handles and magnifier; Copy takes exactly what you selected.',
