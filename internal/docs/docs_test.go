@@ -133,7 +133,7 @@ func TestCheck_CatchesAStaleExample(t *testing.T) {
 	if got == nil {
 		t.Fatalf("a stale region must be reported; got %+v", bad)
 	}
-	if !strings.Contains(got.Produced, "» gtmux·waiting·permission") {
+	if !strings.Contains(got.Produced, "gtmux·waiting·permission") {
 		t.Errorf("the report must show what the code DOES produce; got %q", got.Produced)
 	}
 	if !strings.Contains(got.Documented, "[gtmux]") {
@@ -186,7 +186,7 @@ func TestRewrite_OnlyTheRegion(t *testing.T) {
 	if strings.Contains(out, "LINE ONE") {
 		t.Error("the stale body should have been replaced")
 	}
-	if !strings.Contains(out, "» gtmux·done") {
+	if !strings.Contains(out, "gtmux·done") {
 		t.Errorf("the region should now hold the real rendering:\n%s", out)
 	}
 	again, err := Rewrite(out)

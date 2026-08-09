@@ -63,12 +63,12 @@ func TestEventSummary_PromptHead(t *testing.T) {
 // the batch text itself stays dropped (it must never become a goal).
 func TestEventSummary_WakeBatchRecordsItsID(t *testing.T) {
 	sum, class := eventSummary("UserPromptSubmit",
-		`» gtmux·done  gtmux:0.0 (%14) │ goal:"x" · #a3f1c2`, "", "", "claude")
+		`» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:"x" · #a3f1c2`, "", "", "claude")
 	if sum != "#a3f1c2" || class != "" {
 		t.Fatalf("wake batch summary = %q/%q, want the batch id", sum, class)
 	}
 	// A wake line WITHOUT an id (a stray echo, not a delivered batch) stays silent.
-	if sum, _ := eventSummary("UserPromptSubmit", "» gtmux·done  %14", "", "", "claude"); sum != "" {
+	if sum, _ := eventSummary("UserPromptSubmit", "» ▸ gtmux·done  %14", "", "", "claude"); sum != "" {
 		t.Fatalf("an id-less wake echo must record nothing, got %q", sum)
 	}
 }
@@ -98,7 +98,7 @@ func TestEventSummary_SharesTheDeliverNeedlePipeline(t *testing.T) {
 		"cut a new release and update the cask",
 		"  Please  refactor   the verifier  ",
 		"fix the flaky test\n<system-reminder>context low</system-reminder>",
-		"» gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地",
+		"» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地",
 		strings.Repeat("多字节长指令 ", 30),
 	}
 	for _, p := range payloads {
@@ -121,7 +121,7 @@ func TestGoalOf(t *testing.T) {
 		{"slash command", "<command-name>/compact</command-name>", "(slash-command) /compact"},
 		{"slash, unreadable name", "<command-name>", "(slash-command)"},
 		{"harness injection", "<system-reminder>context low</system-reminder>", ""},
-		{"our own wake line", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, ""},
+		{"our own wake line", `» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, ""},
 		{"legacy nudge echo", `[gtmux] goal-changed gtmux:0 (%20) — goal:"x"`, ""},
 		{"empty", "  ", ""},
 	}
@@ -154,7 +154,7 @@ func TestGoalOf_DecidesBothTheWakeAndTheTier(t *testing.T) {
 		{"typed prose", "先别动那个分支", true},
 		{"slash command", "<command-name>/compact</command-name>", true},
 		{"harness injection", "<system-reminder>context low</system-reminder>", false},
-		{"our own wake line", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, false},
+		{"our own wake line", `» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, false},
 	} {
 		goal := goalOf(c.raw)
 		origin := ""

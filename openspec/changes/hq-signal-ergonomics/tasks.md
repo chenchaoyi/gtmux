@@ -1,28 +1,38 @@
 # Tasks — hq-signal-ergonomics
 
-Status: PROPOSED (not started).
+Status: IN PROGRESS — sections 1, 2, 3 and 5 landed; 4, 6, 7 remain.
 
 ## 1. The grade projection (one source, no new judgment)
 
-- [ ] 1.1 Define the class/severity → grade (decision/attention/ledger) mapping in one
+- [x] 1.1 Define the class/severity → grade (decision/attention/ledger) mapping in one
       place next to the wake-class table (`internal/hqwake`), covering every declared
       class; conformance test: no class without a grade.
-- [ ] 1.2 Choose the three glyphs for encoding robustness (survive POSIX locale, CJK
-      fonts, and the agent composer) — same bar the `»`/`│` choice met; document the
-      choice where the signal grammar is documented.
+- [x] 1.2 Glyphs chosen against the `»`/`│` bar (POSIX locale, CJK fonts, agent composer):
+      `◆` decision · `▸` attention · `·` ledger — Geometric Shapes and Latin-1, the blocks
+      the grammar already uses; no emoji (variation-selector / presentation baggage).
+      Pinned by a test that rejects anything above U+2BFF. Documented in `docs/cli.md`
+      beside the signal grammar and in the playbook.
 
 ## 2. Wake lines carry the grade
 
-- [ ] 2.1 Extend `hqwake.Line` with the fixed-position grade glyph; update the fixture
+- [x] 2.1 Extend `hqwake.Line` with the fixed-position grade glyph; update the fixture
       tests (extend, don't fork the grammar).
-- [ ] 2.2 `docs/cli.md` class table gains the grade column (the docs-conformance check
+- [x] 2.2 `docs/cli.md` class table gains the grade column (the docs-conformance check
       requires class docs and playbook to stay in step).
 
 ## 3. HQ's register and print gate (playbook)
 
-- [ ] 3.1 Playbook: the ⟣ vocabulary maps onto the three grades; ledger-grade content is
+- [x] 3.1 Playbook: the ⟣ vocabulary maps onto the three grades; ledger-grade content is
       board/ledger-only, never printed; grade glyph leads the signal line.
-- [ ] 3.2 Bump `hqPlaybookVersion` (repo rule: any `hqInstructions` change bumps it).
+- [x] 3.2 Bump `hqPlaybookVersion` (repo rule: any `hqInstructions` change bumps it).
+
+> **Found while implementing (both fixed, both now regression-tested):** two production
+> detectors matched the wake line by the literal prefix `» gtmux·`, which the grade glyph
+> splits. `transcript.gtmuxEchoPrefixes` — HQ's own line echoed back would have read as a
+> real user goal (a `goal-changed` wake about itself, at instruction severity). And
+> `hqwake.BatchID` — the delivery ack would stop recognising its own batch, so every wake
+> would re-send until the channel declared itself degraded. Both now match the SIGIL alone,
+> which is robust to the grammar growing again.
 
 ## 4. Pending-decision standing view
 
@@ -34,7 +44,7 @@ Status: PROPOSED (not started).
 
 ## 5. Delta-only tick briefs
 
-- [ ] 5.1 Playbook: a tick brief names only changes since the last brief; the unchanged
+- [x] 5.1 Playbook: a tick brief names only changes since the last brief; the unchanged
       plate is a one-clause pointer to the pending view (covered by the same version
       bump as 3.2).
 

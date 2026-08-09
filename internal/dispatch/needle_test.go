@@ -18,7 +18,7 @@ func TestNormalizeNeedle_OneTrackWithTheHook(t *testing.T) {
 		"fix the flaky test in deliver_test\n<system-reminder>context low</system-reminder>",
 		// A leading gtmux wake line is stripped by the hook's cleaning — the OLD
 		// dual-track needle kept it and never matched the event (the misjudgment bug).
-		"» gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地",
+		"» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地",
 		strings.Repeat("多字节长指令 ", 30),
 	}
 	for _, p := range payloads {

@@ -133,6 +133,15 @@ var classPriority = map[string]int{
 func PriorityOf(line string) int {
 	head := strings.TrimPrefix(strings.TrimSpace(line), Sigil)
 	head = strings.TrimSpace(head)
+	// Step over the grade glyph the line now leads with (hq-signal-ergonomics). Reading
+	// the class out of the line is what keeps the wake vocabulary in ONE table, so the
+	// parser has to follow the grammar when the grammar grows.
+	for _, g := range []Grade{GradeDecision, GradeAttention, GradeLedger} {
+		if rest, ok := strings.CutPrefix(head, g.Glyph()); ok {
+			head = strings.TrimSpace(rest)
+			break
+		}
+	}
 	if !strings.HasPrefix(head, "gtmux·") {
 		return PriorityDefault
 	}
@@ -143,7 +152,7 @@ func PriorityOf(line string) int {
 	if p, ok := classPriority[class]; ok {
 		return p
 	}
-	if stem, _, found := strings.Cut(class, "·"); found { // waiting·permission → waiting
+	if stem, _, found := cutClass(class); found { // waiting·permission → waiting
 		if p, ok := classPriority[stem]; ok {
 			return p
 		}
@@ -151,17 +160,26 @@ func PriorityOf(line string) int {
 	return PriorityDefault
 }
 
+// cutClass splits a compound class at its `·` (waiting·permission → waiting). Shared, so
+// the priority table and the grade table can never disagree about what a stem is.
+func cutClass(class string) (stem, rest string, found bool) { return strings.Cut(class, "·") }
+
 // sep separates the columnar fields. U+2502 (box drawing) reads as a column rule
 // and is pinned by the format fixture test.
 const sep = " │ "
 
-// Line builds one wake line: `» gtmux·<class>  <head> │ f1 │ f2 …`. Empty fields
+// Line builds one wake line: `» <grade> gtmux·<class>  <head> │ f1 │ f2 …`. Empty fields
 // are skipped so callers can pass optionals unconditionally. head is typically
 // `<loc> (<pane>)`; agent/user-authored payloads must already be DATA-labelled
 // (goal:"…" / title:"…" / tail:"…") by the caller.
 func Line(class, head string, fields ...string) string {
 	var b strings.Builder
 	b.WriteString(Sigil)
+	b.WriteString(" ")
+	// The GRADE leads, in a fixed position right after the sigil, so a screen of signal
+	// lines can be read by weight before it is read by words (hq-signal-ergonomics). It
+	// is a projection of the class — see grade.go — never a second opinion about it.
+	b.WriteString(GradeOf(class).Glyph())
 	b.WriteString(" gtmux·")
 	b.WriteString(class)
 	if head = strings.TrimSpace(head); head != "" {
@@ -284,7 +302,9 @@ func PullHint(now, sinceSeq int64) string {
 // scroll-fragile screen read (openspec agent-drivers P2).
 func BatchID(s string) string {
 	t := strings.TrimSpace(s)
-	if !strings.HasPrefix(t, Sigil+" gtmux·") {
+	// Sigil alone: the line now carries a grade glyph before `gtmux·` (see grade.go), and
+	// an ack that stopped recognising its own batch would have re-sent every wake forever.
+	if !strings.HasPrefix(t, Sigil+" ") {
 		return ""
 	}
 	j := strings.LastIndex(t, "#")

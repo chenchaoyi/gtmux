@@ -18,16 +18,18 @@ func withTempState(t *testing.T) {
 // ── signal line format (pinned fixtures — the visual language contract) ──────
 
 func TestLineFormatFixtures(t *testing.T) {
+	// The GRADE leads, in a fixed position after the sigil (hq-signal-ergonomics): `done`
+	// is attention-grade, so the line opens `» ▸ gtmux·done`.
 	got := Line(ClassDone, "%14 gtmux:1.2", "3m", `goal:"重构 auth"`, `tail:"tests pass, PR #12"`)
-	want := `» gtmux·done  %14 gtmux:1.2 │ 3m │ goal:"重构 auth" │ tail:"tests pass, PR #12"`
+	want := `» ▸ gtmux·done  %14 gtmux:1.2 │ 3m │ goal:"重构 auth" │ tail:"tests pass, PR #12"`
 	if got != want {
 		t.Fatalf("done line:\n got %q\nwant %q", got, want)
 	}
 	// Empty fields are skipped; a headless line carries no double-space gap.
-	if got := Line(ClassTick, "seq 341-352", "2 done · 1 gone", ""); got != "» gtmux·tick  seq 341-352 │ 2 done · 1 gone" {
+	if got := Line(ClassTick, "seq 341-352", "2 done · 1 gone", ""); got != "» · gtmux·tick  seq 341-352 │ 2 done · 1 gone" {
 		t.Fatalf("tick line = %q", got)
 	}
-	if got := Line(ClassNewSession, ""); got != "» gtmux·new-session" {
+	if got := Line(ClassNewSession, ""); got != "» ▸ gtmux·new-session" {
 		t.Fatalf("bare line = %q", got)
 	}
 }
@@ -42,7 +44,7 @@ func TestLineEncodingRobustness(t *testing.T) {
 	if !utf8.ValidString(l) {
 		t.Fatalf("line is not valid UTF-8: %q", l)
 	}
-	if !strings.HasPrefix(l, "» gtmux·waiting") {
+	if !strings.HasPrefix(l, "» ◆ gtmux·waiting") {
 		t.Fatalf("prefix drifted: %q", l)
 	}
 }
@@ -115,7 +117,7 @@ func TestConsumeTickLineAndSeqRange(t *testing.T) {
 	AddOutcome("done")
 	AddOutcome("gone")
 	line := ConsumeTick(now, 352)
-	if !strings.HasPrefix(line, "» gtmux·tick  seq 1-352") {
+	if !strings.HasPrefix(line, "» · gtmux·tick  seq 1-352") {
 		t.Fatalf("tick head = %q", line)
 	}
 	if !strings.Contains(line, "2 done · 1 gone") {
@@ -289,19 +291,99 @@ func TestClaimResolved(t *testing.T) {
 // submission's Summary), so anything user-authored must yield "".
 func TestBatchID(t *testing.T) {
 	cases := []struct{ name, in, want string }{
-		{"single wake", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x" · #a3f1c2`, "#a3f1c2"},
-		{"coalesced batch", `» gtmux·waiting  %1 · » gtmux·crash  %2 · +3 more queued · #09fe12`, "#09fe12"},
-		{"trailing newline", "» gtmux·asks  %7 · #abc123\n", "#abc123"},
-		{"no id", `» gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, ""},
+		{"single wake", `» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:"x" · #a3f1c2`, "#a3f1c2"},
+		{"coalesced batch", `» ◆ gtmux·waiting  %1 · » ◆ gtmux·crash  %2 · +3 more queued · #09fe12`, "#09fe12"},
+		{"trailing newline", "» ◆ gtmux·asks  %7 · #abc123\n", "#abc123"},
+		{"no id", `» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:"x"`, ""},
 		{"not a wake line", "please ship the release · #a3f1c2", ""},
-		{"id not hex", `» gtmux·done  %14 · #ZZZZZZ`, ""},
-		{"id wrong length", `» gtmux·done  %14 · #a3f1`, ""},
-		{"user text after id", "» gtmux·done  %14 · #a3f1c2\nand my own note", ""},
+		{"id not hex", `» ▸ gtmux·done  %14 · #ZZZZZZ`, ""},
+		{"id wrong length", `» ▸ gtmux·done  %14 · #a3f1`, ""},
+		{"user text after id", "» ▸ gtmux·done  %14 · #a3f1c2\nand my own note", ""},
 		{"empty", "", ""},
 	}
 	for _, c := range cases {
 		if got := BatchID(c.in); got != c.want {
 			t.Errorf("%s: BatchID(%q) = %q, want %q", c.name, c.in, got, c.want)
 		}
+	}
+}
+
+// ── attention grade (hq-signal-ergonomics) ───────────────────────────────────
+
+// Every declared class must have a grade. A class added without one would silently
+// read as attention, which is the safe default but not a decision anyone made — this is
+// the conformance check that makes the projection total.
+func TestEveryClassHasAGrade(t *testing.T) {
+	for _, c := range []string{
+		ClassWaiting, ClassResolved, ClassAsks, ClassDone, ClassCrash, ClassGoalChanged,
+		ClassNewSession, ClassReapSuggest, ClassTick, ClassStuckWaiting, ClassResourceWarn,
+		ClassLimitsWarn, ClassUsageWarn, ClassFeedDegraded, ClassWakeDegraded,
+		ClassDistill, ClassSelfCheck, ClassSelfRotate, ClassUnread,
+	} {
+		if _, ok := classGrade[c]; !ok {
+			t.Errorf("class %q has no grade — add it to classGrade", c)
+		}
+	}
+}
+
+// A compound class grades by its stem, the same rule PriorityOf follows, so
+// `waiting·permission` cannot drift away from `waiting`.
+func TestGradeOfStemAndUnknown(t *testing.T) {
+	if got := GradeOf(ClassWaiting + "·permission"); got != GradeDecision {
+		t.Errorf("waiting·permission graded %v, want decision", got.Name())
+	}
+	// An unknown class reads as attention: a signal gtmux chose to deliver is at least
+	// worth knowing, and grading it as bookkeeping would hide it.
+	if got := GradeOf("something-new"); got != GradeAttention {
+		t.Errorf("unknown class graded %v, want attention", got.Name())
+	}
+}
+
+// The glyphs must clear the same encoding bar as the sigil: no emoji (variation-selector
+// and presentation baggage), valid UTF-8, and distinct from each other. The `✳`-rendered-
+// as-`_` incident under a locale-less serve is why this bar exists.
+func TestGradeGlyphsAreEncodingSafe(t *testing.T) {
+	seen := map[string]bool{}
+	for _, g := range []Grade{GradeDecision, GradeAttention, GradeLedger} {
+		gl := g.Glyph()
+		if !utf8.ValidString(gl) {
+			t.Errorf("%s glyph is not valid UTF-8", g.Name())
+		}
+		if seen[gl] {
+			t.Errorf("%s reuses a glyph: %q", g.Name(), gl)
+		}
+		seen[gl] = true
+		for _, r := range gl {
+			// Emoji presentation / variation selectors live well above these blocks; the
+			// grammar's own characters (U+00BB, U+2502) are the precedent for staying low.
+			if r > 0x2BFF {
+				t.Errorf("%s glyph %q (U+%04X) is outside the safe blocks the grammar uses", g.Name(), gl, r)
+			}
+		}
+	}
+}
+
+// The grade rides in a FIXED position — immediately after the sigil, before the class —
+// so a reader (and PriorityOf) can find both without parsing the whole line.
+func TestGradeLeadsTheLine(t *testing.T) {
+	if got := Line(ClassCrash, "%9 api:0.0"); !strings.HasPrefix(got, "» ◆ gtmux·crash") {
+		t.Errorf("decision line = %q", got)
+	}
+	if got := Line(ClassUnread, "3 unconsumed"); !strings.HasPrefix(got, "» · gtmux·unread") {
+		t.Errorf("ledger line = %q", got)
+	}
+	// …and the priority parse still finds the class behind the new glyph.
+	if got := PriorityOf(Line(ClassWaiting+"·plan", "%7")); got != PriorityDecision {
+		t.Errorf("PriorityOf through the grade glyph = %d, want %d", got, PriorityDecision)
+	}
+}
+
+// The ack must recognise its own batch THROUGH the grade glyph. It matched
+// `» gtmux·` literally, so adding the grade silently broke it — and a wake whose id is
+// never recognised is a wake re-sent forever, until the channel declares itself degraded.
+func TestBatchIDSurvivesTheGradeGlyph(t *testing.T) {
+	line := Line(ClassDone, "%14 gtmux:1.2", "3m") + " · #a3f1c2"
+	if got := BatchID(line); got != "#a3f1c2" {
+		t.Fatalf("BatchID through the grade glyph = %q, want #a3f1c2", got)
 	}
 }
