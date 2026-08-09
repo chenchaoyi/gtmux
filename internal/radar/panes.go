@@ -26,6 +26,14 @@ type PaneRow struct {
 	Tier    string `json:"tier"`              // "agent" | "plain"
 	Agent   string `json:"agent,omitempty"`   // display name when Tier=="agent"
 	Icon    string `json:"icon,omitempty"`    // identity icon hint (.app/image path) when Tier=="agent"
+	// Git identity of the pane's cwd, on EVERY tier — the agent rows have carried it
+	// since radar++, and a plain pane is exactly where someone does git by hand. A
+	// surface reads Branch to know whether this pane HAS a repo at all: the phone shows
+	// its Diff control only then, instead of offering a button that opens an empty sheet
+	// (`GET /api/diff` returns "" for a non-repo cwd). gitInfo is filesystem-only — no
+	// subprocess — so this stays cheap per pane per poll.
+	Project string `json:"project,omitempty"` // repo-root basename ("" outside a repo)
+	Branch  string `json:"branch,omitempty"`  // current branch or short SHA ("" outside a repo)
 }
 
 // panesSource lists every tmux pane with the fields the browser needs. A package var
@@ -85,6 +93,7 @@ func GatherPanes() []PaneRow {
 			Agent:   names[id],
 			Icon:    icons[id],
 		}
+		row.Project, row.Branch = gitInfo(row.Cwd)
 		if len(f) >= 7 {
 			row.Title = strings.TrimSpace(f[6])
 		}

@@ -599,7 +599,14 @@ export function DetailView({
             </View>
           )}
           <View style={styles.ctlRight}>
-            <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
+            {/* Diff is offered only when this pane's cwd IS a repo. `GET /api/diff`
+                returns "" outside one, so an ungated button opened an empty sheet — a
+                dead control, and most visibly on a plain shell pane, which is exactly
+                where someone does git by hand and where the button is most worth having
+                when it works. `branch` carries the answer on every tier. */}
+            {!!live?.branch && (
+              <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
+            )}
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
             <Ctl pal={pal} label="A−" onPress={smaller} />
             <Ctl pal={pal} label="A+" onPress={bigger} />
