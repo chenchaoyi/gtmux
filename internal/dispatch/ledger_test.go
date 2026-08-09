@@ -1,6 +1,9 @@
 package dispatch
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLedger_RoundTripAndList(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
@@ -138,5 +141,83 @@ func TestResumableTask(t *testing.T) {
 func TestNewID_Unique(t *testing.T) {
 	if NewID(1) == NewID(2) {
 		t.Fatalf("distinct timestamps should yield distinct ids")
+	}
+}
+
+// Undelivered is the fact every status view must respect, because the pane cannot
+// report it: a dispatch that dies at the ready gate leaves a live, EMPTY, idle agent
+// pane that looks exactly like one which just finished a turn.
+func TestUndelivered(t *testing.T) {
+	cases := []struct {
+		name string
+		t    Task
+		want bool
+	}{
+		{"landed", Task{Delivered: true, State: string(StateLanded)}, false},
+		{"legacy landed (no state)", Task{Delivered: true}, false},
+		{"ready-timeout", Task{Delivered: false, State: string(StateFailed)}, true},
+		{"legacy failure (no state)", Task{Delivered: false}, true},
+		{"refused draft", Task{Delivered: false, State: string(StateRefusedDraft)}, true},
+		// Queued reached the agent — it simply runs after the current turn.
+		{"queued", Task{Delivered: false, State: string(StateQueued)}, false},
+	}
+	for _, c := range cases {
+		if got := c.t.Undelivered(); got != c.want {
+			t.Errorf("%s: Undelivered() = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// MarkDelivered closes the loop on the documented RESCUE: a failed spawn's goal
+// re-sent into the pane it left behind. Without it the rescue works and the ledger row
+// says `undelivered` forever while the worker is busy doing the job.
+func TestMarkDelivered_Rescue(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	const goal = "implement the readiness fix and open a PR"
+	id := NewID(1000)
+	_ = AddTask(Task{ID: id, Pane: "%5", Goal: goal, CreatedAt: 10,
+		Delivered: false, State: string(StateFailed)})
+
+	// An UNRELATED send into that pane must not launder a dispatch that never happened —
+	// the whole value of `undelivered` is that the ledger tells the truth.
+	if MarkDelivered("%5", "keep going", 98) {
+		t.Error("an unrelated send must not record the dispatch as delivered")
+	}
+	// The rescue: the same goal, re-sent (line breaks collapsed, as the ledger stores it).
+	if !MarkDelivered("%5", "implement the readiness fix\nand open a PR", 99) {
+		t.Fatal("a rescue into an undelivered entry's pane must record the landing")
+	}
+	got, ok := LoadTask(id)
+	if !ok || !got.Delivered || got.State != string(StateLanded) || got.Undelivered() {
+		t.Fatalf("after the rescue: %+v", got)
+	}
+	if got.LastUpdate != 99 {
+		t.Errorf("LastUpdate = %d, want the passed clock", got.LastUpdate)
+	}
+	// Idempotent, and never invents an entry for an untracked pane.
+	if MarkDelivered("%5", goal, 100) {
+		t.Error("an already-landed entry must not be rewritten")
+	}
+	if MarkDelivered("%404", goal, 100) {
+		t.Error("a pane with no ledger entry must be a no-op")
+	}
+}
+
+// The stored goal is truncated (radar.Snip 200) and whitespace-collapsed, so the match
+// is head-only over the same normalization — an equality check could never succeed for a
+// long goal, which is exactly the kind a --goal-file dispatch carries.
+func TestDeliversGoal(t *testing.T) {
+	long := strings.Repeat("把 hqPlaybookVersion 提到 13 并且运行 make check 然后开 PR ", 6)
+	// What radar.Snip(long, 200) leaves behind: whitespace collapsed, cut at 200 RUNES.
+	stored := string([]rune(collapseSpace(long))[:200]) + "…"
+	if !deliversGoal(stored, long) {
+		t.Error("the full goal must match its own truncated, stored head")
+	}
+	if deliversGoal(stored, "别的事情") {
+		t.Error("a different message must not match")
+	}
+	if deliversGoal("", "anything") {
+		t.Error("an entry with no recorded goal has nothing to match")
 	}
 }

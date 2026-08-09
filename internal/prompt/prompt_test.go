@@ -208,9 +208,10 @@ func TestIsComposerReady(t *testing.T) {
 	if !IsComposerReady("some earlier output\n\n❯ ", "") {
 		t.Error("a clean idle composer should be ready")
 	}
-	// A boot banner (MCP auth / connecting) is NOT ready — the composer hasn't taken over.
+	// A boot banner (still CONNECTING/loading) is NOT ready — the composer hasn't taken
+	// over input yet, so a long paste would truncate and its Enter would be swallowed.
 	banners := []string{
-		"❯ \n\n2 MCP servers need authentication",
+		"❯ \n\nConnecting to MCP servers…",
 		"Connecting to MCP servers…\n❯ ",
 		"Starting Claude Code…",
 		"Loading…\n❯ ",
@@ -235,7 +236,7 @@ func TestIsComposerReady(t *testing.T) {
 		t.Error("a screen with no prompt row should NOT be ready")
 	}
 	// A named agent still checks the default banner set.
-	if IsComposerReady("2 MCP servers need authentication\n❯ ", "Claude Code") {
+	if IsComposerReady("Connecting to MCP servers…\n❯ ", "Claude Code") {
 		t.Error("a named agent should still match the default boot-banner set")
 	}
 	// REGRESSION (2026-08-01 send-wedge): a READY composer must NOT be vetoed just
@@ -253,10 +254,87 @@ func TestIsComposerReady(t *testing.T) {
 	}
 }
 
+// A STANDING NOTICE is not boot noise. `⚠ N MCP servers need authentication · run /mcp`
+// names an action only the user can take and never clears on its own, so treating it as
+// startup chrome made the ready gate UNSATISFIABLE on any machine carrying one: every
+// `gtmux spawn` ran out its 20s timeout into a false `NOT delivered` while the session
+// sat there with an empty composer (three dispatches on 2026-08-09, each rescued by
+// hand). The control assertions below are the boundary — the fix must not buy this by
+// disarming the gate for a pane that IS still booting.
+func TestIsComposerReady_StandingAuthNoticeIsNotBootNoise(t *testing.T) {
+	// The real shape from the incident capture: the notice sits just above an empty,
+	// settled composer row.
+	live := " ⚠ 10 MCP servers need authentication · run /mcp\n❯ "
+	if !IsComposerReady(live, "") {
+		t.Error("a settled composer carrying a standing auth notice must be READY")
+	}
+	if !IsComposerReady(live, "claude") {
+		t.Error("same for a named agent (the default set is what carried the phrase)")
+	}
+	// Below the composer box is the other layout the notice appears in.
+	below := "╭──────────────╮\n│ >            │\n╰──────────────╯\n  ⚠ 3 MCP servers need authentication · run /mcp"
+	if !IsComposerReady(below, "") {
+		t.Error("the notice below the composer box must not block either")
+	}
+
+	// CONTROL 1 — the transient sibling still holds the gate. This is the hazard the
+	// banner list was written for: Claude paints the composer while MCP servers are
+	// still coming up, and a paste into that repainting window truncates.
+	if IsComposerReady("Connecting to MCP servers…\n❯ ", "") {
+		t.Error("a CONNECTING banner must still hold the gate — it resolves by waiting")
+	}
+	// CONTROL 2 — a genuinely booting pane (no composer row yet) is still not ready.
+	if IsComposerReady("Starting Claude Code…\n 10 MCP servers need authentication", "") {
+		t.Error("a booting pane with no composer row must still be NOT ready")
+	}
+	// CONTROL 3 — the notice does not waive the startup gate either.
+	gate := " ⚠ 10 MCP servers need authentication · run /mcp\n Do you trust the files in this folder?\n ❯ 1. Yes\n   2. No\n"
+	if IsComposerReady(gate, "") {
+		t.Error("a trust gate must still block, notice or not")
+	}
+}
+
+// BootBannerLine is the diagnostic twin: the ready-gate timeout has to be able to say
+// WHICH line said no. "composer not ready within the ready timeout" alone is what got
+// this footgun read as "the agent is slow" for months.
+func TestBootBannerLine(t *testing.T) {
+	got := BootBannerLine("prior output\n│ Connecting to MCP servers… │\n❯ ", "")
+	if got != "Connecting to MCP servers…" {
+		t.Errorf("BootBannerLine = %q, want the matched line stripped of box chrome", got)
+	}
+	if BootBannerLine("all quiet\n❯ ", "") != "" {
+		t.Error("a ready screen has no banner line")
+	}
+	if l := BootBannerLine(" ⚠ 10 MCP servers need authentication · run /mcp\n❯ ", ""); l != "" {
+		t.Errorf("a standing notice is not a banner line, got %q", l)
+	}
+}
+
+// NotReadyReason explains a not-ready capture in one line — each branch naming what the
+// reader has to DO about it.
+func TestNotReadyReason(t *testing.T) {
+	if r := NotReadyReason("earlier output\n\n❯ ", ""); r != "" {
+		t.Errorf("a ready capture has no reason, got %q", r)
+	}
+	if r := NotReadyReason("Connecting to MCP servers…\n❯ ", ""); !strings.Contains(r, "Connecting to MCP servers…") {
+		t.Errorf("reason must quote the blocking line, got %q", r)
+	}
+	trust := "  Do you trust the files in this folder?\n\n  ❯ 1. Yes, proceed\n    2. No, exit\n"
+	if r := NotReadyReason(trust, ""); !strings.Contains(r, "startup gate") {
+		t.Errorf("a trust gate must be named as such, got %q", r)
+	}
+	if r := NotReadyReason("  ❯ 1. Yes\n    2. No\n    3. Always\n", ""); !strings.Contains(r, "choice menu") {
+		t.Errorf("a live menu must be named as such, got %q", r)
+	}
+	if r := NotReadyReason("\n\n\n", ""); !strings.Contains(r, "no composer prompt row") {
+		t.Errorf("a blank screen must report the missing composer row, got %q", r)
+	}
+}
+
 // hasBootBanner matches the default set and a named agent's own phrases.
 func TestHasBootBanner(t *testing.T) {
-	if !hasBootBanner("all good\nMCP servers need authentication\n❯ ", "") {
-		t.Error("MCP auth notice is a boot banner")
+	if !hasBootBanner("all good\nConnecting to MCP servers…\n❯ ", "") {
+		t.Error("a connect spinner is a boot banner")
 	}
 	if hasBootBanner("normal idle\n❯ ", "") {
 		t.Error("a clean idle screen has no boot banner")

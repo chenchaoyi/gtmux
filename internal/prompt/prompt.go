@@ -151,15 +151,37 @@ func IsStartupGate(capture, agent string) bool {
 }
 
 // bootBanners are an agent's still-BOOTING chrome — the startup banner it paints
-// while connecting before its composer stably takes over input (MCP-connect spinner,
-// authentication notice, the generic starting/loading lines). Pasting a task while any
-// of these is on screen risks a truncated goal and a swallowed Enter, so they make a
-// pane NOT-ready. Keyed by agent name ("" = the default/Claude set); an agent can add
-// its own boot phrases. Extensible for codex/gemini/… — NOT hardcoded to one agent.
+// while connecting before its composer stably takes over input (the MCP-connect
+// spinner, the generic starting/loading lines). Pasting a task while any of these is on
+// screen risks a truncated goal and a swallowed Enter, so they make a pane NOT-ready.
+// Keyed by agent name ("" = the default/Claude set); an agent can add its own boot
+// phrases. Extensible for codex/gemini/… — NOT hardcoded to one agent.
+//
+// THE MEMBERSHIP RULE — a boot banner is chrome that RESOLVES BY WAITING. That is the
+// whole justification for blocking on it: wait, and the pane becomes deliverable.
+//
+// A STANDING NOTICE does not belong here even though it looks identical — a
+// bottom-region line naming an action only the USER can take. `⚠ N MCP servers need
+// authentication · run /mcp` is not boot noise, it is the boot RESULT: some servers
+// failed auth, and the line stays on screen forever until someone runs /mcp. It sat in
+// this list until 2026-08-09, and on a machine that permanently carries one that made
+// the ready gate UNSATISFIABLE — every `gtmux spawn` timed out into a false
+// `NOT delivered` while the session sat there with an empty composer and the goal in
+// nobody's hands (three dispatches on 2026-08-09 alone, each rescued by hand with
+// `gtmux send --message-file`). #652 narrowed the MATCHING (bottom region + line
+// anchoring) but left the phrase in, so only the "transcript mentions it" variant was
+// fixed and the real standing banner kept blocking; see the
+// spawn-readiness-persistent-banner change for why gating the phrase on the composer's
+// absence — the obvious-looking alternative — would have deleted the check outright
+// instead of narrowing it.
+//
+// The transient sibling stays: while MCP servers are still coming up, Claude paints
+// `Connecting…`, which DOES resolve — so the hazard this list was written for is
+// unchanged. The residual window (the auth line already up while the TUI still
+// repaints) is covered by the caller's two-frame settle check, which is the mechanism
+// built for exactly that.
 var bootBanners = map[string][]string{
 	"": { // Claude Code boot noise
-		"MCP servers need authentication",
-		"need authentication",
 		"Connecting",
 		"Connecting…",
 		"Starting",
@@ -184,7 +206,17 @@ var bootBanners = map[string][]string{
 // spinner signature must ANCHOR the line — the line IS "Connecting…", not prose that
 // happens to contain "connecting". Multi-word signatures ("MCP servers need
 // authentication") are specific enough to match anywhere on a bottom line.
-func hasBootBanner(capture, agent string) bool {
+func hasBootBanner(capture, agent string) bool { return bootBannerLine(capture, agent) != "" }
+
+// BootBannerLine is hasBootBanner's diagnostic twin: it returns the bottom-region LINE
+// that matched a boot-banner signature (trimmed of box chrome), or "" when none did.
+// The predicate answers "is this pane ready?"; this answers "which line said no?" — the
+// question a ready-gate timeout has to be able to answer, because "composer not ready
+// within the ready timeout" alone reads as "the agent is slow" and got this exact
+// footgun misdiagnosed for months.
+func BootBannerLine(capture, agent string) string { return bootBannerLine(capture, agent) }
+
+func bootBannerLine(capture, agent string) string {
 	sigs := bootBanners[""]
 	if agent != "" {
 		sigs = append(append([]string(nil), sigs...), bootBanners[agent]...)
@@ -194,14 +226,14 @@ func hasBootBanner(capture, agent string) bool {
 		for _, sig := range sigs {
 			if strings.ContainsRune(sig, ' ') {
 				if strings.Contains(s, sig) { // specific multi-word banner
-					return true
+					return strings.TrimRight(s, "│ \t")
 				}
 			} else if strings.HasPrefix(s, sig) { // generic one-word spinner: must start the line
-				return true
+				return strings.TrimRight(s, "│ \t")
 			}
 		}
 	}
-	return false
+	return ""
 }
 
 // promptGlyphs are the input-prompt cursor marks an agent draws on its (empty)
@@ -257,6 +289,31 @@ func IsComposerReady(capture, agent string) bool {
 	return hasPromptLine(capture, agent) &&
 		!IsStartupGate(capture, agent) &&
 		!hasBootBanner(capture, agent)
+}
+
+// NotReadyReason names, in one diagnostic line, WHY IsComposerReady is false for this
+// capture — "" when it is ready. It is the screen half of a ready-gate failure report:
+// the caller adds what only it can see (the agent never launched; the composer never
+// settled). Ordered most-actionable first, and each branch says what to DO about it,
+// because the reader of this string is someone whose dispatch just failed.
+//
+// English-only by the same convention `dispatch`'s evidence strings follow: this is
+// diagnostic DATA embedded in `--json` output, not a UI string (the ✗ line that
+// introduces it is localized).
+func NotReadyReason(capture, agent string) string {
+	if IsStartupGate(capture, agent) {
+		return "the agent is at a startup gate and needs a keypress before it can take a task"
+	}
+	if line := BootBannerLine(capture, agent); line != "" {
+		return "a startup banner is on screen: " + line
+	}
+	if WaitingOptions(capture) != nil {
+		return "the pane is at a choice menu, not a goal-ready composer"
+	}
+	if !hasPromptLine(capture, agent) {
+		return "no composer prompt row on screen (the agent has not drawn its input box)"
+	}
+	return ""
 }
 
 // looksLikeStartupChooser reports whether the bottom-of-screen menu is agent

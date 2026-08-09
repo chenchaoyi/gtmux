@@ -140,6 +140,41 @@ func WaitAgentReady(pane, agentCmd string, timeout time.Duration) bool {
 	}
 }
 
+// ReadyBlocker names what kept a pane from becoming ready — read AFTER WaitAgentReady
+// returned false, so a caller's failure report can say WHICH line said no instead of
+// only "not ready within the timeout". That distinction is the whole difference between
+// "the agent is slow, retry" and "this machine carries a banner the gate can never
+// satisfy": the latter was misread as the former for months, because the timeout message
+// named nothing and the evidence was 200 lines of scrollback.
+//
+// It reads the pane ONCE (cheap, and only on the failure path) and returns that frame
+// alongside the verdict, so a caller's evidence quotes the very capture the verdict was
+// read from rather than a second, possibly different one.
+//
+// Two of the conditions are invisible to the pure screen predicate and are decided here:
+// the agent never launched at all, and a composer that IS ready-looking on this frame —
+// which means the gate died on the settle requirement, i.e. the screen kept repainting.
+func ReadyBlocker(pane, agentCmd string) (blocker, capture string) {
+	cmd := tmux.Display(pane, "#{pane_current_command}")
+	if cmd == "" {
+		return "the pane is gone", ""
+	}
+	if ShellCommands[cmd] {
+		return "the agent never started — the pane is still a bare shell (" + cmd + ")", tmux.CaptureFull(pane)
+	}
+	capture = tmux.CaptureFull(pane)
+	return readyBlockerOf(capture, agentKey(agentCmd)), capture
+}
+
+// readyBlockerOf is ReadyBlocker's pure half (the tmux-free part the tests drive), in
+// the same shape as readyGate.step.
+func readyBlockerOf(capture, agent string) string {
+	if r := prompt.NotReadyReason(capture, agent); r != "" {
+		return r
+	}
+	return "the composer never settled — the screen kept repainting through the timeout"
+}
+
 // driverReady wires the driver's session-start signal for the ready gate; nil when
 // the capability is absent (hook-less agent) or switched off (`driver.<agent>.ready`).
 // The launch moment is NOW (WaitAgentReady runs right after the launch keystroke),

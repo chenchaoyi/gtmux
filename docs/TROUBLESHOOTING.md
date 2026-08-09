@@ -518,6 +518,37 @@ or a structured non-empty draft (`dispatch.DraftOf`) — reclassifies it `waitin
 is a gate/draft. All other waiting stays hook-driven. **Unstick now:** answer the gate /
 press Enter in the pane.
 
+### `gtmux spawn` starts a session but the goal never arrives — and `tasks` says `done`
+**Symptom:** `gtmux spawn --goal-file …` prints what reads like a normal startup log,
+the session is up, and the composer is **empty** — the goal was never entered. `gtmux
+tasks` shows the entry green `✳ done` with the full goal text beside it. `digest`'s
+goal/last for that pane are blank. `gtmux send --message-file <the same file>` into that
+pane lands first try. Hit on 2026-08-01, 08-03, 08-06, and twice on 08-09.
+**Root cause (two independent defects, and you need both fixes):**
+1. The readiness gate listed `MCP servers need authentication` as a **boot banner**. On a
+   Mac that permanently carries `⚠ 10 MCP servers need authentication · run /mcp`, that
+   line is not startup noise — it never clears — so `hasBootBanner` matched forever, the
+   gate could never settle, and every spawn timed out into `NOT delivered`. (#652
+   narrowed the MATCHING but left the phrase in, fixing only the "transcript mentions it"
+   variant — which is why "✅ fixed in v0.44.10" was wrong and cost two more incidents.)
+2. `gtmux tasks` derived status from the pane ALONE (`taskStatusFor`: idle → `done`). A
+   ready-timeout leaves a live, empty, **idle** agent pane, so the failed dispatch
+   rendered as finished work. The ledger recorded `delivered:false` the whole time —
+   nothing but the resume lookup ever read it.
+**Fix (spawn-readiness-persistent-banner):** a **standing notice** — a bottom line naming
+an action only the user can take — is no longer a boot banner; only chrome that RESOLVES
+BY WAITING (`Connecting…`/`Loading…`) holds the gate, with the two-frame settle covering
+the transient window. The ledger stores the dispatch `state`, and `tasks`/`digest` read
+it: a never-landed dispatch is `✗ undelivered`, sorted first, never `done`. A `gtmux
+send` that lands in that pane back-fills the entry.
+**Must-check when a spawn looks wrong:** read the FIRST line of the failure, not the
+screen dump under it — it now says `blocked by: <the line that said no>`. spawn DOES
+report this on **stderr with exit 1**; the reason it reads as "no error" is that the old
+evidence appended the full capture (measured: 224 lines / 11.8 KB), so the verdict was
+the head of a wall that looks like a boot log. **Rule:** a spawn whose `tasks` row is
+`undelivered` was never dispatched — re-send with `gtmux send %N --message-file <path>`,
+or fix the blocker the evidence names (`/mcp` to authenticate, answer the trust gate, …).
+
 ### HQ's startup briefing typed into the input box but never sent
 **Symptom:** `gtmux hq` starts the agent, a long "Startup briefing — make this your very
 first output…" prompt sits in the input box UNSENT, and HQ stalls waiting.

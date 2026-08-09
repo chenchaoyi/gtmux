@@ -832,6 +832,12 @@ func clampEvidence(draft string) string {
 	return d
 }
 
+// EvidenceTail is the exported form, for a failure raised OUTSIDE this package that
+// wants the same bounded proof. The bound is the point: a 200-line scrollback dump
+// buries the one-line verdict it is supposed to support, which is exactly how a `✗ NOT
+// delivered` line printed on stderr got read as a normal startup log.
+func EvidenceTail(capture string) string { return evidenceTail(capture) }
+
 func evidenceTail(capture string) string {
 	lines := strings.Split(strings.TrimRight(capture, "\n"), "\n")
 	const n = 12

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
@@ -149,6 +150,12 @@ func cmdSend(args []string) int {
 			// (done-wake-keyed-on-awaited): mark it so its next `done` wakes HQ even when
 			// the pane is attended — the send-driven case a plain attended-defer dropped.
 			dispatch.MarkAwaited(paneID)
+			// Close the loop on a RESCUE. The documented recovery for a spawn that failed
+			// its ready gate is to re-send the same goal into the pane it left behind; the
+			// ledger entry still says the dispatch never landed, so without this the row
+			// would read `undelivered` forever while the worker is busy doing the job.
+			// No-op for a pane with no entry, or one that already landed.
+			dispatch.MarkDelivered(paneID, text, time.Now().Unix())
 		}
 		if asJSON {
 			b, _ := json.Marshal(sendJSON{

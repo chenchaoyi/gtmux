@@ -126,7 +126,9 @@ func TestGatherDigestFixtureLedgerJoin(t *testing.T) {
 
 	// Track %2 with a dispatch task; %1 stays untracked.
 	id := dispatch.NewID(1000)
-	if err := dispatch.AddTask(dispatch.Task{ID: id, Pane: "%2", Goal: "wire up the login flow", CreatedAt: 10}); err != nil {
+	// Delivered: the pane may speak for a dispatch whose goal actually reached the agent.
+	if err := dispatch.AddTask(dispatch.Task{ID: id, Pane: "%2", Goal: "wire up the login flow",
+		CreatedAt: 10, Delivered: true, State: "landed"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -154,6 +156,34 @@ func TestGatherDigestFixtureLedgerJoin(t *testing.T) {
 	}
 	if un := byPane["%1"]; un.Task != "" || un.TaskStatus != "" {
 		t.Errorf("untracked pane %%1 should carry no ledger fields, got task=%q status=%q", un.Task, un.TaskStatus)
+	}
+}
+
+// The digest reads the same ledger-aware mapper `gtmux tasks` does: a dispatch whose
+// goal never landed does NOT get to borrow its pane's status. The pane of a failed
+// dispatch is a live, empty, IDLE agent — indistinguishable from one that just finished
+// — so deriving from it alone published "done" for work that never started.
+func TestGatherDigestLedgerJoin_UndeliveredNeverBorrowsThePane(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	id := dispatch.NewID(2000)
+	if err := dispatch.AddTask(dispatch.Task{ID: id, Pane: "%1", Goal: "implement the thing",
+		CreatedAt: 10, Delivered: false, State: "failed"}); err != nil {
+		t.Fatal(err)
+	}
+
+	lines := []string{
+		paneLine("%1", "work", "0", "0", "✳ done", "claude", 1700000000, 900001, "/tmp/nope"),
+	}
+	var rows []DigestRow
+	withFixture(t, lines, func() { rows = GatherDigest() })
+
+	if len(rows) != 1 {
+		t.Fatalf("want one row, got %+v", rows)
+	}
+	if rows[0].TaskStatus != TaskStatusUndelivered {
+		t.Errorf("task_status = %q, want %q (an idle pane must not launder a failed dispatch into done)",
+			rows[0].TaskStatus, TaskStatusUndelivered)
 	}
 }
 

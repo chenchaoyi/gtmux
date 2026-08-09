@@ -1,6 +1,7 @@
 package dispatchbridge
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -58,7 +59,7 @@ func TestEventsForPane_MapsAndFilters(t *testing.T) {
 // arrive (guarding against a paste into a still-repainting boot screen).
 func TestReadyGate(t *testing.T) {
 	const ready = "prior output\n\n❯ "
-	const banner = "2 MCP servers need authentication\n❯ "
+	const banner = "Connecting to MCP servers…\n❯ "
 
 	// A capture sequence fed one per step. cmd stays a shell until `launchAt`.
 	type sample struct {
@@ -105,7 +106,7 @@ func TestReadyGate(t *testing.T) {
 // capture is enough. The gate/banner checks still apply to that capture.
 func TestReadyGate_SessionStartShortCircuits(t *testing.T) {
 	const ready = "prior output\n\n❯ "
-	const banner = "2 MCP servers need authentication\n❯ "
+	const banner = "Connecting to MCP servers…\n❯ "
 
 	// Event fired, but a banner still on screen → NOT ready (the one-capture
 	// check keeps its gate/banner teeth).
@@ -152,12 +153,43 @@ func TestReadyGate_NoEvent_TwoFrameUnchanged(t *testing.T) {
 // The signal is consulted only on a ready-but-unsettled frame — a banner frame
 // (composer not ready) never pays the event-file scan.
 func TestReadyGate_NoPollWhileNotComposerReady(t *testing.T) {
-	const banner = "2 MCP servers need authentication\n❯ "
+	const banner = "Connecting to MCP servers…\n❯ "
 	polls := 0
 	g := readyGate{agent: "claude", sessionUp: func() bool { polls++; return true }}
 	_ = g.step("claude", func() string { return banner })
 	_ = g.step("claude", func() string { return banner })
 	if polls != 0 {
 		t.Fatalf("a not-ready frame must not poll the signal; polled %d times", polls)
+	}
+}
+
+// A ready-gate failure has to be able to say WHICH line said no. The old report named
+// nothing ("agent composer not ready within the ready timeout") and buried itself under
+// 200 lines of capture, which is how a pane held by a PERMANENT banner was read as "the
+// agent is slow" for months, and how a `✗ NOT delivered` line printed on stderr with
+// exit 1 was reported as "spawn didn't error".
+func TestReadyBlockerOf(t *testing.T) {
+	cases := []struct {
+		name    string
+		capture string
+		want    string
+	}{
+		{"boot banner", "Connecting to MCP servers…\n❯ ", "Connecting to MCP servers…"},
+		{"trust gate", "Do you trust the files in this folder?\n❯ 1. Yes\n  2. No\n", "startup gate"},
+		{"no composer", "\n\n\n", "no composer prompt row"},
+		// A frame that IS ready means the gate died on the settle requirement — the one
+		// condition no single capture can show.
+		{"never settled", "earlier output\n\n❯ ", "never settled"},
+	}
+	for _, c := range cases {
+		if got := readyBlockerOf(c.capture, "claude"); !strings.Contains(got, c.want) {
+			t.Errorf("%s: readyBlockerOf = %q, want it to contain %q", c.name, got, c.want)
+		}
+	}
+	// The regression this change is about: a STANDING notice is not what blocked the
+	// gate, so it must not be reported as the blocker.
+	got := readyBlockerOf(" ⚠ 10 MCP servers need authentication · run /mcp\n❯ ", "claude")
+	if strings.Contains(got, "need authentication") {
+		t.Errorf("a standing notice must not be named as the blocker, got %q", got)
 	}
 }
