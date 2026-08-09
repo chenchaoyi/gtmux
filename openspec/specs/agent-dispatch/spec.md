@@ -192,7 +192,16 @@ clean frame ever reads back the full head+tail) SHALL NOT be treated as a fragme
 clearing or withholding there silently drops the send into a working pane and the
 destructive draft-clear mangles the good paste — but SHALL be submitted best-effort,
 leaving the post-submit landing check (verified paths) or the agent's own submit receipt
-(fast path) as the authority. A submission whose Enter was swallowed (the text remains in
+(fast path) as the authority.
+
+For a HOOK-EQUIPPED agent that protection SHALL extend to a QUIET pane as well: when a
+paste demonstrably reached the box, a fragment verdict SHALL NOT authorize clearing and
+re-pasting, because the screen cannot distinguish "the agent rendered less than we pasted"
+from "the agent has not finished rendering what we pasted", and the second case is the
+common one on an idle pane whose TUI redraws a beat late. The delivery SHALL be submitted
+and judged by the receipt, which matches the FULL payload — so a genuinely truncated paste
+is reported failed rather than silently mangled. A hook-LESS agent has no receipt, so the
+draft scrape remains its only evidence and the clear-and-retry SHALL still apply there. A submission whose Enter was swallowed (the text remains in
 the draft and no submit event arrived) SHALL be resubmitted with backoff, and each
 resubmit SHALL re-confirm the draft STILL holds the full text first — the system
 SHALL NOT re-send Enter blindly against a draft that is empty (already submitted) or
@@ -311,6 +320,49 @@ after the current turn" from "landed now" and from "failed".
   immediately
 - **THEN** the result state is `queued`, distinct from `landed` and `failed`
 
+### Requirement: Delivery never writes into an unsubmitted draft
+
+A paste APPENDS to a pane's input box; it does not replace it. So before delivering, the
+system SHALL read the target's input draft and SHALL REFUSE the delivery
+(`state:"refused-draft"`, writing nothing to the pane) when it holds UNSUBMITTED text that
+is not the delivery itself — otherwise the payload is concatenated onto someone's
+half-written line and both are submitted as one message, without its author ever pressing
+Enter. The refusal SHALL quote enough of the draft for the caller to recognize whose text
+it protected.
+
+Two cases SHALL NOT be treated as a clobber: a draft that already holds THIS delivery (an
+idempotent re-send after a lost acknowledgement), and a pane with no locatable input region
+(a plain shell — there is no draft to protect).
+
+The guard SHALL apply to every delivery path, verified and unverified alike, INCLUDING the
+phone's `POST /api/send` — a send from another device into a pane whose owner is typing is
+the case with no one present to undo it. Its override SHALL be a DISTINCT option from the
+re-send interlock's `--force`: the phone sets the interlock override on every send (it
+carries its own idempotency key), and folding the two together would leave that surface
+unprotected. The operator's `gtmux send --force` SHALL waive both.
+
+#### Scenario: A user's half-written line is not swallowed
+
+- **WHEN** a delivery targets a pane whose input box holds text the user has not submitted
+- **THEN** nothing is pasted, no Enter is sent, and the delivery is refused as
+  `refused-draft` with the draft quoted back
+
+#### Scenario: Our own re-send is not a clobber
+
+- **WHEN** the draft already holds the delivery being sent (a retry after a lost ack)
+- **THEN** the delivery proceeds and confirms idempotently
+
+#### Scenario: The phone cannot waive draft protection
+
+- **WHEN** `POST /api/send` delivers to a pane holding an unsubmitted draft
+- **THEN** it is refused and the client is told the pane has unsent text — the interlock
+  override the phone always carries does not waive this guard
+
+#### Scenario: The operator can override deliberately
+
+- **WHEN** `gtmux send --force` targets a pane with an unsubmitted draft
+- **THEN** the delivery proceeds
+
 ### Requirement: Re-send interlock refuses an identical duplicate
 
 Before delivering, the system SHALL record a hash of the payload per pane. An
@@ -319,6 +371,13 @@ SHALL be REFUSED (delivering nothing, `state:"refused-duplicate"`) unless an exp
 `--force` is given. This seals off a nervous duplicate of a side-effecting command
 (e.g. a second `/compact`) while leaving a deliberate repeat available via `--force`.
 The interlock SHALL NOT block a different payload, nor a repeat after the window lapses.
+
+The record SHALL be written when the paste is PLACED (so a failure between paste and
+submit cannot double-deliver) and SHALL be DROPPED when the delivery ends `failed`: a
+delivery that never landed must not refuse its own retry, which is the obvious next act
+and was answerable only with `--force`. A delivery reported `queued` was ACCEPTED and
+SHALL keep its record — re-sending it would duplicate the instruction the interlock exists
+to protect.
 
 #### Scenario: A duplicate within the window is refused
 
@@ -336,6 +395,17 @@ The interlock SHALL NOT block a different payload, nor a repeat after the window
 
 - **WHEN** a different payload is delivered to the same pane within the window
 - **THEN** it is delivered normally
+
+#### Scenario: A failed delivery may be retried immediately
+
+- **WHEN** a delivery ends `failed` and the same payload is sent again within the window
+- **THEN** it is delivered rather than refused — the failed attempt's record was dropped
+
+#### Scenario: A queued delivery still holds the interlock
+
+- **WHEN** a delivery is reported `queued` and the same payload is sent again within the
+  window
+- **THEN** it is refused, because the agent already accepted the instruction
 
 ### Requirement: Pre-flight checks before dispatch
 
@@ -608,8 +678,10 @@ The system SHALL confirm that the input draft holds the FULL delivered text (hea
 AND tail, or a collapsed-paste placeholder) before sending Enter on the unverified
 text path — `gtmux send` with verification skipped (`--no-verify`) — using the same
 draft-content check as the verified dispatch, so it does not race paste against Enter.
-It SHALL skip the post-submit LANDED verification by design. (The phone's `POST /api/send`
-is NOT this path — it goes through the verified, idempotent dispatch; see below.)
+It SHALL skip the post-submit LANDED verification by design, but NOT the draft guard —
+skipping verification is not a request to overwrite an unsubmitted line. (The phone's
+`POST /api/send` is NOT this path — it goes through the verified, idempotent dispatch; see
+below.)
 
 #### Scenario: An unverified send does not race paste against Enter
 
@@ -627,7 +699,9 @@ the client's next poll cycle. Landing reliability comes from resolving the agent
 from its process subtree (so hook-equipped agents are correctly detected) and the pre-submit
 paste guard's per-agent composer detection — not from a blocking receipt. A genuinely
 un-placeable draft (a settled fragment) SHALL still fail synchronously so the client keeps the
-text; only the post-submit landing confirmation is dropped from the response path. A send MAY
+text, and a pane holding an UNSUBMITTED draft SHALL be refused with a message naming that
+cause (see "Delivery never writes into an unsubmitted draft"); only the post-submit landing
+confirmation is dropped from the response path. A send MAY
 carry a client `send_id`; a `send_id` that already LANDED SHALL return success WITHOUT
 re-injecting, so a retry after an ambiguous network failure never double-sends.
 

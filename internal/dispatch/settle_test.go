@@ -34,7 +34,7 @@ func TestSettleIsCappedSoADeliveryCannotStall(t *testing.T) {
 // which we give up.
 func TestSettleIsAnUpperBoundNotADelay(t *testing.T) {
 	f := &fakeIO{caps: []string{boxDraft("the full message")}}
-	if v := confirmPaste(f.io(), Opts{PasteSettle: 3}, "the full message"); v != pasteInDraft {
+	if v, _ := confirmPaste(f.rawIO(), Opts{PasteSettle: 3}, "the full message"); v != pasteInDraft {
 		t.Fatalf("verdict = %v; want pasteInDraft", v)
 	}
 	if f.clock != 0 {

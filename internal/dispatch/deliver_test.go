@@ -86,18 +86,34 @@ type fakeIO struct {
 	inMode                                       bool // pane starts in copy/view-mode
 	exitCalls                                    int  // ExitMode invocations
 	exitBeforePaste                              bool // ExitMode ran before the first Paste
+	// preDraft is what the input box holds BEFORE Deliver pastes anything. Deliver reads
+	// it first (the draft guard: never append to someone's unsubmitted text), so the fake
+	// must serve that frame or every subsequent fixture frame is off by one. Empty — an
+	// idle, empty box — is the normal case and the default; a test that wants the guard to
+	// fire sets it.
+	preDraft string
 }
 
+// io is the seam DELIVER sees: the fixture's frames behind the PRE-PASTE frame that
+// Deliver's draft guard reads before it pastes anything.
 func (f *fakeIO) io() IO {
+	return f.ioWith(append([]string{boxDraft(f.preDraft)}, f.caps...))
+}
+
+// rawIO serves the fixture's frames verbatim — for unit-testing confirmPaste and the
+// other post-paste helpers directly, which never see Deliver's pre-paste read.
+func (f *fakeIO) rawIO() IO { return f.ioWith(f.caps) }
+
+func (f *fakeIO) ioWith(caps []string) IO {
 	return IO{
 		Capture: func() string {
 			f.capCalls++
 			i := f.capI
-			if i >= len(f.caps) {
-				i = len(f.caps) - 1
+			if i >= len(caps) {
+				i = len(caps) - 1
 			}
 			f.capI++
-			return f.caps[i]
+			return caps[i]
 		},
 		Paste:      func(string) error { f.pasteCalls++; return nil },
 		Enter:      func() error { f.enterCalls++; return nil },
@@ -137,7 +153,7 @@ func TestDeliver_HookHappyPath_NoScreenNeeded(t *testing.T) {
 		t.Fatalf("want landed, got %+v", r)
 	}
 	// The submit event confirmed it — only the paste-guard capture was read.
-	if f.capCalls != 1 {
+	if f.capCalls != 2 { // the draft-guard read + the one verify read
 		t.Fatalf("hook path should not depend on repeated screen reads; capCalls=%d", f.capCalls)
 	}
 	if len(f.recorded) != 1 {
@@ -181,7 +197,7 @@ func TestConfirmPaste_CodexFooterMotion_IsBusy(t *testing.T) {
 		caps = append(caps, codexBox(string(rune('0'+(i/4)%10))+"s", "implement the"))
 	}
 	f := &fakeIO{caps: caps}
-	if v := confirmPaste(f.io(), Opts{Pane: "%1", PasteSettle: 1}, taskText); v != pasteBusy {
+	if v, _ := confirmPaste(f.rawIO(), Opts{Pane: "%1", PasteSettle: 1}, taskText); v != pasteBusy {
 		t.Fatalf("a Codex ticking its footer is busy; want pasteBusy, got %v", v)
 	}
 }
@@ -196,7 +212,7 @@ func TestConfirmPaste_FullyQuiet_IsFragment(t *testing.T) {
 		caps = append(caps, codexBox("5s", "implement the")) // identical every frame: quiet
 	}
 	f := &fakeIO{caps: caps}
-	if v := confirmPaste(f.io(), Opts{Pane: "%1", PasteSettle: 1}, taskText); v != pasteFragment {
+	if v, _ := confirmPaste(f.rawIO(), Opts{Pane: "%1", PasteSettle: 1}, taskText); v != pasteFragment {
 		t.Fatalf("a fully static pane is a fragment; want pasteFragment, got %v", v)
 	}
 }
@@ -558,7 +574,7 @@ func TestPasteAndSubmit_ConfirmsFullDraftThenEnters(t *testing.T) {
 			boxDraft(taskText),                // confirm i=1: full
 		},
 	}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, taskText)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, taskText)
 	if !ok {
 		t.Fatalf("a full paste must confirm")
 	}
@@ -585,7 +601,7 @@ func TestPasteAndSubmit_WrappedCJKLine_ConfirmsNotChurns(t *testing.T) {
 	}
 
 	f := &fakeIO{caps: []string{wrapped}}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 1}, cjk)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 1}, cjk)
 	if !ok {
 		t.Fatal("a wrapped CJK line holds the FULL delivery — must confirm, not churn")
 	}
@@ -601,7 +617,7 @@ func TestPasteAndSubmit_WithholdsEnterOnFragment(t *testing.T) {
 	// A settled fragment the guard cannot place must NOT be submitted — that is the
 	// truncated submit this fixes. Enter is withheld.
 	f := &fakeIO{caps: []string{boxDraft("cl")}} // always a fragment
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, taskText)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, taskText)
 	if ok {
 		t.Fatalf("a fragment must not report confirmed")
 	}
@@ -619,7 +635,7 @@ func TestConfirmPaste_BusyPaneReturnsPasteBusy(t *testing.T) {
 		busyBox("t2", "implement the"),
 		busyBox("t3", "implement the"),
 	}}
-	if v := confirmPaste(f.io(), Opts{PasteSettle: 1}, taskText); v != pasteBusy {
+	if v, _ := confirmPaste(f.rawIO(), Opts{PasteSettle: 1}, taskText); v != pasteBusy {
 		t.Fatalf("churning pane with a placed paste must be pasteBusy, got %v", v)
 	}
 }
@@ -628,7 +644,7 @@ func TestConfirmPaste_QuietFragmentStaysFragment(t *testing.T) {
 	// The SAME short draft on a QUIET pane (static transcript, no churn) is still a real
 	// fragment — the busy carve-out must not swallow the truncation guard.
 	f := &fakeIO{caps: []string{boxDraft("cl")}} // fixed history → churn stays 0
-	if v := confirmPaste(f.io(), Opts{PasteSettle: 1}, taskText); v != pasteFragment {
+	if v, _ := confirmPaste(f.rawIO(), Opts{PasteSettle: 1}, taskText); v != pasteFragment {
 		t.Fatalf("quiet short draft must stay pasteFragment, got %v", v)
 	}
 }
@@ -643,7 +659,7 @@ func TestConfirmPaste_MultilineGrewThenFragment_StaysFragment(t *testing.T) {
 	grew0 := "h1\nh2\nh3\n╭──────────────╮\n│ ❯ implement the │\n╰──────────────╯"
 	grew1 := "h1\nh2\n╭──────────────╮\n│ ❯ implement the │\n│  verified disp │\n╰──────────────╯"
 	f := &fakeIO{caps: []string{grew0, grew1, grew1, grew1, grew1}}
-	if v := confirmPaste(f.io(), Opts{PasteSettle: 1}, taskText); v != pasteFragment {
+	if v, _ := confirmPaste(f.rawIO(), Opts{PasteSettle: 1}, taskText); v != pasteFragment {
 		t.Fatalf("a multi-line paste that grew then settled short is a fragment, got %v", v)
 	}
 }
@@ -661,7 +677,7 @@ func TestPasteAndSubmit_BusyPaneSubmitsBestEffort(t *testing.T) {
 		busyBox("t3", "implement the"),
 		busyBox("t4", "implement the"),
 	}}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 2, PasteSettle: 1}, taskText)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 2, PasteSettle: 1}, taskText)
 	if !ok {
 		t.Fatal("a busy pane holding the paste must submit best-effort, not withhold")
 	}
@@ -706,7 +722,7 @@ func TestPasteAndSubmit_UnstructuredShellSubmits(t *testing.T) {
 	// A plain shell has no locatable draft; the command must still submit (best-effort).
 	shell := "user@host project % " + taskText
 	f := &fakeIO{caps: []string{shell}}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 1}, taskText)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 1}, taskText)
 	if !ok {
 		t.Fatalf("an unstructured pane should proceed to submit")
 	}
@@ -814,7 +830,7 @@ func TestDeliver_JudgedByScreen_Attributed(t *testing.T) {
 func TestPasteAndSubmit_ImagePathFoldedIntoChip_Submits(t *testing.T) {
 	path := "/Users/x/.local/share/gtmux/uploads/ef153468-markup.png"
 	f := &fakeIO{caps: []string{boxDraft("[Image #1]")}}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, path)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, path)
 	if !ok || f.enterCalls != 1 {
 		t.Fatalf("chip in draft = delivery placed; want submit, got ok=%v enters=%d", ok, f.enterCalls)
 	}
@@ -826,7 +842,7 @@ func TestPasteAndSubmit_ImagePathFoldedIntoChip_Submits(t *testing.T) {
 func TestPasteAndSubmit_BodyPlusImagePath_ChipAndProseSubmit(t *testing.T) {
 	text := "看看这个报错截图\n/Users/x/.local/share/gtmux/uploads/a1b2c3d4-shot.jpg"
 	f := &fakeIO{caps: []string{boxDraftLines("看看这个报错截图 [Image #1]")}}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, text)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, text)
 	if !ok || f.enterCalls != 1 {
 		t.Fatalf("prose matched + chip shown; want submit, got ok=%v enters=%d", ok, f.enterCalls)
 	}
@@ -835,7 +851,7 @@ func TestPasteAndSubmit_BodyPlusImagePath_ChipAndProseSubmit(t *testing.T) {
 func TestPasteAndSubmit_ImagePathButNoChipNoPath_StillWithheld(t *testing.T) {
 	path := "/Users/x/.local/share/gtmux/uploads/ef153468-markup.png"
 	f := &fakeIO{caps: []string{boxEmpty("history")}} // box stays empty: nothing landed
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, path)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, path)
 	if ok || f.enterCalls != 0 {
 		t.Fatalf("no chip and no path = not placed; want withheld, got ok=%v enters=%d", ok, f.enterCalls)
 	}
@@ -845,7 +861,7 @@ func TestPasteAndSubmit_ProseWithStaleChip_NotMistakenForDelivery(t *testing.T) 
 	// A draft holding an old attachment chip must not vouch for a PROSE delivery
 	// that never landed — the chip path only applies when the text had image paths.
 	f := &fakeIO{caps: []string{boxDraft("[Image #1]")}}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, taskText)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteRetries: 0, PasteSettle: 1}, taskText)
 	if ok || f.enterCalls != 0 {
 		t.Fatalf("chip must not confirm unrelated prose; got ok=%v enters=%d", ok, f.enterCalls)
 	}
@@ -881,7 +897,7 @@ func TestPasteAndSubmit_LiteralWrappedImagePath_Submits(t *testing.T) {
 		"markup.png",
 	)
 	f := &fakeIO{caps: []string{draft}}
-	ok := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, text)
+	ok, _ := PasteAndSubmit(f.io(), Opts{Pane: "%1", PasteSettle: 2}, text)
 	if !ok || f.enterCalls != 1 {
 		t.Fatalf("literal wrapped path + prose = placed; want submit, got ok=%v enters=%d", ok, f.enterCalls)
 	}
@@ -934,5 +950,173 @@ func TestDeliver_HookLess_FragmentStillFails(t *testing.T) {
 	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10, PasteRetries: 0, PasteSettle: 1}, taskText)
 	if r.Delivered || r.State != StateFailed {
 		t.Fatalf("hook-less: a settled fragment must still fail (no receipt to trust), got %+v", r)
+	}
+}
+
+// ── the three delivery-safety rules (send-delivery-safety) ───────────────────
+
+// A paste APPENDS to the input box. If the user has a half-written line sitting there,
+// delivering concatenates the payload onto it and submits both as one message — their
+// sentence mangled and sent without them ever pressing Enter. The nudge channel has
+// refused a non-empty box since hq-nudge-hardening; the dispatch channel never did.
+func TestDeliver_RefusesToClobberAUsersDraft(t *testing.T) {
+	f := &fakeIO{
+		preDraft: "notes I was still writing",
+		caps:     []string{boxEmpty("me: " + taskText)},
+		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	if r.State != StateRefusedDraft {
+		t.Fatalf("want refused-draft against a user's unsubmitted text, got %+v", r)
+	}
+	if r.Delivered {
+		t.Error("a refusal is not a delivery")
+	}
+	// Nothing may touch the pane: not the paste, not Enter, and above all not C-u.
+	if f.pasteCalls != 0 || f.enterCalls != 0 || f.clearCalls != 0 {
+		t.Errorf("the refusal must not write to the pane; paste=%d enter=%d clear=%d",
+			f.pasteCalls, f.enterCalls, f.clearCalls)
+	}
+	// The caller has to be able to recognize whose text it was.
+	if !strings.Contains(r.Evidence, "notes I was still writing") {
+		t.Errorf("the refusal must quote the draft it protected, got %q", r.Evidence)
+	}
+}
+
+// The operator's explicit override delivers through the guard.
+func TestDeliver_ClobberDraftOverridesTheGuard(t *testing.T) {
+	f := &fakeIO{
+		preDraft: "half a sentence",
+		caps:     []string{boxEmpty("me: " + taskText)},
+		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, ClobberDraft: true, DeliverTimeout: 10}, taskText)
+	if !r.Delivered {
+		t.Fatalf("ClobberDraft must deliver through the draft guard, got %+v", r)
+	}
+}
+
+// …but Force ALONE must not, and this is the property that protects the phone. serve sets
+// Force on every `/api/send` (it carries its own sendID idempotency), so folding the two
+// overrides into one would leave the surface most likely to clobber a draft — a send from
+// another device into a pane whose owner is typing — the one surface with no protection.
+func TestDeliver_InterlockForceDoesNotWaiveTheDraftGuard(t *testing.T) {
+	f := &fakeIO{
+		preDraft: "half a sentence",
+		caps:     []string{boxEmpty("me: " + taskText)},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, Force: true, DeliverTimeout: 10}, taskText)
+	if r.State != StateRefusedDraft {
+		t.Fatalf("interlock --force must not waive draft protection, got %+v", r)
+	}
+}
+
+// The UNVERIFIED fast path (what POST /api/send uses) refuses too, and says which refusal
+// it was so the phone can tell the user something true.
+func TestPasteAndSubmit_RefusesADraft(t *testing.T) {
+	f := &fakeIO{preDraft: "mid-sentence", caps: []string{boxEmpty("")}}
+	ok, refused := PasteAndSubmit(f.io(), Opts{Pane: "%1"}, taskText)
+	if ok || refused != StateRefusedDraft {
+		t.Fatalf("want a draft refusal, got ok=%v refused=%q", ok, refused)
+	}
+	if f.pasteCalls != 0 || f.enterCalls != 0 {
+		t.Errorf("the refusal must not write to the pane; paste=%d enter=%d", f.pasteCalls, f.enterCalls)
+	}
+}
+
+// Our OWN text in the box is not someone else's draft: a re-send whose paste already
+// landed (the ack was lost, not the message) must proceed and confirm idempotently,
+// exactly as it did before the guard existed.
+func TestDeliver_OwnDraftIsNotAClobber(t *testing.T) {
+	f := &fakeIO{
+		preDraft: taskText,
+		caps:     []string{boxEmpty("me: " + taskText)},
+		evs:      []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10}, taskText)
+	if r.State == StateRefusedDraft {
+		t.Fatalf("a draft holding OUR delivery must not be treated as a clobber, got %+v", r)
+	}
+}
+
+// The interlock records the payload when the paste is PLACED — right, because a crash
+// between paste and submit must not double-deliver. But it was read as "this was
+// delivered", so a send that FAILED verification refused its own retry: `gtmux send`
+// answered refused-duplicate to the one thing the operator obviously wanted. Against a
+// Codex whose receipt channel was dead, that was every retry.
+func TestDeliver_FailedSendDoesNotPoisonItsRetry(t *testing.T) {
+	forgotten := ""
+	f := &fakeIO{caps: []string{boxDraft(taskText), boxDraft(taskText)}} // never lands
+	io := f.io()
+	io.ForgetSend = func(pane string) { forgotten = pane }
+	r := Deliver(io, Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 1, HookGrace: 0}, taskText)
+	if r.State != StateFailed {
+		t.Fatalf("setup: want a failed delivery, got %+v", r)
+	}
+	if forgotten != "%1" {
+		t.Errorf("a failed delivery must drop its interlock record; forgot %q", forgotten)
+	}
+}
+
+// …but an ACCEPTED delivery keeps its record. StateQueued means the agent took the
+// message and is running it behind the current turn; re-sending would duplicate the
+// instruction, which is the whole reason the interlock exists.
+func TestDeliver_QueuedSendKeepsItsInterlock(t *testing.T) {
+	forgotten := ""
+	f := &fakeIO{caps: []string{
+		boxDraft(taskText),
+		boxEmpty("assistant: busy") + "\n Press up to edit queued messages",
+	}}
+	io := f.io()
+	io.ForgetSend = func(pane string) { forgotten = pane }
+	r := Deliver(io, Opts{Pane: "%1", DeliverTimeout: 10}, taskText)
+	if r.State != StateQueued {
+		t.Fatalf("setup: want queued, got %+v", r)
+	}
+	if forgotten != "" {
+		t.Errorf("an accepted delivery must keep its interlock record; forgot %q", forgotten)
+	}
+}
+
+// The fragment verdict authorizes C-u — destroying the draft — and the scrape cannot tell
+// "the agent rendered less than we pasted" from "the agent has not finished rendering what
+// we pasted". On an IDLE Codex it is reliably the latter: the pane is still (so the busy
+// escape does not fire) while the draft renders a beat late. The guard wiped a good paste
+// and the message was lost. With a receipt to judge on the FULL needle, a placed draft is
+// submitted instead of destroyed.
+func TestDeliver_IdlePaneFragmentIsNotDestroyed(t *testing.T) {
+	f := &fakeIO{
+		// A still pane whose draft reads short every frame — the slow-render race.
+		caps: []string{
+			boxDraft("implement the"), boxDraft("implement the"), boxDraft("implement the"),
+			boxDraft("implement the"), boxEmpty("me: " + taskText),
+		},
+		evs: []Ev{{Kind: EvSubmit, Head: NormalizeHead(taskText), Ts: 0}},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: true, DeliverTimeout: 10,
+		PasteRetries: 2, PasteSettle: 1}, taskText)
+	if f.clearCalls != 0 {
+		t.Errorf("a hook-equipped pane's placed draft must never be cleared; clearCalls=%d", f.clearCalls)
+	}
+	if f.pasteCalls != 1 {
+		t.Errorf("…and must not be re-pasted on top of itself; pasteCalls=%d", f.pasteCalls)
+	}
+	if !r.Delivered || r.JudgedBy != JudgedByDriver {
+		t.Errorf("the receipt should judge the delivery, got %+v", r)
+	}
+}
+
+// The hook-LESS half is unchanged: with no receipt the scrape is the only evidence there
+// is, so a settled fragment must still clear and retry rather than submit known-truncated
+// text. This is the boundary of the rule above.
+func TestDeliver_HookLessFragmentStillClearsAndRetries(t *testing.T) {
+	f := &fakeIO{caps: []string{
+		boxDraft("frag"), boxDraft("frag"), boxDraft("frag"), boxDraft("frag"),
+		boxDraft("frag"), boxDraft("frag"), boxDraft("frag"), boxDraft("frag"),
+	}}
+	Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 2,
+		PasteRetries: 1, PasteSettle: 1}, taskText)
+	if f.clearCalls == 0 {
+		t.Error("a hook-less agent has no receipt — the fragment retry must still clear")
 	}
 }
