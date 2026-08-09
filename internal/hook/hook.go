@@ -557,6 +557,30 @@ func Run(stdin io.Reader, args []string) int {
 		}
 	}
 
+	// Agent-internal helper filter (see helper.go): a pane-less session whose
+	// UserPromptSubmit carries a known helper system prompt is not anyone's
+	// session — don't sense it, don't stream it, don't bill it to HQ's unread
+	// debt. Its SessionStart has already streamed (nothing identified it yet), so
+	// append the pairing pane-less SessionEnd: the existing lifecycle-BLINK
+	// exclusion (hq's unreadBlinks, count and pull alike) then swallows the pair.
+	// The marker makes every later event of the session a no-op.
+	if pane == "" && agentSession != "" {
+		if event == "UserPromptSubmit" && isHelperPrompt(payload.Prompt) {
+			markHelperSession(agentSession)
+			native.Remove(agentSession) // drop what its SessionStart just recorded
+			events.Append(events.Record{Ts: time.Now().Unix(), Event: "SessionEnd", Agent: display})
+			debugf("helper session filtered: agent=%s session=%q", agentKey, agentSession)
+			return 0
+		}
+		if isHelperSession(agentSession) {
+			if event == "SessionEnd" {
+				unmarkHelperSession(agentSession)
+			}
+			debugf("helper session event swallowed: agent=%s event=%s session=%q", agentKey, event, agentSession)
+			return 0
+		}
+	}
+
 	// Outside tmux (no pane) we can't key pane state, but the hook still carries a
 	// session_id + cwd — so record the session so the radar can SENSE it as a
 	// `source: "native"` row (sense-only: no view/jump/send). Keyed by session, not

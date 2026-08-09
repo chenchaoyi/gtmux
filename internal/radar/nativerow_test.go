@@ -3,6 +3,7 @@ package radar
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ func TestNativePanesCarryTerminal(t *testing.T) {
 	if err := native.Save(native.Record{
 		SessionID: "warp-native-1", Agent: "claude", State: "working",
 		UpdatedAt: now - 30, Terminal: "Warp",
+		PID: os.Getpid(), // positive-evidence gate: a live process keeps the row shown
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -50,6 +52,7 @@ func TestNativePanesCarryIcon(t *testing.T) {
 	now := time.Now().Unix()
 	if err := native.Save(native.Record{
 		SessionID: "codex-native-1", Agent: "codex", State: "working", UpdatedAt: now - 30,
+		PID: os.Getpid(), // positive-evidence gate: a live process keeps the row shown
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -128,6 +131,47 @@ func TestBuiltinIconRefreshesWhenTheBytesChange(t *testing.T) {
 	}
 	if !bytes.Equal(b, assets.AgentIcon("codex")) {
 		t.Error("a stale cached icon must be refreshed from the committed bytes")
+	}
+}
+
+// The ghost-Codex-rows regression (2026-08-09, misled the commander twice): an
+// agent-internal helper call recorded as a native session shows a row with NOTHING
+// behind it — no process (its PID can't be sensed), no on-disk conversation, nothing
+// to focus, kill, or adopt — and a `working` one never resolves. The gate demands
+// positive evidence: a native row is listed only when its record names a live process
+// OR its session has an on-disk conversation. Both absent → the row is withheld.
+func TestNativePanesHideRecordWithNoEvidence(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+
+	// The ghost shape, verbatim from disk: no PID, no transcript, cwd "/".
+	if err := native.Save(native.Record{
+		SessionID: "ghost-1", Agent: "codex", State: "working", UpdatedAt: now - 60, Cwd: "/",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if panes := nativePanes(nil, nil, now); len(panes) != 0 {
+		t.Fatalf("a record with no process and no conversation must be withheld, got %d rows", len(panes))
+	}
+
+	// A conversation on disk is evidence enough — a real session whose process gtmux
+	// could not sense (Codex's detached hook path) must stay visible.
+	dir := filepath.Join(os.Getenv("HOME"), ".claude", "projects", "p")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	line := `{"timestamp":"` + time.Unix(now-120, 0).UTC().Format(time.RFC3339) + `"}` + "\n"
+	if err := os.WriteFile(filepath.Join(dir, "talked-1.jsonl"), []byte(line), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := native.Save(native.Record{
+		SessionID: "talked-1", Agent: "claude", State: "idle", UpdatedAt: now - 60,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	panes := nativePanes(nil, nil, now)
+	if len(panes) != 1 || panes[0].sessionID != "talked-1" {
+		t.Fatalf("a session with an on-disk conversation must stay listed, got %+v", panes)
 	}
 }
 
