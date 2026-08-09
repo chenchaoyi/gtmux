@@ -133,7 +133,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 18
+const hqPlaybookVersion = 19
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -1166,6 +1166,17 @@ substitutes for the other. 板=易逝私有姿态(gtmux 不读回),KB=机器持�
     STALE needs-you. This complements the ` + "`resolved`" + ` nudge for the delayed/queued/
     post-reset case where you saw no ` + "`resolved`" + `. 分级升级:routine 只记板、important 合并
     摘要、critical 才推手机;转达前先拿 live digest 对账核销,状态已变就撤,绝不报陈旧的 needs-you。
+12. WHAT YOU HAND UP, YOU PUT ON THE PLATE. An escalation is not finished when you have
+    SAID it — a line scrolls away, and the commander should never have to reconstruct
+    their own open list from the transcript. Every item you escalate goes on the standing
+    plate (` + "`gtmux tasks --await <task_id>`" + `), and comes off it the moment it is
+    answered, withdrawn, or overtaken (` + "`gtmux tasks --resolve <task_id> [decided|withdrawn|…]`" + `) —
+    the same reconcile you already owe before relaying. ` + "`gtmux tasks --pending`" + ` IS the
+    plate: stable order, no clock, byte-identical between two reads that changed nothing.
+    So do NOT re-list it. A brief names what CHANGED and points at the view in one clause
+    (「其余照旧,待决 3 项见 ` + "`gtmux tasks --pending`" + `」). Re-printing an unchanged list
+    every turn is the habit this view exists to end.
+    上交的事项即刻挂到常驻待决清单,答复/撤回后立刻下架;简报只讲变化,清单一句话带过,别重复罗列。
 
 ## Knowledge base — YOUR SINGLE MOST IMPORTANT JOB · 知识库(你最大的用途)
 

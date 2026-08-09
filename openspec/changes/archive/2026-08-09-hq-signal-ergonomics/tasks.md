@@ -1,7 +1,6 @@
 # Tasks — hq-signal-ergonomics
 
-Status: IN PROGRESS — sections 1, 2, 3, 5 and 6 landed; 4 (pending view) and the
-archive half of 7 remain.
+Status: COMPLETE — all seven sections landed.
 
 ## 1. The grade projection (one source, no new judgment)
 
@@ -37,11 +36,11 @@ archive half of 7 remain.
 
 ## 4. Pending-decision standing view
 
-- [ ] 4.1 Attention ledger: first-class "awaiting-commander" disposition (additive field
+- [x] 4.1 Attention ledger: first-class "awaiting-commander" disposition (additive field
       semantics; legacy entries unaffected).
-- [ ] 4.2 `gtmux tasks --pending` (or the surface decided at implementation): the standing
+- [x] 4.2 `gtmux tasks --pending` (or the surface decided at implementation): the standing
       view, stable ordering, en+zh; updates only on state change.
-- [ ] 4.3 Tests: entering/leaving the pending set; legacy ledger loads.
+- [x] 4.3 Tests: entering/leaving the pending set; legacy ledger loads.
 
 ## 5. Delta-only tick briefs
 
@@ -71,7 +70,12 @@ archive half of 7 remain.
 - [x] 7.1a Synced what SHIPPED: `hq-wake-protocol` (the grade in the line grammar, the
       one-place projection, the encoding bar, and the recognizer rule that broke twice) and
       `supervisor-agent` (read/answer in grade, the grade-explicit print gate, delta-only
-      briefs). `hq-attention-system` waits on section 4, which is what changes it.
+      briefs). `hq-attention-system` waited on section 4 — synced in 7.1b below.
+- [x] 7.1b Synced `hq-attention-system` once section 4 landed: the pending-decision
+      standing view (the awaiting-commander disposition, the total ordering, the
+      no-clock / no-radar-scan properties, the mark/unmark surfaces) plus the
+      grade-colour requirement section 6 shipped. `openspec validate --specs --strict`
+      stays 30/30.
 - [x] 7.2 `docs/cli.md` (`gtmux tasks` section + class table), CLAUDE.md lines citing the
       signal format if wording drifts; `api/contract.md` untouched (no HTTP change).
-- [ ] 7.3 Archive this change once implemented.
+- [x] 7.3 Archive this change once implemented.

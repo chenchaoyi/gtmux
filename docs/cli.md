@@ -513,7 +513,31 @@ Anything not provably a plain shell (vim, ssh, an agent the process scan missed)
 keeps the agent pipeline.
 
 `gtmux tasks [--json]` is the **dispatch / needs-you ledger**: every task you spawned
-with its live status (waiting / done / working / gone), needs-you first.
+with its live status (waiting / done / working / gone), needs-you first. `--verbose`
+adds archived entries and the attention columns (tier · priority · surfaced ·
+disposition).
+
+`gtmux tasks --pending` is the **pending-decision standing view** — the one home of
+what is on your plate:
+
+```
+◆ t1kx8p2m9dq3  hq %21                 08-09 14:32  ship v0.48.0 or hold for §4?
+▸ t1kx9r4w0aa1  worker-b %8            08-09 09:11  which branch should the migration target?
+```
+
+The leading glyph is the attention grade (`◆` decision · `▸` attention · `·` ledger),
+projected from the entry's tier — the same scale the wake lines carry. Ordering is
+total and stable: decision grade first, then the oldest wait, then pane, then id. The
+view reads the LEDGER ONLY (no radar scan) and prints an ABSOLUTE stamp rather than a
+"waiting 3h" countdown, so two reads of an unchanged plate are byte-identical — it
+moves only when the set does. That is what lets a brief point at it (「其余照旧」)
+instead of re-printing the list every time.
+
+Entries go on and off the plate with `gtmux tasks --await <task_id>` and
+`gtmux tasks --resolve <task_id> [disposition]` (the disposition records how it left —
+`decided` / `withdrawn` / `escalated`; omitted, it just clears). Membership is the
+`awaiting-commander` disposition and nothing else, so any other disposition also takes
+an item off the plate, and archiving an entry closes it out of the view.
 
 `gtmux reap <pane|task_id>` safely reclaims a finished dispatch — it runs a safety gate
 FIRST (the worktree must be clean and the branch merged) and only then kills the

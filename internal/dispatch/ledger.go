@@ -48,10 +48,17 @@ type Task struct {
 	Surfaced    bool   `json:"surfaced,omitempty"`    // has HQ shown this to the user
 	SurfacedAt  int64  `json:"surfaced_at,omitempty"` // when it was surfaced (unix secs)
 	Disposition string `json:"disposition,omitempty"` // free text: auto-answered / relayed / todo
-	FirstSeen   int64  `json:"first_seen,omitempty"`  // when the item first entered the ledger
-	LastUpdate  int64  `json:"last_update,omitempty"` // last mutation (promotion / disposition / …)
-	Archived    bool   `json:"archived,omitempty"`    // closed + moved out of the live set
-	ArchivedAt  int64  `json:"archived_at,omitempty"` // when it was archived
+	// AwaitingSince stamps when the entry entered the PENDING-DECISION set (the
+	// DispositionAwaitingCommander disposition) — the clock the standing view orders
+	// by, kept separate from LastUpdate, which every unrelated mutation moves. It is
+	// additive in the strict sense: absent in every entry written before it existed,
+	// and its zero value means exactly what those entries already meant — not pending.
+	// Only the disposition decides membership; this only remembers when it started.
+	AwaitingSince int64 `json:"awaiting_since,omitempty"`
+	FirstSeen     int64 `json:"first_seen,omitempty"`  // when the item first entered the ledger
+	LastUpdate    int64 `json:"last_update,omitempty"` // last mutation (promotion / disposition / …)
+	Archived      bool  `json:"archived,omitempty"`    // closed + moved out of the live set
+	ArchivedAt    int64 `json:"archived_at,omitempty"` // when it was archived
 }
 
 // Dispatch-channel sources for Task.Source (dual-channel awareness).
