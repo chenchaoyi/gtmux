@@ -95,3 +95,37 @@ func TestStaleStop(t *testing.T) {
 		})
 	}
 }
+
+// IsAskKind separates "the agent asked" from "gtmux inferred it from the screen". Both
+// write the same waiting marker, and conflating them is what let an agent's prose list
+// reach the phone as an approval card (2026-08-10).
+func TestIsAskKind(t *testing.T) {
+	for _, k := range []string{"permission", "plan", "question"} {
+		if !IsAskKind(k) {
+			t.Errorf("IsAskKind(%q) = false — the agent DID ask; the card must be offered", k)
+		}
+	}
+	// The slow tick's own screen verdicts. These are gtmux talking, not the agent.
+	for _, k := range []string{"startup", "draft"} {
+		if IsAskKind(k) {
+			t.Errorf("IsAskKind(%q) = true — that kind is a screen inference, not an ask", k)
+		}
+	}
+	// No evidence of an ask reads as no ask: no card, and the user replies in the
+	// terminal. A card offering choices nobody offered is the worse failure.
+	for _, k := range []string{"", "pending", "whatever-a-future-writer-invents"} {
+		if IsAskKind(k) {
+			t.Errorf("IsAskKind(%q) = true — an unrecognized kind is not evidence of an ask", k)
+		}
+	}
+}
+
+// Every waiting-marker kind the HOOK can write must be an ask kind — otherwise this gate
+// would silently drop a real approval card. Guards the two from drifting apart.
+func TestEveryHookWaitKindIsAnAskKind(t *testing.T) {
+	for _, k := range []Kind{KindPermission, KindPlan, KindQuestion} {
+		if !IsAskKind(string(k)) {
+			t.Errorf("hook writes kind %q but IsAskKind says it is not an ask — the approval card would vanish", k)
+		}
+	}
+}

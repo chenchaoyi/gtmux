@@ -246,9 +246,26 @@ invocation; for other agents no claim is made rather than a wrong one.
 ### `GET /api/options?id=%N` — a waiting pane's interactive choices (read-only)
 
 Parses a pane that is `waiting` on a numbered prompt (the SAME parser the
-menu-bar/CLI use) into its `1/2/3` options, for the approval card. `options` is
-`[]` when nothing parses — AND when the prompt is a rich picker rather than a clean
-tap-to-reply menu: Claude Code's `AskUserQuestion` renders each option beside a preview
+menu-bar/CLI use) into its `1/2/3` options, for the approval card.
+
+**Two independent gates, and both must hold** — a card offering choices nobody offered
+invites one keypress to "answer" with, so this endpoint is deliberately hard to open:
+
+1. **The agent must have ASKED.** The gate is the waiting marker's KIND
+   (`permission` / `plan` / `question` — written only by the hook, from an event the agent
+   fired), **not** the marker's existence. gtmux's own slow tick writes that same marker
+   for a dispatch it infers from the screen is stuck (`startup` / `draft`); those never
+   open this endpoint. An unrecognized or empty kind reads as no ask.
+2. **The screen must show a live MENU, not a numbered list.** The selector cursor must
+   LEAD its row (`❯ 1. Yes`), where a TUI actually draws it — a selector glyph merely
+   appearing somewhere on a numbered line does not qualify. `→` and `>` are in the glyph
+   set and are ordinary prose characters.
+
+A hook-less (Tier 0) agent writes no waiting marker at all, so it serves no card and the
+user replies in the terminal — the same degradation as a rich picker, never a hard failure.
+
+`options` is `[]` when nothing parses — AND when the prompt is a rich picker rather than a
+clean tap-to-reply menu: Claude Code's `AskUserQuestion` renders each option beside a preview
 panel on the same line, so the parsed labels are contaminated (an interior box rule) and
 a bare number-send can't drive that UI. Serving `[]` there means the phone shows no
 broken card; the user replies in the terminal (arrows/enter/free text) instead.

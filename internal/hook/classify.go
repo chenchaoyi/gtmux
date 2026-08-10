@@ -20,6 +20,33 @@ const (
 	KindQuestion   Kind = "question"   // the agent is asking you something (AskUserQuestion)
 )
 
+// IsAskKind reports whether a waiting-marker kind means THE AGENT ASKED — a permission
+// request, a plan awaiting approval, or a question. These three are written only by the
+// hook, from an event the agent itself fired (`PermissionRequest` / `Notification` /
+// `Waiting`), so they are POSITIVE evidence that a choice is pending.
+//
+// The waiting marker has a second writer. gtmux's own slow tick marks a tracked dispatch
+// it believes is stuck before running, with kind `startup` or `draft` — a verdict read off
+// the SCREEN, not something any agent said. Callers that need "is the agent asking?" must
+// therefore ask THIS, not merely whether the marker file exists: on 2026-08-10 a false
+// `startup` verdict (from a pane that had a gate phrase in its scrollback) opened the
+// options endpoint, whose own comment promised it served only HOOK-confirmed panes, and an
+// agent's numbered prose findings were served to the phone as a tappable approval card.
+// One wrong inference fed the next.
+//
+// An unrecognized or empty kind reads as NOT an ask. That is deliberate: an empty kind is
+// the absence of evidence that anything was asked, and the failure mode is benign — no
+// card, and the user replies in the terminal, which is already the documented fallback for
+// menus the card cannot drive. The opposite failure is a card offering choices nobody
+// offered, which invites one keypress to "answer" with.
+func IsAskKind(kind string) bool {
+	switch Kind(kind) {
+	case KindPermission, KindPlan, KindQuestion:
+		return true
+	}
+	return false
+}
+
 // Class is the classification of one raw hook event.
 type Class struct {
 	// Lifecycle is gtmux's canonical lifecycle event the state machine acts on:

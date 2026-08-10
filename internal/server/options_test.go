@@ -65,16 +65,16 @@ func TestOptionsEndpoint(t *testing.T) {
 	}
 }
 
-// TestOptionsGatedByHookWaiting: when IsWaiting is wired, a pane that is NOT
-// hook-waiting returns NO options even if its screen text looks like a menu — the
-// approval card must come from the hook, not from parsing arbitrary output.
+// TestOptionsGatedByHookWaiting: when HasPendingAsk is wired, a pane whose agent has
+// NOT asked returns NO options even if its screen text looks like a menu — the approval
+// card must come from the hook, not from parsing arbitrary output.
 func TestOptionsGatedByHookWaiting(t *testing.T) {
 	// Screen shows a numbered list (like an agent's own "1. … 2. …" prose).
 	paneText := "Steps:\n ❯ 1. Yes\n   2. No, tell Claude what to do"
-	waiting := map[string]bool{"%waiting": true} // only this pane is hook-waiting
+	asked := map[string]bool{"%waiting": true} // only this pane's agent asked
 	s := New(Config{Addr: "x", Token: "tok"}, Deps{
-		PaneText:  func(string) (string, bool) { return paneText, true },
-		IsWaiting: func(id string) bool { return waiting[id] },
+		PaneText:      func(string) (string, bool) { return paneText, true },
+		HasPendingAsk: func(id string) bool { return asked[id] },
 	})
 	h := s.Handler()
 	get := func(id string) []struct {
@@ -104,3 +104,4 @@ func TestOptionsGatedByHookWaiting(t *testing.T) {
 		t.Errorf("waiting pane options = %#v, want 2 with first 'Yes'", opts)
 	}
 }
+

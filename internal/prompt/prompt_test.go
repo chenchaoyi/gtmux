@@ -435,3 +435,70 @@ func TestParseOptions_SelectorOnALaterRow(t *testing.T) {
 		t.Fatalf("got %#v; want both options — the run carries a glyph on row 2", got)
 	}
 }
+
+// falseApprovalCard is the capture that produced a five-choice approval card on the phone
+// (2026-08-10) out of an agent's own "附带发现" findings list. The lines are reconstructed
+// from the CARD'S OWN RENDERED LABELS, which are literally what ParseOptions returned —
+// so this is the parser's real input, not a guess at it.
+//
+// The trigger is bullet 2's `→`: it is in selectorGlyphs, the run's "is this a live menu?"
+// flag was set by finding a glyph ANYWHERE on a numbered line, and `→` is an everyday
+// character in technical prose. The terminal's wrap then helped it through the last guard
+// by cutting bullet 1 short enough to pass OptionsReplyable's length check.
+const falseApprovalCard = "附带发现\n\n" +
+	"  1. codex 0.147 回执通道活着(#703 生效):SessionStart/UserPromptSubmit/Stop 全\n" +
+	"  fire,且 approval 菜单弹出即 fire PermissionRequest→Waiting(seq 12122)—— C3\n" +
+	"  2. 本机 session_end hook 曾被拒信任(config.toml enabled = false)→ gtmux 收不到\n" +
+	"  codex SessionEnd。恢复:重装 hooks 后信任门选 Trust all。\n" +
+	"  3. 幽灵批准(更正后口径):批准来源未定,确定不是 HQ(Policy\n" +
+	"  4. opencode/gemini:无推翻审计 §8 的证据,未重做。\n" +
+	"  5. token 用量(USER RULE):本会话 ctx ~119K;探针 %73 三轮短 turn,无 usage_warn。\n"
+
+// NB: TestParseOptions_ProseListIsNotAMenu above is the SAME FAMILY, one round earlier —
+// that one bought the selector requirement (a numbered run with no glyph anywhere is a
+// list). This is the next instance: the glyph requirement itself was satisfiable by prose.
+func TestParseOptions_ProseWithArrowIsNotAMenu(t *testing.T) {
+	if opts := ParseOptions(falseApprovalCard); opts != nil {
+		t.Fatalf("an agent's numbered findings list parsed as a %d-choice menu: %+v", len(opts), opts)
+	}
+	if opts := WaitingOptions(falseApprovalCard); opts != nil {
+		t.Fatalf("the same prose read as a pane WAITING on a menu: %+v", opts)
+	}
+}
+
+// The control half: narrowing the discriminator must not blind it. A real menu — the
+// cursor LEADING its highlighted row — still parses, for each agent's own glyph.
+func TestParseOptions_RealMenusStillParse(t *testing.T) {
+	menus := map[string]string{
+		"claude ❯":     "Do it?\n ❯ 1. Yes, proceed\n   2. No, exit\n",
+		"codex ›":      "Run it?\n› 1. Yes, continue\n  2. No, quit\n",
+		"boxed menu":   "│ ❯ 1. Approve │\n│   2. Deny    │\n",
+		"plain > mark": "> 1. Yes\n  2. No\n",
+	}
+	for name, text := range menus {
+		if opts := ParseOptions(text); len(opts) != 2 {
+			t.Errorf("%s: ParseOptions = %+v, want 2 choices", name, opts)
+		}
+	}
+}
+
+// selectorLeads is the discriminator itself: a cursor prefix vs. a glyph in prose.
+func TestSelectorLeads(t *testing.T) {
+	lead := []string{" ❯ 1. Yes", "› 1. Yes, continue", "│ ❯ 1. Approve │", "> 1. Yes", "  ▸  2. No"}
+	for _, l := range lead {
+		if !selectorLeads(l, promptGlyphs) {
+			t.Errorf("selectorLeads(%q) = false, want true (the cursor leads the row)", l)
+		}
+	}
+	prose := []string{
+		"  2. 本机 session_end hook 曾被拒信任(config.toml enabled = false)→ gtmux 收不到",
+		"  1. PermissionRequest→Waiting fires on approval",
+		"  3. run `grep foo > out.txt` first",
+		"  4. plain prose with no glyph at all",
+	}
+	for _, l := range prose {
+		if selectorLeads(l, promptGlyphs) {
+			t.Errorf("selectorLeads(%q) = true, want false (the glyph is prose)", l)
+		}
+	}
+}
