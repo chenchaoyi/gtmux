@@ -35,6 +35,43 @@ Layer summary, to keep the vocabulary straight:
   signal that "the agent received & submitted MY text", matched on head) and ② the tmux
   screen-scrape (a TUI-coupled proxy). `Deliver` uses ①+②; `PasteAndSubmit` uses ② only.
 
+## Evidence update — 2026-08-11: the symptom has been quiet, and that is explained
+
+**The commander reports no send problems in recent versions, and the machine agrees**:
+`serve.log` (247 KB, through 2026-08-10) contains ZERO occurrences of
+`didn't confirm` / `not delivered` / `refused`. This is not a case of failures going
+unnoticed on the phone — there were none.
+
+The quiet is ACCOUNTED FOR, not mysterious. Three specific scrape defects landed between
+this proposal being written and today, each one a real hole in the confirmation path:
+
+| fix | what it closed |
+|---|---|
+| **#692** (2026-08-04) | Claude 2.x titles its input-box border (`── SAT ──`), so the draft split into the status footer and EVERY send read as unconfirmed |
+| **#697** (v0.45.6) | the busy heuristic watched only the transcript ABOVE the box and missed Codex's footer-rendered timer — a working Codex read as quiet |
+| **#703** (`75e4222`, 2026-08-06) | gtmux installed codex hooks with `async:true`, which codex 0.146+ skips entirely — so codex fired NO events and the receipt channel was dead |
+
+**What this changes about the proposal: its nature, not its correctness.** The
+architectural claim is untouched — confirmation still depends on per-agent TUI scraping,
+and all three defects above arrived the same way: an agent shipped a new version and its
+rendering moved. That will happen again. But the change is now INSURANCE against a
+recurrence rather than REPAIR of a live failure, and it should be prioritized as such.
+
+**Read the "Why" section above with that correction in mind.** It is written in the
+present tense about a live, intermittent failure ("时好时坏", "the message never reached
+Codex"), and that tense is now wrong. Do not schedule this at the urgency that wording
+implies — this note exists precisely because a stale severity, inherited as fact, has cost
+this project real time more than once.
+
+**If a cheap hedge is wanted without the full change, §1 alone carries value and stands
+alone**: a working pane never hard-fails synchronously — the message is held and
+re-delivered at idle instead of dying with a red banner. It needs no receipt work, and it
+converts the worst case from "lost message" into "delivered later".
+
+**What would make this urgent again**: any recurrence of "the input box didn't confirm"
+after an agent upgrade. That is the signal to promote it, and it is worth grepping
+`serve.log` for before assuming this note is still current.
+
 ## What changes
 
 Decouple **sent** from **confirmed**, so the phone stays fast AND confirmation stops
