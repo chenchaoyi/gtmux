@@ -5,7 +5,8 @@ a real alarm; every slice pairs a "quiet when unchanged" test with a "resumes on
 test.
 
 Slice 1 landed: audits §1 + the `stuck·waiting` premise gate §6.
-Slice 2 landed: the family rule §2.2/2.3 + self-rotate backoff §3. (§2.1 rides slice 3.)
+Slice 2 landed: the family rule §2.2/2.3 + self-rotate backoff §3.
+Slice 3 landed: the delivery probe §2.1 + resource §4 + usage §5.
 
 ## 1. Audits first (settle spec-vs-implementation before adding mechanism) — DONE
 
@@ -32,13 +33,16 @@ Slice 2 landed: the family rule §2.2/2.3 + self-rotate backoff §3. (§2.1 ride
 
 ## 2. Family rule (hq-wake-protocol ADDED requirement)
 
-- [ ] 2.1 Add a delivery-side revalidation seam in `internal/hqwake`/`internal/hqnudge`:
+- [x] 2.1 Add a delivery-side revalidation seam in `internal/hqwake`/`internal/hqnudge`:
       a queued standing-class wake can carry a premise probe re-run at flush; probe
       says premise gone ⇒ drop (and record a control trace), changed ⇒ re-render.
-      **DEFERRED to slice 3 on purpose:** its consumers are §4/§5 (a queued
-      `resource·warn` whose tier recovered, a ctx warn voided by auto-compact). Built
-      now it would be a seam with nothing to prove it, and the alarm channel is the
-      wrong place to ship speculative mechanism.
+      **DONE in slice 3, with its consumer.** `hqnudge.RegisterRevalidator` runs the
+      probes inside `claimBatch` — after the claim is taken, so a dropped line is
+      removed like a delivered one and can never come back. Probes recognize their own
+      class from the rendered line, because the queue is text files on disk and a
+      closure cannot survive a serve restart. Registered from `internal/hq` (injection,
+      so hq → hqnudge stays acyclic). Rule for every probe: DROP only on positive
+      evidence the premise is gone; anything ambiguous delivers.
 - [x] 2.2 Unchanged-world suppression — `internal/hq/standing.go`, a pure
       `standingDecide` shared by the family (self-rotate uses it now; §4/§5 next).
       Fingerprint = breach SET + outside-movement counter, persisted with the class's
@@ -52,7 +56,8 @@ Slice 2 landed: the family rule §2.2/2.3 + self-rotate backoff §3. (§2.1 ride
       Minimum spacing and safety floor both kept, per the task.
 - [x] 2.3 Tests: `standing_test.go` (suppress / breach-set drift / movement drift /
       floor / recovery-forgets / knock-records-its-world) + the self-rotate replays.
-      Premise-gone/re-render tests ride with 2.1 in slice 3.
+      Plus `revalidate_test.go`: an unowned class passes through untouched, and the
+      empty chain is an identity.
 
 ## 3. self-rotate backoff + age gate (C17)
 
@@ -74,21 +79,34 @@ Slice 2 landed: the family rule §2.2/2.3 + self-rotate backoff §3. (§2.1 ride
 
 ## 4. resource·warn revalidation + hint decoupling (C15 forms 1 & 3)
 
-- [ ] 4.1 Pre-delivery re-sample: the tier claimed by a queued `resource·warn` is
-      re-read at flush; improved-through-tier ⇒ not delivered.
-- [ ] 4.2 Decouple the reclaim hint: the alarm line stands alone; the hint (measured
-      false-positive ×6 on the simulator suggestion) is marked advisory and dropped
-      when its probe fails, without dropping the alarm.
-- [ ] 4.3 Tests: improving metrics deliver no repeat; a genuine tier escalation still
-      always delivers (never suppressed by any rule here).
+- [x] 4.1 `resourceWarnProbe` re-samples the machine at flush and drops a queued warn
+      whose tier has RECOVERED. A tier that WORSENED still delivers: understating a live
+      problem is the harmless direction, and the escalation exemption raises it next
+      sample.
+- [x] 4.2 The reclaim hint reads `maybe reclaimable: …` and is documented as a guess
+      decoupled from the alarm — measured wrong ×6 while being the only information the
+      line carried, which is how a true alarm came to read as a false one.
+- [x] 4.3 Covered by audit 1.1's tests (a steady tier knocks once; escalation is never
+      suppressed) plus the probe's pass-through tests.
 
 ## 5. usage thresholds: monotonic + reset-aware (C15 forms 2 & 3)
 
-- [ ] 5.1 `burn` (and any cumulative) layers alarm on rate / windowed delta only;
-      remove/convert total-over-line checks (config migration note for usage.json).
-- [ ] 5.2 ctx-based warns re-sample at delivery (auto-compact voids them in flight).
-- [ ] 5.3 Tests: a growing total under a flat rate never alarms; a rate spike does; a
-      warn queued before an auto-compact does not deliver after it.
+- [x] 5.1 `burn <total>` is gone: burn alarms on the PROJECTION only. A session past the
+      line and still producing warns WITH its rate (`burn 23.6M, +20k/m`) — the part that
+      can improve; one that has stopped is silent. No usage.json migration needed:
+      `sessionOutWarn` keeps its meaning as the line being projected at.
+- [x] 5.1b (added from audit 1.2, not in the original plan) a per-pane restate interval,
+      independent of which LAYER is reported — the actual cause of the measured
+      triple-knock. **Found while testing:** my first version cleared the gate whenever
+      the warn cleared, so a value dithering across its threshold re-armed on every dip;
+      the gate now survives a transient clear, and the test pins that.
+- [ ] 5.2 ctx-based warns re-sample at delivery. **NOT done — deliberately deferred.**
+      The seam exists (§2.1) but the probe needs to re-resolve the pane's agent SESSION
+      from a rendered line to re-sample ctx, which is real work with a real wrong answer
+      available (probe the wrong session and a live alarm is dropped). §5.1b already
+      damps the measured incident. Slice 4.
+- [x] 5.3 Tests: a stopped session past the line never alarms; a live rate does; a
+      dithering value knocks once. The auto-compact delivery case rides with 5.2.
 
 ## 6. stuck·waiting ask gate (C20③)
 

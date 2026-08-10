@@ -55,6 +55,23 @@ live pane (orphans a prior session left behind, e.g. a leftover simulator runtim
 or a still-listening dev server) — each named with its pid and a reclaim hint, so
 HQ's advice is executable rather than vague.
 
+The reclaim suggestion SHALL be advisory and clearly marked as a guess, and SHALL be
+decoupled from the alarm: the alarm states that the machine is short of a resource and
+stands on its own, while the suggestion is a heuristic that has been measured wrong. Its
+absence SHALL NOT withhold the alarm, and its being wrong SHALL NOT make the alarm wrong.
+
+A queued resource warning SHALL be re-validated immediately before delivery, and SHALL NOT
+be delivered when the tier it claims has since recovered — a warning is decided when it is
+raised but delivered when the channel next can type, and the machine can recover in that
+gap. A tier that has WORSENED SHALL still be delivered; understating a live problem is the
+harmless direction, and the escalation exemption raises it on the next sample.
+
+#### Scenario: A recovered warning is not delivered
+
+- **WHEN** a `resource·warn` is queued and the machine returns to normal before the wake
+  channel can deliver it
+- **THEN** the queued wake is dropped rather than delivered
+
 #### Scenario: Orphan named for reclaim
 
 - **WHEN** a heavy process is not under any live pane's tree

@@ -104,13 +104,26 @@ func Evaluate(l Layers, horizon time.Duration, win int64, ctxFrac float64, outTo
 			}
 		}
 	}
-	// Layer 2: session cumulative burn — now, then projected.
-	if outTok >= l.SessionOutWarn {
-		return fmt.Sprintf("burn %s", compactTok(outTok))
-	}
+	// Layer 2: session burn. PROJECTION ONLY — a cumulative total may not alarm on
+	// crossing a line (standing-wake-backoff §5.1).
+	//
+	// `burn <total>` used to fire whenever the session's output passed SessionOutWarn,
+	// and output only ever grows: once true it can never become false again, so the
+	// alarm had no de-assert condition in physics. Measured 2026-08-05 — three knocks in
+	// one round at 23.6M → 23.7M → 23.9M, each restating a fact that had not changed
+	// since the first and could not stop being true for the session's remaining life.
+	// An alarm that cannot clear is not a warning, it is a permanent label.
+	//
+	// The projection form is kept because it says something a total cannot: you are
+	// heading for the line at THIS rate, which becomes false the moment the rate drops.
+	// A session already past the line still projects (etaMin ≤ 0 ≤ h), so genuinely
+	// runaway burn is not silenced — it is simply reported as a rate, which can recover.
 	if ratePerMin > 0 {
 		etaMin := float64(l.SessionOutWarn-outTok) / float64(ratePerMin)
 		if etaMin <= h {
+			if outTok >= l.SessionOutWarn {
+				return fmt.Sprintf("burn %s, +%s/m", compactTok(outTok), compactTok(ratePerMin))
+			}
 			return fmt.Sprintf("burn→%s in ~%dm", compactTok(l.SessionOutWarn), int(etaMin+0.5))
 		}
 	}

@@ -109,8 +109,15 @@ func TestEvaluate(t *testing.T) {
 	if !strings.HasPrefix(got, "ctx→") {
 		t.Errorf("ctx projection = %q", got)
 	}
-	if got := Evaluate(l, h, 200_000, 0.1, 1500, 0); got != "burn 1k" {
-		t.Errorf("burn breach = %q", got)
+	// A session PAST the burn line but no longer producing is silent (standing-wake-
+	// backoff §5.1): a cumulative total can never de-assert, so it may not alarm on its
+	// own. Past the line AND still producing warns, with the rate — the part that can
+	// change back.
+	if got := Evaluate(l, h, 200_000, 0.1, 1500, 0); got != "" {
+		t.Errorf("a stopped session past the burn line must be silent, got %q", got)
+	}
+	if got := Evaluate(l, h, 200_000, 0.1, 1500, 50); !strings.HasPrefix(got, "burn 1k, +") {
+		t.Errorf("burn breach with a live rate = %q", got)
 	}
 	// burn projection: 900 now, 10/min → cap 1000 in ~10m ≤ 30m horizon
 	if got := Evaluate(l, h, 200_000, 0.1, 900, 10); !strings.HasPrefix(got, "burn→") {

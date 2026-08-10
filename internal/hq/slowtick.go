@@ -438,12 +438,16 @@ func markerChanged(marker, dedupKey string) bool {
 	return state.WriteMarker(path, dedupKey) == nil
 }
 
-// orphanTail summarizes the top reclaim candidate for the resource nudge, so the
-// warning is actionable ("… · reclaim: iOS Simulator runtime 100MB").
+// orphanTail is the ADVISORY half of a resource warning: one suggestion of what could be
+// reclaimed. It is deliberately decoupled from the alarm (standing-wake-backoff §4.2) —
+// the alarm is "the machine is short of X" and stands on its own, while the suggestion is
+// a guess. The iOS-Simulator-runtime suggestion in particular was measured wrong ×6 while
+// being the only information the line carried, which is how a true alarm came to read as
+// a false one. So it is marked as a guess, and its absence never withholds the alarm.
 func orphanTail(rep resource.Report) string {
 	if len(rep.Orphans) == 0 {
 		return ""
 	}
 	o := rep.Orphans[0]
-	return "reclaim: " + o.Comm
+	return "maybe reclaimable: " + o.Comm
 }
