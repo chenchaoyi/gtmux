@@ -363,11 +363,27 @@ coloured for attention when a worker or HQ itself needs the user.
 ### Requirement: Only an actual menu is offered as an approval card
 
 The system SHALL present numbered choices only when the agent is actually offering a menu,
-and SHALL distinguish a menu from a numbered LIST in ordinary output. A menu marks its
-highlighted row with a selector; prose never does. Being blocked on the user is not
-sufficient evidence, because an agent can be waiting on a free-form question while its
-recent output happens to contain a numbered list — presenting that list as choices offers
-options the agent never made, on a control that invites a single keypress to answer with.
+and SHALL distinguish a menu from a numbered LIST in ordinary output. Being blocked on the
+user is not sufficient evidence, because an agent can be waiting on a free-form question
+while its recent output happens to contain a numbered list — presenting that list as
+choices offers options the agent never made, on a control that invites a single keypress
+to answer with.
+
+TWO independent conditions SHALL hold, because each has failed on its own:
+
+- **The agent SHALL have asked.** The evidence is the waiting KIND recorded from the
+  agent's own hook event (a permission request, a plan, or a question) — NOT the mere
+  presence of a waiting state. gtmux also marks a pane waiting on its OWN screen
+  inference (a dispatch it believes is stuck before running), and such a pane's agent has
+  asked nothing; that state SHALL NOT qualify. A waiting state of unknown provenance SHALL
+  read as no ask.
+- **The screen SHALL show a live menu.** A menu marks its highlighted row with a selector
+  cursor and the cursor LEADS that row; prose never does. A selector glyph appearing
+  ELSEWHERE on a numbered line SHALL NOT qualify — several of those glyphs (`→`, `>`) are
+  ordinary characters in prose and code.
+
+An agent that emits no hook events at all offers no card, and the user replies in the
+terminal — a degradation, never a hard failure.
 The system SHALL further present a card ONLY for a CLEAN, SINGLE-select, tap-to-reply menu
 a bare number-send can drive. It SHALL NOT present a card for a RICH picker the one-tap
 card cannot express: a side-by-side preview picker (Claude Code's `AskUserQuestion`
@@ -382,6 +398,20 @@ user to reply in their own words / in the terminal.
 
 - **WHEN** a waiting session's output contains a numbered list that is not a menu
 - **THEN** no approval card is shown
+
+#### Scenario: A prose bullet containing an arrow is not a menu row
+
+- **WHEN** a numbered line in ordinary output contains a selector glyph somewhere inside
+  it (e.g. a findings bullet reading `(config.toml enabled = false)→ gtmux 收不到`) rather
+  than as a cursor leading the row
+- **THEN** the run is still read as a LIST and no approval card is shown
+
+#### Scenario: A pane gtmux itself inferred was stuck offers no card
+
+- **WHEN** a pane is marked waiting by gtmux's own screen inference (a dispatch believed
+  stuck before running) and its agent has asked nothing
+- **THEN** its choices are not parsed at all and no approval card is shown, however
+  menu-like the screen text looks
 
 #### Scenario: A real menu after prose
 

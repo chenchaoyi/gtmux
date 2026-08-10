@@ -59,12 +59,20 @@ type Deps struct {
 	// ok is false when the pane no longer exists.
 	PaneText func(id string) (text string, ok bool)
 
-	// IsWaiting reports whether the pane is blocked on the user per the HOOK marker
-	// (never inferred from screen text). handleOptions consults it so the approval
-	// card's 1/2/3 choices are only ever parsed for a genuinely-waiting pane — a
-	// numbered list in ordinary output must never surface as an approval menu.
+	// HasPendingAsk reports whether the AGENT ITSELF asked something and is waiting on
+	// the answer — a permission request, a plan, or a question, per the hook's waiting
+	// KIND. handleOptions consults it so the approval card's 1/2/3 choices are only ever
+	// parsed for a pane that genuinely posed a choice; a numbered list in ordinary output
+	// must never surface as an approval menu.
+	//
+	// It is deliberately NOT "does the waiting marker exist". That was the previous
+	// contract, and it was not the same question: gtmux's own slow tick writes that same
+	// marker for a dispatch it infers from the SCREEN is stuck, and one such false
+	// inference opened this endpoint on a pane whose agent had asked nothing (2026-08-10).
+	// See hook.IsAskKind — the predicate this must be wired to.
+	//
 	// Optional: nil → no gate (the parse runs unconditionally, legacy behavior).
-	IsWaiting func(id string) bool
+	HasPendingAsk func(id string) bool
 
 	// PaneCursor returns the pane's text cursor: column x (0-based) and Up = rows
 	// above the last captured line, plus whether it's visible. Optional: nil → the
@@ -538,10 +546,10 @@ func (s *Server) handleOptions(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	// Options belong to a HOOK-confirmed waiting pane only — never derive an approval
+	// Options belong to a pane whose AGENT ASKED something — never derive an approval
 	// menu from arbitrary screen text (a "1. … 2. …" list in an agent's own message
-	// would otherwise read as one). Not waiting → empty, without even parsing.
-	if s.deps.IsWaiting != nil && !s.deps.IsWaiting(id) {
+	// would otherwise read as one). No pending ask → empty, without even parsing.
+	if s.deps.HasPendingAsk != nil && !s.deps.HasPendingAsk(id) {
 		writeJSON(w, http.StatusOK, map[string]any{"options": []prompt.Option{}})
 		return
 	}

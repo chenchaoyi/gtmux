@@ -40,9 +40,11 @@ func ParseOptions(text string) []Option {
 		if m == nil {
 			continue
 		}
-		// Note the glyph BEFORE clean() discards it. An interactive menu marks its
-		// highlighted row (❯ 1. Yes); prose never does.
-		glyph := strings.ContainsAny(ansi.Strip(raw), promptGlyphs)
+		// Note the cursor BEFORE clean() discards it. An interactive menu marks its
+		// highlighted row (❯ 1. Yes); prose never does. The glyph must LEAD the row —
+		// see selectorLeads for the false approval card that "anywhere on the line"
+		// produced out of an agent's own findings list.
+		glyph := selectorLeads(raw, promptGlyphs)
 		n := 0
 		for _, c := range m[1] {
 			n = n*10 + int(c-'0')
@@ -108,6 +110,42 @@ func OptionsReplyable(opts []Option) bool {
 // list, which is what lets us detect "waiting" from the screen for agents that
 // (unlike Claude) fire no waiting hook.
 const selectorGlyphs = "❯›▶▸→"
+
+// boxChrome is the box-drawing a TUI draws around a menu, skipped when looking for
+// the selector cursor's position.
+const boxChrome = "│╭╰╮╯─ \t"
+
+// selectorLeads reports whether a selector cursor sits BEFORE the number on this line —
+// `❯ 1. Yes`, which is where a TUI actually draws it — as opposed to merely appearing
+// SOMEWHERE on the line.
+//
+// That distinction is the whole discriminator between a live menu and prose, and testing
+// it as "contains a glyph anywhere" was not one. `→` is in the set and is an everyday
+// character in technical writing: on 2026-08-10 an agent's own numbered findings list,
+// one bullet of which read `(config.toml enabled = false)→ gtmux 收不到`, was served to
+// the phone as a five-choice approval card — tapping any row would have typed a digit
+// into the pane. Measured: with that one arrow, ParseOptions returned 5 options and
+// OptionsReplyable said yes; delete the arrow and it returns none. `>` (in promptGlyphs)
+// is worse still — it opens every quoted shell line and every markdown blockquote.
+//
+// A cursor prefix is: box chrome and spaces, at most a selector glyph, then the digit.
+// Anything else before the number means the glyph is prose, not a cursor.
+func selectorLeads(raw, glyphs string) bool {
+	seen := false
+	for _, r := range ansi.Strip(raw) {
+		switch {
+		case r >= '0' && r <= '9':
+			return seen
+		case strings.ContainsRune(glyphs, r):
+			seen = true
+		case strings.ContainsRune(boxChrome, r):
+			// skip
+		default:
+			return false
+		}
+	}
+	return false
+}
 
 // startupGates are an agent's PRE-TURN BLOCKING gate — it needs a keypress to proceed
 // before any task can run (Claude's trust-folder confirmation, and equivalents). Unlike
@@ -427,11 +465,13 @@ func WaitingOptions(text string) []Option {
 		return nil // a real menu has ≥2 choices; a lone "1." is likely a list item
 	}
 	for _, l := range window {
-		// The selector cursor must sit ON a numbered choice ("❯ 1. Yes") — that's a
-		// live menu. A bare "❯ " input prompt (Claude idle) also carries the glyph, so
+		// The selector cursor must LEAD a numbered choice ("❯ 1. Yes") — that's a live
+		// menu. A bare "❯ " input prompt (Claude idle) also carries the glyph, so
 		// requiring the number too avoids flagging an idle pane whose recent OUTPUT
-		// happens to contain a numbered list above the prompt.
-		if strings.ContainsAny(l, selectorGlyphs) && numbered.MatchString(clean(l)) {
+		// happens to contain a numbered list above the prompt; requiring the glyph to
+		// come FIRST (selectorLeads) stops a prose bullet that merely contains a `→`
+		// from passing as the highlighted row.
+		if selectorLeads(l, selectorGlyphs) && numbered.MatchString(clean(l)) {
 			return opts
 		}
 	}

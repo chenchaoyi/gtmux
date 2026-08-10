@@ -18,6 +18,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
@@ -187,10 +188,13 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: hq.DrainHQNudges,
-		// The approval card's options are gated on the hook waiting marker, not screen
-		// text (an idle pane showing a numbered list must not surface an approval menu).
-		IsWaiting:  func(id string) bool { return state.Exists(state.WaitingPath(id)) },
-		PaneCursor: paneCursor,
+		// The approval card's options are gated on the agent having ASKED — the hook's
+		// waiting KIND (permission/plan/question), not merely the marker's existence.
+		// gtmux's own slow tick writes that marker too (kinds `startup`/`draft`) from a
+		// screen inference, and letting that open the endpoint turned an agent's prose
+		// list into a tappable approval card. See hook.IsAskKind.
+		HasPendingAsk: hasPendingAsk,
+		PaneCursor:    paneCursor,
 		// attach-predictive-echo: the pane's cursor CELL + alt-screen flag, streamed as
 		// OpCursor frames so the attach client has the authoritative cursor without
 		// emulating a terminal. `alternate_on` is the precise full-screen-TUI signal.
@@ -957,4 +961,20 @@ func reachableHosts(bind string) []string {
 		hosts = []string{"localhost"}
 	}
 	return hosts
+}
+
+// hasPendingAsk reports whether this pane's AGENT asked something and is waiting on the
+// answer. It is what gates the approval card's choices (server.Deps.HasPendingAsk).
+//
+// The waiting marker alone does NOT answer that question, which is the bug this exists to
+// prevent: gtmux's own slow tick writes the same marker for a dispatch it infers from the
+// SCREEN is stuck (kinds `startup` / `draft`). On 2026-08-10 one such false inference
+// opened the options endpoint on a pane whose agent had asked nothing, and its numbered
+// prose findings were served to the phone as a five-choice approval card. The marker's
+// KIND is what distinguishes the two, so read the kind and ask hook.IsAskKind.
+//
+// Named (not an inline closure) so the wiring itself is testable — "which predicate is
+// actually wired here" is the thing that regressed.
+func hasPendingAsk(id string) bool {
+	return hook.IsAskKind(state.ReadMarker(state.WaitingPath(id)))
 }
