@@ -18,7 +18,28 @@ all of it at once, and every tier degrades gracefully to the one below.
 |---|---|---|
 | **0 · Sensed** | The agent shows in the radar (row, status via title glyph / subtree), can be focused, typed into, resumed. | A **manifest** with detection commands (+ optionally an idle glyph, icon, resume argv). |
 | **1 · Event parity** | `waiting`/`done` detection, receipt-verified `send`/dispatch, notifications, HQ wakes. | Tier 0 **plus** a **hook installer** so the agent emits `UserPromptSubmit`/`Stop`/`PermissionRequest`/… into gtmux's event stream. |
-| **2 · Digest parity** | The deterministic digest (`goal`/`last`/`ask`) for the agent, HQ chief-of-staff view. | Tier 1 **plus** a **transcript parser** for the agent's session log. |
+| **2 · Digest parity** | The deterministic digest (`goal`/`last`/`ask`) for the agent, HQ chief-of-staff view, **and the `age` criterion of HQ self-rotation**. | Tier 1 **plus** a **transcript parser** for the agent's session log. |
+| **2+ · Usage parity** | Context/burn figures (`gtmux usage`) **and the `ctx` criterion of HQ self-rotation**. | Tier 2 **plus** a session log whose per-message token accounting the usage parser understands — today that is **Claude's shape only** (`message.role=="assistant"` + `usage.input_tokens` / `cache_read_input_tokens`). |
+
+**What this means for an agent hosting HQ.** HQ self-rotation — the sensor that catches a
+supervisor whose session has aged past being able to judge — senses three facts, and they
+sit at DIFFERENT tiers:
+
+| criterion | needs | claude | codex · opencode | gemini · cursor · copilot · kiro |
+|---|---|:---:|:---:|:---:|
+| `turns` | Tier 1 (the event stream) | ✅ | ✅ | ✅ |
+| `age` | Tier 2 (a transcript) | ✅ | ✅ | ❌ |
+| `ctx` | Tier 2+ (usage-parsable log) | ✅ | ❌ | ❌ |
+
+So HQ on gemini/cursor has ONE line of defence against session ageing, not three. That is
+graceful degradation working as intended — but it is a fact an operator choosing an HQ
+agent should know, not a surprise. A criterion with no data is OMITTED from the wake line
+rather than printed as zero: `ctx 0%` on a session that is actually near-full reads as
+"plenty of room", which is evidence AGAINST the very act the wake is asking for.
+
+Related, same shape: `rotateInput` sends the agent's own "start a fresh conversation"
+command (`/new` for codex, `/clear` otherwise). An agent that does not recognise it simply
+does not rotate and the sensor re-knocks — harmless, but unverified for opencode.
 
 **Graceful degradation is a hard rule (invariant I2):** a missing capability must never
 regress an agent below the tier beneath it. No transcript parser → the digest falls back

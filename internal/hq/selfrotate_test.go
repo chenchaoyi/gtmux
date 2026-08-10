@@ -341,3 +341,28 @@ func TestRotateStateRoundTrip(t *testing.T) {
 		t.Fatalf("empty round trip = %+v, want zero", got)
 	}
 }
+
+// A non-Claude HQ must not be told `ctx 0%`. The usage parser reads Claude's log shape, so
+// ctxFracFor returns 0 for codex/opencode — and the figure was printed unconditionally,
+// which put "plenty of room" on the very wake built to catch a judge that cannot
+// self-assess. Absence must read as absence, the same rule `turns` already followed.
+func TestRotateFiguresOmitsAbsentCtx(t *testing.T) {
+	// codex/opencode HQ: no usage data, a real age and a real turn count.
+	got := rotateFigures(0, 14*3600, 380)
+	if strings.Contains(got, "ctx") {
+		t.Errorf("no usage data must print no ctx figure, got %q", got)
+	}
+	if !strings.Contains(got, "380") {
+		t.Errorf("the figures we DO have must still show: %q", got)
+	}
+	// Claude HQ: the figure is real and still leads.
+	if got := rotateFigures(0.82, 14*3600, 380); !strings.HasPrefix(got, "ctx 82%") {
+		t.Errorf("a real ctx must still lead the figures, got %q", got)
+	}
+	// Nothing sensed at all → an empty head rather than a fabricated one. (A wake only
+	// fires on a breach, and every breach implies at least one live figure, so this is the
+	// doctor-row path, not the wake path.)
+	if got := rotateFigures(0, 0, -1); got != "" {
+		t.Errorf("nothing sensed must render nothing, got %q", got)
+	}
+}
