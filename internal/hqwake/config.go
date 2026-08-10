@@ -44,6 +44,13 @@ type Config struct {
 	// rotation is a handoff, not a reflex, and HQ needs room to finish the board and
 	// knowledge-base writes that are the whole point of doing it deliberately.
 	SelfRotateRepeatSec int64
+	// SelfRotateFloorSec is how long an ENTIRELY UNCHANGED breach may stay silent before it
+	// speaks anyway (standing-wake-backoff). SelfRotateRepeatSec is the minimum spacing
+	// between any two knocks; this is the maximum silence when nothing has changed at all —
+	// the safety floor that keeps suppression from becoming forgetting. Between them, a
+	// repeat only fires when the breach set or the fleet moved. 0 disables the floor
+	// (silence until something changes), which the default deliberately does not do.
+	SelfRotateFloorSec int64
 	// SelfRotateCheckSec is how often the sensor may EVALUATE — the pacing on its only
 	// non-trivial reads (the usage snapshot and the event-delta scan behind the turn
 	// count). The 20 s slow tick is far finer than anything this measures.
@@ -55,7 +62,7 @@ func Defaults() Config {
 	return Config{Done: DoneUnattended, PaneMinGapSec: 120, TickMinutes: 10, TickBurst: 5,
 		UnreadDebounceSec: 120, UnreadRepeatSec: 300,
 		SelfRotateCtx: 0.75, SelfRotateHours: 12, SelfRotateTurns: 300,
-		SelfRotateRepeatSec: 1800, SelfRotateCheckSec: 300}
+		SelfRotateRepeatSec: 1800, SelfRotateFloorSec: 12 * 3600, SelfRotateCheckSec: 300}
 }
 
 // Load reads the hqWake config, falling back per-field to defaults.
@@ -82,6 +89,7 @@ func loadFrom(path string) Config {
 			SelfRotateHours     *int64   `json:"selfRotateHours"`
 			SelfRotateTurns     *int     `json:"selfRotateTurns"`
 			SelfRotateRepeatSec *int64   `json:"selfRotateRepeatSec"`
+			SelfRotateFloorSec  *int64   `json:"selfRotateFloorSec"`
 			SelfRotateCheckSec  *int64   `json:"selfRotateCheckSec"`
 		} `json:"hqWake"`
 	}
@@ -129,6 +137,11 @@ func loadFrom(path string) Config {
 	// it is designed not to be.
 	if c.HQWake.SelfRotateRepeatSec != nil && *c.HQWake.SelfRotateRepeatSec > 0 {
 		cfg.SelfRotateRepeatSec = *c.HQWake.SelfRotateRepeatSec
+	}
+	// >= 0, unlike the others: 0 is a MEANING here (never speak again until something
+	// changes), not an accidental zero to be rejected.
+	if c.HQWake.SelfRotateFloorSec != nil && *c.HQWake.SelfRotateFloorSec >= 0 {
+		cfg.SelfRotateFloorSec = *c.HQWake.SelfRotateFloorSec
 	}
 	if c.HQWake.SelfRotateCheckSec != nil && *c.HQWake.SelfRotateCheckSec > 0 {
 		cfg.SelfRotateCheckSec = *c.HQWake.SelfRotateCheckSec
