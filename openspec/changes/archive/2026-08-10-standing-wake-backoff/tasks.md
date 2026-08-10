@@ -129,8 +129,14 @@ Slice 4 landed: the ctx probe §5.2 + consistency §7. COMPLETE.
 - [x] 6.2 `TestShouldEscalate_PremiseIsProvenanceNotAskText` pins BOTH directions,
       including the one the literal criterion would have lost: kind `question` (often
       free-form prose, no menu) MUST still escalate.
-- [ ] 6.3 Cross-reference: the false `waiting` itself (codex render latency) is the
-      C3/C20①② family, tracked with `mobile-send-receipt-first` — not fixed here.
+- [x] 6.3 Cross-reference recorded, and it MOVED while this change was in flight: the
+      false `waiting` on `%31` was attributed to codex render latency (C3/C20①②,
+      tracked with `mobile-send-receipt-first`). Since then #752 root-caused the
+      Claude-side twin to something else entirely — `IsStartupGate` matching a gate
+      phrase anywhere in 200 lines of scrollback — and fixed it, so a chunk of what this
+      line pointed at is already gone. What remains under `mobile-send-receipt-first` is
+      genuinely the render-latency half. Not fixed here either way; §6 gates the
+      ESCALATION, which holds whatever the false `waiting` turns out to be.
 
 ## 7. Consistency (per the repo rule)
 
