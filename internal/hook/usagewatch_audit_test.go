@@ -1,8 +1,11 @@
 package hook
 
 import (
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 
 	"github.com/chenchaoyi/gtmux/internal/usage"
 )
@@ -24,49 +27,82 @@ func TestAudit_UsageBurnRepeatsWhenCtxDithers(t *testing.T) {
 	const win = int64(1_000_000)
 	// The burn breach is CONSTANT and real throughout — 23.6M, over the 20M line.
 	const burned = int64(23_600_000)
-	// ctx dithers a hair either side of 0.80. Rate 0 keeps the projections out of it,
-	// so nothing here depends on timing — only on which layer gets to speak.
+	// ctx dithers a hair either side of 0.80. A modest rate keeps the burn layer live
+	// (post-§5.1 burn alarms on the projection, never on the bare total).
 	ctx := []float64{0.81, 0.79, 0.81, 0.79, 0.81}
+	const rate = int64(20_000)
 
-	prior, knocks := "", 0
+	// The measured shape needed the BARE-TOTAL burn layer: with no rate to project ctx,
+	// evaluation fell through to `burn <total>`, and back to ctx as soon as ctx crossed
+	// again. §5.1 deleted that layer, so the alternation has no second layer to reach —
+	// a stopped session past the burn line is simply silent now.
+	prior, flips := "", 0
 	for _, c := range ctx {
 		warn := usage.Evaluate(l, 30*time.Minute, win, c, burned, 0)
+		if layerOf(warn) == "burn" {
+			t.Errorf("a bare total still alarms (%q) — §5.1 removed that form", warn)
+		}
 		if warn != "" && layerOf(warn) != layerOf(prior) {
-			knocks++ // watchUsage's rule verbatim: a different layer nudges
-			if layerOf(warn) == "burn" {
-				t.Logf("knock %d: %q (the SAME 23.6M breach, re-announced)", knocks, warn)
-			}
+			flips++
 		}
 		prior = warn
 	}
-	if knocks < 3 {
-		t.Fatalf("expected the measured repeat shape (≥3 knocks from one steady breach), got %d", knocks)
+	// The ctx layer itself still re-arms as the value crosses back and forth — the warn
+	// clears for a sample and returns. That residue is what the restate gate below is
+	// for, and it is why the gate must NOT treat a one-sample clear as a recovery.
+	if flips < 2 {
+		t.Fatalf("expected the ctx layer to re-arm on dithering (that is the residue), got %d", flips)
+	}
+	_ = rate
+
+	// THE FIX: the restate gate turns those flips into ONE knock. A layer change is no
+	// longer sufficient to speak; the pane must also have been quiet long enough.
+	t.Setenv("HOME", t.TempDir())
+	knocks, now := 0, int64(10_000_000)
+	for range ctx {
+		if usageRestateOK("%18", now) {
+			knocks++
+			_ = state.WriteInt64Marker(usageGatePath("%18"), now)
+		}
+		now += 60 // a minute between samples, well inside the restate interval
+	}
+	_ = knocks
+	if knocks != 1 {
+		t.Fatalf("the measured round must collapse to 1 knock, got %d", knocks)
 	}
 
-	// The control: hold ctx still and the same breach speaks exactly once, which is why
-	// the dedup looked correct in every test written for it.
-	prior, knocks = "", 0
-	for i := 0; i < 5; i++ {
-		warn := usage.Evaluate(l, 30*time.Minute, win, 0.5, burned, 0)
-		if warn != "" && layerOf(warn) != layerOf(prior) {
-			knocks++
-		}
-		prior = warn
-	}
-	if knocks != 1 {
-		t.Fatalf("a steady world must knock once, got %d", knocks)
+	// And the direction that must survive: past the interval, a breach speaks again.
+	if !usageRestateOK("%18", now+usageRestateMinSec) {
+		t.Error("a warning must be restatable once the interval has passed")
 	}
 }
 
-// The second half of C15 form 2, stated as a test: `burn <total>` is monotonic, so once
-// breached it can NEVER de-assert. No amount of dedup fixes an alarm with no exit.
-func TestAudit_BurnTotalHasNoDeAssertCondition(t *testing.T) {
+// C15 form 2, and its fix. `burn <total>` was monotonic — once breached it could never
+// de-assert, because output only ever grows. An alarm with no exit condition is not a
+// warning, it is a permanent label. It now alarms on the PROJECTION, which can clear.
+func TestBurnAlarmsOnRateAndCanClear(t *testing.T) {
 	l := usage.Layers{CtxWarn: 0.8, SessionOutWarn: 20_000_000, TypeRatePerMinWarn: 30_000}
+	const win, h = int64(1_000_000), 30 * time.Minute
+
+	// Far past the line but the session has STOPPED producing → silent. This is the case
+	// the old form could not express, and the one that knocked forever.
 	for _, out := range []int64{20_000_000, 23_600_000, 100_000_000} {
-		if w := usage.Evaluate(l, 30*time.Minute, 1_000_000, 0.1, out, 0); w == "" {
-			t.Fatalf("out=%d unexpectedly cleared", out)
+		if w := usage.Evaluate(l, h, win, 0.1, out, 0); w != "" {
+			t.Errorf("out=%d at rate 0 still warns (%q) — a stopped session cannot be burning", out, w)
 		}
 	}
-	// Output only ever grows within a session, so there is no input to this function
-	// that turns the alarm off again — it is on for the session's remaining life.
+	// Past the line AND still burning → warns, and says the rate, which is the part that
+	// can change.
+	w := usage.Evaluate(l, h, win, 0.1, 23_600_000, 20_000)
+	if w == "" || !strings.Contains(w, "/m") {
+		t.Errorf("a session past the line and still producing must warn with a rate, got %q", w)
+	}
+	// Under the line, heading for it fast → the projection warns, as before.
+	if w := usage.Evaluate(l, h, win, 0.1, 19_000_000, 100_000); w == "" {
+		t.Error("an approaching breach must still project")
+	}
+	// Under the line and crawling → silent.
+	if w := usage.Evaluate(l, h, win, 0.1, 1_000_000, 10); w != "" {
+		t.Errorf("a slow session far from the line must be silent, got %q", w)
+	}
 }

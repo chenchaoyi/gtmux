@@ -12,6 +12,8 @@
 package hook
 
 import (
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,17 +36,54 @@ func watchUsage(agentKey, sessionID, pane string) {
 	}
 	warn := usage.EvaluateSession(s)
 	prior := state.ReadMarker(state.UsageWarnPath(pane))
+	now := time.Now().Unix()
 	switch {
 	case warn == "" && prior != "":
 		state.Remove(state.UsageWarnPath(pane)) // back under every layer
+		// The GATE deliberately survives. A value dithering across its threshold clears
+		// the warn for one sample and re-breaches on the next, and treating each of those
+		// dips as a recovery would re-arm the alarm every time — the same flap by another
+		// route, and the one my first attempt at this gate walked straight into. The
+		// interval alone decides when this pane may speak again; a genuine recovery that
+		// outlasts it costs at most one delayed restatement.
 	case warn != "" && layerOf(warn) != layerOf(prior):
-		// First breach, or a DIFFERENT layer than last time → mark + nudge once.
+		// First breach, or a DIFFERENT layer than last time → mark, and nudge unless the
+		// restate gate is still closed.
 		_ = state.WriteMarker(state.UsageWarnPath(pane), warn)
-		nudgeUsage(pane, warn)
+		if usageRestateOK(pane, now) {
+			_ = state.WriteInt64Marker(usageGatePath(pane), now)
+			nudgeUsage(pane, warn)
+		}
 	case warn != "":
 		// Same layer, refreshed detail (e.g. ctx 82% → 84%) → update quietly.
 		_ = state.WriteMarker(state.UsageWarnPath(pane), warn)
 	}
+}
+
+// usageRestateMinSec is how long a pane's usage warning stays quiet after speaking,
+// however the reported LAYER changes in between (standing-wake-backoff §5).
+//
+// Layer identity alone is not a dedup. Evaluate reports the FIRST breached layer, ctx
+// before burn, so a session whose ctx dithers around its threshold alternates
+// ctx → burn → ctx → burn — and every alternation looks like news to a check that only
+// compares layers. Measured 2026-08-05: three `burn` knocks in one round (23.6M → 23.7M
+// → 23.9M) from a single breach that never went away; only its turn to be reported did.
+//
+// resource·warn had paid for this lesson already, with hysteresis + confirming samples +
+// a restate interval. This is the third of those three — the one that alone would have
+// collapsed the measured round to one knock — mirroring resource's 30 minutes. A GENUINE
+// new breach still waits it out, which is the accepted cost: usage figures move over tens
+// of minutes, so a delayed restatement loses nothing a rate does not already imply.
+const usageRestateMinSec = int64(30 * 60)
+
+func usageGatePath(pane string) string {
+	return filepath.Join(state.Dir(), "usagewarn-gate", pane)
+}
+
+// usageRestateOK reports whether this pane's usage warning may speak now.
+func usageRestateOK(pane string, now int64) bool {
+	last, _ := strconv.ParseInt(strings.TrimSpace(state.ReadMarker(usageGatePath(pane))), 10, 64)
+	return last == 0 || now-last >= usageRestateMinSec
 }
 
 // layerOf collapses a warn string to its layer identity for dedup: "ctx 86%"

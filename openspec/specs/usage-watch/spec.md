@@ -22,16 +22,46 @@ logs carry usage).
 
 The system SHALL evaluate each session against PER-AGENT-TYPE thresholds from
 `~/.config/gtmux/usage.json` (sensible defaults when absent): context fraction,
-per-session total burn, and per-agent-type aggregate rate. It SHALL also
+per-session burn, and per-agent-type aggregate rate. It SHALL also
 PROJECT (current + rate × horizon) and flag a session/type whose projection
 crosses a threshold BEFORE it is reached. The first breached-or-projected layer
 is reported as a compact `usage_warn` string.
+
+A CUMULATIVE quantity SHALL NOT alarm on its total crossing a line. Session output only
+ever grows, so such an alarm has no de-assert condition: once true it stays true for the
+session's life, and a warning that cannot clear is a permanent label rather than a
+warning. Burn SHALL therefore be judged on RATE — the projection, which becomes false
+when the rate drops. A session already past the line SHALL still warn while it is
+producing, naming the rate, and SHALL fall silent when it stops.
+
+A repeated usage warning for the same pane SHALL be subject to a minimum restate
+interval, independent of which LAYER is reported. Layer identity alone is not a dedup: the
+first breached layer is reported, so a value dithering around one threshold changes which
+layer speaks and every change reads as news. A momentary drop below a threshold SHALL NOT
+be treated as a recovery that re-arms the alarm, for the same reason.
 
 #### Scenario: Projected breach warns early
 
 - **WHEN** a session's context is under the warn line but its rate projects
   crossing it within the horizon
 - **THEN** its usage row carries a `usage_warn` naming the layer and the ETA
+
+#### Scenario: A stopped session past the burn line is silent
+
+- **WHEN** a session's cumulative output is past its burn threshold but the session is no
+  longer producing
+- **THEN** no burn warning is reported — the total alone is not an alarm
+
+#### Scenario: A session past the line and still burning warns with its rate
+
+- **WHEN** a session is past its burn threshold and still producing
+- **THEN** the warning names the rate, so the condition can be seen to improve
+
+#### Scenario: A dithering value does not re-announce itself
+
+- **WHEN** a session's context crosses back and forth over its threshold within the
+  restate interval, changing which layer is reported
+- **THEN** at most one warning is delivered for that pane in the interval
 
 #### Scenario: Thresholds are per agent type
 

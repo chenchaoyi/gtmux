@@ -147,6 +147,10 @@ func cmdServe(args []string) int {
 func newServeServer(bind string, port int, token, relayURL, relayToken string) *server.Server {
 	addr := net.JoinHostPort(bind, strconv.Itoa(port))
 
+	// Delivery-side premise probes for the standing wake classes (standing-wake-backoff).
+	// Registered before any tick can enqueue, so no wake can slip past unvalidated.
+	hq.RegisterWakeProbes()
+
 	deps := server.Deps{
 		AgentsJSON: func() ([]byte, error) {
 			if !tmux.ServerUp() { // no tmux → empty array, same as `agents --json`

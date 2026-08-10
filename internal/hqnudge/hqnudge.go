@@ -578,6 +578,14 @@ func drainInto(x io, pane string) {
 // how many due entries were held back for the next drain.
 func claimBatch(due []string) (claimed, msgs []string, held int) {
 	chars := 0
+	var dropped []string
+	defer func() {
+		// A line whose premise died is finished business: remove the claim so no later
+		// drain retries it. Done after the loop so the removal can't disturb iteration.
+		for _, d := range dropped {
+			_ = os.Remove(d)
+		}
+	}()
 	for i, n := range due {
 		if len(msgs) >= maxBatchLines || (len(msgs) > 0 && chars > maxBatchChars) {
 			return claimed, msgs, len(due) - i
@@ -592,10 +600,28 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 		if err != nil {
 			continue
 		}
-		if s := strings.TrimSpace(string(b)); s != "" {
-			msgs = append(msgs, s)
-			chars += len(s)
+		s := strings.TrimSpace(string(b))
+		if s == "" {
+			continue
 		}
+		// Delivery-side revalidation (standing-wake-backoff §2.1). A queued line was
+		// decided when it was enqueued, which is NOT when it is typed: it can sit behind
+		// a half-written draft, behind an earlier batch, or behind the fast tick. The
+		// world moves in that gap — a resource tier recovers, an auto-compact zeroes the
+		// ctx a warning is about — and the line then arrives asserting a state that no
+		// longer exists. Measured: a `ctx→80% in ~4m` warning delivered while the pane's
+		// own status bar read 34%, because the harness had compacted mid-flight.
+		//
+		// The probe runs HERE, at the last possible moment, and its claim is already
+		// taken — so a dropped line is removed like a delivered one and can never come
+		// back. Classes with no probe registered are untouched.
+		keep, replaced := revalidate(s)
+		if !keep {
+			dropped = append(dropped, dst)
+			continue
+		}
+		msgs = append(msgs, replaced)
+		chars += len(replaced)
 	}
 	return claimed, msgs, 0
 }
@@ -798,4 +824,43 @@ func writeFailCount(n int) {
 		return
 	}
 	_ = state.WriteMarker(failCountPath(), strconv.Itoa(n))
+}
+
+// ── delivery-side revalidation (standing-wake-backoff §2.1) ──────────────────
+
+// Revalidator re-checks a queued wake line at the moment it is about to be typed.
+// It returns whether to deliver at all, and the line to deliver — so a probe can
+// DROP a wake whose premise died in the queue, or RE-RENDER one whose figures moved.
+//
+// It takes the rendered line because that is all the queue holds: entries are plain
+// text files on disk, and a closure cannot survive a serve restart. A probe therefore
+// recognizes its own class from the line and re-samples the world itself.
+type Revalidator func(line string) (keep bool, out string)
+
+// revalidators are consulted in order; the FIRST one that recognizes the line wins.
+// Registered by the subsystem that owns each standing class (internal/hq), which sits
+// above this package — injection, not an import, so the layering stays acyclic.
+var revalidators []Revalidator
+
+// RegisterRevalidator adds a probe. Not concurrency-guarded because registration
+// happens once, at wiring time, before any tick runs.
+func RegisterRevalidator(f Revalidator) {
+	if f != nil {
+		revalidators = append(revalidators, f)
+	}
+}
+
+// revalidate runs the registered probes. With none registered — or none recognizing
+// this line — the line is delivered verbatim, which is the pre-change behavior and the
+// right default: a class nobody claimed must not be silently droppable.
+func revalidate(line string) (bool, string) {
+	for _, f := range revalidators {
+		if keep, out := f(line); !keep || out != line {
+			if !keep {
+				return false, ""
+			}
+			return true, out
+		}
+	}
+	return true, line
 }
