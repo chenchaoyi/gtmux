@@ -1,4 +1,4 @@
-import {PAD, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
+import {PAD, annotateUrls, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -430,5 +430,75 @@ describe('flattenGrid', () => {
     const g = flattenGrid(lines, lines, cached, 4);
     expect(g.rows.map(r => r.spans)).toEqual([...cached[0], ...cached[1]]);
     expect(g.text).toBe('abcd\nefgh\n');
+  });
+});
+
+describe('annotateUrls (a wrapped or recoloured URL still opens whole)', () => {
+  const plain = (text: string): AnsiLine => [{text, color: '#fff'}];
+
+  it('leaves a line without a URL identical (memo identity must survive)', () => {
+    const spans = plain('no links here, just prose');
+    expect(annotateUrls(spans)).toBe(spans);
+  });
+
+  it('tags a bare URL and keeps the surrounding text intact', () => {
+    const out = annotateUrls(plain('see https://ccy.pub/x now'));
+    expect(out.map(s => s.text).join('')).toBe('see https://ccy.pub/x now');
+    expect(out.filter(s => s.url).map(s => s.text)).toEqual(['https://ccy.pub/x']);
+    expect(out.find(s => s.url)!.url).toBe('https://ccy.pub/x');
+  });
+
+  // THE REPORTED BUG (real phone, 2026-08-10). The grid hard-wraps a long line into
+  // visual rows BEFORE anything renders, so a per-row scan saw only `https://ccy` and
+  // linked it to a host that does not exist. Both halves must now open the WHOLE URL.
+  it('survives the grid wrap — every visual row of a split URL opens the full URL', () => {
+    const url = 'https://ccy.pub/projects/pica/rw?u=code&view=profile&lang=zh';
+    const rows = wrapLine(annotateUrls(plain(`用 ${url} 远程看报告`)), 24);
+    expect(rows.length).toBeGreaterThan(1); // the wrap really did cut it
+
+    const linked = rows.map(r => r.filter(s => s.url));
+    expect(linked.filter(r => r.length > 0).length).toBeGreaterThan(1); // on ≥2 rows
+    for (const row of linked) {
+      for (const s of row) expect(s.url).toBe(url); // never a truncated target
+    }
+    // The pieces reassemble into exactly the URL — no character gained or lost.
+    expect(linked.flat().map(s => s.text).join('')).toBe(url);
+    // And the wrap still reproduces the line verbatim.
+    expect(rows.map(r => r.map(s => s.text).join('')).join('')).toBe(`用 ${url} 远程看报告`);
+  });
+
+  it('survives an SGR change mid-URL (a per-span scan could not see this either)', () => {
+    const out = annotateUrls([
+      {text: 'https://ccy', color: '#fff'},
+      {text: '.pub/x', color: '#0f0'},
+    ]);
+    expect(out.filter(s => s.url).map(s => s.url)).toEqual(['https://ccy.pub/x', 'https://ccy.pub/x']);
+    expect(out.map(s => s.text).join('')).toBe('https://ccy.pub/x');
+  });
+
+  it("does not swallow a sentence's trailing punctuation", () => {
+    const out = annotateUrls(plain('go to https://ccy.pub/x.'));
+    expect(out.find(s => s.url)!.url).toBe('https://ccy.pub/x');
+    expect(out.map(s => s.text).join('')).toBe('go to https://ccy.pub/x.');
+  });
+
+  it("leaves an agent's own OSC 8 hyperlink alone", () => {
+    const spans: AnsiLine = [{text: 'the docs', color: '#fff', href: 'https://example.com/a'}];
+    const out = annotateUrls(spans);
+    expect(out).toEqual(spans);
+  });
+
+  it('routes both link sources through tapTarget, and only web ones', () => {
+    expect(tapTarget({href: 'https://a/'})).toBe('https://a/');
+    expect(tapTarget({url: 'https://b/'})).toBe('https://b/');
+    expect(tapTarget({href: 'file:///tmp/x.png'})).toBeUndefined();
+    expect(tapTarget({})).toBeUndefined();
+  });
+
+  it('reaches the Android overlay too (linkSegsForLines carries the annotation)', () => {
+    const url = 'https://ccy.pub/projects/pica/rw?u=code';
+    const segs = linkSegsForLines([annotateUrls(plain(`用 ${url} 看`))]);
+    expect(segs.filter(s => s.url).map(s => s.url)).toEqual([url]);
+    expect(segs.map(s => s.text).join('')).toBe(`用 ${url} 看`);
   });
 });

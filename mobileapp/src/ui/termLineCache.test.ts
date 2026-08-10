@@ -157,3 +157,31 @@ describe('wrapLinesCached', () => {
     expect(rows[0]).toEqual([[]]);
   });
 });
+
+// The WIRING, not just the function: a URL must be annotated on the logical line by the
+// time the cache hands back spans, because that is the only moment before wrapLine cuts
+// it. Without this test the fix could be silently unwired by a later refactor and every
+// unit test in term.test.ts would still pass.
+describe('URL annotation happens inside the cache, before the wrap', () => {
+  const opts = {base: '#fff'};
+
+  it('tags a bare URL on the parsed line (layout-less / Android path)', () => {
+    const lines = parseLinesCached(['open https://ccy.pub/x now'], opts, makeLineCache());
+    expect(lines[0].filter(s => s.url).map(s => s.url)).toEqual(['https://ccy.pub/x']);
+  });
+
+  it('every wrapped row of a long URL carries the whole target (iOS grid path)', () => {
+    const url = 'https://ccy.pub/projects/pica/rw?u=code&view=profile&lang=zh';
+    const {rows} = wrapLinesCached([`用 ${url} 看`], opts, {cols: 20, fontSize: 12}, makeLineCache());
+    const linked = rows[0].map(r => r.filter(s => s.url)).filter(r => r.length > 0);
+    expect(linked.length).toBeGreaterThan(1);
+    for (const row of linked) for (const s of row) expect(s.url).toBe(url);
+  });
+
+  it('a line with no URL keeps its span identity across polls (memo must still bail)', () => {
+    const cache = makeLineCache();
+    const a = parseLinesCached(['just prose, no link'], opts, cache);
+    const b = parseLinesCached(['just prose, no link'], opts, cache);
+    expect(b[0]).toBe(a[0]);
+  });
+});

@@ -295,6 +295,86 @@ export function linkify(text: string): Array<{text: string; url?: string}> {
   return out;
 }
 
+// Trailing sentence punctuation that a URL at the end of a sentence must not swallow.
+const URL_TRAIL_RE = /[.,;:!?)\]}>"'»]+$/;
+const HAS_URL_RE = /https?:\/\//i;
+
+// annotateUrls tags a LOGICAL line's bare http(s) URLs onto the spans themselves,
+// splitting a span where a URL starts or ends. It is the same detection `linkify` does,
+// moved to the only place that can see a whole URL.
+//
+// WHY IT CANNOT STAY AT RENDER TIME. The renderer receives VISUAL ROWS, not logical
+// lines: `wrapLine` hard-wraps a long line at the grid's column boundary before anything
+// draws. So a URL longer than the remaining columns arrives already cut in two, and a
+// per-row (or, in the color layer, per-SPAN) linkify sees only `https://ccy` and
+// `.pub/projects/…` — the first half becomes a link to a host that does not exist and the
+// second half becomes plain text. Reported on a real phone, 2026-08-10. Running the
+// detection HERE, before the wrap, means `wrapLine`'s `{...s}` copies the `url` onto both
+// halves: every piece of a wrapped URL opens the whole URL. It fixes the SGR-split case
+// for free — a URL recoloured halfway through was equally invisible to a per-span scan.
+//
+// Identity is preserved for any line without a URL (the overwhelming majority): the same
+// array comes back, so the per-line parse cache and the per-row `React.memo` still bail.
+// An agent-declared OSC 8 `href` always wins — it is what the agent asked for.
+export function annotateUrls(spans: AnsiLine): AnsiLine {
+  if (spans.length === 0) return spans;
+  const text = spans.map(s => s.text).join('');
+  if (!HAS_URL_RE.test(text)) return spans;
+
+  const marks: Array<{start: number; end: number; url: string}> = [];
+  for (const m of text.matchAll(URL_RE)) {
+    const start = m.index ?? 0;
+    let url = m[0];
+    const trail = url.match(URL_TRAIL_RE)?.[0] ?? '';
+    if (trail) url = url.slice(0, url.length - trail.length);
+    if (url) marks.push({start, end: start + url.length, url});
+  }
+  if (marks.length === 0) return spans;
+
+  const out: AnsiLine = [];
+  let pos = 0;
+  for (const s of spans) {
+    const from = pos;
+    const to = pos + s.text.length; // UTF-16 units throughout, like String.matchAll
+    pos = to;
+    if (s.href) {
+      out.push(s);
+      continue;
+    }
+    const cuts = new Set<number>([from, to]);
+    for (const mk of marks) {
+      if (mk.end <= from || mk.start >= to) continue;
+      cuts.add(Math.max(mk.start, from));
+      cuts.add(Math.min(mk.end, to));
+    }
+    const bounds = [...cuts].sort((a, b) => a - b);
+    if (bounds.length === 2) {
+      // No boundary falls INSIDE this span — but it may still lie wholly within a URL
+      // (the SGR-recoloured middle of one, or a middle row of a wrapped one). Tag it
+      // whole, or hand back the original span so its identity survives.
+      const whole = marks.find(mk => mk.start <= from && mk.end >= to);
+      out.push(whole ? {...s, url: whole.url} : s);
+      continue;
+    }
+    for (let i = 0; i + 1 < bounds.length; i++) {
+      const a = bounds[i];
+      const b = bounds[i + 1];
+      if (a === b) continue;
+      const hit = marks.find(mk => mk.start <= a && mk.end >= b);
+      out.push(hit ? {...s, text: s.text.slice(a - from, b - from), url: hit.url} : {...s, text: s.text.slice(a - from, b - from)});
+    }
+  }
+  return out;
+}
+
+// tapTarget is the ONE place that decides what a span opens: the agent's own OSC 8
+// hyperlink when it declared a web one, else a URL annotateUrls detected in the text.
+// Both layers ask this, so they can never disagree about which spans are tappable.
+export function tapTarget(s: {href?: string; url?: string}): string | undefined {
+  if (s.href && /^https?:\/\//i.test(s.href)) return s.href;
+  return s.url;
+}
+
 // linkSegsForLines flattens rendered lines into the tap-segments the TRANSPARENT
 // selection overlay needs. That overlay sits ON TOP and is the ONLY layer that receives
 // touches, so it must carry EVERY link the color layer draws: an OSC 8 hyperlink
@@ -317,9 +397,10 @@ export function linkSegsForLines(lines: AnsiLine[]): Array<{text: string; url?: 
       }
     };
     for (const s of spans) {
-      if (s.href && /^https?:\/\//i.test(s.href)) {
+      const href = tapTarget(s);
+      if (href) {
         flush();
-        out.push({text: s.text, url: s.href});
+        out.push({text: s.text, url: href});
       } else {
         run += s.text;
       }

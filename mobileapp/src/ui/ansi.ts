@@ -9,6 +9,11 @@ export interface Span {
   bold?: boolean;
   bg?: string; // background color — only emitted when opts.bg is set (terminal grid)
   href?: string; // OSC 8 hyperlink target for this span's text (a terminal link)
+  // url is a BARE http(s) URL detected in the printed text — set by term.ts's
+  // annotateUrls on the LOGICAL line, before the grid hard-wraps it, so a URL that the
+  // wrap (or an SGR change) cuts in two still opens whole from either half. parseAnsi
+  // never sets it; `href` (what the agent declared) always wins. See tapTarget.
+  url?: string;
 }
 export type AnsiLine = Span[];
 
