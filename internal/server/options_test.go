@@ -104,4 +104,3 @@ func TestOptionsGatedByHookWaiting(t *testing.T) {
 		t.Errorf("waiting pane options = %#v, want 2 with first 'Yes'", opts)
 	}
 }
-
