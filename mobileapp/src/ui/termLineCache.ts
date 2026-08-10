@@ -24,7 +24,7 @@
 // Two-generation eviction: each call keeps only the lines present in THIS frame, so
 // the map is bounded by the buffer size and scrolled-away lines don't leak.
 import {AnsiLine, AnsiOpts, parseAnsi} from './ansi';
-import {wrapLine} from './term';
+import {annotateUrls, wrapLine} from './term';
 
 export interface LineEntry {
   spans: AnsiLine; // parsed spans (identity-stable while the raw line is unchanged)
@@ -70,7 +70,13 @@ function linesThrough(
   const rows: AnsiLine[][] = [];
   for (const raw of raws) {
     let e = next.get(raw) ?? cache.map.get(raw);
-    if (!e) e = {spans: parseAnsi(raw, opts)[0] ?? []};
+    // annotateUrls runs on the LOGICAL line and BEFORE wrapLine, which is the whole
+    // point: the wrap cuts a long URL across visual rows, and anything downstream of it
+    // can only ever see half of one. Placed here so it is paid once per UNIQUE raw line
+    // (cached like the parse) and so both platforms get it — Android reads the same
+    // spans through parseLinesCached. A line with no URL comes back identical, so the
+    // per-row memo still bails on an in-place repaint.
+    if (!e) e = {spans: annotateUrls(parseAnsi(raw, opts)[0] ?? [])};
     if (layout && !e.rows) e.rows = wrapLine(e.spans, layout.cols);
     next.set(raw, e);
     lines.push(e.spans);

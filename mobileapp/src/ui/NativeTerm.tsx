@@ -36,7 +36,7 @@ import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, 
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
-import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor} from './term';
+import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 
@@ -151,20 +151,24 @@ const TermLine = React.memo(function TermLine({
           backgroundColor: s.bg,
           fontWeight: (s.bold ? '700' : '400') as '700' | '400',
         };
-        // An OSC 8 hyperlink (tiered/terminal-hyperlink): the WHOLE span is one
-        // agent-declared link — underlined + tappable (opens in the browser). A
-        // non-web href (e.g. file:// image refs from the Mac) shows as clean text.
-        const oscWeb = !!s.href && /^https?:\/\//i.test(s.href);
-        if (oscWeb) {
+        // A span carrying a link target is ONE link — underlined + tappable (opens in
+        // the browser). Two sources, one behavior: an OSC 8 hyperlink the agent declared
+        // (a non-web href, e.g. the Mac's file:// image refs, stays clean text), and a
+        // bare URL annotateUrls tagged on the LOGICAL line before the grid wrapped it.
+        // The second is why a URL the wrap cut in two still opens whole from either
+        // half — this layer only ever sees the already-wrapped row.
+        const tap = tapTarget(s);
+        if (tap) {
           return (
-            <Text key={j} onPress={() => Linking.openURL(s.href!)} style={{...base, textDecorationLine: 'underline'}}>
+            <Text key={j} onPress={() => Linking.openURL(tap)} style={{...base, textDecorationLine: 'underline'}}>
               {s.text}
             </Text>
           );
         }
-        // Otherwise auto-detect BARE http(s) URLs the agent merely printed as text
-        // and make each one tappable (open in the system browser), same as an OSC 8
-        // link. The common no-URL line renders as a single <Text> (fast path).
+        // Fallback for spans that did not come through the line cache (so were never
+        // annotated): detect a bare URL within this span alone. Cannot see past the
+        // span, which is exactly the limitation annotateUrls exists to remove. The
+        // common no-URL line renders as a single <Text> (fast path).
         const segs = linkify(s.text);
         if (segs.length === 1 && !segs[0].url) {
           return (
