@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/ansi"
 )
 
@@ -138,20 +139,64 @@ var startupPickers = []string{
 	"Resuming the full session", // Claude resume picker body
 }
 
+// gateRegionLines is how far up from the bottom a gate signature is looked for. It is
+// WIDER than bootBannerLine's 14 because the two are different shapes: a boot banner is
+// one line of chrome drawn where the composer will be, while a gate is a whole DIALOG
+// whose question sits near its TOP with the option rows, the box border and a
+// "Press enter to confirm" hint below it (Claude's trust dialog runs ~15 lines). Too
+// narrow a region here would stop seeing a real gate, which is the expensive direction.
+const gateRegionLines = 24
+
+// gateSignatures returns the gate phrases to match for this agent: the default (Claude)
+// set plus the agent's own, if it has any.
+//
+// The agent argument is accepted as EITHER the registry key ("codex", what the dispatch
+// ready gate passes) or the display label ("Codex", what the radar and the HQ slow tick
+// carry on a pane row). The map is keyed by key, so the label callers silently looked up
+// nothing and codex's two gates — added in #751 precisely so a codex worker stuck at its
+// trust prompt is seen — were dead on exactly the paths that watch a running fleet.
+func gateSignatures(agent string) []string {
+	sigs := startupGates[""]
+	if agent == "" {
+		return sigs
+	}
+	own, ok := startupGates[agent]
+	if !ok {
+		own = startupGates[agents.KeyForLabel(agent)]
+	}
+	if len(own) == 0 {
+		return sigs
+	}
+	return append(append([]string(nil), sigs...), own...)
+}
+
 // IsStartupGate reports whether the capture shows the agent's PRE-TURN BLOCKING gate
 // (needs a keypress to proceed) — the trust-folder confirmation and equivalents —
 // looked up per-agent (agent "" uses the default set only; a named agent also checks
 // its own). It deliberately does NOT match the resume/theme pickers (those are handled
 // by startupPickers / looksLikeStartupChooser).
+//
+// Two narrowings, both paid for in production (2026-08-09/10):
+//
+//   - REGION. It used to scan the whole capture, which is 200 lines of SCROLLBACK. A
+//     worker editing this very file rendered its own diff — the source line
+//     `"": {"Do you trust the files"}` — into its pane, and gtmux read that as a live
+//     trust gate: 36 false `waiting·startup` knocks at HQ over 13.6 hours, starting five
+//     minutes after the edit. This is the same defect #652 fixed for boot banners ("a
+//     pane whose scrollback merely MENTIONED those words"), left standing in the sibling
+//     function. A gate is chrome the agent is DRAWING, so only the bottom region counts.
+//   - FAINT. Text emitted while SGR faint is active is an agent's ghost/placeholder
+//     suggestion, not something it is asking. On a COLOR capture that text is dropped
+//     (StripDroppingFaint is identity on a plain one, so the plain-capture callers are
+//     unaffected). The assumption is that no agent renders a blocking gate — the most
+//     prominent thing it can put on screen — dimmed; TestStartupGate_ColorCapture pins
+//     the other side of it, that a normal-brightness gate in a color capture still reads.
 func IsStartupGate(capture, agent string) bool {
-	for _, sig := range startupGates[""] {
-		if strings.Contains(capture, sig) {
-			return true
-		}
-	}
-	if agent != "" {
-		for _, sig := range startupGates[agent] {
-			if strings.Contains(capture, sig) {
+	sigs := gateSignatures(agent)
+	for _, raw := range bottomLines(ansi.StripDroppingFaint(capture), gateRegionLines) {
+		line := strings.TrimLeft(raw, "│╭╰╮╯─ \t")
+		for _, sig := range sigs {
+			if strings.Contains(line, sig) {
 				return true
 			}
 		}

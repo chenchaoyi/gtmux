@@ -682,6 +682,41 @@ a pre-check on the send path may cost a known amount, it may never loop or hang.
 probe to reproduce all of this: build `DeliverOpts` for a pane, call the guard read-only,
 and print `driverKey / hasComposer / refused` across an agent pane, a TUI pane and a shell.
 
+### A screen check matched what the pane was QUOTING, not what it was drawing (2026-08-10)
+**Symptom:** HQ is knocked `» ◆ gtmux·waiting … stuck before running — startup` for a pane
+that is working normally, over and over. Measured: 36 deliveries for one pane (`%74`) across
+13.6 hours, all false.
+**Root cause:** `prompt.IsStartupGate` matched its signatures with `strings.Contains` over
+the WHOLE capture — and a capture is `capture-pane -S -200`, i.e. 200 lines of scrollback.
+That pane's own Edit diff had rendered this repo's gate table, `"": {"Do you trust the
+files"}`, onto its screen at 16:51:23; the first false knock landed at 16:56:25 and they ran
+until 06:34. gtmux was reading the pane's CONTENT as the pane's CHROME.
+**This is a repeat.** #652 fixed exactly this for boot banners ("a pane whose scrollback
+merely MENTIONED those words") by anchoring them to the bottom region — and left the sibling
+function unanchored. When you narrow one screen predicate, check every predicate reading the
+same capture.
+**It costs twice, and the second cost is silent.** The same `IsStartupGate` call suppresses
+the `done` wake (`internal/hook/nudge.go`), so a pane that merely quoted the phrase would
+also have had a real completion withheld from HQ — a false positive here manufactures noise
+in one direction and swallows signal in the other.
+**Rule:** a predicate that asks *"is the agent DRAWING this right now?"* reads only the
+bottom region (`bottomLines`) of a faint-stripped capture. Whole-capture `Contains` answers
+a different question — *"does this text appear anywhere in 200 lines of history?"* — and
+that question is never the one being asked.
+**Second fix in the same call:** a "stuck BEFORE running" claim is about the DISPATCH, not
+the screen, so the ledger decides it — `Task.Undelivered()`. A dispatch whose goal landed was
+accepted by the agent and is past both a launch gate and an unsent goal; it is not
+screen-classified at all. Screen evidence is the fallback for a question the records can't
+answer, never the first source when they can.
+**Third, found while fixing:** the per-agent gate map is keyed by registry KEY (`codex`) but
+the radar and the HQ slow tick pass the display LABEL (`Codex`), so codex's gates — added the
+day before precisely to see a stuck codex worker — resolved to nothing on exactly the paths
+that watch a live fleet. A per-agent table lookup must accept whichever identity its callers
+actually carry; `agents.KeyForLabel` is the bridge.
+**Live repro (a real frame, not a fixture):** print the quoted phrase into a scratch tmux
+pane, then push it up past the bottom region with ~30 more lines. `grep` still finds it in
+`capture-pane -S -200` (what the old code saw) while the predicate now answers false.
+
 ### One instruction pasted 2–3× and submitted in pieces
 **Symptom:** a dispatched message appears in the agent's box twice or three times, is
 submitted line by line (the tail lines land as "queued messages"), the Enter looks
