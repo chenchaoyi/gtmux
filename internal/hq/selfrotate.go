@@ -72,6 +72,14 @@ type rotateState struct {
 	// the event-delta scan); KnockedAt paces the re-knock while a breach stands.
 	CheckedAt int64
 	KnockedAt int64
+	// Breach and KnockMoved are the last DELIVERED knock's fingerprint (see standing.go):
+	// which criteria were over the line, and the fleet counter at that moment. A repeat
+	// whose fingerprint is unchanged says nothing new and is suppressed.
+	Breach     string
+	KnockMoved int64
+	// Moved is the running count of NON-HQ fleet events this window has seen. Cumulative
+	// and compared only against KnockMoved, so its absolute value never matters.
+	Moved int64
 }
 
 func readRotateState() rotateState {
@@ -87,6 +95,15 @@ func readRotateState() rotateState {
 		st.CheckedAt, _ = strconv.ParseInt(f[4], 10, 64)
 		st.KnockedAt, _ = strconv.ParseInt(f[5], 10, 64)
 	}
+	// Appended by standing-wake-backoff. Read defensively: a marker written by an older
+	// binary has six fields, and it must keep parsing rather than reset a live window.
+	if len(f) >= 9 {
+		if f[6] != "-" {
+			st.Breach = f[6]
+		}
+		st.KnockMoved, _ = strconv.ParseInt(f[7], 10, 64)
+		st.Moved, _ = strconv.ParseInt(f[8], 10, 64)
+	}
 	return st
 }
 
@@ -95,6 +112,10 @@ func writeRotateState(st rotateState) {
 	if sess == "" {
 		sess = "-"
 	}
+	breach := st.Breach
+	if breach == "" {
+		breach = "-"
+	}
 	_ = state.WriteMarker(rotateStatePath(), strings.Join([]string{
 		sess,
 		strconv.FormatInt(st.StartedAt, 10),
@@ -102,6 +123,9 @@ func writeRotateState(st rotateState) {
 		strconv.FormatInt(st.Cursor, 10),
 		strconv.FormatInt(st.CheckedAt, 10),
 		strconv.FormatInt(st.KnockedAt, 10),
+		breach,
+		strconv.FormatInt(st.KnockMoved, 10),
+		strconv.FormatInt(st.Moved, 10),
 	}, " "))
 }
 
@@ -152,16 +176,32 @@ const (
 // Only a new session id does, in the caller — which is the same guarantee the consumption
 // watermark makes, applied to a different debt. gtmux stops asking when the act it asked for
 // has happened, not when it has finished asking.
-func selfRotateDecide(now int64, breached bool, st rotateState, repeat int64) (rotateVerdict, rotateState) {
-	if !breached {
-		st.KnockedAt = 0 // a session that came back under the line earns a fresh first knock
+func selfRotateDecide(now int64, breaches []rotateBreach, st rotateState, repeat, floor int64) (rotateVerdict, rotateState) {
+	w := standingWorld{Breach: breachSet(breaches), Moved: st.Moved}
+	v, next := standingDecide(now, w, standingState{
+		KnockedAt: st.KnockedAt, Breach: st.Breach, Moved: st.KnockMoved}, repeat, floor)
+	st.KnockedAt, st.Breach, st.KnockMoved = next.KnockedAt, next.Breach, next.Moved
+	switch v {
+	case standingKnock:
+		return rotateKnock, st
+	case standingHold:
+		return rotateHold, st
+	default:
 		return rotateHealthy, st
 	}
-	if st.KnockedAt != 0 && now-st.KnockedAt < repeat {
-		return rotateHold, st
+}
+
+// breachSet renders the crossed criteria as the stable identity the standing rule compares:
+// the WHAT keys in the fixed order rotateBreaches emits them, never the figures. `age 13h ≥
+// 12h` re-renders differently every hour while describing the same unchanged fact, and a
+// fingerprint built from it would re-arm the alarm forever — which is the loop this change
+// exists to close.
+func breachSet(bs []rotateBreach) string {
+	parts := make([]string, 0, len(bs))
+	for _, b := range bs {
+		parts = append(parts, b.What)
 	}
-	st.KnockedAt = now
-	return rotateKnock, st
+	return strings.Join(parts, ",")
 }
 
 // ── sensing ──────────────────────────────────────────────────────────────────
@@ -185,18 +225,27 @@ func hqSessionRef(pane string) (agent, sessionID string) {
 // the highest sequence scanned. Every delivered wake lands back in the stream as one of
 // these, and that is CORRECT here (unlike the unread sensor, which must exclude them): a
 // wake HQ answered consumed a turn's worth of context exactly like any other.
-func countHQTurns(pane string, cursor int64) (n int, maxSeq int64) {
+// countHQTurns walks the event delta once and reports both things this sensor needs from
+// it: HQ's own prompt submissions (turns, a wear criterion) and how many records came from
+// ANYWHERE ELSE (fleet movement, the standing-knock world signal). One pass, because the
+// second question arrived later and re-scanning for it would double the sensor's only
+// non-trivial read.
+func countHQTurns(pane string, cursor int64) (n int, fleet int64, maxSeq int64) {
 	recs, _ := events.ReadSince(cursor)
 	maxSeq = cursor
 	for _, r := range recs {
 		if r.Seq > maxSeq {
 			maxSeq = r.Seq
 		}
-		if r.Pane == pane && r.Event == "UserPromptSubmit" {
-			n++
+		if r.Pane == pane {
+			if r.Event == "UserPromptSubmit" {
+				n++
+			}
+			continue // HQ's own records are never fleet movement — see standingWorld.Moved
 		}
+		fleet++
 	}
-	return n, maxSeq
+	return n, fleet, maxSeq
 }
 
 // ── the slow-tick sensor ─────────────────────────────────────────────────────
@@ -250,15 +299,16 @@ func selfRotateSensorFor(pane, sessionID string, ctxFrac float64, firstMsgAt, no
 		st = rotateState{Session: sessionID, StartedAt: rotateStart(firstMsgAt, now),
 			Cursor: events.CurrentSeq()}
 	}
-	n, maxSeq := countHQTurns(pane, st.Cursor)
+	n, fleet, maxSeq := countHQTurns(pane, st.Cursor)
 	st.Turns, st.Cursor, st.CheckedAt = st.Turns+n, maxSeq, now
+	st.Moved += fleet
 
 	ageSec := int64(0)
 	if st.StartedAt > 0 {
 		ageSec = now - st.StartedAt
 	}
 	breaches := rotateBreaches(ctxFrac, ageSec, st.Turns, cfg)
-	v, next := selfRotateDecide(now, len(breaches) > 0, st, cfg.SelfRotateRepeatSec)
+	v, next := selfRotateDecide(now, breaches, st, cfg.SelfRotateRepeatSec, cfg.SelfRotateFloorSec)
 	writeRotateState(next)
 	if v != rotateKnock {
 		return

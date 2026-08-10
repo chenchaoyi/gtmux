@@ -99,33 +99,110 @@ func withTurns(c hqwake.Config, n int) hqwake.Config { c.SelfRotateTurns = n; re
 // guarantee rather than a hint: NOTHING here clears the breach. Only a new session id does,
 // in the caller — the same shape as the consumption watermark, applied to a different debt.
 func TestSelfRotateDecide(t *testing.T) {
-	const now, repeat = 10_000_000, 1800
+	const now, repeat, floor = 10_000_000, 1800, 12 * 3600
+	age := []rotateBreach{{What: "age", Text: "age 13h ≥ 12h"}}
+	ctxAge := []rotateBreach{{What: "ctx"}, {What: "age"}}
 
 	cases := []struct {
 		name     string
-		breached bool
+		breaches []rotateBreach
 		st       rotateState
 		want     rotateVerdict
 	}{
-		{"healthy says nothing", false, rotateState{}, rotateHealthy},
-		{"a fresh breach knocks", true, rotateState{}, rotateKnock},
-		{"inside the repeat interval it holds", true,
-			rotateState{KnockedAt: now - repeat + 1}, rotateHold},
-		{"a standing breach re-knocks at the interval", true,
-			rotateState{KnockedAt: now - repeat}, rotateKnock},
+		{"healthy says nothing", nil, rotateState{}, rotateHealthy},
+		{"a fresh breach knocks", age, rotateState{}, rotateKnock},
+		{"inside the repeat interval it holds", age,
+			rotateState{KnockedAt: now - repeat + 1, Breach: "age"}, rotateHold},
+
+		// THE CHANGE. Past the repeat interval, an unchanged breach against an unchanged
+		// world no longer re-knocks — it has nothing to add. This case previously asserted
+		// the opposite, and that assertion is what produced 17 knocks in one 10-hour night.
+		{"a standing breach with nothing changed now HOLDS", age,
+			rotateState{KnockedAt: now - repeat, Breach: "age"}, rotateHold},
+
+		// Re-arming, which matters more than the suppression: any drift speaks again.
+		{"the breach set GREW → knock", ctxAge,
+			rotateState{KnockedAt: now - repeat, Breach: "age"}, rotateKnock},
+		{"the fleet moved → knock", age,
+			rotateState{KnockedAt: now - repeat, Breach: "age", Moved: 7, KnockMoved: 3}, rotateKnock},
+		{"the safety floor fires even with nothing changed", age,
+			rotateState{KnockedAt: now - floor, Breach: "age"}, rotateKnock},
+		{"but the floor cannot outrun the minimum spacing", age,
+			rotateState{KnockedAt: now - repeat + 1, Breach: "age"}, rotateHold},
 	}
 	for _, c := range cases {
-		got, next := selfRotateDecide(now, c.breached, c.st, repeat)
+		got, next := selfRotateDecide(now, c.breaches, c.st, repeat, floor)
 		if got != c.want {
 			t.Errorf("%s: verdict = %v, want %v", c.name, got, c.want)
 		}
-		if got == rotateKnock && next.KnockedAt != now {
-			t.Errorf("%s: a delivered knock must stamp KnockedAt, got %+v", c.name, next)
+		if got == rotateKnock {
+			if next.KnockedAt != now {
+				t.Errorf("%s: a delivered knock must stamp KnockedAt, got %+v", c.name, next)
+			}
+			if next.Breach != breachSet(c.breaches) {
+				t.Errorf("%s: a delivered knock must record its breach set, got %q", c.name, next.Breach)
+			}
 		}
 	}
 	// A session that came back under the line earns a fresh FIRST knock, not a held one.
-	if _, next := selfRotateDecide(now, false, rotateState{KnockedAt: now - 1}, repeat); next.KnockedAt != 0 {
-		t.Errorf("recovering must clear the knock stamp, got %+v", next)
+	if _, next := selfRotateDecide(now, nil, rotateState{KnockedAt: now - 1, Breach: "age"}, repeat, floor); next.KnockedAt != 0 || next.Breach != "" {
+		t.Errorf("recovering must clear the knock fingerprint, got %+v", next)
+	}
+}
+
+// The measured night, replayed (ledger C17): 10 hours, an age-only breach that can never
+// recover, a completely static fleet. It produced 17 knocks. The floor is what it now
+// costs — one reminder, not seventeen.
+func TestSelfRotateDecide_TheSeventeenKnockNight(t *testing.T) {
+	const repeat, floor = int64(1800), int64(12 * 3600)
+	age := []rotateBreach{{What: "age", Text: "age grows every single tick"}}
+	st := rotateState{}
+	knocks := 0
+	// Start at a realistic unix time: KnockedAt==0 is the "never knocked" sentinel, so a
+	// literal t=0 would read as never-knocked on the following tick.
+	const t0 = int64(10_000_000)
+	for now := t0; now <= t0+10*3600; now += 300 { // the real 5-minute check cadence
+		var v rotateVerdict
+		v, st = selfRotateDecide(now, age, st, repeat, floor)
+		if v == rotateKnock {
+			knocks++
+		}
+	}
+	if knocks != 1 {
+		t.Fatalf("the 17-knock night still knocks %d times — want exactly 1", knocks)
+	}
+
+	// And the direction that must survive: the moment the fleet actually moves, it speaks.
+	st.Moved++
+	if v, _ := selfRotateDecide(t0+10*3600+300, age, st, repeat, floor); v != rotateKnock {
+		t.Fatal("a fleet event after a long silence must re-arm the knock")
+	}
+}
+
+// The closing observation of C17: the harness auto-compacted ctx 98% → 21%, the triggering
+// condition disappeared — and the knocking continued, now hanging on age alone. Age can
+// never recover, so without this rule that session is nagged forever.
+func TestSelfRotateDecide_CtxRecoveredButAgeStands(t *testing.T) {
+	const repeat, floor = int64(1800), int64(12 * 3600)
+	ctxAge := []rotateBreach{{What: "ctx"}, {What: "age"}}
+	age := []rotateBreach{{What: "age"}}
+
+	const t0 = int64(10_000_000)
+	var st rotateState
+	v, st := selfRotateDecide(t0, ctxAge, st, repeat, floor)
+	if v != rotateKnock {
+		t.Fatal("the first breach must knock")
+	}
+	// Auto-compact. ctx drops under its line; age cannot. The breach set SHRANK, which is
+	// a change — so one knock reports the new, smaller truth...
+	if v, st = selfRotateDecide(t0+repeat, age, st, repeat, floor); v != rotateKnock {
+		t.Fatal("a shrinking breach set is still a change and should be reported once")
+	}
+	// ...and then it goes quiet, instead of re-announcing an age that only ever grows.
+	for now := t0 + repeat*2; now < t0+11*3600; now += 300 {
+		if v, st = selfRotateDecide(now, age, st, repeat, floor); v == rotateKnock {
+			t.Fatalf("age alone re-knocked at t=%ds against a static world", now)
+		}
 	}
 }
 
@@ -204,11 +281,21 @@ func TestSelfRotateDebtClearsOnlyOnRotation(t *testing.T) {
 	if len(rotateKnocks(t)) != 1 {
 		t.Fatal("setup: the first breach must knock")
 	}
-	// Still breached, still the same session → it knocks again at the repeat interval.
+	// Still breached, still the same session — but nothing has CHANGED, so the repeat is
+	// suppressed (standing-wake-backoff). The debt is not cleared; it is simply not
+	// re-announced to a consumer who already knows. Silence here is the fix, not a bug:
+	// this assertion used to demand the re-knock and that demand cost 17 knocks a night.
 	at := now + cfg.SelfRotateRepeatSec
 	selfRotateSensorFor(testRotatePane, "sess-A", 0.90, now-20*3600, at)
+	if k := rotateKnocks(t); len(k) != 0 {
+		t.Fatalf("an unchanged breach must stay quiet, got %v", k)
+	}
+	// The debt is still owed, and the safety floor proves it: past that, it speaks again
+	// even though nothing changed at all.
+	at = now + cfg.SelfRotateFloorSec
+	selfRotateSensorFor(testRotatePane, "sess-A", 0.90, now-20*3600, at)
 	if k := rotateKnocks(t); len(k) != 1 {
-		t.Fatalf("an unrotated breach must re-knock, got %d", len(k))
+		t.Fatalf("the safety floor must eventually restate an unrotated breach, got %d", len(k))
 	}
 	// Rotation: a NEW session id. The window is discarded whole — age and turns restart from
 	// the new conversation, so the fresh session is immediately healthy.

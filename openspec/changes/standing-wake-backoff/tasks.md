@@ -5,6 +5,7 @@ a real alarm; every slice pairs a "quiet when unchanged" test with a "resumes on
 test.
 
 Slice 1 landed: audits §1 + the `stuck·waiting` premise gate §6.
+Slice 2 landed: the family rule §2.2/2.3 + self-rotate backoff §3. (§2.1 rides slice 3.)
 
 ## 1. Audits first (settle spec-vs-implementation before adding mechanism) — DONE
 
@@ -34,22 +35,42 @@ Slice 1 landed: audits §1 + the `stuck·waiting` premise gate §6.
 - [ ] 2.1 Add a delivery-side revalidation seam in `internal/hqwake`/`internal/hqnudge`:
       a queued standing-class wake can carry a premise probe re-run at flush; probe
       says premise gone ⇒ drop (and record a control trace), changed ⇒ re-render.
-- [ ] 2.2 Unchanged-world suppression: persist per-class last-knock fingerprint
-      (breach set + payload hash + fleet/turn cursors); an identical fingerprint
-      suppresses the repeat, any drift re-arms. Periodic safety floor stays.
-- [ ] 2.3 Tests: premise-gone drops; premise-changed re-renders; unchanged fingerprint
-      suppresses; a single new fleet event or HQ turn re-arms.
+      **DEFERRED to slice 3 on purpose:** its consumers are §4/§5 (a queued
+      `resource·warn` whose tier recovered, a ctx warn voided by auto-compact). Built
+      now it would be a seam with nothing to prove it, and the alarm channel is the
+      wrong place to ship speculative mechanism.
+- [x] 2.2 Unchanged-world suppression — `internal/hq/standing.go`, a pure
+      `standingDecide` shared by the family (self-rotate uses it now; §4/§5 next).
+      Fingerprint = breach SET + outside-movement counter, persisted with the class's
+      own state. **Two deviations from the task as written, both deliberate:**
+      (a) NO payload hash — several payloads (`age 13h ≥ 12h`) re-render every tick by
+      construction, so a fingerprint containing them drifts forever and suppresses
+      nothing; the breach SET is the stable identity. (b) movement EXCLUDES the knocked
+      role's own turns — counting them re-arms the alarm on the very turn that answers
+      it, which is the self-feeding loop C17 measured; genuine escalation from HQ's own
+      work still re-arms through the breach set (that is what a turns crossing is).
+      Minimum spacing and safety floor both kept, per the task.
+- [x] 2.3 Tests: `standing_test.go` (suppress / breach-set drift / movement drift /
+      floor / recovery-forgets / knock-records-its-world) + the self-rotate replays.
+      Premise-gone/re-render tests ride with 2.1 in slice 3.
 
 ## 3. self-rotate backoff + age gate (C17)
 
-- [ ] 3.1 `selfRotateDecide` takes the world-change inputs (non-HQ events since last
-      knock, HQ-pane turns since last knock, current ctx vs threshold); an age-only
-      breach with ctx recovered and a static world holds instead of knocking.
-- [ ] 3.2 Unchanged-breach repeats suppress-until-change (replacing the flat 1800 s
-      re-knock); rotation (session id change) still clears everything.
-- [ ] 3.3 Tests pinned to the ledger shapes: the 17-knock night collapses to 1; the
-      post-compaction "ctx recovered but age keeps knocking" case goes quiet; a new
-      fleet event or a genuine ctx re-breach knocks again.
+- [x] 3.1 `selfRotateDecide` now takes the breach LIST and the world counter and defers
+      to `standingDecide`. The "age-only + ctx recovered + static world holds" case is
+      not special-cased — it falls out: ctx recovering SHRINKS the breach set (one knock
+      reports the smaller truth), after which the set is stable and the fleet is still,
+      so it holds. `countHQTurns` counts fleet movement in the pass it already walks.
+- [x] 3.2 Suppress-until-change replaces the flat 1800 s re-knock (now the minimum
+      spacing), with `hqWake.selfRotateFloorSec` (default 12 h) as the safety floor.
+      Rotation still discards the whole window, fingerprint included. The state marker
+      gained three appended fields and parses an OLD six-field marker unchanged, so an
+      upgrade does not reset a live window.
+- [x] 3.3 Ledger shapes pinned: `TheSeventeenKnockNight` (10 h replay at the real 5-min
+      cadence → exactly 1 knock, then a single fleet event re-arms it) and
+      `CtxRecoveredButAgeStands` (the post-compaction case goes quiet for 11 h).
+      `TestSelfRotateDebtClearsOnlyOnRotation` was REWRITTEN: it used to assert the
+      re-knock this change removes, and now asserts the silence plus the floor.
 
 ## 4. resource·warn revalidation + hint decoupling (C15 forms 1 & 3)
 

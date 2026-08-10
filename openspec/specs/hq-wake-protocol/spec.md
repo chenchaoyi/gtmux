@@ -711,6 +711,54 @@ meaning no longer have opposite failure modes.
 - **THEN** every record in the range is printed — the pull view is the supervisor's view of
   its own debt, and a caller with no debt has no echo to hide
 
+### Requirement: A repeat-until-cleared wake re-checks that it still has something to say
+
+Several wake classes repeat until an ACT clears them, which is correct — a knock is a debt,
+not an FYI. Every such class SHALL additionally answer, before each REPEAT, the question its
+first knock already answered: has anything changed since I last said this?
+
+A repeat SHALL be suppressed while its FINGERPRINT is unchanged, and any drift SHALL re-arm
+it. The fingerprint SHALL be built from WHAT is over the line — the set of breached criteria
+— and from observable movement in the world outside the knocked role. It SHALL NOT be built
+from the rendered figures: several of those only ever grow, so a fingerprint containing them
+drifts by construction and suppresses nothing.
+
+Movement SHALL exclude the knocked role's OWN activity. Counting it would re-arm the alarm
+on the very turn that answers it, and that loop is measurable: one night produced 17
+`self-rotate` knocks in 10 hours against a completely static fleet, with context climbing
+78% → 96% largely on the answer-the-knock turns themselves — an alarm manufacturing its own
+evidence. Escalation driven by the role's own work still re-arms, through the breach set.
+
+Because the dangerous direction on an alarm channel is silence, suppression SHALL be bounded
+at both ends: a MINIMUM spacing applies even to a changed fingerprint, so a flapping world
+cannot produce a flapping alarm; and a SAFETY FLOOR SHALL restate an entirely unchanged
+breach eventually, so a standing debt cannot be forgotten. A class MAY be configured with no
+floor, which means silence until something changes; that SHALL NOT be a default.
+
+Delivering a repeat SHALL NOT clear the debt. Only the act the class named clears it.
+
+#### Scenario: An unchanged repeat says nothing
+
+- **WHEN** a standing class is evaluated past its minimum spacing, its breach set is
+  identical to the last delivered knock's, and no outside movement has been observed
+- **THEN** no wake is delivered
+
+#### Scenario: Any drift re-arms
+
+- **WHEN** the breach set changes, or movement is observed outside the knocked role
+- **THEN** the next evaluation past the minimum spacing delivers a wake
+
+#### Scenario: The floor keeps a debt from being forgotten
+
+- **WHEN** a breach has stood entirely unchanged for the class's safety floor
+- **THEN** one wake is delivered, and the suppression window restarts
+
+#### Scenario: Recovery forgets the suppression
+
+- **WHEN** every criterion falls back under its line
+- **THEN** the stored fingerprint is discarded, so a later breach knocks immediately rather
+  than inheriting a suppression it never earned
+
 ### Requirement: A degraded HQ session wakes itself to rotate
 
 gtmux SHALL observe the health of the SUPERVISOR'S OWN session — the one faculty no other
@@ -735,8 +783,11 @@ alone.
 
 On a standing breach gtmux SHALL deliver a `self-rotate` wake naming the breached figures,
 at `PriorityStanding` — behind every decision-dense knock and evicted first at the queue
-cap — repeating at `hqWake.selfRotateRepeatSec` (default 1800 s) for as long as the breach
-stands. The wake SHALL be a complete no-op when no supervisor pane is resolvable.
+cap. It SHALL follow the repeat-until-cleared rule below: `hqWake.selfRotateRepeatSec`
+(default 1800 s) is the MINIMUM spacing, a repeat fires only when the breach set or the
+fleet has changed, and `hqWake.selfRotateFloorSec` (default 12 h) is the maximum silence
+when nothing has changed at all. The wake SHALL be a complete no-op when no supervisor
+pane is resolvable.
 
 The debt SHALL clear ONLY when the session actually rotates — observed as a CHANGE of the
 HQ pane's agent session id. Delivering the wake SHALL NOT clear it, mirroring the
@@ -762,7 +813,20 @@ consumption watermark: gtmux stops asking only when the act it asked for has hap
 #### Scenario: Knocking does not clear the debt
 
 - **WHEN** a `self-rotate` wake has been delivered and the session id is unchanged
-- **THEN** the breach still stands and the knock repeats at the repeat interval
+- **THEN** the breach still stands; the knock is restated when the breach set or the fleet
+  changes, and otherwise at the safety floor
+
+#### Scenario: An age-only breach against a still fleet stops repeating
+
+- **WHEN** the only breached criterion is age (which can never recover), no fleet events
+  have occurred since the last knock, and the session id has not changed
+- **THEN** no repeat is delivered until the safety floor — a healthy session is not nagged
+  by a number that only grows
+
+#### Scenario: A repeat re-arms the moment anything moves
+
+- **WHEN** a suppressed breach is joined by a second criterion, or any fleet event occurs
+- **THEN** the next evaluation past the minimum spacing delivers a knock
 
 #### Scenario: Rotation clears the debt
 
