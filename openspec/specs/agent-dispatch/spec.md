@@ -1005,6 +1005,24 @@ gates that machinery; it does not replace it.
 - **THEN** the reported evidence names that matched line ahead of the capture, not only
   "composer not ready within the ready timeout"
 
+#### Scenario: Codex's startup gates and MCP-connect window are recognized (live-verified)
+
+Codex's signature set is filled from REAL captures (codex-cli 0.147.0, 2026-08-10),
+not guessed: its directory trust gate (`Do you trust the contents of this
+directory?`) and its hooks review gate after a hooks.json change (`Hooks need
+review`) both render as a ›-selected numbered menu, and mid-boot it paints
+`• Starting MCP servers (N/M): … (0s • esc to interrupt)` with the composer
+ALREADY drawn below.
+
+- **WHEN** `spawn --agent codex` targets a pane sitting at either trust gate
+- **THEN** the pane reads NOT ready via BOTH the per-agent gate signature and the
+  live-choice-menu detector (belt and braces), and the failure reason names the
+  startup gate
+- **WHEN** the pane shows the `Starting MCP servers` line (composer already drawn)
+- **THEN** the pane reads NOT ready until the line resolves — while the PERMANENT
+  `⚠ MCP startup incomplete` / `⚠ MCP client … failed to start` notices remain
+  standing chrome that never blocks readiness
+
 #### Scenario: Process-up alone does not authorize delivery
 
 - **WHEN** the pane's foreground command has become the agent but its composer is
