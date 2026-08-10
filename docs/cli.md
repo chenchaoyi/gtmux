@@ -206,7 +206,7 @@ carrier. The classes:
 | `goal-changed` | ◆ | you submitted a prompt straight into an agent's own window (incl. a slash command), so hq senses work it didn't dispatch |
 | `new-session` | ▸ | a newly sensed agent pane — enroll it |
 | `reap-suggest` | ▸ | a dispatch looks reclaimable · carries the exact `gtmux reap <id>` |
-| `stuck·waiting` | ▸ | a pane has been waiting on you past the timeout — once per waiting episode |
+| `stuck·waiting` | ▸ | a pane has been waiting on you past the timeout — once per waiting episode, and only when the AGENT asked (a wait gtmux merely inferred from the screen never escalates) |
 | `resource·warn` / `limits·warn` | ▸ | a machine/subscription threshold crossed (damped — see `gtmux resource`) |
 | `usage·warn` | ▸ | a session crossed a context/burn layer (see `gtmux usage`) |
 | `feed-degraded` / `wake-degraded` | ◆ | perception itself broke: the spool daemon died, or wakes stopped landing |
@@ -215,6 +215,14 @@ carrier. The classes:
 | `self-check` | · | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |
 | `unread` | · | events are sitting past hq's consumption watermark — a count and the cursor to pull from, no importance claim |
 | `self-rotate` | ◆ | **hq's own session** is worn out (context / age / turns) — it hands off and rotates itself, see below |
+
+**Standing classes re-check themselves.** The classes that repeat until an act clears them
+(`self-rotate`, `unread`, the warns) ask two questions before each REPEAT that a first knock
+never has to: does the premise still hold, and has anything changed since I last said this?
+A repeat whose breach set and world are unchanged is suppressed and re-arms on any drift,
+with a safety floor so a standing debt is never forgotten; and a queued wake is re-sampled
+just before it is typed, so one whose premise died while it waited is dropped rather than
+delivered as a claim about a world that has moved on.
 
 `distill` and `self-check` are **maintenance** classes: they knock at the lowest priority,
 so they never arrive ahead of a blocked agent, and both passes are silent unless hq
@@ -309,7 +317,13 @@ Set any of them to **0** to switch that one criterion off without losing the oth
 believe is worse than no knock.
 
 The debt clears **only when the session actually rotates**, observed as a new agent session
-id; delivering the wake does not clear it, exactly like the watermark. hq's playbook tells it
+id; delivering the wake does not clear it, exactly like the watermark. It does not RESTATE
+itself for nothing either: past `hqWake.selfRotateRepeatSec` a repeat fires only when the
+breach set or the fleet has changed, and `hqWake.selfRotateFloorSec` (12 h) is the longest
+it can stay silent when nothing has changed at all. Without that, an age breach — which can
+never recover — knocked every half hour forever: one measured night cost 17 knocks against
+a completely still fleet, with context climbing largely on the answer-the-knock turns
+themselves. hq's playbook tells it
 to do three things in order and **not** to ask you first: bring `notes/board.md` and the
 knowledge base current (they are the successor's entire briefing), record the handoff, then
 run `gtmux hq --rotate` — which resolves the hq pane and types that agent's own reset command

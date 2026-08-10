@@ -1,12 +1,13 @@
 # Tasks — standing-wake-backoff
 
-Status: IN PROGRESS. Alarm-channel change — the risky direction is silent suppression of
+Status: IMPLEMENTED (2026-08-10, four slices). Alarm-channel change — the risky direction is silent suppression of
 a real alarm; every slice pairs a "quiet when unchanged" test with a "resumes on change"
 test.
 
 Slice 1 landed: audits §1 + the `stuck·waiting` premise gate §6.
 Slice 2 landed: the family rule §2.2/2.3 + self-rotate backoff §3.
 Slice 3 landed: the delivery probe §2.1 + resource §4 + usage §5.
+Slice 4 landed: the ctx probe §5.2 + consistency §7. COMPLETE.
 
 ## 1. Audits first (settle spec-vs-implementation before adding mechanism) — DONE
 
@@ -100,11 +101,15 @@ Slice 3 landed: the delivery probe §2.1 + resource §4 + usage §5.
       triple-knock. **Found while testing:** my first version cleared the gate whenever
       the warn cleared, so a value dithering across its threshold re-armed on every dip;
       the gate now survives a transient clear, and the test pins that.
-- [ ] 5.2 ctx-based warns re-sample at delivery. **NOT done — deliberately deferred.**
-      The seam exists (§2.1) but the probe needs to re-resolve the pane's agent SESSION
-      from a rendered line to re-sample ctx, which is real work with a real wrong answer
-      available (probe the wrong session and a live alarm is dropped). §5.1b already
-      damps the measured incident. Slice 4.
+- [x] 5.2 `usageWarnProbe` re-resolves the pane from the line's head (`(%N)`), the
+      session from the same resume record self-rotate uses, and re-evaluates. Three
+      outcomes — gone ⇒ drop · changed ⇒ deliver the CURRENT figure (this is why §2.1 is
+      a re-RENDER seam, not a drop filter) · same ⇒ untouched. Every step that cannot be
+      established delivers: no pane id, no session, no snapshot, unfamiliar shape. That
+      fail-open direction is tested case by case, because the failure to fear here is
+      resolving the wrong session and discarding a live alarm.
+      `hqwake.FieldSep()` was exported so a probe re-renders one field without guessing
+      at the format.
 - [x] 5.3 Tests: a stopped session past the line never alarms; a live rate does; a
       dithering value knocks once. The auto-compact delivery case rides with 5.2.
 
@@ -124,14 +129,26 @@ Slice 3 landed: the delivery probe §2.1 + resource §4 + usage §5.
 - [x] 6.2 `TestShouldEscalate_PremiseIsProvenanceNotAskText` pins BOTH directions,
       including the one the literal criterion would have lost: kind `question` (often
       free-form prose, no menu) MUST still escalate.
-- [ ] 6.3 Cross-reference: the false `waiting` itself (codex render latency) is the
-      C3/C20①② family, tracked with `mobile-send-receipt-first` — not fixed here.
+- [x] 6.3 Cross-reference recorded, and it MOVED while this change was in flight: the
+      false `waiting` on `%31` was attributed to codex render latency (C3/C20①②,
+      tracked with `mobile-send-receipt-first`). Since then #752 root-caused the
+      Claude-side twin to something else entirely — `IsStartupGate` matching a gate
+      phrase anywhere in 200 lines of scrollback — and fixed it, so a chunk of what this
+      line pointed at is already gone. What remains under `mobile-send-receipt-first` is
+      genuinely the render-latency half. Not fixed here either way; §6 gates the
+      ESCALATION, which holds whatever the false `waiting` turns out to be.
 
 ## 7. Consistency (per the repo rule)
 
-- [ ] 7.1 Sync deltas into `openspec/specs/{hq-wake-protocol,resource-watch,usage-watch,supervisor-agent}/spec.md`.
-- [ ] 7.2 `docs/cli.md` wake-class table: note the standing-class revalidation semantics
-      where user-visible; CLAUDE.md self-rotate paragraph if wording drifts.
-- [ ] 7.3 If the playbook text changes (board/KB-current half of the age gate), bump
-      `hqPlaybookVersion`.
-- [ ] 7.4 Archive this change once implemented; HQ moves ledger C17/C15/C20③ accordingly.
+- [x] 7.1 All four specs updated as each slice landed, not at the end — `hq-wake-protocol`
+      (the family requirement + self-rotate's cadence), `supervisor-agent` (the
+      stuck·waiting premise), `resource-watch` (delivery revalidation + advisory hint),
+      `usage-watch` (cumulative-vs-rate + the restate interval).
+- [x] 7.2 `docs/cli.md`: the standing-class semantics as a paragraph under the wake table,
+      the `stuck·waiting` row now states the ask requirement, and the self-rotate section
+      explains the backoff with the 17-knock night as its reason.
+- [x] 7.3 `hqPlaybookVersion` 19 → 20. The playbook change is one sentence and it is the
+      important one: **silence is not release.** A standing knock now stops restating
+      itself, and without being told, HQ would read the new quiet as "it went away".
+- [x] 7.4 Archived. HQ moves ledger C17/C15/C20③ — note for that pass: C15 form 1 was
+      NOT a bug (audit 1.1), and C20③'s criterion changed during implementation (§6).

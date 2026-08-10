@@ -168,6 +168,12 @@ func cutClass(class string) (stem, rest string, found bool) { return strings.Cut
 // and is pinned by the format fixture test.
 const sep = " │ "
 
+// FieldSep exposes the separator so a delivery-side probe can split a RENDERED line back
+// into its head and fields and re-render one of them. The queue holds text, not structs
+// (a closure cannot survive a serve restart), so a probe that needs to update a stale
+// figure has only the string to work from — and it must not guess at the format.
+func FieldSep() string { return sep }
+
 // Line builds one wake line: `» <grade> gtmux·<class>  <head> │ f1 │ f2 …`. Empty fields
 // are skipped so callers can pass optionals unconditionally. head is typically
 // `<loc> (<pane>)`; agent/user-authored payloads must already be DATA-labelled

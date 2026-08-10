@@ -120,6 +120,10 @@ import (
 //	      current → hand off → `gtmux hq --rotate`. The playbook also welds the arbiter for
 //	      "who said this?" — on HQ's own pane, `UserPromptSubmit` is the user and `Stop` is
 //	      HQ, and the event TYPE decides it, never the prose.
+//	v20 — standing-wake-backoff: a standing knock stops restating itself while nothing
+//	      changes, so HQ must be told that SILENCE is not release — only the act clears
+//	      the debt. Without this line the new quiet reads as "it went away".
+//
 //	v18 — hq-signal-ergonomics: the commander's 2026-08-07 report — 「屏幕上的信息有一些杂乱,
 //	      最好能有一定的结构与颜色」. Wake lines now LEAD with an attention grade (◆ decision ·
 //	      ▸ attention · · ledger), a projection of the class rather than a new judgment, and
@@ -133,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 19
+const hqPlaybookVersion = 20
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -942,7 +946,10 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   owed, and what the next session must not re-derive; **③ rotate** —
   ` + "`gtmux hq --rotate`" + `, then RE-READ the board before acting again.
   A repeated ` + "`self-rotate`" + ` after you rotated means the rotation DID NOT TAKE (your
-  session id never changed), not that a second one is owed. 你自己这轮会话会老化,长会话+高
+  session id never changed), not that a second one is owed. And SILENCE after one is not
+  permission to ignore it: a standing knock no longer restates itself while nothing has
+  changed (it used to arrive every half hour), so the debt is still owed even though it
+  has stopped asking. 沉默不等于解除 —— 只有真的轮换过才算。 你自己这轮会话会老化,长会话+高
   ctx 会让"我产出的"和"外面进来的"边界失真——自己察觉不了,所以由 gtmux 从外部盯;收到
   ` + "`self-rotate`" + ` 就按序自己做完:先把看板与知识库写到最新→交接→` + "`gtmux hq --rotate`" + `,
   全程不需要司令介入。判断"这话是谁说的"看事件类型:你窗格上的 ` + "`UserPromptSubmit`" + ` 才是

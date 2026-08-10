@@ -20,18 +20,22 @@ package hq
 // a real alarm silently discarded on a probe's bad day.
 
 import (
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resource"
+	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
 )
 
 // RegisterWakeProbes wires the delivery-side premise probes. Called once from serve's
 // startup, before any tick runs.
 func RegisterWakeProbes() {
 	hqnudge.RegisterRevalidator(resourceWarnProbe)
+	hqnudge.RegisterRevalidator(usageWarnProbe)
 }
 
 // resourceWarnProbe drops a queued `resource·warn` whose tier has since RECOVERED.
@@ -52,5 +56,72 @@ func resourceWarnProbe(line string) (bool, string) {
 	return true, line
 }
 
-// probeForTest exposes the probe chain to tests in this package without exporting it.
-func probeForTest(line string) (bool, string) { return resourceWarnProbe(line) }
+// wakePaneRe pulls the pane id out of a wake line's head ("sat:0.0 (%74) │ …").
+var wakePaneRe = regexp.MustCompile(`\((%\d+)\)`)
+
+// usageWarnProbe re-samples a queued `usage·warn` against the live session.
+//
+// This is the case that named the whole problem: `ctx→80% in ~4m` reached HQ while the
+// pane's own status bar read 34%, because the harness auto-compacted while the warning
+// sat in the queue. ctx has an external reset event that neither gtmux nor HQ controls,
+// so no amount of care at DECISION time can make the claim true at DELIVERY time. The
+// only fix that holds is to look again just before speaking.
+//
+// Three outcomes, and the middle one is why §2.1 is a re-render seam and not just a drop
+// filter: gone → drop; changed → deliver the CURRENT figure rather than the stale one;
+// same → deliver untouched.
+//
+// The dangerous failure here is resolving the WRONG session and discarding a live alarm,
+// so every step that cannot be established with certainty delivers: no pane id in the
+// line, no session recorded for that pane, no usage snapshot — all pass through.
+func usageWarnProbe(line string) (bool, string) {
+	if !strings.Contains(line, hqwake.ClassUsageWarn) {
+		return true, line // not ours
+	}
+	head, stale, ok := splitWakeTail(line)
+	if !ok {
+		return true, line // an unfamiliar shape is not something to judge
+	}
+	m := wakePaneRe.FindStringSubmatch(head)
+	if m == nil {
+		return true, line
+	}
+	agent, sessionID := hqSessionRef(m[1])
+	if sessionID == "" {
+		return true, line // the pane has no session on record — cannot re-sample
+	}
+	s, okSess := uwatch.ForSession(agent, sessionID, time.Now())
+	if !okSess {
+		return true, line // no snapshot — say nothing about it
+	}
+	switch fresh := uwatch.EvaluateSession(s); {
+	case fresh == "":
+		return false, "" // positive evidence: nothing is over any line now
+	case fresh != stale:
+		return true, head + hqwake.FieldSep() + fresh // speak the current truth
+	default:
+		return true, line
+	}
+}
+
+// splitWakeTail splits a rendered wake line into everything before its LAST field and
+// that field. The usage classes carry exactly one field (the warn), so the last one is
+// it; a line with no field at all is not one of ours to rewrite.
+func splitWakeTail(line string) (head, tail string, ok bool) {
+	i := strings.LastIndex(line, hqwake.FieldSep())
+	if i < 0 {
+		return "", "", false
+	}
+	return line[:i], line[i+len(hqwake.FieldSep()):], true
+}
+
+// probeForTest runs the registered probe chain the way hqnudge does — first probe that
+// changes anything wins — so tests exercise the real composition, not one probe.
+func probeForTest(line string) (bool, string) {
+	for _, f := range []func(string) (bool, string){resourceWarnProbe, usageWarnProbe} {
+		if keep, out := f(line); !keep || out != line {
+			return keep, out
+		}
+	}
+	return true, line
+}
