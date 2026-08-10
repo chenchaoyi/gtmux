@@ -213,12 +213,38 @@ describe a delivery mechanism of its own — a superseded requirement that is me
 contradicted by a newer one, rather than retired, keeps blessing the code that still obeys
 it.
 
+The watchdog's escalation SHALL further require that the wait is an ASK — a waiting state
+whose kind was recorded from the agent's own hook event. `stuck·waiting` asserts that a
+PERSON IS BLOCKED, and that can only be true if someone was asked; a waiting state gtmux
+inferred from the SCREEN (a dispatch it believes is stuck before running) has no asker and
+SHALL NOT escalate.
+
+The discriminator SHALL be the wait's PROVENANCE, never the presence of parsed option
+text. A parseable menu is not what makes someone blocked: an agent stopped on a free-form
+question offers no options and is blocked all the same, and refusing to escalate that
+would trade one silent-alarm failure for another. An escalation refused on this ground
+SHALL NOT consume the episode's once-per-episode allowance, so a later genuine ask in the
+same episode still escalates.
+
 #### Scenario: Agent blocks, supervisor learns
 
 - **WHEN** another agent enters waiting (permission/plan/question) while an hq
   session is live
 - **THEN** one `waiting·<kind>` wake line reaches the hq pane, at most once per waiting
   transition
+
+#### Scenario: A wait nobody asked for does not escalate
+
+- **WHEN** a pane has been marked waiting by gtmux's own screen inference (kind `startup`
+  / `draft`) and stays that way past the watchdog timeout
+- **THEN** no `stuck·waiting` escalation is sent, and the episode's allowance is unspent
+
+#### Scenario: A free-form question still escalates
+
+- **WHEN** a pane is waiting on a question the agent asked in prose, with no numbered menu
+  to parse, and nobody answers past the timeout
+- **THEN** `stuck·waiting` escalates exactly once — the absence of option text is not
+  evidence that nobody is blocked
 
 #### Scenario: Usage warning reaches the supervisor
 

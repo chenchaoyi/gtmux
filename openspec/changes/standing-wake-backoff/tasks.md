@@ -1,18 +1,33 @@
 # Tasks — standing-wake-backoff
 
-Status: PROPOSED (not started). Alarm-channel change — the risky direction is silent
-suppression of a real alarm; every slice pairs a "quiet when unchanged" test with a
-"resumes on change" test.
+Status: IN PROGRESS. Alarm-channel change — the risky direction is silent suppression of
+a real alarm; every slice pairs a "quiet when unchanged" test with a "resumes on change"
+test.
 
-## 1. Audits first (settle spec-vs-implementation before adding mechanism)
+Slice 1 landed: audits §1 + the `stuck·waiting` premise gate §6.
 
-- [ ] 1.1 `resource·warn` identical-payload ×4-in-40-min (2026-08-04): determine whether
-      the incident serve predated the shipped by-tier dedup/hysteresis/min-restate
-      (#475). If the spec'd dedup was running, find and fix the hole; if not, record
-      that the spec already covers form 1 and narrow this change to forms 2–3 +
-      delivery revalidation.
-- [ ] 1.2 `usage·warn burn` ×3-in-one-round (2026-08-05): reproduce against the current
-      dedup key (session+layer) and identify why an unchanged breach re-knocked.
+## 1. Audits first (settle spec-vs-implementation before adding mechanism) — DONE
+
+- [x] 1.1 `resource·warn` identical-payload ×4-in-40-min (2026-08-04). **VERDICT: the
+      incident serve predated the shipped gate; no hole to fix, form 1 needs no new
+      mechanism.** `tierGate` shipped 2026-07-18 (#496), hysteresis 2026-08-01 (#653),
+      both before the incident; the resident launchd serve keeps its binary until
+      restarted. Proven rather than argued —
+      `TestAudit_ResourceWarnIdenticalRepeatsAreUnreachable` drives the real `tierStep`
+      at shipped defaults: a steady amber knocks **once** in 40 min, and even a tier
+      dithering as fast as `ConfirmSamples` allows caps at 2, so 4 is unreachable.
+      → **Change narrowed:** drop form 1; §4 keeps only delivery revalidation + hint
+      decoupling (a DIFFERENT failure — the premise dying between decision and delivery).
+- [x] 1.2 `usage·warn burn` ×3-in-one-round (2026-08-05). **VERDICT: not a dedup bug — a
+      missing anti-flap layer.** `Evaluate` reports the FIRST breached layer, ctx before
+      burn, so a session whose ctx dithers around its threshold alternates ctx → burn →
+      ctx → burn; every alternation is a layer CHANGE, which is exactly what `watchUsage`
+      treats as new. The burn breach never left; only its turn to speak did. Reproduced in
+      `TestAudit_UsageBurnRepeatsWhenCtxDithers` (3 knocks from one steady 23.6M breach,
+      1 knock when ctx holds still — which is why every test written for the dedup passed).
+      `resource·warn` pays for this with hysteresis + confirm-samples + restate interval;
+      `usage·warn` has none of the three. → **§5 gains that**, alongside form 2
+      (`TestAudit_BurnTotalHasNoDeAssertCondition`: a monotonic total has no exit).
 
 ## 2. Family rule (hq-wake-protocol ADDED requirement)
 
@@ -56,11 +71,20 @@ suppression of a real alarm; every slice pairs a "quiet when unchanged" test wit
 
 ## 6. stuck·waiting ask gate (C20③)
 
-- [ ] 6.1 The lifecycle watchdog re-reads the ask at escalation time; empty ask (or
-      dim-only composer text) ⇒ no `stuck·waiting` escalation, and the episode marker
-      does not burn (a later real ask in the same episode may still escalate once).
-- [ ] 6.2 Test pinned to the `%31` shape: waiting + `ask: None` + dim placeholder ⇒ no
-      escalation; same episode gaining a real ask ⇒ one escalation.
+- [x] 6.1 The lifecycle watchdog checks the wait's PROVENANCE at escalation time. **The
+      criterion changed during implementation and the change is deliberate:** the proposal
+      said "empty ask ⇒ no escalation", but `ask` is populated only from a parseable
+      replyable MENU, so "no ask" is equally the state of an agent blocked on a FREE-FORM
+      question — a genuine stuck wait, and silencing it trades the C20③ harm for the C23
+      one (a session idled four hours because nothing announced it). The marker already
+      records provenance: hook-written kinds (permission/plan/question) mean the agent
+      asked, menu or not; `startup`/`draft` are gtmux's own screen verdict. Gated on
+      `hook.IsAskKind` — the predicate #755 added for the approval card, same reason.
+      The episode marker still does not burn: `shouldEscalate` returns false before
+      `state.Touch`, so a later real ask in the same episode escalates once.
+- [x] 6.2 `TestShouldEscalate_PremiseIsProvenanceNotAskText` pins BOTH directions,
+      including the one the literal criterion would have lost: kind `question` (often
+      free-form prose, no menu) MUST still escalate.
 - [ ] 6.3 Cross-reference: the false `waiting` itself (codex render latency) is the
       C3/C20①② family, tracked with `mobile-send-receipt-first` — not fixed here.
 
