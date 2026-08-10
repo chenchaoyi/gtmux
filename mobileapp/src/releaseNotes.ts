@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.48.4',
+    en: [
+      'A link the terminal had to wrap onto a second line is one link again. A long URL used to be cut where the row ended, and only the first fragment was tappable — so it opened a host that did not exist while the real address sat below it as plain text. Every piece of a wrapped URL now opens the whole thing, including a URL the terminal recolours half-way through.',
+      'Fewer false alarms in the radar: a session that merely SHOWS the words of a startup trust prompt — because you were reading or discussing them — is no longer reported as an agent stuck waiting for you, and a session that finishes while such text is on screen is no longer silently skipped. Needs gtmux 0.48.4 on the Mac.',
+    ],
+    zh: [
+      '被终端折到第二行的链接，现在重新是一条完整链接。以前长 URL 会在行尾被切断，只有前半截可点 —— 于是点开的是一个并不存在的域名，而真正的地址就在下面躺着、还点不了。现在折行后的每一段都能打开完整地址，中途变色的 URL 也一样。',
+      '雷达的误报变少了：屏幕上只是「出现」了启动信任提示的字样（你在读它、或者在讨论它），不再被报成有 agent 卡住等你；带着这类文字干完活的会话，也不会再被悄悄漏掉。需要 Mac 端升级到 gtmux 0.48.4。',
+    ],
+  },
+  {
     version: '0.48.1',
     en: [
       'A conversation that looks empty now explains itself: a session started over with /clear or /new says which moment it starts from, and points at Activity for the record from before. A wiped supervisor history used to read as a broken app.',
