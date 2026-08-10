@@ -4,8 +4,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/chenchaoyi/gtmux/internal/ansi"
 )
 
 // The BUG SURFACE: classifyStuck must not mark an idle Codex as holding a draft. Real
@@ -18,8 +16,7 @@ func TestClassifyStuck_CodexIdle_NotDraft(t *testing.T) {
 		t.Fatalf("read fixture: %v", err)
 	}
 	colorCap := string(b)
-	plainCap := ansi.Strip(colorCap)
-	if got := classifyStuck(plainCap, colorCap, "codex", true); got != "" {
+	if got := classifyStuck(colorCap, "codex", true); got != "" {
 		t.Fatalf("an idle Codex composer must classify as not-stuck; got %q", got)
 	}
 }
@@ -33,8 +30,7 @@ func TestClassifyStuck_CodexWithDraft_IsDraft(t *testing.T) {
 		"",
 		"  \x1b[38;2;246;226;183mgpt-5.6-sol high\x1b[39m · \x1b[38;2;171;223;167m/private/tmp\x1b[39m",
 	}, "\n")
-	plainCap := ansi.Strip(colorCap)
-	if got := classifyStuck(plainCap, colorCap, "codex", true); got != "draft" {
+	if got := classifyStuck(colorCap, "codex", true); got != "draft" {
 		t.Fatalf("a real unsubmitted draft must classify as draft; got %q", got)
 	}
 }

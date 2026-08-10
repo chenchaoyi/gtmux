@@ -804,7 +804,18 @@ report it as `done`. `done` SHALL be reserved for a dispatch whose session actua
 completed a turn. The undelivered-draft state SHALL be judged from a COLOR-aware capture
 that EXCLUDES the agent's suggested-next-command GHOST text — the dim autosuggestion the
 agent renders faint (SGR 2), which needs a key to accept and is NOT user input — so a
-composer showing only a ghost suggestion is NOT read as an undelivered draft. The system
+composer showing only a ghost suggestion is NOT read as an undelivered draft. A startup
+gate SHALL be judged the same way, from the same frame: faint text is the agent's
+placeholder, not a question it is asking.
+
+BEFORE RUNNING is a claim about the DISPATCH, so the ledger SHALL decide it: only a
+dispatch whose goal has not landed can be classified this way. A dispatch that is
+delivered (or queued) has had its goal accepted by the agent, and SHALL NOT be
+screen-classified as stuck at all.
+
+A startup-gate signature SHALL be matched only against the BOTTOM REGION of a capture,
+where an agent draws its own chrome — never against the full scrollback, in which a pane
+that merely QUOTES a gate phrase would otherwise pose as gated indefinitely. The system
 SHALL also surface WHY via a kind (`startup` / `draft`).
 
 #### Scenario: `gtmux tasks` shows a stuck dispatch as waiting, not done
@@ -1022,6 +1033,13 @@ ALREADY drawn below.
 - **THEN** the pane reads NOT ready until the line resolves — while the PERMANENT
   `⚠ MCP startup incomplete` / `⚠ MCP client … failed to start` notices remain
   standing chrome that never blocks readiness
+
+#### Scenario: A per-agent gate set is reached by either the agent's key or its label
+
+- **WHEN** a caller identifies the agent by its registry KEY (`codex`, as the dispatch
+  ready gate does) or by its display LABEL (`Codex`, as a radar pane row carries)
+- **THEN** the same per-agent gate signatures apply — an agent's gates SHALL NOT be
+  silently absent on the paths that identify it the other way
 
 #### Scenario: Process-up alone does not authorize delivery
 

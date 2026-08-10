@@ -433,6 +433,16 @@ writer (the serve slow-tick), never as a side effect of a read-side radar scan.
   still holding the payload
 - **THEN** no `done` wake is emitted for it
 
+#### Scenario: Quoted gate text neither fires a false waiting nor swallows a real done
+
+The suppression cuts both ways, so an over-broad gate match is expensive twice: it
+manufactures a `waiting` knock that repeats until consumed, AND it silently withholds the
+`done` of a pane that genuinely finished.
+
+- **WHEN** a pane's screen contains a startup-gate phrase as CONTENT (quoted, diffed or
+  discussed) rather than as chrome the agent is drawing
+- **THEN** no `waiting` wake is fired for it, and a `done` wake it earns is NOT suppressed
+
 ### Requirement: A cleared wait fires a resolved wake on any observed transition
 
 A `resolved` wake SHALL fire whenever a pane transitions from `waiting` to

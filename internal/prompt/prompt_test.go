@@ -200,6 +200,51 @@ func TestIsStartupGate(t *testing.T) {
 	}
 }
 
+// REGION. A gate phrase the pane is QUOTING — up in the scrollback, with a screenful of
+// ordinary output and an idle composer below it — is not a gate being drawn. `capture` is
+// 200 lines of scrollback, and the whole-capture Contains this replaced turned a worker's
+// own diff of the gate table into 36 false `waiting·startup` knocks at HQ overnight
+// (2026-08-09). Same defect #652 fixed for boot banners, in the sibling function.
+func TestIsStartupGate_QuotedInScrollback(t *testing.T) {
+	quoted := "\t\"\": {\"Do you trust the files\"}, // Claude trust-folder gate\n"
+	tail := strings.Repeat("  ok\n", gateRegionLines) + "❯ "
+	if IsStartupGate(quoted+tail, "") {
+		t.Error("a gate phrase quoted up in scrollback must not read as a live gate")
+	}
+	// The boundary belongs to the gate: still inside the region, it must still match.
+	near := quoted + strings.Repeat("  ok\n", gateRegionLines-3) + "❯ "
+	if !IsStartupGate(near, "") {
+		t.Error("a gate signature inside the bottom region must still match")
+	}
+}
+
+// FAINT. On a COLOR capture, text drawn while SGR faint is active is the agent's ghost /
+// placeholder suggestion — it is not asking anything. The control half matters more than
+// the fix half: a gate at normal brightness in a color capture must STILL read as a gate,
+// or this narrowing would blind the detector on every color-capture caller.
+func TestStartupGate_ColorCapture(t *testing.T) {
+	esc := "\x1b"
+	ghost := esc + "[2m  Do you trust the files in this folder?" + esc + "[0m\n❯ "
+	if IsStartupGate(ghost, "") {
+		t.Error("a FAINT gate phrase is ghost text, not a gate the agent is drawing")
+	}
+	live := esc + "[1m  Do you trust the files in this folder?" + esc + "[0m\n\n  ❯ 1. Yes, proceed\n    2. No, exit\n"
+	if !IsStartupGate(live, "") {
+		t.Error("a normal-brightness gate in a COLOR capture must still be a gate")
+	}
+}
+
+// The agent argument arrives as a registry KEY from the dispatch ready gate and as a
+// display LABEL from the radar / HQ slow tick. Both must reach the same signatures —
+// keyed only by key, codex's gates were dead on exactly the fleet-watching paths.
+func TestIsStartupGate_AgentKeyOrLabel(t *testing.T) {
+	for _, agent := range []string{"codex", "Codex"} {
+		if !IsStartupGate(codexDirTrustGate, agent) {
+			t.Errorf("IsStartupGate(%q) must match codex's directory trust gate", agent)
+		}
+	}
+}
+
 // IsComposerReady is the SCREEN half of the spawn readiness handshake: a pane is ready
 // to take a pasted goal only when its input prompt row is present, no startup/trust
 // gate is up, and no boot banner is still on screen.

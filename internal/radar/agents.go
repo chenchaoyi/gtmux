@@ -35,27 +35,38 @@ import (
 
 // StuckDispatchKind reports why a TRACKED dispatch pane is stuck BEFORE running a turn —
 // "startup" (an agent startup/permission gate, per-agent) or "draft" (its goal pasted
-// but left unsubmitted in the composer) — or "" when it isn't. Only tracked dispatches
-// are inspected (a human mid-compose in a normal pane is never flagged). Pure read of a
-// single capture; the caller decides what to do with it.
+// but left unsubmitted in the composer) — or "" when it isn't. Pure read of a single
+// capture; the caller decides what to do with it.
+//
+// TWO conditions, not one. Tracked is the obvious half (a human mid-compose in a normal
+// pane is never flagged). The other half is the ledger: BEFORE RUNNING is a claim about
+// the dispatch, and a dispatch whose goal has LANDED is past it by definition — the
+// agent accepted the paste, so it is neither at a launch gate nor holding that goal
+// unsent. Without this the guard kept re-deciding the question for panes that had been
+// working for hours, and a worker that rendered a gate phrase into its own scrollback
+// (its own diff of this repo's gate table, 2026-08-09) knocked HQ 36 times overnight.
 func StuckDispatchKind(paneID, agent string) string {
-	if _, ok := dispatch.TaskForPane(paneID); !ok {
-		return "" // not a tracked dispatch — skip the captures entirely
+	t, ok := dispatch.TaskForPane(paneID)
+	if !ok || !t.Undelivered() {
+		return "" // not tracked, or its goal already landed — skip the captures entirely
 	}
-	return classifyStuck(tmux.CaptureFull(paneID), tmux.CaptureFullColor(paneID), agent, true)
+	return classifyStuck(tmux.CaptureFullColor(paneID), agent, true)
 }
 
-// classifyStuck is the pure decision behind StuckDispatchKind: given a pane's plain and
-// COLOR captures, the agent name, and whether it's a tracked dispatch, return "startup"
-// / "draft" / "". Separated from the tmux reads so the gate/draft classification is
-// unit-testable. The draft check is COLOR-aware: a plain capture can't tell a real
+// classifyStuck is the pure decision behind StuckDispatchKind: given a pane's COLOR
+// capture, the agent name, and whether this is a tracked dispatch that has NOT yet had
+// its goal land, return "startup" / "draft" / "". Separated from the tmux reads so the
+// gate/draft classification is unit-testable.
+//
+// It reads the COLOR capture for BOTH checks. A plain capture can't tell a real
 // unsubmitted draft from CC's faint suggested-next-command ghost text, so DraftOfColored
-// drops the faint (SGR 2) ghost before reading the box (else a false-positive `draft`).
-func classifyStuck(plainCap, colorCap, agent string, tracked bool) string {
-	if !tracked {
+// drops the faint (SGR 2) ghost before reading the box (else a false-positive `draft`) —
+// and IsStartupGate drops it for the same reason, on the same frame.
+func classifyStuck(colorCap, agent string, preTurn bool) string {
+	if !preTurn {
 		return ""
 	}
-	if prompt.IsStartupGate(plainCap, agent) {
+	if prompt.IsStartupGate(colorCap, agent) {
 		return "startup"
 	}
 	if draft, structured := dispatch.DraftOfColored(colorCap); structured && strings.TrimSpace(draft) != "" {

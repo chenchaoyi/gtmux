@@ -231,13 +231,24 @@ them `idle` would let them be reported as `done`:
 - a STRUCTURED, non-empty input draft on a pane that is a TRACKED dispatch (the agent's
   goal was pasted but never submitted).
 
-The draft state SHALL be judged from a COLOR-aware capture that EXCLUDES the agent's
-suggested-next-command GHOST text — the dim autosuggestion the agent renders faint
-(SGR 2) and that needs a key to accept — because it is NOT user input: only genuinely
-unsubmitted USER input (normal brightness) SHALL count as a draft. All OTHER waiting
-(tool-permission / plan / question) SHALL remain hook-driven and SHALL NOT be inferred
-from the screen. The classification SHALL be pure (it MUST NOT write any marker from
-the read path); the reclassified status carries a kind (`startup` / `draft`).
+BOTH states SHALL be judged from a COLOR-aware capture that EXCLUDES text the agent
+renders FAINT (SGR 2) — its suggested-next-command ghost / placeholder, which needs a key
+to accept and is therefore neither user input nor a question being asked. Only
+normal-brightness content SHALL count, as a draft or as a gate.
+
+The exception SHALL be scoped to a dispatch that has NOT yet had its goal land. "Blocked
+before any turn runs" is a claim about the DISPATCH, and the ledger already answers it: a
+dispatch whose goal landed was accepted by the agent, so it is neither at a launch gate
+nor holding that goal unsent. A dispatch that is delivered (or queued) SHALL NOT be
+screen-classified at all.
+
+A startup gate SHALL be recognized only in the BOTTOM REGION of the capture — chrome the
+agent is currently DRAWING. A capture spans ~200 lines of scrollback, so a gate phrase
+that merely APPEARS in it (a pane quoting or diffing the phrase) SHALL NOT read as a gate.
+
+All OTHER waiting (tool-permission / plan / question) SHALL remain hook-driven and SHALL
+NOT be inferred from the screen. The classification SHALL be pure (it MUST NOT write any
+marker from the read path); the reclassified status carries a kind (`startup` / `draft`).
 
 #### Scenario: A worker stuck at the trust gate reads as waiting
 
@@ -258,6 +269,19 @@ the read path); the reclassified status carries a kind (`startup` / `draft`).
   suggested-next-command ghost text (SGR 2), with no real user input
 - **THEN** the radar does NOT read a draft and does NOT reclassify the pane as
   `waiting` — the ghost suggestion is excluded from draft detection
+
+#### Scenario: A gate phrase the pane is QUOTING is not a gate
+
+- **WHEN** a pane's scrollback contains a startup-gate phrase as CONTENT (a worker
+  reading, diffing or discussing it) while the pane itself shows an ordinary composer
+- **THEN** the radar does NOT read a startup gate — only the bottom region, where the
+  agent draws its own chrome, is considered
+
+#### Scenario: A dispatch that already ran is never screen-classified
+
+- **WHEN** a tracked dispatch whose goal has LANDED is idle
+- **THEN** the radar does NOT apply the stuck-before-running exception to it at all —
+  neither `startup` nor `draft` — because a landed goal proves the pane is past both
 
 #### Scenario: A normal idle pane is unaffected
 
