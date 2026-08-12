@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.50.0',
+    en: [
+      'The HQ page now speaks up about two things it used to stay quiet on: when the supervisor itself needs a decision from you, and when the Mac is genuinely short of disk, memory or power. It reported "all normal — nothing needs you" in both cases, while the Mac\'s own menu bar said otherwise about the very same fleet at the very same moment. That verdict is now decided once, on the Mac, and this app renders it — so the two can no longer disagree.',
+    ],
+    zh: [
+      'HQ 页面现在会对两件它以前一声不吭的事开口：中控自己需要你拍板时，以及 Mac 真的磁盘、内存或电量吃紧时。这两种情况下它以前都显示「都正常 · 无需你介入」，而同一时刻、同一个舰队，Mac 上的菜单栏说的却是另一回事。这个判断现在由 Mac 端裁定一次，本 app 只负责呈现 —— 两边不会再各说各的。',
+    ],
+  },
+  {
     version: '0.48.4',
     en: [
       'A link the terminal had to wrap onto a second line is one link again. A long URL used to be cut where the row ended, and only the first fragment was tappable — so it opened a host that did not exist while the real address sat below it as plain text. Every piece of a wrapped URL now opens the whole thing, including a URL the terminal recolours half-way through.',
