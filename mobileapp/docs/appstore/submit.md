@@ -185,6 +185,43 @@ the rest — your whole terminal fleet, on call.` 的逐段直译。**翻译腔�
 CLAUDE.md 的「文案平实、禁止营销腔」是同一条要求的另一面，那条约束的是**语气**，这条约束的是
 **句法**。
 
+### 已定的中文调性（2026-08-12，司令亲自改定）
+
+`metadata/zh-Hans/description.txt` 现在的版本是**司令改定的**，后续以它为准、不要"优化"回去。
+把他改的几处记下来，因为每一处都是一条可复用的判断：
+
+| 改前（我写的） | 改后 | 为什么 |
+|---|---|---|
+| 「…这类编码 agent **算**，普通的 tmux 窗口**也算**」 | 「**包括**…，**以及**普通的 tmux 窗口」 | 口语化的"算/也算"在商店正文里显得轻佻；平铺直叙即可 |
+| 「用颜色分状态：等你输入、正在工作、空闲。**谁在等你，一眼就看得出来。**」 | 「用颜色分状态，**实时通知工作状态**」 | 删掉了自夸式收尾句。"一眼就看得出来"是替读者下结论，让读者自己看 |
+| 「还能替你分派任务。**舰队忙起来的时候**，不重要的事不会来烦你」 | 「还能替你分派任务，不重要的事不会来烦你」 | 去掉比喻。"舰队"在标题/口号里可以，正文里连用会腻 |
+| 工作原理段末尾「**进出由 token 把关，token 在你手里，随时可以作废**」 | 删除 | 与紧接着的"隐私"段重复。同一件事在一屏内说两遍，读者会觉得你在凑字数 |
+| 「分享给同事一起**看**」 | 「一起**协同**」 | 说准确：分享出去的链接可以输入，不只是看 |
+
+可提炼的三条：**能删就删**（自夸句、重复段、装饰性比喻）；**别替读者下结论**；**用词要对得上功能**。
+
+### ⚠️ 在 ASC 网页上改了文案，必须抄回仓库
+
+`fastlane metadata` 是**单向推送**：它拿仓库里的 `metadata/**` 覆盖 ASC。所以任何直接在 ASC
+网页上做的文案修改，如果没有抄回仓库，**下一次 metadata 会静默把它冲掉**，而且不会有任何报错。
+
+抄回来之后**逐字比对**一次，别凭印象：
+
+```sh
+# 把 ASC 上的现值拉下来跟仓库 diff（0.50.0 那次就是这么确认一致的）
+bundle exec ruby -e '
+require "spaceship"
+Spaceship::ConnectAPI.auth(key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"],
+                           filepath: File.expand_path(ENV["ASC_KEY_PATH"]))
+app = Spaceship::ConnectAPI::App.get(app_id: "6791144062")
+v = app.get_edit_app_store_version(platform: Spaceship::ConnectAPI::Platform::IOS)
+zh = v.get_app_store_version_localizations.find { |l| l.locale == "zh-Hans" }
+File.write("/tmp/asc-zh-desc.txt", (zh.description || "").gsub("\r\n", "\n"))'
+diff <(sed -e 's/[[:space:]]*$//' fastlane/metadata/zh-Hans/description.txt) \
+     <(sed -e 's/[[:space:]]*$//' /tmp/asc-zh-desc.txt)
+# 只剩 "\ No newline at end of file" = 一致（仓库文件带行尾换行，ASC 存的不带）
+```
+
 ---
 
 ## 4. 🌐 Review Notes (copy-paste into App Review Information → Notes)
