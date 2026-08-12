@@ -13,8 +13,12 @@ struct EmptyStateView: View {
             GtmuxLogo(size: 26).opacity(0.85)
             Text(l10n.tr("No agents running", "没有运行中的 agent"))
                 .font(.system(size: 13, weight: .medium)).foregroundStyle(p.fg)
-            Text(l10n.tr("Start any coding agent in a tmux pane\n(Claude Code · Codex · Gemini · aider…)",
-                         "在 tmux pane 里启动任意 coding agent\n(Claude Code · Codex · Gemini · aider…)"))
+            // The named agents are the HOOK-EQUIPPED ones (internal/agents: claude, codex,
+            // cursor, gemini, opencode) — the tier gtmux genuinely senses turn-by-turn.
+            // aider was listed here and is detect-only, which advertised the shallowest
+            // support we have as if it were an example of what gtmux is for.
+            Text(l10n.tr("Start any coding agent in a tmux pane\n(Claude Code · Codex · Cursor · Gemini · opencode…)",
+                         "在 tmux pane 里启动任意 coding agent\n(Claude Code · Codex · Cursor · Gemini · opencode…)"))
                 .font(.system(size: 11)).foregroundStyle(p.fg2).multilineTextAlignment(.center)
             Text(verbatim: "tmux new -s work \\; claude")
                 .font(Theme.Font.mono).foregroundStyle(p.fg)
