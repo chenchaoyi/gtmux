@@ -82,6 +82,13 @@ export ASC_KEY_PATH=$HOME/Downloads/AuthKey_XXXXXXXXXX.p8
    Homebrew 4.0.2 — the lane strips brew ruby from PATH for the spawned
    xcodebuild). If the upload leg fails but `build/GtmuxMobile.ipa` exists, don't
    rebuild — run `bundle exec fastlane upload`.
+   > **Give the upload TIME before calling it failed.** A build takes minutes to
+   > become visible over the API — fastlane even prints "it might take a few
+   > minutes until it's visible online". On 0.50.0 the ASC API still showed the
+   > previous build ~2 min after a successful upload; reading that as a failure and
+   > re-running `upload` earned an **ITMS-90189 Redundant Binary Upload** mail from
+   > Apple (harmless — the duplicate is rejected, the first build stands). Poll
+   > `Spaceship::ConnectAPI::Build.all` for up to ~15 min before concluding anything.
 5. 🖥️ **Metadata + screenshots** — `cd mobileapp && bundle exec fastlane metadata`
    (needs screenshots staged first — see §5). Pushes en-US + zh-Hans copy +
    screenshots; never auto-submits. **THEN prune the duplicates deliver leaves:**
@@ -145,6 +152,38 @@ reviewers often test a day or two later.
   release. (China requires an ICP filing for the app + a 备案'd domain, like Rodi
   did — defer it; add China later once备案 is done. Nothing else is blocked.)
 - **Sign-in required:** No (there is no account; pairing is to the user's own Mac).
+
+---
+
+## 3b. 中文文案：先写中文，不要翻译英文（硬性要求）
+
+`metadata/zh-Hans/*` 不是 `metadata/en-US/*` 的译文，是**另写一份**。英文那份按英文的节奏
+写，中文这份按中文的节奏写；两边说的是同一件事，句子结构不必对应。
+
+商店文案曾经这样翻车（2026-08-12，司令指出「AI 味翻译腔太浓」）：
+
+> 一眼看到哪个 Agent 在等你，从手机回话，剩下的交给中控。你的整支终端舰队，随叫随到。
+
+它是英文原句 `See which CLI agent needs you, reply from your phone, and let an HQ triage
+the rest — your whole terminal fleet, on call.` 的逐段直译。**翻译腔的可识别特征**（写完自查
+这几条）：
+
+1. **破折号后面挂一个悬空名词短语收尾** —— 英文 appositive 的搬运（`— your whole terminal
+   fleet, on call` → 「你的整支终端舰队，随叫随到」）。中文极少这样收尾。
+2. **物主代词「你的」** —— 英文 possessive 是语法必需，中文里通常直接省掉。
+3. **祈使三连的逗号并列**（`See X, reply Y, let Z` → 「一眼看到…，从手机…，剩下的交给…」）
+   —— 英文靠并列推进，中文靠短句推进；把它拆成两三个能独立成立的短句。
+4. **混用两套比喻** —— 「舰队」（军事）和「随叫随到」（仆役）在一句里打架。一句话最多一个比喻。
+5. **英文式大小写** —— 句中把 `Agent` 大写。全仓库统一小写 `agent`、小写 `gtmux`。
+6. **抽象名词堆叠**（「指挥中心」「全景」「实时」连用）—— 换成具体动作：谁卡住了、回一句、接着跑。
+
+自查方法：**把中文念出来**。如果它听上去像一句被翻译过来的话，就是。也可以反向验证 —— 试着把
+它译回英文，如果译得毫不费力、几乎逐词对应，说明它本来就是从英文来的。
+
+同一条规矩适用于 `description.txt` / `subtitle.txt` / `promotional_text.txt` /
+`release_notes.txt`，以及 app 内的一切中文串（`internal/i18n` 与 `mobileapp/src`）。
+CLAUDE.md 的「文案平实、禁止营销腔」是同一条要求的另一面，那条约束的是**语气**，这条约束的是
+**句法**。
 
 ---
 
@@ -225,6 +264,13 @@ em-dash `——` in short lines (formally correct, but reads stiff — prefer �
 - [ ] 🖥️ `fastlane verify` prints a build number (key wiring OK).
 - [ ] 🖥️ `fastlane release` uploaded a build; it finished processing in ASC.
 - [ ] 🖥️ screenshots staged; `fastlane metadata` pushed copy + shots.
+- [ ] 🖥️ **each locale has exactly the intended number of screenshots** —
+      `bundle exec ruby scripts/asc-prune-dup-screenshots.rb --list`. deliver's retry
+      duplicates on essentially every run (0.45.0, 0.45.4, and 0.50.0: en had 9, zh 7).
+- [ ] 🖥️ **"What's New" covers everything since the last SUBMITTED version**, which is
+      often several versions back — a device build is not a submission. Check the live
+      version on ASC first; see `release-notes/README.md`.
+- [ ] 🖥️ **中文文案念一遍**，不是英文的译文（§3b）。
 - [ ] 🌐 build selected, Age Rating 4+, Privacy = Data Not Collected, Category =
       Developer Tools, Availability excludes mainland China, Review Notes pasted
       with a live guest link.
