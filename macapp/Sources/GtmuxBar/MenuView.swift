@@ -390,39 +390,91 @@ struct MenuView: View {
     // list is `store.restorePlan` (from `restore --plan --json`), present only when
     // nothing is running. When the plan has no sessions the chevron is hidden (there
     // is nothing to expand into; restore no-ops gracefully).
+    // Three states, because "nothing is running" and "something is waiting to come back"
+    // are different facts and were being shown the same way:
+    //
+    //   • sessions to restore  → a BANNER: filled, semibold, chevron — the shape the
+    //     update banner uses for "gtmux is offering you a one-tap action right now".
+    //   • plan known and EMPTY → nothing at all. A fresh install has nothing to restore,
+    //     and a permanent dead affordance next to the empty state competed with the tmux
+    //     guidance that IS the right first step there. DESIGN §14 always said this row is
+    //     contextual ("仅当存在 detached session 时出现"); the implementation had drifted
+    //     to gating on "nothing running", which is a different condition.
+    //   • plan UNKNOWN (not yet polled, or the CLI call failed) → the old quiet row. Not
+    //     knowing is not evidence of nothing, and silently dropping a working affordance
+    //     because a shell-out failed is the worse error.
+    //
+    // Deliberately NOT the update banner's cyan: these two stack (updateBanner renders
+    // directly above this), and two identical shouty bars offering different actions is
+    // how you get the wrong one tapped. Cyan also means `working` in the status language.
+    // showsRestore: there is either something to restore (a non-empty plan) or we do not
+    // yet know (no plan polled). A plan that came back EMPTY is positive evidence there is
+    // nothing — the fresh-install case — and shows nothing.
+    private var showsRestore: Bool {
+        guard let plan = store.restorePlan else { return true } // unknown → keep the affordance
+        return !plan.sessions.isEmpty
+    }
+
     @ViewBuilder private func restoreRow(_ p: Theme.Palette) -> some View {
         let plan = store.restorePlan
         let count = plan?.sessions.count ?? 0
+        if count > 0 {
+            restoreBanner(count, p)
+        } else if plan == nil {
+            restoreQuietRow(p)
+        }
+    }
+
+    // The prominent form: something IS waiting to come back.
+    @ViewBuilder private func restoreBanner(_ count: Int, _ p: Theme.Palette) -> some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
+                Button { onAction(.restore) } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "arrow.uturn.backward.circle.fill").font(.system(size: 13))
+                        Text(l10n.tr("Restore \(count) session(s)", "恢复上次的工作现场 · \(count) 个会话"))
+                            .font(.system(size: 11.5, weight: .semibold))
+                        Spacer(minLength: 4)
+                    }
+                    .foregroundStyle(p.fg)
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                Button { withAnimation(.easeInOut(duration: 0.12)) { restoreExpanded.toggle() } } label: {
+                    Image(systemName: restoreExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(p.fg2)
+                        .frame(width: 18, height: 18)
+                        .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+                .help(l10n.tr("Show which sessions would be restored", "看看会恢复哪些会话"))
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(p.rowSelected)
+
+            if restoreExpanded, let plan = store.restorePlan {
+                restorePlanList(plan, p)
+            }
+        }
+    }
+
+    // The quiet form: we do not KNOW whether there is anything to restore.
+    @ViewBuilder private func restoreQuietRow(_ p: Theme.Palette) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Button { onAction(.restore) } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.uturn.backward").font(.system(size: 11))
-                        Text(count > 0
-                            ? l10n.tr("Restore \(count) session(s)", "恢复上次的工作现场 · \(count) 个会话")
-                            : l10n.tr("Restore your last working set", "恢复上次的工作现场"))
+                        Text(l10n.tr("Restore your last working set", "恢复上次的工作现场"))
                             .font(.system(size: 11, weight: .medium))
                         Spacer(minLength: 0)
                     }
                     .foregroundStyle(p.fg2)
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain)
-                if count > 0 {
-                    Button { withAnimation(.easeInOut(duration: 0.12)) { restoreExpanded.toggle() } } label: {
-                        Image(systemName: restoreExpanded ? "chevron.down" : "chevron.right")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(p.fg3)
-                            .frame(width: 18, height: 18)
-                            .contentShape(Rectangle())
-                    }.buttonStyle(.plain)
-                    .help(l10n.tr("Show which sessions would be restored", "看看会恢复哪些会话"))
-                }
             }
             .padding(.horizontal, 12).padding(.vertical, 7)
-
-            if restoreExpanded, let plan {
-                restorePlanList(plan, p)
-            }
+            // No chevron here on purpose: with no plan there is nothing to expand into.
         }
     }
 
@@ -465,7 +517,11 @@ struct MenuView: View {
             // moment — offer one-tap restore of the last working set. Snapshot-precision
             // ("有快照") would need a restore-available signal from core; gating on zero live
             // sessions is the right UX moment (restore no-ops gracefully if there's nothing).
-            if store.total == 0 {
+            // The restore affordance is CONTEXTUAL (DESIGN §14): it appears when there is
+            // something to come back to, not merely when nothing is running. The divider
+            // is gated on the same condition — an empty row would still have drawn its
+            // separator, leaving a stray rule under a fresh install's empty state.
+            if store.total == 0, showsRestore {
                 restoreRow(p)
                 Divider().overlay(p.divider)
             }
