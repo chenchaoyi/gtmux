@@ -17,6 +17,8 @@ struct MenuView: View {
     @ObservedObject var share = ShareStore.shared
     @ObservedObject private var updater = Updater.shared
     @ObservedObject private var collapse = SectionCollapse.shared
+    /// The panel's settled height, reported OUT to whoever hosts it — see PanelSize.
+    @ObservedObject var panel = PanelSize.shared
     var onJump: (Agent) -> Void
     var onAction: (MenuAction) -> Void
     var onAdopt: (Agent) -> Void = { _ in }
@@ -30,17 +32,20 @@ struct MenuView: View {
     @State private var expanded: String? // paneID of the waiting row showing 1/2/3
     @State private var restoreExpanded = false // the footer restore row is showing its session list
     @State private var contentHeight: CGFloat = 0 // measured height of the agent list (see listHeight)
+    @State private var chromeHeight: CGFloat = 0 // measured height of everything that is NOT the list
     @FocusState private var rootFocused: Bool
     @FocusState private var searchFocused: Bool
     @Environment(\.colorScheme) private var scheme
 
-    // The scrollable agent list grows with the screen: taller on a big display, so
-    // more agents show before scrolling, but always leaving room for the header +
-    // footer + menu bar (reserve ~280pt) so the popover never clips on a small
-    // laptop. Capped so it stays a popover, not a full-height panel.
+    /// How tall the LIST may be, so the whole panel still fits the screen.
+    ///
+    /// The reserve used to be a CONSTANT — `visible - 280`, a guess at "header + footer".
+    /// It is MEASURED now: the chrome carries the HQ card (present only when a supervisor
+    /// is running) and the update banner (present only when there is an update), so its
+    /// height changes with what is running and a constant cannot track it. `chromeHeight`
+    /// is the real sum of the two non-list groups, so the list gets exactly what is left.
     private var listMaxHeight: CGFloat {
-        let visible = NSScreen.main?.visibleFrame.height ?? 900
-        return min(820, max(Theme.Size.listMaxHeight, visible - 280))
+        PanelMetrics.listMax(visible: PanelMetrics.visibleHeight, chrome: chromeHeight)
     }
 
     private var query: String { searchActive ? searchText : "" }
@@ -56,14 +61,44 @@ struct MenuView: View {
     var body: some View {
         let p = Theme.Palette.of(scheme)
         VStack(spacing: 0) {
-            header(p)
-            Divider().overlay(p.divider)
-            hqCard(p)
+            // The chrome is measured DIRECTLY, in two groups, so nothing the list's own
+            // height feeds back into. Deriving it as (total − list) also works on paper
+            // and settles in two passes, but it is a loop, and a layout loop on a live
+            // panel is a visible flicker away from being a bug. Measure the thing.
+            VStack(spacing: 0) {
+                header(p)
+                Divider().overlay(p.divider)
+                hqCard(p)
+            }
+            .background(GeometryReader { g in
+                Color.clear.preference(key: ChromeHeight.self, value: g.size.height)
+            })
             content(p)
-            Divider().overlay(p.divider)
-            footer(p)
+            VStack(spacing: 0) {
+                Divider().overlay(p.divider)
+                footer(p)
+            }
+            .background(GeometryReader { g in
+                Color.clear.preference(key: ChromeHeight.self, value: g.size.height)
+            })
         }
         .frame(width: Theme.Size.popoverWidth)
+        .onPreferenceChange(ChromeHeight.self) { h in
+            let r = h.rounded()
+            if abs(r - chromeHeight) >= 1 { chromeHeight = r }
+        }
+        // The panel reports its settled height to AppKit. NSPopover positions its window
+        // from `contentSize`, and a SwiftUI view that resizes ITSELF never updates that —
+        // see PanelSize for the measurement that proved it.
+        .background(GeometryReader { g in
+            Color.clear.preference(key: RootHeight.self, value: g.size.height)
+        })
+        .onPreferenceChange(RootHeight.self) { h in
+            let r = h.rounded()
+            if abs(r - panel.height) >= 1 { panel.height = r }
+            dbg(String(format: "menu: root=%.0f chrome=%.0f listContent=%.0f listCap=%.0f screen=%.0f",
+                       h, chromeHeight, contentHeight, listMaxHeight, PanelMetrics.visibleHeight))
+        }
         .background {
             // Vibrancy blur + the DESIGN §9 tint, so it's a proper frosted panel
             // (not the bare blur that let the terminal bleed through as gray).
@@ -1138,6 +1173,31 @@ private struct VisualEffect: NSViewRepresentable {
 /// sizes it. A `ScrollView` cannot report an intrinsic height, so the content inside it
 /// has to say how tall it is for the popover to be able to grow to fit.
 private struct ListContentHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+/// ChromeHeight totals the popover's non-list parts — header + HQ card above, divider +
+/// footer below — so the list can be given exactly the room that is left.
+///
+/// It SUMS rather than maxes, unlike the list's own measurement: two separate groups
+/// report into this key and both occupy height. The reserve was a CONSTANT before, which
+/// could not track chrome that comes and goes with what is running — the HQ card only
+/// with a supervisor, the update banner only with an update.
+private struct ChromeHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value += nextValue()
+    }
+}
+
+/// RootHeight is the whole panel's measured height — the number that actually has to fit
+/// the screen, and the one the popover has to be told (PanelSize). It measures the panel
+/// as laid out, so it covers the empty state and the no-matches line too, not just the
+/// agent list.
+private struct RootHeight: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())

@@ -35,7 +35,9 @@ enum Theme {
         static let rowHeightCompact: CGFloat = 28
         static let avatar: CGFloat = 30
         static let badge: CGFloat = 15
-        static let listMaxHeight: CGFloat = 520
+        // How tall the agent list may grow is NOT a constant: it depends on the display
+        // and on chrome that comes and goes (the HQ card, the update banner). See
+        // PanelMetrics.
         static let pad: CGFloat = 7
         static let gap: CGFloat = 11
     }

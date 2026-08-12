@@ -83,6 +83,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onUnwatch: { [weak self] in self?.unwatch($0) },
                 onClose: { [weak self] in self?.popover.performClose(nil) }))
 
+        // TELL the popover how tall it is. Without this the panel's own growth never
+        // reaches NSPopover, which goes on positioning the window for the size it was
+        // first given and lets the surplus run off the top of the screen (PanelSize
+        // carries the measurement that proved it). Guarded on a whole-point change: the
+        // resize relays out the panel, which re-measures, and an unguarded assignment
+        // would ping-pong on sub-pixel differences.
+        PanelSize.shared.$height
+            .receive(on: RunLoop.main)
+            .sink { [weak self] h in
+                guard let self, h > 1 else { return }
+                let want = PanelMetrics.popoverHeight(panel: h, visible: PanelMetrics.visibleHeight)
+                guard abs(self.popover.contentSize.height - want) >= 1 else { return }
+                self.popover.contentSize = NSSize(width: Theme.Size.popoverWidth, height: want)
+                self.reanchorPopover()
+                // Again on the next turn: the window does not always finish moving inside
+                // this one, and the check makes a second call free when it already did.
+                DispatchQueue.main.async { self.reanchorPopover() }
+            }
+            .store(in: &cancellables)
+
         // Repaint the status item whenever agents change.
         store.$agents.receive(on: RunLoop.main)
             .sink { [weak self] in self?.renderIcon($0) }
@@ -105,6 +125,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // once/day inside Updater). If one exists, the popover shows a "new version"
         // banner the user can click to install — same effect as `gtmux update`.
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.autoCheck() }
+
+        // GTMUXBAR_MEASURE opens and closes the panel by itself, so its geometry can be
+        // read without a click — the only way to check WHERE the panel landed on a
+        // machine where screen capture is permission-blocked. It repeats because a panel
+        // that measures itself can creep a few points per opening, and one opening
+        // cannot show that. Pair it with GTMUXBAR_DEBUG=1 and read stderr.
+        if ProcessInfo.processInfo.environment["GTMUXBAR_MEASURE"] != nil {
+            for i in 0..<6 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3 + Double(i) * 2) { [weak self] in
+                    self?.togglePopover()
+                }
+            }
+        }
 
         // Record the live terminal tab→session order on a SLOW timer (reads the
         // terminal via AppleScript, so not on the 1.5s poll) so `gtmux restore`
@@ -330,6 +363,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+        logPopoverGeometry()
+    }
+
+    /// reanchorPopover puts an already-open panel back under the status item — but ONLY
+    /// when it has actually left the screen.
+    ///
+    /// A resize while the popover is OPEN does not re-attach it. With a big fleet the
+    /// first opening lands thousands of points off-screen and only snaps back half a
+    /// second later, when some later resize happens to fix it — measured at 300 agents,
+    /// the window sat at y=-3504 for 0.5s. Re-showing re-runs AppKit's own positioning,
+    /// which is the thing that knows where a popover belongs.
+    ///
+    /// It is a REPAIR, not a routine: the panel resizes whenever the fleet changes, which
+    /// is every poll, and re-showing each time would restart the panel's appearance — and
+    /// with it the keyboard selection — under a user who is arrowing through rows. The
+    /// check is also what stops the loop, since a re-show is itself a layout.
+    private func reanchorPopover() {
+        guard popover.isShown, let button = statusItem.button,
+              let win = popover.contentViewController?.view.window,
+              let screen = button.window?.screen ?? NSScreen.main else { return }
+        guard PanelMetrics.hasLeftTheScreen(window: win.frame,
+                                            screenFrame: screen.frame,
+                                            visibleFrame: screen.visibleFrame) else { return }
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+    }
+
+    /// logPopoverGeometry reports where the panel ACTUALLY landed, once layout has
+    /// settled. The popover-off-the-top-edge bug (v0.50.0) survived two fixes that were
+    /// reasoned about on paper; every hypothesis died on contact with a real number, so
+    /// the numbers are readable now: run the app with GTMUXBAR_DEBUG=1.
+    private func logPopoverGeometry() {
+        guard ProcessInfo.processInfo.environment["GTMUXBAR_DEBUG"] != nil else { return }
+        for t in [0.05, 0.15, 0.35, 0.75, 1.5] {
+        DispatchQueue.main.asyncAfter(deadline: .now() + t) { [weak self] in
+            guard let self else { return }
+            let scr = NSScreen.main
+            let vf = scr?.visibleFrame ?? .zero
+            let f = scr?.frame ?? .zero
+            let size = self.popover.contentSize
+            let win = self.popover.contentViewController?.view.window?.frame ?? .zero
+            // The panel legitimately reaches the top of the display — its arrow tucks
+            // under the menu bar — so the ceiling is the screen's own frame, not the
+            // menu-bar-excluding visibleFrame. The floor is the Dock.
+            let fits = win.minY >= vf.minY && win.maxY <= f.maxY
+            dbg(String(format:
+                "geom+%.2fs: screen.frame=%.0fx%.0f visible=%.0fx%.0f@y%.0f | content=%.0fx%.0f | window=%.0fx%.0f@y%.0f (top=%.0f) | onScreen=%@",
+                t, f.width, f.height, vf.width, vf.height, vf.minY,
+                size.width, size.height,
+                win.width, win.height, win.minY, win.maxY,
+                fits ? "yes" : "NO — clipped"))
+        }
+        }
     }
 
     private func jump(_ agent: Agent) {
