@@ -33,6 +33,33 @@ emphasized.
 - **WHEN** a row is clicked (or Enter / ⌘1–9)
 - **THEN** the app runs `gtmux focus <pane>` and lands on that agent
 
+### Requirement: The popover grows with the fleet and stays on screen
+
+The popover SHALL size its agent list to the list's measured content height, capped
+so that the whole panel — list plus its measured chrome (header, HQ card, footer,
+update banner) — fits the display holding the menu bar. The panel's height SHALL be
+reported to the popover itself, because `NSPopover` positions its window from
+`contentSize` and a SwiftUI view that resizes itself never updates that property.
+
+#### Scenario: A dozen agents
+
+- **WHEN** the fleet has more rows than fit a short panel and the display has room
+- **THEN** the popover is tall enough to show them without scrolling, and its top
+  edge stays below the top of the display
+
+#### Scenario: More rows than the display can hold
+
+- **WHEN** the list's content is taller than the room left by the chrome
+- **THEN** the list is capped at the remaining room and scrolls inside it; the panel
+  still fits the display
+
+#### Scenario: A resize leaves the open panel off screen
+
+- **WHEN** the panel is resized while open and the result is positioned outside the
+  display
+- **THEN** the app re-attaches it to the status item; a panel that is merely tall
+  enough to touch the top of the display is left alone
+
 ### Requirement: Pure CLI consumer
 
 The system SHALL source all data from `gtmux agents --json` and SHALL NOT
