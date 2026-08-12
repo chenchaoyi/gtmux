@@ -1,5 +1,30 @@
 import AppKit
 import Combine
+import SwiftUI
+
+/// ListContentHeight carries a scrolling list's measured content height up to the view
+/// that sizes it. A `ScrollView` cannot report an intrinsic height — it is happy at any
+/// size — so the content inside it has to say how tall it wants to be.
+struct ListContentHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+/// ChromeHeight totals a surface's non-list parts — header above, footer below — so the
+/// list can be given exactly the room that is left.
+///
+/// It SUMS rather than maxes, unlike the list's own measurement: separate groups report
+/// into this key and all of them occupy height. The reserve was a CONSTANT before, which
+/// could not track chrome that comes and goes with what is running — the popover's HQ card
+/// only with a supervisor, its update banner only with an update.
+struct ChromeHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value += nextValue()
+    }
+}
 
 /// PanelSize carries the popover panel's settled height from SwiftUI out to AppKit.
 ///
@@ -55,6 +80,31 @@ enum PanelMetrics {
     /// even if some future chrome grows past what was measured.
     static func popoverHeight(panel: CGFloat, visible: CGFloat) -> CGFloat {
         min(max(panel, 1), budget(visible: visible))
+    }
+
+    /// A window's own floor and ceiling. Unlike the popover, a window carries a title bar
+    /// OUTSIDE its content, and it must not cover the Dock — so the room left for content
+    /// is the usable height less the title bar and a margin.
+    static let windowFloor: CGFloat = 400
+
+    /// The design width for the browser (DESIGN §11). It has to be stated: an
+    /// `NSHostingController` sizes its window to the SwiftUI IDEAL, so a view that only
+    /// declares a minimum gets a window at that minimum — the browser was created at 480
+    /// and measured 420 wide for exactly that reason.
+    static let browserWidth: CGFloat = 480
+
+    /// How much of the display the browser deliberately leaves alone. Generous on
+    /// purpose: a window that opens at very nearly full height reads as taking the screen
+    /// over rather than as a panel you opened, and the list scrolls anyway.
+    static let windowMargin: CGFloat = 120
+
+    /// windowContentHeight is how tall to make the pane browser's CONTENT so the window
+    /// shows its sessions without scrolling, while still fitting the display. Same idea as
+    /// the popover, different container: a window is resizable and the user is in charge
+    /// of it, so this is what to open AT, not a cap enforced while they use it.
+    static func windowContentHeight(desired: CGFloat, visible: CGFloat, titleBar: CGFloat) -> CGFloat {
+        let room = max(windowFloor, visible - titleBar - windowMargin)
+        return min(max(desired, windowFloor), room)
     }
 
     /// hasLeftTheScreen decides whether an open panel needs to be re-attached to the

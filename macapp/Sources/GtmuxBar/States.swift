@@ -91,7 +91,7 @@ struct FirstRunView: View {
     private func step(_ n: Int, _ text: String, _ p: Theme.Palette) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text("\(n)").font(.system(size: 10, weight: .bold)).foregroundStyle(p.fg2)
-                .frame(width: 18, height: 18)
+                .frame(width: 22, height: 22)
                 .background(Circle().fill(scheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)))
             Text(text).font(.system(size: 11.5)).foregroundStyle(p.fg2)
                 .fixedSize(horizontal: false, vertical: true)

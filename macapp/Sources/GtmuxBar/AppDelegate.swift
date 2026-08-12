@@ -132,6 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // that measures itself can creep a few points per opening, and one opening
         // cannot show that. Pair it with GTMUXBAR_DEBUG=1 and read stderr.
         if ProcessInfo.processInfo.environment["GTMUXBAR_MEASURE"] != nil {
+            // The all-panes window sizes itself the same way and needs the same proof.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.perform(.browsePanes)
+            }
             for i in 0..<6 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3 + Double(i) * 2) { [weak self] in
                     self?.togglePopover()
@@ -191,7 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ProcessInfo.processInfo.environment["GTMUXBAR_SHOW_BROWSER"] != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 guard let self else { return }
-                PaneBrowserController.shared.show(l10n: self.l10n)
+                PaneBrowserController.shared.show(l10n: self.l10n, radar: self.store)
             }
         }
     }
@@ -476,7 +480,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             PairingController.shared.show(l10n: l10n)
         case .browsePanes:
             popover.performClose(nil)
-            PaneBrowserController.shared.show(l10n: l10n)
+            PaneBrowserController.shared.show(l10n: l10n, radar: store)
         case .quit:       quitApp()
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }

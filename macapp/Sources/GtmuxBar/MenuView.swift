@@ -135,12 +135,12 @@ struct MenuView: View {
                 // NOT buried in the ⚙ menu — reaching any pane is a first-class affordance,
                 // not a low-frequency setting. Opens the separate browser window.
                 Button { onAction(.browsePanes) } label: {
-                    Image(systemName: "rectangle.split.2x2").font(.system(size: 11))
+                    Image(systemName: "rectangle.split.2x2").font(.system(size: 12))
                         .foregroundStyle(p.fg2)
                 }.buttonStyle(.plain)
                     .help(l10n.tr("Browse all panes", "浏览所有 pane"))
                 Button { toggleSearch() } label: {
-                    Image(systemName: "magnifyingglass").font(.system(size: 11))
+                    Image(systemName: "magnifyingglass").font(.system(size: 12))
                         .foregroundStyle(searchActive ? Theme.Status.working : p.fg2)
                 }.buttonStyle(.plain)
             }
@@ -205,7 +205,7 @@ struct MenuView: View {
             VStack(alignment: .leading, spacing: 6) {
                 // Role banner — the "this is the oversight layer, not a session" cue.
                 HStack(spacing: 5) {
-                    Image(systemName: "eye.fill").font(.system(size: 9.5))
+                    Image(systemName: "eye.fill").font(.system(size: 12))
                     Text(l10n.tr("CHIEF OF STAFF", "参谋长"))
                         .font(.system(size: 9.5, weight: .semibold)).tracking(0.9)
                     Spacer(minLength: 6)
@@ -241,7 +241,7 @@ struct MenuView: View {
                                     .lineLimit(1).truncationMode(.tail)
                             }
                             Spacer(minLength: 6)
-                            Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
                                 .foregroundStyle(p.fg3)
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
@@ -504,9 +504,9 @@ struct MenuView: View {
                 }.buttonStyle(.plain)
                 Button { withAnimation(.easeInOut(duration: 0.12)) { restoreExpanded.toggle() } } label: {
                     Image(systemName: restoreExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(p.fg2)
-                        .frame(width: 18, height: 18)
+                        .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                 .help(l10n.tr("Show which sessions would be restored", "看看会恢复哪些会话"))
@@ -527,7 +527,7 @@ struct MenuView: View {
             HStack(spacing: 6) {
                 Button { onAction(.restore) } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "arrow.uturn.backward").font(.system(size: 11))
+                        Image(systemName: "arrow.uturn.backward").font(.system(size: 12))
                         Text(l10n.tr("Restore your last working set", "恢复上次的工作现场"))
                             .font(.system(size: 11, weight: .medium))
                         Spacer(minLength: 0)
@@ -557,7 +557,7 @@ struct MenuView: View {
                             // ↻ resumable · × transcript gone (won't resume). Color, not
                             // just glyph, matches the status language (green=ok, dim=gone).
                             Image(systemName: a.alive ? "arrow.clockwise" : "xmark")
-                                .font(.system(size: 8, weight: .semibold))
+                                .font(.system(size: 12, weight: .semibold))
                                 .foregroundStyle(a.alive ? Theme.Status.idle : p.fg3)
                             Text(a.label).font(.system(size: 10)).foregroundStyle(p.fg3)
                                 .lineLimit(1).truncationMode(.tail)
@@ -595,7 +595,7 @@ struct MenuView: View {
             HStack(spacing: 10) {
                 Button { onAction(.newSession) } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                        Image(systemName: "plus").font(.system(size: 12, weight: .semibold))
                         Text(l10n.tr("New session", "新建会话")).font(.system(size: 11, weight: .medium))
                     }.foregroundStyle(p.fg2)
                 }.buttonStyle(.plain).fixedSize()
@@ -611,12 +611,12 @@ struct MenuView: View {
                     Button { onAction(.preferences) } label: {
                         HStack(spacing: 3) {
                             if remote.remoteClients > 0 {
-                                Image(systemName: "iphone.radiowaves.left.and.right").font(.system(size: 9))
+                                Image(systemName: "iphone.radiowaves.left.and.right").font(.system(size: 12))
                                 if remote.remoteClients > 1 {
                                     Text("\(remote.remoteClients)").font(Theme.Font.footer)
                                 }
                             } else {
-                                Image(systemName: "globe").font(.system(size: 9))
+                                Image(systemName: "globe").font(.system(size: 12))
                                 Text(l10n.tr("Remote on", "远程开启")).font(Theme.Font.footer)
                             }
                         }
@@ -633,7 +633,7 @@ struct MenuView: View {
                     // neutral interactive tone, not a status color) + fixedSize so it
                     // can't clip the version. Tap opens Preferences to manage it.
                     Button { onAction(.preferences) } label: {
-                        Image(systemName: "keyboard").font(.system(size: 9)).foregroundStyle(p.fg2)
+                        Image(systemName: "keyboard").font(.system(size: 12)).foregroundStyle(p.fg2)
                     }.buttonStyle(.plain)
                         .help(l10n.tr("Shared input is on — a guest can type into allowed panes",
                                       "分享输入已开 —— 访客可向允许的 pane 输入"))
@@ -679,7 +679,7 @@ struct MenuView: View {
                     Text(l10n.tr("New version \(v) — click to update", "新版本 \(v) · 点此更新"))
                         .font(.system(size: 11.5, weight: .semibold))
                     Spacer(minLength: 4)
-                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
                 }
                 .foregroundStyle(.white)
                 .padding(.horizontal, 12).padding(.vertical, 7)
@@ -713,7 +713,7 @@ struct MenuView: View {
                         }
                     }
                     Spacer(minLength: 4)
-                    Image(systemName: "arrow.clockwise").font(.system(size: 10, weight: .semibold))
+                    Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .semibold))
                 }
                 .foregroundStyle(.white)
                 .padding(.horizontal, 12).padding(.vertical, 7)
@@ -817,7 +817,7 @@ private struct SectionHeader: View {
                 Text(collapsed ? l10n.tr("Show", "展开") : l10n.tr("Hide", "收起"))
                     .font(Theme.Font.footer).foregroundStyle(p.fg3)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 8, weight: .semibold)).foregroundStyle(p.fg3)
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg3)
                     .rotationEffect(.degrees(collapsed ? 0 : 90))
                     .animation(.easeInOut(duration: 0.15), value: collapsed)
             }
@@ -928,7 +928,7 @@ private struct WatchedHeader: View {
         VStack(spacing: 0) {
             Divider().overlay(p.divider).padding(.horizontal, 12).padding(.top, 6)
             HStack(spacing: 6) {
-                Image(systemName: "eye").font(.system(size: 9)).foregroundStyle(p.fg3)
+                Image(systemName: "eye").font(.system(size: 12)).foregroundStyle(p.fg3)
                 Text(l10n.tr("WATCHED", "关注")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
                 Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
                 Spacer()
@@ -962,8 +962,8 @@ private struct WatchedRowView: View {
             Spacer(minLength: 6)
             if hovering {
                 Button(action: onUnwatch) {
-                    Image(systemName: "xmark").font(.system(size: 9, weight: .semibold)).foregroundStyle(p.fg3)
-                        .frame(width: 18, height: 18).contentShape(Rectangle())
+                    Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg3)
+                        .frame(width: 22, height: 22).contentShape(Rectangle())
                 }.buttonStyle(.plain).help(l10n.tr("Stop watching this pane", "取消关注这个 pane"))
             }
         }
@@ -1024,8 +1024,8 @@ private struct AgentRowView: View {
                 if canReply, selected {
                     Button(action: onReply) {
                         HStack(spacing: 3) {
-                            Image(systemName: "arrowshape.turn.up.left.fill").font(.system(size: 8))
-                            Image(systemName: expanded ? "chevron.down" : "chevron.right").font(.system(size: 8, weight: .semibold))
+                            Image(systemName: "arrowshape.turn.up.left.fill").font(.system(size: 12))
+                            Image(systemName: expanded ? "chevron.down" : "chevron.right").font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundStyle(Theme.Status.waiting)
                         .padding(.horizontal, 5).padding(.vertical, 2)
@@ -1034,7 +1034,7 @@ private struct AgentRowView: View {
                     }.buttonStyle(.plain).help(l10n.tr("Reply here", "就地回应"))
                 } else {
                     Image(systemName: selected ? "return" : "chevron.right")
-                        .font(.system(size: 10, weight: .semibold)).foregroundStyle(p.fg3)
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg3)
                 }
             }
         }
@@ -1137,7 +1137,7 @@ struct WaitingReplyView: View {
     private func optionLabel(_ o: ReplyOption, _ p: Theme.Palette) -> some View {
         HStack(spacing: 8) {
             Text("\(o.n)").font(.system(size: 12, weight: .bold)).foregroundStyle(Theme.Status.waiting)
-                .frame(width: 18, height: 18)
+                .frame(width: 22, height: 22)
                 .background(RoundedRectangle(cornerRadius: 4).fill(Theme.Status.waiting.opacity(0.16)))
             Text(o.label).font(.system(size: 12)).foregroundStyle(p.fg)
                 .lineLimit(2).multilineTextAlignment(.leading).fixedSize(horizontal: false, vertical: true)
@@ -1167,30 +1167,6 @@ private struct VisualEffect: NSViewRepresentable {
         return v
     }
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
-
-/// ListContentHeight carries the agent list's measured content height up to the view that
-/// sizes it. A `ScrollView` cannot report an intrinsic height, so the content inside it
-/// has to say how tall it is for the popover to be able to grow to fit.
-private struct ListContentHeight: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
-
-/// ChromeHeight totals the popover's non-list parts — header + HQ card above, divider +
-/// footer below — so the list can be given exactly the room that is left.
-///
-/// It SUMS rather than maxes, unlike the list's own measurement: two separate groups
-/// report into this key and both occupy height. The reserve was a CONSTANT before, which
-/// could not track chrome that comes and goes with what is running — the HQ card only
-/// with a supervisor, the update banner only with an update.
-private struct ChromeHeight: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value += nextValue()
-    }
 }
 
 /// RootHeight is the whole panel's measured height — the number that actually has to fit

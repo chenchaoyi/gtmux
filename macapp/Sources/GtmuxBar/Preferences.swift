@@ -612,7 +612,7 @@ struct PreferencesView: View {
     private func permissionCell(icon: String, label: String, isOn: Binding<Bool>,
                                 disabled: Bool, help: String) -> some View {
         HStack(spacing: 4) {
-            Image(systemName: icon).font(.system(size: 11)).foregroundStyle(.secondary)
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(.secondary)
             Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
             Spacer(minLength: 6)
             Toggle("", isOn: isOn).labelsHidden().toggleStyle(.checkbox)
@@ -629,7 +629,7 @@ struct PreferencesView: View {
         Button { expanded.wrappedValue.toggle() } label: {
             HStack(spacing: 4) {
                 Image(systemName: expanded.wrappedValue ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
                     .frame(width: 10)
                 Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 Text("\(count)").font(.system(size: 10)).foregroundStyle(.tertiary)
@@ -672,10 +672,10 @@ struct PreferencesView: View {
                                 expandedLink = (expandedLink == g.id) ? "" : g.id
                             } label: {
                                 Image(systemName: expandedLink == g.id ? "chevron.down" : "chevron.right")
-                                    .font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
                                     .frame(width: 10)
                             }.buttonStyle(.plain)
-                            Image(systemName: "link").font(.system(size: 11))
+                            Image(systemName: "link").font(.system(size: 12))
                                 .foregroundStyle(.secondary).frame(width: 14)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
