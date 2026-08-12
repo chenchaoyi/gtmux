@@ -221,7 +221,7 @@ export function HQDisc({
             </View>
             <Text style={[styles.sheetBody, {color: pal.fg2}]}>
               {zh
-                ? 'HQ 是统观全舰队的参谋长会话——它盯着每个 agent、给你情报简报、在你授权的范围内替你分诊。现在它还没启动。'
+                ? 'HQ 是替你统观全局的参谋长会话。它盯着每个 agent，把该你知道的说给你听；你划定的范围内它自己就能处置，不必事事来问。现在还没启动。'
                 : 'HQ is the chief-of-staff session that watches your whole fleet — it keeps an eye on every agent, briefs you, and triages within the scope you allow. It isn’t running yet.'}
             </Text>
             <Text style={[styles.sheetHow, {color: pal.fg3}]}>
