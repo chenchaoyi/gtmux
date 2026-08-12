@@ -123,3 +123,42 @@ test('board freshness is shown, because an old assessment is worth less', () => 
   // No timestamp: label it plainly rather than claiming a freshness we don't have.
   expect(boardFreshness(undefined, now, false)).toBe('situation board');
 });
+
+// The verdict is the CORE's judgment; this page renders it. The two cases below are the
+// ones the local derivation could not see at all — the phone said "all normal" while the
+// menu bar, looking at the same fleet, said otherwise.
+describe('assessment renders the served verdict', () => {
+  const hq = (verdict?: DigestRow['verdict']): DigestRow => ({
+    agent: 'Claude Code', source: 'tmux', status: 'idle', role: 'supervisor', loc: 'hq:0.0', verdict,
+  });
+  const worker = (name: string, status = 'idle'): DigestRow => ({
+    agent: 'Claude Code', source: 'tmux', status, loc: `${name}:0.0`,
+  });
+
+  it('speaks on the machine being under pressure (was: "all normal")', () => {
+    const rows = [hq({state: 'resource', waiting: 0, workers: 2}), worker('api'), worker('web')];
+    expect(assessment(rows, false)).toBe('machine under pressure');
+    expect(assessment(rows, true)).toBe('机器资源紧张');
+  });
+
+  it("speaks on the supervisor's own call (was: \"all normal\")", () => {
+    const rows = [hq({state: 'hq_call', waiting: 0, workers: 2}), worker('api'), worker('web')];
+    expect(assessment(rows, false)).toBe('needs your call');
+    expect(assessment(rows, true)).toBe('请你拍板');
+  });
+
+  it('names the longest-waiting worker the core picked, not one it re-derives', () => {
+    const rows = [hq({state: 'needs_you', waiting: 1, first: 'oldest', workers: 3}), worker('recent', 'waiting')];
+    expect(assessment(rows, false)).toBe('oldest needs you · 2 others normal');
+  });
+
+  it('falls back to the local derivation when an older core sends no verdict', () => {
+    const rows = [hq(undefined), worker('api', 'waiting'), worker('web')];
+    expect(assessment(rows, false)).toBe('api needs you · 1 others normal');
+  });
+
+  it('a quiet fleet still reads as quiet', () => {
+    const rows = [hq({state: 'normal', waiting: 0, workers: 2}), worker('api'), worker('web')];
+    expect(assessment(rows, true)).toBe('都正常 · 无需你介入');
+  });
+});

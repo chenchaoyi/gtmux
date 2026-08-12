@@ -87,6 +87,22 @@ export interface DigestRow {
   ctx?: number;
   rate?: number;
   usage_warn?: string;
+  // The fleet-level judgment, present ONLY on the supervisor row. Decided in the core so
+  // every surface reads one conclusion — this page and the menu bar used to derive it
+  // separately and disagreed (a red machine read "all normal" here). Optional: an older
+  // core sends nothing and the local fallback still answers.
+  verdict?: HQVerdict;
+}
+
+// HQVerdict mirrors internal/radar HQVerdict. It carries no rendered sentence on
+// purpose: the wording is localized per surface, so only the JUDGMENT travels.
+export interface HQVerdict {
+  // Priority-ordered, and the order is the contract — do not re-derive it:
+  // hq_call > needs_you > resource > working > normal.
+  state: 'hq_call' | 'needs_you' | 'resource' | 'working' | 'normal';
+  waiting: number; // worker sessions blocked on you (the supervisor is never counted)
+  first?: string; // the worker that has waited longest
+  workers: number; // how many worker sessions exist at all
 }
 
 // HQBoard mirrors GET /api/hq/board (hq-command-page) — the supervisor's situation
