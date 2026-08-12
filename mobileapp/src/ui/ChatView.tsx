@@ -276,7 +276,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {!loading && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
-            ? '暂无对话历史。\n历史来自 agent 的会话记录（需已装 gtmux hooks）——开始对话后即会出现。切到「终端」可看当前屏幕。'
+            ? '暂无对话历史。\n历史来自 agent 的会话记录（需要装了 gtmux hooks），开始对话后就会出现。想看当前屏幕，切到「终端」。'
             : 'No conversation history yet.\nHistory comes from the agent’s session log (needs the gtmux hooks). It appears once you start talking. Switch to Terminal for the current screen.'}
         </Text>
       )}

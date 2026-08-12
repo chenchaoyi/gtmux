@@ -165,7 +165,7 @@ func doctorSections() []dsection {
 		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), terminalChecks()},
-		{i18n.Tr("Agents & notifications", "Agent 与通知"), agents},
+		{i18n.Tr("Agents & notifications", "agent 与通知"), agents},
 		// The menu-bar app is its own concern — install state + version + on-disk path.
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks()},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks()},
