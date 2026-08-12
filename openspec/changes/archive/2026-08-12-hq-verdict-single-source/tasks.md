@@ -32,6 +32,6 @@ compute, so every slice keeps a working fallback for an absent `hq` object.
 - [x] 3.1 DESIGN §12 / MOBILE §17: record that the verdict is core-decided and only the
       wording is local; keep the deliberate FORM difference (card vs disc) documented as
       deliberate, so a future reader does not "fix" it.
-- [ ] 3.2 Release note: the phone will now speak on HQ-call and resource states where it
-      used to say "all normal". (Rides the next mobile build.)
-- [ ] 3.3 Archive — after 3.2.
+- [x] 3.2 Release note: the phone will now speak on HQ-call and resource states where it
+      used to say "all normal". (Shipped: mobileapp/release-notes/0.50.0.{en,zh}.txt, in the 0.50.0 device build, #765.)
+- [x] 3.3 Archive — after 3.2.
