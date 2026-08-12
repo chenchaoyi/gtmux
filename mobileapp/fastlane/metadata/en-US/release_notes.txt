@@ -1,1 +1,5 @@
-• The HQ page now speaks up about two things it used to stay quiet on: when the supervisor itself needs a decision from you, and when the Mac is genuinely short of disk, memory or power. It reported "all normal — nothing needs you" in both cases, while the Mac's own menu bar said otherwise about the very same fleet at the very same moment. That verdict is now decided once, on the Mac, and this app renders it — so the two can no longer disagree.
+• The HQ page no longer says "all normal" when the supervisor itself needs you, or when the Mac is low on disk, memory or power.
+• Fewer false alarms: a session that only shows the words of a startup prompt is no longer reported as waiting on you.
+• A link the terminal wrapped onto two lines opens properly again.
+• A conversation cleared with /clear or /new explains itself instead of looking broken.
+• After an update the app tells you what changed, including the versions you skipped.

@@ -16,3 +16,21 @@ files per shipped version, and `src/releaseNotes.ts` is generated from the whole
 History before this archive existed lives only in App Store Connect; a user upgrading from
 one of those versions sees the notes from here onward, which is everything the app can
 honestly claim to know.
+
+## When a submission crosses several versions
+
+Most device builds are not submitted, so the App Store can sit several versions behind the
+archive — 0.50.0 was submitted while the store still showed 0.45.13, with 0.47.0, 0.48.1
+and 0.48.4 never having reached a store reader. In that case the STORE notes should cover
+everything since the last SUBMITTED version (a reader is deciding whether to update from
+what they have), while the archive keeps one entry per version, because the in-app popup
+already replays each skipped version and would otherwise say everything twice.
+
+So the two deliberately diverge for that release: write the multi-version text into
+`fastlane/metadata/*/release_notes.txt` and **do not re-run `set-version.sh`** — it would
+archive that text under the stamped version and duplicate it in the popup.
+
+⚠️ **The next stamp must overwrite the store notes first.** `set-version.sh` archives
+whatever is in that file at the time, so a stamp that reuses a multi-version text would
+file it under the wrong version. Writing the store notes before stamping is the normal
+flow anyway; this is only a reason not to skip it.
