@@ -72,6 +72,50 @@ final class PanelMetricsTests: XCTestCase {
                        "never zero — a zero-height popover is an invisible one")
     }
 
+    // MARK: the all-panes window
+
+    /// The browser opened at a fixed 620pt whatever was running. These numbers were read
+    /// off the machine with GTMUXBAR_DEBUG=1: title bar 32pt on a 1007pt usable height.
+    func testTheBrowserOpensAtTheHeightItsSessionsNeed() {
+        // 81 sessions / 240 panes want 10725pt — capped at what the display can hold,
+        // deliberately short of filling it (1007 − 32 title bar − 120 margin).
+        XCTAssertEqual(PanelMetrics.windowContentHeight(desired: 10725, visible: 1007, titleBar: 32), 855)
+        // 9 sessions / 22 panes (the real machine) want more than the display too.
+        XCTAssertEqual(PanelMetrics.windowContentHeight(desired: 1115, visible: 1007, titleBar: 32), 855)
+        // A handful of panes gets a window that is not a sliver.
+        XCTAssertEqual(PanelMetrics.windowContentHeight(desired: 368, visible: 1007, titleBar: 32),
+                       PanelMetrics.windowFloor)
+    }
+
+    /// A window in between is passed through — the point of the change is that the size
+    /// tracks the content instead of being one constant for every machine.
+    func testTheBrowserTracksItsContentInBetween() {
+        for wanted in stride(from: CGFloat(420), through: 840, by: 60) {
+            XCTAssertEqual(PanelMetrics.windowContentHeight(desired: wanted, visible: 1007, titleBar: 32),
+                           wanted, "content of \(wanted) should be honoured")
+        }
+    }
+
+    /// The window opens at the design width, never at the bare minimum it can be dragged
+    /// to. 480 vs 420 is the difference a hosting controller silently made.
+    func testTheBrowserOpensAtItsDesignWidth() {
+        XCTAssertEqual(PanelMetrics.browserWidth, 480)
+    }
+
+    /// It also leaves real room around itself: filling the display would read as taking
+    /// the screen over, and the list scrolls anyway.
+    func testTheBrowserLeavesTheDisplaySomeRoom() {
+        let h = PanelMetrics.windowContentHeight(desired: 9999, visible: 1007, titleBar: 32)
+        XCTAssertLessThanOrEqual(h + 32, 1007 - 100, "a window, not a takeover")
+    }
+
+    /// On a display too small to hold even the floor, the floor wins: the window is
+    /// resizable and a usable-but-too-tall window beats an unusable sliver.
+    func testTheBrowserFloorWinsOnATinyDisplay() {
+        XCTAssertEqual(PanelMetrics.windowContentHeight(desired: 900, visible: 380, titleBar: 32),
+                       PanelMetrics.windowFloor)
+    }
+
     // MARK: the off-screen repair
 
     // The measured display: 1728×1117, Dock 77pt, menu bar 33pt.

@@ -53,6 +53,57 @@ MUST NOT merge plain panes into the radar's default agent listing.
 - **THEN** the radar shows only agent panes (plus any opt-in watched panes), unchanged
   by the browser being available
 
+### Requirement: A browser session groups fold, and says what it holds when folded
+
+A browser SHALL group panes by session and let a user fold a group, remembering the
+choice across openings, with a control to fold or unfold every group at once. It
+SHALL also offer a text filter over session, window, command, title and directory.
+
+A folded group's header SHALL still carry its rollup — its pane count, its agent
+count, and a per-status count for each non-zero agent state, with waiting in the
+waiting color. Folding must not be able to hide the fact that something inside is
+waiting on the user; that is what the surface exists to answer.
+
+An agent-tier row SHALL show the agent's REAL status, joined from the radar by pane
+id, rather than identity alone. Surfaces SHALL agree on how a row is labelled: an
+agent row SHALL NOT fall back to the raw command before the radar join (a Claude 2.x
+pane's command is its version string), and a plain row whose title is only a
+filesystem path SHALL fall back to the command.
+
+#### Scenario: A folded session still reports a blocked agent
+
+- **WHEN** a session whose group is folded contains a pane waiting on the user
+- **THEN** its header shows the waiting count in the waiting color
+
+#### Scenario: The fold survives closing the browser
+
+- **WHEN** a user folds a session and closes the browser, then reopens it
+- **THEN** that session is still folded
+
+### Requirement: The browser opens at the size its sessions need
+
+A desktop browser window SHALL open at a height derived from its MEASURED content —
+its chrome plus the height its session list wants — bounded below so a small fleet
+still gets a usable window, and above by what the display can hold. A fixed height
+serves a machine with three sessions and one with eighty equally badly.
+
+Because the pane list is fetched asynchronously, the window SHALL keep fitting for a
+short interval after it is opened rather than sizing once on the first measurement,
+which lands before any panes have arrived. Once a user resizes the window themselves,
+the size is theirs and the app SHALL stop adjusting it.
+
+#### Scenario: A machine with many sessions
+
+- **WHEN** the browser is opened on a machine whose sessions need more room than the
+  display can give
+- **THEN** the window opens at the height the display allows and scrolls within it,
+  rather than at a fixed height that shows a fraction of them
+
+#### Scenario: The user takes over the size
+
+- **WHEN** a user has resized the browser window themselves
+- **THEN** reopening it keeps their size
+
 ### Requirement: Opt-in "watch this pane" promotion
 
 A user SHALL be able to explicitly promote a chosen plain pane so it appears on the

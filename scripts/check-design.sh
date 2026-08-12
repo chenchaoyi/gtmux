@@ -173,8 +173,46 @@ if [ -f "$APP_VER_TS" ] && [ -f "$HASH_SH" ]; then
   fi
 fi
 
+# N. Icon size floor (DESIGN §16). Icons kept coming out smaller than the text beside
+#    them — twenty-two sites at 8–11pt when this was written — so the floor is checked
+#    rather than remembered. It reads the DECLARED point size only: it cannot judge
+#    optical size, or whether an icon is large enough for its context. That stays a
+#    reviewer's call; this just stops the floor being crossed by habit.
+#    StatusBadge is exempt by design (§16.5) — it is a drawn shape, not an icon, and it
+#    is not an Image(systemName:), so it never matches here.
+#    It follows the MODIFIER CHAIN, not the line: a first version grepped single lines
+#    and so read `Image(systemName: "magnifyingglass")` followed by `.font(…size: 9…)`
+#    on the next line as compliant — a gate that is green whatever the code does.
+small_icons="$(find macapp/Sources -name '*.swift' -print0 2>/dev/null | xargs -0 awk '
+  # A SwiftUI modifier chain is the declaration plus the following lines that begin
+  # with a dot. Track one from each Image(systemName:) and report a size below 12.
+  /Image\(systemName:/ { chain = 1; start = FNR; buf = $0; next }
+  chain && /^[[:space:]]*\./ { buf = buf " " $0
+                               if (match(buf, /\.font\(\.system\(size: ([0-9]|1[01])[,)]/)) {
+                                 print FILENAME ":" start ":" buf; chain = 0
+                               }
+                               next }
+  { chain = 0 }
+' || true)"
+if [ -n "$small_icons" ]; then
+  note "icons below the DESIGN §16 floor of 12pt:"
+  echo "$small_icons" | sed 's/^/  /'
+  fail=1
+fi
+
+# N+1. A text CHARACTER used as an icon (DESIGN §16.1). Its ink has nothing to do with
+#      its point size — "⌕" at 13pt read smaller than the 12pt placeholder next to it.
+#      Each entry names what it should be instead.
+for pair in "⌕:magnifyingglass" "✕:xmark" "⚙:gearshape"; do
+  ch="${pair%%:*}"; sym="${pair##*:}"
+  if grep -rn "Text(\"$ch\")" macapp/Sources 2>/dev/null | grep -q .; then
+    note "DESIGN §16.1: '$ch' is a text character used as an icon — use Image(systemName: \"$sym\")"
+    fail=1
+  fi
+done
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; mobile release notes generated"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; mobile release notes generated"
 else
   exit 1
 fi

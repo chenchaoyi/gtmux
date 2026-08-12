@@ -281,7 +281,7 @@ struct PairingView: View {
     private func errorLine(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 5) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 10)).foregroundStyle(.orange)
+                .font(.system(size: 12)).foregroundStyle(.orange)
             Text(text)
                 .font(.system(size: 10)).foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
@@ -297,7 +297,7 @@ struct PairingView: View {
     private var refreshButton: some View {
         Button(action: reload) {
             HStack(spacing: 4) {
-                Image(systemName: "arrow.clockwise").font(.system(size: 10, weight: .semibold))
+                Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .semibold))
                 Text(l10n.tr("Refresh code", "刷新配对码")).font(.system(size: 11, weight: .medium))
             }
             .foregroundStyle(Color.accentColor)
@@ -309,7 +309,7 @@ struct PairingView: View {
 
     private var proHint: some View {
         HStack(spacing: 4) {
-            Image(systemName: "lock.fill").font(.system(size: 9))
+            Image(systemName: "lock.fill").font(.system(size: 12))
             Text(l10n.tr("“Anywhere” is a Pro feature", "“任意网络”为 Pro 功能"))
         }
         .font(.system(size: 10)).foregroundStyle(.tertiary)
@@ -366,7 +366,7 @@ struct PairingView: View {
 
     private func label(_ symbol: String, _ color: Color, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 5) {
-            Image(systemName: symbol).font(.system(size: 10)).foregroundStyle(color)
+            Image(systemName: symbol).font(.system(size: 12)).foregroundStyle(color)
             Text(text).font(.system(size: 11)).foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)

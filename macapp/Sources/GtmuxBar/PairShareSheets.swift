@@ -134,7 +134,7 @@ struct PairDeviceSheet: View {
     // is self-explanatory — Preferences is the management panel, this is the task flow.
     @ViewBuilder private var accessStatusBar: some View {
         HStack(spacing: 6) {
-            Image(systemName: "antenna.radiowaves.left.and.right").font(.system(size: 11))
+            Image(systemName: "antenna.radiowaves.left.and.right").font(.system(size: 12))
             Text(accessBarText).font(.system(size: 11, weight: .medium))
             Spacer(minLength: 0)
         }
