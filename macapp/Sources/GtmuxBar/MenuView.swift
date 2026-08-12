@@ -29,6 +29,7 @@ struct MenuView: View {
     @State private var selected = 0
     @State private var expanded: String? // paneID of the waiting row showing 1/2/3
     @State private var restoreExpanded = false // the footer restore row is showing its session list
+    @State private var contentHeight: CGFloat = 0 // measured height of the agent list (see listHeight)
     @FocusState private var rootFocused: Bool
     @FocusState private var searchFocused: Bool
     @Environment(\.colorScheme) private var scheme
@@ -325,9 +326,36 @@ struct MenuView: View {
                     }
                 }
                 .padding(.vertical, 4)
+                // Measure what the list actually WANTS to be, so the popover can grow to
+                // it. See listHeight for why maxHeight alone was not enough.
+                .background(GeometryReader { g in
+                    Color.clear.preference(key: ListContentHeight.self, value: g.size.height)
+                })
             }
-            .frame(maxHeight: listMaxHeight)
+            .frame(height: listHeight)
+            .onPreferenceChange(ListContentHeight.self) { h in
+                // Quantized to whole points and only on a real change: a preference that
+                // feeds back into the frame it measures can otherwise oscillate by
+                // sub-pixel amounts every layout pass.
+                let r = h.rounded()
+                if abs(r - contentHeight) >= 1 { contentHeight = r }
+            }
         }
+    }
+
+    /// The height the list is actually GIVEN.
+    ///
+    /// `.frame(maxHeight:)` alone left the popover showing three rows on a screen with
+    /// room for seventeen. A SwiftUI `ScrollView` has no intrinsic content height — it is
+    /// happy at any size — so inside an `NSHostingController` that sizes itself to fit, it
+    /// collapsed toward its minimum and the generous cap was never reached. A cap answers
+    /// "how tall may you be", and nothing was answering "how tall do you want to be".
+    ///
+    /// So the content measures itself and that measurement becomes the height, still
+    /// bounded by the cap. The popover now grows with the fleet: a handful of agents is a
+    /// short panel, a full fleet fills the available screen and only then scrolls.
+    private var listHeight: CGFloat {
+        min(max(contentHeight, 1), listMaxHeight)
     }
 
     /// Flattened list of section headers + agent rows, each with a stable id, so
@@ -1104,4 +1132,14 @@ private struct VisualEffect: NSViewRepresentable {
         return v
     }
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
+/// ListContentHeight carries the agent list's measured content height up to the view that
+/// sizes it. A `ScrollView` cannot report an intrinsic height, so the content inside it
+/// has to say how tall it is for the popover to be able to grow to fit.
+private struct ListContentHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
 }
