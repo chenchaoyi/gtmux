@@ -1,1 +1,11 @@
 • The HQ page now speaks up about two things it used to stay quiet on: when the supervisor itself needs a decision from you, and when the Mac is genuinely short of disk, memory or power. It reported "all normal — nothing needs you" in both cases, while the Mac's own menu bar said otherwise about the very same fleet at the very same moment. That verdict is now decided once, on the Mac, and this app renders it — so the two can no longer disagree.
+
+Also since 0.45.13, the last update to reach the App Store:
+
+• After an update the app tells you what changed — every version you skipped, not just the latest one. Read it again any time from Settings.
+• A link the terminal had to wrap onto a second line is one link again. A long URL used to be cut where the row ended, so only the first fragment was tappable: it opened a host that did not exist while the real address sat below it as plain text.
+• A conversation that looks empty now explains itself. A session started over with /clear or /new says which moment it begins from and points at Activity for the record from before, instead of reading as a broken app.
+• Fewer false alarms in the radar: a session that merely SHOWS the words of a startup prompt — because you were reading or discussing them — is no longer reported as an agent stuck waiting for you.
+• Diff appears only where it can work: a pane sitting in a git repository offers it, and one outside a repository no longer shows a control that could only fail.
+• Numbered lists in a reply are numbered again — 1, 2, 3 rather than 1, 1, 1. An item's wrapped text used to break the list apart.
+• Landscape: the exit-full-screen button no longer covers the first line, content stays clear of the notch, and a phone keeps its single-column layout instead of borrowing the iPad's.
