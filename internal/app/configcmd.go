@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
@@ -24,6 +25,8 @@ func cmdConfig(args []string) int {
 	switch args[0] {
 	case "agent-proxy":
 		return configAgentProxy(args[1:])
+	case "tab-alert":
+		return configTabAlert(args[1:])
 	default:
 		i18n.Sae("gtmux config: unknown key '"+args[0]+"'", "gtmux config: 未知配置项 '"+args[0]+"'")
 		return configUsage()
@@ -83,10 +86,66 @@ func configUsage() int {
 		"usage: gtmux config agent-proxy [<url>|off]\n"+
 			"  <url>  HTTP(S) proxy to apply when gtmux launches an agent (e.g. http://127.0.0.1:PORT)\n"+
 			"  off    no proxy — launch bare (the default when unset)\n"+
-			"  (no value shows the current resolved proxy; env GTMUX_AGENT_PROXY overrides)",
+			"  (no value shows the current resolved proxy; env GTMUX_AGENT_PROXY overrides)\n"+
+			"\nusage: gtmux config tab-alert [on|off]\n"+
+			"  on   mark the terminal TAB of a session that has an agent waiting on you (default off)\n"+
+			"  off  restore your own title format\n"+
+			"  (only waiting marks; working/idle never do — marking everything marks nothing)",
 		"用法：gtmux config agent-proxy [<url>|off]\n"+
 			"  <url>  起 agent 时应用的 HTTP(S) 代理（如 http://127.0.0.1:端口）\n"+
 			"  off    不加代理，裸起（未设时的默认）\n"+
-			"  （不带值则显示当前生效值;环境变量 GTMUX_AGENT_PROXY 优先）")
+			"  （不带值则显示当前生效值;环境变量 GTMUX_AGENT_PROXY 优先）\n"+
+			"\n用法：gtmux config tab-alert [on|off]\n"+
+			"  on   有 agent 在等你的 session，其终端标签标上 "+tabalert.Marker+"（默认关）\n"+
+			"  off  还原你原来的标题格式\n"+
+			"  （只标 waiting;working/idle 从不标 —— 全标就等于全不标）")
 	return 0
+}
+
+// configTabAlert turns the terminal-tab attention marker on or off.
+//
+// It is OFF by default and must stay that way: enabling rewrites `set-titles-string`,
+// which is the user's own tmux configuration. gtmux PREPENDS to whatever is there and
+// stores the original, so disabling restores exactly what it found — and it refuses to
+// restore over a format the user has edited since, because overwriting their edit with a
+// stale snapshot is worse than leaving a prefix they can delete.
+func configTabAlert(args []string) int {
+	if len(args) == 0 {
+		if tabalert.Enabled() {
+			i18n.Say("tab-alert = on — a tab whose session has an agent waiting shows "+tabalert.Marker,
+				"tab-alert = on —— 有 agent 在等你的 session，其终端标签会显示 "+tabalert.Marker)
+		} else {
+			i18n.Say("tab-alert = off", "tab-alert = off")
+		}
+		return 0
+	}
+	switch strings.TrimSpace(args[0]) {
+	case "on":
+		if err := tabalert.Enable(); err != nil {
+			i18n.Sae("gtmux config tab-alert: "+err.Error(), "gtmux config tab-alert: "+err.Error())
+			return 1
+		}
+		tabalert.Reconcile()
+		i18n.Say("tab-alert on — your title format was kept, the marker only goes in front of it",
+			"tab-alert 已开 —— 你原来的标题格式保留，标记只加在它前面")
+		return 0
+	case "off":
+		restored, err := tabalert.Disable()
+		if err != nil {
+			i18n.Sae("gtmux config tab-alert: "+err.Error(), "gtmux config tab-alert: "+err.Error())
+			return 1
+		}
+		if !restored {
+			i18n.Sae("gtmux config tab-alert: the title format is not the one gtmux installed — left untouched",
+				"gtmux config tab-alert: 当前标题格式不是 gtmux 装的那个 —— 未改动")
+			return 1
+		}
+		i18n.Say("tab-alert off — your original title format is back",
+			"tab-alert 已关 —— 你原来的标题格式已还原")
+		return 0
+	default:
+		i18n.Sae("gtmux config tab-alert: value must be 'on' or 'off'",
+			"gtmux config tab-alert: 取值须为 on 或 off")
+		return 2
+	}
 }

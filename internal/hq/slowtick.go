@@ -24,6 +24,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -50,6 +51,10 @@ func SlowTickEval() {
 	lr, _ := limits.Get(limits.LoadConfig(), false, time.Now())
 	nudgeOnChange("limitswarn", limitsTierKey(lr.Warn),
 		hqwake.Line(hqwake.ClassLimitsWarn, "", lr.Warn), "")
+	// Terminal-tab attention marker: the BACKSTOP. The hook updates it instantly on a
+	// waiting transition; this catches a pane whose event never landed, a session created
+	// since, and a marker left behind by a pane that is gone. No-op when the feature is off.
+	tabalert.Reconcile()
 	// Lifecycle watchdog (charter M5): escalate a pane stuck waiting past the timeout.
 	watchdogSweep(time.Now().Unix())
 	// Stuck-dispatch (stuck-dispatch-waiting): a dispatched worker blocked BEFORE running

@@ -267,3 +267,62 @@ func attendedFrom(lines []string, pane string) bool {
 	}
 	return false
 }
+
+// ── options (tabalert) ────────────────────────────────────────────────────────
+//
+// gtmux writes tmux OPTIONS in exactly one place: the terminal-tab attention marker.
+// Everything else it does is read-only or goes through send-keys, so these helpers are
+// deliberately narrow — a global getter/setter for the one title-format option, and
+// per-session get/set/unset for the one user option the format interpolates.
+
+// ShowGlobalOption returns a global option's value, "" when unset or on error. The value
+// comes back quoted by tmux (`set-titles-string "#S — #W"`), so the quotes are stripped.
+func ShowGlobalOption(name string) string {
+	out, err := Run("show-options", "-gv", name)
+	if err != nil {
+		return ""
+	}
+	return strings.Trim(strings.TrimSpace(out), `"`)
+}
+
+// SetGlobalOption sets a global option. This is a WRITE to the user's tmux.
+func SetGlobalOption(name, value string) error {
+	_, err := Run("set-option", "-g", name, value)
+	return err
+}
+
+// ShowSessionOption returns a session-scoped option's value ("" when unset).
+func ShowSessionOption(session, name string) string {
+	out, err := Run("show-options", "-t", session, "-qv", name)
+	if err != nil {
+		return ""
+	}
+	return strings.Trim(strings.TrimSpace(out), `"`)
+}
+
+// SetSessionOption sets a session-scoped option. This is a WRITE.
+func SetSessionOption(session, name, value string) error {
+	_, err := Run("set-option", "-t", session, name, value)
+	return err
+}
+
+// UnsetSessionOption removes a session-scoped option. This is a WRITE.
+func UnsetSessionOption(session, name string) error {
+	_, err := Run("set-option", "-t", session, "-u", name)
+	return err
+}
+
+// SessionNames lists every tmux session name (empty when no server is running).
+func SessionNames() []string {
+	out, err := Run("list-sessions", "-F", "#{session_name}")
+	if err != nil {
+		return nil
+	}
+	var names []string
+	for _, l := range strings.Split(out, "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			names = append(names, l)
+		}
+	}
+	return names
+}
