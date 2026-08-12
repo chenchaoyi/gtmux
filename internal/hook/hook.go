@@ -28,6 +28,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -638,6 +639,13 @@ func Run(stdin io.Reader, args []string) int {
 		// radar + notification can say what's actually needed.
 		if d.setWaiting {
 			_ = state.WriteMarker(state.WaitingPath(pane), string(waitKind))
+		}
+		// Terminal-tab attention marker (tabalert): the FAST path. A tab that should say
+		// "someone here is blocked" says it the moment the agent's own event lands, not on
+		// the next tick. The slow tick reconciles as a backstop for a missed event — the
+		// same hook-fast / tick-backstop shape the rest of gtmux uses.
+		if d.setWaiting || d.clearWaiting {
+			tabalert.Reconcile()
 		}
 		// Background-work modifier: on Stop, record whether the settled turn still
 		// has in-flight background work (Claude's background_tasks) so the radar can

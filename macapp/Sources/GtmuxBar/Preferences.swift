@@ -31,6 +31,10 @@ struct PreferencesView: View {
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject var serverMode = ServerModeStore.shared
     @State private var showServerModeConfirm = false
+    // tab-alert lives in tmux, not in defaults — read once when the pane appears and
+    // after every write, so the switch reflects what tmux actually has.
+    @State private var tabAlertOn = false
+    @State private var tabAlertBusy = false
     @ObservedObject var ent = Entitlements.shared
     @ObservedObject var updater = Updater.shared
     @ObservedObject var share = ShareStore.shared
@@ -149,6 +153,21 @@ struct PreferencesView: View {
                 Toggle(isOn: $settings.notifications) {
                     prefLabel("Notify when an agent waits / finishes", "agent 开始等你 / 完成时提醒", symbol: "bell")
                 }
+                // Terminal-tab marker. NOT backed by UserDefaults like its neighbours:
+                // the truth lives in tmux's own `set-titles-string`, so the CLI is both
+                // the reader and the writer. A defaults-backed mirror would be a second
+                // opinion about the same fact, and the two would drift the moment the
+                // user ran `gtmux config tab-alert` in a shell.
+                Toggle(isOn: Binding(
+                    get: { tabAlertOn },
+                    set: { setTabAlert($0) })) {
+                    prefLabel("Mark the terminal tab when an agent waits",
+                              "有 agent 在等你时，标记其终端标签", symbol: "macwindow.badge.plus")
+                }
+                .disabled(tabAlertBusy)
+                Text(l10n.tr("Adds a ● in front of that session's tab title. Your own title format is kept, and turning this off restores it.",
+                             "在该 session 的标签标题前加一个 ●。你原来的标题格式会保留，关闭即还原。"))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
             }
 
             // Server mode: a property of THIS MACHINE (does it stay awake), not of who
@@ -251,7 +270,7 @@ struct PreferencesView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 640)
-        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh() }
+        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh(); refreshTabAlert() }
         .sheet(isPresented: $showPairSheet) {
             PairDeviceSheet(l10n: l10n) { showPairSheet = false; pairStore.refresh() }
         }
@@ -844,6 +863,38 @@ struct PreferencesView: View {
             remote.enableAnywhere()
         } else {
             remote.objectWillChange.send() // snap the picker back
+        }
+    }
+}
+
+// MARK: tab-alert (terminal-tab attention marker)
+//
+// The state lives in tmux's own `set-titles-string`, so the CLI is the single reader and
+// writer. `gtmux config tab-alert` prints a line that BEGINS with a stable token in both
+// languages — `tab-alert = on` / `tab-alert = off` — which is what this parses; the prose
+// after it is localized and deliberately not depended on.
+extension PreferencesView {
+    var tabAlertQueryOn: Bool {
+        guard let out = GtmuxCLI.capture(["config", "tab-alert"]),
+              let s = String(data: out, encoding: .utf8) else { return false }
+        return s.hasPrefix("tab-alert = on")
+    }
+
+    func refreshTabAlert() { tabAlertOn = tabAlertQueryOn }
+
+    /// Writes through the CLI, then RE-READS rather than trusting the write. Enabling can
+    /// legitimately fail (no tmux server) and disabling deliberately refuses when the user
+    /// has edited the title format since — in both cases the switch must show what tmux
+    /// has, not what was asked for.
+    func setTabAlert(_ on: Bool) {
+        tabAlertBusy = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = GtmuxCLI.capture(["config", "tab-alert", on ? "on" : "off"])
+            let actual = tabAlertQueryOn
+            DispatchQueue.main.async {
+                tabAlertOn = actual
+                tabAlertBusy = false
+            }
         }
     }
 }

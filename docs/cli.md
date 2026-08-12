@@ -1079,6 +1079,37 @@ A release with no `user:` block contributes nothing — deliberately. A version 
 nothing changed for users should say nothing, rather than paraphrasing a commit subject
 into developer vocabulary.
 
+## `gtmux config` — the few settings that are not per-run flags
+
+```
+gtmux config agent-proxy [<url>|off]   # proxy applied when gtmux LAUNCHES an agent
+gtmux config tab-alert  [on|off]       # mark the terminal TAB of a session that needs you
+```
+
+Both print their current value when called with no argument.
+
+### `tab-alert` — find the right tab without opening nine of them
+
+With one tmux session per terminal tab, every tab is titled alike and the only way to
+learn which agent is blocked on you is to visit each one. `tab-alert on` puts a **●** in
+front of the tab title of any session that has an agent waiting.
+
+- **Only `waiting` marks.** `working` and `idle` never do. A marker that appears on most
+  tabs most of the time is one nobody reads — the same reason red is reserved for
+  decisions.
+- **Terminal-agnostic.** tmux renders the title and pushes it to the terminal, which just
+  displays it, so this works on Ghostty, iTerm2, Warp, Apple Terminal alike. It is a
+  GLYPH, not a colour: a coloured tab is a per-terminal capability and would not travel.
+- **Your title format is kept.** Enabling reads your `set-titles-string`, stores it, and
+  prepends only its own field; `off` restores exactly what it found. If you have edited
+  the format since, `off` REFUSES rather than overwrite your edit with a stale snapshot —
+  delete the leading `#{@gtmux_alert}` yourself in that case.
+- **Driven by the agents' own hook events**, not by reading screens: a waiting marker
+  lands the instant the agent reports it, and the serve tick reconciles as a backstop.
+  The supervisor is not in this loop — it is a mechanical projection of state gtmux
+  already has, not a judgment.
+- Also switchable in the menu-bar app's **Preferences → Notifications**.
+
 ## tmux integration
 
 gtmux is just a CLI — bind whatever keys you like in `tmux.conf`. Suggested:
