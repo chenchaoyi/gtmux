@@ -1,6 +1,13 @@
 # Tasks — mobile-send-receipt-first
 
-Status: PROPOSED (not started). Sequenced so each slice ships value on its own.
+Status: PROPOSED (not started), and DEPRIORITIZED 2026-08-11 — the symptom it was
+written against has been absent since #692 / #697 / #703 closed three specific scrape
+defects (serve.log through 2026-08-10 has zero send failures). The architecture is
+unchanged, so this is now insurance against the next agent-version drift rather than a
+live fix. See the proposal's "Evidence update" section before scheduling it.
+
+Sequenced so each slice ships value on its own — §1 is the standalone hedge if only one
+slice is ever done.
 
 ## 1. Demote the scrape to a pre-check; stop hard-failing a working pane
 
