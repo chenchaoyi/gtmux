@@ -20,12 +20,15 @@ import {Debug} from '../debug';
 import {useApp} from '../state/AppContext';
 import {DemoAgentsProvider} from '../state/AgentsContext';
 import {HQDisc} from '../ui/HQDisc';
+import {PanesIcon} from '../ui/Icons';
+import {RadarSummary} from '../ui/RadarSummary';
 import {SectionList} from '../ui/SectionList';
-import {StatusColor} from '../ui/theme';
+import {StatusColor, counts} from '../ui/theme';
 import {sampleAgents} from '../ui/demoData';
 import {makeDemoClient} from '../ui/demoClient';
 import {DetailView} from './DetailScreen';
 import {HQScreen} from './HQScreen';
+import {PaneBrowserScreen} from './PaneBrowserScreen';
 
 export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => void}) {
   const {pal, lang} = useApp();
@@ -35,6 +38,8 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
   const client = useMemo(() => makeDemoClient(lang === 'zh' ? 'zh' : 'en', setAgents), [lang]);
   const [selected, setSelected] = useState<Agent | null>(null);
   const [showHQ, setShowHQ] = useState(false);
+  const [showPanes, setShowPanes] = useState(false);
+  const [waitingOnly, setWaitingOnly] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
   const onToggle = (s: SectionKey) =>
     setCollapsed(prev => {
@@ -49,6 +54,14 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
     <View>
       {/* The demo-data banner is hidden in SHOT_MODE (clean App Store captures) — it is
           always shown in the shipped demo mode, which App Review requires. */}
+      <RadarSummary
+        c={counts(agents)}
+        agentsWord={lang === 'zh' ? '个 agent' : 'agents'}
+        lang={lang}
+        pal={pal}
+        waitingOnly={waitingOnly}
+        onToggleWaitingOnly={() => setWaitingOnly(v => !v)}
+      />
       {!Debug.shotMode && (
         <View style={styles.banner}>
           <View style={[styles.pill, {borderColor: StatusColor.working}]}>
@@ -72,9 +85,21 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
     },
   };
 
+  // The browser's own nav shim: back closes it, a row opens that pane's demo detail.
+  const panesNav = {
+    goBack: () => setShowPanes(false),
+    navigate: (_screen: string, params?: any) => {
+      setShowPanes(false);
+      if (params?.agent) setSelected(params.agent);
+    },
+  };
+
   return (
     <DemoAgentsProvider client={client} agents={agents}>
-      {showHQ && hq ? (
+      {showPanes ? (
+        // The REAL All-panes browser over the fake client (demoClient.panes()).
+        <PaneBrowserScreen navigation={panesNav} />
+      ) : showHQ && hq ? (
         // The REAL HQ command center over the canned digest (DEMO chip via context).
         <HQScreen route={{params: {agent: hq}}} navigation={hqNav} />
       ) : selected ? (
@@ -84,6 +109,16 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
         <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
           <View style={styles.topbar}>
             <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '演示' : 'Demo'}</Text>
+            <View style={styles.topbarRight}>
+              {/* Reaching ANY pane — not just the agent ones — is its own pillar
+                  (tiered-pane-control). The tour had no entry to it at all. */}
+              <TouchableOpacity
+                onPress={() => setShowPanes(true)}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                accessibilityRole="button"
+                accessibilityLabel={lang === 'zh' ? '所有 pane' : 'All panes'}>
+                <PanesIcon size={19} color={pal.fg2} />
+              </TouchableOpacity>
             <TouchableOpacity
               onPress={onExit}
               hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
@@ -91,10 +126,11 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
               accessibilityLabel={lang === 'zh' ? '关闭演示' : 'Close demo'}>
               <Text style={[styles.close, {color: pal.fg3}]}>✕</Text>
             </TouchableOpacity>
+            </View>
           </View>
 
           <SectionList
-            agents={agents}
+            agents={waitingOnly ? agents.filter(a => a.status === 'waiting') : agents}
             pal={pal}
             lang={lang}
             onPressAgent={a => a.source !== 'native' && setSelected(a)}
@@ -131,6 +167,7 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
 
 const styles = StyleSheet.create({
   safe: {flex: 1},
+  topbarRight: {flexDirection: 'row', alignItems: 'center', gap: 16},
   topbar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12},
   title: {fontSize: 22, fontWeight: '700'},
   close: {fontSize: 20, fontWeight: '400'},
