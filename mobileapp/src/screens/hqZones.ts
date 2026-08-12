@@ -44,10 +44,50 @@ export function windowNo(row: DigestRow): string {
   return wp ? wp.split('.')[0] : '';
 }
 
-// assessment is the page's headline: the deterministic chief-of-staff conclusion. It is
-// single-source in SPIRIT with the HQ card's fleetHeadline (same rule, digest rows rather
-// than agent rows), so the card you tapped and the page you land on cannot disagree.
+// assessment is the page's headline: the deterministic chief-of-staff conclusion.
+//
+// It RENDERS the core's verdict rather than deriving one. "Single-source in spirit" is
+// what this used to claim, and spirit was not enough: deriving it here meant considering
+// only the rows this page displays, so the supervisor's OWN waiting state and the
+// machine's resource tier were both invisible to it. On a machine at its red tier the
+// menu bar said "machine under pressure" while this line said "all normal — nothing needs
+// you", about one fleet at one moment.
+//
+// The wording stays local because the reader's language is a device setting; only the
+// judgment travels (see HQVerdict). An older core sends no verdict, so the previous local
+// derivation remains as the fallback — it is incomplete, not wrong.
 export function assessment(digest: DigestRow[], zh: boolean): string {
+  const v = digest.find(r => r.role === 'supervisor')?.verdict;
+  if (v) return verdictSentence(v, zh);
+  return localAssessment(digest, zh);
+}
+
+// verdictSentence writes the core's verdict in the reader's language.
+export function verdictSentence(v: NonNullable<DigestRow['verdict']>, zh: boolean): string {
+  switch (v.state) {
+    case 'hq_call':
+      return zh ? '请你拍板' : 'needs your call';
+    case 'needs_you': {
+      const name = v.first ?? '';
+      if (v.waiting > 1) return zh ? `${v.waiting} 个会话在等你拍板` : `${v.waiting} sessions need you`;
+      const rest = Math.max(0, v.workers - 1);
+      if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} others normal`;
+      return zh ? `${name} 在等你拍板` : `${name} needs you`;
+    }
+    case 'resource':
+      // Cause-agnostic: the red tier can be disk, memory, load or a draining battery.
+      return zh ? '机器资源紧张' : 'machine under pressure';
+    case 'working':
+    case 'normal':
+    default:
+      if (v.workers === 0) return zh ? '暂无其它 agent 会话' : 'no other agent sessions';
+      return zh ? '都正常 · 无需你介入' : 'all normal — nothing needs you';
+  }
+}
+
+// localAssessment is the pre-verdict derivation, kept for an older core. It cannot see
+// the supervisor's own state or the machine's, which is exactly why the verdict moved.
+function localAssessment(digest: DigestRow[], zh: boolean): string {
   const workers = workerRows(digest);
   const waiting = decisions(digest);
   if (workers.length === 0) return zh ? '暂无其它 agent 会话' : 'no other agent sessions';

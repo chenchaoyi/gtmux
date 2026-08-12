@@ -317,8 +317,28 @@ tier as `sense` (`driver` | `partial` | `screen`, additive + omitempty —
 agent-drivers): how much of the row rests on the agent's structured interfaces
 versus pure screen inference.
 
+The SUPERVISOR row (`role:"supervisor"`) additionally carries `verdict` — the fleet-level
+judgment, decided ONCE in the core so every surface reads the same conclusion:
+
+| field | meaning |
+| --- | --- |
+| `state` | priority-ordered, and the ORDER is part of the contract: `hq_call` (the supervisor itself is waiting on you) > `needs_you` (≥1 worker waiting) > `resource` (machine at its critical tier) > `working` > `normal`. A consumer MUST NOT re-order it. |
+| `waiting` | how many WORKER sessions are blocked on you (the supervisor is never counted — its own wait is `hq_call`) |
+| `first` | the worker that has waited LONGEST, so a one-waiter sentence can name it; absent when nobody waits |
+| `workers` | how many worker sessions exist at all, so a surface can say "N others normal" without recounting rows it may have filtered differently |
+
+It carries **no rendered sentence, by design**: a headline is user-facing prose and each
+surface owns its own language state (the phone has a follow-system/EN/中文 toggle; serve
+has a single `GTMUX_LANG`), so a pre-rendered string would silently override a reader's
+language choice. Decide centrally, render at the edge.
+
+There is no `absent` state — the ABSENCE of a supervisor row is that state. `verdict` is
+additive + `omitempty`, so a consumer built against an older core is unaffected and a
+consumer that wants it must keep a local fallback for when it is missing.
+
 ```
-200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"}, …]
+200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"},
+     {"pane_id":"%4","loc":"hq:0.0","agent":"Claude Code","role":"supervisor","status":"idle","verdict":{"state":"needs_you","waiting":1,"first":"api","workers":3}}, …]
 403 {"error":"forbidden: not shared"}   // guest scope
 503 {"error":"digest unavailable"}      // DigestJSON dep not wired
 ```

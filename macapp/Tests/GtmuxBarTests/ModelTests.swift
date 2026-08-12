@@ -181,6 +181,29 @@ final class ModelTests: XCTestCase {
     /// The resolver is the SAME six-state priority as the mobile `discState`: HQ's own
     /// call > a worker waiting > a resource bottleneck > working > normal; absent when no
     /// supervisor. A rename of a state or a reordering here silently desyncs the surfaces.
+    /// CONFORMANCE with the core (hq-verdict-single-source). The fleet verdict is decided
+    /// in Go — `internal/radar.hqVerdict`, pinned by `TestHQVerdict_Priority` — and served
+    /// on the digest's supervisor row, which is what the phone renders.
+    ///
+    /// The menu bar still resolves locally, deliberately: it polls `agents --json` on a
+    /// fast tick, the verdict rides the DIGEST, and sampling the machine on every fast
+    /// tick is exactly the cost its separate slow resource timer exists to avoid. Its
+    /// answer must therefore MATCH the core's, case for case — that is what this test is.
+    /// If the Go ordering ever changes, this goes red and the two cannot drift apart in
+    /// silence, which is how the phone came to disagree with this surface in the first
+    /// place.
+    func testHQStateMatchesCoreVerdictOrdering() {
+        // Same eight cases as internal/radar/hqverdict_test.go, same order.
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 0, resourceCritical: false), .normal)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("working"), waiting: 0, resourceCritical: false), .working)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 1, resourceCritical: false), .needsYou)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("waiting"), waiting: 0, resourceCritical: false), .hqCall)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 0, resourceCritical: true), .resource)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("waiting"), waiting: 1, resourceCritical: false), .hqCall)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("idle"), waiting: 1, resourceCritical: true), .needsYou)
+        XCTAssertEqual(AgentStore.hqState(supervisor: sup("working"), waiting: 0, resourceCritical: true), .resource)
+    }
+
     func testHQStateResolverPriority() {
         XCTAssertEqual(AgentStore.hqState(supervisor: nil, waiting: 0, resourceCritical: false), .absent)
         XCTAssertEqual(AgentStore.hqState(supervisor: sup("waiting"), waiting: 3, resourceCritical: true), .hqCall)

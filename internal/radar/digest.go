@@ -21,6 +21,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -31,18 +32,24 @@ import (
 // DigestRow is one agent's digest — the JSON contract for `gtmux digest --json`
 // and GET /api/digest. Additive to (not a replacement for) `agents --json`.
 type DigestRow struct {
-	PaneID  string `json:"pane_id,omitempty"` // tmux rows only
-	Loc     string `json:"loc,omitempty"`
-	Agent   string `json:"agent"`
-	Source  string `json:"source"`         // "tmux" | "native"
-	Status  string `json:"status"`         // working | waiting | idle | running
-	Kind    string `json:"kind,omitempty"` // waiting only: permission | plan | question
-	Role    string `json:"role,omitempty"` // "supervisor" for the hq session
-	Project string `json:"project,omitempty"`
-	Branch  string `json:"branch,omitempty"`
-	Goal    string `json:"goal,omitempty"` // the session's last user prompt
-	Last    string `json:"last,omitempty"` // tail of the last assistant reply
-	Ask     string `json:"ask,omitempty"`  // waiting only: the parsed prompt options
+	PaneID string `json:"pane_id,omitempty"` // tmux rows only
+	Loc    string `json:"loc,omitempty"`
+	Agent  string `json:"agent"`
+	Source string `json:"source"`         // "tmux" | "native"
+	Status string `json:"status"`         // working | waiting | idle | running
+	Kind   string `json:"kind,omitempty"` // waiting only: permission | plan | question
+	Role   string `json:"role,omitempty"` // "supervisor" for the hq session
+	// Verdict is the FLEET-LEVEL judgment, present ONLY on the supervisor row (hq-verdict-
+	// single-source). Every surface used to derive this for itself, and they diverged: on
+	// a machine at its red resource tier the menu bar said "machine under pressure" while
+	// the phone's HQ page said "all normal — nothing needs you", about the same fleet at
+	// the same moment. The judgment is decided here now; only the WORDING stays local.
+	Verdict *HQVerdict `json:"verdict,omitempty"`
+	Project string     `json:"project,omitempty"`
+	Branch  string     `json:"branch,omitempty"`
+	Goal    string     `json:"goal,omitempty"` // the session's last user prompt
+	Last    string     `json:"last,omitempty"` // tail of the last assistant reply
+	Ask     string     `json:"ask,omitempty"`  // waiting only: the parsed prompt options
 	// Dispatch ledger (hq-dispatch): a pane dispatched by `gtmux spawn` carries its
 	// task goal + lifecycle status. Additive + omitempty — absent for untracked panes.
 	Task       string `json:"task,omitempty"`
@@ -131,6 +138,95 @@ func sessionRef(p Pane) (agentKey, sessionID string) {
 
 // GatherDigest assembles the digest rows over the current radar (same ordering:
 // needs-you first). Pure joins; no LLM, no new persistence.
+// HQVerdict is the supervisor's overall read of the fleet: WHICH state, plus the facts a
+// surface needs to write a sentence about it.
+//
+// It deliberately carries no rendered text. A headline is user-facing prose and each
+// surface owns its own language state — the phone has a follow-system/EN/中文 toggle while
+// serve has a single GTMUX_LANG — so shipping a pre-rendered string would silently
+// override a reader's language choice. Decide centrally, render at the edge.
+//
+// There is no "absent" state: the absence of a supervisor row IS that state, which every
+// surface already reads correctly.
+type HQVerdict struct {
+	// State is priority-ordered and the ordering is part of the contract:
+	// hq_call > needs_you > resource > working > normal.
+	State string `json:"state"`
+	// Waiting is how many WORKER sessions are blocked on the user (the supervisor is not
+	// counted — its own wait is the hq_call state).
+	Waiting int `json:"waiting"`
+	// First names the worker that has waited LONGEST, so a one-waiter sentence can name
+	// it; "" when nobody is waiting.
+	First string `json:"first,omitempty"`
+	// Workers is how many worker sessions exist at all, so a surface can say "N others
+	// normal" without recounting rows it may have filtered differently.
+	Workers int `json:"workers"`
+}
+
+// HQ verdict states. Exported so a surface's tests can reference them by name.
+const (
+	VerdictHQCall   = "hq_call"   // the supervisor itself is waiting on the user
+	VerdictNeedsYou = "needs_you" // one or more workers are waiting on the user
+	VerdictResource = "resource"  // the machine is at its critical tier
+	VerdictWorking  = "working"   // the supervisor is mid-turn
+	VerdictNormal   = "normal"    // a quiet fleet
+)
+
+// hqVerdict is the pure resolver (no clock, no shell) — the single ordering every surface
+// now reads. resourceCritical is passed in rather than sampled here so the decision stays
+// testable and the sampling stays on one, cheap path.
+func hqVerdict(rows []DigestRow, resourceCritical bool) *HQVerdict {
+	var hq *DigestRow
+	var workers []DigestRow
+	for i := range rows {
+		if rows[i].Role == "supervisor" {
+			hq = &rows[i]
+			continue
+		}
+		workers = append(workers, rows[i])
+	}
+	if hq == nil {
+		return nil // no supervisor: the row's absence is the "absent" state
+	}
+	v := &HQVerdict{Workers: len(workers)}
+	// Longest-waiting first: the one stuck longest is the one to unblock.
+	oldest := int64(0)
+	for _, w := range workers {
+		if w.Status != "waiting" {
+			continue
+		}
+		v.Waiting++
+		if v.First == "" || (w.Since > 0 && (oldest == 0 || w.Since < oldest)) {
+			v.First, oldest = digestSessionName(w), w.Since
+		}
+	}
+	switch {
+	case hq.Status == "waiting":
+		v.State = VerdictHQCall
+	case v.Waiting > 0:
+		v.State = VerdictNeedsYou
+	case resourceCritical:
+		v.State = VerdictResource
+	case hq.Status == "working":
+		v.State = VerdictWorking
+	default:
+		v.State = VerdictNormal
+	}
+	return v
+}
+
+// digestSessionName is the tmux session name out of a row's locator ("api:0.0" → "api"),
+// falling back to the agent label for a native row that has no locator.
+func digestSessionName(r DigestRow) string {
+	if i := strings.Index(r.Loc, ":"); i > 0 {
+		return r.Loc[:i]
+	}
+	if r.Loc != "" {
+		return r.Loc
+	}
+	return r.Agent
+}
+
 func GatherDigest() []DigestRow {
 	panes := GatherAgents()
 	out := make([]DigestRow, 0, len(panes))
@@ -177,6 +273,7 @@ func GatherDigest() []DigestRow {
 		}
 		out = append(out, row)
 	}
+	attachHQVerdict(out)
 	return out
 }
 
@@ -232,5 +329,35 @@ func TaskStatusFor(paneStatus string) string {
 		return "done"
 	default:
 		return "working"
+	}
+}
+
+// attachHQVerdict computes the fleet verdict and hangs it on the supervisor row.
+//
+// The resource sample is paid ONLY when a supervisor row exists — on a machine with no
+// HQ there is nobody to deliver a verdict to, and the digest is polled often enough that
+// an unconditional sample would be a real cost for nothing. It uses the machine-only
+// snapshot, never the one that shells out to a full-table `ps`.
+func attachHQVerdict(rows []DigestRow) {
+	hasHQ := false
+	for _, r := range rows {
+		if r.Role == "supervisor" {
+			hasHQ = true
+			break
+		}
+	}
+	if !hasHQ {
+		return
+	}
+	critical := resource.MachineTier(resource.MachineSnapshot()) >= resource.TierRed
+	v := hqVerdict(rows, critical)
+	if v == nil {
+		return
+	}
+	for i := range rows {
+		if rows[i].Role == "supervisor" {
+			rows[i].Verdict = v
+			return
+		}
 	}
 }

@@ -85,6 +85,23 @@ type Report struct {
 
 // Snapshot samples the machine and (given the live panes' pids) attributes use +
 // finds reclaim candidates. panePIDs maps a pane id → its root pid (0 to skip).
+// MachineSnapshot samples ONLY the machine (disk/memory/load + its warn and tier),
+// skipping the process attribution Snapshot does.
+//
+// The distinction is not micro-optimization. Snapshot's second half runs a full-table
+// `ps`, and a wedged process once hung that call and froze the whole radar with it
+// (memory ps-wedge-freezes-radar). A caller that needs the tier and nothing else —
+// the HQ verdict on every digest — must not take that risk on a hot path.
+func MachineSnapshot() Machine {
+	cfg := loadConfig()
+	m := sampleMachine()
+	m.Warn = evalMachine(m, cfg)
+	if t := m.WarnTier(cfg); t != TierNormal {
+		m.Tier = t.String()
+	}
+	return m
+}
+
 func Snapshot(panePIDs map[string]int) Report {
 	cfg := loadConfig()
 	m := sampleMachine()
