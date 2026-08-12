@@ -1,13 +1,13 @@
-gtmux 把 Mac 上 tmux 里跑着的 agent 收进一块屏：Claude、Codex 这类编码 agent 算，普通的 tmux 窗口也算。在 Mac 上装好 gtmux、运行 gtmux serve，手机配对一下，人走到哪儿都能看着它们，也可以分享给同事一起看。
+gtmux 把 Mac 上 tmux 里跑着的 agent 收进一块屏：包括 Claude、Codex 这类编码 agent，以及普通的 tmux 窗口。在 Mac 上装好 gtmux、运行 gtmux serve，手机配对，人走到哪儿都能看着它们，也可以分享给同事一起协同。
 
 感知
-每个 tmux 窗格、每个 CLI agent 都在雷达上，用颜色分状态：等你输入、正在工作、空闲。谁在等你，一眼就看得出来。
+每个 tmux 窗格、每个 CLI agent 都在雷达上，用颜色分状态，实时通知工作状态。
 
 操控
 在手机上直接回复，也可以往终端里发命令，或者把某个 agent 调到眼前。卡住的地方，不必跑回 Mac 前才能解开。
 
 中控
-中控替你盯全局：它读得懂每个 agent 在做什么，只把真正要你出面的挑给你，还能替你分派任务。舰队忙起来的时候，不重要的事不会来烦你。
+中控替你盯全局：它读得懂每个 agent 在做什么，只把真正要你出面的挑给你，还能替你分派任务，不重要的事不会来烦你。
 
 此外
 • 只在 agent 需要你、或者跑完的时候推送，其余时候不打扰。
@@ -16,7 +16,7 @@ gtmux 把 Mac 上 tmux 里跑着的 agent 收进一块屏：Claude、Codex 这�
 • 支持英文和简体中文。
 
 工作原理
-这是 Mac 端 gtmux 的手机客户端，gtmux 本身免费开源。先在 Mac 上装好，app 才连得上；安装和两分钟上手见 ccy.pub/projects/gtmux。连接走你自己的网络直达自己的 Mac，跟 SSH、终端客户端是一回事。数据不上传，不用注册账号，agent 全程跑在 Mac 上，手机只负责看和说。进出由 token 把关，token 在你手里，随时可以作废。
+这是 Mac 端 gtmux 的手机客户端，gtmux 本身免费开源。先在 Mac 上装好，app 才连得上；安装和两分钟上手见 ccy.pub/projects/gtmux。连接走你自己的网络直达自己的 Mac，跟 SSH、终端客户端是一回事。数据不上传，不用注册账号，agent 全程跑在 Mac 上。
 
 隐私
 gtmux 不收集任何数据。会话和 token 只存在你的设备和 Mac 上。
