@@ -70,6 +70,8 @@ func Run(argv []string) int {
 		return cmdPanes(args)
 	case "digest", "dg":
 		return cmdDigest(args)
+	case "brief":
+		return cmdBrief(args)
 	case "usage":
 		return cmdUsage(args)
 	case "events":

@@ -191,7 +191,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave(); serverModeTick() },
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
-		OnFastTick: hq.DrainHQNudges,
+		// Two spools ride the 3s tick: the wake channel's queue, and the brief spool —
+		// a colour report held until its pane stops rendering (see internal/hq/brief.go).
+		OnFastTick: func() { hq.DrainHQNudges(); hq.DrainBriefs() },
 		// The approval card's options are gated on the agent having ASKED — the hook's
 		// waiting KIND (permission/plan/question), not merely the marker's existence.
 		// gtmux's own slow tick writes that marker too (kinds `startup`/`draft`) from a
