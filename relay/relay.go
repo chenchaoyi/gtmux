@@ -27,6 +27,10 @@ type pushRequest struct {
 	Subtitle string `json:"subtitle,omitempty"` // the sending Mac's name (which server)
 	Pane     string `json:"pane"`
 	Kind     string `json:"kind"`
+	// Options is how many numbered choices the waiting pane offers, so the quick-reply
+	// category can have that many buttons. Pointer: absent (older Mac) must stay
+	// distinguishable from 0 (nothing parseable → offer no buttons). See waitingCategory.
+	Options *int `json:"options,omitempty"`
 	// Silent badge/dismiss sync (6a): a content-available push with no alert, used
 	// to keep the app-icon badge correct across ALL devices and to collapse a
 	// resolved agent's banner. Badge is the absolute waiting count; CollapseID

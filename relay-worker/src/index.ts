@@ -23,6 +23,10 @@ interface PushIntent {
   body?: string;
   pane?: string;
   kind?: string;
+  // How many numbered choices the waiting pane offers, so the quick-reply category can
+  // have that many buttons. Absent = an older Mac that cannot count (keep the legacy
+  // category); 0 = nothing parseable (offer no buttons). See waitingCategory.
+  options?: number;
   subtitle?: string; // the sending Mac's name — shown as the notification subtitle (which server)
   // Live Activity update (push-to-update): when set, `token` is the activity push
   // token and contentState replaces the activity's state on the lock screen.
@@ -103,6 +107,24 @@ export default {
 // (clock injected) so index.test.ts can pin its shape. `stale-date` is emitted only when
 // the intent carries one — it tells iOS when to dim the card to "offline", so a dead
 // server (no more pushes refreshing it) stops showing a frozen tally forever.
+// waitingCategory picks the quick-reply category by how many numbered choices the pane
+// is ACTUALLY offering.
+//
+// One fixed category was a bug, not a simplification: an iOS category's actions are
+// frozen at registration, so every waiting push showed three buttons reading
+// "1 · Yes / 2 · Always / 3 · No" — and Claude's common two-option prompt is
+// "1. Yes / 2. No, and tell Claude what to do", where the button labelled ALWAYS sends
+// the answer that means NO and the third button offers a digit that is not a choice.
+//
+// `options` absent = an older Mac that cannot count: keep the old category so its quick
+// reply still works. `options` 0 = a new Mac saying nothing was parseable: NO category,
+// so no buttons are offered for choices we cannot see.
+function waitingCategory(options?: number): string | null {
+  if (options === undefined || options === null) return 'AGENT_WAITING';
+  if (options < 2) return null;
+  return `AGENT_WAITING_${Math.min(options, 4)}`;
+}
+
 export function buildLiveActivityAps(intent: PushIntent, nowSec: number): Record<string, unknown> {
   const aps: Record<string, unknown> = {
     timestamp: nowSec,
@@ -140,9 +162,13 @@ export function buildApnsRequest(
     // mutable-content wakes the app's Notification Service Extension, which
     // attaches a per-kind status badge (red stop / green ✓) to the banner.
     aps['mutable-content'] = 1;
-    // `waiting` pushes carry the AGENT_WAITING category so iOS shows quick-reply
-    // actions (1 Yes / 2 Always / 3 No) the app answers without being opened.
-    if (intent.kind === 'waiting') aps.category = 'AGENT_WAITING';
+    // `waiting` pushes carry a quick-reply category so iOS shows numbered actions the
+    // app answers without being opened. WHICH category depends on how many choices the
+    // pane is actually offering — see waitingCategory.
+    if (intent.kind === 'waiting') {
+      const cat = waitingCategory(intent.options);
+      if (cat) aps.category = cat;
+    }
   }
   if (typeof intent.badge === 'number') aps.badge = intent.badge;
   const payload = JSON.stringify({

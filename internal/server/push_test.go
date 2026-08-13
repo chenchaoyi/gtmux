@@ -269,7 +269,7 @@ func TestOnTallyBadgeSync(t *testing.T) {
 func TestPushManagerFormatter(t *testing.T) {
 	relay := &fakeRelay{}
 	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil, "",
-		func(a Alert) (string, string) { return "T:" + a.Kind, "B:" + a.Agent })
+		func(a Alert) (string, string, int) { return "T:" + a.Kind, "B:" + a.Agent, 3 })
 	pm.dispatch(Alert{Kind: "done", Agent: "Claude"})
 	got := relay.intents()
 	if len(got) != 1 || got[0].Title != "T:done" || got[0].Body != "B:Claude" {
