@@ -1,7 +1,8 @@
 // BrandLoader — the gtmux-branded loading indicator: the pane-grid BrandMark with a
 // gentle breathing pulse (opacity), driven on the NATIVE thread so it stays smooth
 // even while JS is busy with a heavy re-render (mode switch / expand-all). It is NOT
-// a spinner — the design language forbids rotating loaders ("加载环不旋转"); a quiet
+// a spinner — a PAGE loading and an AGENT working must not share one motion language
+// (DESIGN §10: the status ring turns, a page-level loader does not); a quiet
 // pulse fits "动效最小" while staying on-brand.
 
 import React from 'react';

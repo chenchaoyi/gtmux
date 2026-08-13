@@ -158,7 +158,9 @@
       glyph = '<rect x="5.1" y="4.6" width="1.7" height="6.8" rx="0.85" fill="' + W + '"/><rect x="9.2" y="4.6" width="1.7" height="6.8" rx="0.85" fill="' + W + '"/>';
     } else {
       shape = '<circle cx="8" cy="8" r="7" fill="' + c + '"/>';
-      if (st === 'working') glyph = '<circle cx="8" cy="8" r="3.4" stroke="' + W + '" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-dasharray="13 6"/>';
+      // The working ring TURNS (DESIGN §10, 2026-08-13). The class carries the
+      // animation so CSS can stop it under prefers-reduced-motion.
+      if (st === 'working') glyph = '<circle class="spin" cx="8" cy="8" r="3.4" stroke="' + W + '" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-dasharray="13 6"/>';
       else if (st === 'idle') glyph = '<path d="M4.8 8.3 L7 10.5 L11.2 5.6" stroke="' + W + '" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
       else glyph = '<circle cx="8" cy="8" r="1.9" fill="' + W + '"/>';
     }

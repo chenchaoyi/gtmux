@@ -25,6 +25,10 @@ func agentMonogram(_ name: String) -> String {
 struct StatusBadge: View {
     let status: Status
     var size: CGFloat = Theme.Size.badge
+    /// Drives the working ring's rotation. Honours the system's Reduce Motion — a
+    /// preference a glance tool has no business overriding.
+    @State private var spin = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     // errored-idle: an amber ⚠ modifier replacing the green ✓ (the idle session
     // ended on an error). Never for non-idle states.
     var errored = false
@@ -62,10 +66,21 @@ struct StatusBadge: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: size * 0.52, weight: .bold)).foregroundStyle(.white)
             case .working:
+                // The ring TURNS (DESIGN §10, amended 2026-08-13). It is the one place
+                // motion earns its keep: "working" is the only state that is a process
+                // rather than a condition, and a still ring said so with a shape you had
+                // to decode. Slow (2s) and linear, so it reads as alive rather than
+                // urgent — urgency stays red, and red never moves.
+                //
+                // Only in surfaces the user has OPENED. The menu-bar status item stays
+                // static: it is on screen all day, and motion there is ambient noise.
                 Circle().trim(from: 0.08, to: 0.92)
                     .stroke(.white, style: StrokeStyle(lineWidth: size * 0.12, lineCap: .round))
                     .frame(width: size * 0.56, height: size * 0.56)
-                    .rotationEffect(.degrees(-80)) // static gap; never animates
+                    .rotationEffect(.degrees(spin ? 280 : -80))
+                    .animation(reduceMotion ? nil : .linear(duration: 2).repeatForever(autoreverses: false),
+                               value: spin)
+                    .onAppear { spin = true }
             case .running:
                 Circle().fill(.white).frame(width: size * 0.3, height: size * 0.3)
             }

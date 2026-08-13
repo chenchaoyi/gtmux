@@ -275,7 +275,7 @@ iPad **不是「放大的手机」**——大画布用 **split-view（侧栏雷�
 
 ## 6. 视觉规范回顾（与菜单栏一致）
 
-- **状态**：waiting `#EF4444` 红方块·双竖线 / working `#06B6D4` 青圆·加载环（静态不转） /
+- **状态**：waiting `#EF4444` 红方块·双竖线 / working `#06B6D4` 青圆·加载环（**缓慢旋转** 2s/圈，尊重「减弱动态」；DESIGN §10） /
   idle `#22C55E` 绿圆·对勾 / running `#8E8E93` 灰圆·小圆点。
 - **分区顺序**：needs-you → working → idle → running；waiting 分区标题红、其余中性。
 - **深/浅色**（theme.ts）：dark `bg #0D0D0F · surface #1C1C1F`；light `bg #F2F2F7 · surface #FFF`。

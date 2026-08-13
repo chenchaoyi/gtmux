@@ -582,3 +582,11 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.18));
 }
 #guest-scope[hidden] { display: none; }
+
+/* The working ring turns — DESIGN §10 (amended 2026-08-13): "working" is the one state
+   that is a PROCESS rather than a condition, so it is the one place motion earns its
+   keep. Slow and linear, so it reads as alive rather than urgent; urgency is red, and
+   red never moves. */
+@keyframes gtmux-ring-spin { to { transform: rotate(360deg); } }
+svg .spin { transform-origin: 8px 8px; animation: gtmux-ring-spin 2s linear infinite; }
+@media (prefers-reduced-motion: reduce) { svg .spin { animation: none; } }
