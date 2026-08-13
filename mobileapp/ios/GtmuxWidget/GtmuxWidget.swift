@@ -42,6 +42,17 @@ struct StatusBadge: View {
         Capsule().fill(.white).frame(width: size * 0.11, height: size * 0.44)
       }
     case .working:
+      // The ring is STATIC here, and deliberately so — the app's turns (DESIGN §10) but a
+      // Live Activity cannot. MEASURED on device 2026-08-13 (iPhone 15 Pro Max, iOS 26.6):
+      // a `.repeatForever` rotation shipped in this very view and did not run. WidgetKit
+      // renders timeline snapshots; only system-driven views update between them.
+      //
+      // Nothing is missing, because the motion is already here in the place the platform
+      // does support it: each row's elapsed time is `Text(style: .relative)` and counts up
+      // on its own. Same message — this is happening, and for how long — carried by the
+      // mechanism each surface actually has. Do not try to fake it by pushing updates to
+      // advance a rotation: Live Activity updates are rate-limited, and spending the push
+      // budget and the battery on a turning ring is a bad trade for a Lock Screen.
       Circle()
         .stroke(.white, style: StrokeStyle(lineWidth: size * 0.10, lineCap: .round, dash: [size * 0.88, size * 0.40]))
         .frame(width: size * 0.46, height: size * 0.46)
