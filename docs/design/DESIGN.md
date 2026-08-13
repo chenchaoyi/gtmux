@@ -264,6 +264,13 @@ divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
   - **尊重系统「减弱动态」**（macOS `accessibilityReduceMotion` / iOS `AccessibilityInfo` /
     网页 `prefers-reduced-motion`）。一瞥工具没有资格覆盖用户的这项选择。
   - 三端用同一套参数，因为它们是同一枚识别令牌 —— 手机和网页上看到的那个环，和菜单栏里是同一个。
+  - **Live Activity（锁屏/灵动岛）转不了，这是平台限制，不是我们的选择。** 2026-08-13 在真机上
+    测过（iPhone 15 Pro Max / iOS 26.6）：把 `.repeatForever` 旋转直接发到 widget 里，**不动**。
+    WidgetKit 渲染的是时间线快照，两次更新之间只有系统驱动的视图会自更新。
+    **但锁屏并不缺这个信号** —— 每行右侧的耗时是 `Text(style: .relative)`，系统每秒自己走。
+    同一句话（正在发生、已经多久），由各表面**真正具备**的机制去说。
+    **不要用推送去伪造旋转**：Live Activity 更新有频率限制，为转一个圈烧推送预算和电量，
+    在锁屏上是笔坏买卖。
 - **另一处允许的动效**：idle→waiting 跃迁时给状态项/徽章**一次**脉冲提示。
 - 空闲态**零动画**。hover/选中/打开可有极克制的微过渡，整体保持安静。
 - **仍然禁止**：页面级的旋转 loader（`BrandLoader` 因此用脉冲而非转圈——它是「页面在加载」，
