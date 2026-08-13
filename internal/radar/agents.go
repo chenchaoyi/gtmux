@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -293,9 +294,33 @@ type agentJSON struct {
 	Watched bool `json:"watched,omitempty"`
 }
 
-// isBrailleSpinner reports whether r is in the braille block (U+2800–U+28FF),
-// the de-facto spinner glyph most agent TUIs animate while working.
-func isBrailleSpinner(r rune) bool { return r >= 0x2800 && r <= 0x28FF }
+// isSpinnerGlyph reports whether r is a frame of an animated "working" spinner an agent
+// TUI puts at the front of its title.
+//
+// The ALPHABET IS NOT STABLE — Claude Code animated braille through 2.1.227 and switched
+// to half-circles in 2.1.228, which is how "◐ multipilot-companion feature dev" started
+// appearing as a task name in the radar. Adding a range here is the narrow half of the
+// fix; leadingDecoration is the half that survives the NEXT alphabet.
+func isSpinnerGlyph(r rune) bool {
+	switch {
+	case r >= 0x2800 && r <= 0x28FF: // ⠁⠂⠄… braille — most TUIs, Claude Code ≤2.1.227
+		return true
+	case r >= 0x25D0 && r <= 0x25D3: // ◐◑◒◓ half-circles — Claude Code ≥2.1.228
+		return true
+	}
+	return false
+}
+
+// leadingDecoration reports whether a title begins with a standalone symbol followed by a
+// space — a spinner frame or a status mark, never part of what the agent is doing.
+//
+// This is the general rule, and the point of it is that it needs no list: an alphabet
+// gtmux has never seen still cannot leak into the task text. isSpinnerGlyph carries the
+// SEMANTICS (this pane is working) and has to enumerate; this carries the DISPLAY and
+// does not.
+func leadingDecoration(rs []rune) bool {
+	return len(rs) > 1 && rs[1] == ' ' && unicode.IsSymbol(rs[0])
+}
 
 // cmdIsLiveAgent reports whether the foreground command is a live agent process
 // and its display name. Claude Code's foreground command is its version string.
@@ -333,7 +358,7 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 	t := strings.TrimSpace(title)
 	rs := []rune(t)
 
-	spinner := len(rs) > 0 && isBrailleSpinner(rs[0])
+	spinner := len(rs) > 0 && isSpinnerGlyph(rs[0])
 	idle := false
 	if len(rs) > 0 && !spinner {
 		if rs[0] == 0x2733 { // ✳ → idle/ready (Claude Code's marker)
@@ -373,7 +398,7 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 	}
 
 	task = t
-	if (spinner || idle) && len(rs) > 1 {
+	if (spinner || idle || leadingDecoration(rs)) && len(rs) > 1 {
 		task = strings.TrimSpace(string(rs[1:]))
 	}
 	if task == agent { // title is just the placeholder name, not a real task
