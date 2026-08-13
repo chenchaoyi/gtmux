@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.51.1',
+    en: [
+      'The built-in demo now shows the same app the radar does: the all-panes browser, the fleet tally, and the waiting-only filter were missing from it.',
+      'A few Chinese strings reworded.',
+    ],
+    zh: [
+      '内置演示现在和真实雷达是同一个 app：之前它缺了「所有 pane」浏览器、舰队计数和「只看等输入」筛选。',
+      '几处中文文案修订。',
+    ],
+  },
+  {
     version: '0.50.0',
     en: [
       'The HQ page now speaks up about two things it used to stay quiet on: when the supervisor itself needs a decision from you, and when the Mac is genuinely short of disk, memory or power. It reported "all normal — nothing needs you" in both cases, while the Mac\'s own menu bar said otherwise about the very same fleet at the very same moment. That verdict is now decided once, on the Mac, and this app renders it — so the two can no longer disagree.',
