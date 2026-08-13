@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -111,7 +112,8 @@ func warpViewingMatch(out, session string) bool {
 		return false
 	}
 	title := strings.TrimSpace(parts[1])
-	return title == session || strings.HasPrefix(title, session+" — ")
+	// Tolerates a decorated title (a terminal's bell glyph, gtmux's tab-alert marker).
+	return ghostty.TitleMatchesSession(title, session)
 }
 
 // TabOrder can't be read: Warp exposes no scriptable tab list. Restore simply
