@@ -134,10 +134,13 @@ func apnsPayload(req pushRequest) map[string]any {
 		// mutable-content wakes the app's Notification Service Extension, which
 		// attaches a per-kind status badge (red stop / green ✓) to the banner.
 		aps["mutable-content"] = 1
-		// `waiting` pushes carry the AGENT_WAITING category so iOS shows the
-		// quick-reply actions (1 Yes / 2 Always / 3 No) the app answers in-background.
+		// `waiting` pushes carry a quick-reply category so iOS shows numbered actions
+		// the app answers in-background. WHICH one depends on how many choices the pane
+		// is actually offering — see waitingCategory.
 		if req.Kind == "waiting" {
-			aps["category"] = "AGENT_WAITING"
+			if cat := waitingCategory(req.Options); cat != "" {
+				aps["category"] = cat
+			}
 		}
 	}
 	// An absolute badge value (the live waiting count) is authoritative on every
@@ -221,4 +224,30 @@ func leftPad(b []byte, size int) []byte {
 	out := make([]byte, size)
 	copy(out[size-len(b):], b)
 	return out
+}
+
+// waitingCategory picks the quick-reply category by how many numbered choices the pane
+// is ACTUALLY offering.
+//
+// One fixed category was a bug, not a simplification: an iOS category's actions are
+// frozen at registration, so every waiting push showed three buttons reading
+// "1 · Yes / 2 · Always / 3 · No" — and Claude's common two-option prompt is
+// "1. Yes / 2. No, and tell Claude what to do", where the button labelled ALWAYS sends
+// the answer that means NO and the third button offers a digit that is not a choice.
+//
+// `options` absent = an older Mac that cannot count: keep the old category so its quick
+// reply still works. `options` 0 = a new Mac saying nothing was parseable: NO category,
+// so no buttons are offered for choices we cannot see.
+func waitingCategory(options *int) string {
+	if options == nil {
+		return "AGENT_WAITING"
+	}
+	if *options < 2 {
+		return ""
+	}
+	n := *options
+	if n > 4 {
+		n = 4
+	}
+	return fmt.Sprintf("AGENT_WAITING_%d", n)
 }

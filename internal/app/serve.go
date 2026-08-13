@@ -256,7 +256,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	}
 	relay := server.NewHTTPRelay(relayURL, relayToken)
 	deps.Push = server.NewPushManager(relay, loadPushTokens(), savePushTokens, serverDisplayName(),
-		func(a server.Alert) (string, string) { return pushCopy(a, deps.PaneText) })
+		func(a server.Alert) (string, string, int) { return pushCopy(a, deps.PaneText) })
 
 	// Per-device enrollment: a phone pairs via a short-lived code for its own
 	// token (revocable, and the QR stops being a lasting credential). The master
@@ -442,7 +442,7 @@ func saveDevices(d []server.EnrolledDevice) {
 // name (its task/title — the bold line in the app/popover), matching the macOS
 // banner, instead of "<Agent> needs you"; the state (needs you / finished) is the
 // body. Falls back to the locator then a generic word when the task is empty.
-func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, string) {
+func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, string, int) {
 	title := a.Task
 	if title == "" {
 		title = a.Loc
@@ -454,40 +454,51 @@ func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, str
 		// Body = this session's ACTUAL choices, so expanding the notification shows
 		// what you're being asked (not a generic "needs you"). Falls back to the
 		// plain phrase when the pane has no parseable menu.
-		body := optionsBody(a.Pane, paneText)
+		//
+		// The COUNT rides along, because the quick-reply buttons must not offer a
+		// choice the pane is not making. 0 = nothing parseable → no buttons at all.
+		body, n := optionsBody(a.Pane, paneText)
 		switch {
 		case body != "" && a.Repeat:
-			return title, i18n.Tr("Still waiting · ", "仍在等待 · ") + body
+			return title, i18n.Tr("Still waiting · ", "仍在等待 · ") + body, n
 		case body != "":
-			return title, body
+			return title, body, n
 		case a.Repeat:
-			return title, i18n.Tr("Still needs you", "仍在等你输入")
+			return title, i18n.Tr("Still needs you", "仍在等你输入"), 0
 		default:
-			return title, i18n.Tr("Needs you", "等你输入")
+			return title, i18n.Tr("Needs you", "等你输入"), 0
 		}
 	}
-	return title, i18n.Tr("Finished", "已完成")
+	return title, i18n.Tr("Finished", "已完成"), 0
 }
 
-// optionsBody formats a waiting pane's 1/2/3 choices as "1. Yes  2. Always  3. No"
-// for the notification body — the same parser the reply UI uses. "" when none.
-func optionsBody(pane string, paneText func(string) (string, bool)) string {
+// optionsBody formats a waiting pane's 1/2/3 choices for the notification body — the
+// same parser the reply UI uses. "" when none.
+//
+// ONE OPTION PER LINE. They used to be joined with spaces, which on a long-pressed
+// notification read as a run-on sentence: "1. Yes  2. Yes, allow reading from
+// sessions-window-truth/ during this session  3. No" — three choices you have to parse
+// out of one paragraph, at the moment you are being asked to pick one. The buttons
+// underneath cannot carry this text (an iOS category's actions are static, so they say
+// "1 · Yes / 2 · Always / 3 · No" whatever the options are), which makes the body the
+// only place the REAL wording appears. It has to be legible there.
+func optionsBody(pane string, paneText func(string) (string, bool)) (string, int) {
 	if pane == "" || paneText == nil {
-		return ""
+		return "", 0
 	}
 	text, ok := paneText(pane)
 	if !ok {
-		return ""
+		return "", 0
 	}
 	opts := prompt.ParseOptions(text)
 	if len(opts) == 0 {
-		return ""
+		return "", 0
 	}
 	parts := make([]string, 0, len(opts))
 	for _, o := range opts {
 		parts = append(parts, fmt.Sprintf("%d. %s", o.N, o.Label))
 	}
-	return strings.Join(parts, "   ")
+	return strings.Join(parts, "\n"), len(opts)
 }
 
 // resolveServeToken returns the explicit flag token, or a persistent one from

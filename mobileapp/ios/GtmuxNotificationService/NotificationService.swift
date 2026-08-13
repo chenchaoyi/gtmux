@@ -2,10 +2,20 @@
 // attaches a KIND badge so the phone notification reads differently at a glance:
 // waiting = a red "stop" glyph with two bars, done = a green ✓. The glyph sits SMALL
 // and centered on a dark app-icon-style tile with generous margin — because iOS
-// blows the attachment up to a full-width HERO when the banner is long-pressed, so a
-// full-bleed color block looked like a giant slab. The dark tile makes the expanded
-// view read as a calm icon while the collapsed thumbnail still carries the status
-// color. The `kind` rides in the push's custom data (relay/apns.go).
+// blows the attachment up to a full-width HERO when the banner is long-pressed.
+//
+// A dark tile behind the glyph was the first attempt at taming that, and it FAILED —
+// the tile is the same tone as the notification sheet, so what a long-press actually
+// showed was a giant red slab filling most of the screen while the question you were
+// being asked sat squeezed into two lines above it. Measured on device, 2026-08-13.
+//
+// The hero's height is the image's ASPECT RATIO — iOS scales the attachment to the
+// notification's width. So the badge is a WIDE STRIP: the hero becomes a thin band that
+// still carries the status colour, and the text gets the screen back. The collapsed
+// thumbnail keeps its square by clipping to the glyph end of the strip
+// (UNNotificationAttachmentOptionsThumbnailClippingRectKey).
+//
+// The `kind` rides in the push's custom data (relay/apns.go).
 
 import UIKit
 import UserNotifications
@@ -22,7 +32,12 @@ class NotificationService: UNNotificationServiceExtension {
         }
         let kind = content.userInfo["kind"] as? String ?? ""
         if let url = Self.badgeImage(kind: kind),
-           let att = try? UNNotificationAttachment(identifier: "gtmux-badge", url: url, options: nil) {
+           // Clip the THUMBNAIL to the strip's leading square — the glyph — so the
+           // collapsed banner still shows a round status mark rather than a sliver.
+           let att = try? UNNotificationAttachment(identifier: "gtmux-badge", url: url, options: [
+               UNNotificationAttachmentOptionsThumbnailClippingRectKey:
+                   CGRect(x: 0, y: 0, width: Self.stripSquareFraction, height: 1).dictionaryRepresentation,
+           ]) {
             content.attachments = [att]
         }
         contentHandler(content)
@@ -36,18 +51,24 @@ class NotificationService: UNNotificationServiceExtension {
     /// status glyph small + centered (generous dark margin). UIKit origin is top-left.
     /// Colors match the app's status language (waiting #EF4444, done #22C55E) on the
     /// app's avatar-container tone (#1C1C1F).
+    /// How much of the strip's width the leading square occupies — the region the
+    /// collapsed thumbnail is clipped to.
+    static let stripSquareFraction: CGFloat = 1.0 / 8.0
+
     static func badgeImage(kind: String) -> URL? {
         let waiting = (kind == "waiting")
-        let s: CGFloat = 240
-        let img = UIGraphicsImageRenderer(size: CGSize(width: s, height: s)).image { _ in
-            // Dark app-icon tile so the EXPANDED hero reads as a calm icon, not a
-            // full-bleed color slab.
+        // A WIDE strip, not a square: the expanded hero is as tall as the aspect ratio
+        // makes it, and 8:1 is a band rather than a slab.
+        let h: CGFloat = 160
+        let s: CGFloat = h * 8
+        let img = UIGraphicsImageRenderer(size: CGSize(width: s, height: h)).image { _ in
             UIColor(red: 0x1C / 255, green: 0x1C / 255, blue: 0x1F / 255, alpha: 1).setFill()
-            UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: s, height: s), cornerRadius: s * 0.225).fill()
+            UIBezierPath(rect: CGRect(x: 0, y: 0, width: s, height: h)).fill()
 
-            // Status glyph, ~half the tile, centered.
-            let g = s * 0.5
-            let rect = CGRect(x: (s - g) / 2, y: (s - g) / 2, width: g, height: g)
+            // Status glyph, centred in the LEADING square — which is also what the
+            // collapsed thumbnail is clipped to, so both views show the same mark.
+            let g = h * 0.5
+            let rect = CGRect(x: (h - g) / 2, y: (h - g) / 2, width: g, height: g)
             if waiting {
                 UIColor(red: 0xEF / 255, green: 0x44 / 255, blue: 0x44 / 255, alpha: 1).setFill()
                 UIBezierPath(roundedRect: rect, cornerRadius: g * 0.26).fill()

@@ -55,6 +55,19 @@ type PushIntent struct {
 	Pane     string `json:"pane"`               // jump target for the notification tap
 	Kind     string `json:"kind"`               // "waiting" | "done"
 	Subtitle string `json:"subtitle,omitempty"` // this Mac's name — WHICH server, for multi-server
+	// Options is how many numbered choices the waiting pane is actually offering, so the
+	// relay can pick a quick-reply category with THAT many buttons.
+	//
+	// It exists because the buttons were lying. An iOS category's actions are fixed at
+	// registration, so every waiting push showed "1 · Yes / 2 · Always / 3 · No" — and on
+	// the two-option prompt Claude shows constantly ("1. Yes / 2. No, and tell Claude what
+	// to do"), the button labelled ALWAYS sent the answer that means NO, while a third
+	// button offered a digit that was not a choice at all. Labels now say only the number;
+	// the count decides how many appear.
+	//
+	// A POINTER on purpose: absent (an older Mac that cannot count) must stay
+	// distinguishable from 0 (a new Mac saying "no parseable menu — offer no buttons").
+	Options *int `json:"options,omitempty"`
 	// Live Activity push-to-update: when set, Token is the activity push token and
 	// ContentState replaces the lock-screen activity's state (even app-killed).
 	LiveActivity bool           `json:"liveActivity,omitempty"`
@@ -89,14 +102,16 @@ type PushManager struct {
 	// re-registers on each launch / activity start). token → APNs env (for routing).
 	activityTokens map[string]string
 	relay          Relay
-	save           func([]DeviceToken)              // optional persistence hook
-	format         func(Alert) (title, body string) // optional copy formatter (i18n lives in app)
-	serverName     string                           // this Mac's name → notification subtitle (WHICH server)
+	save           func([]DeviceToken) // optional persistence hook
+	// format returns the copy AND how many numbered choices the pane offers, so the
+	// quick-reply category can have that many buttons. -1 = unknown (no counting).
+	format     func(Alert) (title, body string, options int)
+	serverName string // this Mac's name → notification subtitle (WHICH server)
 }
 
 // NewPushManager builds a manager seeded with any persisted tokens. relay may be
 // a no-op (empty relay URL) — registration still works, forwarding is just off.
-func NewPushManager(relay Relay, initial []DeviceToken, save func([]DeviceToken), serverName string, format func(Alert) (string, string)) *PushManager {
+func NewPushManager(relay Relay, initial []DeviceToken, save func([]DeviceToken), serverName string, format func(Alert) (string, string, int)) *PushManager {
 	m := &PushManager{tokens: map[string]DeviceToken{}, activityTokens: map[string]string{}, relay: relay, save: save, format: format, serverName: serverName}
 	for _, d := range initial {
 		if d.Token != "" {
@@ -285,7 +300,7 @@ func (p *PushManager) OnAlert(a Alert) {
 // (best-effort: a dead token must not stop the others). Synchronous — OnAlert
 // runs it in a goroutine.
 func (p *PushManager) dispatch(a Alert) {
-	title, body := p.copy(a)
+	title, body, opts := p.copy(a)
 	for _, d := range p.Tokens() {
 		if !d.wants(a.Kind) {
 			continue
@@ -293,6 +308,7 @@ func (p *PushManager) dispatch(a Alert) {
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName, Pane: a.Pane, Kind: a.Kind,
+			Options: optionCount(opts),
 			// Collapse an agent's banners into one: a re-nudge (#89) replaces the
 			// prior "needs you" instead of stacking a second banner per agent.
 			CollapseID: a.Pane,
@@ -328,13 +344,13 @@ func (p *PushManager) pushBadge(waiting int) {
 // kind prefs. Returns the number of devices it tried.
 func (p *PushManager) Test() int {
 	a := Alert{Kind: "waiting", Agent: "Claude Code", Task: "npm test · Bash", Pane: "gtmux-test"}
-	title, body := p.copy(a)
+	title, body, opts := p.copy(a)
 	toks := p.Tokens()
 	for _, d := range toks {
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName,
-			Pane: a.Pane, Kind: a.Kind, CollapseID: a.Pane,
+			Pane: a.Pane, Kind: a.Kind, Options: optionCount(opts), CollapseID: a.Pane,
 		})
 	}
 	return len(toks)
@@ -342,7 +358,7 @@ func (p *PushManager) Test() int {
 
 // copy builds the notification title/body, via the injected formatter (i18n) or
 // a plain English fallback.
-func (p *PushManager) copy(a Alert) (string, string) {
+func (p *PushManager) copy(a Alert) (string, string, int) {
 	if p.format != nil {
 		return p.format(a)
 	}
@@ -352,11 +368,11 @@ func (p *PushManager) copy(a Alert) (string, string) {
 	}
 	if a.Kind == "waiting" {
 		if a.Repeat {
-			return name + " still needs you", a.Task
+			return name + " still needs you", a.Task, -1
 		}
-		return name + " needs you", a.Task
+		return name + " needs you", a.Task, -1
 	}
-	return name + " finished", a.Task
+	return name + " finished", a.Task, -1
 }
 
 // handleRegister implements POST /api/push/register. 503 when push is unconfigured
@@ -546,4 +562,14 @@ func (r *HTTPRelay) Send(intent PushIntent) error {
 		return fmt.Errorf("relay status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// optionCount turns the formatter's count into the wire field: nil when the count is
+// unknown (-1), so an older relay's default quick-reply survives, and a real number
+// otherwise — including 0, which says "no parseable menu, offer no buttons".
+func optionCount(n int) *int {
+	if n < 0 {
+		return nil
+	}
+	return &n
 }

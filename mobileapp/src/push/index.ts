@@ -3,9 +3,22 @@
 // hex APNs device token → POST /api/push/register. A tapped notification carries
 // `pane` (a top-level custom key from the relay) → deep-link to that agent.
 //
-// Quick-reply: a `waiting` push arrives with the AGENT_WAITING category, which we
-// register with three actions (1 Yes / 2 Always / 3 No). Tapping one sends that
-// answer straight into the pane via /api/send — in the BACKGROUND, no app open.
+// Quick-reply: a `waiting` push arrives with a category whose actions send a digit
+// straight into the pane via /api/send — in the BACKGROUND, no app open.
+//
+// The buttons say ONLY THE NUMBER, and there is one category per option count.
+//
+// They used to say "1 · Yes / 2 · Always / 3 · No", which was not a simplification but a
+// LIE an iOS category cannot avoid telling: its actions are frozen at registration, while
+// the choices differ per prompt. On Claude's common two-option menu — "1. Yes / 2. No,
+// and tell Claude what to do" — the button labelled ALWAYS sent the answer that means NO,
+// and a third button offered a digit that was not a choice at all. A label that claims a
+// meaning it cannot know turns a convenience into a misfire, on a surface whose whole
+// point is answering without looking closely.
+//
+// So: the label says what the button DOES (sends this number), the notification body says
+// what it MEANS (one option per line — see optionsBody in serve.go), and the Mac picks
+// the category from the count so no phantom button is ever offered.
 
 import {Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
@@ -18,16 +31,27 @@ export type Teardown = () => void;
 // in-app waiting context keys (1·Yes / 2·Always / 3·No). Sent WITHOUT Enter: the
 // agent's numbered menu commits on the digit (see ApprovalCard); a trailing Enter
 // leaks onto the next prompt on consecutive selections.
-const QUICK_REPLY: Record<string, string> = {yes: '1', always: '2', no: '3'};
-
-const WAITING_CATEGORY = {
-  id: 'AGENT_WAITING',
-  actions: [
-    {id: 'yes', title: '1 · Yes', options: {foreground: false}},
-    {id: 'always', title: '2 · Always', options: {foreground: false}},
-    {id: 'no', title: '3 · No', options: {foreground: false, destructive: true}},
-  ],
+// Action id → the digit typed into the pane. The id IS the digit now: nothing about a
+// choice's meaning is assumed on this side.
+const QUICK_REPLY: Record<string, string> = {
+  '1': '1', '2': '2', '3': '3', '4': '4',
+  // Legacy ids, kept so a notification delivered by an older Mac still answers instead
+  // of doing nothing when tapped.
+  yes: '1', always: '2', no: '3',
 };
+
+const numAction = (n: number) => ({id: String(n), title: String(n), options: {foreground: false}});
+
+// One category per option count (2..4), plus the legacy id an older Mac still sends.
+// iOS needs every category registered up front; the PUSH chooses which one applies.
+const WAITING_CATEGORIES = [
+  {id: 'AGENT_WAITING_2', actions: [numAction(1), numAction(2)]},
+  {id: 'AGENT_WAITING_3', actions: [numAction(1), numAction(2), numAction(3)]},
+  {id: 'AGENT_WAITING_4', actions: [numAction(1), numAction(2), numAction(3), numAction(4)]},
+  // An older Mac sends AGENT_WAITING for every waiting push, whatever the pane offers.
+  // Three neutral numbers is the safest thing that category can mean.
+  {id: 'AGENT_WAITING', actions: [numAction(1), numAction(2), numAction(3)]},
+];
 
 // The last APNs token iOS handed us, kept so a later kinds-toggle can re-register
 // the same device without re-running setup (which would re-add native listeners).
@@ -103,7 +127,7 @@ export async function setupPush(
   PushNotificationIOS.addEventListener('localNotification', onNotification);
 
   // Register the quick-reply actions iOS attaches to a `waiting` notification.
-  PushNotificationIOS.setNotificationCategories?.([WAITING_CATEGORY]);
+  PushNotificationIOS.setNotificationCategories?.(WAITING_CATEGORIES);
 
   // Triggers the permission prompt + remote-notification registration.
   await PushNotificationIOS.requestPermissions();
