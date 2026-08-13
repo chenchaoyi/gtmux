@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.51.2',
+    en: [
+      'A session that is working now says so with a ring that turns, matching the Mac. It stays slow and calm — urgency is red, and red never moves. Reduce Motion is honoured.',
+      'Rows no longer read "◐ my task name" when the agent on your Mac animates a spinner in its window title.',
+    ],
+    zh: [
+      '正在工作的会话现在用一枚会转的环表示，与 Mac 端一致。转速很慢：着急是红色的事，而红色永不动。尊重系统的「减弱动态」。',
+      '行里不会再出现「◐ 我的任务名」—— Mac 上的 agent 把转圈动画写在窗口标题里时，不会再漏到这里。',
+    ],
+  },
+  {
     version: '0.51.1',
     en: [
       'The built-in demo now shows the same app the radar does: the all-panes browser, the fleet tally, and the waiting-only filter were missing from it.',
