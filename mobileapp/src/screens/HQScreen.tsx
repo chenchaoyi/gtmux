@@ -42,6 +42,7 @@ import {ChatView} from '../ui/ChatView';
 import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {SendFailedBar} from '../ui/SendFailedBar';
+import {parseBoardSections} from './boardSections';
 import {
   Zone,
   assessment,
@@ -92,6 +93,20 @@ export function HQScreen({route, navigation}: any) {
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
   const [boardOpen, setBoardOpen] = useState(false);
+  // The board's sections, and which are unfolded. The FIRST opens by default: it is the
+  // handoff HQ pins at the top for whoever reads next, not merely the earliest entry.
+  const boardSections = useMemo(() => parseBoardSections(board.text ?? ''), [board.text]);
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const first = boardSections.find(x => x.title !== '');
+    setOpenSections(first ? new Set([first.key]) : new Set());
+  }, [boardSections]);
+  const toggleSection = (k: string) =>
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      next.has(k) ? next.delete(k) : next.add(k);
+      return next;
+    });
   // The assessment headline is the supervisor's synthesized conclusion — it can run
   // long. Collapsed to 2 lines by default; tapping it expands to the full text so it
   // is never stranded truncated with no way to read the rest.
@@ -399,8 +414,16 @@ export function HQScreen({route, navigation}: any) {
               </Text>
             </TouchableOpacity>
             {board.exists && (
-              <TouchableOpacity testID="hq-board-open" onPress={() => setBoardOpen(true)} hitSlop={hit} style={styles.boardRow}>
-                <Text style={[styles.boardLink, {color: pal.fg3}]} numberOfLines={1}>
+              // The board is the most substantial thing HQ produces, and this was an 11pt
+              // line in the dimmest colour on the page — quieter than the prose above it.
+              // A bordered row at fg2 reads as somewhere to go.
+              <TouchableOpacity
+                testID="hq-board-open"
+                onPress={() => setBoardOpen(true)}
+                hitSlop={hit}
+                style={[styles.boardRow, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+                <Text style={[styles.boardIcon, {color: pal.fg2}]}>▤</Text>
+                <Text style={[styles.boardLink, {color: pal.fg2}]} numberOfLines={1}>
                   {boardFreshness(board.updated_at, now, zh)}
                 </Text>
                 <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
@@ -627,16 +650,43 @@ export function HQScreen({route, navigation}: any) {
               <Text style={[styles.sheetCloseText, {color: pal.fg}]}>{t('Done', '完成')}</Text>
             </TouchableOpacity>
           </View>
+          {/* Sections, not one scroll. The board is an ARCHIVE — 842 lines when this was
+              written — and rendering all of it meant dragging through the rest to reach
+              any entry. Its `##` days are the structure; they only needed showing.
+              Order is the author's: HQ pins a "read this first" handoff at the top and
+              appends the newest at the bottom, so sorting would misrepresent both. */}
           <ScrollView contentContainerStyle={styles.pad}>
-            {/* Rendered, not raw. The board is markdown a person writes by hand; showing
-                its source turned headings into `##` and emphasis into `**` — a wall of
-                punctuation to read on a phone. */}
-            <MarkdownView
-              source={board.text ?? ''}
-              colors={boardMdColors(pal)}
-              fontSize={13.5}
-              selectable
-            />
+            {boardSections.map((sec, i) => {
+              const open = openSections.has(sec.key);
+              return (
+                <View key={sec.key} style={[styles.bSec, {borderColor: pal.divider}]}>
+                  {sec.title !== '' && (
+                    <TouchableOpacity
+                      testID={`hq-board-section-${i}`}
+                      activeOpacity={0.6}
+                      onPress={() => toggleSection(sec.key)}
+                      style={styles.bSecHead}>
+                      <Text style={[styles.bSecChevron, {color: pal.fg3}]}>{open ? '▾' : '▸'}</Text>
+                      <Text style={[styles.bSecTitle, {color: pal.fg}]} numberOfLines={open ? undefined : 2}>
+                        {sec.title}
+                      </Text>
+                      <Text style={[styles.bSecCount, {color: pal.fg3}]}>{sec.body.split('\n').length}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {(open || sec.title === '') && (
+                    <View style={sec.title === '' ? undefined : styles.bSecBody}>
+                      <MarkdownView
+                        source={sec.body}
+                        colors={boardMdColors(pal)}
+                        fontSize={13.5}
+                        selectable
+                        calmEmphasis
+                      />
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </ScrollView>
         </View>
       </Modal>
@@ -665,9 +715,20 @@ const styles = StyleSheet.create({
   sheetCloseText: {fontSize: 13, fontWeight: '600'},
   assess: {paddingHorizontal: 14, paddingTop: 9, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   assessText: {fontSize: 14, fontWeight: '600', lineHeight: 19},
-  boardRow: {flexDirection: 'row', alignItems: 'center', marginTop: 4},
-  boardLink: {fontSize: 11},
-  boardChevron: {fontSize: 13, marginLeft: 3},
+  boardRow: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 8,
+    borderWidth: StyleSheet.hairlineWidth, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 7, gap: 7,
+  },
+  boardIcon: {fontSize: 13},
+  boardLink: {fontSize: 12.5, fontWeight: '600', flex: 1},
+  boardChevron: {fontSize: 15},
+  bSec: {borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 2},
+  bSecHead: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 11, gap: 8},
+  bSecChevron: {fontSize: 12, width: 12, marginTop: 1},
+  bSecTitle: {flex: 1, fontSize: 14, fontWeight: '700', lineHeight: 19},
+  bSecCount: {fontSize: 11, fontVariant: ['tabular-nums'], marginTop: 2},
+  bSecBody: {paddingBottom: 10},
   boardText: {fontSize: 12.5, lineHeight: 19, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
 
   tabs: {flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth},
