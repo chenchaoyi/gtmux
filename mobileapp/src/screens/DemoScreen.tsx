@@ -54,6 +54,10 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
     <View>
       {/* The demo-data banner is hidden in SHOT_MODE (clean App Store captures) — it is
           always shown in the shipped demo mode, which App Review requires. */}
+      {/* The real radar's header supplies this padding (styles.header, 14pt); the demo's
+          header is bare, so it supplies its own — without it the tally ran under the
+          screen edge and the first character was clipped. */}
+      <View style={styles.summaryWrap}>
       <RadarSummary
         c={counts(agents)}
         agentsWord={lang === 'zh' ? '个 agent' : 'agents'}
@@ -62,6 +66,7 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
         waitingOnly={waitingOnly}
         onToggleWaitingOnly={() => setWaitingOnly(v => !v)}
       />
+      </View>
       {!Debug.shotMode && (
         <View style={styles.banner}>
           <View style={[styles.pill, {borderColor: StatusColor.working}]}>
@@ -167,6 +172,7 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
 
 const styles = StyleSheet.create({
   safe: {flex: 1},
+  summaryWrap: {paddingHorizontal: 14, paddingBottom: 4},
   topbarRight: {flexDirection: 'row', alignItems: 'center', gap: 16},
   topbar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12},
   title: {fontSize: 22, fontWeight: '700'},

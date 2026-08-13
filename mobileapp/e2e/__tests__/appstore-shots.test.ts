@@ -59,7 +59,11 @@ gated('app store demo shots', () => {
     const heroRow = driver.$(`~${TestIds.agent.row}-%7`);
     await heroRow.waitForDisplayed({timeout: 10_000});
     await heroRow.click();
-    await driver.$(`~${TestIds.detail.screen}`).waitForDisplayed({timeout: 10_000});
+    // Wait on a control the USER can see, not on the screen's root. The root is a
+    // KeyboardAvoidingView; XCUITest reports it present but not `visible`, so waiting on
+    // it timed out while the detail screen was fully rendered behind the check (its back
+    // button, mode switch and the 1/2/3 approval card were all in the page source).
+    await driver.$(`~${TestIds.detail.back}`).waitForDisplayed({timeout: 10_000});
     await driver.$(`~${TestIds.detail.modeTerminal}`).click().catch(() => {});
     await settle(1800); // let the pane content + approval card render
     shot('02-terminal-approval');
