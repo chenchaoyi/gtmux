@@ -851,3 +851,39 @@ unreapable child (v0.43.10 shipped this and still hung). You must abandon the `W
 **Recover a live wedge on an OLD build:** `gtmux update` restarts the serve+menu bar with
 the fixed binary — `gtmux agents` then returns in ~4s even while the process is still
 wedged. The leftover stuck `ps` drain when the wedged agent finally unblocks.
+
+---
+
+## Clicking a waiting session in the menu bar does nothing (v0.50.0–v0.51.0, `tab-alert` on)
+
+**Symptom.** The menu-bar row for a session that needs you does not jump to its terminal
+tab. Every OTHER row jumps fine. `gtmux focus <pane>` prints *"No Ghostty tab is showing
+session 'X' (it may be detached)"* while the tab is right there.
+
+**Root cause.** `tab-alert` (v0.50.0, #764) PREPENDS a `● ` to the tab title, and the jump
+matched the raw title: the AppleScript asked `tn starts with "<session> — "`, which
+`"● MP — multipilot"` never satisfies. Because tab-alert marks **only waiting sessions**,
+the failure landed exactly on the rows a user clicks — the ones that need them.
+
+**Must-check when a jump misses.** Read the tab's REAL title before theorising:
+
+```sh
+osascript -e 'tell application "Ghostty" to return name of tab 3 of window 1'
+# and to see which tab is actually selected — NOT `front tab`, which is always tab 1:
+osascript -e 'tell application "Ghostty" to return name of selected tab of front window'
+```
+
+**Fix (v0.51.1).** Matching tolerates leading decoration — `ghostty.TitleMatchesSession` /
+`StripDecoration`, used by Ghostty + Warp, with iTerm2's script accepting the marked form.
+The general point, and why the fix is not about `●`: **the terminal decorates titles too**
+(Ghostty prefixes a background tab that rang the bell), so a tab-to-session match must be
+decoration-tolerant by construction. `SessionsFromTitles` already did this for the bell
+glyph; the focus path did not.
+
+**Two AppleScript traps found while fixing it.**
+- `select tab 8 of window 1` is INVALID in Ghostty's dictionary — *"Can't get 8 of window
+  1. Access not allowed. (-1723)"*. The only reference `select` accepts is the loop
+  variable from `repeat with t in tabs of w`. So match in Go, then select by the tab's
+  exact raw title through that loop.
+- `name of front tab of front window` returns **tab 1**, not the selected tab. Verifying a
+  jump with it reports failure on a jump that worked. Use `selected tab`.

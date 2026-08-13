@@ -5,6 +5,7 @@ package ghostty
 
 import (
 	"os/exec"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -56,18 +57,42 @@ func SessionsFromTitles(s string) []string {
 		if i < 0 {
 			continue
 		}
-		// Strip any leading decoration the terminal prepends to a background tab's
-		// title — notably Ghostty's bell/activity glyph (🔔) — so "🔔 dev-workspace"
-		// still maps to the session "dev-workspace" (else tab-order can't match it).
-		name := strings.TrimSpace(strings.TrimLeftFunc(t[:i], func(r rune) bool {
-			return !unicode.IsLetter(r) && !unicode.IsDigit(r)
-		}))
+		name := StripDecoration(t[:i])
 		if name != "" && !seen[name] {
 			seen[name] = true
 			out = append(out, name)
 		}
 	}
 	return out
+}
+
+// StripDecoration removes the leading decoration a tab title can carry before the
+// session name.
+//
+// TWO sources put something there, and neither is a mistake to be avoided:
+// the TERMINAL does it (Ghostty prefixes a background tab that rang the bell), and
+// GTMUX does it (`tab-alert` marks a session with an agent waiting — internal/tabalert).
+// So matching a tab to a session must tolerate a prefix by construction rather than know
+// about any particular glyph.
+//
+// It trims leading runes that cannot start a session name — anything that is not a letter
+// or a digit. A tmux session name may CONTAIN punctuation, but a leading glyph plus space
+// is never part of one.
+//
+// Shipped v0.51.0 without this on the FOCUS path, which broke exactly the sessions a user
+// clicks: `tab-alert` marks only the waiting ones, so only those failed to jump.
+func StripDecoration(title string) string {
+	return strings.TrimSpace(strings.TrimLeftFunc(title, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	}))
+}
+
+// TitleMatchesSession reports whether a tab TITLE belongs to `session`, tolerating any
+// leading decoration. The separator must match set-titles-string exactly: space, em-dash,
+// space.
+func TitleMatchesSession(title, session string) bool {
+	t := StripDecoration(title)
+	return t == session || strings.HasPrefix(t, session+" — ")
 }
 
 // osascript runs an AppleScript and returns trimmed stdout.
@@ -91,12 +116,26 @@ func ShellQuote(s string) string {
 // "session — ", per set-titles-string '#S — #W') to the front.
 // Returns "ok", "notfound", or "" with a non-nil error on AppleScript failure.
 func FocusTab(session string) (string, error) {
-	// The separator must match set-titles-string exactly: space, em-dash, space.
-	script := `tell application "Ghostty"
+	// The match happens HERE, not inside the AppleScript, so there is ONE matcher and it
+	// is testable. The script used to compare `tn starts with "<session> — "` directly,
+	// which a decorated title never satisfies — see StripDecoration.
+	titles, err := tabTitles()
+	if err != nil {
+		return "", err
+	}
+	for _, t := range titles {
+		if !TitleMatchesSession(t.name, session) {
+			continue
+		}
+		// Select by the tab's EXACT raw title, through the same `repeat … select tab t`
+		// form that has always worked. Addressing it as `tab N of window W` is invalid in
+		// Ghostty's dictionary ("Can't get 8 of window 1. Access not allowed. (-1723)"),
+		// and the loop variable is the only reference `select` accepts. So the tolerant
+		// comparison stays in Go and AppleScript is left with plain string equality.
+		return osascript(`tell application "Ghostty"
   repeat with w in windows
     repeat with t in tabs of w
-      set tn to name of t
-      if tn is "` + Quote(session) + `" or tn starts with "` + Quote(session) + ` — " then
+      if (name of t) is "` + Quote(t.name) + `" then
         select tab t
         activate window w
         activate
@@ -105,8 +144,45 @@ func FocusTab(session string) (string, error) {
     end repeat
   end repeat
   return "notfound"
-end tell`
-	return osascript(script)
+end tell`)
+	}
+	return "notfound", nil
+}
+
+// tabTitle is one Ghostty tab, addressable by its 1-based window/tab index.
+type tabTitle struct {
+	win, tab int
+	name     string
+}
+
+// tabTitles lists every tab with its position, so a match found in Go can be acted on.
+func tabTitles() ([]tabTitle, error) {
+	out, err := osascript(`tell application "Ghostty"
+  set txt to ""
+  repeat with wi from 1 to count of windows
+    repeat with ti from 1 to count of tabs of window wi
+      set txt to txt & wi & "\t" & ti & "\t" & (name of tab ti of window wi) & linefeed
+    end repeat
+  end repeat
+  return txt
+end tell`)
+	if err != nil {
+		return nil, err
+	}
+	var rows []tabTitle
+	for _, line := range strings.Split(out, "\n") {
+		parts := strings.SplitN(strings.TrimRight(line, "\r"), "\t", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		w, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
+		t, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err1 != nil || err2 != nil {
+			continue
+		}
+		rows = append(rows, tabTitle{win: w, tab: t, name: parts[2]})
+	}
+	return rows, nil
 }
 
 // IsViewing reports whether you are already looking at this session's tab:
@@ -142,7 +218,7 @@ return procName & "
 	if proc != "ghostty" {
 		return false
 	}
-	return title == session || strings.HasPrefix(title, session+" — ")
+	return TitleMatchesSession(title, session)
 }
 
 // FocusTerminalTab brings the tab titled `title` in the terminal app `app` to

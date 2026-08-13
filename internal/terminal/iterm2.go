@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
@@ -27,12 +28,18 @@ func (iterm2) Name() string { return "iTerm2" }
 
 func (iterm2) FocusTab(session string) (string, error) {
 	s := aplQuote(session)
+	// A tab whose title gtmux marked (tab-alert prepends a glyph to a session with an
+	// agent waiting) must still be findable — and it is exactly the tab a user clicks.
+	// iTerm2's session tree is deeper than Ghostty's and cannot be verified from here,
+	// so this keeps the script's shape and adds the marked form rather than moving the
+	// match into Go as the Ghostty driver does.
+	m := aplQuote(tabalert.Marker + session)
 	return osa(`tell application "iTerm"
   repeat with w in windows
     repeat with t in tabs of w
       repeat with ss in sessions of t
         set nm to name of ss
-        if nm is "` + s + `" or nm starts with "` + s + ` — " then
+        if nm is "` + s + `" or nm starts with "` + s + ` — " or nm is "` + m + `" or nm starts with "` + m + ` — " then
           select t
           select w
           activate
