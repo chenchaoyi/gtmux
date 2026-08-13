@@ -9,7 +9,7 @@
 
 import {GtmuxClient, DigestRow, HQBoard, HQEvent, TranscriptTurn, SendPayload, UsageReport} from '../api/client';
 import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
-import {sampleAgents, demoDigest, demoBoard, demoEvents, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme} from './demoData';
+import {sampleAgents, demoPanes, demoDigest, demoBoard, demoEvents, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme} from './demoData';
 
 // What the hero pane (%7) shows AFTER you approve running the tests.
 const TESTS_RAN =
@@ -121,6 +121,11 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     },
     async health(): Promise<boolean> {
       return true;
+    },
+    // Every pane on the fake Mac — what the All-panes browser reads. Without this the
+    // browser was unreachable in the tour, so App Review never saw it.
+    async panes() {
+      return demoPanes();
     },
     // Stubs — reached rarely or never in the demo subtree.
     iconUri() {

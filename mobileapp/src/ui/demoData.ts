@@ -4,7 +4,7 @@
 // sample data, and never reaches a paired user. Covers every section so the status
 // language + ordering (needs-you → working → idle → running → Elsewhere) is on display.
 
-import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, TermTheme} from '../api/types';
 import {DigestRow, HQEvent, TranscriptTurn} from '../api/client';
 
 // SGR helpers so the demo terminal shows the flagship COLOR mirror (not flat grey):
@@ -56,6 +56,28 @@ const secAgo = (n: number) => new Date(Date.now() - n * 1000).toISOString();
 // Per-pane terminal screen (what NativeTerm shows), WITH real ANSI color. The hero
 // (%7) shows a permission prompt with the 1/2/3 choices the ApprovalCard picks up.
 const PANE_TEXT: Record<string, string> = {
+  // The PLAIN panes the All-panes browser lists. A plain pane opened from the browser
+  // used to fall through to "(no live screen)", which reads as a dead end in the one
+  // tour App Review sees. These are ordinary terminal screens — no agent, no status.
+  '%12': `${D}~/src/api${X}\n$ git status --short\n M internal/auth/verify.go\n M internal/auth/verify_test.go\n$ ${X}`,
+  '%13':
+    `${D}~/src/api — npm run dev${X}\n\n` +
+    `  ${G}ready${X} - started server on 0.0.0.0:3000\n` +
+    `  ${D}event${X} - compiled successfully in 412 ms\n` +
+    `  ${D}event${X} - hot reload: internal/auth/verify.go\n`,
+  '%14':
+    `${D}~/src/web — vim src/routes/session.ts${X}\n\n` +
+    `  1 import {verifyToken} from '../auth';\n` +
+    `  2\n` +
+    `  3 export async function handler(req, res) {\n` +
+    `  4   const claims = await verifyToken(req);\n` +
+    `  5   if (!claims) return res.status(401).end();\n` +
+    `${D}~${X}\n${D}~${X}\n`,
+  '%15':
+    `${D}~/src/infra — tail -f deploy.log${X}\n\n` +
+    `  12:04:11  build   ok    (38s)\n` +
+    `  12:04:52  push    ok    registry.internal/api:sha-4f2c1a\n` +
+    `  12:05:03  deploy  ok    3/3 healthy\n`,
   '%1':
     `${B}gtmux HQ${X} ${D}— chief of staff${X}\n\n` +
     `${C}⟣${X} fleet: 6 sessions · ${R}1 waiting${X} (api: run tests?) · rest normal\n` +
@@ -333,4 +355,62 @@ export function demoInputHistory(zh: boolean): string[] {
   return zh
     ? ['继续', '把测试跑一遍', '这里为什么要加锁？', '提交并推送', '回滚上一次改动']
     : ['continue', 'run the tests', 'why the lock here?', 'commit & push', 'revert the last change'];
+}
+
+// demoPanes — every tmux pane the fake Mac has, the superset the All-panes browser
+// reads (GET /api/panes). The demo used to have none, so the browser was simply absent
+// from the tour App Review sees — and reaching any pane, not just the agent ones, is a
+// whole pillar of the product.
+//
+// It is DERIVED from sampleAgents so the two can never disagree: every agent row appears
+// as its own pane, plus the plain neighbours a real session actually has (a shell, a dev
+// server, a log tail). Sessions match the agents' sessions, so the browser groups the way
+// the radar does.
+export function demoPanes(): PaneRow[] {
+  const agents = sampleAgents().filter(a => a.source !== 'native');
+  const rows: PaneRow[] = agents.map(a => ({
+    pane_id: a.pane_id,
+    loc: a.loc || `${a.session}:0.0`,
+    session: a.session,
+    window: '0',
+    pane: '0',
+    cwd: `~/src/${a.session}`,
+    command: 'node',
+    title: a.task,
+    active: a.pane_id === '%7',
+    tier: 'agent',
+    agent: a.agent,
+    project: a.session,
+    branch: a.session === 'api' ? 'feat/auth-refactor' : 'main',
+  }));
+  // Plain panes: the neighbours an agent session really has. They carry no agent and no
+  // status — waiting/working/idle are agent concepts (DESIGN §3).
+  const plain: Array<[string, string, string, string]> = [
+    ['%12', 'api', 'zsh', '~/src/api'],
+    ['%13', 'api', 'npm run dev', '~/src/api'],
+    ['%14', 'web', 'vim', '~/src/web'],
+    ['%15', 'infra', 'tail -f deploy.log', '~/src/infra'],
+  ];
+  plain.forEach(([id, session, command, cwd], i) => {
+    rows.push({
+      pane_id: id,
+      loc: `${session}:0.${i + 1}`,
+      session,
+      window: '0',
+      pane: String(i + 1),
+      cwd,
+      command,
+      tier: 'plain',
+      project: session,
+      branch: session === 'api' ? 'feat/auth-refactor' : 'main',
+    });
+  });
+  // Grouped by session in first-seen order, the way the browser lists them.
+  const order: string[] = [];
+  const by = new Map<string, PaneRow[]>();
+  for (const r of rows) {
+    if (!by.has(r.session)) { by.set(r.session, []); order.push(r.session); }
+    by.get(r.session)!.push(r);
+  }
+  return order.flatMap(s => by.get(s)!);
 }

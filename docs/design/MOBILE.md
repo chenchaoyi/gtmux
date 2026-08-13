@@ -440,6 +440,16 @@ resource 同样只在 red 档才红、软 amber 不红)。差异仅在容器:手
 见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc|常用语▾ 历史（用户可见文案 2026-08 起为「常用语 / Quick replies」，代码内部名保持 snippets），写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；Demo 与真机雷达一致用 `HQDisc`，仅 iPad 侧栏仍 `HQCard`，见 hq-meta-layer）。
 
 - **Demo 模式**（mockup §18）：全功能无 server 演示（App Review 路径）。铁律：明示样例（DEMO chip 全程）、永不混入真实（Servers 无条目）、每次进入重置、每步引导「配对你的 Mac」。剧本主线 = 30 秒核心循环：看到等你 → 点进 → 按 1 批准 → 测试跑完 → 雷达变绿挂 latest。优化项见 ITERATIONS §F7。
+  - **Demo 必须与真机雷达同款，不是它的简化版**（2026-08-12 定，此前已因同一原因翻车两次）：
+    Demo 是审核员**唯一**能看到的这个 app，也是新用户的第一印象。真机雷达有的**产品能力**，
+    Demo 一律要有 —— 2026-08-12 的审计发现缺了三样：**舰队计数行**、**「只看等输入」筛选**、
+    **「所有 pane」浏览器**（`demoClient` 连 `panes()` 都没有，整块 surface 在审核路径上不存在），
+    而「所有 pane」正是商店描述里写着的能力。另外普通 pane 点开会落到「(no live screen)」死路，
+    也已补上可信画面。
+  - **Demo 专属**的东西保留：样例横幅、「配对你的 Mac」按钮、关闭按钮 —— 这些是演示脚手架，不是产品差异。
+  - **两边都画的 chrome，抽成一个共享组件**，不要各写一份。§17 早就记过 Demo 因为自己留了一份
+    `HQCard` 而落后于浮窗改版；这次的计数行/筛选也是同样的机制。现在 `ui/RadarSummary` 由真机与
+    Demo 共用，`demoPanes()` 从 `sampleAgents()` **派生**而不是另写一张表 —— 派生的东西不会漂移。
 
 
 ## 18. 服务器模式（纯展示，不控制）

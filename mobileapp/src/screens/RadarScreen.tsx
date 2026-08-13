@@ -15,22 +15,12 @@ import {PanesIcon} from '../ui/Icons';
 import {HQDisc} from '../ui/HQDisc';
 import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
+import {RadarSummary} from '../ui/RadarSummary';
 import {SettingsIcon} from '../ui/SettingsIcon';
 import {StatusColor, counts} from '../ui/theme';
-import {statusLabel, Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 
 const COLLAPSED_KEY = 'radar.collapsed';
-
-// The status words follow the language (统一双语铁律) — the same statusLabel the
-// section headers use, so the summary never reads "1 waiting" in a zh build.
-function summary(c: ReturnType<typeof counts>, agentsWord: string, lang: Lang): string {
-  const parts: string[] = [];
-  if (c.waiting) parts.push(`${c.waiting} ${statusLabel('waiting', lang)}`);
-  parts.push(`${c.working} ${statusLabel('working', lang)}`);
-  parts.push(`${c.idle} ${statusLabel('idle', lang)}`);
-  return `${c.total} ${agentsWord} · ${parts.join(' · ')}`;
-}
 
 export function RadarScreen({navigation}: any) {
   const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client} = useAgents();
@@ -169,31 +159,14 @@ export function RadarScreen({navigation}: any) {
           </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.headerBottom}>
-        <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
-          {summary(c, t('agents'), lang)}
-        </Text>
-        {(c.waiting > 0 || waitingOnly) && (
-          <TouchableOpacity
-            testID={TestIds.radar.waitingOnly}
-            accessibilityLabel={TestIds.radar.waitingOnly}
-            accessibilityRole="button"
-            onPress={() => setWaitingOnly(v => !v)}
-            hitSlop={hit}
-            style={[
-              styles.filterChip,
-              waitingOnly
-                ? {backgroundColor: StatusColor.waiting + '1F', borderColor: StatusColor.waiting}
-                : {backgroundColor: 'transparent', borderColor: pal.divider},
-            ]}>
-            <Text
-              style={[styles.filterChipText, {color: waitingOnly ? StatusColor.waiting : pal.fg2}]}
-              numberOfLines={1}>
-              {lang === 'zh' ? '只看等输入' : 'Waiting only'}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <RadarSummary
+        c={c}
+        agentsWord={t('agents')}
+        lang={lang}
+        pal={pal}
+        waitingOnly={waitingOnly}
+        onToggleWaitingOnly={() => setWaitingOnly(v => !v)}
+      />
     </View>
   );
 
@@ -359,16 +332,6 @@ const styles = StyleSheet.create({
   authBannerText: {flex: 1, fontSize: 12, color: '#F3D9DE', fontWeight: '600'},
   guestBanner: {paddingHorizontal: 16, paddingVertical: 7, borderBottomWidth: 1},
   guestBannerText: {fontSize: 12, fontWeight: '600'},
-  headerBottom: {flexDirection: 'row', alignItems: 'center', marginTop: 6},
-  summary: {fontSize: 12.5, fontWeight: '600', flex: 1},
-  filterChip: {
-    marginLeft: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 11,
-    borderWidth: 1,
-  },
-  filterChipText: {fontSize: 11, fontWeight: '600'},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 70, paddingHorizontal: 40},
   emptyText: {fontSize: 15, fontWeight: '600', marginTop: 16},
   emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},

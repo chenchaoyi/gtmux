@@ -478,6 +478,33 @@ reveals real history nor grows it.
 - **WHEN** the user sends a message in demo mode
 - **THEN** it is not added to the real input history
 
+### Requirement: Demo mode shows the same product the radar does
+
+Demo mode is the only view of the app App Review gets, and a new user's first
+impression of it. It SHALL therefore offer the same surfaces the real radar offers,
+over sample data — not a reduced version of them. A surface reachable from the real
+radar and absent from the demo is a feature a reviewer cannot see and a user is not
+shown.
+
+Demo-only affordances (a sample-data banner, a "pair your Mac" call to action, a
+close control) are expected and SHALL remain. What must not differ is the product:
+the fleet tally, the filters, the sections, the floating supervisor control, the
+detail view, and the all-panes browser.
+
+Where a piece of chrome is drawn on both, it SHOULD be one shared component rather
+than a copy in each — the demo fell behind the real radar twice by being a copy.
+
+#### Scenario: A surface exists on the radar but not in demo
+
+- **WHEN** the real radar offers a surface (for example the all-panes browser)
+- **THEN** the demo offers it too, over sample data, reachable the same way
+
+#### Scenario: A pane opened from the demo browser
+
+- **WHEN** a pane is opened from the demo's all-panes browser, including a plain
+  (non-agent) pane
+- **THEN** it shows a believable sample screen rather than an empty one
+
 ### Requirement: Native terminal text selection on iOS
 
 The iOS terminal viewer SHALL provide system-native text selection over the
