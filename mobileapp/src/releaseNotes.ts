@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.54.0',
+    en: [
+      'The HQ situation board reads like a document again: wide tables stack into labelled blocks instead of running off the side of the screen, and inline code no longer leaves white marks through the prose.',
+      'The board sheet stops repeating its own title, and says how long ago it was updated.',
+    ],
+    zh: [
+      '中控态势板恢复成一份能读的文档：过宽的表格改为逐行堆叠并带上列名，不再从屏幕右侧跑掉；行内代码也不再在正文里留下一块块白斑。',
+      '态势板页面不再把自己的标题重复一遍，改为直接告诉你它多久前更新过。',
+    ],
+  },
+  {
     version: '0.53.0',
     en: [
       'The all-panes browser now shows the window level: panes are grouped under the window that holds them, and a session\'s header lists its windows even when folded.',
