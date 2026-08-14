@@ -2,6 +2,7 @@ package radar
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -113,7 +114,7 @@ func GatherPanes() []PaneRow {
 		}
 		row.Project, row.Branch = gitInfo(row.Cwd)
 		if len(f) >= 7 {
-			row.Title = strings.TrimSpace(f[6])
+			row.Title = meaningfulTitle(f[6])
 		}
 		if len(f) >= 8 {
 			row.Active = f[7] == "1"
@@ -130,6 +131,38 @@ func GatherPanes() []PaneRow {
 		out = append(out, row)
 	}
 	return out
+}
+
+// hostTitle is this machine's hostname, which a shell commonly writes into every pane's
+// title. Resolved once — it cannot change while the process runs.
+var hostTitle = func() string {
+	h, err := os.Hostname()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(h)
+}()
+
+// meaningfulTitle drops a pane title that does not NAME the pane.
+//
+// A shell writes the hostname into the title of every pane it owns, so on a real fleet
+// four different panes all read `ccy-MBP2024-M4-Office.local` — a label that tells them
+// apart from nothing. (A sibling shell with no title showed `bash`, which is at least
+// true.) The tmux-id-surface design says it plainly: `pane_title` is not a usable
+// per-pane name, so a surface must fall back to the command.
+//
+// Dropped HERE, in the core, rather than in each surface: only this machine knows its own
+// hostname — the phone and the web are clients and cannot check it. Same reason the HQ
+// verdict is decided once in the core and merely rendered by the surfaces.
+func meaningfulTitle(raw string) string {
+	t := strings.TrimSpace(raw)
+	if t == "" {
+		return ""
+	}
+	if hostTitle != "" && (t == hostTitle || t == strings.SplitN(hostTitle, ".", 2)[0]) {
+		return ""
+	}
+	return t
 }
 
 // PanesJSONBytes marshals GatherPanes for `gtmux panes --json` / any HTTP consumer.

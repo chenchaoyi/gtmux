@@ -9,8 +9,10 @@ after measurement — the tab carries every pane id through the window NAME, so
 
 - [ ] 1.1 Mobile pane browser (`mobileapp/src/screens/PaneBrowserScreen.tsx`): render an
       explicit window sub-group (`@id name`) under each session; show `%N` on every row.
-- [ ] 1.2 Menu-bar pane browser (`macapp/Sources/GtmuxBar/PaneBrowser.swift`): add the
-      window sub-header (its "tree" comment is currently not rendered); `%N` already shown.
+- [x] 1.2 Menu-bar pane browser: window band (`@id name`) grouped by the STABLE id, shown
+      only when a session has >1 window; every session header lists ALL its window ids so a
+      COLLAPSED session still says what it holds; `%N` moved to the front of the row as the
+      leading identifier and made searchable; the redundant `w.p` index dropped.
 - [ ] 1.3 Web pane browser (`internal/server/web/`): show `%N` per row (3-level already).
 - [ ] 1.4 One shared "identity chip" rendering (`session · @id name · %id label`) reused
       verbatim across the three surfaces; tap/click `%N` copies `gtmux focus %N`.

@@ -103,3 +103,138 @@ final class PaneBrowserTests: XCTestCase {
         XCTAssertFalse(c.isCollapsed("here"))
     }
 }
+
+// MARK: window level (tmux-id-surface phase 1)
+
+private func row(_ id: String, _ session: String, _ win: String, _ winID: String, _ winName: String) -> PaneRow {
+    let json = """
+    {"pane_id":"\(id)","session":"\(session)","window":"\(win)","pane":"0",
+     "loc":"\(session):\(win).0","command":"bash","tier":"plain",
+     "win_id":"\(winID)","win_name":"\(winName)"}
+    """
+    return try! JSONDecoder().decode(PaneRow.self, from: Data(json.utf8))
+}
+
+final class PaneWindowTests: XCTestCase {
+
+    /// The window INDEX cannot group windows. Measured on the fleet this was built for:
+    /// every session's windows sat at index 0..n but MOST sessions had all their windows at
+    /// 0, and two different windows sharing an index would merge into one group. `@id` is
+    /// the anchor; grouping keys on it.
+    func testTwoWindowsAtTheSameIndexDoNotMerge() {
+        let a = PaneWindow(winID: "@4", winName: "cc dev", rows: [row("%9", "HSS", "0", "@4", "cc dev")])
+        let b = PaneWindow(winID: "@5", winName: "cc dev", rows: [row("%31", "HSS", "0", "@5", "cc dev")])
+        XCTAssertNotEqual(a.id, b.id, "same index AND same name — only the @id separates them")
+    }
+
+    /// The label leads with the id because the id is the anchor: a name drifts with
+    /// `automatic-rename` and two windows may share one.
+    func testWindowLabelLeadsWithTheId() {
+        XCTAssertEqual(PaneWindow(winID: "@7", winName: "multipilot", rows: []).label, "@7 multipilot")
+        // No name yet — the id alone still identifies it.
+        XCTAssertEqual(PaneWindow(winID: "@7", winName: "", rows: []).label, "@7")
+        // An older core sends no id: fall back to the name rather than showing nothing.
+        XCTAssertEqual(PaneWindow(winID: "", winName: "multipilot", rows: []).label, "multipilot")
+    }
+
+    /// A window line is only worth a row when there is more than one window. With one, the
+    /// levels coincide and its id rides on the session header — measured motivation: 6 of
+    /// 11 sessions on the real fleet have exactly one window, so always drawing it would
+    /// add a line saying nothing to more than half of them.
+    func testSingleWindowShowsNoExtraRowButKeepsItsId() {
+        let one = PaneGroup(session: "HQ",
+                            windows: [PaneWindow(winID: "@3", winName: "hq", rows: [row("%4", "HQ", "0", "@3", "hq")])],
+                            agentCount: 1, roll: [:])
+        XCTAssertFalse(one.showsWindowRows)
+        XCTAssertEqual(one.windowIDs, "@3", "the id must not disappear just because the row does")
+
+        let many = PaneGroup(session: "MP",
+                             windows: [PaneWindow(winID: "@7", winName: "a", rows: [row("%12", "MP", "0", "@7", "a")]),
+                                       PaneWindow(winID: "@8", winName: "b", rows: [row("%10", "MP", "1", "@8", "b")])],
+                             agentCount: 2, roll: [:])
+        XCTAssertTrue(many.showsWindowRows)
+        // A multi-window session must name ALL of them: collapsed, this line is the only
+        // thing saying which windows are in here, and it used to say nothing at all.
+        XCTAssertEqual(many.windowIDs, "@7 @8")
+    }
+
+    /// The rollup counts every pane in the session, across its windows — folding a session
+    /// must still report what is inside all of it.
+    func testGroupRowsSpanAllWindows() {
+        let g = PaneGroup(session: "S",
+                          windows: [PaneWindow(winID: "@1", winName: "a", rows: [row("%1", "S", "0", "@1", "a"), row("%2", "S", "0", "@1", "a")]),
+                                    PaneWindow(winID: "@2", winName: "b", rows: [row("%3", "S", "1", "@2", "b")])],
+                          agentCount: 0, roll: [:])
+        XCTAssertEqual(g.rows.count, 3)
+        XCTAssertEqual(g.rows.map(\.paneID), ["%1", "%2", "%3"], "window order preserved")
+    }
+
+    /// The decoder must tolerate a core that does not send the fields at all.
+    func testRowDecodesWithoutWindowFields() {
+        let json = #"{"pane_id":"%1","session":"S","window":"0","pane":"0","loc":"S:0.0","command":"bash","tier":"plain"}"#
+        let r = try! JSONDecoder().decode(PaneRow.self, from: Data(json.utf8))
+        XCTAssertEqual(r.winID, "")
+        XCTAssertEqual(r.winName, "")
+    }
+}
+
+
+// A session with many windows must not push its own name off the row.
+final class PaneWindowIDsTests: XCTestCase {
+    private func win(_ id: String) -> PaneWindow { PaneWindow(winID: id, winName: "w", rows: []) }
+
+    func testWindowIDsAreCappedNotEndless() {
+        let g = PaneGroup(session: "S", windows: (1...9).map { win("@\($0)") }, agentCount: 0, roll: [:])
+        XCTAssertEqual(g.windowIDs, "@1 @2 @3 @4 @5 +4")
+    }
+
+    func testSixFitWithoutACounter() {
+        let g = PaneGroup(session: "S", windows: (1...6).map { win("@\($0)") }, agentCount: 0, roll: [:])
+        XCTAssertEqual(g.windowIDs, "@1 @2 @3 @4 @5 @6")
+    }
+
+    /// An older core sends no ids — the header then says nothing rather than a row of blanks.
+    func testNoIdsMeansNoLine() {
+        let g = PaneGroup(session: "S", windows: [win(""), win("")], agentCount: 0, roll: [:])
+        XCTAssertEqual(g.windowIDs, "")
+    }
+}
+
+// The search box must find a pane by the token everyone actually holds: its `%N`. That is
+// what a tab title shows, what `gtmux focus %N` takes, and what HQ says — and it was the
+// one thing the haystack did not contain, so typing a row's own leading label found
+// nothing. Same for a window's `@N`.
+final class PaneSearchTests: XCTestCase {
+    /// Mirrors the filter's haystack. Kept beside the tests so a field dropped from the
+    /// real one shows up here as a failure rather than as silence.
+    private func haystack(_ r: PaneRow) -> [String] {
+        [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc, r.paneID, r.winID, r.winName]
+    }
+    private func matches(_ r: PaneRow, _ q: String) -> Bool {
+        haystack(r).contains { $0.lowercased().contains(q.lowercased()) }
+    }
+    private func sample() -> PaneRow {
+        let json = #"{"pane_id":"%23","session":"gtmux dev","window":"0","pane":"1","loc":"gtmux dev:0.1","command":"bash","tier":"plain","win_id":"@17","win_name":"gtmux"}"#
+        return try! JSONDecoder().decode(PaneRow.self, from: Data(json.utf8))
+    }
+
+    func testFindsByPaneId() {
+        XCTAssertTrue(matches(sample(), "%23"))
+        XCTAssertTrue(matches(sample(), "23"), "typing the digits without the sigil still finds it")
+    }
+
+    func testFindsByWindowIdAndName() {
+        XCTAssertTrue(matches(sample(), "@17"))
+        XCTAssertTrue(matches(sample(), "gtmux"))
+    }
+
+    func testStillFindsByTheOldFields() {
+        XCTAssertTrue(matches(sample(), "bash"))
+        XCTAssertTrue(matches(sample(), "gtmux dev"))
+    }
+
+    func testDoesNotMatchEverything() {
+        XCTAssertFalse(matches(sample(), "%99"))
+        XCTAssertFalse(matches(sample(), "zsh"))
+    }
+}
