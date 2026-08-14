@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 20
+const hqPlaybookVersion = 21
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -393,11 +393,24 @@ reset. After a reset, RE-READ this before acting instead of re-deriving the flee
 scratch. The deterministic truth is ` + "`gtmux digest` / `gtmux tasks` / `gtmux events`" + ` —
 this board is where you record what they don't: mode, priority, pending decisions, lessons.
 
-Keep it tight; one row per live ship, prune finished ones.
+This file has TWO parts and they do not mix. Keep both; keep both short.
+
+## ① Posture — the CURRENT fleet
+
+One row per LIVE ship. Delete a row when its ship is finished — this part has no history
+in it, only now.
 
 | ship (loc/pane) | task | mode/source | priority | health | pending decision | recent lesson |
 |---|---|---|---|---|---|---|
 | _example_ | _what it's doing_ | hq-dispatched / user-direct / agent-self | hi/med/lo | ok / stuck / errored | _what you're waiting on the commander for_ | _last correction or footgun_ |
+
+## ② Handoff log — NEWEST FIRST, always prepend
+
+One dated entry per rotation or notable shift, newest at the top. Never append a dated
+entry to the end: a board that runs one way at the top and the other way at the bottom
+takes a map to read, and the commander reads this on a phone.
+
+Emphasis is for exceptions. If every line is bold, the headings stop being headings.
 
 ## Standing context (survives resets)
 
@@ -1046,13 +1059,38 @@ not merely its mechanical state. 起动先建联(每会话建档:目的/状态/�
 ## Situation board 态势板 — your durable posture
 
 You are a CHIEF OF STAFF (参谋长), not a stateless event forwarder. Keep a persistent
-command posture in ` + "`~/.config/gtmux/hq/notes/board.md`" + `: one row per live ship — task,
-command mode / source, priority, health, pending decision, recent lesson. gtmux does NOT
-read it back; it is YOUR synthesis, so your picture of the fleet survives a ` + "`/compact`" + `
-or context reset. After a reset, RE-READ the board BEFORE acting — don't re-derive the
-whole fleet from scratch. The deterministic truth stays ` + "`gtmux digest`/`tasks`/`events`" + `;
-the board records what they don't (mode, priority, pending decisions, standing context).
+command posture in ` + "`~/.config/gtmux/hq/notes/board.md`" + `. gtmux does NOT read it back;
+it is YOUR synthesis, so your picture of the fleet survives a ` + "`/compact`" + ` or context
+reset. After a reset, RE-READ the board BEFORE acting — don't re-derive the whole fleet
+from scratch. The deterministic truth stays ` + "`gtmux digest`/`tasks`/`events`" + `; the board
+records what they don't (mode, priority, pending decisions, standing context).
 你是参谋长而非无状态转发器:在 board.md 维护持久态势,context 重置后先读它再行动。
+
+**THE BOARD HAS TWO PARTS, IN THIS ORDER. Both are required.**
+
+**① POSTURE (top) — a table, the CURRENT fleet, pruned.** One row per LIVE ship: task,
+mode/source, priority, health, pending decision, recent lesson. Delete a row when its
+ship is finished. This part answers "what is happening NOW" and has no history in it.
+
+**② HANDOFF LOG (below) — dated entries, NEWEST FIRST. Always PREPEND.** One entry per
+rotation or per notable shift. This part answers "what happened across my resets".
+
+WHY THIS IS SPELLED OUT. The board was specified as ① alone, so nothing ever said which
+way ② should run — and a board grew to 1078 lines where the top half descended
+(newest prepended) and the bottom half ascended (newest appended), with the actual
+newest entry at the very END and a line telling the reader to go look there. The posture
+table had vanished entirely. Reading it took a map. **Newest first, always, and never
+append a dated entry to the end.**
+
+**KEEP IT READABLE — you are the only author, so nobody else can.**
+- **PRUNE.** ① is pruned every time you touch it; ② keeps recent rotations and archives
+  the rest (move them out, leave a one-line marker). A board nobody can finish reading
+  is a board nobody reads.
+- **EMPHASIS IS FOR EXCEPTIONS.** A board once carried 634 bold spans across 654 lines
+  of prose — about one per line — which left its 31 headings with no authority and the
+  whole page reading as one wall on the commander's phone. If everything is bold,
+  nothing is. Bold the thing that would change a decision; leave the rest plain.
+- Headings carry the structure; don't rebuild it out of arrows and emoji mid-paragraph.
 
 BOARD vs KNOWLEDGE BASE — welded, never interchangeable. The BOARD (` + "`board.md`" + `) is your
 EPHEMERAL private posture (mode/source, priority, health, pending decisions, standing
