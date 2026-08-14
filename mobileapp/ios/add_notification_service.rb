@@ -27,6 +27,8 @@ nse.build_configurations.each do |c|
   s['CODE_SIGN_STYLE'] = 'Automatic'
   s['GENERATE_INFOPLIST_FILE'] = 'NO'
   s['CURRENT_PROJECT_VERSION'] = '1'
+  # Placeholder only — scripts/set-version.sh rewrites every MARKETING_VERSION in the
+  # pbxproj from the git tag before a build, and the Info.plist reads $(MARKETING_VERSION).
   s['MARKETING_VERSION'] = '1.0'
   s['CLANG_ENABLE_MODULES'] = 'YES'
   s['LD_RUNPATH_SEARCH_PATHS'] =

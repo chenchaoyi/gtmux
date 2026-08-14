@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.53.0',
+    en: [
+      'The all-panes browser now shows the window level: panes are grouped under the window that holds them, and a session\'s header lists its windows even when folded.',
+      'Every row leads with its pane id (%23) instead of a position that changes whenever panes are reordered. Tap the id to copy "gtmux focus %23".',
+      'Search finds a pane by id too — %23, @17, or just the digits.',
+    ],
+    zh: [
+      '「所有 pane」浏览器现在会显示窗口这一层：pane 按所属窗口分组，会话折叠起来时头部也会列出它有哪些窗口。',
+      '每一行改为以 pane id（%23）开头，不再用会随重排而变的位置编号。点 id 即可复制 "gtmux focus %23"。',
+      '搜索也能用 id 找 pane —— %23、@17，或直接敲数字。',
+    ],
+  },
+  {
     version: '0.52.0',
     en: [
       'A notification\'s quick-reply buttons no longer claim a meaning they cannot know. They showed the same "1 · Yes / 2 · Always / 3 · No" whatever the agent was asking, so on a two-option prompt the button labelled Always sent the answer that means No. They now show only the number, the body lists the real options one per line, and there are exactly as many buttons as the agent offers.',
