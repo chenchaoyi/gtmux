@@ -13,7 +13,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<!-- Must match the parent app or every build warns (and a submission can be held).
+	     Take it from MARKETING_VERSION, which scripts/set-version.sh stamps from the git tag. -->
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSExtension</key>
