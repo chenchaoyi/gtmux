@@ -190,7 +190,12 @@ over one Go core (gtmux-core is the single data source):
 - **Every release tag MUST carry a `user:` block in its tag message** — the lines
   `gtmux update` prints after installing and `gtmux whatsnew` lists. Write them for the
   USER (what moved that they'd notice), not as commit subjects; goreleaser copies the tag
-  body into the release, and the CLI reads it back. A release with no `user:` block shows
+  body into the release, and the CLI reads it back **from the GitHub RELEASE body, not the
+  local tag** — so a botched line can be repaired with `gh release edit <tag> --notes-file
+  <path>` (run it INSIDE the repo; from anywhere else it fails with "not a git repository")
+  without rewriting the tag. **Keep every bullet on ONE line**: the reader renders the block
+  line-by-line, so a wrapped bullet ships as two bullets, the second one starting mid-sentence
+  (v0.53.0 did exactly that). A release with no `user:` block shows
   nothing, which is correct only when nothing changed for users. A `user-zh:` twin block
   is **optional but encouraged** (tags used to flip language between releases): the CLI
   serves the block matching the reader's language (`GTMUX_LANG`) and falls back to the
