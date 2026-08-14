@@ -38,11 +38,16 @@ free because `set-titles-string` is `#S — #W`. gtmux writes nothing into the u
 
 ## Phase 3 — capture the stable ids (additive data)
 
-- [ ] 3.1 Add `#{window_id}` (and optionally `#{session_id}`) to the radar/pane queries
-      (`internal/radar/agents.go`, `panes.go`); emit as new fields NAMED to avoid the
-      existing `session_id` adopt-key collision (`win_id` / `tmux_session_id`).
+- [x] 3.1 Add `#{window_id}` + `#{window_name}` to the pane query (`internal/radar/panes.go`)
+      as `win_id` / `win_name`, additive + omitempty, appended to the END of the tmux format
+      so the index-based parser is undisturbed. Named `win_id` to stay clear of the
+      `session_id` adopt key. NOT added to `agents --json`: the radar is a flat agent list
+      with no window level, so that field would be speculative until a consumer needs it.
 - [ ] 3.2 Use `@N` for stable window grouping (a window keeps its identity across reorder).
-- [ ] 3.3 Tests + `agents --json`/`panes --json` contract note (additive, optional fields).
+- [x] 3.3 Tests (window ids distinguish two windows that BOTH have index 0 — the measured
+      failure; a name shared by two windows is not an identity; absent fields stay absent)
+      + `api/contract.md` note carrying the anchor/gloss rule and the server-lifetime
+      boundary.
 
 ## Consistency (per the repo rule)
 

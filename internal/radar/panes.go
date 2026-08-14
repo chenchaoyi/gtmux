@@ -18,6 +18,21 @@ type PaneRow struct {
 	Session string `json:"session"`
 	Window  string `json:"window"` // window index
 	Pane    string `json:"pane"`   // pane index
+	// WinID / WinName are the window's STABLE tmux id and its (drifting) name —
+	// tmux-id-surface. The id is the anchor and the name is a gloss, because a window's
+	// name follows `automatic-rename` while `@N` does not move.
+	//
+	// The INDEX cannot play that role: measured on a real fleet of 13 sessions, 8 of 12
+	// active windows had index 0, so grouping or labelling by index makes most windows
+	// indistinguishable. `@N` is unique per server.
+	//
+	// NAMED `win_id`, deliberately NOT `window_id`-adjacent to `session_id`: the existing
+	// `session_id` on an agent row is the coding-agent ADOPT key, nothing to do with
+	// tmux's `$N`, and a symmetrical name here would invite exactly that confusion.
+	//
+	// Additive + omitempty: a surface built before this keeps decoding.
+	WinID   string `json:"win_id,omitempty"`   // tmux window_id, "@N"
+	WinName string `json:"win_name,omitempty"` // window_name (a gloss; may drift or repeat)
 	Cwd     string `json:"cwd,omitempty"`
 	Command string `json:"command"` // pane_current_command (bash / claude / vim …)
 	Title   string `json:"title,omitempty"`
@@ -39,8 +54,11 @@ type PaneRow struct {
 // panesSource lists every tmux pane with the fields the browser needs. A package var
 // so fixture tests can inject panes without a live tmux server.
 var panesSource = func() []string {
+	// New fields go on the END: the parser reads by index, so appending cannot disturb
+	// what is already there.
 	const fields = "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_current_path}\t#{pane_current_command}\t#{pane_title}\t#{pane_active}\t#{pane_in_mode}"
+		"#{pane_current_path}\t#{pane_current_command}\t#{pane_title}\t#{pane_active}\t#{pane_in_mode}\t" +
+		"#{window_id}\t#{window_name}"
 	return tmux.Lines("list-panes", "-a", "-F", fields)
 }
 
@@ -72,7 +90,7 @@ func GatherPanes() []PaneRow {
 	names, agents, icons := agentPaneSet()
 	var out []PaneRow
 	for _, line := range panesSource() {
-		f := strings.SplitN(line, "\t", 9)
+		f := strings.SplitN(line, "\t", 11)
 		if len(f) < 6 {
 			continue
 		}
@@ -102,6 +120,12 @@ func GatherPanes() []PaneRow {
 		}
 		if len(f) >= 9 {
 			row.InMode = f[8] == "1"
+		}
+		if len(f) >= 10 {
+			row.WinID = strings.TrimSpace(f[9])
+		}
+		if len(f) >= 11 {
+			row.WinName = strings.TrimSpace(f[10])
 		}
 		out = append(out, row)
 	}
