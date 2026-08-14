@@ -63,6 +63,7 @@ func doctorFix(yes bool) int {
 	applied := 0
 	applied += s.stepLocale()
 	applied += s.stepSetTitles()
+	applied += s.stepPaneIDsInTabs()
 	applied += s.stepRestoreSettings()
 	applied += s.stepPlugins()
 	applied += s.stepClaudeHook()
@@ -230,6 +231,53 @@ func (s *fixState) stepSetTitles() int {
 	return s.applyConf(
 		[]string{"set -g set-titles on", "set -g set-titles-string '#S — #W'"},
 		[][]string{{"set", "-g", "set-titles", "on"}, {"set", "-g", "set-titles-string", "#S — #W"}})
+}
+
+// stepPaneIDsInTabs offers the two lines that put every pane's `%N` into its window's
+// name — and so into the terminal tab, since set-titles-string is `#S — #W`.
+//
+// OPT-IN, and asked separately from the required fixes: `automatic-rename-format` is the
+// user's own configuration. On the machine this was designed against it was already set
+// to something better than gtmux would have guessed, which is exactly why gtmux SUGGESTS
+// rather than writes, and why it refuses to touch a format that is not tmux's default.
+func (s *fixState) stepPaneIDsInTabs() int {
+	cur := strings.TrimSpace(tmuxOpt("automatic-rename-format"))
+	if strings.Contains(cur, "#{pane_id}") && strings.Contains(tmuxHook("pane-exited"), "automatic-rename") {
+		return 0 // already configured
+	}
+	// Keep whatever the window name is made of today and APPEND the ids, so a user who
+	// has chosen their own format keeps it. Only an unset/default format is replaced.
+	base := cur
+	if windowNameFollowsCommand(base) {
+		base = "#{b:pane_current_path}"
+	}
+	format := base
+	if !strings.Contains(base, "#{pane_id}") {
+		format = base + " #{P:#{pane_id} }"
+	}
+	detail := i18n.Tr(
+		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n"+
+			"      set -g automatic-rename-format '"+format+"'\n"+
+			"      set-hook -g pane-exited '"+paneIDsRefreshHook+"'\n"+
+			"  Why: the tab then names the panes behind it, so a %N you see in gtmux can be\n"+
+			"  found on screen. The hook is required, not decoration: adding a pane refreshes\n"+
+			"  the name but CLOSING one does not, so without it the tab keeps listing a pane\n"+
+			"  that is gone.",
+		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n"+
+			"      set -g automatic-rename-format '"+format+"'\n"+
+			"      set-hook -g pane-exited '"+paneIDsRefreshHook+"'\n"+
+			"  原因：标签页从此会写出它背后的 pane，于是你在 gtmux 里看到的 %N 能在屏幕上找到。\n"+
+			"  那个 hook 是必需的，不是装饰：新增 pane 会刷新窗口名，但关闭 pane 不会 —— 少了它，\n"+
+			"  标签会一直列着一个已经不存在的 pane。")
+	if !s.ask(i18n.Tr("pane ids in tab titles  (optional — the \"global sense\")",
+		"标签页标题带 pane id（可选 —— 「全局感」）"), detail) {
+		return 0
+	}
+	return s.applyConf(
+		[]string{"set -g automatic-rename-format '" + format + "'",
+			"set-hook -g pane-exited '" + paneIDsRefreshHook + "'"},
+		[][]string{{"set", "-g", "automatic-rename-format", format},
+			{"set-hook", "-g", "pane-exited", paneIDsRefreshHook}})
 }
 
 func (s *fixState) stepRestoreSettings() int {

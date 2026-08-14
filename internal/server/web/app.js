@@ -356,6 +356,7 @@
   function paneToAgent(p) {
     return {
       pane_id: p.pane_id, session: p.session, window: p.window, pane: p.pane, loc: p.loc,
+      win_id: p.win_id || '', win_name: p.win_name || '',
       agent: p.tier === 'agent' ? (p.agent || '') : '', status: 'running',
       task: p.title || p.command, source: 'tmux', project: p.cwd,
       // an agent pane shows its OFFICIAL icon (avatarEl → loadIcon via /api/icon); a
@@ -382,7 +383,10 @@
   function renderPanes() {
     var q = ($('panes-search').value || '').trim().toLowerCase();
     var match = function (p) {
-      return !q || [p.session, p.window, p.command, p.title, p.cwd, p.agent, p.loc]
+      // The IDs are searchable: `%23` is what the tab title, `gtmux focus %23` and HQ
+      // all use, so it is what someone types — and it was not in the haystack at all.
+      return !q || [p.session, p.window, p.command, p.title, p.cwd, p.agent, p.loc,
+                    p.pane_id, p.win_id, p.win_name]
         .some(function (v) { return String(v || '').toLowerCase().indexOf(q) !== -1; });
     };
     // group session → (first-seen order), preserving pane order within
@@ -408,17 +412,39 @@
       var list = byS[sess];
       var nAgent = list.filter(function (p) { return p.tier === 'agent'; }).length;
       var hd = document.createElement('div'); hd.className = 'pb-session';
-      hd.innerHTML = '<span class="pb-sname">' + esc(sess) + '</span><span class="pb-smeta">' +
-        list.length + (nAgent ? ' · ' + nAgent + ' agent' : '') + '</span>';
+      // Every window id, so the session says what it holds at a glance. Capped, so a
+      // session with many windows cannot push its own name off the row.
+      var wids = [];
+      list.forEach(function (p) { if (p.win_id && wids.indexOf(p.win_id) < 0) wids.push(p.win_id); });
+      var widLabel = wids.length === 0 ? '' :
+        wids.length <= 6 ? wids.join(' ') : wids.slice(0, 5).join(' ') + ' +' + (wids.length - 5);
+      hd.innerHTML = '<span class="pb-sname">' + esc(sess) + '</span>' +
+        (widLabel ? '<span class="pb-swins">' + esc(widLabel) + '</span>' : '') +
+        '<span class="pb-smeta">' + list.length + (nAgent ? ' · ' + nAgent + ' agent' : '') + '</span>';
       root.appendChild(hd);
-      var lastWin = null;
+      // Divide on the STABLE window id, not the index: on a real fleet most of a
+      // server's windows sit at index 0, so an index-keyed divider merges windows that
+      // have nothing to do with each other. The label leads with the id because the id
+      // is the anchor — the name drifts with `automatic-rename` and can be shared.
+      //
+      // A single-window session gets no divider: the levels coincide there, and the id
+      // rides on the session header instead.
+      var wins = [];
       list.forEach(function (p) {
-        if (p.window !== lastWin) {
-          lastWin = p.window;
+        var k = p.win_id || 'idx:' + p.window;
+        var w = wins.filter(function (x) { return x.k === k; })[0];
+        if (!w) { w = {k: k, id: p.win_id || '', name: p.win_name || '', rows: []}; wins.push(w); }
+        w.rows.push(p);
+      });
+      wins.forEach(function (w) {
+        if (wins.length > 1) {
           var wl = document.createElement('div'); wl.className = 'pb-win';
-          wl.textContent = 'win ' + p.window; root.appendChild(wl);
+          wl.innerHTML = (w.id ? '<span class="pb-win-id">' + esc(w.id) + '</span>' : '') +
+            (w.name ? '<span class="pb-win-name">' + esc(w.name) + '</span>' : '') +
+            '<span class="pb-win-n">' + w.rows.length + '</span>';
+          root.appendChild(wl);
         }
-        root.appendChild(paneRowEl(p));
+        w.rows.forEach(function (p) { root.appendChild(paneRowEl(p)); });
       });
     });
   }
@@ -430,9 +456,37 @@
     if (!t || t.charAt(0) === '/' || t.charAt(0) === '~') return command;
     return t;
   }
+  // The command a pane id turns into — same shape as the menu-bar's `PaneCommands.focus`
+  // and the mobile `paneFocusCommand`. Surfacing `%N` is only worth it if the token means
+  // the same thing on every surface.
+  function paneFocusCommand(id) { return 'gtmux focus ' + id; }
+
+  // navigator.clipboard needs a SECURE context. The web surface is reached over the
+  // https tunnel (fine) but also over a plain `http://<lan-ip>:8765`, where the API is
+  // simply absent — so the old execCommand path is the fallback, not a legacy leftover.
+  function copyText(s) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(s).catch(function () { legacyCopy(s); });
+      return;
+    }
+    legacyCopy(s);
+  }
+  function legacyCopy(s) {
+    var ta = document.createElement('textarea');
+    ta.value = s; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* nothing else to try */ }
+    document.body.removeChild(ta);
+  }
+
   function paneRowEl(p) {
     var a = paneToAgent(p), isAgent = p.tier === 'agent';
-    var label = isAgent ? (p.agent || p.command) : plainLabel(p.title, p.command);
+    // An agent row leads with what it is DOING (from the live radar join), not its
+    // NAME, which repeats down the whole list while the distinguishing text hides in the
+    // sub-line. The avatar already carries identity.
+    var live = byId(lastAgents, p.pane_id);
+    var task = (live && live.task ? String(live.task) : '').trim();
+    var label = isAgent ? (task || p.agent || p.command) : plainLabel(p.title, p.command);
     var row = document.createElement('div'); row.className = 'pb-row';
     row.appendChild(avatarEl(a, 30, false));
     var tx = document.createElement('div'); tx.className = 'pb-text';
@@ -441,10 +495,26 @@
     if (isAgent) { var tg = document.createElement('span'); tg.className = 'pb-tag'; tg.textContent = 'on radar'; nm.appendChild(tg); }
     if (p.active) { var ad = document.createElement('span'); ad.className = 'pb-active'; nm.appendChild(ad); }
     var sub = document.createElement('div'); sub.className = 'pb-sub';
-    var wp = (p.loc || '').split(':').pop() || '';
+    // The PANE ID, not the `w.p` coordinate: stable, unique, and the token every other
+    // surface names. The coordinate changes whenever panes are reordered.
     var dir = (p.cwd || '').replace(/\/+$/, '').split('/').pop() || '';
-    var bits = [wp]; if (dir) bits.push(dir); if (p.command && p.command !== label) bits.push(p.command);
-    sub.textContent = bits.join('  ·  ');
+    // The id is its own element, not part of the joined text, because it is CLICKABLE:
+    // it copies `gtmux focus %N`, turning a token you can read into one you can run.
+    // The click stops there — the row itself still opens the pane.
+    var pid = document.createElement('span'); pid.className = 'pb-pid'; pid.textContent = p.pane_id;
+    pid.title = 'Copy `' + paneFocusCommand(p.pane_id) + '`';
+    pid.onclick = function (e) {
+      e.stopPropagation();
+      copyText(paneFocusCommand(p.pane_id));
+      pid.textContent = '✓ copied'; pid.classList.add('ok');
+      setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1200);
+    };
+    sub.appendChild(pid);
+    var bits = [];
+    if (isAgent && p.agent && p.agent !== label) bits.push(p.agent);
+    if (dir) bits.push(dir);
+    if (!isAgent && p.command && p.command !== label) bits.push(p.command);
+    if (bits.length) sub.appendChild(document.createTextNode('  ·  ' + bits.join('  ·  ')));
     tx.appendChild(nm); tx.appendChild(sub); row.appendChild(tx);
     var ch = document.createElement('span'); ch.className = 'pb-chev'; ch.textContent = '›'; row.appendChild(ch);
     row.onclick = function () { var live = byId(lastAgents, p.pane_id); openAgent(live || a); };

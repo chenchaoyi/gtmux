@@ -115,6 +115,23 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
 - 顶栏右侧：连接状态点（live / reconnecting / offline）+ 齿轮进设置。
 - waiting 行：淡红底 + 红方块·双竖线徽章 + 一次脉冲。
 
+### 「所有 pane」浏览器（`PaneBrowserScreen`，雷达头部 ▤ 进入）
+
+雷达保持 agent-first，全量 tmux pane 在这块独立整屏上（红线同 DESIGN §16：**绝不平铺进雷达**）。
+session 卡片可折叠（头带状态 rollup，折叠后仍然说话）、常驻搜索、点行进 Detail。
+
+**身份规则与菜单栏、浏览器完全同源（tmux-id-surface，2026-08-14）—— id 是锚，名字只是注解：**
+
+- 行首是 **`%N`**（pane 的 tmux id），不是会变的 `w.p` 坐标。**点它复制 `gtmux focus %N`**，
+  并**就地回显 `✓ copied`**（手机上没有回显，复制成功和点空了长得一模一样）。这个点击**只**属于
+  id：整行仍然是「打开这个 pane」（嵌套 touchable 会吃掉父级的 onPress，正是要的行为）。
+- **window 分带**（`@id 名字`）**只在该 session 有多个 window 时插入**；只有一个时不画，
+  否则每行顶一条带会把每个 session 的高度翻倍。但 **session 头永远列出它所有 window id**
+  （超过 5 折成 `+N`）—— 折叠状态下也要说得出里面装了什么。
+- **搜索认 id**：`%23` / `@17` / 光敲数字都能命中。
+- agent 行的**首行写「在做什么」**（雷达已派生好的 task），不写 agent 名 —— 六个 pane 都叫
+  "Claude Code" 时，名字不是身份；头像已经承担身份了。
+
 ---
 
 ## 4. Detail 交互（pane 视图 + 输入）

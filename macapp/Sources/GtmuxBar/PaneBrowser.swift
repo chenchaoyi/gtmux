@@ -19,12 +19,23 @@ struct PaneRow: Codable, Equatable, Identifiable {
     var tier = "plain"
     var agent = ""
     var icon = "" // official-icon hint for an agent pane (.app/image path); "" = monogram
+    // The window's STABLE id and its (drifting) name — tmux-id-surface. The window INDEX
+    // cannot identify a window: measured on this fleet, most sessions' windows all sit at
+    // index 0. `@N` is unique per server; the name is a gloss.
+    var winID = ""
+    var winName = ""
     var id: String { paneID }
 
     var isAgent: Bool { tier == "agent" }
     var wp: String { // window.pane, from the loc tail
         guard let i = loc.lastIndex(of: ":") else { return loc }
         return String(loc[loc.index(after: i)...])
+    }
+    /// Just the pane index — for rows sitting under a window line that already names the
+    /// window.
+    var paneIndexOnly: String {
+        guard let i = wp.lastIndex(of: ".") else { return wp }
+        return String(wp[wp.index(after: i)...])
     }
     // NO `label` here on purpose: what a row is called depends on the live radar join
     // (an agent's name can arrive empty and its command be a version string), so the rule
@@ -34,6 +45,8 @@ struct PaneRow: Codable, Equatable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
         case loc, session, window, pane, cwd, command, title, active, tier, agent, icon
+        case winID = "win_id"
+        case winName = "win_name"
         case inMode = "in_mode"
     }
 
@@ -50,6 +63,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
         cwd = s(.cwd); command = s(.command); title = s(.title)
         active = b(.active); inMode = b(.inMode)
         tier = s(.tier, "plain"); agent = s(.agent); icon = s(.icon)
+        winID = s(.winID); winName = s(.winName)
     }
 }
 
@@ -99,6 +113,13 @@ final class PaneCollapse: ObservableObject {
 
 /// PaneLabels mirrors the phone's labelling rules (PaneBrowserScreen.plainLabel /
 /// agentLabel). Both encode a real defect, so the two surfaces must agree.
+/// The commands a pane id can be turned into. One place, so the three surfaces that
+/// offer "copy this row's command" cannot drift apart — and so a test can assert the
+/// exact string a user will paste, rather than a rebuilt lookalike.
+enum PaneCommands {
+    static func focus(paneID: String) -> String { "gtmux focus " + paneID }
+}
+
 enum PaneLabels {
     /// A PLAIN pane. Many shells set the pane title to the cwd, sometimes prefixed with a
     /// colon (":/Users/…"), which is ugly and redundant with the directory shown beside
@@ -279,19 +300,27 @@ struct PaneBrowserView: View {
                         Text(store.panes.isEmpty
                              ? l10n.tr("No tmux panes", "没有 tmux pane")
                              : l10n.tr("No panes match", "没有匹配的 pane"))
-                            .font(.system(size: 12)).foregroundStyle(p.fg3)
+                            .font(.system(size: 12)).foregroundStyle(p.fg2)
                             .frame(maxWidth: .infinity).padding(.vertical, 30)
                     }
                     ForEach(groups) { g in
                         SessionHeader(group: g, collapsed: collapse.isCollapsed(g.session),
                                       l10n: l10n) { collapse.toggle(g.session) }
                         if !collapse.isCollapsed(g.session) {
-                            ForEach(g.rows) { row in
-                                PaneBrowserRow(row: row, watched: store.watched.contains(row.paneID),
-                                               joined: byPane[row.paneID],
-                                               l10n: l10n,
-                                               onFocus: { GtmuxCLI.spawn(["focus", row.paneID]) },
-                                               onToggleWatch: { store.toggleWatch(row.paneID) })
+                            ForEach(g.windows) { win in
+                                // The window line appears only when there is more than one
+                                // window to tell apart (see showsWindowRows).
+                                if g.showsWindowRows {
+                                    WindowHeader(winID: win.winID, winName: win.winName, count: win.rows.count)
+                                }
+                                ForEach(win.rows) { row in
+                                    PaneBrowserRow(row: row, watched: store.watched.contains(row.paneID),
+                                                   joined: byPane[row.paneID],
+                                                   indented: g.showsWindowRows,
+                                                   l10n: l10n,
+                                                   onFocus: { GtmuxCLI.spawn(["focus", row.paneID]) },
+                                                   onToggleWatch: { store.toggleWatch(row.paneID) })
+                                }
                             }
                         }
                     }
@@ -307,7 +336,7 @@ struct PaneBrowserView: View {
                 Divider().overlay(p.divider)
                 Text(l10n.tr("Click a pane to jump. Watch a plain pane to pin it onto the radar.",
                              "点击 pane 跳转。关注普通 pane 可把它钉到雷达上。"))
-                    .font(.system(size: 10)).foregroundStyle(p.fg3)
+                    .font(.system(size: 10)).foregroundStyle(p.fg2)
                     .padding(.horizontal, 14).padding(.vertical, 8)
             }
             .background(GeometryReader { g in
@@ -343,7 +372,7 @@ struct PaneBrowserView: View {
                 // carries. "Needs you" is the only part in the waiting color: it is the
                 // one number that is a call to act.
                 HStack(spacing: 0) {
-                    Text(countLine).font(.system(size: 10)).foregroundStyle(p.fg3)
+                    Text(countLine).font(.system(size: 10)).foregroundStyle(p.fg2)
                     if needsYou > 0 {
                         Text(l10n.tr(" · \(needsYou) need you", " · \(needsYou) 个等你"))
                             .font(.system(size: 10)).foregroundStyle(Theme.Status.waiting)
@@ -375,7 +404,8 @@ struct PaneBrowserView: View {
             // beside it. See DESIGN §16.
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 13, weight: .medium)).foregroundStyle(p.fg3)
-            TextField(l10n.tr("Search session / command / dir", "搜索会话 / 命令 / 目录"), text: $query)
+            TextField(l10n.tr("Search %pane · @window · session · command · dir",
+                              "搜索 %pane · @窗口 · 会话 / 命令 / 目录"), text: $query)
                 .textFieldStyle(.plain).font(.system(size: 12)).foregroundStyle(p.fg)
             if !query.isEmpty {
                 Button { query = "" } label: {
@@ -412,7 +442,13 @@ struct PaneBrowserView: View {
         var byS: [String: [PaneRow]] = [:]
         for r in store.panes {
             if !needle.isEmpty {
-                let hay = [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc]
+                // The IDs are searchable, and they are the reason this box is worth
+                // opening now: `%23` is the token the tab title, `gtmux focus %23` and HQ
+                // all use, so it is what someone arrives here holding. It was not in the
+                // haystack at all — typing the row's own leading label found nothing.
+                // `@4` likewise, so a tab's window id lands on that window's panes.
+                let hay = [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc,
+                           r.paneID, r.winID, r.winName]
                 guard hay.contains(where: { $0.lowercased().contains(needle) }) else { continue }
             }
             if byS[r.session] == nil { order.append(r.session) }
@@ -426,7 +462,20 @@ struct PaneBrowserView: View {
                 agents += 1
                 if let st = join[r.paneID]?.state { roll[st, default: 0] += 1 }
             }
-            return PaneGroup(session: s, rows: rows, agentCount: agents, roll: roll)
+            // Windows in first-seen order too, keyed by the STABLE `@id` — not the index,
+            // which is `0` for most windows on a real fleet and would merge them.
+            var wOrder: [String] = []
+            var byW: [String: [PaneRow]] = [:]
+            for r in rows {
+                let key = r.winID.isEmpty ? "idx:" + r.window : r.winID
+                if byW[key] == nil { wOrder.append(key) }
+                byW[key, default: []].append(r)
+            }
+            let windows = wOrder.map { k -> PaneWindow in
+                let rs = byW[k] ?? []
+                return PaneWindow(winID: rs.first?.winID ?? "", winName: rs.first?.winName ?? "", rows: rs)
+            }
+            return PaneGroup(session: s, windows: windows, agentCount: agents, roll: roll)
         }
     }
 
@@ -443,14 +492,96 @@ struct PaneBrowserView: View {
     }
 }
 
-/// PaneGroup is one session's worth of the browser: its panes plus the rollup its header
-/// shows even when it is folded.
+/// PaneWindow is one tmux window inside a session: its STABLE `@id`, its name (a gloss),
+/// and its panes.
+struct PaneWindow: Identifiable {
+    let winID: String
+    let winName: String
+    let rows: [PaneRow]
+    var id: String { winID.isEmpty ? (winName + "/" + (rows.first?.paneID ?? "")) : winID }
+    /// What the window line says: `@7 multipilot`. The id leads because it is the anchor —
+    /// the name can drift or be shared by two windows.
+    var label: String {
+        let n = winName.isEmpty ? "" : " " + winName
+        return winID.isEmpty ? winName : winID + n
+    }
+}
+
+/// PaneGroup is one session's worth of the browser: its windows (each with its panes),
+/// plus the rollup its header shows even when it is folded.
 struct PaneGroup: Identifiable {
     let session: String
-    let rows: [PaneRow]
+    let windows: [PaneWindow]
     let agentCount: Int
     let roll: [Status: Int]
     var id: String { session }
+    /// Every pane in the session, window order preserved — the rollup counts over this.
+    var rows: [PaneRow] { windows.flatMap(\.rows) }
+    /// A window line is worth a row only when there is more than one window to tell apart.
+    /// With a single window the two levels are the same thing, so its `@id` rides on the
+    /// SESSION header instead of costing a line that says nothing new. Measured on the
+    /// fleet this was built against: 6 of 11 sessions have exactly one window.
+    var showsWindowRows: Bool { windows.count > 1 }
+    /// EVERY window id in this session, for the header to carry — `@4 @5 @6`.
+    ///
+    /// It used to be the lone window's id only, which meant a multi-window session showed
+    /// NOTHING when collapsed. Collapsed is exactly when the ids are needed: you are
+    /// scanning the list to find which session owns the `@18` your tab is showing, and the
+    /// sessions that own several were the ones staying silent.
+    ///
+    /// Listed whether folded or not, so the header does not change content as you fold it.
+    /// Capped, because a session with a dozen windows would push its own name off the row.
+    var windowIDs: String {
+        let ids = windows.map(\.winID).filter { !$0.isEmpty }
+        if ids.isEmpty { return "" }
+        if ids.count <= 6 { return ids.joined(separator: " ") }
+        return ids.prefix(5).joined(separator: " ") + " +\(ids.count - 5)"
+    }
+}
+
+// CONTRAST RULE for this window (2026-08-14): `fg3` is 0.34 alpha — calibrated in
+// DESIGN §9 for DECORATION, and it was being used here for content. In a dense list of 26
+// small rows that reads as illegible grey. So: glyphs, chevrons and controls may sit at
+// fg3; anything a reader has to READ — ids, window labels, tallies, hints, empty states —
+// is fg2 or better. The palette is unchanged; only its misuse was.
+
+/// WindowHeader — one tmux window inside a session: `@id name` and its pane count.
+///
+/// Quieter than the session header on purpose: this is the MIDDLE of the tree, and the two
+/// ends carry the work (which session, which pane). It exists so that a tab reading
+/// "HSS AI Workspace — cc dev %9 %31" can be traced to the right group of panes when a
+/// session has several windows.
+private struct WindowHeader: View {
+    let winID: String
+    let winName: String
+    let count: Int
+    @Environment(\.colorScheme) private var scheme
+    var body: some View {
+        let p = Theme.Palette.of(scheme)
+        HStack(spacing: 7) {
+            // The ID is mono — it is an identifier, and mono makes the column of them
+            // line up. The NAME is UI-font semibold at the primary tone: it is what a
+            // person actually reads. Two typefaces because they are two kinds of thing —
+            // the anchor and its gloss.
+            Text(winID).font(Theme.Font.mono).foregroundStyle(p.fg2)
+            if !winName.isEmpty {
+                Text(winName).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(p.fg)
+                    .lineLimit(1).truncationMode(.middle)
+            }
+            Spacer(minLength: 4)
+            Text("\(count)").font(.system(size: 10)).foregroundStyle(p.fg3)
+        }
+        .padding(.leading, 22).padding(.trailing, 14).padding(.vertical, 5)
+        // A tinted BAND, not another line of text. It was mono grey at the same tone as
+        // the ids and sublabels beneath it, so it read as one more row rather than as the
+        // thing those rows belong to. A header is recognised by being a different KIND of
+        // element, which is cheaper than out-weighting the content it heads — and the
+        // content here (what each agent is doing) should stay the heaviest thing on screen.
+        .background(p.fg.opacity(scheme == .dark ? 0.06 : 0.045))
+        // The gap sits OUTSIDE the tint, so the band separates groups instead of padding
+        // itself.
+        .padding(.top, 7)
+    }
 }
 
 /// SessionHeader — the fold control AND the session's panoramic signal.
@@ -472,14 +603,21 @@ private struct SessionHeader: View {
             Image(systemName: collapsed ? "chevron.right" : "chevron.down")
                 .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg2)
                 .frame(width: 10)
-            Text(group.session).font(.system(size: 11, weight: .semibold)).foregroundStyle(p.fg2)
+            Text(group.session).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
                 .lineLimit(1).truncationMode(.tail)
+            // The session names its windows — all of them. With one, this IS the window
+            // line (no separate row is drawn); with several it is how a collapsed session
+            // still says what it holds.
+            if !group.windowIDs.isEmpty {
+                Text(group.windowIDs).font(Theme.Font.mono).foregroundStyle(p.fg2)
+                    .lineLimit(1).truncationMode(.tail).layoutPriority(-1)
+            }
             Spacer(minLength: 6)
             Text(group.agentCount > 0
                  ? l10n.tr("\(group.rows.count) · \(group.agentCount) agents",
                            "\(group.rows.count) · \(group.agentCount) 个 agent")
                  : "\(group.rows.count)")
-                .font(.system(size: 10)).foregroundStyle(p.fg3)
+                .font(.system(size: 10)).foregroundStyle(p.fg2)
             // One pip per non-zero agent state, in the radar's own order.
             ForEach([Status.waiting, .working, .idle], id: \.self) { st in
                 if let n = group.roll[st], n > 0 {
@@ -503,11 +641,24 @@ private struct PaneBrowserRow: View {
     let watched: Bool
     /// The live radar row at this pane id, when there is one.
     var joined: Agent?
+    /// Indented when a window line sits above it, so the tree's depth is visible.
+    var indented = false
     @ObservedObject var l10n: L10n
     var onFocus: () -> Void
     var onToggleWatch: () -> Void
     @Environment(\.colorScheme) private var scheme
     @State private var hovering = false
+    @State private var copied = false
+
+    /// Put the row's jump command on the pasteboard. `PaneCommands.focus` is shared with
+    /// the test, so the string a user pastes is the one that is asserted.
+    private func copyFocusCommand() {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(PaneCommands.focus(paneID: row.paneID), forType: .string)
+        copied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copied = false }
+    }
 
     var body: some View {
         let p = Theme.Palette.of(scheme)
@@ -515,7 +666,26 @@ private struct PaneBrowserRow: View {
             // Identity: an agent pane shows its OFFICIAL icon (like the radar), not a
             // "▸" glyph; a plain pane shows a dim $_ terminal mark (matches phone/web).
             paneIcon(p).frame(width: 20, height: 20)
-            Text(row.wp).font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 34, alignment: .leading)
+            // The pane id LEADS. It is the one stable, unique thing on the row — the
+            // token a tab title, `gtmux focus %N` and HQ all use — so it sits where the
+            // eye starts, not trailing off the right edge.
+            //
+            // The window.pane INDEX that used to be here is gone: the window is already
+            // named above, and the pane index means nothing on its own. A coordinate that
+            // changes when panes are reordered was never worth the column.
+            //
+            // It is also the row's one COPYABLE token: clicking it puts
+            // `gtmux focus %N` on the pasteboard, so the thing you can see becomes a
+            // thing you can run. The tap is scoped to the id (the row still jumps), and
+            // the label confirms in place — a copy with no feedback is indistinguishable
+            // from a missed click.
+            Text(copied ? l10n.tr("copied", "已复制") : row.paneID)
+                .font(Theme.Font.mono)
+                .foregroundStyle(copied ? Theme.Status.idle : p.fg2)
+                .frame(width: 34, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { copyFocusCommand() }
+                .help(l10n.tr("Copy `gtmux focus \(row.paneID)`", "复制 `gtmux focus \(row.paneID)`"))
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 5) {
                     Text(label).font(.system(size: 12, weight: row.isAgent ? .medium : .regular))
@@ -525,17 +695,29 @@ private struct PaneBrowserRow: View {
                     if let st = joined?.state, row.isAgent {
                         StatusBadge(status: st, size: 10)
                     }
+                    // tmux's `pane_active`: the pane its WINDOW currently has selected —
+                    // where you land if you switch to that window. A position, not a state.
+                    //
+                    // It used to read "active", which collided with the status language on
+                    // the same row: next to a green ✓ meaning IDLE, "active" reads as "this
+                    // agent is busy" — the opposite of what the badge says, and the opposite
+                    // of what the word means here. The commander had to ask what it was.
                     if row.active {
-                        Text(l10n.tr("active", "活动"))
-                            .font(.system(size: 8)).foregroundStyle(p.fg3)
+                        Text(l10n.tr("focus", "焦点"))
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundStyle(p.fg2)
+                            .padding(.horizontal, 4).padding(.vertical, 1)
+                            .background(RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                .fill(p.fg.opacity(0.07)))
+                            .help(l10n.tr("the pane this window has selected — switching to the window lands here",
+                                          "这个窗口当前选中的 pane —— 切到该窗口会落在这里"))
                     }
                 }
-                if row.isAgent, !row.title.isEmpty {
-                    Text(row.title).font(.system(size: 10)).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
+                if !sublabel.isEmpty {
+                    Text(sublabel).font(.system(size: 10)).foregroundStyle(p.fg2).lineLimit(1).truncationMode(.tail)
                 }
             }
             Spacer(minLength: 6)
-            Text(row.paneID).font(Theme.Font.mono).foregroundStyle(p.fg3)
             // A PLAIN pane can be watched (pinned onto the radar). An agent pane is
             // already on the radar — no watch toggle.
             if !row.isAgent, hovering || watched {
@@ -548,7 +730,7 @@ private struct PaneBrowserRow: View {
                               : l10n.tr("Watch this pane (pin to radar)", "关注这个 pane（钉到雷达）"))
             }
         }
-        .padding(.horizontal, 14).padding(.vertical, 5)
+        .padding(.leading, indented ? 26 : 14).padding(.trailing, 14).padding(.vertical, 5)
         .frame(minHeight: 26)
         .background(hovering ? p.fg.opacity(0.05) : .clear)
         .contentShape(Rectangle())
@@ -556,10 +738,35 @@ private struct PaneBrowserRow: View {
         .onHover { hovering = $0 }
     }
 
-    /// Same rules as the phone — see PaneLabels for what each one is defending against.
+    /// What the row is CALLED.
+    ///
+    /// An agent row leads with what it is DOING, taken from the radar's already-derived
+    /// task — not from the raw `pane_title`. Two reasons, both visible on a real fleet:
+    ///
+    ///  • The agent NAME is not an identity here. Six panes all read "Claude Code" while
+    ///    the thing that tells them apart sat below in grey. The avatar already carries
+    ///    the identity; the headline should carry the work.
+    ///  • The raw title still wears the agent's status glyph (`✳`, `◐`…), which the radar
+    ///    strips and whose alphabet changes without notice (Claude moved braille →
+    ///    half-circles in 2.1.228). Reusing the radar's task means never re-deriving —
+    ///    and never re-learning — that.
+    ///
+    /// Falls back to the name only when there is no radar row to join (an agent the radar
+    /// has not classified yet).
     private var label: String {
-        row.isAgent ? PaneLabels.agent(row: row, joined: joined)
-                    : PaneLabels.plain(title: row.title, command: row.command)
+        if row.isAgent {
+            let task = joined?.task.trimmingCharacters(in: .whitespaces) ?? ""
+            return task.isEmpty ? PaneLabels.agent(row: row, joined: joined) : task
+        }
+        return PaneLabels.plain(title: row.title, command: row.command)
+    }
+
+    /// The quieter second line: who is doing it (an agent row's identity, now that the
+    /// headline is the work) — empty for a plain pane, whose command IS the headline.
+    private var sublabel: String {
+        guard row.isAgent else { return "" }
+        let name = PaneLabels.agent(row: row, joined: joined)
+        return name == label ? "" : name
     }
 
     // The leading identity tile: an agent's real icon (monogram fallback), or a plain
@@ -575,7 +782,32 @@ private struct PaneBrowserRow: View {
                 .overlay(Text(agentMonogram(row.agent))
                     .font(.system(size: 9, weight: .semibold, design: .rounded)).foregroundStyle(p.fg2))
         } else {
-            Text("$_").font(.system(size: 10, design: .monospaced)).foregroundStyle(p.fg3)
+            // A plain pane wears the SAME neutral tile as an agent with no icon (DESIGN
+            // §6's 中性单字标), with a shell prompt where the monogram goes.
+            //
+            // It used to be bare `$_` text with no tile — the only row type without one —
+            // so next to an agent's solid coloured icon it read as a smudge rather than a
+            // mark, and the leading column stopped being a column. This is not a new
+            // symbol: it is the tile that already existed, applied to the row that was
+            // skipped.
+            //
+            // It looks like a TERMINAL — a dark screen with a light prompt — rather than
+            // like a faint grey chip. A grey-on-grey tile still lost next to an agent's
+            // vivid icon, and the two rules that box this in leave no colour to borrow:
+            // colour is the status channel (DESIGN §1) and brand belongs to the agent
+            // (§6). Representation is the way out: this is not a colour CODE, it is a
+            // picture of the thing, so it earns presence without claiming a state.
+            //
+            // Same #1C1C1F the notification badge uses for its tile. The hairline border
+            // is what keeps the shape readable in DARK mode, where a dark tile would
+            // otherwise dissolve into the sheet behind it.
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(Color(red: 0x1C / 255, green: 0x1C / 255, blue: 0x1F / 255))
+                .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .strokeBorder(Color.white.opacity(scheme == .dark ? 0.18 : 0.0), lineWidth: 0.5))
+                .overlay(Text("$_")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(Color.white.opacity(0.88)))
         }
     }
 }

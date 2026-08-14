@@ -1122,6 +1122,44 @@ bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
 bind J run-shell "gtmux focus --last"
 ```
 
+### Put the pane ids in your tab titles (optional)
+
+gtmux names a pane by its tmux id — `%23` — on every surface, and `gtmux focus %23`
+takes that id directly. Two lines make the id visible on the OTHER side too, so a row
+in the app and a tab in your terminal name the same thing:
+
+```tmux
+set -g automatic-rename-format '#{b:pane_current_path} #{P:#{pane_id} }'
+set-hook -g pane-exited 'set-window-option automatic-rename off ; set-window-option automatic-rename on'
+```
+
+The window name then lists EVERY pane in that window (`gtmux %23 %24`), and since
+`set-titles-string` is `#S — #W` the tab inherits it — no change to the title format,
+so `focus`'s tab matching is untouched.
+
+- **`#{P:…}` iterates the window's panes**, so this does not follow focus. An
+  active-pane id was the first design and measurement killed it: tmux re-evaluates the
+  format on its own schedule, so the name lagged the real active pane — a stale pointer
+  dressed as a live one.
+- **The hook is required, not decoration.** Adding a pane re-evaluates the name
+  immediately; closing one does NOT. Without the hook your tab keeps advertising a pane
+  that is gone, which is worse than showing no ids at all.
+- **Inside a split window**, if you want each pane to wear its id on screen as well:
+
+  ```tmux
+  set -g pane-border-status top
+  set -g pane-border-format ' #{pane_id} #{pane_current_command} '
+  ```
+
+  `doctor` does NOT suggest this one. `pane-border-status` is `off` by default, so turning
+  it on costs a permanent screen row per pane in every split — a real price for something
+  the window name already carries. Your call, not a recommendation.
+- **`gtmux doctor` reports this row and `--fix` offers it** — as a suggestion you own,
+  never a silent write. If you already have your own `automatic-rename-format`, `--fix`
+  APPENDS the ids to it rather than replacing it. gtmux does not rename your windows:
+  `rename-window` would turn `automatic-rename` off for that window and overwrite your
+  format for good.
+
 ## Notification hook
 
 `⏸ waiting`, `✓ latest`, and click-to-jump notifications rely on a hook writing

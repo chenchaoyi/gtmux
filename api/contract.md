@@ -71,10 +71,22 @@ no tmux server is running. A guest is filtered to its view allowlist by the same
 
 `pane` object (see `internal/radar/panes.go` `PaneRow`):
 
+> **Identity: `win_id` is the anchor, `win_name` is the gloss** (tmux-id-surface). The
+> window INDEX cannot identify a window — measured on a real fleet, 8 of 12 active windows
+> had index `0`, so grouping or labelling by index makes most of them indistinguishable.
+> `@N` is unique per server. Note `win_id` is deliberately not named near `session_id`: on
+> an agent row that field is the coding-agent ADOPT key, not tmux's `$N`.
+>
+> **Scope boundary:** tmux ids are stable only for the life of a tmux SERVER. A
+> `kill-server` or reboot can renumber `%N`/`@N`, so these are right for "watch the fleet
+> that is running" and MUST NOT be used as a cross-restart persistent key.
+
 | field | type | meaning |
 |---|---|---|
 | `pane_id` `loc` | string | tmux pane id (`%N`) + `session:window.pane` |
-| `session` `window` `pane` | string | tmux location parts |
+| `session` `window` `pane` | string | tmux location parts (`window`/`pane` are INDEXES — mutable) |
+| `win_id` | string? | the window's STABLE tmux id, `@N` (additive; absent on an older core) |
+| `win_name` | string? | the window's name — a GLOSS: it drifts with `automatic-rename` and two windows may share one |
 | `cwd` `command` `title` | string | working dir, `pane_current_command`, pane title |
 | `active` `in_mode` | bool | the window's active pane / in copy-mode (input swallowed) |
 | `tier` | string | `agent` (a coding-agent pane) \| `plain` (shell/editor/other) |
