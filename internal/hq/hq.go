@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 21
+const hqPlaybookVersion = 22
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -395,20 +395,23 @@ this board is where you record what they don't: mode, priority, pending decision
 
 This file has TWO parts and they do not mix. Keep both; keep both short.
 
-## ① Posture — the CURRENT fleet
+## ① 现状 — 在跑的 pane
 
-One row per LIVE ship. Delete a row when its ship is finished — this part has no history
-in it, only now.
+One row per LIVE pane, named by its ` + "`%N`" + `. Delete a row when that pane's work is finished —
+this part has no history in it, only now.
 
-| ship (loc/pane) | task | mode/source | priority | health | pending decision | recent lesson |
+| pane | 在做什么 | 谁派的 | 优先级 | 状态 | 等你定 | 教训 |
 |---|---|---|---|---|---|---|
-| _example_ | _what it's doing_ | hq-dispatched / user-direct / agent-self | hi/med/lo | ok / stuck / errored | _what you're waiting on the commander for_ | _last correction or footgun_ |
+| ` + "`%23`" + ` | _它在做什么_ | 中控派的 / 你直接说的 / 它自己起的 | 高/中/低 | 正常 / 卡住 / 出错 | _在等你定什么_ | _上一次的纠正或坑_ |
 
-## ② Handoff log — NEWEST FIRST, always prepend
+## ② 交接记录 — 新的在最上面
 
 One dated entry per rotation or notable shift, newest at the top. Never append a dated
 entry to the end: a board that runs one way at the top and the other way at the bottom
 takes a map to read, and the commander reads this on a phone.
+
+Write the Chinese, don't translate it — say it the way you would say it out loud. The
+headings above are the product's words; keep them.
 
 Emphasis is for exceptions. If every line is bold, the headings stop being headings.
 
@@ -1068,12 +1071,29 @@ records what they don't (mode, priority, pending decisions, standing context).
 
 **THE BOARD HAS TWO PARTS, IN THIS ORDER. Both are required.**
 
-**① POSTURE (top) — a table, the CURRENT fleet, pruned.** One row per LIVE ship: task,
-mode/source, priority, health, pending decision, recent lesson. Delete a row when its
-ship is finished. This part answers "what is happening NOW" and has no history in it.
+**① 现状 (top) — a table, one row per LIVE PANE, pruned.** Delete a row when that pane's
+work is finished. This part answers "what is happening NOW" and holds no history.
+Use THESE headings and column names verbatim — do not invent your own:
 
-**② HANDOFF LOG (below) — dated entries, NEWEST FIRST. Always PREPEND.** One entry per
+    ## ① 现状 — 在跑的 pane
+
+    | pane | 在做什么 | 谁派的 | 优先级 | 状态 | 等你定 | 教训 |
+
+**② 交接记录 (below) — dated entries, NEWEST FIRST. Always PREPEND.** One entry per
 rotation or per notable shift. This part answers "what happened across my resets".
+
+    ## ② 交接记录 — 新的在最上面
+
+**WRITE THE CHINESE, DON'T TRANSLATE IT.** The headings above are the product's words;
+use them. Left to translate this section's English on its own, a board came out reading
+` + "`① 姿态 — 当前在飞的线`" + ` over a column called ` + "`线`" + ` — 姿态/在飞/线 are word-for-word renderings
+of posture/in-flight/ship that no Chinese speaker would write, and the commander reads
+this on a phone. The same rule applies to every board line you write: say it the way you
+would say it out loud, not the way an English sentence maps onto Chinese.
+
+**NAME A ROW BY ITS PANE ID (` + "`%23`" + `), not by a metaphor.** ` + "`%23`" + ` is the one identifier the
+whole product shares — the radar, the pane browser, ` + "`gtmux focus %23`" + `, and the terminal tab
+all use it — so a row named that way can be found. A row named ` + "`线 3`" + ` can not.
 
 WHY THIS IS SPELLED OUT. The board was specified as ① alone, so nothing ever said which
 way ② should run — and a board grew to 1078 lines where the top half descended

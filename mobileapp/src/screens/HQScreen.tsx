@@ -47,6 +47,7 @@ import {
   Zone,
   assessment,
   askOf,
+  boardAge,
   boardFreshness,
   decisions,
   eventMark,
@@ -635,8 +636,12 @@ export function HQScreen({route, navigation}: any) {
           <View style={[styles.sheetHead, {borderBottomColor: pal.divider}]}>
             <View style={styles.stripMid}>
               <Text style={[styles.title, {color: pal.fg}]}>{t('Situation board', '态势板')}</Text>
+              {/* The age and nothing else. This line used to run boardFreshness(), which
+                  NAMES the board — right under a title that already says it, so the sheet
+                  read «Situation board» over «situation board · 50m ago». The name belongs
+                  on the HQ page's row, where it is the label; here it is a repeat. */}
               <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-                {boardFreshness(board.updated_at, now, zh)} · {t('read-only', '只读')}
+                {boardAge(board.updated_at, now, zh)} · {t('read-only', '只读')}
               </Text>
             </View>
             {/* A labelled button, not a bare ✕: the way out of a full-screen reader has
@@ -670,7 +675,11 @@ export function HQScreen({route, navigation}: any) {
                       <Text style={[styles.bSecTitle, {color: pal.fg}]} numberOfLines={open ? undefined : 2}>
                         {sec.title}
                       </Text>
-                      <Text style={[styles.bSecCount, {color: pal.fg3}]}>{sec.body.split('\n').length}</Text>
+                      {/* A count bubble, like the radar's section heads — a bare number
+                          floating at the right edge does not say what it counts. */}
+                      <View style={[styles.bSecCountBox, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+                        <Text style={[styles.bSecCount, {color: pal.fg3}]}>{sec.body.split('\n').length}</Text>
+                      </View>
                     </TouchableOpacity>
                   )}
                   {(open || sec.title === '') && (
@@ -727,7 +736,8 @@ const styles = StyleSheet.create({
   bSecHead: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 11, gap: 8},
   bSecChevron: {fontSize: 12, width: 12, marginTop: 1},
   bSecTitle: {flex: 1, fontSize: 14, fontWeight: '700', lineHeight: 19},
-  bSecCount: {fontSize: 11, fontVariant: ['tabular-nums'], marginTop: 2},
+  bSecCount: {fontSize: 10.5, fontVariant: ['tabular-nums']},
+  bSecCountBox: {minWidth: 24, alignItems: 'center', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, marginTop: 1},
   bSecBody: {paddingBottom: 10},
   boardText: {fontSize: 12.5, lineHeight: 19, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
 

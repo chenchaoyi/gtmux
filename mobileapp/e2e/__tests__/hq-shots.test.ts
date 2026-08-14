@@ -60,3 +60,44 @@ gated('hq card', () => {
     console.log(`[shots] wrote hq-radar + hq-detail-chat to ${OUT}`);
   });
 });
+
+/**
+ * The situation-board READER. The commander's verdict on the first version was
+ * 「整体翻译腔调太浓了，样式也非常不专业」, and everything that made it look that way is
+ * visual — white highlighter chips through the prose, a seven-column table cut mid-word,
+ * a title repeated under itself. None of that is visible from a unit test, so this opens
+ * the real board against the live serve and saves the frames to look at.
+ */
+gated('situation board reader', () => {
+  it('opens the board and captures it for review', async () => {
+    mkdirSync(OUT, {recursive: true});
+    const driver = getDriver();
+    await launchWithFlags({
+      GTMUX_DEBUG_PAIR_URL: process.env.GTMUX_E2E_URL!,
+      GTMUX_DEBUG_PAIR_TOKEN: process.env.GTMUX_E2E_TOKEN!,
+      GTMUX_DEBUG_NO_PUSH: '1',
+    });
+
+    // The HQ entry is the floating disc on the radar (MOBILE §17).
+    const disc = driver.$('~radar-hq-disc');
+    await disc.waitForDisplayed({timeout: 25_000});
+    await disc.click();
+    await settle(1200);
+    shot('board-hq-page');
+
+    const open = driver.$('~hq-board-open');
+    await open.waitForDisplayed({timeout: 15_000});
+    await open.click();
+    await settle(1500);
+    shot('board-sheet-top');
+
+    // The first section is open; the rest are folded. Open the second one too, so the
+    // capture shows both a table and a run of prose.
+    const sec = driver.$('~hq-board-section-1');
+    if (await sec.isExisting()) {
+      await sec.click();
+      await settle(900);
+      shot('board-sheet-section-open');
+    }
+  });
+});

@@ -40,7 +40,14 @@ export function parseBoardSections(md: string): BoardSection[] {
   let n = 0;
 
   const flush = () => {
-    const body = buf.join('\n').trim();
+    let body = buf.join('\n').trim();
+    // The sheet already titles the document, so the file's own `# ` heading rendered as a
+    // second, larger title directly under it («Situation board» over 「态势板」). Drop it —
+    // only from the preamble, where a document title can be, never from inside a section.
+    if (title === '' && body.startsWith('# ')) {
+      const nl = body.indexOf('\n');
+      body = nl < 0 ? '' : body.slice(nl + 1).trim(); // a title-only preamble leaves nothing
+    }
     // Drop a leading run of blank lines but keep an empty FIRST section out entirely —
     // a board that starts with `##` has no preamble to show.
     if (title === '' && body === '') {
