@@ -592,7 +592,14 @@ struct MenuView: View {
             // (only when true) + version (dim mono, always) + the ⚙ menu. The old
             // Restore/New/Pair three-cells and the standalone Preferences button are gone —
             // Pair + Preferences + Check + Quit now live inside the ⚙ menu.
-            HStack(spacing: 10) {
+            //
+            // GROUPED BY KIND, NOT STRUNG TOGETHER. Four different things live here — an
+            // action, a status, a version, a menu — and they used to be joined by "·"
+            // separators, which is punctuation for listing things of ONE kind. The eye
+            // read them as one run-on string of stuff. Proximity does that work now:
+            // controls at the two ends, statuses as a cluster, the version standing on its
+            // own as the ambient thing it is.
+            HStack(spacing: 12) {
                 Button { onAction(.newSession) } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus").font(.system(size: 12, weight: .semibold))
@@ -624,7 +631,6 @@ struct MenuView: View {
                     }.buttonStyle(.plain)
                         .help(remoteViewersHelp)
                         .fixedSize()
-                    Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }
                 if share.isLive {
                     // Shared input is LIVE (consent on + a pane allowed + a guest link):
@@ -638,7 +644,6 @@ struct MenuView: View {
                         .help(l10n.tr("Shared input is on — a guest can type into allowed panes",
                                       "分享输入已开 —— 访客可向允许的 pane 输入"))
                         .fixedSize()
-                    Text("·").font(Theme.Font.footer).foregroundStyle(p.fg3)
                 }
                 // The version doubles as a tap-to-"check for updates" affordance and
                 // shows the check's result inline. Lowest layout priority so a longer
@@ -663,7 +668,11 @@ struct MenuView: View {
                 }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
             }
-            .padding(.horizontal, 12).padding(.vertical, 6)
+            // 14 matches the header, so the footer's ends line up with everything above
+            // it. The BOTTOM is deliberately larger than the top: the popover's corner
+            // radius is 13, and 6pt put this row inside the curve — which is what reading
+            // as "too close to the edge" actually is.
+            .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 11)
         }
     }
 

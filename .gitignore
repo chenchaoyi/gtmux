@@ -34,3 +34,6 @@ id_rsa*
 # product feature; kept private, no secret values but operator-specific). See SECURITY.md.
 ops/
 tunnel-worker/issue-direct-code.sh
+
+# wrangler deploy leaves a local build/state dir (relay-worker/tunnel-worker)
+.wrangler/
