@@ -176,8 +176,11 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 /* Every window id on the session header — a COLLAPSED or scrolled-past session still says
    what it holds. */
 .pb-swins { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--fg2); flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A row sits INSIDE its window band, so it starts to the RIGHT of it (26 against the
+   band's 22). It used to start at 14 — the child less indented than its parent, which is
+   what made the list read flat instead of as a tree. */
 .pb-row {
-  display: flex; align-items: center; gap: 11px; padding: 9px 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 11px; padding: 9px 14px 9px 26px; cursor: pointer;
   border-bottom: 1px solid var(--divider);
 }
 .pb-row:hover { background: rgba(255, 255, 255, 0.05); }

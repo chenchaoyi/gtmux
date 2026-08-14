@@ -429,7 +429,11 @@ export function browserItems(windows: PaneWin[], showsWindows: boolean): Browser
 // are two kinds of thing — the anchor and its gloss.
 function WindowBand({win, pal}: {win: PaneWin; pal: any}) {
   return (
-    <View style={[styles.winBand, {backgroundColor: pal.surface, borderBottomColor: pal.divider}]}>
+    // The tint is a shade of the TEXT colour, not `surface`. surface is #FFFFFF on a
+    // #F2F2F7 page, so the band came out BRIGHTER than the content it groups — the
+    // opposite of a tint, and inverted against the menu-bar, which tints with fg at low
+    // opacity (darkens on light, lightens on dark). A neutral grey does both.
+    <View style={[styles.winBand, styles.winTint, {borderBottomColor: pal.divider}]}>
       {win.id !== '' && <Text style={[styles.winID, {color: pal.fg2}]}>{win.id}</Text>}
       {win.name !== '' && (
         <Text style={[styles.winName, {color: pal.fg}]} numberOfLines={1}>
@@ -580,7 +584,10 @@ const styles = StyleSheet.create({
   sectionHeader: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 13, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   chevBox: {width: 22, alignItems: 'center', justifyContent: 'center'},
   sessionWins: {fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', marginLeft: 8},
-  winBand: {flexDirection: 'row', alignItems: 'center', gap: 7, paddingLeft: 22, paddingRight: 14, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth},
+  // The gap sits ABOVE the band, outside its tint, so the band separates one window from
+  // the previous one instead of just padding itself (same as the menu-bar's).
+  winBand: {flexDirection: 'row', alignItems: 'center', gap: 7, paddingLeft: 22, paddingRight: 14, paddingVertical: 6, marginTop: 7, borderBottomWidth: StyleSheet.hairlineWidth},
+  winTint: {backgroundColor: 'rgba(127,127,127,0.10)'},
   winID: {fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
   winName: {fontSize: 12, fontWeight: '600', flexShrink: 1},
   winCount: {fontSize: 10},
@@ -590,7 +597,11 @@ const styles = StyleSheet.create({
   rollCount: {fontSize: 11, fontWeight: '600'},
   pip: {flexDirection: 'row', alignItems: 'center', marginLeft: 7},
   pipCount: {fontSize: 11, fontWeight: '700', marginLeft: 3},
-  row: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth},
+  // A pane row sits INSIDE its window band, so it must start to the RIGHT of it. It used
+  // to start at 14 while the band started at 22 — the child was less indented than its
+  // parent, which is why the phone read as a flat list where the menu-bar reads as a tree.
+  // 26 against the band's 22 is the menu-bar's own relationship.
+  row: {flexDirection: 'row', alignItems: 'center', paddingLeft: 26, paddingRight: 14, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth},
   rowMain: {flex: 1, marginLeft: 11},
   rowTop: {flexDirection: 'row', alignItems: 'center'},
   rowLabel: {fontSize: 14, fontWeight: '600', flexShrink: 1, marginRight: 7},
