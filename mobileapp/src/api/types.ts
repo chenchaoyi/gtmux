@@ -55,6 +55,10 @@ export interface PaneRow {
   title?: string;
   active?: boolean;
   in_mode?: boolean;
+  // The window's STABLE id and its (drifting) name — tmux-id-surface. The window INDEX
+  // cannot identify a window: on a real fleet most windows sit at index 0.
+  win_id?: string;
+  win_name?: string;
   tier: 'agent' | 'plain';
   agent?: string;
   icon?: string; // official-icon hint for an agent pane → the browser avatar (empty for plain)

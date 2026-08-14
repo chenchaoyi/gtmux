@@ -7,8 +7,10 @@ after measurement — the tab carries every pane id through the window NAME, so
 
 ## Phase 1 — surface the stable anchor + real hierarchy (pure UI, no data/contract change)
 
-- [ ] 1.1 Mobile pane browser (`mobileapp/src/screens/PaneBrowserScreen.tsx`): render an
-      explicit window sub-group (`@id name`) under each session; show `%N` on every row.
+- [x] 1.1 Mobile pane browser: window band (`@id name`) keyed by the stable id and
+      interleaved into the flat SectionList; every session header lists all its window ids;
+      the row chip carries `%N` instead of the mutable `w.p`; agent rows lead with the
+      radar's task; ids are searchable. Grouping extracted to pure functions and tested.
 - [x] 1.2 Menu-bar pane browser: window band (`@id name`) grouped by the STABLE id, shown
       only when a session has >1 window; every session header lists ALL its window ids so a
       COLLAPSED session still says what it holds; `%N` moved to the front of the row as the

@@ -25,6 +25,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
@@ -48,11 +49,6 @@ function base(p?: string): string {
   return i >= 0 ? t.slice(i + 1) : t;
 }
 
-// window·pane tail from "session:win.pane" (the loc), for the mono position chip.
-function wp(row: PaneRow): string {
-  const i = row.loc.lastIndexOf(':');
-  return i >= 0 ? row.loc.slice(i + 1) : row.loc;
-}
 
 // Label for a PLAIN pane. Many shells set the pane title to the cwd (some prefixed
 // with a colon, e.g. ":/Users/…"), which is both ugly and redundant with the dir shown
@@ -79,14 +75,29 @@ interface Roll {
   working: number;
   idle: number;
 }
+export interface PaneWin {
+  id: string;   // tmux window_id, "@N" — the ANCHOR
+  name: string; // window_name — a gloss: it drifts and two windows may share one
+  rows: PaneRow[];
+}
 interface Group {
   title: string; // session name
   agentCount: number;
   roll: Roll;
   all: PaneRow[];
+  windows: PaneWin[];
+  /// Every window id, for the header — a COLLAPSED session must still say what it holds.
+  /// Capped so a session with a dozen windows cannot push its own name off the row.
+  winIDs: string;
+  /// A window band is worth a row only when there is more than one window to tell apart.
+  showsWindows: boolean;
 }
+/// One line of a section: a window band or a pane. The band is a row of the list rather
+/// than a nested list, so the SectionList stays flat and keeps recycling.
+export type BrowserItem = {kind: 'win'; win: PaneWin} | {kind: 'pane'; row: PaneRow};
+
 interface Section extends Group {
-  data: PaneRow[]; // [] when the session is collapsed → only the header renders
+  data: BrowserItem[]; // [] when the session is collapsed → only the header renders
 }
 
 // statusOf returns an agent-tier pane's REAL status from the live radar join, or
@@ -169,7 +180,9 @@ export function PaneBrowserScreen({navigation}: any) {
     const needle = q.trim().toLowerCase();
     const match = (r: PaneRow) =>
       !needle ||
-      [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc]
+      // `%23` is the token the tab title, `gtmux focus %23` and HQ all use, so it is
+      // what someone types here — and it was not in the haystack at all.
+      [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc, r.pane_id, r.win_id, r.win_name]
         .some(v => (v || '').toLowerCase().includes(needle));
     const order: string[] = [];
     const byS = new Map<string, PaneRow[]>();
@@ -193,12 +206,25 @@ export function PaneBrowserScreen({navigation}: any) {
         else if (st === 'working') roll.working++;
         else if (st === 'idle') roll.idle++;
       }
-      return {title: s, all, agentCount, roll};
+      // Windows in first-seen order, keyed by the STABLE id — not the index, which is 0
+      // for most windows on a real fleet and would merge unrelated ones.
+      const windows = paneWindows(all);
+      return {
+        title: s, all, agentCount, roll, windows,
+        winIDs: windowIDsLabel(windows),
+        showsWindows: windows.length > 1,
+      };
     });
   }, [panes, q, byPane]);
 
+  // A section's data interleaves WINDOW BANDS with panes, so the list keeps one flat
+  // SectionList (its recycling and sticky headers) while showing three levels.
   const sections: Section[] = useMemo(
-    () => groups.map(g => ({...g, data: collapsed.has(g.title) ? [] : g.all})),
+    () =>
+      groups.map(g => {
+        if (collapsed.has(g.title)) return {...g, data: []};
+        return {...g, data: browserItems(g.windows, g.showsWindows)};
+      }),
     [groups, collapsed],
   );
 
@@ -269,7 +295,7 @@ export function PaneBrowserScreen({navigation}: any) {
 
       <SectionList
         sections={sections}
-        keyExtractor={r => r.pane_id}
+        keyExtractor={(it, i) => (it.kind === 'win' ? 'w:' + it.win.id + i : it.row.pane_id)}
         stickySectionHeadersEnabled
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -290,19 +316,30 @@ export function PaneBrowserScreen({navigation}: any) {
               <Text style={[styles.sessionName, {color: pal.fg}]} numberOfLines={1}>
                 {s.title}
               </Text>
+              {/* Every window id — a COLLAPSED session must still say what it holds, and
+                  that is exactly when someone is scanning for the @N on their tab. */}
+              {s.winIDs !== '' && (
+                <Text style={[styles.sessionWins, {color: pal.fg2}]} numberOfLines={1}>
+                  {s.winIDs}
+                </Text>
+              )}
               <SessionRollup group={s} pal={pal} lang={lang} />
             </TouchableOpacity>
           );
         }}
-        renderItem={({item}) => (
-          <PaneRowView
-            row={item}
-            joined={byPane.get(item.pane_id)}
-            status={statusOf(item, byPane)}
-            pal={pal}
-            onPress={() => navigation.navigate('Detail', {agent: paneRowToAgent(item)})}
-          />
-        )}
+        renderItem={({item}) =>
+          item.kind === 'win' ? (
+            <WindowBand win={item.win} pal={pal} />
+          ) : (
+            <PaneRowView
+              row={item.row}
+              joined={byPane.get(item.row.pane_id)}
+              status={statusOf(item.row, byPane)}
+              pal={pal}
+              onPress={() => navigation.navigate('Detail', {agent: paneRowToAgent(item.row)})}
+            />
+          )
+        }
         ListEmptyComponent={
           loaded ? (
             <View style={styles.empty}>
@@ -325,6 +362,74 @@ export function PaneBrowserScreen({navigation}: any) {
         }
       />
     </SafeAreaView>
+  );
+}
+
+// paneWindows groups a session's panes into windows, keyed by the STABLE `@id`.
+//
+// NOT by the index: measured on a real fleet, most sessions' windows all sit at index 0,
+// so an index-keyed grouping merges windows that have nothing to do with each other. The
+// fallback key exists only for an older core that sends no id at all.
+// Exported for tests.
+export function paneWindows(all: PaneRow[]): PaneWin[] {
+  const order: string[] = [];
+  const by = new Map<string, PaneRow[]>();
+  for (const r of all) {
+    const key = r.win_id || 'idx:' + r.window;
+    if (!by.has(key)) {
+      by.set(key, []);
+      order.push(key);
+    }
+    by.get(key)!.push(r);
+  }
+  return order.map(k => {
+    const rs = by.get(k)!;
+    return {id: rs[0].win_id || '', name: rs[0].win_name || '', rows: rs};
+  });
+}
+
+// windowIDsLabel is what a session header says it holds: `@4 @5 @6`. Capped, so a session
+// with a dozen windows cannot push its own name off the row. Exported for tests.
+export function windowIDsLabel(windows: PaneWin[]): string {
+  const ids = windows.map(w => w.id).filter(Boolean);
+  if (ids.length === 0) return '';
+  if (ids.length <= 6) return ids.join(' ');
+  return ids.slice(0, 5).join(' ') + ` +${ids.length - 5}`;
+}
+
+// browserItems flattens windows into the one list the SectionList renders, interleaving a
+// band before each window's panes. Flat on purpose: a nested list inside a section loses
+// the recycling and the sticky headers. Exported for tests.
+export function browserItems(windows: PaneWin[], showsWindows: boolean): BrowserItem[] {
+  const items: BrowserItem[] = [];
+  for (const w of windows) {
+    if (showsWindows) items.push({kind: 'win', win: w});
+    for (const r of w.rows) items.push({kind: 'pane', row: r});
+  }
+  return items;
+}
+
+// WindowBand — one tmux window inside a session: `@id name` and its pane count.
+//
+// A tinted BAND, not another line of text: a header is recognised by being a different
+// KIND of element, which is cheaper than out-weighting the content it heads — and here
+// the content (what each agent is doing) should stay the heaviest thing on screen.
+//
+// Two typefaces on purpose: the id is mono because it is an identifier and a column of
+// them should line up; the name is the UI font because it is what a person reads. They
+// are two kinds of thing — the anchor and its gloss.
+function WindowBand({win, pal}: {win: PaneWin; pal: any}) {
+  return (
+    <View style={[styles.winBand, {backgroundColor: pal.surface, borderBottomColor: pal.divider}]}>
+      {win.id !== '' && <Text style={[styles.winID, {color: pal.fg2}]}>{win.id}</Text>}
+      {win.name !== '' && (
+        <Text style={[styles.winName, {color: pal.fg}]} numberOfLines={1}>
+          {win.name}
+        </Text>
+      )}
+      <View style={styles.flex1} />
+      <Text style={[styles.winCount, {color: pal.fg3}]}>{win.rows.length}</Text>
+    </View>
   );
 }
 
@@ -368,13 +473,23 @@ function PaneRowView({
   onPress: () => void;
 }) {
   const isAgent = row.tier === 'agent';
-  const label = isAgent ? agentLabel(row, joined) : plainLabel(row.title, row.command);
+  // An agent row leads with what it is DOING, from the radar's already-derived task —
+  // not the agent NAME, which repeats down the whole list while the thing that tells the
+  // rows apart sits below in grey. The avatar already carries identity. Reusing the
+  // radar's task also keeps the raw status glyph (`✳`, `◐`…) out: its alphabet changes
+  // without notice and the radar is the one place that has to know it.
+  const task = (joined?.task ?? '').trim();
+  const label = isAgent ? task || agentLabel(row, joined) : plainLabel(row.title, row.command);
   const dir = base(row.cwd);
   // sub line: dir · (for a PLAIN pane, the command when it isn't already the label).
   // An agent row never repeats its command here — the label already names the agent
   // and the command can be a meaningless version string (#659). The window·pane is a
   // separate mono chip at the front so the tree position reads at a glance.
   const bits: string[] = [];
+  if (isAgent) {
+    const name = agentLabel(row, joined);
+    if (name && name !== label) bits.push(name);
+  }
   if (dir) bits.push(dir);
   if (!isAgent && row.command && row.command !== label) bits.push(row.command);
   return (
@@ -403,7 +518,11 @@ function PaneRowView({
           {!isAgent && row.active && <View style={[styles.activeDot, {backgroundColor: StatusColor.idle}]} />}
         </View>
         <View style={styles.rowSubRow}>
-          <Text style={[styles.wpChip, {color: pal.fg2, backgroundColor: pal.surface}]}>{wp(row)}</Text>
+          {/* The PANE ID, not the `w.p` coordinate. It is the one stable, unique token on
+              the row — what the tab title, `gtmux focus %N` and HQ all use — while the
+              coordinate changes whenever panes are reordered. The window is already named
+              by the band above. */}
+          <Text style={[styles.wpChip, {color: pal.fg2, backgroundColor: pal.surface}]}>{row.pane_id}</Text>
           {bits.length > 0 && (
             <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
               {bits.join('  ·  ')}
@@ -436,6 +555,12 @@ const styles = StyleSheet.create({
   // chevron, and the status rollup right-aligned.
   sectionHeader: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 13, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   chevBox: {width: 22, alignItems: 'center', justifyContent: 'center'},
+  sessionWins: {fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', marginLeft: 8},
+  winBand: {flexDirection: 'row', alignItems: 'center', gap: 7, paddingLeft: 22, paddingRight: 14, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth},
+  winID: {fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
+  winName: {fontSize: 12, fontWeight: '600', flexShrink: 1},
+  winCount: {fontSize: 10},
+  flex1: {flex: 1},
   sessionName: {fontSize: 15, fontWeight: '800', flexShrink: 1, marginRight: 8},
   rollWrap: {flexDirection: 'row', alignItems: 'center', marginLeft: 'auto'},
   rollCount: {fontSize: 11, fontWeight: '600'},
