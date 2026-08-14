@@ -53,6 +53,22 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false): Re
           </Text>
         );
       case 'code':
+        // The chip (background + the spaces that fake its padding, since iOS ignores
+        // padding on a nested <Text>) is right on the chat's dark surface, where a code
+        // span is rare and wants to stand out.
+        //
+        // On a page of PROSE it is wrong twice over: a board line carries several spans,
+        // so a light page fills with white highlighter marks — and when a span lands at a
+        // line break, its leading padding-space keeps the background and renders as an
+        // empty white rectangle floating at the end of the previous line. Under calm, the
+        // monospace face alone says "this is a literal token".
+        if (calm) {
+          return (
+            <Text key={i} style={[styles.codeCalm, {color: c.code, fontSize: fs - 0.5}]}>
+              {n.s}
+            </Text>
+          );
+        }
         return (
           <Text key={i} style={[styles.codeInline, {color: c.code, backgroundColor: c.codeBg, fontSize: fs - 1}]}>
             {' '}
@@ -121,6 +137,62 @@ function TableRow({
   );
 }
 
+/** One table row, re-shaped for a narrow screen. */
+export interface StackedRow {
+  /** The row's first cell — what the row IS (the board puts the pane id here). */
+  head: Inline[];
+  /** The remaining cells, each paired with its column heading. Empty cells are dropped. */
+  fields: {label: string; value: Inline[]}[];
+}
+
+/**
+ * stackRows turns a wide table into one block per row.
+ *
+ * A phone is ~390pt wide. The situation board's table has seven columns, so horizontally
+ * it renders about three and a half of them and cuts the fourth mid-word — which does not
+ * read as "scroll me", it reads as broken. Stacked, every value is visible and labelled,
+ * and nothing has to be dragged.
+ *
+ * Empty cells are dropped rather than rendered as blank rows: half the board's cells are
+ * `—` or empty, and a label with nothing after it is noise.
+ */
+export function stackRows(header: Inline[][], rows: Inline[][][]): StackedRow[] {
+  const labels = header.map(cells => cells.map(n => n.s).join('').trim());
+  return rows.map(row => ({
+    head: row[0] ?? [],
+    fields: row
+      .slice(1)
+      .map((value, i) => ({label: labels[i + 1] ?? '', value}))
+      .filter(f => {
+        const text = f.value.map(n => n.s).join('').trim();
+        return text !== '' && text !== '—' && text !== '-';
+      }),
+  }));
+}
+
+function StackedTable({b, c, fs, sel, sc, ff, calm}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean}) {
+  const rows = stackRows(b.header, b.rows);
+  return (
+    <View style={styles.block}>
+      {rows.map((r, i) => (
+        <View key={i} style={[styles.stackRow, {borderColor: c.border}]}>
+          <Text selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
+            {renderSpans(r.head, c, fs, calm)}
+          </Text>
+          {r.fields.map((f, j) => (
+            <View key={j} style={styles.stackField}>
+              <Text style={[styles.stackLabel, {color: c.dim, fontSize: fs - 2, lineHeight: (fs - 1) * 1.4}]}>{f.label}</Text>
+              <Text selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
+                {renderSpans(f.value, c, fs - 1, calm)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function BlockView({b, c, fs, sel, sc, ff, calm}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean}) {
   switch (b.t) {
     case 'h':
@@ -162,6 +234,11 @@ function BlockView({b, c, fs, sel, sc, ff, calm}: {b: Block; c: MdColors; fs: nu
         </View>
       );
     case 'table':
+      // Wide tables stack on a phone (see stackRows). A table narrow enough to fit still
+      // renders as a table — a two-column key/value grid reads better as one.
+      if (calm && b.header.length > 3) {
+        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} />;
+      }
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
           <View>
@@ -199,6 +276,7 @@ const styles = StyleSheet.create({
   boldCalm: {fontWeight: '600'},
   italic: {fontStyle: 'italic'},
   codeInline: {fontFamily: 'Menlo', borderRadius: 3},
+  codeCalm: {fontFamily: 'Menlo'},
   codeBlock: {borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, marginBottom: 8, maxWidth: '100%'},
   codeBlockContent: {padding: 10},
   codeBlockText: {fontFamily: 'Menlo'},
@@ -207,6 +285,9 @@ const styles = StyleSheet.create({
   liText: {flex: 1},
   quote: {borderLeftWidth: 3, paddingLeft: 10, marginBottom: 8},
   hr: {height: StyleSheet.hairlineWidth, marginVertical: 10},
+  stackRow: {borderLeftWidth: 2, paddingLeft: 9, paddingVertical: 5, marginBottom: 9},
+  stackField: {flexDirection: 'row', alignItems: 'flex-start', gap: 7},
+  stackLabel: {minWidth: 58, fontVariant: ['tabular-nums']},
   tr: {flexDirection: 'row'},
   td: {borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingVertical: 5, minWidth: 92, justifyContent: 'center'},
 });

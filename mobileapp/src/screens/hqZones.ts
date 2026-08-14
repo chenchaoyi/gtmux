@@ -188,6 +188,15 @@ export function boardFreshness(updatedAt: number | undefined, nowSecs: number, z
   return zh ? `态势板 · ${ago}前` : `situation board · ${ago} ago`;
 }
 
+// boardAge is the freshness ALONE — for the reader sheet, whose own title already names
+// the board. How stale the board is has to be visible there too (it is a human synthesis,
+// so its age is part of how much to trust it), but naming it twice is not that.
+export function boardAge(updatedAt: number | undefined, nowSecs: number, zh: boolean): string {
+  if (!updatedAt) return zh ? '时间未知' : 'age unknown';
+  const ago = relTime(updatedAt, nowSecs);
+  return zh ? `${ago}前更新` : `updated ${ago} ago`;
+}
+
 // planLabel compacts a usage-window label for the status strip: "week (all models)" →
 // wk/周, "week (fable)" → the model name, "session" → 5h.
 export function planLabel(label: string, zh: boolean): string {

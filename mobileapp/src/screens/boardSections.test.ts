@@ -55,3 +55,23 @@ describe('parseBoardSections', () => {
     expect(parseBoardSections('\n\n  \n')).toEqual([]);
   });
 });
+
+describe('the document title', () => {
+  // The sheet has its own header saying "Situation board / 态势板". The file's `# ` title
+  // rendered directly under it as a second, larger one.
+  it('is dropped from the preamble', () => {
+    const secs = parseBoardSections('# gtmux HQ — 态势板\n\nYour durable posture.\n\n## ① 现状\n\nrow');
+    expect(secs[0].body).toBe('Your durable posture.');
+    expect(secs[0].body).not.toContain('态势板');
+  });
+
+  it('leaves a section heading alone — only the preamble can hold a document title', () => {
+    const secs = parseBoardSections('## ① 现状\n\n# not a document title\n\nrow');
+    expect(secs[0].body).toContain('# not a document title');
+  });
+
+  it('drops a preamble that was nothing but the title', () => {
+    const secs = parseBoardSections('# 态势板\n\n## ① 现状\n\nrow');
+    expect(secs.map(s => s.title)).toEqual(['① 现状']);
+  });
+});
