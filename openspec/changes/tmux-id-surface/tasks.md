@@ -15,10 +15,17 @@ after measurement — the tab carries every pane id through the window NAME, so
       only when a session has >1 window; every session header lists ALL its window ids so a
       COLLAPSED session still says what it holds; `%N` moved to the front of the row as the
       leading identifier and made searchable; the redundant `w.p` index dropped.
-- [ ] 1.3 Web pane browser (`internal/server/web/`): show `%N` per row (3-level already).
-- [ ] 1.4 One shared "identity chip" rendering (`session · @id name · %id label`) reused
-      verbatim across the three surfaces; tap/click `%N` copies `gtmux focus %N`.
-- [ ] 1.5 Tests: each surface renders `%N` + the window group (jest / Swift / web mirror).
+- [x] 1.3 Web pane browser: the divider was keyed on the mutable INDEX and read "WIN 0";
+      it now groups on `@id`, renders as a tinted band with `@id name`, drops out for a
+      single-window session, and the session header lists every window id. Rows lead with
+      `%N` and (for agents) the radar's task; ids are searchable.
+- [ ] 1.4 Tap/click `%N` copies `gtmux focus %N`. (The "one shared rendering reused
+      verbatim" half is NOT possible across SwiftUI / RN / DOM — what is shared is the
+      SHAPE and the rules, which each surface now implements identically. Verbatim reuse
+      was a wish written before the three renderers were weighed.)
+- [x] 1.5 Tests: Swift (window identity, id capping, search haystack) + jest (grouping,
+      interleaving, capping) + the web verified against a LIVE /api/panes payload rather
+      than a fixture written to match the code.
 
 ## Phase 2 — tab ↔ app shared vocabulary (a doctor SUGGESTION, not a write)
 
