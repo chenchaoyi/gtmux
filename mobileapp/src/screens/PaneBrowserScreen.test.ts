@@ -1,4 +1,4 @@
-import {agentLabel, plainLabel} from './PaneBrowserScreen';
+import {agentLabel, paneFocusCommand, plainLabel} from './PaneBrowserScreen';
 import {Agent, PaneRow} from '../api/types';
 
 const row = (over: Partial<PaneRow>): PaneRow => ({
@@ -109,5 +109,14 @@ describe('browserItems', () => {
   it('draws NO band for a single window — the levels coincide there', () => {
     const ws = paneWindows([pane('%1', '0', '@4'), pane('%2', '0', '@4')]);
     expect(browserItems(ws, false).map(i => i.kind)).toEqual(['pane', 'pane']);
+  });
+});
+
+describe('paneFocusCommand', () => {
+  // Tapping the id copies this. It must be runnable as-is — and identical to the
+  // menu-bar's `PaneCommands.focus` and the web's `paneFocusCommand`, because the point
+  // of surfacing `%N` at all is that the token means one thing on every surface.
+  it('is a runnable command, sigil included', () => {
+    expect(paneFocusCommand('%23')).toBe('gtmux focus %23');
   });
 });

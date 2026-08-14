@@ -238,3 +238,18 @@ final class PaneSearchTests: XCTestCase {
         XCTAssertFalse(matches(sample(), "zsh"))
     }
 }
+
+/// The pane id is the row's one COPYABLE token. What it copies has to be a command the
+/// user can actually paste and run — and the same one on all three surfaces, since the
+/// whole point of putting `%N` on screen is that the token means one thing everywhere.
+final class PaneCommandsTests: XCTestCase {
+    func testFocusCommandIsRunnableAsIs() {
+        XCTAssertEqual(PaneCommands.focus(paneID: "%23"), "gtmux focus %23")
+    }
+
+    /// The sigil is part of the id, not decoration: `gtmux focus 23` is a different
+    /// (and wrong) thing. Stripping it would be an easy "cleanup" to make later.
+    func testKeepsTheSigil() {
+        XCTAssertTrue(PaneCommands.focus(paneID: "%7").contains("%7"))
+    }
+}

@@ -113,6 +113,13 @@ final class PaneCollapse: ObservableObject {
 
 /// PaneLabels mirrors the phone's labelling rules (PaneBrowserScreen.plainLabel /
 /// agentLabel). Both encode a real defect, so the two surfaces must agree.
+/// The commands a pane id can be turned into. One place, so the three surfaces that
+/// offer "copy this row's command" cannot drift apart — and so a test can assert the
+/// exact string a user will paste, rather than a rebuilt lookalike.
+enum PaneCommands {
+    static func focus(paneID: String) -> String { "gtmux focus " + paneID }
+}
+
 enum PaneLabels {
     /// A PLAIN pane. Many shells set the pane title to the cwd, sometimes prefixed with a
     /// colon (":/Users/…"), which is ugly and redundant with the directory shown beside
@@ -641,6 +648,17 @@ private struct PaneBrowserRow: View {
     var onToggleWatch: () -> Void
     @Environment(\.colorScheme) private var scheme
     @State private var hovering = false
+    @State private var copied = false
+
+    /// Put the row's jump command on the pasteboard. `PaneCommands.focus` is shared with
+    /// the test, so the string a user pastes is the one that is asserted.
+    private func copyFocusCommand() {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(PaneCommands.focus(paneID: row.paneID), forType: .string)
+        copied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copied = false }
+    }
 
     var body: some View {
         let p = Theme.Palette.of(scheme)
@@ -655,9 +673,19 @@ private struct PaneBrowserRow: View {
             // The window.pane INDEX that used to be here is gone: the window is already
             // named above, and the pane index means nothing on its own. A coordinate that
             // changes when panes are reordered was never worth the column.
-            Text(row.paneID)
-                .font(Theme.Font.mono).foregroundStyle(p.fg2)
+            //
+            // It is also the row's one COPYABLE token: clicking it puts
+            // `gtmux focus %N` on the pasteboard, so the thing you can see becomes a
+            // thing you can run. The tap is scoped to the id (the row still jumps), and
+            // the label confirms in place — a copy with no feedback is indistinguishable
+            // from a missed click.
+            Text(copied ? l10n.tr("copied", "已复制") : row.paneID)
+                .font(Theme.Font.mono)
+                .foregroundStyle(copied ? Theme.Status.idle : p.fg2)
                 .frame(width: 34, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { copyFocusCommand() }
+                .help(l10n.tr("Copy `gtmux focus \(row.paneID)`", "复制 `gtmux focus \(row.paneID)`"))
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 5) {
                     Text(label).font(.system(size: 12, weight: row.isAgent ? .medium : .regular))

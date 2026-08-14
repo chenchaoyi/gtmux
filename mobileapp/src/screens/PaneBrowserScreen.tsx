@@ -8,8 +8,9 @@
 // Structure (redesign): each SESSION is a COLLAPSIBLE card whose header carries a
 // status ROLLUP (waiting/working/idle pips, joined from the live radar), so you sense
 // the whole fleet's shape at a glance — fold everything and 10 sessions fit one screen.
-// Window is shown as the compact `w·p` loc chip on each row (NOT a full-width "WIN N"
-// label row, which duplicated it and doubled every pane's height).
+// Window is a BAND (`@id name`) interleaved into the list, shown only when a session
+// holds more than one; each row leads with its stable `%N` pane id rather than the
+// mutable `w.p` coordinate (tmux-id-surface). Tapping the id copies `gtmux focus %N`.
 //
 // Data: GET /api/panes (client.panes()), the superset of the radar. A guest sees
 // only the panes shared with them (the server scopes /api/panes to the guest's
@@ -38,8 +39,16 @@ import {StatusBadge} from '../ui/StatusBadge';
 import {StatusColor} from '../ui/theme';
 import {Chevron, FoldAllIcon} from '../ui/Icons';
 import {TestIds} from '../constants/testIds';
+import Clipboard from '@react-native-clipboard/clipboard';
 
 const COLLAPSED_KEY = 'panes.collapsed';
+
+// The command a pane id turns into. Mirrors the menu-bar's `PaneCommands.focus` and the
+// web's `paneFocusCommand` — one shape on all three surfaces, since the whole point of
+// surfacing `%N` is that the same token means the same thing everywhere.
+export function paneFocusCommand(paneID: string): string {
+  return `gtmux focus ${paneID}`;
+}
 
 // Basename of a cwd path — the folder you'd recognize, without the long prefix.
 function base(p?: string): string {
@@ -473,6 +482,7 @@ function PaneRowView({
   onPress: () => void;
 }) {
   const isAgent = row.tier === 'agent';
+  const [copied, setCopied] = useState(false);
   // An agent row leads with what it is DOING, from the radar's already-derived task —
   // not the agent NAME, which repeats down the whole list while the thing that tells the
   // rows apart sits below in grey. The avatar already carries identity. Reusing the
@@ -522,7 +532,23 @@ function PaneRowView({
               the row — what the tab title, `gtmux focus %N` and HQ all use — while the
               coordinate changes whenever panes are reordered. The window is already named
               by the band above. */}
-          <Text style={[styles.wpChip, {color: pal.fg2, backgroundColor: pal.surface}]}>{row.pane_id}</Text>
+          {/* Tapping the id copies `gtmux focus %N`. The touch is scoped to the chip —
+              a nested touchable wins over the row's, so the row still opens Detail — and
+              the chip confirms IN PLACE, because a copy with no feedback on a phone is
+              indistinguishable from a tap that missed. */}
+          <TouchableOpacity
+            onPress={() => {
+              Clipboard.setString(paneFocusCommand(row.pane_id));
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1200);
+            }}
+            hitSlop={hit}
+            accessibilityLabel={`copy ${paneFocusCommand(row.pane_id)}`}
+            activeOpacity={0.6}>
+            <Text style={[styles.wpChip, {color: copied ? StatusColor.idle : pal.fg2, backgroundColor: pal.surface}]}>
+              {copied ? '✓ copied' : row.pane_id}
+            </Text>
+          </TouchableOpacity>
           {bits.length > 0 && (
             <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
               {bits.join('  ·  ')}

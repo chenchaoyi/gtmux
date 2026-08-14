@@ -138,10 +138,24 @@ mistaken for the live ones. **Always probe with `-f /dev/null`.**
 - ~~**Phasing.**~~ SETTLED: all three phases are in scope.
 - ~~**Tab granularity.**~~ SETTLED by measurement — every pane id, via the window name.
 - ~~**Does gtmux set names?**~~ SETTLED: no. `doctor` suggests the format instead.
-- **Session id.** Whether to also show/capture `$N`, or leave the session as name-only.
-  Still open — the session NAME is already unique and is what `attach -t` takes, so `$N`
-  has to earn its place rather than be added for symmetry.
-- **Pane-border labels.** The proposal wanted `pane-border-format` `%N` so a split window
-  shows every pane's id on screen. The window name now carries them all, so the border is
-  no longer the only way to see a non-active pane's id — it is now a nice-to-have rather
-  than the piece that makes the model work. Keep it opt-in, decide during Phase 2.
+- ~~**Session id.**~~ SETTLED: NOT added. The session NAME is already unique per server and
+  is what `attach -t` takes; `$N` never earned its place, and adding it for symmetry would
+  put a second identifier on screen for a level that already had a good one.
+- ~~**Pane-border labels.**~~ SETTLED: NO doctor row, not even optional. Measured:
+  `pane-border-status` defaults to `off`, so suggesting a `pane-border-format` alone changes
+  nothing on screen; making it visible costs a permanent screen ROW per pane in every split
+  window. That is a recurring price for information the window name now carries for free.
+  Documented in `docs/cli.md` as a one-liner for anyone who wants it, and left there.
+
+## Found while verifying (2026-08-14)
+
+Two defects the code review would not have caught, both surfaced by testing at the COMMAND
+level rather than asserting the step "succeeded" (the #748 lesson: 判断对 ≠ 动作做了):
+
+- **`doctor` never fired on the installs it was written for.** `rowWindowNameSource`
+  compared against the bare `#{pane_current_command}`, but tmux 3.7's actual default is
+  `#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}` — so every DEFAULT
+  install was reported "custom — left alone". Now it asks what the format is BUILT FROM.
+- **The window name updates on tmux's own timer, not synchronously.** A read immediately
+  after `split-window` still says `bash`; the ids land within about half a second. Worth
+  knowing before someone reads a stale name as a broken format.

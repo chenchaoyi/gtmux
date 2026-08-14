@@ -456,6 +456,29 @@
     if (!t || t.charAt(0) === '/' || t.charAt(0) === '~') return command;
     return t;
   }
+  // The command a pane id turns into — same shape as the menu-bar's `PaneCommands.focus`
+  // and the mobile `paneFocusCommand`. Surfacing `%N` is only worth it if the token means
+  // the same thing on every surface.
+  function paneFocusCommand(id) { return 'gtmux focus ' + id; }
+
+  // navigator.clipboard needs a SECURE context. The web surface is reached over the
+  // https tunnel (fine) but also over a plain `http://<lan-ip>:8765`, where the API is
+  // simply absent — so the old execCommand path is the fallback, not a legacy leftover.
+  function copyText(s) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(s).catch(function () { legacyCopy(s); });
+      return;
+    }
+    legacyCopy(s);
+  }
+  function legacyCopy(s) {
+    var ta = document.createElement('textarea');
+    ta.value = s; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* nothing else to try */ }
+    document.body.removeChild(ta);
+  }
+
   function paneRowEl(p) {
     var a = paneToAgent(p), isAgent = p.tier === 'agent';
     // An agent row leads with what it is DOING (from the live radar join), not its
@@ -475,11 +498,23 @@
     // The PANE ID, not the `w.p` coordinate: stable, unique, and the token every other
     // surface names. The coordinate changes whenever panes are reordered.
     var dir = (p.cwd || '').replace(/\/+$/, '').split('/').pop() || '';
-    var bits = [p.pane_id];
+    // The id is its own element, not part of the joined text, because it is CLICKABLE:
+    // it copies `gtmux focus %N`, turning a token you can read into one you can run.
+    // The click stops there — the row itself still opens the pane.
+    var pid = document.createElement('span'); pid.className = 'pb-pid'; pid.textContent = p.pane_id;
+    pid.title = 'Copy `' + paneFocusCommand(p.pane_id) + '`';
+    pid.onclick = function (e) {
+      e.stopPropagation();
+      copyText(paneFocusCommand(p.pane_id));
+      pid.textContent = '✓ copied'; pid.classList.add('ok');
+      setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1200);
+    };
+    sub.appendChild(pid);
+    var bits = [];
     if (isAgent && p.agent && p.agent !== label) bits.push(p.agent);
     if (dir) bits.push(dir);
     if (!isAgent && p.command && p.command !== label) bits.push(p.command);
-    sub.textContent = bits.join('  ·  ');
+    if (bits.length) sub.appendChild(document.createTextNode('  ·  ' + bits.join('  ·  ')));
     tx.appendChild(nm); tx.appendChild(sub); row.appendChild(tx);
     var ch = document.createElement('span'); ch.className = 'pb-chev'; ch.textContent = '›'; row.appendChild(ch);
     row.onclick = function () { var live = byId(lastAgents, p.pane_id); openAgent(live || a); };

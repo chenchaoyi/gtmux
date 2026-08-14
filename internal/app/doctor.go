@@ -162,7 +162,8 @@ func doctorSections() []dsection {
 		// The gtmux install itself, FIRST — CLI + menu-bar app versions (a drift is the
 		// first thing you see) + config validity.
 		{i18n.Tr("gtmux", "gtmux"), versionChecks()},
-		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowHistory()}},
+		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(),
+			rowWindowNameSource(), rowPaneIDsInTabs(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), terminalChecks()},
 		{i18n.Tr("Agents & notifications", "agent 与通知"), agents},
@@ -377,6 +378,85 @@ func rowSetTitles() dcheck {
 		return dcheck{stOK, label, "on · '#S — #W'", note}
 	}
 	return dcheck{stMiss, label, i18n.Tr("not set", "未设置"), note}
+}
+
+// paneIDsInWindowName is the automatic-rename-format that puts every pane's `%N` into its
+// window's name — and therefore into the terminal TAB, since set-titles-string is
+// `#S — #W` (tmux-id-surface phase 2).
+//
+// Why the window NAME and not set-titles-string: the tab then carries the ids without
+// gtmux touching the title format, so the ghostty/iTerm2 title MATCHERS need no change —
+// they prefix-match on the session and the ids land after the `#S — ` separator. That
+// coupling is the risk this design avoids on purpose: `tab-alert`'s `● ` prefix broke
+// every jump on 2026-08-13 for exactly that reason.
+const paneIDsInWindowName = "#{b:pane_current_path} #{P:#{pane_id} }"
+
+// paneIDsRefreshHook forces the name to be recomputed when a pane CLOSES.
+//
+// Measured 2026-08-14 on an isolated server: adding a pane re-evaluates
+// automatic-rename-format immediately, but REMOVING one does not — the name kept a dead
+// `%1` while `%0 %2` were the live panes. Toggling the option off and on inside a
+// `pane-exited` hook forces the recompute, and it stays correct across consecutive kills.
+// So this hook is REQUIRED for the format to stay true, not a nicety.
+const paneIDsRefreshHook = "set-window-option automatic-rename off ; set-window-option automatic-rename on"
+
+// rowPaneIDsInTabs reports whether the terminal tab can name the panes it is showing.
+//
+// RECOMMENDED, never required: without it every gtmux surface still works — this is about
+// being able to read a tab and know which panes are behind it, which is the "global sense"
+// tmux-id-surface exists for. gtmux does NOT write it: `automatic-rename-format` is the
+// user's own configuration, and on the machine this was designed against it was already
+// set to something better than gtmux would have guessed.
+func rowPaneIDsInTabs() dcheck {
+	label := i18n.Tr("pane ids in tab titles", "标签页标题带 pane id")
+	note := i18n.Tr("read a tab and know which panes it holds", "看一眼标签就知道它有哪些 pane")
+	fmtOpt := tmuxOpt("automatic-rename-format")
+	hasIDs := strings.Contains(fmtOpt, "#{pane_id}")
+	hasHook := strings.Contains(tmuxHook("pane-exited"), "automatic-rename")
+	switch {
+	case hasIDs && hasHook:
+		return dcheck{stOK, label, i18n.Tr("on · refresh hook set", "已开 · 刷新 hook 已设"), note}
+	case hasIDs:
+		// The half-configured case is worth calling out separately: the ids are there but
+		// go stale on a pane close, which is worse than not having them — a name that
+		// lists a pane which no longer exists.
+		return dcheck{stRec, label, i18n.Tr("on, but no pane-exited hook (ids go stale)",
+			"已开，但缺 pane-exited hook（关 pane 后会过期）"), note}
+	default:
+		return dcheck{stRec, label, i18n.Tr("not set", "未设置"), note}
+	}
+}
+
+// windowNameFollowsCommand reports whether a window's name is derived from its foreground
+// COMMAND — the shape that renders a Claude pane as its version string.
+//
+// It cannot compare against a literal default: tmux 3.7's real default is
+// `#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}`, not the bare
+// `#{pane_current_command}` this first tested for — so every default install was reported
+// as "custom, left alone" and never saw the suggestion. Measured, not assumed; and asking
+// what the format IS BUILT FROM survives tmux decorating its default again.
+func windowNameFollowsCommand(format string) bool {
+	return format == "" || strings.Contains(format, "pane_current_command")
+}
+
+// rowWindowNameSource reports what a window name is made of.
+//
+// tmux's DEFAULT is `#{pane_current_command}`, which for a Claude pane renders its VERSION
+// STRING — `2.1.229`, the #659 fact — so a default user's tab reads `gtmux dev — 2.1.229`.
+// That is the "window names drift" problem in its real form, and the fix is a one-line
+// format the user owns, not gtmux renaming their windows (which would turn
+// `automatic-rename` off and overwrite whatever they had).
+func rowWindowNameSource() dcheck {
+	label := i18n.Tr("window-name source", "窗口名来源")
+	fmtOpt := strings.TrimSpace(tmuxOpt("automatic-rename-format"))
+	switch {
+	case windowNameFollowsCommand(fmtOpt):
+		return dcheck{stRec, label, i18n.Tr("the foreground command (an agent shows its version)",
+			"前台命令（agent 会显示成版本号）"),
+			i18n.Tr("prefer the directory: #{b:pane_current_path}", "建议改用目录名：#{b:pane_current_path}")}
+	default:
+		return dcheck{stOK, label, fmtOpt, i18n.Tr("custom — left alone", "自定义 —— 不动它")}
+	}
 }
 
 func rowHistory() dcheck {
@@ -820,6 +900,24 @@ func tmuxOpt(name string) string {
 		return ""
 	}
 	return strings.TrimSpace(lines[0])
+}
+
+// tmuxHook returns a hook's command, or "" when it is unset.
+//
+// It asks for the hook BY NAME. Measured: `show-hooks -g` without a name does not list a
+// hook that has been set — it prints the known hook names — so scanning that output for
+// one would report every configured hook as absent. With a name it prints
+// `pane-exited[0] <command>`, so the value is what follows the first space.
+func tmuxHook(name string) string {
+	lines := tmux.Lines("show-hooks", "-g", name)
+	if len(lines) == 0 {
+		return ""
+	}
+	f := strings.SplitN(strings.TrimSpace(lines[0]), " ", 2)
+	if len(f) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(f[1])
 }
 
 // pluginDir returns the install dir of a TPM plugin if present.
