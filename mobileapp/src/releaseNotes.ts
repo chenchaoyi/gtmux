@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.52.0',
+    en: [
+      'A notification\'s quick-reply buttons no longer claim a meaning they cannot know. They showed the same "1 · Yes / 2 · Always / 3 · No" whatever the agent was asking, so on a two-option prompt the button labelled Always sent the answer that means No. They now show only the number, the body lists the real options one per line, and there are exactly as many buttons as the agent offers.',
+      'Long-pressing a notification shows the question instead of a giant coloured square.',
+      'The HQ situation board reads as sections you can fold, and its headings are legible again instead of drowning in bold.',
+    ],
+    zh: [
+      '通知的快回按钮不再声称它不知道的含义。以前不管 agent 在问什么，都显示同样的「1 · Yes / 2 · Always / 3 · No」——于是在两项提示上，标着 Always 的按钮发出去的答案其实是「No」。现在按钮只显示编号，正文一行一个列出真实选项，按钮个数与 agent 提供的一致。',
+      '长按通知看到的是问题本身，而不是一大块彩色方块。',
+      '中控态势板改成可折叠的分节，标题不再淹没在满屏加粗里。',
+    ],
+  },
+  {
     version: '0.51.2',
     en: [
       'A session that is working now says so with a ring that turns, matching the Mac. It stays slow and calm — urgency is red, and red never moves. Reduce Motion is honoured.',
