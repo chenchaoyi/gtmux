@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.55.0',
+    en: [
+      'The all-panes browser draws the window line for every session now, including one that holds a single window — the tree has the same shape everywhere instead of two shapes a row apart.',
+      'A pane row no longer repeats the agent\'s name under its icon; the text says what the pane is doing.',
+    ],
+    zh: [
+      '「所有 pane」浏览器现在每个 session 都画出窗口那一行，包括只有一个窗口的 —— 整棵树到处都是同一个形状，不再隔一行换一种。',
+      'pane 行不再在图标下面重复 agent 名字，文字留给「这个 pane 在做什么」。',
+    ],
+  },
+  {
     version: '0.54.0',
     en: [
       'The HQ situation board reads like a document again: wide tables stack into labelled blocks instead of running off the side of the screen, and inline code no longer leaves white marks through the prose.',
