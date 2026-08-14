@@ -106,9 +106,20 @@ describe('browserItems', () => {
       .toEqual(['@4', '%1', '@5', '%2']);
   });
 
-  it('draws NO band for a single window — the levels coincide there', () => {
+  // Reversed on purpose (commander, 2026-08-14). The band used to be drawn only when a
+  // session held several windows, on the grounds that one window costs a line saying
+  // nothing new. But then a single-window session put its panes directly under the session
+  // header — at the same indent that elsewhere means "window" — so the same shape meant two
+  // different things one row apart, and you had to work out which kind of session you were
+  // looking at before you could read the indent.
+  it('draws the band for a single window too — one predictable tree', () => {
     const ws = paneWindows([pane('%1', '0', '@4'), pane('%2', '0', '@4')]);
-    expect(browserItems(ws, false).map(i => i.kind)).toEqual(['pane', 'pane']);
+    expect(browserItems(ws, true).map(i => (i.kind === 'win' ? i.win.id : i.row.pane_id)))
+      .toEqual(['@4', '%1', '%2']);
+  });
+
+  it('still draws nothing when there are no windows at all', () => {
+    expect(browserItems([], true)).toEqual([]);
   });
 });
 

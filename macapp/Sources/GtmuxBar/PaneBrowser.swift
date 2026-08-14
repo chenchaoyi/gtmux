@@ -517,11 +517,16 @@ struct PaneGroup: Identifiable {
     var id: String { session }
     /// Every pane in the session, window order preserved — the rollup counts over this.
     var rows: [PaneRow] { windows.flatMap(\.rows) }
-    /// A window line is worth a row only when there is more than one window to tell apart.
-    /// With a single window the two levels are the same thing, so its `@id` rides on the
-    /// SESSION header instead of costing a line that says nothing new. Measured on the
-    /// fleet this was built against: 6 of 11 sessions have exactly one window.
-    var showsWindowRows: Bool { windows.count > 1 }
+    /// EVERY session draws its window rows, including a session that holds exactly one.
+    ///
+    /// The band used to appear only when there were several windows to tell apart, on the
+    /// grounds that one window costs a line saying nothing new. That reasoning was about
+    /// the LINE and missed the TREE: with it, a single-window session put its panes
+    /// directly under the session header at the same indent that elsewhere means "window",
+    /// so the same shape meant two different things one row apart. A reader had to work out
+    /// which kind of session they were looking at before they could read the indent. One
+    /// predictable three-level tree is worth the line.
+    var showsWindowRows: Bool { !windows.isEmpty }
     /// EVERY window id in this session, for the header to carry — `@4 @5 @6`.
     ///
     /// It used to be the lone window's id only, which meant a multi-window session showed
@@ -736,6 +741,7 @@ private struct PaneBrowserRow: View {
         .contentShape(Rectangle())
         .onTapGesture { onFocus() }
         .onHover { hovering = $0 }
+        .help(rowHelp)
     }
 
     /// What the row is CALLED.
@@ -761,12 +767,17 @@ private struct PaneBrowserRow: View {
         return PaneLabels.plain(title: row.title, command: row.command)
     }
 
-    /// The quieter second line: who is doing it (an agent row's identity, now that the
-    /// headline is the work) — empty for a plain pane, whose command IS the headline.
-    private var sublabel: String {
-        guard row.isAgent else { return "" }
+    /// No second line. It used to name the agent under the work — "Claude Code" beneath
+    /// every one of six rows — which the official icon at the head of the row already says,
+    /// in less space and without repeating. The name stays reachable in the row's tooltip
+    /// for the case the icon cannot be resolved and falls back to a monogram.
+    private var sublabel: String { "" }
+
+    /// What the row is, spelled out for the tooltip: the work, then who is doing it.
+    private var rowHelp: String {
+        guard row.isAgent else { return label }
         let name = PaneLabels.agent(row: row, joined: joined)
-        return name == label ? "" : name
+        return name.isEmpty || name == label ? label : label + " — " + name
     }
 
     // The leading identity tile: an agent's real icon (monogram fallback), or a plain

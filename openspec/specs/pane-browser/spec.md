@@ -138,13 +138,14 @@ mutable `window.pane` index.
 - **THEN** each appears under its own `@<window_id>` sub-group, told apart by the stable
   window id, not by a name or an index that repeats across sessions
 
-#### Scenario: A session with one window draws no window band
+#### Scenario: Every session draws the same three levels
 
 - **WHEN** a session holds exactly one window
-- **THEN** the window level is not drawn as its own row — the session and the window
-  coincide there, and a band per pane row would double every session's height — but the
-  session header SHALL still name the window ids it holds, so a COLLAPSED session says what
-  is inside it
+- **THEN** the window band is drawn anyway, so the tree has one shape everywhere: a
+  conditional band put a single-window session's panes at the indent that elsewhere means
+  "window", making the same shape mean two different things one row apart. The session
+  header SHALL also name the window ids it holds, so a COLLAPSED session says what is
+  inside it
 
 #### Scenario: A plain shell pane is not labeled with the host name
 
@@ -175,3 +176,15 @@ action (open the pane). Every surface SHALL copy the SAME string.
 - **WHEN** the user types `%23` or `@17` (or the bare digits) into the browser's search
 - **THEN** the matching pane / window rows are found — the id is a search key, not only a
   label
+
+### Requirement: A row does not repeat what its icon already says
+
+An agent row SHALL NOT print the agent's name as a secondary line beside its official icon.
+The icon carries identity; the row's text carries the work. Surfaces that can hold the name
+elsewhere at no cost (a tooltip) MAY do so, for the case the icon falls back to a monogram.
+
+#### Scenario: Six agent rows of the same agent
+
+- **WHEN** several panes run the same agent
+- **THEN** each row's text says what that pane is doing, and the agent name appears once per
+  row only as its icon — not as a repeated line of prose
