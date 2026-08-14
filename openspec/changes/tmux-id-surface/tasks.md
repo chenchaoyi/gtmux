@@ -1,7 +1,9 @@
 # Tasks — tmux-id-surface
 
-Status: PROPOSED (not started). Phased; Phase 1+2 are the "global sense" win, Phase 3 is
-additive. Phasing/scope still under discussion (see proposal Open questions).
+Status: APPROVED, all three phases in scope (commander, 2026-08-14). Phase 2 got cheaper
+after measurement — the tab carries every pane id through the window NAME, so
+`set-titles-string` and the title matchers are not touched. See the proposal's
+"Decided by measurement".
 
 ## Phase 1 — surface the stable anchor + real hierarchy (pure UI, no data/contract change)
 
@@ -14,17 +16,25 @@ additive. Phasing/scope still under discussion (see proposal Open questions).
       verbatim across the three surfaces; tap/click `%N` copies `gtmux focus %N`.
 - [ ] 1.5 Tests: each surface renders `%N` + the window group (jest / Swift / web mirror).
 
-## Phase 2 — tab ↔ app shared vocabulary (coupled change)
+## Phase 2 — tab ↔ app shared vocabulary (a doctor SUGGESTION, not a write)
 
-- [ ] 2.1 Change `set-titles-string` to carry the active pane id (`#S #{pane_id} #W`);
-      update `doctor`'s expected value (`internal/app/doctor.go`, `doctorfix.go`).
-- [ ] 2.2 Update the title MATCHERS in lockstep (`internal/ghostty/ghostty.go`,
-      `internal/terminal/iterm2.go`) — they currently parse `#S — #W`; keep `FocusTab`
-      session matching working.
-- [ ] 2.3 Opt-in pane-border `%N` labels (`pane-border-format` / `pane-border-status`),
-      suggested by `doctor`, so split windows show every pane's id.
-- [ ] 2.4 Tests: title round-trips through the matchers; doctor installs/repairs the new
-      option.
+Measured 2026-08-14: the window name can list every pane id, and that reaches the tab for
+free because `set-titles-string` is `#S — #W`. gtmux writes nothing into the user's tmux.
+
+- [ ] 2.1 `doctor` SUGGESTS the two lines (never applies them silently):
+      `automatic-rename-format '#{b:pane_current_path} #{P:#{pane_id} }'` and the
+      `pane-exited` hook that toggles `automatic-rename` off/on. The hook is REQUIRED, not
+      cosmetic: adding a pane re-evaluates the name, removing one does NOT (measured — the
+      name kept a dead `%1` while `%0 %2` were live).
+- [ ] 2.2 `doctor` also flags the DEFAULT `automatic-rename-format`
+      (`#{pane_current_command}`), which renders a Claude pane as its version string
+      (`2.1.229`, #659) — the "names drift" problem, fixed by the same suggestion.
+- [ ] 2.3 Pane-border `%N` (`pane-border-format`) — optional now that the window name
+      carries every id. Decide whether it still earns its row.
+- [ ] 2.4 Tests: the suggested format parses; `TitleMatchesSession` still matches a title
+      whose window part carries ids (it must — that is why this shape was chosen).
+- [ ] 2.5 NOT DONE: rewrite the title matchers. They need no change. Recorded so nobody
+      re-adds the coupling the original plan assumed.
 
 ## Phase 3 — capture the stable ids (additive data)
 
