@@ -332,11 +332,17 @@ func paneTitleHook(shell string) (lines []string, name string) {
 			`fi`,
 		}, "zsh"
 	}
+	// The title write goes LAST in PROMPT_COMMAND, and that ordering is not cosmetic.
+	// Measured on the commander's machine: with it first, the prompt title came out
+	// `__ghostty_cwd_report`. Ghostty's shell integration also hooks PROMPT_COMMAND, and the
+	// DEBUG trap fires for every command INSIDE it — so whatever ran last before the prompt
+	// won, and that was the other integration's internal function. Running last means the
+	// last thing the trap sees is our own printf, which then writes the directory.
 	return []string{
 		paneTitleMarker,
 		`if [ -n "$TMUX" ]; then`,
 		`  trap 'printf "\033]2;%s\007" "$BASH_COMMAND"' DEBUG`,
-		`  PROMPT_COMMAND='printf "\033]2;%s\007" "${PWD##*/}"'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`,
+		`  PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}"'printf "\033]2;%s\007" "${PWD##*/}"'`,
 		`fi`,
 	}, "bash"
 }
@@ -389,8 +395,17 @@ func (s *fixState) stepPaneTitles() int {
 	}
 	rc, shell := shellRCPath()
 	lines, _ := paneTitleHook(shell)
+	// Installed already? Only skip when what is installed is what we would write NOW.
+	// The first shipped snippet put the title write FIRST in PROMPT_COMMAND, which loses to
+	// any other prompt integration; a version check that only asked "is the marker there"
+	// would leave that block in place forever, on exactly the machines that hit the bug.
+	verb := i18n.Tr("pane titles  (optional — name your plain panes)", "pane 标题（可选 —— 让普通 pane 有名字）")
 	if b, err := os.ReadFile(rc); err == nil && strings.Contains(string(b), paneTitleMarker) {
-		return 0 // already installed
+		if strings.Contains(string(b), lines[len(lines)-2]) {
+			return 0 // already installed, and current
+		}
+		verb = i18n.Tr("pane titles  (update the snippet gtmux installed earlier)",
+			"pane 标题（更新 gtmux 之前装的那段）")
 	}
 	detail := i18n.Tr(
 		"  Add to "+tildeify(rc)+":\n      "+strings.Join(lines, "\n      ")+"\n"+
@@ -402,8 +417,7 @@ func (s *fixState) stepPaneTitles() int {
 			"  原因：shell 不写 pane 标题，gtmux 只能退回显示命令名，于是每行都是 \"bash\" —— 而旁边的\n"+
 			"  agent pane 能显示它在做什么，因为 agent 会写。这段替你写：跑命令时显示命令，回到提示符\n"+
 			"  时显示目录名。对之后新开的 shell 生效。")
-	if !s.ask(i18n.Tr("pane titles  (optional — name your plain panes)",
-		"pane 标题（可选 —— 让普通 pane 有名字）"), detail) {
+	if !s.ask(verb, detail) {
 		return 0
 	}
 	old := ""

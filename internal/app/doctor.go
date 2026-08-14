@@ -419,11 +419,21 @@ func rowPaneTitles() dcheck {
 			named++
 		}
 	}
+	// Whether the hook is INSTALLED changes what an unnamed pane means. It only titles
+	// shells started after it, so right after `--fix` writes it every existing pane is
+	// still unnamed — and the post-fix summary, which re-reads these rows and lists any
+	// that are still "to improve", told the user their fix had not worked seconds after
+	// it did. An old pane is not something to go fix; it is something that ages out.
+	installed := shellHookInstalled()
 	switch {
 	case plain == 0:
 		return dcheck{stInfo, label, i18n.Tr("no plain panes", "没有普通 pane"), note}
 	case named == plain:
 		return dcheck{stOK, label, i18n.Tr("all named", "都有名字"), note}
+	case installed:
+		return dcheck{stInfo, label,
+			fmt.Sprintf(i18n.Tr("%d of %d named · hook installed", "%d/%d 有名字 · 钩子已装"), named, plain),
+			i18n.Tr("panes opened before the hook keep their old titles", "钩子之前开的 pane 保持原标题")}
 	case named > 0:
 		return dcheck{stRec, label,
 			fmt.Sprintf(i18n.Tr("%d of %d named", "%d/%d 有名字"), named, plain), note}
@@ -431,6 +441,15 @@ func rowPaneTitles() dcheck {
 		return dcheck{stRec, label,
 			fmt.Sprintf(i18n.Tr("none of %d named", "%d 个都没有名字"), plain), note}
 	}
+}
+
+// shellHookInstalled reports whether the pane-title hook is in the startup file a tmux
+// pane sources. Checked by MARKER, not by behaviour — the behaviour it produces cannot be
+// observed in panes that were opened before it existed, which is the whole point.
+func shellHookInstalled() bool {
+	rc, _ := shellRCPath()
+	b, err := os.ReadFile(rc)
+	return err == nil && strings.Contains(string(b), paneTitleMarker)
 }
 
 // paneIDsInWindowName is the automatic-rename-format that puts every pane's `%N` into its

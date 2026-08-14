@@ -202,8 +202,18 @@ func TestPaneTitleHookRetitlesARealPane(t *testing.T) {
 			if err := os.MkdirAll(sock, 0o755); err != nil {
 				t.Fatal(err)
 			}
+			// The rc carries a PRE-EXISTING integration that also hooks the prompt, because
+			// that is the real condition and it is what broke: with the title write first in
+			// PROMPT_COMMAND, the DEBUG trap fired for the commands INSIDE the other hook and
+			// the prompt title came out `__ghostty_cwd_report` on the commander's machine. A
+			// bare rc passes either way — the first version of this test did exactly that.
+			host := map[string]string{
+				"bash": "__host_cwd_report() { :; }\nPROMPT_COMMAND=\"__host_cwd_report\"\n",
+				"zsh":  "__host_cwd_report() { :; }\nprecmd_functions+=(__host_cwd_report)\n",
+			}[tc.shell]
 			lines, _ := paneTitleHook(tc.shell)
-			if err := os.WriteFile(filepath.Join(dir, tc.rc), []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			body := host + strings.Join(lines, "\n") + "\n"
+			if err := os.WriteFile(filepath.Join(dir, tc.rc), []byte(body), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			t.Setenv("TMUX_TMPDIR", sock)
@@ -283,5 +293,41 @@ func TestShellRCIsTheFileALoginShellReads(t *testing.T) {
 	touch(".bash_profile")
 	if got, _ := shellRCPath(); got != filepath.Join(home, ".bash_profile") {
 		t.Errorf("with .bash_profile → %s", got)
+	}
+}
+
+// An INSTALLED snippet that is out of date must still be offered.
+//
+// The first shipped version put the title write first in PROMPT_COMMAND, where any other
+// prompt integration beats it. A check that only asked "is the marker present" would skip
+// those machines forever — the exact ones that hit the bug.
+func TestOutdatedSnippetIsNotMistakenForCurrent(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("SHELL", "/bin/bash")
+	rc, shell := shellRCPath()
+	lines, _ := paneTitleHook(shell)
+	current := strings.Join(lines, "\n")
+
+	// The shipped-then-superseded shape: same marker, title write first.
+	stale := strings.Replace(current,
+		`  PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}"'printf "\033]2;%s\007" "${PWD##*/}"'`,
+		`  PROMPT_COMMAND='printf "\033]2;%s\007" "${PWD##*/}"'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`, 1)
+	if stale == current {
+		t.Fatal("fixture did not change anything — the snippet moved, update this test")
+	}
+	if err := os.WriteFile(rc, []byte(stale+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(stale, paneTitleMarker) {
+		t.Fatal("fixture lost the marker")
+	}
+	// The line the step compares on must be the one that actually differs, or "current"
+	// would be indistinguishable from "stale".
+	if strings.Contains(stale, lines[len(lines)-2]) {
+		t.Error("an outdated snippet reads as current — it would never be offered again")
+	}
+	if !strings.Contains(current, lines[len(lines)-2]) {
+		t.Error("a current snippet reads as outdated — it would be re-offered forever")
 	}
 }
