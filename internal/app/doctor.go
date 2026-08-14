@@ -13,6 +13,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -163,7 +164,7 @@ func doctorSections() []dsection {
 		// first thing you see) + config validity.
 		{i18n.Tr("gtmux", "gtmux"), versionChecks()},
 		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(),
-			rowWindowNameSource(), rowPaneIDsInTabs(), rowHistory()}},
+			rowWindowNameSource(), rowPaneIDsInTabs(), rowPaneTitles(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), terminalChecks()},
 		{i18n.Tr("Agents & notifications", "agent 与通知"), agents},
@@ -380,6 +381,58 @@ func rowSetTitles() dcheck {
 	return dcheck{stMiss, label, i18n.Tr("not set", "未设置"), note}
 }
 
+// titleSaysSomething reports whether a pane's title tells you anything about the work in
+// it — the question the pane browser silently answers every time it falls back to the
+// command name.
+//
+// Measured on a real fleet: of four plain shell panes, one title was `:/Users/ccy`, one was
+// empty, one was the machine's own host name, and the fourth was the same. All four rows
+// therefore read `bash`, while the agent pane beside them read 提炼本周研发周报质量部分汇总 —
+// because the agent WRITES its title and a shell does not. So the three junk shapes are:
+// empty, a path (many prompts set the title to the cwd), and the command itself.
+//
+// The host name is already stripped upstream by the pane producer, so it arrives empty.
+func titleSaysSomething(title, command string) bool {
+	t := strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(title), ":"))
+	if t == "" || t == strings.TrimSpace(command) {
+		return false
+	}
+	return !strings.HasPrefix(t, "/") && !strings.HasPrefix(t, "~")
+}
+
+// rowPaneTitles reports how many PLAIN panes can say what they are for.
+//
+// Agent panes are excluded on purpose: an agent sets its own title, so counting them would
+// report a healthy fleet made entirely of rows the user cannot tell apart. This measures
+// the OUTCOME (what the panes' titles actually are) rather than looking for a hook in a
+// shell rc, which can be written a hundred ways.
+func rowPaneTitles() dcheck {
+	label := i18n.Tr("pane titles", "pane 标题")
+	note := i18n.Tr("a plain pane says what it is for, not just \"bash\"", "普通 pane 能说出自己在干嘛，而不只是一个 \"bash\"")
+	var plain, named int
+	for _, p := range radar.GatherPanes() {
+		if p.Tier == "agent" {
+			continue
+		}
+		plain++
+		if titleSaysSomething(p.Title, p.Command) {
+			named++
+		}
+	}
+	switch {
+	case plain == 0:
+		return dcheck{stInfo, label, i18n.Tr("no plain panes", "没有普通 pane"), note}
+	case named == plain:
+		return dcheck{stOK, label, i18n.Tr("all named", "都有名字"), note}
+	case named > 0:
+		return dcheck{stRec, label,
+			fmt.Sprintf(i18n.Tr("%d of %d named", "%d/%d 有名字"), named, plain), note}
+	default:
+		return dcheck{stRec, label,
+			fmt.Sprintf(i18n.Tr("none of %d named", "%d 个都没有名字"), plain), note}
+	}
+}
+
 // paneIDsInWindowName is the automatic-rename-format that puts every pane's `%N` into its
 // window's name — and therefore into the terminal TAB, since set-titles-string is
 // `#S — #W` (tmux-id-surface phase 2).
@@ -415,7 +468,28 @@ func rowPaneIDsInTabs() dcheck {
 	hasHook := strings.Contains(tmuxHook("pane-exited"), "automatic-rename")
 	switch {
 	case hasIDs && hasHook:
-		return dcheck{stOK, label, i18n.Tr("on · refresh hook set", "已开 · 刷新 hook 已设"), note}
+		// Report what the WINDOWS say, not what the option says. Measured on a real fleet
+		// minutes after the option was applied: 2 of 12 windows carried ids. The rest had
+		// `automatic-rename` OFF — tmux turns it off for any window that was ever renamed
+		// by hand, and the format simply does not reach those. A row that reads ✓ while
+		// ten tabs show nothing is the same defect as comparing a format to a literal:
+		// it checks the setting instead of the outcome.
+		named, total, manual := windowsNamingTheirPanes()
+		switch {
+		case total == 0:
+			return dcheck{stOK, label, i18n.Tr("on · refresh hook set", "已开 · 刷新 hook 已设"), note}
+		case named == total:
+			return dcheck{stOK, label, i18n.Tr("on · every window", "已开 · 每个窗口都带"), note}
+		case manual > 0:
+			return dcheck{stInfo, label,
+				fmt.Sprintf(i18n.Tr("%d/%d windows (%d named by hand)", "%d/%d 个窗口（%d 个是你手动命名的）"), named, total, manual),
+				i18n.Tr("a hand-renamed window keeps its name — gtmux will not rename it back",
+					"手动命名过的窗口保持原名 —— gtmux 不会替你改回去")}
+		default:
+			return dcheck{stRec, label,
+				fmt.Sprintf(i18n.Tr("%d/%d windows", "%d/%d 个窗口"), named, total),
+				i18n.Tr("the rest refresh on their next activity", "其余窗口下次有动静时会刷新")}
+		}
 	case hasIDs:
 		// The half-configured case is worth calling out separately: the ids are there but
 		// go stale on a pane close, which is worse than not having them — a name that
@@ -437,6 +511,30 @@ func rowPaneIDsInTabs() dcheck {
 // what the format IS BUILT FROM survives tmux decorating its default again.
 func windowNameFollowsCommand(format string) bool {
 	return format == "" || strings.Contains(format, "pane_current_command")
+}
+
+// windowsNamingTheirPanes counts how many windows actually carry a pane id in their name,
+// and how many CANNOT because they were renamed by hand (`automatic-rename` off — tmux
+// turns it off permanently for a window the moment someone renames it).
+//
+// That distinction is the whole point of reporting it: "8 of 12" with no reason reads as a
+// bug, while "8 of 12, 4 named by hand" is a complete answer the user can act on.
+func windowsNamingTheirPanes() (named, total, manual int) {
+	for _, line := range tmux.Lines("list-windows", "-a", "-F", "#{automatic-rename}\t#{window_name}") {
+		f := strings.SplitN(line, "\t", 2)
+		if len(f) < 2 {
+			continue
+		}
+		total++
+		if f[0] == "0" {
+			manual++
+			continue
+		}
+		if strings.Contains(f[1], "%") {
+			named++
+		}
+	}
+	return named, total, manual
 }
 
 // rowWindowNameSource reports what a window name is made of.

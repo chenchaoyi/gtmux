@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -64,6 +65,7 @@ func doctorFix(yes bool) int {
 	applied += s.stepLocale()
 	applied += s.stepSetTitles()
 	applied += s.stepPaneIDsInTabs()
+	applied += s.stepPaneTitles()
 	applied += s.stepRestoreSettings()
 	applied += s.stepPlugins()
 	applied += s.stepClaudeHook()
@@ -273,11 +275,155 @@ func (s *fixState) stepPaneIDsInTabs() int {
 		"标签页标题带 pane id（可选 —— 「全局感」）"), detail) {
 		return 0
 	}
-	return s.applyConf(
+	n := s.applyConf(
 		[]string{"set -g automatic-rename-format '" + format + "'",
 			"set-hook -g pane-exited '" + paneIDsRefreshHook + "'"},
 		[][]string{{"set", "-g", "automatic-rename-format", format},
 			{"set-hook", "-g", "pane-exited", paneIDsRefreshHook}})
+	if n > 0 {
+		refreshWindowNames()
+	}
+	return n
+}
+
+// refreshWindowNames forces every auto-named window to recompute its name NOW.
+//
+// Without this the change is invisible until each window happens to see activity: measured
+// on a real fleet right after applying, 2 of 12 windows carried ids and the rest still had
+// their old names, which reads as "the fix did not work". Same toggle the pane-exited hook
+// uses. A hand-renamed window (`automatic-rename` off) is deliberately left alone — turning
+// it back on would discard the name its owner chose.
+func refreshWindowNames() {
+	for _, id := range tmux.Lines("list-windows", "-a", "-F", "#{?automatic-rename,#{window_id},}") {
+		if id == "" {
+			continue
+		}
+		_, _ = tmux.Run("set-window-option", "-t", id, "automatic-rename", "off")
+		_, _ = tmux.Run("set-window-option", "-t", id, "automatic-rename", "on")
+	}
+}
+
+// paneTitleMarker leads the snippet in BOTH shells, so "is it already installed" is one
+// check rather than one per shell — and so a user who wants it gone can find it by name.
+const paneTitleMarker = "# gtmux: pane titles — a plain pane says what it is for"
+
+// paneTitleHook is the shell snippet that makes a plain pane say what it is for.
+//
+// Two hooks, not one: BEFORE a command runs the title becomes that command, and at each
+// prompt it falls back to the directory. Only the pair survives — a preexec-only version
+// leaves the last command's name up for hours after it finished, and most prompts already
+// write `user@host: cwd` at every prompt, which is where the host-name titles come from.
+//
+// Gated on $TMUX. Outside tmux this would fight the terminal's own tab title, which gtmux
+// itself matches on for `focus`; inside tmux, tmux owns the terminal title and this only
+// sets the PANE's.
+func paneTitleHook(shell string) (lines []string, name string) {
+	if strings.Contains(shell, "zsh") {
+		// add-zsh-hook, never bare preexec()/precmd() functions: defining those REPLACES
+		// whatever the user (or oh-my-zsh) already had.
+		return []string{
+			paneTitleMarker,
+			`if [ -n "$TMUX" ]; then`,
+			`  autoload -Uz add-zsh-hook`,
+			`  gtmux_pane_title_preexec() { print -rn -- $'\e]2;'"$1"$'\a' }`,
+			`  gtmux_pane_title_precmd()  { print -rn -- $'\e]2;'"${PWD:t}"$'\a' }`,
+			`  add-zsh-hook preexec gtmux_pane_title_preexec`,
+			`  add-zsh-hook precmd  gtmux_pane_title_precmd`,
+			`fi`,
+		}, "zsh"
+	}
+	return []string{
+		paneTitleMarker,
+		`if [ -n "$TMUX" ]; then`,
+		`  trap 'printf "\033]2;%s\007" "$BASH_COMMAND"' DEBUG`,
+		`  PROMPT_COMMAND='printf "\033]2;%s\007" "${PWD##*/}"'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"`,
+		`fi`,
+	}, "bash"
+}
+
+// shellRCPath is the file the snippet goes in — the one a TMUX PANE actually sources.
+//
+// That is not the obvious file for bash. A tmux pane runs a LOGIN shell, and a login bash
+// reads `.bash_profile` / `.bash_login` / `.profile` — the FIRST of those that exists —
+// and never `.bashrc`. Measured: a pane whose `.bashrc` and `.bash_profile` each set a
+// different title came up with the `.bash_profile` one. So writing the snippet to
+// `.bashrc`, which is where every "set your shell title" recipe on the internet puts it,
+// would have left the panes exactly as they were.
+//
+// The order matters as much as the file: bash stops at the first one it finds, so creating
+// `.bash_profile` for someone who keeps their setup in `.profile` would SHADOW it. Only
+// ever append to a file that already exists; create `.bash_profile` only when none do.
+//
+// zsh has no such trap — `.zshrc` is read by every interactive shell, login or not.
+func shellRCPath() (path, shell string) {
+	home := homeDir()
+	if strings.Contains(os.Getenv("SHELL"), "zsh") {
+		return filepath.Join(home, ".zshrc"), "zsh"
+	}
+	for _, name := range []string{".bash_profile", ".bash_login", ".profile"} {
+		if p := filepath.Join(home, name); fileExists(p) {
+			return p, "bash"
+		}
+	}
+	return filepath.Join(home, ".bash_profile"), "bash"
+}
+
+// stepPaneTitles offers the shell hook that gives a plain pane a title worth reading.
+//
+// OPT-IN, and it writes to a SHELL RC — the most personal file gtmux touches — so it is
+// asked separately, shows the exact lines first, backs the file up, and lands in a marked
+// block the user can delete in one go.
+func (s *fixState) stepPaneTitles() int {
+	var plain, named int
+	for _, p := range radar.GatherPanes() {
+		if p.Tier == "agent" {
+			continue
+		}
+		plain++
+		if titleSaysSomething(p.Title, p.Command) {
+			named++
+		}
+	}
+	if plain == 0 || named == plain {
+		return 0
+	}
+	rc, shell := shellRCPath()
+	lines, _ := paneTitleHook(shell)
+	if b, err := os.ReadFile(rc); err == nil && strings.Contains(string(b), paneTitleMarker) {
+		return 0 // already installed
+	}
+	detail := i18n.Tr(
+		"  Add to "+tildeify(rc)+":\n      "+strings.Join(lines, "\n      ")+"\n"+
+			"  Why: a shell writes no pane title, so gtmux falls back to the command and every\n"+
+			"  row reads \"bash\" — while the agent pane beside it reads what it is working on,\n"+
+			"  because an agent DOES write one. This writes it for you: the command while it\n"+
+			"  runs, the directory at the prompt. Takes effect in shells you start after this.",
+		"  写入 "+tildeify(rc)+"：\n      "+strings.Join(lines, "\n      ")+"\n"+
+			"  原因：shell 不写 pane 标题，gtmux 只能退回显示命令名，于是每行都是 \"bash\" —— 而旁边的\n"+
+			"  agent pane 能显示它在做什么，因为 agent 会写。这段替你写：跑命令时显示命令，回到提示符\n"+
+			"  时显示目录名。对之后新开的 shell 生效。")
+	if !s.ask(i18n.Tr("pane titles  (optional — name your plain panes)",
+		"pane 标题（可选 —— 让普通 pane 有名字）"), detail) {
+		return 0
+	}
+	old := ""
+	if b, err := os.ReadFile(rc); err == nil {
+		old = string(b)
+	}
+	if err := os.MkdirAll(filepath.Dir(rc), 0o755); err != nil {
+		i18n.Sae("  ✗ "+err.Error(), "  ✗ "+err.Error())
+		s.rc = 1
+		return 0
+	}
+	backupFile(rc)
+	if err := os.WriteFile(rc, []byte(upsertManagedBlock(old, lines)), 0o644); err != nil {
+		i18n.Sae("  ✗ write "+tildeify(rc)+": "+err.Error(), "  ✗ 写入 "+tildeify(rc)+"："+err.Error())
+		s.rc = 1
+		return 0
+	}
+	i18n.Say("  ✓ updated "+tildeify(rc)+" — new shells only; existing panes keep their titles",
+		"  ✓ 已更新 "+tildeify(rc)+" —— 只对新开的 shell 生效，已有 pane 标题不变")
+	return 1
 }
 
 func (s *fixState) stepRestoreSettings() int {

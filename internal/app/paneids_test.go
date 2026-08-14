@@ -178,3 +178,110 @@ func TestDefaultWindowNameFormatIsRecognized(t *testing.T) {
 		}
 	}
 }
+
+// Does the shell snippet actually retitle a real pane?
+//
+// Command-level again, and for the same reason: the snippet is a string in a Go file until
+// a real shell runs it. This starts an isolated tmux whose pane runs the target shell with
+// HOME pointed at a temp rc holding exactly the lines `doctor --fix` writes, then reads
+// `pane_title` — at the prompt (should be the directory) and while a command runs (should
+// be the command).
+func TestPaneTitleHookRetitlesARealPane(t *testing.T) {
+	for _, tc := range []struct{ shell, rc string }{{"zsh", ".zshrc"}, {"bash", ".bashrc"}} {
+		t.Run(tc.shell, func(t *testing.T) {
+			bin, err := exec.LookPath(tc.shell)
+			if err != nil {
+				t.Skip("no " + tc.shell)
+			}
+			dir, err := os.MkdirTemp("/tmp", "gtxt") // short: unix socket path cap
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = os.RemoveAll(dir) })
+			sock := filepath.Join(dir, "s")
+			if err := os.MkdirAll(sock, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			lines, _ := paneTitleHook(tc.shell)
+			if err := os.WriteFile(filepath.Join(dir, tc.rc), []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("TMUX_TMPDIR", sock)
+			t.Setenv("TMUX", "")
+			t.Setenv("HOME", dir)
+			run := func(args ...string) string {
+				out, _ := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
+				return out
+			}
+			run("new-session", "-d", "-s", "t", bin)
+			t.Cleanup(func() { run("kill-server") })
+			if got := run("list-sessions", "-F", "#{session_name}"); got != "t" {
+				t.Fatalf("not isolated — server holds %q", got)
+			}
+
+			title := func() string { return run("display-message", "-p", "-t", "t", "#{pane_title}") }
+			waitFor := func(want func(string) bool, what string) string {
+				deadline := time.Now().Add(6 * time.Second)
+				var last string
+				for time.Now().Before(deadline) {
+					last = title()
+					if want(last) {
+						return last
+					}
+					time.Sleep(150 * time.Millisecond)
+				}
+				t.Errorf("%s: pane title stayed %q", what, last)
+				return last
+			}
+
+			run("send-keys", "-t", "t", "cd /usr/share", "Enter")
+			waitFor(func(s string) bool { return s == "share" }, "at the prompt the title should be the directory")
+
+			run("send-keys", "-t", "t", "sleep 3", "Enter")
+			waitFor(func(s string) bool { return strings.Contains(s, "sleep") }, "while a command runs the title should be the command")
+		})
+	}
+}
+
+// WHICH FILE. A tmux pane runs a LOGIN shell, and a login bash reads `.bash_profile` /
+// `.bash_login` / `.profile` — the first that exists — and never `.bashrc`. Measured with a
+// pane whose two rc files set different titles: `.bash_profile` won. Every "set your shell
+// title" recipe writes `.bashrc`, which in a tmux pane does nothing at all.
+//
+// And the ORDER is load-bearing: bash stops at the first file it finds, so creating
+// `.bash_profile` for someone whose setup lives in `.profile` would silently shadow it.
+func TestShellRCIsTheFileALoginShellReads(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	touch := func(name string) {
+		if err := os.WriteFile(filepath.Join(home, name), []byte("# existing\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Setenv("SHELL", "/bin/zsh")
+	if got, _ := shellRCPath(); got != filepath.Join(home, ".zshrc") {
+		t.Errorf("zsh → %s, want .zshrc", got)
+	}
+
+	t.Setenv("SHELL", "/bin/bash")
+	// Nothing exists yet: a login shell would read .bash_profile, so that is what to create.
+	if got, _ := shellRCPath(); got != filepath.Join(home, ".bash_profile") {
+		t.Errorf("bare bash → %s, want .bash_profile", got)
+	}
+	// .bashrc alone must NOT be chosen — a login shell never reads it.
+	touch(".bashrc")
+	if got, _ := shellRCPath(); got != filepath.Join(home, ".bash_profile") {
+		t.Errorf("with only .bashrc → %s; a tmux pane would never source it", got)
+	}
+	// An existing .profile is appended to, never shadowed by a new .bash_profile.
+	touch(".profile")
+	if got, _ := shellRCPath(); got != filepath.Join(home, ".profile") {
+		t.Errorf("with .profile → %s; creating .bash_profile would shadow it", got)
+	}
+	// .bash_profile wins when it exists — it is what bash looks at first.
+	touch(".bash_profile")
+	if got, _ := shellRCPath(); got != filepath.Join(home, ".bash_profile") {
+		t.Errorf("with .bash_profile → %s", got)
+	}
+}

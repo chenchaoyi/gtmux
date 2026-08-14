@@ -319,3 +319,47 @@ consumption/distill/self-check cadences.
 - **WHEN** an HQ home exists
 - **THEN** the "HQ" section reports the board's freshness and the knowledge base's shape in
   addition to the maintenance cadences
+
+### Requirement: Reports whether panes can be told apart on screen
+
+`doctor` SHALL report two things about pane identity, and SHALL measure the OUTCOME rather
+than the presence of a setting:
+
+- whether the terminal tab names the panes behind it, counted per WINDOW — and, when some
+  windows cannot carry ids because they were renamed by hand (tmux turns `automatic-rename`
+  off permanently for such a window), it SHALL say so rather than reporting a bare fraction;
+- whether PLAIN panes have a title that says anything, counted per pane, excluding agent
+  panes (an agent writes its own title, so counting them would report a healthy fleet made
+  of rows the user cannot tell apart).
+
+A title SHALL be treated as saying nothing when it is empty, the machine's host name, a
+filesystem path, or the pane's own command — the four shapes measured on a real fleet.
+
+`--fix` SHALL OFFER the corresponding configuration and never apply it silently, SHALL show
+the exact lines first, SHALL back up the file it edits, and SHALL write into a marked block.
+For the shell hook it SHALL choose the file a tmux pane actually sources — a login shell —
+and SHALL only create a new startup file when none of the candidates exist.
+
+#### Scenario: A fleet whose tabs cannot name their panes
+
+- **WHEN** `automatic-rename-format` carries no `#{pane_id}`
+- **THEN** the row is reported as improvable and `--fix` offers the format plus the
+  `pane-exited` refresh hook
+
+#### Scenario: Windows the setting cannot reach
+
+- **WHEN** the format is set but some windows were renamed by hand
+- **THEN** the row reports how many windows carry ids AND how many are hand-named, instead
+  of a ✓ that contradicts what the user sees on screen
+
+#### Scenario: Applying the fix shows on screen immediately
+
+- **WHEN** `--fix` applies the format
+- **THEN** every auto-named window is refreshed at once, rather than waiting for each window's
+  next activity; hand-named windows are left alone
+
+#### Scenario: Plain panes all read as their command
+
+- **WHEN** no plain pane has an informative title
+- **THEN** the row is reported as improvable and `--fix` offers the shell hook, written to
+  the startup file a login shell reads
