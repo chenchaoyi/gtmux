@@ -1154,6 +1154,47 @@ so `focus`'s tab matching is untouched.
   `doctor` does NOT suggest this one. `pane-border-status` is `off` by default, so turning
   it on costs a permanent screen row per pane in every split — a real price for something
   the window name already carries. Your call, not a recommendation.
+### Give a plain pane a title worth reading (optional)
+
+An agent writes its own pane title — that is why an agent row reads `提炼本周研发周报质量部分汇总`
+while the shell pane beside it reads `bash`. A shell writes nothing, so gtmux falls back to the
+command name, and every plain row looks the same.
+
+Two shell hooks fix it: the title becomes the command while it runs, and the directory at the
+prompt.
+
+```bash
+# bash — in the file your LOGIN shell reads (see below)
+if [ -n "$TMUX" ]; then
+  trap 'printf "\033]2;%s\007" "$BASH_COMMAND"' DEBUG
+  PROMPT_COMMAND='printf "\033]2;%s\007" "${PWD##*/}"'"${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+fi
+```
+
+```zsh
+# zsh — ~/.zshrc
+if [ -n "$TMUX" ]; then
+  autoload -Uz add-zsh-hook
+  gtmux_pane_title_preexec() { print -rn -- $'\e]2;'"$1"$'\a' }
+  gtmux_pane_title_precmd()  { print -rn -- $'\e]2;'"${PWD:t}"$'\a' }
+  add-zsh-hook preexec gtmux_pane_title_preexec
+  add-zsh-hook precmd  gtmux_pane_title_precmd
+fi
+```
+
+- **Not `~/.bashrc`.** A tmux pane runs a LOGIN shell, and a login bash reads
+  `.bash_profile` / `.bash_login` / `.profile` — the first that exists — and never `.bashrc`.
+  Putting it in `.bashrc`, which is where most recipes put it, does nothing in tmux.
+  `doctor --fix` picks the file your shell actually reads, and only ever appends to one that
+  already exists (creating `.bash_profile` where you keep `.profile` would shadow it).
+- **`add-zsh-hook`, not a bare `preexec()`.** Defining that function replaces whatever you
+  (or oh-my-zsh) already had.
+- **Gated on `$TMUX`.** Outside tmux this would fight your terminal's own tab title, which
+  gtmux matches on to jump.
+- **`gtmux doctor` measures the result, not the config**: it counts how many plain panes have
+  a title that says anything, because a hook can be written a hundred ways and only the
+  outcome matters. New shells only — panes already open keep their titles.
+
 - **`gtmux doctor` reports this row and `--fix` offers it** — as a suggestion you own,
   never a silent write. If you already have your own `automatic-rename-format`, `--fix`
   APPENDS the ids to it rather than replacing it. gtmux does not rename your windows:
