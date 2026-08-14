@@ -436,8 +436,11 @@
         if (!w) { w = {k: k, id: p.win_id || '', name: p.win_name || '', rows: []}; wins.push(w); }
         w.rows.push(p);
       });
+      // EVERY session draws its window bands, including one holding a single window: the
+      // band used to be conditional, so a single-window session put its panes at the same
+      // indent that elsewhere means "window" and the same shape meant two things.
       wins.forEach(function (w) {
-        if (wins.length > 1) {
+        {
           var wl = document.createElement('div'); wl.className = 'pb-win';
           wl.innerHTML = (w.id ? '<span class="pb-win-id">' + esc(w.id) + '</span>' : '') +
             (w.name ? '<span class="pb-win-name">' + esc(w.name) + '</span>' : '') +
@@ -510,8 +513,8 @@
       setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1200);
     };
     sub.appendChild(pid);
+    // No agent name here — the icon at the head of the row already says it.
     var bits = [];
-    if (isAgent && p.agent && p.agent !== label) bits.push(p.agent);
     if (dir) bits.push(dir);
     if (!isAgent && p.command && p.command !== label) bits.push(p.command);
     if (bits.length) sub.appendChild(document.createTextNode('  ·  ' + bits.join('  ·  ')));

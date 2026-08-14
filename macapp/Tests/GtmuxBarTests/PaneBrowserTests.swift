@@ -137,16 +137,16 @@ final class PaneWindowTests: XCTestCase {
         XCTAssertEqual(PaneWindow(winID: "", winName: "multipilot", rows: []).label, "multipilot")
     }
 
-    /// A window line is only worth a row when there is more than one window. With one, the
-    /// levels coincide and its id rides on the session header — measured motivation: 6 of
-    /// 11 sessions on the real fleet have exactly one window, so always drawing it would
-    /// add a line saying nothing to more than half of them.
-    func testSingleWindowShowsNoExtraRowButKeepsItsId() {
+    /// REVERSED 2026-08-14. The line was drawn only for a session with several windows, on
+    /// the grounds that one window makes the levels coincide. In use that produced two
+    /// different shapes a row apart: a single-window session put its panes at the indent
+    /// that everywhere else means "window". The line it costs is worth one predictable tree.
+    func testSingleWindowStillShowsItsWindowRow() {
         let one = PaneGroup(session: "HQ",
                             windows: [PaneWindow(winID: "@3", winName: "hq", rows: [row("%4", "HQ", "0", "@3", "hq")])],
                             agentCount: 1, roll: [:])
-        XCTAssertFalse(one.showsWindowRows)
-        XCTAssertEqual(one.windowIDs, "@3", "the id must not disappear just because the row does")
+        XCTAssertTrue(one.showsWindowRows)
+        XCTAssertEqual(one.windowIDs, "@3", "the header keeps naming what the session holds")
 
         let many = PaneGroup(session: "MP",
                              windows: [PaneWindow(winID: "@7", winName: "a", rows: [row("%12", "MP", "0", "@7", "a")]),
@@ -251,5 +251,36 @@ final class PaneCommandsTests: XCTestCase {
     /// (and wrong) thing. Stripping it would be an easy "cleanup" to make later.
     func testKeepsTheSigil() {
         XCTAssertTrue(PaneCommands.focus(paneID: "%7").contains("%7"))
+    }
+}
+
+/// The tree has the SAME shape for every session, including one that holds a single window.
+///
+/// The band used to be conditional on `windows.count > 1`. That reasoning was about the
+/// line it costs and missed the tree: a single-window session then put its panes directly
+/// under the session header, at the indent that elsewhere means "window", so the same shape
+/// meant two different things one row apart (commander, 2026-08-14).
+final class PaneGroupShapeTests: XCTestCase {
+    private func row(_ pane: String, win: String) -> PaneRow {
+        let json = #"{"pane_id":"\#(pane)","session":"s","window":"0","pane":"0","loc":"s:0.0","command":"bash","tier":"plain","win_id":"\#(win)","win_name":"w"}"#
+        return try! JSONDecoder().decode(PaneRow.self, from: Data(json.utf8))
+    }
+
+    func testSingleWindowSessionStillDrawsItsWindowRow() {
+        let g = PaneGroup(session: "s", windows: [PaneWindow(winID: "@4", winName: "w", rows: [row("%1", win: "@4")])], agentCount: 0, roll: [:])
+        XCTAssertTrue(g.showsWindowRows, "a single-window session must draw the same three levels as any other")
+    }
+
+    func testMultiWindowSessionDrawsThemToo() {
+        let g = PaneGroup(session: "s", windows: [
+            PaneWindow(winID: "@4", winName: "w", rows: [row("%1", win: "@4")]),
+            PaneWindow(winID: "@5", winName: "w2", rows: [row("%2", win: "@5")]),
+        ], agentCount: 0, roll: [:])
+        XCTAssertTrue(g.showsWindowRows)
+    }
+
+    func testASessionWithNoWindowsDrawsNothing() {
+        let g = PaneGroup(session: "s", windows: [], agentCount: 0, roll: [:])
+        XCTAssertFalse(g.showsWindowRows)
     }
 }

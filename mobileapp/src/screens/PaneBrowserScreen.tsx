@@ -221,7 +221,7 @@ export function PaneBrowserScreen({navigation}: any) {
       return {
         title: s, all, agentCount, roll, windows,
         winIDs: windowIDsLabel(windows),
-        showsWindows: windows.length > 1,
+        showsWindows: windows.length > 0,
       };
     });
   }, [panes, q, byPane]);
@@ -495,11 +495,9 @@ function PaneRowView({
   // An agent row never repeats its command here — the label already names the agent
   // and the command can be a meaningless version string (#659). The window·pane is a
   // separate mono chip at the front so the tree position reads at a glance.
+  // The sub-line no longer names the agent. "Claude Code" under every one of six rows is
+  // what the official icon at the head of the row already says, in less space.
   const bits: string[] = [];
-  if (isAgent) {
-    const name = agentLabel(row, joined);
-    if (name && name !== label) bits.push(name);
-  }
   if (dir) bits.push(dir);
   if (!isAgent && row.command && row.command !== label) bits.push(row.command);
   return (
