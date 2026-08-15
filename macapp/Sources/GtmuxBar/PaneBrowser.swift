@@ -188,7 +188,10 @@ final class PaneBrowserStore: ObservableObject {
 /// PreferencesController.
 final class PaneBrowserController {
     static let shared = PaneBrowserController()
-    private var window: NSWindow?
+    /// Kept across closes so the browser reopens where the user left it — but its CONTENT
+    /// is dropped on close, see the willClose handler. `private(set)` so a test can assert
+    /// exactly that: window kept, graph gone.
+    private(set) var window: NSWindow?
     private let browserStore = PaneBrowserStore()
     /// What the content wants to be — published by the view, consumed by fitWindow.
     private let contentSize = PanelSize()
@@ -211,15 +214,18 @@ final class PaneBrowserController {
             let w = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: PanelMetrics.browserWidth, height: 620),
                 styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-            w.contentViewController = NSHostingController(
-                rootView: PaneBrowserView(l10n: l10n, store: browserStore, size: contentSize,
-                                          radar: radar))
             w.isReleasedWhenClosed = false
             w.center()
             window = w
             NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification, object: w, queue: .main) { [weak self] _ in
                 self?.browserStore.stop()
+                // Drop the SwiftUI graph with the window. The window itself is kept
+                // (isReleasedWhenClosed = false) so its frame and position survive, but a
+                // kept graph keeps ANIMATING: the working ring's repeatForever went on
+                // running against a window nobody could see. Telling it to stop does not
+                // work once it is running — not having the view does.
+                w.contentViewController = nil
             }
             NotificationCenter.default.addObserver(
                 forName: NSWindow.didEndLiveResizeNotification, object: w, queue: .main) { [weak self] _ in
@@ -229,6 +235,14 @@ final class PaneBrowserController {
                 .receive(on: RunLoop.main)
                 .sink { [weak self] h in self?.fitWindow(to: h) }
                 .store(in: &cancellables)
+        }
+        // Fresh content each open (see the close handler). Cheap: the list it shows is
+        // re-fetched on open anyway, and what the browser remembers — folded sessions, the
+        // watched set — lives in stores that outlive the window.
+        if window?.contentViewController == nil {
+            window?.contentViewController = NSHostingController(
+                rootView: PaneBrowserView(l10n: l10n, store: browserStore, size: contentSize,
+                                          radar: radar))
         }
         window?.title = l10n.tr("gtmux · All panes", "gtmux · 所有 pane")
         fitUntil = Date().addingTimeInterval(Self.fitWindow)

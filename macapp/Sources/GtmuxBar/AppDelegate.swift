@@ -73,15 +73,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // popover rendered shifted/clipped (seen live 2026-08-08). Instant resize also
         // matches the design language (DESIGN.md: 动效最小).
         popover.animates = false
-        popover.contentViewController = NSHostingController(
-            rootView: MenuView(
-                store: store, l10n: l10n,
-                onJump: { [weak self] in self?.jump($0) },
-                onAction: { [weak self] in self?.perform($0) },
-                onAdopt: { [weak self] in self?.adopt($0) },
-                onSend: { [weak self] in self?.sendReply($0, $1) },
-                onUnwatch: { [weak self] in self?.unwatch($0) },
-                onClose: { [weak self] in self?.popover.performClose(nil) }))
+        // The panel's hosting controller is created ONCE and retained by NSPopover, so
+        // closing the panel does not tear its SwiftUI graph down — a `.repeatForever`
+        // animation inside it goes on running against a window nobody can see. Tell the
+        // gate when the panel actually closes, whatever closed it.
+        NotificationCenter.default.addObserver(
+            forName: NSPopover.didCloseNotification, object: popover, queue: .main) { [weak self] _ in
+            // Drop the graph, not just the pixels — see makeMenuHost().
+            self?.popover.contentViewController = nil
+        }
+        popover.contentViewController = makeMenuHost()
 
         // TELL the popover how tall it is. Without this the panel's own growth never
         // reaches NSPopover, which goes on positioning the window for the size it was
@@ -352,9 +353,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 
+    /// A FRESH hosting controller for the panel, built at each open.
+    ///
+    /// The panel's SwiftUI graph used to be built once and kept by NSPopover for the life
+    /// of the app. That is what let the working ring's `.repeatForever` go on animating
+    /// against a panel nobody could see: measured on a fresh build, one working agent,
+    /// 0.1–0.3 % CPU before the panel was ever opened and 4.6–11 % after opening and
+    /// CLOSING it, climbing with every re-open. The commander's 3.5-hour-old menu bar sat
+    /// at 20 %, and 87.9 % with surfaces open.
+    ///
+    /// Telling the ring to stop was tried first and did NOT work: a running repeatForever
+    /// keeps going even after its driving state flips and the animation is replaced with
+    /// nil (verified — the gate reached `false`, the CPU stayed). What reliably ends an
+    /// animation is not having the view. So the graph is built on open and dropped on
+    /// close. Nothing visible is lost: what the panel remembers (folded sections, the
+    /// language, the watched set) lives in stores that outlive it, not in view state.
+    private func makeMenuHost() -> NSHostingController<MenuView> {
+        NSHostingController(
+            rootView: MenuView(
+                store: store, l10n: l10n,
+                onJump: { [weak self] in self?.jump($0) },
+                onAction: { [weak self] in self?.perform($0) },
+                onAdopt: { [weak self] in self?.adopt($0) },
+                onSend: { [weak self] in self?.sendReply($0, $1) },
+                onUnwatch: { [weak self] in self?.unwatch($0) },
+                onClose: { [weak self] in self?.popover.performClose(nil) }))
+    }
+
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
         if popover.isShown { popover.performClose(nil); return }
+        if popover.contentViewController == nil { popover.contentViewController = makeMenuHost() }
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()
         store.refresh()

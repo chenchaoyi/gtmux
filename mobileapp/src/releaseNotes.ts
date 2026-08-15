@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.55.1',
+    en: [
+      'The all-panes browser draws the window line for every session now, including one that holds a single window, and a pane row sits indented inside its window instead of starting further left than the window line above it.',
+      'A pane row no longer repeats the agent\'s name under its icon; the text says what the pane is doing.',
+    ],
+    zh: [
+      '「所有 pane」浏览器现在每个 session 都画出窗口那一行（包括只有一个窗口的），pane 行也缩进在它所属的窗口里面，不再比上面那行窗口名还靠左。',
+      'pane 行不再在图标下面重复 agent 名字，文字留给「这个 pane 在做什么」。',
+    ],
+  },
+  {
     version: '0.55.0',
     en: [
       'The all-panes browser draws the window line for every session now, including one that holds a single window — the tree has the same shape everywhere instead of two shapes a row apart.',
