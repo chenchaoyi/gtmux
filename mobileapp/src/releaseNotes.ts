@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.58.1',
+    en: [
+      '"All panes" and Settings no longer overlap each other\'s tap areas — aiming at the right half of "all panes" used to open Settings.',
+      'A row marked "background running" names the actual command instead of a script\'s first line, which was often just a variable assignment.',
+      'A share link\'s summary counts the panes it can still reach and names the grants whose pane is gone; when tmux has restarted, the app now says the links are being refused and how to restore them.',
+    ],
+    zh: [
+      '「所有 pane」和「设置」的点击区不再重叠 —— 以前瞄准「所有 pane」右半边点，开的是设置。',
+      '标着「后台运行中」的行现在显示真正的命令，而不是脚本的第一行（那往往只是个变量赋值）。',
+      '分享链接的摘要只数它还能到达的 pane，并把已失效的授权明说出来；tmux 重启之后，app 会直说这些链接正被拒绝以及如何恢复。',
+    ],
+  },
+  {
     version: '0.57.1',
     en: [
       'Paired devices now say what they ARE (iOS 26.6, Chrome 141 · macOS) and where they last connected from, and the list finally has an order — most recently seen first.',
