@@ -199,6 +199,52 @@ func readCandidates() ([]captureCandidate, error) {
 	return out, sc.Err()
 }
 
+// consumeCandidates removes EVERY pending line sharing key — the merge of
+// same-key candidates the distill discipline promises — and returns them,
+// oldest first. The spool is rewritten atomically (temp + rename), so a crash
+// leaves either the old spool or the new one, never a torn file. An unknown key
+// consumes nothing and errors, so a typo cannot silently "succeed".
+func consumeCandidates(key string) ([]captureCandidate, error) {
+	cands, err := readCandidates()
+	if err != nil {
+		return nil, err
+	}
+	var consumed, kept []captureCandidate
+	for _, c := range cands {
+		if c.Key == key {
+			consumed = append(consumed, c)
+		} else {
+			kept = append(kept, c)
+		}
+	}
+	if len(consumed) == 0 {
+		return nil, fmt.Errorf("no pending candidate with key %q (gtmux capture --list)", key)
+	}
+	tmp := pendingDistillPath() + ".tmp"
+	f, err := os.Create(tmp)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range kept {
+		b, err := json.Marshal(c)
+		if err != nil {
+			_ = f.Close()
+			return nil, err
+		}
+		if _, err := f.Write(append(b, '\n')); err != nil {
+			_ = f.Close()
+			return nil, err
+		}
+	}
+	if err := f.Close(); err != nil {
+		return nil, err
+	}
+	if err := os.Rename(tmp, pendingDistillPath()); err != nil {
+		return nil, err
+	}
+	return consumed, nil
+}
+
 // pendingCandidateCount is the spool depth the distill sensor's spool floor reads. An
 // unreadable spool counts as 0 — a sensor must never fire on an I/O error.
 func pendingCandidateCount() int {

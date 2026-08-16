@@ -98,6 +98,8 @@ func Run(argv []string) int {
 		return hq.CmdTasks(args)
 	case "capture":
 		return hq.CmdCapture(args)
+	case "knowledge":
+		return hq.CmdKnowledge(args)
 	case "reap":
 		return cmdReap(args)
 	case "send":

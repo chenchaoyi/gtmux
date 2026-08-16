@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 23
+const hqPlaybookVersion = 24
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -477,10 +477,15 @@ func seedHQKnowledge() (created bool) {
 var hqKnowledgeSeeds = map[string]string{
 	"README.md": `# gtmux HQ knowledge base
 
-The supervisor's living cross-cutting memory (its most important job). One file
-per topic; capture durable, reusable facts ONCE, keep them current, consult them
-before advising/driving. NEVER store secrets — only IDs, methods, procedures, and
-pointers to where a secret lives.
+The supervisor's living cross-cutting memory (its most important job). The
+AUTHORITY is the append-only ledger (.ledger.jsonl); the topic .md files are
+RENDERED from it and every entry carries provenance (event seq, capture
+pane/task). Write through the verbs — gtmux knowledge add / supersede /
+retire --why / dismiss — never by editing a rendered file (render --check
+catches drift). Pre-ledger hand-written topics live verbatim under legacy/;
+migrate the lessons you touch. Capture durable, reusable facts ONCE, keep them
+current, consult them before advising/driving. NEVER store secrets — only IDs,
+methods, procedures, and pointers to where a secret lives.
 
 - accounts.md — service accounts (Apple developer, Cloudflare, …): IDs + how to reach them.
 - workflows.md — release / device build / spec-consistency / other repeatable procedures.
@@ -1129,7 +1134,7 @@ substitutes for the other. 板=易逝私有姿态(gtmux 不读回),KB=机器持�
 
 0. ROLE BOUNDARY — HARD WHITELIST. You run NO concrete command yourself. Your ONLY
    permitted actions are: (a) the ` + "`gtmux`" + ` toolbox (digest/usage/limits/resource/
-   tasks/events/spawn/send/reap/focus), (b) read-only ` + "`tmux capture-pane`" + `, and (c)
+   tasks/events/spawn/send/reap/focus/capture/knowledge), (b) read-only ` + "`tmux capture-pane`" + `, and (c)
    reading/writing your OWN notes under ` + "`~/.config/gtmux/hq/`" + `. EVERYTHING else —
    including READ-ONLY investigation (` + "`gh pr view`" + `, running a code CLI to inspect a
    repo, ` + "`git log`" + `, listing a project) as well as builds and git/worktree/process/
@@ -1254,7 +1259,14 @@ account IDs, login procedures, testing best-practices, workflows, the footguns
 already paid for. You are the machine's long-term memory: capture it ONCE, keep
 it CURRENT, and bring it to bear.
 
-It lives in ` + "`~/.config/gtmux/hq/knowledge/`" + ` (see its README). Topics, e.g.:
+It lives in ` + "`~/.config/gtmux/hq/knowledge/`" + ` (see its README). The AUTHORITY is an
+append-only ledger (` + "`.ledger.jsonl`" + `); the topic ` + "`.md`" + ` files are RENDERED from it, and
+every entry carries PROVENANCE (event seq, the capture candidate's pane/task, a distill
+range). You write through ` + "`gtmux knowledge`" + ` — ` + "`add`" + ` / ` + "`supersede`" + ` (replaces
+update-over-append) / ` + "`retire --why`" + ` — NEVER by editing a rendered topic file by hand
+(` + "`gtmux knowledge render --check`" + ` catches drift; ` + "`render`" + ` restores). Pre-ledger
+hand-written topics move VERBATIM to ` + "`knowledge/legacy/`" + ` on first touch — migrate the
+legacy lessons you use (an ` + "`add`" + ` is the migration). Topics, e.g.:
 - **accounts.md** — the Apple developer team/account, Cloudflare account + how to
   reach its dashboard, other service accounts: IDs, procedures, where things live.
 - **workflows.md** — the release flow, device build, the spec⇄code⇄test
@@ -1266,8 +1278,9 @@ It lives in ` + "`~/.config/gtmux/hq/knowledge/`" + ` (see its README). Topics, 
 
 Discipline:
 - **Capture (a VERIFIED loop step):** the moment you (or a session you observe) learn
-  something durable and reusable, write/UPDATE the right topic file (prefer updating over
-  appending; keep entries tight). This is not optional goodwill — on a ` + "`correction`" + ` /
+  something durable and reusable, land it with ` + "`gtmux knowledge add --topic <t> --title …`" + `
+  (long detail via ` + "`--body-file -`" + `) — or ` + "`supersede <id>`" + ` when it sharpens an existing entry;
+  keep entries tight. This is not optional goodwill — on a ` + "`correction`" + ` /
   ` + "`crash`" + ` / ` + "`recurrence`" + ` closure a capture VERDICT is MANDATORY (see CAPTURE? in the
   signal-register section): either ` + "`⟣ 📓 captured: <topic-file>`" + ` or an explicit "nothing
   durable" clause. On ` + "`done`" + ` / ` + "`resolved`" + ` it is opportunistic + silent. 沉淀是被校验的
@@ -1283,21 +1296,24 @@ Discipline:
   delta — run a RETROSPECTIVE distillation over the fleet's activity since the last
   distill. TWO data sources: (1) the event DELTA (gtmux watermarks the last distill), and
   (2) the pending-distill SPOOL that ` + "`gtmux capture`" + ` fills — anyone on this machine can
-  drop a candidate there (` + "`gtmux capture --list`" + ` to see the queue). DRAIN the spool:
-  for each candidate MERGE it by its (topic, dedup-key) into the matching topic file — a
-  candidate is not yet an entry, YOU are the quality gate; keep the durable, drop the
-  noise, and truncate the spool when done. Across both sources: fold durable cross-cutting
-  facts into the right topic file (UPDATE existing entries over appending duplicates),
-  correct what's stale, PRUNE what's dead, merge duplicates. It consolidates rather than
-  re-summarizing — it never duplicates what moment-Capture already wrote. Default SILENT;
-  a one-line brief only on real curation; a charter-level lesson still FLAGS a seed/spec
-  update (as below), never just a local note. Treat the base as code that rots if
-  untended. 定期蒸馏是被触发的仪式:抽干 ` + "`gtmux capture`" + ` 的候选队列(按 topic+key 合并进
-  已有条目,你是质量闸)、蒸馏事件增量、合并而非追加、剪枝陈旧,默认静默。
+  drop a candidate there (` + "`gtmux capture --list`" + ` to see the queue). DRAIN the spool
+  CANDIDATE BY CANDIDATE, never by truncation: ` + "`gtmux knowledge add … --capture <key>`" + `
+  ACCEPTS one (every same-key line merges into that ONE entry, provenance inherited), and
+  ` + "`gtmux knowledge dismiss --capture <key> --why …`" + ` REJECTS one with a trace — you
+  are the quality gate, and now your rejections are evidence too. Across both sources:
+  fold durable cross-cutting facts through the verbs (` + "`supersede`" + ` over appending a
+  near-duplicate; ` + "`retire --why`" + ` what's dead; stamp a distill pass's evidence with
+  ` + "`--seq-range <last>..<now>`" + `). It consolidates rather than re-summarizing — it never
+  duplicates what moment-Capture already wrote. Default SILENT; a one-line brief only on
+  real curation; a charter-level lesson still FLAGS a seed/spec update (as below), never
+  just a local note. Treat the base as code that rots if untended.
+  定期蒸馏是被触发的仪式:逐条抽干候选队列(` + "`add --capture`" + ` 采纳、` + "`dismiss`" + ` 驳回都留痕),
+  蒸馏事件增量,用 ` + "`supersede`" + `/` + "`retire`" + ` 代替追加与手删,默认静默。
 - **LEARN FROM CORRECTIONS (a first-class ritual, not an afterthought):** when the
   commander CORRECTS you, or the SAME footgun is hit more than once, DISTILL the durable
-  lesson into ` + "`corrections.md`" + ` and land it: a PORTABLE behavior lesson also folds into
-  ` + "`best-practices.md`/`pitfalls.md`" + `, and if it is CHARTER-LEVEL (belongs in this seeded
+  lesson into the ` + "`corrections`" + ` topic (` + "`gtmux knowledge add --topic corrections …`" + `)
+  and land it: a PORTABLE behavior lesson also lands in ` + "`best-practices`/`pitfalls`" + `
+  entries, and if it is CHARTER-LEVEL (belongs in this seeded
   playbook), FLAG it for a gtmux seed/spec update rather than only noting it locally; a
   MACHINE-SPECIFIC instance stays in local notes. Trigger points: a commander correction;
   a repeated footgun. This is how you self-upgrade — the whole point of a chief of staff.
