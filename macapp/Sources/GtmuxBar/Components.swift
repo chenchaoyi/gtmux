@@ -29,6 +29,7 @@ struct StatusBadge: View {
     /// preference a glance tool has no business overriding.
     @State private var spin = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ObservedObject private var visibility = MenuVisibility.shared
     // errored-idle: an amber ⚠ modifier replacing the green ✓ (the idle session
     // ended on an error). Never for non-idle states.
     var errored = false
@@ -74,13 +75,22 @@ struct StatusBadge: View {
                 //
                 // Only in surfaces the user has OPENED. The menu-bar status item stays
                 // static: it is on screen all day, and motion there is ambient noise.
-                Circle().trim(from: 0.08, to: 0.92)
-                    .stroke(.white, style: StrokeStyle(lineWidth: size * 0.12, lineCap: .round))
-                    .frame(width: size * 0.56, height: size * 0.56)
-                    .rotationEffect(.degrees(spin ? 280 : -80))
-                    .animation(reduceMotion ? nil : .linear(duration: 2).repeatForever(autoreverses: false),
-                               value: spin)
-                    .onAppear { spin = true }
+                // Two RINGS, not one ring with a switch: swapping the view is what ends
+                // a repeatForever, and what keeps a closed panel from animating forever.
+                if visibility.visible && !reduceMotion {
+                    Circle().trim(from: 0.08, to: 0.92)
+                        .stroke(.white, style: StrokeStyle(lineWidth: size * 0.12, lineCap: .round))
+                        .frame(width: size * 0.56, height: size * 0.56)
+                        .rotationEffect(.degrees(spin ? 280 : -80))
+                        .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: spin)
+                        .onAppear { spin = true }
+                        .onDisappear { spin = false }
+                } else {
+                    Circle().trim(from: 0.08, to: 0.92)
+                        .stroke(.white, style: StrokeStyle(lineWidth: size * 0.12, lineCap: .round))
+                        .frame(width: size * 0.56, height: size * 0.56)
+                        .rotationEffect(.degrees(-80))
+                }
             case .running:
                 Circle().fill(.white).frame(width: size * 0.3, height: size * 0.3)
             }
@@ -276,4 +286,28 @@ enum PopoverClick {
         let dt = now.timeIntervalSince(close)
         return dt >= 0 && dt < echoWindow
     }
+}
+
+/// MenuVisibility says whether a surface that draws a turning ring is on screen.
+///
+/// The working ring animates with `.repeatForever`, which runs for as long as the VIEW
+/// exists — and the panel's view tree outlives its own visibility (NSPopover keeps its
+/// content controller; the all-panes window is kept with isReleasedWhenClosed = false).
+/// So a closed surface went on animating, and each re-open added another: measured on a
+/// fresh build with one working agent, 0.1–0.3 % CPU before opening anything and
+/// 4.6–11 % after opening and closing, climbing.
+///
+/// Two things were tried before this. Telling the animation to stop does NOT work: a
+/// running repeatForever survives its driving state flipping and its animation being
+/// replaced with nil (verified — the flag reached false, the CPU did not move). Tearing
+/// the view tree down DOES work, but then every re-open lays out from scratch, and the
+/// panel opens with a band of empty space above it while the first pass measures.
+///
+/// What works without either cost: swap the VIEW. When this goes false the animated ring
+/// is replaced by a still one — a different view, so SwiftUI destroys the animated one and
+/// the animation goes with it — while the rest of the tree stays alive and measured.
+final class MenuVisibility: ObservableObject {
+    static let shared = MenuVisibility()
+    @Published private(set) var visible = false
+    func setVisible(_ on: Bool) { if visible != on { visible = on } }
 }

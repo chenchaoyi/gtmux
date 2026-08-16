@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.57.1',
+    en: [
+      'Paired devices now say what they ARE (iOS 26.6, Chrome 141 · macOS) and where they last connected from, and the list finally has an order — most recently seen first.',
+      'A share link says whether anyone has used it, and from what device — or "not used yet", which is worth knowing about a link you handed out.',
+    ],
+    zh: [
+      '配对设备现在会说出它是什么（iOS 26.6、Chrome 141 · macOS）和上次从哪连的，列表也终于有了顺序 —— 最近连接的排在前面。',
+      '分享链接会说出有没有人用过、用的什么设备；没人用过就直说「还没有人用过」—— 对一份你发出去的链接来说，这是值得知道的。',
+    ],
+  },
+  {
     version: '0.55.1',
     en: [
       'The all-panes browser draws the window line for every session now, including one that holds a single window, and a pane row sits indented inside its window instead of starting further left than the window line above it.',
