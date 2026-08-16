@@ -2,35 +2,59 @@ import AppKit
 import XCTest
 @testable import GtmuxBar
 
-/// A closed surface must not keep its SwiftUI graph.
+/// The working ring must not animate against a surface nobody can see — and the surface
+/// must not be rebuilt to achieve that.
 ///
-/// The all-panes window is kept across closes (`isReleasedWhenClosed = false`) so it
-/// reopens where the user left it. Keeping the WINDOW is fine; keeping its CONTENT is not.
-/// The working ring animates with `.repeatForever`, which goes on running against a window
-/// nobody can see — measured on a fresh build with one working agent: 0.1–0.3 % CPU before
-/// anything was opened, 4.6–11 % after opening and closing, climbing with every re-open.
+/// Three approaches were measured on a fresh build with one working agent:
 ///
-/// Stopping the animation was tried first and does NOT work: a running repeatForever
-/// survives its driving state flipping and its animation being replaced with nil. What
-/// ends an animation is not having the view.
-final class SurfaceTeardownTests: XCTestCase {
-    func testTheBrowserDropsItsContentOnCloseAndRebuildsOnOpen() {
-        let c = PaneBrowserController()
-        let l10n = L10n.shared
-        let radar = AgentStore()
+///   as shipped (ring animating in a closed panel) ... 4.6 – 11 % CPU, climbing
+///   telling the animation to stop ................... unchanged; a running
+///                                                     repeatForever survives its state
+///                                                     flipping and its animation being
+///                                                     replaced with nil
+///   tearing the view tree down ...................... 0.0 – 0.2 %, but every re-open laid
+///                                                     out from scratch: the first pass
+///                                                     measured 168pt inside a window still
+///                                                     sized 983 for the previous content,
+///                                                     so the panel opened with a band of
+///                                                     empty space above it and its last
+///                                                     rows past the bottom edge
+///   swapping the RING view (this) ................... 1.0 – 1.3 %, flat, and the tree is
+///                                                     built once
+///
+/// Removing a view is what ends its animation. Removing the smallest view that carries one
+/// is what leaves the rest of the panel measured and ready.
+final class MenuVisibilityTests: XCTestCase {
+    func testVisibilityIsOffUntilASurfaceOpens() {
+        let v = MenuVisibility.shared
+        v.setVisible(false)
+        XCTAssertFalse(v.visible, "nothing is on screen at launch, so nothing should animate")
+    }
 
-        c.show(l10n: l10n, radar: radar)
+    func testItTracksOpenAndClose() {
+        let v = MenuVisibility.shared
+        v.setVisible(true)
+        XCTAssertTrue(v.visible)
+        v.setVisible(false)
+        XCTAssertFalse(v.visible, "a closed surface must stop animating")
+    }
+}
+
+/// The all-panes window keeps BOTH its frame and its content across a close: the frame so
+/// it reopens where the user left it, the content so it reopens already laid out.
+final class PaneBrowserWindowTests: XCTestCase {
+    func testTheWindowAndItsContentSurviveAClose() {
+        let c = PaneBrowserController()
+        c.show(l10n: L10n.shared, radar: AgentStore())
         guard let w = c.window else { return XCTFail("show() made no window") }
-        XCTAssertNotNil(w.contentViewController, "an open browser must have content")
+        XCTAssertNotNil(w.contentViewController)
 
         NotificationCenter.default.post(name: NSWindow.willCloseNotification, object: w)
-        XCTAssertNil(w.contentViewController,
-                     "a closed window must drop its view graph — a kept graph keeps animating")
+        XCTAssertNotNil(w.contentViewController,
+                        "the content stays — rebuilding it is what made the panel open mis-sized")
 
-        // Reopening must rebuild it, or the second open shows an empty frame.
-        c.show(l10n: l10n, radar: radar)
-        XCTAssertNotNil(c.window?.contentViewController, "reopening must rebuild the content")
-        XCTAssertTrue(c.window === w, "the window itself is kept, so its size and position survive")
+        c.show(l10n: L10n.shared, radar: AgentStore())
+        XCTAssertTrue(c.window === w, "same window, so its size and position survive")
         c.window?.close()
     }
 }

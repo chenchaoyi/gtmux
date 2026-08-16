@@ -80,8 +80,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationCenter.default.addObserver(
             forName: NSPopover.didCloseNotification, object: popover, queue: .main) { [weak self] _ in
             self?.lastPopoverClose = Date()
-            // Drop the graph, not just the pixels — see makeMenuHost().
-            self?.popover.contentViewController = nil
+            // The panel's view tree STAYS. Tearing it down on close did stop the ring
+            // animating against a hidden window, but it made every re-open lay out from
+            // scratch: the first frame measured 168pt inside a window still sized 983 for
+            // the previous content, so the panel opened with a band of empty space above
+            // it and its last rows past the bottom edge. Measured on a re-open:
+            //   menu: root=168 chrome=0 listContent=0    <- first pass, window still 983
+            //   menu: root=983 chrome=167 listContent=844 <- settled
+            // The animation is stopped by removing the RING instead (PanelVisibility).
+            MenuVisibility.shared.setVisible(false)
         }
         popover.contentViewController = makeMenuHost()
 
@@ -394,7 +401,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // reopen the panel the user just asked to close. To them that is a click that did
         // nothing, and clicking again (the natural response) closes-and-reopens again.
         if PopoverClick.reopenIsAnEcho(ofCloseAt: lastPopoverClose, now: Date()) { return }
-        if popover.contentViewController == nil { popover.contentViewController = makeMenuHost() }
+        MenuVisibility.shared.setVisible(true)
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()
         store.refresh()
