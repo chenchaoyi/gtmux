@@ -240,6 +240,17 @@ struct PreferencesView: View {
 
             // SHARE — collaborators, least privilege, per-link scope.
             Section(l10n.tr("Sharing", "分享")) {
+                // A refusal nobody can see reads as a broken app. The Mac has always
+                // turned away a grant whose pane ids were made against a tmux that has
+                // since restarted — this is the part that says so, instead of showing a
+                // scope that looks like it still works.
+                if share.grantsStale {
+                    Text(l10n.tr("tmux restarted, so these grants no longer apply — links are being refused. Re-pick the panes to restore them.",
+                                 "tmux 重启过，这些授权已失效 —— 链接目前一律被拒。重新勾选一次即可恢复。"))
+                        .font(.system(size: 11)).foregroundStyle(Theme.Status.waiting)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 Toggle(isOn: shareEnabledBinding) {
                     prefLabel("Let a collaborator type into the terminal",
                               "允许协作者向终端输入", symbol: "keyboard")

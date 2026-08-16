@@ -346,7 +346,9 @@ describe('owner-remote-admin management', () => {
     const [url, init] = call();
     expect(url).toBe(`${BASE}/api/share/config`);
     expect((init?.headers as any).Authorization).toBe(AUTH);
-    expect(c).toEqual({enabled: true, panes: ['%1'], view_panes: ['%1', '%2']});
+    // stale defaults FALSE when the field is absent: an older Mac serve does not send it,
+    // and "we don't know" must not read as "your links are being refused".
+    expect(c).toEqual({enabled: true, panes: ['%1'], view_panes: ['%1', '%2'], stale: false});
   });
 
   it('setShareEnabled POSTs {enabled} and returns r.ok', async () => {

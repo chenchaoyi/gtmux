@@ -253,7 +253,15 @@ func (s *Server) handleShareConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodGet {
-		writeJSON(w, http.StatusOK, s.deps.Share.State())
+		// The owner's view carries STALE too. The gates already refuse a stale grant
+		// (attach, the agent filter, send) — but silently: the owner's screens showed a
+		// link's scope as if it still worked while every request through it was being
+		// turned away. A refusal nobody can see is indistinguishable from a broken app.
+		st := s.deps.Share.State()
+		writeJSON(w, http.StatusOK, struct {
+			ShareState
+			Stale bool `json:"stale,omitempty"`
+		}{st, s.deps.Share.GrantsStale()})
 		return
 	}
 	var body struct {

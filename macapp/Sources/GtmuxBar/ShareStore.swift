@@ -54,6 +54,10 @@ final class ShareStore: ObservableObject {
     /// gates typing): a host can let a guest watch a pane without letting them type.
     @Published private(set) var viewPanes: Set<String> = []
     @Published private(set) var guests: [GuestLink] = []
+    /// The pane grants were made against a tmux server that has since restarted, so the
+    /// ids no longer mean what was picked and every request through a link is refused.
+    /// Enforced on the Mac all along — this is only the part that says so.
+    @Published private(set) var grantsStale = false
     /// The base a share link is built on (tunnel URL when up, else the local
     /// address) — shown so the host knows whether a minted link is publicly
     /// reachable. Loaded with the guest detail.
@@ -106,6 +110,7 @@ final class ShareStore: ObservableObject {
                 self.viewPanes = parsed.viewPanes
                 self.guests = parsed.guests
                 self.base = parsed.base
+                self.grantsStale = parsed.stale
             }
         }
     }
@@ -113,12 +118,15 @@ final class ShareStore: ObservableObject {
     /// Pure parser for `gtmux share status --json` — unit-tested against the wire
     /// shape so a contract drift fails the build.
     static func parseStatus(_ data: Data)
-        -> (enabled: Bool, panes: Set<String>, viewPanes: Set<String>, guests: [GuestLink], base: String)? {
+        -> (enabled: Bool, panes: Set<String>, viewPanes: Set<String>, guests: [GuestLink], base: String, stale: Bool)? {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         let enabled = obj["enabled"] as? Bool ?? false
         let panes = Set(obj["panes"] as? [String] ?? [])
         let viewPanes = Set(obj["view_panes"] as? [String] ?? [])
         let base = obj["base"] as? String ?? ""
+        // The grants were made against a tmux that has since restarted, so the server is
+        // REFUSING every request through these links. It always did; nothing said so.
+        let stale = obj["stale"] as? Bool ?? false
         let guests: [GuestLink] = (obj["guests"] as? [[String: Any]] ?? []).map {
             GuestLink(id: $0["id"] as? String ?? "",
                       label: $0["label"] as? String ?? "",
@@ -130,7 +138,7 @@ final class ShareStore: ObservableObject {
                       platform: $0["platform"] as? String ?? "",
                       lastIP: $0["last_ip"] as? String ?? "")
         }
-        return (enabled, panes, viewPanes, guests, base)
+        return (enabled, panes, viewPanes, guests, base, stale)
     }
 
     // MARK: mutations (shell out to the CLI, then reload detail)
