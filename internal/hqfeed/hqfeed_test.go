@@ -88,13 +88,14 @@ func TestRunCatchUpAndReconcile(t *testing.T) {
 	stop := make(chan struct{})
 	done := make(chan struct{})
 	go func() { Run(func() int64 { return now }, stop); close(done) }()
-	// Give the loop a moment to catch up, then stop.
-	waitFor(t, func() bool { return ReadCursor() >= 3 }, time.Second)
+	// The startup reconcile is JOURNAL-borne (hq-action-journal) and spooled by the
+	// daemon's own tail, so the cursor settles at seq 4 — past the reconcile itself.
+	waitFor(t, func() bool { return ReadCursor() >= 4 }, time.Second)
 	close(stop)
 	<-done
 
-	if ReadCursor() != 3 {
-		t.Errorf("cursor = %d, want 3", ReadCursor())
+	if ReadCursor() != 4 {
+		t.Errorf("cursor = %d, want 4 (3 events + the journal-borne reconcile)", ReadCursor())
 	}
 	spool := ReadSpool(0, now)
 	var stops, reconcile int
@@ -110,7 +111,22 @@ func TestRunCatchUpAndReconcile(t *testing.T) {
 		t.Errorf("spooled Stop events = %d, want 3", stops)
 	}
 	if reconcile != 1 {
-		t.Errorf("reconcile control records = %d, want 1", reconcile)
+		t.Errorf("reconcile control records = %d, want 1 — journal-borne, spooled once by the tail, never twice", reconcile)
+	}
+	// The new property #647-style fixes exist for: the record is in the JOURNAL, so
+	// `gtmux events` (the pull side) actually carries it.
+	journal, _ := events.ReadSince(0)
+	found := 0
+	for _, r := range journal {
+		if r.Event == ControlReconcile {
+			found++
+			if events.IsAudit(r) {
+				t.Error("a reconcile is new information, not audit trail — it must count as debt")
+			}
+		}
+	}
+	if found != 1 {
+		t.Errorf("journal reconcile records = %d, want 1", found)
 	}
 	if HeartbeatAt() != now {
 		t.Errorf("heartbeat = %d, want %d", HeartbeatAt(), now)
@@ -129,13 +145,38 @@ func TestRunNoGapNoDegraded(t *testing.T) {
 	stop := make(chan struct{})
 	done := make(chan struct{})
 	go func() { Run(func() int64 { return now }, stop); close(done) }()
-	waitFor(t, func() bool { return ReadCursor() >= 3 }, time.Second)
+	waitFor(t, func() bool { return ReadCursor() >= 4 }, time.Second)
 	close(stop)
 	<-done
 	for _, r := range ReadSpool(0, now) {
 		if r.Event == ControlFeedDegraded {
 			t.Errorf("no gap should emit no degraded record, got %+v", r)
 		}
+	}
+}
+
+// announceStartup is the daemon's journal-borne startup announcement: the reconcile
+// always, the CRITICAL feed-degraded only on a cursor gap.
+func TestAnnounceStartup(t *testing.T) {
+	setup(t)
+	announceStartup(false, 100)
+	recs, _ := events.ReadSince(0)
+	if len(recs) != 1 || recs[0].Event != ControlReconcile || recs[0].Severity != events.SevNotable {
+		t.Fatalf("no-gap startup: got %+v, want one notable reconcile", recs)
+	}
+	announceStartup(true, 200)
+	recs, _ = events.ReadSince(0)
+	var degraded int
+	for _, r := range recs {
+		if r.Event == ControlFeedDegraded {
+			degraded++
+			if r.Severity != events.SevImportant {
+				t.Errorf("a cursor gap is CRITICAL, got severity %q", r.Severity)
+			}
+		}
+	}
+	if degraded != 1 {
+		t.Fatalf("gap startup: degraded records = %d, want 1", degraded)
 	}
 }
 

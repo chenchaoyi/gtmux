@@ -257,13 +257,17 @@ why this needs no new habit), or an explicit `gtmux events --ack <seq>`. A
 the watermark (it skipped the range between). Until then the knock repeats every
 `hqWake.unreadRepeatSec` (default **300 s**), at standing priority.
 
-Two kinds of record are excluded from the **count**: hq's own lines, or the channel would
-feed itself forever; and a pane-less lifecycle **blink** — a `SessionStart` with no pane
+Three kinds of record are excluded from the **count**: hq's own lines, or the channel would
+feed itself forever; a pane-less lifecycle **blink** — a `SessionStart` with no pane
 whose `SessionEnd` follows within seconds, i.e. a short-lived subprocess hq can neither act
-on nor attribute. The blink rule keys on that Start/End **pairing**, never on the empty pane
-alone: a native (non-tmux) agent's turns and gtmux's own `gtmux:*` triggers are pane-less
-too, and for them this knock is the *only* channel there is — the class wakes all require a
-pane.
+on nor attribute; and gtmux's own **audit trail** (`gtmux:audit:*`) — the journal of what
+the supervision *did* (each wake batch delivered or dropped and why, every `gtmux send`
+settlement, reaps, the hq session rotation chain), which documents acts hq already knows
+about, so counting it would mint fresh debt per delivered knock. The blink rule keys on
+that Start/End **pairing**, never on the empty pane alone, and the audit rule keys on the
+sub-namespace alone: a native (non-tmux) agent's turns and gtmux's non-audit `gtmux:*`
+triggers (maintenance, degradations, reconciles) are pane-less too, still count, and for
+them this knock is the *only* channel there is — the class wakes all require a pane.
 
 **hq's pull shows that same set** — the debt, not hq's own trail. Measured on a week of one
 fleet, 68.7 % of what a knock sent hq to read was its own echo, so a knock about *one* new
@@ -283,7 +287,10 @@ Delivery guards your draft and confirms itself: a line is never typed into a non
 hq input box (it queues to disk and lands when the box clears), and a batch is dropped
 from the queue only once it's been seen on screen — so a failed send retries instead of
 vanishing. That makes it at-least-once, hence the trailing `#<id>`: the same id twice is
-a re-send, and hq's playbook says to ignore it.
+a re-send, and hq's playbook says to ignore it. Every terminal outcome is also journaled
+(`gtmux:audit:wake-delivered` with the full batch, `gtmux:audit:wake-dropped` with the
+reason — evicted / unconfirmed / superseded), so "what was hq told at 14:02, and what was
+it never told" are `gtmux events --all` queries rather than reconstructions.
 
 ### Self-rotation — when hq's own session is the problem
 
@@ -658,7 +665,8 @@ exit code stay exactly the same. A read from an unrelated directory stays silent
 no watermark to miss.
 
 hq's own delta pull is also **scoped to the debt**: it omits the records that never counted
-(hq's own pane's lines and pane-less blinks) and says on stderr how many it withheld.
+(hq's own pane's lines, pane-less blinks, and gtmux's `gtmux:audit:*` trail) and says on
+stderr how many it withheld.
 `--all` restores the raw view; both forms consume, because neither shows hq *less* than it
 owes — which is exactly what disqualifies a `--severity` read. Anyone else's read is
 unchanged.

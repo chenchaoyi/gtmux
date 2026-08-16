@@ -40,10 +40,13 @@ const (
 	replayWindowSecs = 5
 )
 
-// Control-record event names (written into the spool, not the journal). HQ's tail
-// treats these specially: reconcile → pull a digest snapshot; feed-degraded →
-// surface CRITICAL; self-check → run self-maintenance. They ride the same
-// events.Record shape so HQ parses one line format.
+// Control-record event names. All of them are JOURNAL-borne (hq-action-journal
+// finished what #647 started): the daemon's normal tail spools each on its way
+// past, so the spool still carries them without a second hand-written copy.
+// The `--tail` renderer treats these specially: reconcile → pull a digest
+// snapshot; feed-degraded → surface CRITICAL; self-check → run
+// self-maintenance. They ride the same events.Record shape so HQ parses one
+// line format.
 const (
 	ControlReconcile    = "gtmux:reconcile"
 	ControlFeedDegraded = "gtmux:feed-degraded"
@@ -111,12 +114,6 @@ func SpoolAppend(r events.Record) {
 	}
 	_, _ = f.Write(append(line, '\n'))
 	_ = f.Close()
-}
-
-// EmitControl spools a synthetic control record (reconcile / feed-degraded /
-// self-check) with the given human summary and severity, timestamped now.
-func EmitControl(event, summary, severity string, now int64) {
-	SpoolAppend(events.Record{Ts: now, Event: event, Summary: summary, Severity: severity})
 }
 
 // ReadSpool returns spool records from the last sinceSecs seconds (0 = all

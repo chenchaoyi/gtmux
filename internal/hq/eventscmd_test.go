@@ -346,3 +346,89 @@ func TestEventsAckRefusedOutsideHQHome(t *testing.T) {
 		t.Errorf("a non-HQ caller moved the watermark to %d", got)
 	}
 }
+
+// The supervisor's pull hides the audit trail exactly as the count excludes it
+// (hq-action-journal): the two sets must not drift, or either the silent-loss hole or
+// the echo cost re-opens. --all restores it; a bystander is untouched.
+func TestSupervisorPullHidesAuditTrail(t *testing.T) {
+	asHQ(t)
+	t.Setenv("TMUX_PANE", "%4")
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+
+	events.AuditWakeDelivered("%4", "» gtmux·done  %21 │ finished · #b2c3d4", now)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21", Loc: "web:1.0"})
+	latest := events.CurrentSeq()
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if strings.Contains(out, "#b2c3d4") {
+		t.Errorf("the default pull showed the audit trail:\n%s", out)
+	}
+	if !strings.Contains(out, "web:1.0") {
+		t.Errorf("the pull must still show the actual debt:\n%s", out)
+	}
+	if !strings.Contains(errs, "1") {
+		t.Errorf("stderr must count the withheld audit record, got %q", errs)
+	}
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("watermark = %d, want %d — hiding trail must not stop consumption", got, latest)
+	}
+
+	// --all restores the trail (and a maintenance trigger was never hidden at all).
+	hqwake.Consume(0)
+	out, _ = captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0", "--all"}) })
+	if !strings.Contains(out, "#b2c3d4") {
+		t.Errorf("--all must restore the audit trail:\n%s", out)
+	}
+}
+
+// A worker tailing the stream sees the audit trail: the trail is for auditors, and only
+// the supervisor's debt view reshapes a read.
+func TestNonSupervisorPullShowsAuditTrail(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Chdir(t.TempDir())
+	now := time.Now().Unix()
+	events.AuditReap("t-9", "%21", "worktree removed", now)
+
+	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if !strings.Contains(out, "t-9") {
+		t.Errorf("a bystander's read must include the audit trail:\n%s", out)
+	}
+	if strings.TrimSpace(errs) != "" {
+		t.Errorf("…and stay silent; got %q", errs)
+	}
+}
+
+// The count set and the pull set are the SAME set (the hq-unread-noise invariant, now
+// with three exclusion classes): over one mixed delta, the records the supervisor's
+// default pull shows are exactly the records the unread tally counts. If these two ever
+// disagree, either real debt hides (the silent-loss hole) or echo returns (the 68.7 %).
+func TestCountAndPullExcludeTheSameSet(t *testing.T) {
+	asHQ(t)
+	t.Setenv("TMUX_PANE", "%4")
+	now := time.Now().Unix()
+
+	// One of everything: echo, blink pair, audit, a maintenance trigger, worker records.
+	events.Append(events.Record{Ts: now, Event: "UserPromptSubmit", Pane: "%4", Summary: "#e1f2a3"})
+	events.Append(events.Record{Ts: now, Event: "SessionStart", Agent: "Claude Code"})
+	events.Append(events.Record{Ts: now, Event: "SessionEnd", Agent: "Claude Code"})
+	events.AuditWakeDelivered("%4", "» gtmux·done  %21 · #e1f2a3", now)
+	events.AuditSend("%9", "landed", "go", now)
+	events.Append(events.Record{Ts: now, Event: "gtmux:distill", Summary: "due"})
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21", Loc: "web:1.0"})
+	events.Append(events.Record{Ts: now, Event: "UserPromptSubmit", Pane: "%9", Origin: events.OriginInstruction})
+
+	tally := unreadScan(0, "%4")
+	delta, _ := events.ReadSince(0)
+	shown, hidden := pullView(delta, true)
+	if len(shown) != tally.N {
+		t.Fatalf("pull shows %d records but the tally counts %d — the two sets drifted", len(shown), tally.N)
+	}
+	if len(shown)+hidden != len(delta) {
+		t.Fatalf("shown %d + hidden %d ≠ delta %d", len(shown), hidden, len(delta))
+	}
+	// And the composition is the expected one: trigger + two worker records.
+	if tally.N != 3 {
+		t.Fatalf("counted %d, want 3 (the trigger and the two worker records)", tally.N)
+	}
+}

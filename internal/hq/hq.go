@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 22
+const hqPlaybookVersion = 23
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -901,12 +901,15 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   where you land after writing) does NOT count; it now says so on stderr instead of failing
   silently, but the fix is yours: ` + "`cd`" + ` back, or prefix the call. 从本目录跑,子目录不算。
 - **That pull shows the DEBT, not your own trail.** Your unfiltered delta omits the records
-  that never counted as debt — YOUR OWN pane's lines (the wake echoed back, your reply) and
-  pane-less lifecycle blinks — and tells you on stderr how many it withheld. It is not a
-  filter: it is exactly the set you were knocked about, which is why it still counts as
-  consumption. When you need your own trail back (reconstructing what you said, auditing a
-  suspected loop), add ` + "`--all`" + ` — it shows everything and also consumes.
-  增量默认只显示「债务」,隐藏你自己的记录与无 pane 闪断;要全量加 ` + "`--all`" + `(同样计入消费)。
+  that never counted as debt — YOUR OWN pane's lines (the wake echoed back, your reply),
+  pane-less lifecycle blinks, and gtmux's ` + "`gtmux:audit:*`" + ` records (its journal of
+  what the supervision DID: wakes delivered to you or dropped, sends, reaps, rotations) —
+  and tells you on stderr how many it withheld. It is not a filter: it is exactly the set
+  you were knocked about, which is why it still counts as consumption. When you need the
+  trail back (reconstructing what you were told, what a predecessor session was told, what
+  was sent to a pane, or a rotation chain), add ` + "`--all`" + ` — it shows everything and
+  also consumes.
+  增量默认只显示「债务」,隐藏你自己的记录、无 pane 闪断与 gtmux 审计留痕;要全量(含审计)加 ` + "`--all`" + `(同样计入消费)。
 - **A repeated ` + "`#<id>`" + ` is a RE-SEND, not a second event.** Every wake batch ends
   with a short id (` + "`… · #a3f1c2`" + `). Delivery is confirmed on screen and retried when
   the confirmation is missed, so the same batch can arrive twice — carrying the SAME id.

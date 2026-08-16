@@ -234,10 +234,10 @@ func eventsUsage() int {
 		"  从中控目录运行的不过滤 --since-seq 读取会推进中控的消费水位;")
 	i18n.Say("  watermark; anything past it re-knocks as `unread` until consumed.",
 		"  水位之后仍未消费的事件会以 `unread` 反复敲门,直到被消费。")
-	i18n.Say("  That pull shows exactly the DEBT: HQ's own records and pane-less blinks are",
-		"  该增量只显示「债务」本身：你自己的记录与无 pane 闪断会被隐藏(它们本就不计数),")
-	i18n.Say("  hidden (they never counted) — `--all` includes them, and still consumes.",
-		"  需要全量加 `--all`(同样计入消费)。")
+	i18n.Say("  That pull shows exactly the DEBT: HQ's own records, pane-less blinks and",
+		"  该增量只显示「债务」本身：你自己的记录、无 pane 闪断与 gtmux 审计留痕")
+	i18n.Say("  gtmux's audit trail are hidden (they never counted) — `--all` includes them.",
+		"  (gtmux:audit:*)会被隐藏(它们本就不计数)—— 需要全量加 `--all`(同样计入消费)。")
 	i18n.Say("  --ack N: write the watermark back explicitly (HQ home only), for when the",
 		"  --ack N：显式回写水位(仅中控目录),用于以别的方式(如 digest 全量对账)")
 	i18n.Say("  stream was reconciled another way (a full `gtmux digest`).",
@@ -285,7 +285,10 @@ func insideHQHome() bool {
 
 // pullView applies the SUPERVISOR'S PULL VIEW: the delta HQ reads to clear its debt shows
 // exactly the records that made up that debt, and nothing else. It returns what to print
-// and how many records it withheld.
+// and how many records it withheld. The hidden set is the tally's exclusion set — own-pane
+// echo, pane-less blinks, and gtmux's `gtmux:audit:*` trail — and the two must not drift:
+// a set hidden here but counted there would re-open the silent-loss hole, and the reverse
+// would re-open the 68.7 % echo cost.
 //
 // This closes an asymmetry that was, measured, the single largest cost in HQ perception
 // (hq-unread-noise audit, 2026-08-08): the COUNT excluded HQ's own records and pane-less
@@ -312,7 +315,7 @@ func pullView(delta []events.Record, apply bool) (shown []events.Record, hidden 
 	own := os.Getenv("TMUX_PANE")
 	blink := unreadBlinks(delta)
 	for i, r := range delta {
-		if (own != "" && r.Pane == own) || blink[i] {
+		if (own != "" && r.Pane == own) || blink[i] || events.IsAudit(r) {
 			hidden++
 			continue
 		}
@@ -329,8 +332,8 @@ func noteHiddenEcho(hidden int) {
 		return
 	}
 	n := strconv.Itoa(hidden)
-	i18n.Sae(n+" of your own records and pane-less blinks hidden (they are not debt) — `--all` to include them",
-		n+" 条你自己的记录与无 pane 闪断已隐藏（它们不计入债务）—— 需要全量请加 `--all`")
+	i18n.Sae(n+" of your own records, pane-less blinks and gtmux's audit trail hidden (they are not debt) — `--all` to include them",
+		n+" 条你自己的记录、无 pane 闪断与 gtmux 审计留痕已隐藏（它们不计入债务）—— 需要全量请加 `--all`")
 }
 
 // consumeHQRead advances HQ's consumption watermark for a completed delta read, and — when

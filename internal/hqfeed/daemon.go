@@ -28,17 +28,7 @@ func Run(nowFn func() int64, stop <-chan struct{}) {
 		}
 	}
 	WriteCursor(cursor)
-	if gap {
-		// A hole between the cursor and what's retained → events were missed
-		// (rotated away while down, or a phantom seq). Surface it CRITICAL.
-		EmitControl(ControlFeedDegraded,
-			"perception feed detected a gap on startup — reconciling from a full snapshot",
-			events.SevImportant, nowFn())
-	}
-	// Always tell HQ to rebuild from one full digest snapshot on (re)start.
-	EmitControl(ControlReconcile,
-		"perception feed (re)started — pull a full `gtmux digest` snapshot to reconcile",
-		events.SevNotable, nowFn())
+	announceStartup(gap, nowFn())
 	Beat(nowFn())
 
 	// --- heartbeat loop ---------------------------------------------------------
@@ -75,6 +65,24 @@ func Run(nowFn func() int64, stop <-chan struct{}) {
 	}, stop)
 
 	wg.Wait()
+}
+
+// announceStartup journals the daemon's startup control records: a CRITICAL
+// `feed-degraded` when the catch-up found a cursor gap (events were missed —
+// rotated away while down, or a phantom seq), and the `reconcile` that tells HQ
+// to rebuild from one full digest snapshot. JOURNAL-borne, not spool-only (#647:
+// a record written only to the spool reaches no reader — the playbook tells HQ
+// it need not tail the feed, and `gtmux events` reads the journal). The daemon's
+// own tail spools each on its normal pass, so one append yields one spool copy.
+func announceStartup(gap bool, now int64) {
+	if gap {
+		events.Append(events.Record{Ts: now, Event: ControlFeedDegraded,
+			Summary:  "perception feed detected a gap on startup — reconciling from a full snapshot",
+			Severity: events.SevImportant})
+	}
+	events.Append(events.Record{Ts: now, Event: ControlReconcile,
+		Summary:  "perception feed (re)started — pull a full `gtmux digest` snapshot to reconcile",
+		Severity: events.SevNotable})
 }
 
 // AcquireSingleton claims the pidfile for this process, returning false when a live

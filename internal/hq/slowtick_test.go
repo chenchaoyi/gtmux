@@ -3,6 +3,8 @@ package hq
 import (
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 )
 
@@ -123,5 +125,30 @@ func TestResolvedDecide(t *testing.T) {
 	// screen must NOT read as resolved — keep tracking.
 	if v, _ := resolvedDecide("working", "permission", "permission", true); v != resolvedHold {
 		t.Fatalf("clear with a wait still on screen → hold (flicker guard), got %v", v)
+	}
+}
+
+// journalDegradation is the carrier fix for the two watchdog records (hq-action-journal):
+// journal-borne so the pull side actually sees them, important so they surface, and NOT
+// audit — a degradation is new information, so it must count toward the consumption debt.
+func TestJournalDegradationIsPullVisibleDebt(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	journalDegradation(hqfeed.ControlWakeDegraded, "⚠ HQ wake channel not landing", 500)
+
+	recs, _ := events.ReadSince(0)
+	if len(recs) != 1 {
+		t.Fatalf("got %d journal records, want 1", len(recs))
+	}
+	r := recs[0]
+	if r.Event != hqfeed.ControlWakeDegraded || r.Severity != events.SevImportant {
+		t.Fatalf("record = %+v, want an important wake-degraded", r)
+	}
+	if !events.IsControl(r) || events.IsAudit(r) {
+		t.Fatal("a degradation is a control record and never audit trail")
+	}
+	// The whole point: it constitutes debt, so the completeness net delivers it even
+	// when the wake channel itself is the casualty.
+	if tally := unreadScan(0, testHQPane); tally.N != 1 {
+		t.Fatalf("unread tally = %d, want the degradation counted as debt", tally.N)
 	}
 }

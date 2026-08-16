@@ -243,6 +243,13 @@ func countHQTurns(pane string, cursor int64) (n int, fleet int64, maxSeq int64) 
 			}
 			continue // HQ's own records are never fleet movement — see standingWorld.Moved
 		}
+		if events.IsControl(r) {
+			// gtmux's own bookkeeping — maintenance triggers and the audit trail — is
+			// never fleet movement (the events.go sensor doctrine). Without this, every
+			// delivered wake's own audit record would advance Moved and re-arm the very
+			// standing knock that produced it: the alarm manufacturing its own evidence.
+			continue
+		}
 		fleet++
 	}
 	return n, fleet, maxSeq
@@ -296,6 +303,14 @@ func selfRotateSensorFor(pane, sessionID string, ctxFrac float64, firstMsgAt, no
 		// A new session — either the first one we have seen, or the rotation we asked for.
 		// Either way the previous window describes a conversation that no longer exists, so
 		// it is discarded whole: age restarts, turns restart, and the knock cadence resets.
+		// The journal keeps the chain the discard would otherwise destroy: the predecessor
+		// id is about to be overwritten everywhere else (this state file, the resume
+		// record), and it is the only pointer to the retiring session's transcript. A
+		// FIRST sighting is not a replacement — nothing is being lost, and a healthy
+		// first sight writes nothing to the stream (the sensors' silence discipline).
+		if st.Session != "" {
+			events.AuditHQSession(sessionID, st.Session, now)
+		}
 		st = rotateState{Session: sessionID, StartedAt: rotateStart(firstMsgAt, now),
 			Cursor: events.CurrentSeq()}
 	}
@@ -388,7 +403,7 @@ func RotateHQ() (string, bool) {
 	if pane == "" {
 		return "", false
 	}
-	agent, _ := hqSessionRef(pane)
+	agent, retiring := hqSessionRef(pane)
 	input := rotateInput(agent)
 	_ = tmux.ExitCopyMode(pane) // keys are swallowed while the pane is in copy/view-mode
 	if err := tmux.Paste(pane, input); err != nil {
@@ -397,6 +412,10 @@ func RotateHQ() (string, bool) {
 	if err := tmux.SendKey(pane, "Enter"); err != nil {
 		return "", false
 	}
+	// The act enters the journal with the retiring id — the settle record (the sensor
+	// observing the successor) completes the chain; this one also catches a rotation
+	// that never settles, which is itself worth being able to see.
+	events.AuditRotate(retiring, input, time.Now().Unix())
 	st := readRotateState()
 	st.KnockedAt = time.Now().Unix()
 	writeRotateState(st)

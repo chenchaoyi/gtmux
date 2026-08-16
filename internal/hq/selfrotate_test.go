@@ -453,3 +453,72 @@ func TestRotateFiguresOmitsAbsentCtx(t *testing.T) {
 		t.Errorf("nothing sensed must render nothing, got %q", got)
 	}
 }
+
+// gtmux's own bookkeeping is never fleet movement (hq-action-journal): without this,
+// every delivered wake's audit record would advance Moved and re-arm the standing knock
+// that produced it — the alarm manufacturing its own evidence, in a new disguise.
+func TestSelfRotateMovementIgnoresControlAndAudit(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(10_000_000)
+	writeRotateCfg(t, `{"hqWake":{"selfRotateCtx":0,"selfRotateHours":0,"selfRotateTurns":3}}`)
+
+	selfRotateSensorFor(testRotatePane, "sess-A", 0, now, now) // opens the window
+	events.AuditWakeDelivered(testRotatePane, "» gtmux·tick │ brief · #c3d4e5", now)
+	events.AuditSend("%9", "landed", "task text", now)
+	events.Append(events.Record{Ts: now, Event: "gtmux:self-check", Summary: "due"})
+
+	at := now + hqwake.Defaults().SelfRotateCheckSec
+	selfRotateSensorFor(testRotatePane, "sess-A", 0, now, at)
+	if st := readRotateState(); st.Moved != 0 {
+		t.Fatalf("Moved = %d after control/audit records only, want 0", st.Moved)
+	}
+
+	// A real pane record still moves the world.
+	events.Append(events.Record{Ts: at, Event: "Stop", State: "idle", Pane: "%9"})
+	at += hqwake.Defaults().SelfRotateCheckSec
+	selfRotateSensorFor(testRotatePane, "sess-A", 0, now, at)
+	if st := readRotateState(); st.Moved != 1 {
+		t.Fatalf("Moved = %d after one worker record, want 1", st.Moved)
+	}
+}
+
+// The successor chain survives the handoff (hq-action-journal): the settle record names
+// both ids BEFORE the predecessor's window is discarded, a first observation names one,
+// and an unchanged session appends nothing.
+func TestSelfRotateJournalsTheSessionChain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(10_000_000)
+	writeRotateCfg(t, `{"hqWake":{"selfRotateCtx":0,"selfRotateHours":0,"selfRotateTurns":0}}`)
+
+	countChain := func() []string {
+		recs, _ := events.ReadSince(0)
+		var out []string
+		for _, r := range recs {
+			if r.Event == events.AuditEventHQSession {
+				out = append(out, r.Summary)
+			}
+		}
+		return out
+	}
+
+	// A first sighting is not a replacement: nothing is being lost (the resume record
+	// still names the session), so the silence discipline holds and nothing is written.
+	selfRotateSensorFor(testRotatePane, "sess-A", 0, now, now)
+	if chain := countChain(); len(chain) != 0 {
+		t.Fatalf("a first sighting appended to the chain: %v", chain)
+	}
+
+	// An unchanged session on a later tick appends nothing either.
+	selfRotateSensorFor(testRotatePane, "sess-A", 0, now, now+hqwake.Defaults().SelfRotateCheckSec)
+	if chain := countChain(); len(chain) != 0 {
+		t.Fatalf("an unchanged session id appended to the chain: %v", chain)
+	}
+
+	// The rotation settles: successor and predecessor both named, BEFORE the old window
+	// (the only other holder of the predecessor id) is discarded.
+	selfRotateSensorFor(testRotatePane, "sess-B", 0, now, now+2*hqwake.Defaults().SelfRotateCheckSec)
+	chain := countChain()
+	if len(chain) != 1 || !strings.Contains(chain[0], "sess-B replaces sess-A") {
+		t.Fatalf("the settle record must name both ids, got %v", chain)
+	}
+}

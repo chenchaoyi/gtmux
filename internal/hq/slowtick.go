@@ -130,15 +130,30 @@ func DrainHQNudges() {
 	}
 }
 
+// journalDegradation appends one perception-degradation control record to the
+// session JOURNAL — the carrier the pull side actually reads. These records used
+// to go through hqfeed.EmitControl, which writes ONLY to the feed spool: neither
+// reader could receive them there (the playbook tells HQ not to tail the feed,
+// and `gtmux events` reads the journal), so 75 degradation records accumulated
+// invisible to every query — the same #647 failure shape the maintenance
+// triggers already escaped. NOT an audit record: a degradation is new
+// information for HQ, so it counts toward the consumption debt and reaches HQ
+// through the completeness net even when the wake channel is the casualty.
+func journalDegradation(event, summary string, now int64) {
+	events.Append(events.Record{
+		Ts: now, Event: event, Summary: summary, Severity: events.SevImportant,
+	})
+}
+
 // wakeWatchdog surfaces a wake channel that is failing to reach a LIVE HQ (no HQ is
 // not a degradation — there is simply nothing to wake). It runs from the single-writer
 // slow tick, mirroring feedWatchdog, and escalates once per transition into degraded.
 //
-// The alarm cannot ride the channel it is about, so it takes three carriers: a control
-// record at important severity (the pull side sees it), a best-effort HQ line (free,
-// and it lands whenever only the ACK was flaky), and a desktop notification — the one
-// carrier that does not depend on the broken thing. A perception outage must never
-// stay silent.
+// The alarm cannot ride the channel it is about, so it takes three carriers: a journal
+// control record at important severity (the pull side sees it), a best-effort HQ line
+// (free, and it lands whenever only the ACK was flaky), and a desktop notification —
+// the one carrier that does not depend on the broken thing. A perception outage must
+// never stay silent.
 func wakeWatchdog(now int64) {
 	key := ""
 	if hqpane.Find() != "" && hqnudge.Degraded(now) {
@@ -149,7 +164,7 @@ func wakeWatchdog(now int64) {
 	}
 	const summary = "⚠ HQ wake channel not landing — knocks are queued but unconfirmed; " +
 		"reconcile by pull: gtmux events --since-seq <n>"
-	hqfeed.EmitControl(hqfeed.ControlWakeDegraded, summary, events.SevImportant, now)
+	journalDegradation(hqfeed.ControlWakeDegraded, summary, now)
 	if pane := hqpane.Find(); pane != "" {
 		hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassWakeDegraded, "",
 			"⚠ wake deliveries unconfirmed", "reconcile: gtmux digest --json"))
@@ -233,9 +248,9 @@ func feedWatchdog(now int64) {
 		key = "down"
 	}
 	if markerChanged("hqfeeddegraded", key) {
-		hqfeed.EmitControl(hqfeed.ControlFeedDegraded,
+		journalDegradation(hqfeed.ControlFeedDegraded,
 			"⚠ perception feed down — mechanical self-heal failed; on the 5-min polling backstop",
-			events.SevImportant, now)
+			now)
 		if pane := hqpane.Find(); pane != "" {
 			hqnudge.Deliver(pane, hqwake.Line("feed-degraded", "",
 				"⚠ perception daemon down — self-heal failed", "reconcile: gtmux digest --json"))
