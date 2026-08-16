@@ -635,16 +635,40 @@ func bearerToken(r *http.Request) string {
 // always-on tunnel RemoteAddr is localhost, so the real client rides in
 // X-Forwarded-For (first hop) — but only trust it when it's present.
 func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.IndexByte(xff, ','); i > 0 {
-			return strings.TrimSpace(xff[:i])
-		}
-		return strings.TrimSpace(xff)
-	}
+	peer := r.RemoteAddr
 	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
+		peer = host
 	}
-	return r.RemoteAddr
+	// X-Forwarded-For is only as trustworthy as the hop that set it, and the only hop
+	// gtmux controls is its own tunnel client — which reaches serve over LOOPBACK. From
+	// anyone else the header is just a string the caller chose.
+	//
+	// It used to be trusted unconditionally. Measured on a live serve: a request from
+	// this machine carrying `X-Forwarded-For: 8.8.8.8` made the paired-device roster
+	// report 8.8.8.8 as where that device connected from. The roster exists so an
+	// address that should not be there can be spotted — a field anyone on the network
+	// can write is worse than no field.
+	if isLoopback(peer) {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			if i := strings.IndexByte(xff, ','); i > 0 {
+				return strings.TrimSpace(xff[:i])
+			}
+			return strings.TrimSpace(xff)
+		}
+	}
+	return peer
+}
+
+// isLoopback reports whether an address is this machine talking to itself — the only
+// place a forwarded-for header can have come from something gtmux runs.
+func isLoopback(host string) bool {
+	if host == "" {
+		return false
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	return host == "localhost"
 }
 
 // browserPlatform sniffs a coarse, human-readable "<Browser> · <OS>" label from a
