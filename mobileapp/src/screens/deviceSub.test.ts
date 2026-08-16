@@ -21,3 +21,21 @@ describe('deviceSub', () => {
     expect(deviceSub('iOS 26.6', undefined, undefined, false)).toBe('iOS 26.6 · never connected');
   });
 });
+
+import {linkUsage} from './ManageMacScreen';
+
+// A share link is a standing grant handed to someone else. Its row already says what it
+// PERMITS; this line says whether anyone walked through it.
+describe('linkUsage', () => {
+  it('says plainly when nobody has used a link', () => {
+    expect(linkUsage({}, false)).toBe('not used yet');
+    expect(linkUsage({}, true)).toBe('还没有人用过');
+  });
+
+  it('names the device and the address once someone has', () => {
+    const s = linkUsage({platform: 'Chrome 141 · macOS', lastIP: '10.0.0.7', lastSeen: Math.floor(Date.now() / 1000) - 60}, false);
+    expect(s).toContain('Chrome 141 · macOS');
+    expect(s).toContain('10.0.0.7');
+    expect(s).toContain('last used');
+  });
+});

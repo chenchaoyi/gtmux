@@ -682,6 +682,11 @@ struct PreferencesView: View {
                                     .font(.system(size: 12))
                                 Text(shareLinkAge(g.enrolledAt) + "  ·  " + linkScopeSummary(g))
                                     .font(.system(size: 10)).foregroundStyle(.tertiary)
+                                // WHO used it. The rows above say what the link PERMITS;
+                                // a link handed to someone else is only really answered by
+                                // whether anyone walked through it, and from where.
+                                Text(g.usage(now: Int(Date().timeIntervalSince1970), tr: l10n.tr))
+                                    .font(.system(size: 10)).foregroundStyle(.tertiary)
                             }
                             Spacer(minLength: 8)
                             // Show + Revoke as ONE tidy trailing group with matching

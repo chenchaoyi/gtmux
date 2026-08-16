@@ -213,7 +213,9 @@ type deviceListEntry struct {
 	// "Safari · macOS" (a browser, sniffed from the User-Agent). Absent until the
 	// device's first authenticated request after the serve learned to record it.
 	Platform string `json:"platform,omitempty"`
-	Scope    string `json:"scope,omitempty"`
+	// LastIP is where it last connected from.
+	LastIP string `json:"lastIP,omitempty"`
+	Scope  string `json:"scope,omitempty"`
 	// Per-link guest scope (pair-share-model); absent on owner devices.
 	ViewPanes  []string `json:"viewPanes,omitempty"`
 	InputPanes []string `json:"inputPanes,omitempty"`

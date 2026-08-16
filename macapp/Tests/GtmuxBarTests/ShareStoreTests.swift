@@ -83,3 +83,26 @@ final class ShareStoreTests: XCTestCase {
         XCTAssertEqual(bob.expiresAt, 0)
     }
 }
+
+/// A share link's row answers "has anyone used this, and from where" — the question a
+/// standing grant handed to someone else actually raises. The scope line above it already
+/// says what the link permits.
+final class GuestLinkUsageTests: XCTestCase {
+    private func tr(_ en: String, _ zh: String) -> String { en }
+
+    func testAnUnusedLinkSaysSoRatherThanGoingBlank() {
+        let g = GuestLink(id: "1", label: "review", enrolledAt: 100)
+        XCTAssertEqual(g.usage(now: 200, tr: tr), "not used yet")
+    }
+
+    func testAUsedLinkNamesTheDeviceAndTheAddress() {
+        var g = GuestLink(id: "1", label: "review", enrolledAt: 100)
+        g.lastSeen = 150
+        g.platform = "Chrome 141 · macOS"
+        g.lastIP = "10.0.0.7"
+        let s = g.usage(now: 210, tr: tr)
+        XCTAssertTrue(s.contains("Chrome 141 · macOS"), s)
+        XCTAssertTrue(s.contains("10.0.0.7"), s)
+        XCTAssertTrue(s.contains("last used"), s)
+    }
+}

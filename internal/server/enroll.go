@@ -536,7 +536,7 @@ type deviceInfo struct {
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen,omitempty"`
 	Platform   string `json:"platform,omitempty"` // "iOS 17.5" / "Safari 17 · macOS" — what the device IS
-	LastIP     string `json:"last_ip,omitempty"`  // where it last connected from
+	LastIP     string `json:"lastIP,omitempty"`   // where it last connected from
 	Scope      string `json:"scope,omitempty"`
 	// Per-link guest scope (pair-share-model), additive: absent on owner devices.
 	ViewPanes  []string `json:"viewPanes,omitempty"`

@@ -159,7 +159,7 @@ final class PairStore: ObservableObject {
                                 enrolledAt: r["enrolledAt"] as? Int ?? 0,
                                 lastSeen: r["lastSeen"] as? Int ?? 0,
                                 platform: r["platform"] as? String ?? "",
-                                lastIP: r["last_ip"] as? String ?? "")
+                                lastIP: r["lastIP"] as? String ?? "")
         }
     }
 

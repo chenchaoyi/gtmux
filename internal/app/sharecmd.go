@@ -190,6 +190,13 @@ type shareGuest struct {
 	ID         string `json:"id"`
 	Label      string `json:"label"`
 	EnrolledAt int64  `json:"enrolled_at"`
+	// WHO USED IT. A link is a standing grant handed to someone else, so the useful
+	// question is not what it permits but whether anyone has walked through it — and
+	// from what. All three are absent until a first authenticated request, which is
+	// itself the answer "nobody has used this link yet".
+	LastSeen int64  `json:"last_seen,omitempty"`
+	Platform string `json:"platform,omitempty"`
+	LastIP   string `json:"last_ip,omitempty"`
 	// Per-link scope (pair-share-model), additive.
 	ViewPanes []string `json:"view_panes"`
 	Panes     []string `json:"panes"`
@@ -211,6 +218,7 @@ func buildShareStatus(st shareStateJSON, guests []deviceListEntry, base, curEpoc
 	}
 	for _, g := range guests {
 		sg := shareGuest{ID: g.ID, Label: g.Name, EnrolledAt: g.EnrolledAt,
+			LastSeen: g.LastSeen, Platform: g.Platform, LastIP: g.LastIP,
 			ViewPanes: g.ViewPanes, Panes: g.InputPanes, ExpiresAt: g.ExpiresAt}
 		if sg.ViewPanes == nil {
 			sg.ViewPanes = []string{}

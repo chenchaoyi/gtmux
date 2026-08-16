@@ -53,6 +53,10 @@ export interface GuestLink {
   viewPanes: string[];
   inputPanes: string[];
   expiresAt: number;
+  /** Who used it, and from where. Absent until someone has — which is the answer. */
+  lastSeen?: number;
+  platform?: string;
+  lastIP?: string;
 }
 
 // PairedDevice is a `scope:"device"` roster entry (a paired phone/browser/terminal),
@@ -63,7 +67,7 @@ export interface PairedDevice {
   enrolledAt: number;
   lastSeen?: number;
   /** Where the device last connected from — shown plainly on both surfaces. */
-  last_ip?: string;
+  lastIP?: string;
   platform?: string; // "iOS 17.5" / "Safari · macOS" — what the device is
 }
 
@@ -552,9 +556,13 @@ export class GtmuxClient {
           viewPanes: Array.isArray(d.viewPanes) ? d.viewPanes : [],
           inputPanes: Array.isArray(d.inputPanes) ? d.inputPanes : [],
           expiresAt: d.expiresAt ?? 0,
+          // Who has walked through this link, and from where — absent until someone has.
+          lastSeen: d.lastSeen,
+          platform: d.platform,
+          lastIP: d.lastIP,
         });
       } else {
-        devices.push({id: d.id ?? '', name: d.name ?? '', enrolledAt: d.enrolledAt ?? 0, lastSeen: d.lastSeen, platform: d.platform});
+        devices.push({id: d.id ?? '', name: d.name ?? '', enrolledAt: d.enrolledAt ?? 0, lastSeen: d.lastSeen, platform: d.platform, lastIP: d.lastIP});
       }
     }
     return {guests, devices};
