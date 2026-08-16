@@ -67,3 +67,34 @@ describe('grantSummary', () => {
     expect(grantSummary({viewPanes: [], inputPanes: []}, live, false)).toBe('sees nothing');
   });
 });
+
+import {paneGroups} from './ManageMacScreen';
+import {Agent} from '../api/types';
+
+const pane = (id: string, session: string, task: string): Agent =>
+  ({pane_id: id, session, task, source: 'tmux', status: 'idle'} as Agent);
+
+// The picker listed panes flat, labelled only by task — and two panes in different
+// sessions running the same project truncate to the same words, so the list offered two
+// identical-looking rows with no way to tell which was which.
+describe('paneGroups', () => {
+  it('groups by session, keeping the order the radar gave', () => {
+    const g = paneGroups([
+      pane('%11', 'MP', 'multipilot-companion 服务端需求'),
+      pane('%1', 'Diting', 'analysis'),
+      pane('%12', 'MP', 'multipilot-companion feature dev'),
+    ]);
+    expect(g.map(x => x.session)).toEqual(['MP', 'Diting']);
+    expect(g[0].panes.map(p => p.pane_id)).toEqual(['%11', '%12']);
+  });
+
+  it('keeps a session with no name rather than dropping its panes', () => {
+    const g = paneGroups([pane('%9', '', 'stray')]);
+    expect(g).toHaveLength(1);
+    expect(g[0].panes.map(p => p.pane_id)).toEqual(['%9']);
+  });
+
+  it('is empty for no panes', () => {
+    expect(paneGroups([])).toEqual([]);
+  });
+});
