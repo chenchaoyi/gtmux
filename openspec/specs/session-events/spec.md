@@ -321,10 +321,10 @@ SHALL be split into two kinds with different debt semantics:
   only channel a pane-less record has.
 - **Audit records** (the `gtmux:audit:` sub-namespace) document an act whose
   actor already knows it — a delivered or dropped wake, a supervisor-driven send,
-  a reap, a rotation. They are TRAIL, not debt: they SHALL NOT count toward the
-  consumption debt, SHALL be omitted from the supervisor's default delta pull
-  exactly as the tally omits them, and SHALL remain in the log — returned by
-  `--all` and by any non-supervisor read.
+  a reap, a rotation, a knowledge-ledger operation. They are TRAIL, not debt:
+  they SHALL NOT count toward the consumption debt, SHALL be omitted from the
+  supervisor's default delta pull exactly as the tally omits them, and SHALL
+  remain in the log — returned by `--all` and by any non-supervisor read.
 
 Every audit record SHALL nest inside the control namespace, so the standing rule
 that sensors exclude control records from the deltas they measure covers audit
