@@ -27,7 +27,7 @@ func JumpPane(paneID string) {
 	}
 	tmux.OK("select-pane", "-t", paneID)
 	if sess != "" {
-		bringForward(sess)
+		_, _ = BringForward(sess)
 	}
 }
 
@@ -45,17 +45,25 @@ func JumpPane(paneID string) {
 // the same `⌁` headless marker in its window name and IS attached — someone opened it
 // later — and jumping to it works. The marker records how a session began; only the
 // client count says whether it is on screen now.
-func bringForward(sess string) {
+// BringForward is exported because there are TWO jump paths — the TUI/serve one through
+// JumpPane, and the CLI's `gtmux focus`, which resolves a session name and owns its own
+// error messages. Fixing only the first is exactly what happened: `gtmux focus %30` on a
+// real detached session still printed "no tab is showing it, run gtmux restore" after the
+// fix was in. One primitive, two callers.
+//
+// Returns whether it had to OPEN a window, so a caller with a voice can say so.
+func BringForward(sess string) (opened bool, err error) {
 	// Resolve the terminal that hosts THIS session (not a global guess), so a session in
 	// iTerm2 focuses iTerm2 even when other sessions are in Ghostty.
 	term := terminal.ForSession(sess)
 	if Attached(sess) {
-		term.FocusTab(sess)
-		return
+		_, err = term.FocusTab(sess)
+		return false, err
 	}
 	// Nothing is showing it: open a tab that attaches. This is the same call `gtmux new`
 	// and `restore` make, and it is the only way to see a detached session at all.
-	_, _ = term.SpawnTabs([]string{sess}, false)
+	_, err = term.SpawnTabs([]string{sess}, false)
+	return true, err
 }
 
 // Attached reports whether any terminal client is attached to a session — i.e. whether
