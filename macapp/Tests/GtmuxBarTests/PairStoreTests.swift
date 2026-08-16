@@ -19,9 +19,9 @@ final class PairStoreTests: XCTestCase {
 
     // kind guesses the row icon from the device name — chrome only, best-effort.
     func testDeviceKind() {
-        XCTAssertEqual(PairedDevice(id: "1", name: "ccy iPhone 15", enrolledAt: 0, lastSeen: 0).kind, "iphone")
-        XCTAssertEqual(PairedDevice(id: "2", name: "Safari · macOS", enrolledAt: 0, lastSeen: 0).kind, "globe")
-        XCTAssertEqual(PairedDevice(id: "3", name: "work-mbp", enrolledAt: 0, lastSeen: 0).kind, "laptopcomputer")
+        XCTAssertEqual(PairedDevice(id: "1", name: "ccy iPhone 15", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "").kind, "iphone")
+        XCTAssertEqual(PairedDevice(id: "2", name: "Safari · macOS", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "").kind, "globe")
+        XCTAssertEqual(PairedDevice(id: "3", name: "work-mbp", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "").kind, "laptopcomputer")
     }
 }
 
@@ -30,7 +30,7 @@ final class PairStoreTests: XCTestCase {
 // roster (nothing in that list is not a gtmux device) over a word true of every iPhone.
 final class PairedDeviceNameTests: XCTestCase {
     private func dev(_ name: String) -> PairedDevice {
-        PairedDevice(id: "d1", name: name, enrolledAt: 0, lastSeen: 0)
+        PairedDevice(id: "d1", name: name, enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "")
     }
 
     func testLegacyPrefixIsStrippedForDisplay() {
@@ -54,5 +54,42 @@ final class PairedDeviceNameTests: XCTestCase {
         XCTAssertEqual(dev("iPad · iOS 18.5").kind, "iphone")
         XCTAssertEqual(dev("Safari").kind, "globe")
         XCTAssertEqual(dev("dev-mbp.local").kind, "laptopcomputer")
+    }
+}
+
+/// The row's second line, and the icon, now come from what the device IS.
+///
+/// The phone app had been showing the platform for months off the same `/api/devices`
+/// payload the menu bar simply did not decode: two surfaces, one dataset, different
+/// answers. These pin the shared builder so they cannot drift apart again.
+final class PairedDeviceSubtitleTests: XCTestCase {
+    private func tr(_ en: String, _ zh: String) -> String { en }
+
+    func testSubtitleJoinsWhatIsKnown() {
+        let d = PairedDevice(id: "1", name: "ccy", enrolledAt: 0, lastSeen: 1_000,
+                             platform: "iOS 26.6", lastIP: "192.168.1.23")
+        let s = d.subtitle(now: 1_060, tr: tr)
+        XCTAssertTrue(s.contains("iOS 26.6"), s)
+        XCTAssertTrue(s.contains("192.168.1.23"), "the address is the point — an unexpected one is what you act on")
+        XCTAssertTrue(s.contains("last seen"), s)
+    }
+
+    /// A device the Mac has not heard from since it started recording platforms has
+    /// neither — the line must still say the one thing it knows.
+    func testSubtitleSurvivesAnEmptyRecord() {
+        let d = PairedDevice(id: "1", name: "browser", enrolledAt: 5, lastSeen: 0, platform: "", lastIP: "")
+        XCTAssertEqual(d.subtitle(now: 100, tr: tr), "never connected")
+    }
+
+    /// The icon follows the platform, not the name a device chose for itself: a phone
+    /// paired as "ccy" used to get a laptop.
+    func testIconPrefersThePlatform() {
+        XCTAssertEqual(PairedDevice(id: "1", name: "ccy", enrolledAt: 0, lastSeen: 0,
+                                    platform: "iOS 26.6", lastIP: "").kind, "iphone")
+        XCTAssertEqual(PairedDevice(id: "2", name: "ccy", enrolledAt: 0, lastSeen: 0,
+                                    platform: "Chrome 141 · macOS", lastIP: "").kind, "globe")
+        // No platform yet → the old name guess still applies rather than nothing.
+        XCTAssertEqual(PairedDevice(id: "3", name: "ccy iPhone", enrolledAt: 0, lastSeen: 0,
+                                    platform: "", lastIP: "").kind, "iphone")
     }
 }

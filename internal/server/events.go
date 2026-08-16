@@ -655,17 +655,25 @@ func browserPlatform(ua string) string {
 		return ""
 	}
 	browser := ""
+	// The token whose number is the browser's own version. Order matters: every
+	// Chromium browser also says "Chrome", and Safari says it too.
+	token := ""
 	switch {
 	case strings.Contains(ua, "Edg/"):
-		browser = "Edge"
+		browser, token = "Edge", "Edg/"
 	case strings.Contains(ua, "OPR/"), strings.Contains(ua, "Opera"):
-		browser = "Opera"
+		browser, token = "Opera", "OPR/"
 	case strings.Contains(ua, "Firefox"):
-		browser = "Firefox"
+		browser, token = "Firefox", "Firefox/"
 	case strings.Contains(ua, "Chrome"):
-		browser = "Chrome"
+		browser, token = "Chrome", "Chrome/"
 	case strings.Contains(ua, "Safari"):
-		browser = "Safari"
+		// Safari's own version is in `Version/17.0`; its `Safari/605` is the WebKit
+		// build, which is not what a person means by "which Safari".
+		browser, token = "Safari", "Version/"
+	}
+	if v := majorVersion(ua, token); v != "" {
+		browser += " " + v
 	}
 	os := ""
 	switch {
@@ -698,4 +706,26 @@ func browserPlatform(ua string) string {
 func writeSSE(w http.ResponseWriter, ev sseEvent) error {
 	_, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", ev.name, ev.data)
 	return err
+}
+
+// majorVersion pulls the leading number that follows `token` in a User-Agent — the major
+// only, because the rest is noise to a reader ("Chrome 141", not "Chrome 141.0.7390.65")
+// and a device row has no room for it.
+//
+// Bounded on purpose: a User-Agent is attacker-controlled text that ends up in the Mac's
+// UI, so this reads at most 4 digits and stops at the first non-digit.
+func majorVersion(ua, token string) string {
+	if token == "" {
+		return ""
+	}
+	i := strings.Index(ua, token)
+	if i < 0 {
+		return ""
+	}
+	rest := ua[i+len(token):]
+	end := 0
+	for end < len(rest) && end < 4 && rest[end] >= '0' && rest[end] <= '9' {
+		end++
+	}
+	return rest[:end]
 }

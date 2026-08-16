@@ -29,6 +29,10 @@ type EnrolledDevice struct {
 	// browser ("Safari · macOS") — refreshed on each authed request so the paired-device
 	// roster shows what a device IS, not just a generic "browser"/"iPhone". Additive.
 	Platform string `json:"platform,omitempty"`
+	// LastIP is the address the device was last seen from. The commander's reason for
+	// wanting it plainly: this is YOUR Mac, and "who is connected to it" is only a real
+	// answer if you can spot an address that should not be there and act on it.
+	LastIP string `json:"lastIP,omitempty"`
 	// Scope is "" (a paired device — the owner's own surface, unrestricted input) or
 	// "guest" (a share link — input-restricted by the share gate). Additive/back-compat.
 	Scope string `json:"scope,omitempty"`
@@ -107,7 +111,10 @@ type EnrollManager struct {
 	devices map[string]EnrolledDevice // keyed by token
 	codes   map[string]int64          // code → unix expiry
 	save    func([]EnrolledDevice)    // optional persistence hook
-	now     func() time.Time          // injectable clock (tests)
+	// dirty: the hot auth path changed something worth keeping (last-seen, platform,
+	// address) and no save has run since. Flushed on the serve tick, not per request.
+	dirty bool
+	now   func() time.Time // injectable clock (tests)
 }
 
 // NewEnrollManager seeds the roster with any persisted devices.
@@ -294,6 +301,7 @@ func (m *EnrollManager) TokenScope(tok string) (scope string, ok bool) {
 	}
 	d.LastSeen = m.now().Unix()
 	m.devices[tok] = d
+	m.dirty = true
 	if d.Scope == "guest" {
 		return "guest", true
 	}
@@ -348,16 +356,54 @@ func (m *EnrollManager) ValidToken(tok string) bool {
 // roster shows what a device IS, not a generic name. In-memory + best-effort (like
 // LastSeen); an empty value is ignored so a request without the header never clobbers a
 // known one, and it only writes on a CHANGE (cheap on the hot auth path).
-func (m *EnrollManager) SetPlatform(tok, platform string) {
-	if tok == "" || platform == "" {
+func (m *EnrollManager) SetPlatform(tok, platform string) { m.SetClient(tok, platform, "") }
+
+// SetClient records what a device IS and where it connected from.
+//
+// Both are written on the hot auth path, so this marks the roster DIRTY rather than
+// saving: a disk write per request is not acceptable, and losing the value entirely is
+// what happened before. `platform` used to live only in memory, so a serve restart erased
+// it — measured on the commander's own Mac, where the paired "browser" row had no platform
+// at all despite having connected, while the phone (which re-reports on every request)
+// still had one. A periodic flush keeps both.
+//
+// An empty value never clobbers a known one: a request without the header, or one from a
+// path with no address, must not erase what an earlier request established.
+func (m *EnrollManager) SetClient(tok, platform, ip string) {
+	if tok == "" || (platform == "" && ip == "") {
 		return
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if d, ok := m.devices[tok]; ok && d.Platform != platform {
-		d.Platform = platform
-		m.devices[tok] = d
+	d, ok := m.devices[tok]
+	if !ok {
+		return
 	}
+	changed := false
+	if platform != "" && d.Platform != platform {
+		d.Platform, changed = platform, true
+	}
+	if ip != "" && d.LastIP != ip {
+		d.LastIP, changed = ip, true
+	}
+	if changed {
+		m.devices[tok] = d
+		m.dirty = true
+	}
+}
+
+// FlushIfDirty persists the roster when the hot path has changed it (last-seen, platform,
+// address). Called from the serve tick — the alternative is writing on every request.
+func (m *EnrollManager) FlushIfDirty() {
+	m.mu.Lock()
+	if !m.dirty || m.save == nil {
+		m.mu.Unlock()
+		return
+	}
+	m.dirty = false
+	snap := m.devicesLocked()
+	m.mu.Unlock()
+	m.save(snap)
 }
 
 // Devices returns the roster (without tokens would be nicer for display, but the
@@ -401,11 +447,29 @@ func (m *EnrollManager) RevokeBy(id string, allowDevice bool) (removed, refused 
 	return false, false // no such id
 }
 
+// devicesLocked snapshots the roster IN ORDER: most recently seen first, a device that
+// has never checked in last, ties broken by enrolment then id.
+//
+// The order belongs to the data, not to each renderer. It came from a map, so two calls a
+// second apart returned different orders — which is what the commander saw as "the menu bar
+// and the app disagree": neither sorts, so each was showing a different shuffle of the same
+// list. A never-seen device sorts last on purpose: an entry that has never connected is the
+// least informative row on the page, and the most likely one to revoke.
 func (m *EnrollManager) devicesLocked() []EnrolledDevice {
 	out := make([]EnrolledDevice, 0, len(m.devices))
 	for _, d := range m.devices {
 		out = append(out, d)
 	}
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.LastSeen != b.LastSeen {
+			return a.LastSeen > b.LastSeen // 0 (never seen) falls to the end
+		}
+		if a.EnrolledAt != b.EnrolledAt {
+			return a.EnrolledAt > b.EnrolledAt
+		}
+		return a.ID < b.ID // total order, so the list never shuffles between polls
+	})
 	return out
 }
 
@@ -471,7 +535,8 @@ type deviceInfo struct {
 	Name       string `json:"name"`
 	EnrolledAt int64  `json:"enrolledAt"`
 	LastSeen   int64  `json:"lastSeen,omitempty"`
-	Platform   string `json:"platform,omitempty"` // "iOS 17.5" / "Safari · macOS" — what the device IS
+	Platform   string `json:"platform,omitempty"` // "iOS 17.5" / "Safari 17 · macOS" — what the device IS
+	LastIP     string `json:"last_ip,omitempty"`  // where it last connected from
 	Scope      string `json:"scope,omitempty"`
 	// Per-link guest scope (pair-share-model), additive: absent on owner devices.
 	ViewPanes  []string `json:"viewPanes,omitempty"`
@@ -493,7 +558,7 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]deviceInfo, 0)
 	for _, d := range s.deps.Enroll.Devices() {
-		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Platform: d.Platform, Scope: d.Scope,
+		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Platform: d.Platform, LastIP: d.LastIP, Scope: d.Scope,
 			ViewPanes: d.ViewPanes, InputPanes: d.InputPanes, ExpiresAt: d.ExpiresAt})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"devices": out})

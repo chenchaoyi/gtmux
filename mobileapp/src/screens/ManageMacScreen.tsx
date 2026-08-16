@@ -33,10 +33,21 @@ function relSeen(unixSec: number, zh: boolean): string {
   return zh ? `${Math.floor(s / 86400)} 天前` : `${Math.floor(s / 86400)}d ago`;
 }
 
-function deviceSub(platform: string | undefined, lastSeen: number | undefined, zh: boolean): string | undefined {
+// Same three parts, same order, as the menu bar's PairedDevice.subtitle: what it IS,
+// where from, when last seen. The address is shown plainly — this is the user's own Mac,
+// and "who is connected to it" is only a real answer if an address that should not be
+// there can be spotted.
+export function deviceSub(
+  platform: string | undefined,
+  lastIP: string | undefined,
+  lastSeen: number | undefined,
+  zh: boolean,
+): string | undefined {
   const parts: string[] = [];
   if (platform) parts.push(platform);
+  if (lastIP) parts.push(lastIP);
   if (lastSeen) parts.push(relSeen(lastSeen, zh));
+  else parts.push(zh ? '从未连接' : 'never connected');
   return parts.length ? parts.join(' · ') : undefined;
 }
 
@@ -279,7 +290,7 @@ export function ManageMacScreen({navigation}: any) {
                   key={d.id}
                   icon={deviceIcon(d.name, d.platform)}
                   label={displayDeviceName(d.name)}
-                  sub={deviceSub(d.platform, d.lastSeen, zh)}
+                  sub={deviceSub(d.platform, d.last_ip, d.lastSeen, zh)}
                   pal={pal}
                   divider={idx < devices.length - 1}
                 />

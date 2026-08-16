@@ -182,3 +182,36 @@ func TestEnrollEndpoints(t *testing.T) {
 		t.Error("bad code should be 401")
 	}
 }
+
+// The roster has an ORDER, and it comes from the data.
+//
+// It used to come from a Go map, so two calls a second apart returned different orders —
+// what the commander read as "the menu bar and the app show them differently". Neither
+// surface sorts; each was rendering a different shuffle of the same list.
+func TestRosterOrderIsMostRecentlySeenFirst(t *testing.T) {
+	// Keyed by token — a device with none is not in the roster at all.
+	m := NewEnrollManager([]EnrolledDevice{
+		{ID: "never", Token: "t1", Name: "never", EnrolledAt: 50},
+		{ID: "old", Token: "t2", Name: "old", EnrolledAt: 10, LastSeen: 100},
+		{ID: "recent", Token: "t3", Name: "recent", EnrolledAt: 20, LastSeen: 900},
+	}, nil)
+	var got []string
+	for _, d := range m.Devices() {
+		got = append(got, d.ID)
+	}
+	want := []string{"recent", "old", "never"}
+	for i := range want {
+		if i >= len(got) || got[i] != want[i] {
+			t.Fatalf("order = %v, want %v (a device that never connected sorts last)", got, want)
+		}
+	}
+	// Stability is the point: a list that reshuffles between polls is unreadable.
+	for i := 0; i < 5; i++ {
+		again := m.Devices()
+		for j := range again {
+			if again[j].ID != got[j] {
+				t.Fatalf("order changed between calls: %v then %v", got, again)
+			}
+		}
+	}
+}

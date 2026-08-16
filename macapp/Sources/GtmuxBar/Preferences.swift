@@ -759,11 +759,12 @@ struct PreferencesView: View {
         }
     }
 
+    /// The row's second line. It used to be the last-seen time ALONE, while the phone app
+    /// had been showing the platform for months off the same payload the menu bar simply
+    /// did not decode — two surfaces, one dataset, different answers. One builder now,
+    /// living next to the model so neither surface can drift from it again.
     private func pairLastSeen(_ d: PairedDevice) -> String {
-        if d.lastSeen > 0 {
-            return l10n.tr("last seen ", "上次连接 ") + relativeTime(d.lastSeen, now: Int(Date().timeIntervalSince1970)) + l10n.tr(" ago", "前")
-        }
-        return l10n.tr("never connected", "从未连接")
+        d.subtitle(now: Int(Date().timeIntervalSince1970), tr: l10n.tr)
     }
 
     // ── per-link scope editor (SHARE section) ─────────────────────────────────

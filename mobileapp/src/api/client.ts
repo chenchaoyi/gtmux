@@ -62,6 +62,8 @@ export interface PairedDevice {
   name: string;
   enrolledAt: number;
   lastSeen?: number;
+  /** Where the device last connected from — shown plainly on both surfaces. */
+  last_ip?: string;
   platform?: string; // "iOS 17.5" / "Safari · macOS" — what the device is
 }
 
