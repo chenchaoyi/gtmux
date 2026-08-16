@@ -33,11 +33,37 @@ function relSeen(unixSec: number, zh: boolean): string {
   return zh ? `${Math.floor(s / 86400)} 天前` : `${Math.floor(s / 86400)}d ago`;
 }
 
-function deviceSub(platform: string | undefined, lastSeen: number | undefined, zh: boolean): string | undefined {
+// Same three parts, same order, as the menu bar's PairedDevice.subtitle: what it IS,
+// where from, when last seen. The address is shown plainly — this is the user's own Mac,
+// and "who is connected to it" is only a real answer if an address that should not be
+// there can be spotted.
+export function deviceSub(
+  platform: string | undefined,
+  lastIP: string | undefined,
+  lastSeen: number | undefined,
+  zh: boolean,
+): string | undefined {
   const parts: string[] = [];
   if (platform) parts.push(platform);
+  if (lastIP) parts.push(lastIP);
   if (lastSeen) parts.push(relSeen(lastSeen, zh));
+  else parts.push(zh ? '从未连接' : 'never connected');
   return parts.length ? parts.join(' · ') : undefined;
+}
+
+// linkUsage is deviceSub's twin for a share link: what walked through it, from where,
+// when. Not-yet-used is stated rather than left blank — "nobody has used this link" is a
+// useful answer, and an empty line is not.
+export function linkUsage(
+  g: {platform?: string; lastIP?: string; lastSeen?: number},
+  zh: boolean,
+): string {
+  if (!g.lastSeen && !g.platform) return zh ? '还没有人用过' : 'not used yet';
+  const parts: string[] = [];
+  if (g.platform) parts.push(g.platform);
+  if (g.lastIP) parts.push(g.lastIP);
+  if (g.lastSeen) parts.push((zh ? '上次使用 ' : 'last used ') + relSeen(g.lastSeen, zh));
+  return parts.join(' · ');
 }
 
 // deviceIcon picks a leading glyph matching what the device IS, so the roster reads at a
@@ -225,6 +251,12 @@ export function ManageMacScreen({navigation}: any) {
                       <Text style={[styles.linkSub, {color: pal.fg3}]} numberOfLines={1}>
                         {scopeSummary(g)}
                       </Text>
+                      {/* WHO used it. The line above says what the link permits; this one
+                          says whether anyone walked through it, and from where — the
+                          question a grant handed to someone else actually raises. */}
+                      <Text style={[styles.linkSub, {color: pal.fg3}]} numberOfLines={1}>
+                        {linkUsage(g, zh)}
+                      </Text>
                     </View>
                     <Text style={[styles.chev, {color: pal.fg3}]}>{expanded === g.id ? '⌄' : '›'}</Text>
                   </TouchableOpacity>
@@ -279,7 +311,7 @@ export function ManageMacScreen({navigation}: any) {
                   key={d.id}
                   icon={deviceIcon(d.name, d.platform)}
                   label={displayDeviceName(d.name)}
-                  sub={deviceSub(d.platform, d.lastSeen, zh)}
+                  sub={deviceSub(d.platform, d.lastIP, d.lastSeen, zh)}
                   pal={pal}
                   divider={idx < devices.length - 1}
                 />

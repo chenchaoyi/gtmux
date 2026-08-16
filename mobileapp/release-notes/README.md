@@ -34,3 +34,21 @@ archive that text under the stamped version and duplicate it in the popup.
 whatever is in that file at the time, so a stamp that reuses a multi-version text would
 file it under the wrong version. Writing the store notes before stamping is the normal
 flow anyway; this is only a reason not to skip it.
+
+## `store/` — what the App Store showed, when it differs
+
+`fastlane/metadata/*/release_notes.txt` feeds TWO consumers: the App Store listing and
+(via `set-version.sh`) the in-app What's New archive. They are the same text in the normal
+case, because every version ships to both.
+
+They diverge when the store falls behind. 0.55.1 was submitted after the store had sat at
+0.50.0 for six versions, so its "What's New" had to cover everything a user crossed — while
+the in-app popup still needs the per-version entries, one per version skipped. The submitted
+store text lives here so the difference is recorded rather than left as a modified file
+somebody has to remember to put back.
+
+**When this happens again:** write the consolidated text, submit it, then put a copy under
+`store/<version>.{en,zh}.txt` and restore `fastlane/metadata/*/release_notes.txt` to the
+per-version text BEFORE the next stamp. Otherwise `set-version.sh` archives the
+consolidated text as some later version's per-version entry, and the in-app popup tells a
+reader about changes they already saw.

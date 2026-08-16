@@ -1045,7 +1045,11 @@ A link minted without `--view/--type` copies the current global lists (the
 template). The legacy global forms (`share add/remove`, `share view add/remove/
 clear`) still work but FAN OUT to every existing link — per-link tailoring should
 use `share set`. `status --json` carries each guest's `view_panes`/`panes`/
-`expires_at` and never a bare token. A link's URL is printed at mint time; to copy
+`expires_at` and never a bare token. It also reports **who has used the link** —
+`last_seen`, `platform` (`Chrome 141 · macOS`), `last_ip` — all absent until someone
+has, which is itself the answer. A link is a standing grant handed to someone else,
+so "has anyone walked through it, and from where" is the question worth answering;
+what it PERMITS is already on the row above. A link's URL is printed at mint time; to copy
 it again later use `gtmux share link <id>` (or the menu-bar row's copy button) —
 it re-hands the same `#g=` URL (full-scope callers only; guests can't).
 

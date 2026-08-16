@@ -13,6 +13,27 @@ struct GuestLink: Identifiable, Equatable {
     var viewPanes: [String] = []
     var inputPanes: [String] = []
     var expiresAt: Int = 0
+    // WHO USED IT. A link is a standing grant handed to someone else, so the question
+    // that matters is not what it permits but whether anyone has walked through it.
+    // All three stay empty until a first authenticated request — which is itself the
+    // answer "nobody has used this link yet".
+    var lastSeen: Int = 0
+    var platform: String = ""
+    var lastIP: String = ""
+
+    /// The same three parts, in the same order, as a paired device's row.
+    func usage(now: Int, tr: (String, String) -> String) -> String {
+        guard lastSeen > 0 || !platform.isEmpty else {
+            return tr("not used yet", "还没有人用过")
+        }
+        var parts: [String] = []
+        if !platform.isEmpty { parts.append(platform) }
+        if !lastIP.isEmpty { parts.append(lastIP) }
+        if lastSeen > 0 {
+            parts.append(tr("last used ", "上次使用 ") + relativeTime(lastSeen, now: now) + tr(" ago", "前"))
+        }
+        return parts.joined(separator: " · ")
+    }
 }
 
 /// ShareStore reflects + drives web-shared input (the CLI's `gtmux share`): the
@@ -104,7 +125,10 @@ final class ShareStore: ObservableObject {
                       enrolledAt: $0["enrolled_at"] as? Int ?? 0,
                       viewPanes: $0["view_panes"] as? [String] ?? [],
                       inputPanes: $0["panes"] as? [String] ?? [],
-                      expiresAt: $0["expires_at"] as? Int ?? 0)
+                      expiresAt: $0["expires_at"] as? Int ?? 0,
+                      lastSeen: $0["last_seen"] as? Int ?? 0,
+                      platform: $0["platform"] as? String ?? "",
+                      lastIP: $0["last_ip"] as? String ?? "")
         }
         return (enabled, panes, viewPanes, guests, base)
     }

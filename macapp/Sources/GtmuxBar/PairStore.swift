@@ -9,15 +9,49 @@ struct PairedDevice: Identifiable, Equatable {
     let name: String
     let enrolledAt: Int
     let lastSeen: Int
+    /// What the device IS — "iOS 26.6", "Chrome 141 · macOS". The phone reports it per
+    /// request; a browser's is sniffed from its User-Agent. Empty for a device that has
+    /// not connected since the Mac started recording it.
+    let platform: String
+    /// Where it last connected from. Shown plainly: this is the user's own Mac, and
+    /// "who is connected to it" is only a real answer if an address that should not be
+    /// there can be spotted and acted on.
+    let lastIP: String
 
     /// kind guesses a display icon from the device name (best-effort chrome only):
     /// the phone app labels itself with its idiom + OS version; the attach pair flow
     /// names entries after the hostname; browsers enroll via the web page.
+    /// kind picks the row's icon from what the device IS, falling back to its NAME.
+    ///
+    /// The name was the only source before, which meant guessing from a string the device
+    /// chose for itself — a phone paired as "ccy" got a laptop icon. The platform tag is
+    /// the honest source; the name stays as the fallback for a device that has not
+    /// connected since platforms were recorded. Same rule as the phone app's, deliberately.
     var kind: String {
+        let p = platform.lowercased()
+        if p.contains("ios") || p.contains("iphone") { return "iphone" }
+        if p.contains("ipad") { return "ipad" }
+        if p.contains("safari") || p.contains("chrome") || p.contains("firefox")
+            || p.contains("edge") || p.contains("opera") { return "globe" }
+        if !p.isEmpty { return "laptopcomputer" }
         let n = name.lowercased()
         if n.contains("iphone") || n.contains("ipad") || n == "phone" { return "iphone" }
         if n.contains("safari") || n.contains("chrome") || n.contains("browser") { return "globe" }
         return "laptopcomputer"
+    }
+
+    /// The row's second line, built the same way on every surface: what it is, where from,
+    /// when last seen — the parts that are known, joined by "·".
+    func subtitle(now: Int, tr: (String, String) -> String) -> String {
+        var parts: [String] = []
+        if !platform.isEmpty { parts.append(platform) }
+        if !lastIP.isEmpty { parts.append(lastIP) }
+        if lastSeen > 0 {
+            parts.append(tr("last seen ", "上次连接 ") + relativeTime(lastSeen, now: now) + tr(" ago", "前"))
+        } else {
+            parts.append(tr("never connected", "从未连接"))
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// displayName drops the legacy "gtmux • " prefix the phone app used to register
@@ -123,7 +157,9 @@ final class PairStore: ObservableObject {
             return PairedDevice(id: r["id"] as? String ?? "",
                                 name: r["name"] as? String ?? "",
                                 enrolledAt: r["enrolledAt"] as? Int ?? 0,
-                                lastSeen: r["lastSeen"] as? Int ?? 0)
+                                lastSeen: r["lastSeen"] as? Int ?? 0,
+                                platform: r["platform"] as? String ?? "",
+                                lastIP: r["lastIP"] as? String ?? "")
         }
     }
 

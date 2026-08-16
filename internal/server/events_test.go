@@ -33,7 +33,7 @@ func TestHubClientRoster(t *testing.T) {
 	h.onClients = func(list []ClientInfo) { rosters = append(rosters, list) }
 
 	a := h.subscribe(ClientInfo{Kind: "phone", Name: "My Phone", ConnectedAt: 1})
-	b := h.subscribe(ClientInfo{Kind: "browser", Platform: "Safari · macOS", ConnectedAt: 2})
+	b := h.subscribe(ClientInfo{Kind: "browser", Platform: "Safari 17 · macOS", ConnectedAt: 2})
 	h.tick() // heartbeat while 2 connected → reports both
 	h.unsubscribe(a)
 	h.unsubscribe(b)
@@ -53,7 +53,7 @@ func TestHubClientRoster(t *testing.T) {
 	if full[0].Name != "My Phone" || full[0].Kind != "phone" {
 		t.Errorf("first viewer = %+v, want the phone", full[0])
 	}
-	if full[1].Kind != "browser" || full[1].Platform != "Safari · macOS" {
+	if full[1].Kind != "browser" || full[1].Platform != "Safari 17 · macOS" {
 		t.Errorf("second viewer = %+v, want the browser", full[1])
 	}
 }
@@ -279,11 +279,11 @@ func TestHubNilStatuses(t *testing.T) {
 func TestBrowserPlatform(t *testing.T) {
 	cases := map[string]string{
 		"": "",
-		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15":                   "Safari · macOS",
-		"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1": "Safari · iPhone",
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0":           "Edge · Windows",
-		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36":                                   "Chrome · Linux",
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0":                                                        "Firefox · Windows",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15":                   "Safari 17 · macOS",
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1": "Safari 17 · iPhone",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0":           "Edge 120 · Windows",
+		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36":                                   "Chrome 120 · Linux",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0":                                                        "Firefox 121 · Windows",
 	}
 	for ua, want := range cases {
 		if got := browserPlatform(ua); got != want {
@@ -328,7 +328,7 @@ func TestClientInfoIdentity(t *testing.T) {
 	rb.Header.Set("Authorization", "Bearer master")
 	rb.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15")
 	info := s.clientInfo(rb)
-	if info.Kind != "browser" || info.Name != "" || info.Platform != "Safari · macOS" {
+	if info.Kind != "browser" || info.Name != "" || info.Platform != "Safari 17 · macOS" {
 		t.Errorf("master token → %+v, want anonymous 'Safari · macOS' browser", info)
 	}
 }
@@ -347,8 +347,8 @@ func TestClientPlatform(t *testing.T) {
 
 	rb := httptest.NewRequest(http.MethodGet, "/api/agents", nil)
 	rb.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15")
-	if got := s.clientPlatform(rb); got != "Safari · macOS" {
-		t.Errorf("browser UA → %q, want 'Safari · macOS'", got)
+	if got := s.clientPlatform(rb); got != "Safari 17 · macOS" {
+		t.Errorf("browser UA → %q, want 'Safari 17 · macOS'", got)
 	}
 }
 
@@ -495,5 +495,38 @@ func TestHubFastTick(t *testing.T) {
 	case <-slow:
 		t.Fatal("the slow tick must keep its own (much slower) cadence")
 	default:
+	}
+}
+
+// The VERSION is what makes a browser row identify anything: "Safari 17 · macOS" describes
+// half the machines on a network. Each browser's version lives behind a different token,
+// and the order they are tested in matters — every Chromium browser also says "Chrome",
+// and Safari's own `Safari/605` is the WebKit build, not the Safari version a person means.
+func TestBrowserPlatformCarriesTheVersion(t *testing.T) {
+	for _, tc := range []struct{ ua, want string }{
+		{"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", "Safari 17 · macOS"},
+		{"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36", "Chrome 141 · macOS"},
+		{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0", "Edge 141 · Windows"},
+		{"Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0", "Firefox 130 · Linux"},
+		{"Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1", "Safari 17 · iPhone"},
+	} {
+		if got := browserPlatform(tc.ua); got != tc.want {
+			t.Errorf("browserPlatform(%.40s…) = %q, want %q", tc.ua, got, tc.want)
+		}
+	}
+}
+
+// A User-Agent is attacker-controlled text that lands in the Mac's UI. The version read
+// is bounded and stops at the first non-digit, so a hostile UA cannot push a wall of
+// characters into a device row.
+func TestMajorVersionIsBounded(t *testing.T) {
+	if got := majorVersion("X/99999999999", "X/"); got != "9999" {
+		t.Errorf("majorVersion capped at 4 digits, got %q", got)
+	}
+	if got := majorVersion("X/12abc", "X/"); got != "12" {
+		t.Errorf("majorVersion must stop at the first non-digit, got %q", got)
+	}
+	if got := majorVersion("no token here", "X/"); got != "" {
+		t.Errorf("a missing token must yield nothing, got %q", got)
 	}
 }

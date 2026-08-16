@@ -41,6 +41,17 @@ const defaultServePort = 8765
 // It binds an intranet/VPN interface (default 0.0.0.0 so the phone can reach the
 // Mac's internal IP), guards every /api/* route with a Bearer token, and serves
 // ONLY read-only data plus a local "focus" (no input injection / no RCE).
+// rosterMgr is the live enroll manager, so the slow tick can flush what the hot auth path
+// recorded. A package var because the tick closure is built before serve assembles deps.
+var rosterMgr *server.EnrollManager
+
+// flushRoster persists last-seen / platform / address when a request changed them.
+func flushRoster() {
+	if rosterMgr != nil {
+		rosterMgr.FlushIfDirty()
+	}
+}
+
 func cmdServe(args []string) int {
 	port := defaultServePort
 	bind := "0.0.0.0"
@@ -188,7 +199,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// serverModeTick rides the same single-writer cadence: heartbeat (what keeps
 		// the guard from restoring sleep), the battery warning that must reach a user
 		// who is away, and detection of a closed-lid session that silently died.
-		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave(); serverModeTick() },
+		// The roster's hot-path facts (last seen, platform, address) are marked dirty
+		// rather than written per request; this is where they reach disk. Without it a
+		// serve restart erased what every paired device IS — measured on the commander's
+		// Mac, where a paired browser row had no platform at all.
+		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave(); serverModeTick(); flushRoster() },
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: hq.DrainHQNudges,
@@ -262,6 +277,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	// token (revocable, and the QR stops being a lasting credential). The master
 	// token keeps working, so existing pairings are unaffected.
 	deps.Enroll = server.NewEnrollManager(loadDevices(), saveDevices)
+	rosterMgr = deps.Enroll
 
 	// Shared-input policy (web-shared-input): the host's consent + per-pane allowlist
 	// that gates a GUEST share link's input. Default off; persisted like the roster.

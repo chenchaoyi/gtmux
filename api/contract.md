@@ -594,16 +594,23 @@ body: {"enrollCode":"<code>","name":"<device label>"}
 ### `GET /api/devices` — list enrolled devices (no tokens)
 
 ```
-200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?,"platform":"…"?,"scope":"…"?}, …]}
+200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?,"platform":"…"?,"lastIP":"…"?,"scope":"…"?}, …]}
 503 {"error":"enrollment not configured"}
 ```
 
+**The list is ORDERED** — most recently seen first, a device that has never connected
+last, ties broken by enrolment then id. Consumers render it as given; they must not
+re-sort. It used to come straight off a map, so two calls a second apart returned
+different orders and each surface showed a different shuffle of the same roster.
+
 `scope` is `"guest"` for a share link, absent/empty for an owner device (guest entries
 also carry `viewPanes`/`inputPanes`/`expiresAt`, below). `platform` is the device's
-self-reported client tag (`"iOS 17.5"`, sent as the `X-Gtmux-Client` request header) or,
-for a browser that sends none, a coarse `"<Browser> · <OS>"` sniff of the User-Agent —
-so the roster shows WHAT a device is, not just its name. Absent until the device's first
-authenticated request after this server version.
+self-reported client tag (`"iOS 26.6"`, sent as the `X-Gtmux-Client` request header) or,
+for a browser that sends none, a `"<Browser> <major> · <OS>"` sniff of the User-Agent
+(`"Chrome 141 · macOS"`) — so the roster shows WHAT a device is, not just its name.
+`lastIP` is where it last connected from. Both are recorded on the authenticated request
+path and flushed to disk by the serve tick, so they survive a restart; both are absent
+until the device's first authenticated request after this server version.
 
 ### `POST /api/devices/revoke` — revoke a device's token now
 
