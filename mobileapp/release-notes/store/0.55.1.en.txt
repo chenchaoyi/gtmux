@@ -1,0 +1,5 @@
+• Quick-reply buttons in a notification no longer claim a meaning they cannot know. They used to read "1 · Yes / 2 · Always / 3 · No" whatever the agent was asking, so on a two-option question the button labelled Always sent the answer that means No. They now show the number, and the notification lists the real options one per line.
+• The all-panes browser reads as a tree: panes grouped under the window that holds them, every row led by its stable pane id (%23), and search that finds a pane by id.
+• The HQ situation board reads like a document again — sections you can fold, tables that fit a phone instead of running off the side, and headings you can actually see.
+• A session that is working says so with a ring that turns, matching the Mac. It stays slow and calm, and Reduce Motion is honoured.
+• Long-pressing a notification shows the question instead of a giant coloured square.
