@@ -608,7 +608,10 @@ also carry `viewPanes`/`inputPanes`/`expiresAt`, below). `platform` is the devic
 self-reported client tag (`"iOS 26.6"`, sent as the `X-Gtmux-Client` request header) or,
 for a browser that sends none, a `"<Browser> <major> · <OS>"` sniff of the User-Agent
 (`"Chrome 141 · macOS"`) — so the roster shows WHAT a device is, not just its name.
-`lastIP` is where it last connected from. Both are recorded on the authenticated request
+`lastIP` is where it last connected from. `X-Forwarded-For` is honoured ONLY when the
+request reaches serve over loopback — where gtmux's own tunnel client connects from; from
+any other peer the header is a string the caller chose and the peer address is used
+instead. A tunnel that does not set it leaves every remote device reading `127.0.0.1`. Both are recorded on the authenticated request
 path and flushed to disk by the serve tick, so they survive a restart; both are absent
 until the device's first authenticated request after this server version.
 

@@ -530,3 +530,35 @@ func TestMajorVersionIsBounded(t *testing.T) {
 		t.Errorf("a missing token must yield nothing, got %q", got)
 	}
 }
+
+// X-Forwarded-For is a string the caller chose unless the caller is our own tunnel client,
+// which reaches serve over loopback. Trusting it unconditionally — as this did — let
+// anyone on the network write the address the paired-device roster reports. Measured on a
+// live serve before the fix: a request from the same machine carrying
+// `X-Forwarded-For: 8.8.8.8` made the roster say 8.8.8.8.
+func TestClientIPTrustsForwardedForOnlyFromLoopback(t *testing.T) {
+	req := func(remote, xff string) *http.Request {
+		r := httptest.NewRequest("GET", "/api/agents", nil)
+		r.RemoteAddr = remote
+		if xff != "" {
+			r.Header.Set("X-Forwarded-For", xff)
+		}
+		return r
+	}
+	// Our own tunnel client: the header is the only way the real address can arrive.
+	if got := clientIP(req("127.0.0.1:5321", "203.0.113.9")); got != "203.0.113.9" {
+		t.Errorf("loopback peer: got %q, want the forwarded address", got)
+	}
+	// A LAN caller claiming to be someone else must be reported as ITSELF.
+	if got := clientIP(req("192.168.1.50:5321", "8.8.8.8")); got != "192.168.1.50" {
+		t.Errorf("LAN peer: got %q, want its own address — the header is not evidence", got)
+	}
+	// No header, loopback peer: the truth is loopback.
+	if got := clientIP(req("127.0.0.1:5321", "")); got != "127.0.0.1" {
+		t.Errorf("got %q, want 127.0.0.1", got)
+	}
+	// A proxy chain keeps the ORIGINAL client, which is the leftmost entry.
+	if got := clientIP(req("[::1]:5321", "203.0.113.9, 10.0.0.1")); got != "203.0.113.9" {
+		t.Errorf("got %q, want the leftmost (original) address", got)
+	}
+}

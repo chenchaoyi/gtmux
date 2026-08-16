@@ -22,7 +22,13 @@ tunnel.ccy.dev {
     handle @tenant {
         # rewrite to the remaining path ("" for a bare /p<port> → normalized to "/")
         rewrite * {re.tnt.2}
-        reverse_proxy 127.0.0.1:{re.tnt.1}
+        reverse_proxy 127.0.0.1:{re.tnt.1} {
+            # Past this hop the tunnel is raw TCP and cannot carry the caller's address,
+            # so the Mac would see every remote device as 127.0.0.1. Only correct when
+            # Caddy is the edge — behind another proxy this would overwrite the real
+            # value with a loopback one; drop the line in that case.
+            header_up X-Forwarded-For {client_ip}
+        }
     }
 
     # The chisel client's OWN control channel is a ROOT WebSocket upgrade → send those
