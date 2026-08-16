@@ -130,6 +130,6 @@ func distillSensor(now int64) {
 		hint = "then: gtmux events --since-seq " + strconv.FormatInt(lastSeq, 10)
 	}
 	raiseMaintenance(pane, hqwake.ClassDistill, hqfeed.ControlDistill, "due ("+reason+")",
-		"distil the period into the KB (update-over-append) + prune stale; silent unless real curation",
+		"drain captures (knowledge add --capture / dismiss) + distil the period (add/supersede/retire --why); silent unless real curation",
 		hint, events.SevNotable, now)
 }

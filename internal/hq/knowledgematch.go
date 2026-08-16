@@ -38,13 +38,25 @@ func MatchKnowledge(cwd, goal string) string {
 	var hits []string
 	seen := map[string]bool{}
 	for _, topic := range knowledgeEchoTopics {
-		for _, line := range matchingBullets(filepath.Join(hqKnowledgeDir(), topic+".md"), repo, keywords) {
-			key := topic + "|" + line
-			if seen[key] {
-				continue
+		// The render first, then the pre-ledger legacy file (hq-knowledge-ledger):
+		// during the incremental migration a lesson lives in exactly one of the two,
+		// and the echo must reach it in either.
+		paths := []string{
+			filepath.Join(hqKnowledgeDir(), topic+".md"),
+			filepath.Join(knowledgeLegacyDir(), topic+".md"),
+		}
+		for _, path := range paths {
+			for _, line := range matchingBullets(path, repo, keywords) {
+				key := topic + "|" + line
+				if seen[key] {
+					continue
+				}
+				seen[key] = true
+				hits = append(hits, "    - ["+topic+"] "+line)
+				if len(hits) >= knowledgeEchoMaxLines {
+					break
+				}
 			}
-			seen[key] = true
-			hits = append(hits, "    - ["+topic+"] "+line)
 			if len(hits) >= knowledgeEchoMaxLines {
 				break
 			}

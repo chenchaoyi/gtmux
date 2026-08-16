@@ -41,6 +41,10 @@ const (
 	// AuditEventHQSession records the health sensor observing the HQ session id
 	// change: the successor chain that survives every handoff.
 	AuditEventHQSession = AuditPrefix + "hq-session"
+	// AuditEventKnowledge records one knowledge-ledger mutation (add / supersede /
+	// retire / a dismissed capture candidate), so the knowledge base's change
+	// history rides the same stream as everything else.
+	AuditEventKnowledge = AuditPrefix + "knowledge"
 )
 
 // Wake-drop reasons (the wake-dropped record's vocabulary).
@@ -59,9 +63,10 @@ const (
 // batch is already capped near 800 chars by the delivery layer; the send head
 // mirrors the 200-char reply-tail convention.
 const (
-	auditWakeMax = 1000
-	auditSendMax = 200
-	auditReapMax = 300
+	auditWakeMax      = 1000
+	auditSendMax      = 200
+	auditReapMax      = 300
+	auditKnowledgeMax = 300
 )
 
 // auditLine renders arbitrary payload text as one bounded journal-safe line:
@@ -135,6 +140,15 @@ func AuditRotate(retiringSession, input string, now int64) {
 	auditAppend(Record{
 		Event:   AuditEventRotate,
 		Summary: "session " + retiringSession + " → reset (" + input + ")",
+	}, now)
+}
+
+// AuditKnowledge journals one knowledge-ledger mutation. summary is the verb's
+// own rendering ("add pitfalls/x (capture …)", "retire pitfalls/x: why").
+func AuditKnowledge(summary string, now int64) {
+	auditAppend(Record{
+		Event:   AuditEventKnowledge,
+		Summary: auditLine(summary, auditKnowledgeMax),
 	}, now)
 }
 

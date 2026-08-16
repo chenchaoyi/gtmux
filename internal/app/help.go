@@ -35,6 +35,8 @@ Commands:
   capture "<lesson> @<topic>"
                           record a durable, cross-cutting fact as a candidate for
                           HQ's knowledge base (--list shows the pending queue)
+  knowledge <verb>        the knowledge ledger: add/supersede/retire entries with
+                          provenance, drain captures, render the topic files
   usage [--json]          token usage per session + per-type rollup, with
                           layered thresholds and ahead-of-time warnings
   limits [--json]         real subscription-window remaining (5h session +
@@ -158,6 +160,8 @@ const usageZH = `快速开始：
   capture "<教训> @<topic>"
                           把一条持久、横向的事实作为候选记入 HQ 知识库
                           （--list 查看待蒸馏队列）
+  knowledge <子命令>       知识台账：带来源证据地新增/替换/退役条目、
+                          逐条消化候选、生成主题文件
   usage [--json]          每会话 token 用量 + 按类型汇总；分层阈值 + 按速率
                           提前预警（撞墙前告诉你）
   limits [--json]         真实订阅窗口余量（5 小时会话 + 周额度），来自 agent

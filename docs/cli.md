@@ -376,6 +376,36 @@ can't tell you whether the loop is alive: an empty queue reads the same whether 
 drained it yesterday or has never run. Five queued candidates also **pull the next distill
 forward** — a captured lesson is filed within a day rather than waiting out the week.
 
+## `gtmux knowledge` — the knowledge ledger (entries with provenance)
+
+```
+gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--body-file -] [--capture <key>] [--seq-range a..b]
+gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger
+gtmux knowledge retire <id> --why "…"                        # prune, with a reason that survives
+gtmux knowledge dismiss --capture <key> --why "…"            # reject a candidate WITH a trace
+gtmux knowledge list [--topic t] [--json]  ·  show <id>  ·  render [--check]
+```
+
+The knowledge base's **authority is an append-only ledger**
+(`~/.config/gtmux/hq/knowledge/.ledger.jsonl`); the topic `.md` files are **rendered**
+from its live entries — gtmux-owned, marked, and drift-checked (`render --check` catches a
+hand edit; `render` restores). Every entry carries **provenance**: the event seq at write,
+an optional distill range, and — when it consumed a capture candidate — that candidate's
+pane/seq/task and key, inherited instead of evaporating at merge time. `add --capture
+<key>` consumes **every** pending same-key candidate into one entry (the merge the distill
+discipline promises); `dismiss` removes them with a journal trace, so the quality gate's
+rejections stop vanishing identically to its acceptances. Every mutation appends one
+`gtmux:audit:knowledge` record to the event journal.
+
+Mutations are accepted **only from the HQ home** (the same cwd-keyed role rule as
+`gtmux events --ack`) — the quality gate is the supervisor; workers record candidates with
+`gtmux capture`. `list`/`show` work anywhere.
+
+**Migration is incremental:** the first mutation touching a topic moves its pre-ledger
+hand-written file verbatim to `knowledge/legacy/<topic>.md` (an untouched seeded
+placeholder is simply replaced), the render links to it, and the dispatch-time knowledge
+echo consults BOTH — so nothing loses reach while hq migrates lessons by use.
+
 ## `gtmux spawn` / `gtmux tasks` / `gtmux reap` — verified dispatch
 
 `gtmux spawn <goal>` dispatches new work to a coding agent and confirms it actually
