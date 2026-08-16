@@ -142,20 +142,24 @@ export function RadarScreen({navigation}: any) {
           {/* Browse ALL panes (tiered-pane-control): the opt-in secondary surface —
               reach a pane in a session with no agent. Kept off the radar itself so the
               agent-first list stays clean. Guests reach only their shared panes. */}
+          {/* Each button owns a 40pt square and NOTHING claims space outside it. These
+              two used to sit 14pt apart with 10pt of hitSlop on every side, so their
+              touch areas OVERLAPPED by 6pt in the middle — and the overlap belonged to
+              whichever came last in the tree, so aiming at the right half of "all panes"
+              opened Settings instead. A gap you can see is not a gap you can hit. */}
           <TouchableOpacity
             testID={TestIds.radar.panes}
             accessibilityLabel={lang === 'zh' ? '所有 pane' : 'All panes'}
             onPress={() => navigation.navigate('Panes')}
-            hitSlop={hit}
-            style={styles.panesBtn}>
+            style={styles.headBtn}>
             <PanesIcon size={19} color={pal.fg2} />
           </TouchableOpacity>
           <TouchableOpacity
             testID={TestIds.radar.settings}
             accessibilityLabel={TestIds.radar.settings}
             onPress={() => navigation.navigate('Settings')}
-            hitSlop={hit}>
-            <SettingsIcon size={20} color={pal.fg2} style={styles.gear} />
+            style={styles.headBtn}>
+            <SettingsIcon size={20} color={pal.fg2} />
           </TouchableOpacity>
         </View>
       </View>
@@ -247,10 +251,11 @@ function ConnDot({conn, t, lang, awake}: any) {
   // abnormal state adds text (amber reconnecting / red offline / red rejected).
   const isRed = conn === 'offline' || conn === 'unauthorized';
   const color = conn === 'live' ? StatusColor.idle : isRed ? StatusColor.waiting : '#F59E0B';
-  const label =
-    conn === 'live' ? '' :
-    conn === 'unauthorized' ? (lang === 'zh' ? '访问被拒' : 'rejected') :
-    conn === 'offline' ? t('offline') : t('reconnecting');
+  // The WORD appears only for a state nothing else announces. offline and unauthorized
+  // each already own a full-width banner directly above this row — saying it twice cost
+  // the header's width, squeezing the Mac's name to "ccy MBP2024 M4…" and crowding the
+  // buttons beside it. Reconnecting has no banner, so it keeps its word.
+  const label = conn === 'reconnecting' ? t('reconnecting') : '';
   // A meaningful VoiceOver label for the status dot (the coloured dot alone is
   // invisible to screen readers).
   const a11y =
@@ -316,8 +321,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerRight: {flexDirection: 'row', alignItems: 'center'},
-  panesBtn: {marginLeft: 14},
-  gear: {marginLeft: 14},
+  // 40pt square, centred icon, 4pt apart: a finger-sized target that cannot overlap its
+  // neighbour. (iOS asks for 44; 40 is what the header's height allows, and the two no
+  // longer fight each other for the space between them.)
+  headBtn: {width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginLeft: 4},
   conn: {flexDirection: 'row', alignItems: 'center'},
   connDot: {width: 7, height: 7, borderRadius: 3.5, marginRight: 5},
   // A ring OUTSIDE the dot: same colour, so it reads as the same indicator in a

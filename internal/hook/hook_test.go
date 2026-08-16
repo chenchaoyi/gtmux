@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -144,5 +145,56 @@ func TestNativeStateFor(t *testing.T) {
 		if st != c.wantSt || rm != c.wantRm {
 			t.Errorf("nativeStateFor(%q) = (%q,%v), want (%q,%v)", c.event, st, rm, c.wantSt, c.wantRm)
 		}
+	}
+}
+
+// A background row's label is what tells the reader WHAT is running. It used to be the
+// command verbatim, and a marker file keeps one line — so a script-shaped command was
+// labelled by its first line. Seen on a real row: `prev=""`, the opening assignment of a
+// polling loop, sitting where the work should be named.
+func TestBackgroundLabelSkipsThePreamble(t *testing.T) {
+	for _, tc := range []struct{ name, cmd, want string }{
+		{"the real one", "prev=\"\"\nwhile true; do gh pr checks 803; sleep 30; done",
+			"while true; do gh pr checks 803; sleep 30; done"},
+		{"shell options", "set -e\nnpm run build", "npm run build"},
+		{"export", "export PATH=/x\nmake check", "make check"},
+		{"comment", "# poll CI\ngh run watch", "gh run watch"},
+		{"single line is untouched", "npm test", "npm test"},
+		// An env PREFIX is part of the command, not preamble — dropping it would
+		// misreport what is running.
+		{"env prefix stays", "FOO=1 npm test", "FOO=1 npm test"},
+		// Nothing but preamble: say it rather than going blank.
+		{"all preamble", "A=1\nB=2", "A=1 B=2"},
+	} {
+		if got := firstMeaningfulCommand(tc.cmd); got != tc.want {
+			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
+// Nothing in the MIDDLE is dropped: a label that silently omits part of a command is
+// worse than a long one, and the caller truncates.
+func TestBackgroundLabelKeepsTheWholeCommand(t *testing.T) {
+	got := firstMeaningfulCommand("set -e\nmake build\nmake check")
+	if got != "make build make check" {
+		t.Errorf("got %q — later lines must survive", got)
+	}
+}
+
+// The WIRING, not just the helper: summarizeBackground must run a command through the
+// preamble skip. A pure-function test passes whether or not anything calls it — this one
+// fails if summarizeBackground goes back to taking the command verbatim.
+func TestSummarizeBackgroundUsesTheFirstRealCommand(t *testing.T) {
+	n, label := summarizeBackground([]backgroundTask{
+		{Type: "bash", Status: "running", Command: "prev=\"\"\nwhile true; do gh pr checks 803; done"},
+	})
+	if n != 1 {
+		t.Fatalf("count = %d, want 1", n)
+	}
+	if strings.HasPrefix(label, "prev=") {
+		t.Errorf("label = %q — the row would say nothing about what is running", label)
+	}
+	if !strings.Contains(label, "gh pr checks") {
+		t.Errorf("label = %q, want the actual command", label)
 	}
 }
