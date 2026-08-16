@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change supervisor-mvp. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Launchable supervisor session
 
 The system SHALL provide `gtmux hq` (中控): it creates — or focuses, when one
@@ -1041,18 +1043,20 @@ The seeded playbook SHALL teach HQ, on a gtmux-raised `distill` trigger — deli
 STANDING-priority wake line (`» gtmux·distill …`) and recorded as a
 `[CONTROL gtmux:distill]` entry in the session-event stream — to run a retrospective
 knowledge-distillation pass: read the fleet's event/outcome delta since the last distill,
-drain the pending-distill spool, fold durable cross-cutting facts into the right
-knowledge-base topic file (preferring to UPDATE existing entries over appending
-duplicates), and PRUNE stale or dead entries and merge duplicates — using only its
-existing write-own-notes authority. The ritual SHALL be distinct from `self-check`
-(own-artifact health housekeeping) and `tick` (the user-facing summary brief). HQ SHALL
-default to SILENT distillation, printing a one-line brief ONLY when it made a real
-curation; a charter-level lesson SHALL still be flagged for a seed/spec update rather than
-only noted locally; and the never-store-secrets rule SHALL continue to apply. Because the
-trigger is also a stream record, the playbook SHALL teach that a distill missed on the
-wake channel is recoverable by PULL (`gtmux events --since-seq`) rather than lost. The
-shipped playbook version SHALL be bumped so existing HQ homes adopt the ritual on their
-next managed-playbook upgrade.
+drain the pending-distill spool CANDIDATE BY CANDIDATE (`gtmux knowledge add --capture
+<key>` to accept one with its provenance, `gtmux knowledge dismiss --capture <key> --why`
+to reject one with a trace), fold durable cross-cutting facts into the right topic
+through the knowledge verbs (`add` for a new lesson, `supersede` for one that replaces an
+existing entry — the mechanical form of update-over-append), PRUNE stale or dead entries
+with `retire --why`, and migrate any legacy-file lesson the pass touches into the ledger.
+The ritual SHALL be distinct from `self-check` (own-artifact health housekeeping) and
+`tick` (the user-facing summary brief). HQ SHALL default to SILENT distillation, printing
+a one-line brief ONLY when it made a real curation; a charter-level lesson SHALL still be
+flagged for a seed/spec update rather than only noted locally; and the
+never-store-secrets rule SHALL continue to apply. Because the trigger is also a stream
+record, the playbook SHALL teach that a distill missed on the wake channel is recoverable
+by PULL (`gtmux events --since-seq`) rather than lost. The shipped playbook version SHALL
+be bumped so existing HQ homes adopt the ritual on their next managed-playbook upgrade.
 
 #### Scenario: Silent when nothing durable accrued
 
@@ -1063,15 +1067,15 @@ next managed-playbook upgrade.
 #### Scenario: A real distillation is briefed in one line
 
 - **WHEN** a `distill` trigger fires and HQ folds a recurring cross-session fact into a
-  topic file and prunes a dead entry
+  topic through the knowledge verbs and retires a dead entry
 - **THEN** HQ prints a single one-line brief of what it curated
 
 #### Scenario: The distill delta is not a duplicate of moment-capture
 
 - **WHEN** a durable fact was already captured in the knowledge base the moment it was
   learned
-- **THEN** the distill pass updates that entry in place rather than appending a second
-  copy, because it works the delta since the watermark and consolidates rather than
+- **THEN** the distill pass SUPERSEDES that entry rather than adding a second copy,
+  because it works the delta since the watermark and consolidates rather than
   re-summarizes
 
 #### Scenario: Secrets are never distilled into the base
@@ -1155,26 +1159,26 @@ rather than an out-of-loop good intention. A capture VERDICT SHALL be MANDATORY 
 exactly three closure classes — `correction` (the commander corrects HQ), `crash` /
 `StopFailure`, and `recurrence` (any footgun or fact hit a SECOND time) — because each is
 a durable, cross-cutting lesson almost by definition. On a forced class the turn SHALL
-emit exactly one verdict: either `⟣ 📓 captured: <topic-file>` (naming the knowledge-base
-topic file it wrote/updated: accounts | workflows | best-practices | pitfalls |
-corrections), OR an explicit "nothing durable" clause stating why the closure is not a
-reusable cross-cutting fact. For `done` and `resolved` closures capture SHALL be
-OPPORTUNISTIC with a SILENT default — HQ captures and marks a genuinely reusable fact if
-one surfaced, but SHALL NOT be forced to emit a verdict, because forcing on those
-high-frequency closures would degrade into ritual noise and pressure filler entries. The
-capturable criterion SHALL be `reusable ∧ cross-cutting (across sessions / repos / tasks)
-∧ not unique to this conversation`; pure this-task state (who is doing what, a specific PR
-number) is board material, NOT a KB entry. Routine intermediate steps and non-closure
-wakes (`tick`, `new-session`, `waiting`) SHALL NOT force a verdict. The shipped playbook
-version SHALL be bumped so existing homes adopt the capture-verify on their next
-managed-playbook upgrade.
+emit exactly one verdict: either `⟣ 📓 captured: <topic>` (naming the knowledge topic
+whose ledger it wrote through `gtmux knowledge add`/`supersede`: accounts | workflows |
+best-practices | pitfalls | corrections), OR an explicit "nothing durable" clause stating
+why the closure is not a reusable cross-cutting fact. For `done` and `resolved` closures
+capture SHALL be OPPORTUNISTIC with a SILENT default — HQ captures and marks a genuinely
+reusable fact if one surfaced, but SHALL NOT be forced to emit a verdict, because forcing
+on those high-frequency closures would degrade into ritual noise and pressure filler
+entries. The capturable criterion SHALL be `reusable ∧ cross-cutting (across sessions /
+repos / tasks) ∧ not unique to this conversation`; pure this-task state (who is doing
+what, a specific PR number) is board material, NOT a KB entry. Routine intermediate steps
+and non-closure wakes (`tick`, `new-session`, `waiting`) SHALL NOT force a verdict. The
+shipped playbook version SHALL be bumped so existing homes adopt the capture-verify on
+their next managed-playbook upgrade.
 
 #### Scenario: A commander correction forces a capture verdict
 
 - **WHEN** HQ processes a `correction` closure
-- **THEN** its turn emits either a `⟣ 📓 captured: <topic-file>` line naming the KB topic
-  it wrote (typically `corrections`), or an explicit one-clause "nothing durable"
-  judgment — it cannot close the correction without one
+- **THEN** its turn emits either a `⟣ 📓 captured: <topic>` line naming the KB topic
+  whose ledger it wrote (typically `corrections`), or an explicit one-clause "nothing
+  durable" judgment — it cannot close the correction without one
 
 #### Scenario: A recurrence forces a capture verdict
 
@@ -1192,7 +1196,7 @@ managed-playbook upgrade.
 
 - **WHEN** HQ records a lesson only to the situation board
 - **THEN** the playbook does not accept that as a capture verdict — the verdict must name
-  a KB topic file (`⟣ 📓 captured: …`)
+  a KB topic written through the knowledge verbs (`⟣ 📓 captured: …`)
 
 ### Requirement: HQ consults the knowledge base as a hard precondition before advising or dispatching
 
@@ -1245,11 +1249,14 @@ KEY (topic + a lesson slug, or an explicit key), and AUTO-COLLECTED event contex
 pending-distill spool under the HQ home
 (`~/.config/gtmux/hq/knowledge/.pending-distill.jsonl` or the state-dir equivalent).
 `gtmux capture --list` SHALL render the pending queue. A missing or invalid `@topic` SHALL
-be an error. The distillation pass SHALL drain the spool MERGING each candidate by (topic,
-dedup key) into an existing KB entry or an earlier same-key candidate rather than
-manufacturing a near-duplicate, then truncate the spool. Being a public command it SHALL
-be documented per the command-drift rule: the CLAUDE.md command list, a `docs/cli.md`
-section, and `gtmux --help` (en+zh) — NOT the `check-design.sh` HIDDEN allowlist.
+be an error. The spool SHALL drain candidate by candidate, never by blind truncation:
+`gtmux knowledge add --capture <key>` consumes EVERY pending line sharing that key (the
+merge of same-key candidates) into one entry that inherits their provenance, and
+`gtmux knowledge dismiss --capture <key> --why` removes them with a journal trace — so an
+accepted and a rejected candidate stop vanishing identically. Being a public command it
+SHALL be documented per the command-drift rule: the CLAUDE.md command list, a
+`docs/cli.md` section, and `gtmux --help` (en+zh) — NOT the `check-design.sh` HIDDEN
+allowlist.
 
 #### Scenario: A candidate is captured in one line with a dedup key
 
@@ -1265,7 +1272,9 @@ section, and `gtmux --help` (en+zh) — NOT the `check-design.sh` HIDDEN allowli
 #### Scenario: Distill merges same-key candidates rather than duplicating
 
 - **WHEN** two candidates share a (topic, dedup key) and a distill pass drains the spool
-- **THEN** they are merged into one KB entry (no near-duplicate) and the spool is truncated
+- **THEN** one `gtmux knowledge add --capture <key>` consumes both into ONE entry (no
+  near-duplicate), the entry's provenance carries both sequences, and the remaining
+  unrelated candidates stay pending
 
 ### Requirement: HQ echoes matching knowledge at dispatch time
 
