@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -245,6 +246,15 @@ func cmdReap(args []string) int {
 	}
 
 	res := planAndReap(t, abandon, keepBranch, liveReapOps())
+	if res.Reaped {
+		// Journaled BEFORE the ledger entry goes: the task file is about to be the
+		// only other record of this dispatch, and it is deleted on the next line.
+		id := t.ID
+		if id == "" {
+			id = "(bare pane)"
+		}
+		events.AuditReap(id, t.Pane, strings.Join(res.Actions, "; "), time.Now().Unix())
+	}
 	if res.Reaped && t.ID != "" { // a bare-pane reap has no ledger entry to clear
 		dispatch.RemoveTask(t.ID)
 	}

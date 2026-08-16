@@ -189,9 +189,12 @@ func unreadBlinks(recs []events.Record) []bool {
 // UserPromptSubmit, and HQ's reply lands as a Stop. Counting those would make the sensor
 // self-feeding — knock → two new events → debt → knock — a perpetual-motion machine that
 // would knock forever on a fleet where nothing whatsoever happened. It also excludes
-// pane-less blinks (see unreadBlinks). Everything else counts, including gtmux's own
-// control records: a maintenance trigger IS something HQ owes a pass on, and it is rare
-// enough (≈1/day) to never be the loop's fuel.
+// pane-less blinks (see unreadBlinks) and gtmux's own AUDIT records (`gtmux:audit:*` —
+// the trail of acts the supervision already performed; counting a delivered wake's own
+// audit record would make the trail the loop's fuel, one fresh debt per knock).
+// Everything else counts, including gtmux's NON-audit control records: a maintenance
+// trigger IS something HQ owes a pass on, and it is rare enough (≈1/day) to never be
+// the loop's fuel.
 func unreadScan(watermark int64, hqPane string) unreadTally {
 	recs, _ := events.ReadSince(watermark)
 	blink := unreadBlinks(recs)
@@ -206,6 +209,9 @@ func unreadScan(watermark int64, hqPane string) unreadTally {
 		}
 		if blink[i] {
 			continue
+		}
+		if events.IsAudit(r) {
+			continue // gtmux's own trail — an act already performed, not a read HQ owes
 		}
 		t.N++
 		by[unreadSourceOf(r)]++

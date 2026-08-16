@@ -53,6 +53,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -390,16 +391,33 @@ func enqueueKeyed(x io, key, msg string, dueNano int64) {
 // evictOverflow keeps the queue under maxQueueEntries by dropping the LOWEST-priority
 // OLDEST entry (never a claim in flight). Deliberate priority inversion: a standing
 // resource warning re-fires on the next tick, a goal-changed never does — and the
-// oldest standing warning is also the most stale reading of the two.
+// oldest standing warning is also the most stale reading of the two. The eviction is
+// journaled: a dropped line HQ never saw must at least be findable afterwards.
 func evictOverflow() {
 	names := queuedNames(func(string) bool { return true })
 	for len(names) >= maxQueueEntries {
 		i := len(names) - 1
 		for lowest := prioOf(names[i]); i > 0 && prioOf(names[i-1]) == lowest; i-- {
 		}
-		_ = os.Remove(filepath.Join(queueDir(), names[i]))
+		victim := filepath.Join(queueDir(), names[i])
+		auditDroppedFile(events.DropEvicted, victim)
+		_ = os.Remove(victim)
 		names = append(names[:i], names[i+1:]...)
 	}
+}
+
+// auditDroppedFile journals a queue entry that is about to be removed undelivered.
+// Best-effort like the queue itself: an unreadable file still journals the drop, with
+// the entry name standing in for the payload it could not read.
+func auditDroppedFile(reason, path string) {
+	line := ""
+	if b, err := os.ReadFile(path); err == nil {
+		line = strings.TrimSpace(string(b))
+	}
+	if line == "" {
+		line = "(unreadable: " + filepath.Base(path) + ")"
+	}
+	events.AuditWakeDropped(reason, line, time.Now().Unix())
 }
 
 // queuedNames returns the `.txt` entry names passing keep, ordered for delivery:
@@ -548,6 +566,10 @@ func drainInto(x io, pane string) {
 	since := x.nowNano()/int64(time.Second) - 1 // receipt window opens just before the paste
 	switch deliverPayload(x, pane, payload, id, since) {
 	case delivered:
+		// One audit record per confirmed BATCH (never per entry): the journal is
+		// where "what did gtmux tell HQ at 14:02" becomes answerable — the hook's
+		// own receipt records only the six-hex id.
+		events.AuditWakeDelivered(pane, payload, time.Now().Unix())
 		for _, c := range claimed {
 			_ = os.Remove(c)
 		}
@@ -617,6 +639,9 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 		// back. Classes with no probe registered are untouched.
 		keep, replaced := revalidate(s)
 		if !keep {
+			// The control trace standing-wake-backoff §2.1 promised: a line whose
+			// premise died is finished business, and the journal says which line.
+			events.AuditWakeDropped(events.DropSuperseded, s, time.Now().Unix())
 			dropped = append(dropped, dst)
 			continue
 		}
@@ -636,6 +661,9 @@ func requeueUnacked(claimed []string) {
 		if n := attemptsOf(orig) + 1; n < maxAckAttempts {
 			_ = os.Rename(c, filepath.Join(queueDir(), withAttempt(orig, n)))
 		} else {
+			// The bounded, ANNOUNCED loss — announced in the journal too, so the
+			// dropped line itself (not just the degradation counter) survives.
+			auditDroppedFile(events.DropUnconfirmed, c)
 			_ = os.Remove(c)
 		}
 	}
@@ -756,8 +784,10 @@ func stuckClaims() []string {
 }
 
 // finishRepair clears a completed repair: the delivery is confirmed, so the claims
-// and the repair record go, and the channel is healthy again.
-func finishRepair() {
+// and the repair record go, and the channel is healthy again. A repair-confirmed
+// delivery is a delivery — it is journaled exactly like the drain path's.
+func finishRepair(pane string, m repairState) {
+	events.AuditWakeDelivered(pane, m.Payload, time.Now().Unix())
 	for _, c := range stuckClaims() {
 		_ = os.Remove(c)
 	}
@@ -794,7 +824,7 @@ func repairStranded(x io, pane string) {
 		}
 		x.sleep()
 		if ackConfirmed(x, pane, m.ID, m.Since) {
-			finishRepair()
+			finishRepair(pane, m)
 			return
 		}
 		if m.Attempts++; m.Attempts < enterRepairMaxAttempts {
@@ -805,7 +835,7 @@ func repairStranded(x io, pane string) {
 	} else if ackConfirmed(x, pane, m.ID, m.Since) {
 		// The batch left the box and is confirmed (the user pressed Enter for us, or
 		// an earlier repair's ack read raced the TUI's redraw): done.
-		finishRepair()
+		finishRepair(pane, m)
 		return
 	}
 	requeueUnacked(stuckClaims())

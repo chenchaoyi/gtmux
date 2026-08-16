@@ -9,6 +9,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -137,6 +138,7 @@ func cmdSend(args []string) int {
 				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 				return 1
 			}
+			events.AuditSend(paneID, statePlainSent, text, time.Now().Unix())
 			if asJSON {
 				b, _ := json.Marshal(sendJSON{Delivered: true, State: statePlainSent})
 				fmt.Println(string(b))
@@ -145,6 +147,11 @@ func cmdSend(args []string) int {
 		}
 		tune := dispatch.LoadTuning()
 		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
+		// The sender's side of the story (hq-action-journal): the target pane's hook
+		// event carries the prompt's head but cannot say who drove it, and the
+		// interlock keeps only an overwritten hash. Refusals are journaled too — the
+		// attempt is part of the audit.
+		events.AuditSend(paneID, string(res.State), text, time.Now().Unix())
 		if res.Delivered {
 			// HQ (or whoever drives `gtmux send`) awaits this pane's completion
 			// (done-wake-keyed-on-awaited): mark it so its next `done` wakes HQ even when
@@ -208,6 +215,7 @@ func cmdSend(args []string) int {
 				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 				return 1
 			}
+			events.AuditSend(id, statePlainSent, text, time.Now().Unix())
 			return 0
 		}
 		// The unverified path still protects a draft — skipping VERIFICATION was never a
@@ -218,10 +226,12 @@ func cmdSend(args []string) int {
 		popts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
 		popts.PasteRetries = 2
 		if _, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), popts, text); refused == dispatch.StateRefusedDraft {
+			events.AuditSend(id, string(dispatch.StateRefusedDraft), text, time.Now().Unix())
 			i18n.Sae("gtmux send: refused — that pane has UNSENT text in its input box (use --force)",
 				"gtmux send: 已拒发 —— 该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
 			return 1
 		}
+		events.AuditSend(id, statePlainSent, text, time.Now().Unix())
 		return 0
 	}
 	if text != "" {
@@ -245,6 +255,9 @@ func cmdSend(args []string) int {
 			i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 			return 1
 		}
+	}
+	if text != "" {
+		events.AuditSend(paneID(pane), "staged", text, time.Now().Unix())
 	}
 	return 0
 }

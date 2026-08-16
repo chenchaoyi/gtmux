@@ -62,8 +62,11 @@ over one Go core (gtmux-core is the single data source):
   skip-ahead read does not — and a read from a SUBDIRECTORY of the home (the measured
   `cd`-drift after writing `notes/`) now WARNS on stderr instead of silently not counting
   (change `hq-unread-noise`). Excluded from the count (never from the stream): HQ's own
-  pane records (else the knock feeds itself) and a pane-less lifecycle BLINK — a
-  `SessionStart` whose `SessionEnd` pairs within 10s. **The blink rule keys on that
+  pane records (else the knock feeds itself), a pane-less lifecycle BLINK — a
+  `SessionStart` whose `SessionEnd` pairs within 10s — and gtmux's own `gtmux:audit:*`
+  trail (change hq-action-journal: wake delivered/dropped, send, reap, rotate,
+  hq-session records — acts the supervision performed, journaled for audit, never debt;
+  non-audit `gtmux:*` triggers still count). **The blink rule keys on that
   PAIRING, never on the empty pane alone**: native (non-tmux) agents' turns and gtmux's own
   `gtmux:*` triggers are pane-less too, and since every CLASS wake is gated on `pane != ""`,
   `unread` is their only channel. The knock line names its composition
@@ -90,7 +93,13 @@ over one Go core (gtmux-core is the single data source):
   `HQ session health` row shows the figures.
   **Wake DELIVERY is acked** (change `hq-wake-reliability`, `internal/hqnudge`): paste
   + Enter as separate steps, and a claim (`.txt` → `.sending` rename) is deleted ONLY
-  on confirmation. The ack is three layers (agent-drivers P2): the DRIVER RECEIPT
+  on confirmation. Every terminal outcome is journaled (hq-action-journal): a confirmed
+  batch as `gtmux:audit:wake-delivered` (id + full payload, once per batch), every drop
+  as `gtmux:audit:wake-dropped` with its reason (evicted / unconfirmed / superseded);
+  `gtmux send`/`reap`/`--rotate` and the sensor-observed HQ session chain journal
+  likewise, and the two spool-only degradation emitters (`wake-degraded`,
+  `feed-degraded` + the daemon's `reconcile`) now append to the JOURNAL — #647's fix,
+  finished. The ack is three layers (agent-drivers P2): the DRIVER RECEIPT
   first — the HQ session's own `UserPromptSubmit` carrying the batch `#id` (the hook
   records a wake batch's id as its event Summary; `hqwake.BatchID`) — then the screen
   read (id in history, not draft); an id still in the DRAFT is the precise

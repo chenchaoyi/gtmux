@@ -442,3 +442,51 @@ func TestConsumptionStatus(t *testing.T) {
 		t.Errorf("%d events behind: state = %v, want slipped", consumptionLagCount+3, got.State)
 	}
 }
+
+// TestUnreadExcludesAuditTrailButCountsTriggers is hq-action-journal's exclusion rule,
+// tested in BOTH directions. Direction 1: gtmux's own `gtmux:audit:*` records are trail,
+// not debt — without the exclusion, every delivered wake would mint fresh debt and the
+// knock would feed itself. Direction 2: a NON-audit control record (a maintenance
+// trigger) must keep counting — the unread knock is the only channel it has (#647).
+func TestUnreadExcludesAuditTrailButCountsTriggers(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(20_000_000)
+
+	// Bootstrap the watermark at the stream head.
+	events.Append(events.Record{Ts: now - 100, Event: "Stop", State: "idle", Pane: "%1"})
+	unreadSensorFor(testHQPane, now)
+	wm := hqwake.Consumed()
+
+	// Direction 1: only audit records past the watermark → zero debt, no knock, and the
+	// watermark steps over them exactly like pure echo (so the scan is not repeated all day).
+	events.AuditWakeDelivered(testHQPane, "» gtmux·done  %21 │ finished · #a1b2c3", now)
+	events.AuditSend("%28", "landed", "check the failing test", now)
+	unreadSensorFor(testHQPane, now+1+hqwake.Defaults().UnreadDebounceSec)
+	unreadSensorFor(testHQPane, now+2+2*hqwake.Defaults().UnreadDebounceSec)
+	if k := takeUnreadKnocks(t); len(k) != 0 {
+		t.Fatalf("audit records became debt — the trail is feeding the knock: %v", k)
+	}
+	if got := hqwake.Consumed(); got != events.CurrentSeq() {
+		t.Fatalf("watermark = %d, want stepped over the pure-trail scan to %d", got, events.CurrentSeq())
+	}
+	if got := hqwake.Consumed(); got <= wm {
+		t.Fatalf("watermark did not move past the audit records (%d <= %d)", got, wm)
+	}
+
+	// Direction 2: a maintenance trigger (control, NOT audit) still counts and knocks.
+	wm = hqwake.Consumed()
+	events.Append(events.Record{Ts: now + 300, Event: "gtmux:distill",
+		Summary: "distill due", Severity: events.SevNotable})
+	unreadSensorFor(testHQPane, now+300)
+	unreadSensorFor(testHQPane, now+301+hqwake.Defaults().UnreadDebounceSec)
+	knocks := takeUnreadKnocks(t)
+	if len(knocks) != 1 {
+		t.Fatalf("a maintenance trigger must still knock as unread, got %v", knocks)
+	}
+	if !strings.Contains(knocks[0], "control") {
+		t.Errorf("the knock should attribute the debt to `control`, got %q", knocks[0])
+	}
+	if got := hqwake.Consumed(); got != wm {
+		t.Errorf("knocking about the trigger moved the watermark %d → %d", wm, got)
+	}
+}

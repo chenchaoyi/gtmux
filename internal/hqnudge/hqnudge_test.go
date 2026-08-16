@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/driver"
+	"github.com/chenchaoyi/gtmux/internal/events"
 )
 
 // boxWith renders a minimal HQ TUI capture's input box holding draft.
@@ -900,5 +901,147 @@ func TestDeliver_ReceiptNoEvidence_ScreenStillJudges(t *testing.T) {
 	if len(f.sent) != 1 || queuedCount(t) != 0 || readFailCount() != 0 {
 		t.Fatalf("the screen ack still confirms a healthy delivery; sent=%v queued=%d fails=%d",
 			f.sent, queuedCount(t), readFailCount())
+	}
+}
+
+// ── the journal half of "never silently dropped" (hq-action-journal) ─────────
+
+func auditRecords(t *testing.T, event string) []events.Record {
+	t.Helper()
+	recs, _ := events.ReadSince(0)
+	var out []events.Record
+	for _, r := range recs {
+		if r.Event == event {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// A confirmed batch leaves ONE audit record carrying the id and the full payload —
+// per batch, never per coalesced entry — and an unconfirmed path leaves none.
+func TestDeliveredBatchJournalsPayloadOncePerBatch(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{}
+	x := f.io()
+	// Three entries queued behind a draft, then one drain delivers them coalesced.
+	f.draft = "user is typing"
+	deliver(x, "%hq", "» ◆ gtmux·waiting  %14 │ permission")
+	deliver(x, "%hq", "» ▸ gtmux·done  %15")
+	deliver(x, "%hq", "» ▸ gtmux·done  %16")
+	if got := auditRecords(t, events.AuditEventWakeDelivered); len(got) != 0 {
+		t.Fatalf("nothing delivered yet, but %d records journaled", len(got))
+	}
+	f.draft = ""
+	drain(x, "%hq")
+	got := auditRecords(t, events.AuditEventWakeDelivered)
+	if len(got) != 1 {
+		t.Fatalf("one confirmed batch must journal exactly once, got %d", len(got))
+	}
+	for _, part := range []string{"%14", "%15", "%16", "#"} {
+		if !strings.Contains(got[0].Summary, part) {
+			t.Errorf("the record must carry the full coalesced payload, missing %q in %q", part, got[0].Summary)
+		}
+	}
+	if got[0].Pane != "%hq" {
+		t.Errorf("the record names the pane it landed in, got %q", got[0].Pane)
+	}
+}
+
+// The ack-budget drop now announces itself in the stream, not only through the
+// degradation counter — and the retries before it journal nothing.
+func TestUnackableDropIsJournaled(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	for i := 1; i < maxAckAttempts+2; i++ {
+		drain(f.io(), "%hq")
+	}
+	if got := auditRecords(t, events.AuditEventWakeDelivered); len(got) != 0 {
+		t.Fatalf("an unconfirmed delivery must not journal as delivered, got %d", len(got))
+	}
+	drops := auditRecords(t, events.AuditEventWakeDropped)
+	if len(drops) != 1 {
+		t.Fatalf("the final drop must journal exactly once, got %d", len(drops))
+	}
+	if !strings.HasPrefix(drops[0].Summary, events.DropUnconfirmed+": ") ||
+		!strings.Contains(drops[0].Summary, "%14") {
+		t.Errorf("drop record = %q, want reason %q and the dropped line", drops[0].Summary, events.DropUnconfirmed)
+	}
+}
+
+// A queue-cap eviction journals the victim.
+func TestEvictionIsJournaled(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{inMode: true} // nothing delivers; everything queues
+	x := f.io()
+	for i := 0; i < maxQueueEntries; i++ {
+		deliver(x, "%hq", fmt.Sprintf("» · gtmux·tick  brief %d", i))
+	}
+	deliver(x, "%hq", "» ◆ gtmux·goal-changed  %9")
+	drops := auditRecords(t, events.AuditEventWakeDropped)
+	if len(drops) != 1 {
+		t.Fatalf("one eviction must journal one drop, got %d", len(drops))
+	}
+	if !strings.HasPrefix(drops[0].Summary, events.DropEvicted+": ") ||
+		!strings.Contains(drops[0].Summary, "gtmux·tick") {
+		t.Errorf("eviction record = %q, want the evicted standing line", drops[0].Summary)
+	}
+}
+
+// A revalidation drop journals the superseded line (the standing-wake-backoff §2.1
+// control trace); a re-render journals nothing — it is not a terminal outcome.
+func TestSupersededDropIsJournaled(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	saved := revalidators
+	t.Cleanup(func() { revalidators = saved })
+	revalidators = []Revalidator{func(line string) (bool, string) {
+		if strings.Contains(line, "resource·warn") {
+			return false, "" // premise gone
+		}
+		if strings.Contains(line, "usage·warn") {
+			return true, strings.Replace(line, "93%", "41%", 1) // re-render
+		}
+		return true, line
+	}}
+
+	f := &fake{}
+	x := f.io()
+	deliver(x, "%hq", "» ▸ gtmux·resource·warn  disk low")
+	drops := auditRecords(t, events.AuditEventWakeDropped)
+	if len(drops) != 1 || !strings.HasPrefix(drops[0].Summary, events.DropSuperseded+": ") {
+		t.Fatalf("a premise-gone drop must journal with reason superseded, got %v", drops)
+	}
+	if got := auditRecords(t, events.AuditEventWakeDelivered); len(got) != 0 {
+		t.Fatalf("nothing was delivered, but %d delivered records exist", len(got))
+	}
+
+	deliver(x, "%hq", "» ▸ gtmux·usage·warn  ctx 93%")
+	if drops := auditRecords(t, events.AuditEventWakeDropped); len(drops) != 1 {
+		t.Fatalf("a re-render is not a drop; got %d drop records", len(drops))
+	}
+	delivered := auditRecords(t, events.AuditEventWakeDelivered)
+	if len(delivered) != 1 || !strings.Contains(delivered[0].Summary, "41%") {
+		t.Fatalf("the re-rendered line is what was delivered and journaled, got %v", delivered)
+	}
+}
+
+// The Enter-only repair's confirmation is a delivery, journaled like the drain path's.
+func TestRepairConfirmedDeliveryIsJournaled(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	x := f.io()
+	deliver(x, "%hq", "» ◆ gtmux·waiting  %14") // paste lands, Enter swallowed → parked
+	if n := stuckCount(t); n == 0 {
+		t.Fatal("setup: the batch should be parked for the Enter repair")
+	}
+	if got := auditRecords(t, events.AuditEventWakeDelivered); len(got) != 0 {
+		t.Fatalf("a stranded batch is not delivered, got %d records", len(got))
+	}
+	f.swallow = false
+	drain(x, "%hq") // the repair sends Enter; the draft submits; the ack confirms
+	got := auditRecords(t, events.AuditEventWakeDelivered)
+	if len(got) != 1 || !strings.Contains(got[0].Summary, "%14") {
+		t.Fatalf("a repair-confirmed delivery must journal once with the payload, got %v", got)
 	}
 }
