@@ -106,3 +106,23 @@ final class GuestLinkUsageTests: XCTestCase {
         XCTAssertTrue(s.contains("last used"), s)
     }
 }
+
+/// A refused grant must be visible. The Mac has always turned away a grant whose pane ids
+/// were made against a tmux server that has since restarted (ids are reassigned from
+/// scratch, so a stored "%17" silently means a different pane) — but nothing said so, and
+/// the owner's screens showed the scope as if it still worked.
+final class ShareStaleTests: XCTestCase {
+    private func parse(_ json: String) -> Bool? {
+        ShareStore.parseStatus(Data(json.utf8))?.stale
+    }
+
+    func testStaleIsRead() {
+        XCTAssertEqual(parse(#"{"enabled":true,"panes":[],"view_panes":[],"guests":[],"stale":true}"#), true)
+    }
+
+    /// Absent means NOT stale. An older CLI omits the field, and "we don't know" must not
+    /// read as "your links are being refused".
+    func testAbsentMeansNotStale() {
+        XCTAssertEqual(parse(#"{"enabled":true,"panes":[],"view_panes":[],"guests":[]}"#), false)
+    }
+}

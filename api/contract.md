@@ -615,6 +615,11 @@ instead. A tunnel that does not set it leaves every remote device reading `127.0
 path and flushed to disk by the serve tick, so they survive a restart; both are absent
 until the device's first authenticated request after this server version.
 
+`GET /api/share/config` additionally returns `stale` (omitted when false): the pane grants
+were made against a DIFFERENT tmux server, so every request through a share link is being
+refused until the owner re-grants. The gates have always enforced it; the field exists so
+the owner's surfaces can SAY so rather than showing a scope that no longer applies.
+
 ### `POST /api/devices/revoke` — revoke a device's token now
 
 Also unregisters any push token bound to that device (`deviceId`), so a revoked

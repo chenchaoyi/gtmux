@@ -43,6 +43,13 @@ export interface ShareConfig {
   enabled: boolean;
   panes: string[]; // global INPUT allowlist
   view_panes: string[]; // global VIEW allowlist
+  /**
+   * The grants were made against a DIFFERENT tmux server, so every request through a
+   * share link is being REFUSED until the owner re-grants. The server has always
+   * enforced this; it just never told the owner, so a link looked fine while nothing
+   * worked through it.
+   */
+  stale?: boolean;
 }
 
 // GuestLink is a `scope:"guest"` roster entry (a share link) with its per-link scope.
@@ -525,6 +532,7 @@ export class GtmuxClient {
       enabled: !!j?.enabled,
       panes: Array.isArray(j?.panes) ? j.panes : [],
       view_panes: Array.isArray(j?.view_panes) ? j.view_panes : [],
+      stale: !!j?.stale,
     };
   }
 

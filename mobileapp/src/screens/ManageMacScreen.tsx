@@ -20,6 +20,7 @@ import {displayDeviceName} from '../pairing/deviceName';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
 import {SIcon, IconName} from '../ui/SettingsIcons';
 import {ContentColumn} from '../ui/ContentColumn';
+import {StatusColor} from '../ui/theme';
 import {nextLinkScope} from '../state/shareScope';
 
 // The paired-device subtitle: platform (e.g. "iOS 17.5", "Safari · macOS") joined
@@ -64,6 +65,28 @@ export function linkUsage(
   if (g.lastIP) parts.push(g.lastIP);
   if (g.lastSeen) parts.push((zh ? '上次使用 ' : 'last used ') + relSeen(g.lastSeen, zh));
   return parts.join(' · ');
+}
+
+// grantSummary counts what a link can actually reach, not what its record still lists.
+//
+// A grant stores PANE IDS, and a pane can close. The header counted the stored ids while
+// the rows below could only show the live ones, so a link read "sees 9" with six rows to
+// toggle — measured on a real roster: 9 stored, 3 of them (%26 %37 %52) long gone. The
+// dead ones are named in the count rather than dropped silently, because a grant the owner
+// made is worth telling them has expired.
+export function grantSummary(
+  g: {viewPanes: string[]; inputPanes: string[]},
+  live: Set<string>,
+  zh: boolean,
+): string {
+  const v = g.viewPanes.filter(p => live.has(p)).length;
+  const i = g.inputPanes.filter(p => live.has(p)).length;
+  const gone = g.viewPanes.length - v;
+  if (v === 0 && gone === 0) return zh ? '看不到任何 pane' : 'sees nothing';
+  const head = v === 0
+    ? (zh ? '看不到任何 pane' : 'sees nothing')
+    : (zh ? `可见 ${v} · 可输入 ${i}` : `sees ${v} · types ${i}`);
+  return gone > 0 ? head + (zh ? ` · ${gone} 项已失效` : ` · ${gone} gone`) : head;
 }
 
 // deviceIcon picks a leading glyph matching what the device IS, so the roster reads at a
@@ -170,12 +193,7 @@ export function ManageMacScreen({navigation}: any) {
     run(() => client.shareSet(g.id, view, input));
   };
 
-  const scopeSummary = (g: GuestLink) => {
-    const v = g.viewPanes.length;
-    const i = g.inputPanes.length;
-    if (v === 0) return zh ? '看不到任何 pane' : 'sees nothing';
-    return zh ? `可见 ${v} · 可输入 ${i}` : `sees ${v} · types ${i}`;
-  };
+  const scopeSummary = (g: GuestLink) => grantSummary(g, new Set(panes.map(p => p.pane_id)), zh);
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
@@ -225,6 +243,19 @@ export function ManageMacScreen({navigation}: any) {
 
           {/* SHARE LINKS — mint, scope, copy, revoke. */}
           <SettingsGroup title={zh ? '分享链接' : 'Share links'} pal={pal}>
+            {/* A refusal nobody can see reads as a broken app. The server has always
+                turned away a stale grant — the pane ids were made against a tmux that
+                has since restarted, so they no longer mean what was picked — but the
+                owner's screens showed the scope as if it still worked. */}
+            {cfg?.stale && (
+              <View style={[styles.staleBar, {borderBottomColor: pal.divider}]}>
+                <Text style={[styles.staleText, {color: StatusColor.waiting}]}>
+                  {zh
+                    ? 'tmux 重启过，这些授权已失效 —— 链接目前一律被拒。重新勾选一次即可恢复。'
+                    : 'tmux restarted, so these grants no longer apply — links are being refused. Re-pick the panes to restore them.'}
+                </Text>
+              </View>
+            )}
             <SettingsRow
               icon="share"
               label={zh ? '新建链接…' : 'New link…'}
@@ -345,6 +376,8 @@ const styles = StyleSheet.create({
   linkHead: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, minHeight: 52},
   iconWrap: {width: 30, alignItems: 'center', marginRight: 8},
   linkLabel: {fontSize: 16},
+  staleBar: {paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth},
+  staleText: {fontSize: 12, lineHeight: 17},
   linkSub: {fontSize: 12.5, marginTop: 2},
   chev: {fontSize: 20, fontWeight: '300', marginLeft: 8},
   editor: {paddingLeft: 52, paddingRight: 14, paddingBottom: 12},

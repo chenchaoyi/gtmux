@@ -39,3 +39,31 @@ describe('linkUsage', () => {
     expect(s).toContain('last used');
   });
 });
+
+import {grantSummary} from './ManageMacScreen';
+
+// A grant stores PANE IDS, and a pane can close. The header counted the stored ids while
+// the rows below could only show live ones — measured on a real roster: 9 stored, 3 gone,
+// so the link read "sees 9" with six rows to toggle.
+describe('grantSummary', () => {
+  const live = new Set(['%1', '%2', '%3']);
+
+  it('counts what the link can actually reach', () => {
+    expect(grantSummary({viewPanes: ['%1', '%2'], inputPanes: ['%1']}, live, false))
+      .toBe('sees 2 · types 1');
+  });
+
+  it('names the grants that no longer exist instead of quietly inflating the count', () => {
+    const s = grantSummary({viewPanes: ['%1', '%9', '%8'], inputPanes: ['%1']}, live, false);
+    expect(s).toContain('sees 1');
+    expect(s).toContain('2 gone');
+  });
+
+  it('says so when every grant has expired', () => {
+    expect(grantSummary({viewPanes: ['%9'], inputPanes: []}, live, true)).toBe('看不到任何 pane · 1 项已失效');
+  });
+
+  it('reads as before when a link grants nothing at all', () => {
+    expect(grantSummary({viewPanes: [], inputPanes: []}, live, false)).toBe('sees nothing');
+  });
+});
