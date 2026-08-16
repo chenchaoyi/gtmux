@@ -8,7 +8,9 @@ pull-side (events/digest). It replaces per-event receipt forwarding and the
 producer-heartbeat suppression with a single, bounded, zero-token-when-quiet
 arousal mechanism — so HQ reacts in seconds to what matters, and its screen
 stays silent otherwise.
+
 ## Requirements
+
 ### Requirement: Single wake channel with deterministic classes
 
 All gtmux-initiated injections into the HQ pane SHALL flow through one wake
@@ -214,6 +216,13 @@ SHALL NOT re-paste the payload or mint a new identifier. This bounds the
 swallowed-Enter failure to one fast-drain interval instead of blocking the channel
 behind its own stranded paste until the stale-queue degradation fires.
 
+Every terminal outcome SHALL be journaled: a confirmed delivery as
+`gtmux:audit:wake-delivered` (batch id + payload), and every drop — eviction, an
+exhausted ack budget, a revalidation whose premise died — as
+`gtmux:audit:wake-dropped` with its reason. "Never silently dropped" is thereby a
+journal property, not only a queue property: the bounded, ANNOUNCED loss the ack
+budget permits is announced in the stream, not merely by the degradation counter.
+
 #### Scenario: A failed send keeps the nudge
 
 - **WHEN** the paste or the Enter of a wake batch returns an error
@@ -231,8 +240,9 @@ behind its own stranded paste until the stale-queue degradation fires.
 - **WHEN** a batch is pasted and submitted successfully but its delivery is never
   confirmed, drain after drain
 - **THEN** it is re-sent at most 3 times in total (each carrying the same identifier)
-  and then dropped, with the degradation raised — a send that ERRORS instead (nothing
-  reached the pane) keeps retrying without limit, since it risks no duplicate
+  and then dropped, with the degradation raised and a `gtmux:audit:wake-dropped`
+  record written — a send that ERRORS instead (nothing reached the pane) keeps
+  retrying without limit, since it risks no duplicate
 
 #### Scenario: A crashed drainer's batch is reclaimed
 
@@ -284,15 +294,18 @@ recognizable, a loss is not acceptable.
 
 Consecutive unconfirmed deliveries SHALL be counted, and reaching the failure limit
 (3) SHALL raise a CRITICAL `wake-degraded` degradation exactly once per transition into
-the degraded state: a control record at important severity, a best-effort HQ wake line,
-and a desktop notification — the last because the alarm for a broken wake channel MUST
-NOT depend on that channel. A confirmed delivery SHALL reset the counter, and recovery
+the degraded state: a control record at important severity appended to the session
+JOURNAL (so the pull side actually carries it — a record written only to the feed spool
+reaches no reader, the measured #647 failure shape), a best-effort HQ wake line, and a
+desktop notification — the last because the alarm for a broken wake channel MUST NOT
+depend on that channel. A confirmed delivery SHALL reset the counter, and recovery
 SHALL NOT re-alert.
 
 #### Scenario: The wake channel breaks
 
 - **WHEN** three consecutive wake deliveries fail to confirm
-- **THEN** a `wake-degraded` control record at important severity is emitted and a
+- **THEN** a `wake-degraded` control record at important severity is appended to the
+  journal — visible to `gtmux events` and counted toward the consumption debt — and a
   desktop notification is posted, once
 
 #### Scenario: Recovery is silent
@@ -539,14 +552,21 @@ pairing window SHALL be excluded, and that end with it. A short-lived child proc
 subagent whose hook fires without a pane is not something HQ can act on or attribute, so
 it is not a read HQ owes.
 
-The exclusion SHALL be defined by that PAIRING, never by the empty `pane` alone. An empty
-pane is not a blink signature: it is also carried by every native (non-tmux) agent's turns
-and by gtmux's own `gtmux:*` maintenance trigger records, and the `session` field cannot
-discriminate because it holds the tmux session name and is empty on every pane-less record
-by construction. Those two populations SHALL keep counting — decisively so, because the
-class-wake channel fires only for a pane, making the `unread` knock the ONLY channel they
-have. A pane-less `SessionStart` that is not quickly matched by an end SHALL keep counting
-too: it is a native session coming online.
+gtmux's own AUDIT records (`gtmux:audit:*`) SHALL also be excluded from the count: they
+document acts the supervision already performed — a wake it delivered, a send it made — so
+counting them would make the trail the loop's fuel, one fresh unread record per delivered
+knock. The exclusion is exactly the audit sub-namespace: `gtmux:` control records OUTSIDE
+it (maintenance triggers, degradations, reconciles) carry new information and SHALL keep
+counting.
+
+The blink exclusion SHALL be defined by that PAIRING, never by the empty `pane` alone. An
+empty pane is not a blink signature: it is also carried by every native (non-tmux) agent's
+turns and by gtmux's own `gtmux:*` maintenance trigger records, and the `session` field
+cannot discriminate because it holds the tmux session name and is empty on every pane-less
+record by construction. Those two populations SHALL keep counting — decisively so, because
+the class-wake channel fires only for a pane, making the `unread` knock the ONLY channel
+they have. A pane-less `SessionStart` that is not quickly matched by an end SHALL keep
+counting too: it is a native session coming online.
 
 Excluded records SHALL remain in the stream: the exclusion is from the "owes HQ a read"
 tally, never from the log. The supervisor's own delta pull SHALL show the SAME set the
@@ -603,13 +623,21 @@ rather than reporting the entire retained history as unconsumed.
 - **THEN** no `unread` wake is delivered, and those records remain in the log — returned by
   `gtmux events --since-seq --all` and by any non-supervisor read
 
+#### Scenario: gtmux's own audit trail is not a backlog
+
+- **WHEN** the only records past the watermark are `gtmux:audit:*` records (delivered
+  wakes, supervisor sends, a rotation)
+- **THEN** no `unread` wake is delivered, the watermark steps over them exactly as it does
+  for pure echo, and the records remain in the log
+
 #### Scenario: A pane-less agent's work is still a backlog
 
 - **WHEN** the records past the watermark are a pane-less agent's turn events, a `gtmux:*`
-  maintenance trigger, or a pane-less `SessionStart` with no matching end in the pairing
-  window
+  maintenance trigger (not audit), or a pane-less `SessionStart` with no matching end in
+  the pairing window
 - **THEN** they count toward the debt and an `unread` wake is delivered — the blink
-  exclusion keys on the Start/End pairing, never on the empty `pane` alone
+  exclusion keys on the Start/End pairing, never on the empty `pane` alone, and the audit
+  exclusion keys on the `gtmux:audit:` sub-namespace alone
 
 #### Scenario: The knock names what it counted
 
@@ -636,11 +664,11 @@ invocation from anywhere other than the HQ home SHALL NOT move the watermark.
 
 The supervisor's own delta pull SHALL show the SAME set the count defines: an UNFILTERED
 `--since-seq` read run from the HQ home SHALL omit the records the tally excludes — the
-caller's own pane records and the pane-less blinks — and SHALL report on stderr how many it
-withheld, so the omission is never silent. `--all` SHALL restore the raw view. Both forms
-SHALL advance the watermark: neither is a `--severity` filter showing a SUBSET of what HQ
-owes; one shows exactly that set and the other a superset of it. Any read that is not the
-supervisor's SHALL be returned unchanged.
+caller's own pane records, the pane-less blinks, and gtmux's own `gtmux:audit:*` trail —
+and SHALL report on stderr how many it withheld, so the omission is never silent. `--all`
+SHALL restore the raw view. Both forms SHALL advance the watermark: neither is a
+`--severity` filter showing a SUBSET of what HQ owes; one shows exactly that set and the
+other a superset of it. Any read that is not the supervisor's SHALL be returned unchanged.
 
 This exists because the two sets disagreeing was, measured, the largest single cost in HQ
 perception: 68.7 % of the records a knock's pull returned were HQ's own, so the median
@@ -695,7 +723,8 @@ meaning no longer have opposite failure modes.
 #### Scenario: The pull shows the debt, not HQ's own trail
 
 - **WHEN** HQ pulls a delta from its home whose range holds its own wake echo, its own
-  reply, a pane-less blink pair, and one turn-end from a worker pane
+  reply, a pane-less blink pair, a `gtmux:audit:wake-delivered` record, and one turn-end
+  from a worker pane
 - **THEN** only the worker's turn-end is printed, stderr names how many records were
   withheld, and the watermark still advances to the end of the range
 
@@ -851,10 +880,23 @@ This exists so the rotation stays inside HQ's role boundary: HQ decides and hand
 performs the tmux mechanics, and the HARD role whitelist (HQ runs no concrete command, and
 never sends navigation keys into a TUI) is not weakened to make self-rotation possible.
 
+Rotation SHALL leave a durable chain in the journal. The `--rotate` act SHALL append
+`gtmux:audit:rotate` naming the retiring session id and the reset input typed; when the
+health sensor later observes the HQ session id REPLACE a known one (the rotation
+settling — or any session change, including a hand-typed reset), it SHALL append
+`gtmux:audit:hq-session` naming the successor and the predecessor before the old window
+is discarded. A FIRST sighting appends nothing: it replaces no one, nothing is being
+lost (the live resume record still names that session), and a healthy first sight
+keeping the stream untouched is the sensors' silence discipline. The state files keep
+only the current session (unchanged); the journal is where the predecessor chain
+survives, so "which session preceded this HQ, and where is its transcript" is a journal
+query instead of information destroyed at every handoff.
+
 #### Scenario: Rotation is a gtmux verb
 
 - **WHEN** HQ has brought its board and knowledge base current and run `gtmux hq --rotate`
-- **THEN** gtmux delivers the reset input into the HQ pane and the health window restarts
+- **THEN** gtmux delivers the reset input into the HQ pane, appends a
+  `gtmux:audit:rotate` record naming the retiring session, and the health window restarts
 
 #### Scenario: Rotation without a supervisor fails loudly
 
@@ -862,3 +904,56 @@ never sends navigation keys into a TUI) is not weakened to make self-rotation po
 - **THEN** it exits non-zero with a message naming the missing supervisor, rather than
   silently succeeding
 
+#### Scenario: The successor chain survives the handoff
+
+- **WHEN** the health sensor first observes the successor session id after a rotation
+- **THEN** a `gtmux:audit:hq-session` record names both ids before the predecessor's
+  window is discarded, while a FIRST-ever sighting and an unchanged session id on a
+  later tick each append nothing
+
+### Requirement: Wake outcomes are journaled as audit records
+
+Every wake batch's terminal outcome SHALL leave one audit record in the session
+journal, so "what did gtmux tell HQ, and what did it fail to tell HQ" are journal
+queries rather than reconstructions:
+
+- a CONFIRMED delivery (the drain's ack, or the Enter-only repair confirming)
+  SHALL append `gtmux:audit:wake-delivered` carrying the batch identifier and the
+  full delivered payload — one record per coalesced batch, never per entry;
+- a DROP SHALL append `gtmux:audit:wake-dropped` carrying the dropped line and its
+  reason: `evicted` (queue overflow), `unconfirmed` (the ack budget exhausted,
+  whether from the drain path or an abandoned Enter repair), or `superseded` (the
+  delivery-side revalidation probe found the premise gone — the control trace the
+  standing-knock rule already promised).
+
+A requeue below the ack budget, and a revalidation that RE-RENDERS rather than
+drops, SHALL write nothing: only terminal outcomes are journaled. Audit records
+follow the session-events audit rules: trail, not debt.
+
+The self-rotate sensor's fleet-movement counter SHALL exclude control records
+(audit included): gtmux's own bookkeeping is never fleet movement, so a delivered
+wake's own audit record can never re-arm the standing knock that produced it.
+
+#### Scenario: A delivered batch is reconstructable from the journal
+
+- **WHEN** a wake batch coalescing three queued lines is confirmed delivered
+- **THEN** exactly one `gtmux:audit:wake-delivered` record carries the batch id and
+  the full coalesced payload
+
+#### Scenario: Every silent drop now leaves a trace
+
+- **WHEN** a queued wake is evicted at the queue cap, dropped after its final
+  unconfirmed attempt, or dropped because its premise died in the queue
+- **THEN** a `gtmux:audit:wake-dropped` record names the reason and carries the
+  dropped line
+
+#### Scenario: A retry is not a drop
+
+- **WHEN** an unconfirmed batch is returned to the queue below its ack budget
+- **THEN** no wake-dropped record is written
+
+#### Scenario: The trail does not feed the standing knock
+
+- **WHEN** wake deliveries append audit records while a `self-rotate` breach stands
+- **THEN** those records advance neither the fleet-movement counter nor the unread
+  debt, so no knock re-arms on gtmux's own bookkeeping
