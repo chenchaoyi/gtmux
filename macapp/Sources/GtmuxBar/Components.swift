@@ -253,3 +253,27 @@ struct HQMedallion: View {
         }
     }
 }
+
+/// PopoverClick decides whether an "open" is really the tail of a click that just closed
+/// the panel.
+///
+/// A transient NSPopover is dismissed by AppKit on mouse-DOWN anywhere outside its window
+/// — including on the status item that owns it. The status item's action fires on
+/// mouse-UP, milliseconds later, and by then `popover.isShown` is false: the toggle reads
+/// it as "closed, so open" and the panel the user just dismissed comes straight back.
+/// Clicking again repeats it. The reported symptom is "clicking fast sometimes does
+/// nothing, or lags" — it is not slowness, it is a close and an open cancelling out.
+///
+/// A separate function with no AppKit in it so the window can be reasoned about and
+/// tested: too short and the echo gets through, too long and a real second click (the
+/// user reopening on purpose) is swallowed. A deliberate reopen is a distinct gesture,
+/// hundreds of milliseconds away; the echo is one mouse event.
+enum PopoverClick {
+    /// The span after a close during which an "open" is assumed to be the same click.
+    static let echoWindow: TimeInterval = 0.2
+
+    static func reopenIsAnEcho(ofCloseAt close: Date, now: Date) -> Bool {
+        let dt = now.timeIntervalSince(close)
+        return dt >= 0 && dt < echoWindow
+    }
+}

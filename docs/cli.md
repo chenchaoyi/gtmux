@@ -913,6 +913,13 @@ brings it to front (via the terminal's AppleScript). A pane id (`%N`) also
 selects that window+pane inside the session, so you land exactly where the agent
 is — which is how a notification click drops you on the agent that just finished.
 
+**A session with no window open** — a `--headless` spawn, or one you detached — has no tab
+to bring forward, so `focus` OPENS one and attaches it. It used to select the pane inside
+tmux and then search for a tab that could not exist, which looked exactly like a broken
+jump. The test is the client count (`session_attached`), not how the session was started:
+a headless session someone attached later is an ordinary jump. Surfaces mark such a row
+(`no window` / `无窗口`) so you know a tab will open before you click.
+
 > Needs `set-titles on` with `set-titles-string '#S — #W'` so tab titles stay in
 > the format `focus` matches. If another tool also writes the tab title, disable
 > that so titles stay authoritative.

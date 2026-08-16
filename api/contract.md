@@ -89,6 +89,7 @@ no tmux server is running. A guest is filtered to its view allowlist by the same
 | `win_name` | string? | the window's name — a GLOSS: it drifts with `automatic-rename` and two windows may share one |
 | `cwd` `command` `title` | string | working dir, `pane_current_command`, pane title |
 | `active` `in_mode` | bool | the window's active pane / in copy-mode (input swallowed) |
+| `detached` | bool | omitted unless true: no terminal client is attached to this pane's session, so nothing on screen shows it and a jump has to OPEN a window rather than focus one |
 | `tier` | string | `agent` (a coding-agent pane) \| `plain` (shell/editor/other) |
 | `agent` | string? | display name when `tier==agent` |
 | `icon` | string? | identity-icon hint when `tier==agent` |
