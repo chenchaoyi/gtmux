@@ -34,3 +34,32 @@ final class SurfaceTeardownTests: XCTestCase {
         c.window?.close()
     }
 }
+
+/// Clicking the status item to CLOSE the panel must close it — not close and reopen it.
+///
+/// A transient popover is dismissed by AppKit on mouse-DOWN; the status item's action
+/// arrives on mouse-UP, when `isShown` is already false. Without a guard the toggle reads
+/// that as "open it", and the panel the user dismissed comes back. That is the reported
+/// "clicking fast sometimes does nothing" — a close and an open cancelling out.
+final class PopoverClickTests: XCTestCase {
+    func testTheOpenThatFollowsItsOwnCloseIsIgnored() {
+        let close = Date()
+        XCTAssertTrue(PopoverClick.reopenIsAnEcho(ofCloseAt: close, now: close.addingTimeInterval(0.01)),
+                      "the mouse-up half of the same click must not reopen the panel")
+        XCTAssertTrue(PopoverClick.reopenIsAnEcho(ofCloseAt: close, now: close.addingTimeInterval(0.15)))
+    }
+
+    /// The other half matters as much: a user who closes the panel and then decides to
+    /// open it again must be able to. Swallowing that is the same bug wearing a hat.
+    func testADeliberateReopenIsNotSwallowed() {
+        let close = Date()
+        XCTAssertFalse(PopoverClick.reopenIsAnEcho(ofCloseAt: close, now: close.addingTimeInterval(0.35)))
+        XCTAssertFalse(PopoverClick.reopenIsAnEcho(ofCloseAt: close, now: close.addingTimeInterval(2)))
+    }
+
+    /// Never opened yet: `distantPast` must not read as "just closed", or the very first
+    /// click of a session would be eaten.
+    func testTheFirstEverClickOpens() {
+        XCTAssertFalse(PopoverClick.reopenIsAnEcho(ofCloseAt: .distantPast, now: Date()))
+    }
+}

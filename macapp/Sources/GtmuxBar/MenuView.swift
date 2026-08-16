@@ -1009,18 +1009,32 @@ private struct AgentRowView: View {
                     // Modifiers on line 1 (mutually exclusive, errored wins): errored
                     // ⚠, background-running ⧗ (idle but bg work still in flight), latest.
                     if agent.errored { erroredPill(p) } else if agent.bg { bgPill(p) } else if agent.latest { latestPill(p) }
+                    // Not a status — a fact about where it IS: no terminal window shows
+                    // this session. Clicking still works (gtmux opens a tab), but a jump
+                    // that appears to do nothing is what made this worth saying.
+                    if agent.detached { detachedPill(p) }
                     Spacer(minLength: 0)
                 }
                 // line 2: the failure summary (amber) for an errored session, the
                 // background-work label for a bg session, else where it lives (dim).
                 if agent.errored, !agent.errorText.isEmpty {
-                    Text(agent.errorText)
-                        .font(Theme.Font.window).foregroundStyle(Theme.Status.errored)
-                        .lineLimit(1).truncationMode(.tail).help(agent.errorText)
+                    // The id LEADS, then the failure. Line 2 normally carries `session ·
+                    // %N`, and an error label used to replace the whole line — so the one
+                    // row you most want to identify was the one row with no pane id on it.
+                    // Leading also means it survives the truncation the error text causes.
+                    HStack(spacing: 5) {
+                        paneChip(p)
+                        Text(agent.errorText)
+                            .font(Theme.Font.window).foregroundStyle(Theme.Status.errored)
+                            .lineLimit(1).truncationMode(.tail).help(agent.errorText)
+                    }
                 } else if agent.bg, !agent.bgText.isEmpty {
-                    Text(agent.bgText)
-                        .font(Theme.Font.window).foregroundStyle(Theme.Status.errored)
-                        .lineLimit(1).truncationMode(.tail).help(agent.bgText)
+                    HStack(spacing: 5) {
+                        paneChip(p)
+                        Text(agent.bgText)
+                            .font(Theme.Font.window).foregroundStyle(Theme.Status.errored)
+                            .lineLimit(1).truncationMode(.tail).help(agent.bgText)
+                    }
                 } else {
                     Text(agent.secondary)
                         .font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
@@ -1086,6 +1100,24 @@ private struct AgentRowView: View {
             .foregroundStyle(Theme.Status.errored)
             .padding(.horizontal, 4).padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 3).fill(Theme.Status.errored.opacity(0.16)))
+    }
+
+    /// The pane id, in the dim mono the rest of the product uses for `%N`.
+    private func paneChip(_ p: Theme.Palette) -> some View {
+        Text(agent.paneID).font(Theme.Font.mono).foregroundStyle(p.fg3)
+            .lineLimit(1).fixedSize()
+    }
+
+    /// No terminal client is attached to this session: nothing on screen is showing it.
+    /// Neutral, not amber — it is not a failure, and this row sits among ordinary idle
+    /// ones. Clicking opens a tab for it, which the tooltip says.
+    private func detachedPill(_ p: Theme.Palette) -> some View {
+        Text(l10n.tr("no window", "无窗口")).font(.system(size: 8.5, weight: .semibold))
+            .foregroundStyle(p.fg2)
+            .padding(.horizontal, 4).padding(.vertical, 1)
+            .background(RoundedRectangle(cornerRadius: 3).fill(p.fg.opacity(0.08)))
+            .help(l10n.tr("No terminal window is showing this session — clicking opens one",
+                          "没有终端窗口在显示这个会话 —— 点击会为它打开一个"))
     }
 
     private func latestPill(_ p: Theme.Palette) -> some View {

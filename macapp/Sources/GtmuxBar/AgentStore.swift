@@ -123,6 +123,11 @@ struct Agent: Identifiable, Equatable {
     var bg = false
     var bgCount = 0
     var bgText = ""
+    /// No terminal client is attached to this pane's session — nothing on screen is
+    /// showing it, so a click cannot "bring its tab forward" (there is no tab). gtmux
+    /// opens one instead of doing nothing, but the row says so first: a jump that
+    /// silently did nothing read as a broken app.
+    var detached = false
     // watched (tiered-pane-control): this row is a user-promoted PLAIN pane, not a
     // coding agent — no agent status. Rendered in its OWN "watched" section below the
     // agent sections, visually distinct. false = a normal agent.
@@ -180,6 +185,7 @@ extension Agent: Decodable {
         sessionID = s(.sessionID); adoptable = b(.adoptable)
         errored = b(.errored); errorText = s(.errorText)
         bg = b(.bg); bgCount = (try? c.decode(Int.self, forKey: .bgCount)) ?? 0; bgText = s(.bgText)
+        detached = b(.detached)
         watched = b(.watched)
     }
     enum CodingKeys: String, CodingKey {
@@ -189,6 +195,7 @@ extension Agent: Decodable {
         case activityAt = "activity_at"
         case sessionID = "session_id"
         case errored = "error"
+        case detached
         case errorText = "error_text"
         case bgCount = "bg_count"
         case bgText = "bg_text"

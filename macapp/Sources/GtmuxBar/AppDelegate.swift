@@ -79,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // gate when the panel actually closes, whatever closed it.
         NotificationCenter.default.addObserver(
             forName: NSPopover.didCloseNotification, object: popover, queue: .main) { [weak self] _ in
+            self?.lastPopoverClose = Date()
             // Drop the graph, not just the pixels — see makeMenuHost().
             self?.popover.contentViewController = nil
         }
@@ -380,9 +381,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onClose: { [weak self] in self?.popover.performClose(nil) }))
     }
 
+    /// When the panel last closed — the mouse-DOWN half of a click on the status item
+    /// lands here before the action does. See PopoverClick.
+    private var lastPopoverClose = Date.distantPast
+
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
         if popover.isShown { popover.performClose(nil); return }
+        // A click on the status item while the panel is OPEN never reaches here as a
+        // close: the panel is `.transient`, so AppKit dismisses it on mouse-DOWN and our
+        // action fires on mouse-UP, by which time `isShown` is already false — we would
+        // reopen the panel the user just asked to close. To them that is a click that did
+        // nothing, and clicking again (the natural response) closes-and-reopens again.
+        if PopoverClick.reopenIsAnEcho(ofCloseAt: lastPopoverClose, now: Date()) { return }
         if popover.contentViewController == nil { popover.contentViewController = makeMenuHost() }
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()

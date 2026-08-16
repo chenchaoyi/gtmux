@@ -182,3 +182,31 @@ user has customized SHALL be reported as-is and left alone.
 
 - **WHEN** the user has set their own `automatic-rename-format`
 - **THEN** `doctor` reports it and marks the row OK
+
+### Requirement: A session with nothing showing it is opened, not silently missed
+
+When a jump targets a session that has NO attached terminal client, the system SHALL open a
+terminal tab attached to that session rather than searching for a tab that cannot exist. The
+condition SHALL be measured from the client count, not from how the session was started: a
+session spawned `--headless` that someone later attached is an ordinary jump.
+
+Surfaces SHALL mark a row whose session has no attached client, so the user knows before
+clicking that a window will be opened for it.
+
+#### Scenario: Jumping to a headless dispatch
+
+- **WHEN** a session was spawned with `--headless` (no tab was opened) and the user clicks
+  its row
+- **THEN** a terminal tab attached to that session is opened, instead of the click doing
+  nothing at all
+
+#### Scenario: A headless session that was attached later
+
+- **WHEN** a session carries the headless marker in its window name but a client is attached
+- **THEN** it is jumped to like any other session, and it is NOT marked as having no window
+
+#### Scenario: The row says so first
+
+- **WHEN** a radar row's session has no attached client
+- **THEN** the row carries a neutral marker saying no window is showing it — not an error
+  colour, since it is a location, not a failure

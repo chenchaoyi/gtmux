@@ -212,6 +212,9 @@ type Pane struct {
 	// the scrollback), so typed input — manual OR gtmux send/spawn — is swallowed as
 	// mode-nav until it exits. Surfaces flag which pane is input-locked. tmux rows only.
 	inMode bool
+	// detached: no terminal client is attached to this pane's SESSION, so no window
+	// on screen shows it. See the agentJSON field of the same name.
+	detached bool
 	// native (source=="native") only: the agent session id (adopt key) + whether
 	// the agent can be resumed into tmux (so surfaces can hide Adopt otherwise).
 	sessionID string
@@ -284,6 +287,16 @@ type agentJSON struct {
 	// usage-watch modifier (usage-watch change): a breached/projected usage layer,
 	// e.g. "ctx 86%" / "burn→5M in ~12m". Amber modifier, never a status.
 	UsageWarn string `json:"usage_warn,omitempty"`
+	// detached modifier: NO terminal client is attached to this pane's session, so
+	// there is no window on screen showing it. Surfaces mark such a row, because
+	// clicking it cannot "bring a tab forward" — there is no tab. (`gtmux focus` opens
+	// one instead of doing nothing, but the user deserves to know before they click.)
+	// Absent/false = a client is attached, the ordinary case.
+	//
+	// This is measured from the CLIENT COUNT, not from how the session was started: a
+	// `--headless` spawn opens no tab, but nothing stops someone attaching it later, and
+	// one on this fleet was (`restart-feed`, `⌁` in its name, attached=1, jumps fine).
+	Detached bool `json:"detached,omitempty"`
 	// input-lock modifier: the pane is in tmux copy/view-mode, so typed input is
 	// swallowed until it exits. `gtmux send`/`spawn` auto-exit before delivering;
 	// this flag lets surfaces show WHICH pane is input-locked. Absent = not in a mode.
@@ -650,7 +663,10 @@ func headBranch(gitPath string, isDir bool) string {
 // inject canned panes and drive the whole assemble/join/sort path with no live server.
 var paneSource = func() []string {
 	const fields = "#{pane_id}\t#{session_name}\t#{window_index}\t#{pane_index}\t" +
-		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}\t#{pane_in_mode}\t#{@gtmux_hq_home}"
+		"#{pane_title}\t#{pane_current_command}\t#{window_activity_flag}\t#{window_activity}\t#{pane_pid}\t#{pane_current_path}\t#{pane_in_mode}\t#{@gtmux_hq_home}\t" +
+		// APPENDED, like win_id before it: an index-based parser must not shift. 0 = no
+		// terminal client is showing this session, so there is no tab to jump to.
+		"#{session_attached}"
 	return tmux.Lines("list-panes", "-a", "-F", fields)
 }
 
@@ -699,7 +715,7 @@ func GatherAgents() []Pane {
 	paneFieldsByID := map[string][]string{} // pane id → its raw field slice (for watched-pane rows)
 	seenPane := map[string]bool{}           // pane ids already turned into a row — dedup linked/shared windows
 	for _, line := range paneSource() {
-		f := strings.SplitN(line, "\t", 12)
+		f := strings.SplitN(line, "\t", 13)
 		if len(f) < 7 {
 			continue
 		}
@@ -879,6 +895,10 @@ func GatherAgents() []Pane {
 		if len(f) >= 12 && f[11] != "" {
 			hqStamps[id] = f[11]
 		}
+		// "0" = no terminal client on this session. A shorter line (an older tmux, a
+		// fixture written before this field) leaves it false — absent means "ordinary",
+		// never "detached", so a missing field can't invent a warning.
+		detached := len(f) >= 13 && f[12] == "0"
 		panes = append(panes, Pane{
 			PaneID:     id,
 			session:    f[1],
@@ -905,6 +925,7 @@ func GatherAgents() []Pane {
 			BgText:     bgText,
 			usageWarn:  usageWarn,
 			inMode:     inMode,
+			detached:   detached,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -1202,6 +1223,7 @@ func AgentsJSONBytes() ([]byte, error) {
 			Bg: p.Bg, BgCount: p.BgCount, BgText: p.BgText,
 			UsageWarn: p.usageWarn,
 			InMode:    p.inMode,
+			Detached:  p.detached,
 			Watched:   p.Watched,
 		})
 	}
