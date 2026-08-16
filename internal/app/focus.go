@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -117,6 +118,21 @@ func cmdFocus(args []string) int {
 	// whichever terminal hosts the first tmux client — wrong for a session elsewhere.
 	term := terminal.ForSession(target)
 	tn := term.Name()
+	// Nothing attached means there is no tab to focus — so OPEN one, rather than telling
+	// the user to go run another command. This is the same call `gtmux new` and `restore`
+	// make. (panefocus does this for the TUI/serve jump; the CLI has its own path and was
+	// fixed second, after `gtmux focus %30` on a real detached session still printed the
+	// old advice — the change had landed in one of the two places that jump.)
+	if !panefocus.Attached(target) {
+		if _, err := panefocus.BringForward(target); err != nil {
+			i18n.Sae("could not open a "+tn+" tab for '"+target+"': "+err.Error(),
+				"无法为 '"+target+"' 打开 "+tn+" 标签页："+err.Error())
+			return 1
+		}
+		i18n.Say("Nothing was showing '"+target+"' — opened a "+tn+" tab for it.",
+			"之前没有窗口在显示 '"+target+"' —— 已为它打开一个 "+tn+" 标签页。")
+		return 0
+	}
 	res, err := term.FocusTab(target)
 	switch {
 	case res == "ok":
