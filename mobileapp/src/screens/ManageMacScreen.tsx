@@ -7,7 +7,7 @@
 // server 403s them anyway. A guest never reaches this screen (Settings hides it).
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
@@ -87,6 +87,34 @@ export function grantSummary(
     ? (zh ? '看不到任何 pane' : 'sees nothing')
     : (zh ? `可见 ${v} · 可输入 ${i}` : `sees ${v} · types ${i}`);
   return gone > 0 ? head + (zh ? ` · ${gone} 项已失效` : ` · ${gone} gone`) : head;
+}
+
+/** One session's panes, in the order the radar gave them. */
+export interface PaneGroup {
+  session: string;
+  panes: Agent[];
+}
+
+/**
+ * paneGroups groups the pickable panes by session, first-seen order preserved.
+ *
+ * The picker listed panes flat, labelled only by task — and two panes in different
+ * sessions running the same project truncate to the same words, so the list offered two
+ * identical-looking rows and no way to tell which was which. Grouping by session and
+ * leading each row with its %N is the shape every other pane list in gtmux already uses.
+ */
+export function paneGroups(panes: Agent[]): PaneGroup[] {
+  const order: string[] = [];
+  const by = new Map<string, Agent[]>();
+  for (const a of panes) {
+    const k = a.session || '';
+    if (!by.has(k)) {
+      by.set(k, []);
+      order.push(k);
+    }
+    by.get(k)!.push(a);
+  }
+  return order.map(k => ({session: k, panes: by.get(k)!}));
 }
 
 // deviceIcon picks a leading glyph matching what the device IS, so the roster reads at a
@@ -297,11 +325,23 @@ export function ManageMacScreen({navigation}: any) {
                       {panes.length === 0 ? (
                         <Text style={[styles.hint, {color: pal.fg3}]}>{zh ? '没有 tmux pane 可分享。' : 'No tmux panes to share.'}</Text>
                       ) : (
-                        panes.map(a => {
+                        paneGroups(panes).map(grp => [
+                          // A SESSION band, the same shape the pane browser uses. Two panes
+                          // running the same project truncate to the same words ("multipilot
+                          // -companion…" twice, indistinguishable) — the session and the id
+                          // are what tell them apart, so both are on screen before you grant
+                          // anything.
+                          <View key={'s:' + grp.session} style={[styles.paneSess, {borderBottomColor: pal.divider}]}>
+                            <Text style={[styles.paneSessText, {color: pal.fg2}]} numberOfLines={1}>{grp.session}</Text>
+                          </View>,
+                          ...grp.panes.map(a => {
                           const see = g.viewPanes.includes(a.pane_id);
                           const type = g.inputPanes.includes(a.pane_id);
                           return (
                             <View key={a.pane_id} style={styles.paneRow}>
+                              {/* The id LEADS — the one stable, unique token on the row,
+                                  and the only thing that survives a truncated label. */}
+                              <Text style={[styles.paneId, {color: pal.fg3}]}>{a.pane_id}</Text>
                               <Text style={[styles.paneName, {color: pal.fg2}]} numberOfLines={1}>
                                 {primary(a)}
                               </Text>
@@ -315,7 +355,8 @@ export function ManageMacScreen({navigation}: any) {
                               </View>
                             </View>
                           );
-                        })
+                        }),
+                        ])
                       )}
                       <View style={styles.linkActions}>
                         <TouchableOpacity onPress={() => copyLink(g)} hitSlop={hit}>
@@ -382,6 +423,9 @@ const styles = StyleSheet.create({
   chev: {fontSize: 20, fontWeight: '300', marginLeft: 8},
   editor: {paddingLeft: 52, paddingRight: 14, paddingBottom: 12},
   paneRow: {flexDirection: 'row', alignItems: 'center', paddingVertical: 6},
+  paneId: {width: 34, fontSize: 11, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
+  paneSess: {paddingHorizontal: 14, paddingTop: 9, paddingBottom: 5, borderBottomWidth: StyleSheet.hairlineWidth},
+  paneSessText: {fontSize: 11, fontWeight: '700'},
   paneName: {flex: 1, fontSize: 13},
   facet: {flexDirection: 'row', alignItems: 'center', marginLeft: 10},
   facetLabel: {fontSize: 11, marginRight: 4},
