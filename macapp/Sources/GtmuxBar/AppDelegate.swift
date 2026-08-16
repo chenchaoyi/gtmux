@@ -90,7 +90,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // The animation is stopped by removing the RING instead (PanelVisibility).
             MenuVisibility.shared.setVisible(false)
         }
-        popover.contentViewController = makeMenuHost()
+        let host = makeMenuHost()
+        // ONE authority for the panel's size: the hosting controller reports what SwiftUI
+        // actually drew, and NSPopover follows it.
+        //
+        // It used to be two. SwiftUI measured the panel and pushed that number into
+        // popover.contentSize, while the hosting view kept sizing itself — and they
+        // disagreed: measured `asked=420x983` against `drew=420x849`, a 134pt gap that
+        // NSPopover filled with its own background. That is the band above the panel, with
+        // the list's first rows pushed past the bottom edge. 849 is chrome + the list's
+        // FIRST measurement (682); 983 is chrome + its settled one (816) — the window
+        // followed the second, the view stayed on the first, and nothing reconciled them.
+        host.sizingOptions = [.preferredContentSize]
+        popover.contentViewController = host
 
         // TELL the popover how tall it is. Without this the panel's own growth never
         // reaches NSPopover, which goes on positioning the window for the size it was
@@ -102,9 +114,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .receive(on: RunLoop.main)
             .sink { [weak self] h in
                 guard let self, h > 1 else { return }
-                let want = PanelMetrics.popoverHeight(panel: h, visible: PanelMetrics.visibleHeight)
-                guard abs(self.popover.contentSize.height - want) >= 1 else { return }
-                self.popover.contentSize = NSSize(width: Theme.Size.popoverWidth, height: want)
+                // NO size is set here any more — the hosting controller owns it (see
+                // makeMenuHost). This sink stays only to REPAIR the position: a panel that
+                // grew can end up off the top of the screen, and that is a different
+                // question from how tall it should be.
+                _ = h
                 self.reanchorPopover()
                 // Again on the next turn: the window does not always finish moving inside
                 // this one, and the check makes a second call free when it already did.
@@ -453,17 +467,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let vf = scr?.visibleFrame ?? .zero
             let f = scr?.frame ?? .zero
             let size = self.popover.contentSize
+            // The HOSTING VIEW's own frame — what SwiftUI actually drew. contentSize is
+            // only what we ASKED for; when the two disagree the popover pads the
+            // difference with its own background, which is the band the commander sees.
+            let host = self.popover.contentViewController?.view.frame ?? .zero
             let win = self.popover.contentViewController?.view.window?.frame ?? .zero
             // The panel legitimately reaches the top of the display — its arrow tucks
             // under the menu bar — so the ceiling is the screen's own frame, not the
             // menu-bar-excluding visibleFrame. The floor is the Dock.
             let fits = win.minY >= vf.minY && win.maxY <= f.maxY
             dbg(String(format:
-                "geom+%.2fs: screen.frame=%.0fx%.0f visible=%.0fx%.0f@y%.0f | content=%.0fx%.0f | window=%.0fx%.0f@y%.0f (top=%.0f) | onScreen=%@",
+                "geom+%.2fs: screen=%.0fx%.0f visible=%.0fx%.0f@y%.0f | asked=%.0fx%.0f | drew=%.0fx%.0f | window=%.0fx%.0f@y%.0f (top=%.0f) | onScreen=%@",
                 t, f.width, f.height, vf.width, vf.height, vf.minY,
                 size.width, size.height,
+                host.width, host.height,
                 win.width, win.height, win.minY, win.maxY,
                 fits ? "yes" : "NO — clipped"))
+            // A disagreement between what we asked for and what was drawn is invisible on
+            // screen except as a band of empty panel — which is how it went unnoticed
+            // through two releases. Say it loudly instead.
+            if abs(size.height - host.height) >= 2 {
+                dbg(String(format: "geom: MISMATCH asked=%.0f drew=%.0f — the difference renders as empty panel",
+                           size.height, host.height))
+            }
         }
         }
     }
