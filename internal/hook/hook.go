@@ -228,6 +228,57 @@ func terminalBGStatus(s string) bool {
 // summarizeBackground returns how many background tasks are still in flight and a
 // short label for them — the first shell's command line if any, else the first
 // task's description (or type). Empty/nil input → (0, "").
+// firstMeaningfulCommand reduces a background task's command to something a row can say.
+//
+// The label used to be the command verbatim, and a marker file keeps one line — so a
+// SCRIPT-shaped command was labelled by its first line, which is almost never the part
+// that says what it does. Seen on a real row: `prev=""`, the opening variable assignment
+// of a polling loop, sitting where "what is running in the background" belongs.
+//
+// So: skip the lines that carry no information on their own — blank, comment, shell
+// options, exports, plain assignments — and join what is left on one line. Everything is
+// skipped only until the first real command; nothing is dropped from the middle, because
+// a label that silently omits part of a command is worse than a long one (the caller
+// truncates).
+func firstMeaningfulCommand(cmd string) string {
+	var out []string
+	for _, raw := range strings.Split(cmd, "\n") {
+		line := strings.TrimSpace(raw)
+		if len(out) == 0 && (line == "" || strings.HasPrefix(line, "#") ||
+			assignmentOnly(line) || strings.HasPrefix(line, "set ") || strings.HasPrefix(line, "export ")) {
+			continue // still in the preamble
+		}
+		if line == "" {
+			continue
+		}
+		out = append(out, line)
+	}
+	if len(out) == 0 {
+		// All preamble (a command that really is just `X=1`): say that rather than nothing.
+		return strings.TrimSpace(strings.ReplaceAll(cmd, "\n", " "))
+	}
+	return strings.Join(out, " ")
+}
+
+// assignmentOnly reports whether a line is nothing but `NAME=value` — a shell preamble
+// that describes no work.
+func assignmentOnly(line string) bool {
+	eq := strings.IndexByte(line, '=')
+	if eq <= 0 {
+		return false
+	}
+	name := line[:eq]
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		ok := c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (i > 0 && c >= '0' && c <= '9')
+		if !ok {
+			return false
+		}
+	}
+	// `A=1 command args` IS a command (an env prefix); only a bare assignment is preamble.
+	return !strings.ContainsAny(strings.TrimSpace(line[eq+1:]), " \t")
+}
+
 func summarizeBackground(tasks []backgroundTask) (count int, label string) {
 	inFlight := tasks[:0:0]
 	for _, t := range tasks {
@@ -239,7 +290,7 @@ func summarizeBackground(tasks []backgroundTask) (count int, label string) {
 		return 0, ""
 	}
 	for _, t := range inFlight {
-		if c := strings.TrimSpace(t.Command); c != "" {
+		if c := firstMeaningfulCommand(t.Command); c != "" {
 			label = c
 			break
 		}
