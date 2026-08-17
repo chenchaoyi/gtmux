@@ -22,13 +22,31 @@ func selfPath() string {
 	return "gtmux"
 }
 
+// langFromEnv resolves the default output language: GTMUX_LANG when set to a
+// known value; otherwise the system locale (LC_ALL over LANG, POSIX order) —
+// a zh* locale reads Chinese without any gtmux-specific setup. Everything else
+// is English. A set-but-unknown GTMUX_LANG is an explicit (if broken) choice
+// and does NOT fall through to the locale.
+func langFromEnv(get func(string) string) string {
+	if l := get("GTMUX_LANG"); l != "" {
+		if l == "zh" || l == "en" {
+			return l
+		}
+		return "en"
+	}
+	for _, k := range []string{"LC_ALL", "LANG"} {
+		if strings.HasPrefix(get(k), "zh") {
+			return "zh"
+		}
+	}
+	return "en"
+}
+
 // Run is the CLI entry point. It resolves the language, dispatches the
 // subcommand, and returns the process exit code.
 func Run(argv []string) int {
 	// Default language from env; a global --lang=en|zh flag overrides it.
-	if l := os.Getenv("GTMUX_LANG"); l == "zh" || l == "en" {
-		i18n.SetLang(l)
-	}
+	i18n.SetLang(langFromEnv(os.Getenv))
 	var args []string
 	for _, a := range argv {
 		switch {
