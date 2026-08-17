@@ -81,6 +81,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   padding: 16px 16px 6px; font-size: 11px; font-weight: 600; letter-spacing: .05em;
   text-transform: uppercase; color: var(--fg3);
 }
+.group-label.errored { color: var(--amber); }
 .row {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 16px; cursor: pointer;
