@@ -363,3 +363,23 @@ and SHALL only create a new startup file when none of the candidates exist.
 - **WHEN** no plain pane has an informative title
 - **THEN** the row is reported as improvable and `--fix` offers the shell hook, written to
   the startup file a login shell reads
+
+### Requirement: Offers only what the running tmux understands
+
+`doctor` SHALL check the running tmux's version before offering a configuration line whose
+option or feature name postdates some releases, and SHALL NOT offer it when the running
+tmux would reject it. An unknown or unparseable version SHALL be treated as too old: a
+suggestion is offered only when it is known to work.
+
+#### Scenario: Clickable links on a tmux that supports them
+
+- **WHEN** tmux is 3.4 or newer and `terminal-features` does not claim `hyperlinks`
+- **THEN** the row reports that tmux is dropping hyperlinks, and `--fix` offers the
+  `terminal-features` line
+
+#### Scenario: The same machine on an older tmux
+
+- **WHEN** tmux predates the `hyperlinks` feature
+- **THEN** the row says which version it needs and `--fix` offers nothing, because writing
+  an unknown feature name into the user's config is a startup error on a line they did not
+  write

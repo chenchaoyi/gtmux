@@ -331,3 +331,79 @@ func TestOutdatedSnippetIsNotMistakenForCurrent(t *testing.T) {
 		t.Error("a current snippet reads as outdated — it would be re-offered forever")
 	}
 }
+
+// The version gate is the whole safety of this step: `terminal-features` exists from tmux
+// 3.2 but the `hyperlinks` FEATURE only from 3.4, and writing an unknown feature name into
+// someone's tmux.conf is a startup error on a line they did not write.
+func TestTmuxAtLeastToleratesTmuxVersionStrings(t *testing.T) {
+	for _, tc := range []struct {
+		ver, floor string
+		want       bool
+	}{
+		{"3.4", "3.4", true},
+		{"3.7b", "3.4", true}, // tmux's letter suffixes must not break the compare
+		{"3.4a", "3.4", true},
+		{"3.3a", "3.4", false},
+		{"3.2", "3.4", false},
+		{"2.9", "3.4", false},
+		{"4.0", "3.4", true}, // a future major
+		{"", "3.4", false},   // unknown → do not offer
+		{"next-3.5", "3.4", true},
+	} {
+		if got := tmuxAtLeast(tc.ver, tc.floor); got != tc.want {
+			t.Errorf("tmuxAtLeast(%q, %q) = %v, want %v", tc.ver, tc.floor, got, tc.want)
+		}
+	}
+}
+
+// Command-level: does the step leave the machine able to carry a link? Drives the real
+// fix against an isolated tmux and asserts the OPTION is live, not that a function
+// returned 1.
+func TestFixStepEnablesHyperlinks(t *testing.T) {
+	if _, err := exec.LookPath("tmux"); err != nil {
+		t.Skip("no tmux")
+	}
+	dir, err := os.MkdirTemp("/tmp", "gtxh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	sock := filepath.Join(dir, "s")
+	if err := os.MkdirAll(sock, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMUX_TMPDIR", sock)
+	t.Setenv("TMUX", "")
+	t.Setenv("HOME", dir)
+	run := func(args ...string) string {
+		out, _ := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
+		return out
+	}
+	run("new-session", "-d", "-s", "probe")
+	t.Cleanup(func() { run("kill-server") })
+	if got := run("list-sessions", "-F", "#{session_name}"); got != "probe" {
+		t.Fatalf("not isolated — server holds %q", got)
+	}
+	if !tmuxAtLeast(tmuxVersion(), minHyperlinkTmux) {
+		t.Skip("this tmux predates the hyperlinks feature")
+	}
+
+	s := &fixState{confPath: filepath.Join(dir, ".tmux.conf"), yes: true}
+	if n := s.stepHyperlinks(); n != 1 {
+		t.Fatalf("step reported %d applied", n)
+	}
+	if got := run("show", "-gv", "terminal-features"); !strings.Contains(got, "hyperlinks") {
+		t.Errorf("not applied live: %q", got)
+	}
+	conf, err2 := os.ReadFile(s.confPath)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	if !strings.Contains(string(conf), "hyperlinks") {
+		t.Errorf("conf missing the line:\n%s", conf)
+	}
+	// Idempotent: a second run has nothing to offer.
+	if n := s.stepHyperlinks(); n != 0 {
+		t.Errorf("second run applied %d, want 0", n)
+	}
+}

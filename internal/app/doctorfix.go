@@ -66,6 +66,7 @@ func doctorFix(yes bool) int {
 	applied += s.stepSetTitles()
 	applied += s.stepPaneIDsInTabs()
 	applied += s.stepPaneTitles()
+	applied += s.stepHyperlinks()
 	applied += s.stepRestoreSettings()
 	applied += s.stepPlugins()
 	applied += s.stepClaudeHook()
@@ -438,6 +439,36 @@ func (s *fixState) stepPaneTitles() int {
 	i18n.Say("  ✓ updated "+tildeify(rc)+" — new shells only; existing panes keep their titles",
 		"  ✓ 已更新 "+tildeify(rc)+" —— 只对新开的 shell 生效，已有 pane 标题不变")
 	return 1
+}
+
+// stepHyperlinks offers the one line that lets a link printed in a pane be clicked.
+//
+// Version-gated: `hyperlinks` exists from tmux 3.4, and writing it into an older config
+// is a startup ERROR on a line the user did not write. gtmux offers only what the running
+// tmux understands.
+func (s *fixState) stepHyperlinks() int {
+	if !tmuxAtLeast(tmuxVersion(), minHyperlinkTmux) {
+		return 0 // this tmux has no such feature; nothing to offer
+	}
+	if strings.Contains(tmuxOptAll("terminal-features"), "hyperlinks") {
+		return 0
+	}
+	line := "set -as terminal-features '" + hyperlinkFeature + "'"
+	detail := i18n.Tr(
+		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      "+line+"\n"+
+			"  Why: a program prints a hyperlink as an OSC 8 escape, and tmux forwards it ONLY\n"+
+			"  to a terminal that claims the capability — no terminal claims it by default, so\n"+
+			"  tmux drops it and the link renders as plain text. Ghostty and iTerm2 both handle\n"+
+			"  OSC 8; only output printed AFTER this takes effect carries a link.",
+		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n      "+line+"\n"+
+			"  原因：程序用 OSC 8 转义打印超链接，而 tmux **只**把它转发给声明了该能力的终端 ——\n"+
+			"  默认没有终端声明，于是 tmux 直接丢掉，链接就变成了普通文字。Ghostty 和 iTerm2 都支持\n"+
+			"  OSC 8；只有生效之后打印的输出才带链接。")
+	if !s.ask(i18n.Tr("clickable links  (optional)", "可点击的链接（可选）"), detail) {
+		return 0
+	}
+	return s.applyConf([]string{line},
+		[][]string{{"set", "-as", "terminal-features", hyperlinkFeature}})
 }
 
 func (s *fixState) stepRestoreSettings() int {

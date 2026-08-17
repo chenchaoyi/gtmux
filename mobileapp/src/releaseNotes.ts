@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.64.0',
+    en: [
+      'A session whose turn ended on a failure now has its own "errored" group, amber, right below the ones waiting for you — instead of sitting under a green tick among the finished ones.',
+      'The situation board honours the line breaks the supervisor writes instead of printing the tag and running everything together, and struck-out items look struck out.',
+      'Picking panes for a share link groups them by session and leads each row with its pane id; a link\'s summary counts only the panes it can still reach.',
+    ],
+    zh: [
+      '停在错误上的会话现在有了自己的「出错」分区（琥珀色），紧挨在「需要你」下面 —— 而不是顶着绿勾躺在已完成里。',
+      '态势板现在会遵守参谋长写的换行，而不是把标签原样打出来、把内容挤成一整段；划掉的条目也真的显示为划掉。',
+      '给分享链接挑 pane 时按 session 分组、每行以 pane id 打头；链接摘要只数它还能到达的 pane。',
+    ],
+  },
+  {
     version: '0.62.0',
     en: [
       'Version alignment with gtmux 0.62.0 — this release hardens the CLI/HQ side (loss-proof perception, a fully bilingual supervisor charter); no phone-side changes.',

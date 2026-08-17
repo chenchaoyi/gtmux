@@ -1285,6 +1285,24 @@ so `focus`'s tab matching is untouched.
   `doctor` does NOT suggest this one. `pane-border-status` is `off` by default, so turning
   it on costs a permanent screen row per pane in every split — a real price for something
   the window name already carries. Your call, not a recommendation.
+### Make a printed link clickable (optional)
+
+A program prints a hyperlink as an OSC 8 escape, and **tmux forwards it only to a terminal
+that claims the capability** — no terminal claims it by default, so tmux drops the escape
+and the link renders as plain text.
+
+```tmux
+set -as terminal-features ',*:hyperlinks'
+```
+
+- **Needs tmux 3.4+.** `terminal-features` exists from 3.2 but the `hyperlinks` feature
+  only from 3.4; on an older tmux the line is a startup error, so `doctor` checks the
+  running version and does not offer it below that.
+- **Only output printed after it takes effect** carries a link — what is already on screen
+  was drawn without one.
+- Ghostty and iTerm2 both handle OSC 8. If a link still does not respond after this, the
+  next suspect is the terminal's own click modifier (some need ⌘ or ⌥ + click).
+
 ### Give a plain pane a title worth reading (optional)
 
 An agent writes its own pane title — that is why an agent row reads `提炼本周研发周报质量部分汇总`
