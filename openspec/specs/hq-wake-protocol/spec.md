@@ -18,16 +18,17 @@ channel with exactly two classes: IMMEDIATE wakes for decision-dense events —
 `waiting·<kind>`, `resolved` (a wait cleared), `asks`, `done` (unattended
 completion), `crash` (a turn that died on an agent/API failure), `goal-changed`
 (a user-direct prompt in a non-HQ pane), `new-session` (a newly sensed agent
-session), `reap-suggest`, `feed-degraded`, and the standing resource/limits
+session), `reap-suggest`, `wake-degraded`, and the standing resource/limits
 warnings — and a periodic `tick` wake. The standing set SHALL additionally include the
 periodic MAINTENANCE classes `distill` and `self-check`, the SESSION-HEALTH class
 `self-rotate`, raised by the serve slow-tick's own sensors, and the completeness class
 `unread`. No other event class SHALL be typed into
 the HQ pane;
 process-level events (prompt submissions, working transitions) reach HQ only by
-pull (`gtmux digest`, `gtmux events`). Producer-heartbeat receipt suppression
-(`feedSupersedesReceipts`) is REMOVED: the wake line is the only knock, and it
+pull (`gtmux digest`, `gtmux events`). The wake line is the only knock, and it
 always fires for wake-class events (gated only on a live HQ pane and `hqNudge`).
+A retention gap is not a wake class: the pull itself announces it (the read-time
+gap warning), because the reader is present at the exact moment it matters.
 
 The class list SHALL be understood as a PRIORITY vocabulary, not a coverage guarantee: a
 class states what HQ should look at first, and NOT the set of events HQ can learn about.
@@ -42,10 +43,10 @@ matches no class SHALL therefore still reach HQ.
 
 #### Scenario: Wake-class events knock even when the feed daemon is healthy
 
-- **WHEN** a wake-class event (e.g. `goal-changed`) occurs while the hq-feed daemon
-  heartbeat is fresh
-- **THEN** the wake line is still typed into the HQ pane (the daemon's health no
-  longer suppresses the knock)
+- **WHEN** a wake-class event (e.g. `goal-changed`) occurs while every other
+  perception mechanism is healthy
+- **THEN** the wake line is still typed into the HQ pane — no mechanism's
+  health suppresses the knock
 
 #### Scenario: An event matching no class still reaches HQ
 
@@ -348,7 +349,7 @@ enqueued for a later drain instead of discarded.
 ### Requirement: Wake queue is prioritized and bounded
 
 Queue entries SHALL carry the priority of their wake class: decision-dense classes
-(`waiting`, `asks`, `goal-changed`, `crash`, `feed-degraded`, `wake-degraded`) outrank
+(`waiting`, `asks`, `goal-changed`, `crash`, `wake-degraded`) outrank
 outcome classes (`done`, `resolved`, `new-session`, `reap-suggest`, `tick`), which
 outrank standing warnings (`resource·warn`, `limits·warn`). A drain SHALL emit entries
 highest-priority first and oldest-first within a priority, SHALL bound one coalesced

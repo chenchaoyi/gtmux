@@ -834,16 +834,16 @@ place for distilled corrections.
 ### Requirement: HQ subscribes to the silent feed and gates its own output
 
 The seeded playbook SHALL teach HQ to perceive by PULL-ON-WAKE: on any wake line
-it reads the delta (`gtmux events --since <seq>` and/or `gtmux digest --json`)
-before acting, rather than requiring a persistently backgrounded
-`gtmux hq-feed --tail` subscription (which is agent-specific and is DROPPED as a
-playbook requirement — the spool remains available as pull-side data). HQ SHALL
-GATE its own user-visible output by surfacing tier: it SHALL print for CRITICAL
-and NORMAL items (per the resolved threshold), and for QUIET items it SHALL only
-record to the attention ledger and stay silent that turn. HQ SHALL answer
-confirm-type asks itself only within the reversible ∧ low-risk ∧ no-fork bound
-(recording the auto-answer), and escalate everything else. HQ SHALL always
-surface a feed-degradation CRITICAL regardless of the configured threshold.
+it reads the delta (`gtmux events --since-seq <n>` and/or `gtmux digest --json`)
+before acting. No background subscription exists — the journal is the single
+stream, and a retention gap is announced by the pull itself (a CRITICAL warning
+on the `--since-seq` read directing a digest-snapshot rebuild before acking).
+HQ SHALL GATE its own user-visible output by surfacing tier: it SHALL print for
+CRITICAL and NORMAL items (per the resolved threshold), and for QUIET items it
+SHALL only record to the attention ledger and stay silent that turn. HQ SHALL
+answer confirm-type asks itself only within the reversible ∧ low-risk ∧ no-fork
+bound (recording the auto-answer), and escalate everything else. HQ SHALL always
+surface a read-time gap warning regardless of the configured threshold.
 
 #### Scenario: Wake then pull, on any agent
 
@@ -860,9 +860,9 @@ surface a feed-degradation CRITICAL regardless of the configured threshold.
 #### Scenario: A CRITICAL event is surfaced
 
 - **WHEN** HQ ingests a CRITICAL-tier event (a decision-type ask, a crash, or a
-  feed degradation)
-- **THEN** HQ prints it, and a feed-degradation CRITICAL is surfaced even when quiet
-  mode is on
+  read-time gap warning) — even while quiet mode is on
+- **THEN** HQ prints it; a gap warning is surfaced despite the configured
+  threshold, after reconciling from a digest snapshot
 
 ### Requirement: HQ self-check and self-maintenance
 
@@ -1142,28 +1142,25 @@ next managed-playbook upgrade.
 
 ### Requirement: HQ verifies perception self-heal before nagging or restarting
 
-The seeded playbook SHALL teach HQ that a `feed-degraded` or `wake-degraded` wake
-reports that gtmux's OWN mechanical self-heal has ALREADY run — it is a report, not a
+The seeded playbook SHALL teach HQ that a `wake-degraded` wake reports that
+gtmux's OWN mechanical self-heal has ALREADY run — it is a report, not a
 request for HQ to restart anything. HQ SHALL first VERIFY by pulling the live
-digest/events: when perception is actually fresh, HQ SHALL stay silent (record only)
-and SHALL NOT repeatedly nag the user to restart. Only when the data is genuinely
-stale/broken SHALL HQ act, and per the role boundary it SHALL restart nothing itself —
-it SHALL dispatch a worker to restart the feed daemon and escalate to the user. (This
-charter discipline is folded into the knowledge-distillation change so the seeded
-playbook version bumps once; the code-side disk/feed hardening ships separately and
-touches no playbook.)
+digest/events: when perception is actually fresh, HQ SHALL stay silent (record
+only) and SHALL NOT repeatedly nag the user to restart. Only when the data is
+genuinely stale/broken SHALL HQ act, and per the role boundary it SHALL restart
+nothing itself — it SHALL escalate to the user with what it verified.
 
 #### Scenario: Fresh perception after a degraded wake stays silent
 
-- **WHEN** a `feed-degraded` wake arrives but a pull of `gtmux digest`/`events` shows
-  perception is current (the mechanical self-heal recovered)
+- **WHEN** a `wake-degraded` wake arrives but a pull of `gtmux digest`/`events`
+  shows perception is current (the mechanical self-heal recovered)
 - **THEN** HQ records it and stays silent — it does not nag the user to restart
 
 #### Scenario: A genuinely broken feed is restarted via a worker, not by HQ
 
-- **WHEN** after a degraded wake the pulled digest/events are genuinely stale/broken
-- **THEN** HQ dispatches a worker to restart the feed daemon and escalates to the user,
-  and never runs the restart command itself
+- **WHEN** a `wake-degraded` wake arrives and the pulled data is genuinely stale
+- **THEN** HQ escalates to the user with what it verified and restarts nothing
+  itself — recovery is gtmux's mechanical job, not the supervisor's
 
 ### Requirement: The supervisor identity is precise — the stamp outranks the path
 
