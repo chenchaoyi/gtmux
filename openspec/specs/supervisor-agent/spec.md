@@ -1618,11 +1618,15 @@ ARBITRARY user, not for gtmux's author or this machine's history:
   ("a dispatch of yours", "already in your own knowledge base") — on a fresh
   machine such claims are false and an HQ that believes them will recount
   history that never happened there.
-- **The user's language needs no gtmux-specific setup**: the resolved language
-  is `--lang`, else `GTMUX_LANG`, else the system locale (`LC_ALL` over
-  `LANG`, POSIX order — a `zh*` prefix reads Chinese), else English. An
-  explicit `GTMUX_LANG` always wins; a set-but-unknown value resolves to
-  English rather than silently falling through to the locale.
+- **The user's language needs no gtmux-specific setup, and the machine speaks
+  ONE language**: the resolved language is `--lang`, else `GTMUX_LANG`, else
+  `gtmux config lang` (the machine-level choice in config.json — the layer a
+  launchd-started serve and a hook subprocess share with the user's shell,
+  since none of them share an environment), else the system locale (`LC_ALL`
+  over `LANG`, POSIX order — a `zh*` prefix reads Chinese), else English. A
+  set-but-unknown value at an explicit layer resolves to English rather than
+  silently falling through — except the config value `auto`, which
+  deliberately means "follow the locale".
 - **The charter ships whole in the user's language**: one
   complete English edition and one complete Chinese edition, sharing one
   markdown skeleton and one actionable anchor set (every command, wake class,
@@ -1678,3 +1682,9 @@ ARBITRARY user, not for gtmux's author or this machine's history:
 - **WHEN** `GTMUX_LANG` is unset and the system locale is `zh_CN.UTF-8`
 - **THEN** gtmux's output, the charter, the board seed, and the LOCAL.md
   template are Chinese — no gtmux-specific environment variable required
+
+#### Scenario: Every process resolves the same language
+
+- **WHEN** `gtmux config lang zh` is set and a launchd-started serve (no
+  GTMUX_LANG, no user locale) emits a wake suffix or a desktop notification
+- **THEN** it is Chinese — the same language the user's own shell resolves
