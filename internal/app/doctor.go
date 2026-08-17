@@ -164,7 +164,7 @@ func doctorSections() []dsection {
 		// first thing you see) + config validity.
 		{i18n.Tr("gtmux", "gtmux"), versionChecks()},
 		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(),
-			rowWindowNameSource(), rowPaneIDsInTabs(), rowPaneTitles(), rowHistory()}},
+			rowWindowNameSource(), rowPaneIDsInTabs(), rowPaneTitles(), rowHyperlinks(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), terminalChecks()},
 		{i18n.Tr("Agents & notifications", "agent 与通知"), agents},
@@ -475,6 +475,67 @@ func shellHookInstalled() bool {
 	rc, _ := shellRCPath()
 	b, err := os.ReadFile(rc)
 	return err == nil && strings.Contains(string(b), paneTitleMarker)
+}
+
+// hyperlinkFeature is the terminal-features flag that lets tmux pass OSC 8 hyperlinks
+// through to the outer terminal. Without it tmux DROPS them: it only writes a hyperlink
+// for a terminal it believes supports one, and no terminal claims the capability by
+// default. Measured on this machine — `terminal-features` listed clipboard/cstyle/focus/
+// title and no hyperlinks, and clicking a link in a tmux pane did nothing.
+const hyperlinkFeature = ",*:hyperlinks"
+
+// minHyperlinkTmux is the first tmux that KNOWS this feature name. `terminal-features`
+// arrived in 3.2, but `hyperlinks` only in 3.4 — writing it into an older config is not a
+// no-op, it is a startup error on a line the user did not write themselves.
+const minHyperlinkTmux = "3.4"
+
+// tmuxVersion returns the running tmux's version ("3.7b" → "3.7b"), or "" when unknown.
+func tmuxVersion() string {
+	v := tmux.Lines("-V")
+	if len(v) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(strings.TrimPrefix(v[0], "tmux "))
+}
+
+// tmuxAtLeast compares a tmux version against a "major.minor" floor, tolerating the
+// letter suffix tmux uses for its release candidates and point releases ("3.7b", "3.4a").
+// Unknown or unparseable → false: a feature is offered only when it is known to exist.
+func tmuxAtLeast(ver, floor string) bool {
+	num := func(s string) (int, int) {
+		var maj, min int
+		f := strings.SplitN(s, ".", 2)
+		maj, _ = strconv.Atoi(strings.TrimFunc(f[0], func(r rune) bool { return r < '0' || r > '9' }))
+		if len(f) > 1 {
+			min, _ = strconv.Atoi(strings.TrimFunc(f[1], func(r rune) bool { return r < '0' || r > '9' }))
+		}
+		return maj, min
+	}
+	vMaj, vMin := num(ver)
+	fMaj, fMin := num(floor)
+	if vMaj == 0 {
+		return false // unknown
+	}
+	return vMaj > fMaj || (vMaj == fMaj && vMin >= fMin)
+}
+
+// rowHyperlinks reports whether a clickable link in a pane actually reaches the terminal.
+func rowHyperlinks() dcheck {
+	label := i18n.Tr("clickable links", "可点击的链接")
+	note := i18n.Tr("a link printed in a pane is clickable", "pane 里打印的链接可以点开")
+	ver := tmuxVersion()
+	if !tmuxAtLeast(ver, minHyperlinkTmux) {
+		return dcheck{stInfo, label,
+			i18n.Tr("needs tmux "+minHyperlinkTmux+"+", "需要 tmux "+minHyperlinkTmux+"+"),
+			i18n.Tr("this tmux has no hyperlinks feature — brew upgrade tmux",
+				"当前 tmux 没有 hyperlinks 能力 —— brew upgrade tmux")}
+	}
+	if strings.Contains(tmuxOptAll("terminal-features"), "hyperlinks") {
+		return dcheck{stOK, label, i18n.Tr("on", "已开"), note}
+	}
+	return dcheck{stRec, label, i18n.Tr("tmux drops them", "被 tmux 丢弃"),
+		i18n.Tr("tmux only forwards a link to a terminal that claims the capability",
+			"tmux 只会把链接转发给声明了该能力的终端")}
 }
 
 // paneIDsInWindowName is the automatic-rename-format that puts every pane's `%N` into its
@@ -1042,6 +1103,14 @@ func tmuxOpt(name string) string {
 		return ""
 	}
 	return strings.TrimSpace(lines[0])
+}
+
+// tmuxOptAll is tmuxOpt for an ARRAY option. `show -gv terminal-features` prints one
+// line per entry, and tmuxOpt keeps only the first — so a `set -as` append landed on a
+// later line and read as absent. That made the hyperlinks step re-offer itself forever
+// (caught by its idempotency check, not by reading the code).
+func tmuxOptAll(name string) string {
+	return strings.Join(tmux.Lines("show", "-gv", name), "\n")
 }
 
 // tmuxHook returns a hook's command, or "" when it is unset.
