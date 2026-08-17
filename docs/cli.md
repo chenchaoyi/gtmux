@@ -22,8 +22,9 @@
 | `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
 
 Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
-follows `--lang=en|zh`, `$GTMUX_LANG`, or — when neither is set — the system
-locale (`LC_ALL`/`LANG`: a `zh*` locale reads Chinese; default `en`). Everything is invoked
+follows `--lang=en|zh`, `$GTMUX_LANG`, `gtmux config lang`, or — when none is
+set — the system locale (`LC_ALL`/`LANG`: a `zh*` locale reads Chinese; default
+`en`). Everything is invoked
 explicitly — no shell hooks, works with any shell.
 
 ## `gtmux agents`
@@ -1181,9 +1182,19 @@ into developer vocabulary.
 ```
 gtmux config agent-proxy [<url>|off]   # proxy applied when gtmux LAUNCHES an agent
 gtmux config tab-alert  [on|off]       # mark the terminal TAB of a session that needs you
+gtmux config lang       [en|zh|auto]   # machine-level output language (auto = system locale)
 ```
 
-Both print their current value when called with no argument.
+Each prints its current value when called with no argument.
+
+### `lang` — one language for every gtmux process
+
+Processes do not share an environment: a launchd-started `gtmux serve` and a hook
+subprocess have no `GTMUX_LANG` and none of your shell's locale, so without a
+machine-level choice the wake suffixes and desktop notifications they emit could
+disagree with the language your own terminal shows. `gtmux config lang zh` makes the
+choice once for all of them; `auto` follows the system locale instead. Per-process
+`GTMUX_LANG` and per-invocation `--lang` still override.
 
 ### `tab-alert` — find the right tab without opening nine of them
 

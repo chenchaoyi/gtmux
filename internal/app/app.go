@@ -12,6 +12,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
 // selfPath is the absolute path to this binary (for popup re-exec).
@@ -22,15 +23,25 @@ func selfPath() string {
 	return "gtmux"
 }
 
-// langFromEnv resolves the default output language: GTMUX_LANG when set to a
-// known value; otherwise the system locale (LC_ALL over LANG, POSIX order) —
-// a zh* locale reads Chinese without any gtmux-specific setup. Everything else
-// is English. A set-but-unknown GTMUX_LANG is an explicit (if broken) choice
-// and does NOT fall through to the locale.
-func langFromEnv(get func(string) string) string {
+// resolveLang resolves the default output language: GTMUX_LANG when set to a
+// known value; else config.json's "lang" (the MACHINE-level choice — the one
+// that keeps a launchd-started serve, hook subprocesses, and the user's shell
+// speaking the same language, since none of them share an environment); else
+// the system locale (LC_ALL over LANG, POSIX order — a zh* locale reads Chinese
+// without any gtmux-specific setup); else English. A set-but-unknown value at
+// either explicit layer is an explicit (if broken) choice and does NOT fall
+// through — except the config value "auto", which deliberately means "follow
+// the locale". (A global --lang flag is applied after this and beats all of it.)
+func resolveLang(get func(string) string, cfgLang string) string {
 	if l := get("GTMUX_LANG"); l != "" {
 		if l == "zh" || l == "en" {
 			return l
+		}
+		return "en"
+	}
+	if cfgLang != "" && cfgLang != "auto" {
+		if cfgLang == "zh" || cfgLang == "en" {
+			return cfgLang
 		}
 		return "en"
 	}
@@ -45,8 +56,13 @@ func langFromEnv(get func(string) string) string {
 // Run is the CLI entry point. It resolves the language, dispatches the
 // subcommand, and returns the process exit code.
 func Run(argv []string) int {
-	// Default language from env; a global --lang=en|zh flag overrides it.
-	i18n.SetLang(langFromEnv(os.Getenv))
+	// Default language: env, then the machine-level config, then the locale; a
+	// global --lang=en|zh flag overrides all of it.
+	var lc struct {
+		Lang string `json:"lang"`
+	}
+	_ = usercfg.Load(&lc) // malformed/missing config → empty, i.e. locale fallback
+	i18n.SetLang(resolveLang(os.Getenv, lc.Lang))
 	var args []string
 	for _, a := range argv {
 		switch {

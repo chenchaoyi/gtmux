@@ -27,6 +27,8 @@ func cmdConfig(args []string) int {
 		return configAgentProxy(args[1:])
 	case "tab-alert":
 		return configTabAlert(args[1:])
+	case "lang":
+		return configLang(args[1:])
 	default:
 		i18n.Sae("gtmux config: unknown key '"+args[0]+"'", "gtmux config: 未知配置项 '"+args[0]+"'")
 		return configUsage()
@@ -53,6 +55,36 @@ func configAgentProxy(args []string) int {
 	}
 	i18n.Say("set agentProxy = "+v+"  (launch now: "+shownProxy()+")",
 		"已设置 agentProxy = "+v+"（现在起 agent："+shownProxy()+"）")
+	return 0
+}
+
+// configLang implements `gtmux config lang [en|zh|auto]` — the MACHINE-level
+// language. It exists because processes do not share an environment: a
+// launchd-started serve and a hook subprocess have no GTMUX_LANG and no user
+// locale, so without a config-level choice the wake suffixes and desktop
+// notifications they emit could disagree with the language the user's own
+// shell sees. `auto` explicitly means "follow the system locale"; the
+// GTMUX_LANG env var still overrides per-process, and --lang per-invocation.
+func configLang(args []string) int {
+	if len(args) == 0 { // show the resolved value this process is using
+		i18n.Say("lang = "+i18n.Lang()+"  (GTMUX_LANG env > config > locale)",
+			"lang = "+i18n.Lang()+"（GTMUX_LANG 环境变量 > 配置 > 系统 locale）")
+		return 0
+	}
+	if args[0] == "-h" || args[0] == "--help" {
+		return configUsage()
+	}
+	v := strings.TrimSpace(args[0])
+	if v != "en" && v != "zh" && v != "auto" {
+		i18n.Sae("gtmux config lang: value must be en, zh, or auto",
+			"gtmux config lang: 取值须为 en、zh 或 auto")
+		return 2
+	}
+	if err := setConfigKey("lang", v); err != nil {
+		i18n.Sae("gtmux config: "+err.Error(), "gtmux config: "+err.Error())
+		return 1
+	}
+	i18n.Say("set lang = "+v, "已设置 lang = "+v)
 	return 0
 }
 
@@ -87,6 +119,11 @@ func configUsage() int {
 			"  <url>  HTTP(S) proxy to apply when gtmux launches an agent (e.g. http://127.0.0.1:PORT)\n"+
 			"  off    no proxy — launch bare (the default when unset)\n"+
 			"  (no value shows the current resolved proxy; env GTMUX_AGENT_PROXY overrides)\n"+
+			"\nusage: gtmux config lang [en|zh|auto]\n"+
+			"  en|zh  the machine-level output language — one choice ALL gtmux processes share\n"+
+			"         (a launchd serve and your shell have different environments; this doesn't)\n"+
+			"  auto   follow the system locale (LC_ALL/LANG; zh* reads Chinese)\n"+
+			"  (no value shows the resolved language; GTMUX_LANG env and --lang override)\n"+
 			"\nusage: gtmux config tab-alert [on|off]\n"+
 			"  on   mark the terminal TAB of a session that has an agent waiting on you (default off)\n"+
 			"  off  restore your own title format\n"+
@@ -95,6 +132,11 @@ func configUsage() int {
 			"  <url>  起 agent 时应用的 HTTP(S) 代理（如 http://127.0.0.1:端口）\n"+
 			"  off    不加代理，裸起（未设时的默认）\n"+
 			"  （不带值则显示当前生效值;环境变量 GTMUX_AGENT_PROXY 优先）\n"+
+			"\n用法：gtmux config lang [en|zh|auto]\n"+
+			"  en|zh  机器级输出语言 —— 所有 gtmux 进程共用这一个选择\n"+
+			"         （launchd 起的 serve 和你的 shell 环境不同;这个配置不受影响）\n"+
+			"  auto   跟随系统 locale（LC_ALL/LANG;zh* 即中文）\n"+
+			"  （不带值则显示当前生效语言;GTMUX_LANG 环境变量与 --lang 优先）\n"+
 			"\n用法：gtmux config tab-alert [on|off]\n"+
 			"  on   有 agent 在等你的 session，其终端标签标上 "+tabalert.Marker+"（默认关）\n"+
 			"  off  还原你原来的标题格式\n"+
