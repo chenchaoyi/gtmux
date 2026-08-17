@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
+	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 )
 
 func TestMaintenanceState(t *testing.T) {
@@ -88,7 +88,7 @@ func TestRaiseMaintenanceIsAuditable(t *testing.T) {
 	// pane "" makes the wake half a no-op (hqnudge.Deliver returns early), so the AUDIT
 	// half is exercised on its own, without a terminal. Production always passes a
 	// resolved pane — both sensors gate on hqpane.Find() first.
-	raiseMaintenance("", "distill", hqfeed.ControlDistill, "due (weekly)",
+	raiseMaintenance("", "distill", hqsurface.ControlDistill, "due (weekly)",
 		"distil the period into the KB", "then: gtmux capture --list", events.SevNotable, now)
 
 	recs := events.Read(0, now+1)
@@ -96,8 +96,8 @@ func TestRaiseMaintenanceIsAuditable(t *testing.T) {
 		t.Fatalf("want exactly 1 journal record, got %d", len(recs))
 	}
 	r := recs[0]
-	if r.Event != hqfeed.ControlDistill {
-		t.Errorf("event = %q, want %q", r.Event, hqfeed.ControlDistill)
+	if r.Event != hqsurface.ControlDistill {
+		t.Errorf("event = %q, want %q", r.Event, hqsurface.ControlDistill)
 	}
 	if !events.IsControl(r) {
 		t.Error("a maintenance record must classify as a control record")
@@ -110,7 +110,7 @@ func TestRaiseMaintenanceIsAuditable(t *testing.T) {
 	}
 	// And it must be legible in `gtmux events` — the point of the audit trail.
 	if line := events.Format(r); !strings.Contains(line, "CONTROL") ||
-		!strings.Contains(line, hqfeed.ControlDistill) {
+		!strings.Contains(line, hqsurface.ControlDistill) {
 		t.Errorf("formatted line %q must name the control record", line)
 	}
 
@@ -126,9 +126,9 @@ func TestControlRecordsDoNotFeedTheSensors(t *testing.T) {
 	const now = 10_000_000
 
 	// A quiet fleet whose ONLY journal traffic is gtmux's own maintenance records.
-	events.Append(events.Record{Ts: now - 600, Event: hqfeed.ControlSelfCheck,
+	events.Append(events.Record{Ts: now - 600, Event: hqsurface.ControlSelfCheck,
 		Summary: "self-check due (idle)", Severity: events.SevNotable})
-	events.Append(events.Record{Ts: now - 300, Event: hqfeed.ControlDistill,
+	events.Append(events.Record{Ts: now - 300, Event: hqsurface.ControlDistill,
 		Summary: "distill due (weekly)", Severity: events.SevNotable})
 
 	if recentAttentionEvent(now) {

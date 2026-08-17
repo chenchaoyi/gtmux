@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
+	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -245,7 +245,7 @@ func TestUnreadCountsControlRecords(t *testing.T) {
 	now := int64(10_000_000)
 
 	hqwake.Consume(0)
-	events.Append(events.Record{Ts: now, Event: hqfeed.ControlDistill,
+	events.Append(events.Record{Ts: now, Event: hqsurface.ControlDistill,
 		Summary: "due (weekly)", Severity: events.SevNotable})
 	if n := unreadScan(0, testHQPane).N; n != 1 {
 		t.Errorf("unread count = %d, want the maintenance record to count as owed work", n)
@@ -307,7 +307,7 @@ func TestUnreadCountsPaneLessWork(t *testing.T) {
 		Origin: events.OriginInstruction, Severity: events.SevNotable}) // a native agent's turn
 	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Agent: "Codex",
 		Severity: events.SevNotable})
-	events.Append(events.Record{Ts: now, Event: hqfeed.ControlSelfCheck,
+	events.Append(events.Record{Ts: now, Event: hqsurface.ControlSelfCheck,
 		Severity: events.SevNotable}) // gtmux's own maintenance trigger
 	// A pane-less start with no end near it: a native session coming online, not a blink.
 	events.Append(events.Record{Ts: now, Event: "SessionStart", Agent: "Claude Code",
@@ -333,7 +333,7 @@ func TestUnreadKnockNamesItsComposition(t *testing.T) {
 		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%21",
 			Severity: events.SevNotable})
 	}
-	events.Append(events.Record{Ts: now, Event: hqfeed.ControlSelfCheck, Severity: events.SevNotable})
+	events.Append(events.Record{Ts: now, Event: hqsurface.ControlSelfCheck, Severity: events.SevNotable})
 
 	d := hqwake.Defaults().UnreadDebounceSec
 	unreadSensorFor(testHQPane, now)

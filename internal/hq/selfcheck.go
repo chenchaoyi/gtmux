@@ -13,8 +13,8 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -103,7 +103,7 @@ func selfCheckSensor(now int64) {
 	if journalOver || gap {
 		sev = events.SevImportant // a broken log / cursor gap is a severe finding — surface it
 	}
-	raiseMaintenance(pane, hqwake.ClassSelfCheck, hqfeed.ControlSelfCheck, "due ("+reason+")",
+	raiseMaintenance(pane, hqwake.ClassSelfCheck, hqsurface.ControlSelfCheck, "due ("+reason+")",
 		"review feed/ledger/memory health, clean silently, brief only on real action",
 		"", sev, now)
 }
