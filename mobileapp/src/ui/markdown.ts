@@ -13,10 +13,18 @@ export type Inline =
   | {t: 'b'; s: string}
   | {t: 'i'; s: string}
   | {t: 'code'; s: string}
+  /** ~~struck out~~ — HQ marks a handled item this way rather than deleting it. */
+  | {t: 'del'; s: string}
+  /** A hard line break (`<br>`): the break is honoured, the tag never shown. */
+  | {t: 'br'; s: string}
   | {t: 'link'; s: string; href: string};
 
 export type Align = 'left' | 'center' | 'right';
 
+// A hard line BREAK inside a paragraph. HQ writes `<br>` — it is writing for a reader,
+// and a break is the one bit of HTML that survives everywhere else it might be read. The
+// parser used to have no node for it, so the tag showed up as literal text AND the break
+// it asked for was lost: a paragraph meant as ten short lines arrived as one wall.
 export type Block =
   | {t: 'h'; level: number; spans: Inline[]}
   | {t: 'p'; spans: Inline[]}
@@ -45,6 +53,9 @@ export function parseInline(s: string): Inline[] {
     if ((m = /\[([^\]]+)\]\(([^)\s]+)\)/.exec(rest))) consider(m.index, m[0].length, {t: 'link', s: m[1], href: m[2]});
     if ((m = /\*\*([^*]+)\*\*/.exec(rest))) consider(m.index, m[0].length, {t: 'b', s: m[1]});
     if ((m = /\*([^*\n]+)\*/.exec(rest))) consider(m.index, m[0].length, {t: 'i', s: m[1]});
+    if ((m = /~~([^~]+)~~/.exec(rest))) consider(m.index, m[0].length, {t: 'del', s: m[1]});
+    // `<br>`, `<br/>`, `<br />` — a hard break, not text.
+    if ((m = /<br\s*\/?>/i.exec(rest))) consider(m.index, m[0].length, {t: 'br', s: ''});
     if (!best) {
       out.push({t: 'text', s: rest});
       break;

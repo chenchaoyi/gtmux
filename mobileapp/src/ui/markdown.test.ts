@@ -125,3 +125,31 @@ describe('parseBlocks', () => {
     expect((b[1] as any).t).toBe('table');
   });
 });
+
+// HQ writes for a reader, and `<br>` is the one bit of HTML that survives wherever else
+// its board might be read. The parser had no node for it, so the tag arrived as literal
+// text AND the break it asked for was lost — a passage meant as short lines rendered as
+// one wall, which is exactly what the board looked like on the phone.
+describe('inline markup the board actually uses', () => {
+  it('turns <br> into a break, and never shows the tag', () => {
+    const spans = parseInline('done<br>next');
+    expect(spans.map(s => s.t)).toEqual(['text', 'br', 'text']);
+    expect(spans.map(s => s.s).join('')).not.toContain('br');
+  });
+
+  it('accepts the self-closing spellings too', () => {
+    for (const tag of ['<br/>', '<br />', '<BR>']) {
+      expect(parseInline('a' + tag + 'b').map(s => s.t)).toEqual(['text', 'br', 'text']);
+    }
+  });
+
+  it('strikes out ~~text~~ instead of printing the tildes', () => {
+    const spans = parseInline('~~handled~~ now');
+    expect(spans[0]).toEqual({t: 'del', s: 'handled'});
+    expect(spans.map(s => s.s).join('')).not.toContain('~');
+  });
+
+  it('leaves a lone tilde alone', () => {
+    expect(parseInline('~/config').map(s => s.t)).toEqual(['text']);
+  });
+});

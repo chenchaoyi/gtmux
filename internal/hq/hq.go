@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 32
+const hqPlaybookVersion = 33
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND the charter language, and signals
@@ -1159,6 +1159,13 @@ your own (Chinese seed: ` + "`## ① 现状 — 在跑的 pane`" + `; English se
 **② (below) — dated entries, NEWEST FIRST. Always PREPEND.** One entry per
 rotation or per notable shift. This part answers "what happened across my resets"
 (Chinese seed: ` + "`## ② 交接记录 — 新的在最上面`" + `; English: ` + "`## ② Handoff log — newest first`" + `).
+
+**A TABLE CELL IS ONE LINE.** 每格一句话：现在在做什么、谁派的、什么状态。A running
+narrative — timestamps, emoji, ` + "`<br>`" + ` separators — does NOT belong in a cell; it is a
+dated entry, and dated entries live in ②. Measured on the commander's phone: one ` + "`状态`" + `
+cell had grown into a multi-paragraph log, so its row rendered as a wall of text with tiny
+labels down the left edge and he read the whole board as 「太不专业了」. **A cell that needs
+more than a line is telling you it belongs in ②** — not that the cell should be longer.
 
 **KEEP THE BOARD IN THE LANGUAGE IT WAS SEEDED IN — and write it natively, never as a
 word-for-word rendering.** Left to translate a seed's English on its own, a board once

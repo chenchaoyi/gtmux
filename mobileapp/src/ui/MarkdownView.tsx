@@ -76,6 +76,15 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false): Re
             {' '}
           </Text>
         );
+      case 'del':
+        return (
+          <Text key={i} style={styles.del}>
+            {n.s}
+          </Text>
+        );
+      case 'br':
+        // A real newline inside the Text: what the author asked for, and never the tag.
+        return <Text key={i}>{'\n'}</Text>;
       case 'link':
         return (
           <Text key={i} style={{color: c.link, textDecorationLine: 'underline'}} onPress={() => Linking.openURL(n.href).catch(() => {})}>
@@ -275,6 +284,7 @@ const styles = StyleSheet.create({
   // there it is 600: still emphasis, no longer a shout.
   boldCalm: {fontWeight: '600'},
   italic: {fontStyle: 'italic'},
+  del: {textDecorationLine: 'line-through'},
   codeInline: {fontFamily: 'Menlo', borderRadius: 3},
   codeCalm: {fontFamily: 'Menlo'},
   codeBlock: {borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, marginBottom: 8, maxWidth: '100%'},
