@@ -3,6 +3,7 @@ package hq
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -231,7 +232,7 @@ func TestSeedHQHome_UpgradesOnNewerVersion(t *testing.T) {
 		t.Fatalf("expected a v0→v%d migration, got %+v", hqPlaybookVersion, res)
 	}
 	// The prior content is backed up, not destroyed.
-	bak, err := os.ReadFile(hqInstructionsPath() + ".bak-v0")
+	bak, err := os.ReadFile(hqInstructionsPath() + ".bak-v0-legacy")
 	if err != nil || string(bak) != "OLD UNVERSIONED PLAYBOOK + my edits" {
 		t.Fatalf("prior playbook must be backed up verbatim: %v %q", err, bak)
 	}
@@ -591,16 +592,16 @@ func TestHQPlaybookChiefOfStaff(t *testing.T) {
 			t.Errorf("chief-of-staff seed missing %q", want)
 		}
 	}
-	// bilingual: the zh anchors are present too
+	// The Chinese charter carries the same doctrine (bilingual-playbook).
 	for _, wantZH := range []string{
 		"态势板",       // situation board
-		"授权分层",      // decision-authority tiers
+		"决策权限",      // decision-authority tiers
 		"分级升级",      // graded escalation
-		"对账核销",      // reconcile
+		"对账",        // reconcile
 		"纠正→守则学习闭环", // learning loop
 	} {
-		if !strings.Contains(s, wantZH) {
-			t.Errorf("chief-of-staff seed missing zh anchor %q", wantZH)
+		if !strings.Contains(hqInstructionsZH, wantZH) {
+			t.Errorf("zh charter missing anchor %q", wantZH)
 		}
 	}
 }
@@ -630,15 +631,15 @@ func TestHQPlaybookWakeProtocol(t *testing.T) {
 	}
 	s := string(agents)
 	for _, want := range []string{
-		"» gtmux·",            // the injected signal-line language
-		"WAKE → PULL → JUDGE", // the short-turn loop
-		"--since-seq",         // pull-on-wake primitive
-		"Signal register",     // wakes answer in a distinct register
-		"⟣ ◈",                 // the tick brief glyph
-		"Enrollment 建联",       // goal-aware dossiers at start + per newcomer
-		"DONE JUDGMENT",       // graded done responses
-		"crash",               // a dead turn is never a finish
-		"don't tail",          // no background-tail requirement (agent-agnostic HQ)
+		"» gtmux·",                         // the injected signal-line language
+		"WAKE → PULL → JUDGE",              // the short-turn loop
+		"--since-seq",                      // pull-on-wake primitive
+		"Signal register",                  // wakes answer in a distinct register
+		"⟣ ◈",                              // the tick brief glyph
+		"Enrollment — goal-aware dossiers", // at start + per newcomer
+		"DONE JUDGMENT",                    // graded done responses
+		"crash",                            // a dead turn is never a finish
+		"don't tail",                       // no background-tail requirement (agent-agnostic HQ)
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("AGENTS.md v2 playbook missing %q", want)
@@ -674,11 +675,13 @@ func TestHQPlaybookThreeReads(t *testing.T) {
 		"--severity important", // the escalation stream…
 		"SUBSET",               // …explicitly not the whole picture
 		"triage shortcut",      // the rule that generalizes past this bug
-		"世界模型",                 // the zh anchor for that rule
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("v4 playbook missing %q", want)
 		}
+	}
+	if !strings.Contains(hqInstructionsZH, "世界模型") {
+		t.Error("zh charter lost the filtered-read rule anchor")
 	}
 	// The claim this change exists to kill: no filtered read is "the attention stream".
 	if strings.Contains(s, "attention stream") {
@@ -722,7 +725,8 @@ func TestSeedsAndPlaybookCarryNoAuthorLeakage(t *testing.T) {
 			}
 		}
 	}
-	check("hqInstructions", hqInstructions)
+	check("en charter", hqInstructionsEN)
+	check("zh charter", hqInstructionsZH)
 	for name, body := range hqKnowledgeSeeds {
 		check("seed "+name, body)
 	}
@@ -761,12 +765,134 @@ func TestBoardSeedFollowsLanguage(t *testing.T) {
 // that no longer exists.
 func TestPlaybookDropsRetiredPerceptionVocabulary(t *testing.T) {
 	for _, banned := range []string{"hq-feed", "feed-degraded", "spool daemon"} {
-		if strings.Contains(hqInstructions, banned) {
-			t.Errorf("playbook reintroduces retired vocabulary %q", banned)
+		for _, charter := range []string{hqInstructionsEN, hqInstructionsZH} {
+			if strings.Contains(charter, banned) {
+				t.Errorf("a charter reintroduces retired vocabulary %q", banned)
+			}
 		}
 		for name, seed := range hqKnowledgeSeeds {
 			if strings.Contains(seed, banned) {
 				t.Errorf("seed %s reintroduces retired vocabulary %q", name, banned)
+			}
+		}
+	}
+}
+
+// The managed playbook follows the user's language (bilingual-playbook): the
+// marker records which charter was installed, generatedPlaybook picks by
+// i18n.Lang, and a language switch upgrades a current-version install.
+func TestGeneratedPlaybookFollowsLanguage(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+
+	i18n.SetLang("en")
+	en := generatedPlaybook()
+	if !strings.Contains(en, "lang:en") {
+		t.Error("en playbook marker must record lang:en")
+	}
+	if !strings.Contains(en, hqInstructionsEN[:40]) {
+		t.Error("en playbook must carry the English charter")
+	}
+
+	i18n.SetLang("zh")
+	zh := generatedPlaybook()
+	if !strings.Contains(zh, "lang:zh") {
+		t.Error("zh playbook marker must record lang:zh")
+	}
+	if !strings.Contains(zh, hqInstructionsZH[:40]) {
+		t.Error("zh playbook must carry the Chinese charter")
+	}
+}
+
+// A same-version install in the OTHER language regenerates (backup kept); a
+// same-version same-language install is a no-op; a legacy marker without lang
+// regenerates once.
+func TestPlaybookUpgradesOnLanguageSwitch(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	i18n.SetLang("en")
+	if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Same version, same language → no-op.
+	var r seedResult
+	if err := upgradePlaybookIfNewer(&r); err != nil || r.Upgraded {
+		t.Fatalf("same-version same-lang must be a no-op: %+v err=%v", r, err)
+	}
+	// Same version, other language → regenerate with a backup.
+	i18n.SetLang("zh")
+	r = seedResult{}
+	if err := upgradePlaybookIfNewer(&r); err != nil || !r.Upgraded {
+		t.Fatalf("a language switch must regenerate: %+v err=%v", r, err)
+	}
+	if r.BackupPath == "" {
+		t.Error("the replaced playbook must be backed up")
+	}
+	body, _ := os.ReadFile(hqInstructionsPath())
+	if !strings.Contains(string(body), "lang:zh") {
+		t.Error("regenerated playbook must be the zh charter")
+	}
+	// Legacy marker without lang: regenerates once.
+	legacy := playbookMarker(hqPlaybookVersion)
+	legacy = strings.Replace(legacy, " lang:"+i18n.Lang(), "", 1)
+	if err := os.WriteFile(hqInstructionsPath(), []byte(legacy+"\n\nold body\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r = seedResult{}
+	if err := upgradePlaybookIfNewer(&r); err != nil || !r.Upgraded {
+		t.Fatalf("a langless legacy marker must regenerate: %+v err=%v", r, err)
+	}
+}
+
+// The two charters are one document in two languages: a bullet added to one and
+// not the other is a red build. Prose may differ; the actionable surface — the
+// markdown skeleton, every gtmux command, every wake class, every control
+// record, every signal glyph — must be identical.
+func TestChartersShareSkeletonAndAnchors(t *testing.T) {
+	headings := func(s string) []string {
+		var out []string
+		for _, line := range strings.Split(s, "\n") {
+			if strings.HasPrefix(line, "# ") || strings.HasPrefix(line, "## ") {
+				out = append(out, strings.Repeat("#", strings.Index(line, " ")))
+			}
+		}
+		return out
+	}
+	he, hz := headings(hqInstructionsEN), headings(hqInstructionsZH)
+	if strings.Join(he, ",") != strings.Join(hz, ",") {
+		t.Errorf("heading skeleton differs: en=%v zh=%v", he, hz)
+	}
+
+	anchorSet := func(s, pattern string) map[string]bool {
+		out := map[string]bool{}
+		for _, m := range regexp.MustCompile(pattern).FindAllString(s, -1) {
+			out[m] = true
+		}
+		return out
+	}
+	for _, probe := range []struct {
+		name, pattern string
+	}{
+		{"gtmux commands", "`gtmux [a-z][a-z-]*"},
+		{"wake classes", "» gtmux·[a-z][a-z·-]*"},
+		{"control records", `\[CONTROL gtmux:[a-z-]+\]`},
+		{"signal glyphs", "⟣ [✅▪📓⚠◈]"},
+		{"audit namespace", `gtmux:audit:\*`},
+	} {
+		en, zh := anchorSet(hqInstructionsEN, probe.pattern), anchorSet(hqInstructionsZH, probe.pattern)
+		for a := range en {
+			if !zh[a] {
+				t.Errorf("%s: zh charter missing %q", probe.name, a)
+			}
+		}
+		for a := range zh {
+			if !en[a] {
+				t.Errorf("%s: en charter missing %q", probe.name, a)
 			}
 		}
 	}
