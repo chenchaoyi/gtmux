@@ -49,13 +49,13 @@ struct MenuView: View {
     }
 
     private var query: String { searchActive ? searchText : "" }
-    private var sections: [(status: Status, agents: [Agent])] {
+    private var sections: [(status: Status, errored: Bool, agents: [Agent])] {
         store.sections(query: query)
     }
     // Keyboard navigation only walks rows in EXPANDED sections (A4): a collapsed
     // section's agents are hidden, so ↑/↓ skip them.
     private var flat: [Agent] {
-        sections.filter { !collapse.isCollapsed($0.status) }.flatMap { $0.agents }
+        sections.filter { !collapse.isCollapsed($0.status, errored: $0.errored) }.flatMap { $0.agents }
     }
 
     var body: some View {
@@ -324,10 +324,10 @@ struct MenuView: View {
                 LazyVStack(alignment: .leading, spacing: 1) {
                     ForEach(listItems) { item in
                         switch item {
-                        case let .header(status, count):
-                            SectionHeader(status: status, count: count,
-                                          collapsed: collapse.isCollapsed(status), l10n: l10n) {
-                                collapse.toggle(status)
+                        case let .header(status, errored, count):
+                            SectionHeader(status: status, errored: errored, count: count,
+                                          collapsed: collapse.isCollapsed(status, errored: errored), l10n: l10n) {
+                                collapse.toggle(status, errored: errored)
                                 selected = 0
                             }
                         case let .agent(agent, idx):
@@ -396,7 +396,7 @@ struct MenuView: View {
     /// Flattened list of section headers + agent rows, each with a stable id, so
     /// SwiftUI reconciles a single identity space (no cross-section staleness).
     private enum ListItem: Identifiable {
-        case header(Status, Int)
+        case header(Status, Bool, Int) // status, errored-section?, count
         case agent(Agent, Int) // agent + its flat index (for keyboard selection)
         case nativeHeader(Int)  // the "Elsewhere / 不在 tmux" category header
         case native(Agent)      // a sensed non-tmux session (sense-only + Adopt)
@@ -404,7 +404,7 @@ struct MenuView: View {
         case watched(Agent)     // a user-promoted plain pane (focus + unwatch)
         var id: String {
             switch self {
-            case let .header(s, _): return "h:" + s.rawValue
+            case let .header(s, errored, _): return "h:" + (errored ? "errored" : s.rawValue)
             // status is part of the identity → a status change rebuilds the row,
             // so the badge can never go stale (defends the working/waiting bug).
             case let .agent(a, _): return "a:" + a.id + ":" + a.status
@@ -420,8 +420,10 @@ struct MenuView: View {
         var items: [ListItem] = []
         var idx = 0
         for section in sections {
-            items.append(.header(section.status, section.agents.count))
-            if collapse.isCollapsed(section.status) { continue } // count stays; rows hidden
+            items.append(.header(section.status, section.errored, section.agents.count))
+            // The errored section folds on its own key, not idle's — folding "finished"
+            // must not hide the failures too.
+            if collapse.isCollapsed(section.status, errored: section.errored) { continue }
             for a in section.agents {
                 items.append(.agent(a, idx))
                 idx += 1
@@ -807,6 +809,8 @@ struct MenuView: View {
 
 private struct SectionHeader: View {
     let status: Status
+    /// True for the errored section — amber, and titled "errored", not "idle".
+    var errored = false
     let count: Int
     let collapsed: Bool
     @ObservedObject var l10n: L10n
@@ -820,7 +824,10 @@ private struct SectionHeader: View {
         Button(action: onToggle) {
             HStack(spacing: 6) {
                 Text(title.uppercased()).font(Theme.Font.section).kerning(0.5)
-                    .foregroundStyle(status == .waiting ? Theme.Status.waiting : p.fg3)
+                    // Amber for errored — the colour the row's own ⚠ already uses. NOT
+                    // red: red means an agent is asking you something you can answer.
+                    .foregroundStyle(errored ? Theme.Status.errored
+                                     : status == .waiting ? Theme.Status.waiting : p.fg3)
                 Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
                 Spacer()
                 Text(collapsed ? l10n.tr("Show", "展开") : l10n.tr("Hide", "收起"))
@@ -837,6 +844,7 @@ private struct SectionHeader: View {
     }
 
     private var title: String {
+        if errored { return l10n.tr("Errored", "出错") }
         switch status {
         case .waiting: return l10n.tr("Needs input", "需要输入")
         case .working: return l10n.tr("Working", "运行中")
@@ -862,10 +870,15 @@ final class SectionCollapse: ObservableObject {
         collapsed = Set(raw.split(separator: ",").map(String.init))
     }
 
-    func isCollapsed(_ s: Status) -> Bool { collapsed.contains(s.rawValue) }
+    /// The errored section folds on its OWN key: folding "finished" must not take the
+    /// failures with it, which is what a shared key would do (both are idle sessions).
+    private func key(_ s: Status, errored: Bool) -> String { errored ? "errored" : s.rawValue }
 
-    func toggle(_ s: Status) {
-        if collapsed.contains(s.rawValue) { collapsed.remove(s.rawValue) } else { collapsed.insert(s.rawValue) }
+    func isCollapsed(_ s: Status, errored: Bool = false) -> Bool { collapsed.contains(key(s, errored: errored)) }
+
+    func toggle(_ s: Status, errored: Bool = false) {
+        let k = key(s, errored: errored)
+        if collapsed.contains(k) { collapsed.remove(k) } else { collapsed.insert(k) }
         UserDefaults.standard.set(collapsed.sorted().joined(separator: ","), forKey: key)
     }
 }

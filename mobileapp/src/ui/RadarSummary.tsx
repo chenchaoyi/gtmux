@@ -19,6 +19,9 @@ const hit = {top: 10, bottom: 10, left: 10, right: 10};
 export function summaryText(c: ReturnType<typeof counts>, agentsWord: string, lang: Lang): string {
   const parts: string[] = [];
   if (c.waiting) parts.push(`${c.waiting} ${statusLabel('waiting', lang)}`);
+  // Only when there ARE any: a standing "0 errored" would be noise on a healthy fleet,
+  // while a non-zero one has to be visible in the tally that describes the sections.
+  if (c.errored) parts.push(`${c.errored} ${statusLabel('errored', lang)}`);
   parts.push(`${c.working} ${statusLabel('working', lang)}`);
   parts.push(`${c.idle} ${statusLabel('idle', lang)}`);
   return `${c.total} ${agentsWord} · ${parts.join(' · ')}`;

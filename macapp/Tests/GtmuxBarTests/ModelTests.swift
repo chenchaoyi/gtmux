@@ -432,3 +432,34 @@ final class ModelTests: XCTestCase {
                       Int((s.blueComponent * 255).rounded()))
     }
 }
+
+/// An idle session whose turn ended on a FAILURE gets its own section — it is not
+/// "finished". The commander found one sitting under a green ✓ among the completed ones:
+/// 这种情况挺严重的，也需要用户及时介入。
+///
+/// It is NOT folded into "needs you": that section means an agent is asking something you
+/// can answer, and an error is not a question. Amber, between needs-you and working.
+final class ErroredSectionTests: XCTestCase {
+    private func agent(_ id: String, _ status: String, errored: Bool = false) -> Agent {
+        let json = #"{"pane_id":"\#(id)","session":"s","status":"\#(status)","agent":"Claude Code","source":"tmux","error":\#(errored)}"#
+        return try! JSONDecoder().decode(Agent.self, from: Data(json.utf8))
+    }
+
+    func testErroredIdleGetsItsOwnSectionAfterNeedsYou() {
+        let store = AgentStore()
+        store.setAgentsForTesting([
+            agent("%1", "waiting"), agent("%2", "idle", errored: true),
+            agent("%3", "working"), agent("%4", "idle"),
+        ])
+        let secs = store.sections(query: "")
+        XCTAssertEqual(secs.map { $0.errored }, [false, true, false, false])
+        XCTAssertEqual(secs[1].agents.map { $0.paneID }, ["%2"], "the errored row is its own group")
+        XCTAssertEqual(secs[3].agents.map { $0.paneID }, ["%4"], "and is gone from idle")
+    }
+
+    func testNoSectionOnAHealthyFleet() {
+        let store = AgentStore()
+        store.setAgentsForTesting([agent("%1", "idle"), agent("%2", "working")])
+        XCTAssertFalse(store.sections(query: "").contains { $0.errored })
+    }
+}

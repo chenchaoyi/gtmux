@@ -208,6 +208,11 @@ extension Agent: Decodable {
 final class AgentStore: ObservableObject {
     @Published private(set) var agents: [Agent] = []
 
+    /// Test seam: the section grouping is a pure function of `agents`, and the poll that
+    /// normally fills it needs a live tmux. Without this the grouping — where a failure
+    /// is either seen or buried — could only be checked by eye.
+    func setAgentsForTesting(_ rows: [Agent]) { agents = rows }
+
     /// The restore plan — what `gtmux restore` would bring back — populated ONLY when
     /// nothing is running (the "just rebooted" moment the restore row appears), so the
     /// footer row can expand into the actual pending sessions. nil the rest of the time.
@@ -286,20 +291,39 @@ final class AgentStore: ObservableObject {
 
     /// Agents grouped into the four sections, in fixed rank order, each non-empty
     /// section only. Applies fuzzy search.
-    func sections(query: String) -> [(status: Status, agents: [Agent])] {
-        var out: [(Status, [Agent])] = []
+    /// `errored` marks the section of idle sessions whose turn ended on a FAILURE. It is
+    /// a section, not a status: the state language has exactly four states, and an error
+    /// is a fact about how an idle turn ENDED. It gets its own group because "finished"
+    /// and "stopped on an error" ask different things of the reader, and burying the
+    /// second among the first put a session that needs a person under a green ✓.
+    ///
+    /// It is NOT folded into `waiting` either — that section means an agent is asking
+    /// something you can answer, and an error is not a question (commander, 2026-08-17).
+    func sections(query: String) -> [(status: Status, errored: Bool, agents: [Agent])] {
+        var out: [(Status, Bool, [Agent])] = []
         for st in [Status.waiting, .working, .idle, .running] {
             // Native (non-tmux) sessions are their own category, not mixed into the
             // tmux status groups.
             // The supervisor renders as its own HQ card, never inside the sections.
             // Watched (opt-in plain) panes render in their OWN section below, not here.
-            let group = agents.filter { $0.state == st && !$0.isNative && !$0.isSupervisor && !$0.watched && matches($0, query) }
+            let group = agents.filter {
+                $0.state == st && !($0.state == .idle && $0.errored)
+                    && !$0.isNative && !$0.isSupervisor && !$0.watched && matches($0, query)
+            }
             // Finished (idle): most-recently-finished first (its `since` is frozen at
             // last activity, so order stays stable). Other sections: by name.
             let rows = st == .idle
                 ? group.sorted { $0.since > $1.since }
                 : group.sorted { $0.primary.localizedCaseInsensitiveCompare($1.primary) == .orderedAscending }
-            if !rows.isEmpty { out.append((st, rows)) }
+            if !rows.isEmpty { out.append((st, false, rows)) }
+            // Right after "needs you", before "working".
+            if st == .waiting {
+                let bad = agents
+                    .filter { $0.errored && $0.state == .idle && !$0.isNative && !$0.isSupervisor
+                        && !$0.watched && matches($0, query) }
+                    .sorted { $0.since > $1.since }
+                if !bad.isEmpty { out.append((.idle, true, bad)) }
+            }
         }
         return out
     }

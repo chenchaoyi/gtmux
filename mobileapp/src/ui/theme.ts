@@ -88,6 +88,15 @@ export interface Section {
 // + AgentStore.sections so all surfaces agree.
 export function sections(agents: Agent[]): Section[] {
   const out: Section[] = [];
+  // ERRORED first among the non-waiting sections: a session that stopped on a failure
+  // needs a person, and it will do nothing further until one arrives. It is NOT folded
+  // into "needs you" — that section means an agent is asking a question you can answer,
+  // and an error is not a question (commander, 2026-08-17).
+  const errored = agents
+    .filter(a => a.error && a.status === 'idle' && a.source !== 'native' &&
+      a.role !== 'supervisor' && !a.watched)
+    .sort((l, r) => (r.since ?? 0) - (l.since ?? 0));
+
   for (const st of SECTION_ORDER) {
     // Native (non-tmux) sessions and WATCHED plain panes are their own trailing
     // categories, not mixed in; the supervisor (role) renders as the HQ card above the
@@ -95,13 +104,17 @@ export function sections(agents: Agent[]): Section[] {
     // 'running' on decode), so without this it would fall into the RUNNING bucket
     // instead of its own "Watched / 关注" section (mirrors the menu-bar).
     const rows = agents
-      .filter(a => a.status === st && a.source !== 'native' && a.role !== 'supervisor' && !a.watched)
+      // An ERRORED idle session is pulled out below — it is not "finished".
+      .filter(a => a.status === st && !(st === 'idle' && a.error) &&
+        a.source !== 'native' && a.role !== 'supervisor' && !a.watched)
       .sort((l, r) =>
         st === 'idle'
           ? (r.since ?? 0) - (l.since ?? 0)
           : primary(l).toLowerCase().localeCompare(primary(r).toLowerCase()),
       );
     if (rows.length) out.push({status: st, agents: rows});
+    // Right after "needs you", before "working".
+    if (st === 'waiting' && errored.length) out.push({status: 'errored', agents: errored});
   }
   // "Watched": user-pinned PLAIN panes (tiered-pane-control) — a distinct section, no
   // agent status. Placed above natives (your own pinned tmux panes are nearer than
@@ -122,6 +135,8 @@ export interface Counts {
   total: number;
   waiting: number;
   working: number;
+  /** Idle sessions whose turn ended on a failure — counted apart from idle. */
+  errored: number;
   idle: number;
 }
 
@@ -135,5 +150,13 @@ export function counts(agents: Agent[]): Counts {
   const rows = agents.filter(a => a.role !== 'supervisor' && !a.watched);
   const waiting = rows.filter(a => a.status === 'waiting').length;
   const working = rows.filter(a => a.status === 'working').length;
-  return {total: agents.filter(a => !a.watched).length, waiting, working, idle: rows.length - waiting - working};
+  // Errored sessions are counted SEPARATELY, not as idle — the summary has to agree
+  // with the sections under it, and a session that stopped on a failure reading as
+  // "idle" is exactly the thing that hid it.
+  const errored = rows.filter(a => a.error && a.status === 'idle').length;
+  return {
+    total: agents.filter(a => !a.watched).length,
+    waiting, working, errored,
+    idle: rows.length - waiting - working - errored,
+  };
 }

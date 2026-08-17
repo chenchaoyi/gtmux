@@ -29,7 +29,7 @@ final class PaletteModel: ObservableObject {
     }
 
     var results: [Agent] { store.ordered(query: query) }
-    var sections: [(status: Status, agents: [Agent])] { store.sections(query: query) }
+    var sections: [(status: Status, errored: Bool, agents: [Agent])] { store.sections(query: query) }
 
     func move(_ delta: Int) {
         let n = results.count
