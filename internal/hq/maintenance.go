@@ -1,7 +1,7 @@
 // HQ periodic MAINTENANCE — the shared raise path behind the `distill` and `self-check`
 // sensors, and the staleness verdict `gtmux doctor` reports.
 //
-// Both sensors used to end in `hqfeed.EmitControl`, which writes the trigger to the feed
+// Both sensors used to end in `hqsurface.EmitControl`, which writes the trigger to the feed
 // SPOOL and nowhere else. Neither reader of the spool could receive it: the seeded
 // playbook tells HQ it does NOT need to tail the feed (arousal is the wake line), and
 // `gtmux events` reads the journal, never the spool. So the triggers fired on schedule for

@@ -2,12 +2,12 @@
 // tunes how high the bar sits for HQ to PRINT an item to the user: `on` = surface
 // CRITICAL only, `off` = the default (NORMAL and above), `status` = show the resolved
 // threshold. Under the hood it sets `quiet` / clears it in config.json; the resolver
-// (hqfeed.ResolveThreshold) is env-overridable for a per-session switch. A feed
+// (hqsurface.ResolveThreshold) is env-overridable for a per-session switch. A feed
 // DEGRADATION is never quieted — it is CRITICAL and always surfaces.
 package app
 
 import (
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
+	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -39,9 +39,9 @@ func cmdQuiet(args []string) int {
 
 // quietStatus prints the resolved surfacing threshold.
 func quietStatus() int {
-	th := hqfeed.ResolveThreshold()
+	th := hqsurface.ResolveThreshold()
 	on := "off"
-	if hqfeed.QuietOn() {
+	if hqsurface.QuietOn() {
 		on = "on"
 	}
 	i18n.Say("quiet = "+on+"  ·  surface threshold = "+th+" and above",

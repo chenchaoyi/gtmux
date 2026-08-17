@@ -120,7 +120,7 @@ over one Go core (gtmux-core is the single data source):
   cwd/start-path (a symlinked `~/.config` silently ate every wake before this); an
   unresolvable HQ seen within 2h HOLDS the wake instead of dropping it.
   A self-check sensor raises a `self-check` trigger (idle/threshold/daily, ≤1/h)
-  HQ acts on (`internal/hqfeed` keeps only the surfacing tiers + control-record
+  HQ acts on (`internal/hqsurface` keeps only the surfacing tiers + control-record
   names). `gtmux tasks` doubles as the **attention
   ledger** (free-text disposition + the `--pending` plate view; `--verbose` adds the
   disposition detail — the unwired tier/priority/surfaced/archive verbs were removed

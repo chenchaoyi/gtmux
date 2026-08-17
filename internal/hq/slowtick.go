@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
@@ -127,7 +127,7 @@ func DrainHQNudges() {
 
 // journalDegradation appends one perception-degradation control record to the
 // session JOURNAL — the carrier the pull side actually reads. These records used
-// to go through hqfeed.EmitControl, which writes ONLY to the feed spool: neither
+// to go through hqsurface.EmitControl, which writes ONLY to the feed spool: neither
 // reader could receive them there (the playbook tells HQ not to tail the feed,
 // and `gtmux events` reads the journal), so 75 degradation records accumulated
 // invisible to every query — the same #647 failure shape the maintenance
@@ -159,7 +159,7 @@ func wakeWatchdog(now int64) {
 	}
 	const summary = "⚠ HQ wake channel not landing — knocks are queued but unconfirmed; " +
 		"reconcile by pull: gtmux events --since-seq <n>"
-	journalDegradation(hqfeed.ControlWakeDegraded, summary, now)
+	journalDegradation(hqsurface.ControlWakeDegraded, summary, now)
 	if pane := hqpane.Find(); pane != "" {
 		hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassWakeDegraded, "",
 			"⚠ wake deliveries unconfirmed", "reconcile: gtmux digest --json"))

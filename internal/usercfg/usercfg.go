@@ -1,7 +1,7 @@
 // Package usercfg centralizes access to gtmux's user config file
 // (~/.config/gtmux/config.json). The path plus the read+unmarshal boilerplate used to
 // be re-hardcoded in every package that reads a knob (agentenv, dispatch, events,
-// hqfeed, hqwake, resource, hook, app) — so a relocation, or the kind of
+// hqsurface, hqwake, resource, hook, app) — so a relocation, or the kind of
 // symlink-normalization fix that already bit the HQ pane resolver, needed a coordinated
 // edit in ~8 places. Now it lives here. (Named `usercfg`, not `config`/`cfg`, because
 // several of those packages already have a local `config` type or `cfg` variable.)

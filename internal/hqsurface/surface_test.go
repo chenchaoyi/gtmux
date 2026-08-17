@@ -1,4 +1,4 @@
-package hqfeed
+package hqsurface
 
 import (
 	"testing"

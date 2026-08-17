@@ -14,8 +14,8 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -129,7 +129,7 @@ func distillSensor(now int64) {
 	if pending == 0 {
 		hint = "then: gtmux events --since-seq " + strconv.FormatInt(lastSeq, 10)
 	}
-	raiseMaintenance(pane, hqwake.ClassDistill, hqfeed.ControlDistill, "due ("+reason+")",
+	raiseMaintenance(pane, hqwake.ClassDistill, hqsurface.ControlDistill, "due ("+reason+")",
 		"drain captures (knowledge add --capture / dismiss) + distil the period (add/supersede/retire --why); silent unless real curation",
 		hint, events.SevNotable, now)
 }

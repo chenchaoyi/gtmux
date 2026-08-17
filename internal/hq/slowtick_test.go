@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/hqfeed"
+	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 )
 
@@ -92,14 +92,14 @@ func TestResolvedDecide(t *testing.T) {
 // audit — a degradation is new information, so it must count toward the consumption debt.
 func TestJournalDegradationIsPullVisibleDebt(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	journalDegradation(hqfeed.ControlWakeDegraded, "⚠ HQ wake channel not landing", 500)
+	journalDegradation(hqsurface.ControlWakeDegraded, "⚠ HQ wake channel not landing", 500)
 
 	recs, _ := events.ReadSince(0)
 	if len(recs) != 1 {
 		t.Fatalf("got %d journal records, want 1", len(recs))
 	}
 	r := recs[0]
-	if r.Event != hqfeed.ControlWakeDegraded || r.Severity != events.SevImportant {
+	if r.Event != hqsurface.ControlWakeDegraded || r.Severity != events.SevImportant {
 		t.Fatalf("record = %+v, want an important wake-degraded", r)
 	}
 	if !events.IsControl(r) || events.IsAudit(r) {
