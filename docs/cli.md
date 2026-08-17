@@ -211,7 +211,7 @@ carrier. The classes:
 | `stuck·waiting` | ▸ | a pane has been waiting on you past the timeout — once per waiting episode, and only when the AGENT asked (a wait gtmux merely inferred from the screen never escalates) |
 | `resource·warn` / `limits·warn` | ▸ | a machine/subscription threshold crossed (damped — see `gtmux resource`) |
 | `usage·warn` | ▸ | a session crossed a context/burn layer (see `gtmux usage`) |
-| `feed-degraded` / `wake-degraded` | ◆ | perception itself broke: the spool daemon died, or wakes stopped landing |
+| `wake-degraded` | ◆ | perception itself broke: wakes stopped landing on the HQ pane |
 | `tick` | · | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
 | `distill` | · | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued) — hq folds the period's lessons into its knowledge base and prunes stale |
 | `self-check` | · | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |

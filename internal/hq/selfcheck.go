@@ -93,7 +93,7 @@ func selfCheckSensor(now int64) {
 	recentAttn := recentAttentionEvent(now)
 	openLedger := len(dispatch.ListTasks())
 	journalOver := events.OverCeiling()
-	_, gap := events.ReadSince(hqfeed.ReadCursor())
+	_, gap := events.ReadSince(hqwake.Consumed())
 	fire, reason := shouldSelfCheck(now, lastCheck, recentAttn, openLedger, journalOver, gap)
 	if !fire {
 		return

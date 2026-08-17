@@ -77,7 +77,6 @@ var classGrade = map[string]Grade{
 	ClassAsks:         GradeDecision,
 	ClassGoalChanged:  GradeDecision,
 	ClassCrash:        GradeDecision,
-	ClassFeedDegraded: GradeDecision,
 	ClassWakeDegraded: GradeDecision,
 	ClassSelfRotate:   GradeDecision,
 

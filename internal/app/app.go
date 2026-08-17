@@ -88,8 +88,6 @@ func Run(argv []string) int {
 		return cmdShare(args)
 	case "hq":
 		return hq.CmdHQ(args)
-	case "hq-feed":
-		return hq.CmdHQFeed(args)
 	case "status", "st":
 		return cmdStatus(args)
 	case "spawn":

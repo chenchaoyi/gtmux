@@ -10,15 +10,6 @@ import (
 // to keep the hq package from importing the command layer).
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
 
-// selfPath returns the running gtmux binary path (for re-spawning `gtmux hq-feed
-// --daemon`), falling back to the bare name.
-func selfPath() string {
-	if p, err := os.Executable(); err == nil && p != "" {
-		return p
-	}
-	return "gtmux"
-}
-
 // isShellCommand reports whether name is a bare login/interactive shell (so a
 // pane running only this has no agent yet).
 func isShellCommand(name string) bool {

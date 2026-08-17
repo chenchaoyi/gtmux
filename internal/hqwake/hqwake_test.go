@@ -227,7 +227,6 @@ func TestPriorityOf(t *testing.T) {
 		{Line(ClassAsks, "(%14)", `ask:"which one?"`), PriorityDecision},
 		{Line(ClassGoalChanged, "(%14)", `goal:"ship it"`), PriorityDecision},
 		{Line(ClassCrash, "(%14)"), PriorityDecision},
-		{Line(ClassFeedDegraded, ""), PriorityDecision},
 		{Line(ClassWakeDegraded, ""), PriorityDecision},
 		{Line(ClassDone, "(%14)", "3m"), PriorityOutcome},
 		{Line(ClassResolved, "(%14)"), PriorityOutcome},
@@ -317,7 +316,7 @@ func TestEveryClassHasAGrade(t *testing.T) {
 	for _, c := range []string{
 		ClassWaiting, ClassResolved, ClassAsks, ClassDone, ClassCrash, ClassGoalChanged,
 		ClassNewSession, ClassReapSuggest, ClassTick, ClassStuckWaiting, ClassResourceWarn,
-		ClassLimitsWarn, ClassUsageWarn, ClassFeedDegraded, ClassWakeDegraded,
+		ClassLimitsWarn, ClassUsageWarn, ClassWakeDegraded,
 		ClassDistill, ClassSelfCheck, ClassSelfRotate, ClassUnread,
 	} {
 		if _, ok := classGrade[c]; !ok {

@@ -754,3 +754,20 @@ func TestBoardSeedFollowsLanguage(t *testing.T) {
 		}
 	}
 }
+
+// The perception vocabulary retired by retire-perception-spool must not creep back
+// into what HQ is taught: there is no spool daemon to tail and no feed-degraded
+// class to expect — a reintroduction here would teach HQ to reason about machinery
+// that no longer exists.
+func TestPlaybookDropsRetiredPerceptionVocabulary(t *testing.T) {
+	for _, banned := range []string{"hq-feed", "feed-degraded", "spool daemon"} {
+		if strings.Contains(hqInstructions, banned) {
+			t.Errorf("playbook reintroduces retired vocabulary %q", banned)
+		}
+		for name, seed := range hqKnowledgeSeeds {
+			if strings.Contains(seed, banned) {
+				t.Errorf("seed %s reintroduces retired vocabulary %q", name, banned)
+			}
+		}
+	}
+}

@@ -21,11 +21,11 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`, `panes`,
-  `digest`, `hq`, `hq-feed`, `quiet`, `capture`, `knowledge`, `usage`, `limits`, `events`, `resource`, `awake`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
+  `digest`, `hq`, `quiet`, `capture`, `knowledge`, `usage`, `limits`, `events`, `resource`, `awake`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
   `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install`, `uninstall`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
   (`GET /api/attach`, scope-gated), raw passthrough; owner or guest. See
-  `openspec/changes/remote-terminal-client` + `docs/design/remote-attach-research.md`. Logic lives in `internal/`: the command layer is `internal/app` (CLI dispatch + thin command shims + spawn/send/serve/tunnel), over the extracted, compiler-enforced clusters — `internal/radar` (the pane-data KERNEL: the `agents`/`digest`/`usage` producers + their JSON shapes + `CurrentResource`/`PreflightResource`), `internal/hq` (the supervisor subsystem — the 10 `hq`/`slowtick`/`selfcheck`/`distill`/`diskhygiene`/`tiergate`/`watchdog`/`tasks`/`events`/`hq-feed` files), `internal/dispatchbridge` (the tmux/events dispatch adapter), and the `internal/panefocus` pane-jump leaf. Import rule is strictly acyclic — `app → hq → {radar, dispatchbridge} → leaves`; **`hq` NEVER imports `app`**, nothing below `app` imports it (see openspec change `decompose-app-package`). `digest`+`hq` = the supervisor
+  `openspec/changes/remote-terminal-client` + `docs/design/remote-attach-research.md`. Logic lives in `internal/`: the command layer is `internal/app` (CLI dispatch + thin command shims + spawn/send/serve/tunnel), over the extracted, compiler-enforced clusters — `internal/radar` (the pane-data KERNEL: the `agents`/`digest`/`usage` producers + their JSON shapes + `CurrentResource`/`PreflightResource`), `internal/hq` (the supervisor subsystem — the `hq`/`slowtick`/`selfcheck`/`distill`/`diskhygiene`/`tiergate`/`watchdog`/`tasks`/`events` files), `internal/dispatchbridge` (the tmux/events dispatch adapter), and the `internal/panefocus` pane-jump leaf. Import rule is strictly acyclic — `app → hq → {radar, dispatchbridge} → leaves`; **`hq` NEVER imports `app`**, nothing below `app` imports it (see openspec change `decompose-app-package`). `digest`+`hq` = the supervisor
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
   also `GET /api/digest`) + a supervisor agent session at `~/.config/gtmux/hq/`
   (radar rows carry `role:"supervisor"`; the hook nudges it on waiting events —
@@ -46,7 +46,7 @@ over one Go core (gtmux-core is the single data source):
   **HQ perception = the wake protocol** (`internal/hqwake`, spec `hq-wake-protocol`,
   change hq-perception-v2): decision-dense events — `waiting·kind / resolved / asks /
   done(unattended) / crash(StopFailure) / goal-changed / new-session / reap-suggest /
-  feed-degraded / tick` — type ONE `» gtmux·<class> │ …` signal line into the HQ pane
+  wake-degraded / tick` — type ONE `» gtmux·<class> │ …` signal line into the HQ pane
   (draft-guarded, coalesced; done is rate-merged per pane, and a completion in the
   FOCUSED pane of an attached client defers to the tick instead — `hqWake.done`
   config). Everything else is pull-side: HQ wakes → `gtmux events --since-seq N` /
@@ -100,9 +100,10 @@ over one Go core (gtmux-core is the single data source):
   batch as `gtmux:audit:wake-delivered` (id + full payload, once per batch), every drop
   as `gtmux:audit:wake-dropped` with its reason (evicted / unconfirmed / superseded);
   `gtmux send`/`reap`/`--rotate` and the sensor-observed HQ session chain journal
-  likewise, and the two spool-only degradation emitters (`wake-degraded`,
-  `feed-degraded` + the daemon's `reconcile`) now append to the JOURNAL — #647's fix,
-  finished. The ack is three layers (agent-drivers P2): the DRIVER RECEIPT
+  likewise, and degradation emitters append to the JOURNAL — #647's fix, finished
+  (retire-perception-spool then removed the spool copy layer entirely: the journal is
+  the single stream, and `gtmux events --since-seq` warns about a sequence gap at read
+  time). The ack is three layers (agent-drivers P2): the DRIVER RECEIPT
   first — the HQ session's own `UserPromptSubmit` carrying the batch `#id` (the hook
   records a wake batch's id as its event Summary; `hqwake.BatchID`) — then the screen
   read (id in history, not draft); an id still in the DRAFT is the precise
@@ -118,12 +119,11 @@ over one Go core (gtmux-core is the single data source):
   `internal/hqpane` — the `@gtmux_hq_home` pane option, then symlink-NORMALIZED
   cwd/start-path (a symlinked `~/.config` silently ate every wake before this); an
   unresolvable HQ seen within 2h HOLDS the wake instead of dropping it.
-  `hq-feed` remains the LLM-free spool daemon (`internal/hqfeed`; serve slow-tick
-  watchdog: heartbeat 30s / stale 90s / self-heal 2 failures → CRITICAL
-  `feed-degraded`), and a self-check sensor raises a `self-check` trigger
-  (idle/threshold/daily, ≤1/h) HQ acts on. `gtmux tasks` doubles as the **attention
+  A self-check sensor raises a `self-check` trigger (idle/threshold/daily, ≤1/h)
+  HQ acts on (`internal/hqfeed` keeps only the surfacing tiers + control-record
+  names). `gtmux tasks` doubles as the **attention
   ledger** (tier/priority/surfaced/disposition/archive, `--verbose`); `gtmux quiet
-  [on|off|status]` tunes the surfacing threshold (a `feed-degraded` CRITICAL is never
+  [on|off|status]` tunes the surfacing threshold (a read-time gap CRITICAL is never
   quieted). HQ gates its OWN prints by the tier — CRITICAL/NORMAL print, QUIET is
   ledger-only.
   **HQ playbook is VERSION-TRACKED** (`openspec/changes/versioned-hq-playbook`): the seeded

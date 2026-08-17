@@ -114,11 +114,6 @@ func TestRaiseMaintenanceIsAuditable(t *testing.T) {
 		t.Errorf("formatted line %q must name the control record", line)
 	}
 
-	// The daemon spools the journal on its own tail, so raise must NOT also hand-write a
-	// spool copy — that would double every trigger.
-	if got := len(hqfeed.ReadSpool(0, now+1)); got != 0 {
-		t.Errorf("raise wrote %d spool records directly; the daemon's tail owns that", got)
-	}
 }
 
 // TestControlRecordsDoNotFeedTheSensors pins the self-feed guard. Both sensors measure a
