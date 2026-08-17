@@ -32,6 +32,11 @@ const (
 	// the mechanical form of "FLAG it for a seed/spec update" (hq-promotion-exit).
 	knowledgeOpPromote = "promote"
 	knowledgeOpLand    = "land"
+	// knowledgeOpTopic DECLARES a custom topic (hq-open-topics): id = the topic
+	// name, title = its one-line description. Add-only; the vocabulary becomes
+	// built-ins plus every declared topic, judged by ONE validation from every
+	// entrance (capture included), so the two can never drift again.
+	knowledgeOpTopic = "topic"
 )
 
 // Content bounds. They refuse LOUDLY at write time — knowledge is curated
@@ -43,6 +48,8 @@ const (
 	knowledgeWhyMax    = 300
 	knowledgeTargetMax = 200
 	knowledgeRefMax    = 200
+	// knowledgeTopicNameMax bounds a declared topic's name (a slug, not prose).
+	knowledgeTopicNameMax = 40
 )
 
 // knowledgeOp is one ledger line. Adds and supersedes carry content; retires
@@ -91,18 +98,71 @@ func promotionPending(op knowledgeOp) bool { return op.PromotedAt > 0 && op.Land
 // pending-distill spool so it stays out of the curated topic listing.
 func knowledgeLedgerPath() string { return filepath.Join(hqKnowledgeDir(), ".ledger.jsonl") }
 
-// knowledgeTopics is the topic vocabulary an entry may be filed under: the
-// capture topics plus `environment` (machine-specific, so not a capture target,
-// but still curated knowledge). README is an index, never a topic.
-func knowledgeTopics() []string { return append(append([]string{}, captureTopics...), "environment") }
+// builtinTopics is the seeded vocabulary. `environment` is a full member since
+// hq-open-topics (capture and knowledge judge topics identically now); README is
+// an index, never a topic.
+var builtinTopics = []string{"accounts", "workflows", "best-practices", "pitfalls", "corrections", "environment"}
 
-func validKnowledgeTopic(topic string) bool {
-	for _, t := range knowledgeTopics() {
+// reservedTopicNames are directory names the knowledge layout owns — a topic
+// with one of these names would collide with a non-topic file or dir.
+var reservedTopicNames = []string{"README", "legacy", "promotions"}
+
+// knowledgeTopics is the CURRENT vocabulary: built-ins plus every declared
+// custom, in declaration order.
+func knowledgeTopics(custom []knowledgeOp) []string {
+	out := append([]string{}, builtinTopics...)
+	for _, t := range custom {
+		out = append(out, t.ID)
+	}
+	return out
+}
+
+// validKnowledgeTopic is the ONE topic judgment every entrance (capture and the
+// knowledge verbs) calls — the seam that must never drift.
+func validKnowledgeTopic(topic string, custom []knowledgeOp) bool {
+	for _, t := range knowledgeTopics(custom) {
 		if t == topic {
 			return true
 		}
 	}
 	return false
+}
+
+// validateTopicName bounds a declaration, loudly: slug charset, length, and no
+// collision with a built-in, an existing custom, or a reserved directory name.
+func validateTopicName(name string, custom []knowledgeOp) error {
+	if name == "" || len(name) > knowledgeTopicNameMax {
+		return fmt.Errorf("a topic name is a slug of 1–%d bytes, got %d", knowledgeTopicNameMax, len(name))
+	}
+	for _, r := range name {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+			return fmt.Errorf("a topic name is lowercase letters, digits and dashes; %q is not", name)
+		}
+	}
+	for _, t := range reservedTopicNames {
+		if t == name {
+			return fmt.Errorf("%q is reserved by the knowledge directory layout", name)
+		}
+	}
+	if validKnowledgeTopic(name, custom) {
+		return fmt.Errorf("%q is already a topic", name)
+	}
+	return nil
+}
+
+// customTopics returns the declared-topic operations in ledger order (first
+// declaration wins — the write path refuses a duplicate, this is the read
+// side's defensive twin).
+func customTopics(ops []knowledgeOp) []knowledgeOp {
+	seen := map[string]bool{}
+	var out []knowledgeOp
+	for _, op := range ops {
+		if op.Op == knowledgeOpTopic && !seen[op.ID] {
+			seen[op.ID] = true
+			out = append(out, op)
+		}
+	}
+	return out
 }
 
 // validateKnowledgeContent enforces the bounds, loudly. An empty title is the
@@ -248,11 +308,18 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 
 // liveKnowledge reads and folds in one step.
 func liveKnowledge() ([]knowledgeOp, error) {
+	live, _, err := readKnowledgeState()
+	return live, err
+}
+
+// readKnowledgeState is the one-read loader every verb uses: the live entry set
+// and the declared custom topics, from a single pass over the ledger.
+func readKnowledgeState() (live, custom []knowledgeOp, err error) {
 	ops, err := readKnowledgeOps()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return foldKnowledge(ops), nil
+	return foldKnowledge(ops), customTopics(ops), nil
 }
 
 // pendingPromotions returns the live entries whose promotion is open, in ledger

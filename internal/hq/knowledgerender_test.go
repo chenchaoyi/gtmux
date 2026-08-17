@@ -21,7 +21,7 @@ func TestRenderTopicShapeAndDeterminism(t *testing.T) {
 	}
 	live[0].Capture, live[0].Task, live[0].Pane = "pitfalls/wrangler-tls", "t-9", "%21"
 
-	got := renderTopic("pitfalls", live)
+	got := renderTopic("pitfalls", "", live)
 	if !strings.HasPrefix(got, knowledgeRenderMarker+"\n") {
 		t.Fatalf("render must lead with the gtmux-owned marker:\n%s", got)
 	}
@@ -40,7 +40,7 @@ func TestRenderTopicShapeAndDeterminism(t *testing.T) {
 	if strings.Contains(got, "release flow") {
 		t.Errorf("another topic's entry leaked into the render:\n%s", got)
 	}
-	if again := renderTopic("pitfalls", live); again != got {
+	if again := renderTopic("pitfalls", "", live); again != got {
 		t.Fatal("render must be deterministic")
 	}
 }
@@ -56,7 +56,7 @@ func TestMigrationPreservesHandWrittenBytes(t *testing.T) {
 	}
 
 	live := []knowledgeOp{kadd("pitfalls", "new lesson", "")}
-	if err := writeTopicRender("pitfalls", live, 500); err != nil {
+	if err := writeTopicRender("pitfalls", "", live, 500); err != nil {
 		t.Fatal(err)
 	}
 	// The hand-written bytes moved verbatim.
@@ -70,7 +70,7 @@ func TestMigrationPreservesHandWrittenBytes(t *testing.T) {
 		t.Fatalf("render must link legacy and carry the entry:\n%s", r)
 	}
 	// Idempotent: a second render does not re-migrate or duplicate.
-	if err := writeTopicRender("pitfalls", live, 600); err != nil {
+	if err := writeTopicRender("pitfalls", "", live, 600); err != nil {
 		t.Fatal(err)
 	}
 	entries, _ := os.ReadDir(knowledgeLegacyDir())
@@ -97,7 +97,7 @@ func TestMigrationDropsUntouchedPlaceholder(t *testing.T) {
 	if err := os.WriteFile(topicPath("pitfalls"), []byte(seed), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := writeTopicRender("pitfalls", []knowledgeOp{kadd("pitfalls", "first", "")}, 500); err != nil {
+	if err := writeTopicRender("pitfalls", "", []knowledgeOp{kadd("pitfalls", "first", "")}, 500); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(knowledgeLegacyDir(), "pitfalls.md")); !os.IsNotExist(err) {
@@ -108,17 +108,17 @@ func TestMigrationDropsUntouchedPlaceholder(t *testing.T) {
 func TestKnowledgeDriftDetection(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	live := []knowledgeOp{kadd("pitfalls", "a lesson", "")}
-	if err := writeTopicRender("pitfalls", live, 500); err != nil {
+	if err := writeTopicRender("pitfalls", "", live, 500); err != nil {
 		t.Fatal(err)
 	}
-	if d := knowledgeDrift(live); len(d) != 0 {
+	if d := knowledgeDrift(live, nil); len(d) != 0 {
 		t.Fatalf("a clean render must pass, got drift %v", d)
 	}
 	// A hand edit to a rendered file is DETECTED, not absorbed.
 	f, _ := os.OpenFile(topicPath("pitfalls"), os.O_APPEND|os.O_WRONLY, 0o644)
 	_, _ = f.WriteString("- a hand-added line\n")
 	_ = f.Close()
-	d := knowledgeDrift(live)
+	d := knowledgeDrift(live, nil)
 	if len(d) != 1 || !strings.HasSuffix(d[0], "pitfalls.md") {
 		t.Fatalf("drift must name the edited file, got %v", d)
 	}
@@ -126,7 +126,7 @@ func TestKnowledgeDriftDetection(t *testing.T) {
 	if err := os.WriteFile(topicPath("workflows"), []byte("# mine\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if d := knowledgeDrift(live); len(d) != 1 {
+	if d := knowledgeDrift(live, nil); len(d) != 1 {
 		t.Fatalf("a pre-ledger file is not drift, got %v", d)
 	}
 }
@@ -147,7 +147,7 @@ func TestKnowledgeEchoCapSpansRenderAndLegacy(t *testing.T) {
 		kadd("pitfalls", "gtmux rendered lesson one", ""),
 		kadd("pitfalls", "gtmux rendered lesson two", ""),
 	}
-	if err := writeTopicRender("pitfalls", live, 500); err != nil {
+	if err := writeTopicRender("pitfalls", "", live, 500); err != nil {
 		t.Fatal(err)
 	}
 	echo := MatchKnowledge("/Users/x/gtmux", "")

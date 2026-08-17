@@ -14,10 +14,24 @@ import (
 	"strings"
 )
 
-// knowledgeEchoTopics are the two topics worth surfacing to a worker at launch — the
-// footguns to avoid and the procedures to follow. Accounts/corrections are not
-// dispatch-time context.
+// knowledgeEchoTopics are the built-in topics worth surfacing to a worker at
+// launch — the footguns to avoid and the procedures to follow. Accounts /
+// corrections / environment are deliberately not dispatch-time context. Every
+// DECLARED custom topic joins the echo (hq-open-topics): a user's own domain
+// topics are exactly the lessons they want surfaced when work starts there.
 var knowledgeEchoTopics = []string{"pitfalls", "workflows"}
+
+// echoTopics is the effective echo set: the built-ins plus the ledger's custom
+// declarations (best-effort — an unreadable ledger just means built-ins only).
+func echoTopics() []string {
+	out := append([]string{}, knowledgeEchoTopics...)
+	if ops, err := readKnowledgeOps(); err == nil {
+		for _, t := range customTopics(ops) {
+			out = append(out, t.ID)
+		}
+	}
+	return out
+}
 
 // knowledgeEchoMaxLines caps the echo so a dispatch stays terse.
 const knowledgeEchoMaxLines = 4
@@ -37,7 +51,7 @@ func MatchKnowledge(cwd, goal string) string {
 
 	var hits []string
 	seen := map[string]bool{}
-	for _, topic := range knowledgeEchoTopics {
+	for _, topic := range echoTopics() {
 		// The render first, then the pre-ledger legacy file (hq-knowledge-ledger):
 		// during the incremental migration a lesson lives in exactly one of the two,
 		// and the echo must reach it in either.

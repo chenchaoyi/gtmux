@@ -42,6 +42,8 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgePromote(rest) })
 	case "land":
 		return knowledgeMutation(func() error { return knowledgeLand(rest) })
+	case "topic":
+		return knowledgeMutation(func() error { return knowledgeTopic(rest) })
 	case "promotions":
 		return knowledgePromotions(rest)
 	case "list":
@@ -77,7 +79,7 @@ func hqHomeForMessage() string { return state.HQHome() }
 // knowledgeFlags is the shared flag set of the content-carrying verbs.
 type knowledgeFlags struct {
 	topic, title, bodyFile, capture, seqRange, why string
-	target, ref                                    string
+	target, ref, descText                          string
 	jsonOut                                        bool
 	positional                                     []string
 }
@@ -127,6 +129,10 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.ref, err = take(&i, a)
 		case strings.HasPrefix(a, "--ref="):
 			f.ref = strings.TrimPrefix(a, "--ref=")
+		case a == "--desc":
+			f.descText, err = take(&i, a)
+		case strings.HasPrefix(a, "--desc="):
+			f.descText = strings.TrimPrefix(a, "--desc=")
 		case a == "--json":
 			f.jsonOut = true
 		case strings.HasPrefix(a, "--"):
@@ -176,8 +182,13 @@ func knowledgeAdd(args []string) error {
 	if f.topic == "" || f.title == "" {
 		return fmt.Errorf("add needs --topic and --title")
 	}
-	if !validKnowledgeTopic(f.topic) {
-		return fmt.Errorf("unknown topic %q (want %s)", f.topic, strings.Join(knowledgeTopics(), " | "))
+	live, custom, err := readKnowledgeState()
+	if err != nil {
+		return err
+	}
+	if !validKnowledgeTopic(f.topic, custom) {
+		return fmt.Errorf("unknown topic %q (want %s; declare your own with `gtmux knowledge topic <name> --desc …`)",
+			f.topic, strings.Join(knowledgeTopics(custom), " | "))
 	}
 	body, err := readBody(f.bodyFile)
 	if err != nil {
@@ -191,10 +202,6 @@ func knowledgeAdd(args []string) error {
 		Op: knowledgeOpAdd, ID: f.topic + "/" + slug(f.title), Topic: f.topic,
 		Title: f.title, Body: body, At: time.Now().Unix(),
 		Seq: events.LatestSeq(), SeqRange: seqRange,
-	}
-	live, err := liveKnowledge()
-	if err != nil {
-		return err
 	}
 	if _, exists := findLive(live, op.ID); exists {
 		return fmt.Errorf("id %s is a live entry — `gtmux knowledge supersede %s --title …` to replace it, or retitle", op.ID, op.ID)
@@ -275,6 +282,41 @@ func knowledgeRetire(args []string) error {
 		At: time.Now().Unix(), Seq: events.LatestSeq(), Why: f.why,
 	}
 	return commitKnowledgeOp(op, "retire "+id+": "+f.why)
+}
+
+// knowledgeTopic DECLARES a custom topic (hq-open-topics): the vocabulary is the
+// ledger's to extend, judged by the same validation capture uses.
+func knowledgeTopic(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 || f.why != "" {
+		return fmt.Errorf("topic needs <name> and --desc (what belongs here)")
+	}
+	name := f.positional[0]
+	desc := f.target // parsed below via --desc alias
+	if f.descText != "" {
+		desc = f.descText
+	}
+	if desc == "" {
+		return fmt.Errorf("topic needs --desc — the description becomes the rendered file's intro")
+	}
+	_, custom, err := readKnowledgeState()
+	if err != nil {
+		return err
+	}
+	if err := validateTopicName(name, custom); err != nil {
+		return err
+	}
+	if err := validateKnowledgeContent(desc, "", ""); err != nil {
+		return err
+	}
+	op := knowledgeOp{
+		Op: knowledgeOpTopic, ID: name, Topic: name, Title: desc,
+		At: time.Now().Unix(), Seq: events.LatestSeq(),
+	}
+	return commitKnowledgeOp(op, "topic "+name)
 }
 
 // knowledgePromote opens the export lifecycle on a live entry: the mechanical
@@ -404,11 +446,11 @@ func commitKnowledgeOp(op knowledgeOp, auditNote string) error {
 	if err := appendKnowledgeOp(op); err != nil {
 		return err
 	}
-	live, err := liveKnowledge()
+	live, custom, err := readKnowledgeState()
 	if err != nil {
 		return err
 	}
-	if err := renderAllTopics(live, time.Now().Unix()); err != nil {
+	if err := renderAllTopics(live, custom, time.Now().Unix()); err != nil {
 		return err
 	}
 	if err := renderPromotions(live); err != nil {
@@ -429,12 +471,12 @@ func knowledgeRender(args []string) error {
 			return fmt.Errorf("unknown option '%s'", a)
 		}
 	}
-	live, err := liveKnowledge()
+	live, custom, err := readKnowledgeState()
 	if err != nil {
 		return err
 	}
 	if check {
-		drifted := knowledgeDrift(live)
+		drifted := knowledgeDrift(live, custom)
 		if len(drifted) == 0 {
 			return nil
 		}
@@ -444,7 +486,7 @@ func knowledgeRender(args []string) error {
 		}
 		return fmt.Errorf("%d rendered file(s) drifted", len(drifted))
 	}
-	return renderAllTopics(live, time.Now().Unix())
+	return renderAllTopics(live, custom, time.Now().Unix())
 }
 
 func knowledgeList(args []string) int {
@@ -508,6 +550,7 @@ func knowledgeUsage() int {
   supersede <id> --title "<one line>" [--body-file <path|->] [--why "<reason>"]
   retire    <id> --why "<reason>"
   dismiss   --capture <key> --why "<reason>"
+  topic     <name> --desc "<what belongs here>"            # declare your own topic
   promote   <id> --why "<case>" [--target "<repo spot>"]   # charter-level → export brief
   land      <id> --ref "<pr/spec>"                         # close the loop when it lands
   promotions [--json]                                      # the pending export queue
@@ -522,6 +565,7 @@ func knowledgeUsage() int {
   supersede <id> --title "<一句话>" [--body-file <路径|->] [--why "<原因>"]
   retire    <id> --why "<原因>"
   dismiss   --capture <键> --why "<原因>"
+  topic     <名称> --desc "<这里放什么>"               # 声明你自己的主题
   promote   <id> --why "<理由>" [--target "<落点>"]   # 守则级 → 生成外送简报
   land      <id> --ref "<pr/spec>"                    # 落地后闭环
   promotions [--json]                                 # 待落地队列

@@ -22,10 +22,9 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
-// captureTopics is the fixed topic vocabulary a candidate may be filed under — the same
-// curated knowledge-base topics HQ maintains (README + environment are not capture
-// targets: the former is an index, the latter is machine-specific config).
-var captureTopics = []string{"accounts", "workflows", "best-practices", "pitfalls", "corrections"}
+// The capture vocabulary is the knowledge vocabulary (hq-open-topics): built-ins
+// plus every ledger-declared topic, judged by the same validKnowledgeTopic the
+// knowledge verbs use — one seam, so the two entrances can never drift.
 
 // captureCandidate is one pending-distill spool line: the lesson + its topic tag + a
 // dedup key (so distill MERGES same-key candidates rather than duplicating) + the
@@ -67,9 +66,15 @@ func CmdCapture(args []string) int {
 		captureUsage()
 		return 2
 	}
-	if !validCaptureTopic(topic) {
-		i18n.Sae("gtmux capture: unknown topic '"+topic+"' (want @"+strings.Join(captureTopics, " | @")+")",
-			"gtmux capture: 未知主题 '"+topic+"'(可选 @"+strings.Join(captureTopics, " | @")+")")
+	_, custom, err := readKnowledgeState()
+	if err != nil {
+		i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
+		return 1
+	}
+	if !validKnowledgeTopic(topic, custom) {
+		vocab := strings.Join(knowledgeTopics(custom), " | @")
+		i18n.Sae("gtmux capture: unknown topic '"+topic+"' (want @"+vocab+"; HQ can declare more with `gtmux knowledge topic`)",
+			"gtmux capture: 未知主题 '"+topic+"'(可选 @"+vocab+";中控可用 `gtmux knowledge topic` 声明新主题)")
 		return 2
 	}
 
@@ -115,15 +120,6 @@ func parseCaptureInput(rest []string) (lesson, topic string, ok bool) {
 		return "", "", false
 	}
 	return lesson, topic, true
-}
-
-func validCaptureTopic(topic string) bool {
-	for _, t := range captureTopics {
-		if t == topic {
-			return true
-		}
-	}
-	return false
 }
 
 // slug lowercases a lesson and reduces it to a short, stable dedup token: alphanumerics
@@ -296,8 +292,8 @@ func captureListHeader(now int64) string {
 func captureUsage() int {
 	i18n.Say("usage: gtmux capture \"<one-line lesson> @<topic>\"   |   gtmux capture --list",
 		"用法：gtmux capture \"<一句话教训> @<topic>\"   |   gtmux capture --list")
-	i18n.Say("  topic ∈ "+strings.Join(captureTopics, " | "),
-		"  topic ∈ "+strings.Join(captureTopics, " | "))
+	i18n.Say("  topic ∈ "+strings.Join(builtinTopics, " | ")+" — plus any topic HQ declared (`gtmux knowledge topic`)",
+		"  topic ∈ "+strings.Join(builtinTopics, " | ")+" —— 以及中控用 `gtmux knowledge topic` 声明的主题")
 	i18n.Say("  Record a durable, cross-cutting fact as a CANDIDATE — cheap, in the moment.",
 		"  把一条持久、横向的事实作为候选记下来 —— 便宜、当场。")
 	i18n.Say("  Any worker can capture; HQ's distill pass is the quality gate that files it.",
