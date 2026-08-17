@@ -122,7 +122,9 @@ over one Go core (gtmux-core is the single data source):
   A self-check sensor raises a `self-check` trigger (idle/threshold/daily, ≤1/h)
   HQ acts on (`internal/hqfeed` keeps only the surfacing tiers + control-record
   names). `gtmux tasks` doubles as the **attention
-  ledger** (tier/priority/surfaced/disposition/archive, `--verbose`); `gtmux quiet
+  ledger** (free-text disposition + the `--pending` plate view; `--verbose` adds the
+  disposition detail — the unwired tier/priority/surfaced/archive verbs were removed
+  by slim-attention-ledger); `gtmux quiet
   [on|off|status]` tunes the surfacing threshold (a read-time gap CRITICAL is never
   quieted). HQ gates its OWN prints by the tier — CRITICAL/NORMAL print, QUIET is
   ledger-only.

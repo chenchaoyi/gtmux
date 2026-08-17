@@ -427,15 +427,3 @@ func TestGradeOfSeverity(t *testing.T) {
 // An attention-ledger row reads at the same weight the knock about it would have had.
 // A tierless entry — everything written before the attention ledger existed — is
 // attention, not bookkeeping: it is on a list of things awaiting a decision.
-func TestGradeOfTier(t *testing.T) {
-	for tier, want := range map[string]Grade{
-		"critical": GradeDecision,
-		"normal":   GradeAttention,
-		"quiet":    GradeLedger,
-		"":         GradeAttention, // a legacy ledger entry with no tier
-	} {
-		if got := GradeOfTier(tier); got != want {
-			t.Errorf("tier %q graded %s, want %s", tier, got.Name(), want.Name())
-		}
-	}
-}

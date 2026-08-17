@@ -267,7 +267,7 @@ func recordDispatch(id string, t dispatch.Task) string {
 	if id != "" {
 		if prev, ok := dispatch.LoadTask(id); ok {
 			t.ID, t.CreatedAt, t.FirstSeen = prev.ID, prev.CreatedAt, prev.FirstSeen
-			t.Tier, t.Priority, t.SnoozeUntil = prev.Tier, prev.Priority, prev.SnoozeUntil
+			t.SnoozeUntil = prev.SnoozeUntil
 		}
 	}
 	if t.ID == "" {

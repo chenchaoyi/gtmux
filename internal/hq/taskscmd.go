@@ -28,12 +28,8 @@ type taskJSON struct {
 	Branch        string `json:"branch,omitempty"`
 	Snoozed       bool   `json:"snoozed,omitempty"`
 	CreatedAt     int64  `json:"created_at,omitempty"`
-	Tier          string `json:"tier,omitempty"`
-	Priority      int    `json:"priority,omitempty"`
-	Surfaced      bool   `json:"surfaced,omitempty"`
 	Disposition   string `json:"disposition,omitempty"`
 	AwaitingSince int64  `json:"awaiting_since,omitempty"`
-	Archived      bool   `json:"archived,omitempty"`
 }
 
 // taskStatus maps a tracked dispatch to the ledger lifecycle: "gone" when its pane is
@@ -73,9 +69,7 @@ func rowFor(t dispatch.Task, status string, now int64) taskJSON {
 		Goal: t.Goal, Status: status, Source: t.SourceOrDefault(),
 		Worktree: t.Worktree, Branch: t.Branch,
 		Snoozed: t.Snoozed(now), CreatedAt: t.CreatedAt,
-		Tier: t.Tier, Priority: t.Priority, Surfaced: t.Surfaced,
 		Disposition: t.Disposition, AwaitingSince: t.AwaitingSince,
-		Archived: t.Archived,
 	}
 }
 
@@ -96,18 +90,6 @@ func gatherTasks() []taskJSON {
 		for j := i; j > 0 && taskRank(out[j].Status) < taskRank(out[j-1].Status); j-- {
 			out[j], out[j-1] = out[j-1], out[j]
 		}
-	}
-	return out
-}
-
-// gatherArchivedTasks returns archived ledger entries as rows (status "archived",
-// most-recently-archived first) — the `--verbose` retro-query.
-func gatherArchivedTasks() []taskJSON {
-	now := time.Now().Unix()
-	arch := dispatch.ListArchived()
-	out := make([]taskJSON, 0, len(arch))
-	for _, t := range arch {
-		out = append(out, rowFor(t, "archived", now))
 	}
 	return out
 }
@@ -150,8 +132,8 @@ func CmdTasks(args []string) int {
 				"       gtmux tasks --await <task_id> | --resolve <task_id> [处置]")
 			i18n.Say("  The attention ledger (gtmux spawn dispatches + attention items), live",
 				"  注意力账本（gtmux spawn 派活 + 注意力条目），带实时状态，需要你的排在前面。")
-			i18n.Say("  status, needs-you first. --verbose adds archived entries + tier/disposition.",
-				"  --verbose 追加已归档条目 + 分级/处置/surfaced 列。")
+			i18n.Say("  status, needs-you first. --verbose adds the disposition detail.",
+				"  --verbose 追加处置(disposition)明细。")
 			i18n.Say("  --pending is the standing view: only what awaits YOUR decision, stable order.",
 				"  --pending 是常驻视图：只列待你决定的事项，顺序稳定。")
 			return 0
@@ -185,9 +167,6 @@ func CmdTasks(args []string) int {
 		return 0
 	}
 	rows := gatherTasks()
-	if verbose {
-		rows = append(rows, gatherArchivedTasks()...) // archived after the live set
-	}
 	if jsonOut {
 		b, _ := json.MarshalIndent(rows, "", "  ")
 		fmt.Println(string(b))
@@ -219,29 +198,13 @@ func CmdTasks(args []string) int {
 	return 0
 }
 
-// verboseTail renders the attention columns (tier · priority · surfaced ·
-// disposition) as a dimmed suffix, only under --verbose and only when set.
+// verboseTail renders the disposition as a dimmed suffix, only under --verbose
+// and only when set.
 func verboseTail(r taskJSON, verbose bool) string {
-	if !verbose {
+	if !verbose || r.Disposition == "" {
 		return ""
 	}
-	var parts []string
-	if r.Tier != "" {
-		parts = append(parts, r.Tier)
-	}
-	if r.Priority != 0 {
-		parts = append(parts, fmt.Sprintf("p%d", r.Priority))
-	}
-	if r.Surfaced {
-		parts = append(parts, "surfaced")
-	}
-	if r.Disposition != "" {
-		parts = append(parts, r.Disposition)
-	}
-	if len(parts) == 0 {
-		return ""
-	}
-	return i18n.Dim + "  · " + strings.Join(parts, " · ") + i18n.Reset
+	return i18n.Dim + "  · " + r.Disposition + i18n.Reset
 }
 
 func taskGlyph(status string) (glyph, label string) {
@@ -256,8 +219,6 @@ func taskGlyph(status string) (glyph, label string) {
 		return i18n.Green + "✳" + i18n.Reset, i18n.Tr("done", "已完成")
 	case "working":
 		return i18n.Cyan + "⠿" + i18n.Reset, i18n.Tr("working", "运行中")
-	case "archived":
-		return i18n.Dim + "▪" + i18n.Reset, i18n.Tr("archived", "已归档")
 	default:
 		return i18n.Dim + "○" + i18n.Reset, i18n.Tr("gone", "已消失")
 	}

@@ -125,23 +125,6 @@ func GradeOfSeverity(sev string) Grade {
 	}
 }
 
-// GradeOfTier projects an attention-LEDGER entry's surfacing tier onto the same scale,
-// so a row in `gtmux tasks` reads at the weight the knock about it would have had. The
-// tiers were defined by exactly this question (does this deserve the user's attention
-// now), so like GradeOfSeverity this is a rename, not a second opinion. An entry with no
-// tier — every entry written before the attention ledger existed — reads as attention:
-// it is on a list of things awaiting a decision, which is not bookkeeping.
-func GradeOfTier(tier string) Grade {
-	switch tier {
-	case "critical":
-		return GradeDecision
-	case "quiet":
-		return GradeLedger
-	default: // normal, or a legacy entry with no tier
-		return GradeAttention
-	}
-}
-
 // Color returns the grade's ANSI colour. It reuses the product's existing status
 // palette rather than inventing a second one: decision is the red the radar already
 // uses for "needs you", attention the cyan of work in flight, and ledger is dim —

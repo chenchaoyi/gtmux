@@ -1,30 +1,32 @@
 package dispatch
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
-// TestAttentionFieldsRoundTripAndLegacy confirms the additive attention fields
-// persist and that an entry written without them (legacy) still loads.
-func TestAttentionFieldsRoundTripAndLegacy(t *testing.T) {
+// TestDispositionRoundTripAndLegacy confirms the disposition fields persist and
+// that an entry written without them (legacy) still loads.
+func TestDispositionRoundTripAndLegacy(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	full := Task{
 		ID: NewID(1000), Pane: "%1", Goal: "build", CreatedAt: 10,
-		Tier: "critical", Priority: 5, Surfaced: true, SurfacedAt: 12,
 		Disposition: "relayed", FirstSeen: 10, LastUpdate: 12,
 	}
 	if err := AddTask(full); err != nil {
 		t.Fatal(err)
 	}
 	got, ok := LoadTask(full.ID)
-	if !ok || got.Tier != "critical" || got.Priority != 5 || !got.Surfaced || got.Disposition != "relayed" {
-		t.Fatalf("attention fields not round-tripped: %+v", got)
+	if !ok || got.Disposition != "relayed" || got.LastUpdate != 12 {
+		t.Fatalf("disposition fields not round-tripped: %+v", got)
 	}
-	// A legacy entry (no attention fields) still loads and defaults FirstSeen.
+	// A legacy entry (no disposition fields) still loads and defaults FirstSeen.
 	legacy := Task{ID: NewID(2000), Pane: "%2", Goal: "test", CreatedAt: 20}
 	if err := AddTask(legacy); err != nil {
 		t.Fatal(err)
 	}
 	l, ok := LoadTask(legacy.ID)
-	if !ok || l.Tier != "" || l.Priority != 0 {
+	if !ok || l.Disposition != "" {
 		t.Fatalf("legacy entry mangled: %+v", l)
 	}
 	if l.FirstSeen != 20 {
@@ -32,80 +34,44 @@ func TestAttentionFieldsRoundTripAndLegacy(t *testing.T) {
 	}
 }
 
-func TestPromoteIsInPlaceNoDuplicate(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-	id := NewID(3000)
-	_ = AddTask(Task{ID: id, Pane: "%3", Goal: "x", CreatedAt: 30, Tier: "quiet"})
-	if !Promote(id, "critical", 9, 100) {
-		t.Fatal("promote should succeed")
-	}
-	// Same entry mutated — no duplicate created.
-	if n := len(ListTasks()); n != 1 {
-		t.Fatalf("promote created a duplicate: %d entries", n)
-	}
-	got, _ := LoadTask(id)
-	if got.Tier != "critical" || got.Priority != 9 || got.LastUpdate != 100 {
-		t.Fatalf("promote didn't apply: %+v", got)
-	}
-	// A missing task is a no-op.
-	if Promote("nope", "critical", 1, 100) {
-		t.Error("promoting a missing task should return false")
-	}
-}
-
-func TestMarkSurfacedAndDisposition(t *testing.T) {
+// TestSetDispositionRecordsHow pins the free-text disposition write path that
+// `gtmux tasks --resolve <id> [disposition]` rides.
+func TestSetDispositionRecordsHow(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	id := NewID(4000)
 	_ = AddTask(Task{ID: id, Pane: "%4", Goal: "y", CreatedAt: 40})
-	if !MarkSurfaced(id, 200) {
-		t.Fatal("mark surfaced should succeed")
+	if !SetDisposition(id, "auto-answered", 400) {
+		t.Fatal("set-disposition should succeed")
 	}
 	got, _ := LoadTask(id)
-	if !got.Surfaced || got.SurfacedAt != 200 {
-		t.Fatalf("surfaced not recorded: %+v", got)
-	}
-	// SurfacedAt is stamped once (a re-mark doesn't move it).
-	_ = MarkSurfaced(id, 300)
-	got, _ = LoadTask(id)
-	if got.SurfacedAt != 200 {
-		t.Errorf("SurfacedAt should be stamped once, got %d", got.SurfacedAt)
-	}
-	_ = SetDisposition(id, "auto-answered", 400)
-	got, _ = LoadTask(id)
 	if got.Disposition != "auto-answered" || got.LastUpdate != 400 {
 		t.Fatalf("disposition not recorded: %+v", got)
 	}
+	// A missing task is a no-op.
+	if SetDisposition("nope", "x", 400) {
+		t.Error("setting a missing task's disposition should return false")
+	}
 }
 
-func TestArchiveMovesOutOfLiveSet(t *testing.T) {
+// TestRetiredFieldsStillLoad pins the compatibility promise of
+// slim-attention-ledger: an on-disk entry written when the ledger carried the
+// tier/priority/surfaced/archive fields loads cleanly — unknown JSON fields
+// are ignored, everything else survives.
+func TestRetiredFieldsStillLoad(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	a := NewID(5000)
-	b := NewID(6000)
-	_ = AddTask(Task{ID: a, Pane: "%5", Goal: "done-thing", CreatedAt: 50})
-	_ = AddTask(Task{ID: b, Pane: "%6", Goal: "live-thing", CreatedAt: 60})
-
-	if !ArchiveTask(a, 500) {
-		t.Fatal("archive should succeed")
+	id := NewID(7000)
+	_ = AddTask(Task{ID: id, Pane: "%7", Goal: "old", CreatedAt: 70}) // creates the dir
+	raw := `{"id":"` + id + `","pane":"%7","goal":"old","created_at":70,` +
+		`"tier":"critical","priority":9,"surfaced":true,"surfaced_at":71,` +
+		`"archived":false,"disposition":"relayed","first_seen":70}`
+	if err := os.WriteFile(taskPath(id), []byte(raw), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	// Live set no longer has a; b remains.
-	live := ListTasks()
-	if len(live) != 1 || live[0].ID != b {
-		t.Fatalf("live set after archive = %+v", live)
+	got, ok := LoadTask(id)
+	if !ok {
+		t.Fatal("an entry with retired fields must still load")
 	}
-	// a is retro-queryable via the archive.
-	arch := ListArchived()
-	if len(arch) != 1 || arch[0].ID != a || !arch[0].Archived || arch[0].ArchivedAt != 500 {
-		t.Fatalf("archived set = %+v", arch)
-	}
-	// LoadTask (live) misses it; LoadAnyTask finds it.
-	if _, ok := LoadTask(a); ok {
-		t.Error("archived task should not load from the live set")
-	}
-	if got, ok := LoadAnyTask(a); !ok || got.ID != a {
-		t.Fatalf("LoadAnyTask should find the archived entry: %+v ok=%v", got, ok)
-	}
-	// Archiving a missing task is a no-op.
-	if ArchiveTask("nope", 500) {
-		t.Error("archiving a missing task should return false")
+	if got.Goal != "old" || got.Disposition != "relayed" || got.FirstSeen != 70 {
+		t.Fatalf("living fields mangled while ignoring retired ones: %+v", got)
 	}
 }

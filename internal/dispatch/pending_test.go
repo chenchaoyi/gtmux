@@ -120,7 +120,7 @@ func TestLegacyLedgerEntryWithoutAwaitingField(t *testing.T) {
 	if got.AwaitingSince != 0 || got.AwaitingCommander() {
 		t.Fatalf("legacy entry read as pending: %+v", got)
 	}
-	if got.Goal != "an entry from before the plate existed" || got.Tier != "normal" || got.Priority != 3 {
+	if got.Goal != "an entry from before the plate existed" {
 		t.Fatalf("legacy fields mangled: %+v", got)
 	}
 	if got.PendingSince() != 1700000000 {

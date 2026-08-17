@@ -10,40 +10,39 @@ import (
 )
 
 // pend builds a ledger entry already on the plate.
-func pend(id, pane, tier, goal string, since int64) dispatch.Task {
+func pend(id, pane, goal string, since int64) dispatch.Task {
 	return dispatch.Task{
-		ID: id, Pane: pane, Goal: goal, Tier: tier, CreatedAt: since,
+		ID: id, Pane: pane, Goal: goal, CreatedAt: since,
 		FirstSeen: since, AwaitingSince: since,
 		Disposition: dispatch.DispositionAwaitingCommander,
 	}
 }
 
-// The view's order is TOTAL and by weight: decision grade first, then the oldest wait,
-// then pane, then id. A view that is re-read constantly must not wobble.
-func TestPendingOrderIsStableAndByGrade(t *testing.T) {
-	// Deliberately fed in an order that contradicts every rank.
+// The view's order is TOTAL: the oldest wait first, then pane, then id. A view that is
+// re-read constantly must not wobble.
+func TestPendingOrderIsStable(t *testing.T) {
+	// Deliberately fed in an order that contradicts the rank.
 	in := []dispatch.Task{
-		pend("t-e", "%5", "quiet", "ledger-grade, oldest of all", 100),
-		pend("t-b", "%2", "normal", "attention, newer", 500),
-		pend("t-a", "%1", "normal", "attention, older", 300),
-		pend("t-d", "%4", "critical", "decision, newer", 900),
-		pend("t-c", "%3", "critical", "decision, older", 200),
+		pend("t-b", "%2", "newer", 500),
+		pend("t-d", "%4", "newest", 900),
+		pend("t-a", "%1", "older", 300),
+		pend("t-c", "%3", "oldest", 100),
 	}
 	rows := pendingTasks(in, 1000)
 	var got []string
 	for _, r := range rows {
 		got = append(got, r.row.ID)
 	}
-	want := []string{"t-c", "t-d", "t-a", "t-b", "t-e"}
+	want := []string{"t-c", "t-a", "t-b", "t-d"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("order = %v, want %v", got, want)
 	}
 
-	// Same-grade, same-wait entries fall back to pane then id, so ties cannot flip.
+	// Same-wait entries fall back to pane then id, so ties cannot flip.
 	tie := []dispatch.Task{
-		pend("t-z", "%9", "normal", "second", 42),
-		pend("t-y", "%9", "normal", "first", 42),
-		pend("t-x", "%1", "normal", "pane wins over id", 42),
+		pend("t-z", "%9", "second", 42),
+		pend("t-y", "%9", "first", 42),
+		pend("t-x", "%1", "pane wins over id", 42),
 	}
 	rows = pendingTasks(tie, 1000)
 	got = nil
@@ -59,8 +58,8 @@ func TestPendingOrderIsStableAndByGrade(t *testing.T) {
 // view is that it stops churning. A relative clock in the output would break this.
 func TestPendingRenderIsByteIdenticalAcrossReads(t *testing.T) {
 	in := []dispatch.Task{
-		pend("t-a", "%1", "critical", "ship v0.48.0 or hold?", 1700000000),
-		pend("t-b", "%2", "normal", "which branch for the migration?", 1700000100),
+		pend("t-a", "%1", "ship v0.48.0 or hold?", 1700000000),
+		pend("t-b", "%2", "which branch for the migration?", 1700000100),
 	}
 	var first, second bytes.Buffer
 	renderPending(&first, pendingTasks(in, 2_000_000_000), false)
@@ -71,9 +70,9 @@ func TestPendingRenderIsByteIdenticalAcrossReads(t *testing.T) {
 	if strings.Count(first.String(), "\n") != 2 {
 		t.Fatalf("expected one line per pending entry, got:\n%s", first.String())
 	}
-	// The grade is carried by the glyph, so a colourless read loses nothing.
-	if !strings.Contains(first.String(), "◆") || !strings.Contains(first.String(), "▸") {
-		t.Errorf("grade glyphs missing from the view:\n%s", first.String())
+	// Every plate row is attention grade; the glyph survives a colourless read.
+	if strings.Count(first.String(), "▸") != 2 {
+		t.Errorf("attention glyphs missing from the view:\n%s", first.String())
 	}
 	if strings.Contains(first.String(), "\033[") {
 		t.Errorf("colour leaked into a colour-off render:\n%q", first.String())
@@ -117,21 +116,11 @@ func TestPendingSetEntryAndExit(t *testing.T) {
 		t.Fatalf("entry did not leave the plate: %+v", rows)
 	}
 
-	// Archiving is closure: a still-marked entry that was archived is off the plate.
-	if !dispatch.MarkAwaitingCommander(id, 600) {
-		t.Fatal("re-mark failed")
-	}
-	if !dispatch.ArchiveTask(id, 700) {
-		t.Fatal("archive failed")
-	}
-	if rows = pendingTasks(dispatch.ListTasks(), 800); len(rows) != 0 {
-		t.Fatalf("an archived entry is still on the plate: %+v", rows)
-	}
 }
 
-// A ledger entry from before this change — no tier, no awaiting_since, the disposition
-// set by hand — still renders: it reads as attention grade and falls back to its
-// created-at stamp rather than dropping out of the view.
+// A ledger entry from before this change — no awaiting_since, the disposition set by
+// hand — still renders: it falls back to its created-at stamp rather than dropping out
+// of the view.
 func TestPendingLegacyEntryRenders(t *testing.T) {
 	legacy := dispatch.Task{
 		ID: "t-legacy", Pane: "%7", Goal: "an old escalation", CreatedAt: 1700000000,
