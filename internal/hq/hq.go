@@ -186,9 +186,30 @@ func generatedPlaybook() string {
 // hqLocalPath is the user's personalization file — seed-once, NEVER overwritten.
 func hqLocalPath() string { return filepath.Join(state.HQHome(), "LOCAL.md") }
 
-// hqLocalTemplate is LOCAL.md's one-time content: it explains the split so the user
-// knows THIS is where their edits belong (AGENTS.md is regenerated on upgrades).
-const hqLocalTemplate = `# Your HQ instructions (LOCAL.md)
+// hqLocalTemplate is the seed-once LOCAL.md personalization template, in the
+// user's language (GTMUX_LANG) — like the board seed and the charter. Seed-once
+// means a later language switch never rewrites an existing LOCAL.md: the file is
+// the user's from the first byte.
+func hqLocalTemplate() string {
+	if i18n.Lang() == "zh" {
+		return `# 你的 HQ 指令(LOCAL.md)
+
+gtmux 绝不覆盖这个文件。托管守则(AGENTS.md)会在 gtmux 发布新版时重新生成;
+你的个性化内容住在这里,并且最后导入——写在这里的内容扩展或覆盖托管守则。
+
+这个文件只约束中控。通知、推送、勿扰模式是 gtmux 自己的设置
+(config.json / 各 app)——写在这里的规则静音不了手机。
+
+<!-- 在下方添加你的常备指令、偏好与覆盖规则。示例:
+
+- 我主要在做: <你的领域 / 主要仓库>。
+- 状态汇报方式: <如:简洁表格;先说需要我的>。
+- 免打扰时段: <如:22:00 后例行汇报先压着;阻塞项照样上报>。
+
+-->
+`
+	}
+	return `# Your HQ instructions (LOCAL.md)
 
 gtmux NEVER overwrites this file. The managed playbook (AGENTS.md) is regenerated when
 gtmux ships a newer version; YOUR customizations live here and are imported LAST, so
@@ -205,6 +226,7 @@ gtmux's own settings (config.json / the apps) — a rule here cannot mute the ph
 
 -->
 `
+}
 
 // hqSessionName is the preferred tmux session name (auto-named on collision —
 // detection is by cwd, not name, so the name is cosmetic).
@@ -324,6 +346,7 @@ type seedResult struct {
 	Migrated    bool   // the upgraded file had no version marker (legacy → managed)
 	FromVersion int    // the installed version before an upgrade
 	ToVersion   int    // the shipped version written
+	LangSwitch  string // non-empty: the upgrade was (also) a charter-language switch, to this language
 	BackupPath  string // where the prior AGENTS.md was backed up (on upgrade)
 }
 
@@ -357,6 +380,9 @@ func upgradePlaybookIfNewer(r *seedResult) error {
 	}
 	r.Upgraded = true
 	r.FromVersion, r.ToVersion = installed, hqPlaybookVersion
+	if installedLang != "" && installedLang != i18n.Lang() {
+		r.LangSwitch = i18n.Lang()
+	}
 	r.BackupPath = bak
 	r.Migrated = installed == 0
 	return nil
@@ -368,7 +394,7 @@ func seedHQLocal() bool {
 	if fileExists(hqLocalPath()) {
 		return false
 	}
-	return os.WriteFile(hqLocalPath(), []byte(hqLocalTemplate), 0o644) == nil
+	return os.WriteFile(hqLocalPath(), []byte(hqLocalTemplate()), 0o644) == nil
 }
 
 // printSeedNotice reports the outcome of seedHQHome (versioned-hq-playbook): a
@@ -381,6 +407,11 @@ func printSeedNotice(r seedResult) {
 			r.ToVersion, r.BackupPath, hqLocalPath()),
 			fmt.Sprintf("已将 HQ 守则迁移为受管 v%d —— 你原来的守则已备份到 %s。请把个人定制移入 %s（gtmux 永不覆盖它）。",
 				r.ToVersion, r.BackupPath, hqLocalPath()))
+	case r.Upgraded && r.LangSwitch != "" && r.FromVersion == r.ToVersion:
+		i18n.Say(fmt.Sprintf("Switched the HQ charter language to %s (previous backed up at %s). Your %s is untouched.",
+			r.LangSwitch, r.BackupPath, filepath.Base(hqLocalPath())),
+			fmt.Sprintf("HQ 守则语言已切换为 %s（旧版备份在 %s）。你的 %s 未改动。",
+				r.LangSwitch, r.BackupPath, filepath.Base(hqLocalPath())))
 	case r.Upgraded:
 		i18n.Say(fmt.Sprintf("Upgraded the HQ playbook v%d → v%d (previous backed up at %s). Your %s is untouched.",
 			r.FromVersion, r.ToVersion, r.BackupPath, filepath.Base(hqLocalPath())),
