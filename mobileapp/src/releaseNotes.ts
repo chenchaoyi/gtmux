@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.61.0',
+    en: [
+      'Version alignment with gtmux 0.61.0 — this release\'s improvements are on the CLI/HQ side (a supervisor that speaks to any user); no phone-side changes.',
+    ],
+    zh: [
+      '与 gtmux 0.61.0 版本对齐 —— 本次改进都在 CLI/中控侧（面向任何用户的参谋长），手机端无功能变化。',
+    ],
+  },
+  {
     version: '0.59.0',
     en: [
       'Picking panes for a share link now groups them by session and leads each row with its pane id, so two panes running the same project are no longer two identical-looking rows.',
