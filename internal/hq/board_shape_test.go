@@ -3,6 +3,8 @@ package hq
 import "strings"
 import "testing"
 
+import "github.com/chenchaoyi/gtmux/internal/i18n"
+
 // The board was specified as ONE thing — a pruned, current-state table — so nothing ever
 // said which way a dated log inside it should run. HQ wrote one anyway, and a real board
 // reached 1078 lines with its top half descending (newest prepended), its bottom half
@@ -44,9 +46,14 @@ func TestBoardShapeShippedWithAVersionBump(t *testing.T) {
 var boardHeadings = []string{"① 现状", "② 交接记录"}
 
 // The seed a FRESH home starts from must already have the shape, or a new HQ learns the
-// old one from its own file while the playbook tells it something else.
+// old one from its own file while the playbook tells it something else. Since
+// hq-first-person the skeleton follows GTMUX_LANG; the Chinese seed keeps the exact
+// headings this test always pinned.
 func TestBoardSeedHasBothParts(t *testing.T) {
-	seed := hqNotesSeeds["board.md"]
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	i18n.SetLang("zh")
+	seed := hqNotesSeeds()["board.md"]
 	for _, want := range append(boardHeadings, "新的在最上面") {
 		if !strings.Contains(seed, want) {
 			t.Errorf("board seed missing %q", want)
@@ -62,7 +69,10 @@ func TestBoardSeedHasBothParts(t *testing.T) {
 // decision, and when they drift a fresh home reads one shape out of its own file while
 // being told another by its charter — with no error anywhere.
 func TestPlaybookAndSeedAgreeOnTheHeadings(t *testing.T) {
-	seed := hqNotesSeeds["board.md"]
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	i18n.SetLang("zh")
+	seed := hqNotesSeeds()["board.md"]
 	for _, h := range boardHeadings {
 		if !strings.Contains(hqInstructions, h) {
 			t.Errorf("playbook does not name the part %q", h)
@@ -76,7 +86,7 @@ func TestPlaybookAndSeedAgreeOnTheHeadings(t *testing.T) {
 // The words that got this rewritten must not come back.
 func TestBoardDoesNotSpeakTranslationese(t *testing.T) {
 	for _, banned := range []string{"① Posture", "per LIVE ship", "ship (loc/pane)"} {
-		if strings.Contains(hqInstructions, banned) || strings.Contains(hqNotesSeeds["board.md"], banned) {
+		if strings.Contains(hqInstructions, banned) || strings.Contains(hqNotesSeeds()["board.md"], banned) {
 			t.Errorf("%q is back — it is what produced 姿态/在飞的线/线", banned)
 		}
 	}

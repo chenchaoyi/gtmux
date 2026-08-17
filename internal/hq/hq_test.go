@@ -462,9 +462,18 @@ func TestHQPlaybookCharter(t *testing.T) {
 			t.Errorf("charter seed missing %q", want)
 		}
 	}
+	// hq-first-person: the seed is the USER's blank page — no pre-filled author
+	// lessons; the portable budget rules moved into Policy #3 where operating
+	// rules live.
 	bp, err := os.ReadFile(filepath.Join(hqKnowledgeDir(), "best-practices.md"))
-	if err != nil || !strings.Contains(string(bp), "HQ operating lessons") {
-		t.Errorf("best-practices seed should carry portable HQ operating lessons: %v", err)
+	if err != nil || strings.Contains(string(bp), "HQ operating lessons") {
+		t.Errorf("best-practices seed must be a neutral template (err=%v)", err)
+	}
+	if !strings.Contains(string(bp), "keep THIS file portable") {
+		t.Error("best-practices seed lost its portability guidance")
+	}
+	if !strings.Contains(hqInstructions, "BUDGET: compact a near-full session") {
+		t.Error("the portable budget rules must live in Policy #3")
 	}
 }
 
@@ -575,8 +584,8 @@ func TestHQPlaybookChiefOfStaff(t *testing.T) {
 		"RECONCILE before",       // §3: reconcile-before-relay
 		"CRITICAL",               // §3: only critical rings
 		"LEARN FROM CORRECTIONS", // §4: the learning loop
-		"corrections.md",         // §4: the landing place
-		"CHARTER-LEVEL",          // §4: flag charter-level lessons for a seed/spec update
+		"corrections",            // §4: the landing topic
+		"CHARTER-LEVEL",          // §4: promote charter-level lessons to their carrier
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("chief-of-staff seed missing %q", want)
@@ -691,6 +700,57 @@ func TestAgentAliveByCmd(t *testing.T) {
 	for _, c := range alive {
 		if !agentAliveByCmd(c) {
 			t.Errorf("agentAliveByCmd(%q) = false, want true (a non-shell foreground = agent running)", c)
+		}
+	}
+}
+
+// The first-person guard (hq-first-person): the seeds and playbook speak to ANY
+// user — the author's stack, undefined internal markers, and biography-as-your-
+// memory phrasing are banned, so a neutrality regression is a red build, not
+// review archaeology.
+func TestSeedsAndPlaybookCarryNoAuthorLeakage(t *testing.T) {
+	banned := []string{
+		"Apple developer", "Cloudflare", "Appium", "(B2)",
+		"review-pr-518", "menubar-width",
+		"of yours", "your own knowledge base",
+		"WRITE THE CHINESE",
+	}
+	check := func(name, body string) {
+		for _, tok := range banned {
+			if strings.Contains(body, tok) {
+				t.Errorf("%s contains banned author-leak token %q", name, tok)
+			}
+		}
+	}
+	check("hqInstructions", hqInstructions)
+	for name, body := range hqKnowledgeSeeds {
+		check("seed "+name, body)
+	}
+	for name, body := range hqNotesSeeds() {
+		check("notes seed "+name, body)
+	}
+	check("LOCAL.md template", hqLocalTemplate)
+}
+
+// The board seeds in the user's language (hq-first-person): zh gets the Chinese
+// skeleton, anything else the English one, and the guidance below the fold is
+// shared.
+func TestBoardSeedFollowsLanguage(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	i18n.SetLang("zh")
+	zh := boardSeed()
+	if !strings.Contains(zh, "## ① 现状 — 在跑的 pane") || !strings.Contains(zh, "## ② 交接记录 — 新的在最上面") {
+		t.Fatalf("zh board must carry the Chinese skeleton:\n%s", zh)
+	}
+	i18n.SetLang("en")
+	en := boardSeed()
+	if !strings.Contains(en, "## ① Now — live panes") || !strings.Contains(en, "## ② Handoff log — newest first") {
+		t.Fatalf("en board must carry the English skeleton:\n%s", en)
+	}
+	for _, b := range []string{zh, en} {
+		if !strings.Contains(b, "KEEP THIS BOARD IN THE LANGUAGE IT WAS SEEDED IN") {
+			t.Fatal("both seeds must carry the keep-seeded-language rule")
 		}
 	}
 }
