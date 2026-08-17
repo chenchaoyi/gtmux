@@ -7,152 +7,81 @@ TBD - created by archiving change hq-attention-system. Update Purpose after arch
 
 ### Requirement: Split feeding-HQ from showing-user
 
-The system SHALL feed the supervisor the FULL event stream through a channel that is
-NOT visible in the HQ pane, so that the only user-visible action is HQ's deliberate
-print. gtmux SHALL NOT force-type low-value (`routine`/QUIET) event lines into the HQ
-pane as a way to inform HQ. HQ's awareness of an event SHALL be independent of whether
-the user is shown anything about it.
+The system SHALL keep HQ's awareness independent of user surfacing: gtmux SHALL
+NOT force-type low-value (`routine`/QUIET) event lines into the HQ pane as a way
+to inform HQ. HQ's full awareness comes from the session journal itself —
+decision-dense events knock (the wake channel), and HQ pulls the complete delta
+(`gtmux events --since-seq <n>`) on any knock; there is NO push copy of the
+stream. HQ's awareness of an event SHALL be independent of whether the user is
+shown anything about it.
 
 #### Scenario: Low-value events reach HQ silently
 
-- **WHEN** a QUIET-tier event (e.g. a resolved wait, a send-landed confirmation, a
-  working tick) occurs and an HQ pane is live
-- **THEN** HQ receives it through the silent feed and gtmux does NOT type a visible
-  `» gtmux·<class>` wake line for it into the HQ pane
+- **WHEN** a QUIET-tier event (e.g. a resolved wait, a send-landed confirmation)
+  occurs while an HQ pane is live
+- **THEN** no visible `» gtmux·<class>` line is typed for it, and HQ receives it
+  in its next pulled delta
 
 #### Scenario: HQ omniscience is decoupled from user surfacing
 
 - **WHEN** any event occurs while an HQ pane is live
-- **THEN** the event is delivered to HQ regardless of surfacing tier, and only a
-  CRITICAL/NORMAL judgment by HQ produces user-visible output
-
-### Requirement: Perception feed daemon
-
-The system SHALL provide a gtmux-managed, LLM-free perception daemon (`gtmux hq-feed`)
-that tails the event journal from a persisted cursor and appends each event to a spool
-file it owns under `~/.local/share/gtmux/hq-feed/`. The daemon SHALL be a singleton
-guarded by a pidfile, SHALL keep the spool ROLLABLE (rotated at a size cap, never an
-unbounded single file), and SHALL provide a cursor/rotation-aware tail mode HQ subscribes
-to. Starting the daemon while one already runs SHALL NOT create a second.
-
-#### Scenario: The daemon spools journal events
-
-- **WHEN** `gtmux hq-feed` runs and a new event is appended to the journal
-- **THEN** the daemon appends the event to its spool and advances its cursor
-
-#### Scenario: The spool stays bounded
-
-- **WHEN** the spool reaches its size cap
-- **THEN** it is rotated to a retained generation and a fresh spool starts, so total
-  on-disk size stays bounded
-
-#### Scenario: Singleton
-
-- **WHEN** `gtmux hq-feed --daemon` is invoked while a live daemon already holds the
-  pidfile
-- **THEN** the second invocation does not start a competing daemon
+- **THEN** the event is retained in the journal and delivered through HQ's next
+  pull regardless of surfacing tier, and only a CRITICAL/NORMAL judgment by HQ
+  produces user-visible output
 
 ### Requirement: Zero-loss cursor catch-up and gap detection
 
-On (re)start the feed SHALL resume from its consumed cursor and replay EXACTLY the events
-whose sequence is greater than the cursor, so a crashed or restarted feed loses no events.
-The feed SHALL detect a gap (a hole in consumed sequence numbers) and, on a gap, trigger a
-reconciliation (a full digest snapshot) rather than silently continuing.
+The pull read SHALL be seq-exact and self-auditing at the moment of consumption:
+`gtmux events --since-seq <n>` SHALL return exactly the retained events with
+sequence greater than the cursor, oldest first, and SHALL detect a gap — the
+first returned event not being cursor+1, or a hole inside the returned tail —
+every time it reads. On a gap it SHALL warn the reader (one CRITICAL line,
+separate from the record output so `--json` consumers stay parseable) to rebuild
+from a full `gtmux digest` snapshot before acking, rather than letting the
+reader proceed as if nothing was missed. A cursor of 0 ("everything retained")
+never reports a leading gap.
 
 #### Scenario: Restart replays missed events
 
-- **WHEN** the feed stops after consuming up to sequence N and later restarts while the
-  journal has advanced to N+K
-- **THEN** on restart it emits the events with sequence in (N, N+K] and none twice
+- **WHEN** HQ last acked sequence N and pulls `--since-seq N` while the journal
+  has advanced to N+K
+- **THEN** the read returns the events with sequence in (N, N+K] and none twice
 
 #### Scenario: A gap triggers reconciliation
 
-- **WHEN** the consumed sequence jumps (a missing sequence number is observed)
-- **THEN** the feed marks a gap and requests a full reconciliation snapshot instead of
-  proceeding as if nothing was missed
+- **WHEN** HQ pulls `--since-seq N` and the first retained event after N is not
+  N+1 (events rotated away), or the returned tail has a hole
+- **THEN** the output carries one CRITICAL warning telling HQ to reconcile from
+  a full digest snapshot before acking — at the moment of the read, not at some
+  daemon's startup
 
-### Requirement: Heartbeat and mechanical watchdog
+#### Scenario: A contiguous read stays clean
 
-The feed daemon SHALL write a heartbeat every 30 s. A gtmux-side, LLM-free watchdog
-(running in the `gtmux serve` slow-tick) SHALL, only while an HQ pane is live, treat a
-missing pidfile or a heartbeat older than 90 s as a dead feed and mechanically restart the
-daemon. A mechanical restart SHALL be SILENT (it does not disturb HQ). Only after two
-consecutive restart attempts fail SHALL the watchdog escalate.
-
-The mechanical restart SHALL NOT respawn the daemon on every tick during a persistent
-outage. Restarts SHALL be spaced by an exponential backoff (widening from a base delay,
-capped at a maximum), and after a bounded number of restart attempts within ONE continuous
-outage the watchdog SHALL STOP attempting further restarts and rely on the CRITICAL
-degradation plus the polling backstop instead of churning a daemon that will not come up.
-The backoff and attempt count SHALL reset the moment the feed is healthy again (or no HQ
-is live), so a later outage begins with an immediate restart.
-
-#### Scenario: A stale feed is restarted silently
-
-- **WHEN** the daemon's heartbeat is older than 90 s and an HQ pane is live
-- **THEN** the watchdog restarts the daemon and does not print anything to the HQ pane
-
-#### Scenario: A healthy feed is left alone
-
-- **WHEN** the daemon's heartbeat is fresh (≤ 90 s)
-- **THEN** the watchdog takes no action
-
-#### Scenario: Repeated self-heal failure escalates
-
-- **WHEN** two consecutive restart attempts fail to bring the heartbeat fresh
-- **THEN** the watchdog raises a degradation (see the degradation requirement) rather
-  than continuing to retry silently forever
-
-#### Scenario: Restarts back off and stop after a cap
-
-- **WHEN** the feed stays unhealthy across many ticks
-- **THEN** the watchdog does not respawn every tick — attempts are spaced by a widening
-  backoff and cease after the attempt cap, leaving the CRITICAL degradation and the
-  polling backstop in effect
-
-#### Scenario: Recovery resets the backoff
-
-- **WHEN** the feed becomes healthy again after a backed-off / capped outage
-- **THEN** the attempt count and backoff reset, so the next outage is restarted at once
+- **WHEN** HQ pulls `--since-seq N` and the retained tail is contiguous from N+1
+- **THEN** no gap warning is printed
 
 ### Requirement: Degradation is surfaced as CRITICAL
 
-The system SHALL surface any perception-layer degradation to the user as a CRITICAL
-condition immediately — the feed down after failed self-heal, a stale stream, or a
-detected cursor gap — via a synthetic `feed-degraded` control record marked `important`
-appended to the session JOURNAL (from which the feed daemon's own tail spools it — one
-record, not two; a record written only to the spool reaches no reader, the measured #647
-failure shape) AND one visible HQ-pane nudge, so a perception outage is known within
-seconds rather than discovered long after. Recovery SHALL clear the degradation state
-without re-alerting on the recovery.
+The system SHALL surface a perception-layer degradation to the user as a
+CRITICAL condition immediately. Two degradations remain: a broken WAKE channel
+(knocks queued but unconfirmed — the `wake-degraded` control record appended to
+the session journal at `important` severity, plus one visible HQ-pane nudge and
+a desktop notification), and a RETENTION overrun (events rotated away unread —
+the read-time gap warning of the catch-up requirement). Recovery SHALL clear
+the degradation state without re-alerting on the recovery.
 
 #### Scenario: An outage is announced at once
 
-- **WHEN** the feed is judged down (failed self-heal) or the stream is stale
-- **THEN** a CRITICAL degradation is surfaced to the user immediately, stating the feed
-  is down and a polling backstop is in effect — and the control record is visible to
-  `gtmux events` and counts toward the consumption debt
+- **WHEN** wake deliveries stop landing on a live HQ pane
+- **THEN** a `wake-degraded` control record lands in the journal (counting
+  toward the consumption debt), one visible nudge reaches the HQ pane, and a
+  desktop notification fires
 
 #### Scenario: Recovery does not re-alert
 
-- **WHEN** a previously degraded feed becomes healthy again
-- **THEN** the degradation state clears and no new alert fires for the recovery itself
-
-### Requirement: Startup reconciliation
-
-On every (re)start of the perception feed, the system SHALL rebuild state from two sources
-— replay the journal from the cursor AND pull one full `digest` snapshot — so a single
-restart never loses state. The reconciliation SHALL be idempotent (safe to run on a
-spurious gap). The `reconcile` control record announcing it SHALL be appended to the
-session journal (not only the spool), so feed restarts are visible to the pull side and
-auditable from the stream.
-
-#### Scenario: A restart rebuilds without loss
-
-- **WHEN** the feed (re)starts
-- **THEN** it replays outstanding journal events from the cursor and takes one full
-  digest snapshot, reconstructing the current fleet state — and a `gtmux:reconcile`
-  control record lands in the journal
+- **WHEN** a previously degraded wake channel becomes healthy again
+- **THEN** the degradation state clears and no new alert fires for the recovery
+  itself
 
 ### Requirement: Attention ledger
 

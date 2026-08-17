@@ -122,12 +122,8 @@ retired_check '[gtmux] '        'hq-perception-v2 (the wake format is now `» gt
   'openspec/specs/chat-transcript/spec.md docs/design/DESIGN.md docs/design/HANDOFF.md'
 retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is gone)' \
   'CLAUDE.md docs/design/DESIGN.md docs/design/HANDOFF.md'
-# The three spec files are exempt only until the retire-perception-spool archive folds
-# its deltas into them; the archive PR removes the exemptions.
-retired_check 'hq-feed' 'retire-perception-spool (the spool daemon and its command are gone)' \
-  'openspec/specs/hq-attention-system/spec.md openspec/specs/supervisor-agent/spec.md openspec/specs/hq-wake-protocol/spec.md'
-retired_check 'feed-degraded' 'retire-perception-spool (the wake class retired with its raiser)' \
-  'openspec/specs/hq-attention-system/spec.md openspec/specs/supervisor-agent/spec.md openspec/specs/hq-wake-protocol/spec.md'
+retired_check 'hq-feed' 'retire-perception-spool (the spool daemon and its command are gone)' ''
+retired_check 'feed-degraded' 'retire-perception-spool (the wake class retired with its raiser)' ''
 
 # ── the mobile What's New notes are GENERATED, not authored twice ─────────────
 #
