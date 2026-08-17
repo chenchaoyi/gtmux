@@ -6,8 +6,12 @@
   'use strict';
   var TOKEN_KEY = 'gtmux.token';
   var COLORS = {waiting: '#EF4444', working: '#06B6D4', idle: '#22C55E', running: '#8E8E93'};
-  var ORDER = ['waiting', 'working', 'idle', 'running'];
-  var LABEL = {waiting: 'needs you', working: 'working', idle: 'idle', running: 'running'};
+  // 'errored' is a SECTION, not a status: the state language has four states, and errored
+  // says how an idle turn ENDED. It sits right after "needs you" because a session stopped
+  // on a failure needs a person — but NOT inside it, because that section means an agent is
+  // asking something you can answer, and an error is not a question.
+  var ORDER = ['waiting', 'errored', 'working', 'idle', 'running'];
+  var LABEL = {waiting: 'needs you', errored: 'errored', working: 'working', idle: 'idle', running: 'running'};
   // terminal defaults taken from the user's Ghostty config (Hack 15, #17171a/#d4d2cc).
   var GHOSTTY = {bg: '#17171a', fg: '#d4d2cc', cursor: '#bbc1ff', sel: '#2a2a33', font: 'Hack, Menlo, Monaco, "Courier New", monospace', size: 15};
   var MARKS = {'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
@@ -262,20 +266,25 @@
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
     // they get their own "Elsewhere" section at the end (mirrors the app / menu-bar).
-    var by = {waiting: [], working: [], idle: [], running: []};
+    var by = {waiting: [], errored: [], working: [], idle: [], running: []};
     var natives = [];
     agents.forEach(function (a) {
       if (isNative(a)) { natives.push(a); return; }
+      // An idle turn that ended on a failure is not "finished" — it was sitting under a
+      // green tick among the completed ones.
+      if (a.status === 'idle' && a.error) { by.errored.push(a); return; }
       (by[a.status] || by.running).push(a);
     });
     var root = $('radar'); root.innerHTML = '';
-    function section(label, list) {
+    function section(label, list, cls) {
       if (!list.length) return;
-      var lbl = document.createElement('div'); lbl.className = 'group-label';
+      var lbl = document.createElement('div'); lbl.className = 'group-label' + (cls ? ' ' + cls : '');
       lbl.textContent = label + '  ' + list.length; root.appendChild(lbl);
       list.forEach(function (a) { root.appendChild(rowEl(a)); });
     }
-    ORDER.forEach(function (st) { section(LABEL[st], by[st]); });
+    // Amber for errored — the colour its own ⚠ already uses. Never red: red is reserved
+    // for "an agent is waiting for your input".
+    ORDER.forEach(function (st) { section(LABEL[st], by[st], st === 'errored' ? 'errored' : ''); });
     section('Elsewhere', natives);
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = 'no agents'; root.appendChild(e); }
     if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
