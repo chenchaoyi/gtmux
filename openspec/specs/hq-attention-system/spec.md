@@ -34,11 +34,15 @@ shown anything about it.
 The pull read SHALL be seq-exact and self-auditing at the moment of consumption:
 `gtmux events --since-seq <n>` SHALL return exactly the retained events with
 sequence greater than the cursor, oldest first, and SHALL detect a gap — the
-first returned event not being cursor+1, or a hole inside the returned tail —
-every time it reads. On a gap it SHALL warn the reader (one CRITICAL line,
-separate from the record output so `--json` consumers stay parseable) to rebuild
-from a full `gtmux digest` snapshot and then write the watermark back explicitly
-with `gtmux events --ack <seq>`. A cursor of 0 ("everything retained") never
+first returned event not being cursor+1, a hole inside the returned tail, or an
+EMPTY tail while a positive cursor sits behind the sequence counter (the counter
+survives the log files, so nothing-retained-yet-behind is the severest loss, not
+proof of none) — every time it reads. On a gap it SHALL warn the reader (one
+CRITICAL line, separate from the record output so `--json` consumers stay
+parseable) to rebuild from a full `gtmux digest` snapshot and then write the
+watermark back explicitly with `gtmux events --ack`, suggesting the sequence
+COUNTER as the target (with an empty tail the retained maximum equals the
+cursor — a no-op suggestion). A cursor of 0 ("everything retained") never
 reports a leading gap.
 
 **A gap read is NOT consumption.** A read that detected a gap SHALL NOT advance
@@ -81,6 +85,13 @@ echo), until the reader acks explicitly after rebuilding. The consumption row
   sequence hole stands between the watermark and the retained tail
 - **THEN** the unread sensor does not auto-advance the watermark and knocks,
   naming the gap and the rebuild-then-ack exit
+
+#### Scenario: An empty tail behind the counter is a gap, not silence
+
+- **WHEN** the journal files are gone (cleanup, disk fault) while the sequence
+  counter survives, and HQ pulls `--since-seq N` with 0 < N < the counter
+- **THEN** the read warns exactly like any other gap — an empty result is not
+  read as "nothing happened"
 
 ### Requirement: Degradation is surfaced as CRITICAL
 

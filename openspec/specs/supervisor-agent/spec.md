@@ -1618,7 +1618,12 @@ ARBITRARY user, not for gtmux's author or this machine's history:
   ("a dispatch of yours", "already in your own knowledge base") — on a fresh
   machine such claims are false and an HQ that believes them will recount
   history that never happened there.
-- **The charter ships whole in the user's language** (`GTMUX_LANG`): one
+- **The user's language needs no gtmux-specific setup**: the resolved language
+  is `--lang`, else `GTMUX_LANG`, else the system locale (`LC_ALL` over
+  `LANG`, POSIX order — a `zh*` prefix reads Chinese), else English. An
+  explicit `GTMUX_LANG` always wins; a set-but-unknown value resolves to
+  English rather than silently falling through to the locale.
+- **The charter ships whole in the user's language**: one
   complete English edition and one complete Chinese edition, sharing one
   markdown skeleton and one actionable anchor set (every command, wake class,
   control record, and signal glyph identical — only prose translates). The
@@ -1629,10 +1634,11 @@ ARBITRARY user, not for gtmux's author or this machine's history:
   same-number upgrade. LOCAL.md and the user's notes are never touched by
   regeneration.
 - **LOCAL.md seeds in the user's language too**: the personalization template
-  (the explainer and its commented examples) follows `GTMUX_LANG` at seed
-  time, and seed-once is absolute — an existing LOCAL.md is never rewritten by
-  a later language switch; the file is the user's from the first byte.
-- **The board seeds in the user's language** (`GTMUX_LANG`), and the language
+  (the explainer and its commented examples) follows the resolved language at
+  seed time, and seed-once is absolute — an existing LOCAL.md is never
+  rewritten by a later language switch; the file is the user's from the first
+  byte.
+- **The board seeds in the user's language**, and the language
   discipline taught is "keep the board in the language it was seeded in — never
   flip an existing board", preserving the don't-machine-translate lesson
   without mandating any particular language.
@@ -1655,8 +1661,8 @@ ARBITRARY user, not for gtmux's author or this machine's history:
 
 #### Scenario: A language switch regenerates the charter
 
-- **WHEN** `gtmux hq` runs with `GTMUX_LANG` naming a different language than
-  the installed playbook's marker records — even at the same version
+- **WHEN** `gtmux hq` runs with the resolved language differing from what the
+  installed playbook's marker records — even at the same version
 - **THEN** the managed AGENTS.md is regenerated in the new language with the
   prior file backed up, the notice names the language switch rather than a
   same-number upgrade, and LOCAL.md is untouched
@@ -1666,3 +1672,9 @@ ARBITRARY user, not for gtmux's author or this machine's history:
 - **WHEN** a command, wake class, control record, signal glyph, or heading is
   added to one charter edition and not the other
 - **THEN** the structural guard test fails
+
+#### Scenario: A zh locale reads Chinese without setup
+
+- **WHEN** `GTMUX_LANG` is unset and the system locale is `zh_CN.UTF-8`
+- **THEN** gtmux's output, the charter, the board seed, and the LOCAL.md
+  template are Chinese — no gtmux-specific environment variable required
