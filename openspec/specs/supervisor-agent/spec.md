@@ -770,24 +770,38 @@ where no `resolved` nudge was observed.
 
 The seeded playbook SHALL make learning from corrections a FIRST-CLASS ritual, not an ad-hoc
 afterthought: when the commander CORRECTS HQ, or the SAME footgun is hit more than once, HQ
-SHALL distill the durable lesson and land it — a PORTABLE behavior lesson into
-`knowledge/best-practices.md` or `knowledge/pitfalls.md` (and, when the lesson is
-charter-level, FLAG it for a seed/spec update rather than only noting it locally); a
-MACHINE-SPECIFIC instance into local notes. The playbook SHALL state the trigger points
-(a commander correction; a repeated footgun) and the landing path explicitly, so HQ actually
-self-upgrades from the interaction. The knowledge scaffold SHALL include a `corrections.md`
-topic as the landing place for distilled corrections.
+SHALL distill the durable lesson and land it — a PORTABLE behavior lesson into the
+`best-practices` or `pitfalls` knowledge topics (through the knowledge verbs), and, when the
+lesson is CHARTER-LEVEL (it belongs in gtmux's seeded playbook, specs, or code — the
+promotion test: it holds on another machine AND changes how gtmux itself should behave),
+PROMOTE it: `gtmux knowledge promote <id> --why "…" [--target "…"]` writes the promotion
+brief that IS the exit, and `gtmux knowledge land <id> --ref "…"` closes the loop when it
+lands in the repo. A local flags list is NOT the mechanism — an un-carried flag rots and
+drifts (measured: 34 accumulated items, and an estimate off by ~50× by the time it was
+audited). A MACHINE-SPECIFIC instance goes into local notes. The playbook SHALL state the
+trigger points (a commander correction; a repeated footgun) and the landing path explicitly,
+so HQ actually self-upgrades from the interaction, and SHALL direct HQ to migrate any
+pre-existing local flags backlog through the promotion verbs — judged entry-by-entry, never
+bulk-imported. The knowledge scaffold SHALL include a `corrections` topic as the landing
+place for distilled corrections.
 
 #### Scenario: A correction is distilled and landed
 
 - **WHEN** the playbook covers the commander correcting HQ, or a footgun recurring
 - **THEN** it directs HQ to distill the lesson into the knowledge base (portable) or local
-  notes (machine-specific) and to flag a charter-level lesson for a seed/spec update
+  notes (machine-specific) and to PROMOTE a charter-level lesson through
+  `gtmux knowledge promote`, closing with `land` when it reaches the repo
 
 #### Scenario: The scaffold has a corrections topic
 
 - **WHEN** `gtmux hq` seeds the knowledge scaffold
-- **THEN** a `corrections.md` topic file exists and the KB README lists it
+- **THEN** a `corrections` topic exists and the KB README lists it
+
+#### Scenario: A flags file is not an exit
+
+- **WHEN** HQ holds charter-level lessons only in a local notes file
+- **THEN** the playbook directs it to promote the ones that still hold (and dismiss or
+  retire the rest), so the queue — not the file — carries them
 
 ### Requirement: HQ subscribes to the silent feed and gates its own output
 
@@ -1049,14 +1063,17 @@ to reject one with a trace), fold durable cross-cutting facts into the right top
 through the knowledge verbs (`add` for a new lesson, `supersede` for one that replaces an
 existing entry — the mechanical form of update-over-append), PRUNE stale or dead entries
 with `retire --why`, and migrate any legacy-file lesson the pass touches into the ledger.
-The ritual SHALL be distinct from `self-check` (own-artifact health housekeeping) and
-`tick` (the user-facing summary brief). HQ SHALL default to SILENT distillation, printing
-a one-line brief ONLY when it made a real curation; a charter-level lesson SHALL still be
-flagged for a seed/spec update rather than only noted locally; and the
-never-store-secrets rule SHALL continue to apply. Because the trigger is also a stream
-record, the playbook SHALL teach that a distill missed on the wake channel is recoverable
-by PULL (`gtmux events --since-seq`) rather than lost. The shipped playbook version SHALL
-be bumped so existing HQ homes adopt the ritual on their next managed-playbook upgrade.
+The pass SHALL also check `gtmux knowledge promotions`: a pending brief past its
+staleness floor is escalation material for the commander, because a promotion nobody
+carries is silent rot. The ritual SHALL be distinct from `self-check` (own-artifact
+health housekeeping) and `tick` (the user-facing summary brief). HQ SHALL default to
+SILENT distillation, printing a one-line brief ONLY when it made a real curation; a
+charter-level lesson SHALL be PROMOTED (`gtmux knowledge promote`) rather than only
+noted locally; and the never-store-secrets rule SHALL continue to apply. Because the
+trigger is also a stream record, the playbook SHALL teach that a distill missed on the
+wake channel is recoverable by PULL (`gtmux events --since-seq`) rather than lost. The
+shipped playbook version SHALL be bumped so existing HQ homes adopt the ritual on their
+next managed-playbook upgrade.
 
 #### Scenario: Silent when nothing durable accrued
 
@@ -1089,6 +1106,11 @@ be bumped so existing HQ homes adopt the ritual on their next managed-playbook u
   outage) but the trigger was raised
 - **THEN** the `[CONTROL gtmux:distill]` record is still in the event stream, so HQ's next
   delta pull surfaces the pending pass instead of it being silently lost
+
+#### Scenario: A stale promotion is escalated, not forgotten
+
+- **WHEN** a distill pass finds a promotion pending past its staleness floor
+- **THEN** HQ raises it to the commander instead of letting the queue rot silently
 
 ### Requirement: HQ verifies perception self-heal before nagging or restarting
 
