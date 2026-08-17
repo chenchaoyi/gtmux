@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.62.0',
+    en: [
+      'Version alignment with gtmux 0.62.0 — this release hardens the CLI/HQ side (loss-proof perception, a fully bilingual supervisor charter); no phone-side changes.',
+    ],
+    zh: [
+      '与 gtmux 0.62.0 版本对齐 —— 本次加固都在 CLI/中控侧（不丢事件的感知、整份双语守则），手机端无功能变化。',
+    ],
+  },
+  {
     version: '0.61.0',
     en: [
       'Version alignment with gtmux 0.61.0 — this release\'s improvements are on the CLI/HQ side (a supervisor that speaks to any user); no phone-side changes.',
