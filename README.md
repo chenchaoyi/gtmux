@@ -104,8 +104,12 @@ you converse with ONE agent about all the others.
 The supervisor can be **any CLI agent**, not just Claude: the playbook is seeded
 as `AGENTS.md` (the cross-agent convention Codex/Cursor/Amp read natively) with
 `CLAUDE.md` as an `@AGENTS.md` import — pick yours with `gtmux hq --agent codex`
-(or `GTMUX_HQ_AGENT`). Edit `~/.config/gtmux/hq/AGENTS.md` to change its policy;
-notes it keeps there persist across its sessions. See [docs/cli.md](docs/cli.md).
+(or `GTMUX_HQ_AGENT`). Personalize it in `~/.config/gtmux/hq/LOCAL.md` — your
+priorities, reporting style, quiet hours — which survives every playbook upgrade
+(`AGENTS.md` itself is managed and regenerated; don't edit it). The supervisor
+also **learns from your usage**: `gtmux capture` files lessons into its
+`knowledge/` base, and its periodic self-audit rituals (driven by `gtmux serve`)
+distill them into standing rules. See [docs/cli.md](docs/cli.md).
 
 ## Quickstart
 

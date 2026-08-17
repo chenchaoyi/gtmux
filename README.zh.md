@@ -93,8 +93,11 @@ coding agent，读 digest、替你盯全部 agent、代你驱动（`gtmux send`�
 
 中控可以是**任意 CLI agent**,不限于 Claude:守则以 `AGENTS.md` 播种(Codex/Cursor/Amp
 原生读的跨 agent 约定),`CLAUDE.md` 只是一行 `@AGENTS.md` 导入——用 `gtmux hq --agent codex`
-(或 `GTMUX_HQ_AGENT`)选你的中控。编辑 `~/.config/gtmux/hq/AGENTS.md` 调整它的守则;
-它沉淀在该目录的笔记跨会话保留。详见 [docs/cli.md](docs/cli.md)。
+(或 `GTMUX_HQ_AGENT`)选你的中控。个性化写进 `~/.config/gtmux/hq/LOCAL.md`——你的
+优先级、汇报风格、免打扰时段——守则每次升级它都原样保留(`AGENTS.md` 本身是托管文件、
+会被重新生成,别改它)。中控还会**从你的用法里学习**:`gtmux capture` 把教训归档进它的
+`knowledge/` 知识库,周期性自审(由 `gtmux serve` 驱动)再把教训提炼成长期规则。
+详见 [docs/cli.md](docs/cli.md)。
 
 ## 快速上手
 

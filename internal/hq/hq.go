@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 27
+const hqPlaybookVersion = 28
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -176,7 +176,16 @@ gtmux NEVER overwrites this file. The managed playbook (AGENTS.md) is regenerate
 gtmux ships a newer version; YOUR customizations live here and are imported LAST, so
 anything you write here extends or overrides the managed playbook.
 
-<!-- Add your own standing instructions, preferences, and overrides below. -->
+This file steers the SUPERVISOR only. Notifications, push, and quiet-mode mechanics are
+gtmux's own settings (config.json / the apps) — a rule here cannot mute the phone.
+
+<!-- Add your own standing instructions, preferences, and overrides below. Examples:
+
+- I mainly work on: <your domains / main repos>.
+- Report status as: <e.g. terse tables; lead with what needs me>.
+- Quiet hours: <e.g. after 22:00, hold routine reports; still surface blockers>.
+
+-->
 `
 
 // hqSessionName is the preferred tmux session name (auto-named on collision —
@@ -355,8 +364,12 @@ func printSeedNotice(r seedResult) {
 			fmt.Sprintf("已升级 HQ 守则 v%d → v%d（旧版备份在 %s）。你的 %s 未改动。",
 				r.FromVersion, r.ToVersion, r.BackupPath, filepath.Base(hqLocalPath())))
 	case r.Seeded:
-		i18n.Say("Seeded the supervisor home: "+hqInstructionsPath(),
-			"已初始化中控目录："+hqInstructionsPath())
+		i18n.Say("Seeded the supervisor home: "+hqInstructionsPath()+
+			"\n  · knowledge/ — its knowledge base (ledger + topics); anyone can file a candidate: gtmux capture \"<lesson> @pitfalls\""+
+			"\n  · LOCAL.md — YOUR standing instructions (never overwritten; edit this, not AGENTS.md)",
+			"已初始化中控目录："+hqInstructionsPath()+
+				"\n  · knowledge/ —— 它的知识库(台账+主题);任何人可投候选:gtmux capture \"<教训> @pitfalls\""+
+				"\n  · LOCAL.md —— 你的常设指令(永不被覆盖;要改就改它,不是 AGENTS.md)")
 	}
 }
 
@@ -371,7 +384,7 @@ func seedHQNotes() (created bool) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return false
 	}
-	for name, body := range hqNotesSeeds {
+	for name, body := range hqNotesSeeds() {
 		p := filepath.Join(dir, name)
 		if _, err := os.Stat(p); err != nil {
 			if os.WriteFile(p, []byte(body), 0o644) == nil {
@@ -384,34 +397,58 @@ func seedHQNotes() (created bool) {
 
 // hqNotesSeeds is the notes scaffold — the situation board HQ maintains as its
 // cross-turn posture (curated markdown, NOT a gtmux-parsed schema).
-var hqNotesSeeds = map[string]string{
-	"board.md": `# gtmux HQ — situation board (作战态势板)
+func hqNotesSeeds() map[string]string {
+	return map[string]string{"board.md": boardSeed()}
+}
+
+// boardSeedHeadings are the board's two section headings and the ① table header,
+// in the language the home is being seeded in (hq-first-person): the board is the
+// USER's readable surface, so its skeleton follows GTMUX_LANG. The playbook's
+// rule is then "keep the board in the language it was seeded in".
+func boardSeedHeadings() (h1, cols, h2 string) {
+	return i18n.Tr("## ① Now — live panes", "## ① 现状 — 在跑的 pane"),
+		i18n.Tr("| pane | doing | dispatched by | priority | state | your call | lesson |",
+			"| pane | 在做什么 | 谁派的 | 优先级 | 状态 | 等你定 | 教训 |"),
+		i18n.Tr("## ② Handoff log — newest first", "## ② 交接记录 — 新的在最上面")
+}
+
+func boardSeed() string {
+	h1, cols, h2 := boardSeedHeadings()
+	oneIntro := i18n.Tr(
+		"One row per LIVE pane, named by its `%N`. Delete a row when that pane's work is finished —\nthis part has no history in it, only now.",
+		"一行一个在跑的 pane,以其 `%N` 命名;活干完就删行 —— 这一部分只有现在,没有历史。")
+	example := i18n.Tr(
+		"| `%23` | _what it is doing_ | HQ / you directly / self-started | high/med/low | ok / stuck / erroring | _what it awaits from you_ | _last correction or footgun_ |",
+		"| `%23` | _它在做什么_ | 中控派的 / 你直接说的 / 它自己起的 | 高/中/低 | 正常 / 卡住 / 出错 | _在等你定什么_ | _上一次的纠正或坑_ |")
+	return boardSeedTop + h1 + "\n\n" + oneIntro + "\n\n" +
+		cols + "\n|---|---|---|---|---|---|---|\n" + example + "\n\n" +
+		h2 + "\n" + boardSeedTail
+}
+
+const boardSeedTop = `# gtmux HQ — situation board (作战态势板)
 
 Your DURABLE command posture. gtmux does NOT read this back — it is your synthesis,
-kept current by you, so your picture of the fleet survives a ` + "`/compact`" + ` or context
-reset. After a reset, RE-READ this before acting instead of re-deriving the fleet from
+kept current by you, so your picture of the fleet survives a context compaction or
+reset (Claude Code's ` + "`/compact`" + ` — your agent's equivalent applies). After a reset, RE-READ this before acting instead of re-deriving the fleet from
 scratch. The deterministic truth is ` + "`gtmux digest` / `gtmux tasks` / `gtmux events`" + ` —
 this board is where you record what they don't: mode, priority, pending decisions, lessons.
 
 This file has TWO parts and they do not mix. Keep both; keep both short.
 
-## ① 现状 — 在跑的 pane
+`
 
-One row per LIVE pane, named by its ` + "`%N`" + `. Delete a row when that pane's work is finished —
-this part has no history in it, only now.
-
-| pane | 在做什么 | 谁派的 | 优先级 | 状态 | 等你定 | 教训 |
-|---|---|---|---|---|---|---|
-| ` + "`%23`" + ` | _它在做什么_ | 中控派的 / 你直接说的 / 它自己起的 | 高/中/低 | 正常 / 卡住 / 出错 | _在等你定什么_ | _上一次的纠正或坑_ |
-
-## ② 交接记录 — 新的在最上面
-
+// boardSeedTail is everything below the ② heading: dating discipline, the
+// language rule (keep the seeded language; never machine-translate), emphasis
+// discipline, and the standing-context section.
+const boardSeedTail = `
 One dated entry per rotation or notable shift, newest at the top. Never append a dated
 entry to the end: a board that runs one way at the top and the other way at the bottom
 takes a map to read, and the commander reads this on a phone.
 
-Write the Chinese, don't translate it — say it the way you would say it out loud. The
-headings above are the product's words; keep them.
+KEEP THIS BOARD IN THE LANGUAGE IT WAS SEEDED IN — never flip an existing board, and
+never translate a line word-for-word: say it the way you would say it out loud in that
+language. (A literal translation once produced headings no native speaker would write;
+the cure is writing naturally, not switching languages.)
 
 Emphasis is for exceptions. If every line is bold, the headings stop being headings.
 
@@ -419,8 +456,7 @@ Emphasis is for exceptions. If every line is bold, the headings stop being headi
 
 _The commander's current priorities, discussed directions in flight, and any mode-③
 delegations already agreed — so you know what is "in an already-discussed direction"._
-`,
-}
+`
 
 // isClaudePointer reports whether CLAUDE.md is just the `@AGENTS.md` import (the
 // single-source pointer) rather than a full standalone playbook.
@@ -487,22 +523,22 @@ migrate the lessons you touch. Capture durable, reusable facts ONCE, keep them
 current, consult them before advising/driving. NEVER store secrets — only IDs,
 methods, procedures, and pointers to where a secret lives.
 
-- accounts.md — service accounts (Apple developer, Cloudflare, …): IDs + how to reach them.
-- workflows.md — release / device build / spec-consistency / other repeatable procedures.
-- best-practices.md — testing (iOS Appium/e2e), research methodology, what worked.
+- accounts.md — the service accounts YOUR work depends on: IDs + how to reach them.
+- workflows.md — YOUR repeatable procedures: releases, builds, data refreshes, reviews.
+- best-practices.md — approaches that worked for you, worth reusing.
 - pitfalls.md — footguns already paid for, and how to avoid them.
-- environment.md — network/env rules affecting agent launches (proxy per network).
+- environment.md — machine/network rules that affect agent launches here.
 - corrections.md — commander corrections + repeated footguns, distilled into durable lessons.
 
 Declare your own topics with: gtmux knowledge topic <name> --desc "..."
 主动学习、持续更新、用时调取;按你的领域用 topic 子命令加主题。
 `,
-	"accounts.md":       "# Accounts (IDs + access procedures — NEVER secrets)\n\n_Record the Apple developer team/account, Cloudflare account + dashboard access, and other services here: identifiers and how to reach them, with pointers (keychain / password manager) for anything secret._\n",
-	"workflows.md":      "# Workflows (repeatable procedures)\n\n_Release flow, device build, the spec⇄code⇄test consistency workflow (propose → implement → sync-specs → archive), etc._\n",
-	"best-practices.md": "# Best practices\n\n_Approaches that worked (testing, research, and the like)._\n\n## HQ operating lessons (portable)\n\n- **Compact before dispatching from a heavy session.** A high-context session (say >150k ctx) burns quota fast; if you dispatch or drill from one, /compact it first.\n- **Move non-critical work off a near-cap model.** When a model's window is near its cap, switch non-urgent dispatches to another model; keep the scarce one for the work that needs it.\n- **Keep fan-out modest under quota pressure.** Don't spray many subagents when a window is tight — a few, sequenced, beats a stampede that trips the cap.\n- **Dispatch fast ops separately from slow ones** (B2): a reclaim/cleanup chained behind a release stays invisible until the slow step ends; dispatch it on its own and confirm on return.\n- **Prefer `gtmux spawn` over hand-driving.** The proxied, land-verified path avoids the un-proxied 403 and the swallowed-Enter class of failures.\n\n_Record machine-specific instances (which model, which incident, exact numbers) in local notes — keep THIS file portable._\n",
+	"accounts.md":       "# Accounts (IDs + access procedures — NEVER secrets)\n\n_The service accounts your work depends on: identifiers and how to reach them, with pointers (keychain / password manager / vault) for anything secret. Which services those are is yours to fill in._\n",
+	"workflows.md":      "# Workflows (repeatable procedures)\n\n_Anything you do more than twice: a release flow, a build, a data refresh, a review checklist. One entry per procedure, kept current._\n",
+	"best-practices.md": "# Best practices\n\n_Approaches that worked for you and are worth reusing — testing setups, research methods, dispatch habits. Machine-specific instances (exact numbers, one-off incidents) belong in notes/, not here: keep THIS file portable._\n",
 	"pitfalls.md":       "# Pitfalls (footguns already paid for)\n\n_Each entry: symptom → root cause → how to avoid. Keep it current._\n",
-	"corrections.md":    "# Corrections & repeated footguns (the learning loop)\n\n_The landing place for the correction→charter loop. TRIGGER: the commander corrects you, or the SAME footgun is hit more than once. DISTILL the durable lesson here, then act on it:_\n\n- _Portable behavior lesson → also fold into `best-practices.md` / `pitfalls.md`; if it is charter-level (belongs in the seeded playbook), FLAG it for a `gtmux` seed/spec update, don't just note it._\n- _Machine-specific instance (which repo, which run, exact numbers) → keep it in local notes, not the portable KB._\n\n_Each entry: what was corrected / what recurred → the distilled rule → where it landed._\n",
-	"environment.md":    "# Environment / network\n\n_gtmux applies a proxy to an agent launch ONLY when you configure one explicitly — it never probes the network or assumes any proxy tool. Set it with `gtmux config agent-proxy <url>|off`, or the `GTMUX_AGENT_PROXY` env var (overrides config — handy to wire to a network switch)._\n\n- no proxy (the default) — a network that reaches the model API directly.\n- a proxy URL — a network where a direct launch is blocked and must go through an HTTP proxy.\n\n**The proxy (when set) covers ONLY gtmux's OWN launch path** (`gtmux spawn` / `hq` / `adopt` / `restore`). A hand-typed `send-keys` launch bypasses it — ALWAYS dispatch with `gtmux spawn`. 起 agent 是否走代理是显式设置,gtmux 不探测、不内置任何代理工具或端口。\n\n_This is specific to YOUR machine — record YOUR per-network rules below (which network → which proxy URL, or none)._\n",
+	"corrections.md":    "# Corrections & repeated footguns (the learning loop)\n\n_The landing place for the correction→charter loop. TRIGGER: the commander corrects you, or the SAME footgun is hit more than once. DISTILL the durable lesson into an entry (`gtmux knowledge add --topic corrections …`), then act on it:_\n\n- _A portable behavior lesson also lands in `best-practices` / `pitfalls` entries; a CHARTER-LEVEL lesson gets PROMOTED (`gtmux knowledge promote <id> --why … [--target …]`) so it reaches its durable carrier._\n- _A machine-specific instance (which repo, which run, exact numbers) stays in notes/, not the portable KB._\n\n_Each entry: what was corrected / what recurred → the distilled rule → where it landed._\n",
+	"environment.md":    "# Environment / network\n\n_Machine and network rules that affect how agents launch HERE: which networks need a proxy, which need none, anything else a fresh session must know about this machine. If a network blocks direct model-API access, set `gtmux config agent-proxy <url>|off` (or `GTMUX_AGENT_PROXY`); the proxy covers only gtmux's own launch path (`spawn` / `hq` / `adopt` / `restore`), so always dispatch with `gtmux spawn`._\n\n_This file is specific to YOUR machine — record your per-network rules below._\n",
 }
 
 // hqAgentAlive reports whether a coding agent is actually the FOREGROUND process in the
@@ -778,16 +814,16 @@ re-dispatching with ` + "`--cwd <project dir>`" + `, then stop. 只有 ` + "`gtm
     WHY, so you can re-derive it instead of remembering it: a goal passed as a
     command-line ARGUMENT is parsed by a shell before gtmux sees it. Inside ` + "`\"…\"`" + `
     a backticked span is EXECUTED, ` + "`$x`" + ` is expanded, a newline ends the command.
-    A real dispatch of yours died exactly this way —
-    ` + "`command substitution: syntax error near unexpected token 'done'`" + ` — with the
-    footgun already recorded in your own knowledge base TWICE. That is the proof that
+    A real dispatch died exactly this way during development —
+    ` + "`command substitution: syntax error near unexpected token 'done'`" + ` — AFTER the
+    footgun had been documented twice, which is the proof that
     "quote it carefully" is not a mechanism: any long enough natural-language goal
     eventually contains one of those characters. The file channel has no shell on it.
     Quote the heredoc marker (` + "`<<'EOF'`" + `) or the shell expands the body on the
     way in.
     派活的标准动作:先把 goal 写进文件,再 --goal-file 下发。原因是结构性的——
     命令行参数必经 shell 解析,反引号会被执行、$ 会被展开、换行会截断命令;
-    你已经因此挂过一次,而这条坑在知识库里记过两次。别再靠"小心"。
+    这条坑在被记录过两次之后仍真实炸过一次派发。别靠"小心",走文件通道。
   - **ALWAYS pass ` + "`--cwd <project dir>`" + `.** Without it the new session inherits
     YOUR cwd — the HQ home — and the worker would read this charter and impersonate
     you (spawn refuses that, but the refusal wastes a dispatch). Name the project
@@ -796,7 +832,7 @@ re-dispatching with ` + "`--cwd <project dir>`" + `, then stop. 只有 ` + "`gtm
     别浪费一次派发)。
   - **WINDOW-TITLE STANDARD (always):** pass a concise ` + "`--title`" + ` naming the
     window's PURPOSE — a verb-object kebab slug, ≤~24 chars (` + "`fix-auth-mw`" + `,
-    ` + "`review-pr-518`" + `, ` + "`debug-restore`" + `). NOT the raw goal head. This becomes
+    ` + "`review-pr-42`" + `, ` + "`debug-restore`" + `). NOT the raw goal head. This becomes
     the window + pane name across tmux, the radar, and the app. The spawn report hands
     back the STANDARD HANDLE ` + "`<loc> (%pane) · <title>`" + ` — ` + "`loc`" + ` is the LIVE
     tmux number ` + "`session:N.M`" + ` (correct under renumber-windows; never baked into
@@ -852,9 +888,15 @@ asking for your STARTUP BRIEFING. Produce it in TWO parts, then wait:
    (needs-you first · token-usage rollup · subscription window · terse). Don't restate the
    format; it IS Policy #1 — a briefing is just your first status report with a one-line
    self-intro on top.
+3. FIRST LAUNCH ONLY — if ` + "`LOCAL.md`" + ` is still the seeded template (no user content
+   below the comment), close the briefing by asking the commander THREE questions, as
+   plain non-blocking text: what do you mainly work on · how do you want status reported
+   · any quiet hours? Write the answers into ` + "`LOCAL.md`" + ` (you are the scribe; the file
+   stays theirs). If LOCAL.md already carries user content, skip this — never re-interview.
 你的第一条消息就是信号线 ` + "`» gtmux·startup`" + `,即启动简报请求:先一句自我介绍 + 职责,再
 按下面 Policy #1 的列对齐格式产出一次现状汇报(needs-you 优先 · 用量 · 订阅余量 · 简洁),
-然后待命。启动简报=带一句自我介绍的第一份现状汇报,格式不必在这里重复。
+然后待命。首次启动(LOCAL.md 还是种子模板)时,简报末尾用非阻塞文本问司令三件事——主要做什么/
+想怎么被汇报/有无免打扰时段——并把答案写进 LOCAL.md;已有内容则跳过,绝不重复访谈。
 
 ## Perception & waking 感知与唤醒 — the core discipline
 
@@ -955,7 +997,7 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   ` + "`unread`" + ` 只报条数、不报重要性:照常拉增量判读;同样的数字反复出现说明你没真消费。
 - **SELF-ROTATE: your own session wears out, and noticing is NOT your job — acting is.**
   A long, near-full session degrades a specific faculty: the boundary between what YOU
-  produced and what reached you from OUTSIDE. On 2026-08-03 an HQ session read its own
+  produced and what reached you from OUTSIDE. During development (2026-08-03) an HQ session read its own
   previous turn — "that message was from me, don't worry" — as the commander's reassurance,
   and dropped a suspicion it had raised correctly. **The event stream is the arbiter, and it
   is decisive:** on YOUR pane, ` + "`UserPromptSubmit`" + ` is the user speaking to you and
@@ -1080,25 +1122,21 @@ records what they don't (mode, priority, pending decisions, standing context).
 
 **THE BOARD HAS TWO PARTS, IN THIS ORDER. Both are required.**
 
-**① 现状 (top) — a table, one row per LIVE PANE, pruned.** Delete a row when that pane's
+**① (top) — a table, one row per LIVE PANE, pruned.** Delete a row when that pane's
 work is finished. This part answers "what is happening NOW" and holds no history.
-Use THESE headings and column names verbatim — do not invent your own:
+Use the headings and column names your board was SEEDED with, verbatim — do not invent
+your own (Chinese seed: ` + "`## ① 现状 — 在跑的 pane`" + `; English seed: ` + "`## ① Now — live panes`" + `).
 
-    ## ① 现状 — 在跑的 pane
+**② (below) — dated entries, NEWEST FIRST. Always PREPEND.** One entry per
+rotation or per notable shift. This part answers "what happened across my resets"
+(Chinese seed: ` + "`## ② 交接记录 — 新的在最上面`" + `; English: ` + "`## ② Handoff log — newest first`" + `).
 
-    | pane | 在做什么 | 谁派的 | 优先级 | 状态 | 等你定 | 教训 |
-
-**② 交接记录 (below) — dated entries, NEWEST FIRST. Always PREPEND.** One entry per
-rotation or per notable shift. This part answers "what happened across my resets".
-
-    ## ② 交接记录 — 新的在最上面
-
-**WRITE THE CHINESE, DON'T TRANSLATE IT.** The headings above are the product's words;
-use them. Left to translate this section's English on its own, a board came out reading
-` + "`① 姿态 — 当前在飞的线`" + ` over a column called ` + "`线`" + ` — 姿态/在飞/线 are word-for-word renderings
-of posture/in-flight/ship that no Chinese speaker would write, and the commander reads
-this on a phone. The same rule applies to every board line you write: say it the way you
-would say it out loud, not the way an English sentence maps onto Chinese.
+**KEEP THE BOARD IN THE LANGUAGE IT WAS SEEDED IN — and write it natively, never as a
+word-for-word rendering.** Left to translate a seed's English on its own, a board once
+came out reading ` + "`① 姿态 — 当前在飞的线`" + ` over a column called ` + "`线`" + ` — literal renderings
+of posture/in-flight/ship that no native speaker would write, and the commander reads
+this on a phone. Never flip an existing board's language; on every line, say it the way
+you would say it out loud in the board's language.
 
 **NAME A ROW BY ITS PANE ID (` + "`%23`" + `), not by a metaphor.** ` + "`%23`" + ` is the one identifier the
 whole product shares — the radar, the pane browser, ` + "`gtmux focus %23`" + `, and the terminal tab
@@ -1175,10 +1213,12 @@ substitutes for the other. 板=易逝私有姿态(gtmux 不读回),KB=机器持�
    GRANULARITY: one self-reporting subagent PER independent step. Dispatch a FAST op
    (reclaim / cleanup) SEPARATELY and confirm it the moment it returns — never chain it
    behind a SLOW step (a release, a big build), or the fast op's completion stays
-   invisible to you and drags. For heavy/background work the user doesn't need to watch
+   invisible to you and drags. BUDGET: compact a near-full session before dispatching
+   from it, and keep fan-out modest when the quota window is tight — a few sequenced
+   subagents beat a stampede that trips the cap. For heavy/background work the user doesn't need to watch
    (a build, a batch edit), dispatch ` + "`gtmux spawn --headless`" + ` — no terminal tab pops,
    yet it stays tracked, verified, and reapable. ORGANIZATION: give each dispatch a
-   HUMAN-READABLE home — name its window/pane after the task (e.g. ` + "`menubar-width`" + `),
+   HUMAN-READABLE home — name its window/pane after the task (e.g. ` + "`fix-login-flow`" + `),
    one feature per worktree — so a glance at tmux reads what the fleet is doing. 一步一个
    自回报 subagent;快操作单独派、拿到即确认,别串在慢步骤后;重活/后台活用 ` + "`--headless`" + `
    (不弹 tab 但仍追踪);窗口/worktree 按任务命名,人扫一眼就懂。
@@ -1273,14 +1313,13 @@ reaches its carrier (` + "`gtmux knowledge promotions`" + ` shows the queue). Th
 vocabulary is YOURS to extend: ` + "`gtmux knowledge topic <name> --desc …`" + ` declares a
 domain topic (clients, datasets, …) that capture, the verbs, and the dispatch echo all
 honor. The built-ins:
-- **accounts.md** — the Apple developer team/account, Cloudflare account + how to
-  reach its dashboard, other service accounts: IDs, procedures, where things live.
-- **workflows.md** — the release flow, device build, the spec⇄code⇄test
-  consistency workflow (propose → implement → sync-specs → archive), etc.
-- **best-practices.md** — iOS Appium/e2e automation, research methodology, what
-  worked.
-- **pitfalls.md** — footguns already hit and how to avoid them.
-- **corrections.md** — the correction→charter LEARNING LOOP (below).
+- **accounts** — the service accounts THIS machine's work depends on: IDs,
+  procedures, where things live (never the secrets themselves).
+- **workflows** — the user's repeatable procedures: releases, builds, data
+  refreshes, review checklists.
+- **best-practices** — approaches that worked here and are worth reusing.
+- **pitfalls** — footguns already hit and how to avoid them.
+- **corrections** — the correction→charter LEARNING LOOP (below).
 
 Discipline:
 - **Capture (a VERIFIED loop step):** the moment you (or a session you observe) learn
@@ -1332,7 +1371,7 @@ Discipline:
   is NOT the mechanism (an un-carried flag rots and drifts); if you inherited one
   (e.g. a ` + "`charter-flags`" + ` file), migrate it through the verbs — promote what still
   holds, retire or dismiss the rest, judged entry-by-entry, never bulk-imported. A
-  MACHINE-SPECIFIC instance stays in local notes. Trigger points: a commander correction;
+  MACHINE-SPECIFIC instance stays in your notes/ files. Trigger points: a commander correction;
   a repeated footgun. This is how you self-upgrade — the whole point of a chief of staff.
   纠正→守则学习闭环:司令纠正你/重复踩坑 → 蒸馏进 corrections;属守则级的用
   ` + "`promote`" + ` 生成外送简报(队列即出口,落点写进 --target:项目 AGENTS.md、团队

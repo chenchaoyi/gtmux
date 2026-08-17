@@ -158,8 +158,10 @@ supervisor can be ANY CLI agent. On a FRESH launch with no `--agent`, `gtmux hq`
 PATH) and **remembers the pick** — so a machine signed into Codex but not Claude no longer
 gets an HQ stuck on "Please run /login". You can still name it outright
 (`gtmux hq --agent codex`, or `GTMUX_HQ_AGENT`), and non-interactive callers (a script)
-fall back to the default without prompting. Edit `AGENTS.md` to change its policy;
-notes it keeps in that directory persist across its sessions. In the radar its
+fall back to the default without prompting. Personalize it in `LOCAL.md` (same
+directory) — priorities, reporting style, quiet hours — which survives every playbook
+upgrade; `AGENTS.md` itself is managed and regenerated, so edits there get displaced to
+a backup. Notes it keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
 `gtmux hq --rotate` retires the live supervisor's session for a fresh one, in place: it
@@ -231,6 +233,17 @@ no timer of its own, so `gtmux serve` is what makes the periodic rituals happen 
 
 Everything else is **pull-side**: hq wakes, then reads `gtmux events --since-seq <n>`
 or `gtmux digest`. Ordinary progress turns never touch its screen.
+
+**hq's replies to signal lines are signal lines too** — one line opening with `⟣` plus a
+glyph, so its pane scans the same way its inbox does. The legend:
+
+| reply | means |
+| --- | --- |
+| `⟣ ✅ <pane> <judgment> → <next step>` | a completion worth knowing about |
+| `⟣ ▪ noted: <one clause>` | routine outcome, recorded to the board — nothing owed |
+| `⟣ 📓 captured: <topic>` | a durable lesson written into the knowledge base |
+| `⟣ ⚠ <escalation>` | something needs YOU, per the escalation policy |
+| `⟣ ◈ 简报 <time> │ <counts> │ top item` | the periodic brief (plus up to 5 indented `· ` lines) |
 
 ### The watermark — why nothing goes missing
 
@@ -369,7 +382,7 @@ and `$GTMUX_TASK_ID` if the caller is a tracked dispatch).
 A candidate is **not** a knowledge-base entry: hq's distill pass is the quality gate that
 decides what is durable, files it under the right topic, and prunes — so opening the
 input is safe (worst case a candidate is dropped at distill time). This is layer ② of the
-capture loop; see `openspec/changes/hq-capture-loop`.
+capture loop; see `openspec/changes/archive/2026-07-29-hq-capture-loop`.
 
 `--list` heads the queue with **when the queue was last drained**, because the depth alone
 can't tell you whether the loop is alive: an empty queue reads the same whether distill
@@ -1186,6 +1199,29 @@ front of the tab title of any session that has an agent waiting.
   The supervisor is not in this loop — it is a mechanical projection of state gtmux
   already has, not a judgment.
 - Also switchable in the menu-bar app's **Preferences → Notifications**.
+
+### `hqWake` — tuning the supervisor's wake channel
+
+Hand-edited keys under `"hqWake"` in `~/.config/gtmux/config.json` (all optional; an
+absent or invalid key keeps its default). What each one governs is explained where the
+behavior lives — [the wake channel](#the-wake-channel--how-hq-learns-things),
+[the watermark](#the-watermark--why-nothing-goes-missing), and
+[self-rotation](#self-rotation--when-hqs-own-session-is-the-problem):
+
+| key | default | governs |
+| --- | --- | --- |
+| `done` | `"unattended"` | done-wake mode: `unattended` \| `always` \| `tick` |
+| `paneMinGapSec` | 120 | per-pane merge window for `done` wakes (seconds) |
+| `tickMinutes` | 10 | summary-tick minimum interval |
+| `tickBurst` | 5 | outcome count that fires the tick early |
+| `unreadDebounceSec` | 120 | how long unconsumed events must stand before an `unread` knock |
+| `unreadRepeatSec` | 300 | `unread` re-knock interval while the watermark stays put |
+| `selfRotateCtx` | 0.75 | context-fraction breach line (0 disables) |
+| `selfRotateHours` | 12 | session-age breach line (0 disables) |
+| `selfRotateTurns` | 300 | hq-turn-count breach line (0 disables) |
+| `selfRotateRepeatSec` | 1800 | re-knock pacing while the breach stands |
+| `selfRotateFloorSec` | 43200 | longest an unchanged breach may stay silent |
+| `selfRotateCheckSec` | 300 | how often the self-rotate sensor evaluates |
 
 ## tmux integration
 
