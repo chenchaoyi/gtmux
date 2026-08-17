@@ -609,12 +609,13 @@ mode raises the bar to CRITICAL-only.
 `gtmux tasks --verbose`, not lost. A read-time gap CRITICAL is never quieted, so
 silence there means perception is healthy, not broken.
 
-### Seed is generated ONCE — a live HQ home won't auto-update
-The attention-system behavior lives in the HQ playbook (`hq.go` `hqInstructions` →
-`~/.config/gtmux/hq/AGENTS.md`), which is seeded once and never overwritten. A FRESH hq
-home gets it automatically; the commander's EXISTING HQ needs a deliberate re-seed
-(back up and remove/replace AGENTS.md, then `gtmux hq`) to pick up the feed/threshold/
-self-check instructions.
+### The playbook upgrades itself — never hand-edit AGENTS.md
+The supervisor's charter (`~/.config/gtmux/hq/AGENTS.md`) is a MANAGED file: it carries a
+version+language marker, and `gtmux hq` regenerates it automatically whenever the shipped
+version is newer OR `GTMUX_LANG` names a different language than the installed edition —
+the prior file is backed up beside it (`AGENTS.md.bak-v<N>-<lang>`) first. There is
+nothing to re-seed by hand, and edits to AGENTS.md are displaced to a backup on the next
+upgrade; your customizations belong in `LOCAL.md`, which no upgrade ever touches.
 
 ---
 

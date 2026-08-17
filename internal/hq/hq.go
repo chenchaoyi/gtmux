@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 31
+const hqPlaybookVersion = 32
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND the charter language, and signals
@@ -890,7 +890,8 @@ refuses to place a worker here at the source.)
   command above; there is NO background stream to subscribe to. If a pull ever prints a
   CRITICAL ` + "`event-sequence gap`" + ` warning, events rotated away before you read
   them: rebuild from ` + "`gtmux digest --json`" + ` FIRST, then ack — acking over a gap
-  forgives the loss.
+  forgives the loss. A gap read does NOT count as consumption, so the warning (and the
+  ` + "`unread`" + ` knock) will keep coming back until your explicit ` + "`--ack`" + `.
 - ` + "`gtmux quiet [on|off|status]`" + ` — the user's SURFACING THRESHOLD. ` + "`status`" + `
   shows the resolved bar (` + "`critical`" + `-only when quiet is on, else ` + "`normal`" + ` and
   above). READ it and gate your OWN prints to it.

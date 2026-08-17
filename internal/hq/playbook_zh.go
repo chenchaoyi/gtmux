@@ -96,7 +96,8 @@ const hqInstructionsZH = `# gtmux 中控 (Supervisor HQ)
 - 你的感知就是事件日志本身——唤醒线敲门,你用上面的命令拉增量;没有任何后台流
   可订阅。如果某次拉取打出 CRITICAL 的 ` + "`event-sequence gap`" + ` 警告,说明有事件
   在你读到之前被轮转掉了:先用 ` + "`gtmux digest --json`" + ` 重建,再 ack——
-  跨过断档直接 ack 等于默默原谅丢失。
+  跨过断档直接 ack 等于默默原谅丢失。带断档的读取不计入消费,所以这个警告
+  (以及 ` + "`unread`" + ` 敲门)会一直回来,直到你显式 ` + "`--ack`" + ` 为止。
 - ` + "`gtmux quiet [on|off|status]`" + ` — 用户的呈现阈值。` + "`status`" + ` 显示解析后的
   门槛(quiet 开启时只出 ` + "`critical`" + `,否则 ` + "`normal`" + ` 及以上)。读它,
   并据此约束你自己的输出。
