@@ -189,11 +189,11 @@ describe('counts', () => {
       mk({status: 'idle'}),
       mk({status: 'running'}), // not waiting/working → falls into idle remainder
     ];
-    expect(counts(agents)).toEqual({total: 5, waiting: 2, working: 1, idle: 2});
+    expect(counts(agents)).toEqual({total: 5, waiting: 2, working: 1, errored: 0, idle: 2});
   });
 
   it('is all-zero for an empty list', () => {
-    expect(counts([])).toEqual({total: 0, waiting: 0, working: 0, idle: 0});
+    expect(counts([])).toEqual({total: 0, waiting: 0, working: 0, errored: 0, idle: 0});
   });
 
   it('excludes watched plain panes — they are not agents (no inflated idle/total)', () => {
@@ -203,6 +203,42 @@ describe('counts', () => {
       mk({status: 'running', watched: true}), // pinned pane, not an agent
     ];
     // total counts the 2 agents (not the pinned pane); idle stays 1, not 2.
-    expect(counts(agents)).toEqual({total: 2, waiting: 0, working: 1, idle: 1});
+    expect(counts(agents)).toEqual({total: 2, waiting: 0, working: 1, errored: 0, idle: 1});
+  });
+});
+
+
+// An idle session whose turn ended on a FAILURE is not "finished". It sat under a green
+// ✓ among the completed ones — the commander's words: 这种情况挺严重的，也需要用户及时介入。
+// It is NOT folded into "needs you" either: that section means an agent is asking
+// something you can answer, and an error is not a question.
+describe('the errored section', () => {
+  const mk = (o: Partial<Agent>): Agent =>
+    ({agent: 'Claude Code', source: 'tmux', status: 'idle', ...o} as Agent);
+
+  it('pulls an errored idle session out of idle, between waiting and working', () => {
+    const secs = sections([
+      mk({pane_id: '%1', status: 'waiting'}),
+      mk({pane_id: '%2', status: 'idle', error: true}),
+      mk({pane_id: '%3', status: 'working'}),
+      mk({pane_id: '%4', status: 'idle'}),
+    ]);
+    expect(secs.map(s => s.status)).toEqual(['waiting', 'errored', 'working', 'idle']);
+    expect(secs[1].agents.map(a => a.pane_id)).toEqual(['%2']);
+    expect(secs[3].agents.map(a => a.pane_id)).toEqual(['%4']);
+  });
+
+  it('does not invent the section on a healthy fleet', () => {
+    const secs = sections([mk({pane_id: '%1'}), mk({pane_id: '%2', status: 'working'})]);
+    expect(secs.map(s => s.status)).not.toContain('errored');
+  });
+
+  it('counts errored apart from idle, so the tally matches the sections', () => {
+    const c = counts([
+      mk({pane_id: '%1', status: 'idle', error: true}),
+      mk({pane_id: '%2', status: 'idle'}),
+    ]);
+    expect(c.errored).toBe(1);
+    expect(c.idle).toBe(1);
   });
 });

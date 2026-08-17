@@ -46,6 +46,7 @@ const S: Dict = {
   working: {en: 'working', zh: '运行中'},
   idle: {en: 'idle', zh: '空闲'},
   running: {en: 'running', zh: '待命'},
+  errored: {en: 'errored', zh: '出错'},
   native: {en: 'Elsewhere', zh: '不在 tmux'},
   watched: {en: 'Watched', zh: '关注'},
   agents: {en: 'agents', zh: 'agents'},

@@ -4,7 +4,11 @@
 
 export type StatusName = 'waiting' | 'working' | 'idle' | 'running';
 // Section grouping key: the four statuses plus the non-tmux ("Elsewhere") category.
-export type SectionKey = StatusName | 'native' | 'watched';
+// 'errored' is a SECTION but not a status: the agent is idle, and its turn ended on a
+// failure. It gets its own bucket because "finished" and "stopped on an error" call for
+// different things from the reader, and burying the second among the first is how a
+// session that needs a human sat under a green ✓.
+export type SectionKey = StatusName | 'native' | 'watched' | 'errored';
 
 export interface Agent {
   pane_id: string;
