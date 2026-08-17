@@ -160,15 +160,22 @@ func CmdEvents(args []string) int {
 		// Sequence-filtered delta read (hq-perception-v2): everything retained with
 		// seq strictly greater than the cursor, oldest first — the pull-on-wake
 		// primitive. Combinable with --severity/--json; --follow is ignored (one-shot).
-		var delta []events.Record
+		//
+		// The read audits itself at the moment of consumption (retire-perception-spool):
+		// a hole between the cursor and the retained tail, or inside it, means events
+		// rotated away unread. The warning rides stderr so --json stdout stays parseable,
+		// and it directs a digest-snapshot rebuild BEFORE acking — acking over a gap
+		// would silently forgive the loss.
+		delta, gap := events.ReadSince(sinceSeq)
 		maxSeq := sinceSeq
-		for _, r := range events.Read(0, time.Now().Unix()) {
-			if r.Seq > sinceSeq {
-				if r.Seq > maxSeq {
-					maxSeq = r.Seq
-				}
-				delta = append(delta, r)
+		for _, r := range delta {
+			if r.Seq > maxSeq {
+				maxSeq = r.Seq
 			}
+		}
+		if gap {
+			i18n.Sae("⚠ CRITICAL: event-sequence gap — events between your cursor and the retained tail were rotated away unread; rebuild from `gtmux digest --json` before acking",
+				"⚠ 严重:事件序号断档——游标到留存事件之间有事件在未读时被轮转掉了;先用 `gtmux digest --json` 重建再 ack")
 		}
 		shown, hidden := pullView(delta, minSeverity == "" && !all)
 		for _, r := range shown {

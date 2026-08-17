@@ -589,17 +589,16 @@ playbook (`AGENTS.md` "## First turn"), read by any agent via its own convention
 gtmux injects only a MINIMAL one-line trigger — `» gtmux·startup` — which submits
 reliably and is agent-agnostic. (Unstick a stalled one: just press Enter in that pane.)
 
-### `feed-degraded` in HQ — the perception feed is down
-**Symptom:** HQ surfaces `⚠ perception feed down — on the 5-min polling backstop`, or a
-`[CRITICAL gtmux:feed-degraded]` line appears in `gtmux hq-feed --tail`.
-**Root cause:** the `gtmux hq-feed` daemon died and mechanical self-heal failed twice
-(the no-LLM watchdog lives in the `gtmux serve` slow-tick — if serve is OFF, nothing
-restarts it automatically).
-**Must-check / fix:** `gtmux hq-feed --status` (running? heartbeat age ≤ 90s? cursor lag?).
-If down, `gtmux hq-feed --daemon &` restarts it (singleton-guarded), or just re-attach
-HQ's `gtmux hq-feed --tail` — the tail auto-starts the daemon. Confirm `gtmux serve` is
-running so the watchdog can supervise it going forward. Files:
-`~/.local/share/gtmux/hq-feed/{pid,cursor,heartbeat,spool.jsonl}`.
+### An `event-sequence gap` warning on a pull — events rotated away unread
+**Symptom:** `gtmux events --since-seq <n>` prints a CRITICAL warning about a sequence
+gap.
+**Root cause:** the journal retains a bounded window (8 MB × 2 generations); events
+between HQ's watermark and the retained tail were rotated away before being read —
+usually after HQ was down or silent for a long stretch.
+**Must-check / fix:** rebuild from `gtmux digest --json` FIRST, then
+`gtmux events --ack <latest>` — acking over the gap without the snapshot forgives the
+loss silently. If gaps recur, check that `gtmux serve` is running (without it the wake
+and unread knocks that keep HQ consuming never fire).
 
 ### HQ went quiet — is it the feed or the surfacing threshold?
 **Symptom:** HQ stopped printing routine updates.
@@ -607,8 +606,8 @@ running so the watchdog can supervise it going forward. Files:
 nudges into the pane); HQ only PRINTS CRITICAL/NORMAL and ledger-records QUIET. Quiet
 mode raises the bar to CRITICAL-only.
 **Must-check:** `gtmux quiet status` (the resolved threshold). QUIET items are in
-`gtmux tasks --verbose`, not lost. A `feed-degraded` CRITICAL is never quieted, so
-silence there means the feed is healthy, not broken.
+`gtmux tasks --verbose`, not lost. A read-time gap CRITICAL is never quieted, so
+silence there means perception is healthy, not broken.
 
 ### Seed is generated ONCE — a live HQ home won't auto-update
 The attention-system behavior lives in the HQ playbook (`hq.go` `hqInstructions` →

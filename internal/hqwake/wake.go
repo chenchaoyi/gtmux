@@ -44,7 +44,6 @@ const (
 	ClassResourceWarn = "resource·warn"
 	ClassLimitsWarn   = "limits·warn"
 	ClassUsageWarn    = "usage·warn"
-	ClassFeedDegraded = "feed-degraded"
 	ClassWakeDegraded = "wake-degraded"
 	// ClassDistill / ClassSelfCheck are the periodic MAINTENANCE knocks raised by the
 	// serve slow-tick's own sensors. They were originally spec'd as feed-only control
@@ -99,7 +98,6 @@ var classPriority = map[string]int{
 	ClassAsks:         PriorityDecision,
 	ClassGoalChanged:  PriorityDecision,
 	ClassCrash:        PriorityDecision,
-	ClassFeedDegraded: PriorityDecision,
 	ClassWakeDegraded: PriorityDecision,
 	ClassDone:         PriorityOutcome,
 	ClassResolved:     PriorityOutcome,

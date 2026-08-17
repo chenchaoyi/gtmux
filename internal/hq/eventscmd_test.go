@@ -1,6 +1,7 @@
 package hq
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -430,5 +431,68 @@ func TestCountAndPullExcludeTheSameSet(t *testing.T) {
 	// And the composition is the expected one: trigger + two worker records.
 	if tally.N != 3 {
 		t.Fatalf("counted %d, want 3 (the trigger and the two worker records)", tally.N)
+	}
+}
+
+// The read-time gap warning (retire-perception-spool): a hole in the pulled
+// sequence must warn the reader on stderr at the moment of the read, while
+// stdout stays record-only so --json consumers keep parsing.
+func TestEventsSinceSeqWarnsOnGap(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	for _, loc := range []string{"a:0.0", "b:0.0", "c:0.0", "d:0.0"} {
+		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: loc})
+	}
+	// Punch a hole: drop seq 2 from the journal, as a retention overrun would.
+	b, err := os.ReadFile(events.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var kept []string
+	for _, line := range strings.Split(strings.TrimRight(string(b), "\n"), "\n") {
+		if !strings.Contains(line, `"seq":2`) {
+			kept = append(kept, line)
+		}
+	}
+	if err := os.WriteFile(events.Path(), []byte(strings.Join(kept, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "1"}) })
+	if !strings.Contains(stderr, "gap") {
+		t.Errorf("a holed pull must warn on stderr:\nstderr=%q", stderr)
+	}
+	if !strings.Contains(stdout, "c:0.0") || !strings.Contains(stdout, "d:0.0") {
+		t.Errorf("the retained tail must still print:\n%s", stdout)
+	}
+
+	// --json: every stdout line stays parseable; the warning rides stderr only.
+	stdout, stderr = captureBoth(t, func() { CmdEvents([]string{"--since-seq", "1", "--json"}) })
+	if !strings.Contains(stderr, "gap") {
+		t.Errorf("--json must still warn on stderr:\nstderr=%q", stderr)
+	}
+	for _, line := range strings.Split(strings.TrimSpace(stdout), "\n") {
+		var r events.Record
+		if json.Unmarshal([]byte(line), &r) != nil {
+			t.Errorf("--json stdout line not parseable: %q", line)
+		}
+	}
+}
+
+// A contiguous tail stays clean: no warning, byte-for-byte the old output.
+func TestEventsSinceSeqContiguousStaysQuiet(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	for _, loc := range []string{"a:0.0", "b:0.0", "c:0.0"} {
+		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: loc})
+	}
+	_, stderr := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "1"}) })
+	if strings.Contains(stderr, "gap") {
+		t.Errorf("a contiguous pull must not warn:\nstderr=%q", stderr)
+	}
+	// Cursor 0 = "everything retained": no prior position, never a leading gap.
+	_, stderr = captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
+	if strings.Contains(stderr, "gap") {
+		t.Errorf("cursor 0 must never report a leading gap:\nstderr=%q", stderr)
 	}
 }

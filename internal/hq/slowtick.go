@@ -8,7 +8,6 @@ package hq
 
 import (
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -68,10 +67,6 @@ func SlowTickEval() {
 	// registers no PostToolUse, so its wait marker lingers until the eventual Stop). The
 	// hook's resolved emit is event-gated; this observes the radar's status transition.
 	resolvedTransitionSweep()
-	// Perception-feed watchdog (hq-attention-system): keep the silent feed daemon
-	// alive while an HQ is live; mechanically self-heal, escalate CRITICAL only after
-	// self-heal fails twice.
-	feedWatchdog(time.Now().Unix())
 	// Wake-channel watchdog (hq-wake-reliability): the knock itself can break —
 	// escalate OUT of band when it does.
 	wakeWatchdog(time.Now().Unix())
@@ -147,7 +142,7 @@ func journalDegradation(event, summary string, now int64) {
 
 // wakeWatchdog surfaces a wake channel that is failing to reach a LIVE HQ (no HQ is
 // not a degradation — there is simply nothing to wake). It runs from the single-writer
-// slow tick, mirroring feedWatchdog, and escalates once per transition into degraded.
+// slow tick and escalates once per transition into degraded.
 //
 // The alarm cannot ride the channel it is about, so it takes three carriers: a journal
 // control record at important severity (the pull side sees it), a best-effort HQ line
@@ -176,86 +171,6 @@ func wakeWatchdog(now int64) {
 		Message: i18n.Tr("Wake lines aren't reaching the HQ pane — check it for a stuck draft.",
 			"唤醒信号没能进入中控窗格 —— 检查输入框是否卡住。"),
 	})
-}
-
-// feedFailCountPath stores the consecutive restart-failure counter (text int).
-func feedFailCountPath() string { return filepath.Join(state.Dir(), "hq-feed", "restart-fails") }
-
-func readFeedFailCount() int {
-	n, _ := strconv.Atoi(state.ReadMarker(feedFailCountPath()))
-	return n
-}
-
-func writeFeedFailCount(n int) { _ = state.WriteMarker(feedFailCountPath(), strconv.Itoa(n)) }
-
-// The backoff gate's persisted state: how many restarts THIS outage has made, and the
-// earliest unix time the next restart is permitted. Separate from the escalation counter
-// above (which escalates CRITICAL at 2 unhealthy ticks) — these throttle the actual
-// spawns so a doomed daemon isn't respawned every 20 s. Both reset on a healthy feed.
-func feedRestartAttemptsPath() string {
-	return filepath.Join(state.Dir(), "hq-feed", "restart-attempts")
-}
-func feedRestartNextAtPath() string {
-	return filepath.Join(state.Dir(), "hq-feed", "restart-next-at")
-}
-
-func readFeedRestartAttempts() int {
-	n, _ := strconv.Atoi(state.ReadMarker(feedRestartAttemptsPath()))
-	return n
-}
-func readFeedRestartNextAt() int64 {
-	n, _ := strconv.ParseInt(state.ReadMarker(feedRestartNextAtPath()), 10, 64)
-	return n
-}
-
-// resetFeedRestartGate clears the backoff state so the next outage restarts immediately.
-func resetFeedRestartGate() {
-	state.Remove(feedRestartAttemptsPath())
-	state.Remove(feedRestartNextAtPath())
-}
-
-// feedWatchdog is the no-LLM perception-feed supervisor (design §1.2.2 / §6.4). It
-// runs from the single-writer serve slow-tick, so its markers have no race. Only
-// while an HQ pane is live: it ensures the daemon is up and beating, mechanically
-// restarts a dead/stale one (SILENTLY), and — only after two consecutive failed
-// restarts — surfaces a CRITICAL degradation (a feed-degraded control record + one
-// visible HQ nudge), deduped so recovery doesn't re-alert. This is the ONE place
-// the feed watchdog is allowed to be visible: a perception outage must not stay
-// silent (the commander's #1 requirement).
-func feedWatchdog(now int64) {
-	hqLive := hqpane.Find() != ""
-	h := hqfeed.Health{HQLive: hqLive, PidAlive: hqfeed.Running(), HbStale: hqfeed.Stale(now)}
-	if hqfeed.NeedsRestart(h) {
-		// Gate the respawn: exponential backoff between attempts + a hard cap, so a daemon
-		// that can't come up isn't relaunched every 20 s forever. The gate persists its
-		// attempt count + next-allowed-at across ticks.
-		if do, nextAt, attempts := hqfeed.RestartGate(
-			readFeedRestartAttempts(), now, readFeedRestartNextAt()); do {
-			_ = spawnFeedDaemon() // detached; the singleton guard makes a redundant spawn safe
-			_ = state.WriteMarker(feedRestartAttemptsPath(), strconv.Itoa(attempts))
-			_ = state.WriteInt64Marker(feedRestartNextAtPath(), nextAt)
-		}
-	} else {
-		resetFeedRestartGate() // healthy (or no HQ) → next outage restarts immediately
-	}
-	next := hqfeed.NextFailureCount(readFeedFailCount(), h)
-	writeFeedFailCount(next)
-
-	// Escalate once on the transition into degraded; clear on recovery (empty key)
-	// without re-alerting. markerChanged is the by-tier dedup core.
-	key := ""
-	if hqfeed.ShouldEscalate(next) {
-		key = "down"
-	}
-	if markerChanged("hqfeeddegraded", key) {
-		journalDegradation(hqfeed.ControlFeedDegraded,
-			"⚠ perception feed down — mechanical self-heal failed; on the 5-min polling backstop",
-			now)
-		if pane := hqpane.Find(); pane != "" {
-			hqnudge.Deliver(pane, hqwake.Line("feed-degraded", "",
-				"⚠ perception daemon down — self-heal failed", "reconcile: gtmux digest --json"))
-		}
-	}
 }
 
 // resourceTierKey is the dedup key for a machine warning: the tier (amber/red), or
