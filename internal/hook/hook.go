@@ -279,6 +279,28 @@ func assignmentOnly(line string) bool {
 	return !strings.ContainsAny(strings.TrimSpace(line[eq+1:]), " \t")
 }
 
+// notifySubtitle leads a banner's second line with the pane id.
+//
+// A notification is the one surface where the list is not on screen: you get a title, a
+// truncated subtitle, and no way to look around. Measured on a real fleet, FOUR sessions
+// held two panes each, and the worst pair was indistinguishable —
+//
+//	title "MP" / subtitle "multipilot-companion 服务端需求"
+//	title "MP" / subtitle "multipilot-companion featu…"
+//
+// — same session name, same opening words, and macOS truncates the rest. `%11` costs four
+// characters and is the same token the click jumps to, the pane browser leads with, and HQ
+// refers to. Same rule as every other surface: the id is the anchor, the label is a gloss.
+func notifySubtitle(pane, display string) string {
+	if pane == "" {
+		return display
+	}
+	if display == "" {
+		return pane
+	}
+	return pane + " · " + display
+}
+
 func summarizeBackground(tasks []backgroundTask) (count int, label string) {
 	inFlight := tasks[:0:0]
 	for _, t := range tasks {
@@ -864,7 +886,7 @@ func Run(stdin io.Reader, args []string) int {
 	notify.Send(notify.Options{
 		Kind:     kind,
 		Title:    title,
-		Subtitle: display,
+		Subtitle: notifySubtitle(pane, display),
 		Message:  body,
 		Pane:     pane,
 		Session:  session,
