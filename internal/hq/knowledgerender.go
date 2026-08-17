@@ -101,11 +101,15 @@ func renderPromotions(live []knowledgeOp) error {
 func topicPath(topic string) string { return filepath.Join(hqKnowledgeDir(), topic+".md") }
 
 // renderTopic renders one topic's live entries (pure; deterministic — dates in
-// UTC so the bytes do not depend on the host timezone).
-func renderTopic(topic string, live []knowledgeOp) string {
+// UTC so the bytes do not depend on the host timezone). desc is a declared
+// custom topic's one-line description ("" for built-ins).
+func renderTopic(topic, desc string, live []knowledgeOp) string {
 	var b strings.Builder
 	b.WriteString(knowledgeRenderMarker + "\n")
 	b.WriteString("# " + topic + "\n\n")
+	if desc != "" {
+		b.WriteString("> " + desc + "\n\n")
+	}
 	if _, err := os.Stat(filepath.Join(knowledgeLegacyDir(), topic+".md")); err == nil {
 		b.WriteString("> Pre-ledger hand-written entries: [legacy/" + topic + ".md](legacy/" +
 			topic + ".md) — migrate the ones you touch.\n\n")
@@ -208,26 +212,32 @@ func migrateTopicFile(topic string, now int64) error {
 }
 
 // writeTopicRender migrates (first touch) then writes the topic's render.
-func writeTopicRender(topic string, live []knowledgeOp, now int64) error {
+func writeTopicRender(topic, desc string, live []knowledgeOp, now int64) error {
 	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
 		return err
 	}
 	if err := migrateTopicFile(topic, now); err != nil {
 		return err
 	}
-	return os.WriteFile(topicPath(topic), []byte(renderTopic(topic, live)), 0o644)
+	return os.WriteFile(topicPath(topic), []byte(renderTopic(topic, desc, live)), 0o644)
 }
 
-// renderAllTopics re-renders every topic that has live entries OR already carries
-// a rendered file (so a topic whose last entry was retired renders empty rather
-// than going stale). Topics never touched by the ledger keep their hand-written
-// or seeded files untouched.
-func renderAllTopics(live []knowledgeOp, now int64) error {
-	for _, topic := range knowledgeTopics() {
+// renderAllTopics re-renders every BUILT-IN topic that has live entries OR
+// already carries a rendered file (so a topic whose last entry was retired
+// renders empty rather than going stale; untouched seeds stay untouched) — and
+// every DECLARED custom topic unconditionally: a declaration is explicit
+// intent, and its render (name + description) is what makes it visible.
+func renderAllTopics(live, custom []knowledgeOp, now int64) error {
+	for _, topic := range builtinTopics {
 		if !topicHasEntries(live, topic) && !isRenderedTopicFile(topicPath(topic)) {
 			continue
 		}
-		if err := writeTopicRender(topic, live, now); err != nil {
+		if err := writeTopicRender(topic, "", live, now); err != nil {
+			return err
+		}
+	}
+	for _, t := range custom {
+		if err := writeTopicRender(t.ID, t.Title, live, now); err != nil {
 			return err
 		}
 	}
@@ -246,15 +256,19 @@ func topicHasEntries(live []knowledgeOp, topic string) bool {
 // knowledgeDrift returns the rendered topic files whose on-disk bytes no longer
 // match their render — hand edits, which are review material, never silently
 // absorbed or overwritten.
-func knowledgeDrift(live []knowledgeOp) []string {
+func knowledgeDrift(live, custom []knowledgeOp) []string {
+	descs := map[string]string{}
+	for _, t := range custom {
+		descs[t.ID] = t.Title
+	}
 	var drifted []string
-	for _, topic := range knowledgeTopics() {
+	for _, topic := range knowledgeTopics(custom) {
 		path := topicPath(topic)
 		if !isRenderedTopicFile(path) {
 			continue
 		}
 		b, err := os.ReadFile(path)
-		if err != nil || string(b) != renderTopic(topic, live) {
+		if err != nil || string(b) != renderTopic(topic, descs[topic], live) {
 			drifted = append(drifted, path)
 		}
 	}

@@ -117,15 +117,42 @@ func TestKnowledgeMalformedLineIsSkipped(t *testing.T) {
 }
 
 func TestKnowledgeTopics(t *testing.T) {
-	for _, ok := range append(append([]string{}, captureTopics...), "environment") {
-		if !validKnowledgeTopic(ok) {
+	custom := []knowledgeOp{{Op: knowledgeOpTopic, ID: "datasets", Topic: "datasets", Title: "my datasets"}}
+	for _, ok := range append(append([]string{}, builtinTopics...), "datasets") {
+		if !validKnowledgeTopic(ok, custom) {
 			t.Errorf("topic %q should be valid", ok)
 		}
 	}
-	for _, bad := range []string{"", "README", "notes", "board"} {
-		if validKnowledgeTopic(bad) {
+	for _, bad := range []string{"", "README", "notes", "board", "clients"} {
+		if validKnowledgeTopic(bad, custom) {
 			t.Errorf("topic %q should be invalid", bad)
 		}
+	}
+}
+
+func TestValidateTopicName(t *testing.T) {
+	custom := []knowledgeOp{{Op: knowledgeOpTopic, ID: "datasets", Topic: "datasets", Title: "d"}}
+	for name, wantErr := range map[string]string{
+		"clients":     "",
+		"ml-pipeline": "",
+		"pitfalls":    "already a topic",
+		"datasets":    "already a topic",
+		"legacy":      "reserved",
+		"promotions":  "reserved",
+		"README":      "lowercase",
+		"With Space":  "lowercase",
+		"":            "1–40 bytes",
+	} {
+		err := validateTopicName(name, custom)
+		if wantErr == "" && err != nil {
+			t.Errorf("%q: unexpected refusal %v", name, err)
+		}
+		if wantErr != "" && (err == nil || !strings.Contains(err.Error(), wantErr)) {
+			t.Errorf("%q: err=%v, want refusal naming %q", name, err, wantErr)
+		}
+	}
+	if err := validateTopicName(strings.Repeat("a", knowledgeTopicNameMax+1), nil); err == nil {
+		t.Error("over-long name must refuse")
 	}
 }
 

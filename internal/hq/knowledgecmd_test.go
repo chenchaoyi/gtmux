@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 func knowledgeAudits(t *testing.T) []string {
@@ -308,5 +309,73 @@ func TestPromotionBriefRegeneratesOnUnrelatedMutation(t *testing.T) {
 	}
 	if _, err := os.Stat(brief); err != nil {
 		t.Fatalf("the pending brief must regenerate on the next render pass: %v", err)
+	}
+}
+
+// The whole loop for a user's own domain (hq-open-topics): declare → capture from
+// a worker cwd → accept with provenance → render with the description → echo at
+// dispatch. This is the "anyone learns personalized knowledge" path, end to end.
+func TestCustomTopicWholeLoop(t *testing.T) {
+	asHQ(t)
+	// Declaration refusals first: bad names and duplicates are loud.
+	if rc := CmdKnowledge([]string{"topic", "datasets"}); rc == 0 {
+		t.Fatal("topic without --desc must refuse")
+	}
+	if rc := CmdKnowledge([]string{"topic", "Datasets!", "--desc", "d"}); rc == 0 {
+		t.Fatal("a non-slug name must refuse")
+	}
+	if rc := CmdKnowledge([]string{"topic", "legacy", "--desc", "d"}); rc == 0 {
+		t.Fatal("a reserved name must refuse")
+	}
+	if rc := CmdKnowledge([]string{"topic", "datasets", "--desc", "warehouse quirks and dataset contracts"}); rc != 0 {
+		t.Fatal("declaring a custom topic failed")
+	}
+	if rc := CmdKnowledge([]string{"topic", "datasets", "--desc", "again"}); rc == 0 {
+		t.Fatal("re-declaring must refuse")
+	}
+	// The declaration renders immediately, with the description as the intro.
+	b, err := os.ReadFile(topicPath("datasets"))
+	if err != nil || !strings.Contains(string(b), "> warehouse quirks and dataset contracts") {
+		t.Fatalf("a declared topic must render with its description: %v\n%s", err, b)
+	}
+
+	// A worker (any cwd) captures under the custom topic — the shared validation.
+	hqHome := state.HQHome()
+	t.Chdir(t.TempDir())
+	if rc := CmdCapture([]string{"the etl-pipeline repo needs schema pinning", "@datasets"}); rc != 0 {
+		t.Fatal("capture under a declared topic must be accepted")
+	}
+	if rc := CmdCapture([]string{"whatever", "@undeclared"}); rc == 0 {
+		t.Fatal("capture under an undeclared topic must refuse")
+	}
+	// Capture accepts environment now too (the 5-vs-6 drift is closed).
+	if rc := CmdCapture([]string{"the office network needs the proxy", "@environment"}); rc != 0 {
+		t.Fatal("capture must accept environment")
+	}
+
+	// HQ accepts the candidate; the entry lands under datasets with provenance.
+	t.Chdir(hqHome)
+	key := "datasets/" + slug("the etl-pipeline repo needs schema pinning")
+	if rc := CmdKnowledge([]string{"add", "--topic", "datasets",
+		"--title", "the etl-pipeline repo needs schema pinning", "--capture", key}); rc != 0 {
+		t.Fatal("add --capture under the custom topic failed")
+	}
+	b, _ = os.ReadFile(topicPath("datasets"))
+	if !strings.Contains(string(b), "schema pinning") || !strings.Contains(string(b), "capture "+key) {
+		t.Fatalf("the entry and its provenance must render:\n%s", b)
+	}
+
+	// The dispatch echo surfaces the custom topic by repo name.
+	echo := MatchKnowledge("/Users/x/etl-pipeline", "")
+	if !strings.Contains(echo, "[datasets]") || !strings.Contains(echo, "schema pinning") {
+		t.Fatalf("a custom-topic lesson must echo at dispatch:\n%s", echo)
+	}
+	// The built-in exclusions stand: a corrections entry does not echo.
+	if rc := CmdKnowledge([]string{"add", "--topic", "corrections",
+		"--title", "etl-pipeline correction that must not echo"}); rc != 0 {
+		t.Fatal("corrections add failed")
+	}
+	if echo := MatchKnowledge("/Users/x/etl-pipeline", ""); strings.Contains(echo, "must not echo") {
+		t.Fatalf("corrections must stay out of the dispatch echo:\n%s", echo)
 	}
 }

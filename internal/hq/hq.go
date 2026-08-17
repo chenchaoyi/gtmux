@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 25
+const hqPlaybookVersion = 26
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -494,7 +494,8 @@ methods, procedures, and pointers to where a secret lives.
 - environment.md — network/env rules affecting agent launches (proxy per network).
 - corrections.md — commander corrections + repeated footguns, distilled into durable lessons.
 
-Add topic files as needed. 主动学习、持续更新、用时调取。
+Declare your own topics with: gtmux knowledge topic <name> --desc "..."
+主动学习、持续更新、用时调取;按你的领域用 topic 子命令加主题。
 `,
 	"accounts.md":       "# Accounts (IDs + access procedures — NEVER secrets)\n\n_Record the Apple developer team/account, Cloudflare account + dashboard access, and other services here: identifiers and how to reach them, with pointers (keychain / password manager) for anything secret._\n",
 	"workflows.md":      "# Workflows (repeatable procedures)\n\n_Release flow, device build, the spec⇄code⇄test consistency workflow (propose → implement → sync-specs → archive), etc._\n",
@@ -1268,7 +1269,10 @@ update-over-append) / ` + "`retire --why`" + ` — NEVER by editing a rendered t
 hand-written topics move VERBATIM to ` + "`knowledge/legacy/`" + ` on first touch — migrate the
 legacy lessons you use (an ` + "`add`" + ` is the migration). A CHARTER-LEVEL entry exits
 through ` + "`promote`" + ` → a brief under ` + "`knowledge/promotions/`" + ` → ` + "`land --ref`" + ` when it
-reaches the gtmux repo (` + "`gtmux knowledge promotions`" + ` shows the queue). Topics, e.g.:
+reaches the gtmux repo (` + "`gtmux knowledge promotions`" + ` shows the queue). The topic
+vocabulary is YOURS to extend: ` + "`gtmux knowledge topic <name> --desc …`" + ` declares a
+domain topic (clients, datasets, …) that capture, the verbs, and the dispatch echo all
+honor. The built-ins:
 - **accounts.md** — the Apple developer team/account, Cloudflare account + how to
   reach its dashboard, other service accounts: IDs, procedures, where things live.
 - **workflows.md** — the release flow, device build, the spec⇄code⇄test

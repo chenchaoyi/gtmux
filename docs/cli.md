@@ -346,7 +346,7 @@ surface decisions to you, not take them.
 ## `gtmux capture` — cheap notice into HQ's knowledge base
 
 ```
-gtmux capture "<one-line lesson> @<topic>"   # topic ∈ accounts | workflows | best-practices | pitfalls | corrections
+gtmux capture "<one-line lesson> @<topic>"   # topic ∈ the knowledge vocabulary: six built-ins + topics hq declared
 gtmux capture --list                         # show the pending-distill queue
 ```
 
@@ -383,6 +383,7 @@ gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--bod
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger
 gtmux knowledge retire <id> --why "…"                        # prune, with a reason that survives
 gtmux knowledge dismiss --capture <key> --why "…"            # reject a candidate WITH a trace
+gtmux knowledge topic <name> --desc "…"                      # declare your own topic (clients, datasets, …)
 gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
 gtmux knowledge land <id> --ref "<pr/spec>"                  # close the loop when it lands
 gtmux knowledge promotions [--json]                          # the pending export queue
@@ -403,6 +404,15 @@ rejections stop vanishing identically to its acceptances. Every mutation appends
 Mutations are accepted **only from the HQ home** (the same cwd-keyed role rule as
 `gtmux events --ack`) — the quality gate is the supervisor; workers record candidates with
 `gtmux capture`. `list`/`show` work anywhere.
+
+**The topic vocabulary is yours to extend.** Six topics ship built in (accounts,
+workflows, best-practices, pitfalls, corrections, environment); `gtmux knowledge topic
+<name> --desc "…"` declares your own — a ledger operation like any other, rendered
+immediately with its description, honored by `gtmux capture`, every knowledge verb, and
+the dispatch-time echo (custom topics join pitfalls/workflows there; accounts /
+corrections / environment deliberately stay out of dispatch context). Names are slugs
+(`a-z 0-9 -`, ≤ 40 bytes); built-ins, existing topics, and the reserved directory names
+refuse loudly. Declarations are add-only for now.
 
 **A charter-level lesson has a mechanical exit** (the thing hq's own ledger once said was
 missing): `promote` marks a live entry charter-level and writes a **promotion brief** —
