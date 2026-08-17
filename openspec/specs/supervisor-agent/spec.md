@@ -1624,8 +1624,14 @@ ARBITRARY user, not for gtmux's author or this machine's history:
   control record, and signal glyph identical — only prose translates). The
   managed AGENTS.md marker records the installed language, and `gtmux hq`
   regenerates the file when the version OR the language differs (backup first);
-  a pre-bilingual marker without a language regenerates once. LOCAL.md and the
-  user's notes are never touched by regeneration.
+  a pre-bilingual marker without a language regenerates once. A same-version
+  language switch SHALL be announced as a language switch, not as a
+  same-number upgrade. LOCAL.md and the user's notes are never touched by
+  regeneration.
+- **LOCAL.md seeds in the user's language too**: the personalization template
+  (the explainer and its commented examples) follows `GTMUX_LANG` at seed
+  time, and seed-once is absolute — an existing LOCAL.md is never rewritten by
+  a later language switch; the file is the user's from the first byte.
 - **The board seeds in the user's language** (`GTMUX_LANG`), and the language
   discipline taught is "keep the board in the language it was seeded in — never
   flip an existing board", preserving the don't-machine-translate lesson
@@ -1638,8 +1644,8 @@ ARBITRARY user, not for gtmux's author or this machine's history:
 
 - **WHEN** `gtmux hq` seeds a brand-new home
 - **THEN** every topic file is a template describing its purpose, no seed
-  carries another person's lessons or vendor list, and the board's headings and
-  the charter are in the user's language
+  carries another person's lessons or vendor list, and the board's headings,
+  the charter, and the LOCAL.md template are in the user's language
 
 #### Scenario: A leaked author token fails the build
 
@@ -1652,7 +1658,8 @@ ARBITRARY user, not for gtmux's author or this machine's history:
 - **WHEN** `gtmux hq` runs with `GTMUX_LANG` naming a different language than
   the installed playbook's marker records — even at the same version
 - **THEN** the managed AGENTS.md is regenerated in the new language with the
-  prior file backed up, and LOCAL.md is untouched
+  prior file backed up, the notice names the language switch rather than a
+  same-number upgrade, and LOCAL.md is untouched
 
 #### Scenario: Charter drift is a red build
 
