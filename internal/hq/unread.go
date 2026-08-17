@@ -124,6 +124,7 @@ type unreadGroup struct {
 type unreadTally struct {
 	N      int
 	MaxSeq int64
+	Gap    bool          // a sequence hole between the watermark and the retained tail
 	Groups []unreadGroup // most numerous first, then by key; deterministic
 }
 
@@ -196,9 +197,9 @@ func unreadBlinks(recs []events.Record) []bool {
 // trigger IS something HQ owes a pass on, and it is rare enough (≈1/day) to never be
 // the loop's fuel.
 func unreadScan(watermark int64, hqPane string) unreadTally {
-	recs, _ := events.ReadSince(watermark)
+	recs, gap := events.ReadSince(watermark)
 	blink := unreadBlinks(recs)
-	t := unreadTally{MaxSeq: watermark}
+	t := unreadTally{MaxSeq: watermark, Gap: gap}
 	by := map[string]int{}
 	for i, r := range recs {
 		if r.Seq > t.MaxSeq {
@@ -298,16 +299,24 @@ func unreadSensorFor(pane string, now int64) {
 		return
 	}
 	t := unreadScan(wm, pane)
-	if t.N == 0 {
+	if t.N == 0 && !t.Gap {
 		// Everything past the watermark is HQ's own echo or a pane-less blink. Nothing to
 		// say — and step the watermark over it, so this scan is not repeated every interval
 		// for the rest of the day on a fleet that is genuinely quiet.
 		hqwake.Consume(t.MaxSeq)
 		return
 	}
-	hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassUnread,
-		strconv.Itoa(t.N)+i18n.Tr(" unconsumed", " 条未消费")+t.composition(),
-		"pull: gtmux events --since-seq "+strconv.FormatInt(wm, 10)+" --json"))
+	// A gap means events died unread between the watermark and the retained tail
+	// (gap-holds-the-debt): the watermark must NOT be stepped over the hole — even
+	// when everything retained is echo — and the knock names the rebuild-then-ack
+	// exit instead of the ordinary pull.
+	payload := strconv.Itoa(t.N) + i18n.Tr(" unconsumed", " 条未消费") + t.composition()
+	hint := "pull: gtmux events --since-seq " + strconv.FormatInt(wm, 10) + " --json"
+	if t.Gap {
+		payload += i18n.Tr(" · sequence gap", " · 序号断档")
+		hint = "rebuild: gtmux digest --json → gtmux events --ack <seq>"
+	}
+	hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassUnread, payload, hint))
 }
 
 // ── consumption status (the read side `gtmux doctor` reports) ────────────────
@@ -337,16 +346,18 @@ func ConsumptionStatus(now int64) ConsumptionRow {
 	if wm == hqwake.WatermarkUnset {
 		return ConsumptionRow{State: MaintenanceNever}
 	}
-	n := unreadScan(wm, hqpane.Find()).N
-	if n == 0 {
+	t := unreadScan(wm, hqpane.Find())
+	if t.N == 0 && !t.Gap {
 		return ConsumptionRow{State: MaintenanceOK}
 	}
 	standing := int64(0)
 	if st := readUnreadState(); st.Watermark == wm && st.Since > 0 {
 		standing = now - st.Since
 	}
-	row := ConsumptionRow{Unread: n, StandingSec: standing, State: MaintenanceOK}
-	if n >= consumptionLagCount || standing >= consumptionLagSecs {
+	row := ConsumptionRow{Unread: t.N, StandingSec: standing, State: MaintenanceOK}
+	// A standing gap is slipped regardless of volume: the missing events cannot be
+	// pulled, only rebuilt around, and that exit should not wait for a backlog.
+	if t.Gap || t.N >= consumptionLagCount || standing >= consumptionLagSecs {
 		row.State = MaintenanceSlipped
 	}
 	return row

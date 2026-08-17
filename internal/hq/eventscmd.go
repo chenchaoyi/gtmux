@@ -174,8 +174,8 @@ func CmdEvents(args []string) int {
 			}
 		}
 		if gap {
-			i18n.Sae("⚠ CRITICAL: event-sequence gap — events between your cursor and the retained tail were rotated away unread; rebuild from `gtmux digest --json` before acking",
-				"⚠ 严重:事件序号断档——游标到留存事件之间有事件在未读时被轮转掉了;先用 `gtmux digest --json` 重建再 ack")
+			i18n.Sae("⚠ CRITICAL: event-sequence gap — events between your cursor and the retained tail were rotated away unread. This read did NOT advance your watermark: rebuild from `gtmux digest --json`, then write it back with `gtmux events --ack "+strconv.FormatInt(maxSeq, 10)+"`",
+				"⚠ 严重:事件序号断档——游标到留存事件之间有事件在未读时被轮转掉了。本次读取未推进你的消费水位:先用 `gtmux digest --json` 重建,再用 `gtmux events --ack "+strconv.FormatInt(maxSeq, 10)+"` 回写")
 		}
 		shown, hidden := pullView(delta, minSeverity == "" && !all)
 		for _, r := range shown {
@@ -191,7 +191,10 @@ func CmdEvents(args []string) int {
 		// while never seeing most of it — the playbook's "a filter is a triage shortcut,
 		// never your model of the world" turned from advice into mechanism. Reading
 		// filtered simply leaves the debt standing, and the next knock names it again.
-		if minSeverity == "" {
+		if minSeverity == "" && !gap {
+			// A gap read is NOT consumption (gap-holds-the-debt): advancing the
+			// watermark here would give the warning exactly one chance to be seen
+			// before the loss was forgiven. The debt stands until the explicit --ack.
 			consumeHQRead(sinceSeq, maxSeq)
 		}
 		return 0

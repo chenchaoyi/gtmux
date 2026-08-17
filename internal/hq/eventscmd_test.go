@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -494,5 +495,109 @@ func TestEventsSinceSeqContiguousStaysQuiet(t *testing.T) {
 	_, stderr = captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
 	if strings.Contains(stderr, "gap") {
 		t.Errorf("cursor 0 must never report a leading gap:\nstderr=%q", stderr)
+	}
+}
+
+// punchHole removes one sequence from the journal, as a retention overrun would.
+func punchHole(t *testing.T, seq int64) {
+	t.Helper()
+	b, err := os.ReadFile(events.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var kept []string
+	needle := `"seq":` + strconv.FormatInt(seq, 10)
+	for _, line := range strings.Split(strings.TrimRight(string(b), "\n"), "\n") {
+		if !strings.Contains(line, needle) {
+			kept = append(kept, line)
+		}
+	}
+	if err := os.WriteFile(events.Path(), []byte(strings.Join(kept, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A gap read is NOT consumption (gap-holds-the-debt): the watermark stays put,
+// every pull re-warns, and only the explicit --ack (after the digest rebuild)
+// settles the debt.
+func TestGapReadLeavesTheWatermark(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	for _, loc := range []string{"a:0.0", "b:0.0", "c:0.0", "d:0.0"} {
+		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: loc})
+	}
+	punchHole(t, 2)
+
+	_, stderr := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "1"}) })
+	if !strings.Contains(stderr, "--ack") {
+		t.Errorf("the gap warning must name the explicit --ack exit:\n%q", stderr)
+	}
+	if got := hqwake.Consumed(); got != 0 {
+		t.Fatalf("a gap read advanced the watermark to %d — the debt was forgiven", got)
+	}
+	// The next pull warns again — the debt keeps asking.
+	_, stderr = captureBoth(t, func() { CmdEvents([]string{"--since-seq", "1"}) })
+	if !strings.Contains(stderr, "gap") {
+		t.Error("a standing gap must re-warn on every pull")
+	}
+	// The explicit ack (post-rebuild) settles it; the next pull is clean.
+	if rc := CmdEvents([]string{"--ack", "4"}); rc != 0 {
+		t.Fatalf("ack returned %d", rc)
+	}
+	if got := hqwake.Consumed(); got != 4 {
+		t.Fatalf("ack did not move the watermark: %d", got)
+	}
+	_, stderr = captureBoth(t, func() { CmdEvents([]string{"--since-seq", "4"}) })
+	if strings.Contains(stderr, "gap") {
+		t.Errorf("after the ack a clean tail must not warn:\n%q", stderr)
+	}
+}
+
+// The unread net sees the hole: a scan carries Gap, and a tally that is nothing
+// but echo behind a hole neither auto-consumes nor stays silent.
+func TestUnreadScanFlagsGap(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	for _, loc := range []string{"a:0.0", "b:0.0", "c:0.0"} {
+		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: loc})
+	}
+	punchHole(t, 2)
+	tally := unreadScan(1, "")
+	if !tally.Gap {
+		t.Fatal("a holed tail must set Gap on the tally")
+	}
+	clean := unreadScan(2, "")
+	if clean.Gap {
+		t.Fatal("a contiguous tail must not set Gap")
+	}
+}
+
+// An echo-only gap still knocks: everything retained past the watermark is HQ's
+// own pane, but the hole between means events died unread — the sensor must not
+// step the watermark over it, and must say so.
+func TestUnreadSensorGapKnocksInsteadOfConsuming(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(10_000_000)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%1"})
+	unreadSensorFor(testHQPane, now) // bootstrap adopts the stream end
+	wm := hqwake.Consumed()
+
+	// Two more events: one that will rotate away, then only HQ's own echo.
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Pane: "%2", Loc: "x:1.0"})
+	events.Append(events.Record{Ts: now, Event: "UserPromptSubmit", Pane: testHQPane})
+	punchHole(t, wm+1)
+
+	unreadSensorFor(testHQPane, now+1)
+	unreadSensorFor(testHQPane, now+1+hqwake.Defaults().UnreadDebounceSec)
+	knocks := takeUnreadKnocks(t)
+	if len(knocks) != 1 {
+		t.Fatalf("an echo-only gap must knock exactly once per interval, got %d: %v", len(knocks), knocks)
+	}
+	if !strings.Contains(knocks[0], "gap") {
+		t.Errorf("the knock must name the gap: %q", knocks[0])
+	}
+	if got := hqwake.Consumed(); got != wm {
+		t.Fatalf("the sensor stepped the watermark over the hole: %d → %d", wm, got)
 	}
 }
