@@ -379,3 +379,40 @@ func TestCustomTopicWholeLoop(t *testing.T) {
 		t.Fatalf("corrections must stay out of the dispatch echo:\n%s", echo)
 	}
 }
+
+// The brief's closing instruction is the user's destination (hq-promote-anywhere):
+// a target names it; no target lists the carriers instead of mandating gtmux's repo.
+func TestPromotionBriefClosesWithTheUsersCarrier(t *testing.T) {
+	asHQ(t)
+	if rc := CmdKnowledge([]string{"add", "--topic", "workflows", "--title", "targeted lesson"}); rc != 0 {
+		t.Fatal("add failed")
+	}
+	id := "workflows/" + slug("targeted lesson")
+	if rc := CmdKnowledge([]string{"promote", id, "--why", "w", "--target", "team runbook: deploy checklist"}); rc != 0 {
+		t.Fatal("promote failed")
+	}
+	b, _ := os.ReadFile(promotionBriefPath(knowledgeOp{ID: id}))
+	if !strings.Contains(string(b), "Land it at: team runbook: deploy checklist") {
+		t.Fatalf("a targeted brief must close with the target:\n%s", b)
+	}
+	if strings.Contains(string(b), "Land it in the gtmux repo") {
+		t.Fatalf("the hardcoded repo mandate must be gone:\n%s", b)
+	}
+
+	if rc := CmdKnowledge([]string{"add", "--topic", "workflows", "--title", "untargeted lesson"}); rc != 0 {
+		t.Fatal("add 2 failed")
+	}
+	id2 := "workflows/" + slug("untargeted lesson")
+	if rc := CmdKnowledge([]string{"promote", id2, "--why", "w"}); rc != 0 {
+		t.Fatal("promote 2 failed")
+	}
+	b, _ = os.ReadFile(promotionBriefPath(knowledgeOp{ID: id2}))
+	for _, carrier := range []string{"AGENTS.md", "runbook", "LOCAL.md", "GitHub issue"} {
+		if !strings.Contains(string(b), carrier) {
+			t.Errorf("the target-less brief must offer carrier %q:\n%s", carrier, b)
+		}
+	}
+	if !strings.Contains(string(b), "gtmux knowledge land "+id2) {
+		t.Errorf("the land instruction must always close the brief:\n%s", b)
+	}
+}

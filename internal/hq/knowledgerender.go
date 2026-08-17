@@ -60,8 +60,18 @@ func renderPromotionBrief(op knowledgeOp) string {
 		b.WriteString(body + "\n\n")
 	}
 	b.WriteString("provenance: " + provenanceFooter(op) + "\n\n")
-	b.WriteString("Land it in the gtmux repo (an openspec change, a seed edit, or code), then close:\n\n")
-	b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<pr/spec>\"\n")
+	// The closing instruction is the USER'S destination, never a hardcoded one
+	// (hq-promote-anywhere): a promotion that named its target closes with it; one
+	// that did not gets the carrier options — a brew-installed user has no gtmux
+	// checkout, and their rules live in their own carriers.
+	if op.PromoteTarget != "" {
+		b.WriteString("Land it at: " + op.PromoteTarget + " — then close:\n\n")
+	} else {
+		b.WriteString("Land it in whichever durable rule carrier fits — a project AGENTS.md / CLAUDE.md, " +
+			"a team runbook, LOCAL.md (when the rule governs this supervisor), or gtmux's own repo " +
+			"(an openspec change, or a GitHub issue carrying this brief) — then close:\n\n")
+	}
+	b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<pr / issue / runbook>\"\n")
 	return b.String()
 }
 
