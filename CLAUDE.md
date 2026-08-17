@@ -39,7 +39,10 @@ over one Go core (gtmux-core is the single data source):
   the world — change `hq-attention-stream`), decision-authority tiers (reversible∧
   low-risk∧in-discussed-scope → HQ decides+dispatches; else escalate), graded escalation
   + reconcile-before-relay (kills stale needs-you), and a correction→charter learning
-  loop (`knowledge/corrections.md`). See `openspec/changes/hq-chief-of-staff`.
+  loop (`corrections` topic; a CHARTER-LEVEL lesson exits mechanically — change
+  `hq-promotion-exit`: `gtmux knowledge promote` → a brief under `knowledge/promotions/`
+  → `land --ref` closes it; doctor flags a brief pending past ~2 weeks). See
+  `openspec/changes/hq-chief-of-staff`.
   **HQ perception = the wake protocol** (`internal/hqwake`, spec `hq-wake-protocol`,
   change hq-perception-v2): decision-dense events — `waiting·kind / resolved / asks /
   done(unattended) / crash(StopFailure) / goal-changed / new-session / reap-suggest /

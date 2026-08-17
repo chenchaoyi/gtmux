@@ -383,6 +383,9 @@ gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--bod
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger
 gtmux knowledge retire <id> --why "…"                        # prune, with a reason that survives
 gtmux knowledge dismiss --capture <key> --why "…"            # reject a candidate WITH a trace
+gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
+gtmux knowledge land <id> --ref "<pr/spec>"                  # close the loop when it lands
+gtmux knowledge promotions [--json]                          # the pending export queue
 gtmux knowledge list [--topic t] [--json]  ·  show <id>  ·  render [--check]
 ```
 
@@ -400,6 +403,17 @@ rejections stop vanishing identically to its acceptances. Every mutation appends
 Mutations are accepted **only from the HQ home** (the same cwd-keyed role rule as
 `gtmux events --ack`) — the quality gate is the supervisor; workers record candidates with
 `gtmux capture`. `list`/`show` work anywhere.
+
+**A charter-level lesson has a mechanical exit** (the thing hq's own ledger once said was
+missing): `promote` marks a live entry charter-level and writes a **promotion brief** —
+a self-contained hand-off under `knowledge/promotions/` carrying the lesson, the why, the
+suggested landing spot, and the entry's full provenance — which a human (or a worker they
+dispatch) carries into the gtmux repo; `land --ref` closes the loop and removes the brief,
+while the ledger keeps the whole lifecycle. Topic renders badge the state (`⚑ promoted
+(pending)` / `→ landed <ref>`), `promotions` heads its list with the count and the oldest
+age, and `gtmux doctor` flags a brief that has waited past its floor (~2 weeks) — an
+un-carried promotion is exactly the rot this exit ends. gtmux never writes into any repo
+itself, and nothing auto-dispatches: the queue surfaces, the commander decides.
 
 **Migration is incremental:** the first mutation touching a topic moves its pre-ledger
 hand-written file verbatim to `knowledge/legacy/<topic>.md` (an untouched seeded

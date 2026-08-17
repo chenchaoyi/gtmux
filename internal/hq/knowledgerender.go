@@ -31,6 +31,73 @@ const knowledgeInlineBodyMax = 300
 // knowledgeLegacyDir holds pre-ledger hand-written topic files, moved verbatim.
 func knowledgeLegacyDir() string { return filepath.Join(hqKnowledgeDir(), "legacy") }
 
+// knowledgePromotionsDir is the export OUTBOX: one brief per pending promotion,
+// written on promote, removed on land, swept on every render pass.
+func knowledgePromotionsDir() string { return filepath.Join(hqKnowledgeDir(), "promotions") }
+
+// knowledgePromotionMarker heads every brief.
+const knowledgePromotionMarker = "<!-- gtmux-hq-promotion v1 · rendered from .ledger.jsonl — close the loop with `gtmux knowledge land <id> --ref <pr/spec>` -->"
+
+// promotionBriefPath names a pending promotion's brief (the id's slash becomes a
+// dash so the file sits flat in the outbox).
+func promotionBriefPath(op knowledgeOp) string {
+	return filepath.Join(knowledgePromotionsDir(), strings.ReplaceAll(op.ID, "/", "-")+".md")
+}
+
+// renderPromotionBrief is the carryable evidence package: the lesson, the
+// promotion case, the suggested landing spot, the entry's provenance, and the
+// closing instruction. Deterministic (UTC dates), like every other render.
+func renderPromotionBrief(op knowledgeOp) string {
+	var b strings.Builder
+	b.WriteString(knowledgePromotionMarker + "\n")
+	b.WriteString("# promotion: " + op.Title + "\n\n")
+	b.WriteString("- id: `" + op.ID + "` · promoted " + time.Unix(op.PromotedAt, 0).UTC().Format("2006-01-02") + "\n")
+	if op.PromoteTarget != "" {
+		b.WriteString("- suggested landing: " + op.PromoteTarget + "\n")
+	}
+	b.WriteString("- why charter-level: " + op.PromoteWhy + "\n\n")
+	if body := strings.TrimSpace(op.Body); body != "" {
+		b.WriteString(body + "\n\n")
+	}
+	b.WriteString("provenance: " + provenanceFooter(op) + "\n\n")
+	b.WriteString("Land it in the gtmux repo (an openspec change, a seed edit, or code), then close:\n\n")
+	b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<pr/spec>\"\n")
+	return b.String()
+}
+
+// renderPromotions writes one brief per PENDING promotion and sweeps everything
+// else out of the outbox — a landed or superseded promotion's brief must not
+// linger as a stale hand-off. The sweep only touches files this renderer names
+// (.md), so a stray user file is left alone.
+func renderPromotions(live []knowledgeOp) error {
+	pending, _ := pendingPromotions(live)
+	if err := os.MkdirAll(knowledgePromotionsDir(), 0o755); err != nil {
+		return err
+	}
+	expected := map[string]bool{}
+	for _, op := range pending {
+		path := promotionBriefPath(op)
+		expected[filepath.Base(path)] = true
+		if err := os.WriteFile(path, []byte(renderPromotionBrief(op)), 0o644); err != nil {
+			return err
+		}
+	}
+	entries, err := os.ReadDir(knowledgePromotionsDir())
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || expected[e.Name()] {
+			continue
+		}
+		if b, err := os.ReadFile(filepath.Join(knowledgePromotionsDir(), e.Name())); err == nil &&
+			strings.HasPrefix(string(b), knowledgePromotionMarker) {
+			_ = os.Remove(filepath.Join(knowledgePromotionsDir(), e.Name()))
+		}
+	}
+	return nil
+}
+
 func topicPath(topic string) string { return filepath.Join(hqKnowledgeDir(), topic+".md") }
 
 // renderTopic renders one topic's live entries (pure; deterministic — dates in
@@ -91,6 +158,13 @@ func provenanceFooter(op knowledgeOp) string {
 	}
 	if op.Legacy {
 		parts = append(parts, "from legacy")
+	}
+	// The promotion lifecycle is visible where the lesson lives.
+	switch {
+	case promotionPending(op):
+		parts = append(parts, "⚑ promoted (pending)")
+	case op.LandedRef != "":
+		parts = append(parts, "→ landed "+op.LandedRef)
 	}
 	return strings.Join(parts, " · ")
 }
