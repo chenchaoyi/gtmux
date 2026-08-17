@@ -466,6 +466,18 @@ func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, str
 	if title == "" {
 		title = i18n.Tr("agent", "agent")
 	}
+	// The pane id LEADS the title, for the reason the desktop banner does the same: a
+	// notification has no list to look at, and on a real fleet four sessions held two
+	// panes each whose tasks began with the same words. It goes at the FRONT because iOS
+	// truncates the tail — an id appended is an id thrown away.
+	//
+	// NOT in the subtitle, which looks like the natural home: the relay copies the
+	// subtitle into the payload's `server` field, and the app matches THAT against its
+	// saved servers to route the tap to the right Mac. Appending a pane to it would send
+	// the tap looking for a server named "<Mac> · %11".
+	if a.Pane != "" {
+		title = a.Pane + " · " + title
+	}
 	if a.Kind == "waiting" {
 		// Body = this session's ACTUAL choices, so expanding the notification shows
 		// what you're being asked (not a generic "needs you"). Falls back to the

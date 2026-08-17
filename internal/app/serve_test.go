@@ -92,8 +92,11 @@ func TestCursorFromFields(t *testing.T) {
 func TestPushCopyTitleIsSessionName(t *testing.T) {
 	noPane := func(string) (string, bool) { return "", false } // no parseable menu
 	waiting := server.Alert{Kind: "waiting", Agent: "Claude Code", Task: "gtmux.app dev", Loc: "ws:1.0", Pane: "%1"}
-	if title, body, _ := pushCopy(waiting, noPane); title != "gtmux.app dev" || body == "" || title == body {
-		t.Errorf("waiting → title=%q body=%q; want title=session name, body=state", title, body)
+	// The pane id LEADS the title (a banner has no list to look at, and two panes in one
+	// session had tasks beginning with the same words). At the FRONT because iOS truncates
+	// the tail — an id appended is an id thrown away.
+	if title, body, _ := pushCopy(waiting, noPane); title != "%1 · gtmux.app dev" || body == "" || title == body {
+		t.Errorf("waiting → title=%q body=%q; want the pane id leading the task, body=state", title, body)
 	}
 	done := server.Alert{Kind: "done", Agent: "Codex", Task: "fix build", Loc: "ws:2.0"}
 	if title, _, _ := pushCopy(done, noPane); title != "fix build" {
@@ -148,5 +151,28 @@ func TestPushCopyReportsOptionCount(t *testing.T) {
 	// A done push never carries a quick reply.
 	if _, _, n := pushCopy(server.Alert{Kind: "done", Task: "x"}, three); n != 0 {
 		t.Errorf("done reported %d options, want 0", n)
+	}
+}
+
+// The pane id must NOT go in the push subtitle, which looks like its natural home: the
+// relay copies the subtitle into the payload's `server` field, and the app matches THAT
+// against its saved servers to route a tap to the right Mac. A pane appended there would
+// send the tap looking for a server named "<Mac> · %11".
+func TestPushCopyLeavesTheSubtitleAlone(t *testing.T) {
+	noPane := func(string) (string, bool) { return "", false }
+	title, body, _ := pushCopy(server.Alert{Kind: "done", Task: "fix build", Pane: "%9"}, noPane)
+	if !strings.HasPrefix(title, "%9 · ") {
+		t.Errorf("title = %q, want the id leading", title)
+	}
+	if strings.Contains(body, "%9") {
+		t.Errorf("body = %q — the id belongs in the title, not doubled into the body", body)
+	}
+}
+
+// A pane-less alert (a native, non-tmux session) keeps its plain title.
+func TestPushCopyWithoutAPane(t *testing.T) {
+	noPane := func(string) (string, bool) { return "", false }
+	if title, _, _ := pushCopy(server.Alert{Kind: "done", Task: "fix build"}, noPane); title != "fix build" {
+		t.Errorf("title = %q, want the task alone when there is no pane", title)
 	}
 }
