@@ -733,7 +733,12 @@ func TestSeedsAndPlaybookCarryNoAuthorLeakage(t *testing.T) {
 	for name, body := range hqNotesSeeds() {
 		check("notes seed "+name, body)
 	}
-	check("LOCAL.md template", hqLocalTemplate)
+	prevL := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prevL) })
+	for _, lang := range []string{"en", "zh"} {
+		i18n.SetLang(lang)
+		check("LOCAL.md template ("+lang+")", hqLocalTemplate())
+	}
 }
 
 // The board seeds in the user's language (hq-first-person): zh gets the Chinese
@@ -895,5 +900,62 @@ func TestChartersShareSkeletonAndAnchors(t *testing.T) {
 				t.Errorf("%s: en charter missing %q", probe.name, a)
 			}
 		}
+	}
+}
+
+// LOCAL.md seeds in the user's language, like the board and the charter — and
+// seed-once means a later language switch never rewrites an existing file.
+func TestLocalTemplateFollowsLanguage(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+
+	i18n.SetLang("zh")
+	if !strings.Contains(hqLocalTemplate(), "你的 HQ 指令") {
+		t.Error("zh LOCAL.md template must open in Chinese")
+	}
+	i18n.SetLang("en")
+	if !strings.Contains(hqLocalTemplate(), "Your HQ instructions") {
+		t.Error("en LOCAL.md template must open in English")
+	}
+
+	// Seed-once survives a language switch: an existing LOCAL.md is never rewritten.
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if !seedHQLocal() {
+		t.Fatal("first seed should create LOCAL.md")
+	}
+	before, _ := os.ReadFile(hqLocalPath())
+	i18n.SetLang("zh")
+	if seedHQLocal() {
+		t.Error("an existing LOCAL.md must not be re-seeded")
+	}
+	after, _ := os.ReadFile(hqLocalPath())
+	if string(before) != string(after) {
+		t.Error("a language switch rewrote the user's LOCAL.md")
+	}
+}
+
+// A same-version language switch is announced as what it is, not as "v32 → v32".
+func TestLanguageSwitchNoticeNamesTheSwitch(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	i18n.SetLang("en")
+	if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	i18n.SetLang("zh")
+	var r seedResult
+	if err := upgradePlaybookIfNewer(&r); err != nil || !r.Upgraded || r.LangSwitch != "zh" {
+		t.Fatalf("expected a recorded language switch, got %+v err=%v", r, err)
+	}
+	out := captureStdout(t, func() { printSeedNotice(r) })
+	if strings.Contains(out, "v32 → v32") || !strings.Contains(out, "zh") {
+		t.Errorf("the notice must name the language switch, not a same-version upgrade: %q", out)
 	}
 }
