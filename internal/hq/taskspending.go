@@ -39,23 +39,17 @@ type pendingRow struct {
 // decision grade first (the tier projection — same scale the wake lines carry), then the
 // oldest wait first, then pane, then id. The last two are not cosmetic: they make the
 // order total, so the view cannot wobble between two reads of an unchanged set.
-//
-// Archived entries are excluded by definition — archiving IS closure, and a closed item
-// is off the plate.
 func pendingTasks(tasks []dispatch.Task, now int64) []pendingRow {
 	var out []pendingRow
 	for _, t := range tasks {
-		if t.Archived || !t.AwaitingCommander() {
+		if !t.AwaitingCommander() {
 			continue
 		}
 		out = append(out, pendingRow{row: rowFor(t, "pending", now), since: t.PendingSince()})
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		a, b := out[i], out[j]
-		ga, gb := hqwake.GradeOfTier(a.row.Tier), hqwake.GradeOfTier(b.row.Tier)
 		switch {
-		case ga != gb:
-			return ga > gb // decision before attention before ledger
 		case a.since != b.since:
 			return a.since < b.since // oldest wait first
 		case a.row.Pane != b.row.Pane:
@@ -93,7 +87,9 @@ func renderPending(w io.Writer, rows []pendingRow, color bool) {
 		return
 	}
 	for _, r := range rows {
-		g := hqwake.GradeOfTier(r.row.Tier)
+		// Every row on the plate is a thing awaiting a decision — attention grade,
+		// not bookkeeping (slim-attention-ledger removed the never-written tier).
+		g := hqwake.GradeAttention
 		loc := r.row.Pane
 		if r.row.Session != "" {
 			loc = r.row.Session + " " + r.row.Pane

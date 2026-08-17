@@ -129,13 +129,6 @@ func TestResumableTask(t *testing.T) {
 		t.Error("a different session name must not resume")
 	}
 
-	// An archived entry is closed business.
-	t.Setenv("HOME", t.TempDir())
-	_ = AddTask(Task{ID: NewID(8000), Pane: "%8", Session: "fix-auth", CreatedAt: 80,
-		OwnSession: true, Archived: true})
-	if _, ok := ResumableTask("", "fix-auth"); ok {
-		t.Error("an archived entry must not resume")
-	}
 }
 
 func TestNewID_Unique(t *testing.T) {

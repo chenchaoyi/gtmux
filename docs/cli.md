@@ -214,7 +214,7 @@ carrier. The classes:
 | `wake-degraded` | ◆ | perception itself broke: wakes stopped landing on the HQ pane |
 | `tick` | · | the periodic brief — only when something actually changed (a quiet interval costs nothing) |
 | `distill` | · | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued) — hq folds the period's lessons into its knowledge base and prunes stale |
-| `self-check` | · | hq's own housekeeping is due (≈ daily) — ledger archival, feed and memory health |
+| `self-check` | · | hq's own housekeeping is due (≈ daily) — settle stale pending entries, memory and log health |
 | `unread` | · | events are sitting past hq's consumption watermark — a count and the cursor to pull from, no importance claim |
 | `self-rotate` | ◆ | **hq's own session** is worn out (context / age / turns) — it hands off and rotates itself, see below |
 
@@ -636,13 +636,13 @@ launder a dispatch that never happened.
 what is on your plate:
 
 ```
-◆ t1kx8p2m9dq3  hq %21                 08-09 14:32  ship v0.48.0 or hold for §4?
+▸ t1kx8p2m9dq3  hq %21                 08-09 14:32  ship v0.48.0 or hold for §4?
 ▸ t1kx9r4w0aa1  worker-b %8            08-09 09:11  which branch should the migration target?
 ```
 
-The leading glyph is the attention grade (`◆` decision · `▸` attention · `·` ledger),
-projected from the entry's tier — the same scale the wake lines carry. Ordering is
-total and stable: decision grade first, then the oldest wait, then pane, then id. The
+The leading glyph is `▸` (attention — an entry on this list is awaiting a decision,
+which is not bookkeeping). Ordering is
+total and stable: the oldest wait first, then pane, then id. The
 view reads the LEDGER ONLY (no radar scan) and prints an ABSOLUTE stamp rather than a
 "waiting 3h" countdown, so two reads of an unchanged plate are byte-identical — it
 moves only when the set does. That is what lets a brief point at it (「其余照旧」)

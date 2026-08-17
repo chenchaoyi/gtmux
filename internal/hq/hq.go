@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 29
+const hqPlaybookVersion = 30
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -970,11 +970,11 @@ is only what YOU choose to print. 你唯一的敲门是信号线;其余感知全
   ` + "`routine`→QUIET" + `, resolved against ` + "`gtmux quiet status`" + `: CRITICAL/NORMAL →
   print (per the bar); QUIET → ledger only, stay silent. 按 tier 与阈值决定出声与否。
 - Record what you don't print in the ATTENTION LEDGER (` + "`gtmux tasks`" + `): a QUIET item
-  goes in silently and can be PROMOTED later if related events accrue.
-  ` + "`gtmux tasks --verbose`" + ` retro-queries the full ledger. 不 print 的入账本。
+  goes in silently and stays queryable — ` + "`gtmux tasks --verbose`" + ` adds the
+  disposition detail. 不 print 的入账本。
 - SELF-CHECK: on a ` + "`self-check`" + ` wake (or a ` + "`[CONTROL gtmux:self-check]`" + `
-  record in the stream), run a maintenance pass on your OWN artifacts (ledger archival,
-  stale memory, log health). Default SILENT; one line only if you did real work; severe
+  record in the stream), run a maintenance pass on your OWN artifacts (settle stale
+  pending entries, stale memory, log health). Default SILENT; one line only if you did real work; severe
   findings surface CRITICAL. 静默自检。
 - DISTILL: on a ` + "`distill`" + ` wake (or a ` + "`[CONTROL gtmux:distill]`" + ` record),
   run a periodic knowledge pass: distil what the FLEET did since the last distill into the

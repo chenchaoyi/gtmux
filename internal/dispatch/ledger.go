@@ -48,12 +48,9 @@ type Task struct {
 	// (incident ⑧). 0 = not snoozed.
 	SnoozeUntil int64 `json:"snooze_until,omitempty"`
 
-	// --- attention-ledger fields (hq-attention-system) — all additive/optional so a
-	// legacy entry still loads. They grow `gtmux tasks` into a general attention ledger.
-	Tier        string `json:"tier,omitempty"`        // surfacing tier: critical|normal|quiet
-	Priority    int    `json:"priority,omitempty"`    // re-orderable; higher = more urgent
-	Surfaced    bool   `json:"surfaced,omitempty"`    // has HQ shown this to the user
-	SurfacedAt  int64  `json:"surfaced_at,omitempty"` // when it was surfaced (unix secs)
+	// --- disposition fields (hq-attention-system) — additive/optional so a legacy
+	// entry still loads, including one written when the ledger carried the retired
+	// tier/priority/surfaced/archive fields (unknown JSON fields are ignored).
 	Disposition string `json:"disposition,omitempty"` // free text: auto-answered / relayed / todo
 	// AwaitingSince stamps when the entry entered the PENDING-DECISION set (the
 	// DispositionAwaitingCommander disposition) — the clock the standing view orders
@@ -63,9 +60,7 @@ type Task struct {
 	// Only the disposition decides membership; this only remembers when it started.
 	AwaitingSince int64 `json:"awaiting_since,omitempty"`
 	FirstSeen     int64 `json:"first_seen,omitempty"`  // when the item first entered the ledger
-	LastUpdate    int64 `json:"last_update,omitempty"` // last mutation (promotion / disposition / …)
-	Archived      bool  `json:"archived,omitempty"`    // closed + moved out of the live set
-	ArchivedAt    int64 `json:"archived_at,omitempty"` // when it was archived
+	LastUpdate    int64 `json:"last_update,omitempty"` // last mutation (disposition / …)
 }
 
 // Dispatch-channel sources for Task.Source (dual-channel awareness).
@@ -235,7 +230,7 @@ func ResumableTask(worktree, session string) (Task, bool) {
 	var found Task
 	ok := false
 	for _, t := range ListTasks() {
-		if t.Delivered || !t.OwnSession || t.Pane == "" || t.Archived {
+		if t.Delivered || !t.OwnSession || t.Pane == "" {
 			continue
 		}
 		match := false
