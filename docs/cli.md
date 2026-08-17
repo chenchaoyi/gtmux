@@ -153,7 +153,9 @@ with instructions that teach it the loop — read `gtmux digest --json`, judge,
 drill into a pane (`tmux capture-pane`) only when warranted, drive via
 `gtmux send`, report to you. The playbook is seeded as `AGENTS.md` (the
 cross-agent convention) with `CLAUDE.md` as an `@AGENTS.md` import — so the
-supervisor can be ANY CLI agent. On a FRESH launch with no `--agent`, `gtmux hq`
+supervisor can be ANY CLI agent — and ships whole in your language
+(`GTMUX_LANG` en/zh): the managed file records its language, and a version or
+language change regenerates it (prior file backed up; LOCAL.md untouched). On a FRESH launch with no `--agent`, `gtmux hq`
 **asks which installed agent to run** (the hook-equipped agents whose binary is on your
 PATH) and **remembers the pick** — so a machine signed into Codex but not Claude no longer
 gets an HQ stuck on "Please run /login". You can still name it outright
