@@ -20,7 +20,16 @@ import "sort"
 // Legacy records without a seq (Seq == 0) are excluded once the cursor is positive
 // — they predate the sequence and cannot be positioned against it.
 func ReadSince(cursor int64) (recs []Record, gap bool) {
-	return readSinceFrom(Read(0, 0), cursor) // everything retained, both generations
+	recs, gap = readSinceFrom(Read(0, 0), cursor) // everything retained, both generations
+	// An empty tail is not proof of no loss: the sequence counter survives the log
+	// files, so a positive cursor BEHIND the counter with nothing retained means
+	// every event in between died unread — the severest gap, and the quietest
+	// without this check (readSinceFrom cannot see the counter; a cursor of 0 keeps
+	// its no-prior-position exemption).
+	if len(recs) == 0 && cursor > 0 && cursor < CurrentSeq() {
+		gap = true
+	}
+	return recs, gap
 }
 
 // readSinceFrom is the pure core of ReadSince over an in-memory record set — the

@@ -1,6 +1,7 @@
 package events
 
 import (
+	"os"
 	"testing"
 	"time"
 )
@@ -94,5 +95,30 @@ func TestLatestSeq(t *testing.T) {
 	}
 	if LatestSeq() != 4 {
 		t.Errorf("LatestSeq = %d, want 4", LatestSeq())
+	}
+}
+
+// An empty retained tail is not proof of no loss (empty-gap-and-locale): the
+// sequence counter survives the log files, so a cursor behind the counter with
+// nothing retained means everything in between died unread.
+func TestReadSinceEmptyTailBehindCounterIsAGap(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(1000)
+	Append(Record{Ts: now, Event: "Stop", State: "idle", Loc: "a:0.0"})
+	Append(Record{Ts: now, Event: "Stop", State: "idle", Loc: "b:0.0"})
+	// The log files vanish (cleanup, disk fault); the counter file survives.
+	if err := os.Remove(Path()); err != nil {
+		t.Fatal(err)
+	}
+	if recs, gap := ReadSince(1); len(recs) != 0 || !gap {
+		t.Fatalf("empty tail behind the counter must be a gap, got recs=%d gap=%v", len(recs), gap)
+	}
+	// Cursor 0 has no prior position — never a leading gap, even against a counter.
+	if _, gap := ReadSince(0); gap {
+		t.Error("cursor 0 must never report a leading gap")
+	}
+	// A cursor AT the counter owes nothing.
+	if _, gap := ReadSince(CurrentSeq()); gap {
+		t.Error("a caught-up cursor over an empty tail is not a gap")
 	}
 }

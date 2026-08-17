@@ -22,7 +22,8 @@
 | `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
 
 Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
-follows `--lang=en|zh` (default `en`) or `$GTMUX_LANG`. Everything is invoked
+follows `--lang=en|zh`, `$GTMUX_LANG`, or — when neither is set — the system
+locale (`LC_ALL`/`LANG`: a `zh*` locale reads Chinese; default `en`). Everything is invoked
 explicitly — no shell hooks, works with any shell.
 
 ## `gtmux agents`
@@ -269,7 +270,11 @@ The debt clears only when hq **consumes**, and only two things count: an unfilte
 `gtmux events --since-seq <n>` read from the hq home (the everyday pull-on-wake — which is
 why this needs no new habit), or an explicit `gtmux events --ack <seq>`. A
 `--severity`-filtered read does not (it showed a subset), nor does one starting ahead of
-the watermark (it skipped the range between). Until then the knock repeats every
+the watermark (it skipped the range between) — nor does a read that detected a
+**sequence gap** (events rotated away unread): the warning would otherwise get one
+chance to be seen before the loss was forgiven, so the pull re-warns and the knock
+gains a `· sequence gap` marker with a rebuild hint (`gtmux digest --json`, then the
+explicit `--ack`) until hq acks over it deliberately. Until then the knock repeats every
 `hqWake.unreadRepeatSec` (default **300 s**), at standing priority.
 
 Three kinds of record are excluded from the **count**: hq's own lines, or the channel would
