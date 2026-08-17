@@ -164,13 +164,18 @@ func TestHQMaintenanceChecks(t *testing.T) {
 	const now = 10_000_000
 
 	rows := hqMaintenanceChecks(now)
-	if len(rows) != 2 {
-		t.Fatalf("want 2 maintenance rows, got %d", len(rows))
+	if len(rows) != 3 {
+		t.Fatalf("want 3 maintenance rows (distill, self-check, promotions), got %d", len(rows))
 	}
-	for _, r := range rows {
+	for _, r := range rows[:2] {
 		if r.status != stInfo {
 			t.Errorf("%s: fresh install should be a neutral note, got status %d", r.label, r.status)
 		}
+	}
+	// The promotions row (hq-promotion-exit) is quiet-OK on an empty queue — a
+	// fresh install has nothing waiting to land, which is health, not absence.
+	if rows[2].status != stOK {
+		t.Errorf("empty promotions queue: status %d, want stOK", rows[2].status)
 	}
 
 	// Distill 3 days ago (inside its weekly floor) → OK. Self-check 40h ago (past the

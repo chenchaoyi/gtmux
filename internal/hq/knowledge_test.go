@@ -128,3 +128,65 @@ func TestKnowledgeTopics(t *testing.T) {
 		}
 	}
 }
+
+// The promotion lifecycle in the fold: promote opens, land closes, a re-promote
+// re-opens, and a supersede is re-judged from scratch (hq-promotion-exit).
+func TestKnowledgePromotionLifecycleFold(t *testing.T) {
+	add := knowledgeOp{Op: knowledgeOpAdd, ID: "pitfalls/a", Topic: "pitfalls", Title: "a"}
+	promote := knowledgeOp{Op: knowledgeOpPromote, ID: "pitfalls/a", Topic: "pitfalls",
+		At: 100, Why: "holds on any machine; changes the seeded playbook", Target: "supervisor-agent spec"}
+	land := knowledgeOp{Op: knowledgeOpLand, ID: "pitfalls/a", Topic: "pitfalls", At: 200, Ref: "#812"}
+
+	live := foldKnowledge([]knowledgeOp{add, promote})
+	e, _ := findLive(live, "pitfalls/a")
+	if !promotionPending(e) || e.PromoteWhy == "" || e.PromoteTarget == "" || e.PromotedAt != 100 {
+		t.Fatalf("promote must open the lifecycle with why/target: %+v", e)
+	}
+
+	live = foldKnowledge([]knowledgeOp{add, promote, land})
+	e, _ = findLive(live, "pitfalls/a")
+	if promotionPending(e) || e.LandedRef != "#812" || e.LandedAt != 200 {
+		t.Fatalf("land must close with the ref: %+v", e)
+	}
+
+	// A re-promote re-opens a landed entry (the lesson evolved).
+	rePromote := promote
+	rePromote.At, rePromote.Why = 300, "evolved"
+	live = foldKnowledge([]knowledgeOp{add, promote, land, rePromote})
+	e, _ = findLive(live, "pitfalls/a")
+	if !promotionPending(e) || e.PromotedAt != 300 || e.LandedRef != "" {
+		t.Fatalf("a re-promote must re-open and clear the landed pair: %+v", e)
+	}
+
+	// A supersede does NOT inherit promotion state — the successor is re-judged.
+	sup := knowledgeOp{Op: knowledgeOpSupersede, ID: "pitfalls/a-two", Topic: "pitfalls",
+		Title: "a two", Supersedes: "pitfalls/a"}
+	live = foldKnowledge([]knowledgeOp{add, promote, sup})
+	e, _ = findLive(live, "pitfalls/a-two")
+	if e.PromotedAt != 0 || promotionPending(e) {
+		t.Fatalf("a successor carries no promotion state: %+v", e)
+	}
+
+	// pendingPromotions reports the queue and the oldest.
+	addB := knowledgeOp{Op: knowledgeOpAdd, ID: "pitfalls/b", Topic: "pitfalls", Title: "b"}
+	promoteB := knowledgeOp{Op: knowledgeOpPromote, ID: "pitfalls/b", Topic: "pitfalls", At: 50, Why: "w"}
+	pending, oldest := pendingPromotions(foldKnowledge([]knowledgeOp{add, promote, addB, promoteB}))
+	if len(pending) != 2 || oldest != 50 {
+		t.Fatalf("pending=%d oldest=%d, want 2/50", len(pending), oldest)
+	}
+}
+
+func TestKnowledgePromotionBoundsRefuseLoudly(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	long := strings.Repeat("t", knowledgeTargetMax+1)
+	err := appendKnowledgeOp(knowledgeOp{Op: knowledgeOpPromote, ID: "pitfalls/a",
+		Topic: "pitfalls", Why: "w", Target: long})
+	if err == nil || !strings.Contains(err.Error(), "limit is 200") {
+		t.Fatalf("over-budget target must refuse loudly, got %v", err)
+	}
+	err = appendKnowledgeOp(knowledgeOp{Op: knowledgeOpLand, ID: "pitfalls/a",
+		Topic: "pitfalls", Ref: strings.Repeat("r", knowledgeRefMax+1)})
+	if err == nil || !strings.Contains(err.Error(), "limit is 200") {
+		t.Fatalf("over-budget ref must refuse loudly, got %v", err)
+	}
+}

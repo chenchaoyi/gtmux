@@ -27,15 +27,22 @@ const (
 	knowledgeOpAdd       = "add"
 	knowledgeOpSupersede = "supersede"
 	knowledgeOpRetire    = "retire"
+	// knowledgeOpPromote marks a live entry CHARTER-LEVEL and opens the export
+	// lifecycle; knowledgeOpLand closes it with the repo reference. The pair is
+	// the mechanical form of "FLAG it for a seed/spec update" (hq-promotion-exit).
+	knowledgeOpPromote = "promote"
+	knowledgeOpLand    = "land"
 )
 
 // Content bounds. They refuse LOUDLY at write time — knowledge is curated
 // content, and a silent truncation would corrupt exactly the thing the ledger
 // exists to keep trustworthy.
 const (
-	knowledgeTitleMax = 200
-	knowledgeBodyMax  = 8 << 10
-	knowledgeWhyMax   = 300
+	knowledgeTitleMax  = 200
+	knowledgeBodyMax   = 8 << 10
+	knowledgeWhyMax    = 300
+	knowledgeTargetMax = 200
+	knowledgeRefMax    = 200
 )
 
 // knowledgeOp is one ledger line. Adds and supersedes carry content; retires
@@ -59,10 +66,26 @@ type knowledgeOp struct {
 	Capture  string  `json:"capture,omitempty"`   // consumed candidate key
 	Legacy   bool    `json:"legacy,omitempty"`    // migrated from a legacy file
 	// Supersedes names the predecessor for op=supersede; Why the reason for
-	// op=retire (and optionally colors a supersede).
+	// op=retire (and optionally colors a supersede) and the promotion case for
+	// op=promote. Target suggests the repo landing spot (op=promote); Ref names
+	// where it landed (op=land).
 	Supersedes string `json:"supersedes,omitempty"`
 	Why        string `json:"why,omitempty"`
+	Target     string `json:"target,omitempty"`
+	Ref        string `json:"ref,omitempty"`
+	// Folded promotion state — set by foldKnowledge on the LIVE entry, never
+	// written to disk by an append (ops carry why/target/ref natively). Pending
+	// means PromotedAt > 0 with LandedAt == 0; a later promote re-opens a landed
+	// entry by clearing the landed pair.
+	PromotedAt    int64  `json:"promotedAt,omitempty"`
+	PromoteWhy    string `json:"promoteWhy,omitempty"`
+	PromoteTarget string `json:"promoteTarget,omitempty"`
+	LandedAt      int64  `json:"landedAt,omitempty"`
+	LandedRef     string `json:"landedRef,omitempty"`
 }
+
+// promotionPending reports whether a folded live entry has an open promotion.
+func promotionPending(op knowledgeOp) bool { return op.PromotedAt > 0 && op.LandedAt == 0 }
 
 // knowledgeLedgerPath is the append-only authority, dot-prefixed like the
 // pending-distill spool so it stays out of the curated topic listing.
@@ -100,6 +123,17 @@ func validateKnowledgeContent(title, body, why string) error {
 	return nil
 }
 
+// validatePromotionFields bounds the promote/land vocabulary, loudly.
+func validatePromotionFields(target, ref string) error {
+	if len(target) > knowledgeTargetMax {
+		return fmt.Errorf("--target is %d bytes — the limit is %d", len(target), knowledgeTargetMax)
+	}
+	if len(ref) > knowledgeRefMax {
+		return fmt.Errorf("--ref is %d bytes — the limit is %d", len(ref), knowledgeRefMax)
+	}
+	return nil
+}
+
 // appendKnowledgeOp validates and appends one ledger line (O_APPEND, one line,
 // atomic enough across concurrent writers — the capture spool's discipline).
 func appendKnowledgeOp(op knowledgeOp) error {
@@ -107,6 +141,9 @@ func appendKnowledgeOp(op knowledgeOp) error {
 		op.V = knowledgeSchemaV
 	}
 	if err := validateKnowledgeContent(op.Title, op.Body, op.Why); err != nil {
+		return err
+	}
+	if err := validatePromotionFields(op.Target, op.Ref); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
@@ -173,15 +210,31 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 			index[id] = -1
 		}
 	}
+	mark := func(id string, f func(*knowledgeOp)) {
+		if i, ok := index[id]; ok && i >= 0 {
+			f(&out[i])
+		}
+	}
 	for _, op := range ops {
 		switch op.Op {
 		case knowledgeOpAdd:
 			place(op)
 		case knowledgeOpSupersede:
+			// Promotion state deliberately does NOT transfer: the content changed,
+			// so the successor is re-judged (the write path never copies it either).
 			kill(op.Supersedes)
 			place(op)
 		case knowledgeOpRetire:
 			kill(op.ID)
+		case knowledgeOpPromote:
+			o := op
+			mark(op.ID, func(e *knowledgeOp) {
+				e.PromotedAt, e.PromoteWhy, e.PromoteTarget = o.At, o.Why, o.Target
+				e.LandedAt, e.LandedRef = 0, "" // a re-promote re-opens a landed entry
+			})
+		case knowledgeOpLand:
+			o := op
+			mark(op.ID, func(e *knowledgeOp) { e.LandedAt, e.LandedRef = o.At, o.Ref })
 		}
 	}
 	live := out[:0]
@@ -200,6 +253,53 @@ func liveKnowledge() ([]knowledgeOp, error) {
 		return nil, err
 	}
 	return foldKnowledge(ops), nil
+}
+
+// pendingPromotions returns the live entries whose promotion is open, in ledger
+// order, plus the oldest pending promotion's timestamp (0 when none).
+func pendingPromotions(live []knowledgeOp) (pending []knowledgeOp, oldestAt int64) {
+	for _, op := range live {
+		if !promotionPending(op) {
+			continue
+		}
+		pending = append(pending, op)
+		if oldestAt == 0 || op.PromotedAt < oldestAt {
+			oldestAt = op.PromotedAt
+		}
+	}
+	return pending, oldestAt
+}
+
+// promotionStaleSecs is the doctor's staleness floor for a pending promotion:
+// past it, "nobody carried the brief" is a flagged condition, not a note —
+// because an un-carried flag is exactly the charter-flags rot the exit ends.
+const promotionStaleSecs = 14 * 24 * 60 * 60
+
+// PromotionsRow is the export queue's health verdict (consumed by `gtmux doctor`).
+type PromotionsRow struct {
+	Pending   int   // open promotions
+	OldestSec int64 // age of the oldest, 0 when none
+	State     MaintenanceState
+}
+
+// PromotionsStatus reports the export queue at `now`. Pure disk reads; an
+// unreadable ledger reads as a quiet row — a health probe must never fire on
+// its own I/O error.
+func PromotionsStatus(now int64) PromotionsRow {
+	live, err := liveKnowledge()
+	if err != nil {
+		return PromotionsRow{State: MaintenanceOK}
+	}
+	pending, oldestAt := pendingPromotions(live)
+	row := PromotionsRow{Pending: len(pending), State: MaintenanceOK}
+	if len(pending) == 0 {
+		return row
+	}
+	row.OldestSec = now - oldestAt
+	if row.OldestSec >= promotionStaleSecs {
+		row.State = MaintenanceSlipped
+	}
+	return row
 }
 
 // findLive returns the live entry with id, if any.

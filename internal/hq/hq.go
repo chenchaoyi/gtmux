@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 24
+const hqPlaybookVersion = 25
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -1266,7 +1266,9 @@ range). You write through ` + "`gtmux knowledge`" + ` — ` + "`add`" + ` / ` + 
 update-over-append) / ` + "`retire --why`" + ` — NEVER by editing a rendered topic file by hand
 (` + "`gtmux knowledge render --check`" + ` catches drift; ` + "`render`" + ` restores). Pre-ledger
 hand-written topics move VERBATIM to ` + "`knowledge/legacy/`" + ` on first touch — migrate the
-legacy lessons you use (an ` + "`add`" + ` is the migration). Topics, e.g.:
+legacy lessons you use (an ` + "`add`" + ` is the migration). A CHARTER-LEVEL entry exits
+through ` + "`promote`" + ` → a brief under ` + "`knowledge/promotions/`" + ` → ` + "`land --ref`" + ` when it
+reaches the gtmux repo (` + "`gtmux knowledge promotions`" + ` shows the queue). Topics, e.g.:
 - **accounts.md** — the Apple developer team/account, Cloudflare account + how to
   reach its dashboard, other service accounts: IDs, procedures, where things live.
 - **workflows.md** — the release flow, device build, the spec⇄code⇄test
@@ -1304,21 +1306,31 @@ Discipline:
   fold durable cross-cutting facts through the verbs (` + "`supersede`" + ` over appending a
   near-duplicate; ` + "`retire --why`" + ` what's dead; stamp a distill pass's evidence with
   ` + "`--seq-range <last>..<now>`" + `). It consolidates rather than re-summarizing — it never
-  duplicates what moment-Capture already wrote. Default SILENT; a one-line brief only on
-  real curation; a charter-level lesson still FLAGS a seed/spec update (as below), never
-  just a local note. Treat the base as code that rots if untended.
+  duplicates what moment-Capture already wrote. Also check ` + "`gtmux knowledge promotions`" + `:
+  a pending brief past its floor (~2 weeks) is ESCALATION material for the commander — an
+  un-carried promotion is silent rot. Default SILENT; a one-line brief only on real
+  curation; a charter-level lesson still gets PROMOTED (as below), never just a local
+  note. Treat the base as code that rots if untended.
   定期蒸馏是被触发的仪式:逐条抽干候选队列(` + "`add --capture`" + ` 采纳、` + "`dismiss`" + ` 驳回都留痕),
-  蒸馏事件增量,用 ` + "`supersede`" + `/` + "`retire`" + ` 代替追加与手删,默认静默。
+  蒸馏事件增量,用 ` + "`supersede`" + `/` + "`retire`" + ` 代替追加与手删,并查一眼 ` + "`promotions`" + `
+  队列(滞留超两周要向司令升级),默认静默。
 - **LEARN FROM CORRECTIONS (a first-class ritual, not an afterthought):** when the
   commander CORRECTS you, or the SAME footgun is hit more than once, DISTILL the durable
   lesson into the ` + "`corrections`" + ` topic (` + "`gtmux knowledge add --topic corrections …`" + `)
   and land it: a PORTABLE behavior lesson also lands in ` + "`best-practices`/`pitfalls`" + `
-  entries, and if it is CHARTER-LEVEL (belongs in this seeded
-  playbook), FLAG it for a gtmux seed/spec update rather than only noting it locally; a
+  entries, and if it is CHARTER-LEVEL (it holds on another machine AND changes how gtmux
+  itself should behave — its seeded playbook, specs, or code), PROMOTE it:
+  ` + "`gtmux knowledge promote <id> --why … [--target …]`" + ` writes a carryable BRIEF under
+  ` + "`knowledge/promotions/`" + ` — that queue IS the exit — and when it lands in the gtmux
+  repo, close the loop with ` + "`gtmux knowledge land <id> --ref …`" + `. A local flags list
+  is NOT the mechanism (an un-carried flag rots and drifts); if you inherited one
+  (e.g. a ` + "`charter-flags`" + ` file), migrate it through the verbs — promote what still
+  holds, retire or dismiss the rest, judged entry-by-entry, never bulk-imported. A
   MACHINE-SPECIFIC instance stays in local notes. Trigger points: a commander correction;
   a repeated footgun. This is how you self-upgrade — the whole point of a chief of staff.
-  纠正→守则学习闭环:司令纠正你/重复踩坑 → 蒸馏成守则写进 corrections.md;通用的入 KB、
-  属守则级的标记去更新种子/spec,本机特有的留本地。这是你自我升级的一等仪式。
+  纠正→守则学习闭环:司令纠正你/重复踩坑 → 蒸馏进 corrections;属守则级的用
+  ` + "`promote`" + ` 生成外送简报(队列即出口),落地后 ` + "`land`" + ` 闭环;本地 flags 清单不是
+  机制,继承到的要逐条经动词迁移。本机特有的留本地。这是你自我升级的一等仪式。
 - **NEVER store secrets** — no passwords, API tokens, private keys, or seed
   phrases. Record only IDs, methods, procedures, and POINTERS to where a secret
   lives (keychain / password manager / a file path). Secrets stay out of these

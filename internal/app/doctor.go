@@ -265,6 +265,31 @@ func hqMaintenanceChecks(now int64) []dcheck {
 			i18n.Tr("daily pass checks ledger / feed / memory health", "每日自检账本、感知与记忆健康"),
 			i18n.Tr("no self-check for over a day+grace — is `gtmux serve` running with a live HQ?",
 				"超过一天+宽限没有自检 —— `gtmux serve` 还在跑、中控还活着吗？")),
+		promotionsRow(hq.PromotionsStatus(now)),
+	}
+}
+
+// promotionsRow reports the knowledge export queue (hq-promotion-exit): quiet when
+// empty or young, flagged once the oldest pending brief has stood past its floor —
+// a promotion nobody carries is silent rot, and this row is where it stops being
+// silent.
+func promotionsRow(r hq.PromotionsRow) dcheck {
+	label := i18n.Tr("knowledge promotions", "知识晋升队列")
+	switch {
+	case r.Pending == 0:
+		return dcheck{stOK, label, i18n.Tr("queue clear", "队列已清空"),
+			i18n.Tr("no charter-level lesson is waiting to land", "没有待落地的守则级教训")}
+	case r.State == hq.MaintenanceSlipped:
+		return dcheck{stRec, label,
+			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),
+				r.Pending, hq.HumanAgeShort(r.OldestSec)),
+			i18n.Tr("a brief has waited past its floor — carry it into the gtmux repo, then `gtmux knowledge land <id> --ref …`",
+				"有简报滞留超期 —— 请带入 gtmux 仓库落地,再用 `gtmux knowledge land <id> --ref …` 闭环")}
+	default:
+		return dcheck{stOK, label,
+			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),
+				r.Pending, hq.HumanAgeShort(r.OldestSec)),
+			i18n.Tr("briefs under knowledge/promotions/ await landing", "knowledge/promotions/ 下的简报等待落地")}
 	}
 }
 

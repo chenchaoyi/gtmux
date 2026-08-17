@@ -38,6 +38,12 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgeDismiss(rest) })
 	case "render":
 		return knowledgeMutation(func() error { return knowledgeRender(rest) })
+	case "promote":
+		return knowledgeMutation(func() error { return knowledgePromote(rest) })
+	case "land":
+		return knowledgeMutation(func() error { return knowledgeLand(rest) })
+	case "promotions":
+		return knowledgePromotions(rest)
 	case "list":
 		return knowledgeList(rest)
 	case "show":
@@ -71,6 +77,7 @@ func hqHomeForMessage() string { return state.HQHome() }
 // knowledgeFlags is the shared flag set of the content-carrying verbs.
 type knowledgeFlags struct {
 	topic, title, bodyFile, capture, seqRange, why string
+	target, ref                                    string
 	jsonOut                                        bool
 	positional                                     []string
 }
@@ -112,6 +119,14 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.why, err = take(&i, a)
 		case strings.HasPrefix(a, "--why="):
 			f.why = strings.TrimPrefix(a, "--why=")
+		case a == "--target":
+			f.target, err = take(&i, a)
+		case strings.HasPrefix(a, "--target="):
+			f.target = strings.TrimPrefix(a, "--target=")
+		case a == "--ref":
+			f.ref, err = take(&i, a)
+		case strings.HasPrefix(a, "--ref="):
+			f.ref = strings.TrimPrefix(a, "--ref=")
 		case a == "--json":
 			f.jsonOut = true
 		case strings.HasPrefix(a, "--"):
@@ -262,6 +277,103 @@ func knowledgeRetire(args []string) error {
 	return commitKnowledgeOp(op, "retire "+id+": "+f.why)
 }
 
+// knowledgePromote opens the export lifecycle on a live entry: the mechanical
+// form of "FLAG it for a seed/spec update" (hq-promotion-exit). The commit path
+// writes the brief via renderPromotions.
+func knowledgePromote(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 || f.why == "" {
+		return fmt.Errorf("promote needs <id> and --why (the promotion case — it survives into the brief)")
+	}
+	id := f.positional[0]
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	entry, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	if promotionPending(entry) {
+		return fmt.Errorf("%s is already promoted and pending — land it (`gtmux knowledge land %s --ref …`) before promoting again", id, id)
+	}
+	op := knowledgeOp{
+		Op: knowledgeOpPromote, ID: id, Topic: entry.Topic,
+		At: time.Now().Unix(), Seq: events.LatestSeq(),
+		Why: f.why, Target: f.target,
+	}
+	return commitKnowledgeOp(op, "promote "+id)
+}
+
+// knowledgeLand closes a pending promotion with the repo reference; the commit
+// path's promotion sweep removes the brief.
+func knowledgeLand(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 || f.ref == "" {
+		return fmt.Errorf("land needs <id> and --ref (where it landed: a PR, a spec, a seed change)")
+	}
+	id := f.positional[0]
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	entry, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	if !promotionPending(entry) {
+		return fmt.Errorf("%s has no pending promotion to land (gtmux knowledge promotions)", id)
+	}
+	op := knowledgeOp{
+		Op: knowledgeOpLand, ID: id, Topic: entry.Topic,
+		At: time.Now().Unix(), Seq: events.LatestSeq(), Ref: f.ref,
+	}
+	return commitKnowledgeOp(op, "land "+id+" → "+f.ref)
+}
+
+// knowledgePromotions lists the pending export queue — read-only, open to
+// anyone, HEADED by the count and the oldest age so rot is visible at a glance
+// (the instrument a local flags file never had).
+func knowledgePromotions(args []string) int {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		i18n.Sae("gtmux knowledge: "+err.Error(), "gtmux knowledge: "+err.Error())
+		return 2
+	}
+	live, err := liveKnowledge()
+	if err != nil {
+		i18n.Sae("gtmux knowledge: "+err.Error(), "gtmux knowledge: "+err.Error())
+		return 1
+	}
+	pending, oldestAt := pendingPromotions(live)
+	if f.jsonOut {
+		if pending == nil {
+			pending = []knowledgeOp{}
+		}
+		b, _ := json.Marshal(pending)
+		fmt.Println(string(b))
+		return 0
+	}
+	if len(pending) == 0 {
+		i18n.Say("no pending promotions — the exit queue is clear", "无待落地晋升 —— 出口队列已清空")
+		return 0
+	}
+	now := time.Now().Unix()
+	i18n.Say(fmt.Sprintf("%d pending promotion(s), oldest %s ago:",
+		len(pending), HumanAgeShort(now-oldestAt)),
+		fmt.Sprintf("%d 条待落地晋升,最久 %s 前:", len(pending), HumanAgeShort(now-oldestAt)))
+	for _, op := range pending {
+		fmt.Printf("  %-40s  %s  (%s)\n", op.ID, HumanAgeShort(now-op.PromotedAt), promotionBriefPath(op))
+	}
+	return 0
+}
+
 // knowledgeDismiss rejects a pending capture candidate WITH a trace: no ledger
 // operation, but the spool line is gone and the journal says why — the quality
 // gate's rejections stop vanishing identically to its acceptances.
@@ -297,6 +409,9 @@ func commitKnowledgeOp(op knowledgeOp, auditNote string) error {
 		return err
 	}
 	if err := renderAllTopics(live, time.Now().Unix()); err != nil {
+		return err
+	}
+	if err := renderPromotions(live); err != nil {
 		return err
 	}
 	events.AuditKnowledge(auditNote, time.Now().Unix())
@@ -393,18 +508,26 @@ func knowledgeUsage() int {
   supersede <id> --title "<one line>" [--body-file <path|->] [--why "<reason>"]
   retire    <id> --why "<reason>"
   dismiss   --capture <key> --why "<reason>"
+  promote   <id> --why "<case>" [--target "<repo spot>"]   # charter-level → export brief
+  land      <id> --ref "<pr/spec>"                         # close the loop when it lands
+  promotions [--json]                                      # the pending export queue
   list      [--topic <t>] [--json]     show <id>     render [--check]
   The knowledge base's authority is an append-only ledger; topic .md files are
   rendered from it, entries carry provenance (seq/pane/task/capture), and every
-  mutation is journaled. Mutations run from the HQ home only; workers use
-  `+"`gtmux capture`"+`.`,
+  mutation is journaled. A charter-level lesson exits through promote → a brief
+  under knowledge/promotions/ → land. Mutations run from the HQ home only;
+  workers use `+"`gtmux capture`"+`.`,
 		`用法：gtmux knowledge <子命令>
   add       --topic <主题> --title "<一句话>" [--body-file <路径|->] [--capture <键>] [--seq-range a..b]
   supersede <id> --title "<一句话>" [--body-file <路径|->] [--why "<原因>"]
   retire    <id> --why "<原因>"
   dismiss   --capture <键> --why "<原因>"
+  promote   <id> --why "<理由>" [--target "<落点>"]   # 守则级 → 生成外送简报
+  land      <id> --ref "<pr/spec>"                    # 落地后闭环
+  promotions [--json]                                 # 待落地队列
   list      [--topic <主题>] [--json]     show <id>     render [--check]
   知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
-  每次变更都写入事件流。变更只能在中控目录执行；worker 用 `+"`gtmux capture`"+`。`)
+  每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,
+  落地后用 land 闭环。变更只能在中控目录执行；worker 用 `+"`gtmux capture`"+`。`)
 	return 0
 }
