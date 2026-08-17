@@ -418,7 +418,11 @@ refuse loudly. Declarations are add-only for now.
 missing): `promote` marks a live entry charter-level and writes a **promotion brief** —
 a self-contained hand-off under `knowledge/promotions/` carrying the lesson, the why, the
 suggested landing spot, and the entry's full provenance — which a human (or a worker they
-dispatch) carries into the gtmux repo; `land --ref` closes the loop and removes the brief,
+dispatch) carries to whichever durable rule carrier fits: a project `AGENTS.md`/`CLAUDE.md`,
+a team runbook, `LOCAL.md` (when the rule governs the supervisor itself), or gtmux's own
+repo — an openspec change for developers, or simply a GitHub issue with the brief attached
+for everyone else. `land --ref` closes the loop (the ref can be a PR, an issue URL, or a
+runbook name alike) and removes the brief,
 while the ledger keeps the whole lifecycle. Topic renders badge the state (`⚑ promoted
 (pending)` / `→ landed <ref>`), `promotions` heads its list with the count and the oldest
 age, and `gtmux doctor` flags a brief that has waited past its floor (~2 weeks) — an

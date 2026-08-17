@@ -283,8 +283,8 @@ func promotionsRow(r hq.PromotionsRow) dcheck {
 		return dcheck{stRec, label,
 			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),
 				r.Pending, hq.HumanAgeShort(r.OldestSec)),
-			i18n.Tr("a brief has waited past its floor — carry it into the gtmux repo, then `gtmux knowledge land <id> --ref …`",
-				"有简报滞留超期 —— 请带入 gtmux 仓库落地,再用 `gtmux knowledge land <id> --ref …` 闭环")}
+			i18n.Tr("a brief has waited past its floor — land it in its carrier (a project AGENTS.md, a runbook, LOCAL.md, or a gtmux issue), then `gtmux knowledge land <id> --ref …`",
+				"有简报滞留超期 —— 请落到它的载体(项目 AGENTS.md、runbook、LOCAL.md 或 gtmux issue),再用 `gtmux knowledge land <id> --ref …` 闭环")}
 	default:
 		return dcheck{stOK, label,
 			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),

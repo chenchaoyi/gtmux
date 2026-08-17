@@ -137,7 +137,7 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 26
+const hqPlaybookVersion = 27
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND signals the file is gtmux-owned.
@@ -1269,7 +1269,7 @@ update-over-append) / ` + "`retire --why`" + ` — NEVER by editing a rendered t
 hand-written topics move VERBATIM to ` + "`knowledge/legacy/`" + ` on first touch — migrate the
 legacy lessons you use (an ` + "`add`" + ` is the migration). A CHARTER-LEVEL entry exits
 through ` + "`promote`" + ` → a brief under ` + "`knowledge/promotions/`" + ` → ` + "`land --ref`" + ` when it
-reaches the gtmux repo (` + "`gtmux knowledge promotions`" + ` shows the queue). The topic
+reaches its carrier (` + "`gtmux knowledge promotions`" + ` shows the queue). The topic
 vocabulary is YOURS to extend: ` + "`gtmux knowledge topic <name> --desc …`" + ` declares a
 domain topic (clients, datasets, …) that capture, the verbs, and the dispatch echo all
 honor. The built-ins:
@@ -1322,19 +1322,22 @@ Discipline:
   commander CORRECTS you, or the SAME footgun is hit more than once, DISTILL the durable
   lesson into the ` + "`corrections`" + ` topic (` + "`gtmux knowledge add --topic corrections …`" + `)
   and land it: a PORTABLE behavior lesson also lands in ` + "`best-practices`/`pitfalls`" + `
-  entries, and if it is CHARTER-LEVEL (it holds on another machine AND changes how gtmux
-  itself should behave — its seeded playbook, specs, or code), PROMOTE it:
+  entries, and if it is CHARTER-LEVEL (it holds on another machine AND belongs in a
+  DURABLE RULE CARRIER beyond this machine's KB — a project's AGENTS.md/CLAUDE.md, a team
+  runbook, LOCAL.md when it governs YOU, or gtmux's own playbook/specs/code), PROMOTE it:
   ` + "`gtmux knowledge promote <id> --why … [--target …]`" + ` writes a carryable BRIEF under
-  ` + "`knowledge/promotions/`" + ` — that queue IS the exit — and when it lands in the gtmux
-  repo, close the loop with ` + "`gtmux knowledge land <id> --ref …`" + `. A local flags list
+  ` + "`knowledge/promotions/`" + ` — that queue IS the exit; name the carrier in ` + "`--target`" + ` —
+  and when it lands there, close the loop with ` + "`gtmux knowledge land <id> --ref …`" + `
+  (the ref can be a PR, an issue URL, a runbook name, a file). A local flags list
   is NOT the mechanism (an un-carried flag rots and drifts); if you inherited one
   (e.g. a ` + "`charter-flags`" + ` file), migrate it through the verbs — promote what still
   holds, retire or dismiss the rest, judged entry-by-entry, never bulk-imported. A
   MACHINE-SPECIFIC instance stays in local notes. Trigger points: a commander correction;
   a repeated footgun. This is how you self-upgrade — the whole point of a chief of staff.
   纠正→守则学习闭环:司令纠正你/重复踩坑 → 蒸馏进 corrections;属守则级的用
-  ` + "`promote`" + ` 生成外送简报(队列即出口),落地后 ` + "`land`" + ` 闭环;本地 flags 清单不是
-  机制,继承到的要逐条经动词迁移。本机特有的留本地。这是你自我升级的一等仪式。
+  ` + "`promote`" + ` 生成外送简报(队列即出口,落点写进 --target:项目 AGENTS.md、团队
+  runbook、LOCAL.md 或 gtmux 仓库/issue 皆可),落地后 ` + "`land`" + ` 闭环;本地 flags
+  清单不是机制,继承到的要逐条经动词迁移。本机特有的留本地。这是你自我升级的一等仪式。
 - **NEVER store secrets** — no passwords, API tokens, private keys, or seed
   phrases. Record only IDs, methods, procedures, and POINTERS to where a secret
   lives (keychain / password manager / a file path). Secrets stay out of these
