@@ -1,0 +1,3 @@
+• Picking panes for a share link now groups them by session and leads each row with its pane id, so two panes running the same project are no longer two identical-looking rows.
+• A share link's summary counts the panes it can still reach and names the grants whose pane is gone; when tmux has restarted, the app says the links are being refused and how to restore them.
+• "All panes" and Settings no longer overlap each other's tap areas.

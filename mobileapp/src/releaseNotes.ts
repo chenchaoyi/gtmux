@@ -12,6 +12,28 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.61.0',
+    en: [
+      'Version alignment with gtmux 0.61.0 — this release\'s improvements are on the CLI/HQ side (a supervisor that speaks to any user); no phone-side changes.',
+    ],
+    zh: [
+      '与 gtmux 0.61.0 版本对齐 —— 本次改进都在 CLI/中控侧（面向任何用户的参谋长），手机端无功能变化。',
+    ],
+  },
+  {
+    version: '0.59.0',
+    en: [
+      'Picking panes for a share link now groups them by session and leads each row with its pane id, so two panes running the same project are no longer two identical-looking rows.',
+      'A share link\'s summary counts the panes it can still reach and names the grants whose pane is gone; when tmux has restarted, the app says the links are being refused and how to restore them.',
+      '"All panes" and Settings no longer overlap each other\'s tap areas.',
+    ],
+    zh: [
+      '给分享链接挑 pane 时按 session 分组、每行以 pane id 打头 —— 两个跑着同一个项目的 pane，不再是两行长得一模一样、无从分辨的选项。',
+      '分享链接的摘要只数它还能到达的 pane，并把已失效的授权明说出来；tmux 重启之后，app 会直说这些链接正被拒绝以及如何恢复。',
+      '「所有 pane」和「设置」的点击区不再重叠。',
+    ],
+  },
+  {
     version: '0.58.1',
     en: [
       '"All panes" and Settings no longer overlap each other\'s tap areas — aiming at the right half of "all panes" used to open Settings.',
