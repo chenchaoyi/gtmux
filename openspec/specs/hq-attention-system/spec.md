@@ -83,38 +83,9 @@ the degradation state without re-alerting on the recovery.
 - **THEN** the degradation state clears and no new alert fires for the recovery
   itself
 
-### Requirement: Attention ledger
-
-The system SHALL extend `gtmux tasks` into a general attention ledger. Each entry SHALL
-additionally carry a surfacing `tier`, a re-orderable `priority`, a `surfaced` marker, and
-a free-text `disposition`, plus first-seen / last-update timestamps — all additive and
-optional so a legacy entry still loads. Priority SHALL be re-orderable and an entry SHALL
-be able to be promoted after first being recorded (late promotion), so a QUIET item that
-accrues related events can be surfaced later. Closed entries SHALL be archivable so the
-live ledger stays small (rollable), and `gtmux tasks --verbose` SHALL retro-query the full
-ledger including archived and disposition detail.
-
-#### Scenario: An entry carries attention fields
-
-- **WHEN** an attention item is recorded in the ledger
-- **THEN** it stores its tier, priority, surfaced marker, disposition, and timestamps,
-  and an older entry lacking these still loads
-
-#### Scenario: Late promotion
-
-- **WHEN** a QUIET-recorded item later accrues related events past a threshold
-- **THEN** its priority/tier can be raised and it can be surfaced, without creating a
-  duplicate entry
-
-#### Scenario: Archived entries stay retro-queryable
-
-- **WHEN** a ledger entry is closed and archived
-- **THEN** the live `gtmux tasks` list no longer shows it but `gtmux tasks --verbose`
-  can still retrieve it
-
 ### Requirement: Pending-decision standing view
 
-The attention ledger SHALL support a first-class "awaiting-commander" disposition, and
+The ledger SHALL support a first-class "awaiting-commander" disposition, and
 the system SHALL provide a standing view of exactly those entries (`gtmux tasks
 --pending` — a filter on the existing ledger surface, no new top-level command), with
 mark / unmark surfaces on the same command (`--await <id>` / `--resolve <id>
@@ -125,16 +96,24 @@ instead of re-printing the list (measured motivation: every brief of a 400+-turn
 re-printed the same unchanged 「你手上未变: A · B · C…」 list — a persistent view
 simulated in a scrolling transcript).
 
-The ordering SHALL be TOTAL — attention grade (projected from the entry's tier) first,
-then the oldest wait, then pane, then id — so two reads of an unchanged set cannot
-differ. The view SHALL NOT render a relative clock (a countdown would churn the output
-the view exists to stabilize) and SHALL NOT require a radar scan (it is polled, and the
+Each entry SHALL carry the free-text `disposition` and the `awaiting-since` /
+first-seen / last-update timestamps — additive and optional, so a legacy entry
+(including one written when the ledger carried tier/priority/surfaced/archive
+fields) still loads. `gtmux tasks --verbose` SHALL add the disposition detail
+to the live rows.
+
+The ordering SHALL be TOTAL — the oldest wait first, then pane, then id — so
+two reads of an unchanged set cannot differ. Every row renders at attention
+grade (`▸`): an entry on the plate is a thing awaiting a decision, which is
+not bookkeeping. The view
+SHALL NOT render a relative clock (a countdown would churn the output the view
+exists to stabilize) and SHALL NOT require a radar scan (it is polled, and the
 plate is not a question about pane state).
 
-Membership SHALL be the disposition and nothing else, so setting any other disposition
-also removes an entry, and an archived entry is out of the view (archiving is closure).
-The disposition is additive: a legacy ledger entry without it still loads, none is
-pending, marking one requires no migration, and archiving semantics are unchanged.
+Membership SHALL be the disposition and nothing else, so setting any other
+disposition also removes an entry. The disposition is additive: a legacy
+ledger entry without it still loads, none is pending, and marking one requires
+no migration.
 
 #### Scenario: The plate has one home
 
@@ -149,7 +128,8 @@ pending, marking one requires no migration, and archiving semantics are unchange
 
 #### Scenario: Legacy entries are unaffected
 
-- **WHEN** a ledger written before this change is loaded
+- **WHEN** a ledger written before this change is loaded — with or without the
+  retired tier/priority/surfaced/archive fields
 - **THEN** every entry loads, none is in the pending set, and marking one
   awaiting-commander requires no migration
 
