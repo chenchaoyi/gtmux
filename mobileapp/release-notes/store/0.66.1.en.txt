@@ -1,0 +1,3 @@
+• Sessions that stopped on an error get their own group instead of sitting among the finished ones.
+• The situation board is laid out properly now.
+• Paired devices and share links say what device it is, where it connected from, and whether a link has been used.

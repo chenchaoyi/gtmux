@@ -943,3 +943,28 @@ glyph; the focus path did not.
   exact raw title through that loop.
 - `name of front tab of front window` returns **tab 1**, not the selected tab. Verifying a
   jump with it reports failure on a jump that worked. Use `selected tab`.
+
+## App Store upload "failed" when it actually landed (2026-08-18, 0.66.1)
+
+**Symptom.** `bundle exec fastlane release` ends with a Ruby crash —
+`uninitialized constant Gem::Resolver::APISet::GemParser (NameError)` followed by
+*"RubyGems is not listed as your Gem source"* — and an immediate App Store Connect query
+still shows the PREVIOUS build. Everything points at a failed upload.
+
+**It had already uploaded.** Re-running the `upload` lane on the same ipa is what proved it:
+altool answered *"Redundant Binary Upload. You've already uploaded a build with build number
+'12' for version number '0.66.1'"*. Two independent things had lined up to look like failure:
+
+- **The crash is teardown noise.** Homebrew ruby is at 4.0.6; the pinned fastlane (2.237.0)
+  predates its Ruby 4 support (`[core] Support for Ruby 4` ships in a later release). A
+  subprocess spawned after the transfer dies on it — after the binary is on Apple's side.
+- **A fresh build is not in the builds list yet.** ASC takes minutes to surface an upload,
+  so "the list still shows build 11" is not evidence of anything in the first few minutes.
+
+**Must check.**
+- Never judge a lane by an immediate ASC query. Ask again a few minutes later, or re-run
+  `upload` — a *Redundant Binary Upload* error is positive proof the first one landed.
+- Never run a lane through `| tail -N`: the pipe hands you `tail`'s exit code (always 0) and
+  hides every line above the window. Redirect to a log file and grep it.
+- The fix for the noise itself is `bundle update fastlane` (or a Ruby 3.x for this
+  toolchain); until then, expect the crash and read past it.
