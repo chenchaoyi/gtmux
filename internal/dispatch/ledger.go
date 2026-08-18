@@ -96,6 +96,29 @@ func (t Task) Undelivered() bool {
 	return t.State != string(StateQueued)
 }
 
+// undeliveredShelfLife is how long a never-delivered dispatch may keep DRIVING live
+// judgments about the pane it names. Two weeks: long enough that a dispatch parked over a
+// holiday is still actionable, short enough that the record cannot outlive the pane
+// numbering it depends on (a tmux server restart reissues pane ids, and a reboot is a far
+// more frequent event than a fortnight).
+const undeliveredShelfLife int64 = 14 * 24 * 3600
+
+// StaleUndelivered reports whether this entry is an undelivered dispatch old enough that
+// it should no longer STEER anything about its pane.
+//
+// The record is still true — that goal really never landed — and `gtmux tasks` should
+// keep saying so; this is not an expiry of the fact. It is an expiry of the fact's
+// AUTHORITY over a pane id, because a pane id is a reused number. Measured on 2026-08-18:
+// a `delivered:false` entry created two weeks earlier, for a session long gone, still
+// named %25; the reboot that morning gave %25 to an unrelated project's pane; gtmux
+// dutifully screen-scraped that pane on the strength of the old record, misread its
+// startup menu, and raised an alarm about work it had never dispatched there. Liveness
+// hygiene removes most of these (state.ReapDeadPaneState), but the ledger entry itself
+// must survive for `gtmux reap` — so the ledger's own answer is this predicate.
+func (t Task) StaleUndelivered(now int64) bool {
+	return t.Undelivered() && t.CreatedAt > 0 && now-t.CreatedAt > undeliveredShelfLife
+}
+
 // MarkDelivered records that this pane's tracked dispatch DID land — after the fact and
 // through another channel. The documented rescue for a failed spawn is
 // `gtmux send --message-file <same file>` into the pane spawn left behind; without this

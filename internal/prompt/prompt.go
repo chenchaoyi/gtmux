@@ -171,10 +171,61 @@ var startupGates = map[string][]string{
 // test), but they are NOT a block: a 2h-old reopened session at its resume picker must
 // never read "waiting" (the original "stuck waiting" false-positive). So they are
 // excluded from waiting detection but are NOT treated as a startup GATE.
-var startupPickers = []string{
-	"Resume from summary",       // Claude resume picker
-	"Resume full session",       // Claude resume picker
-	"Resuming the full session", // Claude resume picker body
+//
+// Keyed by agent exactly like startupGates ("" = the default/Claude set; a named agent
+// also gets its own), and resolved through the same registry lookup, so an agent whose
+// reopened-session chrome reads differently can be taught it without anyone editing a
+// hardcoded list. Codex has no entry yet — not because it has no such menu, but because
+// nobody has captured one; inventing signatures for chrome we have not seen is how a
+// table starts lying.
+var startupPickers = map[string][]string{
+	"": {
+		"Resume from summary",       // Claude resume picker
+		"Resume full session",       // Claude resume picker
+		"Resuming the full session", // Claude resume picker body
+	},
+}
+
+// pickerSignatures returns the picker phrases to match for this agent — the default set
+// plus its own, resolved by key OR display label (see gateSignatures for why both).
+func pickerSignatures(agent string) []string {
+	sigs := startupPickers[""]
+	if agent == "" {
+		return sigs
+	}
+	own, ok := startupPickers[agent]
+	if !ok {
+		own = startupPickers[agents.KeyForLabel(agent)]
+	}
+	if len(own) == 0 {
+		return sigs
+	}
+	return append(append([]string(nil), sigs...), own...)
+}
+
+// IsStartupPicker reports whether the capture shows the agent's REOPENED-SESSION menu —
+// the resume picker and friends. It is the twin of IsStartupGate and carries both of that
+// function's hard-won narrowings for the same reasons: only the BOTTOM region counts (a
+// pane whose scrollback merely MENTIONS "Resume from summary" is not sitting at one), and
+// faint text is dropped (an agent's dimmed ghost suggestion is not chrome it is drawing).
+//
+// The caller that needs this most is the stuck-dispatch classifier. A resume menu is a
+// numbered list the agent PAINTED; the draft detector, asked whether the input box holds
+// unsubmitted text, reads that painted menu as text somebody typed. On 2026-08-18 that
+// produced a `stuck before running — draft` alarm about a session nobody had dispatched
+// anything to — the third time in two weeks that agent chrome has been misread as user
+// input (dark placeholder text, 2026-08-06; a gate phrase in scrollback, 2026-08-10).
+func IsStartupPicker(capture, agent string) bool {
+	sigs := pickerSignatures(agent)
+	for _, raw := range bottomLines(ansi.StripDroppingFaint(capture), gateRegionLines) {
+		line := strings.TrimLeft(raw, "│╭╰╮╯─ \t")
+		for _, sig := range sigs {
+			if strings.Contains(line, sig) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // gateRegionLines is how far up from the bottom a gate signature is looked for. It is
@@ -425,15 +476,7 @@ func NotReadyReason(capture, agent string) string {
 // session-startup chrome (a GATE or a PICKER) rather than a task-level approval — so
 // WaitingOptions doesn't flag either as an active task wait.
 func looksLikeStartupChooser(window string) bool {
-	if IsStartupGate(window, "") {
-		return true
-	}
-	for _, sig := range startupPickers {
-		if strings.Contains(window, sig) {
-			return true
-		}
-	}
-	return false
+	return IsStartupGate(window, "") || IsStartupPicker(window, "")
 }
 
 // WaitingOptions returns the on-screen choice block ONLY when it looks like an

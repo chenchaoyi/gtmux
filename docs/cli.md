@@ -946,6 +946,32 @@ was a permanent target — one reboot turned 10 live agent panes into 16.) Which
 conversation a live pane gets is still the resume record for that pane; if the record
 is missing, restore reads the id out of the `--resume` the save recorded it running.
 
+**How fresh the save actually is.** Restore always prints the moment it is putting back
+— "Restoring the layout saved at 09:57 (37m ago)" — because the thing that quietly costs
+work is not an ancient save, it is a recent-looking one. The autosave that writes that
+file hangs off tmux's status bar, so it only runs while a terminal is attached and
+redrawing: close the lid and it saves nothing, however correctly it is configured. `gtmux
+serve` backstops it by watching the FILE rather than the configuration — if nothing has
+written the save for ~10 minutes (~20 when an autosave trigger is present, to give it the
+first move) serve runs the save itself. `gtmux doctor`'s `resurrect autosave` row reports
+the same thing: an armed trigger that has not saved for hours is flagged, not called OK.
+
+**What came back is checked against what was saved.** After a restore, gtmux compares
+every saved window's pane count and arrangement against the live one and names any that
+differ, on the terminal and in `~/.local/share/gtmux/restore.log`. This matters because
+both halves used to be silent: gtmux only counted session NAMES, and tmux-resurrect
+discards its own layout errors — so when a window comes back with one pane more than the
+save recorded, tmux refuses to apply the layout ("have 3 panes but need 2") and that
+window silently keeps a default stacked arrangement with nothing, anywhere, saying so.
+
+**Pane records are reconciled with the panes that exist.** A tmux pane id is a per-server
+sequence number: restart the server and `%25` is handed to a different pane. gtmux keys a
+lot of state by that number, so restore (and, every few minutes, `gtmux serve`) drops
+pane-keyed records whose panes are gone — otherwise yesterday's goal, dispatch and wake
+records start describing whoever inherited their numbers. Conversation records
+(`resume/`, `usage/`) are keyed by locator and conversation id instead, and are never
+touched.
+
 Diagnosing it needs no reboot — point `XDG_DATA_HOME` at a copy of any save and
 preview it read-only:
 

@@ -96,6 +96,10 @@ func SlowTickEval() {
 	// uploads sink so gtmux can't fill the disk with its own output. Time-gated to
 	// ≤ 1/30 min; silent housekeeping (no HQ nudge).
 	diskHygieneSweep(time.Now().Unix())
+	// Live-pane hygiene (restore-durability): drop pane-keyed state whose pane tmux no
+	// longer has. Not a disk-space concern — a pane id is a REUSED number, so a record
+	// outliving its pane doesn't go quiet, it starts describing somebody else's session.
+	deadPaneSweep(time.Now().Unix())
 }
 
 // hqSummaryTick delivers the `tick` wake when due: at least one pending outcome

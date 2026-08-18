@@ -31,7 +31,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -262,8 +261,12 @@ func TestRestoreContract(t *testing.T) {
 				continue
 			}
 			// The layout string's leading checksum varies with pane ids; compare the
-			// geometry that follows it, which is what the user sees.
-			assertDimension(t, "pane layout of "+win, layoutGeometry(want), layoutGeometry(got))
+			// geometry that follows it, which is what the user sees. This uses the
+			// SHIPPED normalizer (restorecheck.go) rather than a test-local copy: the
+			// normalization was subtle enough to nearly turn a passing restore into a
+			// filed bug on this test's first run, and a second implementation of it
+			// would be free to drift from the one that actually reports to users.
+			assertDimension(t, "pane layout of "+win, normalizeLayout(want), normalizeLayout(got))
 		}
 	})
 
@@ -278,27 +281,34 @@ func TestRestoreContract(t *testing.T) {
 			assertDimension(t, "active pane of "+sess, want, after.active[sess])
 		}
 	})
-}
 
-// paneIDInLayout matches the pane id that terminates each leaf of a tmux layout string
-// (`80x12,0,0,7` → the trailing `7`).
-var paneIDInLayout = regexp.MustCompile(`(\d+x\d+,\d+,\d+),\d+`)
+	// The post-restore reconciliation, on the happy path. A checker that cried wolf on
+	// every restore would be worse than no checker at all — people learn to ignore it,
+	// which is the state it replaced. So the first thing to pin is its SILENCE.
+	t.Run("the layout check is silent on a faithful restore", func(t *testing.T) {
+		drift := layoutDrift(savedShapes(resurrectLastSave()), liveShapes())
+		if len(drift) != 0 {
+			t.Errorf("a faithful restore reported drift — the checker is crying wolf:\n  %s",
+				strings.Join(drift, "\n  "))
+		}
+	})
 
-// layoutGeometry reduces a tmux layout string to the part the contract is actually
-// about: the pane GEOMETRY and the bracket structure that distinguishes a stacked split
-// (`[...]`) from a side-by-side one (`{...}`).
-//
-// Two things in the raw string legitimately differ across a restore and must not be
-// compared, or the test reports a break that isn't one — which it did on its first run,
-// and which would have been a false alarm shipped as a bug report:
-//   - the leading CHECKSUM, derived from the whole string including pane ids;
-//   - the PANE ID terminating each leaf. A restored pane is a new pane with a new id;
-//     that the numbers shifted by one says nothing about whether the layout survived.
-func layoutGeometry(layout string) string {
-	if i := strings.Index(layout, ","); i > 0 {
-		layout = layout[i+1:]
-	}
-	return paneIDInLayout.ReplaceAllString(layout, "$1,#")
+	// …and the other half: it must actually speak. Splitting one more pane into a
+	// restored window reproduces the production failure shape (the window now has a pane
+	// the save never recorded, which is the state that makes tmux refuse the layout), and
+	// the checker has to name that window and nothing else.
+	t.Run("the layout check names a window that gained a pane", func(t *testing.T) {
+		e.tmuxCmd("split-window", "-v", "-t", "gamma:solo")
+		time.Sleep(300 * time.Millisecond)
+		drift := layoutDrift(savedShapes(resurrectLastSave()), liveShapes())
+		if len(drift) != 1 {
+			t.Fatalf("want exactly one drift line for gamma:0, got %d:\n  %s",
+				len(drift), strings.Join(drift, "\n  "))
+		}
+		if !strings.Contains(drift[0], "gamma:0") {
+			t.Errorf("drift line must name the window that changed; got %q", drift[0])
+		}
+	})
 }
 
 // The lost-session regression, isolated: when SOME saved sessions are already live,

@@ -37,7 +37,7 @@ func restoreLogf(format string, a ...any) {
 	if os.MkdirAll(dir, 0o755) != nil {
 		return
 	}
-	p := filepath.Join(dir, "restore.log")
+	p := restoreLogPath()
 	// Bounded: restore is infrequent, but never let a boot loop grow it without limit.
 	if fi, err := os.Stat(p); err == nil && fi.Size() > 512*1024 {
 		_ = os.Truncate(p, 0)
@@ -49,6 +49,9 @@ func restoreLogf(format string, a ...any) {
 	defer f.Close()
 	fmt.Fprintf(f, "%s "+format+"\n", append([]any{time.Now().Format(time.RFC3339)}, a...)...)
 }
+
+// restoreLogPath is the restore trace file — named so diagnostics can point at it.
+func restoreLogPath() string { return filepath.Join(state.Dir(), "restore.log") }
 
 // execTmuxAttach replaces this process with `tmux attach -t <name>` (like bash exec).
 func execTmuxAttach(name string) int {
@@ -122,6 +125,13 @@ func ensureServer() {
 		i18n.Sae(w, w)
 		restoreLogf("ensureServer: STALE-SAVE WARNING — %s", w)
 	}
+	// And always say WHICH moment is coming back. The 24h warning above is far too
+	// coarse for the case that actually costs work: a save 37 minutes stale looks
+	// perfectly healthy and still loses everything you did in those 37 minutes.
+	if n := saveAgeNote(save, time.Now()); n != "" {
+		i18n.Say(n, n)
+		restoreLogf("ensureServer: %s", n)
+	}
 
 	if script != "" {
 		i18n.Say("tmux server not running — restoring your saved sessions via tmux-resurrect (may take a moment)...",
@@ -134,6 +144,7 @@ func ensureServer() {
 			// resurrect places the active window with `switch-client`, which does nothing
 			// without an attached client — and we just restored headlessly. Replay it.
 			restoreActiveSpots(save)
+			afterRestore(save)
 			i18n.Say("Restored layout, dirs and screen text — bringing your agent conversations back…",
 				"已恢复布局 / 目录 / 屏幕文本 —— 正在接回你的 agent 会话…")
 			resumeAgents()
@@ -148,6 +159,7 @@ func ensureServer() {
 		restoreLogf("ensureServer: continuum-fallback restored=%v liveSessions=%v", restored, sessionNamesList())
 		if restored {
 			tmux.OK("kill-session", "-t", boot)
+			afterRestore(save)
 			i18n.Say("Restored saved sessions.", "已恢复存档 session。")
 			resumeAgents()
 			return
@@ -446,9 +458,15 @@ func recoverMissingSavedSessions() {
 	}
 	i18n.Say("A tmux server is running but your saved sessions are missing — restoring them from the last save...",
 		"检测到 tmux server 在跑但缺少你的存档 session，正在用最近一次存档恢复...")
+	// Same as the reboot path: say which moment is coming back (see saveAgeNote).
+	if n := saveAgeNote(save, time.Now()); n != "" {
+		i18n.Say(n, n)
+		restoreLogf("recover: %s", n)
+	}
 	driveResurrectRestore(script)
 	if waitForSavedSessions(saved, 120*time.Second) {
 		restoreActiveSpots(save) // see restoreactive.go — switch-client is a no-op here too
+		afterRestore(save)
 		i18n.Say("Restored your saved sessions — bringing your agent conversations back…",
 			"已恢复你的存档 session —— 正在接回你的 agent 会话…")
 		resumeAgents()

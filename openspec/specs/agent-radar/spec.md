@@ -236,11 +236,24 @@ renders FAINT (SGR 2) — its suggested-next-command ghost / placeholder, which 
 to accept and is therefore neither user input nor a question being asked. Only
 normal-brightness content SHALL count, as a draft or as a gate.
 
+A REOPENED-SESSION menu — the resume picker and its kin — SHALL be recognized, per-agent
+through the same registry the gate check uses, and SHALL be classified as NEITHER. It is
+not a draft: it is a numbered menu the agent PAINTED, and the draft detector, asked
+whether the composer holds unsubmitted text, reads painted chrome as typed input (this
+produced a `stuck before running — draft` alarm on 2026-08-18 about a session nothing had
+been dispatched to — the third time in two weeks agent chrome has been misread as user
+input). It is equally not a gate: a reopened session parked at its resume menu is not
+blocked work, and calling it one recreates the "waiting forever" false positive the
+picker exclusion exists to prevent. Picker recognition SHALL carry the same BOTTOM-REGION
+and FAINT narrowings as gate recognition, so a pane merely quoting the menu's wording is
+not sitting at one.
+
 The exception SHALL be scoped to a dispatch that has NOT yet had its goal land. "Blocked
 before any turn runs" is a claim about the DISPATCH, and the ledger already answers it: a
 dispatch whose goal landed was accepted by the agent, so it is neither at a launch gate
 nor holding that goal unsent. A dispatch that is delivered (or queued) SHALL NOT be
-screen-classified at all.
+screen-classified at all. Neither SHALL a dispatch record so old that the pane id it
+names has outlived it — see the session-restore capability's pane-record reconciliation.
 
 A startup gate SHALL be recognized only in the BOTTOM REGION of the capture — chrome the
 agent is currently DRAWING. A capture spans ~200 lines of scrollback, so a gate phrase
@@ -262,6 +275,18 @@ marker from the read path); the reclassified status carries a kind (`startup` / 
 - **WHEN** a TRACKED dispatch pane holds a structured, non-empty input draft (the goal
   was pasted but the Enter was swallowed)
 - **THEN** the radar reports it `waiting` (kind `draft`), not `idle`/`done`
+
+#### Scenario: A reopened-session menu is neither a draft nor a gate
+
+- **WHEN** a tracked dispatch pane shows the agent's resume picker
+- **THEN** the radar reads no draft and no gate — the menu is chrome the agent painted,
+  and a session parked at it is not blocked work
+
+#### Scenario: Menu wording in scrollback still leaves a real draft readable
+
+- **WHEN** a pane's scrollback quotes the resume picker's wording while its composer
+  holds a genuine unsubmitted draft
+- **THEN** the radar still reports the draft — only the bottom region can be a menu
 
 #### Scenario: A dim suggested-next-command is not a draft
 
@@ -289,7 +314,6 @@ marker from the read path); the reclassified status carries a kind (`startup` / 
   dispatch (a human mid-compose)
 - **THEN** it stays `idle` — the exception is scoped to startup gates + tracked-dispatch
   drafts only
-
 ### Requirement: The radar admits only agents and opt-in watched panes
 
 The agent radar SHALL list coding-agent panes automatically and SHALL NOT

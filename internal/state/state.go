@@ -96,6 +96,119 @@ func ReapOrphanTurnMarkers(live map[string]bool) int {
 	return removed
 }
 
+// panePrefix is what every tmux pane id starts with.
+const panePrefix = "%"
+
+// IsPaneID reports whether `name` has the shape of a tmux pane id ("%" then digits).
+// It is the safety catch for every pane-keyed sweep: the directories below hold a few
+// files that are NOT keyed by pane (hqwake's `consumed-seq`, `unread-state`,
+// `selfrotate-state`…), and a sweep that deleted those would take out HQ's consumption
+// watermark along with the cruft.
+func IsPaneID(name string) bool {
+	if !strings.HasPrefix(name, panePrefix) || len(name) < 2 {
+		return false
+	}
+	for _, r := range name[1:] {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// panePlainDirs are the state directories whose every pane-keyed entry is named by the
+// bare pane id. They are swept together because they share one lifecycle: the pane.
+var panePlainDirs = []string{
+	"active", "waiting", "finished", "watched", // turn state (also ReapOrphanTurnMarkers')
+	"enrolled",     // "HQ has met this pane" — the new-session dedup
+	"goal",         // the pane's last user-direct goal, read back by the done wake
+	"goalchanged",  // the goal-changed wake's dedup record
+	"awaited",      // "HQ awaits this pane's completion"
+	"bg",           // background-work-still-running modifier
+	"usagewarn",    // the amber burn modifier
+	"frame", "cpu", // the hook-free working/idle samplers
+	"watchdog", // "already escalated this stuck episode"
+}
+
+// paneJSONDirs are pane-keyed directories whose entries carry a `.json` suffix.
+var paneJSONDirs = []string{"sends"} // the re-send interlock's last-payload record
+
+// hqwakePaneFamilies are the pane-keyed file FAMILIES inside the (otherwise
+// shared) hqwake directory: `<prefix><pane>`.
+var hqwakePaneFamilies = []string{"done-last-", "resolved-claim-", "resolved-track-"}
+
+// ReapDeadPaneState deletes every pane-keyed state file whose pane tmux no longer has.
+//
+// # Why this has to exist
+//
+// A tmux pane id is a SEQUENCE NUMBER on the server, not an identity. Restart the server
+// — a reboot, a crash, `kill-server` — and it starts issuing from %1 again, handing your
+// old numbers to entirely different panes. gtmux keys a dozen state directories by that
+// number and, until this, only ever cleaned the three turn-state ones. Everything else
+// accumulated: measured on 2026-08-18, right after a reboot, 50 of 52 `enrolled` records,
+// 27 of 29 `goal`s, 31 of 32 `sends` and 93 of 103 `hqwake` files named panes that had
+// not existed for up to two weeks — and the live panes had inherited those very numbers.
+//
+// That is not merely litter, it is state CROSS-WIRED between unrelated sessions. Two
+// measured consequences from that one reboot: `goal/%11` still held what the commander
+// had told a session about a completely different project, so anything reading that
+// pane's goal attributed one team's words to another's; and a dispatch record from two
+// weeks earlier, still `delivered:false`, made gtmux screen-scrape the pane that had
+// inherited its number, misread a startup menu, and raise a fabricated alarm about a
+// session it had never dispatched anything to.
+//
+// # What it deliberately does NOT touch
+//
+//   - `resume/` — keyed by LOCATOR (session:window.pane), not pane id, and it must
+//     survive a reboot: at the moment restore runs, every pane is gone, and these
+//     records are the only memory of which conversation belongs where.
+//   - `usage/` and `native/` — keyed by the agent's conversation/session id. A dead pane
+//     says nothing about a conversation's usefulness.
+//   - anything whose name is not a pane id (see IsPaneID).
+//
+// `live` is the set of pane ids tmux currently reports. An EMPTY set is refused
+// outright: a transient failed `list-panes` would otherwise read as "no panes exist"
+// and reap the entire fleet's state. Best-effort; returns how many files it removed.
+func ReapDeadPaneState(live map[string]bool) int {
+	if len(live) == 0 {
+		return 0
+	}
+	base := Dir()
+	removed := 0
+	sweep := func(dir, prefix, suffix string) {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			name := e.Name()
+			if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, suffix) {
+				continue
+			}
+			pane := strings.TrimSuffix(strings.TrimPrefix(name, prefix), suffix)
+			if !IsPaneID(pane) || live[pane] {
+				continue
+			}
+			if os.Remove(filepath.Join(dir, name)) == nil {
+				removed++
+			}
+		}
+	}
+	for _, d := range panePlainDirs {
+		sweep(filepath.Join(base, d), "", "")
+	}
+	for _, d := range paneJSONDirs {
+		sweep(filepath.Join(base, d), "", ".json")
+	}
+	for _, fam := range hqwakePaneFamilies {
+		sweep(filepath.Join(base, "hqwake"), fam, "")
+	}
+	return removed
+}
+
 // WaitingDir is the directory of per-pane "blocked on the user" markers.
 func WaitingDir() string { return filepath.Join(Dir(), "waiting") }
 

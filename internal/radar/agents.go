@@ -51,6 +51,12 @@ func StuckDispatchKind(paneID, agent string) string {
 	if !ok || !t.Undelivered() {
 		return "" // not tracked, or its goal already landed — skip the captures entirely
 	}
+	if t.StaleUndelivered(time.Now().Unix()) {
+		// A fortnight-old undelivered dispatch has outlived the pane numbering it is
+		// keyed to. It is still a true ledger fact; it is no longer evidence about
+		// whoever holds that number today. See dispatch.StaleUndelivered.
+		return ""
+	}
 	return classifyStuck(tmux.CaptureFullColor(paneID), agent, true)
 }
 
@@ -69,6 +75,19 @@ func classifyStuck(colorCap, agent string, preTurn bool) string {
 	}
 	if prompt.IsStartupGate(colorCap, agent) {
 		return "startup"
+	}
+	// A REOPENED-SESSION menu (Claude's "Resume from summary / Resume full session" and
+	// its kin) is chrome the agent painted, not text a person typed — and it must not
+	// fall through to the draft branch, which would read the painted menu as an
+	// unsubmitted draft and report the pane stuck holding a goal it never received.
+	//
+	// It answers "" rather than "startup" on purpose. A picker is deliberately NOT a
+	// block (see prompt.startupPickers): the original false-positive this whole area
+	// exists to prevent was a reopened session sitting at its resume menu for hours
+	// reading as needs-you. Calling it "startup" here would knock HQ for exactly that
+	// again, in a new costume.
+	if prompt.IsStartupPicker(colorCap, agent) {
+		return ""
 	}
 	if draft, structured := dispatch.DraftOfColored(colorCap); structured && strings.TrimSpace(draft) != "" {
 		return "draft"
