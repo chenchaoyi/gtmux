@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.67.0',
+    en: [
+      'Fixed: when an agent moved its conversation to a background process, the phone kept showing the old history.',
+      'The chat now refreshes on its own instead of waiting for the pane\'s status to change.',
+    ],
+    zh: [
+      '修复：agent 把对话搬到后台运行后，手机上的对话会停在旧记录不再更新。',
+      '对话页现在自己会刷新，不用等状态变化。',
+    ],
+  },
+  {
     version: '0.64.0',
     en: [
       'A session whose turn ended on a failure now has its own "errored" group, amber, right below the ones waiting for you — instead of sitting under a green tick among the finished ones.',

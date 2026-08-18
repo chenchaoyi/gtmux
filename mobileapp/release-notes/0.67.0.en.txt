@@ -1,0 +1,2 @@
+• Fixed: when an agent moved its conversation to a background process, the phone kept showing the old history.
+• The chat now refreshes on its own instead of waiting for the pane's status to change.
