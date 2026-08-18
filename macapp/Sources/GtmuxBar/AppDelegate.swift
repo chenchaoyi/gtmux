@@ -543,7 +543,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // behind it, and dismissing the popover later leaves the window orphaned. One
         // surface at a time: the popover gives way to the window (like newSession does).
         switch action {
-        case .restore:    GtmuxCLI.spawn(["restore"])
+        case .restore:
+            // A second click while one is in flight does nothing here, and would be
+            // refused by the CLI anyway — two guards, because the trigger can also come
+            // from a terminal or the phone, and only the CLI sees those.
+            guard !store.restoring else { break }
+            store.beginRestore()
+            GtmuxCLI.spawn(["restore"], onExit: { [weak self] in
+                self?.store.endRestore()
+                self?.store.refresh() // the fleet it just brought back
+            })
         case .newSession: newSession() // manages its own popover close + prompt
         case .preferences:
             popover.performClose(nil)

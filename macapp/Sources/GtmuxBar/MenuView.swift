@@ -483,11 +483,37 @@ struct MenuView: View {
     @ViewBuilder private func restoreRow(_ p: Theme.Palette) -> some View {
         let plan = store.restorePlan
         let count = plan?.sessions.count ?? 0
-        if count > 0 {
+        if store.restoring {
+            restoreBusyRow(p)
+        } else if count > 0 {
             restoreBanner(count, p)
         } else if plan == nil {
             restoreQuietRow(p)
         }
+    }
+
+    /// What the row says while the work is happening.
+    ///
+    /// It replaces the button rather than merely dimming it: a restore takes many seconds
+    /// (a tab per session, each waiting on the terminal), and a row that looks the same
+    /// before and after the click reads as "nothing happened" — which is how a person ends
+    /// up asking for the whole working set twice.
+    @ViewBuilder private func restoreBusyRow(_ p: Theme.Palette) -> some View {
+        HStack(spacing: 7) {
+            ProgressView().controlSize(.small).scaleEffect(0.7).frame(width: 13, height: 13)
+            Text(l10n.tr("Restoring your working set…", "正在恢复工作现场…"))
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(p.fg)
+            Spacer(minLength: 0)
+            Text(l10n.tr("this can take a moment", "可能需要一会儿"))
+                .font(.system(size: 10)).foregroundStyle(p.fg3)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(p.rowSelected)
+        // Not tappable at all while it runs — the honest form of "clicking again does
+        // nothing", rather than a button that silently discards the click.
+        .allowsHitTesting(false)
     }
 
     // The prominent form: something IS waiting to come back.
@@ -527,18 +553,25 @@ struct MenuView: View {
     @ViewBuilder private func restoreQuietRow(_ p: Theme.Palette) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
+                // Same weight as the form that KNOWS there is something to restore. It
+                // used to be 11pt medium at fg2 with no background — the faintest thing on
+                // a panel whose emptiness is the reason you are looking at it. "We have
+                // not counted the sessions yet" is a reason to word it carefully, not a
+                // reason to whisper the one action the screen offers.
                 Button { onAction(.restore) } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.uturn.backward").font(.system(size: 12))
+                    HStack(spacing: 7) {
+                        Image(systemName: "arrow.uturn.backward.circle.fill").font(.system(size: 13))
                         Text(l10n.tr("Restore your last working set", "恢复上次的工作现场"))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 11.5, weight: .semibold))
                         Spacer(minLength: 0)
                     }
-                    .foregroundStyle(p.fg2)
+                    .foregroundStyle(p.fg)
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
-            .padding(.horizontal, 12).padding(.vertical, 7)
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(p.rowSelected)
             // No chevron here on purpose: with no plan there is nothing to expand into.
         }
     }

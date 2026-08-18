@@ -463,3 +463,29 @@ final class ErroredSectionTests: XCTestCase {
         XCTAssertFalse(store.sections(query: "").contains { $0.errored })
     }
 }
+
+/// A restore takes many seconds — a tab per session, each waiting on the terminal — and
+/// the row used to look identical before and after the click. The honest reading of that
+/// screen is "nothing happened", and the natural response is to click again, which used to
+/// restore the whole working set twice.
+final class RestoreInFlightTests: XCTestCase {
+    func testTheStoreKnowsWhileARestoreRuns() {
+        let store = AgentStore()
+        XCTAssertFalse(store.restoring, "nothing is running at rest")
+        store.beginRestore()
+        XCTAssertTrue(store.restoring, "the row has to be able to say so")
+        store.endRestore()
+        XCTAssertFalse(store.restoring, "and stop saying so when the process exits")
+    }
+
+    /// The flag is what makes the second click a no-op in the app. The CLI refuses a
+    /// concurrent run as well (state.RunLock) — two guards, because a second trigger can
+    /// come from a terminal or the phone, which the app never sees.
+    func testASecondBeginIsHarmless() {
+        let store = AgentStore()
+        store.beginRestore()
+        store.beginRestore()
+        store.endRestore()
+        XCTAssertFalse(store.restoring)
+    }
+}

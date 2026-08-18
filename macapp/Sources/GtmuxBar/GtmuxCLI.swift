@@ -91,11 +91,27 @@ enum GtmuxCLI {
     }
 
     /// Fire-and-forget (focus / restore / new) — don't block the UI on it.
-    static func spawn(_ args: [String]) {
+    static func spawn(_ args: [String]) { spawn(args, onExit: nil) }
+
+    /// spawn, with a completion callback on the main queue.
+    ///
+    /// The fire-and-forget form is right for a jump — it is over before you look. It is
+    /// wrong for anything SLOW: the restore row spawned and returned, so the menu bar had
+    /// no idea the work was running, showed no change, and invited the second click that
+    /// used to restore everything twice.
+    static func spawn(_ args: [String], onExit: (() -> Void)?) {
         let proc = makeProcess(args)
         proc.standardOutput = FileHandle.nullDevice
         proc.standardError = FileHandle.nullDevice
-        try? proc.run()
+        if let onExit {
+            proc.terminationHandler = { _ in DispatchQueue.main.async(execute: onExit) }
+        }
+        do {
+            try proc.run()
+        } catch {
+            // Never leave a caller waiting on a process that never started.
+            if let onExit { DispatchQueue.main.async(execute: onExit) }
+        }
     }
 
     /// A shell-quoted invocation string for embedding in an AppleScript command.
