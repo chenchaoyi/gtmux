@@ -208,6 +208,18 @@ extension Agent: Decodable {
 final class AgentStore: ObservableObject {
     @Published private(set) var agents: [Agent] = []
 
+    /// True while a restore this app started is still running.
+    ///
+    /// A restore opens a tab per session and can take many seconds. Until this existed the
+    /// row looked identical before and after the click, so the honest reading of the screen
+    /// was "nothing happened" and the natural response was to click again — which used to
+    /// restore the whole working set twice. The CLI now refuses the second run outright
+    /// (state.RunLock); this is the half that keeps the user from having to find out.
+    @Published private(set) var restoring = false
+
+    func beginRestore() { restoring = true }
+    func endRestore() { restoring = false }
+
     /// Test seam: the section grouping is a pure function of `agents`, and the poll that
     /// normally fills it needs a live tmux. Without this the grouping — where a failure
     /// is either seen or buried — could only be checked by eye.

@@ -909,6 +909,13 @@ anyway.
 
 ## `gtmux restore`
 
+**One restore at a time.** A restore opens the whole working set, so two in parallel open
+it twice — and the way people trigger a second one is the way slow actions invite: asking
+again because nothing visibly happened. A run holds a lock (pid + start time) and a second
+run says so and does nothing. A lock whose process is gone, or one older than 10 minutes,
+is taken over: a crash must not wedge the feature. `--plan` and `--dry-run` are exempt —
+refusing to SHOW the plan while a restore runs would be the guard blocking the answer.
+
 Quitting your terminal leaves the tmux server and all sessions alive — only the
 tabs are gone. After reopening, run **once** in any tab:
 

@@ -603,6 +603,12 @@ func restoreSessions(list []string, dryRun bool) int {
 }
 
 // cmdRestore implements `gtmux restore [--one|--pick|<name>|--dry-run]`.
+// restoreLockMaxAge is how long a restore may hold the lock before another run treats it
+// as dead. Generous on purpose: restoring a large working set opens a tab per session and
+// waits on each terminal, and a guard that expires early would reintroduce the double
+// restore it exists to prevent.
+const restoreLockMaxAge = 10 * time.Minute
+
 func cmdRestore(args []string) int {
 	if tmux.Bin == "" {
 		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
@@ -653,6 +659,23 @@ func cmdRestore(args []string) int {
 		i18n.Sae("Already inside tmux — run this in a fresh tab.", "已在 tmux 内，请在新 tab 里运行。")
 		return 1
 	}
+
+	// ONE restore at a time, whoever asks. A restore opens the whole working set, so two
+	// in parallel open it twice — and the way a person triggers a second one is precisely
+	// the way slow actions invite: clicking again because nothing visibly happened. The
+	// guard lives here rather than in the menu bar because the second trigger can come
+	// from a terminal, the phone, or a click that raced the first.
+	//
+	// A plan/dry run is exempt: it opens nothing, and refusing to SHOW the plan while a
+	// restore runs would be the guard getting in the way of the answer.
+	lock := state.NewRunLock("restore")
+	if ok, heldFor := lock.Acquire(restoreLockMaxAge); !ok {
+		i18n.Say(
+			fmt.Sprintf("A restore is already running (started %ds ago) — nothing to do.", int(heldFor.Seconds())),
+			fmt.Sprintf("已经有一个恢复在进行中（%d 秒前开始）—— 无需重复操作。", int(heldFor.Seconds())))
+		return 0
+	}
+	defer lock.Release()
 
 	if target != "" {
 		ensureServer()
