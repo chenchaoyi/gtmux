@@ -596,7 +596,19 @@ func Run(stdin io.Reader, args []string) int {
 
 	// The pane id ($TMUX_PANE, e.g. %12) is the state key. Outside tmux we can't
 	// key state or name the session — degrade to a generic, state-less notify.
+	//
+	// The env var is the FIRST signal, no longer the only one: an agent may run its
+	// conversation in a process that inherits neither the tty nor the tmux env
+	// (Claude Code's background session host), and such a hook used to be filed as a
+	// native session while the pane it belongs to went silently blind. When the env
+	// is empty we ask the process tree instead — see paneidentity.go.
 	pane := os.Getenv("TMUX_PANE")
+	if pane == "" {
+		if p := paneFromAncestry(); p != "" {
+			debugf("pane resolved from ancestry (no $TMUX_PANE): %s", p)
+			pane = p
+		}
+	}
 	session := ""
 	if pane != "" {
 		session = tmux.Display(pane, "#{session_name}")

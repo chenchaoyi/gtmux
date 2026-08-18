@@ -782,6 +782,13 @@ type TranscriptMeta struct {
 	// from reading as a broken one.
 	Reset   string
 	ResetAt int64
+
+	// Etag identifies the LOG this body was built from — its identity plus how far it
+	// had grown. The chat view polls while it is open (a pane whose status is stuck can
+	// never trigger a refresh any other way), and a poll that re-serves half a megabyte
+	// of unchanged turns every few seconds is a cost the phone pays on cellular. With
+	// this the unchanged case is a 304 with no body.
+	Etag string
 }
 
 // handleTranscript serves the pane's parsed chat history (GET /api/transcript?id=%N)
@@ -801,6 +808,7 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, errBody("transcript failed: "+err.Error()))
 		return
 	}
+
 	// Additive HEADERS, not an envelope: the body stays the plain turn array every
 	// existing client (and the web mirror) already parses, so an app build that predates
 	// either signal simply ignores it instead of failing to decode.
@@ -813,6 +821,17 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 		// could phrase, and a kind with an unknown clock is still worth saying.
 		if meta.ResetAt > 0 {
 			w.Header().Set("X-Gtmux-Session-Reset-At", strconv.FormatInt(meta.ResetAt, 10))
+		}
+	}
+	// Conditional GET, so polling an idle pane costs a round trip and nothing else.
+	// Placed AFTER the informational headers above so the 304 carries them too — a
+	// client that learns "this history is truncated" from a 200 must not lose that
+	// fact the moment the conversation goes quiet.
+	if meta.Etag != "" {
+		w.Header().Set("ETag", meta.Etag)
+		if r.Header.Get("If-None-Match") == meta.Etag {
+			w.WriteHeader(http.StatusNotModified)
+			return
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")

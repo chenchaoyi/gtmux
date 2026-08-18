@@ -340,8 +340,19 @@ export class GtmuxClient {
   // the conversation was STARTED OVER (`/clear`, `/new`, `gtmux hq --rotate`) and what
   // came before it is in a session log this endpoint never reads. Without it a cleared
   // history is indistinguishable from a broken one.
-  async transcript(id: string): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset}> {
-    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}`, {headers: this.h()});
+  // `etag` makes this a conditional request. The chat view polls while it is open — a
+  // pane whose status is stuck can never refresh any other way, which is how a reader
+  // was left looking at five-hour-old history — and re-sending half a megabyte of
+  // unchanged turns every few seconds is a cost the phone pays on cellular. Passing the
+  // validator back turns the unchanged case into a 304 with no body, reported as
+  // `unchanged: true` so the caller keeps what it already has.
+  async transcript(
+    id: string,
+    etag?: string,
+  ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean}> {
+    const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
+    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}`, {headers});
+    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true};
     if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);
     const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);
@@ -354,6 +365,7 @@ export class GtmuxClient {
       turns: Array.isArray(j) ? j : [],
       dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0,
       reset: kind === 'clear' || kind === 'new' ? {kind, at: Number.isFinite(at) && at > 0 ? at : 0} : undefined,
+      etag: r.headers?.get?.('ETag') ?? undefined,
     };
   }
 

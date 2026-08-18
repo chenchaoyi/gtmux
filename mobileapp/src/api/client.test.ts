@@ -154,6 +154,31 @@ describe('transcript', () => {
     expect((init?.headers as any).Authorization).toBe(AUTH);
   });
 
+  // The chat polls while it is open, so an unchanged conversation must cost nothing:
+  // the validator goes back out as If-None-Match, and a 304 says "keep what you have"
+  // rather than handing the view an empty history.
+  it('revalidates with the ETag and reports 304 as unchanged', async () => {
+    fetchMock.mockResolvedValueOnce(okJson([{prompt: 'hi'}], true, 200, {ETag: 'W/"s-9"'}));
+    const first = await client().transcript('%12');
+    expect(first.etag).toBe('W/"s-9"');
+
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
+    const again = await client().transcript('%12', first.etag);
+    expect(again.unchanged).toBe(true);
+    expect(again.etag).toBe('W/"s-9"');
+    const [, init] = call(1); // the SECOND request is the revalidation
+    expect((init?.headers as any)['If-None-Match']).toBe('W/"s-9"');
+  });
+
+  // A 304 must never be mistaken for an empty conversation — that would blank the
+  // reader's history on every quiet poll.
+  it('does not return turns on a 304', async () => {
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
+    const res = await client().transcript('%12', 'W/"s-9"');
+    expect(res.turns).toEqual([]);
+    expect(res.unchanged).toBe(true);
+  });
+
   // A truncated history must reach the view as a NUMBER, or it silently reads as whole
   // (transcript-render-bounds).
   it('surfaces the dropped-turn count from the response header', async () => {

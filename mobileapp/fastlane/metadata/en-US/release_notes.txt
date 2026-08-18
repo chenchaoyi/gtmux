@@ -1,3 +1,2 @@
-• A session whose turn ended on a failure now has its own "errored" group, amber, right below the ones waiting for you — instead of sitting under a green tick among the finished ones.
-• The situation board honours the line breaks the supervisor writes instead of printing the tag and running everything together, and struck-out items look struck out.
-• Picking panes for a share link groups them by session and leads each row with its pane id; a link's summary counts only the panes it can still reach.
+• Fixed: when an agent moved its conversation to a background process, the phone kept showing the old history.
+• The chat now refreshes on its own instead of waiting for the pane's status to change.

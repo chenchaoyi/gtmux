@@ -18,6 +18,14 @@ func hermeticEnv(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("TMUX_PANE", "")
 	t.Setenv("GTMUX_HOOK_DEBUG", "")
+	// Clearing $TMUX_PANE is no longer enough to mean "not in tmux": a hook with no
+	// pane env now asks the PROCESS TREE which pane it belongs to (paneidentity.go),
+	// and `go test` run inside a tmux pane has exactly that ancestry — so a test
+	// asserting the no-pane path would silently exercise the pane path instead.
+	// Pointing tmux at an empty socket dir leaves it with no server to answer from.
+	// $TMUX names the live server's socket and OVERRIDES $TMUX_TMPDIR, so both go.
+	t.Setenv("TMUX", "")
+	t.Setenv("TMUX_TMPDIR", t.TempDir())
 }
 
 // TestRunAlwaysZero: a hook must never fail the agent's turn, so Run returns 0

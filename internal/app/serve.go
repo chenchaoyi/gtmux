@@ -697,6 +697,14 @@ func transcriptForPane(id string) ([]byte, server.TranscriptMeta, error) {
 	if err != nil || len(turns) == 0 {
 		return empty, meta, nil
 	}
+	// The validator: WHICH log, and how far it had grown. Both halves matter — the log
+	// grows as the agent talks, and the session id changes when a pane rebinds (the
+	// case that had a reader staring at five-hour-old history on 2026-08-18).
+	if p := transcript.LogPath(rec.Agent, rec.SessionID); p != "" {
+		if fi, statErr := os.Stat(p); statErr == nil {
+			meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("%s-%d", rec.SessionID, fi.Size()))
+		}
+	}
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
 	b, err := json.Marshal(kept)
 	if err != nil {
