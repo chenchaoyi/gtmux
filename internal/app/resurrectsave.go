@@ -19,10 +19,22 @@ import (
 )
 
 const (
-	// backstopSaveStaleAfter: how old the last resurrect save may get before gtmux serve
-	// saves ITSELF. Short enough that a reboot loses little; long enough that when
-	// continuum IS autosaving (every few min) the backstop never fires.
+	// backstopSaveStaleAfter: how long the last resurrect save may sit unchanged before
+	// gtmux serve saves ITSELF, when nothing else even claims to be autosaving. Short
+	// enough that a reboot loses little.
 	backstopSaveStaleAfter = 10 * time.Minute
+	// backstopArmedStaleAfter: the same question when tmux-continuum's trigger IS in
+	// status-right. Wider, because an armed autosaver deserves the first move — but
+	// FINITE, because "armed" is a configuration and this file's freshness is the fact
+	// (see backstopStaleAfter).
+	backstopArmedStaleAfter = 20 * time.Minute
+	// backstopArmedYield: how long to wait, after deciding to step in for an ARMED
+	// autosaver, before actually saving — then re-check. The collision that matters is
+	// the moment the Mac wakes: the status bar redraws (continuum saves) and serve's tick
+	// resumes (gtmux notices the staleness) within the same second or two. Yielding lets
+	// continuum's save land and repoint `last`, and the re-check then stands the backstop
+	// down instead of running a second save_all over the same files.
+	backstopArmedYield = 8 * time.Second
 	// restoreWarnStaleAfter: at restore time, a save older than this is a red flag — a
 	// healthy setup saves every few minutes, so a day-old save means autosave is dead.
 	restoreWarnStaleAfter = 24 * time.Hour
@@ -44,6 +56,20 @@ func saveIsStale(lastPath string, now time.Time, threshold time.Duration) bool {
 		return true
 	}
 	return now.Sub(fi.ModTime()) >= threshold
+}
+
+// saveAge is how long ago the save at lastPath was last written, and whether that is
+// knowable at all (a missing path / unreadable file answers no). Separate from
+// saveIsStale because doctor wants to SHOW the number, not just compare it.
+func saveAge(lastPath string, now time.Time) (time.Duration, bool) {
+	if lastPath == "" {
+		return 0, false
+	}
+	fi, err := os.Stat(lastPath)
+	if err != nil {
+		return 0, false
+	}
+	return now.Sub(fi.ModTime()), true
 }
 
 // saveStalenessWarning returns a localized "your saved layout is N old" line when the
@@ -119,25 +145,16 @@ func driveResurrectSave(script string) {
 }
 
 // maybeBackstopSave is called on the serve slow tick. It backstops tmux-continuum: it
-// saves ONLY when a tmux server is up AND the last save is stale — so when continuum is
-// healthy (saving every few min) it's a no-op, and when continuum is disarmed it keeps
-// the save fresh. The save runs in its own goroutine (a slow save.sh must not stall the
-// tick) under a single-flight guard.
+// saves ONLY when a tmux server is up AND the last save has actually gone stale — so
+// when the autosave is working (saving every few min) it's a no-op, and when the
+// autosave has stopped it keeps the save fresh. The save runs in its own goroutine (a
+// slow save.sh must not stall the tick) under a single-flight guard.
 func maybeBackstopSave() {
 	if !tmux.ServerUp() {
 		return
 	}
-	// Only back up an autosave that ISN'T running. The backstop exists for the case
-	// continuum's trigger is missing from status-right (autosave silently off); when the
-	// trigger IS there, continuum is already saving and a second saver is not redundancy
-	// — it is a RACE. Both run resurrect's save_all against the same files, and two
-	// concurrent runs produced paired save files and a truncated pane_contents.tar.gz
-	// (the archive is written by one process while the other is removing its inputs).
-	// Corrupting the save is strictly worse than the staleness this was guarding against.
-	if !shouldBackstopSave(tmuxOpt("status-right")) {
-		return
-	}
-	if !saveIsStale(resurrectLastSave(), time.Now(), backstopSaveStaleAfter) {
+	statusRight := tmuxOpt("status-right")
+	if !shouldBackstopSave(statusRight, resurrectLastSave(), time.Now()) {
 		return
 	}
 	if !backstopSaving.CompareAndSwap(false, true) {
@@ -145,6 +162,19 @@ func maybeBackstopSave() {
 	}
 	go func() {
 		defer backstopSaving.Store(false)
+		// Yield to an ARMED autosaver before stepping on its toes. See
+		// backstopArmedYield: the one moment both savers plausibly fire at once is a
+		// wake-from-sleep, and letting continuum's save land first turns that collision
+		// into a no-op instead of two concurrent save_all runs.
+		if statusRightHasContinuumTrigger(statusRight) {
+			time.Sleep(backstopArmedYield)
+			if !shouldBackstopSave(statusRight, resurrectLastSave(), time.Now()) {
+				restoreLogf("maybeBackstopSave: stood down — the autosaver saved during the %v grace", backstopArmedYield)
+				return
+			}
+		}
+		restoreLogf("maybeBackstopSave: save unchanged for >= %v (autosave trigger present=%v) — saving ourselves",
+			backstopStaleAfter(statusRight), statusRightHasContinuumTrigger(statusRight))
 		driveResurrectSave(resurrectSaveScript())
 	}()
 }
@@ -160,17 +190,37 @@ func resurrectSaveArgs(script string) []string {
 	return []string{"bash", script, "quiet"}
 }
 
-// shouldBackstopSave reports whether gtmux should save the tmux layout ITSELF, given the
-// running status-right.
+// shouldBackstopSave reports whether gtmux should save the tmux layout ITSELF: the last
+// save has gone stale, judged against the grace this setup has earned.
 //
-// Only when continuum is NOT armed. The backstop exists for the case its trigger is
-// missing (autosave silently off); when the trigger is present continuum is already
-// saving, and a second saver is a RACE rather than redundancy — two concurrent save_all
-// runs over the same files yielded paired save files and a truncated
-// pane_contents.tar.gz. Corrupting the save is strictly worse than the staleness this
-// guards against.
-func shouldBackstopSave(statusRight string) bool {
-	return !statusRightHasContinuumTrigger(statusRight)
+// The question used to be "is continuum's trigger in status-right?", and that question
+// has a hole big enough to lose a working day through: the trigger only RUNS when tmux
+// redraws the status bar, which needs a terminal attached and awake. Written into
+// status-right, it looks armed forever; asleep, it saves nothing. On this user's Mac the
+// two readings diverged 76 times in three and a half days — gaps up to six hours against
+// a configured five-minute interval — and because the trigger was present the whole time,
+// the backstop that exists for exactly this never fired ONCE. So the trigger is no longer
+// the criterion; the file's mtime is. Configuration is a claim, freshness is the fact.
+//
+// The old check's lesson is kept, not discarded: two concurrent save_all runs over the
+// same files produced paired save files and a truncated pane_contents.tar.gz, and
+// corrupting the save is strictly worse than the staleness this guards against. Staleness
+// itself is now the interlock — an autosaver that IS running keeps the save fresh, so the
+// backstop never wakes up beside it — reinforced by a wider grace when the trigger is
+// present (backstopStaleAfter) and a yield-then-recheck before the save actually runs
+// (backstopArmedYield).
+func shouldBackstopSave(statusRight, lastPath string, now time.Time) bool {
+	return saveIsStale(lastPath, now, backstopStaleAfter(statusRight))
+}
+
+// backstopStaleAfter is how long a save may sit unchanged before gtmux saves it itself.
+// An armed autosaver gets the wider grace — it deserves the first move — but a finite
+// one, because "armed" describes the configuration and only the file describes reality.
+func backstopStaleAfter(statusRight string) time.Duration {
+	if statusRightHasContinuumTrigger(statusRight) {
+		return backstopArmedStaleAfter
+	}
+	return backstopSaveStaleAfter
 }
 
 // statusRightHasContinuumTrigger reports whether a tmux status-right value carries

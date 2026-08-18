@@ -326,3 +326,20 @@ func SessionNames() []string {
 	}
 	return names
 }
+
+// LivePaneIDs is the set of pane ids the running server currently has, across every
+// session and window. Empty when tmux is down or the query fails — a caller reconciling
+// state against it MUST read empty as "unknown", never as "no panes exist", or a
+// transient failure reaps the whole fleet's records.
+func LivePaneIDs() map[string]bool {
+	live := map[string]bool{}
+	if !ServerUp() {
+		return live
+	}
+	for _, l := range Lines("list-panes", "-a", "-F", "#{pane_id}") {
+		if id := strings.TrimSpace(l); id != "" {
+			live[id] = true
+		}
+	}
+	return live
+}

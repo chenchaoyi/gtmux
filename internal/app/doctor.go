@@ -717,6 +717,18 @@ func rowAutoSave() dcheck {
 		"continuum 需周期保存,重启才能恢复")
 	switch n := continuumTriggerCount(tmuxOpt("status-right")); {
 	case n == 1:
+		// Armed is a CLAIM. continuum's trigger only runs while tmux redraws the status
+		// bar, which needs an awake machine with a terminal attached — so a laptop that
+		// sleeps can carry a perfectly-configured trigger and save nothing for hours (76
+		// such gaps in 3.5 days here, the longest just under six). Report what the file
+		// says, not what the config says.
+		if age, ok := saveAge(resurrectLastSave(), time.Now()); ok && age >= backstopArmedStaleAfter {
+			return dcheck{stRec, label,
+				i18n.Tr("armed, but idle "+hq.HumanAgeShort(int64(age.Seconds())),
+					"已装,但 "+hq.HumanAgeShort(int64(age.Seconds()))+" 没存过"),
+				i18n.Tr("the trigger is in status-right but nothing has saved for a long while — continuum only fires while the status bar redraws, so a sleeping Mac saves nothing. `gtmux serve` backstops it; if that is not running, your layout is only as fresh as the age shown",
+					"触发器在 status-right 里,但已经很久没存过了 —— continuum 只在状态栏重画时才跑,Mac 一睡就不存。`gtmux serve` 会兜底;若没在跑,你的存档就只有这个新鲜度")}
+		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), note}
 	case n > 1:
 		// Two triggers = every interval runs the save twice, forever, silently. It comes
