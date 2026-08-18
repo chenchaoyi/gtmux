@@ -968,3 +968,48 @@ altool answered *"Redundant Binary Upload. You've already uploaded a build with 
   hides every line above the window. Redirect to a log file and grep it.
 - The fix for the noise itself is `bundle update fastlane` (or a Ruby 3.x for this
   toolchain); until then, expect the crash and read past it.
+
+## A pane goes blind: the agent moved, the hook lost its pane (2026-08-18, %13)
+
+**Symptom.** The phone shows a calm, complete conversation whose newest turn is hours
+old. The radar shows the pane `idle`. HQ's picture of it is frozen at the same moment.
+Nothing errors anywhere — and the pane is working the whole time.
+
+**What happened.** Claude Code 2.1.234 moved the session into a background host:
+
+    34175  the pane's interactive client   TMUX=…  TMUX_PANE=%13
+    77257    claude daemon run --origin transient --spawned-by {pid:34175}
+    77301      --bg-pty-host
+    78152        the conversation process  (no tty, no TMUX_PANE)
+
+The hooks kept firing — `hookErrors` was empty and `stop_hook_summary` listed `gtmux
+hook` every time — but from a process with no `$TMUX_PANE`. gtmux identified panes by
+that one env var, so every event was filed as a NATIVE (non-tmux) session under
+`native/<sessionId>.json`. The pane's resume binding never updated, so `/api/transcript`
+kept serving a log whose last message was 17:47 while the conversation ran on until
+22:58 in a session gtmux had never heard of.
+
+**Diagnosing it (in this order — three of these contradict each other).**
+- `~/.local/share/gtmux/resume/<base64 of session:window.pane>.json` — what the chat is
+  being served FROM. Compare its `sessionId` against what is actually growing.
+- `ls -lt ~/.claude/projects/<cwd-slug>/` — **mtime lies here.** The dead log had the
+  NEWER mtime (Claude appends `permission-mode` records to it long after the
+  conversation left). Read the last `"timestamp"` in the file, not the mtime.
+- `ps -o ppid=,tty=,command= -p <pid>` up the chain from the agent process, and
+  `ps eww -p <pid> | tr ' ' '\n' | grep TMUX` — the decisive evidence: which process
+  actually runs the conversation, and whether it can see the pane.
+- `~/.local/share/gtmux/native/` — a record here whose cwd matches a tmux pane is the
+  fingerprint of this failure.
+- `grep '"%13"' ~/.local/share/gtmux/events.jsonl | tail` — the moment the events stop
+  is the moment the session moved.
+
+**Fixed (hook-pane-identity).** A hook with no `$TMUX_PANE` now walks its process
+ancestry and matches it against tmux's pane table (`pane_pid`, then `pane_tty`) before
+concluding it is native. `gtmux doctor`'s `chat binding` row reports a pane whose
+directory holds a newer, live, unclaimed session. The mobile chat polls while open
+(conditional on an ETag) instead of refreshing only when the status flips — a pane whose
+status is stuck cannot flip, which is why the reader saw nothing new for five hours.
+
+**Must-check when something like this recurs:** the events stopping is not evidence the
+hook stopped running. Check where the hook RAN before assuming it failed — and never
+judge which log is live by its mtime.

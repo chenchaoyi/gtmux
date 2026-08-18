@@ -14,10 +14,12 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // check status levels.
@@ -167,7 +169,7 @@ func doctorSections() []dsection {
 			rowWindowNameSource(), rowPaneIDsInTabs(), rowPaneTitles(), rowHyperlinks(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), terminalChecks()},
-		{i18n.Tr("Agents & notifications", "agent 与通知"), agents},
+		{i18n.Tr("Agents & notifications", "agent 与通知"), append(agents, rowStaleBindings())},
 		// The menu-bar app is its own concern — install state + version + on-disk path.
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks()},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks()},
@@ -1285,4 +1287,137 @@ func sleepChecksFor(st servermode.Status, stale bool) []dcheck {
 			i18n.Tr("sleeps now, but the stored setting would disable it after a reboot. ",
 				"现在能睡，但落盘的设置会在重启后再次禁止。") + manual}}
 	}
+}
+
+// staleBindingLead is how far ahead an UNBOUND session must be before the binding
+// beside it is called stale. A few minutes of lead is normal: an agent that just
+// started a new session fires its hook moments later and the binding catches up.
+const staleBindingLead = 10 * 60
+
+// staleBindingFresh bounds the row to a binding that is stale RIGHT NOW: the
+// unclaimed session beside it must itself have been active within this window.
+//
+// Without it the row flags leftovers. Measured on a real fleet: pane %17 is bound to
+// a session last spoken to 22 days ago and shares its directory with an unrelated
+// session from two weeks before that — newer than the binding, owned by nobody, and
+// completely inert. That is a folder with old files in it, not a pane whose chat is
+// lying to its reader.
+//
+// The trade-off is deliberate and worth stating: a binding that went stale days ago
+// and then went quiet is NOT reported, because at that point it is indistinguishable
+// from the leftovers. What this row catches is the case that costs hours — a live
+// conversation running beside a pane that is still serving the old one.
+const staleBindingFresh = 2 * 60 * 60
+
+// rowStaleBindings reports panes whose chat is being served from a log the agent
+// has moved on from.
+//
+// On 2026-08-18 pane %13 spent 5h15m in exactly that state: Claude moved the
+// conversation into a background session host, the hook lost its $TMUX_PANE and was
+// filed as a native session, and the pane's binding kept naming a log whose last
+// message was five hours old. Nothing errored anywhere — the phone showed a calm,
+// complete conversation and the radar showed a settled `idle`.
+//
+// paneidentity.go closes the way that binding went stale. This row exists because the
+// SILENCE is the real defect: a binding can go stale for reasons we have not met yet,
+// and a reader must never again be shown five-hour-old history as if it were current.
+//
+// The question it asks is the one that actually distinguishes the failure: does this
+// pane's own session DIRECTORY hold a NEWER conversation that no pane is bound to? A
+// first attempt compared the pane's tmux activity against its log instead, and flagged
+// 13 of 13 panes on a real fleet — `window_activity` is a WINDOW's clock, so a
+// neighbouring pane's output makes a month-idle agent look busy. An unclaimed newer
+// session in the same directory is the evidence; anything else is a proxy for it.
+func rowStaleBindings() dcheck {
+	label := i18n.Tr("chat binding", "会话绑定")
+	note := i18n.Tr("the chat is served from the log a pane is bound to",
+		"手机/网页的对话正是从 pane 绑定的那份记录里读出来的")
+	now := time.Now().Unix()
+
+	type bound struct {
+		pane string
+		rec  resume.Record
+		path string
+		last int64
+	}
+	var bounds []bound
+	claimed := map[string]bool{} // every session id some pane already owns
+	for _, p := range radar.GatherPanes() {
+		if p.Tier != "agent" || p.Loc == "" {
+			continue
+		}
+		rec, ok := resume.Load(p.Loc)
+		if !ok || rec.SessionID == "" {
+			continue
+		}
+		claimed[rec.SessionID] = true
+		path := transcript.LogPath(rec.Agent, rec.SessionID)
+		if path == "" {
+			continue
+		}
+		bounds = append(bounds, bound{pane: p.PaneID, rec: rec, path: path,
+			last: transcript.LastMessageTime(rec.Agent, rec.SessionID)})
+	}
+
+	var stale []string
+	for _, b := range bounds {
+		if b.last == 0 {
+			continue // a log we cannot read says nothing about the binding
+		}
+		newer := newestUnclaimedSession(b.path, b.rec, claimed, b.last)
+		if newer > b.last+staleBindingLead && now-newer < staleBindingFresh {
+			stale = append(stale, fmt.Sprintf("%s (%s)", b.pane, hq.HumanAgeShort(now-b.last)))
+		}
+	}
+	switch {
+	case len(bounds) == 0:
+		return dcheck{stInfo, label, i18n.Tr("nothing bound yet", "暂无绑定"), note}
+	case len(stale) == 0:
+		return dcheck{stOK, label,
+			fmt.Sprintf(i18n.Tr("%d live", "%d 个在跟"), len(bounds)), note}
+	default:
+		return dcheck{stRec, label, strings.Join(stale, " · "),
+			i18n.Tr("a newer conversation sits beside these panes' logs and no pane owns it — their chat is showing old history",
+				"这些 pane 的记录旁边躺着更新的对话、而且没有任何 pane 认领 —— 它们的对话页显示的是旧历史")}
+	}
+}
+
+// newestUnclaimedSession returns the last-message time of the newest session in
+// `boundPath`'s directory that no pane is bound to. Agent-agnostic by construction:
+// the directory and the file extension come from the pane's OWN log, so whatever
+// layout an agent uses is the layout we search.
+//
+// Bounded on purpose — the mtime pre-filter means a directory of old sessions costs
+// one stat each, and only a genuinely newer file is ever parsed.
+func newestUnclaimedSession(boundPath string, rec resume.Record, claimed map[string]bool, boundLast int64) int64 {
+	dir := filepath.Dir(boundPath)
+	ext := filepath.Ext(boundPath)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	var newest int64
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ext {
+			continue
+		}
+		id := strings.TrimSuffix(e.Name(), ext)
+		if id == rec.SessionID || claimed[id] {
+			continue
+		}
+		path := filepath.Join(dir, e.Name())
+		// Filter against the bound log's last MESSAGE, never against its mtime. The
+		// file that started all this had the NEWER mtime of the two — Claude appended a
+		// `permission-mode` record to the dead log at 23:09 while the live conversation
+		// had moved on at 17:47. An mtime pre-filter therefore skipped the very
+		// candidate it existed to find, and this row stayed green through the exact
+		// failure it was written for. mtime is a claim; the last message is the fact.
+		if radar.FileMtime(path) < boundLast {
+			continue // cheap stat filter before any parse
+		}
+		if t := transcript.LastMessageTime(rec.Agent, id); t > newest {
+			newest = t
+		}
+	}
+	return newest
 }

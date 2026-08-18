@@ -45,6 +45,12 @@ import {isSplitCanvas} from '../ui/layout';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
 // either mode) so switching modes never jumps the text size. Middle = default.
+// CHAT_POLL_MS: how often an open chat re-asks for its history. Slow on purpose — a
+// conversation moves on a human timescale, and the request is conditional, so an
+// unchanged one is a 304 with no body. Its job is to make sure history CANNOT sit
+// still while the pane talks, not to feel live; the terminal view is what feels live.
+const CHAT_POLL_MS = 8000;
+
 const FONT_SIZES = [11, 13, 15];
 
 type DetailMode = 'chat' | 'terminal';
@@ -349,25 +355,50 @@ export function DetailView({
     };
   }, [client, agent.pane_id, live.status]);
 
-  // Fetch the transcript on mount + when the status flips or a prompt is sent (a
-  // turn likely completed). Never clears `turns`, so a background refetch swaps in
-  // fresh history without flashing the spinner — and a mode switch is instant.
+  // Fetch the transcript on mount + when the status flips or a prompt is sent (a turn
+  // likely completed) — AND on a slow poll for as long as the chat is on screen.
+  //
+  // The status flip used to be the only trigger, which fails exactly when it matters:
+  // a pane whose status is itself frozen can never flip, so on 2026-08-18 a reader sat
+  // in front of five-hour-old history on a pane that had been working the whole time
+  // (the binding that fed it had gone stale — see paneidentity.go). A view that can
+  // only refresh when something else notices a change is not refreshing.
+  //
+  // The poll is cheap by construction: the request is conditional on the ETag the last
+  // response carried, so an unchanged conversation costs a 304 with no body. `turns` is
+  // never cleared, so a background refetch swaps in fresh history without flashing the
+  // spinner — and a mode switch is instant.
+  const etagRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     let alive = true;
-    client
-      .transcript(agent.pane_id)
-      .then(({turns: ts, dropped, reset}) => {
-        if (!alive) return;
-        setTurns(ts);
-        setDroppedTurns(dropped);
-        setSessionReset(reset);
-        setChatLoaded(true);
-      })
-      .catch(() => alive && setChatLoaded(true));
+    const load = () =>
+      client
+        .transcript(agent.pane_id, etagRef.current)
+        .then(({turns: ts, dropped, reset, etag, unchanged}) => {
+          if (!alive) return;
+          etagRef.current = etag;
+          if (!unchanged) {
+            setTurns(ts);
+            setDroppedTurns(dropped);
+            setSessionReset(reset);
+          }
+          setChatLoaded(true);
+        })
+        .catch(() => alive && setChatLoaded(true));
+    load();
+    // Only while the chat is the visible mode: the terminal view has its own live feed,
+    // and a poll behind a screen nobody is reading is pure cost.
+    if (mode !== 'chat') {
+      return () => {
+        alive = false;
+      };
+    }
+    const id = setInterval(load, CHAT_POLL_MS);
     return () => {
       alive = false;
+      clearInterval(id);
     };
-  }, [client, agent.pane_id, live.status, pendingPrompt]);
+  }, [client, agent.pane_id, live.status, pendingPrompt, mode]);
 
   const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
