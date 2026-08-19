@@ -239,3 +239,34 @@ Triggers SHALL be rate-limited to at most one per hour.
 
 - **WHEN** conditions would raise a second self-check trigger within an hour of the last
 - **THEN** no second trigger is raised until the hour has elapsed
+
+### Requirement: An event carries the session that produced it
+
+Every lifecycle event SHALL record the agent's own conversation id alongside the pane it
+was observed in. The pane can be absent for reasons outside the system's control — an
+agent may move a conversation into a process that cannot be tied to a pane — and without
+the session id such a record is attributable only by matching its summary prose against
+transcripts, which is a heuristic with a real miss rate and not a result that belongs in
+an audit trail.
+
+A reader SHALL be able to attribute a pane-less record by LOOKUP: the recorded session
+id resolved against the pane bindings. That attribution SHALL happen at read time and
+SHALL be rendered distinctly from a pane the event was recorded with, because a binding
+says where a conversation lives now, which is a different claim from where the event
+happened. The log itself SHALL remain append-only — nothing is rewritten.
+
+#### Scenario: A pane-less record is attributed at read time
+
+- **WHEN** a record has no pane but carries a session id that a pane is currently bound to
+- **THEN** the reader reports that pane, marked as attributed rather than recorded
+
+#### Scenario: A recorded pane is never overridden
+
+- **WHEN** a record already names the pane it was observed in
+- **THEN** that pane stands, whatever the current bindings say
+
+#### Scenario: Nothing is invented for a record with no session id
+
+- **WHEN** a record predates the session id and carries none
+- **THEN** no attribution is reported for it
+

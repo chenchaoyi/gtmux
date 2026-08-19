@@ -407,6 +407,14 @@ prints, in feed order rather than log order.
 Always a JSON array (never `null`); an unreachable/absent ledger reads as `[]`, since
 "nothing happened" and "can't tell you" are the same thing to a reader.
 
+Additive field `agent_session` — the agent's own conversation id for the session that
+produced the record. It is what makes a PANE-LESS record attributable later: `pane` can
+be absent for reasons outside gtmux's control (an agent that moves its conversation into
+a background process the hook cannot tie to a pane), and the session id turns the
+recovery into a lookup instead of a guess at the prose. Absent on records written before
+it existed, which therefore stay unattributable — deliberately, since inventing an
+attribution for them would put inference into an audit trail.
+
 ```
 200 [{"ts":1784720000,"seq":108,"event":"Waiting","state":"waiting","pane":"%17","loc":"api:0.0","session":"api","agent":"Claude Code","kind":"permission","summary":"run the test suite?","severity":"important"}, …]
 403 {"error":"forbidden: not shared"}   // guest scope

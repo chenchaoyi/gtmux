@@ -59,6 +59,20 @@ type Record struct {
 	// supervisor can triage without the raw full text. Absent on a legacy record, which
 	// reads as "routine".
 	Severity string `json:"severity,omitempty"`
+	// AgentSession is the agent's own conversation id for the session that produced
+	// this event (hook-pane-identity follow-up). It is what makes a PANE-LESS record
+	// attributable later: a pane id can be missing for reasons outside gtmux's control
+	// — on 2026-08-18 Claude moved a session into a background host with no
+	// $TMUX_PANE, and 28 records over 4h18m landed with no pane while the pane itself
+	// worked on — and without this field the only way back was matching the summary
+	// prose against transcripts. Measured on three of those records, that matched the
+	// right session once: a heuristic with a real miss rate, and not something whose
+	// output belongs in an audit trail.
+	//
+	// With the id present the same recovery is a LOOKUP — session → pane through the
+	// resume binding — so a reader can attribute at READ time. Nothing rewrites the
+	// stream: the log stays append-only, and this is the key a later join uses.
+	AgentSession string `json:"agent_session,omitempty"`
 }
 
 // OriginInstruction marks a prompt submission whose payload is a real instruction —
@@ -266,7 +280,18 @@ func readFile(path string, cutoff int64) []Record {
 // renders as its tag + event + summary instead. Without this branch a raised maintenance
 // trigger printed as a row of blanks, which is why `gtmux events` could not answer "did
 // the periodic distill run?" even once the record was in the journal.
-func Format(r Record) string {
+func Format(r Record) string { return FormatAttributed(r, "") }
+
+// FormatAttributed renders a record, optionally naming a pane it was ATTRIBUTED to at
+// READ time rather than recorded with.
+//
+// The two are shown differently on purpose — `(%13)` was observed, `(~%13)` was worked
+// out — because they can disagree. A recorded pane is what the hook saw at the moment
+// the event happened; an attributed one is where that conversation lives NOW, resolved
+// through the resume binding. For a session that has since moved panes the second
+// answers a slightly different question, and a reader who cannot tell them apart would
+// have no way to notice.
+func FormatAttributed(r Record, attributed string) string {
 	if IsControl(r) {
 		line := clock(r.Ts) + "  [CONTROL " + r.Event + "]"
 		if r.Summary != "" {
@@ -292,8 +317,11 @@ func Format(r Record) string {
 		b.WriteString("  ")
 		b.WriteString(r.Agent)
 	}
-	if r.Pane != "" {
+	switch {
+	case r.Pane != "":
 		b.WriteString(" (" + r.Pane + ")")
+	case attributed != "":
+		b.WriteString(" (~" + attributed + ")")
 	}
 	return b.String()
 }
