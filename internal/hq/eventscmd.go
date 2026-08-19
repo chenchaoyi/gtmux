@@ -144,15 +144,26 @@ func CmdEvents(args []string) int {
 	// the same palette the wake lines use, and a pipe / file / --json consumer gets the
 	// bytes it always got (hq-signal-ergonomics §6).
 	color := i18n.ColorEnabled()
+	// Read-time attribution for a record the hook could not name a pane for (see
+	// eventsattr.go). Lazily built, so a stream without such records costs nothing.
+	var attr attributor
 	print := func(r events.Record) {
 		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
 			return
 		}
+		att := attr.attributedPane(r)
 		if jsonOut {
 			b, _ := json.Marshal(r)
+			if att != "" {
+				// Added ALONGSIDE the record, never merged into `pane`: a consumer must
+				// be able to tell what was observed from what was worked out, and a
+				// record that arrives with a pane it was never recorded with is exactly
+				// the kind of quiet fiction this whole change is about.
+				b = append(b[:len(b)-1], []byte(`,"attributed_pane":`+strconv.Quote(att)+`}`)...)
+			}
 			fmt.Println(string(b))
 		} else {
-			fmt.Println(hqwake.GradeOfSeverity(r.Severity).Paint(events.Format(r), color))
+			fmt.Println(hqwake.GradeOfSeverity(r.Severity).Paint(events.FormatAttributed(r, att), color))
 		}
 	}
 

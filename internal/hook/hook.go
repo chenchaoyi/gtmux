@@ -654,7 +654,7 @@ func Run(stdin io.Reader, args []string) int {
 		if event == "UserPromptSubmit" && isHelperPrompt(payload.Prompt) {
 			markHelperSession(agentSession)
 			native.Remove(agentSession) // drop what its SessionStart just recorded
-			events.Append(events.Record{Ts: time.Now().Unix(), Event: "SessionEnd", Agent: display})
+			events.Append(events.Record{Ts: time.Now().Unix(), Event: "SessionEnd", Agent: display, AgentSession: agentSession})
 			debugf("helper session filtered: agent=%s session=%q", agentKey, agentSession)
 			return 0
 		}
@@ -787,6 +787,9 @@ func Run(stdin io.Reader, args []string) int {
 			Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
 			Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
 			Summary: summary, Class: evClass, Origin: origin,
+			// Recorded on EVERY event, not just the pane-less ones: which record will
+			// need attributing later is not knowable when it is written.
+			AgentSession: agentSession,
 		})
 	}
 
