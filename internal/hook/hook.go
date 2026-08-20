@@ -107,8 +107,13 @@ type decision struct {
 //     waiting unconditionally and notify; the turn is still in progress.
 //   - Resumed           → that pending wait was just answered (the plan/question
 //     tool finished, the approval was responded to), so clear waiting silently;
-//     the turn is still in progress, so active is untouched and we don't notify.
-func decide(event string, activePresent bool) decision {
+//     the turn is still in progress, so we don't notify. It also RE-ARMS the turn
+//     marker: a no-op when one is already there (Touch leaves its mtime, so the turn
+//     start is preserved), and a recovery when something removed it mid-turn.
+//
+// sameSessionTurn says the event comes from the very session that owns the turn in
+// progress. It only matters to SessionStart — see there.
+func decide(event string, activePresent, sameSessionTurn bool) decision {
 	switch event {
 	case "UserPromptSubmit":
 		return decision{setActive: true, clearWaiting: true, clearFinished: true}
@@ -123,21 +128,43 @@ func decide(event string, activePresent bool) decision {
 	case "Waiting":
 		return decision{setWaiting: true, clearFinished: true, notify: true}
 	case "Resumed":
-		// A pending plan/question/approval was answered → the agent is working
-		// again. Clear the wait silently; the turn is still in progress, so don't
-		// touch active or notify.
-		return decision{clearWaiting: true, clearFinished: true}
+		// A pending plan/question/approval was answered → the agent is working again.
+		// Clear the wait silently and don't notify.
+		//
+		// setActive is a REPAIR, not a state change: Touch leaves an existing marker's
+		// mtime alone, so a normal turn keeps its real start time, while a turn whose
+		// marker went missing gets one back. The agent just finished a tool, which is
+		// only something a running turn does — so if nothing says a turn is running,
+		// something is wrong and this is the cheapest place to notice.
+		return decision{setActive: true, clearWaiting: true, clearFinished: true}
 	case "StopFailure":
 		// The turn DIED on an agent/API failure — over, but NOT a normal finish:
 		// clear the turn state without stamping finished (a crash must never read
 		// as done) and without the finish notification. The crash is recorded to
 		// the event stream (severity important) and wakes HQ.
 		return decision{clearActive: true, clearWaiting: true}
-	case "SessionStart", "SessionEnd":
-		// A session (re)starting (startup/resume/clear/compact) or ending voids this
-		// pane's turn state. Clear active + waiting so a marker orphaned by a prior
-		// session — or by a pane id reused across a tmux restart — can't linger as a
-		// phantom "working"/"needs you". No notify; the next UserPromptSubmit re-arms.
+	case "SessionStart":
+		// A session announcing itself normally voids this pane's turn state: a marker
+		// orphaned by a PRIOR session — or by a pane id reused across a tmux restart —
+		// must not linger as a phantom "working"/"needs you", and the next
+		// UserPromptSubmit re-arms.
+		//
+		// But that reasoning only holds for a DIFFERENT session. Claude announces a
+		// SessionStart mid-turn when it compacts, carrying the same session id, and the
+		// turn then continues without another prompt — so voiding it left a pane that
+		// worked for another twenty minutes reading "idle", with nothing able to correct
+		// it. Measured on %41: prompt at 23:41:13, SessionStart at 23:47:43 with the
+		// identical session id, still "Incubating…" at 00:01.
+		//
+		// Same session + a turn in progress → the conversation is continuing, so leave
+		// its state exactly as it is. (Same shape as staleStop, which ignores a Stop
+		// from a session that no longer owns the pane.)
+		if sameSessionTurn {
+			return decision{}
+		}
+		return decision{clearActive: true, clearWaiting: true, clearFinished: true}
+	case "SessionEnd":
+		// Ending is unconditional: whoever it belonged to, the turn is over.
 		return decision{clearActive: true, clearWaiting: true, clearFinished: true}
 	case "PreCompact":
 		// State-neutral: recorded to the event stream (so a `/compact` is confirmable
@@ -712,7 +739,11 @@ func Run(stdin io.Reader, args []string) int {
 			turnStart = fi.ModTime().Unix()
 		}
 	}
-	d := decide(event, activePresent)
+	// A SessionStart (or any event) from the session that owns the in-flight turn is
+	// that conversation continuing, not a new one taking the pane.
+	sameSessionTurn := activePresent && agentSession != "" &&
+		agentSession == state.ReadMarker(state.ActivePath(pane))
+	d := decide(event, activePresent, sameSessionTurn)
 	if pane != "" {
 		applyState(d, pane)
 		// Record the agent session on the active marker so a later superseded Stop

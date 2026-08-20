@@ -28,10 +28,13 @@ func TestDecide(t *testing.T) {
 			decision{setWaiting: true, clearFinished: true, setLastFinished: true, notify: true}},
 		{"Notification while idle does NOT mark waiting or touch finished", "Notification", false,
 			decision{setLastFinished: true, notify: true}},
-		{"Resumed clears waiting silently mid-turn", "Resumed", true,
-			decision{clearWaiting: true, clearFinished: true}},
-		{"Resumed while idle is still just a silent clear", "Resumed", false,
-			decision{clearWaiting: true, clearFinished: true}},
+		// Resumed re-arms the turn marker as well. Touch leaves an existing marker's
+		// mtime alone, so a normal turn keeps its real start; a turn whose marker went
+		// missing gets one back on the agent's next tool completion.
+		{"Resumed clears waiting and re-arms the turn mid-turn", "Resumed", true,
+			decision{setActive: true, clearWaiting: true, clearFinished: true}},
+		{"Resumed with no turn marker restores one", "Resumed", false,
+			decision{setActive: true, clearWaiting: true, clearFinished: true}},
 		{"StopFailure ends the turn but is NOT a finish (no stamp, no notify)", "StopFailure", true,
 			decision{clearActive: true, clearWaiting: true}},
 		{"StopFailure while idle still just clears", "StopFailure", false,
@@ -45,7 +48,7 @@ func TestDecide(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := decide(c.event, c.activePresent); got != c.want {
+			if got := decide(c.event, c.activePresent, false); got != c.want {
 				t.Errorf("decide(%q, %v) =\n  %+v\nwant\n  %+v", c.event, c.activePresent, got, c.want)
 			}
 		})
@@ -75,7 +78,7 @@ func TestApplyStateLifecycle(t *testing.T) {
 	pane := "%7"
 
 	// Prompt submitted → turn in progress.
-	applyState(decide("UserPromptSubmit", false), pane)
+	applyState(decide("UserPromptSubmit", false, false), pane)
 	if !state.Exists(state.ActivePath(pane)) {
 		t.Fatal("UserPromptSubmit should create the active marker")
 	}
@@ -85,7 +88,7 @@ func TestApplyStateLifecycle(t *testing.T) {
 
 	// Notification mid-turn → blocked on the user, and recorded as last-finished.
 	active := state.Exists(state.ActivePath(pane))
-	applyState(decide("Notification", active), pane)
+	applyState(decide("Notification", active, false), pane)
 	if !state.Exists(state.WaitingPath(pane)) {
 		t.Error("mid-turn Notification should create the waiting marker")
 	}
@@ -94,7 +97,7 @@ func TestApplyStateLifecycle(t *testing.T) {
 	}
 
 	// Stop → turn over, both markers cleared, last-finished persists.
-	applyState(decide("Stop", true), pane)
+	applyState(decide("Stop", true, false), pane)
 	if state.Exists(state.ActivePath(pane)) {
 		t.Error("Stop should clear the active marker")
 	}
@@ -113,7 +116,7 @@ func TestNotificationWhileIdle(t *testing.T) {
 	pane := "%9"
 
 	active := state.Exists(state.ActivePath(pane)) // false — no turn in progress
-	applyState(decide("Notification", active), pane)
+	applyState(decide("Notification", active, false), pane)
 
 	if state.Exists(state.WaitingPath(pane)) {
 		t.Error("idle Notification must NOT create a waiting marker")
@@ -216,5 +219,36 @@ func TestNotifySubtitleLeadsWithThePaneID(t *testing.T) {
 	}
 	if got := notifySubtitle("", ""); got != "" {
 		t.Errorf("got %q, want empty", got)
+	}
+}
+
+// A compaction announces a SessionStart mid-turn carrying the SAME session id, and the
+// turn then continues with no further prompt. Voiding it there left pane %41 reading
+// "idle" while it worked for another twenty minutes — prompt 23:41:13, SessionStart
+// 23:47:43, same session id, still working at 00:01 — with nothing able to correct it.
+func TestSessionStartFromTheSameSessionKeepsTheTurn(t *testing.T) {
+	got := decide("SessionStart", true, true)
+	if (got != decision{}) {
+		t.Fatalf("a compaction of the running session changed state: %+v", got)
+	}
+}
+
+// The original reason for clearing still stands for anyone ELSE: a marker orphaned by a
+// prior session, or by a pane id reused across a tmux restart, must not linger.
+func TestSessionStartFromAnotherSessionStillClears(t *testing.T) {
+	want := decision{clearActive: true, clearWaiting: true, clearFinished: true}
+	if got := decide("SessionStart", true, false); got != want {
+		t.Fatalf("a different session's start must void the pane: %+v", got)
+	}
+	if got := decide("SessionStart", false, false); got != want {
+		t.Fatalf("a start with no turn in progress must still clear: %+v", got)
+	}
+}
+
+// Ending is unconditional — whoever it belonged to, the turn is over.
+func TestSessionEndAlwaysClears(t *testing.T) {
+	want := decision{clearActive: true, clearWaiting: true, clearFinished: true}
+	if got := decide("SessionEnd", true, true); got != want {
+		t.Fatalf("SessionEnd must clear even for the owning session: %+v", got)
 	}
 }

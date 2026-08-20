@@ -396,3 +396,36 @@ The new tmux-identity fields SHALL be named so they do NOT collide with the exis
 - **WHEN** two sessions each hold a window at index `0`
 - **THEN** their panes carry different `win_id`s, so a consumer grouping by window id does
   not merge them — the measured failure that the index alone could not tell apart
+
+### Requirement: A conversation continuing does not end its own turn
+
+An agent may announce that a session is starting while a turn is already running in that
+pane — Claude does it when it compacts — and the turn then continues with no further
+prompt from the user. The system SHALL treat such an announcement as the conversation
+continuing, not as a new one taking the pane: when the announcement carries the SAME
+session id as the turn in progress, the pane's turn state SHALL be left untouched.
+
+An announcement from a DIFFERENT session SHALL still void the pane's turn state, which is
+what that clearing was for: a marker orphaned by a prior session, or by a pane id reused
+across a tmux restart, must not linger as a phantom `working` or `waiting`. A session
+ENDING SHALL void it unconditionally.
+
+The system SHALL also repair a turn marker that has gone missing: an event that only a
+running turn can produce — the agent completing a tool — SHALL restore the marker if
+none is present, without disturbing the start time of a turn that already has one.
+
+#### Scenario: A compaction mid-turn
+
+- **WHEN** a session announces a start while that same session's turn is in progress
+- **THEN** the pane keeps reporting `working`
+
+#### Scenario: Another session takes the pane
+
+- **WHEN** the announcement carries a different session id
+- **THEN** the pane's turn state is cleared, as before
+
+#### Scenario: A lost marker is repaired
+
+- **WHEN** an agent completes a tool in a pane with no turn marker
+- **THEN** the marker is restored and the pane reports `working` again
+

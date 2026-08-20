@@ -181,7 +181,7 @@ func TestClassify_PreCompactIsStateNeutralLifecycle(t *testing.T) {
 	if got := classify("claude", "PreCompact", "").Lifecycle; got != "PreCompact" {
 		t.Fatalf("PreCompact lifecycle = %q, want PreCompact", got)
 	}
-	d := decide("PreCompact", true)
+	d := decide("PreCompact", true, false)
 	if d.setActive || d.clearActive || d.setWaiting || d.clearWaiting || d.setFinished || d.notify {
 		t.Fatalf("PreCompact must not touch any marker: %+v", d)
 	}
