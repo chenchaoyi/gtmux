@@ -35,7 +35,10 @@ vet: ## go vet
 	go vet ./...
 
 lint: ## staticcheck (pinned via go run)
-	go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+	# PINNED, not @latest: staticcheck v0.8.0 raised its floor to Go 1.26 while this
+	# repo builds on 1.25, so `@latest` broke every build the day it shipped — a green
+	# gate that turns red on someone else's release schedule is not a gate.
+	go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
 
 docs-fix: ## Rewrite the docs' rendered examples from the code (CI only reports)
 	go test ./internal/docs -run TestDocExamples -update
