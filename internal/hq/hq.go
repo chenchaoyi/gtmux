@@ -696,23 +696,37 @@ func CmdHQ(args []string) int {
 	// the agent exited → relaunch it IN PLACE (reuse the window the user already has),
 	// never a dead-window focus.
 	if pane := hqpane.Find(); pane != "" {
+		where := hqWhere(pane)
 		if hqAgentAlive(pane) {
-			if err := panefocus.FocusPaneByID(pane); err == nil {
-				i18n.Say("Focused the running supervisor.", "已跳到正在运行的中控。")
-			} else {
-				i18n.Say("A supervisor is already running (pane "+pane+").",
-					"中控已在运行（pane "+pane+"）。")
+			// Say it BEFORE moving. This branch used to print after the jump, so the line
+			// landed in the window the user was being taken out of: what they actually saw
+			// was the terminal move on its own and not one word about why. And the old
+			// wording ("Focused the running supervisor") answered a question nobody asked
+			// — someone who types `gtmux hq` is asking for a supervisor, so the useful
+			// news is that one is already running, where it is, and that starting a second
+			// is not something gtmux will do.
+			i18n.Say("A supervisor is already running at "+where+" — no new one was started; taking you there.",
+				"中控已经在跑了（"+where+"）—— 没有新建，这就把你切过去。")
+			if err := panefocus.FocusPaneByID(pane); err != nil {
+				i18n.Say("Could not switch to it — go there with:  gtmux focus "+pane,
+					"没能自动切过去 —— 手动跳：  gtmux focus "+pane)
+				return 0
 			}
+			// …and say it again where the user LANDS, because that is where their eyes are.
+			noteAtPane(pane, i18n.Tr("gtmux: this is your supervisor — it was already running, so nothing new was started",
+				"gtmux：这就是你的中控 —— 它本来就在跑，所以没有新建"))
 			return 0
 		}
 		// Stamped but dead → relaunch the agent in the same pane, then focus. Reuse the
 		// remembered choice (resolveHQLaunchAgent) so a revive doesn't silently fall back to
 		// claude after the user picked another agent.
 		rawCmd := resolveHQLaunchAgent(agentCmd)
+		i18n.Say("The supervisor had quit; restarting it in the window it already had ("+where+").",
+			"中控之前退出了，正在它原来的窗口里重新拉起（"+where+"）。")
 		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
 		_ = panefocus.FocusPaneByID(pane)
-		i18n.Say("The supervisor had exited — relaunched it in its pane.",
-			"中控此前已退出 —— 已在原 pane 里重新拉起。")
+		noteAtPane(pane, i18n.Tr("gtmux: your supervisor had quit — restarted here",
+			"gtmux：你的中控之前退出了 —— 已在这里重新拉起"))
 		deliverHQBriefing(pane, rawCmd)
 		return 0
 	}
@@ -1395,3 +1409,31 @@ In one sentence: proactively learn and capture cross-cutting knowledge, keep it
 current, and bring it to bear — that is HQ's reason to exist; and never write a
 secret (record only IDs, methods, pointers, and where things live).
 `
+
+// hqWhere names where the supervisor lives, in the two forms a person needs: the
+// window they can navigate to and the pane id every other gtmux command takes. Falls
+// back to the pane id alone if tmux cannot answer.
+func hqWhere(pane string) string {
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	if loc == "" {
+		return pane
+	}
+	return loc + " · " + pane
+}
+
+// noteAtPane puts one line on tmux's status bar in the pane the user was just sent to.
+//
+// A command that moves you somewhere has a reporting problem: whatever it printed is
+// back in the window you left, so the explanation and the reader end up in different
+// places. This says it again where the reader is now. Best-effort in every direction —
+// an older tmux without `-d` gets the plain form, and a failure changes nothing about
+// what the command did.
+func noteAtPane(pane, msg string) {
+	if tmux.Bin == "" || pane == "" {
+		return
+	}
+	if _, err := tmux.Run("display-message", "-d", "4000", "-t", pane, msg); err == nil {
+		return
+	}
+	_, _ = tmux.Run("display-message", "-t", pane, msg)
+}

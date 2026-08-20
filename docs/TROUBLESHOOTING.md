@@ -549,10 +549,10 @@ section above instead of guessing.
 
 ## HQ attention system / perception feed
 
-### `gtmux hq` "Focused the running supervisor" but the HQ session is dead
+### `gtmux hq` said it focused the supervisor but the HQ session is dead
 **Symptom:** you quit the HQ agent but left its tmux window open (a bare shell). Later
-`gtmux hq` says "Focused the running supervisor" and jumps to that window — which holds
-only a shell prompt, no agent. Confusing.
+`gtmux hq` said it had focused the running supervisor and jumped to that window — which
+held only a shell prompt, no agent. Confusing.
 **Root cause:** `findHQPane()` detects HQ by a pane STAMP that survives the agent
 exiting, so `gtmux hq` treated a stamped-but-dead pane as "running" and focused it.
 **Fix:** `gtmux hq` now checks the pane's foreground command (`hqAgentAlive` →
@@ -1013,3 +1013,25 @@ status is stuck cannot flip, which is why the reader saw nothing new for five ho
 **Must-check when something like this recurs:** the events stopping is not evidence the
 hook stopped running. Check where the hook RAN before assuming it failed — and never
 judge which log is live by its mtime.
+
+### `gtmux hq` moved my terminal and said nothing (2026-08-20)
+
+**Symptom:** you run `gtmux hq` expecting a supervisor to start. Instead the terminal
+jumps to some other window, and as far as you can tell nothing was explained.
+
+**What was actually happening:** a supervisor was already running, so the command
+focused it rather than starting a second one — which is right, since two supervisors
+would both be driving the same panes. It did print a line. But it printed it AFTER the
+jump, so the words stayed in the window you were just taken out of, and the wording
+("Focused the running supervisor") confirmed an action nobody had asked for instead of
+answering the question you actually had.
+
+**Fix:** the line now comes BEFORE the jump, names where the supervisor is
+(`HQ:0.0 · %6`), and says plainly that nothing new was started — and the same fact is
+put on tmux's status bar in the window you land in (`noteAtPane`), because that is where
+you are looking once the jump has happened.
+
+**The general rule this is an instance of:** say something when what happened differs
+from what was asked. A jump you asked for needs no words; a jump you did not ask for
+needs them, and they have to arrive where your eyes are. `gtmux focus` already worked
+this way (it speaks only when the pane you land on is no longer running an agent).
