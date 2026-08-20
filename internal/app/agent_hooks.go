@@ -100,6 +100,15 @@ var agentInstallers = map[string]agentInstaller{
 			{key: "Stop", event: "Stop"},
 			{key: "SessionStart", event: "SessionStart"},
 			{key: "SessionEnd", event: "SessionEnd"},
+			// Tool events: with none of these, a codex pane's "needs you" mark could
+			// only clear on the next prompt or at the end of the turn — so an approval
+			// answered mid-turn kept reading as blocked. PostToolUse also repairs a
+			// turn marker that went missing.
+			{key: "PreToolUse", event: "PreToolUse", feed: true},
+			{key: "PostToolUse", event: "PostToolUse", feed: true},
+			// Compaction: same signal Claude gets — a turn carrying on through one.
+			{key: "PreCompact", event: "PreCompact"},
+			{key: "PostCompact", event: "PostCompact"},
 		},
 	},
 	"cursor": {
@@ -112,7 +121,12 @@ var agentInstallers = map[string]agentInstaller{
 			{key: "afterShellExecution", event: "PostToolUse"},        // resolved → clear waiting
 			{key: "beforeMCPExecution", event: "PermissionRequest"},   // an MCP tool also blocks on you
 			{key: "afterMCPExecution", event: "PostToolUse"},          // resolved → clear waiting
-			{key: "sessionEnd", event: "SessionEnd"},                  // clear markers when the conversation ends
+			// sessionStart was missing, so a marker orphaned by a previous conversation
+			// in that pane had nothing to clear it.
+			{key: "sessionStart", event: "SessionStart"},
+			{key: "sessionEnd", event: "SessionEnd"}, // clear markers when the conversation ends
+			{key: "preCompact", event: "PreCompact"},
+			{key: "postToolUseFailure", event: "PostToolUseFailure", feed: true},
 		},
 	},
 	"gemini": {
@@ -128,6 +142,8 @@ var agentInstallers = map[string]agentInstaller{
 			{key: "AfterTool", event: "PostToolUse", feed: true},
 			{key: "SessionStart", event: "SessionStart"}, // clear markers on (re)start
 			{key: "SessionEnd", event: "SessionEnd"},     // clear markers on end
+			{key: "Notification", event: "Notification"}, // gemini's needs-you channel
+			{key: "PreCompress", event: "PreCompact"},    // gemini's name for a compaction
 		},
 	},
 	"copilot": {
@@ -208,8 +224,14 @@ export const GtmuxHook = async ({ $ }) => {
   const MAP = {
     "session.created": "SessionStart",
     "session.deleted": "SessionEnd",
-    "session.error": "SessionEnd",
-    "session.compacted": "PreCompact",
+    // A crashed session is not a clean end. It used to map to SessionEnd, so a turn
+    // that died read exactly like one that finished — no crash severity, no wake, and
+    // a "finished" stamp it never earned. StopFailure is the event for it.
+    "session.error": "StopFailure",
+    // Past tense: opencode fires this when compaction is DONE and the turn carries on,
+    // which is PostCompact. As PreCompact it changed no state, so a turn marker lost
+    // around a compaction stayed lost.
+    "session.compacted": "PostCompact",
     "permission.asked": "PermissionRequest",
     "permission.replied": "PostToolUse",
   };

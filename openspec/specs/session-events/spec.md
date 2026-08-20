@@ -358,3 +358,44 @@ collapse, so one record is always one journal line.
   budget
 - **THEN** the stored summary is single-line, truncated at a rune boundary, and the
   journal line parses as one record
+
+### Requirement: A registered hook must mean something
+
+gtmux asks each agent to run a command on a list of events, and separately holds a table
+saying what those events mean. Nothing compared the two, so an event could be registered
+with no mapping and be discarded on arrival without a warning anywhere — which is what
+happened to the crash event: registered with Claude, given a branch in the state machine,
+documented as a wake class and written into two specs, while every one that fired was
+dropped. Zero were recorded in nineteen thousand events.
+
+Every event the system registers with an agent SHALL resolve to a known meaning. An
+event MISSING from an agent's own table SHALL fall through to the shared table rather
+than resolving to nothing, so a forgotten entry degrades to the common meaning instead
+of to silence. The pairing SHALL be enforced by a test, because the two lists live apart
+and a reviewer reading either one cannot see the gap.
+
+The reverse — a mapping with no registration — is NOT an error: a table may carry
+meanings for events other agents send, or that an agent may gain later.
+
+#### Scenario: An event registered with no mapping
+
+- **WHEN** the system registers an event for which no table gives a meaning
+- **THEN** the conformance test fails, naming the agent and the event
+
+#### Scenario: An event missing from an agent's own table
+
+- **WHEN** an agent sends an event its own table does not list but the shared table does
+- **THEN** the shared meaning applies
+
+### Requirement: A compaction is announced, not inferred
+
+Agents announce that a context compaction has finished — the same turn then carries on.
+The system SHALL treat that announcement as the turn continuing, and SHALL restore the
+turn marker if it is absent, so a pane cannot come out of a compaction reporting idle
+while it works.
+
+#### Scenario: A turn that compacted mid-flight
+
+- **WHEN** an agent reports a completed compaction for a pane
+- **THEN** the pane reports `working`, whether or not it still had a turn marker
+
