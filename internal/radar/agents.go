@@ -862,6 +862,32 @@ func GatherAgents() []Pane {
 		since := activityAt
 		var errored bool
 		var errorText string
+		// A turn whose log ENDS on an error is over, whatever the markers say.
+		//
+		// The pane's own transcript is the agent's account of what happened, and it is
+		// the only source that survives the hook going quiet. That matters because a
+		// turn dying is exactly when the hook is least likely to speak: measured on %41
+		// at 00:54, the turn died on "API Error: Connection lost mid-response", no Stop
+		// and no StopFailure ever arrived, and the pane reported "working" from a turn
+		// marker set half an hour earlier — on the phone, in the menu bar, everywhere.
+		//
+		// Checked for a pane reported as WORKING, not only for an idle one (where this
+		// has always run, to show ⚠ instead of ✓ on a finished-but-failed turn). The
+		// cost is a 64KB tail read for a working pane, and the reading is self-
+		// correcting: an agent that hit an error and carried on has something else as
+		// its last message.
+		//
+		// DISPLAY-only, like the stuck-dispatch guard below: the radar reports what it
+		// sees and does not reach into the hook's markers. Stamping state from here is
+		// what made a dead log look alive on 2026-08-20.
+		if status == "working" {
+			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+			if rec, ok := resume.Load(loc); ok {
+				if e, txt := transcript.LastMessageError(rec.Agent, rec.SessionID); e {
+					status, errored, errorText = "idle", true, txt
+				}
+			}
+		}
 		var bg bool
 		var bgCount int
 		var bgText string
