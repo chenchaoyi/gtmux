@@ -1,6 +1,7 @@
 package hq
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -154,7 +155,7 @@ func TestPlaybookTeachesBatteryWatch(t *testing.T) {
 func TestSeedHQHomeIdempotent(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
-	res, err := seedHQHome()
+	res, err := seedHQHome("")
 	if err != nil || !res.Seeded {
 		t.Fatalf("first seed = (%+v, %v), want Seeded", res, err)
 	}
@@ -177,7 +178,7 @@ func TestSeedHQHomeIdempotent(t *testing.T) {
 	}
 
 	// A re-run at the same version changes nothing and reports no upgrade.
-	res, err = seedHQHome()
+	res, err = seedHQHome("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +214,7 @@ func itoa(n int) string {
 // file is regenerated at the new version, and LOCAL.md is left untouched.
 func TestSeedHQHome_UpgradesOnNewerVersion(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	// Simulate an OLDER installed playbook (version 0 — e.g. a legacy hand-edited one)
@@ -224,7 +225,7 @@ func TestSeedHQHome_UpgradesOnNewerVersion(t *testing.T) {
 	if err := os.WriteFile(hqLocalPath(), []byte("MY LOCAL OVERRIDES"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	res, err := seedHQHome()
+	res, err := seedHQHome("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -249,7 +250,7 @@ func TestSeedHQHome_UpgradesOnNewerVersion(t *testing.T) {
 // An upgrade must NOT touch the situation board or the knowledge base.
 func TestSeedHQHome_UpgradeLeavesMemoryUntouched(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	board := filepath.Join(hqNotesDir(), "board.md")
@@ -260,7 +261,7 @@ func TestSeedHQHome_UpgradeLeavesMemoryUntouched(t *testing.T) {
 	if err := os.WriteFile(hqInstructionsPath(), []byte("unversioned"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	if bb, _ := os.ReadFile(board); string(bb) != "MY CURATED BOARD" {
@@ -270,11 +271,11 @@ func TestSeedHQHome_UpgradeLeavesMemoryUntouched(t *testing.T) {
 
 func TestParsePlaybookVersion(t *testing.T) {
 	cases := map[string]int{
-		playbookMarker(3) + "\n\nbody":      3,
-		playbookMarker(1):                   1,
-		"no marker here":                    0,
-		"<!-- gtmux-hq-playbook vX -->":     0, // malformed → 0
-		"prefix gtmux-hq-playbook v12 rest": 12,
+		playbookMarker(3, "en") + "\n\nbody": 3,
+		playbookMarker(1, "en"):              1,
+		"no marker here":                     0,
+		"<!-- gtmux-hq-playbook vX -->":      0, // malformed → 0
+		"prefix gtmux-hq-playbook v12 rest":  12,
 	}
 	for body, want := range cases {
 		if got := parsePlaybookVersion(body); got != want {
@@ -294,7 +295,7 @@ func TestSeedHQHome_LegacyClaudeMigrates(t *testing.T) {
 	if err := os.WriteFile(hqClaudePointerPath(), []byte("FULL OLD PLAYBOOK + user notes"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	r, err := seedHQHome()
+	r, err := seedHQHome("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +318,7 @@ func TestSeedHQHome_LegacyClaudeMigrates(t *testing.T) {
 		t.Error("migration must seed LOCAL.md for the user's personalization")
 	}
 	// Idempotent: a second run neither re-migrates nor touches the backup.
-	r2, err := seedHQHome()
+	r2, err := seedHQHome("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,7 +337,7 @@ func TestSeedHQHome_AgentsOnlyAddsPointer(t *testing.T) {
 	if err := os.WriteFile(hqInstructionsPath(), []byte(hqInstructions), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	cb, _ := os.ReadFile(hqClaudePointerPath())
@@ -381,7 +382,7 @@ func TestHQPolicyWarning(t *testing.T) {
 
 func TestSeedHQKnowledge(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	// scaffold present + the README teaches the no-secrets rule
@@ -416,7 +417,7 @@ func TestSeedHQKnowledge(t *testing.T) {
 // TUN-mode network note. Pins spec⇄code consistency for these behaviors.
 func TestHQPlaybookHardening(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	agents, err := os.ReadFile(hqInstructionsPath())
@@ -444,7 +445,7 @@ func TestHQPlaybookHardening(t *testing.T) {
 // granularity (B2), reclaim-is-HQ's-job (A), and the portable operating lessons (F6).
 func TestHQPlaybookCharter(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	agents, err := os.ReadFile(hqInstructionsPath())
@@ -540,7 +541,7 @@ func TestHQBriefingEnabled(t *testing.T) {
 // clobbered on re-seed — the same discipline as the knowledge scaffold.
 func TestSeedHQNotesBoard(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	board := filepath.Join(hqNotesDir(), "board.md")
@@ -565,7 +566,7 @@ func TestSeedHQNotesBoard(t *testing.T) {
 // reconcile, and the correction→charter learning loop. Pins spec⇄code.
 func TestHQPlaybookChiefOfStaff(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	agents, err := os.ReadFile(hqInstructionsPath())
@@ -622,7 +623,7 @@ func TestHQAgentCommand(t *testing.T) {
 // judgment, and the tick brief bound.
 func TestHQPlaybookWakeProtocol(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	agents, err := os.ReadFile(hqInstructionsPath())
@@ -658,7 +659,7 @@ func TestHQPlaybookWakeProtocol(t *testing.T) {
 // HQ that `--severity important` is the whole picture.
 func TestHQPlaybookThreeReads(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if _, err := seedHQHome(); err != nil {
+	if _, err := seedHQHome(""); err != nil {
 		t.Fatal(err)
 	}
 	agents, err := os.ReadFile(hqInstructionsPath())
@@ -812,7 +813,7 @@ func TestGeneratedPlaybookFollowsLanguage(t *testing.T) {
 // A same-version install in the OTHER language regenerates (backup kept); a
 // same-version same-language install is a no-op; a legacy marker without lang
 // regenerates once.
-func TestPlaybookUpgradesOnLanguageSwitch(t *testing.T) {
+func TestShellLanguageNeverRewritesTheCharter(t *testing.T) {
 	prev := i18n.Lang()
 	t.Cleanup(func() { i18n.SetLang(prev) })
 	t.Setenv("HOME", t.TempDir())
@@ -824,33 +825,111 @@ func TestPlaybookUpgradesOnLanguageSwitch(t *testing.T) {
 	if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// Same version, same language → no-op.
+	// Same version, same language → nothing at all.
 	var r seedResult
-	if err := upgradePlaybookIfNewer(&r); err != nil || r.Upgraded {
-		t.Fatalf("same-version same-lang must be a no-op: %+v err=%v", r, err)
+	if err := upgradePlaybookIfNewer(&r, ""); err != nil || r.Upgraded || r.LangDiffers != "" {
+		t.Fatalf("same version, same language must be silent: %+v err=%v", r, err)
 	}
-	// Same version, other language → regenerate with a backup.
+
+	// A terminal set to another language must NOT translate the user's charter. This
+	// used to rewrite the file, so running `gtmux hq` from a differently-configured
+	// shell replaced the document the supervisor works from.
 	i18n.SetLang("zh")
 	r = seedResult{}
-	if err := upgradePlaybookIfNewer(&r); err != nil || !r.Upgraded {
-		t.Fatalf("a language switch must regenerate: %+v err=%v", r, err)
+	if err := upgradePlaybookIfNewer(&r, ""); err != nil {
+		t.Fatal(err)
+	}
+	if r.Upgraded {
+		t.Error("a shell language difference rewrote the charter")
+	}
+	if r.LangDiffers != "en" {
+		t.Errorf("the mismatch must be recorded for the notice, got %q", r.LangDiffers)
+	}
+	body, _ := os.ReadFile(hqInstructionsPath())
+	if !strings.Contains(string(body), "lang:en") {
+		t.Error("the charter language changed when nobody asked")
+	}
+}
+
+// The route out: asking for it by name is what changes the charter.
+func TestExplicitLangRewritesTheCharter(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	i18n.SetLang("en")
+	if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var r seedResult
+	if err := upgradePlaybookIfNewer(&r, "zh"); err != nil || !r.Upgraded {
+		t.Fatalf("--lang must rewrite: %+v err=%v", r, err)
+	}
+	if r.LangSwitch != "zh" {
+		t.Errorf("LangSwitch = %q, want zh", r.LangSwitch)
 	}
 	if r.BackupPath == "" {
-		t.Error("the replaced playbook must be backed up")
+		t.Error("the replaced charter must be backed up")
 	}
 	body, _ := os.ReadFile(hqInstructionsPath())
 	if !strings.Contains(string(body), "lang:zh") {
-		t.Error("regenerated playbook must be the zh charter")
+		t.Error("the charter should now be zh")
 	}
-	// Legacy marker without lang: regenerates once.
-	legacy := playbookMarker(hqPlaybookVersion)
+}
+
+// A version upgrade must keep the charter in the language it is already in — the
+// upgrade is gtmux's business, the language is the user's.
+func TestVersionUpgradeKeepsTheCharterLanguage(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// An OLD zh charter, and a shell reading English.
+	old := strings.Replace(playbookIn("zh"), fmt.Sprintf("v%d", hqPlaybookVersion), "v1", 1)
+	if err := os.WriteFile(hqInstructionsPath(), []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	i18n.SetLang("en")
+
+	var r seedResult
+	if err := upgradePlaybookIfNewer(&r, ""); err != nil || !r.Upgraded {
+		t.Fatalf("an old version must upgrade: %+v err=%v", r, err)
+	}
+	body, _ := os.ReadFile(hqInstructionsPath())
+	if !strings.Contains(string(body), "lang:zh") {
+		t.Error("the version upgrade translated the charter into the shell's language")
+	}
+	if r.LangSwitch != "" {
+		t.Errorf("no language change was asked for, but LangSwitch = %q", r.LangSwitch)
+	}
+	// A legacy marker with no language recorded has nothing to preserve.
+	legacy := playbookMarker(hqPlaybookVersion, i18n.Lang())
 	legacy = strings.Replace(legacy, " lang:"+i18n.Lang(), "", 1)
 	if err := os.WriteFile(hqInstructionsPath(), []byte(legacy+"\n\nold body\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	r = seedResult{}
-	if err := upgradePlaybookIfNewer(&r); err != nil || !r.Upgraded {
+	if err := upgradePlaybookIfNewer(&r, ""); err != nil || !r.Upgraded {
 		t.Fatalf("a langless legacy marker must regenerate: %+v err=%v", r, err)
+	}
+}
+
+// The notice for a mismatch must answer all four questions a person has, including
+// the way out — a message that only reports a problem is half a message.
+func TestMismatchNoticeSaysNothingChangedAndHow(t *testing.T) {
+	prev := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(prev) })
+	i18n.SetLang("en")
+	out := captureStdout(t, func() { printSeedNotice(seedResult{LangDiffers: "zh"}) })
+	for _, want := range []string{"zh", "en", "Nothing was changed", "gtmux hq --lang en"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("notice %q is missing %q", out, want)
+		}
 	}
 }
 
@@ -938,24 +1017,14 @@ func TestLocalTemplateFollowsLanguage(t *testing.T) {
 }
 
 // A same-version language switch is announced as what it is, not as "v32 → v32".
-func TestLanguageSwitchNoticeNamesTheSwitch(t *testing.T) {
+func TestExplicitSwitchNoticeSaysItWasAskedFor(t *testing.T) {
 	prev := i18n.Lang()
 	t.Cleanup(func() { i18n.SetLang(prev) })
-	t.Setenv("HOME", t.TempDir())
-	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	i18n.SetLang("en")
-	if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	i18n.SetLang("zh")
-	var r seedResult
-	if err := upgradePlaybookIfNewer(&r); err != nil || !r.Upgraded || r.LangSwitch != "zh" {
-		t.Fatalf("expected a recorded language switch, got %+v err=%v", r, err)
-	}
-	out := captureStdout(t, func() { printSeedNotice(r) })
-	if strings.Contains(out, "v32 → v32") || !strings.Contains(out, "zh") {
-		t.Errorf("the notice must name the language switch, not a same-version upgrade: %q", out)
+	out := captureStdout(t, func() {
+		printSeedNotice(seedResult{Upgraded: true, LangSwitch: "zh", FromVersion: hqPlaybookVersion, ToVersion: hqPlaybookVersion, BackupPath: "/tmp/x"})
+	})
+	if !strings.Contains(out, "as you asked") || !strings.Contains(out, "zh") {
+		t.Errorf("the notice must say the rewrite was requested: %q", out)
 	}
 }

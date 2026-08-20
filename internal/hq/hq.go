@@ -142,8 +142,8 @@ const hqPlaybookVersion = 33
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND the charter language, and signals
 // the file is gtmux-owned.
-func playbookMarker(v int) string {
-	return fmt.Sprintf("<!-- gtmux-hq-playbook v%d lang:%s · managed by gtmux — DO NOT EDIT; put your own instructions in LOCAL.md -->", v, i18n.Lang())
+func playbookMarker(v int, lang string) string {
+	return fmt.Sprintf("<!-- gtmux-hq-playbook v%d lang:%s · managed by gtmux — DO NOT EDIT; put your own instructions in LOCAL.md -->", v, lang)
 }
 
 var playbookVersionRe = regexp.MustCompile(`gtmux-hq-playbook v(\d+)`)
@@ -175,12 +175,21 @@ func parsePlaybookVersion(body string) int {
 // the version+language marker, the charter in the user's language (GTMUX_LANG),
 // and the LOCAL.md import (LAST, so a user's LOCAL.md extends/overrides the
 // managed guidance).
-func generatedPlaybook() string {
+func generatedPlaybook() string { return playbookIn(i18n.Lang()) }
+
+// playbookIn renders the managed AGENTS.md in a NAMED language rather than whichever
+// one this shell happens to be set to.
+//
+// The distinction matters because the charter is a file on the user's disk. A version
+// upgrade has to rewrite it, and it must rewrite it in the language it was already in —
+// otherwise running `gtmux hq` from a terminal with a different GTMUX_LANG silently
+// translates the user's charter as a side effect of something else.
+func playbookIn(lang string) string {
 	charter := hqInstructionsEN
-	if i18n.Lang() == "zh" {
+	if lang == "zh" {
 		charter = hqInstructionsZH
 	}
-	return playbookMarker(hqPlaybookVersion) + "\n\n" + charter + "\n@LOCAL.md\n"
+	return playbookMarker(hqPlaybookVersion, lang) + "\n\n" + charter + "\n@LOCAL.md\n"
 }
 
 // hqLocalPath is the user's personalization file — seed-once, NEVER overwritten.
@@ -267,7 +276,7 @@ const hqClaudePointer = `@AGENTS.md
 // backed up, then regenerated as managed (hq-perception-v2): the old warn-only
 // path provably left live HQ brains running stale policy forever.
 // Returns a seedResult describing what happened (seeded / upgraded / migrated).
-func seedHQHome() (seedResult, error) {
+func seedHQHome(wantLang string) (seedResult, error) {
 	var r seedResult
 	home := state.HQHome()
 	if err := os.MkdirAll(home, 0o755); err != nil {
@@ -278,7 +287,12 @@ func seedHQHome() (seedResult, error) {
 	switch {
 	case !hasAgents && !hasClaude:
 		// Fresh home → single source: the managed AGENTS.md plus the CLAUDE.md import.
-		if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+		// No existing charter to preserve, so this one follows the shell (or --lang).
+		seedLang := i18n.Lang()
+		if wantLang != "" {
+			seedLang = wantLang
+		}
+		if err := os.WriteFile(hqInstructionsPath(), []byte(playbookIn(seedLang)), 0o644); err != nil {
 			return r, err
 		}
 		if err := os.WriteFile(hqClaudePointerPath(), []byte(hqClaudePointer), 0o644); err != nil {
@@ -288,7 +302,7 @@ func seedHQHome() (seedResult, error) {
 	case hasAgents:
 		// A managed (or legacy-unversioned) AGENTS.md exists → upgrade it if the shipped
 		// playbook is newer (versioned-hq-playbook), and ensure the CLAUDE.md import.
-		if err := upgradePlaybookIfNewer(&r); err != nil {
+		if err := upgradePlaybookIfNewer(&r, wantLang); err != nil {
 			return r, err
 		}
 		if !hasClaude {
@@ -346,7 +360,11 @@ type seedResult struct {
 	Migrated    bool   // the upgraded file had no version marker (legacy → managed)
 	FromVersion int    // the installed version before an upgrade
 	ToVersion   int    // the shipped version written
-	LangSwitch  string // non-empty: the upgrade was (also) a charter-language switch, to this language
+	LangSwitch  string // non-empty: the user asked for a language change (--lang), to this language
+	// LangDiffers is set when the charter is in one language and this shell reads
+	// another, and NOTHING was changed because of it. It exists so the mismatch can be
+	// mentioned once instead of acted on.
+	LangDiffers string
 	BackupPath  string // where the prior AGENTS.md was backed up (on upgrade)
 }
 
@@ -355,15 +373,38 @@ type seedResult struct {
 // FIRST (never destroy content) — and records the outcome in r. An installed version
 // equal to (or newer than) the shipped one is a no-op (idempotent). A file with no
 // version marker parses as version 0 and is migrated once.
-func upgradePlaybookIfNewer(r *seedResult) error {
+func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 	body, err := os.ReadFile(hqInstructionsPath())
 	if err != nil {
 		return err
 	}
 	installed := parsePlaybookVersion(string(body))
 	installedLang := parsePlaybookLang(string(body))
-	if installed >= hqPlaybookVersion && installedLang == i18n.Lang() {
-		return nil // up to date, right language (or a dev home ahead of this binary)
+
+	// Which language to WRITE, if we write at all. The default is the language the
+	// charter is already in — never the shell's.
+	//
+	// It used to be the shell's, so a terminal with a different GTMUX_LANG rewrote the
+	// user's charter into another language as a side effect of running `gtmux hq` for
+	// some unrelated reason. Nobody asked for that, and a translated charter is not a
+	// small change: it is the document the supervisor works from. Changing it is now
+	// something the user asks for by name (`gtmux hq --lang zh`), and everything else
+	// leaves it alone.
+	writeLang := installedLang
+	if writeLang == "" {
+		writeLang = i18n.Lang() // legacy file with no marker: nothing to preserve
+	}
+	if wantLang != "" {
+		writeLang = wantLang
+	}
+
+	if installed >= hqPlaybookVersion && writeLang == installedLang {
+		// Nothing to write. If this shell reads a different language than the charter
+		// is in, say so once — an advisory, not an action.
+		if installedLang != "" && installedLang != i18n.Lang() {
+			r.LangDiffers = installedLang
+		}
+		return nil
 	}
 	// Back up the prior playbook before overwriting, keyed by its version+language so
 	// no upgrade ever clobbers an earlier backup.
@@ -375,13 +416,13 @@ func upgradePlaybookIfNewer(r *seedResult) error {
 	if err := os.WriteFile(bak, body, 0o644); err != nil {
 		return err
 	}
-	if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
+	if err := os.WriteFile(hqInstructionsPath(), []byte(playbookIn(writeLang)), 0o644); err != nil {
 		return err
 	}
 	r.Upgraded = true
 	r.FromVersion, r.ToVersion = installed, hqPlaybookVersion
-	if installedLang != "" && installedLang != i18n.Lang() {
-		r.LangSwitch = i18n.Lang()
+	if installedLang != "" && writeLang != installedLang {
+		r.LangSwitch = writeLang // only ever set by an explicit --lang
 	}
 	r.BackupPath = bak
 	r.Migrated = installed == 0
@@ -408,15 +449,28 @@ func printSeedNotice(r seedResult) {
 			fmt.Sprintf("已将 HQ 守则迁移为受管 v%d —— 你原来的守则已备份到 %s。请把个人定制移入 %s（gtmux 永不覆盖它）。",
 				r.ToVersion, r.BackupPath, hqLocalPath()))
 	case r.Upgraded && r.LangSwitch != "" && r.FromVersion == r.ToVersion:
-		i18n.Say(fmt.Sprintf("Switched the HQ charter language to %s (previous backed up at %s). Your %s is untouched.",
+		i18n.Say(fmt.Sprintf("Rewrote the HQ charter in %s, as you asked (the old one is saved at %s). Your %s is untouched.",
 			r.LangSwitch, r.BackupPath, filepath.Base(hqLocalPath())),
-			fmt.Sprintf("HQ 守则语言已切换为 %s（旧版备份在 %s）。你的 %s 未改动。",
+			fmt.Sprintf("已按你的要求把中控守则改写成 %s（旧的存在 %s）。你的 %s 没动。",
 				r.LangSwitch, r.BackupPath, filepath.Base(hqLocalPath())))
 	case r.Upgraded:
 		i18n.Say(fmt.Sprintf("Upgraded the HQ playbook v%d → v%d (previous backed up at %s). Your %s is untouched.",
 			r.FromVersion, r.ToVersion, r.BackupPath, filepath.Base(hqLocalPath())),
 			fmt.Sprintf("已升级 HQ 守则 v%d → v%d（旧版备份在 %s）。你的 %s 未改动。",
 				r.FromVersion, r.ToVersion, r.BackupPath, filepath.Base(hqLocalPath())))
+	case r.LangDiffers != "":
+		// Nothing happened here, and that is the point: the charter is in one language,
+		// this terminal reads another, and gtmux left the file alone. Say all four
+		// things a person needs — what the charter is, what this shell wants, that
+		// nothing changed, and the one command that would change it.
+		other := "zh"
+		if r.LangDiffers == "zh" {
+			other = "en"
+		}
+		i18n.Say(fmt.Sprintf("The HQ charter is written in %s; this terminal is set to %s. Nothing was changed. To rewrite it in %s:  gtmux hq --lang %s",
+			r.LangDiffers, i18n.Lang(), other, other),
+			fmt.Sprintf("中控守则是 %s 的，你这个终端用的是 %s。什么都没改。想改成 %s：  gtmux hq --lang %s",
+				r.LangDiffers, i18n.Lang(), other, other))
 	case r.Seeded:
 		i18n.Say("Seeded the supervisor home: "+hqInstructionsPath()+
 			"\n  · knowledge/ — its knowledge base (ledger + topics); anyone can file a candidate: gtmux capture \"<lesson> @pitfalls\""+
@@ -615,6 +669,7 @@ func agentAliveByCmd(cmd string) bool {
 func CmdHQ(args []string) int {
 	agentCmd := ""
 	rotate := false
+	charterLang := "" // --lang: the ONLY way the charter's language ever changes
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
@@ -632,6 +687,8 @@ func CmdHQ(args []string) int {
 				"  首次启动时 HQ 会自动自我介绍并汇报一次现状；")
 			i18n.Say("  set GTMUX_HQ_BRIEF=off to spawn silently.",
 				"  设 GTMUX_HQ_BRIEF=off 可静默启动。")
+			i18n.Say("  --lang en|zh: rewrite the charter in that language (the only thing that changes it).",
+				"  --lang en|zh：把守则改写成这个语言（只有它能改守则的语言）。")
 			i18n.Say("  --rotate: HQ retires its own session for a fresh one (run it AFTER",
 				"  --rotate：中控轮换掉自己这轮会话（务必在把态势板与知识库写到最新、")
 			i18n.Say("  bringing the board + knowledge base current — they are the handoff).",
@@ -648,10 +705,24 @@ func CmdHQ(args []string) int {
 			agentCmd = args[i]
 		case strings.HasPrefix(a, "--agent="):
 			agentCmd = strings.TrimPrefix(a, "--agent=")
+		case a == "--lang":
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux hq: --lang needs a language (en or zh)", "gtmux hq: --lang 需要一个语言（en 或 zh）")
+				return 2
+			}
+			i++
+			charterLang = args[i]
+		case strings.HasPrefix(a, "--lang="):
+			charterLang = strings.TrimPrefix(a, "--lang=")
 		default:
 			i18n.Sae("gtmux hq: unknown option '"+a+"'", "gtmux hq: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+	if charterLang != "" && charterLang != "en" && charterLang != "zh" {
+		i18n.Sae("gtmux hq: --lang takes en or zh, not '"+charterLang+"'",
+			"gtmux hq: --lang 只接受 en 或 zh，不是 '"+charterLang+"'")
+		return 2
 	}
 	if tmux.Bin == "" {
 		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
@@ -674,7 +745,7 @@ func CmdHQ(args []string) int {
 	}
 
 	radar.PreflightResource() // warn (not block) if a machine resource is at its red line
-	res, err := seedHQHome()
+	res, err := seedHQHome(charterLang)
 	if err != nil {
 		i18n.Sae("gtmux hq: "+err.Error(), "gtmux hq: "+err.Error())
 		return 1
