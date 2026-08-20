@@ -429,3 +429,25 @@ none is present, without disturbing the start time of a turn that already has on
 - **WHEN** an agent completes a tool in a pane with no turn marker
 - **THEN** the marker is restored and the pane reports `working` again
 
+### Requirement: A turn that died is not a turn that is running
+
+An agent's own log is the account that survives its hooks going quiet — and a turn
+dying is exactly when the hook is least likely to speak. A pane whose transcript ENDS on
+an error SHALL be reported as ended and marked as failed, whatever its turn marker says,
+so a dead turn cannot be shown as work in progress.
+
+The reading is self-correcting: an agent that hit an error and carried on has something
+else as its last message. It is display-only — the radar reports what the log shows and
+does not reach into the hook's markers.
+
+#### Scenario: The turn died and nothing said so
+
+- **WHEN** a pane's turn marker says a turn is running but its transcript's last message
+  is an error
+- **THEN** the pane reports as ended and errored, not `working`
+
+#### Scenario: An error the agent recovered from
+
+- **WHEN** an error appears in the log but the agent has written since
+- **THEN** the pane keeps reporting `working`
+
