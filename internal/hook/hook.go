@@ -166,6 +166,11 @@ func decide(event string, activePresent, sameSessionTurn bool) decision {
 	case "SessionEnd":
 		// Ending is unconditional: whoever it belonged to, the turn is over.
 		return decision{clearActive: true, clearWaiting: true, clearFinished: true}
+	case "PostCompact":
+		// Compaction finished; the turn continues. Re-arm the marker (Touch leaves an
+		// existing one's mtime alone, so a live turn keeps its real start) so a pane
+		// cannot come out of a compaction looking idle while it works.
+		return decision{setActive: true}
 	case "PreCompact":
 		// State-neutral: recorded to the event stream (so a `/compact` is confirmable
 		// by a dispatcher) but touches NO marker — the turn's working/idle state is

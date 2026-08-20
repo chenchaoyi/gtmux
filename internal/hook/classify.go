@@ -77,6 +77,7 @@ const (
 	semSubagentStart
 	semResponse // the agent finished its turn
 	semSubagentResponse
+	semResponseFailure
 	semSessionStart
 	semSessionEnd
 	semStatusNotification
@@ -114,6 +115,18 @@ func classify(source, event, tool string) Class {
 		return Class{Lifecycle: "UserPromptSubmit"}
 	case semResponse:
 		return Class{Lifecycle: "Stop"}
+	case semResponseFailure:
+		// A crash is not a finish: it ends the turn without stamping "finished" and
+		// without the completion notification (see decide).
+		return Class{Lifecycle: "StopFailure"}
+	case semPostCompact:
+		// Compaction FINISHED and the same turn carries on. Said outright by the agent,
+		// where gtmux previously had to infer it: a compaction also announces a
+		// SessionStart, which used to void the turn and leave a pane that worked for
+		// another twenty minutes reading "idle" (%41, 2026-08-20). The session-id guard
+		// added then still stands; this is the explicit signal beside it, and it also
+		// REPAIRS a turn marker that something else removed.
+		return Class{Lifecycle: "PostCompact"}
 	case semPreCompact:
 		// State-neutral: compaction started. Emitted to the event stream (so a
 		// `/compact` is confirmable) but changes no marker (decide has no case → noop).
@@ -147,12 +160,21 @@ func dedicatedApprovalKind(tool string) Kind {
 }
 
 func eventSemantic(source, event string) semantic {
+	// A per-agent table OVERRIDES the generic one — that is its whole purpose, since
+	// the same event name can mean different things per agent (Claude's PreToolUse
+	// fires for every tool and is telemetry; an agent whose only signal is the
+	// pre-tool event needs it read as a possible approval).
 	if table, ok := agentEventSemantics[source]; ok {
 		if s, ok := table[event]; ok {
 			return s
 		}
-		return semUnknown
 	}
+	// …but an event MISSING from that table falls through here rather than being
+	// dropped. It used to return unknown, which is how `StopFailure` stayed dead for
+	// months while being registered, branched on, and documented: nothing anywhere
+	// says "you registered an event you never mapped". Falling through means a
+	// forgotten mapping degrades to the shared meaning instead of to silence, and
+	// TestEveryRegisteredEventClassifies catches the rest.
 	if s, ok := genericEventSemantics[event]; ok {
 		return s
 	}
@@ -180,9 +202,18 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"SessionStart":     semSessionStart,
 		"SessionEnd":       semSessionEnd,
 		"Stop":             semResponse,
-		"SubagentStart":    semSubagentStart,
-		"SubagentStop":     semSubagentResponse,
-		"Notification":     semStatusNotification,
+		// The turn DIED on an agent/API error. gtmux has registered this hook, kept a
+		// `decide` branch for it and documented it as a wake class since
+		// hq-perception-v2 — and never mapped it here, so every one was classified
+		// unknown and dropped: 0 in 19k events. What made that silent is the lookup
+		// below, which used to stop at a per-agent table instead of falling through.
+		"StopFailure": semResponseFailure,
+		// A tool that failed mid-turn. Telemetry — the turn is still running, and the
+		// agent decides what to do about it.
+		"PostToolUseFailure": semToolEnd,
+		"SubagentStart":      semSubagentStart,
+		"SubagentStop":       semSubagentResponse,
+		"Notification":       semStatusNotification,
 	},
 	"codex": {
 		// Codex's NEW hooks system (~/.codex/hooks.json, features.hooks) fires
@@ -246,11 +277,15 @@ var genericEventSemantics = map[string]semantic{
 	"PermissionRequest":    semApprovalRequest,
 	"PostToolUse":          semToolEnd,
 	"PreCompact":           semPreCompact,
+	"PreCompress":          semPreCompact,  // gemini's name for PreCompact
+	"PostCompress":         semPostCompact, // …and for PostCompact, if it gains one
 	"PostCompact":          semPostCompact,
 	"UserPromptSubmit":     semPromptSubmit,
 	"SessionStart":         semSessionStart,
 	"SessionEnd":           semSessionEnd,
 	"Stop":                 semResponse,
+	"StopFailure":          semResponseFailure,
+	"PostToolUseFailure":   semToolEnd,
 	"SubagentStart":        semSubagentStart,
 	"SubagentStop":         semSubagentResponse,
 	"Notification":         semStatusNotification,
@@ -292,4 +327,16 @@ func isSideEffectingTool(tool, source string) bool {
 		return kiroSideEffectingAliases[strings.ToLower(tool)]
 	}
 	return false
+}
+
+// EventIsMapped reports whether (agent, event) resolves to a KNOWN semantic — i.e.
+// whether gtmux will do anything at all with that hook when it fires.
+//
+// Exported for the conformance test that pairs the two halves of this feature: the
+// list of events gtmux REGISTERS with each agent (internal/app) and the table that
+// says what they MEAN (here). Those lists sat in different packages with nothing
+// comparing them, which is how `StopFailure` was registered, branched on in decide,
+// documented as a wake class, and silently discarded for months.
+func EventIsMapped(agent, event string) bool {
+	return eventSemantic(agent, event) != semUnknown
 }

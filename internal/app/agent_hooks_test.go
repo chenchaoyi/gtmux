@@ -241,8 +241,15 @@ func TestInstallCodexHooks(t *testing.T) {
 	if _, hasAsync := e["async"]; hasAsync {
 		t.Errorf("codex handler must NOT set async (Codex skips async hooks); got %v", e["async"])
 	}
-	if n := countAgentHooks(t, m, "PreToolUse"); n != 1 {
+	// A foreign PreToolUse hook must survive. gtmux now registers its OWN PreToolUse
+	// for codex too (an approval answered mid-turn had nothing to clear its "needs
+	// you" mark before), so the count is the foreign one PLUS ours — what matters is
+	// that the foreign entry is still there, not that we added nothing beside it.
+	if n := countAgentHooks(t, m, "PreToolUse"); n < 1 {
 		t.Errorf("foreign PreToolUse hook must survive, got %d", n)
+	}
+	if !hasForeignHook(t, m, "PreToolUse") {
+		t.Error("the foreign PreToolUse hook was replaced by ours")
 	}
 	if n := countAgentHooks(t, m, "Stop"); n != 1 {
 		t.Errorf("reinstall left %d Stop entries, want 1 (idempotent)", n)
@@ -290,4 +297,24 @@ func TestInstallPreservesForeignHooks(t *testing.T) {
 	if n := countAgentHooks(t, m, "AfterAgent"); n != 1 {
 		t.Errorf("after uninstall only the foreign hook should remain, got %d", n)
 	}
+}
+
+// hasForeignHook reports whether an event still carries a handler that is NOT gtmux's
+// — the property "we add ours without taking over the file" actually depends on.
+func hasForeignHook(t *testing.T, m map[string]any, event string) bool {
+	t.Helper()
+	hooks, _ := m["hooks"].(map[string]any)
+	for _, raw := range asArray(hooks[event]) {
+		entry, _ := raw.(map[string]any)
+		if c := asString(entry["command"]); c != "" && !strings.Contains(c, "gtmux") {
+			return true
+		}
+		for _, h := range asArray(entry["hooks"]) {
+			hm, _ := h.(map[string]any)
+			if c := asString(hm["command"]); c != "" && !strings.Contains(c, "gtmux") {
+				return true
+			}
+		}
+	}
+	return false
 }
