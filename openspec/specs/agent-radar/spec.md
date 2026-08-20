@@ -37,9 +37,36 @@ plain shell (a stale title is not a live agent).
 The system SHALL classify each detected agent as `working`, `waiting`, `idle`,
 or `running`, where `waiting` means blocked on the user (permission/approval).
 
+`working` is decided from the AGENT's own hooks first, exactly as `waiting` is: the
+hook records that a turn began and has not ended, which is the fact. Screen signals — a
+title spinner, a changing pane — remain the fallback for panes that report no hooks.
+
+This ordering is not a preference. Claude animated its pane title with a braille spinner
+while it worked and showed a ready glyph when idle, and 2.1.237 stopped animating it: a
+pane working flat out showed the same glyph as an idle one, and every Claude pane in a
+fleet read `idle` indefinitely while the marker that knew better sat unread. A signal
+owned by an agent can stop meaning what it meant; the hook is gtmux's own record.
+
+The rule SHALL be agent-agnostic — it reads the marker, never the agent's name — so
+every hook-equipped agent (Claude, Codex, Cursor, opencode, …) is covered by the same
+mechanism, and an agent with no hooks is unaffected.
+
+#### Scenario: Working because the hook says a turn is running
+
+- **WHEN** a pane has a turn marker written by its agent's hook and the pane has not
+  fallen silent
+- **THEN** the agent's status is `working`, whatever its title shows
+
+#### Scenario: A turn marker that the pane's own silence contradicts
+
+- **WHEN** a turn marker exists but the pane has stopped painting for well past the
+  grace (the end-of-turn hook never arrived)
+- **THEN** the marker is no longer believed and the screen signals decide
+
 #### Scenario: Working via title spinner
 
-- **WHEN** a pane's title leads with an animating braille spinner glyph
+- **WHEN** a pane reports no hooks and its title leads with an animating braille
+  spinner glyph
 - **THEN** the agent's status is `working`
 
 #### Scenario: Working for a spinner-less agent

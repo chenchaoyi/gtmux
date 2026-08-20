@@ -819,6 +819,25 @@ func GatherAgents() []Pane {
 			}
 			return hookFreeStatus(id, panePid) == "working"
 		}
+		// WORKING is hook-driven too, on the same principle as waiting: the hook knows
+		// a turn started and has not ended, which is the fact — the pane TITLE only ever
+		// carried a hint about it.
+		//
+		// It used to be the only source: Claude animated the title with a braille spinner
+		// while it worked and showed ✳ when ready, so the glyph told you the state. Claude
+		// 2.1.237 stopped animating it — a pane working flat out now shows the same ✳ as an
+		// idle one — and every Claude pane in the fleet read "idle" forever. Measured on a
+		// pane running commands the whole time: eight title samples over six seconds, ✳
+		// every one. A signal owned by someone else can stop meaning what it meant, and
+		// the hook marker had been sitting right there, used only to say how long.
+		//
+		// Applied BEFORE resolveWaiting so a waiting mark still wins: blocked on you is a
+		// more specific truth than in a turn, and both come from the same hook.
+		if status == "idle" || status == "running" {
+			if turnInProgress(id, activityAt, now) {
+				status = "working"
+			}
+		}
 		var clearMark bool
 		status, clearMark = resolveWaiting(status, waiting[id], waitMarkStale(id, activityAt), liveWorking)
 		if clearMark {
@@ -1143,6 +1162,29 @@ func sortPanes(panes []Pane) {
 		}
 		return panes[i].Loc < panes[j].Loc
 	})
+}
+
+// activeQuietGrace is how long a pane may go quiet with a turn marker still on it
+// before the marker stops being believed.
+//
+// The polarity is the opposite of the waiting mark's, because the states are: an agent
+// blocked on you sits still, so activity NEWER than the mark means it moved on; an agent
+// working repaints its status line every second or two, so activity that has STOPPED is
+// what says the turn is over. Generous on purpose — a missing end-of-turn event is a
+// hook fault, and the honest reading of "a turn began and nothing ended it" is that it
+// is still running.
+const activeQuietGrace int64 = 10 * 60 // seconds
+
+// turnInProgress reports whether the hook says this pane is mid-turn: an active marker
+// that the pane's own activity has not contradicted.
+func turnInProgress(id string, activityAt, now int64) bool {
+	if FileMtime(state.ActivePath(id)) == 0 {
+		return false // no marker: nothing claimed here (a hook-less agent, always)
+	}
+	if activityAt <= 0 || now <= 0 {
+		return true // nothing to contradict it with
+	}
+	return now-activityAt <= activeQuietGrace
 }
 
 // waitStaleGrace is how far a pane's activity may postdate its waiting mark before
