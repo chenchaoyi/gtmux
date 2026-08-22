@@ -1,1 +1,2 @@
 • Fixed: the lock-screen Live Activity counted gtmux's own supervisor as work in progress — it now counts only your sessions.
+• Fixed: the lock-screen card could freeze hours behind — the app now keeps making sure this Mac can still push to it.
