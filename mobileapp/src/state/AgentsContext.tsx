@@ -9,7 +9,7 @@ import {subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
 import {setBadge} from '../push';
-import {buildActivityItems} from './activityItems';
+import {buildActivityItems, isWorkerRow} from './activityItems';
 
 export type ConnState = 'connecting' | 'live' | 'offline' | 'unauthorized';
 
@@ -69,7 +69,10 @@ export function AgentsProvider({
           // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
           // leading with the session that needs you (bold) + its prompt (detail),
           // and LISTING the top in-flight sessions (concrete names + relative time).
-          const waiters = a.filter(x => x.status === 'waiting');
+          // Count only the WORKERS — the supervisor has its own card and is not one of
+          // them (isWorkerRow; matches the Go push side and the radar list).
+          const workerRows = a.filter(isWorkerRow);
+          const waiters = workerRows.filter(x => x.status === 'waiting');
           // App-icon badge = live count of sessions waiting on you (reconciled every
           // refresh; the server's silent push covers backgrounded/killed).
           setBadge(waiters.length);
@@ -77,8 +80,8 @@ export function AgentsProvider({
           const {items, more} = buildActivityItems(a);
           LiveActivity.sync(
             waiters.length,
-            a.filter(x => x.status === 'working').length,
-            a.filter(x => x.status === 'idle').length,
+            workerRows.filter(x => x.status === 'working').length,
+            workerRows.filter(x => x.status === 'idle').length,
             top ? top.task || primary(top) : '',
             top ? top.session || top.loc : '',
             items,
