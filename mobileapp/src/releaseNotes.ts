@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.72.0',
+    en: [
+      'Fixed: the lock-screen Live Activity counted gtmux\'s own supervisor as work in progress — it now counts only your sessions.',
+    ],
+    zh: [
+      '修复：锁屏实时活动把 gtmux 自己的中控算成了「工作中」，现在只统计你的会话。',
+    ],
+  },
+  {
     version: '0.67.0',
     en: [
       'Fixed: when an agent moved its conversation to a background process, the phone kept showing the old history.',
