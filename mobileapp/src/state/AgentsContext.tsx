@@ -13,6 +13,13 @@ import {buildActivityItems, isWorkerRow} from './activityItems';
 
 export type ConnState = 'connecting' | 'live' | 'offline' | 'unauthorized';
 
+// How often to check that the Mac still holds this activity's push token. Cheap: a
+// native read plus, at most, one idempotent POST.
+const ACTIVITY_ASSERT_TICK_MS = 60_000;
+// How long a CONFIRMED registration is trusted before asserting it again — the window
+// in which a serve restart that dropped its in-memory copy would go unnoticed.
+const ACTIVITY_REASSERT_MS = 10 * 60_000;
+
 interface AgentsContextValue {
   client: GtmuxClient;
   agents: Agent[];
@@ -155,29 +162,44 @@ export function AgentsProvider({
     };
   }, [conn]);
 
-  // Forward the Live Activity push token to this Mac so the relay can keep the
-  // lock screen live with the app closed. The OS fires onPushToken on a token CHANGE.
-  const lastActivityToken = useRef<string>('');
+  // Keep this Mac holding a CURRENT Live Activity push token, so it can update the
+  // lock-screen card while the app is closed.
+  //
+  // Everything about this used to be one-shot. The OS emits a token only when it
+  // CHANGES; the app forwarded that once, swallowed any error, and never tried again;
+  // and the only other attempt fired on a connection transition, using a token cached
+  // in JS. So a single failed POST — this Mac's relay leg measured 5.4s on a slow
+  // network — or a token the OS never re-emitted left the Mac holding nothing, for as
+  // long as the app stayed connected. The card does not look broken when that happens:
+  // its relative times are rendered on the phone from the last state it was given, so
+  // it keeps counting and reads as a session that has been working for hours. Measured
+  // 2026-08-22: 2h56m of that, phone connected throughout.
+  //
+  // So: assert it on a heartbeat instead, from the token the NATIVE side holds (the
+  // running activity's, not a JS copy), and stop retrying only once the Mac has
+  // confirmed. Registration is idempotent server-side, and a no-op when no activity is
+  // running (there is no token to send).
+  const registered = useRef<{token: string; at: number}>({token: '', at: 0});
   useEffect(() => {
-    const unsub = LiveActivity.onPushToken(tok => {
-      if (tok === lastActivityToken.current) return;
-      lastActivityToken.current = tok;
-      client.registerActivityToken(tok, apnsEnv()).catch(() => {});
-    });
-    return unsub;
-  }, [client]);
-
-  // A serve RESTART drops the serve's in-memory Live Activity token (it isn't
-  // persisted like device push tokens), yet the OS only re-fires onPushToken on a
-  // token CHANGE — which a restart is not — so an ongoing Live Activity would go
-  // stale until the app is relaunched. Re-assert the current token whenever the
-  // connection comes (back) up (a restart drops+reopens the SSE → conn goes
-  // offline→live), so a serve restart auto-recovers. Idempotent server-side.
-  useEffect(() => {
-    if (conn === 'live' && lastActivityToken.current) {
-      client.registerActivityToken(lastActivityToken.current, apnsEnv()).catch(() => {});
-    }
-  }, [conn, client]);
+    let alive = true;
+    const assert = async () => {
+      if (!alive || conn !== 'live') return;
+      const tok = await LiveActivity.currentPushToken();
+      if (!alive || !tok) return;
+      const done = registered.current;
+      // Re-assert a token the Mac already confirmed only occasionally — enough to
+      // recover a serve restart that dropped its in-memory copy, rare enough to be free.
+      if (tok === done.token && Date.now() - done.at < ACTIVITY_REASSERT_MS) return;
+      const ok = await client.registerActivityToken(tok, apnsEnv()).catch(() => false);
+      if (ok && alive) registered.current = {token: tok, at: Date.now()};
+    };
+    assert();
+    const id = setInterval(assert, ACTIVITY_ASSERT_TICK_MS);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client, conn]);
 
   // Resolve the caller's scope authoritatively from GET /api/share (all:true ⇒
   // owner). Re-reads when the client changes and on every successful agents refresh

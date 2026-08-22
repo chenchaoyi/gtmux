@@ -492,3 +492,30 @@ func TestPushTokensRedacted(t *testing.T) {
 		t.Fatalf("GET /api/push/tokens leaked the full token: %s", rr.Body.String())
 	}
 }
+
+// A Live Activity that stops updating is invisible from every side: the card keeps its
+// own timers running, so it reads as a session working for hours rather than as a lost
+// connection. ActivityStatus is what makes the link inspectable — and its ZERO state is
+// the one that matters, because "the Mac holds no token" is exactly the failure.
+func TestActivityStatusReportsTheLink(t *testing.T) {
+	pm := NewPushManager(nil, nil, nil, "mac", nil)
+
+	acts, last := pm.ActivityStatus()
+	if len(acts) != 0 || last != 0 {
+		t.Fatalf("a fresh manager holds nothing: %v, last=%d", acts, last)
+	}
+
+	pm.RegisterActivity("act-tok", "sandbox")
+	acts, _ = pm.ActivityStatus()
+	if len(acts) != 1 || acts["act-tok"].Env != "sandbox" {
+		t.Fatalf("registration not reported: %+v", acts)
+	}
+	if acts["act-tok"].RegisteredAt == 0 {
+		t.Error("a registration must carry when it happened — 'since when' is the question asked of a stale card")
+	}
+
+	pm.UnregisterActivity("act-tok")
+	if acts, _ := pm.ActivityStatus(); len(acts) != 0 {
+		t.Fatalf("unregister left %v", acts)
+	}
+}
