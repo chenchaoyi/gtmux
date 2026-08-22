@@ -3,7 +3,9 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -960,7 +962,69 @@ func appChecks() []dcheck {
 
 func remoteChecks() []dcheck {
 	rows := append([]dcheck{rowCloudflared()}, sleepSettingChecks()...)
-	return append(rows, rowServeRunning())
+	return append(rows, rowServeRunning(), rowLiveActivity())
+}
+
+// localServeGet reads a host-only endpoint off the serve running on this Mac. Kept
+// small and local to doctor: it answers "what does the RUNNING process think", which no
+// file on disk can (the Live Activity token is held in memory by design).
+func localServeGet(path string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d%s", defaultServePort, path), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+resolveServeToken(""))
+	resp, err := (&http.Client{Timeout: 2 * time.Second}).Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("serve returned %d", resp.StatusCode)
+	}
+	return io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+}
+
+// rowLiveActivity reports whether this Mac can still update the phone's lock-screen
+// card.
+//
+// The card is the one surface that FAILS INVISIBLY. Its relative times are rendered on
+// the phone from the last pushed state, so when the Mac stops pushing, the card does not
+// go blank or stale-looking — it keeps counting, and reads as a session that has been
+// working for hours. Measured 2026-08-22: nearly three hours of that, while the phone
+// was connected the whole time and nothing on either side said the push token was gone.
+//
+// The token lives in the running serve's memory, so this asks the serve rather than a
+// file. No serve, or no push configured, is not a fault to report here — rowServeRunning
+// covers the first and push is optional.
+func rowLiveActivity() dcheck {
+	label := i18n.Tr("lock-screen card", "锁屏卡片")
+	note := i18n.Tr("the phone's Live Activity is updated by THIS Mac pushing to it",
+		"手机锁屏那张卡片，是由本机推送更新的")
+	body, err := localServeGet("/api/push/tokens")
+	if err != nil {
+		return dcheck{stInfo, label, i18n.Tr("serve not answering", "服务未响应"), note}
+	}
+	var payload struct {
+		Activities []struct {
+			Env          string `json:"env"`
+			RegisteredAt int64  `json:"registeredAt"`
+		} `json:"activities"`
+		LastPush int64 `json:"activityLastPush"`
+	}
+	if json.Unmarshal(body, &payload) != nil {
+		return dcheck{stInfo, label, i18n.Tr("unreadable", "读不出"), note}
+	}
+	if len(payload.Activities) == 0 {
+		return dcheck{stInfo, label, i18n.Tr("no card registered", "没有已注册的卡片"),
+			i18n.Tr("nothing to update — either no Live Activity is running on the phone, or its push token never reached this Mac (open the app to re-register)",
+				"没有可更新的对象 —— 要么手机上没有在跑的实时活动，要么它的推送 token 没送到本机（打开 app 会重新注册）")}
+	}
+	val := fmt.Sprintf(i18n.Tr("%d registered", "已注册 %d 个"), len(payload.Activities))
+	if payload.LastPush > 0 {
+		val += " · " + i18n.Tr("last push ", "上次推送 ") + hq.HumanAgeShort(time.Now().Unix()-payload.LastPush)
+	}
+	return dcheck{stOK, label, val, note}
 }
 
 // rowServeRunning reports whether a local gtmux serve is actually LISTENING (the phone's

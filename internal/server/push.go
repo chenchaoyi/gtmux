@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 )
@@ -101,8 +102,14 @@ type PushManager struct {
 	// activity push tokens for Live Activity push-to-update (in-memory; the app
 	// re-registers on each launch / activity start). token → APNs env (for routing).
 	activityTokens map[string]string
-	relay          Relay
-	save           func([]DeviceToken) // optional persistence hook
+	// When each token was registered and when a push last went out for it. Kept so
+	// the link can be INSPECTED: a Live Activity that quietly stops updating is
+	// otherwise invisible from every side — the card just freezes with its own timer
+	// still running, and nothing on the Mac says whether a token is even held.
+	activityAt map[string]int64
+	lastPushAt int64
+	relay      Relay
+	save       func([]DeviceToken) // optional persistence hook
 	// format returns the copy AND how many numbered choices the pane offers, so the
 	// quick-reply category can have that many buttons. -1 = unknown (no counting).
 	format     func(Alert) (title, body string, options int)
@@ -209,6 +216,7 @@ func (p *PushManager) UnregisterActivity(token string) {
 	p.mu.Lock()
 	env, had := p.activityTokens[token]
 	delete(p.activityTokens, token)
+	delete(p.activityAt, token)
 	relay := p.relay
 	p.mu.Unlock()
 	if had && relay != nil {
@@ -244,6 +252,10 @@ func (p *PushManager) RegisterActivity(token, env string) {
 		p.activityTokens = map[string]string{}
 	}
 	p.activityTokens[token] = env
+	if p.activityAt == nil {
+		p.activityAt = map[string]int64{}
+	}
+	p.activityAt[token] = time.Now().Unix()
 	p.mu.Unlock()
 }
 
@@ -259,6 +271,9 @@ func (p *PushManager) PushLiveActivity(t Tally) {
 	toks := make([]actTok, 0, len(p.activityTokens))
 	for tok, env := range p.activityTokens {
 		toks = append(toks, actTok{tok, env})
+	}
+	if len(toks) > 0 {
+		p.lastPushAt = time.Now().Unix()
 	}
 	p.mu.Unlock()
 	if len(toks) == 0 {
@@ -447,6 +462,11 @@ func (s *Server) handleTokens(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("push not configured"))
 		return
 	}
+	type activityRow struct {
+		TokenPrefix  string `json:"tokenPrefix"`
+		Env          string `json:"env,omitempty"`
+		RegisteredAt int64  `json:"registeredAt,omitempty"`
+	}
 	type row struct {
 		DeviceID    string   `json:"deviceId,omitempty"`
 		TokenPrefix string   `json:"tokenPrefix"`
@@ -458,7 +478,45 @@ func (s *Server) handleTokens(w http.ResponseWriter, r *http.Request) {
 	for _, d := range s.deps.Push.Tokens() {
 		out = append(out, row{DeviceID: d.DeviceID, TokenPrefix: redactToken(d.Token), Platform: d.Platform, Env: d.Env, Kinds: d.Kinds})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"tokens": out})
+	// Live Activity registrations, reported ALONGSIDE the device tokens rather than
+	// mixed in: they are a different thing with a different lifetime, and the reason
+	// they are here at all is that a lock-screen card which stops updating had no
+	// observable surface anywhere — not in the CLI, not in doctor, not in a log.
+	acts, lastPush := s.deps.Push.ActivityStatus()
+	arows := make([]activityRow, 0, len(acts))
+	for tok, a := range acts {
+		arows = append(arows, activityRow{TokenPrefix: redactToken(tok), Env: a.Env, RegisteredAt: a.RegisteredAt})
+	}
+	sort.Slice(arows, func(i, j int) bool { return arows[i].RegisteredAt > arows[j].RegisteredAt })
+	writeJSON(w, http.StatusOK, map[string]any{
+		"tokens":           out,
+		"activities":       arows,
+		"activityLastPush": lastPush,
+	})
+}
+
+// ActivityInfo is one Live Activity registration as reported to a caller.
+type ActivityInfo struct {
+	Env          string
+	RegisteredAt int64
+}
+
+// ActivityStatus returns the current Live Activity registrations and when a push last
+// went out for any of them. The zero state — no registrations — is the failure this
+// exists to make visible: the Mac then pushes nowhere, silently, and the card on the
+// lock screen keeps its last content with its own timer still ticking, so it reads as
+// "stuck" rather than "disconnected".
+func (p *PushManager) ActivityStatus() (map[string]ActivityInfo, int64) {
+	if p == nil {
+		return nil, 0
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	out := make(map[string]ActivityInfo, len(p.activityTokens))
+	for tok, env := range p.activityTokens {
+		out[tok] = ActivityInfo{Env: env, RegisteredAt: p.activityAt[tok]}
+	}
+	return out, p.lastPushAt
 }
 
 // handleForget implements POST /api/push/forget {deviceId|orphans|all} — MASTER only.
