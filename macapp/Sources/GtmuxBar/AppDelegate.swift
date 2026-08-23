@@ -549,7 +549,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // from a terminal or the phone, and only the CLI sees those.
             guard !store.restoring else { break }
             store.beginRestore()
-            GtmuxCLI.spawn(["restore"], onExit: { [weak self] in
+            // --from-app: macOS pins a process tree's PERMISSION IDENTITY to the app
+            // that created it, so a tmux server started as this app's child makes every
+            // agent inside it — and every command those agents run — ask macOS in
+            // Gtmux.app's name. A restore started from a terminal is already attributed
+            // to that terminal, which is honest; only an app has to say so, because
+            // gtmux cannot read its own attribution. See startBootServer.
+            GtmuxCLI.spawn(["restore", "--from-app"], onExit: { [weak self] in
                 self?.store.endRestore()
                 self?.store.refresh() // the fleet it just brought back
             })

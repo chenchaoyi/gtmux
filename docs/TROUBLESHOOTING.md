@@ -1065,3 +1065,40 @@ you are looking once the jump has happened.
 from what was asked. A jump you asked for needs no words; a jump you did not ask for
 needs them, and they have to arrive where your eyes are. `gtmux focus` already worked
 this way (it speaks only when the pane you land on is no longer running an agent).
+
+## A permission prompt with the wrong app's name on it (2026-08-23)
+
+**Symptom:** macOS asks *"Gtmux.app would like to access data from other apps"*, now and
+then, while gtmux is doing nothing that would need it.
+
+**It is not gtmux.** It is one of your own agents — clearing disk space, reading a cache,
+walking `~/Library` — and the prompt is putting gtmux's name on it.
+
+**Root cause:** macOS attributes a file access to the **responsible process**, the
+application at the root of the process tree, and fixes that when a process is created. It
+survives being re-parented to launchd, so nothing in `ps` reveals it — the tmux server
+shows `ppid=1` and looks unowned. `gtmux restore` run from the menu-bar app creates the
+tmux server as the app's child, and from then on every pane in that server, and every
+command every agent runs in it, answers as Gtmux.app for as long as the server lives.
+
+**How to check it yourself:**
+
+```bash
+log show --last 1h --predicate 'process == "tccd" AND eventMessage CONTAINS "AUTHREQ_PROMPTING"' \
+  --style compact | grep -oE "responsible_path=[^,]*|binary_path=[^}]*"
+```
+
+`responsible_path` is the name on the dialog; `binary_path` is what actually asked. Seeing
+`responsible_path=…/GtmuxBar` beside `binary_path=/usr/bin/du` is this exact case.
+
+**Fixed (tmux-server-own-identity):** a restore started by the menu-bar app now creates
+the server through launchd, which hands it an identity of its own — measured, same read
+both ways: started directly → `GtmuxBar`, started by launchd → `tmux`. A restore from a
+terminal is unchanged: it is already attributed to that terminal, which IS the app the
+user launched.
+
+**Two things worth knowing:**
+- **It cannot fix a server already running.** Identity is set at creation, so an existing
+  session keeps answering as Gtmux.app until tmux is next restarted.
+- `setsid` does nothing here. Responsibility is neither the process group nor the parent,
+  and survives both — tried first, measured, discarded.
