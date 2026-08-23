@@ -623,8 +623,16 @@ func windowNameFollowsCommand(format string) bool {
 }
 
 // windowsNamingTheirPanes counts how many windows actually carry a pane id in their name,
-// and how many CANNOT because they were renamed by hand (`automatic-rename` off — tmux
-// turns it off permanently for a window the moment someone renames it).
+// and how many CANNOT because they were renamed by hand with no ids of their own —
+// `automatic-rename` off (tmux turns it off permanently for a window the moment someone
+// renames it) and no `%` in the name to show for it.
+//
+// `automatic-rename` off does NOT by itself mean "no ids": `gtmux spawn` renames its own
+// windows (also turning the option off) but backfills every pane's `%id` into the name by
+// hand — see spawn.go's windowNameWithPaneIDs. Counting every off-window as unnamed used to
+// report a fleet full of spawned, ID-bearing windows as "named by hand" (the same "checks
+// the setting instead of the outcome" mistake this whole check exists to avoid), so the
+// name itself — not the option — decides `named` vs `manual`.
 //
 // That distinction is the whole point of reporting it: "8 of 12" with no reason reads as a
 // bug, while "8 of 12, 4 named by hand" is a complete answer the user can act on.
@@ -635,12 +643,12 @@ func windowsNamingTheirPanes() (named, total, manual int) {
 			continue
 		}
 		total++
-		if f[0] == "0" {
-			manual++
-			continue
-		}
 		if strings.Contains(f[1], "%") {
 			named++
+			continue
+		}
+		if f[0] == "0" {
+			manual++
 		}
 	}
 	return named, total, manual

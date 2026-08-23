@@ -325,9 +325,13 @@ consumption/distill/self-check cadences.
 `doctor` SHALL report two things about pane identity, and SHALL measure the OUTCOME rather
 than the presence of a setting:
 
-- whether the terminal tab names the panes behind it, counted per WINDOW — and, when some
-  windows cannot carry ids because they were renamed by hand (tmux turns `automatic-rename`
-  off permanently for such a window), it SHALL say so rather than reporting a bare fraction;
+- whether the terminal tab names the panes behind it, counted per WINDOW by the NAME itself
+  (does it carry an id), never by the `automatic-rename` option alone — renaming a window
+  (by hand, or by `gtmux spawn` naming its own) turns that option off permanently, but a
+  window gtmux named still backfills its own pane ids into the name, so the option being off
+  does not mean the window is unnamed. When some windows carry no ids of their own — a
+  genuine hand-rename with nothing to show for it — it SHALL say so rather than reporting a
+  bare fraction;
 - whether PLAIN panes have a title that says anything, counted per pane, excluding agent
   panes (an agent writes its own title, so counting them would report a healthy fleet made
   of rows the user cannot tell apart).
@@ -348,9 +352,16 @@ and SHALL only create a new startup file when none of the candidates exist.
 
 #### Scenario: Windows the setting cannot reach
 
-- **WHEN** the format is set but some windows were renamed by hand
+- **WHEN** the format is set but some windows were renamed by hand with no ids of their own
 - **THEN** the row reports how many windows carry ids AND how many are hand-named, instead
   of a ✓ that contradicts what the user sees on screen
+
+#### Scenario: A gtmux-named window still counts as carrying ids
+
+- **WHEN** `gtmux spawn` names a window (turning `automatic-rename` off for it) and
+  backfills the window's own pane ids into the name
+- **THEN** that window counts toward `named`, not toward the hand-named count — the option
+  being off is not, by itself, evidence the window carries no ids
 
 #### Scenario: Applying the fix shows on screen immediately
 
