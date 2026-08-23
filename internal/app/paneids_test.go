@@ -154,6 +154,74 @@ func TestFixStepPutsPaneIDsInTheWindowName(t *testing.T) {
 	}
 }
 
+// windowsNamingTheirPanes must credit a window whose NAME carries pane ids, whether tmux
+// itself is still computing it (automatic-rename on) or `gtmux spawn` backfilled it by hand
+// after turning automatic-rename off (spawn.go's windowNameWithPaneIDs) — and must NOT
+// credit a window that was hand-renamed to something with no ids in it, the one case doctor
+// really cannot help. The old version treated every automatic-rename-off window as
+// unnamed, which reported a fleet full of spawned, ID-bearing windows as "named by hand".
+func TestWindowsNamingTheirPanesCreditsSpawnBackfilledWindows(t *testing.T) {
+	if _, err := exec.LookPath("tmux"); err != nil {
+		t.Skip("no tmux")
+	}
+	dir, err := os.MkdirTemp("/tmp", "gtxc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	sock := filepath.Join(dir, "s")
+	if err := os.MkdirAll(sock, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMUX_TMPDIR", sock)
+	t.Setenv("TMUX", "")
+	t.Setenv("HOME", dir)
+	run := func(args ...string) string {
+		out, _ := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
+		return out
+	}
+	run("new-session", "-d", "-s", "probe")
+	t.Cleanup(func() { run("kill-server") })
+	if got := run("list-sessions", "-F", "#{session_name}"); got != "probe" {
+		t.Fatalf("not isolated — server holds %q, refusing to configure it", got)
+	}
+
+	// Window 1: tmux's own automatic-rename-format, still on, computes the id itself.
+	run("set-option", "-g", "automatic-rename-format", "#{pane_id}")
+	tmuxPane := run("display-message", "-p", "-t", "probe", "#{pane_id}")
+	var name string
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		name = run("display-message", "-p", "-t", "probe", "#{window_name}")
+		if strings.Contains(name, tmuxPane) {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if !strings.Contains(name, tmuxPane) {
+		t.Fatalf("setup: window 1 never picked up automatic-rename-format, got %q", name)
+	}
+
+	// Window 2: the `gtmux spawn` shape — renamed by hand (tmux turns automatic-rename off
+	// for that), but with its own pane id backfilled into the name.
+	spawnPane := run("new-window", "-t", "probe", "-P", "-F", "#{pane_id}")
+	run("rename-window", "-t", spawnPane, "task-slug "+spawnPane)
+
+	// Window 3: a genuine hand-rename with no ids — the one case that should count as manual.
+	run("new-window", "-t", "probe", "-n", "my-window")
+
+	named, total, manual := windowsNamingTheirPanes()
+	if total != 3 {
+		t.Fatalf("total = %d, want 3 (unexpected windows in the probe server)", total)
+	}
+	if named != 2 {
+		t.Errorf("named = %d, want 2 (the tmux-formatted window AND the spawn-backfilled one)", named)
+	}
+	if manual != 1 {
+		t.Errorf("manual = %d, want 1 (only the truly hand-renamed window)", manual)
+	}
+}
+
 // tmux's default is not a fixed string. On tmux 3.7 it is
 // `#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}` — comparing
 // against the bare `#{pane_current_command}` reported every DEFAULT install as "custom,
