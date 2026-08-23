@@ -107,7 +107,7 @@ func ensureServer() {
 	// restore an empty save. See sanitizeLast.
 	sanitizeLast()
 	boot := fmt.Sprintf("gtmux-boot-%d", os.Getpid())
-	if !tmux.OK("new-session", "-d", "-s", boot) {
+	if !startBootServer(boot, restoreFromApp) {
 		i18n.Sae("failed to start tmux", "启动 tmux 失败")
 		os.Exit(1)
 	}
@@ -627,6 +627,10 @@ func restoreSessions(list []string, dryRun bool) int {
 // restore it exists to prevent.
 const restoreLockMaxAge = 10 * time.Minute
 
+// restoreFromApp records that this invocation came from an application (the menu-bar
+// app), which is what decides whether the boot server needs an identity of its own.
+var restoreFromApp bool
+
 func cmdRestore(args []string) int {
 	if tmux.Bin == "" {
 		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
@@ -634,6 +638,7 @@ func cmdRestore(args []string) int {
 	}
 	mode, target, dryRun := "all", "", false
 	planOnly, asJSON := false, false
+	restoreFromApp = false // reset per invocation
 	restoreResumeFlag = "" // reset per invocation (the flag below overrides config)
 	for _, a := range args {
 		switch {
@@ -649,6 +654,10 @@ func cmdRestore(args []string) int {
 			planOnly = true
 		case a == "--json":
 			asJSON = true
+		case a == fromAppFlag:
+			// The caller is an APPLICATION, so the tmux server must not inherit its
+			// name — see startBootServer. Only the caller can know this.
+			restoreFromApp = true
 		case strings.HasPrefix(a, "--resume-agents="):
 			restoreResumeFlag = strings.TrimPrefix(a, "--resume-agents=")
 		case a == "-h" || a == "--help":
