@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -446,13 +447,35 @@ func rollbackWorktree(wt dispatch.Worktree, asJSON bool) {
 // at tmux reads what the fleet is doing (charter C). It pins the window name (turns OFF
 // automatic-rename, which would otherwise track the running command) and sets the pane
 // title. Best-effort — a naming failure never fails the dispatch.
+//
+// Turning automatic-rename off is exactly what stops tmux's own automatic-rename-format
+// (doctor.go's paneIDsInWindowName, `#{P:#{pane_id} }`) from ever touching this window
+// again — so a spawned window would otherwise NEVER carry its pane's %N, title or not.
+// windowNameWithPaneIDs backfills the same ids by hand, once, at naming time.
 func nameDispatchWindow(pane, slug string, headless bool) {
 	if slug == "" || pane == "" {
 		return
 	}
 	_, _ = tmux.Run("set-window-option", "-t", pane, "automatic-rename", "off")
-	_, _ = tmux.Run("rename-window", "-t", pane, windowName(slug, headless))
+	_, _ = tmux.Run("rename-window", "-t", pane, windowNameWithPaneIDs(pane, slug, headless))
 	_, _ = tmux.Run("select-pane", "-t", pane, "-T", slug)
+}
+
+// windowNameWithPaneIDs is windowName with every pane in the window's %N appended —
+// ascending by id, the same order tmux's own `#{P:#{pane_id} }` produces (verified against
+// a real tmux server: pane_index order does NOT match it, ascending pane_id does).
+func windowNameWithPaneIDs(pane, slug string, headless bool) string {
+	name := windowName(slug, headless)
+	ids := tmux.Lines("list-panes", "-t", pane, "-F", "#{pane_id}")
+	if len(ids) == 0 {
+		return name
+	}
+	sort.Slice(ids, func(i, j int) bool {
+		a, _ := strconv.Atoi(strings.TrimPrefix(ids[i], "%"))
+		b, _ := strconv.Atoi(strings.TrimPrefix(ids[j], "%"))
+		return a < b
+	})
+	return name + " " + strings.Join(ids, " ")
 }
 
 // headlessMarker prefixes a background (`--headless`) dispatch's window name so a glance

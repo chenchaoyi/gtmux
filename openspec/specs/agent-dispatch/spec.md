@@ -745,11 +745,24 @@ tmux reads the fleet. The slug SHALL be derived as: an explicit `--title`, else 
 worktree/branch slug, else a normalized head of the goal. One feature maps to one
 worktree by convention.
 
+Naming the window pins it (tmux's `automatic-rename` off), which also stops tmux's own
+pane-id-in-tab-title convention (see env-doctor's "panes can be told apart on screen") from
+ever reaching that window again. So the window name SHALL carry every pane's `%id` itself,
+appended after the slug — this applies the same whether the slug came from `--title` or
+was derived, since both go through the same naming call.
+
 #### Scenario: A spawn names its window
 
 - **WHEN** `gtmux spawn <goal>` creates a window
 - **THEN** the window/pane title is the task slug (`--title`, else worktree/branch, else
   goal head)
+
+#### Scenario: The window name still carries its pane ids
+
+- **WHEN** `gtmux spawn` names a window, with or without `--title`
+- **THEN** the window name is the task slug followed by the `%id` of every pane in that
+  window, so it can still be matched to a `%pane` id on screen even though naming it
+  turned `automatic-rename` off
 
 ### Requirement: Headless dispatch for background heavy work
 
