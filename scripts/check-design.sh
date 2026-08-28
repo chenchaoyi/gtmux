@@ -44,7 +44,12 @@ fi
 #    and archive-hygiene halves are a review-gate checklist item). Needs node; both
 #    CI runners (ubuntu + macOS) have it preinstalled, so a missing npx = a real gap.
 if command -v npx >/dev/null 2>&1; then
-  if npx --yes @fission-ai/openspec validate --specs --strict >/tmp/openspec-check.log 2>&1; then :; else
+  # PINNED, not floating: 1.11.0 (2026-08-26) turned "the Purpose section is still the
+  # placeholder" into a WARNING, and --strict fails on warnings — so twelve specs written
+  # long before it went red on a repo nobody had touched. Same shape as the staticcheck
+  # break a week earlier: a gate that turns red on someone else's release schedule is not
+  # testing this repo. Raise this deliberately, with the spec cleanup it then demands.
+  if npx --yes @fission-ai/openspec@1.10.0 validate --specs --strict >/tmp/openspec-check.log 2>&1; then :; else
     note "openspec spec validation FAILED (specs malformed / drifted):"; cat /tmp/openspec-check.log; fail=1
   fi
 else
