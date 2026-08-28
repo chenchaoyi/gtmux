@@ -9,12 +9,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert as AlertType, SectionKey} from '../api/types';
 import type {ServerMode} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
+import {Agent} from '../api/types';
 import {useApp} from '../state/AppContext';
 import {BrandMark} from '../ui/BrandMark';
 import {PanesIcon} from '../ui/Icons';
 import {HQDisc} from '../ui/HQDisc';
 import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
+import {RowSheet} from '../ui/RowSheet';
 import {RadarSummary} from '../ui/RadarSummary';
 import {SettingsIcon} from '../ui/SettingsIcon';
 import {StatusColor, counts} from '../ui/theme';
@@ -23,6 +25,9 @@ import {TestIds} from '../constants/testIds';
 const COLLAPSED_KEY = 'radar.collapsed';
 
 export function RadarScreen({navigation}: any) {
+  // The long-press sheet. The row IS the whole state (null = closed), so a stale sheet
+  // cannot linger after a refresh replaces the list.
+  const [sheetAgent, setSheetAgent] = useState<Agent | null>(null);
   const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [refreshing, setRefreshing] = useState(false);
@@ -221,12 +226,22 @@ export function RadarScreen({navigation}: any) {
         pal={pal}
         lang={lang}
         onPressAgent={a => { if (a.source !== 'native') navigation.navigate('Detail', {agent: a}); }}
+        onLongPressAgent={setSheetAgent}
         refreshing={refreshing}
         onRefresh={onRefresh}
         collapsed={collapsed}
         onToggle={onToggle}
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
+      />
+      <RowSheet
+        agent={sheetAgent}
+        pal={pal}
+        lang={lang}
+        onClose={() => setSheetAgent(null)}
+        onOpen={a => navigation.navigate('Detail', {agent: a})}
+        onJump={a => { client.focus(a.pane_id).catch(() => {}); }}
+        onDiff={a => navigation.navigate('Detail', {agent: a, openDiff: true})}
       />
       {/* HQ floats over the list as a disc (the meta-layer, above the fleet) — always
           reachable, never scrolls away. Owner-only (a guest has no HQ). Shown even when

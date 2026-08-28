@@ -30,6 +30,7 @@ export function SectionList({
   pal,
   lang,
   onPressAgent,
+  onLongPressAgent,
   refreshing,
   onRefresh,
   collapsed,
@@ -40,6 +41,10 @@ export function SectionList({
 }: {
   agents: Agent[];
   pal: Palette;
+  // Long-press opens the row sheet (rowSheet.ts): what the row's one-line clamp hides,
+  // plus the jump that otherwise lives two screens away. Optional so a caller that has
+  // no sheet (a picker, a test) keeps the plain row behaviour.
+  onLongPressAgent?: (a: Agent) => void;
   lang: Lang;
   onPressAgent: (a: Agent) => void;
   refreshing: boolean;
@@ -85,6 +90,7 @@ export function SectionList({
           pal={pal}
           lang={lang}
           onPress={() => onPressAgent(item)}
+          onLongPress={onLongPressAgent ? () => onLongPressAgent(item) : undefined}
           selected={!!selectedId && agentId(item) === selectedId}
         />
       )}

@@ -34,6 +34,8 @@ export const TestIds = {
   agent: {
     // one per row; suffixed with the pane id so a test can target a known agent
     row: 'agent-row', // use `${agent.row}-${paneId}`
+    sheet: 'agent-sheet', // the long-press sheet
+    sheetAction: 'agent-sheet-action', // suffixed with the action key
   },
   detail: {
     screen: 'detail-screen',
