@@ -798,6 +798,18 @@ func rowCodexHook() dcheck {
 			return dcheck{stRec, label, i18n.Tr("stale (async — Codex skips it)", "陈旧（async —— Codex 会跳过）"),
 				i18n.Tr("run `gtmux doctor --fix` to reinstall as sync (else it never fires)", "跑 `gtmux doctor --fix` 重装为 sync（否则永不触发）")}
 		}
+		// Installed is not the same fact as installed COMPLETELY, and only the first
+		// was ever checked. A hooks file written by an older gtmux keeps working and
+		// keeps reading ✓ while missing every event added since — measured here: 5 of
+		// the 9 events Codex should carry, so its tool and compaction events had been
+		// shipped for days and were reaching nobody. Nothing rewrites an agent's hooks
+		// file on update; that is `install hooks`, and nobody re-runs it unprompted.
+		if missing := missingAgentHookEvents("codex"); len(missing) > 0 {
+			return dcheck{stRec, label,
+				fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
+				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — reinstall with `gtmux install hooks --agent codex`",
+					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— 用 `gtmux install hooks --agent codex` 重装")}
+		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 	}
 	if codexNotifyIsGtmux() {
