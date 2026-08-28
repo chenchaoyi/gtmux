@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -239,4 +240,63 @@ func codexHooksHasAsync(path string) bool {
 		}
 	}
 	return false
+}
+
+// missingAgentHookEvents lists the events gtmux WOULD register for an agent that its
+// installed hooks file does not carry.
+//
+// "Installed" and "installed completely" are different facts, and doctor only ever
+// checked the first. A hooks file written by an older gtmux keeps working and keeps
+// reporting ✓ while missing every event added since — measured on this machine: Codex
+// had 5 of the 9 it should have, so its tool and compaction events had been shipped for
+// days and were reaching nobody. Nothing rewrites an agent's hooks file on update; that
+// is `install hooks` alone, and a user has no reason to re-run it unprompted.
+func missingAgentHookEvents(key string) []string {
+	inst, ok := agentInstallers[key]
+	if !ok {
+		return nil
+	}
+	m, err := loadJSONObject(inst.configPath())
+	if err != nil {
+		return nil // no file at all is "not installed", which the caller reports already
+	}
+	have := map[string]bool{}
+	for event, v := range asObject(m["hooks"]) {
+		for _, raw := range asArray(v) {
+			grp, ok := raw.(map[string]any)
+			if !ok {
+				continue
+			}
+			for _, h := range asArray(grp["hooks"]) {
+				if hm, ok := h.(map[string]any); ok && isGtmuxHookCommand(asString(hm["command"])) {
+					have[event] = true
+				}
+			}
+		}
+	}
+	// Flat-format agents (cursor) keep the command at the top level of each entry.
+	for event, v := range asObject(m["hooks"]) {
+		for _, raw := range asArray(v) {
+			if e, ok := raw.(map[string]any); ok && isGtmuxHookCommand(asString(e["command"])) {
+				have[event] = true
+			}
+		}
+	}
+	// No gtmux entry anywhere is NOT an incomplete install — it is no install, which the
+	// caller already reports in its own words. Saying "9 events missing" there would be
+	// a second, noisier claim about the same fact.
+	if len(have) == 0 {
+		return nil
+	}
+	var missing []string
+	seen := map[string]bool{}
+	for _, b := range inst.bindings {
+		if have[b.key] || seen[b.key] {
+			continue
+		}
+		seen[b.key] = true
+		missing = append(missing, b.key)
+	}
+	sort.Strings(missing)
+	return missing
 }
