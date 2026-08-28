@@ -6,7 +6,7 @@
 // NOT bundle third-party logos (DESIGN §6); color is never used for identity.
 
 import React from 'react';
-import {Alert, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -28,27 +28,28 @@ export function AgentRow({
   pal,
   lang,
   onPress,
+  onLongPress,
   selected = false,
 }: {
   agent: Agent;
   pal: Palette;
   lang: Lang;
   onPress: () => void;
+  // Long-press belongs to the caller now (RowSheet). It used to raise a system alert
+  // here showing the agent's name and the task — both already on this row — so the
+  // gesture returned nothing that was not already visible. What the row genuinely
+  // cannot show (the whole task, the whole error, which pane this is, and the jump)
+  // lives in the sheet.
+  onLongPress?: () => void;
   selected?: boolean;
 }) {
   const isWaiting = agent.status === 'waiting';
   const time = relTime(agent.since || agent.activity_at);
 
-  // Line 1 (task) is clamped to one line for density; long-press reveals the FULL
-  // task (and error summary) in an alert so nothing on the row is unreachable.
+  // Line 1 (task) is clamped to one line for density; the long-press sheet is where
+  // the clamped text becomes reachable.
   const bgLabel = (lang === 'zh' ? '后台运行中' : 'background running');
   const bgMark = `⧗${agent.bg_count && agent.bg_count > 1 ? agent.bg_count : ''} ${bgLabel}`;
-  const showFull = () => {
-    let body = primary(agent);
-    if (agent.error && agent.error_text) body = `${primary(agent)}\n\n⚠ ${agent.error_text}`;
-    else if (agent.bg && agent.bg_text) body = `${primary(agent)}\n\n⧗ ${agent.bg_text}`;
-    Alert.alert(agent.agent || 'Agent', body, [{text: lang === 'zh' ? '关闭' : 'Close'}]);
-  };
 
   return (
     <TouchableOpacity
@@ -56,7 +57,7 @@ export function AgentRow({
       accessibilityLabel={`${TestIds.agent.row}-${agent.pane_id}`}
       activeOpacity={0.6}
       onPress={onPress}
-      onLongPress={showFull}
+      onLongPress={onLongPress}
       delayLongPress={350}
       style={[
         styles.row,

@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.74.0',
+    en: [
+      'Fixed: the lock-screen Live Activity counted gtmux\'s own supervisor as work in progress — it now counts only your sessions.',
+      'Fixed: the lock-screen card could freeze hours behind — the app now keeps making sure this Mac can still push to it.',
+      'Long-pressing a session now shows the full task and error, which pane it is, and one step to go look at it on the Mac.',
+    ],
+    zh: [
+      '修复：锁屏实时活动把 gtmux 自己的中控算成了「工作中」，现在只统计你的会话。',
+      '修复：锁屏卡片可能停在几小时前的状态不再更新 —— 现在会持续确保 Mac 能推送到它。',
+      '长按一个会话现在给出完整任务与错误原文、它是哪个 pane，以及一步跳到 Mac 上去看。',
+    ],
+  },
+  {
     version: '0.72.0',
     en: [
       'Fixed: the lock-screen Live Activity counted gtmux\'s own supervisor as work in progress — it now counts only your sessions.',
