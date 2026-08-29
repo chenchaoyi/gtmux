@@ -120,6 +120,45 @@ can't safely automate: installing tmux.
 - **AND** if tmux is missing, it only PRINTS how to install it (never runs a package
   manager), since that isn't safe to automate
 
+### Requirement: An agent's hooks are reported as complete, not merely present
+
+"Installed" and "installed COMPLETELY" are different facts, and a hooks file only ever
+answers the first on its own. Nothing rewrites an agent's hooks config on update — that
+is `install hooks`, which nobody re-runs unprompted — so a file written by an older
+gtmux keeps working, keeps reading installed, and silently lacks every event added since.
+
+For each agent whose hooks gtmux installs, the system SHALL compare the events the
+config carries a GTMUX entry for against the events gtmux currently registers for that
+agent, and SHALL report a shortfall by naming the missing events and the command that
+reinstalls them. This applies to Claude, whose events come from gtmux's own list, as
+much as to the agents driven by an installer registry — a check written for one shape
+leaves the other blind, which is how Claude's two compaction events stayed missing while
+its row read a plain green "installed".
+
+Presence SHALL be judged by whose hook it is, not by whether the event is configured:
+another tool's hook on the same event does not deliver anything to gtmux.
+
+A config carrying NO gtmux entry at all SHALL NOT be reported as incomplete — that is
+"not installed", which the row already says in its own words.
+
+#### Scenario: A hooks file that predates the current event set
+
+- **WHEN** an agent's hooks config carries gtmux entries for only some of the events
+  gtmux now registers
+- **THEN** the row reports how many are missing, names them, and names the reinstall
+  command
+
+#### Scenario: Someone else's hook on the same event
+
+- **WHEN** the config has an entry for an event gtmux wants, but the command belongs to
+  another tool
+- **THEN** that event counts as missing for gtmux
+
+#### Scenario: No gtmux entry anywhere
+
+- **WHEN** the config carries no gtmux hook at all
+- **THEN** the row reports it as not installed, and says nothing about missing events
+
 ### Requirement: Remote-access readiness check
 
 The system SHALL include a "Remote access" section in the doctor report that checks

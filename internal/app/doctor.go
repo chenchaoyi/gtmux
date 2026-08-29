@@ -784,6 +784,18 @@ func rowTerminal() dcheck {
 func rowClaudeHook() dcheck {
 	label := i18n.Tr("Claude Code hook", "Claude Code hook")
 	if claudeHookInstalled() {
+		// Installed is not the same fact as installed COMPLETELY — the check codex got
+		// (#865) never covered Claude, whose hooks come from hookEvents rather than an
+		// agentInstaller. Measured here: PreCompact and PostCompact were in gtmux's list
+		// and in neither the settings file nor any event received in 48 days, while this
+		// row read a plain green "installed". Nothing rewrites the file on update; that
+		// is `install hooks`, and nobody re-runs it unprompted.
+		if missing := missingClaudeHookEvents(); len(missing) > 0 {
+			return dcheck{stRec, label,
+				fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
+				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — reinstall with `gtmux install hooks`",
+					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— 用 `gtmux install hooks` 重装")}
+		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
 	}
 	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}

@@ -81,3 +81,73 @@ func TestNoHooksFileIsNotIncomplete(t *testing.T) {
 		t.Errorf("with no hooks file at all, got %v", missing)
 	}
 }
+
+// writeClaudeSettings lays down a ~/.claude/settings.json carrying gtmux entries for
+// exactly the events named, alongside another tool's hook that must survive untouched.
+func writeClaudeSettings(t *testing.T, home string, events []string) {
+	t.Helper()
+	dir := filepath.Join(home, ".claude")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	hooks := map[string]any{
+		// Someone else's hook on an event gtmux also wants: gtmux is absent from it, so
+		// the event is MISSING for gtmux even though the key exists. This is the shape
+		// that was found on the real machine, and a check keyed on the key alone would
+		// call it present.
+		"PreCompact": []any{map[string]any{
+			"hooks": []any{map[string]any{"type": "command", "command": "/Users/x/.claude/hooks/peon-ping/peon.sh"}},
+		}},
+	}
+	for _, e := range events {
+		hooks[e] = []any{map[string]any{
+			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+		}}
+	}
+	b, _ := json.Marshal(map[string]any{"hooks": hooks})
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The same question for Claude, which the codex-shaped check could not see: Claude's
+// hooks come from hookEvents, not from an agentInstaller. Found on a real machine on
+// 2026-08-29 — PreCompact and PostCompact had been in gtmux's list for weeks, were in
+// neither the settings file nor any of 28291 events over 48 days, and the row still read
+// a plain green "installed" while compaction fired 61 times in four transcripts.
+func TestMissingClaudeHookEvents(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	// Everything except the two compaction events — the exact gap measured in the wild.
+	var all []string
+	for _, h := range hookEvents {
+		if h.event != "PreCompact" && h.event != "PostCompact" {
+			all = append(all, h.event)
+		}
+	}
+	writeClaudeSettings(t, home, all)
+
+	missing := missingClaudeHookEvents()
+	if len(missing) != 2 || missing[0] != "PostCompact" || missing[1] != "PreCompact" {
+		t.Fatalf("missing = %v, want exactly [PostCompact PreCompact] — another tool's hook on the\n"+
+			"same event does not make it present for gtmux", missing)
+	}
+
+	// A complete file is silent.
+	var every []string
+	for _, h := range hookEvents {
+		every = append(every, h.event)
+	}
+	writeClaudeSettings(t, home, every)
+	if m := missingClaudeHookEvents(); m != nil {
+		t.Errorf("a complete file reported %v", m)
+	}
+
+	// No gtmux entry at all is "not installed", which the row already says in its own
+	// words — reporting every event as missing there would be a second, noisier claim.
+	writeClaudeSettings(t, home, nil)
+	if m := missingClaudeHookEvents(); m != nil {
+		t.Errorf("an uninstalled file reported %v — that is the other row's fact", m)
+	}
+}
