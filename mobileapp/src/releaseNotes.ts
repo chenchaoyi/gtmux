@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.76.0',
+    en: [
+      'Fixed: a session\'s agent icon could turn into a plain two-letter mark and stay that way. One icon request failing on a weak connection was being treated as "this agent has no icon"; it now retries.',
+    ],
+    zh: [
+      '修复：会话的 agent 图标有时会变成两个字母的字标，并且一直不恢复。以前只要有一次取图在弱网下失败，就被当成「这个 agent 没有图标」；现在会重试。',
+    ],
+  },
+  {
     version: '0.74.0',
     en: [
       'Fixed: the lock-screen Live Activity counted gtmux\'s own supervisor as work in progress — it now counts only your sessions.',
