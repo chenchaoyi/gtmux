@@ -1131,3 +1131,47 @@ clocks gtmux already keeps — the pane is painting, and no event has arrived:
 **Must-check when installing hooks into a live fleet:** the sessions already running are
 NOT left alone. Restart them (Codex asks you to trust the hooks again after a change —
 press `t`), and check the `hook traffic` row afterwards rather than assuming.
+
+## A session came back as a bare shell after a reboot (2026-08-29, Codex + `opencrab`)
+
+**Symptom.** After a machine restart, `gtmux restore` brought the tmux layout back but
+one Codex pane was an empty shell — no conversation, no error, nothing in the plan
+marked `×`.
+
+**Two different things look identical here, and only one is a bug.**
+
+1. **The save says the pane was a shell.** Then restore is CORRECT: the agent had
+   already exited when the layout was saved, and injecting a resume into a pane that
+   never ran an agent is exactly the phantom #688 removed. Check it before anything
+   else:
+
+   ```sh
+   # what the save recorded for each pane — locator, command, full command line
+   awk -F'\t' '/^pane/{print $2":"$3"."$6, $10, $11}' ~/.local/share/tmux/resurrect/last
+   gtmux restore --plan          # ↻ = will come back · × = transcript gone
+   ```
+
+   A pane whose command is a shell and whose full command line is empty (a bare `:`)
+   was a shell in the save, and no record anywhere overrides that.
+
+2. **The agent was started through a wrapper.** `opencrab`, an alias, an `npx`-style
+   launcher — anything that is not the agent's own binary name. Until the launcher was recorded, the
+   resume record held `{agent, sessionId, cwd}` and nothing about the launch, so the
+   conversation was resumed as `codex resume <id>`: no wrapper, and none of the
+   configuration, credentials or network the wrapper exists to provide. Claude hides
+   this class of bug, because tmux-resurrect saves its whole command line and replays
+   it verbatim; gtmux's own resume path is the one that assumed the launcher was the
+   agent's name.
+
+**Must-check when a wrapper is involved.** The launcher is read from the pane at hook
+time, so a session running since before the upgrade has no launcher recorded:
+
+```sh
+# what gtmux will type to bring this pane's conversation back
+cat "$HOME/.local/share/gtmux/resume/$(printf %s 'session:0.0' | base64 | tr '+/' '-_' | tr -d '=').json"
+# → {"agent":"codex", …, "launcher":"opencrab"}   ← present only after a prompt/session-start
+tmux display -p -t %NN '#{pane_current_command}'  # the wrapper must be visible here
+```
+
+If `pane_current_command` shows the wrapper but the record has no `launcher`, the
+session simply has not submitted a prompt since the upgrade — one more turn records it.

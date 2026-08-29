@@ -669,7 +669,9 @@ func Run(stdin io.Reader, args []string) int {
 			// instead of the work session. See resumeowner.go.
 			if sid != "" && ownsPane(loc, agentKey, sid) {
 				_ = resume.Save(loc, resume.Record{
-					Agent: agentKey, SessionID: sid, Cwd: cwd, UpdatedAt: time.Now().Unix(),
+					Agent: agentKey, SessionID: sid, Cwd: cwd,
+					Launcher:  launcherFor(loc, pane, agentKey, event),
+					UpdatedAt: time.Now().Unix(),
 				})
 			}
 		}
