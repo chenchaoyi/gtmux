@@ -29,6 +29,13 @@ func Command(r Record) (string, bool) {
 	if !ok || r.SessionID == "" {
 		return "", false
 	}
+	// Resume through the launcher the session was actually started with, when one was
+	// recorded. Only the executable is substituted — the agent's own resume flags still
+	// come from the registry, because a wrapper forwards its arguments to the agent, it
+	// does not redefine them.
+	if r.Launcher != "" {
+		argv = append([]string{r.Launcher}, argv[1:]...)
+	}
 	cmd := strings.Join(argv, " ") + " " + shellSingleQuote(r.SessionID)
 	if r.Cwd != "" {
 		q := shellSingleQuote(r.Cwd)

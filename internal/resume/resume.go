@@ -25,6 +25,19 @@ type Record struct {
 	Agent     string `json:"agent"`     // the agent key (claude/codex/cursor/…)
 	SessionID string `json:"sessionId"` // the agent's resumable conversation id
 	Cwd       string `json:"cwd,omitempty"`
+	// Launcher is the executable that actually started this agent, when it is not the
+	// agent's own name — a wrapper, an alias, an `npx`-style shim.
+	//
+	// An agent is not always launched by its own name, and resuming it by that name
+	// brings the conversation back as a different thing. Measured 2026-08-29: a Codex
+	// session started through an internal wrapper (`opencrab`) that supplies the
+	// company's configuration; gtmux would have resumed it as a bare `codex resume
+	// <id>`, without any of that. A registry cannot enumerate the wrappers a real
+	// environment puts in front of an agent, so the launch is recorded instead.
+	//
+	// Empty for a record written before this existed, or when the agent was launched
+	// under its own name — Command falls back to the registry form either way.
+	Launcher  string `json:"launcher,omitempty"`
 	UpdatedAt int64  `json:"updatedAt"` // unix seconds, last time we saw this pane
 }
 
