@@ -1102,3 +1102,32 @@ user launched.
   session keeps answering as Gtmux.app until tmux is next restarted.
 - `setsid` does nothing here. Responsibility is neither the process group nor the parent,
   and survives both — tried first, measured, discarded.
+
+## Reinstalling an agent's hooks silences the sessions already running (2026-08-29)
+
+**Symptom:** an agent stops being seen entirely — no waiting, no done, no digest — while
+its pane visibly works. `gtmux doctor` says its hooks are installed. They are.
+
+**What happened:** `gtmux install hooks --agent codex` rewrote `~/.codex/hooks.json`
+under a Codex that was already running. That session kept using the hooks it started
+with for another two hours, then went silent across EVERY Codex pane at once, because
+Codex re-read the changed file and stopped trusting the entries. Nothing said so: no
+prompt on screen, nothing in 3000 lines of scrollback.
+
+Measured: reinstall at 23:57 → last Codex event at 02:13 → zero Codex events for the next
+six hours, during which an approval sat unanswered and the radar showed the session
+`working`.
+
+**Why the existing checks could not see it:** they ask about the FILE — is it installed,
+is it complete. Both were true the whole time. The channel was dead anyway.
+
+**Fixed (this change):** `gtmux doctor` gains a `hook traffic` row that compares two
+clocks gtmux already keeps — the pane is painting, and no event has arrived:
+
+```
+⚠  hook traffic   %60 (6h)   these panes are busy but their agent has sent nothing
+```
+
+**Must-check when installing hooks into a live fleet:** the sessions already running are
+NOT left alone. Restart them (Codex asks you to trust the hooks again after a change —
+press `t`), and check the `hook traffic` row afterwards rather than assuming.

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -171,7 +172,7 @@ func doctorSections() []dsection {
 			rowWindowNameSource(), rowPaneIDsInTabs(), rowPaneTitles(), rowHyperlinks(), rowHistory()}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
 		{i18n.Tr("Terminal", "终端"), terminalChecks()},
-		{i18n.Tr("Agents & notifications", "agent 与通知"), append(agents, rowStaleBindings())},
+		{i18n.Tr("Agents & notifications", "agent 与通知"), append(agents, rowStaleBindings(), rowHookSilence())},
 		// The menu-bar app is its own concern — install state + version + on-disk path.
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks()},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks()},
@@ -1504,4 +1505,80 @@ func newestUnclaimedSession(boundPath string, rec resume.Record, claimed map[str
 		}
 	}
 	return newest
+}
+
+// hookSilenceGrace is how long a pane may be visibly busy with no hook event before its
+// agent counts as silent. Generous: a session can legitimately work for a long stretch
+// inside one turn, and this row must never cry wolf at a pane that is simply thinking.
+const hookSilenceGrace int64 = 90 * 60
+
+// rowHookSilence reports agents whose hooks are installed and configured, and which have
+// nonetheless said nothing while their pane kept moving.
+//
+// This is the failure mode the other hook rows cannot see. They answer "is it installed"
+// and "is it installed completely" — both about the FILE. An agent can pass both and
+// still be mute: measured 2026-08-29, reinstalling Codex's hooks under a running session
+// left every Codex pane firing normally for two hours, then silent from 02:13 across all
+// of them, because Codex re-read the changed file and stopped trusting the entries. No
+// prompt on screen, nothing in the scrollback, nothing anywhere. An approval sat
+// unanswered for six hours while the radar showed the session working.
+//
+// The evidence is the disagreement between two clocks gtmux already keeps: the pane is
+// painting, and no event has arrived. Neither alone means anything — a quiet pane may be
+// idle, and a quiet event stream may mean nobody is working — but a pane that moves for
+// an hour and a half without one word from its agent is a broken channel.
+func rowHookSilence() dcheck {
+	label := i18n.Tr("hook traffic", "hook 通路")
+	note := i18n.Tr("an agent whose hooks are installed can still stop firing them",
+		"hook 装着、也没坏，仍然可能根本不再触发")
+	now := time.Now().Unix()
+
+	last := map[string]int64{} // pane → newest event ts
+	for _, r := range events.Read(now-2*hookSilenceGrace, now) {
+		if r.Pane != "" && r.Ts > last[r.Pane] {
+			last[r.Pane] = r.Ts
+		}
+	}
+
+	var silent []string
+	checked := 0
+	for _, p := range radar.GatherPanes() {
+		if p.Tier != "agent" {
+			continue
+		}
+		checked++
+		act := paneActivityAt(p.PaneID)
+		if act == 0 || now-act > hookSilenceGrace {
+			continue // the pane itself is quiet: nothing to disagree with
+		}
+		if seen := last[p.PaneID]; now-seen > hookSilenceGrace {
+			age := i18n.Tr("never", "从未")
+			if seen > 0 {
+				age = hq.HumanAgeShort(now - seen)
+			}
+			silent = append(silent, fmt.Sprintf("%s (%s)", p.PaneID, age))
+		}
+	}
+
+	switch {
+	case checked == 0:
+		return dcheck{stInfo, label, i18n.Tr("no agents", "没有 agent"), note}
+	case len(silent) == 0:
+		return dcheck{stOK, label, fmt.Sprintf(i18n.Tr("%d agents talking", "%d 个 agent 在说话"), checked), note}
+	default:
+		return dcheck{stRec, label, strings.Join(silent, " · "),
+			i18n.Tr("these panes are busy but their agent has sent nothing — its hooks are installed and not firing; restart the agent (Codex asks you to trust them again after a hooks change)",
+				"这些 pane 在动，agent 却什么都没发 —— hook 装着但没触发；重启该 agent（Codex 在 hook 配置变更后会重新要求你信任）")}
+	}
+}
+
+// paneActivityAt is tmux's own clock for when a pane last did something. Window-level
+// and therefore coarse — a neighbour in the same window bumps it — so it is only ever
+// used to establish that a pane is NOT quiet, never to prove that it is.
+func paneActivityAt(paneID string) int64 {
+	n, err := strconv.ParseInt(strings.TrimSpace(tmux.Display(paneID, "#{window_activity}")), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n
 }

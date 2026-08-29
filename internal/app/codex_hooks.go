@@ -62,6 +62,16 @@ func installCodexHooks(yes bool) int {
 	// this out explicitly, it's the difference between "installed" and "working".
 	i18n.Say("• first launch: recent Codex asks you to review each hook — press 't' to trust the gtmux hooks (else they never fire).",
 		"• 首次启动：较新版 Codex 会让你逐个确认 hook —— 按 't' 信任 gtmux 的 hook（否则不会触发）。")
+	// Rewriting this file under a RUNNING Codex does not leave that session alone: it
+	// reads hooks.json again at some point, finds it changed, and stops firing until the
+	// new entries are trusted — with nothing on screen to say so. Measured 2026-08-29:
+	// a reinstall at 23:57 left every Codex session firing normally for over two hours,
+	// then silence from 02:13 across ALL panes, and an approval that sat unanswered for
+	// six hours without gtmux ever knowing. "Restart Codex to load the hooks" did not
+	// prepare anyone for that, because it reads as "the new ones arrive later", not as
+	// "the ones you have stop".
+	i18n.Say("Sessions already running keep the hooks they started with, and may stop firing them once Codex re-reads this file — restart them (and press 't') to be sure gtmux still sees them.",
+		"已经在跑的会话仍用它启动时的那套 hook，而且 Codex 再次读到这个文件后可能就不再触发了 —— 重启它们（并按 't'）才能确保 gtmux 还看得见。")
 	i18n.Say("Done. Restart Codex to load the hooks.", "完成。重启 Codex 以加载 hook。")
 	return 0
 }
