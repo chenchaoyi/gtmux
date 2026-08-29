@@ -325,32 +325,19 @@ func claimBase(name string) string {
 	return strings.TrimSuffix(strings.TrimSuffix(name, sendingSuffix), stuckSuffix)
 }
 
-// boxEmpty reports whether the HQ input box is empty, confirmed over TWO frames. A
-// non-empty first frame returns false immediately (no sleep, no send). A capture with
-// no locatable input region (structured == false) is treated as NOT empty — we only
-// ever type into a confirmed-empty, structured box.
+// boxEmpty reports whether the HQ input box is empty. The decision itself lives in
+// dispatch.BoxEmpty — one implementation for every path that types into a composer —
+// and this only adapts the nudge's injectable io onto it.
 func boxEmpty(x io, pane string) bool {
-	// Copy/view-mode: the user is scrolling, and injected keys are eaten as copy-mode
-	// NAV commands (`f` → jump-forward, yellow residue) instead of reaching the box.
-	// Treat it exactly like a non-empty draft — do not inject; queue, deliver on exit.
-	if x.inMode != nil && x.inMode(pane) {
-		return false
+	capture := x.captureColor
+	if capture == nil {
+		capture = x.capture
 	}
-	// COLOR-aware draft read: exclude CC's faint suggested-next-command ghost text, which
-	// a plain capture would misread as a half-typed draft and HOLD the nudge behind a
-	// phantom. DraftOfColored is a safe superset of DraftOf (identity on plain text), so a
-	// test injecting a plain capture is unchanged. Fall back to `capture` when no color
-	// capture is wired.
-	cap := x.captureColor
-	if cap == nil {
-		cap = x.capture
-	}
-	if draft, structured := dispatch.DraftOfColored(cap(pane)); !structured || strings.TrimSpace(draft) != "" {
-		return false
-	}
-	x.sleep()
-	draft, structured := dispatch.DraftOfColored(cap(pane))
-	return structured && strings.TrimSpace(draft) == ""
+	return dispatch.BoxEmpty(dispatch.IO{
+		CaptureColor: func() string { return capture(pane) },
+		InMode:       func() bool { return x.inMode != nil && x.inMode(pane) },
+		Sleep:        x.sleep,
+	})
 }
 
 // enqueue writes one pending-nudge file. The name is time-ordered (fixed-width nanos)

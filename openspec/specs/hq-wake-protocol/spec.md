@@ -877,6 +877,12 @@ conversation-reset input to it, and SHALL restart the session-health window so t
 does not repeat about the session it just retired. It SHALL report a clear failure when no
 HQ pane is resolvable.
 
+It SHALL NOT type into a box that is not confirmed empty. A reset input is pasted and
+submitted, so on a box holding an unsubmitted draft the act does not reset a session — it
+submits that draft, joined to a slash command, as an instruction. Withholding is the cheap
+side: the session id does not change, so the sensor knocks again and the rotation happens
+at the next attempt against an empty box.
+
 This exists so the rotation stays inside HQ's role boundary: HQ decides and hands off, gtmux
 performs the tmux mechanics, and the HARD role whitelist (HQ runs no concrete command, and
 never sends navigation keys into a TUI) is not weakened to make self-rotation possible.
@@ -898,6 +904,13 @@ query instead of information destroyed at every handoff.
 - **WHEN** HQ has brought its board and knowledge base current and run `gtmux hq --rotate`
 - **THEN** gtmux delivers the reset input into the HQ pane, appends a
   `gtmux:audit:rotate` record naming the retiring session, and the health window restarts
+
+#### Scenario: Rotation never submits what the user is typing
+
+- **WHEN** `gtmux hq --rotate` runs while the HQ input box holds an unsubmitted draft, or
+  while the pane is in copy/view-mode, or on a capture with no locatable input box
+- **THEN** nothing is typed, the command exits non-zero naming the draft as the reason,
+  and the rotation is left for the sensor's next knock
 
 #### Scenario: Rotation without a supervisor fails loudly
 

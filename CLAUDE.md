@@ -91,7 +91,11 @@ over one Go core (gtmux-core is the single data source):
   shape as the watermark — **only the act clears the debt**: a NEW agent session id, never
   the knock. Playbook v16 makes it unattended (board+KB current → hand off → `gtmux hq
   --rotate`, which types the agent's own `/clear`|`/new` so HQ never touches tmux and the
-  role whitelist stands). Deliberately NOT folded into `self-check`, which audits HQ's
+  role whitelist stands — and which HOLDS on a box not confirmed empty: a reset pasted onto
+  a half-typed line submits THAT LINE as an instruction, which on 2026-08-29 cleared a live
+  session. The guard is `dispatch.BoxEmpty`, the ONE answer to "may I type here?" for every
+  writer; `check-design.sh` fails a new pane-writer that isn't declared). Deliberately NOT
+  folded into `self-check`, which audits HQ's
   PRODUCTS silently at ≤1/h; this audits the JUDGE and must be heard. `gtmux doctor`'s
   `HQ session health` row shows the figures.
   **Wake DELIVERY is acked** (change `hq-wake-reliability`, `internal/hqnudge`): paste

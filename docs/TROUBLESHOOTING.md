@@ -1175,3 +1175,38 @@ tmux display -p -t %NN '#{pane_current_command}'  # the wrapper must be visible 
 
 If `pane_current_command` shows the wrapper but the record has no `launcher`, the
 session simply has not submitted a prompt since the upgrade — one more turn records it.
+
+## Your half-typed line got submitted to HQ — and HQ acted on it (2026-08-29)
+
+**Symptom.** You are mid-sentence in the HQ pane. Without you pressing Enter, what you had
+typed is submitted — sometimes joined to text you never wrote — and HQ treats it as an
+instruction. On 2026-08-29 a half-typed `%11 ` became `%11 /clear`; HQ read that as an
+order and ran `gtmux send %11 /clear`, clearing a live session. Not recoverable.
+
+**It is not always the wake nudge.** The nudge path has had a draft guard since
+hq-nudge-hardening, and it holds correctly. Every path that types into a pane is a
+suspect, and the fastest way to name the right one is the journal, because each writer
+leaves its own audit record at the moment it typed:
+
+```sh
+# what typed into HQ, and what HQ submitted, in the same seconds
+gtmux events --since-seq <N> --all | grep -E 'audit:(rotate|wake-delivered|send)|UserPromptSubmit'
+```
+
+A `gtmux:audit:rotate` sharing a timestamp with the `UserPromptSubmit` means the session
+ROTATION typed it — that was this bug: `RotateHQ` pasted `/clear` and pressed Enter with
+no draft check at all, because the guard had been written for the other writers and this
+one was added later.
+
+**Must-check when this class recurs.** The guard now lives in one place
+(`dispatch.BoxEmpty`) and `scripts/check-design.sh` fails the build when a NEW file types
+into a pane without being declared. So the question is not "was the guard added again"
+but which of these it is:
+
+- the guard ran and misread the box — reproduce with `dispatch.DraftOfColored` against
+  the pane's real COLOR capture (`tmux capture-pane -e -p -t %NN`), not a plain one; a
+  plain capture reads Claude's faint ghost suggestion as a typed draft, and an agent's
+  input-box border changes shape between versions (see the TUI border entry above)
+- a writer bypassed the seam — `bash scripts/check-design.sh` names it
+- the text was submitted by something that is not gtmux at all (the agent's own paste
+  handling, a terminal keybinding)
