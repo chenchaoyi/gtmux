@@ -733,8 +733,14 @@ func CmdHQ(args []string) int {
 	// must never be the thing that CREATES a supervisor — an HQ that isn't running has no
 	// session to retire, and saying so plainly beats silently starting one.
 	if rotate {
-		input, ok := RotateHQ()
+		input, ok, held := RotateHQ()
 		if !ok {
+			if held != "" {
+				// Name what stopped it. "could not rotate" would read as a gtmux fault and
+				// invite a retry, when the honest answer is that someone is mid-sentence.
+				i18n.Sae("gtmux hq --rotate: held — "+held, "gtmux hq --rotate: 已暂缓 —— "+held)
+				return 1
+			}
 			i18n.Sae("gtmux hq --rotate: no live supervisor pane to rotate",
 				"gtmux hq --rotate: 没有在跑的中控窗格可轮换")
 			return 1

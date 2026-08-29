@@ -218,8 +218,38 @@ for pair in "⌕:magnifyingglass" "✕:xmark" "⚙:gearshape"; do
   fi
 done
 
+# N+2. Every path that types into a pane and submits must be a KNOWN one. The draft
+#      guard has been written three times — for `gtmux send`, for the wake nudge — and
+#      each time a NEW writer appeared later without it. HQ's session rotation typed
+#      `/clear` straight into the composer, landed on a half-written `%11 `, and
+#      submitted `%11 /clear` as an instruction (2026-08-29). A guard that has to be
+#      remembered gets forgotten, so a new writer now has to be declared here, which is
+#      a reviewer asking "does this one ask dispatch.BoxEmpty first?".
+writers=$(grep -rn "tmux\.Paste(\|tmux\.SendText(\|tmux\.SendKey(" internal --include='*.go' \
+  | grep -v '_test\.go:' | grep -v '^internal/tmux/' \
+  | grep -v ':[0-9]*:[[:space:]]*//' \
+  | cut -d: -f1 | sort -u)
+known="internal/app/adopt.go
+internal/app/agent_resume.go
+internal/app/oneshot.go
+internal/app/plainsend.go
+internal/app/send.go
+internal/app/serve.go
+internal/app/spawn.go
+internal/dispatchbridge/dispatchbridge.go
+internal/hq/hq.go
+internal/hq/selfrotate.go
+internal/hqnudge/hqnudge.go"
+new_writers=$(comm -23 <(echo "$writers") <(echo "$known" | sort))
+if [ -n "$new_writers" ]; then
+  note "a new path types into a pane — it must ask dispatch.BoxEmpty (or go through dispatch.PasteAndSubmit) before submitting, then be added to the list in this script:"
+  echo "$new_writers" | sed 's/^/  /'
+  fail=1
+fi
+
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; mobile release notes generated"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; mobile release notes generated"
 else
   exit 1
 fi

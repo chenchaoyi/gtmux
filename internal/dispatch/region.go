@@ -234,3 +234,42 @@ func stripBoxChrome(lines []string) string {
 	}
 	return strings.TrimSpace(strings.Join(out, "\n"))
 }
+
+// BoxEmpty reports whether a pane's input box is confirmed empty over TWO frames, and
+// is the single answer to "may I type here?" — the one question every path that puts
+// text into an agent's composer has to ask first.
+//
+// It lives here, and not in each caller, because the caller list keeps growing. The
+// guard was written for `gtmux send`, then again for the wake nudge; when HQ's own
+// session rotation was added it typed `/clear` straight into the pane with no check at
+// all, and on 2026-08-29 it landed on top of a half-typed `%11 ` — submitting
+// `%11 /clear` as an instruction, which HQ then carried out on a real session. A guard
+// that has to be remembered is a guard that will be forgotten by the next writer.
+//
+// Not-empty is the safe answer to everything it cannot read: copy/view-mode (keys are
+// eaten as navigation there anyway), a capture with no locatable input region, and any
+// draft text at all. Two agreeing frames are required because one frame can catch a
+// render mid-flight.
+func BoxEmpty(io IO) bool {
+	if io.InMode != nil && io.InMode() {
+		return false
+	}
+	// The COLOR capture excludes Claude Code's FAINT ghost suggestion, which a plain
+	// capture reports as a typed draft — the false positive that would hold every
+	// delivery behind text nobody wrote.
+	capture := io.CaptureColor
+	if capture == nil {
+		capture = io.Capture
+	}
+	if capture == nil {
+		return false // no eyes, no typing
+	}
+	if draft, structured := DraftOfColored(capture()); !structured || strings.TrimSpace(draft) != "" {
+		return false
+	}
+	if io.Sleep != nil {
+		io.Sleep()
+	}
+	draft, structured := DraftOfColored(capture())
+	return structured && strings.TrimSpace(draft) == ""
+}

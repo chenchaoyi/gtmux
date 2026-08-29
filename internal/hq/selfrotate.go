@@ -34,6 +34,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
@@ -392,25 +394,48 @@ func rotateBreachText(bs []rotateBreach) string {
 // off, gtmux performs the tmux mechanics, and the rule that HQ runs no concrete command and
 // never sends keys into a TUI stands untouched.
 //
+// It refuses to type into a box that is not confirmed empty — see rotateHQ.
+//
 // Delivery is paste-then-Enter as separate steps (the swallowed-Enter lesson), and it is
 // deliberately UNVERIFIED: the turn being reset is the one calling this, so there is no
 // later hook event to confirm against from in here. Success is therefore not assumed — it
 // only holds the knock for one repeat interval, long enough for the new session id to
 // appear. If the reset did not take, the id does not change and the sensor knocks again,
 // which is the correct recovery.
-func RotateHQ() (string, bool) {
+func RotateHQ() (input string, ok bool, held string) {
 	pane := hqpane.Find()
 	if pane == "" {
-		return "", false
+		return "", false, ""
+	}
+	return rotateHQ(pane, dispatchbridge.DispatchIO(pane))
+}
+
+// rotateHQ is RotateHQ over an injectable pane I/O — the same seam every other delivery
+// uses, so the guard here is the guard there.
+//
+// The box is checked BEFORE anything is typed. A rotation types `/clear` and submits it,
+// so on a box that already holds the user's half-written line it does not reset a
+// session — it submits that line, joined to a slash command, as an instruction. That is
+// what happened on 2026-08-29: a half-typed `%11 ` became `%11 /clear`, HQ read it as an
+// order and cleared a real session. Withholding costs nothing by comparison: the session
+// id does not change, the sensor knocks again, and the rotation happens at the next
+// attempt with an empty box.
+func rotateHQ(pane string, io dispatch.IO) (string, bool, string) {
+	if !dispatch.BoxEmpty(io) {
+		return "", false, i18n.Tr(
+			"that pane has unsent text in its input box — rotating would submit it",
+			"该 pane 的输入框里有未提交的内容 —— 现在轮换会把它一起交出去")
 	}
 	agent, retiring := hqSessionRef(pane)
 	input := rotateInput(agent)
-	_ = tmux.ExitCopyMode(pane) // keys are swallowed while the pane is in copy/view-mode
-	if err := tmux.Paste(pane, input); err != nil {
-		return "", false
+	if io.ExitMode != nil {
+		_ = io.ExitMode() // keys are swallowed while the pane is in copy/view-mode
 	}
-	if err := tmux.SendKey(pane, "Enter"); err != nil {
-		return "", false
+	if io.Paste(input) != nil {
+		return "", false, ""
+	}
+	if io.Enter() != nil {
+		return "", false, ""
 	}
 	// The act enters the journal with the retiring id — the settle record (the sensor
 	// observing the successor) completes the chain; this one also catches a rotation
@@ -419,7 +444,7 @@ func RotateHQ() (string, bool) {
 	st := readRotateState()
 	st.KnockedAt = time.Now().Unix()
 	writeRotateState(st)
-	return input, true
+	return input, true, ""
 }
 
 // rotateInput is the agent's own "start a fresh conversation" command. Unknown agents get
