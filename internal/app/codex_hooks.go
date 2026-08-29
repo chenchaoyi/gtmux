@@ -261,16 +261,12 @@ func codexHooksHasAsync(path string) bool {
 // had 5 of the 9 it should have, so its tool and compaction events had been shipped for
 // days and were reaching nobody. Nothing rewrites an agent's hooks file on update; that
 // is `install hooks` alone, and a user has no reason to re-run it unprompted.
-func missingAgentHookEvents(key string) []string {
-	inst, ok := agentInstallers[key]
-	if !ok {
-		return nil
-	}
-	m, err := loadJSONObject(inst.configPath())
-	if err != nil {
-		return nil // no file at all is "not installed", which the caller reports already
-	}
+func gtmuxHookEventsIn(path string) map[string]bool {
 	have := map[string]bool{}
+	m, err := loadJSONObject(path)
+	if err != nil {
+		return have // no file at all is "not installed", which callers report in their own words
+	}
 	for event, v := range asObject(m["hooks"]) {
 		for _, raw := range asArray(v) {
 			grp, ok := raw.(map[string]any)
@@ -282,16 +278,44 @@ func missingAgentHookEvents(key string) []string {
 					have[event] = true
 				}
 			}
-		}
-	}
-	// Flat-format agents (cursor) keep the command at the top level of each entry.
-	for event, v := range asObject(m["hooks"]) {
-		for _, raw := range asArray(v) {
-			if e, ok := raw.(map[string]any); ok && isGtmuxHookCommand(asString(e["command"])) {
+			// Flat-format agents (cursor) keep the command at the top level of each entry.
+			if isGtmuxHookCommand(asString(grp["command"])) {
 				have[event] = true
 			}
 		}
 	}
+	return have
+}
+
+// missingClaudeHookEvents is the same question for Claude, whose hooks live in
+// ~/.claude/settings.json and come from hookEvents rather than an agentInstaller — so
+// the codex-shaped check could not see them. Measured on 2026-08-29: PreCompact and
+// PostCompact had been in gtmux's list for weeks and were in neither the settings file
+// nor any event gtmux ever received, while the row read a plain green "installed".
+func missingClaudeHookEvents() []string {
+	have := gtmuxHookEventsIn(claudeSettingsPath())
+	if len(have) == 0 {
+		return nil
+	}
+	var missing []string
+	seen := map[string]bool{}
+	for _, h := range hookEvents {
+		if have[h.event] || seen[h.event] {
+			continue
+		}
+		seen[h.event] = true
+		missing = append(missing, h.event)
+	}
+	sort.Strings(missing)
+	return missing
+}
+
+func missingAgentHookEvents(key string) []string {
+	inst, ok := agentInstallers[key]
+	if !ok {
+		return nil
+	}
+	have := gtmuxHookEventsIn(inst.configPath())
 	// No gtmux entry anywhere is NOT an incomplete install — it is no install, which the
 	// caller already reports in its own words. Saying "9 events missing" there would be
 	// a second, noisier claim about the same fact.

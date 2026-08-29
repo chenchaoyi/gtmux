@@ -1210,3 +1210,46 @@ but which of these it is:
 - a writer bypassed the seam — `bash scripts/check-design.sh` names it
 - the text was submitted by something that is not gtmux at all (the agent's own paste
   handling, a terminal keybinding)
+
+## An event type gtmux registers has never once arrived (2026-08-29, PreCompact)
+
+**Symptom.** A whole class of hook event is absent from the stream — not rare, *zero* —
+while the agent is plainly doing the thing that fires it.
+
+```sh
+# every non-gtmux event name actually received, with counts
+gtmux events --since-seq 0 --all --json 2>/dev/null | \
+  python3 -c 'import sys,json,collections
+c=collections.Counter(json.loads(l).get("event","") for l in sys.stdin if l.strip())
+[print(f"{n:6d}  {e}") for e,n in c.most_common() if not e.startswith("gtmux:")]'
+```
+
+Measured here against the raw log (`~/.local/share/gtmux/events.jsonl`): 28291 events
+over 48 days, 11106 prompts — and `PreCompact` / `PostCompact` count **0**, while
+`grep -c compact_boundary` over the four largest Claude transcripts found 61 real
+compactions.
+
+**The order to check things in, because the obvious first guess is wrong.**
+
+1. **Is gtmux actually registered for it?** Not "is the event in gtmux's list" — is there
+   a gtmux command in the agent's config, under that event:
+
+   ```sh
+   python3 -c 'import json,os;d=json.load(open(os.path.expanduser("~/.claude/settings.json")))
+   [print(k, ["gtmux" if "gtmux" in h.get("command","") else "other" for g in v for h in g.get("hooks",[])]) for k,v in d["hooks"].items()]'
+   ```
+
+   This was the answer: the key existed with ANOTHER tool's hook under it, and no gtmux
+   entry at all. `gtmux doctor` now reports this ("N events missing"), but only since
+   v0.76.0 — before that the row read a green "installed".
+
+2. **Does the agent support the event?** `strings -a "$(readlink -f "$(which claude)")" |
+   grep -c PreCompact` — a name that appears nowhere in the binary was never going to fire.
+
+3. **Only then**: the agent is installed but silent (see the entries above — codex's
+   `async: true`, or a reinstall under a running session).
+
+**Why the gap opens.** gtmux adds an event to its list; nothing rewrites the agent's
+config on update; the file ages in place. The fix is `gtmux install hooks` (it merges —
+each event's gtmux entry is replaced, every other tool's is preserved), and the price is
+that some agents re-prompt for trust and running sessions may need a restart.
