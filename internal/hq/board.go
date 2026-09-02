@@ -55,7 +55,12 @@ func Board() (text string, modUnix int64, ok bool) {
 // ("" = every tier), NEWEST FIRST and capped at limit records — the shape a feed reads,
 // as opposed to the CLI's oldest-first log order. It always returns a valid JSON array,
 // never null, so a client can render "no activity" without special-casing.
-func EventsJSON(minSeverity string, limit int) ([]byte, error) {
+//
+// actsOnly narrows it to what the SUPERVISION did (events.IsSupervisorAct). The filter
+// belongs on this side because the acts are sparse in a feed the wake plumbing dominates:
+// measured on a real machine, the 200-record cap spanned 3.9 hours and carried 5 acts
+// where the day held 37. A client filtering after the fact cannot show a week.
+func EventsJSON(minSeverity string, limit int, actsOnly bool) ([]byte, error) {
 	if limit <= 0 {
 		return []byte("[]"), nil
 	}
@@ -66,6 +71,9 @@ func EventsJSON(minSeverity string, limit int) ([]byte, error) {
 	out := make([]events.Record, 0, limit)
 	for i := len(all) - 1; i >= 0 && len(out) < limit; i-- {
 		if minSeverity != "" && events.SeverityRank(all[i].Severity) < minRank {
+			continue
+		}
+		if actsOnly && !events.IsSupervisorAct(all[i]) {
 			continue
 		}
 		out = append(out, all[i])

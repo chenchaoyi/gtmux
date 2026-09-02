@@ -64,7 +64,10 @@ func (s *Server) handleHQEvents(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("[]"))
 		return
 	}
-	b, err := s.deps.HQEvents(r.URL.Query().Get("severity"), hqEventsLimit(r.URL.Query().Get("limit")))
+	// ?acts=1 narrows the feed to what the SUPERVISION did. It is additive: a client that
+	// does not send it sees exactly the feed it always saw.
+	acts := r.URL.Query().Get("acts") == "1"
+	b, err := s.deps.HQEvents(r.URL.Query().Get("severity"), hqEventsLimit(r.URL.Query().Get("limit")), acts)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, errBody("events error"))
 		return

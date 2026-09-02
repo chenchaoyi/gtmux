@@ -403,6 +403,14 @@ prints, in feed order rather than log order.
 |---|---|---|
 | `severity` | *(all)* | floor: `routine` \| `notable` \| `important` — that tier **and above** |
 | `limit` | `40` | max records, clamped to `200`; a junk value falls back to the default rather than erroring |
+| `acts` | *(off)* | `1` narrows the feed to what the SUPERVISION did — dispatch, reclaim, knowledge, self-audit, rotation, and alarms about the supervision itself (`internal/events.IsSupervisorAct`). Any other value behaves as if absent, so a client that predates it is unaffected. |
+
+`acts=1` exists because the acts are SPARSE in a feed the wake plumbing dominates: measured
+on a real machine, the 200-record cap spanned 3.9 hours and carried 5 acts where that day
+held 37, because 1532 of the week's records were wake deliveries. A client filtering after
+the fact cannot show a week, so the filter is applied before the cap. Wake delivery is
+deliberately NOT an act — it is gtmux knocking on HQ's door, not the supervision working;
+its failure still surfaces as the `wake-degraded` alarm, which IS one.
 
 Always a JSON array (never `null`); an unreachable/absent ledger reads as `[]`, since
 "nothing happened" and "can't tell you" are the same thing to a reader.

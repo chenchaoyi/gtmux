@@ -106,3 +106,32 @@ func TestAuditConstructorsRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// A feed that filters on "is this an act" and a reader that renders acts have to agree
+// about what one is; the rule lives once, here, so a new audit kind cannot be an act to
+// one and not the other.
+func TestIsSupervisorAct(t *testing.T) {
+	act := func(name string) Record { return Record{Event: name} }
+	for _, name := range []string{
+		AuditPrefix + "send", AuditPrefix + "reap", AuditPrefix + "knowledge",
+		AuditPrefix + "rotate", AuditPrefix + "hq-session",
+		"gtmux:self-check", "gtmux:distill", "gtmux:wake-degraded",
+		AuditPrefix + "some-kind-added-later",
+	} {
+		if !IsSupervisorAct(act(name)) {
+			t.Errorf("%s must count as an act — a new audit kind defaults IN, or it silently vanishes", name)
+		}
+	}
+	// Wake delivery is gtmux knocking on HQ's door: 1532 records in the week this was
+	// written, against 39 acts. Counting it would bury everything that is one.
+	for _, name := range []string{AuditEventWakeDelivered, AuditEventWakeDropped} {
+		if IsSupervisorAct(act(name)) {
+			t.Errorf("%s is plumbing, not work", name)
+		}
+	}
+	for _, name := range []string{"Stop", "Waiting", "UserPromptSubmit", "SessionStart", ""} {
+		if IsSupervisorAct(act(name)) {
+			t.Errorf("%s is the fleet's own life, not the supervision's", name)
+		}
+	}
+}

@@ -70,7 +70,7 @@ func TestHQBoardAbsentIsNotAnError(t *testing.T) {
 func TestHQEventsPassesSeverityAndBoundedLimit(t *testing.T) {
 	var gotSev string
 	var gotLimit int
-	s := hqTestServer(t, Deps{HQEvents: func(sev string, limit int) ([]byte, error) {
+	s := hqTestServer(t, Deps{HQEvents: func(sev string, limit int, _ bool) ([]byte, error) {
 		gotSev, gotLimit = sev, limit
 		return []byte(`[{"event":"Waiting"}]`), nil
 	}})
@@ -116,7 +116,7 @@ func TestHQSurfacesAreRefusedToAGuest(t *testing.T) {
 	s := hqTestServer(t, Deps{
 		Enroll:   enroll,
 		HQBoard:  func() (string, int64, bool) { return "secret assessment", 1, true },
-		HQEvents: func(string, int) ([]byte, error) { return []byte(`[{"event":"Waiting"}]`), nil },
+		HQEvents: func(string, int, bool) ([]byte, error) { return []byte(`[{"event":"Waiting"}]`), nil },
 	})
 	for _, p := range []string{"/api/hq/board", "/api/hq/events"} {
 		w := hqGet(t, s, p, guest.Token)
@@ -280,4 +280,35 @@ func TestSupervisorProducesNoWorkerAlerts(t *testing.T) {
 			t.Errorf("the supervisor emitted a done alert: %+v", a)
 		}
 	}
+}
+
+// ?acts=1 has to reach the producer, or the phone's acts zone silently gets the whole
+// mixed feed — which on a real machine is 3.9 hours of mostly wake plumbing where the
+// day held 37 acts.
+func TestHQEventsActsParamReachesTheProducer(t *testing.T) {
+	var gotActs []bool
+	s := hqTestServer(t, Deps{HQEvents: func(_ string, _ int, actsOnly bool) ([]byte, error) {
+		gotActs = append(gotActs, actsOnly)
+		return []byte(`[]`), nil
+	}})
+	for _, q := range []string{"?acts=1", "", "?acts=0", "?acts=yes"} {
+		hqGet(t, s, "/api/hq/events"+q, "master")
+	}
+	// Only the exact opt-in narrows the feed: anything else must behave as it always did,
+	// so a client that does not know the parameter is unaffected.
+	if want := []bool{true, false, false, false}; !equalBools(gotActs, want) {
+		t.Errorf("actsOnly per request = %v, want %v", gotActs, want)
+	}
+}
+
+func equalBools(a, b []bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
