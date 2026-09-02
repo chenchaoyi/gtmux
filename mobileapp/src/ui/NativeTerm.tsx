@@ -36,7 +36,7 @@ import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, 
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {AnsiLine} from './ansi';
-import {PAD, colsFor, cursorSpans, flattenGrid, jumpMayAnimate, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
+import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 
@@ -396,11 +396,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     stick.current = true;
     setAtBottom(true);
     onLiveEdge?.(true);
-    // Animate only when nothing is about to resize under us (see jumpMayAnimate): with a
-    // frame waiting, the animation would target the height it is replacing and stop short.
-    const animated = jumpMayAnimate(pending.current !== null);
     flushPending();
-    ref.current?.scrollToEnd({animated});
+    ref.current?.scrollToEnd({animated: true});
   };
   const onContentSizeChange = () => {
     if (stick.current) ref.current?.scrollToEnd({animated: false});
