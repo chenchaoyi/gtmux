@@ -141,6 +141,19 @@ another tool's hook on the same event does not deliver anything to gtmux.
 A config carrying NO gtmux entry at all SHALL NOT be reported as incomplete — that is
 "not installed", which the row already says in its own words.
 
+A shortfall SHALL be repairable by `--fix`, on the same terms as a missing install: it is
+the same act, it preserves every other tool's hooks, and it backs the file up first. What
+`--fix` CANNOT do is load the new events into sessions already running — that needs a
+restart, which would end a live conversation — so the report SHALL say so rather than
+implying the events are now flowing.
+
+#### Scenario: --fix tops up an incomplete install
+
+- **WHEN** `gtmux doctor --fix` runs against a hooks config that carries gtmux entries for
+  only some of the events gtmux registers
+- **THEN** it offers to add the missing ones, preserves the other tools' hooks, and says
+  the sessions already running must be restarted to load them
+
 #### Scenario: A hooks file that predates the current event set
 
 - **WHEN** an agent's hooks config carries gtmux entries for only some of the events

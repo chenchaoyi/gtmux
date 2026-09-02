@@ -48,6 +48,17 @@ type fixState struct {
 	yes      bool
 	backedUp bool
 	rc       int
+	// bin is the gtmux path written into an agent's hooks config. Empty means this
+	// binary — the seam exists so a test exercises the REAL "is this gtmux's hook?"
+	// predicate rather than a copy of it (a test binary is not named gtmux).
+	bin string
+}
+
+func (s *fixState) hookBin() string {
+	if s.bin != "" {
+		return s.bin
+	}
+	return selfPath()
 }
 
 // doctorFix runs the step-by-step fixer. yes applies every step without prompting.
@@ -561,17 +572,29 @@ func (s *fixState) stepPlugins() int {
 }
 
 func (s *fixState) stepClaudeHook() int {
-	if claudeHookInstalled() {
+	// An INCOMPLETE install is fixable by exactly the same act as a missing one, and
+	// doctor was sending it to the user as something only they could do. It isn't:
+	// updateSettings replaces gtmux's entry per event and preserves every other tool's,
+	// after a backup, and --fix asks before it writes. What genuinely cannot be automated
+	// is the RESTART that loads it — that would end a live conversation — so the step
+	// still says so rather than claiming the events are already flowing.
+	missing := missingClaudeHookEvents()
+	if claudeHookInstalled() && len(missing) == 0 {
 		return 0
 	}
 	detail := i18n.Tr(
 		"  Register `gtmux hook` in "+tildeify(claudeSettingsPath())+" (Stop · Notification · UserPromptSubmit).\n  Gives ⏸ needs-input + desktop notifications. (backed up first)",
 		"  在 "+tildeify(claudeSettingsPath())+" 注册 `gtmux hook`（Stop · Notification · UserPromptSubmit）。\n  提供 ⏸ 需要输入 + 桌面通知。（会先备份）")
+	if len(missing) > 0 {
+		detail = i18n.Tr(
+			"  Add the "+fmt.Sprint(len(missing))+" event(s) this hooks file predates ("+strings.Join(missing, ", ")+").\n  Other tools' hooks are preserved; the file is backed up first.",
+			"  补上这份 hook 配置缺的 "+fmt.Sprint(len(missing))+" 个事件（"+strings.Join(missing, "、")+"）。\n  其它工具的 hook 原样保留，写入前先备份。")
+	}
 	if !s.ask(i18n.Tr("Claude Code hook", "Claude Code hook"), detail) {
 		return 0
 	}
 	cacheClaudeIcon()
-	if err := updateSettings(claudeSettingsPath(), selfPath(), true); err != nil {
+	if err := updateSettings(claudeSettingsPath(), s.hookBin(), true); err != nil {
 		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
 		s.rc = 1
 		return 0
@@ -593,7 +616,10 @@ func (s *fixState) stepCodexHook() int {
 	// A wired hook still marked async (written by an older gtmux) is STALE: Codex 0.146.0
 	// skips async hooks, so it never fires. Don't skip that case — reinstall it synchronously.
 	stale := codexHooksWired() && codexHooksStale()
-	if codexHooksWired() && !stale {
+	// Same gap as Claude's: a wired file MISSING events gtmux now registers is fixable
+	// by this very step, and was being reported as manual work.
+	incomplete := codexHooksWired() && len(missingAgentHookEvents("codex")) > 0
+	if codexHooksWired() && !stale && !incomplete {
 		return 0
 	}
 	inst := agentInstallers["codex"]

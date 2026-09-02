@@ -793,8 +793,8 @@ func rowClaudeHook() dcheck {
 		if missing := missingClaudeHookEvents(); len(missing) > 0 {
 			return dcheck{stRec, label,
 				fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
-				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — reinstall with `gtmux install hooks`",
-					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— 用 `gtmux install hooks` 重装")}
+				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — `gtmux doctor --fix` adds them (restart the sessions to load it)",
+					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— `gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
 	}
@@ -820,8 +820,8 @@ func rowCodexHook() dcheck {
 		if missing := missingAgentHookEvents("codex"); len(missing) > 0 {
 			return dcheck{stRec, label,
 				fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
-				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — reinstall with `gtmux install hooks --agent codex`",
-					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— 用 `gtmux install hooks --agent codex` 重装")}
+				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — `gtmux doctor --fix` adds them (restart the sessions to load it)",
+					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— `gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 	}
