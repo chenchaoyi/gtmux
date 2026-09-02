@@ -19,6 +19,7 @@ import {MarkdownView, MdColors} from './MarkdownView';
 import {fmtTurnTime} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
+import {stepsOpen} from './chatSteps';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
@@ -376,18 +377,23 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
                       </View>
                     </View>
                   )}
-                  {!!seg.steps?.length && (
+                  {!!seg.steps?.length && (() => {
+                    // The turn IN FLIGHT opens its steps; history stays closed, and a tap
+                    // wins over both (ui/chatSteps).
+                    const stepCtx = {isLatestTurn: i === turns.length - 1, working: status === 'working'};
+                    const stepsShown = stepsOpen(expanded[key], stepCtx);
+                    return (
                     <>
                       <TouchableOpacity
                         style={styles.stepsToggle}
                         activeOpacity={0.7}
-                        onPress={() => setExpanded(e => ({...e, [key]: !e[key]}))}>
+                        onPress={() => setExpanded(e => ({...e, [key]: !stepsShown}))}>
                         <Text style={styles.stepsToggleText}>
-                          {expanded[key] ? '▾ ' : '▸ '}
+                          {stepsShown ? '▾ ' : '▸ '}
                           {lang === 'zh' ? `${seg.steps.length} 个步骤` : `${seg.steps.length} step${seg.steps.length > 1 ? 's' : ''}`}
                         </Text>
                       </TouchableOpacity>
-                      {expanded[key] &&
+                      {stepsShown &&
                         seg.steps.map((s, j) => (
                           <View key={j} style={styles.stepRow}>
                             <Text style={styles.stepName}>{s.title}</Text>
@@ -399,7 +405,8 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
                           </View>
                         ))}
                     </>
-                  )}
+                    );
+                  })()}
                 </View>
               );
             })}

@@ -16,12 +16,12 @@
 
 ## 3. The conversation shows the work as it happens
 
-- [ ] 3.1 Stream the in-flight turn's steps; the timer stays as the fallback when there is nothing yet
-- [ ] 3.2 The current turn's steps are expanded, history collapsed
-- [ ] 3.3 Tests: an in-flight turn with steps shows them; with none it shows the timer; a finished turn collapses again
+- [x] 3.1 Stream the in-flight turn's steps; the timer stays as the fallback when there is nothing yet
+- [x] 3.2 The current turn's steps are expanded, history collapsed
+- [x] 3.3 Tests: an in-flight turn with steps shows them; with none it shows the timer; a finished turn collapses again
 
 ## 4. Close it out
 
-- [ ] 4.1 `npm run check` green; `check-design.sh` green
-- [ ] 4.2 MOBILE.md §17 rewritten to the new page (it is the design authority — a page that no longer matches it is drift)
-- [ ] 4.3 Sync specs + archive
+- [x] 4.1 `npm run check` green; `check-design.sh` green
+- [x] 4.2 MOBILE.md §17 rewritten to the new page (it is the design authority — a page that no longer matches it is drift)
+- [x] 4.3 Sync specs + archive

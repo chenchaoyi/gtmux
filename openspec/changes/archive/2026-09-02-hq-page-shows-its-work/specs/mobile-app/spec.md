@@ -11,14 +11,17 @@ its own products 8 times and rotated its own aged session — and none of it was
 from the app, whose activity zone showed the FLEET's lifecycle instead.
 
 The HQ page SHALL present the supervisor's own acts — dispatch, reclaim, record, audit,
-rotate, and the delivery of its wakes — as a first-class zone, each act naming what it
+rotate, and alarms about the supervision itself — as a first-class zone, each act naming what it
 acted on, what it was, and how it ended, with a tally over a recent window. The fleet's
 lifecycle ledger SHALL remain available beside it as a filter rather than as the default,
 because a session starting or stopping is not news and a chief of staff dispatching work
 is.
 
-These acts SHALL be read from the journal the core already serves; this requirement adds
-no new server surface. An act kind the client does not recognise SHALL still render as a
+These acts SHALL be read from the journal the core already serves, narrowed by the core
+BEFORE its record cap: the acts are sparse in a feed the wake plumbing dominates, and a
+client filtering after the cap sees hours where the reader needs a week. Wake DELIVERY is
+not an act — it is the core knocking on the supervisor's door, not the supervision
+working. An act kind the client does not recognise SHALL still render as a
 readable row rather than a raw token, so a newly journalled kind degrades instead of
 leaking an identifier at the user.
 

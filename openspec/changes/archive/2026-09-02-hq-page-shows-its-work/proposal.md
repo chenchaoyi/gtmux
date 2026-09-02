@@ -82,8 +82,11 @@ and it is what makes the next iteration cheap.
 
 - **The radar is not touched.** `HQDisc`, the six-state disc model, and the menu-bar
   parity all stand.
-- **No new server endpoint.** Everything above reads surfaces that already exist. A
-  change that needed one would be a different, larger proposal.
+- **No new server endpoint** — but this boundary was written before measuring, and the
+  measurement moved it. The acts are sparse in a feed the wake plumbing dominates: the
+  200-record cap spans 3.9 hours and carries 5 acts where the day held 37. So
+  `/api/hq/events` gains an ADDITIVE `?acts=1`, applied before the cap. Same endpoint,
+  same shape, and a client that does not send it is unaffected.
 - **The supervisor's recommendation per decision card is NOT in this change.** It is the
   natural next step — a chief of staff should already have an opinion about what is
   blocking you — but it needs HQ to write per-pane advice and a playbook change to teach
