@@ -1253,3 +1253,45 @@ compactions.
 config on update; the file ages in place. The fix is `gtmux install hooks` (it merges —
 each event's gtmux entry is replaced, every other tool's is preserved), and the price is
 that some agents re-prompt for trust and running sessions may need a restart.
+
+## HQ went deaf and three checks blamed three different things (2026-09-02)
+
+**Symptom.** The supervisor stops responding to anything the fleet does. `gtmux doctor`
+flags `hook traffic` and `event consumption`, a `wake-degraded` alarm fires every so
+often, and none of it points anywhere useful.
+
+**One cause, three descriptions.** All three were true and none named it: the HQ pane was
+scrolled into tmux **copy-mode**, where injected keys are eaten as navigation commands
+(`f` jumps, `/` searches). The wake guard held every knock there — correctly; injecting
+would be worse — so 22 of them queued for 1h40m.
+
+```sh
+tmux display -p -t %NN '#{pane_in_mode}'    # 1 = scrolled; nothing gtmux types arrives
+```
+
+**The fix is one keypress**: `q` (or Escape) in that pane. The queue drains on the next
+3-second tick — measured: 22 → 0 in six seconds.
+
+To release it without touching the composer (a scrolled pane still has a draft you must
+not disturb), send the copy-mode COMMAND rather than a key:
+
+```sh
+tmux send-keys -X -t %NN cancel
+```
+
+**What was checked and ruled out first**, in case the next occurrence is not this:
+
+- **the tick loop wedged.** `h.tick()`, the slow tick and the wake drain share ONE
+  goroutine and one `select` in `internal/server/events.go`, so a hung child process
+  stops all three (this has happened — see the radar/`ps` entry). Ruled out by mtimes:
+  `~/.local/share/gtmux/hqwake/{selfrotate-state,tick-seq}` were seconds old.
+- **the input-box detector lost the box.** The agent was rendering a plain-rule box, not
+  Claude's rounded one. Ruled out by feeding the pane's real COLOR capture to
+  `dispatch.DraftOfColored`: `structured=true, draft=""`.
+- **the HQ pane stopped resolving.** Ruled out by `hqwake/last-seen-hq`, which
+  `hqpane.resolve()` touches on every hit — it was current.
+
+**Must-check.** Since v0.77.0 the guard returns WHY it refused (`dispatch.Reach`) and all
+three surfaces render it, so a recurrence of this particular cause names itself and the
+key that clears it. If a future outage still reads as a generic "not landing", the cause
+is one `Reach` does not model — start with `pane_in_mode`, then the three checks above.

@@ -13,8 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hq"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -205,6 +208,13 @@ func hqConsumptionCheck(now int64) dcheck {
 		value := strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费")
 		if c.StandingSec > 0 {
 			value += " · " + hq.HumanAgeShort(c.StandingSec)
+		}
+		// Name the CAUSE when gtmux can see it. "Check the input box" is a guess, and on
+		// 2026-09-02 it was the wrong one: the box was empty and the pane was scrolled
+		// into copy-mode, where every knock is held (correctly) and none arrives. The
+		// reason is a field gtmux already reads; it just never asked.
+		if why := unreachableHQ(); why != "" {
+			return dcheck{stRec, label, value, why}
 		}
 		return dcheck{stRec, label, value,
 			i18n.Tr("HQ is not consuming what it is knocked about — check the HQ pane for a stuck draft",
@@ -1541,6 +1551,7 @@ const hookSilenceGrace int64 = 90 * 60
 // an hour and a half without one word from its agent is a broken channel.
 func rowHookSilence() dcheck {
 	label := i18n.Tr("hook traffic", "hook 通路")
+	var silentIDs []string
 	note := i18n.Tr("an agent whose hooks are installed can still stop firing them",
 		"hook 装着、也没坏，仍然可能根本不再触发")
 	now := time.Now().Unix()
@@ -1569,6 +1580,7 @@ func rowHookSilence() dcheck {
 				age = hq.HumanAgeShort(now - seen)
 			}
 			silent = append(silent, fmt.Sprintf("%s (%s)", p.PaneID, age))
+			silentIDs = append(silentIDs, p.PaneID)
 		}
 	}
 
@@ -1578,9 +1590,69 @@ func rowHookSilence() dcheck {
 	case len(silent) == 0:
 		return dcheck{stOK, label, fmt.Sprintf(i18n.Tr("%d agents talking", "%d 个 agent 在说话"), checked), note}
 	default:
-		return dcheck{stRec, label, strings.Join(silent, " · "),
-			i18n.Tr("these panes are busy but their agent has sent nothing — its hooks are installed and not firing; restart the agent (Codex asks you to trust them again after a hooks change)",
-				"这些 pane 在动，agent 却什么都没发 —— hook 装着但没触发；重启该 agent（Codex 在 hook 配置变更后会重新要求你信任）")}
+		// A pane in copy-mode is silent for a reason that has nothing to do with hooks,
+		// and "restart the agent" would spend a live session on a wrong diagnosis. Say
+		// which ones those are instead.
+		return dcheck{stRec, label, strings.Join(silent, " · "), hookSilenceNote(panesInMode(silentIDs))}
+	}
+}
+
+// hookSilenceNote explains a set of silent panes. A pane in copy-mode is silent for a
+// reason that has nothing to do with hooks, and "restart the agent" would spend a live
+// session on a wrong diagnosis — so those are named, and the hook advice is kept for the
+// rest. Pure, so the wording is testable without a tmux server.
+func hookSilenceNote(scrolled []string) string {
+	if len(scrolled) > 0 {
+		return i18n.Tr("scrolled into copy-mode ("+strings.Join(scrolled, " · ")+") — nothing gtmux types reaches an agent there; press q in that pane. Any others: hooks installed but not firing, so restart that agent",
+			"已滚进 copy-mode（"+strings.Join(scrolled, " · ")+"）—— 在那里 gtmux 打进去的东西一个字都到不了；在该 pane 里按 q 退出。其余的才是 hook 装着没触发，需要重启该 agent")
+	}
+	return i18n.Tr("these panes are busy but their agent has sent nothing — its hooks are installed and not firing; restart the agent (Codex asks you to trust them again after a hooks change)",
+		"这些 pane 在动，agent 却什么都没发 —— hook 装着但没触发；重启该 agent（Codex 在 hook 配置变更后会重新要求你信任）")
+}
+
+// panesInMode returns the subset scrolled into tmux copy/view-mode, where injected keys
+// are eaten as navigation commands and never reach the agent.
+func panesInMode(ids []string) []string {
+	var out []string
+	for _, id := range ids {
+		if tmux.InMode(id) {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// unreachableHQ says, in the reader's words, why gtmux cannot currently type into the
+// supervisor's pane — or "" when it can (or when there is no HQ to ask about).
+//
+// The single decision is dispatch.Reach; this only renders it. Three surfaces reported
+// the consequence of a held wake channel on 2026-09-02 and none named the cause, because
+// the guard that knew it returned a bare no.
+func unreachableHQ() string {
+	pane := hqpane.Find()
+	if pane == "" {
+		return ""
+	}
+	why, ok := dispatch.Reach(dispatchbridge.DispatchIO(pane))
+	return reachSentence(pane, why, ok)
+}
+
+// reachSentence renders a reach verdict for the reader. Split from the tmux read so the
+// wording — the part that decides whether the user knows what to DO — is testable.
+func reachSentence(pane string, why dispatch.ReachReason, ok bool) string {
+	if ok {
+		return ""
+	}
+	switch why {
+	case dispatch.ReachCopyMode:
+		return i18n.Tr("the HQ pane "+pane+" is scrolled into copy-mode — every knock is held there, and none arrives; press q in that pane",
+			"中控窗格 "+pane+" 滚进了 copy-mode —— 敲门会被一直扣住、一条都到不了；在该 pane 里按 q 退出")
+	case dispatch.ReachDraft:
+		return i18n.Tr("the HQ pane "+pane+" has unsent text in its input box — knocks wait rather than append to it",
+			"中控窗格 "+pane+" 的输入框里有未提交的内容 —— 敲门会等着，而不是拼在它后面")
+	default:
+		return i18n.Tr("gtmux cannot read an input box in the HQ pane "+pane+" — it will not type on a guess",
+			"gtmux 在中控窗格 "+pane+" 里读不出输入框 —— 它不会靠猜往里打字")
 	}
 }
 
