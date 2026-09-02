@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
@@ -161,8 +163,17 @@ func wakeWatchdog(now int64) {
 	if !markerChanged("hqwakedegraded", key) {
 		return // unchanged (or recovered — which clears the marker and stays quiet)
 	}
-	const summary = "⚠ HQ wake channel not landing — knocks are queued but unconfirmed; " +
+	// Name the cause where gtmux can see it. On 2026-09-02 this alarm fired four times
+	// over a pane that was simply scrolled into copy-mode: correct in every particular,
+	// and it sent the reader looking for a stuck draft that was not there. The channel
+	// held 22 knocks for 1h40m and one keypress released all of them.
+	summary := "⚠ HQ wake channel not landing — knocks are queued but unconfirmed; " +
 		"reconcile by pull: gtmux events --since-seq <n>"
+	cause := wakeHeldCause()
+	if cause != "" {
+		summary = "⚠ HQ wake channel not landing — " + cause +
+			"; knocks are queued. reconcile by pull: gtmux events --since-seq <n>"
+	}
 	journalDegradation(hqsurface.ControlWakeDegraded, summary, now)
 	if pane := hqpane.Find(); pane != "" {
 		hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassWakeDegraded, "",
@@ -172,9 +183,45 @@ func wakeWatchdog(now int64) {
 		Kind:     "input",
 		Title:    i18n.Tr("gtmux HQ is not being woken", "gtmux 中控唤醒失效"),
 		Subtitle: "gtmux",
-		Message: i18n.Tr("Wake lines aren't reaching the HQ pane — check it for a stuck draft.",
-			"唤醒信号没能进入中控窗格 —— 检查输入框是否卡住。"),
+		Message:  wakeNotifyMessage(cause),
 	})
+}
+
+// wakeHeldCause names why gtmux cannot type into the HQ pane, in the words the journal
+// keeps (English, machine-side); "" when it can, or when there is no HQ to ask about.
+// The decision itself is dispatch.Reach — the one answer to "may I type here?".
+func wakeHeldCause() string {
+	pane := hqpane.Find()
+	if pane == "" {
+		return ""
+	}
+	why, ok := dispatch.Reach(dispatchbridge.DispatchIO(pane))
+	if ok {
+		return ""
+	}
+	switch why {
+	case dispatch.ReachCopyMode:
+		return "the HQ pane " + pane + " is scrolled into copy-mode (press q there)"
+	case dispatch.ReachDraft:
+		return "the HQ pane " + pane + " has unsent text in its input box"
+	default:
+		return "no input box could be read in the HQ pane " + pane
+	}
+}
+
+// wakeNotifyMessage is the desktop alarm's line. It is the carrier that does not depend
+// on the broken channel, so it is the one that most needs to say what to DO.
+func wakeNotifyMessage(cause string) string {
+	switch {
+	case strings.Contains(cause, "copy-mode"):
+		return i18n.Tr("The HQ pane is scrolled into copy-mode — press q there and the queued wakes deliver.",
+			"中控窗格滚进了 copy-mode —— 在那里按 q，积压的唤醒就会送达。")
+	case strings.Contains(cause, "unsent text"):
+		return i18n.Tr("The HQ pane has unsent text in its input box — wakes wait rather than append to it.",
+			"中控窗格输入框里有未提交的内容 —— 唤醒会等着，不会拼在它后面。")
+	}
+	return i18n.Tr("Wake lines aren't reaching the HQ pane — check it for a stuck draft.",
+		"唤醒信号没能进入中控窗格 —— 检查输入框是否卡住。")
 }
 
 // resourceTierKey is the dedup key for a machine warning: the tier (amber/red), or

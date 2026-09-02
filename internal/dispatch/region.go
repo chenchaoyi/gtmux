@@ -235,24 +235,43 @@ func stripBoxChrome(lines []string) string {
 	return strings.TrimSpace(strings.Join(out, "\n"))
 }
 
-// BoxEmpty reports whether a pane's input box is confirmed empty over TWO frames, and
-// is the single answer to "may I type here?" — the one question every path that puts
-// text into an agent's composer has to ask first.
+// ReachReason names why gtmux cannot type into a pane right now. It exists because the
+// guard below already worked all of this out and then threw it away, returning a bare
+// no — so every surface that reported the consequence had to guess at the cause.
 //
-// It lives here, and not in each caller, because the caller list keeps growing. The
-// guard was written for `gtmux send`, then again for the wake nudge; when HQ's own
-// session rotation was added it typed `/clear` straight into the pane with no check at
-// all, and on 2026-08-29 it landed on top of a half-typed `%11 ` — submitting
-// `%11 /clear` as an instruction, which HQ then carried out on a real session. A guard
-// that has to be remembered is a guard that will be forgotten by the next writer.
+// Measured 2026-09-02: the supervisor's pane sat in copy-mode for 1h40m, 18 wakes queued
+// correctly behind the guard, and the three places that noticed said "hook installed but
+// not firing — restart the agent", "check whether the input box is stuck", and "wake
+// channel not landing". All three were describing one fact none of them named, and the
+// fix was one keypress.
+type ReachReason string
+
+const (
+	// ReachCopyMode: the pane is scrolled into tmux copy/view-mode, where injected keys
+	// are eaten as navigation (`f` jumps, `/` searches) instead of reaching the agent.
+	ReachCopyMode ReachReason = "copy-mode"
+	// ReachDraft: someone has unsubmitted text in the box. Typing would append to it and
+	// submit both.
+	ReachDraft ReachReason = "draft"
+	// ReachUnreadable: no input region could be located in the capture — an unknown TUI,
+	// a pane mid-render, or no agent at all. Never typed into on a guess.
+	ReachUnreadable ReachReason = "unreadable"
+)
+
+// Reach reports whether a pane can be typed into right now, and names the reason when it
+// cannot. Confirmed over TWO frames, because one frame can catch a render mid-flight.
 //
-// Not-empty is the safe answer to everything it cannot read: copy/view-mode (keys are
-// eaten as navigation there anyway), a capture with no locatable input region, and any
-// draft text at all. Two agreeing frames are required because one frame can catch a
-// render mid-flight.
-func BoxEmpty(io IO) bool {
+// It is the single answer to "may I type here?" — the one question every path that puts
+// text into an agent's composer has to ask first. It lives here, and not in each caller,
+// because the caller list keeps growing: the guard was written for `gtmux send`, then
+// again for the wake nudge, and when HQ's own session rotation was added it typed
+// `/clear` straight into the pane with no check at all, landing on a half-typed `%11 `
+// and submitting `%11 /clear` as an instruction (2026-08-29).
+//
+// Not-reachable is the safe answer to everything it cannot read.
+func Reach(io IO) (ReachReason, bool) {
 	if io.InMode != nil && io.InMode() {
-		return false
+		return ReachCopyMode, false
 	}
 	// The COLOR capture excludes Claude Code's FAINT ghost suggestion, which a plain
 	// capture reports as a typed draft — the false positive that would hold every
@@ -262,14 +281,33 @@ func BoxEmpty(io IO) bool {
 		capture = io.Capture
 	}
 	if capture == nil {
-		return false // no eyes, no typing
+		return ReachUnreadable, false // no eyes, no typing
 	}
-	if draft, structured := DraftOfColored(capture()); !structured || strings.TrimSpace(draft) != "" {
-		return false
+	if r, ok := reachFrame(capture()); !ok {
+		return r, false
 	}
 	if io.Sleep != nil {
 		io.Sleep()
 	}
-	draft, structured := DraftOfColored(capture())
-	return structured && strings.TrimSpace(draft) == ""
+	if r, ok := reachFrame(capture()); !ok {
+		return r, false
+	}
+	return "", true
+}
+
+func reachFrame(capture string) (ReachReason, bool) {
+	draft, structured := DraftOfColored(capture)
+	if !structured {
+		return ReachUnreadable, false
+	}
+	if strings.TrimSpace(draft) != "" {
+		return ReachDraft, false
+	}
+	return "", true
+}
+
+// BoxEmpty is Reach without the reason — kept because most callers only need the verdict.
+func BoxEmpty(io IO) bool {
+	_, ok := Reach(io)
+	return ok
 }
