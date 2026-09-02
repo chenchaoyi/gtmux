@@ -410,3 +410,20 @@ export function linkSegsForLines(lines: AnsiLine[]): Array<{text: string; url?: 
   });
   return out;
 }
+
+/**
+ * jumpMayAnimate reports whether the snap-to-bottom control may animate.
+ *
+ * It may not when a frozen frame is about to be swapped in. That frame changes the
+ * content height, and an ANIMATED scroll issued now animates toward the height being
+ * REPLACED: it lands short by the difference, and the post-layout pin
+ * (onContentSizeChange) is then overridden by the animation still running toward its
+ * stale target.
+ *
+ * Reported on a Codex pane, whose footer timer means there is almost always a frame
+ * waiting while you read history. An idle Claude pane has none, nothing resizes, and the
+ * animated scroll lands correctly — which is why the bug looked agent-specific.
+ */
+export function jumpMayAnimate(hasPendingFrame: boolean): boolean {
+  return !hasPendingFrame;
+}

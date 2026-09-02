@@ -1,4 +1,4 @@
-import {PAD, annotateUrls, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
+import {PAD, annotateUrls, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget, wrapLine, DOT_REC, DOT_CIRCLE, jumpMayAnimate} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -500,5 +500,20 @@ describe('annotateUrls (a wrapped or recoloured URL still opens whole)', () => {
     const segs = linkSegsForLines([annotateUrls(plain(`用 ${url} 看`))]);
     expect(segs.filter(s => s.url).map(s => s.url)).toEqual([url]);
     expect(segs.map(s => s.text).join('')).toBe(`用 ${url} 看`);
+  });
+});
+
+// Scroll up in a Codex pane, tap the jump-to-bottom arrow, and it stops a little short of
+// the tail. Claude panes are fine. The difference is that a Codex pane is almost always
+// producing something (its footer timer ticks), so a frozen frame is waiting when you tap:
+// flushing it grows the content, while the animated scroll already issued is animating
+// toward the height it is replacing — and it overrides the post-layout pin.
+describe('jumpMayAnimate', () => {
+  test('a waiting frame means no animation: it would target the old height', () => {
+    expect(jumpMayAnimate(true)).toBe(false);
+  });
+
+  test('with nothing waiting the jump keeps its animation', () => {
+    expect(jumpMayAnimate(false)).toBe(true);
   });
 });
