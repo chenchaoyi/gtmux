@@ -181,30 +181,37 @@ func TestResolveWaiting(t *testing.T) {
 		hasMark    bool
 		stale      bool
 		liveWork   bool
+		ask        bool // the agent's numbered question is still on screen
 		wantStatus string
 		wantClear  bool
 		wantConsul bool // whether liveWorking should have been called
 	}{
 		// The bug: a real permission prompt whose pane TITLE still shows a (frozen)
 		// spinner. Fresh mark + NOT live-working → waiting, mark kept (card shows).
-		{"frozen-spinner prompt", "working", true, false, false, "waiting", false, true},
-		// Answered → the approved tool is running (pane demonstrably live-working).
-		// Show working; the mark is left for PostToolUse→Resumed / staleness to clear.
-		{"answered, tool running", "working", true, false, true, "working", false, true},
+		{"frozen-spinner prompt", "working", true, false, false, false, "waiting", false, true},
+		// Answered → the question is GONE from the screen and the approved tool is
+		// running. Show working; the mark is left for PostToolUse→Resumed / staleness.
+		{"answered, tool running", "working", true, false, true, false, "working", false, true},
+		// The one this table used to get wrong. Still ASKING, and the pane is live because
+		// a blocked agent keeps repainting its footer — so the frame diff says working
+		// while the question is right there on screen. The hook's mark is the harder fact.
+		// Measured 2026-09-02 23:50: the app said working for two minutes over a live
+		// "Allow reads outside the working directories? 1/2/3".
+		{"still asking, screen alive", "working", true, false, true, true, "waiting", false, true},
 		// A Claude idle/ready pane with a fresh mark → waiting without sampling frames.
-		{"idle with fresh mark", "idle", true, false, false, "waiting", false, false},
-		{"running with fresh mark", "running", true, false, false, "waiting", false, false},
+		{"idle with fresh mark", "idle", true, false, false, false, "waiting", false, false},
+		{"running with fresh mark", "running", true, false, false, false, "waiting", false, false},
 		// Stale orphan mark → keep the raw status, clear the mark. Never sample frames.
-		{"stale orphan, working", "working", true, true, false, "working", true, false},
-		{"stale orphan, idle", "idle", true, true, false, "idle", true, false},
+		{"stale orphan, working", "working", true, true, false, false, "working", true, false},
+		{"stale orphan, idle", "idle", true, true, false, false, "idle", true, false},
 		// No mark → status untouched, nothing cleared, frames never sampled.
-		{"no mark, working", "working", false, false, false, "working", false, false},
-		{"no mark, idle", "idle", false, false, false, "idle", false, false},
+		{"no mark, working", "working", false, false, false, false, "working", false, false},
+		{"no mark, idle", "idle", false, false, false, false, "idle", false, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			consulted := false
-			got, clear := resolveWaiting(c.status, c.hasMark, c.stale, live(c.liveWork, &consulted))
+			got, clear := resolveWaiting(c.status, c.hasMark, c.stale, live(c.liveWork, &consulted), func() bool { return c.ask })
 			if got != c.wantStatus {
 				t.Errorf("status = %q, want %q", got, c.wantStatus)
 			}

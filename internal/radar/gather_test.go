@@ -311,3 +311,34 @@ func TestGatherAgents_WatchedPaneDroppedWhenClosed(t *testing.T) {
 		t.Fatal("the closed watched pane's marker should be reaped")
 	}
 }
+
+// A permission prompt happens MID-TURN: the agent is inside a turn and stops to ask.
+// So the pane carries BOTH a live turn marker and a fresh waiting marker, and the answer
+// has to be `waiting` — blocked on you is the more specific truth, and it is the whole
+// needs-you signal the product is built around.
+//
+// Reported 2026-09-02 23:50 from a real pane: the screen read "Allow reads outside the
+// working directories? 1/2/3", the event stream had said waiting since 23:49:30, and the
+// app's header still said "working" two minutes later.
+func TestGatherAgents_WaitingBeatsATurnInProgress(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := state.WriteMarker(state.ActivePath("%3"), "sess-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.WriteMarker(state.WaitingPath("%3"), "permission"); err != nil {
+		t.Fatal(err)
+	}
+
+	// A title that says nothing either way — which is every Claude pane since 2.1.237.
+	lines := []string{paneLine("%3", "work", "1", "0", "✳ ready", "claude", 1700000200, 900003, "/tmp/nope")}
+	var got []Pane
+	withFixture(t, lines, func() { got = GatherAgents() })
+
+	if len(got) != 1 {
+		t.Fatalf("got %d rows, want 1", len(got))
+	}
+	if got[0].Status != "waiting" {
+		t.Errorf("status = %q, want \"waiting\" — a turn in progress must not hide that the "+
+			"agent is blocked on the user", got[0].Status)
+	}
+}
