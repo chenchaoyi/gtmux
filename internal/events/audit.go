@@ -163,3 +163,22 @@ func AuditHQSession(successor, predecessor string, now int64) {
 		Summary: successor + " replaces " + predecessor,
 	}, now)
 }
+
+// IsSupervisorAct reports whether a record is something the SUPERVISION did — a
+// dispatch, a reclaim, a knowledge entry, a self-audit, a rotation, an alarm about the
+// supervision itself — as opposed to the fleet's own lifecycle.
+//
+// Wake DELIVERY is deliberately not one. It is plumbing: gtmux knocking on HQ's door,
+// measured at 1532 records in one week against 39 acts in the same period, so counting
+// it as work would bury everything that is. The channel's failure still surfaces, as the
+// `wake-degraded` alarm, which is the part worth hearing.
+//
+// The rule lives here rather than in each consumer because a feed that filters on it
+// (GET /api/hq/events?acts=1) and a reader that renders it must agree about what an act
+// is; two copies of this predicate would drift the moment a new audit kind is added.
+func IsSupervisorAct(r Record) bool {
+	if !strings.HasPrefix(r.Event, "gtmux:") {
+		return false
+	}
+	return r.Event != AuditEventWakeDelivered && r.Event != AuditEventWakeDropped
+}

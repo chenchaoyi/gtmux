@@ -142,7 +142,7 @@ type Deps struct {
 	// newest first, capped at limit records — the fleet's recent history, which the
 	// radar's present-instant view cannot show. Optional: nil → GET /api/hq/events
 	// serves an empty array (a client renders "no activity", not an error).
-	HQEvents func(severity string, limit int) ([]byte, error)
+	HQEvents func(severity string, limit int, actsOnly bool) ([]byte, error)
 
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,

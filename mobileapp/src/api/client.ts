@@ -415,8 +415,14 @@ export class GtmuxClient {
   // hqEvents: the fleet's recent history at a severity floor (GET /api/hq/events),
   // newest first. [] on failure — an empty feed reads as "quiet", which is honest
   // when we can't reach the ledger and is what a reader can act on either way.
-  async hqEvents(severity = 'notable', limit = 40): Promise<HQEvent[]> {
-    const q = `severity=${encodeURIComponent(severity)}&limit=${limit}`;
+  //
+  // `acts` asks for just what the SUPERVISION did. The core applies it BEFORE the cap,
+  // which is the whole point: on a real machine 200 records span under four hours and
+  // carry a handful of acts, because wake deliveries dominate the feed. A core that
+  // predates the parameter ignores it and returns the mixed feed, which is why the
+  // caller still filters (hqActsModel.isSupervisorAct) rather than trusting the narrowing.
+  async hqEvents(severity = 'notable', limit = 40, acts = false): Promise<HQEvent[]> {
+    const q = `severity=${encodeURIComponent(severity)}&limit=${limit}` + (acts ? '&acts=1' : '');
     const r = await tfetch(`${this.base}/api/hq/events?${q}`, {headers: this.h()});
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);

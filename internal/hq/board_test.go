@@ -95,7 +95,7 @@ func TestEventsJSONIsNewestFirstSeverityFlooredAndCapped(t *testing.T) {
 	})
 
 	var got []events.Record
-	b, err := EventsJSON(events.SevNotable, 10)
+	b, err := EventsJSON(events.SevNotable, 10, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestEventsJSONIsNewestFirstSeverityFlooredAndCapped(t *testing.T) {
 	}
 
 	// The cap takes the NEWEST, not the oldest.
-	b, _ = EventsJSON("", 1)
+	b, _ = EventsJSON("", 1, false)
 	got = nil
 	_ = json.Unmarshal(b, &got)
 	if len(got) != 1 || got[0].Seq != 3 {
@@ -122,7 +122,7 @@ func TestEventsJSONIsNewestFirstSeverityFlooredAndCapped(t *testing.T) {
 func TestEventsJSONIsAlwaysAnArray(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	for _, limit := range []int{0, 5} {
-		b, err := EventsJSON("", limit)
+		b, err := EventsJSON("", limit, false)
 		if err != nil {
 			t.Fatal(err)
 		}
