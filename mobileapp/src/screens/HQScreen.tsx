@@ -43,6 +43,8 @@ import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {parseBoardSections} from './boardSections';
+import {HQHeader} from './HQHeader';
+import {ResourceState, headerModel} from './hqHeaderModel';
 import {
   Zone,
   assessment,
@@ -53,10 +55,8 @@ import {
   eventMark,
   eventPhrase,
   eventSession,
-  fleetCounts,
   hasNewActivity,
   initialZone,
-  planLabel,
   relTime,
   sessionName,
   windowNo,
@@ -80,7 +80,7 @@ export function HQScreen({route, navigation}: any) {
 
   const [digest, setDigest] = useState<DigestRow[]>([]);
   const [week, setWeek] = useState<{label: string; pct: number}[]>([]);
-  const [res, setRes] = useState<{warn?: string; diskGB?: number; memTier?: string} | null>(null);
+  const [res, setRes] = useState<ResourceState | null>(null);
   const [board, setBoard] = useState<HQBoard>({exists: false});
   const [ledger, setLedger] = useState<HQEvent[]>([]);
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
@@ -111,7 +111,8 @@ export function HQScreen({route, navigation}: any) {
   // The assessment headline is the supervisor's synthesized conclusion — it can run
   // long. Collapsed to 2 lines by default; tapping it expands to the full text so it
   // is never stranded truncated with no way to read the rest.
-  const [assessExpanded, setAssessExpanded] = useState(false);
+  // The verdict's disclosure — everything the old header showed standing.
+  const [briefOpen, setBriefOpen] = useState(false);
   // Collapsing top (like the terminal/Detail header): the fleet-counts + resource +
   // assessment block hides as you scroll into a zone's body, reclaiming the height for
   // content, and reappears at the top. The thin title row (back · gtmux HQ · conn) stays
@@ -170,7 +171,10 @@ export function HQScreen({route, navigation}: any) {
           if (!alive) return;
           setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used})));
           const m = u?.resource?.machine;
-          setRes(m ? {warn: m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier} : null);
+          // `tier` rides along now: it is what decides whether the machine's line is
+          // promoted OUT of the disclosure (hqHeader.isCritical), and dropping it here
+          // was why the old header printed disk/memory unconditionally.
+          setRes(m ? {warn: m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
         })
         .catch(() => {});
       client
@@ -253,7 +257,6 @@ export function HQScreen({route, navigation}: any) {
   }, [turns, pending]);
 
   const calls = useMemo(() => decisions(digest), [digest]);
-  const counts = useMemo(() => fleetCounts(digest), [digest]);
 
   // Land on the block when there is one — that's why you opened HQ. Decided ONCE, from
   // the first digest that arrives, so a later state change never yanks the zone out from
@@ -365,72 +368,26 @@ export function HQScreen({route, navigation}: any) {
             const h = e.nativeEvent.layout.height;
             if (h > 0 && Math.abs(h - topH) > 1) setTopH(h);
           }}>
-          <View style={[styles.strip, {borderBottomColor: pal.divider}]}>
-            <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
-              <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
-            </TouchableOpacity>
-            <View style={styles.titleRow}>
-              <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
-              {demo && !Debug.shotMode && (
-                <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-                  <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
-                </View>
-              )}
-              <View
-                style={[
-                  styles.dot,
-                  {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting},
-                ]}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.stripDetail, {borderBottomColor: pal.divider}]}>
-            <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={2}>
-              {t(
-                `${counts.waiting} need you · ${counts.working} working · ${counts.idle} idle`,
-                `${counts.waiting} 需要你 · ${counts.working} 运行 · ${counts.idle} 空闲`,
-              )}
-              {week.length > 0 && '  ·  ' + week.map(w => `${planLabel(w.label, zh)} ${w.pct}%`).join(' · ')}
-            </Text>
-            {res && (res.warn || res.diskGB != null) && (
-              <Text style={[styles.sub, {color: res.warn ? ERRORED_COLOR : pal.fg3}]} numberOfLines={1}>
-                {res.warn ? '⚠ ' + res.warn : `${zh ? '磁盘' : 'disk'} ${res.diskGB}GB · ${zh ? '内存' : 'mem'} ${res.memTier}`}
-              </Text>
-            )}
-          </View>
-
-          {/* Assessment — the conclusion, and the supervisor's own board behind it.
-              Tap the conclusion to expand it in full (it can be long) and again to collapse. */}
-          <View style={[styles.assess, {borderBottomColor: pal.divider}]}>
-            <TouchableOpacity
-              activeOpacity={0.6}
-              testID="hq-assess"
-              onPress={() => setAssessExpanded(v => !v)}>
-              <Text
-                style={[styles.assessText, {color: calls.length > 0 ? ERRORED_COLOR : pal.fg}]}
-                numberOfLines={assessExpanded ? undefined : 2}>
-                <Text style={{color: pal.fg3}}>⟣ </Text>
-                {assessment(digest, zh)}
-              </Text>
-            </TouchableOpacity>
-            {board.exists && (
-              // The board is the most substantial thing HQ produces, and this was an 11pt
-              // line in the dimmest colour on the page — quieter than the prose above it.
-              // A bordered row at fg2 reads as somewhere to go.
-              <TouchableOpacity
-                testID="hq-board-open"
-                onPress={() => setBoardOpen(true)}
-                hitSlop={hit}
-                style={[styles.boardRow, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-                <Text style={[styles.boardIcon, {color: pal.fg2}]}>▤</Text>
-                <Text style={[styles.boardLink, {color: pal.fg2}]} numberOfLines={1}>
-                  {boardFreshness(board.updated_at, now, zh)}
-                </Text>
-                <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <HQHeader
+            model={headerModel({
+              verdict: assessment(digest, zh),
+              urgent: calls.length > 0,
+              digest,
+              turns,
+              week,
+              res,
+              zh,
+            })}
+            conn={conn}
+            demo={demo && !Debug.shotMode}
+            boardLine={board.exists ? boardFreshness(board.updated_at, now, zh) : null}
+            open={briefOpen}
+            onToggle={() => setBriefOpen(v => !v)}
+            onBack={() => navigation.goBack()}
+            onOpenBoard={() => setBoardOpen(true)}
+            pal={pal}
+            zh={zh}
+          />
         </View>
       </Animated.View>
 

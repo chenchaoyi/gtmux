@@ -2,10 +2,10 @@
 
 ## 1. Header: the judgment, and everything else behind a disclosure
 
-- [ ] 1.1 `hqBrief.ts` (pure): pick HQ's own latest `⟣` brief from the turns; decide what the disclosure holds; resource promoted only at the red tier
-- [ ] 1.2 `HQHeader.tsx`: back + name + dot + verdict line + disclosure, composed from the pure model
-- [ ] 1.3 Tests: the brief is HQ's own words when it has any and the counts otherwise; a red tier reaches the standing line; a green one does not
-- [ ] 1.4 HQScreen composes the header instead of inlining it
+- [x] 1.1 `hqHeaderModel.ts` (pure — the name avoids the macOS case-insensitive collision with `HQHeader.tsx`): pick HQ's own latest `⟣` brief from the turns; decide what the disclosure holds; resource promoted only at the red tier
+- [x] 1.2 `HQHeader.tsx`: back + name + dot + verdict line + disclosure, composed from the pure model
+- [x] 1.3 Tests: the brief is HQ's own words when it has any and the counts otherwise; a red tier reaches the standing line; a green one does not
+- [x] 1.4 HQScreen composes the header instead of inlining it
 
 ## 2. The middle zone becomes the supervisor's own work
 
