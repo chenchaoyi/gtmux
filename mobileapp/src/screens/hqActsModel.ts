@@ -1,4 +1,4 @@
-// hqActs — the supervisor's own work, read out of the journal (hq-page-shows-its-work).
+// hqActsModel — the supervisor's own work, read out of the journal (hq-page-shows-its-work).
 //
 // The page used to give its middle zone to the FLEET's lifecycle: sessions starting,
 // stopping, waiting. That is what the workers did. Measured over one week on a real
@@ -9,6 +9,10 @@
 // The journal already carries every one of those acts (`gtmux:*`, served by
 // /api/hq/events at routine severity). This module decides which of them are ACTS and
 // says them in words.
+
+// The name carries `Model` for the same reason hqHeaderModel does: macOS resolves module
+// paths case-insensitively, so a `hqActs.ts` beside `HQActs.tsx` is ONE name to the
+// resolver and the import lands on the wrong file. Third time this repo has met it.
 
 import {HQEvent} from '../api/client';
 

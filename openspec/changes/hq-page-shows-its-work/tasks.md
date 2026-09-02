@@ -9,10 +9,10 @@
 
 ## 2. The middle zone becomes the supervisor's own work
 
-- [ ] 2.1 `hqActs.ts` (pure): `gtmux:audit:*` → {when, verb, target, detail, outcome}; the week tally; the supervisor/fleet filter
-- [ ] 2.2 `HQActs.tsx`: the tally strip, the day-grouped act rows, the filter, an empty state in words
-- [ ] 2.3 Tests: every audit kind gets a phrase (a new kind must not render as a raw token); the tally counts a week; the filter partitions without losing records
-- [ ] 2.4 The zone's selector signal reports unseen acts, not just fleet events
+- [x] 2.1 `hqActsModel.ts` (pure) + the core-side `?acts=1` filter (the client-only plan died on measurement — 200 records span 3.9h): `gtmux:audit:*` → {when, verb, target, detail, outcome}; the week tally; the supervisor/fleet filter
+- [x] 2.2 `HQActs.tsx`: the tally strip, the day-grouped act rows, the filter, an empty state in words
+- [x] 2.3 Tests: every audit kind gets a phrase (a new kind must not render as a raw token); the tally counts a week; the filter partitions without losing records
+- [x] 2.4 The zone's selector signal reports unseen acts, not just fleet events
 
 ## 3. The conversation shows the work as it happens
 

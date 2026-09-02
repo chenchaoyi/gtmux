@@ -43,6 +43,8 @@ import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {parseBoardSections} from './boardSections';
+import {ActsView, HQActs} from './HQActs';
+import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
 import {ResourceState, headerModel} from './hqHeaderModel';
 import {
@@ -53,8 +55,6 @@ import {
   boardFreshness,
   decisions,
   eventMark,
-  eventPhrase,
-  eventSession,
   hasNewActivity,
   initialZone,
   relTime,
@@ -83,6 +83,9 @@ export function HQScreen({route, navigation}: any) {
   const [res, setRes] = useState<ResourceState | null>(null);
   const [board, setBoard] = useState<HQBoard>({exists: false});
   const [ledger, setLedger] = useState<HQEvent[]>([]);
+  // The supervisor's own acts (a separate, narrowed feed — see the poll below).
+  const [actFeed, setActFeed] = useState<HQEvent[]>([]);
+  const [actsView, setActsView] = useState<ActsView>('acts');
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
   // Set when the supervisor's session began with a `/clear`/`/new` — including the
   // `gtmux hq --rotate` HQ performs on itself. The console then shows this shift whole
@@ -185,6 +188,12 @@ export function HQScreen({route, navigation}: any) {
         .hqEvents('notable', 40)
         .then(e => alive && setLedger(e))
         .catch(() => {});
+      // The supervisor's own acts, narrowed by the CORE before its cap — a client-side
+      // filter over the mixed feed sees under four hours (see hqActsModel / the contract).
+      client
+        .hqEvents('', 200, true)
+        .then(e => alive && setActFeed(e))
+        .catch(() => {});
     };
     load();
     const id = setInterval(load, 3000);
@@ -257,6 +266,7 @@ export function HQScreen({route, navigation}: any) {
   }, [turns, pending]);
 
   const calls = useMemo(() => decisions(digest), [digest]);
+  const actList = useMemo(() => supervisorActs(actFeed, zh), [actFeed, zh]);
 
   // Land on the block when there is one — that's why you opened HQ. Decided ONCE, from
   // the first digest that arrives, so a later state change never yanks the zone out from
@@ -277,11 +287,14 @@ export function HQScreen({route, navigation}: any) {
 
   // Reading the feed marks it read; leaving it doesn't un-mark.
   useEffect(() => {
-    if (activeZone === 'activity' && ledger.length > 0) {
-      setSeenMark(m => Math.max(m, eventMark(ledger[0])));
+    if (activeZone === 'acts' && actFeed.length > 0) {
+      setSeenMark(m => Math.max(m, eventMark(actFeed[0])));
     }
-  }, [activeZone, ledger]);
-  const activityNew = hasNewActivity(ledger, seenMark);
+  }, [activeZone, actFeed]);
+  // The zone's own signal reports UNSEEN ACTS. It used to report unseen fleet events,
+  // which is the other tab's content now — a dot that lights for something the zone does
+  // not lead with sends the reader to the wrong place.
+  const actsNew = hasNewActivity(actFeed, seenMark);
 
   // Every command routes through gtmux HQ (send to the supervisor pane).
   const command = useCallback(
@@ -340,7 +353,7 @@ export function HQScreen({route, navigation}: any) {
 
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
     {key: 'calls', label: t('your call', '该你拍板'), badge: calls.length > 0 ? String(calls.length) : undefined},
-    {key: 'activity', label: t('activity', '动态'), dot: activityNew},
+    {key: 'acts', label: t('what HQ did', '参谋长做了什么'), dot: actsNew},
     {key: 'console', label: t('console', '对话')},
   ];
 
@@ -480,35 +493,20 @@ export function HQScreen({route, navigation}: any) {
           </ScrollView>
         )}
 
-        {/* ACTIVITY — the ledger. History; the radar only has the present instant. */}
-        {activeZone === 'activity' && (
-          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad} onScroll={onZoneScroll} scrollEventThrottle={16}>
-            {ledger.length === 0 ? (
-              <Text style={[styles.empty, {color: pal.fg3}]}>{t('Nothing notable recently.', '最近没有值得一提的动静。')}</Text>
-            ) : (
-              ledger.map((e, i) => (
-                <View key={`${e.seq ?? e.ts}-${i}`} testID="hq-event" style={styles.eventRow}>
-                  <Text style={[styles.eventTime, {color: pal.fg3}]}>{relTime(e.ts, now)}</Text>
-                  <View
-                    style={[
-                      styles.eventDot,
-                      {backgroundColor: e.severity === 'important' ? ERRORED_COLOR : pal.fg3},
-                    ]}
-                  />
-                  <View style={styles.flex}>
-                    <Text style={[styles.eventHead, {color: pal.fg}]} numberOfLines={1}>
-                      {eventSession(e)} <Text style={{color: pal.fg2, fontWeight: '400'}}>{eventPhrase(e, zh)}</Text>
-                    </Text>
-                    {e.summary ? (
-                      <Text style={[styles.eventSummary, {color: pal.fg3}]} numberOfLines={2}>
-                        {e.summary}
-                      </Text>
-                    ) : null}
-                  </View>
-                </View>
-              ))
-            )}
-          </ScrollView>
+        {/* WHAT HQ DID — the supervisor's own acts, with the fleet ledger beside them.
+            The old zone gave this height to the fleet's lifecycle and left the chief of
+            staff's own work with no surface anywhere in the app. */}
+        {activeZone === 'acts' && (
+          <HQActs
+            acts={actList}
+            ledger={ledger}
+            view={actsView}
+            onView={setActsView}
+            now={now}
+            pal={pal}
+            zh={zh}
+            onScroll={onZoneScroll}
+          />
         )}
 
         {/* CONSOLE — the conversation with gtmux HQ. */}

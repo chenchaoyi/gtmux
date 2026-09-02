@@ -9,7 +9,9 @@
 import {DigestRow, HQEvent} from '../api/client';
 
 // Zone is which body the page is showing. The command bar spans all three.
-export type Zone = 'calls' | 'activity' | 'console';
+// `acts` was `activity` while it showed the FLEET's lifecycle; it now shows what the
+// SUPERVISOR did, and a key that names the old content is drift waiting to mislead.
+export type Zone = 'calls' | 'acts' | 'console';
 
 // workerRows drops the supervisor: HQ is the meta-layer and must never appear as one
 // more session inside its own page.

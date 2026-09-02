@@ -1,5 +1,5 @@
 import {HQEvent} from '../api/client';
-import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally} from './hqActs';
+import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally} from './hqActsModel';
 
 const ev = (o: Partial<HQEvent>): HQEvent => ({ts: 1000, event: 'Stop', ...o} as HQEvent);
 
