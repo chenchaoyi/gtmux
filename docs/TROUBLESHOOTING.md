@@ -1295,3 +1295,41 @@ tmux send-keys -X -t %NN cancel
 three surfaces render it, so a recurrence of this particular cause names itself and the
 key that clears it. If a future outage still reads as a generic "not landing", the cause
 is one `Reach` does not model — start with `pane_in_mode`, then the three checks above.
+
+## HQ's identity stamp disappears after a reboot (2026-09-02, silent for 4 days)
+
+**Symptom.** None — that is the point. `gtmux hq --rotate`, the wake channel and the
+digest all keep working, because HQ still resolves by PATH. What is gone is the lock that
+makes the resolution unambiguous.
+
+```sh
+# every pane on the server, and which one claims to be HQ
+tmux list-panes -a -F '#{pane_id}\t#{@gtmux_hq_home}\t#{pane_current_path}'
+```
+
+An empty second column on the HQ pane means the stamp is missing.
+
+**Cause.** The stamp is a tmux PANE OPTION, and a pane option dies with its pane. It was
+written in exactly one place — `gtmux hq` at spawn — so an HQ brought back any other way
+(a `restore` after a reboot, a hand-restarted agent) never had one. Compare the tmux
+server's start time with the HQ session's:
+
+```sh
+tmux display -p '#{t:start_time}'                 # server up
+tmux display -p -t %NN '#{t:session_created}'     # HQ session created
+```
+
+One second apart is a restore, not a spawn.
+
+**Why it matters even though nothing broke.** The stamp exists (hq-home-quarantine)
+because the path criteria are AMBIGUOUS: a worker parked in the HQ home matches them too,
+and first-line-wins let one steal the supervisor identity — wakes delivered to a worker,
+the real HQ silent. Running on the fallback alone means that accident is one stray `cd`
+away.
+
+**Since v0.77.0** a path hit re-stamps itself, so this heals on the next resolve (seconds).
+It re-stamps only a UNIQUE hit: stamping an ambiguous one would freeze a first-line-wins
+guess into the authoritative answer, which is precisely the accident being prevented.
+
+**Must-check when HQ identity misbehaves:** whether TWO panes match the home. If so, the
+fallback is picking one by list order and no stamp will be written until that is resolved.

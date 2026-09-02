@@ -39,6 +39,10 @@ func seenStampPath() string { return filepath.Join(state.Dir(), "hqwake", "last-
 // lister is the injectable pane source (real tmux in production, a fixture in tests).
 var lister = func() []string { return tmux.Lines("list-panes", "-a", "-F", paneFmt) }
 
+// stamper is the injectable write side, so a test can observe what resolution decided
+// to make authoritative — the part that is dangerous to get wrong.
+var stamper = Stamp
+
 // Find returns the pane id of a live supervisor pane ("" when none).
 func Find() string { return resolve() }
 
@@ -54,12 +58,19 @@ func FindOther(about string) (pane string, self bool) {
 	return pane, false
 }
 
-// resolve scans the panes for the HQ home and stamps a hit. The STAMP outranks the
-// path fallback (hq-home-quarantine): a worker session mistakenly parked in the HQ
-// home matches the path criteria too, and first-line-wins used to let it STEAL the
-// supervisor identity — wakes delivered to a worker, the real HQ silent. When any
-// stamped pane exists, only the stamp answers; the path criteria remain solely the
-// legacy fallback for a pane predating the stamp.
+// resolve finds the supervisor pane. The STAMP outranks the path fallback
+// (hq-home-quarantine): a worker session mistakenly parked in the HQ home matches the
+// path criteria too, and first-line-wins used to let it STEAL the supervisor identity —
+// wakes delivered to a worker, the real HQ silent. When any stamped pane exists, only
+// the stamp answers.
+//
+// A path hit RE-STAMPS, but only when it is the sole one. The stamp used to be written
+// in exactly one place — `gtmux hq` at spawn — and a pane option dies with its pane, so
+// every HQ brought back by `restore` after a reboot ran unstamped, on the path fallback
+// alone. Measured on this machine: four days, the identity lock silently disarmed the
+// whole time. Re-stamping on a UNIQUE hit re-arms it before any ambiguity can arise;
+// re-stamping an ambiguous one would do the opposite — freeze a first-line-wins guess
+// into the authoritative answer, which is the accident the stamp exists to prevent.
 func resolve() string {
 	home := normalize(state.HQHome())
 	lines := lister()
@@ -70,15 +81,22 @@ func resolve() string {
 			return f[0]
 		}
 	}
+	var byPath []string
 	for _, line := range lines {
 		f := strings.SplitN(line, "\t", 4)
 		if len(f) != 4 || !isHQ(f, home) {
 			continue
 		}
-		stampSeen()
-		return f[0]
+		byPath = append(byPath, f[0])
 	}
-	return ""
+	if len(byPath) == 0 {
+		return ""
+	}
+	if len(byPath) == 1 {
+		stamper(byPath[0]) // unambiguous — record it so the next resolve needs no paths
+	}
+	stampSeen()
+	return byPath[0]
 }
 
 // isHQ reports whether a pane record names the HQ home in ANY of its three fields:
