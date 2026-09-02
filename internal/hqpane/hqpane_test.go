@@ -188,3 +188,78 @@ func TestSameDir(t *testing.T) {
 		t.Fatal("a subdirectory is not the home")
 	}
 }
+
+// fakeStamper records what resolution decided to make authoritative.
+func fakeStamper(t *testing.T) *[]string {
+	t.Helper()
+	var got []string
+	prev := stamper
+	stamper = func(p string) { got = append(got, p) }
+	t.Cleanup(func() { stamper = prev })
+	return &got
+}
+
+// The stamp was written in exactly ONE place — `gtmux hq` at spawn — and a pane option
+// dies with its pane. So every HQ that `restore` brought back after a reboot ran
+// unstamped, on the path fallback alone: measured on a real machine, four days with the
+// identity lock silently disarmed. A unique path hit re-arms it.
+func TestResolveRestampsAUniquePathHit(t *testing.T) {
+	home := hqHome(t)
+	stamped := fakeStamper(t)
+	fakePanes(t,
+		pane("%1", "", "/work/api", "/work/api"),
+		pane("%6", "", home, home), // restored HQ: right place, no stamp
+	)
+	if got := resolve(); got != "%6" {
+		t.Fatalf("resolve = %q, want %%6", got)
+	}
+	if len(*stamped) != 1 || (*stamped)[0] != "%6" {
+		t.Errorf("stamped %v, want [%%6] — a restored HQ must not stay unstamped forever", *stamped)
+	}
+}
+
+// The danger the stamp exists to prevent: a worker parked in the HQ home matches the
+// path criteria too. Freezing a first-line-wins guess into the authoritative answer
+// would be worse than having no stamp at all.
+func TestResolveRefusesToStampAnAmbiguousHit(t *testing.T) {
+	home := hqHome(t)
+	stamped := fakeStamper(t)
+	fakePanes(t,
+		pane("%6", "", home, home),
+		pane("%9", "", home, home), // a worker that wandered into the home
+	)
+	if got := resolve(); got != "%6" {
+		t.Errorf("resolve = %q — the pick itself is unchanged (first wins)", got)
+	}
+	if len(*stamped) != 0 {
+		t.Errorf("stamped %v — an ambiguous hit must never become authoritative", *stamped)
+	}
+}
+
+// An existing stamp already answers; re-writing it every few seconds would be noise.
+func TestResolveDoesNotRestampWhenAStampAnswers(t *testing.T) {
+	home := hqHome(t)
+	stamped := fakeStamper(t)
+	fakePanes(t,
+		pane("%9", "", home, home),                   // path-matching worker, listed FIRST
+		pane("%6", home, "/elsewhere", "/elsewhere"), // the real HQ, stamped, having cd'd away
+	)
+	if got := resolve(); got != "%6" {
+		t.Errorf("resolve = %q, want the STAMPED pane to outrank the path", got)
+	}
+	if len(*stamped) != 0 {
+		t.Errorf("stamped %v — nothing to re-record", *stamped)
+	}
+}
+
+func TestResolveStampsNothingWhenThereIsNoHQ(t *testing.T) {
+	hqHome(t)
+	stamped := fakeStamper(t)
+	fakePanes(t, pane("%1", "", "/work/api", "/work/api"))
+	if got := resolve(); got != "" {
+		t.Errorf("resolve = %q, want empty", got)
+	}
+	if len(*stamped) != 0 {
+		t.Errorf("stamped %v with no HQ anywhere", *stamped)
+	}
+}
