@@ -36,3 +36,21 @@ func TestEveryRegisteredEventClassifies(t *testing.T) {
 // The reverse is NOT an error and must not be asserted: a mapping with no
 // registration is how a table stays ready for an agent that gains the event later,
 // and for events other agents already send.
+
+// The registration is the half a behaviour test cannot see. PostToolUse classifies as
+// Resumed and Resumed clears a waiting mark, both of which stayed true the whole time
+// this was broken — because a matcher meant the event never arrived for the tools that
+// actually gate. Scoping it again would restore the bug with every other test green.
+func TestPostToolUseIsRegisteredForEveryTool(t *testing.T) {
+	for _, h := range hookEvents {
+		if h.event != "PostToolUse" {
+			continue
+		}
+		if h.matcher != "" {
+			t.Fatalf("PostToolUse is scoped to %q — a permission on a Read or a Bash then has "+
+				"nothing to clear its waiting mark, which is the 2026-09-03 bug", h.matcher)
+		}
+		return
+	}
+	t.Fatal("PostToolUse is not registered at all — an approved tool would never clear its wait")
+}

@@ -51,7 +51,17 @@ var hookEvents = []claudeHook{
 	{event: "PreCompact"},
 	{event: "PostCompact"},
 	{event: "PreToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
-	{event: "PostToolUse", matcher: "ExitPlanMode|AskUserQuestion"},
+	// PostToolUse is registered UNSCOPED, unlike PreToolUse. A PermissionRequest for a
+	// Read or a Bash writes a waiting mark, and the event that clears it is the tool
+	// FINISHING once you approve — which a matcher scoped to the plan/question tools
+	// never delivers. Measured 2026-09-03: %7 asked at 09:48:33, was answered, and sat
+	// as needs-you until the 15-minute staleness guard expired, because its main thread
+	// was idle behind a background agent and produced no Stop either. codex hit the same
+	// wall and was widened for the same reason.
+	//
+	// The volume this admits does not reach the journal: a Resumed that cleared nothing
+	// is not recorded (hook.journalWorthy), and the HQ wake was already gated on it.
+	{event: "PostToolUse"},
 }
 
 const lsregister = "/System/Library/Frameworks/CoreServices.framework/" +

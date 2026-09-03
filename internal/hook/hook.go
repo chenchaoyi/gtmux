@@ -113,6 +113,22 @@ type decision struct {
 //
 // sameSessionTurn says the event comes from the very session that owns the turn in
 // progress. It only matters to SessionStart — see there.
+// journalWorthy says whether an event belongs in the session journal.
+//
+// Everything does, except a `Resumed` that cleared nothing. Resumed is what a finished
+// tool produces, and a Claude turn runs about ten tools (measured: 4711 calls over 459
+// turns). Registering the tool event unscoped — which is what lets an approved
+// permission clear its own waiting mark — would therefore add roughly 3500 records a
+// day against a current total of 970, and that stream is what HQ's consumption
+// watermark reads. A tool finishing is not news; a WAIT ending is, and that is the
+// Resumed this keeps.
+//
+// The wake side already drew the same line (`d.clearWaiting && hadWaiting`), so this
+// only brings the journal into agreement with it.
+func journalWorthy(event string, hadWaiting bool) bool {
+	return event != "Resumed" || hadWaiting
+}
+
 func decide(event string, activePresent, sameSessionTurn bool) decision {
 	switch event {
 	case "UserPromptSubmit":
@@ -821,14 +837,16 @@ func Run(stdin io.Reader, args []string) int {
 		if goal != "" {
 			origin = events.OriginInstruction
 		}
-		events.Append(events.Record{
-			Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
-			Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
-			Summary: summary, Class: evClass, Origin: origin,
-			// Recorded on EVERY event, not just the pane-less ones: which record will
-			// need attributing later is not knowable when it is written.
-			AgentSession: agentSession,
-		})
+		if journalWorthy(event, hadWaiting) {
+			events.Append(events.Record{
+				Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
+				Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
+				Summary: summary, Class: evClass, Origin: origin,
+				// Recorded on EVERY event, not just the pane-less ones: which record will
+				// need attributing later is not knowable when it is written.
+				AgentSession: agentSession,
+			})
+		}
 	}
 
 	// HQ wake channel (hq-perception-v2). All gated on a live HQ pane (no HQ → zero
