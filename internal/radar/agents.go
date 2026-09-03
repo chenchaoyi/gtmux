@@ -839,7 +839,10 @@ func GatherAgents() []Pane {
 			}
 		}
 		var clearMark bool
-		status, clearMark = resolveWaiting(status, waiting[id], waitMarkStale(id, activityAt), liveWorking)
+		// askOnScreen: is the agent's numbered question still up? Lazy — only the narrow
+		// "fresh mark over a live-working pane" branch pays for the capture.
+		askOnScreen := func() bool { return len(prompt.ParseOptions(tmux.CapturePane(id))) > 0 }
+		status, clearMark = resolveWaiting(status, waiting[id], waitMarkStale(id, activityAt), liveWorking, askOnScreen)
 		if clearMark {
 			state.Remove(state.WaitingPath(id))
 			delete(waiting, id)
@@ -1250,10 +1253,21 @@ func waitMarkStale(id string, activityAt int64) bool {
 //   - No mark: keep the raw status untouched. "Waiting" is never inferred from screen
 //     output (a numbered "1. … 2. …" list in an agent's own prose must not pop a
 //     bogus approval card) — it belongs to the hook, not the terminal.
-func resolveWaiting(status string, hasMark, stale bool, liveWorking func() bool) (out string, clearMark bool) {
+func resolveWaiting(status string, hasMark, stale bool, liveWorking, askOnScreen func() bool) (out string, clearMark bool) {
 	switch {
 	case hasMark && !stale:
-		if status == "working" && liveWorking() {
+		// The live-working escape means ANSWERED: you picked an option, the approved tool
+		// is running, and the mark has not been cleared yet. What proves it was answered
+		// is that the question is GONE from the screen.
+		//
+		// Without that last check a pane that is still ASKING reads as working, because a
+		// blocked agent keeps repainting (its footer counts tokens and elapsed time) and a
+		// frame diff cannot tell that from computing. Measured 2026-09-02 23:50 on a real
+		// pane: "Allow reads outside the working directories? 1/2/3" sat on screen, the
+		// hook had recorded kind=permission at 23:49:30, and the app still said working
+		// two minutes later. A screen heuristic must not overrule what the agent's own
+		// hook reported.
+		if status == "working" && liveWorking() && !askOnScreen() {
 			return status, false
 		}
 		return "waiting", false

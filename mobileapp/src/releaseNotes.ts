@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.77.0',
+    en: [
+      'The HQ page has a slimmer header, so the conversation finally has room.',
+      'New: see what your supervisor did while you were away. Dispatches, clean-ups, the notes it kept.',
+      'HQ\'s steps now show while it works, instead of folding away once it finishes.',
+    ],
+    zh: [
+      'HQ 页头部瘦身，对话终于有地方了。',
+      '新增：看得到参谋长替你做了什么。派活、回收、记的账都在这里。',
+      'HQ 干活的过程边跑边看，不用等它跑完再去角落里翻。',
+    ],
+  },
+  {
     version: '0.76.0',
     en: [
       'Fixed: a session\'s agent icon could turn into a plain two-letter mark and stay that way. One icon request failing on a weak connection was being treated as "this agent has no icon"; it now retries.',

@@ -12,7 +12,10 @@ WebDriverAgent), so it works where raw synthetic clicks don't.
 - A booted iOS simulator. Default target: **iPhone 17 Pro / iOS 26.5**
   (`e2e/setup/capabilities.ts`; override with `GTMUX_E2E_DEVICE` / `GTMUX_E2E_OS`
   / `GTMUX_E2E_UDID`).
-- Node ≥ 20. The toolchain is already in devDependencies (`appium`,
+- **Node 20–22.** Not newer: on Node 26 the session never opens — webdriverio's request
+  fails inside undici before it leaves the client (`UND_ERR_INVALID_ARG` on
+  `POST /session`, with nothing in the Appium log but the `/status` probe). Use
+  `nvm use 22` (or prefix `PATH`) for `test:e2e`. The toolchain is in devDependencies (`appium`,
   `appium-xcuitest-driver`, `webdriverio`, `ts-jest`). One-time, idempotent:
   `npx appium driver install xcuitest`.
 - **Software keyboard on.** If the sim's hardware keyboard is connected, the soft

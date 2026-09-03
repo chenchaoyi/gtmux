@@ -35,6 +35,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
+import {Debug} from '../debug';
 import {AnsiLine} from './ansi';
 import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
@@ -383,10 +384,48 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
   // follow-live behavior. Both track the same "near the tail" test.
   const [atBottom, setAtBottom] = useState(true);
+  // TEMPORARY instrumentation (jump-to-bottom investigation) — remove before merging.
+  // True while the user's own finger is driving the scroll (a drag, and the momentum it
+  // hands off to). Programmatic scrolls never set it, which is what keeps them from
+  // cancelling the follow they are performing.
+  const dragging = useRef(false);
+  const beginDrag = () => {
+    dragging.current = true;
+    freeze();
+  };
+  const endDrag = () => {
+    dragging.current = false;
+    thawByPosition();
+  };
+  const probe = useRef(Debug.logNet);
+  // Route through the harness's own recorder (Documents/gtmux-debug.jsonl, read back by
+  // readDebugLog) rather than console: a `log stream` on the simulator kept being
+  // group-killed with the Appium server and lost every line.
+  const say = (m: string, extra: Record<string, unknown> = {}) => {
+    if (probe.current) Debug.record({event: 'termprobe', at: m, ...extra});
+  };
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
-    const bottom = contentSize.height - contentOffset.y - layoutMeasurement.height < 40;
-    stick.current = bottom;
+    const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
+    say('scroll', {gap: +gap.toFixed(1), content: +contentSize.height.toFixed(1), off: +contentOffset.y.toFixed(1), view: +layoutMeasurement.height.toFixed(1), stick: stick.current});
+    const bottom = gap < 40;
+    // Following the live tail is the USER's intent, so only the user may withdraw it.
+    //
+    // This used to be a plain `stick.current = bottom`, which let a PROGRAMMATIC scroll
+    // cancel the very follow it was performing. Measured on the simulator: tapping
+    // jump-to-bottom set stick=true, and the animation's own first onScroll — reporting
+    // gap=1046 while it was still a thousand points from the tail — set it straight back
+    // to false. It stayed false for the whole flight, so when the content grew (and when
+    // the viewport resized under the collapsing header, which the same trace shows moving
+    // 692.7 → 684.3 → 691.3 mid-scroll) nothing re-pinned, and the view came to rest
+    // short of the tail. That is the reported "the arrow doesn't quite get me back".
+    //
+    // Arriving at the bottom always re-sticks, whoever caused it.
+    if (bottom) {
+      stick.current = true;
+    } else if (dragging.current) {
+      stick.current = false;
+    }
     setAtBottom(bottom);
     onLiveEdge?.(bottom);
   };
@@ -396,10 +435,12 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     stick.current = true;
     setAtBottom(true);
     onLiveEdge?.(true);
+    say('jump', {pending: pending.current !== null, frozen: frozen.current});
     flushPending();
     ref.current?.scrollToEnd({animated: true});
   };
-  const onContentSizeChange = () => {
+  const onContentSizeChange = (_w: number, h: number) => {
+    say('contentSize', {h: +h.toFixed(1), stick: stick.current});
     if (stick.current) ref.current?.scrollToEnd({animated: false});
   };
 
@@ -451,9 +492,9 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
         onTouchStart={freeze}
         onTouchEnd={thawSoon}
         onTouchCancel={thawSoon}
-        onScrollBeginDrag={freeze}
-        onScrollEndDrag={thawByPosition}
-        onMomentumScrollEnd={thawByPosition}
+        onScrollBeginDrag={beginDrag}
+        onScrollEndDrag={endDrag}
+        onMomentumScrollEnd={endDrag}
         scrollEventThrottle={16}
         onContentSizeChange={onContentSizeChange}>
         <View style={styles.layerWrap}>

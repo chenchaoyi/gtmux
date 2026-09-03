@@ -214,12 +214,34 @@ export function flattenGrid(
 ): {rows: Array<{key: string; spans: AnsiLine}>; text: string} {
   const out: Array<{key: string; spans: AnsiLine}> = [];
   const sel: string[] = [];
+  // Keys are CONTENT-addressed, not positional, and that is the whole point.
+  //
+  // The line cache already keeps an unchanged line's spans identity-stable, so a
+  // memoized row can bail. With a positional key that only worked for an IN-PLACE
+  // repaint: measured, a one-line SCROLL moved every row onto a different key and
+  // re-rendered the entire grid (61 of 61 rows for one new line), because key "5" now
+  // held what key "6" held before. A busy pane scrolls on almost every poll, so the
+  // whole terminal re-rendered every 1.5s and typing in the composer beside it stuttered.
+  //
+  // Content keys turn that into React's prefix/suffix diff: drop the row that scrolled
+  // off, keep the rest untouched, mount the new one.
+  //
+  // Repeated text (blank rows, mostly) is disambiguated by its occurrence number so keys
+  // stay unique. Two identical rows swapping places renders identically either way.
+  const nth = new Map<string, number>();
   rendered.forEach((spans, i) => {
     const raw = cachedRows ? cachedRows[i] : wrapLine(lines[i] || [], cols);
-    const wrapped = spans === lines[i] ? raw : wrapLine(spans, cols);
+    const spliced = spans !== lines[i];
+    const wrapped = spliced ? wrapLine(spans, cols) : raw;
     for (let j = 0; j < wrapped.length; j++) {
-      out.push({key: `${i}-${j}`, spans: wrapped[j]});
-      sel.push(j < raw.length ? raw[j].map(s => s.text).join('') : '');
+      const selText = j < raw.length ? raw[j].map(s => s.text).join('') : '';
+      sel.push(selText);
+      // The cursor-spliced row keys off what is RENDERED: a moved cursor really is a
+      // different row, and it should re-render.
+      const keyText = spliced ? wrapped[j].map(s => s.text).join('') : selText;
+      const n = (nth.get(keyText) ?? 0) + 1;
+      nth.set(keyText, n);
+      out.push({key: keyText + '\u0000' + n, spans: wrapped[j]});
     }
   });
   return {rows: out, text: sel.join('\n')};
