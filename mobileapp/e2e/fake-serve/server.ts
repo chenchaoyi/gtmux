@@ -49,6 +49,8 @@ export interface Fake {
   url: string;
   token: string;
   world: World;
+  /** Announce a fleet change to connected clients, as the real serve does on every one. */
+  bumpAgents: () => void;
   /**
    * dropStreams cuts every open SSE connection, the way a tunnel hiccup or a sleeping
    * phone does. The app must come back to `live` on its own — a client that needs a
@@ -86,6 +88,21 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
   const world = new World();
   const token = 'fake-token';
   const streams = new Set<ServerResponse>();
+  let rev = 1;
+  /**
+   * Tell every connected client the fleet changed, exactly as the real serve does: a bare
+   * revision number that makes the client re-fetch /api/agents.
+   *
+   * Without this the fake changed its world in silence and the app only noticed on its own
+   * poll timer — which made an answered question look like it had not been answered for
+   * however long that timer is. A fake that mutates without announcing it is not a slower
+   * serve, it is a different one.
+   */
+  const bumpAgents = (): void => {
+    rev += 1;
+    const frame = `event: agents\ndata: {"rev":${rev}}\n\n`;
+    streams.forEach(r => r.write(frame));
+  };
 
   const server: Server = createServer((req, res) => {
     void handle(req, res).catch(() => json(res, 500, {error: 'fake failed'}));
@@ -248,6 +265,16 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
           // The draft guard, as the core states it: a paste APPENDS, so delivering into
           // someone's half-written line would submit THEIR text with yours.
           if (text && world.drafts.get(id)) return json(res, 400, {error: 'send failed: refused-draft'});
+          // Answering a numbered menu is what a real agent does with a lone digit: the
+          // choice commits and the session stops waiting. Modelled here so a test can ask
+          // the question that matters after the tap — did the needs-you mark clear —
+          // rather than only whether the request was made.
+          if (a.status === 'waiting' && /^[1-9]$/.test(text.trim())) {
+            a.status = 'working';
+            a.since = Math.floor(Date.now() / 1000);
+            world.answered.set(id, text.trim());
+            bumpAgents();
+          }
           return json(res, 200, {status: 'ok'});
         }
         case '/api/focus': {
@@ -294,6 +321,7 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
     url: `http://127.0.0.1:${port}`,
     token,
     world,
+    bumpAgents,
     dropStreams: () => {
       const n = streams.size;
       streams.forEach(r => r.destroy());

@@ -167,3 +167,32 @@ describe('reply options', () => {
 // Still open, and deliberately: the client now KEEPS these reasons, but nothing shows them
 // to the reader yet. What a failed send should say, and where, is a question for the
 // commander — see the PR that added sendResult.
+
+// hq's third item. The premise needed correcting first: `/api/send` goes through
+// dispatch.PasteAndSubmit, NOT Deliver, so the queued detection (Deliver's on-screen
+// queuedMarkers) never runs for the phone and the server answers a plain ok either way.
+// The QUEUE is the agent's, not the server's, and nothing carries that distinction across
+// the API — see the note in the PR.
+//
+// What IS checkable here: two sends in a row into a busy pane both arrive, whole and in
+// order. The re-send interlock must not swallow the second, and one send_id must not
+// stand in for another.
+describe('two messages into a working session', () => {
+  test('both arrive, in order, each with its own idempotency token', async () => {
+    await client.send('%12', {text: 'first', enter: true, send_id: 'a1'});
+    await client.send('%12', {text: 'second', enter: true, send_id: 'a2'});
+    const sends = fake.world.writesTo('/api/send') as Array<Record<string, unknown>>;
+    expect(sends.map(s => s.text)).toEqual(['first', 'second']);
+    expect(new Set(sends.map(s => s.send_id)).size).toBe(2);
+  });
+
+  test('a retry of the SAME send reuses its token, which is what makes it a retry', async () => {
+    // The app preserves send_id across a Retry so an ambiguous timeout — the send may have
+    // landed while the response was lost — does not double-send.
+    const payload = {text: 'once', enter: true, send_id: 'same'} as const;
+    await client.send('%12', payload);
+    await client.send('%12', payload);
+    const sends = fake.world.writesTo('/api/send') as Array<Record<string, unknown>>;
+    expect(sends.every(s => s.send_id === 'same')).toBe(true);
+  });
+});

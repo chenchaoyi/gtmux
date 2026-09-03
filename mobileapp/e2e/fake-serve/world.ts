@@ -63,6 +63,8 @@ export class World {
   board = {exists: true, updated_at: now() - 300, text: '# gtmux HQ — situation board\n\n## 现状\n- 两条船在飞\n'};
   /** Everything the app wrote, in order. */
   recorded: Recorded[] = [];
+  /** pane id → the digit that answered its menu, once one did. */
+  answered = new Map<string, string>();
   /** Set to make the next matching write fail, so error paths are testable. */
   failNext = new Map<string, {status: number; error: string}>();
 
@@ -72,6 +74,7 @@ export class World {
 
   reset(): void {
     this.recorded = [];
+    this.answered.clear();
     this.failNext.clear();
     this.drafts.clear();
     this.agents = [
