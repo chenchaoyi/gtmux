@@ -4,6 +4,7 @@ import {join, resolve} from 'path';
 import {remote} from 'webdriverio';
 import {appiumPort, appiumServerUrl, iosCapabilities} from './capabilities';
 import {writeDebugFlags} from './app';
+import {reclaimBefore} from './reclaim';
 
 /**
  * Boots an Appium server (its own process group so teardown can kill the
@@ -36,6 +37,11 @@ function ensureLoopbackNoProxy(): void {
 
 export default async function globalSetup(): Promise<void> {
   ensureLoopbackNoProxy();
+  // An INTERRUPTED run (a killed jest, a tool timeout) never reaches teardown, so its
+  // Appium keeps the port and its WebDriverAgent keeps driving the simulator — orphaned
+  // to launchd, where no group kill can reach it. Setup always runs; it is the only
+  // reliable place to clear that. See reclaim.ts for the 25-hour one that prompted this.
+  reclaimBefore();
   const appRoot = resolve(__dirname, '../..'); // mobileapp/
   const artifactsRoot = join(appRoot, '.e2e-artifacts');
   const runStamp = new Date().toISOString().replace(/[-:T]/g, '').replace(/\..+$/, '');
