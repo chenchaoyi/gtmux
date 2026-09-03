@@ -1,6 +1,6 @@
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
-import {launchWithFlags, openFirstAgentDetail, settle} from '../setup/app';
+import {launchWithFlags, openFirstAgentDetail, readDebugLog, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 
 /**
@@ -25,6 +25,7 @@ gated('terminal scroll collapses segmented (live, debug-driven)', () => {
       GTMUX_DEBUG_PAIR_URL: url!,
       GTMUX_DEBUG_PAIR_TOKEN: token!,
       GTMUX_DEBUG_NO_PUSH: '1',
+      GTMUX_DEBUG_LOG_NET: '1', // gates the scroll + collapse probes
     });
 
     const radar = driver.$(`~${TestIds.radar.screen}`);
@@ -72,7 +73,16 @@ gated('terminal scroll collapses segmented (live, debug-driven)', () => {
 
     await screenshot('tsc-2-scrolled-up');
     // The whole top chrome is folded: the segmented control is gone from view.
-    expect(await termTab.isDisplayed()).toBe(false);
+    const shown = await termTab.isDisplayed();
+    if (shown) {
+      const log = readDebugLog();
+      // eslint-disable-next-line no-console
+      console.log('[tsc] collapse events:', JSON.stringify(log.filter(e => e.event === 'collapse')));
+      const frames = log.filter(e => e.event === 'termprobe');
+      // eslint-disable-next-line no-console
+      console.log('[tsc] scroll frames:', frames.length, 'last:', JSON.stringify(frames.slice(-2)));
+    }
+    expect(shown).toBe(false);
 
     // Flick back to the live tail via the jump-to-bottom FAB → chrome returns.
     const fab = driver.$(`~${TestIds.detail.jumpBottom}`);

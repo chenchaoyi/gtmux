@@ -440,8 +440,22 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     ref.current?.scrollToEnd({animated: true});
   };
   const onContentSizeChange = (_w: number, h: number) => {
-    say('contentSize', {h: +h.toFixed(1), stick: stick.current});
+    say('contentSize', {h: +h.toFixed(1), stick: stick.current, atBottom});
     if (stick.current) ref.current?.scrollToEnd({animated: false});
+    // RE-PUBLISH the live-edge state, do not only announce transitions.
+    //
+    // The host folds its top chrome while you browse scrollback, and it learns the edge
+    // state ONLY from this callback — which used to fire just on a scroll frame. Anything
+    // that reset the host's copy while the finger was already up left the chrome open with
+    // the reader parked in history and no event coming to correct it: scrolling had
+    // stopped, so there was nothing left to fire. Seen once on 2026-09-04 (the
+    // jump-to-bottom FAB showing, which is the same handler's other output, while the
+    // whole header, the neighbour strip and the segmented control stayed up).
+    //
+    // Content size changes on every poll of a live pane, so this re-asserts the truth
+    // several times a second. The host dedupes by its own last value, so a repeat costs
+    // nothing and a DESYNC repairs itself within one frame.
+    onLiveEdge?.(atBottom);
   };
 
   // iOS selection — the native overlay reports activation so JS can freeze the
