@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.78.0',
+    en: [
+      'Long-press a session to act on it: answer its question, tell it to carry on or stop, or hand it to the supervisor.',
+      'A session waiting on a permission prompt now shows as needing you, not as working.',
+      'The terminal no longer stutters your typing while output arrives, and the jump-to-bottom arrow lands on the tail.',
+    ],
+    zh: [
+      '长按一个会话就能动手：直接回答它的问题、让它继续或停下、或者交给参谋长。',
+      '卡在权限提示上的会话现在显示成「需要你」，不再是「运行中」。',
+      '终端刷新时打字不再卡顿，回到底部的箭头也真的落到底。',
+    ],
+  },
+  {
     version: '0.77.0',
     en: [
       'The HQ page has a slimmer header, so the conversation finally has room.',
