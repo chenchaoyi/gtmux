@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.80.0',
+    en: [
+      'The long-press sheet was rebuilt: it stops re-opening while you read it, leads with where the session is instead of which agent it runs, and every action says what it actually sends.',
+    ],
+    zh: [
+      '长按卡片重做：不再在你看着它的时候反复重弹；标题换成会话在哪，而不是它跑的哪个 agent；每个动作都写明了它到底发出去什么。',
+    ],
+  },
+  {
     version: '0.78.0',
     en: [
       'Long-press a session to act on it: answer its question, tell it to carry on or stop, or hand it to the supervisor.',
