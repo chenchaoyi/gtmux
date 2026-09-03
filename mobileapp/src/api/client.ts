@@ -118,6 +118,53 @@ export interface HQVerdict {
   workers: number; // how many worker sessions exist at all
 }
 
+// The knowledge base (hq-knowledge-on-phone). The index carries identity and state for
+// every live entry but NO bodies — several hundred entries' bodies are megabytes over a
+// tunnel — so a body is fetched per entry when a finger lands on one.
+export interface KnowledgeEntry {
+  id: string;
+  topic: string;
+  title: string;
+  at: number;
+  seq?: number;
+  pane?: string;
+  task?: string;
+  capture?: string;
+  legacy?: boolean;
+  promoted_at?: number;
+  promote_why?: string;
+  promote_target?: string;
+  landed_at?: number;
+  landed_ref?: string;
+  /** Only on the detail read. */
+  body?: string;
+}
+
+export interface KnowledgeTopic {
+  name: string;
+  count: number;
+  desc?: string;
+  builtin?: boolean;
+}
+
+/** How much is outstanding, and how old the oldest of it is. */
+export interface KnowledgeQueue {
+  pending: number;
+  oldest_sec?: number;
+}
+
+export interface KnowledgeIndex {
+  entries: KnowledgeEntry[];
+  topics: KnowledgeTopic[];
+  promotions: KnowledgeQueue;
+  candidates: KnowledgeQueue;
+}
+
+/** The two mutations a phone can honestly perform, each one short line of text. */
+export type KnowledgeAct =
+  | {op: 'land'; id: string; ref: string}
+  | {op: 'retire'; id: string; why: string};
+
 // HQBoard mirrors GET /api/hq/board (hq-command-page) — the supervisor's situation
 // board, the synthesis it maintains by hand so its picture of the fleet survives a
 // context reset. `exists:false` is an ordinary answer, not an error: plenty of
@@ -427,6 +474,51 @@ export class GtmuxClient {
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
     return Array.isArray(j) ? j : [];
+  }
+
+  // hqKnowledge: the knowledge index (GET /api/hq/knowledge). An unreachable or older
+  // serve reads as an EMPTY base, the same shape a Mac with no HQ home returns — the
+  // surface renders "nothing recorded yet" either way, and a client that had to tell the
+  // two apart would render the same thing for both.
+  async hqKnowledge(): Promise<KnowledgeIndex> {
+    const empty: KnowledgeIndex = {entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0}};
+    const r = await tfetch(`${this.base}/api/hq/knowledge`, {headers: this.h()});
+    if (!r.ok) return empty;
+    const j = await r.json().catch(() => null);
+    if (!j || typeof j !== 'object') return empty;
+    const k = j as Partial<KnowledgeIndex>;
+    return {
+      entries: Array.isArray(k.entries) ? k.entries : [],
+      topics: Array.isArray(k.topics) ? k.topics : [],
+      promotions: k.promotions ?? {pending: 0},
+      candidates: k.candidates ?? {pending: 0},
+    };
+  }
+
+  // hqKnowledgeEntry: one entry with its body. null when it is gone (retired entries
+  // leave the live set by design) or unreachable.
+  async hqKnowledgeEntry(id: string): Promise<KnowledgeEntry | null> {
+    const r = await tfetch(`${this.base}/api/hq/knowledge/entry?id=${encodeURIComponent(id)}`, {headers: this.h()});
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => null);
+    return j && typeof j === 'object' ? (j as KnowledgeEntry) : null;
+  }
+
+  // hqKnowledgeAct: land or retire. Returns the server's own refusal text on failure —
+  // "has no pending promotion to land" is the message that tells the reader what to do,
+  // and replacing it with a generic failure would throw that away.
+  async hqKnowledgeAct(act: KnowledgeAct): Promise<{ok: true} | {ok: false; error: string}> {
+    const r = await tfetch(`${this.base}/api/hq/knowledge/act`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify(act),
+    });
+    if (r.ok) return {ok: true};
+    const j = await r.json().catch(() => null);
+    const msg = j && typeof j === 'object' && typeof (j as {error?: string}).error === 'string'
+      ? (j as {error: string}).error
+      : `request failed (${r.status})`;
+    return {ok: false, error: msg};
   }
 
   // usage: token accounting + real subscription-window limits (GET /api/usage) —

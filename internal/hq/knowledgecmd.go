@@ -268,20 +268,9 @@ func knowledgeRetire(args []string) error {
 	if len(f.positional) != 1 || f.why == "" {
 		return fmt.Errorf("retire needs <id> and --why (the reason survives; make it worth reading)")
 	}
-	id := f.positional[0]
-	live, err := liveKnowledge()
-	if err != nil {
-		return err
-	}
-	entry, ok := findLive(live, id)
-	if !ok {
-		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
-	}
-	op := knowledgeOp{
-		Op: knowledgeOpRetire, ID: id, Topic: entry.Topic,
-		At: time.Now().Unix(), Seq: events.LatestSeq(), Why: f.why,
-	}
-	return commitKnowledgeOp(op, "retire "+id+": "+f.why)
+	// The verb itself lives in knowledgeapi.go, which serve calls too. This function is
+	// argument parsing; there is one implementation of what retiring an entry MEANS.
+	return KnowledgeRetire(f.positional[0], f.why)
 }
 
 // knowledgeTopic DECLARES a custom topic (hq-open-topics): the vocabulary is the
@@ -360,23 +349,7 @@ func knowledgeLand(args []string) error {
 	if len(f.positional) != 1 || f.ref == "" {
 		return fmt.Errorf("land needs <id> and --ref (where it landed: a PR, a spec, a seed change)")
 	}
-	id := f.positional[0]
-	live, err := liveKnowledge()
-	if err != nil {
-		return err
-	}
-	entry, ok := findLive(live, id)
-	if !ok {
-		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
-	}
-	if !promotionPending(entry) {
-		return fmt.Errorf("%s has no pending promotion to land (gtmux knowledge promotions)", id)
-	}
-	op := knowledgeOp{
-		Op: knowledgeOpLand, ID: id, Topic: entry.Topic,
-		At: time.Now().Unix(), Seq: events.LatestSeq(), Ref: f.ref,
-	}
-	return commitKnowledgeOp(op, "land "+id+" → "+f.ref)
+	return KnowledgeLand(f.positional[0], f.ref)
 }
 
 // knowledgePromotions lists the pending export queue — read-only, open to

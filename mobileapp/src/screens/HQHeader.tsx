@@ -39,6 +39,11 @@ export interface HQHeaderProps {
   demo?: boolean;
   /** Board freshness line ("situation board · 12m ago"), absent when there is no board. */
   boardLine?: string | null;
+  /** Knowledge label ("knowledge · 330 · 6 waiting on you"), absent when there is no base. */
+  knowledgeLine?: string | null;
+  /** Pending promotions — a debt with a clock on it, so the row carries a mark. */
+  knowledgeOwed?: number;
+  onOpenKnowledge?: () => void;
   open: boolean;
   onToggle: () => void;
   onBack: () => void;
@@ -47,7 +52,10 @@ export interface HQHeaderProps {
   zh: boolean;
 }
 
-export function HQHeader({model, conn, demo, boardLine, open, onToggle, onBack, onOpenBoard, pal, zh}: HQHeaderProps) {
+export function HQHeader({
+  model, conn, demo, boardLine, knowledgeLine, knowledgeOwed = 0,
+  open, onToggle, onBack, onOpenBoard, onOpenKnowledge, pal, zh,
+}: HQHeaderProps) {
   const dot = conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting;
   return (
     <View>
@@ -132,6 +140,10 @@ export function HQHeader({model, conn, demo, boardLine, open, onToggle, onBack, 
             </View>
           )}
 
+          {/* The two memories, side by side: the board is what HQ currently thinks, the
+              knowledge base is what it has learned to keep. The knowledge row carries the
+              only number here with a clock on it — a promotion waiting to be carried,
+              which `gtmux doctor` flags past two weeks. */}
           {boardLine ? (
             <TouchableOpacity
               testID="hq-board-open"
@@ -141,6 +153,22 @@ export function HQHeader({model, conn, demo, boardLine, open, onToggle, onBack, 
               <Text style={[styles.boardIcon, {color: pal.fg3}]}>▤</Text>
               <Text style={[styles.boardLink, {color: pal.fg2}]} numberOfLines={1}>
                 {boardLine}
+              </Text>
+              <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {knowledgeLine ? (
+            <TouchableOpacity
+              testID="hq-knowledge-open"
+              onPress={onOpenKnowledge}
+              hitSlop={hit}
+              style={[styles.boardRow, {borderTopColor: pal.divider}]}>
+              <Text style={[styles.boardIcon, {color: pal.fg3}]}>◆</Text>
+              <Text
+                style={[styles.boardLink, {color: knowledgeOwed > 0 ? ERRORED_COLOR : pal.fg2}]}
+                numberOfLines={1}>
+                {knowledgeLine}
               </Text>
               <Text style={[styles.boardChevron, {color: pal.fg3}]}>›</Text>
             </TouchableOpacity>

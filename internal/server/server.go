@@ -144,6 +144,23 @@ type Deps struct {
 	// serves an empty array (a client renders "no activity", not an error).
 	HQEvents func(severity string, limit int, actsOnly bool) ([]byte, error)
 
+	// HQKnowledge returns the marshaled knowledge INDEX — every live entry's identity,
+	// topic, title, promotion state and provenance, without bodies — plus the topic
+	// vocabulary and the two maintenance queues (pending promotions, pending capture
+	// candidates). Optional: nil → GET /api/hq/knowledge serves an empty base, since a
+	// Mac with no HQ home is an ordinary machine rather than a failure.
+	HQKnowledge func() ([]byte, error)
+
+	// HQKnowledgeEntry returns one live entry WITH its body. ok=false is "no such live
+	// entry" (a retired one is gone from the live set by design). Optional: nil → 404.
+	HQKnowledgeEntry func(id string) (b []byte, ok bool, err error)
+
+	// HQKnowledgeAct performs one of the two REMOTE knowledge mutations — "land" (close a
+	// pending promotion, ref names where it landed) and "retire" (remove a live entry,
+	// why survives). The CLI's cwd-keyed HQ-home gate is untouched: it keeps workers out,
+	// while this door is the owner, who outranks the supervisor. Optional: nil → 503.
+	HQKnowledgeAct func(op, id, ref, why string) error
+
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
 	// to diff (status transitions → `alert` events + push). Optional: if nil,
 	// GET /api/events still serves heartbeats but emits no agents/alert events.
@@ -267,8 +284,11 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/digest", s.auth(http.HandlerFunc(s.handleDigest)))
 	mux.Handle("/api/awake", s.auth(http.HandlerFunc(s.handleServerMode)))
 	mux.Handle("/api/usage", s.auth(http.HandlerFunc(s.handleUsage)))
-	mux.Handle("/api/hq/board", s.auth(http.HandlerFunc(s.handleHQBoard)))   // owner: the supervisor's situation board
-	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents))) // owner: severity-floored event ledger
+	mux.Handle("/api/hq/board", s.auth(http.HandlerFunc(s.handleHQBoard)))                    // owner: the supervisor's situation board
+	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents)))                  // owner: severity-floored event ledger
+	mux.Handle("/api/hq/knowledge", s.auth(http.HandlerFunc(s.handleHQKnowledge)))            // owner: the knowledge index
+	mux.Handle("/api/hq/knowledge/entry", s.auth(http.HandlerFunc(s.handleHQKnowledgeEntry))) // owner: one entry, with its body
+	mux.Handle("/api/hq/knowledge/act", s.auth(http.HandlerFunc(s.handleHQKnowledgeAct)))     // owner: land / retire
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))

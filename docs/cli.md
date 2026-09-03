@@ -425,6 +425,16 @@ discipline promises); `dismiss` removes them with a journal trace, so the qualit
 rejections stop vanishing identically to its acceptances. Every mutation appends one
 `gtmux:audit:knowledge` record to the event journal.
 
+**A second, narrower door exists for the commander** (hq-knowledge-on-phone): `gtmux
+serve` exposes the base to an OWNER-authenticated client (`GET /api/hq/knowledge`, the
+index without bodies; `GET /api/hq/knowledge/entry?id=`; `POST /api/hq/knowledge/act`)
+and accepts exactly two verbs from it — `land` and `retire`. That is not a hole in the
+rule below: the cwd gate keeps WORKERS out of the quality gate, while this door is the
+commander, who outranks the supervisor, and `land` in particular is a fact only they hold
+(HQ can judge a lesson charter-level; only the person who carried it knows it arrived).
+`add`/`supersede` stay off it — they carry prose. Both doors journal the same
+`gtmux:audit:knowledge` record.
+
 Mutations are accepted **only from the HQ home** (the same cwd-keyed role rule as
 `gtmux events --ack`) — the quality gate is the supervisor; workers record candidates with
 `gtmux capture`. `list`/`show` work anywhere.

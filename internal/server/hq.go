@@ -1,9 +1,17 @@
 package server
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 )
+
+// writeRaw sends an already-marshaled JSON body.
+func writeRaw(w http.ResponseWriter, b []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(b)
+}
 
 // Serving what only the SUPERVISOR knows (hq-command-page).
 //
@@ -88,4 +96,104 @@ func hqEventsLimit(raw string) int {
 		return hqEventsMaxLimit
 	}
 	return n
+}
+
+// The knowledge base, remotely (hq-knowledge-on-phone).
+//
+// Same OWNER rule as the board and the ledger above, for the same reason: the base is the
+// supervisor's private assessment of how this machine works, not part of a scoped share.
+//
+// Reads are split index/detail on size: a few hundred entries with bodies is megabytes
+// over a tunnel, and the same identities without them are tens of kilobytes. Writes carry
+// exactly two verbs — `land` and `retire` — because those are the two a phone can honestly
+// perform in one short line. `add` and `supersede` need prose, and prose typed on a phone
+// is how a knowledge base fills with entries nobody wants to read.
+
+// knowledgeAct is the request shape of POST /api/hq/knowledge/act.
+type knowledgeAct struct {
+	Op  string `json:"op"`  // "land" | "retire"
+	ID  string `json:"id"`  // the entry
+	Ref string `json:"ref"` // land: where it landed
+	Why string `json:"why"` // retire: the reason, which survives
+}
+
+// handleHQKnowledge serves the index — every live entry's identity and state, no bodies.
+func (s *Server) handleHQKnowledge(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
+	// No dependency and no knowledge base are the same answer to a client, so neither is
+	// an error: it renders "nothing recorded yet" either way.
+	if s.deps.HQKnowledge == nil {
+		writeRaw(w, []byte(`{"entries":[],"topics":[],"promotions":{"pending":0},"candidates":{"pending":0}}`))
+		return
+	}
+	b, err := s.deps.HQKnowledge()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("knowledge unavailable"))
+		return
+	}
+	writeRaw(w, b)
+}
+
+// handleHQKnowledgeEntry serves one entry, with its body.
+func (s *Server) handleHQKnowledgeEntry(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("id required"))
+		return
+	}
+	if s.deps.HQKnowledgeEntry == nil {
+		writeJSON(w, http.StatusNotFound, errBody("no such entry"))
+		return
+	}
+	b, ok, err := s.deps.HQKnowledgeEntry(id)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, errBody("knowledge unavailable"))
+		return
+	}
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errBody("no such entry"))
+		return
+	}
+	writeRaw(w, b)
+}
+
+// handleHQKnowledgeAct performs one of the two remote mutations.
+func (s *Server) handleHQKnowledgeAct(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("POST required"))
+		return
+	}
+	var act knowledgeAct
+	if err := json.NewDecoder(io.LimitReader(r.Body, 64*1024)).Decode(&act); err != nil {
+		writeJSON(w, http.StatusBadRequest, errBody("bad request body"))
+		return
+	}
+	if s.deps.HQKnowledgeAct == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("knowledge unavailable"))
+		return
+	}
+	// The verb list is closed HERE as well as in the dep: a client cannot reach a verb
+	// this surface has not decided a phone should have.
+	switch act.Op {
+	case "land", "retire":
+	default:
+		writeJSON(w, http.StatusBadRequest, errBody("unknown op (land|retire)"))
+		return
+	}
+	if err := s.deps.HQKnowledgeAct(act.Op, act.ID, act.Ref, act.Why); err != nil {
+		writeJSON(w, http.StatusBadRequest, errBody(err.Error()))
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
