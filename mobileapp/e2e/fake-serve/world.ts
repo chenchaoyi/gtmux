@@ -9,8 +9,10 @@
 // after tapping "stop" proves the screen changed; a test that asserts the server received
 // `{id:'%12', key:'C-c'}` proves what the app actually did.
 
+import {StatusName} from '../../src/api/types';
+
 /**
- * One radar row, in the REAL serve's field names.
+ * One radar row, in the REAL serve's field names AND its value vocabulary.
  *
  * The names are not a detail: the first fixture used `title`, `error` and `last_activity`,
  * none of which any serve sends (they are `pane`, `error_text` and `activity_at`), and the
@@ -22,7 +24,16 @@ export interface FakeAgent {
   session: string;
   window: string;
   agent: string;
-  status: 'waiting' | 'working' | 'idle' | 'running' | 'errored';
+  /**
+   * The app's own union, imported rather than restated. The first fixture wrote
+   * `status: 'errored'`, which no serve sends: `errored` is a SECTION the app DERIVES
+   * from an idle row that carries `error` (see ui/theme.ts). The row therefore fell into
+   * no section at all and simply vanished from the radar — the shape check passed the
+   * whole time, because it compares key sets and this was a value. Typing it here is what
+   * makes that class of drift a compile error instead of a missing row.
+   */
+  status: StatusName;
+  error?: boolean;
   pane?: string;
   task?: string;
   error_text?: string;
@@ -68,7 +79,9 @@ export class World {
       {pane_id: '%11', session: 'MP analysis', window: '1', agent: 'Claude Code', status: 'waiting', task: '要不要把这条改成红档？', project: 'MP', branch: 'main', activity_at: now() - 30},
       {pane_id: '%12', session: 'gtmux dev', window: '2', agent: 'Claude Code', status: 'working', task: 'knowledge on the phone', project: 'gtmux', branch: 'main', since: now() - 90},
       {pane_id: '%13', session: 'weekly report', window: '3', agent: 'Codex', status: 'idle', task: '提炼本周研发周报', activity_at: now() - 3600},
-      {pane_id: '%14', session: 'disk triage', window: '4', agent: 'Claude Code', status: 'errored', error_text: "You've hit your weekly limit · resets Sep 8", activity_at: now() - 7 * 86400},
+      // An errored session is IDLE and carries the flag — that is what a real serve sends,
+      // and what puts it in the radar's errored section.
+      {pane_id: '%14', session: 'disk triage', window: '4', agent: 'Claude Code', status: 'idle', error: true, error_text: "You've hit your weekly limit · resets Sep 8", activity_at: now() - 7 * 86400},
       {pane_id: '%15', session: 'dev server', window: '5', agent: '', status: 'running', pane: 'npm run dev'},
       {pane_id: 'native:abc', session: '', window: '', agent: 'Claude Code', status: 'idle', source: 'native', pane: 'a native session'},
     ];
@@ -166,7 +179,7 @@ function screenFor(a: FakeAgent): string {
       '',
     ].join('\n');
   }
-  if (a.status === 'errored') return `⚠ ${a.error_text ?? 'error'}\n`;
+  if (a.error) return `⚠ ${a.error_text ?? 'error'}\n`;
   // Enough lines that a terminal has scrollback to browse.
   return Array.from({length: 120}, (_, i) => `line ${i + 1} of ${a.session || a.pane || 'pane'}`).join('\n');
 }
