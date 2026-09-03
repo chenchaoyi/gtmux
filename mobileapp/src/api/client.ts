@@ -6,6 +6,7 @@ import {Platform} from 'react-native';
 import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent} from './types';
 import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
+import {noteServerDate} from './clock';
 
 // clientTag is the device's self-reported platform, sent on every request as
 // `X-Gtmux-Client` so the Mac's paired-device roster can show "iOS 17.5" instead of a
@@ -236,13 +237,18 @@ export interface TranscriptTurn {
 // records the path only (host stripped, token/id query values redacted) — never
 // the bearer token or request body. No-op overhead when Debug.logNet is off.
 async function tfetch(url: string, init?: RequestInit): Promise<Response> {
-  if (!Debug.logNet) return fetch(url, init);
+  if (!Debug.logNet) {
+    const r = await fetch(url, init);
+    noteServerDate(r.headers.get('date')); // keep the server's clock in view (api/clock)
+    return r;
+  }
   const method = (init?.method || 'GET').toUpperCase();
   const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
   const t0 = Date.now();
   try {
     const r = await fetch(url, init);
-    Debug.record({event: 'net', method, path, status: r.status, ms: Date.now() - t0});
+    noteServerDate(r.headers.get('date')); // same in both branches: the debug flag must
+    Debug.record({event: 'net', method, path, status: r.status, ms: Date.now() - t0}); // not change the clock
     return r;
   } catch (e: any) {
     Debug.record({event: 'net', method, path, error: String(e?.message || e), ms: Date.now() - t0});

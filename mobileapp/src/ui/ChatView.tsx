@@ -15,6 +15,7 @@ import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {JumpToBottom} from './JumpToBottom';
 import {UserAvatar} from './UserAvatar';
+import {serverNowSec} from '../api/clock';
 import {MarkdownView, MdColors} from './MarkdownView';
 import {fmtTurnTime} from './time';
 import {nativeFontFamily} from './term';
@@ -149,10 +150,13 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const [windowSize, setWindowSize] = React.useState(CHAT_WINDOW);
   // A 1s heartbeat WHILE WORKING only, so the "thinking" elapsed label moves. Idle
   // costs nothing: the interval isn't created unless a turn is actually running.
-  const [nowSec, setNowSec] = React.useState(() => Math.floor(Date.now() / 1000));
+  // The SERVER's clock, not the phone's: `workingSince` is a timestamp the Mac produced,
+  // and subtracting it from a phone that runs fast turns a twelve-second turn into
+  // "Thinking… 3m12s". See api/clock.
+  const [nowSec, setNowSec] = React.useState(() => serverNowSec());
   React.useEffect(() => {
     if (status !== 'working') return;
-    const id = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
+    const id = setInterval(() => setNowSec(serverNowSec()), 1000);
     return () => clearInterval(id);
   }, [status]);
   const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
