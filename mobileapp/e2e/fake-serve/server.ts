@@ -21,8 +21,27 @@ import {createServer, IncomingMessage, Server, ServerResponse} from 'http';
 import {AddressInfo} from 'net';
 import {World} from './world';
 
-/** The one pane a guest link in these tests is scoped to. */
-export const GUEST_PANES = ['%12'];
+/**
+ * A guest link's two allowlists, kept separate because the real serve keeps them separate:
+ * `view` gates what may be SEEN (/api/agents, /api/panes, /api/pane, /api/attach) and
+ * `input` gates what may be TYPED INTO (/api/send, via EnrolledDevice.MayInput). A link
+ * can show a pane without granting the keyboard, and the fake collapsing the two would
+ * quietly test a permission model the product does not have.
+ */
+export const GUEST_VIEW = ['%12', '%13'];
+export const GUEST_INPUT = ['%12'];
+/** Back-compat alias for the view list. */
+export const GUEST_PANES = GUEST_VIEW;
+
+/**
+ * The ONE place a guest's reach is decided. Every handler asks this rather than testing
+ * the allowlist itself: the fake's first version made that judgment per-handler, and the
+ * radar handler simply forgot to — a guest saw the whole fleet. One rule has one place to
+ * be wrong, and one place to fix.
+ */
+export function mayGuest(kind: 'view' | 'input', pane: string): boolean {
+  return (kind === 'view' ? GUEST_VIEW : GUEST_INPUT).includes(pane);
+}
 
 const KEYS = ['Enter', 'C-c', 'Escape', 'Tab', 'Up', 'Down', 'Left', 'Right', 'Space', 'BSpace', 'C-d', 'C-z', 'C-l'];
 
@@ -85,9 +104,10 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
     const auth = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
     if (auth !== token) return json(res, 401, {error: 'unauthorized'});
 
-    /** What this caller may see: everything for an owner, the allowlist for a guest. */
+    /** What this caller may see: everything for an owner, the view allowlist for a guest. */
     const visible = <T extends {pane_id: string}>(rows: T[]): T[] =>
-      owner ? rows : rows.filter(r => GUEST_PANES.includes(r.pane_id));
+      owner ? rows : rows.filter(r => mayGuest('view', r.pane_id));
+    const mayReach = (kind: 'view' | 'input', pane: string): boolean => owner || mayGuest(kind, pane);
 
     const ownerOnly = (): boolean => {
       if (owner) return true;
@@ -110,7 +130,7 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
     if (req.method === 'GET') {
       switch (path) {
         case '/api/share':
-          return json(res, 200, owner ? {all: true, panes: []} : {all: false, panes: GUEST_PANES});
+          return json(res, 200, owner ? {all: true, panes: []} : {all: false, panes: GUEST_VIEW});
         case '/api/agents':
           // A guest sees ONLY the panes on its own link's view allowlist — the real serve
           // filters here (server.go, filterAgentsForGuest). The first version of this fake
@@ -124,13 +144,15 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
           })));
         case '/api/pane': {
           const id = q.get('id') ?? '';
-          if (!owner && !GUEST_PANES.includes(id)) return json(res, 403, {error: 'forbidden: not shared'});
+          if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
           const text = world.screens.get(id);
           if (text == null) return json(res, 404, {error: 'no such pane'});
           return json(res, 200, {id, text, cols: 80, rows: 30});
         }
         case '/api/options': {
-          const a = world.agent(q.get('id') ?? '');
+          const id = q.get('id') ?? '';
+          if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
+          const a = world.agent(id);
           // `{options: [...]}`, not a bare array — the first version of this fake
           // answered an array and the client quietly read nothing, which is precisely the
           // drift contract.test.ts exists to catch (so /api/options is on its list now).
@@ -143,10 +165,13 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
             ],
           });
         }
-        case '/api/transcript':
+        case '/api/transcript': {
+          const id = q.get('id') ?? '';
+          if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
           return json(res, 200, [
             {prompt: '把知识库接到手机上', response: '⟣ 已经接好了,三个端点都在。', time: new Date(Date.now() - 600_000).toISOString()},
           ]);
+        }
         case '/api/theme':
           return json(res, 200, {bg: '#000000', fg: '#ffffff'});
         case '/api/awake':
@@ -212,6 +237,9 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
           const id = String(body.id ?? '');
           const a = world.agent(id);
           if (!id) return json(res, 400, {error: 'missing id'});
+          // A guest types only where its link granted the keyboard — a SEPARATE list from
+          // what it may look at (real serve: EnrolledDevice.MayInput).
+          if (!mayReach('input', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
           if (!a) return json(res, 400, {error: 'send failed: no such pane'});
           const key = body.key == null ? '' : String(body.key);
           const text = body.text == null ? '' : String(body.text);
@@ -225,6 +253,7 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
         case '/api/focus': {
           const id = q.get('id') ?? String(body.id ?? '');
           world.record('/api/focus', {id});
+          if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
           if (!world.agent(id)) return json(res, 400, {error: 'no such pane'});
           return json(res, 200, {ok: true});
         }
