@@ -20,14 +20,23 @@ import (
 //     — those are NOT new prompts, so they don't open a turn.
 //   - the FINAL assistant message has stop_reason=="end_turn" (tool_use is mid-turn);
 //     we approximate by letting the latest assistant text win.
-//   - isMeta (slash-command echo) and isSidechain (sub-agent) entries are skipped
-//     so they don't pollute the main timeline.
+//   - isMeta (slash-command echo), isSidechain (sub-agent) and isCompactSummary (the
+//     post-/compact continuation message, which reads as a user prompt but is written by
+//     the harness) entries are skipped so they don't pollute the main timeline.
 //   - unknown `type` values (ai-title/queue-operation/attachment/…) are ignored.
 
 type claudeLine struct {
 	Type        string `json:"type"`
 	IsMeta      bool   `json:"isMeta"`
 	IsSidechain bool   `json:"isSidechain"`
+	// isCompactSummary marks the continuation message Claude writes after a /compact:
+	// role "user", plain-string content, beginning "This session is being continued from
+	// a previous conversation…". Nobody typed it. Without this flag it parses as an
+	// ordinary prompt, and every surface then shows the summary of the last session as
+	// something the COMMANDER said — the same confusion that made an HQ shift misread its
+	// own output as an instruction on 2026-08-03. Verified against two real logs on this
+	// machine: the flag is present and no other field distinguishes the entry.
+	IsCompactSummary bool `json:"isCompactSummary"`
 	// isApiErrorMessage marks an assistant entry that IS an API/tool error (Claude
 	// Code writes one per failed attempt, e.g. "API Error: Unable to connect to
 	// API"). Only meaningful as the LAST message — mid-turn ones usually recovered.
@@ -72,7 +81,7 @@ func claudeStep(line string, st *parseState) {
 	}
 	switch e.Type {
 	case "user":
-		if e.IsMeta {
+		if e.IsMeta || e.IsCompactSummary {
 			return
 		}
 		prompt, isPrompt := claudePrompt(e.Message.Content)
