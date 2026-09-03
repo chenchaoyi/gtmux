@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.81.0',
+    en: [
+      'HQ\'s knowledge base is now on the phone: read what the supervisor has learned, and mark a promoted lesson as landed once you have carried it somewhere.',
+      'The HQ header was rebuilt. Its latest brief is attributed and dated, and the fleet, usage and machine figures are three readable rows instead of one gray sentence.',
+      'Long press a session and jumping to it on the Mac is back near the top.',
+      'Pull to refresh works again when every section is collapsed.',
+    ],
+    zh: [
+      '参谋长的知识库现在能在手机上看了：读它学到了什么，并在你把一条已提升的经验带走之后标记落地。',
+      'HQ 头部重做。最近一次简报有了署名和时间，舰队、用量、机器从一句灰句子拆成三行。',
+      '长按会话，跳到 Mac 上那个会话的入口回到了靠前的位置。',
+      '分区全部折叠时，下拉刷新恢复正常。',
+    ],
+  },
+  {
     version: '0.80.0',
     en: [
       'The long-press sheet was rebuilt: it stops re-opening while you read it, leads with where the session is instead of which agent it runs, and every action says what it actually sends.',
