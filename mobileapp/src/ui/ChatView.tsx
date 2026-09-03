@@ -20,7 +20,7 @@ import {MarkdownView, MdColors} from './MarkdownView';
 import {fmtTurnTime} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
-import {stepsOpen} from './chatSteps';
+import {segmentKey, stepsOpen} from './chatSteps';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
@@ -367,7 +367,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
 
             {open &&
             segs.map((seg, k) => {
-              const key = `${i}-${k}`;
+              const key = segmentKey(t, k, i); // by the TURN, not its position (chatSteps)
               return (
                 <View key={k} style={styles.segBlock}>
                   {!!seg.text && (
