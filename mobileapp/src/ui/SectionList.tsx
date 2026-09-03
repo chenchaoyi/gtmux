@@ -16,6 +16,7 @@ import {
 import {Agent, SectionKey, agentId} from '../api/types';
 import {Lang, statusLabel} from '../i18n';
 import {AgentRow} from './AgentRow';
+import {TestIds} from '../constants/testIds';
 import {Palette, Size, StatusColor, sections} from './theme';
 
 interface Sec {
@@ -67,9 +68,14 @@ export function SectionList({
       sections={secs}
       keyExtractor={a => agentId(a)}
       stickySectionHeadersEnabled={false}
+      // The list must FILL the screen, not stop where its content does. Without this it
+      // is sized to its content, so collapsing the sections leaves a blank lower half
+      // that belongs to the screen behind it — a pull that starts there reaches no
+      // scroll view, and pull-to-refresh silently stops working (reported 2026-09-03).
+      style={styles.list}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={ListEmptyComponent}
-      contentContainerStyle={secs.length === 0 ? styles.emptyContainer : undefined}
+      contentContainerStyle={styles.fill}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={pal.fg3} />
       }
@@ -132,6 +138,8 @@ function CollapseBar({
         </View>
       )}
       <Pressable
+        testID={`${TestIds.radar.section}-${status}`}
+        accessibilityLabel={`${TestIds.radar.section}-${status}`}
         onPress={onPress}
         style={({pressed}) => [styles.bar, pressed && {backgroundColor: pal.rowSelected}]}>
         <Text style={[styles.name, {color: isWaiting ? StatusColor.waiting : pal.fg2}]}>{name}</Text>
@@ -155,7 +163,8 @@ function CollapseBar({
 }
 
 const styles = StyleSheet.create({
-  emptyContainer: {flexGrow: 1},
+  list: {flex: 1}, // fill the screen (flexGrow alone would not shrink: RN flexShrink defaults to 0)
+  fill: {flexGrow: 1},
   slot: {height: 9, justifyContent: 'flex-start'},
   slotLine: {height: 3},
   bar: {

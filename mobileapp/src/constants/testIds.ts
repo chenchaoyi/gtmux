@@ -23,6 +23,7 @@ export const TestIds = {
     settings: 'radar-settings',
     waitingOnly: 'radar-waiting-only',
     panes: 'radar-panes',
+    section: 'radar-section', // collapse bar, suffixed with the status key
   },
   panes: {
     screen: 'panes-screen',
