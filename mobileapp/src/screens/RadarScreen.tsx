@@ -303,6 +303,13 @@ function ConnDot({conn, t, lang, awake}: any) {
   return (
     <View
       style={styles.conn}
+      // `accessible` is what turns this into an element a screen reader can land on.
+      // Without it RN leaves the View transparent to accessibility on iOS and the label
+      // below never reaches the tree at all — measured 2026-09-04: the whole radar header
+      // exposed `radar-server-chip` and no "Connection:" node anywhere. The connection
+      // state was then carried by the coloured dot ALONE, which is the one channel a
+      // screen-reader user does not have.
+      accessible
       accessibilityRole="text"
       accessibilityLabel={
         (lang === 'zh' ? '连接：' : 'Connection: ') + a11y +
