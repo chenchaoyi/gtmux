@@ -101,7 +101,10 @@ func writeClaudeSettings(t *testing.T, home string, events []string) {
 	}
 	for _, e := range events {
 		hooks[e] = []any{map[string]any{
-			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+			// The real matcher: a fixture that omits it describes a file gtmux would
+			// consider out of date, which is a different test than the one intended.
+			"matcher": matcherFor(e),
+			"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
 		}}
 	}
 	b, _ := json.Marshal(map[string]any{"hooks": hooks})
@@ -150,4 +153,59 @@ func TestMissingClaudeHookEvents(t *testing.T) {
 	if m := missingClaudeHookEvents(); m != nil {
 		t.Errorf("an uninstalled file reported %v — that is the other row's fact", m)
 	}
+}
+
+// Present is not correct. A registration can carry every event gtmux wants and still
+// deliver nothing, because the MATCHER decides which tool calls fire it. Claude's
+// PostToolUse sat scoped to ExitPlanMode|AskUserQuestion, so an approved Read or Bash
+// produced no event and the waiting mark it should have cleared stayed up — and the
+// completeness check, which compared names only, called that file complete. The fix for
+// it shipped in a release that could not take effect on a single existing install.
+func TestAMisScopedHookCountsAsOutOfDate(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(filepath.Join(home, ".claude"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	write := func(matcher string) {
+		hooks := map[string]any{}
+		for _, h := range hookEvents {
+			m := h.matcher
+			if h.event == "PostToolUse" {
+				m = matcher
+			}
+			hooks[h.event] = []any{map[string]any{
+				"matcher": m,
+				"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+			}}
+		}
+		b, _ := json.Marshal(map[string]any{"hooks": hooks})
+		if err := os.WriteFile(claudeSettingsPath(), b, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write("ExitPlanMode|AskUserQuestion")
+	if got := missingClaudeHookEvents(); len(got) != 1 || got[0] != "PostToolUse" {
+		t.Errorf("missing = %v, want [PostToolUse] — every event is present, and one of them "+
+			"is scoped so it never fires for the tools that gate", got)
+	}
+
+	// Written the way gtmux writes it now: nothing to report.
+	write("")
+	if got := missingClaudeHookEvents(); got != nil {
+		t.Errorf("a correctly scoped file reported %v", got)
+	}
+}
+
+// matcherFor is what gtmux registers for an event, so a fixture can describe a file that
+// is up to date rather than one that merely has the right event names.
+func matcherFor(event string) string {
+	for _, h := range hookEvents {
+		if h.event == event {
+			return h.matcher
+		}
+	}
+	return ""
 }
