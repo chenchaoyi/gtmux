@@ -35,7 +35,11 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 		os.RemoveAll(sock)
 	})
 
-	run := exec.Command("tmux", "-f", "/dev/null", "new-session", "-d", "-s", "probe", "-x", "120", "-y", "20")
+	// Deliberately NARROW: the resume command is long, so this guarantees tmux wraps it.
+	// The first version of this test used a wide pane and matched the raw capture, which
+	// passed locally and by luck in CI until a runner with a long hostname split the
+	// command mid-word ("crabs\ntub resume").
+	run := exec.Command("tmux", "-f", "/dev/null", "new-session", "-d", "-s", "probe", "-x", "40", "-y", "20")
 	run.Env = append(os.Environ(), "TMUX_TMPDIR="+sock, "TMUX=")
 	if out, err := run.CombinedOutput(); err != nil {
 		t.Fatalf("isolated server: %v: %s", err, out)
@@ -58,7 +62,8 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 
 	resumeAgents()
 
-	screen, _ := tmux.Run("capture-pane", "-p", "-t", loc)
+	// -J joins wrapped lines, so a command that spans the pane width is still one string.
+	screen, _ := tmux.Run("capture-pane", "-J", "-p", "-t", loc)
 	if !strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") {
 		t.Errorf("pane shows %q — restore must resume through the wrapper", strings.TrimSpace(screen))
 	}
