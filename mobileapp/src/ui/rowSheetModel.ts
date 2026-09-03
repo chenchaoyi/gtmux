@@ -22,7 +22,7 @@ import {Lang, statusLabel} from '../i18n';
 // now instead of two screens.
 export type SheetActionKey = 'reply' | 'continue' | 'stop' | 'ask-hq' | 'diff' | 'jump';
 
-export type SheetGroup = 'answer' | 'drive' | 'look';
+export type SheetGroup = 'answer' | 'go' | 'drive' | 'look';
 
 export interface SheetAction {
   key: SheetActionKey;
@@ -112,14 +112,28 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     });
   }
 
+  // GO — take it over on the Mac. Ranked SECOND, not last (2026-09-03): the first cut
+  // put it at the bottom on the argument that jumping is useless to someone away from
+  // their desk, and the commander's answer was that the phone IS the remote control for
+  // the Mac's terminal, which is one of the things gtmux was built to be. It is also the
+  // only action that means the same thing in every state. Buried under five rows on a
+  // sheet that scrolls, it read as removed.
+  actions.push({
+    key: 'jump',
+    group: 'go',
+    title: zh ? '在 Mac 上跳过去' : 'Jump to it on the Mac',
+    sub: native
+      ? (zh ? '不在 tmux 里，切不过去' : 'Not in tmux, so there is nowhere to switch to')
+      : (zh ? `把 Mac 的终端切到 ${a.pane_id}` : `Moves the Mac's terminal to ${a.pane_id}`),
+    disabled: native,
+  });
+
   // DRIVE — the two things anyone says to an agent most often.
   if (!native && !watched) {
     actions.push({
       key: 'continue',
       group: 'drive',
       title: zh ? '让它继续' : 'Tell it to carry on',
-      // Name the literal payload. "Carry on" is a label, and the reader's first question
-      // was what it actually sends.
       sub: zh ? '发送「继续」并回车' : 'Sends "continue" and Enter',
     });
     actions.push({
@@ -136,8 +150,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     });
   }
 
-  // LOOK — the read-only ones, last. `jump` stays because it is the one action that
-  // matters when you ARE at the Mac; it is simply not the common case.
+  // LOOK — read-only, last.
   if (a.branch) {
     actions.push({
       key: 'diff',
@@ -146,15 +159,6 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
       sub: zh ? `${a.branch} 上未提交的改动` : `Uncommitted changes on ${a.branch}`,
     });
   }
-  actions.push({
-    key: 'jump',
-    group: 'look',
-    title: zh ? '在 Mac 上跳过去' : 'Jump to it on the Mac',
-    sub: native
-      ? (zh ? '不在 tmux 里，切不过去' : 'Not in tmux, so there is nowhere to switch to')
-      : (zh ? `把 Mac 的终端切到 ${a.pane_id}` : `Moves the Mac's terminal to ${a.pane_id}`),
-    disabled: native,
-  });
 
   return {
     kind,

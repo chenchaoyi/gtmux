@@ -129,8 +129,21 @@ describe('what the sheet offers', () => {
 
   test('the read-only actions come last', () => {
     const m = at({status: 'waiting', branch: 'feat/x'});
+    const order = ['answer', 'go', 'drive', 'look'];
     const groups = m.actions.map(x => x.group);
-    expect(groups).toEqual([...groups].sort((a, b) => ['answer', 'drive', 'look'].indexOf(a) - ['answer', 'drive', 'look'].indexOf(b)));
-    expect(m.actions[m.actions.length - 1].key).toBe('jump');
+    expect(groups).toEqual([...groups].sort((a, b) => order.indexOf(a) - order.indexOf(b)));
+    expect(m.actions[m.actions.length - 1].key).toBe('diff');
+  });
+
+  // Jumping the Mac's terminal to a session is what the phone is a remote control FOR,
+  // and it is the only action that means the same thing in every state. Ranked last it
+  // sat under five rows on a sheet that scrolls, and read as removed.
+  test('jumping to it on the Mac is never buried', () => {
+    for (const s of ['waiting', 'working', 'idle'] as const) {
+      const keys = at({status: s, branch: 'feat/x'}).actions.map(x => x.key);
+      const at2 = keys.indexOf('jump');
+      expect(at2).toBeGreaterThanOrEqual(0);
+      expect(at2).toBeLessThanOrEqual(1); // first, or straight after answering a blocked one
+    }
   });
 });
