@@ -263,6 +263,21 @@ func codexHooksHasAsync(path string) bool {
 // is `install hooks` alone, and a user has no reason to re-run it unprompted.
 func gtmuxHookEventsIn(path string) map[string]bool {
 	have := map[string]bool{}
+	for e := range gtmuxHookMatchersIn(path) {
+		have[e] = true
+	}
+	return have
+}
+
+// gtmuxHookMatchersIn is the same read, keeping each event's MATCHER.
+//
+// Presence is not correctness. A registration can carry every event gtmux wants and
+// still deliver nothing, because a matcher decides WHICH tool calls fire it: Claude's
+// PostToolUse sat scoped to ExitPlanMode|AskUserQuestion, so an approved Read or Bash
+// produced no event and the waiting mark it should have cleared stayed up (2026-09-03).
+// A check by name alone reported that file as complete.
+func gtmuxHookMatchersIn(path string) map[string]string {
+	have := map[string]string{}
 	m, err := loadJSONObject(path)
 	if err != nil {
 		return have // no file at all is "not installed", which callers report in their own words
@@ -275,12 +290,12 @@ func gtmuxHookEventsIn(path string) map[string]bool {
 			}
 			for _, h := range asArray(grp["hooks"]) {
 				if hm, ok := h.(map[string]any); ok && isGtmuxHookCommand(asString(hm["command"])) {
-					have[event] = true
+					have[event] = asString(grp["matcher"])
 				}
 			}
 			// Flat-format agents (cursor) keep the command at the top level of each entry.
 			if isGtmuxHookCommand(asString(grp["command"])) {
-				have[event] = true
+				have[event] = asString(grp["matcher"])
 			}
 		}
 	}
@@ -293,14 +308,21 @@ func gtmuxHookEventsIn(path string) map[string]bool {
 // PostCompact had been in gtmux's list for weeks and were in neither the settings file
 // nor any event gtmux ever received, while the row read a plain green "installed".
 func missingClaudeHookEvents() []string {
-	have := gtmuxHookEventsIn(claudeSettingsPath())
+	have := gtmuxHookMatchersIn(claudeSettingsPath())
 	if len(have) == 0 {
 		return nil
 	}
 	var missing []string
 	seen := map[string]bool{}
 	for _, h := range hookEvents {
-		if have[h.event] || seen[h.event] {
+		if seen[h.event] {
+			continue
+		}
+		m, present := have[h.event]
+		// Out of date is either absence OR the wrong matcher. A registration scoped
+		// differently from what gtmux now writes delivers a different set of tool calls,
+		// which is indistinguishable from not being there for the events it drops.
+		if present && m == h.matcher {
 			continue
 		}
 		seen[h.event] = true

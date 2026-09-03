@@ -151,3 +151,47 @@ func TestMissingClaudeHookEvents(t *testing.T) {
 		t.Errorf("an uninstalled file reported %v — that is the other row's fact", m)
 	}
 }
+
+// Present is not correct. A registration can carry every event gtmux wants and still
+// deliver nothing, because the MATCHER decides which tool calls fire it. Claude's
+// PostToolUse sat scoped to ExitPlanMode|AskUserQuestion, so an approved Read or Bash
+// produced no event and the waiting mark it should have cleared stayed up — and the
+// completeness check, which compared names only, called that file complete. The fix for
+// it shipped in a release that could not take effect on a single existing install.
+func TestAMisScopedHookCountsAsOutOfDate(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(filepath.Join(home, ".claude"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	write := func(matcher string) {
+		hooks := map[string]any{}
+		for _, h := range hookEvents {
+			m := h.matcher
+			if h.event == "PostToolUse" {
+				m = matcher
+			}
+			hooks[h.event] = []any{map[string]any{
+				"matcher": m,
+				"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+			}}
+		}
+		b, _ := json.Marshal(map[string]any{"hooks": hooks})
+		if err := os.WriteFile(claudeSettingsPath(), b, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write("ExitPlanMode|AskUserQuestion")
+	if got := missingClaudeHookEvents(); len(got) != 1 || got[0] != "PostToolUse" {
+		t.Errorf("missing = %v, want [PostToolUse] — every event is present, and one of them "+
+			"is scoped so it never fires for the tools that gate", got)
+	}
+
+	// Written the way gtmux writes it now: nothing to report.
+	write("")
+	if got := missingClaudeHookEvents(); got != nil {
+		t.Errorf("a correctly scoped file reported %v", got)
+	}
+}
