@@ -26,7 +26,15 @@ describe('reclaim kills by predicate, not by process group', () => {
   test('an ORPHANED match still dies', async () => {
     // Detached + unref'd is the shape that defeated the old teardown: once its parent is
     // gone the child belongs to init, and kill(-pid) can no longer reach it.
-    const child = spawn('/bin/sh', ['-c', `exec -a ${MARKER} sleep 30`], {detached: true, stdio: 'ignore'});
+    //
+    // Spawned as node with the marker as an argument, so the marker is in the command line
+    // pgrep matches. The first version used `sh -c 'exec -a <marker> sleep'`, which works
+    // in bash and not in dash — so on CI the probe exited immediately and the test failed
+    // on its own setup rather than on the behaviour.
+    const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)', MARKER], {
+      detached: true,
+      stdio: 'ignore',
+    });
     child.unref();
     await settle(300);
     expect(alive(child.pid!)).toBe(true);
