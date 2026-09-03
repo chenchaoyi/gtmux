@@ -11,6 +11,7 @@ import type {ServerMode} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {Agent} from '../api/types';
 import {useApp} from '../state/AppContext';
+import {Debug} from '../debug';
 import {BrandMark} from '../ui/BrandMark';
 import {PanesIcon} from '../ui/Icons';
 import {HQDisc} from '../ui/HQDisc';
@@ -92,6 +93,10 @@ export function RadarScreen({navigation}: any) {
   const shown = waitingOnly ? agents.filter(a => a.status === 'waiting') : agents;
 
   const onRefresh = () => {
+    // Probe (debug builds only): did the pull actually reach the list? A collapsed
+    // radar is shorter than the screen, and a list sized to its content leaves the
+    // blank half unreachable — see ui/SectionList.test.tsx.
+    if (Debug.logNet) Debug.record({event: 'radar-refresh'});
     setRefreshing(true);
     refresh();
     setTimeout(() => setRefreshing(false), 600);
