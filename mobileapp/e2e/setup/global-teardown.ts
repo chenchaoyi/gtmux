@@ -1,7 +1,14 @@
 /**
- * Closes the webdriverio session and group-kills the Appium server. Errors are
- * logged, never thrown — teardown must always let the runner exit.
+ * Closes the webdriverio session, group-kills the Appium server, then ends any
+ * WebDriverAgent by predicate. Errors are logged, never thrown — teardown must always let
+ * the runner exit.
+ *
+ * The predicate pass is not redundant with the group kill: by the time we get here the
+ * WDA may already be re-parented, and a run that never gets here at all is exactly the
+ * case setup's reclaim covers.
  */
+import {reclaimAfter} from './reclaim';
+
 export default async function globalTeardown(): Promise<void> {
   const driver = globalThis.__E2E_DRIVER__;
   if (driver) {
@@ -32,4 +39,6 @@ export default async function globalTeardown(): Promise<void> {
     }
     globalThis.__E2E_SERVER_PID__ = undefined;
   }
+
+  reclaimAfter();
 }
