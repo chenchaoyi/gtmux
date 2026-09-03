@@ -1,0 +1,121 @@
+import {startFake, Fake} from './server';
+
+// The mutating half of the app, exercised against the fake rather than a live Mac
+// (hq asked for exactly this list: send incl. keys and draft protection, focus,
+// knowledge land/retire). These drive the CLIENT — the same code the app runs — and
+// assert on what the server RECEIVED, which is a stronger claim than a screenshot: not
+// "the screen changed" but "the app sent C-c to %12".
+//
+// Error paths are first class here. A suite that only ever drives the happy path teaches
+// itself that failure does not happen, and every one of these failures is a real state:
+// a pane that went away, a key that is not allow-listed, a half-typed draft in the box, a
+// promotion that was already landed.
+import {GtmuxClient} from '../../src/api/client';
+
+let fake: Fake;
+let client: GtmuxClient;
+
+beforeEach(async () => {
+  fake = await startFake();
+  client = new GtmuxClient(fake.url, fake.token);
+});
+afterEach(async () => {
+  await fake.close();
+});
+
+describe('send', () => {
+  test('text lands as text, and a control key lands as a key', async () => {
+    await client.send('%12', {text: '继续', enter: true});
+    await client.send('%12', {key: 'C-c'});
+    expect(fake.world.writesTo('/api/send')).toEqual([
+      {id: '%12', text: '继续', enter: true},
+      {id: '%12', key: 'C-c'},
+    ]);
+  });
+
+  test('a key outside the allow-list is refused by the server, not by hope', async () => {
+    // The client reports a failed send as null — it keeps no reason. See the note in
+    // this file's tail about what that costs the reader.
+    expect(await client.send('%12', {key: 'C-x' as 'C-c'})).toBeNull();
+  });
+
+  test('a send into a pane holding an unsubmitted draft is refused', async () => {
+    // A paste APPENDS, so delivering here would submit someone's half-written line along
+    // with the payload. The core refuses.
+    fake.world.drafts.set('%12', 'half a thought');
+    expect(await client.send('%12', {text: 'continue', enter: true})).toBeNull();
+    // The attempt still reached the server, which is what makes this a refusal rather
+    // than the app deciding on its own not to try.
+    expect(fake.world.writesTo('/api/send')).toEqual([{id: '%12', text: 'continue', enter: true}]);
+  });
+
+  test('a pane that went away fails', async () => {
+    expect(await client.send('%999', {text: 'hello'})).toBeNull();
+  });
+});
+
+describe('knowledge, remotely', () => {
+  const PENDING = 'best-practices/spawn-must-decide-model';
+  const LANDED = 'workflows/green-means-merge';
+
+  test('landing a pending promotion clears it from the queue', async () => {
+    const before = await client.hqKnowledge();
+    expect(before.promotions.pending).toBe(2);
+
+    const r = await client.hqKnowledgeAct({op: 'land', id: PENDING, ref: 'AGENTS.md'});
+    expect(r.ok).toBe(true);
+
+    const after = await client.hqKnowledge();
+    expect(after.promotions.pending).toBe(1);
+    expect(after.entries.find(e => e.id === PENDING)?.landed_ref).toBe('AGENTS.md');
+  });
+
+  test('landing something already landed is refused, with a message that says why', async () => {
+    const r = await client.hqKnowledgeAct({op: 'land', id: LANDED, ref: 'again.md'});
+    expect(r.ok).toBe(false);
+    expect(String((r as {ok: false; error: string}).error)).toContain('no pending promotion');
+  });
+
+  test('retiring removes the entry from the live set', async () => {
+    const r = await client.hqKnowledgeAct({op: 'retire', id: PENDING, why: 'superseded'});
+    expect(r.ok).toBe(true);
+    const after = await client.hqKnowledge();
+    expect(after.entries.some(e => e.id === PENDING)).toBe(false);
+  });
+
+  test('an unknown id changes nothing', async () => {
+    const r = await client.hqKnowledgeAct({op: 'retire', id: 'nope/nope', why: 'x'});
+    expect(r.ok).toBe(false);
+    const after = await client.hqKnowledge();
+    expect(after.entries.length).toBe(4);
+  });
+
+  test('a guest is refused the whole surface', async () => {
+    const guest = await startFake({guest: true});
+    try {
+      const c = new GtmuxClient(guest.url, guest.token);
+      // The client degrades a refusal to an empty base, which is what the UI renders —
+      // the point is that nothing of the supervisor's assessment reaches a guest.
+      const idx = await c.hqKnowledge();
+      expect(idx.entries).toEqual([]);
+      expect((await c.hqKnowledgeAct({op: 'retire', id: 'x', why: 'y'})).ok).toBe(false);
+    } finally {
+      await guest.close();
+    }
+  });
+});
+
+describe('reply options', () => {
+  test('a waiting pane offers its own words, an idle one offers nothing', async () => {
+    expect((await client.options('%11')).map(o => o.n)).toEqual([1, 2, 3]);
+    expect(await client.options('%13')).toEqual([]);
+  });
+});
+
+// Noted while writing these, for the commander rather than for tonight: `send` reports a
+// failure as `null`, so the server's own words are dropped at the client boundary. The
+// refusals above are all specific and actionable — "refused-draft" means someone is typing
+// in that pane, "no such pane" means it is gone, "key not allowed" means the app asked for
+// something the server will never do — and a reader who sees one generic failure bar
+// cannot tell them apart. The knowledge client (added with #889) keeps the message; this
+// one predates that and does not.
