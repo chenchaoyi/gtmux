@@ -101,7 +101,10 @@ func writeClaudeSettings(t *testing.T, home string, events []string) {
 	}
 	for _, e := range events {
 		hooks[e] = []any{map[string]any{
-			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+			// The real matcher: a fixture that omits it describes a file gtmux would
+			// consider out of date, which is a different test than the one intended.
+			"matcher": matcherFor(e),
+			"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
 		}}
 	}
 	b, _ := json.Marshal(map[string]any{"hooks": hooks})
@@ -194,4 +197,15 @@ func TestAMisScopedHookCountsAsOutOfDate(t *testing.T) {
 	if got := missingClaudeHookEvents(); got != nil {
 		t.Errorf("a correctly scoped file reported %v", got)
 	}
+}
+
+// matcherFor is what gtmux registers for an event, so a fixture can describe a file that
+// is up to date rather than one that merely has the right event names.
+func matcherFor(event string) string {
+	for _, h := range hookEvents {
+		if h.event == event {
+			return h.matcher
+		}
+	}
+	return ""
 }

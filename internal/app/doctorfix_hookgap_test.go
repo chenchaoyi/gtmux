@@ -61,7 +61,8 @@ func TestFixTopsUpAnIncompleteClaudeHook(t *testing.T) {
 			continue
 		}
 		hooks[h.event] = []any{map[string]any{
-			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+			"matcher": h.matcher,
+			"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
 		}}
 	}
 	b, _ := json.Marshal(map[string]any{"hooks": hooks})
@@ -98,7 +99,8 @@ func TestFixLeavesACompleteClaudeHookAlone(t *testing.T) {
 	hooks := map[string]any{}
 	for _, h := range hookEvents {
 		hooks[h.event] = []any{map[string]any{
-			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+			"matcher": h.matcher,
+			"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
 		}}
 	}
 	b, _ := json.Marshal(map[string]any{"hooks": hooks})
