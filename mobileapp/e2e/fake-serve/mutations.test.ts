@@ -1,4 +1,4 @@
-import {startFake, Fake} from './server';
+import {startFake, Fake, GUEST_VIEW} from './server';
 
 // The mutating half of the app, exercised against the fake rather than a live Mac
 // (hq asked for exactly this list: send incl. keys and draft protection, focus,
@@ -145,7 +145,9 @@ describe('a guest sees only its own link', () => {
     try {
       const c = new GtmuxClient(guest.url, guest.token);
       const rows = await c.agents();
-      expect(rows.map(r => r.pane_id)).toEqual(['%12']);
+      // The list itself, not a copy of it: guest-scope.test.ts deliberately makes view and
+      // input differ, and a hard-coded ['%12'] here went red the moment it did.
+      expect(rows.map(r => r.pane_id)).toEqual(GUEST_VIEW);
       // And a pane outside it cannot be read even by asking directly (the client throws
       // on a non-2xx here, which is the shape the caller already handles).
       await expect(c.pane('%11')).rejects.toThrow(/403/);

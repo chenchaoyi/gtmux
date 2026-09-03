@@ -2,7 +2,7 @@ import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
-import {startFake, Fake} from '../fake-serve/server';
+import {startFake, Fake, GUEST_VIEW} from '../fake-serve/server';
 
 /**
  * The states a real machine rarely holds, and which therefore never got looked at.
@@ -70,7 +70,7 @@ it('a guest sees the fleet and none of the supervisor', async () => {
   // SEEN, so every other session's name, task and error must be absent from the screen,
   // not merely un-tappable.
   const src = await driver.getPageSource();
-  expect(src).toContain('agent-row-%12');
+  for (const id of GUEST_VIEW) expect(src).toContain(`agent-row-${id}`);
   expect(src).not.toContain('agent-row-%11');
   expect(src).not.toContain('weekly limit');
 });
