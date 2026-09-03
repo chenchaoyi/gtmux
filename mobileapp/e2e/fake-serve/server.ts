@@ -21,6 +21,9 @@ import {createServer, IncomingMessage, Server, ServerResponse} from 'http';
 import {AddressInfo} from 'net';
 import {World} from './world';
 
+/** The one pane a guest link in these tests is scoped to. */
+export const GUEST_PANES = ['%12'];
+
 const KEYS = ['Enter', 'C-c', 'Escape', 'Tab', 'Up', 'Down', 'Left', 'Right', 'Space', 'BSpace', 'C-d', 'C-z', 'C-l'];
 
 export interface Fake {
@@ -82,6 +85,10 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
     const auth = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
     if (auth !== token) return json(res, 401, {error: 'unauthorized'});
 
+    /** What this caller may see: everything for an owner, the allowlist for a guest. */
+    const visible = <T extends {pane_id: string}>(rows: T[]): T[] =>
+      owner ? rows : rows.filter(r => GUEST_PANES.includes(r.pane_id));
+
     const ownerOnly = (): boolean => {
       if (owner) return true;
       json(res, 403, {error: 'forbidden: not shared'});
@@ -103,15 +110,21 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
     if (req.method === 'GET') {
       switch (path) {
         case '/api/share':
-          return json(res, 200, owner ? {all: true, panes: []} : {all: false, panes: ['%12']});
+          return json(res, 200, owner ? {all: true, panes: []} : {all: false, panes: GUEST_PANES});
         case '/api/agents':
-          return json(res, 200, world.agents);
+          // A guest sees ONLY the panes on its own link's view allowlist — the real serve
+          // filters here (server.go, filterAgentsForGuest). The first version of this fake
+          // returned the whole fleet to a guest, which is worse than a missing feature: a
+          // suite written against it would have PROVED that a guest sees every session's
+          // name, task and error, and gone on passing if the real filter ever broke.
+          return json(res, 200, visible(world.agents));
         case '/api/panes':
-          return json(res, 200, world.agents.filter(a => a.pane_id.startsWith('%')).map(a => ({
+          return json(res, 200, visible(world.agents).filter(a => a.pane_id.startsWith('%')).map(a => ({
             pane_id: a.pane_id, session: a.session, window: a.window, pane: a.pane ?? a.session, agent: a.agent,
           })));
         case '/api/pane': {
           const id = q.get('id') ?? '';
+          if (!owner && !GUEST_PANES.includes(id)) return json(res, 403, {error: 'forbidden: not shared'});
           const text = world.screens.get(id);
           if (text == null) return json(res, 404, {error: 'no such pane'});
           return json(res, 200, {id, text, cols: 80, rows: 30});

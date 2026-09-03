@@ -137,6 +137,24 @@ describe('knowledge, remotely', () => {
   });
 });
 
+describe('a guest sees only its own link', () => {
+  test('the radar is filtered to the allowlist, not merely styled differently', async () => {
+    // The real serve filters here (filterAgentsForGuest). A fake that returned the whole
+    // fleet would let a suite prove the opposite and keep passing if that filter broke.
+    const guest = await startFake({guest: true});
+    try {
+      const c = new GtmuxClient(guest.url, guest.token);
+      const rows = await c.agents();
+      expect(rows.map(r => r.pane_id)).toEqual(['%12']);
+      // And a pane outside it cannot be read even by asking directly (the client throws
+      // on a non-2xx here, which is the shape the caller already handles).
+      await expect(c.pane('%11')).rejects.toThrow(/403/);
+    } finally {
+      await guest.close();
+    }
+  });
+});
+
 describe('reply options', () => {
   test('a waiting pane offers its own words, an idle one offers nothing', async () => {
     expect((await client.options('%11')).map(o => o.n)).toEqual([1, 2, 3]);
