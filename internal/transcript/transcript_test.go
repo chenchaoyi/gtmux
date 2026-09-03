@@ -679,3 +679,47 @@ func TestSessionOriginMakesNoClaimForOtherAgents(t *testing.T) {
 		t.Errorf("missing log claimed a reset: %q", kind)
 	}
 }
+
+// A /compact writes a continuation message that LOOKS like a prompt: type "user", role
+// "user", plain-string content beginning "This session is being continued…". Nobody typed
+// it. Read as one, every surface shows the PREVIOUS session's summary as something the
+// commander said — and a supervisor reading its own summary back as an instruction is a
+// failure this fleet has already had (2026-08-03).
+//
+// The shape here is copied from two real logs on this machine: `isCompactSummary` is the
+// only field that tells the entry apart.
+func TestLoadClaudeSkipsTheCompactionSummary(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "33333333-4444-5555-6666-777777777777"
+	writeClaudeLog(t, home, sid, []string{
+		`{"type":"user","message":{"role":"user","content":"real question one"}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"an answer"}]}}`,
+		`{"type":"user","isCompactSummary":true,"message":{"role":"user","content":"This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.\n\nSummary:\n1. the commander asked for X"}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"carrying on"}]}}`,
+		`{"type":"user","message":{"role":"user","content":"real question two"}}`,
+		`{"type":"assistant","message":{"role":"assistant","stop_reason":"end_turn","content":[{"type":"text","text":"second answer"}]}}`,
+	})
+
+	turns, err := Load("Claude Code", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tn := range turns {
+		if strings.Contains(tn.Prompt, "being continued from a previous conversation") {
+			t.Fatalf("the compaction summary was attributed to the user: %q", tn.Prompt)
+		}
+	}
+	if len(turns) != 2 {
+		t.Fatalf("want 2 real turns, got %d: %+v", len(turns), turns)
+	}
+	if turns[0].Prompt != "real question one" || turns[1].Prompt != "real question two" {
+		t.Fatalf("real prompts lost or reordered: %+v", turns)
+	}
+	// Dropping the summary must not drop what came after it: the reply written while the
+	// compacted turn was open belongs to the conversation.
+	joined := turns[0].Response + turns[1].Response
+	if !strings.Contains(joined, "carrying on") {
+		t.Fatalf("the reply after the compaction was lost: %q", joined)
+	}
+}
