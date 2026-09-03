@@ -31,7 +31,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent} from '../api/types';
 import {Debug} from '../debug';
-import {DigestRow, HQBoard, HQEvent, SendPayload, TranscriptTurn} from '../api/client';
+import {DigestRow, HQBoard, HQEvent, KnowledgeIndex, SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
@@ -41,6 +41,8 @@ import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
+import {KnowledgeSheet} from './KnowledgeSheet';
+import {knowledgeLine} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {parseBoardSections} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
@@ -97,6 +99,13 @@ export function HQScreen({route, navigation}: any) {
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
   const [boardOpen, setBoardOpen] = useState(false);
+  // The knowledge base — HQ's long-term memory, beside the board's working memory
+  // (hq-knowledge-on-phone). Polled with the rest: the promotion queue is a debt whose
+  // count belongs on the header row, so it cannot wait until the sheet is opened.
+  const [knowledge, setKnowledge] = useState<KnowledgeIndex>({
+    entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0},
+  });
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   // The board's sections, and which are unfolded. The FIRST opens by default: it is the
   // handoff HQ pins at the top for whoever reads next, not merely the earliest entry.
   const boardSections = useMemo(() => parseBoardSections(board.text ?? ''), [board.text]);
@@ -183,6 +192,10 @@ export function HQScreen({route, navigation}: any) {
       client
         .hqBoard()
         .then(b => alive && setBoard(b))
+        .catch(() => {});
+      client
+        .hqKnowledge()
+        .then(k => alive && setKnowledge(k))
         .catch(() => {});
       client
         .hqEvents('notable', 40)
@@ -399,6 +412,9 @@ export function HQScreen({route, navigation}: any) {
             onToggle={() => setBriefOpen(v => !v)}
             onBack={() => navigation.goBack()}
             onOpenBoard={() => setBoardOpen(true)}
+            knowledgeLine={knowledgeLine(knowledge, zh)}
+            knowledgeOwed={knowledge.promotions?.pending ?? 0}
+            onOpenKnowledge={() => setKnowledgeOpen(true)}
             pal={pal}
             zh={zh}
           />
@@ -583,6 +599,23 @@ export function HQScreen({route, navigation}: any) {
           clock and the battery, and the ✕ could not reliably be tapped. A page sheet is
           laid out below the status bar by iOS itself, and it adds a second way out
           (swipe down) so leaving never depends on hitting one glyph. */}
+      <KnowledgeSheet
+        visible={knowledgeOpen}
+        index={knowledge}
+        nowSecs={now}
+        pal={pal}
+        zh={zh}
+        onClose={() => setKnowledgeOpen(false)}
+        loadEntry={id => client.hqKnowledgeEntry(id)}
+        act={async a => {
+          const r = await client.hqKnowledgeAct(a);
+          // A mutation changes the base, so the index a reader is looking at is stale the
+          // moment it succeeds — refetch rather than patching a copy locally.
+          if (r.ok) client.hqKnowledge().then(setKnowledge).catch(() => {});
+          return r;
+        }}
+      />
+
       <Modal
         visible={boardOpen}
         animationType="slide"

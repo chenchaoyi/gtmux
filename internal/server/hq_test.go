@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -117,8 +118,18 @@ func TestHQSurfacesAreRefusedToAGuest(t *testing.T) {
 		Enroll:   enroll,
 		HQBoard:  func() (string, int64, bool) { return "secret assessment", 1, true },
 		HQEvents: func(string, int, bool) ([]byte, error) { return []byte(`[{"event":"Waiting"}]`), nil },
+		HQKnowledge: func() ([]byte, error) {
+			return []byte(`{"entries":[{"title":"secret lesson"}]}`), nil
+		},
+		HQKnowledgeEntry: func(string) ([]byte, bool, error) {
+			return []byte(`{"body":"secret lesson"}`), true, nil
+		},
+		HQKnowledgeAct: func(string, string, string, string) error { return nil },
 	})
-	for _, p := range []string{"/api/hq/board", "/api/hq/events"} {
+	for _, p := range []string{
+		"/api/hq/board", "/api/hq/events",
+		"/api/hq/knowledge", "/api/hq/knowledge/entry?id=x", "/api/hq/knowledge/act",
+	} {
 		w := hqGet(t, s, p, guest.Token)
 		if w.Code != http.StatusForbidden {
 			t.Errorf("%s as guest -> %d; want 403", p, w.Code)
@@ -311,4 +322,84 @@ func equalBools(a, b []bool) bool {
 		}
 	}
 	return true
+}
+
+// errTest is a domain refusal, for the act test below.
+var errTest = errors.New("no live entry")
+
+// The knowledge endpoints (hq-knowledge-on-phone). The reads degrade to an empty base
+// rather than an error, and the write door accepts exactly two verbs.
+
+func TestHQKnowledgeAbsentIsAnEmptyBase(t *testing.T) {
+	// A Mac with no HQ home is an ordinary machine; a client renders "nothing recorded".
+	w := hqGet(t, hqTestServer(t, Deps{}), "/api/hq/knowledge", "master")
+	var got struct {
+		Entries []json.RawMessage `json:"entries"`
+		Topics  []json.RawMessage `json:"topics"`
+	}
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &got) != nil {
+		t.Fatalf("status=%d body=%q; want 200 and an empty base", w.Code, w.Body.String())
+	}
+	if len(got.Entries) != 0 || len(got.Topics) != 0 {
+		t.Errorf("want empty collections, got %+v", got)
+	}
+}
+
+func TestHQKnowledgeEntryNeedsAnID(t *testing.T) {
+	s := hqTestServer(t, Deps{
+		HQKnowledgeEntry: func(id string) ([]byte, bool, error) {
+			if id != "pitfalls/x" {
+				return nil, false, nil
+			}
+			return []byte(`{"id":"pitfalls/x","body":"the lesson"}`), true, nil
+		},
+	})
+	if w := hqGet(t, s, "/api/hq/knowledge/entry", "master"); w.Code != http.StatusBadRequest {
+		t.Errorf("no id -> %d; want 400", w.Code)
+	}
+	if w := hqGet(t, s, "/api/hq/knowledge/entry?id=nope", "master"); w.Code != http.StatusNotFound {
+		t.Errorf("unknown id -> %d; want 404", w.Code)
+	}
+	w := hqGet(t, s, "/api/hq/knowledge/entry?id=pitfalls/x", "master")
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "the lesson") {
+		t.Errorf("status=%d body=%q; want the entry with its body", w.Code, w.Body.String())
+	}
+}
+
+func TestHQKnowledgeActClosesTheVerbList(t *testing.T) {
+	var ran []string
+	s := hqTestServer(t, Deps{
+		HQKnowledgeAct: func(op, id, ref, why string) error {
+			ran = append(ran, op+" "+id+" "+ref+why)
+			if id == "" {
+				return errTest
+			}
+			return nil
+		},
+	})
+	post := func(body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/api/hq/knowledge/act", strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer master")
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, req)
+		return w
+	}
+	if w := post(`{"op":"land","id":"pitfalls/x","ref":"AGENTS.md"}`); w.Code != http.StatusOK {
+		t.Errorf("land -> %d %s; want 200", w.Code, w.Body.String())
+	}
+	if w := post(`{"op":"retire","id":"pitfalls/x","why":"wrong"}`); w.Code != http.StatusOK {
+		t.Errorf("retire -> %d; want 200", w.Code)
+	}
+	// A verb this surface has not decided a phone should have never reaches the ledger.
+	if w := post(`{"op":"add","id":"pitfalls/x"}`); w.Code != http.StatusBadRequest {
+		t.Errorf("add -> %d; want 400", w.Code)
+	}
+	// The domain's own refusal (a missing id, an unpromoted entry) surfaces as 400 with
+	// its message, not as a 500.
+	if w := post(`{"op":"land"}`); w.Code != http.StatusBadRequest {
+		t.Errorf("land with no id -> %d; want 400", w.Code)
+	}
+	if len(ran) != 3 {
+		t.Errorf("the dep must see only the accepted verbs: %v", ran)
+	}
 }

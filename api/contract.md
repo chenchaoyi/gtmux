@@ -393,6 +393,59 @@ focus).
 403 {"error":"forbidden: not shared"}   // guest scope
 ```
 
+### `GET /api/hq/knowledge` — the knowledge index (OWNER only)
+
+Every LIVE entry's identity and state, **without bodies** — the base on this machine is
+several hundred entries whose bodies together are megabytes and whose identities are tens
+of kilobytes, and a phone polls the index. Entries are **newest first** (the review
+question is "what did it just learn"). Also carries the topic vocabulary with per-topic
+counts and the two maintenance queues: pending promotions (with the age of the oldest —
+what `gtmux doctor` flags past ~2 weeks) and pending capture candidates.
+
+A Mac with no HQ home answers `200` with empty collections. "No knowledge base" is an
+ordinary state a client renders, not a failure it has to tell apart from a read error.
+
+```
+200 {"entries":[{"id":"pitfalls/office-tls-resets","topic":"pitfalls","title":"…",
+     "at":1784720000,"seq":9120,"pane":"%14","capture":"pitfalls/…",
+     "promoted_at":1784700000,"promote_why":"…","promote_target":"AGENTS.md"}],
+     "topics":[{"name":"pitfalls","count":137,"builtin":true}],
+     "promotions":{"pending":6,"oldest_sec":1209600},
+     "candidates":{"pending":0}}
+403 {"error":"forbidden: not shared"}   // guest scope
+```
+
+### `GET /api/hq/knowledge/entry?id=<id>` — one entry, with its body (OWNER only)
+
+```
+200 {"id":"pitfalls/office-tls-resets","topic":"pitfalls","title":"…","body":"…","at":…}
+400 {"error":"id required"}
+404 {"error":"no such entry"}           // unknown, or retired (gone from the live set)
+```
+
+### `POST /api/hq/knowledge/act` — land or retire, remotely (OWNER only)
+
+The two mutations a phone can honestly perform, each one short line of text:
+
+- `land` closes a pending promotion — `ref` names where the lesson landed (a PR, a spec, a
+  runbook). **This is the verb that most needed a remote door**: HQ can judge a lesson
+  charter-level, but only the person who carried it knows it arrived.
+- `retire` removes a live entry — `why` survives in the ledger.
+
+`add` and `supersede` are deliberately absent: they carry prose, and the quality of the
+base is the point of having one. The CLI's cwd-keyed HQ-home gate is unchanged — it keeps
+WORKERS out, while this door is the owner, who outranks the supervisor. Both doors journal
+the same `gtmux:audit:knowledge` record.
+
+```
+POST {"op":"land","id":"pitfalls/office-tls-resets","ref":"AGENTS.md"}
+POST {"op":"retire","id":"pitfalls/office-tls-resets","why":"the office network was fixed"}
+200 {"ok":true}
+400 {"error":"unknown op (land|retire)"}
+400 {"error":"pitfalls/x has no pending promotion to land (gtmux knowledge promotions)"}
+403 {"error":"forbidden: not shared"}   // guest scope
+```
+
 ### `GET /api/hq/events` — the fleet event ledger (read-only, OWNER only)
 
 The severity-tagged lifecycle ledger (`internal/events`), **newest first** — history,
