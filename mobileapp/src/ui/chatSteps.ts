@@ -40,3 +40,27 @@ export function stepsOpenByDefault(ctx: StepContext): boolean {
 export function stepsOpen(chosen: boolean | undefined, ctx: StepContext): boolean {
   return chosen ?? stepsOpenByDefault(ctx);
 }
+
+/**
+ * segmentKey identifies a step group by the TURN it belongs to, not by where that turn
+ * currently sits.
+ *
+ * The reader's choice used to be keyed `${turnIndex}-${segIndex}`. Indexes are stable
+ * while turns are only appended — but the server drops the oldest turns to bound the
+ * payload, and each drop shifts every remaining turn down by one. Measured: open the
+ * steps on the newest turn, let one old turn fall out, and the expansion is now on the
+ * turn AFTER the one that was tapped — open where nobody asked, closed where they did.
+ *
+ * The turn's own timestamp plus the head of its prompt is what survives that. Two turns
+ * would have to share a second AND an opening to collide. A turn with no timestamp keeps
+ * the positional key: there is nothing better to key it by, and saying so is better than
+ * inventing an identity.
+ */
+export function segmentKey(
+  turn: {time?: string; prompt?: string},
+  segIndex: number,
+  turnIndex: number,
+): string {
+  if (!turn.time) return `${turnIndex}-${segIndex}`;
+  return `${turn.time}|${(turn.prompt ?? '').slice(0, 40)}|${segIndex}`;
+}
