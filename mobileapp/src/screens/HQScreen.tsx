@@ -389,6 +389,7 @@ export function HQScreen({route, navigation}: any) {
               turns,
               week,
               res,
+              nowSecs: now,
               zh,
             })}
             conn={conn}

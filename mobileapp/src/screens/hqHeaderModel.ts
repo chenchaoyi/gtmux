@@ -23,7 +23,7 @@
 
 import {TranscriptTurn} from '../api/client';
 import {DigestRow} from '../api/client';
-import {fleetCounts, planLabel} from './hqZones';
+import {fleetCounts, planLabel, relTime} from './hqZones';
 
 /** The machine-resource slice the header cares about. */
 export interface ResourceState {
@@ -40,6 +40,38 @@ export interface WindowPct {
   pct: number;
 }
 
+/** One run of the brief. `code` marks what HQ wrote between backticks. */
+export interface InlineSeg {
+  text: string;
+  code: boolean;
+}
+
+/** The supervisor's own latest brief, attributed and dated. */
+export interface Brief {
+  segments: InlineSeg[];
+  /** "12m ago" / "12分钟前". Null when the turn carries no time — never invented. */
+  age: string | null;
+}
+
+/**
+ * One labelled figure in the disclosure. The three kinds used to be one gray sentence
+ * that wrapped ("0 need you · 1 working · 16 idle · 5h 21% · wk 53% · Fable 78% disk
+ * 16GB free"), so nothing said where the fleet ended and the subscription began. They
+ * are three different questions and get three rows.
+ */
+export interface Stat {
+  key: 'fleet' | 'usage' | 'machine';
+  label: string;
+  value: string;
+  /**
+   * `warn` when the value is the core's own warning rather than a plain reading. An
+   * amber machine stays inside the disclosure (only red is read standing), but rendering
+   * "disk 16GB free" in the same gray as "5h 24%" tells the reader it is a figure when
+   * it is a warning.
+   */
+  tone?: 'warn';
+}
+
 export interface HeaderModel {
   /** The one-line judgment — the only prose in the standing header. */
   verdict: string;
@@ -48,11 +80,9 @@ export interface HeaderModel {
   /** Promoted out of the disclosure: shown standing, under the verdict. Null in the normal case. */
   standing: string | null;
   /** The supervisor's own most recent brief, or null when it has produced none. */
-  brief: string | null;
-  /** The derived fleet line, for the disclosure. */
-  fleet: string;
-  /** The derived resource line, for the disclosure. Null when nothing is known. */
-  resource: string | null;
+  brief: Brief | null;
+  /** The derived figures, for the disclosure. A row with nothing to say is absent. */
+  stats: Stat[];
 }
 
 // briefMark is the supervisor's signal register (playbook v2+). A reply that opens with
@@ -61,47 +91,100 @@ export interface HeaderModel {
 const briefMark = '⟣';
 
 /**
+ * inlineSegments splits HQ's prose on backticks so the view can set what HQ marked as
+ * code in a monospace face.
+ *
+ * It exists because the header used to print the backticks themselves: HQ writes
+ * "`%19` 下拉刷新修好了", and a header that shows the punctuation of a markup language
+ * it does not render is the single clearest way to look unfinished. An unpaired backtick
+ * stays literal text — guessing where the run ends would silently re-style the rest of
+ * the sentence.
+ */
+export function inlineSegments(text: string): InlineSeg[] {
+  const parts = text.split('`');
+  if (parts.length % 2 === 0) return [{text, code: false}]; // unpaired: leave it alone
+  const out: InlineSeg[] = [];
+  parts.forEach((t, i) => {
+    if (t !== '') out.push({text: t, code: i % 2 === 1});
+  });
+  return out.length > 0 ? out : [{text, code: false}];
+}
+
+/**
  * supervisorBrief returns the supervisor's most recent brief — the newest reply written
- * in its own signal register — with the register glyph stripped (the disclosure labels
- * the line itself, so keeping it would print the mark twice).
+ * in its own signal register — with the register glyph stripped (the block's own
+ * attribution carries the mark, so keeping it would print it twice).
  *
  * Null when the supervisor has produced none: an empty disclosure is honest, and picking
  * "the newest reply" instead would present an answer to some specific question as if it
  * were a standing brief.
+ *
+ * The age comes from the turn's timestamp, which the transcript records for the PROMPT —
+ * the wake that produced the brief, a turn ahead of the reply. At the minute granularity
+ * shown that is the same number, and it is a real reading rather than an invented one:
+ * a turn with no time gets no age, never a guessed one.
  */
-export function supervisorBrief(turns: TranscriptTurn[]): string | null {
+export function supervisorBrief(
+  turns: TranscriptTurn[],
+  nowSecs: number,
+  zh: boolean,
+): Brief | null {
   for (let i = turns.length - 1; i >= 0; i--) {
     const text = (turns[i]?.response ?? '').trim();
-    if (text.startsWith(briefMark)) {
-      const body = text.slice(briefMark.length).trim();
-      if (body !== '') return body;
-    }
+    if (!text.startsWith(briefMark)) continue;
+    const body = text.slice(briefMark.length).trim();
+    if (body === '') continue;
+    const at = Date.parse(turns[i]?.time ?? '');
+    const age = Number.isNaN(at)
+      ? null
+      : zh
+        ? `${relTime(Math.floor(at / 1000), nowSecs)}前`
+        : `${relTime(Math.floor(at / 1000), nowSecs)} ago`;
+    return {segments: inlineSegments(body), age};
   }
   return null;
 }
 
-/** fleetLine is the derived state tally, plus each subscription window's usage. */
-export function fleetLine(digest: DigestRow[], week: WindowPct[], zh: boolean): string {
+/** fleetStat is the state tally: how many of the fleet are in each state. */
+export function fleetStat(digest: DigestRow[], zh: boolean): Stat {
   const c = fleetCounts(digest);
-  const head = zh
-    ? `${c.waiting} 需要你 · ${c.working} 运行 · ${c.idle} 空闲`
-    : `${c.waiting} need you · ${c.working} working · ${c.idle} idle`;
-  if (week.length === 0) return head;
-  return head + '  ·  ' + week.map(w => `${planLabel(w.label, zh)} ${w.pct}%`).join(' · ');
+  return {
+    key: 'fleet',
+    label: zh ? '舰队' : 'fleet',
+    value: zh
+      ? `${c.waiting} 需要你 · ${c.working} 运行 · ${c.idle} 空闲`
+      : `${c.waiting} need you · ${c.working} working · ${c.idle} idle`,
+  };
 }
 
 /**
- * resourceLine is the machine's own line. `warn` is the core's sentence and wins; the
- * disk/memory figures are the fallback for when there is nothing to warn about but the
- * numbers are still worth having in the disclosure.
+ * usageStat is each subscription window's burn. Null when the endpoint reported none —
+ * a row reading "usage —" says less than no row at all.
  */
-export function resourceLine(res: ResourceState | null, zh: boolean): string | null {
+export function usageStat(week: WindowPct[], zh: boolean): Stat | null {
+  if (week.length === 0) return null;
+  return {
+    key: 'usage',
+    label: zh ? '用量' : 'usage',
+    value: week.map(w => `${planLabel(w.label, zh)} ${w.pct}%`).join('  ·  '),
+  };
+}
+
+/**
+ * machineStat is the machine's own line. `warn` is the core's sentence and wins; the
+ * disk figure is the fallback for when there is nothing to warn about.
+ *
+ * A memory tier is appended only when the core reported one. The old line printed
+ * "mem —" whenever it had not, which spends a reader's attention to tell them nothing.
+ */
+export function machineStat(res: ResourceState | null, zh: boolean): Stat | null {
+  const label = zh ? '机器' : 'machine';
   if (!res) return null;
-  if (res.warn) return res.warn;
+  if (res.warn) return {key: 'machine', label, value: res.warn, tone: 'warn'};
   if (res.diskGB == null) return null;
-  return zh
-    ? `磁盘 ${res.diskGB}GB · 内存 ${res.memTier ?? '—'}`
-    : `disk ${res.diskGB}GB · mem ${res.memTier ?? '—'}`;
+  const disk = zh ? `磁盘 ${res.diskGB}GB 可用` : `${res.diskGB}GB free`;
+  const mem = res.memTier ? (zh ? ` · 内存 ${res.memTier}` : ` · mem ${res.memTier}`) : '';
+  return {key: 'machine', label, value: disk + mem};
 }
 
 /**
@@ -130,15 +213,22 @@ export function headerModel(args: {
   turns: TranscriptTurn[];
   week: WindowPct[];
   res: ResourceState | null;
+  nowSecs: number;
   zh: boolean;
 }): HeaderModel {
-  const resource = resourceLine(args.res, args.zh);
+  const machine = machineStat(args.res, args.zh);
+  const critical = isCritical(args.res);
   return {
     verdict: args.verdict,
     urgent: args.urgent,
-    standing: isCritical(args.res) ? resource : null,
-    brief: supervisorBrief(args.turns),
-    fleet: fleetLine(args.digest, args.week, args.zh),
-    resource,
+    // A critical machine is read standing, so it does not also sit in the list below —
+    // the same figure in two places reads as two facts.
+    standing: critical ? (machine?.value ?? null) : null,
+    brief: supervisorBrief(args.turns, args.nowSecs, args.zh),
+    stats: [
+      fleetStat(args.digest, args.zh),
+      usageStat(args.week, args.zh),
+      critical ? null : machine,
+    ].filter((x): x is Stat => x != null),
   };
 }

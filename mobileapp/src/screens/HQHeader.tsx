@@ -1,12 +1,28 @@
 // HQHeader — the HQ page's standing header (hq-page-shows-its-work).
 //
-// Two rows and nothing else: who this is, and what the supervisor concludes. The four
-// stacked bands this replaces cost ~200pt before the body began, and with a keyboard up
-// the conversation underneath was left four or five lines. Everything those bands showed
-// still exists, one tap down, inside the verdict's disclosure.
+// Two rows standing: who this is, and what gtmux concludes. Everything else lives one
+// tap down, inside the verdict's disclosure. The four stacked bands this replaces cost
+// ~200pt before the body began, and with a keyboard up the conversation underneath was
+// left four or five lines.
 //
-// The view is deliberately thin: what belongs standing and what belongs behind the
-// disclosure is decided in hqHeaderModel.ts, where it can be tested as rules.
+// The disclosure itself was rebuilt after 2026-09-03 ("这一块信息还是很零散，不专业"),
+// where it read as four unrelated blocks stacked with no rule between them. Three things
+// were wrong, and each fix is a rule, not a nudge:
+//
+//   - `⟣` is the SUPERVISOR's signal register. It was printed on the verdict, which is
+//     gtmux's own computed sentence (hqZones.verdictSentence) — so one glyph labelled two
+//     different voices a line apart, and HQ's quoted brief right below it looked like
+//     more of the same sentence. The verdict now stands unmarked; the mark went back to
+//     the only thing that earns it.
+//   - a brief with no attribution and no time is not a brief, it is a paragraph. It is
+//     now a quotation: who said it, when, and clamped to a glance. The full text is one
+//     tab away in the conversation, so a header that reprints all of it puts the same
+//     words on screen twice.
+//   - three kinds of quantity (fleet state · subscription burn · machine) ran together in
+//     one wrapping gray sentence. They are three questions and get three labelled rows.
+//
+// The view stays thin: what belongs standing and what belongs behind the disclosure is
+// decided in hqHeaderModel.ts, where it is tested as rules.
 
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -51,14 +67,15 @@ export function HQHeader({model, conn, demo, boardLine, open, onToggle, onBack, 
       </View>
 
       {/* The verdict IS the header. The chevron says there is more without spending a
-          line saying so. */}
+          line saying so. No register glyph: this sentence is gtmux's, not HQ's. */}
       <TouchableOpacity
         testID="hq-verdict"
         activeOpacity={0.6}
         onPress={onToggle}
         style={[styles.verdictRow, {borderBottomColor: pal.divider}]}>
-        <Text style={[styles.verdict, {color: model.urgent ? ERRORED_COLOR : pal.fg}]} numberOfLines={open ? undefined : 1}>
-          <Text style={{color: pal.fg3}}>⟣ </Text>
+        <Text
+          style={[styles.verdict, {color: model.urgent ? ERRORED_COLOR : pal.fg}]}
+          numberOfLines={open ? undefined : 1}>
           {model.verdict}
         </Text>
         <Text style={[styles.chevron, {color: pal.fg3}]}>{open ? '▾' : '▸'}</Text>
@@ -76,33 +93,52 @@ export function HQHeader({model, conn, demo, boardLine, open, onToggle, onBack, 
 
       {open && (
         <View testID="hq-disclosure" style={[styles.sheet, {borderBottomColor: pal.divider}]}>
-          {/* The supervisor's own words come first. A tally of states is what the page
-              can compute; this is what the supervisor actually thinks. */}
+          {/* HQ's own words, as a quotation. A tally of states is what the page can
+              compute; this is what the supervisor actually thinks. */}
           {model.brief ? (
-            <View style={styles.briefBlock}>
-              <Text style={[styles.label, {color: pal.fg3}]}>{zh ? '参谋长最近一次简报' : 'latest brief'}</Text>
-              <Text style={[styles.brief, {color: pal.fg}]} numberOfLines={6}>
-                {model.brief}
+            <View testID="hq-brief" style={styles.block}>
+              <View style={styles.byline}>
+                <Text style={[styles.mark, {color: pal.fg2}]}>⟣</Text>
+                <Text style={[styles.bylineText, {color: pal.fg3}]}>{zh ? '参谋长' : 'HQ'}</Text>
+                {model.brief.age ? (
+                  <Text style={[styles.bylineAge, {color: pal.fg3}]}>· {model.brief.age}</Text>
+                ) : null}
+              </View>
+              <Text style={[styles.brief, {color: pal.fg}]} numberOfLines={3}>
+                {model.brief.segments.map((seg, i) => (
+                  <Text key={i} style={seg.code ? [styles.code, {color: pal.fg2}] : undefined}>
+                    {seg.text}
+                  </Text>
+                ))}
               </Text>
             </View>
           ) : null}
 
-          <Text style={[styles.derived, {color: pal.fg2}]} numberOfLines={2}>
-            {model.fleet}
-          </Text>
-          {model.resource && !model.standing ? (
-            <Text style={[styles.derived, {color: pal.fg3}]} numberOfLines={1}>
-              {model.resource}
-            </Text>
-          ) : null}
+          {/* The figures: one row per question, a fixed key column so the eye lands in
+              the same place each time, and tabular numerals so the digits do not dance
+              between polls. */}
+          {model.stats.length > 0 && (
+            <View style={[styles.block, styles.stats, {borderTopColor: pal.divider}]}>
+              {model.stats.map(s => (
+                <View key={s.key} testID={`hq-stat-${s.key}`} style={styles.statRow}>
+                  <Text style={[styles.statLabel, {color: pal.fg3}]}>{s.label}</Text>
+                  <Text
+                    style={[styles.statValue, {color: s.tone === 'warn' ? ERRORED_COLOR : pal.fg2}]}
+                    numberOfLines={1}>
+                    {s.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {boardLine ? (
             <TouchableOpacity
               testID="hq-board-open"
               onPress={onOpenBoard}
               hitSlop={hit}
-              style={[styles.boardRow, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-              <Text style={[styles.boardIcon, {color: pal.fg2}]}>▤</Text>
+              style={[styles.boardRow, {borderTopColor: pal.divider}]}>
+              <Text style={[styles.boardIcon, {color: pal.fg3}]}>▤</Text>
               <Text style={[styles.boardLink, {color: pal.fg2}]} numberOfLines={1}>
                 {boardLine}
               </Text>
@@ -134,15 +170,26 @@ const styles = StyleSheet.create({
   standing: {paddingHorizontal: 14, paddingBottom: 7, borderBottomWidth: StyleSheet.hairlineWidth},
   standingText: {fontSize: 12, fontWeight: '600'},
 
-  sheet: {paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth},
-  briefBlock: {gap: 3, marginBottom: 2},
-  label: {fontSize: 10.5, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase'},
+  // The disclosure is three registers, so they are separated by rules rather than by a
+  // gap: quotation · figures · document.
+  sheet: {borderBottomWidth: StyleSheet.hairlineWidth},
+  block: {paddingHorizontal: 14, paddingVertical: 10},
+
+  byline: {flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4},
+  mark: {fontSize: 12},
+  bylineText: {fontSize: 11, fontWeight: '700', letterSpacing: 0.3},
+  bylineAge: {fontSize: 11},
   brief: {fontSize: 13.5, lineHeight: 19},
-  derived: {fontSize: 12},
+  code: {fontFamily: 'Menlo', fontSize: 12},
+
+  stats: {borderTopWidth: StyleSheet.hairlineWidth, gap: 5},
+  statRow: {flexDirection: 'row', alignItems: 'baseline', gap: 10},
+  statLabel: {width: 58, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase'},
+  statValue: {flex: 1, fontSize: 12.5, fontVariant: ['tabular-nums']},
+
   boardRow: {
-    flexDirection: 'row', alignItems: 'center', marginTop: 4,
-    borderWidth: StyleSheet.hairlineWidth, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 8, gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 14, paddingVertical: 11, borderTopWidth: StyleSheet.hairlineWidth,
   },
   boardIcon: {fontSize: 13},
   boardLink: {flex: 1, fontSize: 12.5},
