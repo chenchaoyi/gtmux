@@ -267,6 +267,11 @@ export function isAuthError(e: unknown): boolean {
   return e instanceof ApiError && e.isAuth;
 }
 
+/** What a send did, including the server's own words when it refused. */
+export type SendResult =
+  | {ok: true; pane: PaneResponse | null}
+  | {ok: false; status: number; reason: string};
+
 export class GtmuxClient {
   constructor(
     public base: string,
@@ -533,18 +538,51 @@ export class GtmuxClient {
   // Returns the post-send pane snapshot the server captures after a brief settle
   // (text + cursor) so the caller can render the echo in ONE round-trip instead of
   // a separate pane() fetch — the latency win over a remote tunnel. null on failure.
-  async send(id: string, payload: SendPayload): Promise<PaneResponse | null> {
+  /**
+   * sendResult types into a pane and reports WHY when it does not land.
+   *
+   * The server's refusals are specific and actionable — `refused-draft` means someone is
+   * typing in that pane right now, `no such pane` means the target is gone, `key not
+   * allowed` means we asked for something it will never do — and until this existed all
+   * three arrived at the caller as the same `null`. The knowledge client added with #889
+   * keeps its server's words; this path predates it and dropped them at the boundary,
+   * where no amount of UI work downstream can recover them.
+   *
+   * `send` below still returns the old shape, so no caller changes behaviour today. What
+   * the reader is eventually TOLD is a separate question, deliberately left open.
+   */
+  async sendResult(id: string, payload: SendPayload): Promise<SendResult> {
     const r = await tfetch(`${this.base}/api/send`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({id, ...payload}),
     });
-    if (!r.ok) return null;
-    try {
-      return (await r.json()) as PaneResponse;
-    } catch {
-      return {id, text: ''}; // sent ok, but no snapshot body — caller falls back to poll
+    if (!r.ok) {
+      const j = await r.json().catch(() => null);
+      const reason =
+        j && typeof j === 'object' && typeof (j as {error?: string}).error === 'string'
+          ? (j as {error: string}).error
+          : `send failed (${r.status})`;
+      if (Debug.logNet) Debug.record({event: 'send-refused', id, status: r.status, reason});
+      return {ok: false, status: r.status, reason};
     }
+    try {
+      return {ok: true, pane: (await r.json()) as PaneResponse};
+    } catch {
+      return {ok: true, pane: {id, text: ''}}; // sent ok, no snapshot — caller polls
+    }
+  }
+
+  /**
+   * send is the original shape: the pane snapshot, or null for any failure.
+   *
+   * Kept as it was on purpose. Every caller reads null as "it did not land", and this
+   * change is about not DESTROYING the reason at the boundary — not about changing what
+   * anyone shows.
+   */
+  async send(id: string, payload: SendPayload): Promise<PaneResponse | null> {
+    const r = await this.sendResult(id, payload);
+    return r.ok ? r.pane : null;
   }
 
   // upload sends a file to the Mac and returns the saved path (to reference to an

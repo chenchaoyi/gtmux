@@ -54,6 +54,38 @@ describe('send', () => {
   });
 });
 
+// hq's requirement, verbatim: the three refusals must be READABLE after crossing the
+// client boundary. They are the reasons a reader could act on — someone is typing in that
+// pane, the pane is gone, that key will never be run — and they used to arrive as one
+// undifferentiated null.
+describe('a refusal keeps the server’s words', () => {
+  test('the three real refusals survive the boundary', async () => {
+    fake.world.drafts.set('%12', 'half a thought');
+    const draft = await client.sendResult('%12', {text: 'continue', enter: true});
+    const gone = await client.sendResult('%999', {text: 'hello'});
+    const key = await client.sendResult('%12', {key: 'C-x' as 'C-c'});
+
+    expect(draft).toMatchObject({ok: false, status: 400});
+    expect(gone).toMatchObject({ok: false, status: 400});
+    expect(key).toMatchObject({ok: false, status: 400});
+    expect((draft as {reason: string}).reason).toContain('refused-draft');
+    expect((gone as {reason: string}).reason).toContain('no such pane');
+    expect((key as {reason: string}).reason).toContain('key not allowed');
+  });
+
+  test('a success carries the pane, not a reason', async () => {
+    const ok = await client.sendResult('%12', {text: 'hi'});
+    expect(ok.ok).toBe(true);
+  });
+
+  test('the old shape is unchanged, so no caller behaves differently', async () => {
+    // Additive by construction: every call site reads null as "did not land", and still
+    // does. What the reader is TOLD is a separate question, left open on purpose.
+    expect(await client.send('%999', {text: 'hello'})).toBeNull();
+    expect(await client.send('%12', {text: 'hi'})).not.toBeNull();
+  });
+});
+
 describe('knowledge, remotely', () => {
   const PENDING = 'best-practices/spawn-must-decide-model';
   const LANDED = 'workflows/green-means-merge';
@@ -112,10 +144,6 @@ describe('reply options', () => {
   });
 });
 
-// Noted while writing these, for the commander rather than for tonight: `send` reports a
-// failure as `null`, so the server's own words are dropped at the client boundary. The
-// refusals above are all specific and actionable — "refused-draft" means someone is typing
-// in that pane, "no such pane" means it is gone, "key not allowed" means the app asked for
-// something the server will never do — and a reader who sees one generic failure bar
-// cannot tell them apart. The knowledge client (added with #889) keeps the message; this
-// one predates that and does not.
+// Still open, and deliberately: the client now KEEPS these reasons, but nothing shows them
+// to the reader yet. What a failed send should say, and where, is a question for the
+// commander — see the PR that added sendResult.
