@@ -72,7 +72,7 @@ export function SectionList({
       // is sized to its content, so collapsing the sections leaves a blank lower half
       // that belongs to the screen behind it — a pull that starts there reaches no
       // scroll view, and pull-to-refresh silently stops working (reported 2026-09-03).
-      style={styles.fill}
+      style={styles.list}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={ListEmptyComponent}
       contentContainerStyle={styles.fill}
@@ -163,6 +163,7 @@ function CollapseBar({
 }
 
 const styles = StyleSheet.create({
+  list: {flex: 1}, // fill the screen (flexGrow alone would not shrink: RN flexShrink defaults to 0)
   fill: {flexGrow: 1},
   slot: {height: 9, justifyContent: 'flex-start'},
   slotLine: {height: 3},

@@ -74,6 +74,17 @@ gated('radar pull-to-refresh with every section collapsed', () => {
     const expanded = readDebugLog().filter(e => e.event === 'radar-refresh').length - before;
     await screenshot('refresh-1-expanded');
 
+    // Filling the screen must not cost the LONG case: scroll the expanded list to its
+    // end and check the last section is reachable, not clipped past the parent.
+    const {width, height} = await driver.getWindowSize();
+    for (let i = 0; i < 12; i++) {
+      await driver.execute('mobile: dragFromToForDuration', {
+        fromX: width / 2, fromY: height * 0.8, toX: width / 2, toY: height * 0.25, duration: 0.25,
+      });
+    }
+    await settle(800);
+    await screenshot('refresh-1b-bottom');
+
     // 2. Collapse every section that is on screen.
     let collapsedAny = 0;
     for (const status of SECTIONS) {

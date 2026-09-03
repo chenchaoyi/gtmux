@@ -13,7 +13,9 @@ import {paletteFor} from './theme';
 // (e2e/__tests__/radar-refresh-collapsed.test.ts): content ended at 32% of the screen,
 // a pull from 40% fired onRefresh zero times.
 //
-// So the list must FILL the screen, content or not.
+// So the list must FILL the screen, content or not: `flex: 1` on the list itself (not
+// flexGrow alone — RN's flexShrink defaults to 0, so a long list would overflow rather
+// than scroll inside its parent) and flexGrow on the content container.
 function render(collapsed: Set<string>) {
   const agents = [
     {pane_id: '%1', agent: 'Claude Code', status: 'idle', session: 'a'},
