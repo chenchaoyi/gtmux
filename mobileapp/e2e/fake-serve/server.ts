@@ -27,6 +27,12 @@ export interface Fake {
   url: string;
   token: string;
   world: World;
+  /**
+   * dropStreams cuts every open SSE connection, the way a tunnel hiccup or a sleeping
+   * phone does. The app must come back to `live` on its own — a client that needs a
+   * relaunch to reconnect looks, to its reader, exactly like a Mac that went away.
+   */
+  dropStreams: () => number;
   close: () => Promise<void>;
 }
 
@@ -57,6 +63,7 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
 export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
   const world = new World();
   const token = 'fake-token';
+  const streams = new Set<ServerResponse>();
 
   const server: Server = createServer((req, res) => {
     void handle(req, res).catch(() => json(res, 500, {error: 'fake failed'}));
@@ -85,7 +92,11 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
       res.writeHead(200, {'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive'});
       res.write(': hello\n\n');
       const beat = setInterval(() => res.write(': heartbeat\n\n'), 2000);
-      req.on('close', () => clearInterval(beat));
+      streams.add(res);
+      req.on('close', () => {
+        clearInterval(beat);
+        streams.delete(res);
+      });
       return;
     }
 
@@ -241,6 +252,12 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
     url: `http://127.0.0.1:${port}`,
     token,
     world,
+    dropStreams: () => {
+      const n = streams.size;
+      streams.forEach(r => r.destroy());
+      streams.clear();
+      return n;
+    },
     close: () =>
       new Promise<void>(resolve => {
         server.closeAllConnections?.();
