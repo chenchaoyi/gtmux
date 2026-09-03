@@ -16,9 +16,13 @@ const keys = (a: Agent) => buildRowSheet(a, 'en', NOW).actions.map(x => x.key);
 // that was pressed. What the row genuinely cannot show is the whole of a clamped task
 // and error, and WHICH pane this is.
 describe('what the row cannot say', () => {
-  it('leads with the pane id, because a truncated name cannot tell two panes apart', () => {
+  // The header is the ANCHOR, not the agent's name: the avatar identifies the tool, and
+  // titling the sheet "Claude Code" spends the largest type on the page on something the
+  // reader already knew before they pressed.
+  it('is headed by where this session is, not by what agent it runs', () => {
     const m = buildRowSheet(agent({}), 'en', NOW);
-    expect(m.identity[0]).toBe('%60 · MP:0.1');
+    expect(m.anchor).toContain('%60');
+    expect(m.anchor).not.toContain('Claude Code');
   });
 
   it('carries the full error text, which is exactly what gets truncated on the row', () => {
@@ -40,12 +44,12 @@ describe('each kind tells its own truth', () => {
   it('a session outside tmux cannot be jumped to, and says why', () => {
     const m = buildRowSheet(agent({source: 'native'}), 'en', NOW);
     expect(m.kind).toBe('native');
-    expect(m.identity[0]).toContain('Not in tmux');
+    expect(m.where).toContain('not in tmux');
     const jump = m.actions.find(a => a.key === 'jump')!;
     expect(jump.disabled).toBe(true);
     // The reason must be present: an action that is simply missing leaves the reader
     // wondering whether they missed it.
-    expect(jump.sub).toContain('not in tmux');
+    expect(jump.sub.toLowerCase()).toContain('not in tmux');
   });
 
   it('a watched plain pane is given no agent status', () => {

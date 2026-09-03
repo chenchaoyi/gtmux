@@ -36,11 +36,17 @@ export interface SheetAction {
 
 export interface RowSheetModel {
   kind: 'agent' | 'native' | 'watched';
-  title: string;
+  // The anchor: WHERE this session is, in the form every surface uses (`session · %pane`).
+  // It is deliberately not the agent's name. The avatar beside it already identifies the
+  // tool, and spending the largest type on the page repeating that leaves the reader
+  // with a heading they learned nothing from.
+  anchor: string;
+  // Project and branch, when there are any. A quiet second line, not a block of its own:
+  // it is context for the task, not a record to study.
+  where?: string;
   // Absent for a watched plain pane: it carries no agent status, and rendering "idle"
   // for it would invent one.
   status?: string;
-  identity: string[];
   task?: string;
   error?: string;
   background?: string;
@@ -78,18 +84,11 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
   // Identity leads with the pane id wherever there is one. Names are a gloss and the id
   // is the anchor: two panes running one project are indistinguishable once a row
   // truncates their titles, which is the reason the share picker leads with `%N` too.
-  const identity: string[] = [];
-  if (native) {
-    identity.push(zh ? '不在 tmux 里（只能感知，不能操作）' : 'Not in tmux (sensed only, not controllable)');
-  } else {
-    identity.push(a.loc ? `${a.pane_id} · ${a.loc}` : a.pane_id);
-  }
-  if (a.project || a.branch) {
-    identity.push([a.project, a.branch].filter(Boolean).join(' · '));
-  }
-  if (a.terminal) {
-    identity.push(zh ? `终端 ${a.terminal}` : `Terminal ${a.terminal}`);
-  }
+  const anchor = native
+    ? (a.project || a.terminal || a.agent)
+    : (a.session ? `${a.session} · ${a.pane_id}` : a.pane_id);
+  const whereParts = [a.project, a.branch].filter(Boolean);
+  if (native) whereParts.unshift(zh ? '不在 tmux 里' : 'not in tmux');
 
   const dur = humanSince(a.since || a.activity_at, nowSecs, lang);
   let status: string | undefined;
@@ -109,7 +108,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
       key: 'reply',
       group: 'answer',
       title: zh ? '回答它' : 'Answer it',
-      sub: zh ? '直接选一个，或写一句' : 'Pick an option, or write a line',
+      sub: zh ? '选一个编号，或打开会话自己写' : 'Pick a numbered choice, or open it and write',
     });
   }
 
@@ -118,20 +117,22 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     actions.push({
       key: 'continue',
       group: 'drive',
-      title: zh ? '继续' : 'Carry on',
-      sub: zh ? '让它接着做' : 'Tell it to keep going',
+      title: zh ? '让它继续' : 'Tell it to carry on',
+      // Name the literal payload. "Carry on" is a label, and the reader's first question
+      // was what it actually sends.
+      sub: zh ? '发送「继续」并回车' : 'Sends "continue" and Enter',
     });
     actions.push({
       key: 'stop',
       group: 'drive',
-      title: zh ? '停下' : 'Stop it',
-      sub: zh ? '打断当前这一轮' : 'Interrupt the current turn',
+      title: zh ? '打断它' : 'Interrupt it',
+      sub: zh ? '发送 Esc，停掉当前这一轮' : 'Sends Esc, stopping the current turn',
     });
     actions.push({
       key: 'ask-hq',
       group: 'drive',
       title: zh ? '问参谋长' : 'Ask the supervisor',
-      sub: zh ? '让中控看一眼再替你回' : 'Have HQ look at it and answer for you',
+      sub: zh ? `打开中控，开头填好 ${a.pane_id}` : `Opens HQ with ${a.pane_id} filled in`,
     });
   }
 
@@ -150,16 +151,16 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     group: 'look',
     title: zh ? '在 Mac 上跳过去' : 'Jump to it on the Mac',
     sub: native
-      ? (zh ? '这个会话不在 tmux 里，gtmux 无法切过去' : 'This session is not in tmux, so gtmux cannot switch to it')
-      : (zh ? '把 Mac 的终端切到这个 pane' : "Move the Mac's terminal to this pane"),
+      ? (zh ? '不在 tmux 里，切不过去' : 'Not in tmux, so there is nowhere to switch to')
+      : (zh ? `把 Mac 的终端切到 ${a.pane_id}` : `Moves the Mac's terminal to ${a.pane_id}`),
     disabled: native,
   });
 
   return {
     kind,
-    title: watched ? (a.task || a.pane_id) : (a.agent || (zh ? 'agent' : 'Agent')),
+    anchor,
+    where: whereParts.length > 0 ? whereParts.join(' · ') : undefined,
     status,
-    identity,
     task: watched ? undefined : primary(a),
     error: a.error && a.error_text ? a.error_text : undefined,
     background: a.bg && a.bg_text ? a.bg_text : undefined,
