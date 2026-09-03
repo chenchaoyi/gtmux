@@ -239,9 +239,26 @@ export function RadarScreen({navigation}: any) {
         pal={pal}
         lang={lang}
         onClose={() => setSheetAgent(null)}
-        onOpen={a => navigation.navigate('Detail', {agent: a})}
         onJump={a => { client.focus(a.pane_id).catch(() => {}); }}
         onDiff={a => navigation.navigate('Detail', {agent: a, openDiff: true})}
+        loadOptions={a => client.options(a.pane_id)}
+        onAct={(a, act) => {
+          // Every talking action lands here. A numbered choice is a KEYSTROKE (an agent's
+          // menu commits on the digit, and a bracketed paste of "1" selects nothing);
+          // "stop" is Escape; the rest are text. `reply` with no number has nothing to
+          // send yet, so it opens the session where the composer lives.
+          if (act.kind === 'option' && act.n) {
+            client.send(a.pane_id, {text: String(act.n)}).catch(() => {});
+          } else if (act.kind === 'continue') {
+            client.send(a.pane_id, {text: lang === 'zh' ? '继续' : 'continue', enter: true}).catch(() => {});
+          } else if (act.kind === 'stop') {
+            client.send(a.pane_id, {key: 'Escape'}).catch(() => {});
+          } else if (act.kind === 'ask-hq') {
+            navigation.navigate('HQ', {prefill: `${a.pane_id} `});
+          } else {
+            navigation.navigate('Detail', {agent: a});
+          }
+        }}
       />
       {/* HQ floats over the list as a disc (the meta-layer, above the fleet) — always
           reachable, never scrolls away. Owner-only (a guest has no HQ). Shown even when
