@@ -209,8 +209,19 @@ struct MenuView: View {
                     Text(l10n.tr("CHIEF OF STAFF", "参谋长"))
                         .font(.system(size: 9.5, weight: .semibold)).tracking(0.9)
                     Spacer(minLength: 6)
-                    Text(l10n.tr("watches all sessions", "统观全局"))
-                        .font(.system(size: 9))
+                    if store.supervisor != nil {
+                        // The supervisor's two documents ride the banner it already has.
+                        // As a pair of full-width buttons they cost a whole row of the most
+                        // expensive space in the popover (§12: the pixels above the list),
+                        // for two entrances that are not what the reader came for.
+                        hqReaderButton(p, icon: "doc.plaintext",
+                                       help: l10n.tr("Situation board", "态势板"), tab: .board)
+                        hqReaderButton(p, icon: "diamond",
+                                       help: l10n.tr("Knowledge base", "知识库"), tab: .knowledge)
+                    } else {
+                        Text(l10n.tr("watches all sessions", "统观全局"))
+                            .font(.system(size: 9))
+                    }
                 }
                 .foregroundStyle(p.fg3)
                 .padding(.horizontal, 4)
@@ -250,19 +261,6 @@ struct MenuView: View {
                     }
                     .buttonStyle(.plain)
                     .help(l10n.tr("Jump to the supervisor", "跳到中控"))
-
-                    // The supervisor's two memories, readable here (DESIGN §12). Reading
-                    // is not the command centre: nothing on these dispatches anything, and
-                    // the knowledge base's own actions stay on the phone and in the CLI.
-                    // They earn a place at the Mac because this is the machine the board
-                    // describes and the reader is already sitting at it.
-                    HStack(spacing: 6) {
-                        hqReaderButton(p, icon: "doc.plaintext",
-                                       label: l10n.tr("Board", "态势板"), tab: .board)
-                        hqReaderButton(p, icon: "diamond", label: l10n.tr("Knowledge", "知识库"),
-                                       tab: .knowledge)
-                    }
-                    .padding(.top, 1)
                 } else {
                     Button { onAction(.startHQ) } label: {
                         HStack(spacing: 11) {
@@ -285,22 +283,24 @@ struct MenuView: View {
         }
     }
 
-    /// One of the two reader entries under the HQ card. Deliberately quiet: a way IN to a
-    /// document, not a control.
-    @ViewBuilder private func hqReaderButton(_ p: Theme.Palette, icon: String, label: String,
+    /// One of the supervisor's two document entrances, as a mark in the role banner.
+    ///
+    /// Icon only: these are ways IN, not controls, and the banner row already exists — a
+    /// labelled pair below the card spent a whole row of the popover's most expensive
+    /// space on them. The name survives as the tooltip and as the accessibility label, so
+    /// nothing is lost to a reader who needs it spelled out.
+    @ViewBuilder private func hqReaderButton(_ p: Theme.Palette, icon: String, help: String,
                                              tab: HQReaderTab) -> some View {
         Button { HQReaderController.shared.show(l10n: l10n, tab: tab) } label: {
-            HStack(spacing: 5) {
-                Image(systemName: icon).font(.system(size: 10))
-                Text(label).font(.system(size: 11))
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(p.fg2)
-            .padding(.horizontal, 9).padding(.vertical, 6)
-            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(p.divider, lineWidth: 1))
-            .contentShape(Rectangle())
+            Image(systemName: icon)
+                .font(.system(size: 12)) // DESIGN §16 floor — and these carry no label
+                .foregroundStyle(p.fg3)
+                .frame(width: 22, height: 18)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(help)
     }
 
     // fleetHeadlineText renders the deterministic chief-of-staff conclusion shown as the
