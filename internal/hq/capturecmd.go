@@ -44,19 +44,28 @@ type captureCandidate struct {
 // dot-prefixed so it does not clutter the curated knowledge-base topic list.
 func pendingDistillPath() string { return filepath.Join(hqKnowledgeDir(), ".pending-distill.jsonl") }
 
-// CmdCapture implements `gtmux capture "<lesson> @<topic>"` and `gtmux capture --list`.
+// CmdCapture implements `gtmux capture "<lesson> @<topic>"` and `gtmux capture --list
+// [--json]`.
 func CmdCapture(args []string) int {
-	// A single pass: --list/-h are recognized anywhere; everything else is the lesson.
+	// A single pass: --list/--json/-h are recognized anywhere; everything else is the
+	// lesson. The flags are collected rather than acted on inline so `--list --json` and
+	// `--json --list` mean the same thing.
 	var rest []string
+	list, jsonOut := false, false
 	for _, a := range args {
 		switch a {
 		case "--list", "-l":
-			return captureList()
+			list = true
+		case "--json":
+			jsonOut = true
 		case "-h", "--help":
 			return captureUsage()
 		default:
 			rest = append(rest, a)
 		}
+	}
+	if list {
+		return captureList(jsonOut)
 	}
 
 	lesson, topic, ok := parseCaptureInput(rest)
@@ -255,11 +264,27 @@ func pendingCandidateCount() int {
 // DRAINED. The queue depth alone can't tell you whether the loop is alive: an empty queue
 // reads identically whether distill drained it yesterday or has never run at all — which
 // is exactly how a 13-day distill outage stayed invisible.
-func captureList() int {
+func captureList(asJSON bool) int {
 	cands, err := readCandidates()
 	if err != nil {
 		i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
 		return 1
+	}
+	// --json is the read a SURFACE makes. The text form omits the dedup key, which is the
+	// one field `gtmux knowledge dismiss --capture <key>` needs, so a GUI could show the
+	// queue but never act on it. Always an array, never null: "nothing queued" is a state
+	// to render, not a case to special-case.
+	if asJSON {
+		if cands == nil {
+			cands = []captureCandidate{}
+		}
+		b, err := json.Marshal(cands)
+		if err != nil {
+			i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
+			return 1
+		}
+		fmt.Println(string(b))
+		return 0
 	}
 	fmt.Println(captureListHeader(time.Now().Unix()))
 	if len(cands) == 0 {
@@ -290,8 +315,8 @@ func captureListHeader(now int64) string {
 }
 
 func captureUsage() int {
-	i18n.Say("usage: gtmux capture \"<one-line lesson> @<topic>\"   |   gtmux capture --list",
-		"用法：gtmux capture \"<一句话教训> @<topic>\"   |   gtmux capture --list")
+	i18n.Say("usage: gtmux capture \"<one-line lesson> @<topic>\"   |   gtmux capture --list [--json]",
+		"用法：gtmux capture \"<一句话教训> @<topic>\"   |   gtmux capture --list [--json]")
 	i18n.Say("  topic ∈ "+strings.Join(builtinTopics, " | ")+" — plus any topic HQ declared (`gtmux knowledge topic`)",
 		"  topic ∈ "+strings.Join(builtinTopics, " | ")+" —— 以及中控用 `gtmux knowledge topic` 声明的主题")
 	i18n.Say("  Record a durable, cross-cutting fact as a CANDIDATE — cheap, in the moment.",

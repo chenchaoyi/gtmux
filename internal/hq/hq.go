@@ -672,6 +672,7 @@ func CmdHQ(args []string) int {
 	rotate := false
 	board := false     // --board: print the situation board instead of opening HQ
 	boardJSON := false // --json alongside --board, for a surface that wants the mtime too
+	home := false      // --home: print where a knowledge mutation has to run
 	charterLang := ""  // --lang: the ONLY way the charter's language ever changes
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -698,11 +699,15 @@ func CmdHQ(args []string) int {
 				"  完成交接之后再跑 —— 那份记录就是给下一轮的交接）。")
 			i18n.Say("  --board [--json]: print the situation board (read-only) instead of opening HQ.",
 				"  --board [--json]：打印态势板（只读），不打开中控。")
+			i18n.Say("  --home: print the HQ home — where a `gtmux knowledge` mutation has to run.",
+				"  --home：打印中控目录 —— `gtmux knowledge` 的写操作必须在那里执行。")
 			return 0
 		case a == "--rotate":
 			rotate = true
 		case a == "--board":
 			board = true
+		case a == "--home":
+			home = true
 		case a == "--json":
 			boardJSON = true
 		case a == "--agent":
@@ -734,6 +739,9 @@ func CmdHQ(args []string) int {
 	// construction, so the CLI is where that path resolution belongs.
 	if board {
 		return printBoard(boardJSON)
+	}
+	if home {
+		return printHQHome()
 	}
 	if charterLang != "" && charterLang != "en" && charterLang != "zh" {
 		i18n.Sae("gtmux hq: --lang takes en or zh, not '"+charterLang+"'",
@@ -1557,6 +1565,32 @@ func printBoard(asJSON bool) int {
 	fmt.Print(text)
 	if !strings.HasSuffix(text, "\n") {
 		fmt.Println()
+	}
+	return 0
+}
+
+// printHQHome writes the HQ home path — the directory a `gtmux knowledge` mutation has to
+// run from — to stdout.
+//
+// Same reason `--board` exists (#909): a surface that acts on HQ's memory must not have to
+// know where that memory lives. The home is relocatable and on some machines is reached
+// through a symlink, so ONE resolver answers for every consumer, and the menu bar stays a
+// pure CLI consumer rather than a second implementation of the path.
+//
+// This does NOT widen the cwd-keyed role gate by one inch: the caller still has to run the
+// verb from the home, and `gtmux knowledge` still judges it by cwd exactly as before. The
+// path is public knowledge — every refusal message already prints it.
+//
+// A missing home still prints the path (a caller wants it for the message it will show)
+// but exits non-zero, because chdir'ing there is about to fail and the reason is worth
+// saying once, here, in words.
+func printHQHome() int {
+	home := state.HQHome()
+	fmt.Println(home)
+	if fi, err := os.Stat(home); err != nil || !fi.IsDir() {
+		i18n.Sae("gtmux hq: no HQ home at "+home+" yet — run `gtmux hq` to create one",
+			"gtmux hq: "+home+" 还不存在 —— 先跑 `gtmux hq` 建一个")
+		return 1
 	}
 	return 0
 }

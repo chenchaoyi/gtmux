@@ -28,9 +28,14 @@ enum GtmuxCLI {
         return "/usr/bin/env" // last resort handled by callers (env gtmux …)
     }
 
-    private static func makeProcess(_ args: [String]) -> Process {
+    private static func makeProcess(_ args: [String], cwd: String? = nil) -> Process {
         let proc = Process()
         proc.environment = childEnvironment()
+        // A cwd only matters for the few commands that are JUDGED by it. `gtmux knowledge`
+        // accepts a mutation only from the HQ home (the cwd-keyed role rule that keeps
+        // workers out of the quality gate), so a caller acting on the knowledge base runs
+        // the verb FROM there rather than asking for an exemption.
+        if let cwd { proc.currentDirectoryURL = URL(fileURLWithPath: cwd) }
         if path == "/usr/bin/env" {
             proc.executableURL = URL(fileURLWithPath: "/usr/bin/env")
             proc.arguments = ["gtmux"] + args
@@ -88,6 +93,43 @@ enum GtmuxCLI {
         let msg = String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return (proc.terminationStatus, msg)
+    }
+
+    /// Run gtmux and return its exit status + BOTH streams, trimmed. Blocking — call
+    /// off-main. status is -1 (with an empty stderr) if the process could not be launched
+    /// at all, which is the case a caller has to word itself: there is no CLI output to
+    /// quote when there was no CLI.
+    ///
+    /// Both pipes are drained concurrently. Reading one to the end and then the other
+    /// deadlocks the moment the writer fills the pipe buffer of the stream nobody is
+    /// reading yet — which the other two helpers dodge by pointing one stream at
+    /// /dev/null, an option a caller that needs both does not have.
+    static func captureFull(_ args: [String], cwd: String? = nil)
+        -> (status: Int32, stdout: String, stderr: String) {
+        let proc = makeProcess(args, cwd: cwd)
+        let out = Pipe(), err = Pipe()
+        proc.standardOutput = out
+        proc.standardError = err
+        do { try proc.run() } catch { return (-1, "", "") }
+        var outData = Data(), errData = Data()
+        let group = DispatchGroup()
+        let q = DispatchQueue.global(qos: .userInitiated)
+        group.enter()
+        q.async {
+            outData = out.fileHandleForReading.readDataToEndOfFile()
+            group.leave()
+        }
+        group.enter()
+        q.async {
+            errData = err.fileHandleForReading.readDataToEndOfFile()
+            group.leave()
+        }
+        group.wait()
+        proc.waitUntilExit()
+        let text = { (d: Data) in
+            String(data: d, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
+        return (proc.terminationStatus, text(outData), text(errData))
     }
 
     /// Fire-and-forget (focus / restore / new) — don't block the UI on it.
