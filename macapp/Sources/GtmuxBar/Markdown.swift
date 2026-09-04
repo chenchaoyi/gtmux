@@ -17,6 +17,9 @@ enum MDInline: Equatable {
     case text(String)
     case code(String)
     case bold(String)
+    /// `[[another-entry]]` — the knowledge base's own cross-reference. It is a graph, and
+    /// printing its edges as literal brackets both adds noise and hides the structure.
+    case link(String)
 }
 
 enum MDBlock: Equatable {
@@ -51,6 +54,13 @@ enum Markdown {
 
         while i < line.endIndex {
             let c = line[i]
+            if c == "[", line[i...].hasPrefix("[["),
+               let close = range(of: "]]", in: line, from: line.index(i, offsetBy: 2)) {
+                flush()
+                out.append(.link(String(line[line.index(i, offsetBy: 2)..<close.lowerBound])))
+                i = close.upperBound
+                continue
+            }
             if c == "`", let close = line[line.index(after: i)...].firstIndex(of: "`") {
                 flush()
                 out.append(.code(String(line[line.index(after: i)..<close])))

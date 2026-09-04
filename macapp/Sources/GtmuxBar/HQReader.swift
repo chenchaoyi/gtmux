@@ -462,11 +462,11 @@ struct HQReaderView: View {
                     }
 
                     if let body = e.body, !body.isEmpty {
-                        Text(body)
-                            .font(.system(size: 12))
-                            .foregroundStyle(p.fg2)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        // Entries are written in markdown, the same as the board: tables of
+                        // evidence, `code` for identifiers, and [[links]] to sibling
+                        // entries. Printed raw it was the reader's job to parse them —
+                        // and the links, which are the base's structure, read as noise.
+                        MarkdownBody(markdown: body, p: p)
                     }
 
                     Divider().padding(.vertical, 2)
@@ -622,6 +622,17 @@ private struct ActSheetItem: Identifiable {
     var id: String { "\(pending.act)" }
 }
 
+/// The blocks of a document, without a scroll view of its own — for a body that is
+/// already inside one (a knowledge entry sits under its own title and banner).
+struct MarkdownBody: View {
+    let markdown: String
+    let p: Theme.Palette
+
+    var body: some View {
+        MarkdownBlocks(blocks: Markdown.parseBlocks(markdown), p: p, spacing: 8)
+    }
+}
+
 /// The board, rendered.
 ///
 /// Blocks are built as they scroll into view (`LazyVStack`), which is what keeps the tab
@@ -636,16 +647,29 @@ struct MarkdownDoc: View {
     let p: Theme.Palette
 
     var body: some View {
-        let blocks = Markdown.parseBlocks(markdown)
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 9) {
-                ForEach(Array(blocks.enumerated()), id: \.offset) { _, b in
-                    block(b)
-                }
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            MarkdownBlocks(blocks: Markdown.parseBlocks(markdown), p: p, spacing: 9)
+                .padding(14)
         }
+    }
+}
+
+/// The blocks themselves, built as they scroll into view.
+///
+/// Lazy is not a nicety here: laying out a whole document at once is the bug this reader
+/// shipped with once (34 KB in a single SwiftUI `Text`, and switching to the tab hung).
+struct MarkdownBlocks: View {
+    let blocks: [MDBlock]
+    let p: Theme.Palette
+    let spacing: CGFloat
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: spacing) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, b in
+                block(b)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private func block(_ b: MDBlock) -> some View {
@@ -721,6 +745,10 @@ struct MarkdownDoc: View {
                 return acc + Text(t).font(.system(size: size - 0.5, design: .monospaced)).foregroundColor(p.fg2)
             case let .bold(t):
                 return acc + Text(t).font(.system(size: size, weight: .semibold)).foregroundColor(p.fg)
+            case let .link(t):
+                // An edge in the knowledge graph. Styled as one and stripped of its
+                // brackets: the reader is looking at a reference, not at markup.
+                return acc + Text(t).font(.system(size: size - 0.5)).foregroundColor(Theme.Status.working)
             }
         }
     }
@@ -731,6 +759,7 @@ struct MarkdownDoc: View {
             case let .text(t): return t
             case let .code(t): return t
             case let .bold(t): return t
+            case let .link(t): return t
             }
         }.joined()
     }
