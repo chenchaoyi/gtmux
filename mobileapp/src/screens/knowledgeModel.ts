@@ -151,6 +151,18 @@ export function splitTitleKey(title: string, id?: string): {key: string | null; 
  * clock on it (doctor flags one past two weeks), and a reader who has to open the sheet to
  * discover they owe something will not open the sheet.
  */
+/**
+ * knowledgeOverdue reports whether the queue has passed the line doctor uses.
+ *
+ * The colour rule the header follows is 色=状态, and amber means "past its line" — so a
+ * count of pending promotions must NOT be amber merely for being non-zero. Seven waiting
+ * and none of them old is a healthy queue; painting it the same as a machine warning
+ * spends the one colour that is supposed to mean something.
+ */
+export function knowledgeOverdue(idx: KnowledgeIndex): boolean {
+  return (idx.promotions?.pending ?? 0) > 0 && (idx.promotions?.oldest_sec ?? 0) >= PROMOTION_STALE_SECS;
+}
+
 export function knowledgeLine(idx: KnowledgeIndex, zh: boolean): string | null {
   const n = idx.entries?.length ?? 0;
   const owed = idx.promotions?.pending ?? 0;

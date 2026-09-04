@@ -80,8 +80,10 @@ func TestEvalMachineBattery(t *testing.T) {
 	// An otherwise-healthy machine on a low DISCHARGING battery: the warn names it and
 	// the overall tier reddens (so it rides the existing resource·warn nudge to HQ).
 	m := Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 0.3, Battery: &Battery{Present: true, Percent: 8, State: "discharging"}}
-	if w := evalMachine(m, c); w != "battery 8% (red)" {
-		t.Errorf("low discharging battery warn = %q, want %q", w, "battery 8% (red)")
+	// Every warn NAMES its condition, so a surface can print it as-is instead of colouring
+	// a normal-looking reading and hoping the reader infers the rest.
+	if w := evalMachine(m, c); w != "battery critical · 8%" {
+		t.Errorf("low discharging battery warn = %q, want %q", w, "battery critical · 8%")
 	}
 	if m.WarnTier(c) != TierRed {
 		t.Error("low discharging battery → machine tier red")
@@ -229,5 +231,33 @@ func TestReclaimSanityFilter(t *testing.T) {
 		if o.Comm == "-PPID" || o.PID == 999 {
 			t.Errorf("junk-comm proc leaked into reclaim: %+v", o)
 		}
+	}
+}
+
+// A tier is a judgment this package makes, and the warn string is where it says so. The
+// disk lines used to read "disk 19GB free" at amber and "disk 19GB free (red)" at red:
+// the same sentence for a heads-up and an emergency, and a normal-looking number for
+// both. A surface can only colour that and hope.
+func TestEveryWarnNamesItsCondition(t *testing.T) {
+	c := defaultConfig
+	cases := []struct {
+		name string
+		m    Machine
+		want string
+	}{
+		{"disk amber", Machine{DiskFreeGB: 19}, "disk getting low · 19GB free"},
+		{"disk red", Machine{DiskFreeGB: 9}, "disk critical · 9GB free"},
+		{"load amber", Machine{DiskFreeGB: 500, LoadRatio: 1.2}, "load high · 1.2×cores"},
+		{"load red", Machine{DiskFreeGB: 500, LoadRatio: 2.0}, "load critical · 2.0×cores"},
+		{"normal", Machine{DiskFreeGB: 500}, ""},
+	}
+	for _, tc := range cases {
+		if got := evalMachine(tc.m, c); got != tc.want {
+			t.Errorf("%s: warn = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+	// The memory lines already worked this way; they are the pattern the others now follow.
+	if got := evalMachine(Machine{DiskFreeGB: 500, MemTier: "critical"}, c); got != "memory critical" {
+		t.Errorf("memory red = %q", got)
 	}
 }

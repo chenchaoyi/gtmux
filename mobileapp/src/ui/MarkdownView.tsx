@@ -184,7 +184,7 @@ function StackedTable({b, c, fs, sel, sc, ff, calm}: {b: Extract<Block, {t: 'tab
   return (
     <View style={styles.block}>
       {rows.map((r, i) => (
-        <View key={i} style={[styles.stackRow, {borderColor: c.border}]}>
+        <View key={i} style={[styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}]}>
           <Text selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
             {renderSpans(r.head, c, fs, calm)}
           </Text>
@@ -295,8 +295,18 @@ const styles = StyleSheet.create({
   liText: {flex: 1},
   quote: {borderLeftWidth: 3, paddingLeft: 10, marginBottom: 8},
   hr: {height: StyleSheet.hairlineWidth, marginVertical: 10},
-  stackRow: {borderLeftWidth: 2, paddingLeft: 9, paddingVertical: 5, marginBottom: 9},
-  stackField: {flexDirection: 'row', alignItems: 'flex-start', gap: 7},
+  // A CARD per row, not a rule beside it. One row of the situation board's table can run
+  // a dozen lines, and a 2pt left rule with a 9pt gap gave the eye nothing to find the end
+  // of a ship by: two entries read as one continuous wall. Same treatment the radar's rows
+  // and the long-press sheet use, so a list looks like a list wherever it appears.
+  stackRow: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    marginBottom: 10,
+  },
+  stackField: {flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 3},
   stackLabel: {minWidth: 58, fontVariant: ['tabular-nums']},
   tr: {flexDirection: 'row'},
   td: {borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingVertical: 5, minWidth: 92, justifyContent: 'center'},

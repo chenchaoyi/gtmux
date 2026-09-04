@@ -41,8 +41,12 @@ export interface HQHeaderProps {
   boardLine?: string | null;
   /** Knowledge label ("knowledge · 330 · 6 waiting on you"), absent when there is no base. */
   knowledgeLine?: string | null;
-  /** Pending promotions — a debt with a clock on it, so the row carries a mark. */
-  knowledgeOwed?: number;
+  /**
+   * True when one of them has passed the floor `gtmux doctor` uses. Only THAT turns the
+   * row amber: a queue with work in it is normal, a queue with something rotting in it is
+   * not, and one colour cannot mean both.
+   */
+  knowledgeOverdue?: boolean;
   onOpenKnowledge?: () => void;
   open: boolean;
   onToggle: () => void;
@@ -53,7 +57,7 @@ export interface HQHeaderProps {
 }
 
 export function HQHeader({
-  model, conn, demo, boardLine, knowledgeLine, knowledgeOwed = 0,
+  model, conn, demo, boardLine, knowledgeLine, knowledgeOverdue = false,
   open, onToggle, onBack, onOpenBoard, onOpenKnowledge, pal, zh,
 }: HQHeaderProps) {
   const dot = conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting;
@@ -141,9 +145,10 @@ export function HQHeader({
           )}
 
           {/* The two memories, side by side: the board is what HQ currently thinks, the
-              knowledge base is what it has learned to keep. The knowledge row carries the
-              only number here with a clock on it — a promotion waiting to be carried,
-              which `gtmux doctor` flags past two weeks. */}
+              knowledge base is what it has learned to keep. The knowledge row goes amber
+              only when a promotion has passed the floor `gtmux doctor` uses — a queue with
+              work in it is normal, and amber has to keep meaning "past its line" or it
+              stops meaning anything (there is a machine warning two rows up wearing it). */}
           {boardLine ? (
             <TouchableOpacity
               testID="hq-board-open"
@@ -166,7 +171,7 @@ export function HQHeader({
               style={[styles.boardRow, {borderTopColor: pal.divider}]}>
               <Text style={[styles.boardIcon, {color: pal.fg3}]}>◆</Text>
               <Text
-                style={[styles.boardLink, {color: knowledgeOwed > 0 ? ERRORED_COLOR : pal.fg2}]}
+                style={[styles.boardLink, {color: knowledgeOverdue ? ERRORED_COLOR : pal.fg2}]}
                 numberOfLines={1}>
                 {knowledgeLine}
               </Text>

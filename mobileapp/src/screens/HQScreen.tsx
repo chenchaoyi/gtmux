@@ -42,9 +42,9 @@ import {ChatView} from '../ui/ChatView';
 import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {KnowledgeSheet} from './KnowledgeSheet';
-import {knowledgeLine} from './knowledgeModel';
+import {knowledgeLine, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
-import {parseBoardSections} from './boardSections';
+import {parseBoardSections, sectionCount} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
@@ -413,7 +413,7 @@ export function HQScreen({route, navigation}: any) {
             onBack={() => navigation.goBack()}
             onOpenBoard={() => setBoardOpen(true)}
             knowledgeLine={knowledgeLine(knowledge, zh)}
-            knowledgeOwed={knowledge.promotions?.pending ?? 0}
+            knowledgeOverdue={knowledgeOverdue(knowledge)}
             onOpenKnowledge={() => setKnowledgeOpen(true)}
             pal={pal}
             zh={zh}
@@ -664,11 +664,18 @@ export function HQScreen({route, navigation}: any) {
                       <Text style={[styles.bSecTitle, {color: pal.fg}]} numberOfLines={open ? undefined : 2}>
                         {sec.title}
                       </Text>
-                      {/* A count bubble, like the radar's section heads — a bare number
-                          floating at the right edge does not say what it counts. */}
-                      <View style={[styles.bSecCountBox, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-                        <Text style={[styles.bSecCount, {color: pal.fg3}]}>{sec.body.split('\n').length}</Text>
-                      </View>
+                      {/* A count bubble of what the section HOLDS — its table rows or its
+                          bullets — not how many lines it was typed on. That read "154"
+                          beside a twelve-row table: a number about the file, in the most
+                          prominent spot after the title. Nothing countable, no bubble. */}
+                      {(() => {
+                        const n = sectionCount(sec.body);
+                        return n == null ? null : (
+                          <View style={[styles.bSecCountBox, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+                            <Text style={[styles.bSecCount, {color: pal.fg3}]}>{n}</Text>
+                          </View>
+                        );
+                      })()}
                     </TouchableOpacity>
                   )}
                   {(open || sec.title === '') && (

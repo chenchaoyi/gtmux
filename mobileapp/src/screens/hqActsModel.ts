@@ -76,6 +76,26 @@ export function shortenIds(text: string): string {
 }
 
 /**
+ * dropLeadingTaskID removes an opaque identifier that opens the text.
+ *
+ * A reclaim journals `tdl65mklxp4eg: killed session …`, and that id is how the ledger
+ * refers to the dispatch — not how a person reads a sentence. On screen it took the most
+ * valuable position in the row, the first words, and told the reader nothing they could
+ * use: the row already says what happened, when, and to which pane.
+ *
+ * Only an opaque token is dropped: at least eight characters, letters AND digits mixed,
+ * no spaces. An ordinary word or a state prefix (`landed:`) is left where it is, and
+ * splitOutcome still gets to claim the latter.
+ */
+export function dropLeadingTaskID(text: string): string {
+  const m = /^([A-Za-z0-9]{8,32}):\s+([\s\S]+)$/.exec(text);
+  if (!m) return text;
+  const head = m[1];
+  if (!/[0-9]/.test(head) || !/[a-zA-Z]/.test(head)) return text;
+  return m[2];
+}
+
+/**
  * splitOutcome pulls a leading `state: rest` off a summary. A dispatch records
  * `landed: <payload>` or `refused-draft: <payload>`, and the state is the part a reader
  * scans for — it belongs beside the act, not buried at the head of its text.
@@ -103,7 +123,7 @@ export function actOf(e: HQEvent, zh: boolean): Act {
     kind: e.event,
     verb: known ? (zh ? known.zh : known.en) : fallbackVerb(e.event),
     target: actTarget(e),
-    detail: shortenIds(detail),
+    detail: dropLeadingTaskID(shortenIds(detail)),
     outcome,
     alarm: known?.alarm || e.severity === 'important',
   };

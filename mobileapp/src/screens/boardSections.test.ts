@@ -1,4 +1,4 @@
-import {parseBoardSections} from './boardSections';
+import {parseBoardSections, sectionCount} from './boardSections';
 
 describe('parseBoardSections', () => {
   it('splits at ## and keeps the heading text', () => {
@@ -73,5 +73,36 @@ describe('the document title', () => {
   it('drops a preamble that was nothing but the title', () => {
     const secs = parseBoardSections('# 态势板\n\n## ① 现状\n\nrow');
     expect(secs.map(s => s.title)).toEqual(['① 现状']);
+  });
+});
+
+// The bubble beside a heading used to carry `body.split('\n').length` — the number of
+// lines the author typed, blanks included. On the real board that read "154" beside a
+// section whose content is a twelve-row table.
+describe('sectionCount', () => {
+  const table = [
+    'some prose first',
+    '',
+    '| pane | loc | 在做什么 |',
+    '|---|---|---|',
+    '| `%7` | HSS:0.0 | 答了第四问 |',
+    '| `%10` | HSS:1.0 | 发 changelog |',
+    '| `%46` | dup:0.0 | 查重复 |',
+    '',
+    '**船数 17**',
+  ].join('\n');
+
+  test('a table reports its rows, not its lines', () => {
+    expect(sectionCount(table)).toBe(3);
+  });
+
+  test('a bulleted section reports its bullets', () => {
+    expect(sectionCount('- one\n- two\n  continued\n- three\n')).toBe(3);
+  });
+
+  test('prose with nothing countable gets no bubble at all', () => {
+    // An honest absence beats a confident irrelevance.
+    expect(sectionCount('just a paragraph\n\nand another one\n')).toBeNull();
+    expect(sectionCount('')).toBeNull();
   });
 });

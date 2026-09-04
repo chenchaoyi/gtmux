@@ -71,3 +71,33 @@ export function parseBoardSections(md: string): BoardSection[] {
   flush();
   return out;
 }
+
+/**
+ * sectionCount is what a section HOLDS, for the bubble beside its heading.
+ *
+ * It used to be `body.split('\n').length` — the number of lines the author typed,
+ * blank ones included. On the real board that read "154" beside a section whose content
+ * is a twelve-row table: a number about the file, in the most prominent spot after the
+ * title, that no reader can act on.
+ *
+ * A table's rows are the thing being counted, so a section built around one reports that.
+ * A section with no countable structure reports NOTHING: an honest absence beats a
+ * confident irrelevance.
+ */
+export function sectionCount(body: string): number | null {
+  const lines = body.split('\n');
+  // A markdown table: a header row, a separator of dashes, then the rows that matter.
+  const sep = lines.findIndex(l => /^\s*\|?[\s:|-]*-[\s:|-]*\|/.test(l) && l.includes('-'));
+  if (sep > 0 && /\|/.test(lines[sep - 1])) {
+    let rows = 0;
+    for (let i = sep + 1; i < lines.length; i++) {
+      const l = lines[i].trim();
+      if (!l.startsWith('|')) break;
+      rows++;
+    }
+    if (rows > 0) return rows;
+  }
+  // Otherwise: top-level bullets, which is the board's other list shape.
+  const bullets = lines.filter(l => /^\s{0,3}[-*•]\s+\S/.test(l)).length;
+  return bullets > 0 ? bullets : null;
+}

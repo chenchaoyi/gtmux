@@ -1,5 +1,5 @@
 import {HQEvent} from '../api/client';
-import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally} from './hqActsModel';
+import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally, dropLeadingTaskID} from './hqActsModel';
 
 const ev = (o: Partial<HQEvent>): HQEvent => ({ts: 1000, event: 'Stop', ...o} as HQEvent);
 
@@ -172,5 +172,26 @@ describe('groupByDay', () => {
 
   test('no acts, no days', () => {
     expect(groupByDay([], 1000)).toEqual([]);
+  });
+});
+
+// A reclaim journals `tdl65mklxp4eg: killed session …`. The id is how the ledger refers to
+// the dispatch, not how a person reads a sentence, and on screen it took the row's first
+// words — the most valuable position — to say nothing the reader could use.
+describe('dropLeadingTaskID', () => {
+  test('an opaque id that opens the text is dropped', () => {
+    expect(dropLeadingTaskID('tdl65mklxp4eg: killed session setup-skip-node-modules')).toBe(
+      'killed session setup-skip-node-modules',
+    );
+  });
+
+  test('a word is not an id, and a state prefix belongs to splitOutcome', () => {
+    expect(dropLeadingTaskID('landed: 继续')).toBe('landed: 继续');
+    expect(dropLeadingTaskID('reclaimed: worktree clean')).toBe('reclaimed: worktree clean');
+  });
+
+  test('a plain sentence with a colon keeps every word', () => {
+    expect(dropLeadingTaskID('注意: 这条要读完')).toBe('注意: 这条要读完');
+    expect(dropLeadingTaskID('no colon here at all')).toBe('no colon here at all');
   });
 });

@@ -120,10 +120,14 @@ func Snapshot(panePIDs map[string]int) Report {
 // ("" = all normal). Disk first (hard to recover), then memory, then load.
 func evalMachine(m Machine, cfg config) string {
 	switch diskTier(m, cfg) {
+	// Each line NAMES the condition, the way the memory lines below always have. A tier
+	// is a judgment this package made; printing only the reading leaves the surface to
+	// colour a normal-looking number and hope the reader infers the rest ("disk 19GB
+	// free" in amber reads as a false alarm).
 	case TierRed:
-		return fmt.Sprintf("disk %dGB free (red)", m.DiskFreeGB)
+		return fmt.Sprintf("disk critical · %dGB free", m.DiskFreeGB)
 	case TierAmber:
-		return fmt.Sprintf("disk %dGB free", m.DiskFreeGB)
+		return fmt.Sprintf("disk getting low · %dGB free", m.DiskFreeGB)
 	}
 	switch memTierOf(m.MemTier) {
 	case TierRed:
@@ -133,15 +137,15 @@ func evalMachine(m Machine, cfg config) string {
 	}
 	switch loadTier(m.LoadRatio, cfg) {
 	case TierRed:
-		return fmt.Sprintf("load %.1f×cores (red)", m.LoadRatio)
+		return fmt.Sprintf("load critical · %.1f×cores", m.LoadRatio)
 	case TierAmber:
-		return fmt.Sprintf("load %.1f×cores", m.LoadRatio)
+		return fmt.Sprintf("load high · %.1f×cores", m.LoadRatio)
 	}
 	switch batteryTier(m, cfg) {
 	case TierRed:
-		return fmt.Sprintf("battery %d%% (red)", m.Battery.Percent)
+		return fmt.Sprintf("battery critical · %d%%", m.Battery.Percent)
 	case TierAmber:
-		return fmt.Sprintf("battery %d%%", m.Battery.Percent)
+		return fmt.Sprintf("battery low · %d%%", m.Battery.Percent)
 	}
 	return ""
 }
