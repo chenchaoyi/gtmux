@@ -12,6 +12,16 @@ final class MarkdownTests: XCTestCase {
                        [.bold("船数 17"), .text("(现取)")])
     }
 
+    func testWikiLinksAreEdgesNotText() {
+        // The knowledge base cross-references its own entries. Printed as literal brackets
+        // they are noise AND they hide the structure the reader could follow.
+        XCTAssertEqual(Markdown.parseInline("见 [[topic-split-is-not-duplication]] 一条"),
+                       [.text("见 "), .link("topic-split-is-not-duplication"), .text(" 一条")])
+        // A single bracket is ordinary punctuation and stays put.
+        XCTAssertEqual(Markdown.parseInline("[not a link]"), [.text("[not a link]")])
+        XCTAssertEqual(Markdown.parseInline("[[unclosed"), [.text("[[unclosed")])
+    }
+
     func testAnUnmatchedMarkerStaysLiteral() {
         // Guessing where a run ends would silently restyle the rest of the sentence.
         XCTAssertEqual(Markdown.parseInline("a ` b"), [.text("a ` b")])
