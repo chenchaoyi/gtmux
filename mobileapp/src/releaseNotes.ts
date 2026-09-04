@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.83.0',
+    en: [
+      'The situation board reads as a list again: each session is its own card, and the count beside a section says what it holds instead of how many lines it was typed on.',
+      'Amber now means one thing. The knowledge row turns amber only when a promotion has actually gone overdue, and each machine warning says what is wrong rather than just showing a reading.',
+      'What HQ did no longer opens each line with an internal task id.',
+    ],
+    zh: [
+      '态势板重新像一份清单：每条会话是一张独立卡片，分区旁的计数说的是它装了什么，而不是它被打了多少行字。',
+      '琥珀色只表示一件事。知识库那行只在提升真的逾期时才转琥珀；机器告警会说清哪里不对，而不只是给一个读数。',
+      '「参谋长做了什么」不再用内部任务 id 开头。',
+    ],
+  },
+  {
     version: '0.82.0',
     en: [
       'A send that does not go through now says why: someone is typing in that pane, or the session is gone. The message you wrote is kept either way.',
