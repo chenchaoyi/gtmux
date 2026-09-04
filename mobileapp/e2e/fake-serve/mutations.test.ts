@@ -68,8 +68,8 @@ describe('a refusal keeps the server’s words', () => {
     expect(draft).toMatchObject({ok: false, status: 400});
     expect(gone).toMatchObject({ok: false, status: 400});
     expect(key).toMatchObject({ok: false, status: 400});
-    expect((draft as {reason: string}).reason).toContain('refused-draft');
-    expect((gone as {reason: string}).reason).toContain('no such pane');
+    expect((draft as {reason: string}).reason).toContain('unsent text');
+    expect((gone as {reason: string}).reason).toContain('pane not found');
     expect((key as {reason: string}).reason).toContain('key not allowed');
   });
 

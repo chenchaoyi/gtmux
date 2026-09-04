@@ -34,6 +34,7 @@ import {Composer} from '../ui/Composer';
 import {ChatView} from '../ui/ChatView';
 import {SessionReset} from '../ui/chatWindow';
 import {SendFailedBar} from '../ui/SendFailedBar';
+import {busyNote} from '../ui/sendFailure';
 import {BrandLoader} from '../ui/BrandLoader';
 import {ApprovalCard} from '../ui/ApprovalCard';
 import {NativeTerm, TERM_BG} from '../ui/NativeTerm';
@@ -171,6 +172,11 @@ export function DetailView({
   // A send the server declined to submit. Held (not dropped) so the text survives and
   // can be retried — see SendFailedBar.
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
+  // The server's own words for that refusal, so the bar can say which one it was.
+  const [failedReason, setFailedReason] = useState('');
+  // "it is running; this will be handled after the current turn" — cleared by the next
+  // send, and by the turn ending (see the effect below).
+  const [busyHint, setBusyHint] = useState('');
   // B1: 对话 ↔ 终端. Initial mode = the global "default mode" setting (B2, default
   // 终端 — preserves the established read-the-pane behavior; 对话 is a visible-
   // screen glance, not a full transcript), overridden by this pane's own
@@ -187,6 +193,13 @@ export function DetailView({
   const [seenChat, setSeenChat] = useState((initialMode ?? defaultDetailMode) === 'chat');
   const [seenTerm, setSeenTerm] = useState((initialMode ?? defaultDetailMode) === 'terminal');
   const [switching, setSwitching] = useState(false);
+
+  // The note is about a turn that was running. When it stops, the note is no longer true,
+  // and a stale "it is running" is exactly the kind of false liveness this app has been
+  // bitten by before.
+  useEffect(() => {
+    if (live.status !== 'working') setBusyHint('');
+  }, [live.status]);
 
   useEffect(() => {
     if (mode === 'chat') setSeenChat(true);
@@ -304,19 +317,27 @@ export function DetailView({
       // without double-sending: the server no-ops a send_id that already landed.
       const p: SendPayload = payload.send_id ? payload : {...payload, send_id: newSendId()};
       setFailedSend(null);
+      setFailedReason('');
+      setBusyHint('');
+      // sendResult keeps the server's own refusal, which is what lets the bar say
+      // WHICH refusal it was. The old `send` returned null for all of them.
       client
-        .send(agent.pane_id, p)
-        .then(snap => {
-          // null = the server refused (it could not confirm the full message reached
-          // the input box, so it declined to press Enter). Surface it and KEEP the
-          // text: a silently dropped message is the one failure the user can't recover
-          // from without retyping.
-          if (!snap) {
+        .sendResult(agent.pane_id, p)
+        .then(r => {
+          if (!r.ok) {
+            // KEEP the text: a silently dropped message is the one failure the user
+            // can't recover from without retyping.
             setFailedSend(p);
+            setFailedReason(r.reason);
             setPendingPrompt('');
             return;
           }
-          if (snap.text) {
+          // It landed. If the session is mid-turn the agent queues it behind the current
+          // turn — the server does not report that on this path, so this is read off the
+          // status the radar already has, and worded as the expectation it is.
+          setBusyHint(busyNote(live.status, lang === 'zh'));
+          const snap = r.pane;
+          if (snap?.text) {
             setText(prev => (prev === snap.text ? prev : snap.text));
             if (snap.cursor) setCursor(snap.cursor);
           }
@@ -324,7 +345,7 @@ export function DetailView({
         .catch(() => setFailedSend(p))
         .finally(bumpPane);
     },
-    [client, agent.pane_id, bumpPane],
+    [client, agent.pane_id, bumpPane, live.status, lang],
   );
 
   useEffect(() => {
@@ -733,12 +754,21 @@ export function DetailView({
       {/* input — types into the pane via POST /api/send (MOBILE §4). A guest may type
           only into a pane on the host's input allowlist; a view-only pane is read-only
           (the server would 403 the send anyway — this just makes it visible). */}
+      {/* The message landed in a session that was mid-turn. It clears when the turn ends
+          (the effect below), so it can never be left standing as a false "still running". */}
+      {!failedSend && !!busyHint && (
+        <Text testID="send-busy-note" style={[styles.busyNote, {color: pal.fg3}]} numberOfLines={2}>
+          {busyHint}
+        </Text>
+      )}
       {failedSend && (
         <SendFailedBar
           text={failedSend.text ?? failedSend.key ?? ''}
+          reason={failedReason}
           pal={pal}
           lang={lang}
           onRetry={() => sendPane(failedSend)}
+          onBackToRadar={onBack}
           onDismiss={() => setFailedSend(null)}
         />
       )}
@@ -871,6 +901,7 @@ const styles = StyleSheet.create({
   neighborMark: {fontSize: 11, fontWeight: '700'},
   neighborLabel: {fontSize: 11, flexShrink: 1},
   neighborLoc: {fontSize: 9, fontVariant: ['tabular-nums']},
+  busyNote: {fontSize: 11.5, lineHeight: 16, paddingHorizontal: 14, paddingBottom: 6},
   segWrap: {paddingHorizontal: 12, paddingTop: 5, paddingBottom: 5},
   seg: {flexDirection: 'row', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, padding: 2},
   segWide: {maxWidth: 460, alignSelf: 'center', width: '100%'}, // iPad: don't span the whole main pane
