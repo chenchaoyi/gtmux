@@ -250,6 +250,19 @@ struct MenuView: View {
                     }
                     .buttonStyle(.plain)
                     .help(l10n.tr("Jump to the supervisor", "跳到中控"))
+
+                    // The supervisor's two memories, readable here (DESIGN §12). Reading
+                    // is not the command centre: nothing on these dispatches anything, and
+                    // the knowledge base's own actions stay on the phone and in the CLI.
+                    // They earn a place at the Mac because this is the machine the board
+                    // describes and the reader is already sitting at it.
+                    HStack(spacing: 6) {
+                        hqReaderButton(p, icon: "doc.plaintext",
+                                       label: l10n.tr("Board", "态势板"), tab: .board)
+                        hqReaderButton(p, icon: "diamond", label: l10n.tr("Knowledge", "知识库"),
+                                       tab: .knowledge)
+                    }
+                    .padding(.top, 1)
                 } else {
                     Button { onAction(.startHQ) } label: {
                         HStack(spacing: 11) {
@@ -270,6 +283,24 @@ struct MenuView: View {
             }
             .padding(.horizontal, 8).padding(.top, 8)
         }
+    }
+
+    /// One of the two reader entries under the HQ card. Deliberately quiet: a way IN to a
+    /// document, not a control.
+    @ViewBuilder private func hqReaderButton(_ p: Theme.Palette, icon: String, label: String,
+                                             tab: HQReaderTab) -> some View {
+        Button { HQReaderController.shared.show(l10n: l10n, tab: tab) } label: {
+            HStack(spacing: 5) {
+                Image(systemName: icon).font(.system(size: 10))
+                Text(label).font(.system(size: 11))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(p.fg2)
+            .padding(.horizontal, 9).padding(.vertical, 6)
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(p.divider, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // fleetHeadlineText renders the deterministic chief-of-staff conclusion shown as the

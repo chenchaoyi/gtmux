@@ -171,6 +171,13 @@ upgrade; `AGENTS.md` itself is managed and regenerated, so edits there get displ
 a backup. Notes it keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
+`gtmux hq --board [--json]` PRINTS the situation board instead of opening HQ — a read,
+and the whole command when given. It exists so a surface can show HQ's synthesis without
+knowing where the HQ home lives: that path is relocatable and is reached through a symlink
+on at least one real machine, so resolving it belongs in the CLI rather than in every
+consumer. The menu-bar app's board reader is the first caller. A board that was never
+written reports `exists:false` and is an ordinary state, not an error.
+
 `gtmux hq --rotate` retires the live supervisor's session for a fresh one, in place: it
 resolves the hq pane and types that agent's own reset command into it. It is hq's OWN verb —
 its playbook runs it unprompted once the `self-rotate` knock says the session is worn out
