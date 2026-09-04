@@ -146,7 +146,7 @@ struct HQReaderView: View {
 
     @ViewBuilder private func boardBody(_ p: Theme.Palette) -> some View {
         if let b = store.board, b.exists, let text = b.text, !text.isEmpty {
-            DocumentText(text: text, color: NSColor(p.fg))
+            MarkdownDoc(markdown: text, p: p)
         } else {
             // A supervisor that has written no board is ordinary, not broken.
             empty(l10n.tr("No situation board yet — the supervisor writes one as it works",
@@ -219,39 +219,117 @@ struct HQReaderView: View {
     }
 }
 
-/// A long read-only document, laid out by TextKit rather than by SwiftUI.
+/// The board, rendered.
 ///
-/// The first version put the whole board in one `Text` inside a `ScrollView`. SwiftUI's
-/// Text does not virtualize: it lays out every character it is given, and it does that
-/// again on each render — so switching to this tab re-laid-out the board's 34 KB every
-/// time, and the switch visibly hung. TextKit lays out only what is on screen, keeps
-/// selection across the whole document, and scrolls a file this size without noticing it.
+/// Blocks are built as they scroll into view (`LazyVStack`), which is what keeps the tab
+/// switch instant: the whole document laid out at once is the bug this reader already had
+/// once, in its first form as a single SwiftUI `Text`.
 ///
-/// The text is pushed only when it CHANGES: the store re-reads every 20s, and assigning an
-/// identical string would throw away the reader's scroll position and selection for
-/// nothing.
-struct DocumentText: NSViewRepresentable {
-    let text: String
-    let color: NSColor
+/// The board's own table is six columns of prose. No window width makes that a readable
+/// grid, so a row renders as a CARD of labelled fields — the same shape the phone settled
+/// on, for the same measurement, so the document reads the same wherever it is opened.
+struct MarkdownDoc: View {
+    let markdown: String
+    let p: Theme.Palette
 
-    func makeNSView(context: NSViewRepresentableContext<Self>) -> NSScrollView {
-        let scroll = NSTextView.scrollableTextView()
-        guard let tv = scroll.documentView as? NSTextView else { return scroll }
-        tv.isEditable = false
-        tv.isSelectable = true
-        tv.drawsBackground = false
-        scroll.drawsBackground = false
-        tv.textContainerInset = NSSize(width: 10, height: 10)
-        tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-        tv.textColor = color
-        tv.string = text
-        return scroll
+    var body: some View {
+        let blocks = Markdown.parseBlocks(markdown)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 9) {
+                ForEach(Array(blocks.enumerated()), id: \.offset) { _, b in
+                    block(b)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
-    func updateNSView(_ scroll: NSScrollView, context: NSViewRepresentableContext<Self>) {
-        guard let tv = scroll.documentView as? NSTextView else { return }
-        tv.textColor = color
-        if tv.string != text { tv.string = text }
+    @ViewBuilder private func block(_ b: MDBlock) -> some View {
+        switch b {
+        case let .heading(level, spans):
+            spansText(spans, size: level == 1 ? 17 : level == 2 ? 14.5 : 12.5, weight: .semibold)
+                .padding(.top, level >= 3 ? 8 : 12)
+        case let .paragraph(spans):
+            spansText(spans, size: 12, weight: .regular)
+        case let .bullets(items):
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        Text("·").foregroundStyle(p.fg3)
+                        spansText(item, size: 12, weight: .regular)
+                    }
+                }
+            }
+        case let .code(text):
+            Text(text)
+                .font(.system(size: 11.5, design: .monospaced))
+                .foregroundStyle(p.fg)
+                .textSelection(.enabled)
+                .padding(9)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 8).fill(p.rowSelected))
+        case let .quote(spans):
+            HStack(spacing: 8) {
+                Rectangle().fill(p.divider).frame(width: 2)
+                spansText(spans, size: 12, weight: .regular)
+            }
+        case let .table(header, rows):
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                    tableCard(header: header, row: row)
+                }
+            }
+        case .rule:
+            Rectangle().fill(p.divider).frame(height: 1).padding(.vertical, 4)
+        }
+    }
+
+    /// One table row as a card: its first cell is the handle, the rest are labelled.
+    @ViewBuilder private func tableCard(header: [[MDInline]], row: [[MDInline]]) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            if let first = row.first {
+                spansText(first, size: 12.5, weight: .semibold)
+            }
+            ForEach(Array(row.dropFirst().enumerated()), id: \.offset) { i, cell in
+                HStack(alignment: .firstTextBaseline, spacing: 9) {
+                    Text(plain(header.count > i + 1 ? header[i + 1] : []))
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(p.fg3)
+                        .frame(width: 62, alignment: .leading)
+                    spansText(cell, size: 11.5, weight: .regular)
+                }
+            }
+        }
+        .padding(11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(p.divider, lineWidth: 1))
+    }
+
+    /// Inline runs as one selectable Text: code in the monospace face the rest of the
+    /// product uses for identifiers, bold at a weight that does not compete with a heading
+    /// (the board carries roughly one bold span per line).
+    private func spansText(_ spans: [MDInline], size: CGFloat, weight: Font.Weight) -> Text {
+        spans.reduce(Text("")) { acc, span in
+            switch span {
+            case let .text(t):
+                return acc + Text(t).font(.system(size: size, weight: weight)).foregroundColor(p.fg)
+            case let .code(t):
+                return acc + Text(t).font(.system(size: size - 0.5, design: .monospaced)).foregroundColor(p.fg2)
+            case let .bold(t):
+                return acc + Text(t).font(.system(size: size, weight: .semibold)).foregroundColor(p.fg)
+            }
+        }
+    }
+
+    private func plain(_ spans: [MDInline]) -> String {
+        spans.map { span in
+            switch span {
+            case let .text(t): return t
+            case let .code(t): return t
+            case let .bold(t): return t
+            }
+        }.joined()
     }
 }
 
