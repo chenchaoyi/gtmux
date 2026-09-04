@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.82.0',
+    en: [
+      'A send that does not go through now says why: someone is typing in that pane, or the session is gone. The message you wrote is kept either way.',
+      'A message sent to a session that is still working says it will be handled after the current turn.',
+      'After the Mac compacts a conversation, the summary is no longer shown as something you said.',
+      'The "thinking" timer is measured on the Mac\'s clock, so a phone whose clock is off no longer shows the wrong duration.',
+      'Opening a turn\'s steps stays with that turn as the conversation grows.',
+      'The connection dot now reads out to VoiceOver.',
+    ],
+    zh: [
+      '消息没发出去时会说清原因：那个窗格里有人正在打字，或者会话已经不在了。无论哪种，你写的内容都会保留。',
+      '发给正在跑的会话的消息，会提示它排在这一轮之后处理。',
+      'Mac 压缩过对话之后，摘要不再被显示成你说过的话。',
+      '「正在思考」的计时改用 Mac 的时钟，手机时间不准时不会再显示错误的时长。',
+      '展开某一轮的步骤后，它会一直跟着那一轮，不会随着对话增长跑到别的回合上。',
+      '连接状态的圆点现在能被 VoiceOver 读出来。',
+    ],
+  },
+  {
     version: '0.81.0',
     en: [
       'HQ\'s knowledge base is now on the phone: read what the supervisor has learned, and mark a promoted lesson as landed once you have carried it somewhere.',
