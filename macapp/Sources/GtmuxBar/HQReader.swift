@@ -83,10 +83,19 @@ final class HQReaderStore: ObservableObject {
             if let d = GtmuxCLI.capture(["knowledge", "list", "--json"]) {
                 rows = (try? JSONDecoder().decode([KBEntry].self, from: d)) ?? []
             }
+            let newest = rows.reversed().map { $0 } // newest first, as every surface shows them
             DispatchQueue.main.async {
-                self.board = doc
-                self.entries = rows.reversed() // newest first, as every surface shows them
-                self.loading = false
+                // Publish only what CHANGED. Every assignment re-renders the window, and
+                // the poll re-reads the same two documents every 20 seconds — a board that
+                // has not been rewritten would otherwise throw away the reader's scroll
+                // position and selection for nothing.
+                if self.board?.updatedAt != doc?.updatedAt || self.board?.exists != doc?.exists {
+                    self.board = doc
+                }
+                if self.entries.map({ $0.id }) != newest.map({ $0.id }) {
+                    self.entries = newest
+                }
+                if self.loading { self.loading = false }
             }
         }
     }
@@ -137,14 +146,7 @@ struct HQReaderView: View {
 
     @ViewBuilder private func boardBody(_ p: Theme.Palette) -> some View {
         if let b = store.board, b.exists, let text = b.text, !text.isEmpty {
-            ScrollView {
-                Text(text)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(p.fg)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-            }
+            DocumentText(text: text, color: NSColor(p.fg))
         } else {
             // A supervisor that has written no board is ordinary, not broken.
             empty(l10n.tr("No situation board yet — the supervisor writes one as it works",
@@ -157,7 +159,9 @@ struct HQReaderView: View {
             empty(l10n.tr("Nothing recorded yet", "还没有记录"), p)
         } else {
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                // Lazy for the same reason the board is: rows are built as they are
+                // needed, not all of them on every switch back to this tab.
+                LazyVStack(alignment: .leading, spacing: 0) {
                     if !store.pending.isEmpty {
                         // What the commander owes leads, exactly as it does on the phone:
                         // carrying a promoted lesson somewhere durable is the only step of
@@ -212,6 +216,42 @@ struct HQReaderView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// A long read-only document, laid out by TextKit rather than by SwiftUI.
+///
+/// The first version put the whole board in one `Text` inside a `ScrollView`. SwiftUI's
+/// Text does not virtualize: it lays out every character it is given, and it does that
+/// again on each render — so switching to this tab re-laid-out the board's 34 KB every
+/// time, and the switch visibly hung. TextKit lays out only what is on screen, keeps
+/// selection across the whole document, and scrolls a file this size without noticing it.
+///
+/// The text is pushed only when it CHANGES: the store re-reads every 20s, and assigning an
+/// identical string would throw away the reader's scroll position and selection for
+/// nothing.
+struct DocumentText: NSViewRepresentable {
+    let text: String
+    let color: NSColor
+
+    func makeNSView(context: NSViewRepresentableContext<Self>) -> NSScrollView {
+        let scroll = NSTextView.scrollableTextView()
+        guard let tv = scroll.documentView as? NSTextView else { return scroll }
+        tv.isEditable = false
+        tv.isSelectable = true
+        tv.drawsBackground = false
+        scroll.drawsBackground = false
+        tv.textContainerInset = NSSize(width: 10, height: 10)
+        tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        tv.textColor = color
+        tv.string = text
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: NSViewRepresentableContext<Self>) {
+        guard let tv = scroll.documentView as? NSTextView else { return }
+        tv.textColor = color
+        if tv.string != text { tv.string = text }
     }
 }
 
