@@ -99,8 +99,10 @@ func TestSnapshotStaysRaw(t *testing.T) {
 	if MachineTierSticky(TierRed, m) != TierRed {
 		t.Fatal("…while the ALERT still holds red — the two are deliberately different")
 	}
-	if evalMachine(m, loadConfig()) != "disk 16GB free" {
-		t.Fatalf("the reported warn string is the raw reading; got %q", evalMachine(m, loadConfig()))
+	// The string names the amber condition (see TestEveryWarnNamesItsCondition); what
+	// this test cares about is that it reports the RAW tier rather than the sticky one.
+	if got := evalMachine(m, loadConfig()); got != "disk getting low · 16GB free" {
+		t.Fatalf("the reported warn is the raw reading, worded as amber; got %q", got)
 	}
 }
 
