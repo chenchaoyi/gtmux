@@ -1,7 +1,9 @@
 package hq
 
 import (
+	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -78,5 +80,63 @@ func TestCaptureList(t *testing.T) {
 	cands, _ := readCandidates()
 	if len(cands) != 1 || cands[0].Topic != "workflows" {
 		t.Fatalf("queue = %+v", cands)
+	}
+}
+
+// `--list --json` is the read a SURFACE makes. The text form omits the dedup key, which is
+// exactly the field `gtmux knowledge dismiss --capture <key>` needs — so a GUI could show
+// the queue and never act on it (menubar-kb-actions).
+func TestCaptureListJSONCarriesTheDismissKey(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	// An empty queue is an ARRAY, not null: "nothing queued" is a state to render.
+	empty := captureStdout(t, func() {
+		if rc := CmdCapture([]string{"--list", "--json"}); rc != 0 {
+			t.Fatalf("empty --list --json rc = %d", rc)
+		}
+	})
+	if strings.TrimSpace(empty) != "[]" {
+		t.Errorf("empty queue printed %q; want []", strings.TrimSpace(empty))
+	}
+
+	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}); rc != 0 {
+		t.Fatal("capture failed")
+	}
+	out := captureStdout(t, func() {
+		// Flag order must not matter — a caller writes whichever reads better.
+		if rc := CmdCapture([]string{"--json", "--list"}); rc != 0 {
+			t.Fatalf("--json --list rc = %d", rc)
+		}
+	})
+	var got []captureCandidate
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("not JSON: %v (%q)", err, out)
+	}
+	if len(got) != 1 {
+		t.Fatalf("want 1 candidate, got %d", len(got))
+	}
+	if got[0].Key == "" {
+		t.Error("no dedup key in the JSON — dismiss has nothing to name")
+	}
+	// The key round-trips: what the JSON prints is what dismiss consumes.
+	consumed, err := consumeCandidates(got[0].Key)
+	if err != nil || len(consumed) != 1 {
+		t.Errorf("consumeCandidates(%q) = %d, %v; the printed key must be the one dismiss takes",
+			got[0].Key, len(consumed), err)
+	}
+}
+
+// The text form is unchanged — it is what a person reads in a terminal.
+func TestCaptureListTextStaysText(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}); rc != 0 {
+		t.Fatal("capture failed")
+	}
+	out := captureStdout(t, func() { CmdCapture([]string{"--list"}) })
+	if strings.HasPrefix(strings.TrimSpace(out), "[") {
+		t.Errorf("--list without --json printed JSON: %q", out)
+	}
+	if !strings.Contains(out, "release flow") {
+		t.Errorf("--list = %q; want the lesson", out)
 	}
 }

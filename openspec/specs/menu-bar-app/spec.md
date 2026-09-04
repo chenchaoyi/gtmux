@@ -519,3 +519,67 @@ the first time.
 - **WHEN** the user turns server mode on from the menu bar for the first time
 - **THEN** the explainer card appears before any system dialog, states that it stays on
   until switched off, and declining it leaves every system setting unchanged
+
+### Requirement: The supervisor's two memories are readable, and the knowledge base is judgeable, at the Mac
+
+The HQ card SHALL offer two READERS, each in its own window rather than inside the
+popover: the situation board, and the knowledge base with what it owes the commander at
+the top. Both SHALL read exclusively through the CLI (`gtmux hq --board --json`,
+`gtmux knowledge list --json`, `gtmux capture --list --json`), so the app stays a pure
+consumer and never resolves the HQ home itself; that path is relocatable and symlinked on
+real machines, so it SHALL be asked for (`gtmux hq --home`) rather than rebuilt.
+
+The knowledge reader SHALL additionally offer the four JUDGMENT verbs — `promote`,
+`land`, `retire`, `dismiss` — and SHALL NOT offer the AUTHORING verbs `add` and
+`supersede`. The boundary this draws is between judging what is already written and
+writing new prose, NOT between screens: DRIVING the fleet (send, spawn, deciding) stays
+off the menu bar entirely, and nothing in either window dispatches anything.
+
+Each act SHALL:
+
+- run the CLI verb of the same name, from the HQ home, so the ledger — not a second
+  implementation in the app — decides what the verb means and whether it is allowed;
+- require a REASON, which the CLI requires anyway (`--why`, or `--ref` for `land`), and
+  take exactly ONE confirmation naming the verb and its subject before running;
+- report a failure as the CLI's own stderr, verbatim and unedited;
+- refresh the window's contents on success, so the reader sees the state they created.
+
+Which acts an entry offers SHALL follow the promotion lifecycle rather than being uniform:
+a promoted-and-unlanded entry offers `land`, any other live entry offers `promote`, and
+both offer `retire`. Candidates SHALL be grouped by dedup key, because `dismiss --capture
+<key>` consumes every pending line sharing it.
+
+Form and wording SHALL match the phone's knowledge sheet (MOBILE, `hq-knowledge-on-phone`)
+rather than inventing a third dialect: `land` and `retire` reuse its copy, and the acts sit
+in the entry's detail view rather than on the index rows a reader is scanning.
+
+#### Scenario: Reading the board
+
+- **WHEN** the commander opens the board reader and the supervisor has written one
+- **THEN** the document is shown in a resizable window, selectable, laid out lazily so a
+  50 KB board opens without a stall
+- **AND WHEN** no board has ever been written
+- **THEN** the window says so as an ordinary state, not as a failure
+
+#### Scenario: Closing out a promotion at the Mac
+
+- **WHEN** the commander opens a promoted entry and confirms "mark it landed" with a ref
+- **THEN** `gtmux knowledge land <id> --ref <ref>` runs from the HQ home, the ledger
+  records it with the same `gtmux:audit:knowledge` trail any other door would leave, and
+  the window re-reads so the entry has left the "waiting on you" section
+
+#### Scenario: A refused act says what the CLI said
+
+- **WHEN** an act is refused (an entry with no pending promotion, an unknown candidate
+  key, a machine with no HQ home)
+- **THEN** the CLI's own message is shown unedited, and nothing in the ledger changed
+
+#### Scenario: A reason is required before anything runs
+
+- **WHEN** the confirm sheet is open with an empty or blank reason
+- **THEN** the confirming action is unavailable and no process is spawned
+
+#### Scenario: Authoring is not offered here
+
+- **WHEN** the commander looks for a way to add or supersede an entry
+- **THEN** the window offers neither, and says the writing verbs stay in the CLI

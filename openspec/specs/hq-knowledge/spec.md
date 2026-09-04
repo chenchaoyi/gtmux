@@ -113,11 +113,25 @@ silence. Every mutation SHALL append one `gtmux:audit:knowledge` journal record
 (an audit record under the session-events audit rules: trail, not debt), so the
 knowledge base's change history rides the same stream as everything else.
 
+The HQ home SHALL be DISCOVERABLE (`gtmux hq --home`) so that a caller which must
+mutate can SATISFY the gate rather than be exempted from it: it runs the verb from the
+home the CLI names. This is not a widening — the verb is still judged by cwd, the path is
+already printed by every refusal, and one resolver keeps a relocatable (and, on real
+machines, symlinked) path from being re-derived by every consumer.
+
 #### Scenario: A worker cannot write knowledge
 
 - **WHEN** `gtmux knowledge add` runs from a directory that is not the HQ home
 - **THEN** it is refused with a message naming the home, and neither the ledger
   nor any projection changes
+
+#### Scenario: A surface finds the one directory the gate accepts
+
+- **WHEN** a consumer that is about to mutate runs `gtmux hq --home`
+- **THEN** it receives the HQ home path, and a `gtmux knowledge` verb run with that
+  directory as its cwd passes the gate exactly as the supervisor's own would
+- **AND WHEN** no HQ home exists yet
+- **THEN** the path is still printed and the command exits non-zero saying so
 
 #### Scenario: A dismissed candidate leaves a trace
 

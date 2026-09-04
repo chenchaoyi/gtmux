@@ -1299,7 +1299,10 @@ lesson, the topic TAG, a DEDUP KEY (topic + a lesson slug, or an explicit key), 
 AUTO-COLLECTED event context (current/related `pane_id`, the current event `seq`,
 `task_id` if any, a timestamp) — to a pending-distill spool under the HQ home
 (`~/.config/gtmux/hq/knowledge/.pending-distill.jsonl` or the state-dir equivalent).
-`gtmux capture --list` SHALL render the pending queue. A missing or invalid `@topic`
+`gtmux capture --list` SHALL render the pending queue, and `--list --json` SHALL print
+that queue as a JSON array (never `null`) carrying each line's DEDUP KEY, so a surface can
+offer `dismiss` at all: the text form omits the key, which is the one field the dismiss
+verb names. A missing or invalid `@topic`
 SHALL be an error naming the current vocabulary. The spool SHALL drain candidate by
 candidate, never by blind truncation: `gtmux knowledge add --capture <key>` consumes
 EVERY pending line sharing that key (the merge of same-key candidates) into one entry
@@ -1327,6 +1330,15 @@ command-drift rule: the CLAUDE.md command list, a `docs/cli.md` section, and
 - **WHEN** `gtmux capture` is called with no `@topic` or a topic outside the
   current vocabulary
 - **THEN** the command errors naming the vocabulary and writes nothing
+
+#### Scenario: A surface reads the queue and can act on it
+
+- **WHEN** `gtmux capture --list --json` runs against a spool holding candidates
+- **THEN** it prints one JSON array whose entries carry the dedup key, and that key is
+  exactly what `gtmux knowledge dismiss --capture <key>` consumes
+- **AND WHEN** the spool is empty
+- **THEN** it prints `[]`, because "nothing queued" is a state to render rather than a
+  case a caller has to special-case
 
 #### Scenario: Distill merges same-key candidates rather than duplicating
 

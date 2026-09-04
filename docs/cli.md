@@ -178,6 +178,15 @@ on at least one real machine, so resolving it belongs in the CLI rather than in 
 consumer. The menu-bar app's board reader is the first caller. A board that was never
 written reports `exists:false` and is an ordinary state, not an error.
 
+`gtmux hq --home` prints that same path, for the caller that has to *act* rather than
+read: `gtmux knowledge`'s mutations are accepted only from the HQ home, so a surface
+offering one runs the verb FROM there, and asks the CLI where "there" is instead of
+building the path a second time. It does not widen the cwd gate by one inch — the verb is
+still judged by cwd exactly as before, and the path was never a secret (every refusal
+message prints it). A machine with no HQ home yet still prints the path, and exits
+non-zero saying so, because the chdir that was about to happen would have failed with less
+to go on.
+
 `gtmux hq --rotate` retires the live supervisor's session for a fresh one, in place: it
 resolves the hq pane and types that agent's own reset command into it. It is hq's OWN verb —
 its playbook runs it unprompted once the `self-rotate` knock says the session is worn out
@@ -379,6 +388,7 @@ surface decisions to you, not take them.
 ```
 gtmux capture "<one-line lesson> @<topic>"   # topic ∈ the knowledge vocabulary: six built-ins + topics hq declared
 gtmux capture --list                         # show the pending-distill queue
+gtmux capture --list --json                  # the same queue, with each line's dedup key
 ```
 
 ```
@@ -406,6 +416,13 @@ capture loop; see `openspec/changes/archive/2026-07-29-hq-capture-loop`.
 can't tell you whether the loop is alive: an empty queue reads the same whether distill
 drained it yesterday or has never run. Five queued candidates also **pull the next distill
 forward** — a captured lesson is filed within a day rather than waiting out the week.
+
+`--list --json` is the same queue for a SURFACE rather than a reader: one array (never
+`null`), each line carrying its topic, timestamp, provenance and — the reason the flag
+exists — its **dedup key**, which is what `gtmux knowledge dismiss --capture <key>` names.
+The text form omits the key, so a GUI could show the queue and never act on it. Note the
+key is the unit of action, not the line: dismissing one consumes every pending line that
+shares it.
 
 ## `gtmux knowledge` — the knowledge ledger (entries with provenance)
 
