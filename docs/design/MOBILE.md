@@ -214,8 +214,16 @@ session 卡片可折叠（头带状态 rollup，折叠后仍然说话）、常�
 ### 邻居 pane 条（tiered-pane-control）
 
 Detail 顶部（header 下、segmented 上）一条**横向邻居 pane 条**：列出该 pane 所在 tmux
-session 的**其他 pane**（`GET /api/panes` 过滤同 session），agent 行 ▸ + 名、普通行 › +
-命令名。点一个 = 打开那个 pane 的 Detail(任意 pane 可看/可输入,普通 pane 以 `paneRowToAgent`
+session 的**其他 pane**（`GET /api/panes` 过滤同 session）。
+
+**每片带身份图标**：agent pane 戴自己的官方图标，普通 pane 戴 `AgentAvatar` 回退的 `$_` 单字标 ——
+和雷达行同一枚识别令牌。早先是 `▸` / `›` 两个字形，同一件事用两个要读者先学会的符号说。
+
+**普通 pane 要有名字，不是命令名**（`api/types.paneLabel`）。原来印 `command`，于是同一 session 里
+三个 shell 全叫 `bash` —— 真，但**什么也没区分出来**，而读者正是在这几片里挑一个。取名顺序按
+「这一步比上一步多说了什么」：`title`（有人特意起的；核心已经把等于主机名的标题丢掉了）→
+`win_name`（除非 tmux 把它自动改成了命令名，那样又回到 bash）→ `project`（它在哪个仓库里，跨子目录稳定，
+也是人嘴里真正的叫法）→ `cwd` 末段（不在仓库里时）→ `command`（仍然是真的，只是最后一档）。点一个 = 打开那个 pane 的 Detail(任意 pane 可看/可输入,普通 pane 以 `paneRowToAgent`
 适配)。**无兄弟 pane 或全屏时隐藏**;guest 只看到被授权的 pane。桌面侧的"邻居"由 §16 的
 pane 浏览器(按 session 分组)覆盖,手机侧则用这条 —— 都基于同一 `/api/panes` 契约。
 
