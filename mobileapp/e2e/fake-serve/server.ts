@@ -257,14 +257,21 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
           // A guest types only where its link granted the keyboard — a SEPARATE list from
           // what it may look at (real serve: EnrolledDevice.MayInput).
           if (!mayReach('input', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
-          if (!a) return json(res, 400, {error: 'send failed: no such pane'});
+          // The wording is the real serve's, not a paraphrase: the app classifies a
+          // refusal by what the server SAYS (ui/sendFailure), so a fake that invents its
+          // own sentences tests a classifier against strings no server sends.
+          if (!a) return json(res, 400, {error: 'send failed: pane not found'});
           const key = body.key == null ? '' : String(body.key);
           const text = body.text == null ? '' : String(body.text);
           if (!key && !text) return json(res, 400, {error: 'nothing to send'});
           if (key && !KEYS.includes(key)) return json(res, 400, {error: 'send failed: key not allowed'});
           // The draft guard, as the core states it: a paste APPENDS, so delivering into
           // someone's half-written line would submit THEIR text with yours.
-          if (text && world.drafts.get(id)) return json(res, 400, {error: 'send failed: refused-draft'});
+          if (text && world.drafts.get(id)) {
+            return json(res, 400, {
+              error: 'send failed: not sent: that pane has unsent text in its input box — clear it or send from the Mac',
+            });
+          }
           // Answering a numbered menu is what a real agent does with a lone digit: the
           // choice commits and the session stops waiting. Modelled here so a test can ask
           // the question that matters after the tap — did the needs-you mark clear —
