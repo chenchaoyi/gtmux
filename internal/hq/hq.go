@@ -13,6 +13,7 @@
 package hq
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -669,7 +670,9 @@ func agentAliveByCmd(cmd string) bool {
 func CmdHQ(args []string) int {
 	agentCmd := ""
 	rotate := false
-	charterLang := "" // --lang: the ONLY way the charter's language ever changes
+	board := false     // --board: print the situation board instead of opening HQ
+	boardJSON := false // --json alongside --board, for a surface that wants the mtime too
+	charterLang := ""  // --lang: the ONLY way the charter's language ever changes
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
@@ -693,9 +696,15 @@ func CmdHQ(args []string) int {
 				"  --rotate：中控轮换掉自己这轮会话（务必在把态势板与知识库写到最新、")
 			i18n.Say("  bringing the board + knowledge base current — they are the handoff).",
 				"  完成交接之后再跑 —— 那份记录就是给下一轮的交接）。")
+			i18n.Say("  --board [--json]: print the situation board (read-only) instead of opening HQ.",
+				"  --board [--json]：打印态势板（只读），不打开中控。")
 			return 0
 		case a == "--rotate":
 			rotate = true
+		case a == "--board":
+			board = true
+		case a == "--json":
+			boardJSON = true
 		case a == "--agent":
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux hq: --agent needs a command", "gtmux hq: --agent 需要一个命令")
@@ -718,6 +727,13 @@ func CmdHQ(args []string) int {
 			i18n.Sae("gtmux hq: unknown option '"+a+"'", "gtmux hq: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+	// --board is a READ, and it takes the whole command: a surface that wants HQ's
+	// synthesis must not have to know where the HQ home lives (it is relocatable, and on
+	// this machine it is reached through a symlink). The menu-bar app is a CLI consumer by
+	// construction, so the CLI is where that path resolution belongs.
+	if board {
+		return printBoard(boardJSON)
 	}
 	if charterLang != "" && charterLang != "en" && charterLang != "zh" {
 		i18n.Sae("gtmux hq: --lang takes en or zh, not '"+charterLang+"'",
@@ -1513,4 +1529,34 @@ func noteAtPane(pane, msg string) {
 		return
 	}
 	_, _ = tmux.Run("display-message", "-t", pane, msg)
+}
+
+// printBoard writes the supervisor's situation board to stdout.
+//
+// A board that has never been written is an ORDINARY state, not an error: a fresh HQ has
+// none, and a reader is told that rather than shown a failure.
+func printBoard(asJSON bool) int {
+	text, mod, ok := Board()
+	if asJSON {
+		out, err := json.Marshal(struct {
+			Exists    bool   `json:"exists"`
+			UpdatedAt int64  `json:"updated_at,omitempty"`
+			Text      string `json:"text,omitempty"`
+		}{Exists: ok, UpdatedAt: mod, Text: text})
+		if err != nil {
+			return 1
+		}
+		fmt.Println(string(out))
+		return 0
+	}
+	if !ok {
+		i18n.Say("no situation board yet — the supervisor writes one as it works",
+			"还没有态势板 —— 参谋长干着干着就会写一份")
+		return 0
+	}
+	fmt.Print(text)
+	if !strings.HasSuffix(text, "\n") {
+		fmt.Println()
+	}
+	return 0
 }

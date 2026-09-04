@@ -131,3 +131,47 @@ func TestEventsJSONIsAlwaysAnArray(t *testing.T) {
 		}
 	}
 }
+
+// `gtmux hq --board` is a READ that takes the whole command. It exists because a surface
+// that wants HQ's synthesis must not have to know where the HQ home is: the path is
+// relocatable and on this machine it is reached through a symlink, and the menu-bar app is
+// a CLI consumer by construction.
+func TestCmdHQBoardPrintsAndDegrades(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	// No board yet is an ORDINARY state: a fresh HQ has none, and the reader is told so
+	// rather than shown a failure.
+	if rc := CmdHQ([]string{"--board"}); rc != 0 {
+		t.Fatalf("--board with no board = %d, want 0", rc)
+	}
+	var out struct {
+		Exists    bool   `json:"exists"`
+		UpdatedAt int64  `json:"updated_at"`
+		Text      string `json:"text"`
+	}
+	if err := json.Unmarshal([]byte(captureStdout(t, func() { CmdHQ([]string{"--board", "--json"}) })), &out); err != nil {
+		t.Fatalf("--board --json is not JSON: %v", err)
+	}
+	if out.Exists {
+		t.Error("an unwritten board must report exists:false")
+	}
+
+	// With one written, the text comes back whole and dated.
+	if err := os.MkdirAll(hqNotesDir(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := "# 态势板\n\n## ① 现状\n- one ship\n"
+	if err := os.WriteFile(BoardPath(), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(captureStdout(t, func() { CmdHQ([]string{"--board", "--json"}) })), &out); err != nil {
+		t.Fatalf("--board --json is not JSON: %v", err)
+	}
+	if !out.Exists || out.Text != body {
+		t.Fatalf("board round-trip failed: exists=%v text=%q", out.Exists, out.Text)
+	}
+	if out.UpdatedAt <= 0 {
+		t.Error("a written board carries when it was written")
+	}
+}
