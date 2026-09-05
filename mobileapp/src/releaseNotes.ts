@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.88.0',
+    en: [
+      'A neighbour pane is named for what it is, not for the command it runs: three sibling shells no longer all read "bash".',
+      'Each neighbour wears which kind it is, an agent its own icon and a shell the terminal mark.',
+    ],
+    zh: [
+      '邻居 pane 按它实际是什么命名，而不是按它跑的命令：同一个会话里的三个 shell 不再全叫 bash。',
+      '每个邻居戴上自己的身份图标：agent 是它自己的，shell 是终端标。',
+    ],
+  },
+  {
     version: '0.83.0',
     en: [
       'The situation board reads as a list again: each session is its own card, and the count beside a section says what it holds instead of how many lines it was typed on.',
