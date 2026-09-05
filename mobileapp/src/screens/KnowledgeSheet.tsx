@@ -283,6 +283,18 @@ function IndexPane({
       {view.promotions.length > 0 && (
         <View testID="knowledge-promotions">
           <SectionLabel pal={pal} text={t('waiting on you', '待你带走')} count={view.promotions.length} accent />
+          {/* What a promotion IS, said where it matters. This base is one of THREE places
+              a rule can live — the shipped charter, the operator's own LOCAL.md, and this
+              machine's ledger — and a reader who takes it for all three files a lesson
+              everyone needed on one machine. The commander asked exactly that question
+              on 2026-09-05: "I thought the knowledge base was local personal information,
+              and this looks like a general improvement".
+              docs/design/knowledge-layers.md is the long form. */}
+          <Text style={[styles.sectionNote, {color: pal.fg3}]}>
+            {zh
+              ? '这些是参谋长判断「比这台机器大」的条目。它已写好带走简报，等你把它搬进一个持久的地方（你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook，或 gtmux 自己的仓库），再回来标记落地。'
+              : 'Entries the supervisor judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.'}
+          </Text>
           {view.promotions.map(p => (
             <TouchableOpacity
               key={p.entry.id}
@@ -554,6 +566,7 @@ const styles = StyleSheet.create({
 
   body: {paddingBottom: 40},
   secRow: {flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingTop: 18, paddingBottom: 7},
+  sectionNote: {fontSize: 11.5, lineHeight: 17, paddingHorizontal: 14, paddingBottom: 9},
   sec: {fontSize: 10.5, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase'},
   secCount: {fontSize: 10.5, fontWeight: '700'},
 

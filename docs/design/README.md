@@ -18,6 +18,7 @@
 | `DESIGN.md` | 菜单栏权威规范。 |
 | `MOBILE.md` | 移动端权威规范(App 图标 / Agent.icon / 交互 / 推送 / 状态)。 |
 | `WEB.md` | Web 浏览器镜像权威规范(工作台 / 只读红线 / 对话模式 / 头像 / 键盘)。 |
+| `knowledge-layers.md` | 三层知识(出厂章程 / 你的守则 / 本机台账):谁写、何时进谁的脑子、怎么从一层升到另一层。 |
 | `ITERATIONS-2026-06.md` | 本轮所有变更清单(现状→改动→落地点)。 |
 | `REVIEW-mobile-01.md` | 实拍走查(P0/P1/P2)。 |
 | `mockup/gtmux-menubar.dc.html` | 菜单栏可交互原型(终版,§00–§11)。 |

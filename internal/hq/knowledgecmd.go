@@ -532,7 +532,13 @@ func knowledgeUsage() int {
   rendered from it, entries carry provenance (seq/pane/task/capture), and every
   mutation is journaled. A charter-level lesson exits through promote → a brief
   under knowledge/promotions/ → land. Mutations run from the HQ home only;
-  workers use `+"`gtmux capture`"+`.`,
+  workers use `+"`gtmux capture`"+`.
+
+  THIS LEDGER IS ONE OF THREE places a rule can live: gtmux's shipped charter
+  (AGENTS.md, reaches every machine through a version bump), the operator's own
+  LOCAL.md (never overwritten, in context every turn), and this ledger — this
+  machine's, spent at dispatch rather than always present. A lesson filed in the
+  wrong one is a lesson its readers never get. docs/design/knowledge-layers.md.`,
 		`用法：gtmux knowledge <子命令>
   add       --topic <主题> --title "<一句话>" [--body-file <路径|->] [--capture <键>] [--seq-range a..b]
   supersede <id> --title "<一句话>" [--body-file <路径|->] [--why "<原因>"]
@@ -545,6 +551,11 @@ func knowledgeUsage() int {
   list      [--topic <主题>] [--json]     show <id>     render [--check]
   知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
   每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,
-  落地后用 land 闭环。变更只能在中控目录执行；worker 用 `+"`gtmux capture`"+`。`)
+  落地后用 land 闭环。变更只能在中控目录执行；worker 用 `+"`gtmux capture`"+`。
+
+  本台账是「规矩能存放的三处」之一:gtmux 出厂章程(AGENTS.md,靠升版本号下发到每台
+  机器)、你自己的 LOCAL.md(永不覆盖,每轮都在上下文里),以及本台账 —— 这台机器的,
+  派活时才浮出来而不是常驻。放错一层,等于写给不会读到它的人看。
+  详见 docs/design/knowledge-layers.md。`)
 	return 0
 }
