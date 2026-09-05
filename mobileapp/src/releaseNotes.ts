@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.90.0',
+    en: [
+      'The HQ page\'s verdict is now a card you can see is tappable, and what it opens is one grid instead of three stacked layouts.',
+      'The header quotes the supervisor\'s latest word and stays quiet when that word was routine, so a withdrawn alert no longer sits there for hours.',
+      'Tab and button capitalization follows one rule across the app.',
+    ],
+    zh: [
+      'HQ 页的判断句现在是一张看得出能点的卡片，展开后是一张表，不再是三种排版摞在一起。',
+      '头部只引参谋长的最新一句，例行流水账就什么都不说，作废的警报不会再挂几小时。',
+      '标签和按钮的大小写全 app 统一成一条规则。',
+    ],
+  },
+  {
     version: '0.89.0',
     en: [
       'The knowledge base now says what a promoted entry is: one the supervisor judged bigger than this machine, waiting for you to carry it somewhere durable.',
