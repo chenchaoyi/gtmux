@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, PaneRow} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -279,5 +279,48 @@ describe('paneRowToAgent git identity', () => {
   // the radar puts in the same field — the two surfaces mean different things by it.
   it('keeps project as the cwd for display', () => {
     expect(paneRowToAgent(row({cwd: '/w/repo', project: 'repo'})).project).toBe('/w/repo');
+  });
+});
+
+// Three sibling shells all read "bash" in the neighbour strip. That is true and it
+// identifies nothing — the reader is choosing between panes, and telling them apart is
+// the label's whole job.
+describe('paneLabel', () => {
+  const row = (o: Partial<PaneRow>): PaneRow =>
+    ({pane_id: '%1', loc: 's:0.0', session: 's', window: '0', pane: '0', command: 'bash', tier: 'plain', active: false, ...o} as PaneRow);
+
+  test('a title someone chose wins', () => {
+    expect(paneLabel(row({title: 'log tail'}))).toBe('log tail');
+  });
+
+  test('a title that is a whole path is not a name either', () => {
+    // Many shells write the cwd into the title, sometimes colon-prefixed. The folder's
+    // own name says more, and the later rules produce it.
+    expect(paneLabel(row({title: ':/Users/x/src', cwd: '/Users/x/src'}))).toBe('src');
+    expect(paneLabel(row({title: '~/src', project: 'gtmux'}))).toBe('gtmux');
+  });
+
+  test('a title that is just the command is not a name', () => {
+    // tmux and shells both write the command into the title.
+    expect(paneLabel(row({title: 'bash', cwd: '/Users/x/gtmux'}))).toBe('gtmux');
+  });
+
+  test('a window name counts, unless tmux auto-renamed it to the command', () => {
+    expect(paneLabel(row({win_name: 'deploy'}))).toBe('deploy');
+    expect(paneLabel(row({win_name: 'bash', project: 'gtmux'}))).toBe('gtmux');
+  });
+
+  test('a shell in a repo is named by the repo, whatever subdirectory it sits in', () => {
+    expect(paneLabel(row({project: 'gtmux', cwd: '/Users/x/gtmux/mobileapp'}))).toBe('gtmux');
+  });
+
+  test('outside a repo it is the folder', () => {
+    expect(paneLabel(row({cwd: '/private/tmp'}))).toBe('tmp');
+    expect(paneLabel(row({cwd: '/Users/x/notes/'}))).toBe('notes');
+  });
+
+  test('with nothing else it is still the command, which is at least true', () => {
+    expect(paneLabel(row({}))).toBe('bash');
+    expect(paneLabel(row({command: ''}))).toBe('%1');
   });
 });

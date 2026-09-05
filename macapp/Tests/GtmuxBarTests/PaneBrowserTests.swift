@@ -35,20 +35,50 @@ final class PaneBrowserTests: XCTestCase {
                        "the row's own identity wins over the join")
     }
 
-    /// Many shells set the pane title to the cwd, sometimes colon-prefixed. That is both
-    /// ugly and redundant with the directory shown beside it, so a path falls back to the
-    /// command.
-    func testPlainLabelFallsBackWhenTheTitleIsJustAPath() {
-        XCTAssertEqual(PaneLabels.plain(title: ":/Users/x/src", command: "bash"), "bash")
-        XCTAssertEqual(PaneLabels.plain(title: "/Users/x/src", command: "bash"), "bash")
-        XCTAssertEqual(PaneLabels.plain(title: "~/src", command: "zsh"), "zsh")
-        XCTAssertEqual(PaneLabels.plain(title: "", command: "vim"), "vim")
-        XCTAssertEqual(PaneLabels.plain(title: "   ", command: "vim"), "vim")
+    /// A shell named only by its command reads "bash", which is true and identifies
+    /// nothing — and a machine has several. The order below is "what does this say that
+    /// the previous did not", and it is the same rule the phone's neighbour strip uses.
+    private func plain(title: String = "", win: String = "", project: String = "",
+                       cwd: String = "", command: String = "bash") -> String {
+        PaneLabels.plain(title: title, winName: win, project: project, cwd: cwd, command: command)
+    }
+
+    /// Many shells set the pane title to the cwd, sometimes colon-prefixed. A whole path
+    /// is not a name; the later rules produce its meaningful part anyway.
+    func testPlainLabelSkipsATitleThatIsJustAPath() {
+        XCTAssertEqual(plain(title: ":/Users/x/src", cwd: "/Users/x/src"), "src")
+        XCTAssertEqual(plain(title: "/Users/x/src", project: "gtmux"), "gtmux")
+        XCTAssertEqual(plain(title: "~/src", command: "zsh"), "zsh")
+        XCTAssertEqual(plain(title: "", command: "vim"), "vim")
+        XCTAssertEqual(plain(title: "   ", command: "vim"), "vim")
+    }
+
+    func testATitleThatIsMerelyTheCommandIsNotAName() {
+        XCTAssertEqual(plain(title: "bash", project: "gtmux"), "gtmux")
+    }
+
+    func testTheWindowNameCountsUnlessTmuxAutoRenamedIt() {
+        XCTAssertEqual(plain(win: "deploy"), "deploy")
+        // automatic-rename writes the command into the window name.
+        XCTAssertEqual(plain(win: "bash", project: "gtmux"), "gtmux")
+    }
+
+    func testARepoNamesItsShellWhateverSubdirectoryItSitsIn() {
+        XCTAssertEqual(plain(project: "gtmux", cwd: "/Users/x/gtmux/mobileapp"), "gtmux")
+    }
+
+    func testOutsideARepoItIsTheFolder() {
+        XCTAssertEqual(plain(cwd: "/private/tmp"), "tmp")
+        XCTAssertEqual(plain(cwd: "/Users/x/notes/"), "notes")
+    }
+
+    func testWithNothingElseItIsStillTheCommand() {
+        XCTAssertEqual(plain(command: "htop"), "htop")
     }
 
     func testPlainLabelKeepsARealTitle() {
-        XCTAssertEqual(PaneLabels.plain(title: "make check", command: "bash"), "make check")
-        XCTAssertEqual(PaneLabels.plain(title: ": logs", command: "tail"), "logs",
+        XCTAssertEqual(plain(title: "make check"), "make check")
+        XCTAssertEqual(plain(title: ": logs", command: "tail"), "logs",
                        "a colon prefix is stripped, the title still stands")
     }
 

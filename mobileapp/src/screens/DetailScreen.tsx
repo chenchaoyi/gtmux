@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {Agent, paneLabel, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
@@ -561,13 +561,24 @@ export function DetailView({
                 key={n.pane_id}
                 onPress={() => onOpenPane(n)}
                 style={[styles.neighborChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-                <Text style={[styles.neighborMark, {color: n.tier === 'agent' ? StatusColor.working : pal.fg3}]}>
-                  {n.tier === 'agent' ? '▸' : '›'}
-                </Text>
+                {/* WHICH KIND, by the same token the radar uses: an agent pane wears its
+                    own icon, a plain one the $_ monogram AgentAvatar falls back to. A ▸/›
+                    pair said the same thing in two glyphs a reader has to learn. */}
+                <AgentAvatar
+                  agent={paneRowToAgent(n)}
+                  size={16}
+                  radius={4}
+                  bg={pal.bg}
+                  fg={pal.fg3}
+                  border={pal.divider}
+                />
                 <Text style={[styles.neighborLabel, {color: pal.fg2}]} numberOfLines={1}>
                   {/* agentLabel, not `agent || command`: a Claude 2.x pane's command is
-                      its VERSION string (#659) — join the live radar name first. */}
-                  {n.tier === 'agent' ? agentLabel(n, agents.find(a => a.pane_id === n.pane_id)) : n.command}
+                      its VERSION string (#659) — join the live radar name first. A plain
+                      pane gets a NAME rather than its command: three sibling shells all
+                      read "bash", which is true and identifies nothing (api/types
+                      paneLabel). */}
+                  {n.tier === 'agent' ? agentLabel(n, agents.find(a => a.pane_id === n.pane_id)) : paneLabel(n)}
                 </Text>
                 <Text style={[styles.neighborLoc, {color: pal.fg3}]}>{n.pane_id}</Text>
               </TouchableOpacity>

@@ -24,6 +24,9 @@ struct PaneRow: Codable, Equatable, Identifiable {
     // index 0. `@N` is unique per server; the name is a gloss.
     var winID = ""
     var winName = ""
+    /// The repo root's basename, on every tier ("" outside a repo). It is how a shell is
+    /// referred to out loud, and it is stable across the repo's subdirectories.
+    var project = ""
     var id: String { paneID }
 
     var isAgent: Bool { tier == "agent" }
@@ -44,7 +47,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
-        case loc, session, window, pane, cwd, command, title, active, tier, agent, icon
+        case loc, session, window, pane, cwd, command, title, active, tier, agent, icon, project
         case winID = "win_id"
         case winName = "win_name"
         case inMode = "in_mode"
@@ -63,7 +66,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
         cwd = s(.cwd); command = s(.command); title = s(.title)
         active = b(.active); inMode = b(.inMode)
         tier = s(.tier, "plain"); agent = s(.agent); icon = s(.icon)
-        winID = s(.winID); winName = s(.winName)
+        winID = s(.winID); winName = s(.winName); project = s(.project)
     }
 }
 
@@ -121,15 +124,38 @@ enum PaneCommands {
 }
 
 enum PaneLabels {
-    /// A PLAIN pane. Many shells set the pane title to the cwd, sometimes prefixed with a
-    /// colon (":/Users/…"), which is ugly and redundant with the directory shown beside
-    /// it — so a path-looking title falls back to the command (bash/vim/…).
-    static func plain(title: String, command: String) -> String {
+    /// A PLAIN pane — a shell, an editor, a log tail — named for a reader choosing
+    /// between rows.
+    ///
+    /// It used to end at the command, so a machine's shells all read "bash". That is true
+    /// and it identifies nothing. The order below is "what does this say that the previous
+    /// did not", and it is the same rule the phone's neighbour strip uses
+    /// (mobileapp/src/api/types.ts paneLabel) so a pane is called the same thing on both.
+    ///
+    /// Many shells set the pane title to the cwd, sometimes prefixed with a colon
+    /// (":/Users/…"). A whole path is not a name, so it is skipped and the rules below
+    /// produce its meaningful part anyway.
+    static func plain(title: String, winName: String, project: String, cwd: String, command: String) -> String {
         var t = title
         while t.hasPrefix(":") { t.removeFirst() }
         t = t.trimmingCharacters(in: .whitespaces)
-        if t.isEmpty || t.hasPrefix("/") || t.hasPrefix("~") { return command }
-        return t
+        if !t.isEmpty, !t.hasPrefix("/"), !t.hasPrefix("~"), t != command { return t }
+
+        // tmux's automatic-rename writes the command into the window name, which would
+        // land us back on "bash".
+        let w = winName.trimmingCharacters(in: .whitespaces)
+        if !w.isEmpty, w != command { return w }
+
+        // The repo it sits in: stable across its subdirectories, and how people refer to
+        // a shell out loud ("the gtmux one").
+        let p = project.trimmingCharacters(in: .whitespaces)
+        if !p.isEmpty { return p }
+
+        var dir = cwd.trimmingCharacters(in: .whitespaces)
+        while dir.count > 1, dir.hasSuffix("/") { dir.removeLast() }
+        if let leaf = dir.split(separator: "/").last, !leaf.isEmpty { return String(leaf) }
+
+        return command
     }
 
     /// An AGENT pane. The raw command is NEVER a good first choice here: a Claude 2.x
@@ -769,7 +795,8 @@ private struct PaneBrowserRow: View {
             let task = joined?.task.trimmingCharacters(in: .whitespaces) ?? ""
             return task.isEmpty ? PaneLabels.agent(row: row, joined: joined) : task
         }
-        return PaneLabels.plain(title: row.title, command: row.command)
+        return PaneLabels.plain(title: row.title, winName: row.winName, project: row.project,
+                                cwd: row.cwd, command: row.command)
     }
 
     /// No second line. It used to name the agent under the work — "Claude Code" beneath

@@ -75,6 +75,43 @@ export interface PaneRow {
 // paneRowToAgent adapts a PaneRow into an Agent so a plain (non-agent) pane can open
 // in the same DetailView (its live screen + input). A plain pane has no agent status,
 // so status stays 'running' (the neutral bucket); the label is its title or command.
+/**
+ * paneLabel names a PLAIN pane — a shell, an editor, a log tail — for a surface that has
+ * one line to say what it is.
+ *
+ * The neighbour strip used to print `command`, so three sibling shells all read "bash".
+ * That is TRUE and it identifies nothing: the reader is choosing between panes, and the
+ * one thing the label must do is tell them apart.
+ *
+ * The order is "what does this say that the previous did not":
+ *   1. `title` — a pane someone deliberately titled. The core already drops a title that
+ *      is merely the hostname (radar.meaningfulTitle), so a surviving one was meant.
+ *   2. `win_name` — the tmux window's name, unless tmux auto-renamed it to the command,
+ *      which would land us back on "bash".
+ *   3. `project` — the repo it sits in. Stable across its subdirectories, and it is how
+ *      people actually refer to a shell ("the gtmux one").
+ *   4. the last path segment of `cwd` — for a pane outside any repo.
+ *   5. `command` — still true, and still the last resort.
+ */
+export function paneLabel(r: PaneRow): string {
+  const cmd = (r.command || '').trim();
+  // A title that is a whole PATH is not a name. Many shells set the pane title to the
+  // cwd, sometimes colon-prefixed (":/Users/…"), and printing that in a chip says less
+  // than the folder's own name — which the rules below produce anyway. The Mac's browser
+  // has skipped path titles since it shipped; this is the same rule, and the two
+  // surfaces now call a pane the same thing (macapp PaneLabels.plain).
+  const title = (r.title || '').replace(/^:+/, '').trim();
+  if (title && title !== cmd && !title.startsWith('/') && !title.startsWith('~')) return title;
+  const win = (r.win_name || '').trim();
+  if (win && win !== cmd) return win;
+  const project = (r.project || '').trim();
+  if (project) return project;
+  const cwd = (r.cwd || '').replace(/\/+$/, '');
+  const leaf = cwd.slice(cwd.lastIndexOf('/') + 1);
+  if (leaf) return leaf;
+  return cmd || r.pane_id;
+}
+
 export function paneRowToAgent(r: PaneRow): Agent {
   return {
     pane_id: r.pane_id,
