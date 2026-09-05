@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.91.0',
+    en: [
+      'Scrolling is steady again. The header and tabs folding away used to fight the scroll position, so returning to the bottom jumped around, worst of all mid-conversation.',
+      'A new reply no longer drags you out of the history you scrolled up to read.',
+    ],
+    zh: [
+      '滚动稳了。顶部信息和标签折叠时会和滚动位置打架，回到底部就跳来跳去，对话进行中最明显。',
+      '新回复不再把正在往上读历史的你拽回底部。',
+    ],
+  },
+  {
     version: '0.90.0',
     en: [
       'The HQ page\'s verdict is now a card you can see is tappable, and what it opens is one grid instead of three stacked layouts.',
