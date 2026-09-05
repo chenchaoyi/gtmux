@@ -495,6 +495,12 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .cx-attach:hover, .cx-send:hover { color: var(--fg); border-color: var(--fg3, var(--fg2)); }
 .cx-send { color: var(--fg); font-weight: 700; }
 .cx-attach:disabled { opacity: .5; cursor: default; }
+/* A refused send, in the core's own words. Amber, the same tier the errored group uses:
+   this is a warning about something that did not happen, not an emergency. */
+.cx-note { padding: 4px 0 0 41px; font-size: 11.5px; line-height: 1.45; color: var(--amber); }
+/* The queued note is not a warning — the message landed. Colour means state here, so a
+   thing that went right does not wear the colour of a thing that did not. */
+.cx-note.info { color: var(--fg3, var(--fg2)); }
 .cx-keys { display: flex; gap: 5px; padding-left: 41px; }
 .cx-keys button { flex: none; padding: 3px 9px; font-size: 11px; color: var(--fg3, var(--fg2)); background: transparent; border: 1px solid var(--divider); border-radius: 6px; cursor: pointer; }
 .cx-keys button:hover { color: var(--fg); border-color: var(--fg2); }
