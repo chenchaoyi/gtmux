@@ -50,7 +50,7 @@ export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll}: HQA
               onPress={() => onView(k)}
               style={[styles.switchBtn, {borderColor: pal.divider, backgroundColor: on ? pal.surface : 'transparent'}]}>
               <Text style={[styles.switchText, {color: on ? pal.fg : pal.fg3, fontWeight: on ? '700' : '500'}]}>
-                {k === 'acts' ? t('supervisor', '参谋长') : t('fleet', '舰队')}
+                {k === 'acts' ? t('Supervisor', '参谋长') : t('Fleet', '舰队')}
               </Text>
             </TouchableOpacity>
           );

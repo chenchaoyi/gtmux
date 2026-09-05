@@ -14,9 +14,15 @@
 // by it once before, in rowSheet/RowSheet).
 //
 // Two rules live here because they are judgments, not layout:
-//   - the disclosure opens with the supervisor's OWN latest brief when it has one. HQ
-//     already produces a periodic brief in its `⟣` register, and its own words beat a
-//     recomputed "3 需要你 · 0 运行 · 12 空闲".
+//   - the disclosure quotes the supervisor's LATEST word, and shows nothing when that word
+//     was routine. Measured on a real HQ session: 41 `▪ noted:` against 7 `✅`, 2 `⚠` and
+//     1 `◈ brief`. Quoting "the newest `⟣` reply" therefore quoted bookkeeping four times
+//     out of five ("…水位到 32134") under a byline calling it a brief; but skipping PAST
+//     the ledger to the newest interesting line is worse, because a later note is often
+//     exactly what retires an earlier alarm ("上一条升级撤回", 2026-09-05) — that header
+//     would have gone on showing a withdrawn escalation for hours under a verdict reading
+//     "all normal". So the newest register line decides, and a routine one decides for
+//     silence. See `supervisorSignal`.
 //   - a resource condition is promoted OUT of the disclosure only at the CRITICAL tier.
 //     The old header printed disk/memory unconditionally, which is why it read as noise:
 //     a line that is always there says nothing when it matters.
@@ -46,9 +52,19 @@ export interface InlineSeg {
   code: boolean;
 }
 
-/** The supervisor's own latest brief, attributed and dated. */
-export interface Brief {
+/**
+ * The grade of a supervisor signal, as the playbook's register defines it. Only these
+ * three reach the header; see `supervisorSignal`.
+ */
+export type SignalGrade = 'escalation' | 'done' | 'brief';
+
+/** The supervisor's own latest signal, graded, attributed and dated. */
+export interface Signal {
+  grade: SignalGrade;
+  /** The headline. */
   segments: InlineSeg[];
+  /** A brief's indented `· ` items. Empty for the other grades. */
+  bullets: InlineSeg[][];
   /** "12m ago" / "12分钟前". Null when the turn carries no time — never invented. */
   age: string | null;
 }
@@ -79,16 +95,11 @@ export interface HeaderModel {
   urgent: boolean;
   /** Promoted out of the disclosure: shown standing, under the verdict. Null in the normal case. */
   standing: string | null;
-  /** The supervisor's own most recent brief, or null when it has produced none. */
-  brief: Brief | null;
+  /** The supervisor's own most recent header-grade signal, or null when it has none. */
+  signal: Signal | null;
   /** The derived figures, for the disclosure. A row with nothing to say is absent. */
   stats: Stat[];
 }
-
-// briefMark is the supervisor's signal register (playbook v2+). A reply that opens with
-// it is HQ addressing the user about the situation, which is exactly what a brief is; a
-// reply that does not is an answer to something specific and is not one.
-const briefMark = '⟣';
 
 /**
  * inlineSegments splits HQ's prose on backticks so the view can set what HQ marked as
@@ -110,39 +121,91 @@ export function inlineSegments(text: string): InlineSeg[] {
   return out.length > 0 ? out : [{text, code: false}];
 }
 
+// signalMark is the supervisor's signal register (playbook v2+). A reply that opens with
+// it is HQ speaking about the situation rather than answering a question.
+const signalMark = '⟣';
+
+// The grades that earn the header, keyed by the glyph the playbook assigns them. The two
+// that are absent are absent on purpose: `▪` (ledger) is by its own definition a routine
+// outcome needing no action, and `📓` (captured) is a knowledge-base write the KNOWLEDGE
+// row already counts. Both stay in the console, where reading them is the point.
+const headerGrades: {glyph: string; grade: SignalGrade}[] = [
+  {glyph: '⚠', grade: 'escalation'},
+  {glyph: '✅', grade: 'done'},
+  {glyph: '◈', grade: 'brief'},
+];
+
+// A brief opens `◈ brief 14:30 │ …` / `◈ 简报 14:30 │ …`. The byline already says who and
+// how long ago, so the word and the clock are struck; if the line does not have that
+// shape it is left exactly as HQ wrote it.
+const briefPreamble = /^(?:brief|简报)\s+\d{1,2}:\d{2}\s*(?:│|\|)\s*/;
+
+// A brief's items are indented continuation lines. HQ writes `· `; a model that has
+// drifted to `- ` or `• ` means the same thing and is read the same way.
+const bulletLine = /^\s*[·•-]\s+(.*)$/;
+
 /**
- * supervisorBrief returns the supervisor's most recent brief — the newest reply written
- * in its own signal register — with the register glyph stripped (the block's own
- * attribution carries the mark, so keeping it would print it twice).
+ * supervisorSignal returns the supervisor's most recent word about the situation — its
+ * newest reply written in the signal register — but only when HQ graded that word as one
+ * worth standing. The register glyph is stripped (the block's own attribution carries the
+ * mark, so keeping it would print it twice).
  *
- * Null when the supervisor has produced none: an empty disclosure is honest, and picking
- * "the newest reply" instead would present an answer to some specific question as if it
- * were a standing brief.
+ * Null when the newest register line was routine, and null when there is none at all. It
+ * deliberately does NOT search backwards past a routine line for something more
+ * interesting: a `▪ noted:` is frequently the thing that RETIRES the alarm above it, so a
+ * header that skipped it would keep showing a withdrawn escalation. Latest word, or
+ * nothing.
+ *
+ * Replies that are not in the register are answers to specific questions, not status
+ * claims, and are passed over rather than treated as either.
  *
  * The age comes from the turn's timestamp, which the transcript records for the PROMPT —
- * the wake that produced the brief, a turn ahead of the reply. At the minute granularity
- * shown that is the same number, and it is a real reading rather than an invented one:
- * a turn with no time gets no age, never a guessed one.
+ * the wake that produced the reply, a turn ahead of it. At the minute granularity shown
+ * that is the same number, and it is a real reading rather than an invented one: a turn
+ * with no time gets no age, never a guessed one.
  */
-export function supervisorBrief(
+export function supervisorSignal(
   turns: TranscriptTurn[],
   nowSecs: number,
   zh: boolean,
-): Brief | null {
+): Signal | null {
   for (let i = turns.length - 1; i >= 0; i--) {
     const text = (turns[i]?.response ?? '').trim();
-    if (!text.startsWith(briefMark)) continue;
-    const body = text.slice(briefMark.length).trim();
-    if (body === '') continue;
+    if (!text.startsWith(signalMark)) continue;
+    const body = text.slice(signalMark.length).trim();
+    const hit = headerGrades.find(g => body.startsWith(g.glyph));
+    if (!hit) return null; // the latest word was routine — say nothing rather than the one before it
+    let rest = body.slice(hit.glyph.length).trim();
+    if (rest === '') continue;
+    if (hit.grade === 'brief') rest = rest.replace(briefPreamble, '');
+
+    const lines = rest.split('\n');
+    const head: string[] = [];
+    const bullets: InlineSeg[][] = [];
+    for (const line of lines) {
+      const m = bulletLine.exec(line);
+      if (m && m[1].trim() !== '') bullets.push(inlineSegments(m[1].trim()));
+      else if (bullets.length === 0 && line.trim() !== '') head.push(line.trim());
+    }
+    const headline = head.join(' ').trim();
+    if (headline === '' && bullets.length === 0) continue;
+
     const at = Date.parse(turns[i]?.time ?? '');
     const age = Number.isNaN(at)
       ? null
       : zh
         ? `${relTime(Math.floor(at / 1000), nowSecs)}前`
         : `${relTime(Math.floor(at / 1000), nowSecs)} ago`;
-    return {segments: inlineSegments(body), age};
+    return {grade: hit.grade, segments: inlineSegments(headline), bullets, age};
   }
   return null;
+}
+
+/** gradeLabel names the grade in the byline, so the reader knows what they are reading. */
+export function gradeLabel(grade: SignalGrade, zh: boolean): string {
+  if (grade === 'escalation') return zh ? '升级' : 'escalation';
+  if (grade === 'done') return zh ? '完成' : 'done';
+  return zh ? '简报' : 'brief';
 }
 
 /** fleetStat is the state tally: how many of the fleet are in each state. */
@@ -224,7 +287,7 @@ export function headerModel(args: {
     // A critical machine is read standing, so it does not also sit in the list below —
     // the same figure in two places reads as two facts.
     standing: critical ? (machine?.value ?? null) : null,
-    brief: supervisorBrief(args.turns, args.nowSecs, args.zh),
+    signal: supervisorSignal(args.turns, args.nowSecs, args.zh),
     stats: [
       fleetStat(args.digest, args.zh),
       usageStat(args.week, args.zh),

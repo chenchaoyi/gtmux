@@ -185,7 +185,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           ) : null}
           <View style={styles.headText}>
             <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
-              {pane.kind === 'topic' ? pane.name : t('knowledge', '知识库')}
+              {pane.kind === 'topic' ? pane.name : t('Knowledge', '知识库')}
             </Text>
             <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
               {pane.kind === 'index'
@@ -467,7 +467,7 @@ function EntryPane({
             activeOpacity={0.6}
             onPress={() => onAct('land', entry.id)}
             style={[styles.action, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-            <Text style={[styles.actionText, {color: pal.fg}]}>{t('mark it landed…', '标记为已落地…')}</Text>
+            <Text style={[styles.actionText, {color: pal.fg}]}>{t('Mark it landed…', '标记为已落地…')}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -475,7 +475,7 @@ function EntryPane({
           activeOpacity={0.6}
           onPress={() => onAct('retire', entry.id)}
           style={[styles.action, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-          <Text style={[styles.actionText, {color: ERRORED_COLOR}]}>{t('retire it…', '退休这一条…')}</Text>
+          <Text style={[styles.actionText, {color: ERRORED_COLOR}]}>{t('Retire it…', '退休这一条…')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -513,7 +513,7 @@ function ActBar({
           {p.title}
         </Text>
         <TouchableOpacity testID="knowledge-act-cancel" onPress={onCancel} hitSlop={hit} style={styles.actBtn}>
-          <Text style={[styles.actBtnText, {color: pal.fg3}]}>{t('cancel', '取消')}</Text>
+          <Text style={[styles.actBtnText, {color: pal.fg3}]}>{t('Cancel', '取消')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           testID="knowledge-act-submit"
@@ -521,7 +521,7 @@ function ActBar({
           disabled={!ready}
           hitSlop={hit}
           style={[styles.actBtn, !ready && styles.actBtnOff]}>
-          <Text style={[styles.actBtnText, {color: StatusColor.working}]}>{t('confirm', '确认')}</Text>
+          <Text style={[styles.actBtnText, {color: StatusColor.working}]}>{t('Confirm', '确认')}</Text>
         </TouchableOpacity>
       </View>
       <Text style={[styles.actHint, {color: pal.fg3}]}>{p.hint}</Text>

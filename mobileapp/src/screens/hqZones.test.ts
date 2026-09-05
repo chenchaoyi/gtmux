@@ -2,10 +2,10 @@ import {DigestRow, HQEvent} from '../api/client';
 import {
   assessment,
   askOf,
-  boardFreshness,
   decisions,
   eventPhrase,
   eventSession,
+  boardAge,
   fleetCounts,
   hasNewActivity,
   initialZone,
@@ -118,10 +118,10 @@ test('the activity tab flags unread by sequence, and an empty feed is never "new
 
 test('board freshness is shown, because an old assessment is worth less', () => {
   const now = 10_000;
-  expect(boardFreshness(now - 7200, now, false)).toBe('situation board · 2h ago');
-  expect(boardFreshness(now - 120, now, true)).toBe('态势板 · 2m前');
-  // No timestamp: label it plainly rather than claiming a freshness we don't have.
-  expect(boardFreshness(undefined, now, false)).toBe('situation board');
+  expect(boardAge(now - 7200, now, false)).toBe('updated 2h ago');
+  expect(boardAge(now - 120, now, true)).toBe('2m前更新');
+  // No timestamp: say so rather than claiming a freshness we don't have.
+  expect(boardAge(undefined, now, false)).toBe('age unknown');
 });
 
 // The verdict is the CORE's judgment; this page renders it. The two cases below are the
