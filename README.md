@@ -169,7 +169,7 @@ networks that block Cloudflare's edge. See **[docs/phone.md](docs/phone.md)**.
 
 ## Docs
 
-- **[CLI & commands](docs/cli.md)** — `agents` / `overview` / `focus` / `restore` / `new` / `adopt` / `app` / `update`, detection, the notification hook (Claude + `--agent`), tmux key bindings, and permissions.
+- **[CLI & commands](docs/cli.md)** — the radar (`agents`, `panes`), the supervisor (`digest`, `hq`, `capture`, `knowledge`), verified dispatch (`spawn`, `send`, `tasks`, `reap`), budget and machine (`usage`, `limits`, `resource`, `awake`), reaching a session (`focus`, `restore`, `new`, `adopt`, `attach`, `pair`, `share`), plus how detection works, the notification hook (Claude + `--agent`), tmux key bindings, and permissions.
 - **[Mobile & remote access](docs/phone.md)** — the iOS app, `gtmux serve`, and reaching your Mac from anywhere: Standard vs Direct tunnels (and Tailscale), the always-on toggle, and the browser mirror.
 - **[Install notes](docs/install.md)** — pinning a version, building from source, and the China / mirror fallback.
 - **Design specs** — `docs/design/` (menu-bar `DESIGN.md`, mobile `MOBILE.md`) and `openspec/` for in-flight changes.
@@ -194,11 +194,15 @@ networks that block Cloudflare's edge. See **[docs/phone.md](docs/phone.md)**.
 
 ## How it's different
 
-Tools like claude-squad, uzi, and dmux *spawn* agents and sandbox them in git
-worktrees. gtmux is the opposite: it runs nothing, owns nothing, and is just a
-radar plus a remote over the tmux you already use. One static, cgo-free Go
-binary; the menu-bar and mobile apps are pure consumers of the same `gtmux agents
---json`. The "g" is for Go.
+Tools like claude-squad, uzi, and dmux are **launchers**: they spawn agents and
+sandbox them in git worktrees, and what they can show you is what they started.
+gtmux comes at it from the other end — it reads the tmux you already have, so it
+sees agents you started by hand, agents another tool started, and (read-only)
+agents running outside tmux entirely. It dispatches too (`gtmux spawn`, worktree
+and all), but that is a layer you may add, never one you have to route through:
+**nothing you already run has to move for gtmux to see it.** One static, cgo-free
+Go binary; the menu-bar and mobile apps are pure consumers of the same
+`gtmux agents --json`. The "g" is for Go.
 
 ## License
 

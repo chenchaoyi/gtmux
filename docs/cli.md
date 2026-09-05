@@ -424,6 +424,23 @@ The text form omits the key, so a GUI could show the queue and never act on it. 
 key is the unit of action, not the line: dismissing one consumes every pending line that
 shares it.
 
+## `gtmux quiet` — how much the supervisor is allowed to say
+
+```
+gtmux quiet on       # CRITICAL only — the quietest setting
+gtmux quiet off      # the default: NORMAL and above are surfaced
+gtmux quiet status   # what is in effect right now
+```
+
+The supervisor grades what it finds, and this is the floor for what it prints to you.
+Anything below the floor is still **recorded** — it goes to the attention ledger
+(`gtmux tasks --pending`) rather than to your screen, so turning it up loses nothing but
+the interruption. `GTMUX_SURFACE_TIER` / `GTMUX_QUIET` override it for one process.
+
+One thing is never quieted: a **read-time gap** in the event log. That is the supervisor
+telling you it may have missed something, and a setting that could silence it would make
+every other reading untrustworthy.
+
 ## `gtmux knowledge` — the knowledge ledger (entries with provenance)
 
 ```
@@ -492,7 +509,7 @@ hand-written file verbatim to `knowledge/legacy/<topic>.md` (an untouched seeded
 placeholder is simply replaced), the render links to it, and the dispatch-time knowledge
 echo consults BOTH — so nothing loses reach while hq migrates lessons by use.
 
-## `gtmux spawn` / `gtmux tasks` / `gtmux reap` — verified dispatch
+## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap` — verified dispatch
 
 `gtmux spawn <goal>` dispatches new work to a coding agent and confirms it actually
 LANDED — the supervisor's (and your) reliable way to start a task without hand-rolled
@@ -1058,6 +1075,32 @@ A sessions/windows/panes summary from any shell. `--popup` is size-fitted for a
 tmux `display-popup`, so you can bind it to a key and float it over a full-screen
 program without interrupting it.
 
+## `gtmux new`
+
+```
+gtmux new                    # a session named for the current directory
+gtmux new api                # …named api
+```
+
+Creates a tmux session and opens a terminal tab attached to it, through the same
+terminal driver `focus` and `restore` use — so the tab lands where you can see it
+instead of in a detached session you then have to go find.
+
+## `gtmux adopt`
+
+```
+gtmux adopt 4f0c1a2b                 # resume that native session inside a new tmux session
+gtmux adopt 4f0c1a2b 91de77c4        # several at once
+```
+
+An agent started **outside** tmux is sensed read-only (the **Elsewhere** section —
+its hook fires with no `$TMUX_PANE`, so gtmux knows it exists but has no pane to
+show, jump to, or type into). `adopt` fixes that the only way it can be fixed: it
+resumes the conversation by session id inside a fresh tmux session, and from then
+on the row is a full one. Take the id from `gtmux agents --json` (`session_id`) or
+the radar row. Only agents whose CLI can resume by id are adoptable; the rest are
+listed and left alone rather than half-adopted.
+
 ## `gtmux focus`
 
 ```sh
@@ -1322,6 +1365,16 @@ bind g run-shell -b "gtmux overview --popup"
 bind a display-popup -E -w 80% -h 60% "gtmux agents --watch --popup"
 bind J run-shell "gtmux focus --last"
 ```
+
+### `gtmux status` — the fleet in your tmux status bar
+
+```tmux
+set -g status-right '#(gtmux status)'
+```
+
+One short, colored run of counts — `●2 ✓14` — for the tmux status line, so the bar you
+already have says who needs you without you asking. `--plain` drops the tmux color escapes
+for any other status bar (or a shell prompt) that wants the same numbers.
 
 ### Put the pane ids in your tab titles (optional)
 
