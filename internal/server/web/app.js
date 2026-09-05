@@ -460,13 +460,32 @@
       });
     });
   }
-  // Label for a PLAIN pane: strip a leading colon (some shells set the title to
-  // ":$PWD") and, if what's left is a filesystem path (redundant with the dir in the
-  // sub) or empty, use the command — far cleaner than a raw path as the name.
-  function plainLabel(title, command) {
-    var t = String(title || '').replace(/^:+\s*/, '').trim();
-    if (!t || t.charAt(0) === '/' || t.charAt(0) === '~') return command;
-    return t;
+  // Label for a PLAIN pane — a shell, an editor, a log tail — for a reader choosing
+  // between rows.
+  //
+  // Ending at the command made every shell on a machine read "bash": true, and it
+  // identifies nothing. The order is "what does this say that the previous did not", and
+  // it is the SAME chain the other two surfaces use (macapp PaneLabels.plain, mobile
+  // api/types paneLabel). Three copies of one rule is exactly how these drifted before,
+  // so DESIGN §16 carries the chain and says all three move together.
+  //
+  // A title that is a whole path is not a name: many shells set the title to the cwd,
+  // sometimes colon-prefixed, and the later rules produce its meaningful part anyway.
+  function plainLabel(p) {
+    var cmd = String((p && p.command) || '').trim();
+    var t = String((p && p.title) || '').replace(/^:+\s*/, '').trim();
+    if (t && t !== cmd && t.charAt(0) !== '/' && t.charAt(0) !== '~') return t;
+    // tmux's automatic-rename writes the command into the window name.
+    var win = String((p && p.win_name) || '').trim();
+    if (win && win !== cmd) return win;
+    // The repo it sits in: stable across its subdirectories, and how people refer to a
+    // shell out loud.
+    var project = String((p && p.project) || '').trim();
+    if (project) return project;
+    var cwd = String((p && p.cwd) || '').replace(/\/+$/, '');
+    var leaf = cwd.slice(cwd.lastIndexOf('/') + 1);
+    if (leaf) return leaf;
+    return cmd;
   }
   // The command a pane id turns into — same shape as the menu-bar's `PaneCommands.focus`
   // and the mobile `paneFocusCommand`. Surfacing `%N` is only worth it if the token means
@@ -498,7 +517,7 @@
     // sub-line. The avatar already carries identity.
     var live = byId(lastAgents, p.pane_id);
     var task = (live && live.task ? String(live.task) : '').trim();
-    var label = isAgent ? (task || p.agent || p.command) : plainLabel(p.title, p.command);
+    var label = isAgent ? (task || p.agent || p.command) : plainLabel(p);
     var row = document.createElement('div'); row.className = 'pb-row';
     row.appendChild(avatarEl(a, 30, false));
     var tx = document.createElement('div'); tx.className = 'pb-text';
@@ -831,23 +850,65 @@
     var keys = document.createElement('div'); keys.className = 'cx-keys';
     [['Tab', '⇥', 'Tab'], ['Escape', 'esc', 'Esc'], ['C-c', '^C', 'Ctrl-C'], ['Up', '↑', 'Up'], ['Down', '↓', 'Down']].forEach(function (k) {
       var b = document.createElement('button'); b.type = 'button'; b.textContent = k[1]; b.title = k[2];
-      b.onclick = function (e) { e.stopPropagation(); postSend(getId(), {key: k[0]}).then(then); ta.focus(); };
+      b.onclick = function (e) { e.stopPropagation(); postSend(getId(), {key: k[0]}).then(function (r) { then(r); }); ta.focus(); };
       keys.appendChild(b);
     });
 
-    root.appendChild(row); root.appendChild(keys);
+    // Where a refused send says so. The core's refusals are specific and actionable —
+    // someone is typing in that pane, the pane is gone, the box did not confirm — and
+    // this surface used to drop all of them on the floor (`if (!r.ok) return`), having
+    // already emptied the box. A message gone with nothing said is the one failure a
+    // reader cannot recover from. The phone keeps the text and names the reason; so does
+    // this now.
+    var note = document.createElement('div');
+    note.className = 'cx-note'; note.hidden = true;
 
-    function then(r) {
+    root.appendChild(row); root.appendChild(keys); root.appendChild(note);
+
+    function clearNote() { note.hidden = true; note.textContent = ''; }
+    function sayRefusal(r, restore) {
+      if (!r) return;
+      r.json().then(function (j) {
+        var why = (j && j.error) || ('发送失败（' + r.status + '）');
+        note.textContent = why;
+        note.className = 'cx-note';
+        note.hidden = false;
+        // Put the text back, but only if the box is still empty: the reader may already
+        // be typing the next thing, and overwriting that would be its own small theft.
+        if (restore && !ta.value) { ta.value = restore; grow(); }
+      }).catch(function () {
+        note.textContent = '发送失败（' + r.status + '）';
+        note.className = 'cx-note';
+        note.hidden = false;
+        if (restore && !ta.value) { ta.value = restore; grow(); }
+      });
+    }
+
+    function then(r, restore) {
       if (!r) return;
       if (r.status === 403) { ta.placeholder = '此 pane 未开放输入'; return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
-      if (!r.ok) return;
+      if (!r.ok) { sayRefusal(r, restore); return; }
+      // It landed. A session that is MID-TURN queues it behind the current turn — the
+      // agent does, not the server, and nothing on the wire reports that (the phone's
+      // send path never runs the queued detection either). So this is read off the
+      // status the radar already has, and worded as the expectation it is. Same sentence
+      // as the phone's, so the two surfaces say one thing.
+      var live = byId(lastAgents, getId());
+      if (live && live.status === 'working') {
+        note.textContent = '已送出 —— 它正在跑，这条会排在这一轮之后';
+        note.className = 'cx-note info';
+        note.hidden = false;
+      } else {
+        clearNote();
+      }
       r.json().then(function (j) { if (j && typeof j.text === 'string') echo(j.text); });
     }
     function submit() {
-      var v = ta.value; ta.value = ''; grow();
+      var v = ta.value;
       if (!v.trim()) return;
-      postSend(getId(), {text: v, enter: true}).then(then);
+      ta.value = ''; grow(); clearNote();
+      postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); });
     }
     function uploadInto(f) {
       attach.disabled = true; attach.textContent = '…';

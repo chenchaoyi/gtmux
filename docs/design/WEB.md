@@ -14,6 +14,11 @@
 真 tmux 能 split/kill/spawn，镜像**不假装**。「编排窗口与 pane」= 用户**自己的观察布局**，
 不改动真实 tmux 树。输入仍回手机/Mac。
 
+**共享页可以打字时，失败必须说话**：`/api/send` 的拒绝是具体的（那个窗格里有人在打字 / 会话已不在 /
+输入框没确认），而这块屏曾经把它们全部静默丢弃 —— 而且**在结果回来之前就清空了输入框**，于是消息没了、
+字也没了、屏幕上一个字都不说。现在：原话显示在 composer 下方（琥珀，与 errored 分组同一档），失败时把文字
+放回去（仅当输入框仍为空 —— 读者可能已经在打下一句）。手机端同规矩。
+
 ## 1. 顶栏
 
 gtmux logo · **布局预设**下拉（Frontend trio…）· **贴齐网格**开关 · **自动浮出 waiting** 开关 ·
@@ -22,6 +27,10 @@ gtmux logo · **布局预设**下拉（Frontend trio…）· **贴齐网格**开
 ## 2. 左侧目录（session/window/pane 树）
 
 - 按状态分组 needs-you→working→idle；window 可展开到 pane；顶部搜索过滤。
+- **普通 pane 的名字与另外两块屏同源**（`plainLabel` ↔ macapp `PaneLabels.plain` ↔ mobile
+  `api/types.paneLabel`）：`title`（整条路径不算名字）→ `win_name`（除非 tmux 自动改成了命令名）→
+  `project` → `cwd` 末段 → `command`。只印命令时一台机器上的 shell 全叫 `bash` —— 真，但什么也没区分
+  出来。**三份实现、一条链**：改一处必须改三处，规则全文在 DESIGN §16。
 - **拖 pane → 画板**；双击 → 全屏。
 - **可收起**：头部 ⇤ 收入；收起后画板左缘留带 waiting 计数的小标签（⇥）可重开。
 - **可调宽**：右缘 col-resize 拖柄，记住宽度（localStorage）。窄屏（<900px）自动收起。
