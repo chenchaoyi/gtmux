@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.89.0',
+    en: [
+      'The knowledge base now says what a promoted entry is: one the supervisor judged bigger than this machine, waiting for you to carry it somewhere durable.',
+    ],
+    zh: [
+      '知识库现在会说清「待你带走」是什么：参谋长判断比这台机器大的条目，等你把它搬进一个持久的地方。',
+    ],
+  },
+  {
     version: '0.88.0',
     en: [
       'A neighbour pane is named for what it is, not for the command it runs: three sibling shells no longer all read "bash".',
