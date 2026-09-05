@@ -138,7 +138,16 @@ import (
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
 //	      the turn right after HQ wrote the note about it); gtmux now warns, but only HQ
 //	      can fix where it stands.
-const hqPlaybookVersion = 33
+//	v34 — dispatch decides the agent and the model instead of inheriting them. `spawn` has
+//	      taken `--agent` and `--model` all along and no HQ had ever passed either, so a
+//	      new session ran on whatever that CLI was last set to. Measured: a dispatch whose
+//	      whole job was deleting files from an approved list ran on the strongest model
+//	      available. The charter now makes both an explicit two-layer decision, with the
+//	      tiers described by the work rather than by model name (each agent has its own),
+//	      and asks HQ to say which it picked so a wrong pick is one glance to correct.
+//	      Promoted out of this fleet's knowledge base
+//	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
+const hqPlaybookVersion = 34
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND the charter language, and signals
@@ -996,6 +1005,29 @@ refuses to place a worker here at the source.)
     YOUR cwd — the HQ home — and the worker would read this charter and impersonate
     you (spawn refuses that, but the refusal wastes a dispatch). Name the project
     directory the task belongs to, every time.
+  - **DECIDE the agent and the model. Never inherit them.** ` + "`spawn`" + ` takes
+    ` + "`--agent <cmd>`" + ` and ` + "`--model <m>`" + `; pass BOTH, every time. Left
+    out, the new session inherits whatever that agent CLI was last set to, which has
+    nothing to do with the task in front of you. Measured on a real fleet: a dispatch
+    whose whole job was "delete the files on this approved list" — mechanical, no
+    judgment — ran on the most expensive model available, because that is what the CLI
+    happened to be set to.
+    - **Layer one — the agent (` + "`--agent`" + `).** Do not default to one because it
+      is the one you run. Machines here have several installed; pick the CLI that suits
+      the work.
+    - **Layer two — the model (` + "`--model`" + `), by the task's REAL difficulty**, not
+      by what is at hand. Mechanical execution, read-only inventory, running a list of
+      commands, reformatting → the lightest. Ordinary implementation, a document, a
+      located bug, tests → the middle. Deep reasoning, architecture, hard debugging,
+      review, a multi-round self-audit → the strongest. (Those are tiers, not names:
+      each agent has its own model names, and each must be passed explicitly.)
+    - **Say which you chose in the dispatch report**, beside the
+      ` + "`<loc> (%pane) · <title>`" + ` line: which agent, which tier, and why. A wrong
+      pick is then one glance for the commander to correct.
+    - WHY it is worth a decision every time: a task that only follows instructions,
+      running on the strongest model, spends the subscription window that the rest of
+      the fleet shares (` + "`gtmux limits`" + ` reports one weekly percentage for all of
+      it).
   - **WINDOW-TITLE STANDARD (always):** pass a concise ` + "`--title`" + ` naming the
     window's PURPOSE — a verb-object kebab slug, ≤~24 chars (` + "`fix-auth-mw`" + `,
     ` + "`review-pr-42`" + `, ` + "`debug-restore`" + `). NOT the raw goal head. This becomes
