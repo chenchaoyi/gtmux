@@ -72,6 +72,14 @@ the UI drove, not just the pixels.
   asserts the recorded log shows `/api/agents` + `/api/pane` succeeded with no
   4xx/5xx. A real user scenario exercised end-to-end, UI and network together.
 
+- `edge-stability.test.ts` (gated on env) — drags into terminal scrollback and back to
+  the live tail, then **stands still** and reads the terminal's own per-frame probe. The
+  top chrome folding changes the viewport, and the viewport is what "am I at the tail" is
+  measured against, so an unstable header shows up as the viewport sawtoothing while
+  nothing is moving. It asserts that once the reveal starts, the viewport only shrinks.
+  Measured before the 2026-09-05 fix: `692.7 → 619.7 → 628.7 → 576`. After: monotone.
+  The rule it guards is `src/ui/liveEdge.ts`.
+
 Run the gated tests with a real token (kept out of the committed tests):
 
 ```sh

@@ -22,7 +22,7 @@ const scrollEvent = (over: {content: number; offset: number; view: number}) => (
   },
 });
 
-function mount(onLiveEdge: (b: boolean) => void) {
+function mount(onLiveEdge: (gap: number) => void) {
   let tree: renderer.ReactTestRenderer | undefined;
   act(() => {
     tree = renderer.create(<NativeTerm text={'line\n'.repeat(80)} onLiveEdge={onLiveEdge} />);
@@ -31,15 +31,15 @@ function mount(onLiveEdge: (b: boolean) => void) {
 }
 
 test('a poll re-publishes the edge state, so a stale host repairs itself', () => {
-  const seen: boolean[] = [];
-  const tree = mount(b => seen.push(b));
+  const seen: number[] = [];
+  const tree = mount(g => seen.push(g));
   const view = tree.root.findAllByType(ScrollView)[0];
 
-  // Drag up into history: the host is told to fold.
+  // Drag up into history: the host is told how far away the tail is.
   act(() => {
     view.props.onScroll(scrollEvent({content: 9000, offset: 100, view: 700}));
   });
-  expect(seen).toContain(false);
+  expect(seen).toEqual([8200]);
 
   // The host's copy goes stale (it resets its own collapse on a mode change, and nothing
   // says the reader came back). The next poll grows the content — which happens several
@@ -48,12 +48,12 @@ test('a poll re-publishes the edge state, so a stale host repairs itself', () =>
   act(() => {
     view.props.onContentSizeChange(390, 9200);
   });
-  expect(seen).toEqual([false]);
+  expect(seen).toEqual([8200]);
 });
 
 test('at the tail it re-publishes the tail, not a fold', () => {
-  const seen: boolean[] = [];
-  const tree = mount(b => seen.push(b));
+  const seen: number[] = [];
+  const tree = mount(g => seen.push(g));
   const view = tree.root.findAllByType(ScrollView)[0];
   act(() => {
     view.props.onScroll(scrollEvent({content: 9000, offset: 8300, view: 700})); // gap 0
@@ -62,5 +62,5 @@ test('at the tail it re-publishes the tail, not a fold', () => {
   act(() => {
     view.props.onContentSizeChange(390, 9200);
   });
-  expect(seen).toEqual([true]);
+  expect(seen).toEqual([0]);
 });

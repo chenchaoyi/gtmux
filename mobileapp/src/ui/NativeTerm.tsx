@@ -77,7 +77,12 @@ interface Props {
   theme?: TermTheme;
   fontPref?: string; // accepted for config-parity with the font picker; native uses Menlo
   lang?: Lang; // for the iOS selection overlay's edit menu (Copy / 拷贝)
-  onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
+  /**
+   * How far the tail sits below the viewport, in points (0 = pinned to the live edge).
+   * The host folds its chrome from this. A DISTANCE, not a boolean: the threshold that
+   * keeps the chrome stable depends on the chrome's own height — see ui/liveEdge.
+   */
+  onLiveEdge?: (gap: number) => void;
 }
 
 // The terminal surface's default (always-dark) background. Exported so the
@@ -404,6 +409,9 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   const say = (m: string, extra: Record<string, unknown> = {}) => {
     if (probe.current) Debug.record({event: 'termprobe', at: m, ...extra});
   };
+  // The last measured distance from the tail, so the re-publish below repeats a real
+  // reading rather than re-deriving one from a state value that may be a frame stale.
+  const gapRef = useRef(0);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
@@ -427,14 +435,16 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
       stick.current = false;
     }
     setAtBottom(bottom);
-    onLiveEdge?.(bottom);
+    gapRef.current = gap;
+    onLiveEdge?.(gap);
   };
   // Snap back to the live tail: resume following, flush any frozen snapshot (so you
   // land on the newest output, not a stale frame), and scroll down.
   const jumpToBottom = () => {
     stick.current = true;
     setAtBottom(true);
-    onLiveEdge?.(true);
+    gapRef.current = 0;
+    onLiveEdge?.(0);
     say('jump', {pending: pending.current !== null, frozen: frozen.current});
     flushPending();
     ref.current?.scrollToEnd({animated: true});
@@ -455,7 +465,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     // Content size changes on every poll of a live pane, so this re-asserts the truth
     // several times a second. The host dedupes by its own last value, so a repeat costs
     // nothing and a DESYNC repairs itself within one frame.
-    onLiveEdge?.(atBottom);
+    onLiveEdge?.(gapRef.current);
   };
 
   // iOS selection — the native overlay reports activation so JS can freeze the
