@@ -24,6 +24,7 @@ export const TestIds = {
     waitingOnly: 'radar-waiting-only',
     panes: 'radar-panes',
     section: 'radar-section', // collapse bar, suffixed with the status key
+    end: 'radar-end', // the line that closes the list
   },
   panes: {
     screen: 'panes-screen',
