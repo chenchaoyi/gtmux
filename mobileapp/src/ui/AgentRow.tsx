@@ -51,6 +51,11 @@ export function AgentRow({
   const bgLabel = (lang === 'zh' ? '后台运行中' : 'background running');
   const bgMark = `⧗${agent.bg_count && agent.bg_count > 1 ? agent.bg_count : ''} ${bgLabel}`;
 
+  // The pane's own account of why it is red, when it has one. It replaces the second
+  // line rather than sharing it — see the branch chip below.
+  const message =
+    (agent.error && agent.error_text) || (agent.bg && agent.bg_text) || '';
+
   return (
     <TouchableOpacity
       testID={`${TestIds.agent.row}-${agent.pane_id}`}
@@ -112,13 +117,12 @@ export function AgentRow({
           <Text
             style={[styles.secondary, {color: agent.error || agent.bg ? ERRORED_COLOR : pal.fg3}]}
             numberOfLines={1}>
-            {agent.error && agent.error_text
-              ? agent.error_text
-              : agent.bg && agent.bg_text
-                ? agent.bg_text
-                : secondary(agent)}
+            {message || secondary(agent)}
           </Text>
-          {!!agent.branch && (
+          {/* A pane in trouble says why, and that sentence owns the line: trading
+              "resets Aug 28 at 11pm" for a branch name is the wrong half to keep, and the
+              branch is still on the row's sheet and its Detail page. */}
+          {!!agent.branch && !message && (
             <View style={[styles.branchChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
               <Text style={[styles.branchText, {color: pal.fg2}]} numberOfLines={1}>
                 {agent.branch}
@@ -153,7 +157,13 @@ const styles = StyleSheet.create({
   primary: {fontSize: 15, fontWeight: '600', flexShrink: 1},
   latest: {fontSize: 11, fontWeight: '600', marginLeft: 8},
   line2: {flexDirection: 'row', alignItems: 'center', marginTop: 2},
-  secondary: {fontSize: 12.5, flexShrink: 0},
+  // The text yields first and the chip keeps its natural width, capped at half the line.
+  // It used to be the other way round (`flexShrink: 0` here, a shrinkable chip), so a long
+  // second line squeezed the chip to nothing — and a chip at zero width is not gone, it is
+  // its own padding and border: a small empty white pill, which is what shipped on the
+  // rate-limited row (2026-09-05). Whichever of the two is too long now ellipsizes inside
+  // its own budget instead of erasing the other.
+  secondary: {fontSize: 12.5, flexShrink: 1},
   // radar++ branch chip: subtle monospace pill carrying the pane's git branch.
   branchChip: {
     marginLeft: 7,
@@ -161,7 +171,8 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: 5,
     borderWidth: StyleSheet.hairlineWidth,
-    flexShrink: 1,
+    flexShrink: 0,
+    maxWidth: '50%',
   },
   branchText: {fontSize: 10.5, fontFamily: 'Menlo'},
   right: {alignItems: 'flex-end', marginLeft: 8, flexDirection: 'row'},

@@ -1,7 +1,7 @@
 import React from 'react';
 import {SectionList as RNSectionList} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
-import {SectionList} from './SectionList';
+import {SectionList, listEndLabel} from './SectionList';
 import {Agent} from '../api/types';
 import {paletteFor} from './theme';
 
@@ -52,4 +52,22 @@ test.each([
   const list = render(collapsed).root.findByType(RNSectionList);
   expect(grows(list.props.style)).toBe(true);
   expect(grows(list.props.contentContainerStyle)).toBe(true);
+});
+
+// A list that just stops leaves the reader guessing whether that was everything or
+// whether more is still coming — the radar ends in dark space, and it was read as the
+// latter (2026-09-05). The close must therefore be honest about folded sections too.
+describe('listEndLabel', () => {
+  test('claims no total when it showed everything it has', () => {
+    // The list's total is not the fleet's — the supervisor sits on the floating disc —
+    // so a footer counting "16" under a header counting "17" would send the reader
+    // looking for the missing one.
+    expect(listEndLabel(16, 16, 'en')).toBe('end of list');
+    expect(listEndLabel(16, 16, 'zh')).toBe('到底了');
+  });
+
+  test('does not claim you saw everything when a section is folded', () => {
+    expect(listEndLabel(16, 5, 'en')).toBe('end of list · 5 of 16 shown');
+    expect(listEndLabel(16, 0, 'zh')).toBe('到底了 · 显示 0 / 16');
+  });
 });
