@@ -149,7 +149,7 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 
 ## 文档
 
-- **[CLI 与命令](docs/cli.md)**：`agents` / `overview` / `focus` / `restore` / `new` / `adopt` / `app` / `update`、识别原理、通知 hook（Claude + `--agent`）、tmux 按键绑定、权限。
+- **[CLI 与命令](docs/cli.md)**：雷达（`agents`、`panes`）、中控（`digest`、`hq`、`capture`、`knowledge`）、带核验的派活（`spawn`、`send`、`tasks`、`reap`）、额度与机器（`usage`、`limits`、`resource`、`awake`）、够到一个会话（`focus`、`restore`、`new`、`adopt`、`attach`、`pair`、`share`），以及识别原理、通知 hook（Claude + `--agent`）、tmux 按键绑定、权限。
 - **[移动端与远程访问](docs/phone.md)**：iOS app、`gtmux serve`，以及从任意网络连回 Mac：Standard 与 Direct 两种隧道（还有 Tailscale）、always-on 开关、浏览器镜像。
 - **[安装说明](docs/install.md)**：锁版本、从源码装、中国大陆 / 镜像兜底。
 - **设计规范**：`docs/design/`（菜单栏 `DESIGN.md`、移动端 `MOBILE.md`），在途变更看 `openspec/`。
@@ -174,9 +174,12 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 
 ## 它有何不同
 
-claude-squad、uzi、dmux 这类工具**孵化** agent、把它们放进 git worktree 沙盒。gtmux 正相反：
-什么都不跑、什么都不占，只是你已有 tmux 之上的一台雷达加一个遥控器。一个静态、零 cgo 的 Go
-二进制；菜单栏和移动端 app 都只是同一份 `gtmux agents --json` 的消费方。名字里的 “g” 取自 Go。
+claude-squad、uzi、dmux 这类工具是**启动器**：它们孵化 agent、放进 git worktree 沙盒，
+而它们能给你看的，也就是它们自己起的那些。gtmux 从另一头进 —— 它读你已有的 tmux，所以
+你手动起的、别的工具起的、甚至跑在 tmux 之外的（只读），它都看得见。它**也**能派活
+（`gtmux spawn`，worktree 一样有），但那是你可以加的一层，不是必须绕的一道 ——
+**你已经在跑的东西，一个都不用搬家。** 一个静态、零 cgo 的 Go 二进制；菜单栏和移动端 app
+都只是同一份 `gtmux agents --json` 的消费方。名字里的 “g” 取自 Go。
 
 ## 许可
 

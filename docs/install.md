@@ -38,7 +38,9 @@ From source:
 go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 ```
 
-Update later with `gtmux update`; remove the app with `gtmux uninstall-app`.
+Update later with `gtmux update`. To remove: `gtmux uninstall app` takes the
+menu-bar app off, `gtmux uninstall hooks` unregisters the agent hooks, and
+`gtmux uninstall all` does both.
 
 ## China / unstable GitHub — mirror fallback
 
