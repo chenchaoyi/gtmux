@@ -42,7 +42,7 @@ import {ChatView} from '../ui/ChatView';
 import {collapseDecision} from '../ui/collapse';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {KnowledgeSheet} from './KnowledgeSheet';
-import {knowledgeLine, knowledgeOverdue} from './knowledgeModel';
+import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {parseBoardSections, sectionCount} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
@@ -54,7 +54,6 @@ import {
   assessment,
   askOf,
   boardAge,
-  boardFreshness,
   decisions,
   eventMark,
   hasNewActivity,
@@ -353,21 +352,21 @@ export function HQScreen({route, navigation}: any) {
   // Quick-command chips: per-selected-target when a decision card is picked, else fleet-wide.
   const chips: {label: string; cmd: string}[] = selected
     ? [
-        {label: t('reply for me', '帮我回复'), cmd: t(`${selected.loc} is waiting — recommend a reply.`, `${selected.loc} 在等待,给我一个回复建议。`)},
-        {label: t('inspect', '看它在干嘛'), cmd: t(`What is ${selected.loc} doing right now?`, `${selected.loc} 现在在干什么?`)},
-        {label: t('continue it', '让它继续'), cmd: t(`Tell ${selected.loc} to continue.`, `让 ${selected.loc} 继续。`)},
+        {label: t('Reply for me', '帮我回复'), cmd: t(`${selected.loc} is waiting — recommend a reply.`, `${selected.loc} 在等待,给我一个回复建议。`)},
+        {label: t('Inspect', '看它在干嘛'), cmd: t(`What is ${selected.loc} doing right now?`, `${selected.loc} 现在在干什么?`)},
+        {label: t('Continue it', '让它继续'), cmd: t(`Tell ${selected.loc} to continue.`, `让 ${selected.loc} 继续。`)},
       ]
     : [
-        {label: t('brief', '简报'), cmd: t('Give me a one-line brief of the whole fleet, needs-you first.', '给我一句话的舰队简报,先说需要我的。')},
-        {label: t("who's waiting", '谁在等我'), cmd: t('Which agents are waiting on me, and what for?', '哪些 agent 在等我?分别等什么?')},
-        {label: t("what's important", '要事'), cmd: t('What are the important events I should know about?', '有哪些我该知道的要紧事?')},
-        {label: t('my call', '该我拍板'), cmd: t('What needs my decision right now?', '现在有什么需要我拍板的?')},
+        {label: t('Brief', '简报'), cmd: t('Give me a one-line brief of the whole fleet, needs-you first.', '给我一句话的舰队简报,先说需要我的。')},
+        {label: t("Who's waiting", '谁在等我'), cmd: t('Which agents are waiting on me, and what for?', '哪些 agent 在等我?分别等什么?')},
+        {label: t("What's important", '要事'), cmd: t('What are the important events I should know about?', '有哪些我该知道的要紧事?')},
+        {label: t('My call', '该我拍板'), cmd: t('What needs my decision right now?', '现在有什么需要我拍板的?')},
       ];
 
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
-    {key: 'calls', label: t('your call', '该你拍板'), badge: calls.length > 0 ? String(calls.length) : undefined},
-    {key: 'acts', label: t('what HQ did', '参谋长做了什么'), dot: actsNew},
-    {key: 'console', label: t('console', '对话')},
+    {key: 'calls', label: t('Your call', '该你拍板'), badge: calls.length > 0 ? String(calls.length) : undefined},
+    {key: 'acts', label: t("HQ's work", '参谋长动作'), dot: actsNew},
+    {key: 'console', label: t('Console', '对话')},
   ];
 
   return (
@@ -407,12 +406,12 @@ export function HQScreen({route, navigation}: any) {
             })}
             conn={conn}
             demo={demo && !Debug.shotMode}
-            boardLine={board.exists ? boardFreshness(board.updated_at, now, zh) : null}
+            boardValue={board.exists ? boardAge(board.updated_at, now, zh) : null}
             open={briefOpen}
             onToggle={() => setBriefOpen(v => !v)}
             onBack={() => navigation.goBack()}
             onOpenBoard={() => setBoardOpen(true)}
-            knowledgeLine={knowledgeLine(knowledge, zh)}
+            knowledgeValue={knowledgeValue(knowledge, zh)}
             knowledgeOverdue={knowledgeOverdue(knowledge)}
             onOpenKnowledge={() => setKnowledgeOpen(true)}
             pal={pal}
@@ -487,7 +486,7 @@ export function HQScreen({route, navigation}: any) {
                         testID={`hq-call-open-${row.loc}`}
                         style={[styles.action, {borderColor: pal.divider}]}
                         onPress={() => openWorker(row)}>
-                        <Text style={[styles.actionText, {color: pal.fg}]}>{t('open session', '打开会话')}</Text>
+                        <Text style={[styles.actionText, {color: pal.fg}]}>{t('Open session', '打开会话')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         testID={`hq-call-ask-${row.loc}`}
@@ -500,7 +499,7 @@ export function HQScreen({route, navigation}: any) {
                             ),
                           )
                         }>
-                        <Text style={[styles.actionText, {color: pal.fg}]}>{t('ask HQ', '问参谋长')}</Text>
+                        <Text style={[styles.actionText, {color: pal.fg}]}>{t('Ask HQ', '问参谋长')}</Text>
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
@@ -625,7 +624,7 @@ export function HQScreen({route, navigation}: any) {
           <View style={[styles.sheetHead, {borderBottomColor: pal.divider}]}>
             <View style={styles.stripMid}>
               <Text style={[styles.title, {color: pal.fg}]}>{t('Situation board', '态势板')}</Text>
-              {/* The age and nothing else. This line used to run boardFreshness(), which
+              {/* The age and nothing else. This line used to name the board again, which
                   NAMES the board — right under a title that already says it, so the sheet
                   read «Situation board» over «situation board · 50m ago». The name belongs
                   on the HQ page's row, where it is the label; here it is a repeat. */}

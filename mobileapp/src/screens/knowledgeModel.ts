@@ -145,11 +145,14 @@ export function splitTitleKey(title: string, id?: string): {key: string | null; 
 }
 
 /**
- * knowledgeLine is the header row's label — the base's size, and what it owes.
+ * knowledgeValue is the header row's value — the base's size, and what it owes.
  *
  * The owed count is the part that earns a place on a standing row: it is a debt with a
  * clock on it (doctor flags one past two weeks), and a reader who has to open the sheet to
  * discover they owe something will not open the sheet.
+ *
+ * It does NOT name the base. The header's rows carry their name in a key column, so a
+ * value reading "knowledge · 352" prints the word twice on one line.
  */
 /**
  * knowledgeOverdue reports whether the queue has passed the line doctor uses.
@@ -163,11 +166,11 @@ export function knowledgeOverdue(idx: KnowledgeIndex): boolean {
   return (idx.promotions?.pending ?? 0) > 0 && (idx.promotions?.oldest_sec ?? 0) >= PROMOTION_STALE_SECS;
 }
 
-export function knowledgeLine(idx: KnowledgeIndex, zh: boolean): string | null {
+export function knowledgeValue(idx: KnowledgeIndex, zh: boolean): string | null {
   const n = idx.entries?.length ?? 0;
   const owed = idx.promotions?.pending ?? 0;
   if (n === 0 && owed === 0) return null; // no base: no row, rather than a row saying zero
-  const head = zh ? `知识库 · ${n} 条` : `knowledge · ${n}`;
+  const head = zh ? `${n} 条` : `${n} entries`;
   if (owed === 0) return head;
   return head + (zh ? ` · ${owed} 待带走` : ` · ${owed} waiting on you`);
 }

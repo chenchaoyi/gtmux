@@ -5,7 +5,7 @@ import {
   inlineSegments,
   isCritical,
   machineStat,
-  supervisorBrief,
+  supervisorSignal,
   usageStat,
 } from './hqHeaderModel';
 
@@ -15,42 +15,107 @@ const turn = (prompt: string, response: string, time?: string): TranscriptTurn =
 const row = (o: Partial<DigestRow>): DigestRow => ({pane_id: '%1', agent: 'Claude Code', status: 'idle', ...o} as DigestRow);
 const text = (segs: {text: string}[]) => segs.map(s => s.text).join('');
 
-// The supervisor writes to the user in its own signal register. Its latest such reply is
-// a standing brief — which is a better answer to "what is going on" than a tally of
-// states the page can recompute, and is the reason the disclosure opens with it.
-describe('supervisorBrief', () => {
-  test('takes the newest brief and strips the register glyph', () => {
-    const got = supervisorBrief(
+// The supervisor writes to the user in its own signal register, and grades every line it
+// writes there. Which grades reach the header is the judgment this describe() pins:
+// measured on a real session, 41 of 52 signals were `▪ noted:` bookkeeping, so "the newest
+// `⟣` reply" put "…水位到 32134" in the header four times out of five.
+describe('supervisorSignal', () => {
+  test('takes the newest header-grade signal and strips the register glyph', () => {
+    const got = supervisorSignal(
       [
-        turn('a', '⟣ older brief', at(9000)),
+        turn('a', '⟣ ✅ older completion', at(9000)),
         turn('b', 'a plain answer to something specific', at(600)),
-        turn('c', '⟣ 三条在飞 · %11 等你拍板', at(720)),
+        turn('c', '⟣ ⚠ 三条在飞 · %11 等你拍板', at(720)),
       ],
       NOW,
       false,
     );
     expect(text(got!.segments)).toBe('三条在飞 · %11 等你拍板');
+    expect(got!.grade).toBe('escalation');
     expect(got!.age).toBe('12m ago');
   });
 
-  test('a reply that is not in the register is not a brief', () => {
-    // Presenting an answer to one question as the standing brief would misreport what the
-    // supervisor thinks about everything else.
-    expect(supervisorBrief([turn('a', 'yes, that PR is merged')], NOW, false)).toBeNull();
+  test('a routine latest word means silence, NOT the interesting one before it', () => {
+    // This is the case that decided the rule. On 2026-09-05 HQ raised `⚠ %19 崩了一回合…可能
+    // 要重开`, and three minutes later wrote `▪ noted: 压缩成了…上一条「可能要重开」的升级撤回`.
+    // A header that skipped the ledger line to find something worth quoting would have gone
+    // on showing the withdrawn alarm for hours, under a verdict reading "all normal".
+    const got = supervisorSignal(
+      [
+        turn('a', '⟣ ⚠ %19 崩了一回合,可能要重开', at(3600)),
+        turn('b', '⟣ ▪ noted: 压缩成了 —— 上一条升级撤回', at(60)),
+      ],
+      NOW,
+      false,
+    );
+    expect(got).toBeNull();
   });
 
-  test('no turns, and a register mark with nothing after it, are both "none"', () => {
-    expect(supervisorBrief([], NOW, false)).toBeNull();
-    expect(supervisorBrief([turn('a', '⟣   ')], NOW, false)).toBeNull();
+  test('a knowledge write is routine here too — the KNOWLEDGE row already counts it', () => {
+    expect(supervisorSignal([turn('a', '⟣ 📓 captured: pitfalls/x', at(30))], NOW, false)).toBeNull();
+  });
+
+  test('a plain answer is not a status claim, so it neither stands nor silences', () => {
+    const got = supervisorSignal(
+      [
+        turn('a', '⟣ ✅ v0.89.0 shipped', at(3600)),
+        turn('b', 'yes, that PR is merged', at(60)),
+      ],
+      NOW,
+      false,
+    );
+    expect(got!.grade).toBe('done');
+  });
+
+  test('a brief drops the word and the clock the byline already carries, and keeps its items', () => {
+    const got = supervisorSignal(
+      [turn('a', '⟣ ◈ brief 14:30 │ 0 need you · 2 working │ top: the release\n· %19 is tagging\n· %7 idle', at(180))],
+      NOW,
+      false,
+    );
+    expect(got!.grade).toBe('brief');
+    expect(text(got!.segments)).toBe('0 need you · 2 working │ top: the release');
+    expect(got!.bullets.map(text)).toEqual(['%19 is tagging', '%7 idle']);
+  });
+
+  test('a brief that does not have that shape is left exactly as written', () => {
+    const got = supervisorSignal([turn('a', '⟣ ◈ everything quiet', at(60))], NOW, false);
+    expect(text(got!.segments)).toBe('everything quiet');
+  });
+
+  test('a reply that is not in the register is not a signal', () => {
+    // Presenting an answer to one question as the standing signal would misreport what the
+    // supervisor thinks about everything else.
+    expect(supervisorSignal([turn('a', 'yes, that PR is merged')], NOW, false)).toBeNull();
+  });
+
+  test('no turns, a bare mark, and an ungraded register line are all "none"', () => {
+    expect(supervisorSignal([], NOW, false)).toBeNull();
+    expect(supervisorSignal([turn('a', '⟣   ')], NOW, false)).toBeNull();
+    // The register without a grade glyph carries no claim about whether it is worth
+    // standing in the header, so it does not get to stand there.
+    expect(supervisorSignal([turn('a', '⟣ 都正常')], NOW, false)).toBeNull();
+  });
+
+  test('the newest header-grade line wins when it IS the newest word', () => {
+    const got = supervisorSignal(
+      [
+        turn('a', '⟣ ✅ older completion', at(9000)),
+        turn('b', '⟣ ⚠ %11 等你拍板', at(720)),
+      ],
+      NOW,
+      false,
+    );
+    expect(got!.grade).toBe('escalation');
   });
 
   test('a turn with no timestamp gets no age rather than an invented one', () => {
-    const got = supervisorBrief([turn('a', '⟣ 都正常')], NOW, false);
+    const got = supervisorSignal([turn('a', '⟣ ✅ 都正常')], NOW, false);
     expect(got!.age).toBeNull();
   });
 
   test('the age reads in the reader language', () => {
-    const got = supervisorBrief([turn('a', '⟣ 都正常', at(300))], NOW, true);
+    const got = supervisorSignal([turn('a', '⟣ ✅ 都正常', at(300))], NOW, true);
     expect(got!.age).toBe('5m前');
   });
 });

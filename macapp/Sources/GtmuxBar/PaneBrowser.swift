@@ -739,7 +739,7 @@ private struct PaneBrowserRow: View {
                     // agent is busy" — the opposite of what the badge says, and the opposite
                     // of what the word means here. The commander had to ask what it was.
                     if row.active {
-                        Text(l10n.tr("focus", "焦点"))
+                        Text(l10n.tr("Focus", "焦点"))
                             .font(.system(size: 8, weight: .medium))
                             .foregroundStyle(p.fg2)
                             .padding(.horizontal, 4).padding(.vertical, 1)

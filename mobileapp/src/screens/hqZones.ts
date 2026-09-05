@@ -181,18 +181,11 @@ export function relTime(since: number | undefined, nowSecs: number): string {
   return `${Math.floor(s / 86400)}d`;
 }
 
-// boardFreshness labels how old the supervisor's assessment is. A board is a synthesis a
-// person maintains, so its AGE is part of how much to trust it — an hours-old board is
-// worth reading with that in mind, and the label says so rather than hiding it.
-export function boardFreshness(updatedAt: number | undefined, nowSecs: number, zh: boolean): string {
-  if (!updatedAt) return zh ? '态势板' : 'situation board';
-  const ago = relTime(updatedAt, nowSecs);
-  return zh ? `态势板 · ${ago}前` : `situation board · ${ago} ago`;
-}
-
-// boardAge is the freshness ALONE — for the reader sheet, whose own title already names
-// the board. How stale the board is has to be visible there too (it is a human synthesis,
-// so its age is part of how much to trust it), but naming it twice is not that.
+// boardAge is the freshness ALONE. Both places that show it — the header's `BOARD` row
+// and the reader sheet — already name the board in their own furniture, so a value that
+// says "situation board · 1m ago" prints the noun twice on one line. How stale it is has
+// to be visible in both (a board is a human synthesis, so its age is part of how much to
+// trust it); its name does not.
 export function boardAge(updatedAt: number | undefined, nowSecs: number, zh: boolean): string {
   if (!updatedAt) return zh ? '时间未知' : 'age unknown';
   const ago = relTime(updatedAt, nowSecs);

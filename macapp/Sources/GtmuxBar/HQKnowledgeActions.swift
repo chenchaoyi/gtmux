@@ -68,8 +68,8 @@ extension KnowledgeAct {
         switch self {
         case .land:
             return KnowledgeActCopy(
-                button: l10n.tr("mark it landed…", "标记为已落地…"),
-                title: l10n.tr("mark it landed", "标记为已落地"),
+                button: l10n.tr("Mark it landed…", "标记为已落地…"),
+                title: l10n.tr("Mark it landed", "标记为已落地"),
                 hint: l10n.tr(
                     "Where did it land? A PR, a spec, a runbook name — this survives in the ledger.",
                     "落到哪儿了？PR、spec、runbook 名都行 —— 这条会留在账本里。"),
@@ -77,7 +77,7 @@ extension KnowledgeAct {
                 field: "--ref")
         case .retire:
             return KnowledgeActCopy(
-                button: l10n.tr("retire it…", "退休这一条…"),
+                button: l10n.tr("Retire it…", "退休这一条…"),
                 title: l10n.tr("retire this entry", "退休这一条"),
                 hint: l10n.tr(
                     "Why? The reason survives in the ledger — it is the only place a later reader can learn what was wrong with it.",
@@ -87,7 +87,7 @@ extension KnowledgeAct {
                 field: "--why")
         case .promote:
             return KnowledgeActCopy(
-                button: l10n.tr("promote it…", "晋升这一条…"),
+                button: l10n.tr("Promote it…", "晋升这一条…"),
                 title: l10n.tr("promote this entry", "晋升这一条"),
                 hint: l10n.tr(
                     "Why is this charter-level? The case is what whoever carries it will read in the export brief.",
@@ -97,7 +97,7 @@ extension KnowledgeAct {
                 field: "--why")
         case .dismiss:
             return KnowledgeActCopy(
-                button: l10n.tr("dismiss it…", "驳回这条候选…"),
+                button: l10n.tr("Dismiss it…", "驳回这条候选…"),
                 title: l10n.tr("dismiss this candidate", "驳回这条候选"),
                 hint: l10n.tr(
                     "Why? The candidate goes away and the reason stays in the journal, so a rejection does not vanish the way an acceptance does.",

@@ -5,6 +5,7 @@ import {
   entriesOfTopic,
   isPending,
   provenanceOf,
+  knowledgeValue,
   splitTitleKey,
 } from './knowledgeModel';
 
@@ -129,5 +130,26 @@ describe('splitTitleKey', () => {
     });
     // No id to check against: nothing is split.
     expect(splitTitleKey('kb-entry-date-is-utc KB 条目落款用 UTC').key).toBeNull();
+  });
+});
+
+// The header row carries its name in a key column, so this is the VALUE alone. It used to
+// be the whole line, "knowledge · 352 · 6 waiting on you", which printed the noun twice
+// once the row grew a key.
+describe('knowledgeValue', () => {
+  const idx = (entries: number, pending: number): KnowledgeIndex =>
+    ({
+      entries: Array.from({length: entries}, (_, i) => e({id: `t/${i}`})),
+      promotions: {pending, oldest_sec: 0},
+    }) as unknown as KnowledgeIndex;
+
+  test('says the size, and the debt when there is one', () => {
+    expect(knowledgeValue(idx(352, 0), false)).toBe('352 entries');
+    expect(knowledgeValue(idx(352, 6), false)).toBe('352 entries · 6 waiting on you');
+    expect(knowledgeValue(idx(352, 6), true)).toBe('352 条 · 6 待带走');
+  });
+
+  test('no base at all gets no row, rather than a row saying zero', () => {
+    expect(knowledgeValue(idx(0, 0), false)).toBeNull();
   });
 });
