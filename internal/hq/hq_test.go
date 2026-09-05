@@ -1028,3 +1028,38 @@ func TestExplicitSwitchNoticeSaysItWasAskedFor(t *testing.T) {
 		t.Errorf("the notice must say the rewrite was requested: %q", out)
 	}
 }
+
+// A charter change reaches an EXISTING home only through the version bump — the seeded
+// AGENTS.md is regenerated when the shipped version is newer than the installed one. So a
+// lesson written into the playbook and not bumped is a lesson nobody receives, which is
+// why CLAUDE.md makes the bump a rule rather than a habit.
+//
+// This one came out of the fleet's own knowledge base
+// (best-practices/spawn-must-decide-model-and-agent): spawn has taken --agent and --model
+// all along, no HQ ever passed either, and a dispatch whose whole job was deleting files
+// from a list ran on the strongest model available.
+func TestPlaybookTeachesDispatchToChooseAgentAndModel(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	for _, lang := range []string{"en", "zh"} {
+		body := playbookIn(lang)
+		for _, want := range []string{"--agent", "--model"} {
+			if !strings.Contains(body, want) {
+				t.Errorf("%s playbook never mentions %s", lang, want)
+			}
+		}
+		// The rule is "decide", not "there is a flag": a charter that only lists the flag
+		// is what the fleet already had while every dispatch inherited its model.
+		decided := strings.Contains(body, "Never inherit them") || strings.Contains(body, "别继承上次的设置")
+		if !decided {
+			t.Errorf("%s playbook lists the flags without asking for a decision", lang)
+		}
+		if v := parsePlaybookVersion(playbookMarker(hqPlaybookVersion, lang)); v != hqPlaybookVersion {
+			t.Errorf("%s marker does not carry the shipped version", lang)
+		}
+	}
+	// The bump itself: an existing home regenerates only when the shipped version is
+	// newer than the one its file records.
+	if hqPlaybookVersion <= 33 {
+		t.Errorf("the charter changed without a version bump — existing homes keep the old one")
+	}
+}
