@@ -39,7 +39,7 @@ import {Composer} from '../ui/Composer';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
-import {collapseDecision} from '../ui/collapse';
+import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {KnowledgeSheet} from './KnowledgeSheet';
 import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
@@ -130,28 +130,47 @@ export function HQScreen({route, navigation}: any) {
   // put so navigation is never scrolled away. `collapse` 0 = shown, 1 = hidden; `topH`
   // measured once for the height animation.
   const collapse = useRef(new Animated.Value(0)).current;
-  const topHidden = useRef(false); // animate only on a real change
-  const lastFlip = useRef(0); // when the collapse last changed (for the anti-flip-flop lock)
   const [topH, setTopH] = useState(0);
-  const setCollapsed = useCallback(
-    (hide: boolean) => {
-      // The anti-flip-flop rule is the pure `collapseDecision` (ui/collapse, tested):
-      // collapsing the header grows the ChatView's viewport, which changes its own
-      // atBottom test → onLiveEdge can bounce back the other way and the header reverses
-      // mid-animation (the "two-stage / 卡涩" jank). A reversal within 250ms of the last
-      // flip is the echo and is ignored; a settled change still lands.
-      const d = collapseDecision({hidden: topHidden.current, lastFlip: lastFlip.current}, hide, Date.now());
+  // How much the viewport moves under the scroller when the header folds — which is the
+  // number the hysteresis has to clear. For the console (a ChatView pinned to its tail)
+  // that is the header's full height; a TOP-anchored zone does not move at all when the
+  // header goes, so it has no feedback to defend against and contributes 0.
+  const chromeH = useRef(0);
+  const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
+  const lastGap = useRef(0);
+  // One rule, shared with Detail: `ui/liveEdge`. Folding this header grows the ChatView's
+  // viewport, which is what the console's distance-from-the-tail is measured against — so
+  // a threshold smaller than the header cannot help asking for the opposite of what it
+  // just did. The thresholds are derived from `chromeH` instead, and no decision is taken
+  // from a frame measured mid-animation.
+  const runEdge = useCallback(
+    (gap: number) => {
+      const d = chromeDecision(chrome.current, gap, chromeH.current, Date.now());
       if (!d.change) return;
-      lastFlip.current = d.lastFlip;
-      topHidden.current = d.hidden;
-      Animated.timing(collapse, {toValue: d.hidden ? 1 : 0, duration: 200, useNativeDriver: false}).start();
+      chrome.current = d;
+      Animated.timing(collapse, {
+        toValue: d.hidden ? 1 : 0,
+        duration: CHROME_ANIM_MS,
+        useNativeDriver: false,
+      }).start(({finished}) => {
+        if (finished) runEdge(lastGap.current); // answer whatever arrived mid-flight
+      });
     },
     [collapse],
   );
-  // Top-anchored zones (calls/activity): hide once scrolled a little past the top.
+  const onLiveEdge = useCallback(
+    (gap: number) => {
+      lastGap.current = gap;
+      runEdge(gap);
+    },
+    [runEdge],
+  );
+  // Top-anchored zones (calls/activity) measure their distance from the TOP instead, and
+  // then take exactly the same road — including the hysteresis, which is what stops a
+  // scroll coming to rest near the line from flickering the header.
   const onZoneScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => setCollapsed(e.nativeEvent.contentOffset.y > 24),
-    [setCollapsed],
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => onLiveEdge(e.nativeEvent.contentOffset.y),
+    [onLiveEdge],
   );
   const [seenMark, setSeenMark] = useState(0);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
@@ -287,14 +306,15 @@ export function HQScreen({route, navigation}: any) {
     if (zone === null && digest.length > 0) setZone(initialZone(digest));
   }, [digest, zone]);
   const activeZone: Zone = zone ?? 'console';
+  chromeH.current = activeZone === 'console' ? topH : 0; // see the collapse driver above
 
   // Reveal the top when switching zones — each zone starts at its resting edge, so a
   // stale collapsed state from the previous zone would hide the header with nothing
   // scrolled.
   useEffect(() => {
     collapse.setValue(0);
-    topHidden.current = false;
-    lastFlip.current = 0; // don't carry the anti-flip-flop lock across a zone switch
+    chrome.current = {hidden: false, settledAt: 0}; // don't carry a fold across a zone switch
+    lastGap.current = 0;
   }, [activeZone, collapse]);
 
   // Reading the feed marks it read; leaving it doesn't un-mark.
@@ -389,7 +409,7 @@ export function HQScreen({route, navigation}: any) {
             // Re-measure only while SHOWN — feeding a new height into the interpolation
             // mid-hide makes the collapse jump (a visible second stage). When shown
             // again it re-syncs (fixes the assessment-grew clip).
-            if (topHidden.current) return;
+            if (chrome.current.hidden) return;
             const h = e.nativeEvent.layout.height;
             if (h > 0 && Math.abs(h - topH) > 1) setTopH(h);
           }}>
@@ -549,7 +569,7 @@ export function HQScreen({route, navigation}: any) {
               // it re-hid → …) is broken in ChatView: it re-pins to the bottom when its
               // viewport changes while at the tail, so atBottom stays true and the header
               // stays put.
-              onLiveEdge={atBottom => setCollapsed(!atBottom)}
+              onLiveEdge={onLiveEdge}
             />
           </View>
         )}

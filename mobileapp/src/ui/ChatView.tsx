@@ -58,7 +58,13 @@ interface Props {
   // show how long it has been thinking — a silent wait is indistinguishable from a
   // hung one, so the view always says which it is.
   workingSince?: number;
-  onLiveEdge?: (atBottom: boolean) => void; // hide/show host chrome as you leave/return to the live tail
+  /**
+   * How far the tail sits below the viewport, in points (0 = pinned to the live edge).
+   * The host folds its chrome from this. It is a DISTANCE and not a boolean because the
+   * threshold that keeps the chrome stable depends on how tall the chrome is, which only
+   * the host knows — see ui/liveEdge.
+   */
+  onLiveEdge?: (gap: number) => void;
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -115,15 +121,27 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const scrollRef = React.useRef<ScrollView>(null);
   // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
   const [atBottom, setAtBottom] = React.useState(true);
-  // atBottom as a ref too, so the layout-pin (below) reads the live value without a
-  // stale closure. The host chrome (HQ header) shows at the live tail via onLiveEdge.
-  const atBottomRef = React.useRef(true);
+  // Following the live tail is the USER's intent, so only the user may withdraw it —
+  // the same rule NativeTerm arrived at, and for the same reason. Deciding it from the
+  // geometry alone ("is the tail within 60pt") breaks the moment the host reveals its
+  // chrome: that costs ~117pt of viewport, which is more than the threshold, so a reader
+  // sitting AT the tail was reclassified as away — the pin below stopped compensating
+  // halfway through the reveal and the jump-to-bottom arrow appeared under a finger that
+  // had never left the bottom.
+  const stick = React.useRef(true);
+  const dragging = React.useRef(false);
+  // The last reported distance from the tail, so a re-publish (below) can repeat it.
+  const gapRef = React.useRef(0);
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
-    const b = contentSize.height - contentOffset.y - layoutMeasurement.height < 60;
-    atBottomRef.current = b;
-    setAtBottom(b);
-    onLiveEdge?.(b);
+    const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
+    gapRef.current = gap;
+    // Arriving at the tail always resumes following, whoever caused it; leaving it counts
+    // only under a finger.
+    if (gap < 60) stick.current = true;
+    else if (dragging.current) stick.current = false;
+    setAtBottom(stick.current);
+    onLiveEdge?.(gap);
   };
   // When the VIEWPORT changes while we're at the tail — e.g. a host header collapsing
   // in/out above us shrinks/grows this ScrollView — re-pin to the bottom. Without this,
@@ -131,13 +149,14 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // header hid, the viewport grew back… an endless loop. Pinning keeps atBottom true so
   // the header stays put at the live tail.
   const onBodyLayout = () => {
-    if (atBottomRef.current) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+    if (stick.current) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
   };
   const jumpToBottom = () => {
     scrollRef.current?.scrollToEnd({animated: true});
-    atBottomRef.current = true;
+    stick.current = true;
+    gapRef.current = 0;
     setAtBottom(true);
-    onLiveEdge?.(true);
+    onLiveEdge?.(0);
   };
 
   // Collapse/expand all agent replies — so you can scan prompts to find a turn, then
@@ -188,12 +207,21 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   });
   const toggleTurn = (i: number) => setTurnOpen(o => ({...o, [i]: !o[i]}));
 
-  // Jump to the latest turn whenever the history grows (kept in sync by the parent).
+  // Follow the newest turn — but ONLY if you were already at the tail.
+  //
+  // This used to scroll to the bottom on every new turn unconditionally, and to declare
+  // itself at the bottom while doing it. Two things went wrong during a live conversation,
+  // which is exactly when turns arrive: it yanked you out of the history you had scrolled
+  // up to read, and it set `atBottom` behind the host's back — the host had folded its
+  // chrome because you were away, this said you were not, and nothing told the host. The
+  // two then disagreed until the next scroll frame flipped one of them. Following the tail
+  // is for a reader who is AT the tail; for anyone else it is an interruption.
   React.useEffect(() => {
+    if (!stick.current) return;
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
-    atBottomRef.current = true;
-    setAtBottom(true);
-  }, [turns.length]);
+    gapRef.current = 0;
+    onLiveEdge?.(0);
+  }, [turns.length, onLiveEdge]);
 
   // Per-turn time labels, with adjacent duplicates blanked so a burst of turns in
   // the same minute shows the label once (a centered separator, chat-app style).
@@ -254,6 +282,12 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       style={styles.body}
       contentContainerStyle={styles.content}
       onScroll={onScroll}
+      onScrollBeginDrag={() => {
+        dragging.current = true;
+      }}
+      onScrollEndDrag={() => {
+        dragging.current = false;
+      }}
       onLayout={onBodyLayout}
       scrollEventThrottle={16}>
       {/* current-state row: avatar + agent + status dot */}

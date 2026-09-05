@@ -43,6 +43,7 @@ import {agentLabel} from './PaneBrowserScreen';
 import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {isSplitCanvas} from '../ui/layout';
+import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
 // either mode) so switching modes never jumps the text size. Middle = default.
@@ -133,19 +134,65 @@ export function DetailView({
   const [loading, setLoading] = useState(true);
   // Auto-hide the header info block to reclaim space while you browse history /
   // scrollback (i.e. away from the live tail); reveal it when you flick back to the
-  // bottom. `collapse` 0 = shown, 1 = hidden; `headerH` is measured once for the
-  // height animation. Driven by ChatView/NativeTerm's onLiveEdge.
+  // bottom. `collapse` 0 = shown, 1 = hidden; the three block heights are measured once
+  // for the height animation. Driven by ChatView/NativeTerm's onLiveEdge, which reports a
+  // DISTANCE from the tail — the threshold that keeps this stable depends on how tall the
+  // chrome is, and only this side knows that. The rule is `ui/liveEdge`.
   const collapse = useRef(new Animated.Value(0)).current;
-  const lastEdge = useRef(true); // last atBottom → animate only on a real change
   const [headerH, setHeaderH] = useState(0);
-  const onLiveEdge = useCallback(
-    (atBottom: boolean) => {
-      if (atBottom === lastEdge.current) return; // fires every scroll frame — dedupe so
-      lastEdge.current = atBottom; // one clean animation runs (no restart-creep)
-      Animated.timing(collapse, {toValue: atBottom ? 0 : 1, duration: 200, useNativeDriver: false}).start();
+  // All three blocks fold on one driver, so the height the decision needs is their SUM:
+  // that is what the viewport gains and loses, and therefore what the hysteresis has to
+  // clear. Measured on a real page it is ~117pt against a 40pt "at the tail" threshold,
+  // which is why the old boolean could not help oscillating.
+  const chromeH = useRef(0);
+  // Only count a block that is actually on screen: the measurements are kept forever (a
+  // re-measure during the collapse would capture a shrunken value), so a strip that has
+  // since emptied would otherwise still be charged for its height.
+  chromeH.current =
+    headerH +
+    (neighbors.length > 0 && onOpenPane ? neighborH : 0) +
+    (isPlainPane ? 0 : segH);
+  const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
+  const lastGap = useRef(0);
+  const runEdge = useCallback(
+    (gap: number) => {
+      const d = chromeDecision(chrome.current, gap, chromeH.current, Date.now());
+      if (Debug.logNet) {
+        Debug.record({event: 'edge', gap: +gap.toFixed(1), chromeH: chromeH.current, was: chrome.current.hidden, hidden: d.hidden, change: d.change});
+      }
+      if (!d.change) return;
+      chrome.current = d;
+      Animated.timing(collapse, {
+        toValue: d.hidden ? 1 : 0,
+        duration: CHROME_ANIM_MS,
+        useNativeDriver: false,
+      }).start(({finished}) => {
+        // Re-ask with the newest reading. Everything that arrived mid-flight was ignored
+        // on purpose (the layout was still moving), so without this a genuine change made
+        // during the animation would wait for another scroll event — and on a finger that
+        // has already lifted there is no other scroll event.
+        if (finished) runEdge(lastGap.current);
+      });
     },
     [collapse],
   );
+  // BOTH mode layers stay mounted (switching must be instant), so both keep reporting —
+  // and the hidden one reports its OWN tail. Measured on 2026-09-05: browsing terminal
+  // scrollback produced an alternating stream of `gap=258` from the terminal and `gap=0`
+  // from the chat sitting at its tail behind it, and the chrome unfolded on the chat's
+  // reading while the reader was a thousand points deep in history. One driver, so only
+  // the mode you are looking at may drive it.
+  const modeRef = useRef<DetailMode>('terminal');
+  const edgeFrom = useCallback(
+    (source: DetailMode) => (gap: number) => {
+      if (modeRef.current !== source) return;
+      lastGap.current = gap;
+      runEdge(gap);
+    },
+    [runEdge],
+  );
+  const chatEdge = useMemo(() => edgeFrom('chat'), [edgeFrom]);
+  const termEdge = useMemo(() => edgeFrom('terminal'), [edgeFrom]);
   const [fontIdx, setFontIdx] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
@@ -184,6 +231,7 @@ export function DetailView({
   // An explicit route mode (the HQ card opens CHAT — talking to the supervisor is
   // the point) beats the global default.
   const [mode, setMode] = useState<DetailMode>(initialMode ?? defaultDetailMode);
+  modeRef.current = mode; // only the layer you are looking at may drive the chrome (above)
   // Each view (terminal = hundreds of dual-layer <Text> rows; chat = many markdown
   // turns) is expensive to MOUNT, so we keep BOTH mounted once visited and just
   // toggle visibility with display:none — a switch is then instant (no re-mount, no
@@ -205,7 +253,9 @@ export function DetailView({
     if (mode === 'chat') setSeenChat(true);
     else setSeenTerm(true);
     collapse.setValue(0); // reveal the header when switching Chat↔Terminal
-    lastEdge.current = true;
+    chrome.current = {hidden: false, settledAt: 0};
+    lastGap.current = 0;
+    if (Debug.logNet) Debug.record({event: 'edge-reset', mode});
   }, [mode, collapse]);
 
   // A plain pane has no chat — force Terminal (the Chat/Terminal segmented is hidden
@@ -431,13 +481,13 @@ export function DetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={onLiveEdge} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} />
     ),
-    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, onLiveEdge],
+    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge],
   );
   const termEl = useMemo(
-    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={onLiveEdge} />,
-    [text, fontSize, cursor, theme, fontPref, lang, onLiveEdge],
+    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} />,
+    [text, fontSize, cursor, theme, fontPref, lang, termEdge],
   );
 
   // Load the sibling panes in this pane's session, refreshed on a slow cadence
