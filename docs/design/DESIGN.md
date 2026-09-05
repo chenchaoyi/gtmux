@@ -414,9 +414,14 @@ gtmux 的控制原语（`focus`/`send`/`attach`）本来就是 **pane 级**、�
   `N 个 pane · M 个会话`，其中「K 个等你」用 waiting 红。session 头带 **rollup**（pane 数 · agent
   数 + 各状态 pip）—— **rollup 挂在头上是为了折叠后仍然说话**：折起来还要能看见「这里有 1 个在等
   你」，否则折叠恰好藏掉了这块屏存在的理由。agent 行显示**真实状态徽章**（按 pane_id join 雷达）。
-  标签规则与手机同源（`PaneLabels`）：agent 行绝不拿 `command` 当首选（Claude 2.x 的
-  `pane_current_command` 是版本号，#659），plain 行标题若是路径就退回命令名 —— 两块屏各写一份标签
-  规则正是它们当初分叉的原因。
+  标签规则与手机同源（`PaneLabels` ↔ `api/types.paneLabel`）：agent 行绝不拿 `command` 当首选
+  （Claude 2.x 的 `pane_current_command` 是版本号，#659）。**plain 行要有名字，不是命令名** ——
+  只印命令时一台机器上的 shell 全叫 `bash`，真，但**什么也没区分出来**，而读者正是在这些行里挑一个。
+  取名顺序按「这一步比上一步多说了什么」：`title`（有人特意起的；**整条路径不算名字** —— 很多 shell
+  把 cwd 写进标题，有时还带冒号前缀）→ `win_name`（除非 tmux 的 automatic-rename 把它改成了命令名）→
+  `project`（在哪个仓库里，跨子目录稳定，也是人嘴里的叫法）→ `cwd` 末段 → `command`（最后一档）。
+  两块屏各写一份实现（语言不同），但**同一条链、同一组用例**，改一边必须改另一边 —— 各写一份规则
+  正是它们当初分叉的原因。
 - **身份用 tmux 稳定 id（tmux-id-surface，2026-08-14）**：一行靠什么被认出来，是这块屏的地基。
   规则一句话 —— **id 是锚，名字只是注解，字首（sigil）表示层级**：session 用**名字**（本来就唯一，
   也是 `attach -t` 接受的东西）；window 用 `@id + 名字`（tmux 的 `automatic-rename` 会让名字漂，

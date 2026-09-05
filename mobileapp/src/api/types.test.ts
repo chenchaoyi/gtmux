@@ -293,6 +293,13 @@ describe('paneLabel', () => {
     expect(paneLabel(row({title: 'log tail'}))).toBe('log tail');
   });
 
+  test('a title that is a whole path is not a name either', () => {
+    // Many shells write the cwd into the title, sometimes colon-prefixed. The folder's
+    // own name says more, and the later rules produce it.
+    expect(paneLabel(row({title: ':/Users/x/src', cwd: '/Users/x/src'}))).toBe('src');
+    expect(paneLabel(row({title: '~/src', project: 'gtmux'}))).toBe('gtmux');
+  });
+
   test('a title that is just the command is not a name', () => {
     // tmux and shells both write the command into the title.
     expect(paneLabel(row({title: 'bash', cwd: '/Users/x/gtmux'}))).toBe('gtmux');

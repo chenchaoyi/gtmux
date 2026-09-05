@@ -95,8 +95,13 @@ export interface PaneRow {
  */
 export function paneLabel(r: PaneRow): string {
   const cmd = (r.command || '').trim();
-  const title = (r.title || '').trim();
-  if (title && title !== cmd) return title;
+  // A title that is a whole PATH is not a name. Many shells set the pane title to the
+  // cwd, sometimes colon-prefixed (":/Users/…"), and printing that in a chip says less
+  // than the folder's own name — which the rules below produce anyway. The Mac's browser
+  // has skipped path titles since it shipped; this is the same rule, and the two
+  // surfaces now call a pane the same thing (macapp PaneLabels.plain).
+  const title = (r.title || '').replace(/^:+/, '').trim();
+  if (title && title !== cmd && !title.startsWith('/') && !title.startsWith('~')) return title;
   const win = (r.win_name || '').trim();
   if (win && win !== cmd) return win;
   const project = (r.project || '').trim();
