@@ -1,7 +1,24 @@
 # hq-knowledge Specification
 
 ## Purpose
-TBD - created by archiving change hq-knowledge-ledger. Update Purpose after archive.
+
+The supervisor's own memory of THIS machine: what it has learned working here, kept as an
+append-only ledger with provenance rather than as prose it has to remember.
+
+It is one of three places a rule or a fact can live, and the distinction is what keeps a
+lesson from being filed where nobody will receive it:
+
+- the **shipped charter** (`AGENTS.md`, generated from `internal/hq`) belongs to gtmux and
+  reaches every machine through a version bump;
+- **`LOCAL.md`** belongs to the operator, is never overwritten, and is in context every
+  turn — it is how a commander governs their own supervisor without touching code;
+- **this ledger** belongs to the machine's supervisor, and is SPENT rather than always
+  present: matched entries echo into a dispatch, and the supervisor reads it on purpose.
+
+An entry that turns out to be bigger than one machine leaves through `promote` → a carried
+brief → `land`, which is the only step of the whole lifecycle that waits on a person.
+
+Written up for readers in `docs/design/knowledge-layers.md`.
 
 ## Requirements
 
