@@ -20,22 +20,21 @@ import {TestIds} from '../constants/testIds';
 import {Palette, Size, StatusColor, sections} from './theme';
 
 /**
- * listEndLabel closes the list.
+ * listEndLabel closes the list — and in the ordinary case it says NOTHING, because
+ * the mark does the talking.
  *
- * A list that simply stops leaves the reader guessing whether that was everything or
- * whether more was still loading — the radar ends in dark space, and on 2026-09-05 it was
- * read as the latter. So the end says so.
+ * It used to read "end of list", which is a lowercase English sentence fragment
+ * sitting under a clean list: it has to pick a capitalisation, it has to be
+ * translated, and neither decision has a good answer. A short centred rule needs
+ * none of that and reads as a terminus in any language.
  *
- * It adds a count ONLY when a folded section makes "that was everything" untrue. The
- * plain case deliberately claims no total: the list's own total is not the fleet's (the
- * supervisor is on the floating disc, not in these sections), and a footer reading
- * "16 agents" under a header reading "17 agents" would have the reader hunting for the
- * one that got away. `total` is therefore what the SECTIONS hold, folded or not.
+ * Words come back only when the list is NOT everything it has — a folded section
+ * makes "that was all" untrue, and that fact cannot be drawn. What returns is a
+ * COUNT rather than a sentence, so there is still no case to get wrong.
  */
 export function listEndLabel(total: number, shown: number, lang: Lang): string {
-  const zh = lang === 'zh';
-  if (shown >= total) return zh ? '到底了' : 'end of list';
-  return zh ? `到底了 · 显示 ${shown} / ${total}` : `end of list · ${shown} of ${total} shown`;
+  if (shown >= total) return '';
+  return lang === 'zh' ? `显示 ${shown} / ${total}` : `${shown} of ${total} shown`;
 }
 
 interface Sec {
@@ -100,10 +99,13 @@ export function SectionList({
       contentContainerStyle={styles.fill}
       ListFooterComponent={
         agents.length > 0 ? (
-          <View style={styles.end}>
-            <Text testID={TestIds.radar.end} style={[styles.endText, {color: pal.fg3}]}>
-              {listEndLabel(inSections, shown, lang)}
-            </Text>
+          <View testID={TestIds.radar.end} style={styles.end}>
+            <View style={[styles.endRule, {backgroundColor: pal.divider}]} />
+            {listEndLabel(inSections, shown, lang) !== '' && (
+              <Text style={[styles.endText, {color: pal.fg3}]}>
+                {listEndLabel(inSections, shown, lang)}
+              </Text>
+            )}
           </View>
         ) : undefined
       }
@@ -196,8 +198,11 @@ function CollapseBar({
 const styles = StyleSheet.create({
   list: {flex: 1}, // fill the screen (flexGrow alone would not shrink: RN flexShrink defaults to 0)
   fill: {flexGrow: 1},
-  end: {paddingTop: 18, paddingBottom: 30, alignItems: 'center'},
-  endText: {fontSize: 11.5, letterSpacing: 0.2},
+  end: {paddingTop: 20, paddingBottom: 32, alignItems: 'center'},
+  // A short rule, not a full-width one: a line spanning the list is another row
+  // separator, and this has to read as the end of them rather than one more.
+  endRule: {width: 28, height: 2, borderRadius: 1, opacity: 0.9},
+  endText: {fontSize: 11.5, letterSpacing: 0.2, marginTop: 10, fontVariant: ['tabular-nums']},
   slot: {height: 9, justifyContent: 'flex-start'},
   slotLine: {height: 3},
   bar: {

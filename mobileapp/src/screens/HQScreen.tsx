@@ -663,6 +663,7 @@ export function HQScreen({route, navigation}: any) {
       <UsageSheet
         visible={usageOpen}
         usage={usageFull}
+        agents={agents}
         pal={pal}
         lang={lang}
         onClose={() => setUsageOpen(false)}

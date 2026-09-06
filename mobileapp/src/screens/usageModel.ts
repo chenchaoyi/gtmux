@@ -87,6 +87,60 @@ export function buildUsageView(u: UsageReport | null): UsageView {
 }
 
 /**
+ * agentNames maps a registry key to the display name, learned from the session
+ * rows rather than a table: each carries both, so "claude" becomes "Claude Code"
+ * without this file having to know that. An unknown key keeps its own spelling —
+ * inventing a capitalisation for an agent gtmux has not met would be worse.
+ */
+export function agentNames(u: UsageReport | null): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const s of u?.sessions ?? []) {
+    const key = s.agent_key;
+    const label = (s as {agent?: string}).agent;
+    if (key && label) out[key] = label;
+  }
+  return out;
+}
+
+/** One agent's plan: the windows that belong to it, named without its prefix. */
+export interface PlanGroup {
+  agent: string;
+  name: string;
+  windows: {name: string; pct: number; resetAt: string}[];
+}
+
+/**
+ * planByAgent groups the windows under the agent whose plan they are.
+ *
+ * The flat list repeated the agent on every row — "claude session", "claude week
+ * (all models)", "claude week (fable)" — in the registry's lowercase key, next to
+ * session rows that spell the same agent "Claude Code". Grouping says it once, in
+ * the name the rest of the app uses, and lets each window be called what it
+ * actually is.
+ *
+ * Order is the report's, not sorted: it arrives plan by plan already.
+ */
+export function planByAgent(u: UsageReport | null): PlanGroup[] {
+  const names = agentNames(u);
+  const out: PlanGroup[] = [];
+  const at = new Map<string, number>();
+  for (const w of u?.limits?.windows ?? []) {
+    const agent = w.agent ?? '';
+    const prefix = agent ? agent + ' ' : '';
+    const name = prefix && w.label.startsWith(prefix) ? w.label.slice(prefix.length) : w.label;
+    const key = agent || w.label;
+    let i = at.get(key);
+    if (i === undefined) {
+      i = out.length;
+      at.set(key, i);
+      out.push({agent, name: names[agent] ?? agent, windows: []});
+    }
+    out[i].windows.push({name, pct: w.pct_used, resetAt: w.reset_at});
+  }
+  return out;
+}
+
+/**
  * compactTok is the token count as a reader wants it: 2.9M, 830k, 412.
  *
  * Exact digits are noise at this magnitude — nobody acts on the difference between
