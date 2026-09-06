@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.95.0',
+    en: [
+      'A usage view on the phone: your plan windows, who is burning them, and the machine — reached from the HQ page.',
+      'Sessions there are ranked by trouble rather than size, so the one that needs attention is at the top.',
+    ],
+    zh: [
+      '手机上有了用量页：额度窗口、谁在烧、机器状况，从 HQ 页进去。',
+      '里面的会话按「麻烦」排而不是按「大小」排，需要你留意的那条在最上面。',
+    ],
+  },
+  {
     version: '0.94.0',
     en: [
       'The HQ page now reports instead of displaying: what is owed to you, what HQ did, and only then the context — rather than a stack of readings you can see on the radar anyway.',
