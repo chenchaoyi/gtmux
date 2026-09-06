@@ -111,12 +111,17 @@ func cmdInstallHooks(args []string) int {
 		// which coexists with any existing `notify` — see installCodexHooks.
 		return installCodexHooks(yes)
 	}
+	if agent == "kimi" {
+		// Kimi's hooks live inside the user's OWN config.toml, so it takes the
+		// managed-block path rather than a JSON merge — see installKimiHooks.
+		return installKimiHooks(true)
+	}
 	if inst, ok := agentInstallers[agent]; ok {
 		return installAgentHooks(inst, yes)
 	}
 	if agent != "claude" {
-		i18n.Sae("unsupported agent: "+agent+" (try: claude, codex, cursor, gemini, copilot, kiro)",
-			"不支持的 agent："+agent+"（可选：claude、codex、cursor、gemini、copilot、kiro）")
+		i18n.Sae("unsupported agent: "+agent+" (try: claude, codex, cursor, gemini, kimi, copilot, kiro)",
+			"不支持的 agent："+agent+"（可选：claude、codex、cursor、gemini、kimi、copilot、kiro）")
 		return 1
 	}
 	bin := selfPath()
@@ -173,6 +178,9 @@ func cmdUninstallHooks(args []string) int {
 				i++
 			}
 		}
+	}
+	if agent == "kimi" {
+		return installKimiHooks(false)
 	}
 	if inst, ok := agentInstallers[agent]; ok {
 		return uninstallAgentHooks(inst)

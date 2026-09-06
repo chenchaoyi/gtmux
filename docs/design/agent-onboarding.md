@@ -25,7 +25,7 @@ all of it at once, and every tier degrades gracefully to the one below.
 supervisor whose session has aged past being able to judge — senses three facts, and they
 sit at DIFFERENT tiers:
 
-| criterion | needs | claude | codex · opencode | gemini · cursor · copilot · kiro |
+| criterion | needs | claude | codex · opencode · kimi | gemini · cursor · copilot · kiro |
 |---|---|:---:|:---:|:---:|
 | `turns` | Tier 1 (the event stream) | ✅ | ✅ | ✅ |
 | `age` | Tier 2 (a transcript) | ✅ | ✅ | ❌ |
@@ -126,6 +126,16 @@ emits events. Two extension models exist — check which the agent supports:
   The installer writes a small plugin that subscribes to the agent's events and shells
   out to `gtmux hook --agent <key> <event>`. Same `install-hooks --agent <key>` entry
   point; the plugin is a `dedicated` artifact removed cleanly on uninstall.
+- **Managed-block model** (Kimi Code): the agent's hooks live inside a config file
+  **gtmux does not own** — `[[hooks]]` entries in the same `~/.kimi-code/config.toml`
+  that holds the user's providers and keys. Neither of the models above fits: there is
+  no file to write whole, and re-serialising someone's hand-written TOML to change four
+  lines is not a trade worth taking (gtmux has no TOML library, and should not acquire
+  one for this). So `internal/app/kimi_hooks.go` appends a block between **sentinel
+  comments**, the way a shell rc file is edited; uninstall deletes exactly what lies
+  between them and reads nothing else. Appending is always valid TOML — a table header
+  ends the previous table's scope — so the block cannot land inside someone else's
+  table. Reach for this whenever an agent's hooks share a file with its user config.
 
 Map the agent's native events onto gtmux's: `UserPromptSubmit`, `Stop`, `PermissionRequest`
 (a real user-facing approval → `waiting`), `PostToolUse`/resolve (clears `waiting`),
@@ -215,6 +225,13 @@ id (piped alongside the prompt) so it lines up with the `resume` record `session
   registered explicitly).
 - [ ] **Read-only tools never flag "needs you."** `sideEffectingTools` in `classify.go` is
   the allowlist; keep read-only tools (Read/Grep/Glob/…) out of it.
+- [ ] **An unknown field can take the whole config down.** Kimi's `[[hooks]]` accepts
+  exactly four keys and rejects the ENTIRE file on a fifth — so an ownership marker
+  written into the entry would have cost the user their providers, not one hook.
+  Verified with the agent's own validator (`kimi doctor` reported
+  `hooks[11]: Unrecognized key: "owner"`). When an installer writes into a file the
+  user owns, run the AGENT's validator over the result, and check the validator
+  discriminates by feeding it a bad one.
 - [ ] **Keys must be consistent.** One canonical `Key`; use `Aliases` for alternate command
   names (cursor-agent → cursor). Don't invent a per-subsystem key.
 

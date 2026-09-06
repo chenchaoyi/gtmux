@@ -82,6 +82,7 @@ func doctorFix(yes bool) int {
 	applied += s.stepPlugins()
 	applied += s.stepClaudeHook()
 	applied += s.stepCodexHook()
+	applied += s.stepKimiHook()
 	applied += s.stepCloudflared()
 	applied += s.stepAppInstall()
 	applied += s.stepUploads()
@@ -600,6 +601,42 @@ func (s *fixState) stepClaudeHook() int {
 		return 0
 	}
 	i18n.Say("  ✓ installed — restart Claude Code sessions to load it", "  ✓ 已安装，重启 Claude Code 会话以加载")
+	return 1
+}
+
+// stepKimiHook wires gtmux into Kimi Code by appending a managed block to the user's
+// own ~/.kimi-code/config.toml. Additive and reversible — everything else in that file
+// is left byte for byte — so it is a normal [Y/n] step, safe under --yes. Only offered
+// when Kimi is present, and (like Codex's) also when the block is there but predates
+// events gtmux has since added.
+func (s *fixState) stepKimiHook() int {
+	if !fileExists(kimiDataRoot()) {
+		return 0
+	}
+	missing := missingKimiHookEvents()
+	if missing != nil && len(missing) == 0 {
+		return 0 // installed and complete
+	}
+	path := kimiConfigPath()
+	title := i18n.Tr("Kimi Code hook  (a marked block in your config.toml)", "Kimi Code hook（在你的 config.toml 里加一块带标记的内容）")
+	detail := i18n.Tr(
+		"  Wire Kimi via its hooks — precise per-event state. Appends one marked block at the\n  end of "+tildeify(path)+"; the rest of your config is untouched. (backed up first)",
+		"  用 Kimi 的 hooks 接入 —— 每事件状态精准。在 "+tildeify(path)+" 末尾追加一整块带标记的内容，\n  配置其余部分原样不动。（会先备份）")
+	if missing != nil {
+		title = i18n.Tr("Kimi Code hook  (add the events this block predates)", "Kimi Code hook（补上这块配置还没有的事件）")
+		detail = i18n.Tr(
+			"  Add the "+fmt.Sprint(len(missing))+" event(s) this block predates ("+strings.Join(missing, ", ")+").\n  Rewrites only gtmux's own block in "+tildeify(path)+". (backed up first)",
+			"  补上这块配置还没有的 "+fmt.Sprint(len(missing))+" 个事件（"+strings.Join(missing, "、")+"）。\n  只重写 "+tildeify(path)+" 里 gtmux 自己那一块。（会先备份）")
+	}
+	if !s.ask(title, detail) {
+		return 0
+	}
+	if err := updateKimiHooks(path, selfPath(), true); err != nil {
+		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
+		s.rc = 1
+		return 0
+	}
+	i18n.Say("  ✓ installed — restart Kimi Code sessions to load it", "  ✓ 已安装，重启 Kimi Code 会话以加载")
 	return 1
 }
 

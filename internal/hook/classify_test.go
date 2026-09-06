@@ -32,6 +32,23 @@ func TestClassify(t *testing.T) {
 		{"claude session start", "claude", "SessionStart", "", Class{Lifecycle: "SessionStart"}},
 		{"claude session end", "claude", "SessionEnd", "", Class{Lifecycle: "SessionEnd"}},
 
+		// Kimi raises a dedicated PermissionRequest, so its PreToolUse is telemetry.
+		// On the GENERIC table a side-effecting tool start escalates to "needs you",
+		// which for Kimi would flag every Bash the agent ran — including under --yolo
+		// and --auto, where it never asks at all.
+		{"kimi pre-tool bash = telemetry", "kimi", "PreToolUse", "Bash", tele},
+		{"kimi pre-tool write = telemetry", "kimi", "PreToolUse", "Write", tele},
+		{"kimi permission = waiting", "kimi", "PermissionRequest", "Bash", w(KindPermission)},
+		{"kimi permission answered = resume", "kimi", "PermissionResult", "Bash", resume},
+		// A plain tool completion is NOT an answer to an approval: routing it through
+		// the same token would let an unrelated tool clear a pending one.
+		{"kimi post-tool = telemetry", "kimi", "PostToolUse", "Bash", tele},
+		{"kimi prompt = turn start", "kimi", "UserPromptSubmit", "", Class{Lifecycle: "UserPromptSubmit"}},
+		{"kimi stop = turn end", "kimi", "Stop", "", Class{Lifecycle: "Stop"}},
+		{"kimi failed turn = StopFailure", "kimi", "StopFailure", "", Class{Lifecycle: "StopFailure"}},
+		{"kimi session start", "kimi", "SessionStart", "", Class{Lifecycle: "SessionStart"}},
+		{"kimi session end", "kimi", "SessionEnd", "", Class{Lifecycle: "SessionEnd"}},
+
 		// Codex's PreToolUse fires for every tool → telemetry; its PermissionRequest
 		// (new hooks system) is a real user-facing approval → waiting.
 		{"codex pre-tool bash = telemetry", "codex", "PreToolUse", "Bash", tele},

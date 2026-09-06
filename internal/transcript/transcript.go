@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +23,63 @@ import (
 // tsField matches a log line's "timestamp":"<RFC3339>" — the wall-clock the agent
 // stamped that message with.
 var tsField = regexp.MustCompile(`"timestamp":"([^"]+)"`)
+
+// kimiMsTs matches a Kimi record's stamp: `"time": <epoch ms>`, a NUMBER on a
+// differently-named field, which is why the shared matcher above finds nothing in a
+// Kimi journal and both readers silently returned 0 — the `age` criterion of HQ
+// self-rotation would have been blind on a Kimi-hosted supervisor while the docs
+// claimed Tier 2 gave it, and a criterion with no data is omitted, so nothing would
+// have said so.
+var kimiMsTs = regexp.MustCompile(`"time":(\d+)`)
+
+// kimiMessageRecord is the record type that carries the conversation. The scope
+// matters: all sixty of Kimi's record types carry a `time`, so an unscoped match would
+// report the last token count or permission decision as the last thing the agent SAID.
+const kimiMessageRecord = `"type":"context.append_message"`
+
+// messageTimeIn extracts a message timestamp (unix seconds) from a raw log chunk —
+// the LAST match when `last`, the FIRST otherwise. 0 when there is none.
+//
+// Kimi is read line by line rather than by one regex over the buffer, because pairing
+// the record type with its stamp inside a single expression would depend on which
+// comes first in the JSON object. Kimi writes `type` first today; nothing promises it
+// always will, and a serialiser that sorts its keys puts `time` first instead. A
+// partial line at either edge of the window simply fails to match.
+func messageTimeIn(agent, buf string, last bool) int64 {
+	if normalizeAgent(agent) == "kimi" {
+		out := int64(0)
+		for _, ln := range strings.Split(buf, "\n") {
+			if !strings.Contains(ln, kimiMessageRecord) {
+				continue
+			}
+			m := kimiMsTs.FindStringSubmatch(ln)
+			if len(m) != 2 {
+				continue
+			}
+			ms, err := strconv.ParseInt(m[1], 10, 64)
+			if err != nil || ms <= 0 {
+				continue
+			}
+			out = ms / 1000
+			if !last {
+				return out
+			}
+		}
+		return out
+	}
+	m := tsField.FindAllStringSubmatch(buf, -1)
+	if len(m) == 0 {
+		return 0
+	}
+	pick := m[0]
+	if last {
+		pick = m[len(m)-1]
+	}
+	if t, err := time.Parse(time.RFC3339Nano, pick[1]); err == nil {
+		return t.Unix()
+	}
+	return 0
+}
 
 // LastMessageTime returns the wall-clock (unix seconds) of the LAST message logged
 // in an agent's session — when it most recently did anything, i.e. ~when its turn
@@ -51,15 +109,7 @@ func LastMessageTime(agent, sessionID string) int64 {
 	if _, err := f.ReadAt(buf, start); err != nil && err != io.EOF {
 		return 0
 	}
-	m := tsField.FindAllStringSubmatch(string(buf), -1)
-	if len(m) == 0 {
-		return 0
-	}
-	ts := m[len(m)-1][1]
-	if t, err := time.Parse(time.RFC3339Nano, ts); err == nil {
-		return t.Unix()
-	}
-	return 0
+	return messageTimeIn(agent, string(buf), true)
 }
 
 // FirstMessageTime returns the wall-clock (unix seconds) of the FIRST message logged
@@ -88,14 +138,7 @@ func FirstMessageTime(agent, sessionID string) int64 {
 	if n == 0 || (err != nil && err != io.EOF) {
 		return 0
 	}
-	m := tsField.FindStringSubmatch(string(buf[:n]))
-	if len(m) != 2 {
-		return 0
-	}
-	if t, err := time.Parse(time.RFC3339Nano, m[1]); err == nil {
-		return t.Unix()
-	}
-	return 0
+	return messageTimeIn(agent, string(buf[:n]), false)
 }
 
 // Session-reset kinds — how a conversation was started over. Both are the agent's own
@@ -334,6 +377,8 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 		return codexLogPath(sessionID), codexStep
 	case "opencode":
 		return opencodeLogPath(sessionID), opencodeStep
+	case "kimi":
+		return kimiLogPath(sessionID), kimiStep
 	}
 	return "", nil
 }
@@ -559,6 +604,8 @@ func normalizeAgent(agent string) string {
 		return "codex"
 	case strings.Contains(a, "opencode"):
 		return "opencode"
+	case strings.Contains(a, "kimi"):
+		return "kimi"
 	}
 	return a
 }

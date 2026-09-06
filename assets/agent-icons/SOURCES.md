@@ -20,8 +20,8 @@ delete `<key>.png`; a missing icon simply falls back to the neutral monogram.
 | `kimi.png` | Kimi | Moonshot AI |
 
 Notes:
-- `grok`, `glm`, `kimi` need registry entries (detection commands) before their
-  panes are recognized as agents and the icon is shown; `opencode` and `gemini` are
+- `grok` and `glm` need registry entries (detection commands) before their panes are
+  recognized as agents and the icon is shown; `opencode`, `gemini` and `kimi` are
   already detected.
 - `gemini.png` is a wide wordmark (2:1) rather than a square glyph — replace with a
   square icon when available for a cleaner avatar.

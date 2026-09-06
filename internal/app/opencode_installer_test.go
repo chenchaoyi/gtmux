@@ -74,8 +74,29 @@ func TestEveryHookEquippedAgentHasInstaller(t *testing.T) {
 		if canonical == "claude" {
 			continue // dedicated cmdInstallHooks path
 		}
+		if canonical == "kimi" {
+			// Kimi's hooks are a managed BLOCK inside the user's own config.toml,
+			// not a JSON file gtmux merges — installKimiHooks, covered by its own
+			// tests. It is dispatched in cmdInstallHooks, so assert THAT rather
+			// than letting the exemption hide a missing wiring.
+			if !strings.Contains(hooksGoSource(t), `agent == "kimi"`) {
+				t.Error("kimi is hook-equipped but cmdInstallHooks does not dispatch it — its event layer would stay dark")
+			}
+			continue
+		}
 		if _, ok := agentInstallers[canonical]; !ok {
 			t.Errorf("agent %q (canonical %q) is hook-equipped but has no installer — its event layer would stay dark", key, canonical)
 		}
 	}
+}
+
+// hooksGoSource reads the dispatch file, so the exemption above cannot quietly
+// become "kimi is exempt from having an installer at all".
+func hooksGoSource(t *testing.T) string {
+	t.Helper()
+	b, err := os.ReadFile("hooks.go")
+	if err != nil {
+		t.Fatalf("read hooks.go: %v", err)
+	}
+	return string(b)
 }

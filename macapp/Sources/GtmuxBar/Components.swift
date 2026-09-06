@@ -10,6 +10,7 @@ func agentMonogram(_ name: String) -> String {
     case "Gemini":      return "G"
     case "Copilot":     return "Co"
     case "opencode":    return "oc"
+    case "Kimi Code":   return "Ki"
     case "Crush":       return "Cr"
     case "Cursor":      return "Cu"
     case "Amp":         return "Am"

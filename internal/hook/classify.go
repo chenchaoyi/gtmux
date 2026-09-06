@@ -215,6 +215,31 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"SubagentStop":       semSubagentResponse,
 		"Notification":       semStatusNotification,
 	},
+	"kimi": {
+		// Kimi raises a DEDICATED PermissionRequest just before it waits on you, so
+		// its PreToolUse stays pure telemetry. Left to the generic table's
+		// semToolStartMaybeApproval, every Bash/Write the agent ran would have
+		// flagged "needs you" — including in --yolo and --auto, where Kimi never asks
+		// at all.
+		"PermissionRequest": semApprovalRequest,
+		"PreToolUse":        semToolStart,
+		// Kimi answers an approval with its OWN event, so that — and ONLY that —
+		// clears the waiting mark. Routing it through PostToolUse instead would have
+		// let any unrelated tool completion clear a pending approval.
+		"PermissionResult":   semToolEndResume,
+		"PostToolUse":        semToolEnd,
+		"PostToolUseFailure": semToolEnd,
+		"UserPromptSubmit":   semPromptSubmit,
+		"SessionStart":       semSessionStart,
+		"SessionEnd":         semSessionEnd,
+		"Stop":               semResponse,
+		"StopFailure":        semResponseFailure,
+		"PreCompact":         semPreCompact,
+		"PostCompact":        semPostCompact,
+		"SubagentStart":      semSubagentStart,
+		"SubagentStop":       semSubagentResponse,
+		"Notification":       semStatusNotification,
+	},
 	"codex": {
 		// Codex's NEW hooks system (~/.codex/hooks.json, features.hooks) fires
 		// PermissionRequest when it's about to ASK you (shell escalation, managed

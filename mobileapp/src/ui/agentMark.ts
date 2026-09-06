@@ -10,6 +10,8 @@ const MARKS: Record<string, string> = {
   gemini: 'G',
   copilot: 'Co',
   opencode: 'oc',
+  'kimi code': 'Ki',
+  kimi: 'Ki',
   cursor: 'Cu',
   crush: 'Cr',
   amp: 'Am',

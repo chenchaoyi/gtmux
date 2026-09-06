@@ -153,8 +153,9 @@ gtmux update                 # self-update the CLI + menu-bar app (the app also
 > Just want notifications and nothing else? `gtmux install hooks` registers only
 > the agent hook — but `gtmux doctor` is the recommended path (it does that
 > **and** the set-titles focus/restore depend on). For non-Claude agents, add
-> `--agent codex|cursor|gemini|copilot|kiro|opencode` (Codex wires via its own hooks
-> system, coexisting with any existing `notify`; opencode installs a small plugin).
+> `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` (Codex wires via its own
+> hooks system, coexisting with any existing `notify`; opencode installs a small plugin;
+> Kimi Code gets one marked block appended to your own `config.toml`).
 
 To watch from your phone, run `gtmux serve` (same Wi-Fi) or `gtmux tunnel`
 (anywhere) and pair the iOS app. **Anywhere** comes in two flavors: **Standard**
