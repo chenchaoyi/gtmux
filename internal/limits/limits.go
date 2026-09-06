@@ -191,12 +191,36 @@ func save(r Report) {
 // runAndParse executes the command (via the login shell so an env-prefixed
 // string like `HTTPS_PROXY=… claude -p /usage` works) and parses its stdout.
 func runAndParse(command string) ([]Window, error) {
-	cmd := exec.Command("/bin/sh", "-lc", agentenv.Wrap(command))
+	cmd := exec.Command(loginShell(), "-lc", agentenv.Wrap(command))
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
 	return parse(string(out)), nil
+}
+
+// loginShell is the shell the limits command runs through.
+//
+// NOT `/bin/sh`, which is what this used and is why it failed under launchd. On
+// macOS /bin/sh is bash in POSIX mode, and a POSIX login shell reads /etc/profile
+// and ~/.profile ONLY — never ~/.bash_profile or ~/.bashrc, which is where a
+// user's PATH addition actually lives. Measured on this machine: `claude` sits in
+// ~/.local/bin, added by .bashrc/.zprofile; `sh -lc 'command -v claude'` cannot
+// find it and `bash -lc` can. So `gtmux serve` — a LaunchAgent whose own PATH is
+// /usr/bin:/bin:/usr/sbin:/sbin — could never run the command at all, and the
+// subscription windows on every remote surface were only ever as fresh as the last
+// time someone ran the CLI by hand.
+//
+// $SHELL is set even under launchd (verified on the running daemon), so it is the
+// right answer. /bin/bash is the fallback because it reads strictly more startup
+// files than /bin/sh, and an unusable $SHELL should not cost the feature.
+func loginShell() string {
+	if s := os.Getenv("SHELL"); s != "" {
+		if fi, err := os.Stat(s); err == nil && !fi.IsDir() && fi.Mode()&0o111 != 0 {
+			return s
+		}
+	}
+	return "/bin/bash"
 }
 
 // itoa avoids importing strconv for one int.

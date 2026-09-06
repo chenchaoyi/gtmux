@@ -289,3 +289,50 @@ func TestCommandFailureKeepsTheOtherAgentsWindows(t *testing.T) {
 		t.Errorf("a failed refresh was saved: %+v", again)
 	}
 }
+
+// The command runs through the user's LOGIN shell, not /bin/sh. On macOS /bin/sh
+// is bash in POSIX mode, which reads ~/.profile only — never ~/.bash_profile or
+// ~/.bashrc, where a PATH addition actually lives. Under launchd, where serve's
+// own PATH is /usr/bin:/bin:/usr/sbin:/sbin, that made the command unrunnable.
+func TestLoginShell(t *testing.T) {
+	t.Setenv("SHELL", "/bin/zsh")
+	if got := loginShell(); got != "/bin/zsh" {
+		t.Errorf("loginShell = %q, want $SHELL", got)
+	}
+	// Unset, or set to something that is not an executable file, falls back to a
+	// shell that reads more than /bin/sh does — never to /bin/sh itself.
+	t.Setenv("SHELL", "")
+	if got := loginShell(); got != "/bin/bash" {
+		t.Errorf("unset = %q", got)
+	}
+	t.Setenv("SHELL", filepath.Join(t.TempDir(), "not-a-shell"))
+	if got := loginShell(); got != "/bin/bash" {
+		t.Errorf("bogus = %q", got)
+	}
+}
+
+// End to end through the real shell: the command is found the way a user's own
+// shell would find it, not the way /bin/sh would.
+func TestRunAndParseUsesTheLoginShell(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "faux-usage")
+	body := "#!/bin/sh\necho 'Current session: 11% used · resets Jul 13 at 1:30am'\n"
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A shell whose startup file puts the script's directory on PATH — the shape a
+	// real machine has, and the one /bin/sh would not pick up.
+	rc := filepath.Join(dir, "rc")
+	if err := os.WriteFile(rc, []byte("export PATH="+dir+":$PATH\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	shim := filepath.Join(dir, "shell")
+	if err := os.WriteFile(shim, []byte("#!/bin/sh\n. "+rc+"\nexec /bin/sh \"$@\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SHELL", shim)
+	wins, err := runAndParse("faux-usage")
+	if err != nil || len(wins) != 1 || wins[0].PctUsed != 11 {
+		t.Fatalf("runAndParse = %+v, err %v — the login shell's PATH was not used", wins, err)
+	}
+}
