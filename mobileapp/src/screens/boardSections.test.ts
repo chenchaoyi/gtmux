@@ -25,10 +25,42 @@ describe('parseBoardSections', () => {
     expect(s[0].body).toContain('still section one');
   });
 
-  it('keeps deeper headings inside the body for the renderer', () => {
-    const s = parseBoardSections('## One\n### Detail\ntext\n');
+  it('nests ### entries under their ## section', () => {
+    // The board is TWO `##` sections holding 4 and 26 `###` entries, so stopping the
+    // outline at `##` gave a reader two rows: a 26,000-character wall when open, a
+    // screen of void when shut.
+    const s = parseBoardSections('## One\nlead-in\n### A\naaa\n### B\nbbb\n');
     expect(s).toHaveLength(1);
-    expect(s[0].body).toBe('### Detail\ntext');
+    expect(s[0].body).toBe('lead-in'); // the section's OWN text, ending where A begins
+    expect(s[0].children.map(c => c.title)).toEqual(['A', 'B']);
+    expect(s[0].children[0].body).toBe('aaa');
+    expect(s[0].children[1].body).toBe('bbb');
+  });
+
+  it('does not repeat a child body inside its parent', () => {
+    // Rendering both would draw every entry twice and pay the full cost this split
+    // exists to avoid.
+    const s = parseBoardSections('## One\n### A\naaa\n');
+    expect(s[0].body).toBe('');
+    expect(s[0].children[0].body).toBe('aaa');
+  });
+
+  it('gives a child a key distinct from every other row', () => {
+    const s = parseBoardSections('## Same\n### Same\na\n\n## Same\n### Same\nb');
+    const keys = [...s.map(x => x.key), ...s.flatMap(x => x.children.map(c => c.key))];
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('ignores a ### with no ## above it, rather than dropping its text', () => {
+    const s = parseBoardSections('### orphan\ntext');
+    expect(s[0].title).toBe('');
+    expect(s[0].body).toContain('### orphan');
+  });
+
+  it('does not nest on a ### inside a fence', () => {
+    const s = parseBoardSections('## One\n```md\n### not an entry\n```\ntail');
+    expect(s[0].children).toHaveLength(0);
+    expect(s[0].body).toContain('### not an entry');
   });
 
   it('preserves the AUTHOR order and never sorts', () => {

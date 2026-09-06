@@ -15,19 +15,7 @@
 // direct-send input — direct control lives in each worker's own Detail).
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {
-  Animated,
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Modal,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Platform,
-} from 'react-native';
+import {Animated, View, Text, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent} from '../api/types';
 import {Debug} from '../debug';
@@ -42,12 +30,12 @@ import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
-import {MarkdownView, MdColors} from '../ui/MarkdownView';
+import {BoardSheet} from './BoardSheet';
 import {KnowledgeSheet} from './KnowledgeSheet';
 import {UsageSheet} from './UsageSheet';
 import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
-import {parseBoardSections, sectionCount} from './boardSections';
+import {parseBoardSections} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
@@ -67,13 +55,6 @@ import {
 } from './hqZones';
 
 const hit = {top: 8, bottom: 8, left: 8, right: 8};
-
-// Colours for the situation board's markdown. The board sheet follows the APP palette
-// (unlike the chat surface, which is always dark), so these are resolved per render from
-// `pal` rather than fixed — a fixed light-on-dark set would be invisible in light mode.
-function boardMdColors(pal: any): MdColors {
-  return {text: pal.fg, dim: pal.fg3, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2};
-}
 
 export function HQScreen({route, navigation}: any) {
   const hq: Agent = route.params.agent;
@@ -110,20 +91,9 @@ export function HQScreen({route, navigation}: any) {
     entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0},
   });
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
-  // The board's sections, and which are unfolded. The FIRST opens by default: it is the
-  // handoff HQ pins at the top for whoever reads next, not merely the earliest entry.
+  // The board's outline. Parsed here because the sheet is unmounted until opened, and
+  // re-parsing 48k characters on every open would be work the poll already did.
   const boardSections = useMemo(() => parseBoardSections(board.text ?? ''), [board.text]);
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    const first = boardSections.find(x => x.title !== '');
-    setOpenSections(first ? new Set([first.key]) : new Set());
-  }, [boardSections]);
-  const toggleSection = (k: string) =>
-    setOpenSections(prev => {
-      const next = new Set(prev);
-      next.has(k) ? next.delete(k) : next.add(k);
-      return next;
-    });
   // The assessment headline is the supervisor's synthesized conclusion — it can run
   // long. Collapsed to 2 lines by default; tapping it expands to the full text so it
   // is never stranded truncated with no way to read the rest.
@@ -669,85 +639,14 @@ export function HQScreen({route, navigation}: any) {
         onClose={() => setUsageOpen(false)}
       />
 
-      <Modal
+      <BoardSheet
         visible={boardOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setBoardOpen(false)}>
-        <View style={[styles.root, {backgroundColor: pal.bg}]}>
-          <View style={[styles.sheetHead, {borderBottomColor: pal.divider}]}>
-            <View style={styles.stripMid}>
-              <Text style={[styles.title, {color: pal.fg}]}>{t('Situation board', '态势板')}</Text>
-              {/* The age and nothing else. This line used to name the board again, which
-                  NAMES the board — right under a title that already says it, so the sheet
-                  read «Situation board» over «situation board · 50m ago». The name belongs
-                  on the HQ page's row, where it is the label; here it is a repeat. */}
-              <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-                {boardAge(board.updated_at, now, zh)} · {t('read-only', '只读')}
-              </Text>
-            </View>
-            {/* A labelled button, not a bare ✕: the way out of a full-screen reader has
-                to be unmissable, and a word cannot be mistaken for decoration. */}
-            <TouchableOpacity
-              testID="hq-board-close"
-              accessibilityLabel="hq-board-close"
-              onPress={() => setBoardOpen(false)}
-              hitSlop={hit}
-              style={[styles.sheetClose, {borderColor: pal.divider}]}>
-              <Text style={[styles.sheetCloseText, {color: pal.fg}]}>{t('Done', '完成')}</Text>
-            </TouchableOpacity>
-          </View>
-          {/* Sections, not one scroll. The board is an ARCHIVE — 842 lines when this was
-              written — and rendering all of it meant dragging through the rest to reach
-              any entry. Its `##` days are the structure; they only needed showing.
-              Order is the author's: HQ pins a "read this first" handoff at the top and
-              appends the newest at the bottom, so sorting would misrepresent both. */}
-          <ScrollView contentContainerStyle={styles.pad}>
-            {boardSections.map((sec, i) => {
-              const open = openSections.has(sec.key);
-              return (
-                <View key={sec.key} style={[styles.bSec, {borderColor: pal.divider}]}>
-                  {sec.title !== '' && (
-                    <TouchableOpacity
-                      testID={`hq-board-section-${i}`}
-                      activeOpacity={0.6}
-                      onPress={() => toggleSection(sec.key)}
-                      style={styles.bSecHead}>
-                      <Text style={[styles.bSecChevron, {color: pal.fg3}]}>{open ? '▾' : '▸'}</Text>
-                      <Text style={[styles.bSecTitle, {color: pal.fg}]} numberOfLines={open ? undefined : 2}>
-                        {sec.title}
-                      </Text>
-                      {/* A count bubble of what the section HOLDS — its table rows or its
-                          bullets — not how many lines it was typed on. That read "154"
-                          beside a twelve-row table: a number about the file, in the most
-                          prominent spot after the title. Nothing countable, no bubble. */}
-                      {(() => {
-                        const n = sectionCount(sec.body);
-                        return n == null ? null : (
-                          <View style={[styles.bSecCountBox, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-                            <Text style={[styles.bSecCount, {color: pal.fg3}]}>{n}</Text>
-                          </View>
-                        );
-                      })()}
-                    </TouchableOpacity>
-                  )}
-                  {(open || sec.title === '') && (
-                    <View style={sec.title === '' ? undefined : styles.bSecBody}>
-                      <MarkdownView
-                        source={sec.body}
-                        colors={boardMdColors(pal)}
-                        fontSize={13.5}
-                        selectable
-                        calmEmphasis
-                      />
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
+        sections={boardSections}
+        age={boardAge(board.updated_at, now, zh)}
+        pal={pal}
+        zh={zh}
+        onClose={() => setBoardOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -759,18 +658,12 @@ const styles = StyleSheet.create({
   strip: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   back: {fontSize: 30, fontWeight: '300', marginRight: 10, marginTop: -4},
   close: {fontSize: 18, fontWeight: '400', paddingHorizontal: 4},
-  stripMid: {flex: 1},
   stripDetail: {paddingHorizontal: 14, paddingTop: 6, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   titleRow: {flexDirection: 'row', alignItems: 'center', flex: 1},
   demoPill: {borderWidth: 1, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 0.5, marginLeft: 8},
   demoPillText: {fontSize: 9, fontWeight: '700', letterSpacing: 0.06},
-  title: {fontSize: 17, fontWeight: '700'},
   dot: {width: 8, height: 8, borderRadius: 4, marginLeft: 8},
-  sub: {fontSize: 12, marginTop: 1},
 
-  sheetHead: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth},
-  sheetClose: {paddingHorizontal: 12, paddingVertical: 6, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, marginLeft: 10},
-  sheetCloseText: {fontSize: 13, fontWeight: '600'},
   assess: {paddingHorizontal: 14, paddingTop: 9, paddingBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   assessText: {fontSize: 14, fontWeight: '600', lineHeight: 19},
   boardRow: {
@@ -781,13 +674,6 @@ const styles = StyleSheet.create({
   boardIcon: {fontSize: 13},
   boardLink: {fontSize: 12.5, fontWeight: '600', flex: 1},
   boardChevron: {fontSize: 15},
-  bSec: {borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 2},
-  bSecHead: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 11, gap: 8},
-  bSecChevron: {fontSize: 12, width: 12, marginTop: 1},
-  bSecTitle: {flex: 1, fontSize: 14, fontWeight: '700', lineHeight: 19},
-  bSecCount: {fontSize: 10.5, fontVariant: ['tabular-nums']},
-  bSecCountBox: {minWidth: 24, alignItems: 'center', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, marginTop: 1},
-  bSecBody: {paddingBottom: 10},
   boardText: {fontSize: 12.5, lineHeight: 19, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
 
   tabs: {flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth},

@@ -4,8 +4,14 @@
 // this was written for, and the sheet rendered all of it as one scroll. Reaching any
 // particular entry meant dragging through the rest.
 //
-// It already has the structure — eleven `##` day-level entries — so nothing needs to be
-// invented; it needs to be SHOWN.
+// It already has the structure, so nothing needs to be invented; it needs to be SHOWN.
+//
+// TWO LEVELS, because one was not the document's shape. This was written for a board of
+// eleven `##` day-level entries. The board has since grown into TWO `##` sections holding
+// 4 and 26 `###` entries, and an outline of two rows is not an outline: the reader gets a
+// 26,000-character wall when a section is open and a screen of void when it is not
+// (reported 2026-09-06, "这个 UI 太差劲了", with a screenshot of exactly that). `###` is
+// where this board's entries actually live, so that is where the outline has to reach.
 //
 // ORDER IS THE AUTHOR'S, never re-sorted. The board is not chronological: HQ pins a
 // "read this first" handoff at the TOP and appends the newest progress at the BOTTOM (its
@@ -15,60 +21,93 @@
 // is what opens.
 
 export interface BoardSection {
-  /** The heading text, without the leading `## `. Empty for content before the first one. */
+  /** The heading text, without its `#` marks. Empty for content before the first one. */
   title: string;
-  /** The section's markdown, deeper headings kept for the renderer. */
+  /** This section's OWN markdown — its children's text is not repeated here. */
   body: string;
   /** Stable across re-parses of the same board, so expansion survives a poll. */
   key: string;
+  /** The `###` entries under a `##`. Empty for a leaf. */
+  children: BoardSection[];
 }
 
 const H2 = /^##\s+(.*\S)\s*$/;
+const H3 = /^###\s+(.*\S)\s*$/;
 const FENCE = /^\s*(```|~~~)/;
 
 /**
- * parseBoardSections splits markdown at its `##` headings.
+ * parseBoardSections splits markdown into `##` sections, each holding its `###` entries.
  *
- * A `##` inside a fenced code block is NOT a heading — the board quotes shell and JSON
+ * A heading inside a fenced code block is NOT a heading — the board quotes shell and JSON
  * constantly, and splitting on those would cut sections in half at a comment.
  */
 export function parseBoardSections(md: string): BoardSection[] {
   const out: BoardSection[] = [];
-  let title = '';
+  let sec: BoardSection | null = null; // the open `##`
+  let sub: BoardSection | null = null; // the open `###` inside it
   let buf: string[] = [];
   let fenced = false;
   let n = 0;
 
-  const flush = () => {
-    let body = buf.join('\n').trim();
+  const text = () => buf.join('\n').trim();
+  const closeSub = () => {
+    if (sub) {
+      sub.body = text();
+      buf = [];
+      sub = null;
+    }
+  };
+  const closeSec = () => {
+    closeSub();
+    if (sec) {
+      if (sec.body === '') sec.body = text();
+      buf = [];
+      // A `##` with neither text nor entries is a heading over nothing.
+      if (sec.body !== '' || sec.children.length > 0) out.push(sec);
+      sec = null;
+    }
+  };
+  const preamble = () => {
+    let body = text();
     // The sheet already titles the document, so the file's own `# ` heading rendered as a
     // second, larger title directly under it («Situation board» over 「态势板」). Drop it —
-    // only from the preamble, where a document title can be, never from inside a section.
-    if (title === '' && body.startsWith('# ')) {
+    // only from the preamble, where a document title can be.
+    if (body.startsWith('# ')) {
       const nl = body.indexOf('\n');
-      body = nl < 0 ? '' : body.slice(nl + 1).trim(); // a title-only preamble leaves nothing
+      body = nl < 0 ? '' : body.slice(nl + 1).trim();
     }
-    // Drop a leading run of blank lines but keep an empty FIRST section out entirely —
-    // a board that starts with `##` has no preamble to show.
-    if (title === '' && body === '') {
-      buf = [];
-      return;
-    }
-    out.push({title, body, key: `${n++}:${title.slice(0, 40)}`});
     buf = [];
+    if (body !== '') out.push({title: '', body, key: `${n++}:`, children: []});
   };
 
+  let started = false;
   for (const line of md.split('\n')) {
     if (FENCE.test(line)) fenced = !fenced;
-    const m = fenced ? null : line.match(H2);
-    if (m) {
-      flush();
-      title = m[1];
+    const h2 = fenced ? null : line.match(H2);
+    const h3 = fenced ? null : line.match(H3);
+    if (h2 && !h3) {
+      if (!started) {
+        preamble();
+        started = true;
+      } else {
+        closeSec();
+      }
+      sec = {title: h2[1], body: '', key: `${n++}:${h2[1].slice(0, 40)}`, children: []};
+      continue;
+    }
+    if (h3 && sec) {
+      // The `##`'s own text ends where its first entry begins.
+      if (sec.children.length === 0 && sec.body === '') sec.body = text();
+      else closeSub();
+      buf = [];
+      sub = {title: h3[1], body: '', key: `${n++}:${h3[1].slice(0, 40)}`, children: []};
+      sec.children.push(sub);
       continue;
     }
     buf.push(line);
   }
-  flush();
+  if (!started) preamble();
+  else closeSec();
   return out;
 }
 
