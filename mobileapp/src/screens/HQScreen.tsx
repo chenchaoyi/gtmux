@@ -36,6 +36,7 @@ import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
+import {historyScope} from '../state/history';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
@@ -607,7 +608,14 @@ export function HQScreen({route, navigation}: any) {
             onDismiss={() => setFailedSend(null)}
           />
         )}
-        <Composer pal={pal} lang={lang} demo={demo} draftKey={hq.pane_id} onSend={onSend} />
+        <Composer
+            pal={pal}
+            lang={lang}
+            demo={demo}
+            draftKey={hq.pane_id}
+            historyScope={historyScope(hq)}
+            onSend={onSend}
+          />
       </KeyboardAvoidingView>
 
       {/* The situation board, read-only — the supervisor's own working memory. */}

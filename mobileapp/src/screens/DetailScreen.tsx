@@ -43,6 +43,7 @@ import {agentLabel} from './PaneBrowserScreen';
 import {StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {isSplitCanvas} from '../ui/layout';
+import {historyScope} from '../state/history';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
@@ -849,6 +850,7 @@ export function DetailView({
           lang={lang}
           demo={demo}
           draftKey={live.pane_id || agent.pane_id}
+          historyScope={historyScope(live)}
           enabled={!isGuest || inputPanes.includes(agent.pane_id)}
           returnSends={returnSends}
           onSend={p => {
