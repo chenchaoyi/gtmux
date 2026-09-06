@@ -32,6 +32,7 @@ type Session struct {
 	InTok      int64   `json:"in"`                   // cumulative non-cached input tokens
 	CtxTok     int64   `json:"ctx_tok"`              // live context footprint (last msg in+cache)
 	CtxFrac    float64 `json:"ctx"`                  // CtxTok / the model window
+	Window     int64   `json:"window,omitempty"`     // the window CtxFrac was judged against
 	RatePerMin int64   `json:"rate"`                 // output tokens/min over the recent window
 	LastAt     int64   `json:"last_at"`              // epoch seconds of the last usage message
 	Warn       string  `json:"usage_warn,omitempty"` // first breached/projected layer, "" = fine
@@ -57,51 +58,109 @@ func ForSession(agent, sessionID string, now time.Time) (Session, bool) {
 	}
 	s := Session{Agent: agent, SessionID: sessionID}
 
-	// Cumulative counters: incremental by byte offset, persisted per session.
-	c := loadCounter(sessionID)
-	if c.Offset > fi.Size() { // log replaced/truncated → rescan from zero
-		c = counter{}
-	}
-	grew, msgs := scanFrom(path, c.Offset, fi.Size())
-	for _, m := range msgs {
-		c.Out += m.out
-		c.In += m.in
-	}
-	c.Offset = grew
-	saveCounter(sessionID, c)
-	s.OutTok, s.InTok = c.Out, c.In
-
-	// Context + rate: from the tail (exact — the tail always contains the last
-	// message; the window rate only counts what falls inside the window anyway).
+	// Context + rate come from the tail (exact — the tail always contains the
+	// last observation), and the tail also says which accounting shape this
+	// agent logs, so read it first.
 	tail := tailMessages(path, fi.Size())
+
+	if len(tail) > 0 && tail[len(tail)-1].cumulative {
+		// The log already states the session's running totals, so there is
+		// nothing to accumulate — and nothing to scan: the last line is the
+		// answer however long the log is. Summing these would multiply the
+		// session's burn by its turn count.
+		last := tail[len(tail)-1]
+		s.OutTok, s.InTok = last.totalOut, last.totalIn
+	} else {
+		// Per-message deltas: fold them into a persistent counter, incrementally
+		// by byte offset so no caller ever re-scans a huge log.
+		c := loadCounter(sessionID)
+		if c.Offset > fi.Size() { // log replaced/truncated → rescan from zero
+			c = counter{}
+		}
+		grew, msgs := scanFrom(path, c.Offset, fi.Size())
+		for _, m := range msgs {
+			c.Out += m.out
+			c.In += m.in
+		}
+		c.Offset = grew
+		saveCounter(sessionID, c)
+		s.OutTok, s.InTok = c.Out, c.In
+	}
+
 	if len(tail) > 0 {
 		last := tail[len(tail)-1]
-		s.CtxTok = last.in + last.cacheRead + last.cacheCreate
+		s.CtxTok = last.ctxTokens()
 		s.LastAt = last.at.Unix()
-		if w := windowFor(agent, last.model, s.CtxTok); w > 0 {
+		if w := windowFor(agent, last.model, s.CtxTok, last.window); w > 0 {
+			s.Window = w
 			s.CtxFrac = float64(s.CtxTok) / float64(w)
 		}
-		cut := now.Add(-rateWindow)
-		var winOut int64
+		s.RatePerMin = ratePerMin(tail, now)
+	}
+	return s, true
+}
+
+// ratePerMin is output tokens per minute over the recent window.
+//
+// The two log shapes need different arithmetic for the same number. Deltas are
+// summed. Running totals are DIFFERENCED, and the baseline is the last reading
+// from BEFORE the window when there is one — using the first reading inside it
+// would credit the window with nothing at all whenever only one reading landed
+// in it, which is the common case on a slow turn.
+func ratePerMin(tail []msg, now time.Time) int64 {
+	cut := now.Add(-rateWindow)
+	if len(tail) > 0 && tail[len(tail)-1].cumulative {
+		var base *msg
 		var first time.Time
-		for _, m := range tail {
-			if m.at.Before(cut) {
+		for i := range tail {
+			if tail[i].at.Before(cut) {
+				base = &tail[i]
 				continue
 			}
 			if first.IsZero() {
-				first = m.at
+				first = tail[i].at
+				if base == nil {
+					base = &tail[i]
+				}
 			}
-			winOut += m.out
 		}
-		if !first.IsZero() {
-			mins := now.Sub(first).Minutes()
-			if mins < 1 {
-				mins = 1
-			}
-			s.RatePerMin = int64(float64(winOut) / mins)
+		if base == nil || first.IsZero() {
+			return 0
 		}
+		out := tail[len(tail)-1].totalOut - base.totalOut
+		if out <= 0 {
+			return 0
+		}
+		from := base.at
+		if from.Before(cut) {
+			from = cut
+		}
+		return perMinute(out, now.Sub(from).Minutes())
 	}
-	return s, true
+	var winOut int64
+	var first time.Time
+	for _, m := range tail {
+		if m.at.Before(cut) {
+			continue
+		}
+		if first.IsZero() {
+			first = m.at
+		}
+		winOut += m.out
+	}
+	if first.IsZero() {
+		return 0
+	}
+	return perMinute(winOut, now.Sub(first).Minutes())
+}
+
+// perMinute divides, with a one-minute floor so a burst measured over seconds
+// is not extrapolated into an alarming rate.
+func perMinute(out int64, mins float64) int64 {
+	if mins < 1 {
+		mins = 1
+	}
+	return int64(float64(out) / mins)
 }
 
 // counter is the persistent per-session cumulative record.

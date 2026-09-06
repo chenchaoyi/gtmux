@@ -7,16 +7,35 @@ TBD - created by archiving change usage-watch. Update Purpose after archive.
 
 The system SHALL compute, per agent session and without any LLM call, from the
 session's own transcript: cumulative input/output tokens, the live CONTEXT
-footprint (the last assistant message's input + cache_read + cache_creation
-tokens) as a fraction of the model window, and a timestamp-based sliding-window
-spend RATE (output tokens/min over the recent window). Sessions with no usage
-data SHALL degrade to empty fields (Claude-first; other agents follow when their
-logs carry usage).
+footprint as a fraction of the model window, and a timestamp-based sliding-window
+spend RATE (output tokens/min over the recent window). Sessions whose log carries
+no usage SHALL degrade to empty fields.
 
-#### Scenario: Session usage computed
+The system SHALL support both shapes agent logs use, because reading one with the
+other's arithmetic is silently wrong rather than empty:
+
+- **per-message deltas** (Claude: each assistant message's own usage) — totals are
+  the SUM, accumulated incrementally by byte offset so no caller rescans the log;
+- **running totals** (Codex: a `token_count` event after each turn carrying the
+  session's totals so far) — totals are the LAST reading. Summing them would
+  multiply a session's burn by its turn count.
+
+The context window SHALL be taken from the best available source, in order: a
+configured per-agent override, a window the log STATES outright (Codex reports
+`model_context_window`), then inference from evidence (the smallest known tier ≥
+the observed footprint). A snapshot SHALL carry the window it was judged against,
+so a later evaluation cannot re-derive a different one.
+
+#### Scenario: Session usage computed from per-message deltas
 
 - **WHEN** a Claude session has assistant messages with usage + timestamps
 - **THEN** its usage row reports totals, context fraction, and the recent rate
+
+#### Scenario: Session usage computed from running totals
+
+- **WHEN** a Codex session's log carries `token_count` events
+- **THEN** its totals are the last event's, not the sum of every event's
+- **AND** its context fraction is measured against the window the log stated
 
 ### Requirement: Layered thresholds with ahead-of-time projection
 

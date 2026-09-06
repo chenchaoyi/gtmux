@@ -87,14 +87,20 @@ func TestForSessionIncremental(t *testing.T) {
 	}
 }
 
-// windowFor: config override wins; else the smallest tier ≥ observed.
+// windowFor: config override wins, then a window the log stated, then evidence.
 func TestWindowFor(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if w := windowFor("claude", "x", 100_000); w != 200_000 {
+	if w := windowFor("claude", "x", 100_000, 0); w != 200_000 {
 		t.Errorf("small ctx window = %d", w)
 	}
-	if w := windowFor("claude", "x", 400_000); w != 1_000_000 {
+	if w := windowFor("claude", "x", 400_000, 0); w != 1_000_000 {
 		t.Errorf("1M-evidence window = %d", w)
+	}
+	// A stated window is the agent's own answer and beats the tier guess — and
+	// it is routinely NOT a tier (Codex reports 258400), which is the whole
+	// reason inference cannot serve it.
+	if w := windowFor("codex", "", 91_343, 258_400); w != 258_400 {
+		t.Errorf("stated window = %d", w)
 	}
 }
 
@@ -136,5 +142,102 @@ func TestTypeRateWarn(t *testing.T) {
 	}
 	if got := TypeRateWarn("claude", 100); got != "" {
 		t.Errorf("tiny rate warned: %q", got)
+	}
+}
+
+// Codex logs the session's RUNNING TOTALS on every turn, where Claude logs what
+// each message cost. Reading the first shape with the second's arithmetic
+// multiplies a session's burn by its turn count, so this pins the difference —
+// with real records, trimmed, from a live rollout log.
+func TestCodexRunningTotals(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	dir := t.TempDir()
+	path := filepath.Join(dir, "rollout.jsonl")
+	now := time.Now().UTC()
+	line := func(ago time.Duration, totalIn, cached, totalOut, lastIn int64) string {
+		return fmt.Sprintf(`{"timestamp":%q,"type":"event_msg","payload":{"type":"token_count","info":{`+
+			`"total_token_usage":{"input_tokens":%d,"cached_input_tokens":%d,"output_tokens":%d,"total_tokens":%d},`+
+			`"last_token_usage":{"input_tokens":%d,"cached_input_tokens":0,"output_tokens":10,"total_tokens":%d},`+
+			`"model_context_window":258400}}}`+"\n",
+			now.Add(-ago).Format(time.RFC3339), totalIn, cached, totalOut, totalIn+totalOut, lastIn, lastIn+10)
+	}
+	var b strings.Builder
+	b.WriteString(`{"timestamp":"x","type":"response_item","payload":{"type":"reasoning"}}` + "\n")
+	b.WriteString(line(20*time.Minute, 100_000, 60_000, 1_000, 40_000))
+	b.WriteString(line(6*time.Minute, 200_000, 150_000, 3_000, 70_000))
+	b.WriteString(line(1*time.Minute, 300_000, 250_000, 4_000, 91_343))
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tail := tailMessages(path, int64(len(b.String())))
+	if len(tail) != 3 {
+		t.Fatalf("parsed %d token_count records, want 3", len(tail))
+	}
+	last := tail[len(tail)-1]
+	if !last.cumulative {
+		t.Fatal("codex records must be marked cumulative")
+	}
+	// The totals are the LAST reading, never the sum of the three (which would
+	// be 8,000 output instead of 4,000).
+	if last.totalOut != 4_000 {
+		t.Errorf("totalOut = %d, want the last reading 4000", last.totalOut)
+	}
+	// Non-cached input is what is comparable to Claude's: 300k total − 250k cached.
+	if last.totalIn != 50_000 {
+		t.Errorf("totalIn = %d, want 50000 (total minus cached)", last.totalIn)
+	}
+	// The context footprint is the last TURN's input, not the session's.
+	if last.ctxTokens() != 91_343 {
+		t.Errorf("ctx = %d, want the last turn's 91343", last.ctxTokens())
+	}
+	if last.window != 258_400 {
+		t.Errorf("window = %d, want the stated 258400", last.window)
+	}
+
+	// The rate differences the totals across the window rather than summing
+	// them: 4000 − 1000 over the 10 minutes since the window opened.
+	if r := ratePerMin(tail, now); r < 250 || r > 350 {
+		t.Errorf("rate = %d, want ~300/min", r)
+	}
+
+	// And the same through ForSession, which is where the mistake would
+	// actually be made: the counter path would fold all three readings in.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+	day := filepath.Join(home, ".codex", "sessions", "2026", "09", "01")
+	if err := os.MkdirAll(day, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const sid = "01a05bcd-6e41-7bd1-8de7-e06db5a7b4d3"
+	if err := os.WriteFile(filepath.Join(day, "rollout-2026-09-01T15-09-44-"+sid+".jsonl"),
+		[]byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, ok := ForSession("codex", sid, now)
+	if !ok {
+		t.Fatal("ForSession(codex) found no log")
+	}
+	if got.OutTok != 4_000 || got.InTok != 50_000 {
+		t.Errorf("session totals = out %d / in %d, want 4000 / 50000 (the last reading, not a sum)",
+			got.OutTok, got.InTok)
+	}
+	if got.Window != 258_400 {
+		t.Errorf("session window = %d, want the stated 258400", got.Window)
+	}
+	// 91343 / 258400 ≈ 0.354 — computed against the window the log named, not a
+	// tier it does not belong to.
+	if got.CtxFrac < 0.34 || got.CtxFrac > 0.37 {
+		t.Errorf("ctx fraction = %.3f, want ~0.354", got.CtxFrac)
+	}
+}
+
+// A session whose only readings predate the window is not burning anything.
+func TestCodexRateOutsideWindow(t *testing.T) {
+	now := time.Now().UTC()
+	old := msg{at: now.Add(-2 * time.Hour), cumulative: true, totalOut: 9_000}
+	if r := ratePerMin([]msg{old}, now); r != 0 {
+		t.Errorf("stale-only rate = %d, want 0", r)
 	}
 }
