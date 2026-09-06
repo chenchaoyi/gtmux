@@ -884,9 +884,25 @@ re-alert (the readout stays raw — `gtmux resource` always reports what it meas
 ```
 
 The one number local estimation can't give you: **how much of your plan is
-left**. gtmux gets it from the agent's OWN `/usage` command run headlessly
-(`claude -p "/usage"`) — real server data, the user's sanctioned command, not a
-reverse-engineered endpoint. Because that spawns a process, results are **cached**
+left** — real server data, from what the agent itself reports, never a
+reverse-engineered endpoint. **Claude and Codex report it in different places, so
+gtmux reads each where it actually is:**
+
+- **Claude** has nothing about windows on disk (its transcript holds session
+  cost, its stats cache all-time model totals), so gtmux runs the agent's own
+  sanctioned command headlessly: `claude -p "/usage"`.
+- **Codex** writes the server's rate-limit response into its session rollout,
+  beside the token counts — so gtmux just reads it. No process, no command.
+  Codex's own `/usage` is an activity heatmap rather than remaining quota, so the
+  command route has no counterpart there anyway.
+
+Two rules the log route needs and the command route doesn't. A window is named by
+its **duration**, never by its position in the source: Codex's `primary` field is
+observed carrying the weekly window as well as the 5-hour one. And a reading can
+**outlive its own window**, since a log is only as fresh as its last turn — a
+window whose reset has passed is dropped rather than reported, because by then
+the percentage is unknown, not low. Each window says whose plan it is, so the
+`spawn` preflight advises against the plan the work will actually bill. Because that spawns a process, results are **cached**
 (`state/limits.json`) with a 15-minute TTL, shortened to 5 minutes once any
 window is near its cap; `--refresh` forces one. Configure in
 `~/.config/gtmux/usage.json`:
