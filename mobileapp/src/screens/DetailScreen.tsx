@@ -848,6 +848,7 @@ export function DetailView({
           pal={pal}
           lang={lang}
           demo={demo}
+          draftKey={live.pane_id || agent.pane_id}
           enabled={!isGuest || inputPanes.includes(agent.pane_id)}
           returnSends={returnSends}
           onSend={p => {
