@@ -6,7 +6,7 @@ describe('agentMark', () => {
     expect(agentMark('claude')).toBe('CC');
     expect(agentMark('codex')).toBe('Cx');
     expect(agentMark('gemini')).toBe('G');
-    expect(agentMark('aider')).toBe('Ai');
+    expect(agentMark('copilot')).toBe('Co');
     expect(agentMark('opencode')).toBe('oc');
     expect(agentMark('cursor')).toBe('Cu');
     expect(agentMark('crush')).toBe('Cr');

@@ -343,6 +343,16 @@ squash-merge — they can't be fully automated).
   `NotificationManager` drains & posts) is the notification channel — there is no
   terminal-notifier/osascript fallback (notifications need the app running).
 - **i18n:** every user-facing string is en+zh via `internal/i18n` and `GTMUX_LANG`.
+- **USER DOCS ARE BILINGUAL, and both halves ship in the same PR** (2026-09-06). The pairs
+  are `README.md`/`README.zh.md` and, under `docs/`, `cli`/`phone`/`install` × `.md`/`.zh.md`.
+  A change to one half without the other is an incomplete change, the same way a behavior
+  change without a spec delta is. Write the Chinese, do not translate it: no translationese,
+  no padding — Chinese is denser, so the twin is usually SHORTER than the English, and a
+  sentence that only makes sense as a translation of an English sentence is a defect.
+  **The boundary:** `docs/TROUBLESHOOTING.md` and `docs/release-signing.md` are maintainer
+  logs, not user docs, and stay single-language on purpose — they change constantly and
+  nobody reads them to learn the product. `docs/design/*` is Chinese-first for the same
+  kind of reason. If you add a new USER doc, it is born as a pair.
 - **Scope (decided):** gtmux focuses on the **tmux + agent** workflow. Its rich
   view/control surface is **tmux-only** (`agents` scans `tmux list-panes`; focus &
   send need a pane). **Non-tmux ("native") agent sessions are now SENSED**

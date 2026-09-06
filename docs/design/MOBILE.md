@@ -69,7 +69,7 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
    | Claude Code | `CC` | Cursor | `Cu` |
    | Codex | `Cx` | Crush | `Cr` |
    | Gemini | `G` | Amp | `Am` |
-   | aider | `Ai` | Cline | `Cl` |
+   | Copilot | `Co` | Cline | `Cl` |
    | opencode | `oc` | 其它 | 名称前 2 字符 |
 
 4. **颜色仍只属于状态徽章**：头像容器保持中性（`surface` 底），不给 agent 上色。

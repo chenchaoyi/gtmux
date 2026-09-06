@@ -162,7 +162,7 @@
 不报错、不留白尴尬。展示一行可复制的启动命令；文案说明**任意 coding agent**（不限 Claude）：
 
 > 没有运行中的 agent
-> 在 tmux pane 里启动任意 coding agent（Claude Code · Codex · Gemini · aider…）
+> 在 tmux pane 里启动任意 coding agent（Claude Code · Codex · Gemini · Cursor…）
 > `tmux new -s work \; claude`
 
 ### 首次运行（自动化权限）

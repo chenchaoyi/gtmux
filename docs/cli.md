@@ -1,5 +1,7 @@
 # CLI & commands
 
+**English** · [中文](cli.zh.md)
+
 | command | what it does |
 | --- | --- |
 | `agents [--watch\|--json]` | coding agents across your panes: who's waiting / working / idle, where, and the pane id to jump to |
@@ -62,7 +64,7 @@ the same data for scripts and the menu-bar app.
   spinner (`⠋⠙⠹…`, what most agent TUIs animate) = **working**; Claude Code's `✳`
   = **idle**. This generalizes across agents that animate a spinner.
 - **Which agent** is matched by foreground command (`claude`, `codex`, `gemini`,
-  `aider`, `opencode`, …) or by a name in the title.
+  `cursor`, `opencode`, …) or by a name in the title.
 - Extend/override via `~/.config/gtmux/agents.json` — a JSON array of
   `{"name","commands","idleGlyph"}`; your entries win over the built-ins.
 - A pane is listed only if the agent **process is actually running**. A leftover

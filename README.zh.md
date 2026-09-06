@@ -17,7 +17,7 @@
 
 ---
 
-你在 tmux 里跑着 coding agent（Claude Code、Codex、Gemini、aider），常常好几个一起。
+你在 tmux 里跑着 coding agent（Claude Code、Codex、Gemini、Cursor），常常好几个一起。
 它们一安静下来，你就分不清哪个在等你拍板、哪个还在跑、哪个刚跑完。
 
 gtmux 就是盯着它们的那台雷达。它读出你 tmux 里的 agent，告诉你谁需要你，并把你直接送到
@@ -98,7 +98,7 @@ coding agent，读 digest、替你盯全部 agent、代你驱动（`gtmux send`�
 优先级、汇报风格、免打扰时段——守则每次升级它都原样保留(`AGENTS.md` 本身是托管文件、
 会被重新生成,别改它)。中控还会**从你的用法里学习**:`gtmux capture` 把教训归档进它的
 `knowledge/` 知识库,周期性自审(由 `gtmux serve` 驱动)再把教训提炼成长期规则。
-详见 [docs/cli.md](docs/cli.md)。
+详见 [docs/cli.zh.md](docs/cli.zh.md)。
 
 ## 快速上手
 
@@ -140,18 +140,18 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 
 想用手机看，跑 `gtmux serve`（同一 Wi-Fi）或 `gtmux tunnel`（任意网络），再配对 iOS app。
 **任意网络**分两档：**Standard**（零配置、免费）与 **Direct**（走 gtmux 自己的服务器、443，
-适用于无法直连 Cloudflare 边缘的网络）。见 **[docs/phone.md](docs/phone.md)**。
+适用于无法直连 Cloudflare 边缘的网络）。见 **[docs/phone.zh.md](docs/phone.zh.md)**。
 
 > **需要** macOS + [Ghostty](https://ghostty.org) 1.3+ **或** iTerm2 才能用跳转功能
 > （`focus` / `restore` / `new`）；Warp 也可用，但尽力而为（只有 gtmux 开的 tab 能
 > 精确聚焦，否则只激活应用）；`agents` / `overview` 在任何承载 tmux 的终端下都能用。
-> 中国大陆 / GitHub 不稳：见 [安装说明](docs/install.md)。
+> 中国大陆 / GitHub 不稳：见 [安装说明](docs/install.zh.md)。
 
 ## 文档
 
-- **[CLI 与命令](docs/cli.md)**：雷达（`agents`、`panes`）、中控（`digest`、`hq`、`capture`、`knowledge`）、带核验的派活（`spawn`、`send`、`tasks`、`reap`）、额度与机器（`usage`、`limits`、`resource`、`awake`）、够到一个会话（`focus`、`restore`、`new`、`adopt`、`attach`、`pair`、`share`），以及识别原理、通知 hook（Claude + `--agent`）、tmux 按键绑定、权限。
-- **[移动端与远程访问](docs/phone.md)**：iOS app、`gtmux serve`，以及从任意网络连回 Mac：Standard 与 Direct 两种隧道（还有 Tailscale）、always-on 开关、浏览器镜像。
-- **[安装说明](docs/install.md)**：锁版本、从源码装、中国大陆 / 镜像兜底。
+- **[CLI 与命令](docs/cli.zh.md)**：雷达（`agents`、`panes`）、中控（`digest`、`hq`、`capture`、`knowledge`）、带核验的派活（`spawn`、`send`、`tasks`、`reap`）、额度与机器（`usage`、`limits`、`resource`、`awake`）、够到一个会话（`focus`、`restore`、`new`、`adopt`、`attach`、`pair`、`share`），以及识别原理、通知 hook（Claude + `--agent`）、tmux 按键绑定、权限。
+- **[移动端与远程访问](docs/phone.zh.md)**：iOS app、`gtmux serve`，以及从任意网络连回 Mac：Standard 与 Direct 两种隧道（还有 Tailscale）、always-on 开关、浏览器镜像。
+- **[安装说明](docs/install.zh.md)**：锁版本、从源码装、中国大陆 / 镜像兜底。
 - **设计规范**：`docs/design/`（菜单栏 `DESIGN.md`、移动端 `MOBILE.md`），在途变更看 `openspec/`。
 
 ## 仓库地图

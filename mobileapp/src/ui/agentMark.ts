@@ -8,7 +8,7 @@ const MARKS: Record<string, string> = {
   claude: 'CC',
   codex: 'Cx',
   gemini: 'G',
-  aider: 'Ai',
+  copilot: 'Co',
   opencode: 'oc',
   cursor: 'Cu',
   crush: 'Cr',
