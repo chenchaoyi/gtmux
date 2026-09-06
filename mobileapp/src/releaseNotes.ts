@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.94.0',
+    en: [
+      'The HQ page now reports instead of displaying: what is owed to you, what HQ did, and only then the context — rather than a stack of readings you can see on the radar anyway.',
+      'Input history is kept per project, so the message you want is at the top instead of buried under other work.',
+    ],
+    zh: [
+      'HQ 页现在是汇报而不是罗列：先说欠你什么、参谋长做了什么，最后才是现状，不再堆一屏雷达上本来就有的读数。',
+      '输入历史按项目保留，你要找的那条在最上面，不会被别的项目顶掉。',
+    ],
+  },
+  {
     version: '0.93.0',
     en: [
       'A half-typed message now survives leaving the pane. Drafts are kept per session, so what you started writing is waiting when you come back.',
