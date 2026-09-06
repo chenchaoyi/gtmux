@@ -149,9 +149,11 @@ window). A window whose reset time has already passed SHALL NOT be reported as
 current: a log-derived reading can outlive its own window, and an expired
 percentage is unknown rather than low.
 
-Each window SHALL carry which agent's plan it belongs to, so that a consumer
-acting on it — the dispatch preflight suggests a cheaper model — acts on the plan
-that the work will actually bill against.
+Each window SHALL carry which agent's plan it belongs to, in its LABEL as well as
+a field — including the first agent's, since an unqualified label beside a
+qualified one reads as the general case beside a special one. A consumer acting
+on it (the dispatch preflight suggests a cheaper model) thereby acts on the plan
+the work will actually bill against.
 
 #### Scenario: Windows read from an agent's log
 

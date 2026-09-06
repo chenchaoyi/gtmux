@@ -180,3 +180,35 @@ func TestCodexWindowNamedByDuration(t *testing.T) {
 		t.Errorf("primary-holding-a-week = %+v, want codex week", got)
 	}
 }
+
+// Every window says whose plan it is, the first agent's included. A bare
+// "session" beside "codex session" reads as the general case with a special case
+// next to it, and the label is the only field most renderers show.
+func TestEveryWindowIsQualified(t *testing.T) {
+	if got := qualify("claude", "week (all models)"); got != "claude week (all models)" {
+		t.Errorf("claude label = %q", got)
+	}
+	// Idempotent: qualifying twice must not stutter.
+	if got := qualify("codex", "codex week"); got != "codex week" {
+		t.Errorf("re-qualified = %q", got)
+	}
+	// The warn string is what the spawn preflight prints, so it names the plan.
+	wins := []Window{{Label: qualify("claude", "week (all models)"), PctUsed: 90}}
+	if w := warnOf(wins, 85); w != "claude week (all models) 90%" {
+		t.Errorf("warn = %q", w)
+	}
+
+	// And through Get, which is where the qualifying is actually wired: the
+	// parser reports what the command said, Get is what says whose it is.
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir()) // no codex rollouts → command windows only
+	cfg := Config{Command: `printf '%s\n' "Current session: 11% used · resets Jul 13 at 1:30am"`,
+		TTLMin: 15, NearMin: 5, NearPct: 70, WarnPct: 85}
+	r, ok := Get(cfg, true, time.Unix(1_788_700_000, 0))
+	if !ok || len(r.Windows) != 1 {
+		t.Fatalf("Get = %+v ok=%v", r.Windows, ok)
+	}
+	if r.Windows[0].Label != "claude session" || r.Windows[0].Agent != "claude" {
+		t.Errorf("Get window = %+v, want a qualified claude session", r.Windows[0])
+	}
+}

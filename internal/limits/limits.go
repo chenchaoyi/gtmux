@@ -29,7 +29,7 @@ import (
 // where it is known, because only a comparable time can tell a live reading from
 // one that outlived its window.
 type Window struct {
-	Label     string `json:"label"`                // "session" | "week (all models)" | "codex week"
+	Label     string `json:"label"`                // "claude session" | "claude week (all models)" | "codex week"
 	PctUsed   int    `json:"pct_used"`             // 0–100, server-authoritative
 	ResetAt   string `json:"reset_at"`             // human reset time, as reported ("Jul 17 at 10:59pm")
 	Agent     string `json:"agent,omitempty"`      // which agent's plan this window belongs to
@@ -114,8 +114,11 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 		}
 		return cached, hasCache // keep the last good snapshot on failure
 	}
+	// The command route parses Claude's own `/usage` phrasing, so its windows are
+	// Claude's.
 	for i := range wins {
 		wins[i].Agent = "claude"
+		wins[i].Label = qualify("claude", wins[i].Label)
 	}
 	if cx, ok := codexWindows(now); ok {
 		wins = append(wins, cx...)
@@ -133,6 +136,20 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 // warning names WHOSE plan is tight. That matters where it is acted on: the
 // spawn preflight suggests a cheaper model, and a suggestion drawn from the
 // other agent's plan is advice about the wrong thing.
+// qualify prefixes a window label with whose plan it is.
+//
+// EVERY window carries it, the first agent's included. Leaving one bare reads as
+// the general case with a special case beside it — "session 10%" next to "codex
+// session 0%" invites exactly the guess that the first one is everyone's. A label
+// is the only thing most renderers show, so the label is where this has to be
+// true, not just the `Agent` field a shipped client does not know about.
+func qualify(agent, label string) string {
+	if agent == "" || strings.HasPrefix(label, agent+" ") {
+		return label
+	}
+	return agent + " " + label
+}
+
 func warnOf(wins []Window, warnPct int) string {
 	for _, w := range wins {
 		if strings.Contains(w.Label, "week") && w.PctUsed >= warnPct {
