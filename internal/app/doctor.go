@@ -167,6 +167,10 @@ func doctorSections() []dsection {
 	if fileExists(filepath.Join(homeDir(), ".codex")) {
 		agents = append(agents, rowCodexHook())
 	}
+	// Same courtesy for Kimi: a row only for a machine that runs it.
+	if fileExists(kimiDataRoot()) {
+		agents = append(agents, rowKimiHook())
+	}
 	secs := []dsection{
 		// The gtmux install itself, FIRST — CLI + menu-bar app versions (a drift is the
 		// first thing you see) + config validity.
@@ -843,6 +847,27 @@ func rowCodexHook() dcheck {
 	// neutral note. Detection still works without it, but you miss precise per-event
 	// state + notifications.
 	return dcheck{stRec, label, i18n.Tr("not installed", "未装"), i18n.Tr("install for precise state + notifications", "接入以获精准状态 + 通知")}
+}
+
+// rowKimiHook reports whether gtmux's managed block is in Kimi's config.toml.
+//
+// "Installed" and "installed completely" are different facts, and Codex taught that
+// the hard way: a hooks file written by an older gtmux keeps reading ✓ while missing
+// every event added since. So this counts the bindings, not the block.
+func rowKimiHook() dcheck {
+	label := i18n.Tr("Kimi Code hook", "Kimi Code hook")
+	if missing := missingKimiHookEvents(); missing != nil {
+		if len(missing) == 0 {
+			return dcheck{stOK, label, i18n.Tr("installed", "已装"),
+				i18n.Tr("precise state + notifications", "状态精准 + 通知")}
+		}
+		return dcheck{stRec, label,
+			fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
+			i18n.Tr("this block predates events gtmux now uses ("+strings.Join(missing, ", ")+") — `gtmux doctor --fix` adds them (restart the sessions to load it)",
+				"这块配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— `gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
+	}
+	return dcheck{stRec, label, i18n.Tr("not installed", "未装"),
+		i18n.Tr("install for precise state + notifications", "接入以获精准状态 + 通知")}
 }
 
 // rowCloudflared surfaces the optional tunnel client. It's only needed for

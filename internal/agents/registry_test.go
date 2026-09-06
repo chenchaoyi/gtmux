@@ -20,7 +20,7 @@ func sortedSet(s []string) []string {
 
 func TestHookEquippedKeys_matchesLegacy(t *testing.T) {
 	// internal/driver/driver.go hookEquippedAgents
-	want := []string{"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "copilot", "kiro"}
+	want := []string{"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "kimi", "copilot", "kiro"}
 	if got := HookEquippedKeys(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("HookEquippedKeys()=%v, want %v", got, want)
 	}
@@ -37,6 +37,7 @@ func TestProfiles_matchesLegacy(t *testing.T) {
 		{Label: "Crush", Commands: []string{"crush"}},
 		{Label: "Cursor", Commands: []string{"cursor-agent", "cursor"}, Icon: "/Applications/Cursor.app"},
 		{Label: "Amp", Commands: []string{"amp"}},
+		{Label: "Kimi Code", Commands: []string{"kimi"}},
 	}
 	if got := Profiles(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("Profiles()=%#v\nwant %#v", got, want)
@@ -47,7 +48,7 @@ func TestDisplayNames_matchesLegacy(t *testing.T) {
 	// internal/hook/hook.go agentDisplay
 	want := map[string]string{
 		"claude": "Claude Code", "codex": "Codex", "gemini": "Gemini", "cursor": "Cursor",
-		"opencode": "opencode", "copilot": "Copilot", "hermes-agent": "Hermes", "kiro": "Kiro",
+		"opencode": "opencode", "kimi": "Kimi Code", "copilot": "Copilot", "hermes-agent": "Hermes", "kiro": "Kiro",
 	}
 	if got := DisplayNames(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("DisplayNames()=%v, want %v", got, want)
@@ -64,6 +65,7 @@ func TestResumeArgv_matchesLegacy(t *testing.T) {
 		"kiro":         {"kiro-cli", "chat", "--resume-id"},
 		"copilot":      {"copilot", "--resume"},
 		"opencode":     {"opencode", "--session"},
+		"kimi":         {"kimi", "--session"},
 		"hermes-agent": {"hermes", "--resume"},
 		"grok":         {"grok", "-r"},
 	}
@@ -74,17 +76,17 @@ func TestResumeArgv_matchesLegacy(t *testing.T) {
 
 func TestResourceNames_matchesLegacy(t *testing.T) {
 	// internal/resource/attribute.go agent list
-	want := []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp"}
+	want := []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp", "kimi"}
 	if got := ResourceNames(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("ResourceNames()=%v, want %v", got, want)
 	}
 }
 
 func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
-	// Content parsers: claude + codex read the agent's own on-disk log; opencode has
-	// no readable log, so gtmux keeps its OWN transcript (internal/transcript/opencode.go,
+	// Content parsers: claude + codex + kimi read the agent's own on-disk log; opencode
+	// has no readable log, so gtmux keeps its OWN transcript (internal/transcript/opencode.go,
 	// fed by the plugin via `gtmux hook`). Headless one-shot stays claude+codex only.
-	if got, want := sortedSet(ContentKeys()), []string{"claude", "codex", "opencode"}; !reflect.DeepEqual(got, want) {
+	if got, want := sortedSet(ContentKeys()), []string{"claude", "codex", "kimi", "opencode"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ContentKeys()=%v, want %v", got, want)
 	}
 	if got, want := sortedSet(HeadlessKeys()), []string{"claude", "codex"}; !reflect.DeepEqual(got, want) {
@@ -94,7 +96,7 @@ func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
 
 func TestDedicatedSemanticsKeys_matchesLegacy(t *testing.T) {
 	// internal/hook/classify.go agentEventSemantics
-	want := []string{"claude", "codex", "hermes-agent", "kiro"}
+	want := []string{"claude", "codex", "hermes-agent", "kimi", "kiro"}
 	if got := sortedSet(DedicatedSemanticsKeys()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("DedicatedSemanticsKeys()=%v, want %v", got, want)
 	}

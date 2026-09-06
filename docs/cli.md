@@ -12,7 +12,7 @@
 | `new [name]` | start a new tmux session in a fresh terminal tab |
 | `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
 | `doctor [--fix [--yes]]` | health check grouped by concern; on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
-| `install [hooks\|app\|all]` | install what gtmux needs; with no target it asks. `install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode` wires another agent |
+| `install [hooks\|app\|all]` | install what gtmux needs; with no target it asks. `install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` wires another agent |
 | `uninstall [hooks\|app\|all]` | remove it again; with no target it asks (the two have very different consequences) |
 | `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); see [phone.md](phone.md) |
@@ -1535,13 +1535,16 @@ other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
 runs it, you don't — and writes state purely by event **timing**, telling a
 permission request from an idle nudge without reading message text.
 
-**Other agents:** `--agent codex|cursor|gemini|copilot|kiro|opencode` wires that
+**Other agents:** `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` wires that
 agent's own hooks file instead. **Codex** uses its additive hooks system
 (`~/.codex/hooks.json` + `features.hooks`), so it **coexists with any existing
 `notify`** (e.g. computer-use) rather than replacing it. **opencode** has no
 command-hook file, so gtmux installs a small JS plugin
-(`~/.config/opencode/plugin/gtmux.js`) that forwards its events. `gtmux doctor --fix`
-offers to wire whatever agents it detects.
+(`~/.config/opencode/plugin/gtmux.js`) that forwards its events. **Kimi Code** keeps its
+hooks as `[[hooks]]` entries inside your own `~/.kimi-code/config.toml`, so gtmux appends
+one **marked block** at the end of that file and leaves everything else byte for byte;
+uninstall removes exactly that block. `gtmux doctor --fix` offers to wire whatever agents
+it detects.
 
 Notifications are delivered by the menu-bar app — no `terminal-notifier` needed.
 The hook queues a request under `~/.local/share/gtmux/notify/` and `Gtmux.app`

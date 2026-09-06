@@ -12,7 +12,7 @@
 | `new [name]` | 新建一个 tmux session，并开一个终端标签页 |
 | `adopt <session_id>…` | 把感知到的非 tmux（native）agent 会话转进 tmux |
 | `doctor [--fix [--yes]]` | 按主题分组的体检；在 TTY 上会当场问你要不要修可改进的项；`--fix` 是一站式配置（hook、set-titles、重启恢复、菜单栏 app） |
-| `install [hooks\|app\|all]` | 装 gtmux 需要的东西；不给目标就问你。`install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode` 接入另一个 agent |
+| `install [hooks\|app\|all]` | 装 gtmux 需要的东西；不给目标就问你。`install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` 接入另一个 agent |
 | `uninstall [hooks\|app\|all]` | 反过来卸掉；不给目标就问你（两者后果差很远） |
 | `serve [--port N]` | 给手机 app / 网页镜像用的只读 HTTP+SSE 雷达（放在 VPN 或隧道后面） |
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <码>]` | 把雷达开到任意网络 —— Standard（Cloudflare）或 Direct（自托管 / 付费），见 [phone.zh.md](phone.zh.md) |
@@ -1393,11 +1393,13 @@ gtmux uninstall [hooks|app|all]     # 反过来卸掉（不给目标就问你）
 `gtmux hook` 是产出方 —— 由 Claude Code 来跑，不是你来跑 ——
 它纯粹按事件**时序**写状态，不读消息文本就能把一次权限请求和一次空闲提醒区分开。
 
-**其它 agent：** `--agent codex|cursor|gemini|copilot|kiro|opencode` 改成接那个 agent
+**其它 agent：** `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` 改成接那个 agent
 自己的 hook 文件。**Codex** 用的是它可叠加的 hooks 系统
 （`~/.codex/hooks.json` + `features.hooks`），所以它**与你已有的 `notify` 共存**
 （比如 computer-use），而不是替换掉。**opencode** 没有命令 hook 文件，
 所以 gtmux 装一个转发它事件的小 JS 插件（`~/.config/opencode/plugin/gtmux.js`）。
+**Kimi Code** 的 hook 是写在你自己的 `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目，
+所以 gtmux 只在文件末尾追加一整块带标记的内容，其余部分一个字节都不动；卸载时也只删这一块。
 `gtmux doctor --fix` 会针对它探测到的 agent 逐个提议接上。
 
 通知由菜单栏 app 投递，不需要 `terminal-notifier`。hook 把请求排到

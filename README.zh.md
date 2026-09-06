@@ -135,8 +135,9 @@ gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持�
 
 > 只想要通知？`gtmux install hooks` 只注册 agent hook —— 但推荐走 `gtmux doctor`
 > （它会做这个**并且**配好 focus/restore 依赖的 set-titles）。非 Claude 的 agent 加
-> `--agent codex|cursor|gemini|copilot|kiro|opencode`（Codex 走它自己的 hooks 系统，
-> 与已有的 `notify` 并存；opencode 装一个小插件）。
+> `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi`（Codex 走它自己的 hooks 系统，
+> 与已有的 `notify` 并存；opencode 装一个小插件；Kimi Code 在你自己的 `config.toml`
+> 末尾追加一块带标记的内容）。
 
 想用手机看，跑 `gtmux serve`（同一 Wi-Fi）或 `gtmux tunnel`（任意网络），再配对 iOS app。
 **任意网络**分两档：**Standard**（零配置、免费）与 **Direct**（走 gtmux 自己的服务器、443，

@@ -58,14 +58,15 @@ agent already gets.
 - **THEN** verification falls to the two-frame screen read, exactly as for an agent with no
   hook (the absence of evidence is not a failure)
 
-### Requirement: The install spec supports both command-hook and plugin extension models
+### Requirement: The install spec supports command-hook, plugin, and managed-block extension models
 
-The manifest's hook-install spec SHALL support materializing the integration by either a JSON
-"run a command on event" configuration OR a plugin artifact (e.g. a JavaScript module) that
-subscribes to the agent's native events and shells out to `gtmux hook`. An agent whose only
-extension point is a plugin system, not a command-hook file, SHALL be installable to full Tier
-1 parity through the same `install-hooks --agent <key>` entry point and removed cleanly on
-uninstall.
+The manifest's hook-install spec SHALL support materializing the integration by a JSON
+"run a command on event" configuration, a plugin artifact (e.g. a JavaScript module) that
+subscribes to the agent's native events and shells out to `gtmux hook`, OR a delimited
+block appended to a configuration file the USER owns. An agent whose only extension point
+is a plugin system, or whose hooks share a file with the user's own settings, SHALL be
+installable to full Tier 1 parity through the same `install-hooks --agent <key>` entry
+point and removed cleanly on uninstall.
 
 #### Scenario: A plugin-only agent is wired to Tier 1
 
@@ -74,11 +75,18 @@ uninstall.
   and the agent thereafter drives waiting/done, receipt, and notifications like a
   command-hook agent
 
+#### Scenario: An agent whose hooks live in the user's own config file
+
+- **WHEN** `install-hooks --agent <key>` runs for an agent whose hooks are entries in a
+  configuration file that also holds the user's own settings
+- **THEN** gtmux appends its entries as a single delimited block and rewrites nothing else
+  in that file, and re-running the install replaces that block rather than adding a second
+
 #### Scenario: Uninstall removes only what gtmux wrote
 
 - **WHEN** the agent's integration is uninstalled
-- **THEN** the gtmux-written hooks or plugin are removed and any pre-existing user
-  configuration for that agent is left intact
+- **THEN** the gtmux-written hooks, plugin, or block are removed and any pre-existing user
+  configuration for that agent is left intact, byte for byte
 
 ### Requirement: A logless agent reaches Tier 2 via a gtmux-owned transcript
 

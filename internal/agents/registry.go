@@ -83,6 +83,17 @@ var manifests = []Manifest{
 		HookDisplay: true, Hooked: true, Content: "opencode",
 	},
 	{
+		// Kimi Code CLI (MoonshotAI). Its hooks live as TOML `[[hooks]]` inside the
+		// user's OWN ~/.kimi-code/config.toml — see the managed-block installer — and
+		// its payload is already snake_case Claude-shaped (session_id / cwd / prompt),
+		// so the hook needed no new parsing. Transcript: the event-sourced
+		// agents/main/wire.jsonl under ~/.kimi-code/sessions/.
+		Key: "kimi", Label: "Kimi Code",
+		Detect: []string{"kimi"}, // icon: committed assets/agent-icons/kimi.png
+		Resume: []string{"kimi", "--session"}, Resource: "kimi",
+		HookDisplay: true, Hooked: true, Content: "kimi", Semantics: true,
+	},
+	{
 		Key: "copilot", Label: "Copilot",
 		Resume:      []string{"copilot", "--resume"},
 		HookDisplay: true, Hooked: true,
@@ -110,8 +121,8 @@ var manifests = []Manifest{
 // resourceOrder / profileOrder pin the emission order the legacy slices used, so a
 // derived list is byte-identical to what it replaces (order is not behaviorally
 // significant — commands are unique across profiles — but keeping it avoids noise).
-var profileOrder = []string{"claude", "codex", "gemini", "aider", "opencode", "crush", "cursor", "amp"}
-var resourceOrder = []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp"}
+var profileOrder = []string{"claude", "codex", "gemini", "aider", "opencode", "crush", "cursor", "amp", "kimi"}
+var resourceOrder = []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp", "kimi"}
 
 // byKey indexes the manifests for O(1) lookup.
 var byKey = func() map[string]Manifest {

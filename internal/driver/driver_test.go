@@ -16,13 +16,18 @@ func TestRegistryMatchesFormerHookAgents(t *testing.T) {
 		"claude", "codex", "gemini", "cursor",
 		"cursor-agent", "opencode", "copilot", "kiro",
 	}
-	for _, k := range former {
+	// Agents onboarded SINCE the migration. The guard is still exact — an agent that
+	// gains the event-first path by accident fails here — but a deliberate onboarding
+	// is one line, named, rather than a number nobody can read back.
+	since := []string{"kimi"}
+	for _, k := range append(append([]string{}, former...), since...) {
 		if For(k).Receipt == nil {
-			t.Errorf("For(%q).Receipt = nil; the former whitelist had it hook-equipped", k)
+			t.Errorf("For(%q).Receipt = nil; it is expected to be hook-equipped", k)
 		}
 	}
-	if len(registry) != len(former) {
-		t.Errorf("registry has %d entries, former whitelist had %d", len(registry), len(former))
+	if want := len(former) + len(since); len(registry) != want {
+		t.Errorf("registry has %d entries, expected %d (%d migrated + %d since)",
+			len(registry), want, len(former), len(since))
 	}
 }
 
