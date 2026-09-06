@@ -296,6 +296,21 @@ export function didRow(tally: {verb: string; n: number}[], zh: boolean): Row | n
 }
 
 /**
+ * usageDoorValue is the plan headline that labels the usage door: one window per
+ * plan, the tightest.
+ *
+ * It is a DOOR and not part of the context row because a door has to be permanent
+ * and a summary does not. The context row disappears when nothing is moving — and,
+ * by design, when the machine is critical — which is exactly when the machine
+ * readings behind it matter most. A row that vanishes cannot be the only way in.
+ */
+export function usageDoorValue(week: WindowPct[], zh: boolean): string | null {
+  const wins = tightestPerPlan(week);
+  if (wins.length === 0) return null;
+  return wins.map(w => `${planLabel(w, zh)} ${w.pct}%`).join('  ·  ');
+}
+
+/**
  * contextRow is everything the radar and the usage view already show, compressed
  * to one line and included only where it is not the ordinary case.
  *
@@ -307,12 +322,7 @@ export function didRow(tally: {verb: string; n: number}[], zh: boolean): Row | n
  * figure is the tightest window rather than every window, and the machine appears
  * only when the core has a warning to give.
  */
-export function contextRow(
-  digest: DigestRow[],
-  week: WindowPct[],
-  res: ResourceState | null,
-  zh: boolean,
-): Row | null {
+export function contextRow(digest: DigestRow[], res: ResourceState | null, zh: boolean): Row | null {
   const parts: string[] = [];
   const c = fleetCounts(digest);
   if (c.waiting > 0 || c.working > 0) {
@@ -321,8 +331,6 @@ export function contextRow(
     if (c.working > 0) bits.push(zh ? `${c.working} 运行` : `${c.working} working`);
     parts.push(bits.join(' '));
   }
-  const tight = tightestPerPlan(week).sort((a, b) => b.pct - a.pct)[0];
-  if (tight) parts.push(`${planLabel(tight, zh)} ${tight.pct}%`);
   if (res?.warn) parts.push(res.warn);
   if (parts.length === 0) return null;
   return {key: 'context', label: zh ? '现状' : 'context', value: parts.join('  ·  ')};
@@ -360,7 +368,7 @@ export function headerModel(args: {
     rows: [
       owedRow(args.owed, args.zh),
       didRow(args.did, args.zh),
-      critical ? null : contextRow(args.digest, args.week, args.res, args.zh),
+      critical ? null : contextRow(args.digest, args.res, args.zh),
     ].filter((x): x is Row => x != null),
   };
 }

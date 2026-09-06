@@ -31,7 +31,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent} from '../api/types';
 import {Debug} from '../debug';
-import {DigestRow, HQBoard, HQEvent, KnowledgeIndex, SendPayload, TranscriptTurn} from '../api/client';
+import {DigestRow, HQBoard, HQEvent, KnowledgeIndex, SendPayload, TranscriptTurn, UsageReport} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
@@ -44,13 +44,14 @@ import {ChatView} from '../ui/ChatView';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {KnowledgeSheet} from './KnowledgeSheet';
+import {UsageSheet} from './UsageSheet';
 import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {parseBoardSections, sectionCount} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
-import {ResourceState, WindowPct, headerModel} from './hqHeaderModel';
+import {ResourceState, WindowPct, headerModel, usageDoorValue} from './hqHeaderModel';
 import {
   Zone,
   assessment,
@@ -83,6 +84,8 @@ export function HQScreen({route, navigation}: any) {
 
   const [digest, setDigest] = useState<DigestRow[]>([]);
   const [week, setWeek] = useState<WindowPct[]>([]);
+  const [usageFull, setUsageFull] = useState<UsageReport | null>(null);
+  const [usageOpen, setUsageOpen] = useState(false);
   const [res, setRes] = useState<ResourceState | null>(null);
   const [board, setBoard] = useState<HQBoard>({exists: false});
   const [ledger, setLedger] = useState<HQEvent[]>([]);
@@ -201,6 +204,7 @@ export function HQScreen({route, navigation}: any) {
         .usage()
         .then(u => {
           if (!alive) return;
+          setUsageFull(u ?? null);
           setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
           const m = u?.resource?.machine;
           // `tier` rides along now: it is what decides whether the machine's line is
@@ -439,9 +443,11 @@ export function HQScreen({route, navigation}: any) {
             conn={conn}
             demo={demo && !Debug.shotMode}
             boardValue={board.exists ? boardAge(board.updated_at, now, zh) : null}
+            usageValue={usageDoorValue(week, zh)}
             open={briefOpen}
             onToggle={() => setBriefOpen(v => !v)}
             onOpenActs={() => setZone('acts')}
+            onOpenUsage={() => setUsageOpen(true)}
             onBack={() => navigation.goBack()}
             onOpenBoard={() => setBoardOpen(true)}
             knowledgeValue={knowledgeValue(knowledge, zh)}
@@ -652,6 +658,14 @@ export function HQScreen({route, navigation}: any) {
           if (r.ok) client.hqKnowledge().then(setKnowledge).catch(() => {});
           return r;
         }}
+      />
+
+      <UsageSheet
+        visible={usageOpen}
+        usage={usageFull}
+        pal={pal}
+        lang={lang}
+        onClose={() => setUsageOpen(false)}
       />
 
       <Modal

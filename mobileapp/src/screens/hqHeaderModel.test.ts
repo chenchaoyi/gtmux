@@ -7,6 +7,7 @@ import {
   isCritical,
   owedRow,
   supervisorSignal,
+  usageDoorValue,
 } from './hqHeaderModel';
 
 const NOW = 1_756_800_000; // fixed clock: an age is only readable if it is deterministic
@@ -173,25 +174,30 @@ describe('the report rows', () => {
     // "0 need you · 0 working · 17 idle" is three numbers to say nothing is
     // happening, directly under a verdict that just said so — and the radar one
     // swipe away prints the same line.
-    const quiet = contextRow(
-      [row({status: 'idle'}), row({status: 'idle'})],
-      [{label: 'claude week', pct: 18, agent: 'claude'}],
-      null,
-      false,
-    )!;
-    expect(quiet.value).toBe('claude wk 18%');
+    expect(contextRow([row({status: 'idle'}), row({status: 'idle'})], null, false)).toBeNull();
 
     const busy = contextRow(
       [row({status: 'working'}), row({status: 'idle'})],
-      [{label: 'claude week', pct: 18, agent: 'claude'}],
       {warn: 'disk getting low'},
       false,
     )!;
-    expect(busy.value).toBe('1 working  ·  claude wk 18%  ·  disk getting low');
+    expect(busy.value).toBe('1 working  ·  disk getting low');
   });
 
-  test('context is absent when there is nothing notable at all', () => {
-    expect(contextRow([row({status: 'idle'})], [], null, false)).toBeNull();
+  test('the usage DOOR is permanent, because the context row is not', () => {
+    // The row is dropped when the machine is critical — exactly when the readings
+    // behind it matter most. A way in cannot depend on a row that vanishes.
+    expect(
+      usageDoorValue(
+        [
+          {label: 'claude week (all models)', pct: 27, agent: 'claude'},
+          {label: 'claude session', pct: 4, agent: 'claude'},
+          {label: 'codex week', pct: 1, agent: 'codex'},
+        ],
+        false,
+      ),
+    ).toBe('claude wk 27%  ·  codex wk 1%');
+    expect(usageDoorValue([], false)).toBeNull();
   });
 });
 
@@ -217,7 +223,13 @@ describe('headerModel', () => {
   };
 
   test('the report reads owed → did → context, in that order', () => {
-    const m = headerModel({...base, res: {diskGB: 16, memTier: 'ok'}});
+    // Something is moving, so context has something to say — see the row's own
+    // test for why it stays away when nothing is.
+    const m = headerModel({
+      ...base,
+      digest: [row({status: 'working'})],
+      res: {diskGB: 16, memTier: 'ok'},
+    });
     expect(m.standing).toBeNull();
     expect(m.rows.map(r => r.key)).toEqual(['owed', 'did', 'context']);
   });
