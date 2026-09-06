@@ -241,3 +241,33 @@ func TestCodexRateOutsideWindow(t *testing.T) {
 		t.Errorf("stale-only rate = %d, want 0", r)
 	}
 }
+
+// The agent string that reaches the thresholds is the DISPLAY LABEL a session
+// carries, not the registry key the config is written with. Lowercasing alone
+// turned "Claude Code" into "claude code", which matched nothing — so the
+// documented `{"claude": {…}}` was ignored for every Claude session there has
+// ever been, while Codex worked purely because its label IS its key.
+func TestLayersUseTheDocumentedKey(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(filepath.Join(home, ".config", "gtmux"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, ".config", "gtmux", "usage.json"),
+		[]byte(`{"claude":{"ctxWarn":0.5,"window":123456},"codex":{"ctxWarn":0.4}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		agent string
+		want  float64
+	}{{"Claude Code", 0.5}, {"Codex", 0.4}, {"opencode", 0.8}} {
+		if got := layersFor(tc.agent).CtxWarn; got != tc.want {
+			t.Errorf("layersFor(%q).CtxWarn = %v, want %v", tc.agent, got, tc.want)
+		}
+	}
+	// The window override reaches windowFor by the same label, and outranks a
+	// window the log stated.
+	if w := windowFor("Claude Code", "", 10_000, 258_400); w != 123_456 {
+		t.Errorf("configured window = %d, want 123456", w)
+	}
+}

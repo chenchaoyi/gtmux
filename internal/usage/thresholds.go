@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/agents"
 )
 
 // Layers are PER AGENT TYPE, from ~/.config/gtmux/usage.json:
@@ -64,7 +66,7 @@ func loadConfig() config {
 // layersFor merges the agent type's configured layers over the defaults.
 func layersFor(agent string) Layers {
 	cfg := loadConfig()
-	l, ok := cfg.layers[strings.ToLower(agent)]
+	l, ok := cfg.layers[agentKey(agent)]
 	if !ok {
 		return defaultLayers
 	}
@@ -81,6 +83,19 @@ func layersFor(agent string) Layers {
 }
 
 func configWindow(agent string) int64 { return layersFor(agent).Window }
+
+// agentKey is the registry key a session's agent string maps to, because what
+// arrives here is the DISPLAY LABEL — a session carries "Claude Code", not
+// "claude". Lowercasing alone looked right and matched nothing: the documented
+// `{"claude": {…}}` config was silently ignored for every Claude session, which
+// is every session most people have. Codex only appeared to work because its
+// label and its key happen to be the same word.
+func agentKey(agent string) string {
+	if k := agents.KeyForLabel(agent); k != "" {
+		return k
+	}
+	return strings.ToLower(agent)
+}
 
 func horizon() time.Duration { return loadConfig().horizon }
 
