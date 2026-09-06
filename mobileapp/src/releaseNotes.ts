@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.92.0',
+    en: [
+      'The radar says where it ends, so a list that stops no longer reads as one still loading.',
+      'A row reporting an error gives that message the whole line, instead of squeezing the branch tag down to a blank pill.',
+    ],
+    zh: [
+      '雷达会说明自己在哪儿结束，列表停住不再读起来像还在加载。',
+      '报错的那一行把整行让给错误信息，不再把分支标签挤成一颗空白药丸。',
+    ],
+  },
+  {
     version: '0.91.0',
     en: [
       'Scrolling is steady again. The header and tabs folding away used to fight the scroll position, so returning to the bottom jumped around, worst of all mid-conversation.',
