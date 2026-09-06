@@ -48,7 +48,7 @@ import {parseBoardSections, sectionCount} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
-import {ResourceState, headerModel} from './hqHeaderModel';
+import {ResourceState, WindowPct, headerModel} from './hqHeaderModel';
 import {
   Zone,
   assessment,
@@ -80,7 +80,7 @@ export function HQScreen({route, navigation}: any) {
   const t = (en: string, cn: string) => (zh ? cn : en);
 
   const [digest, setDigest] = useState<DigestRow[]>([]);
-  const [week, setWeek] = useState<{label: string; pct: number}[]>([]);
+  const [week, setWeek] = useState<WindowPct[]>([]);
   const [res, setRes] = useState<ResourceState | null>(null);
   const [board, setBoard] = useState<HQBoard>({exists: false});
   const [ledger, setLedger] = useState<HQEvent[]>([]);
@@ -199,7 +199,7 @@ export function HQScreen({route, navigation}: any) {
         .usage()
         .then(u => {
           if (!alive) return;
-          setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used})));
+          setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
           const m = u?.resource?.machine;
           // `tier` rides along now: it is what decides whether the machine's line is
           // promoted OUT of the disclosure (hqHeader.isCritical), and dropping it here

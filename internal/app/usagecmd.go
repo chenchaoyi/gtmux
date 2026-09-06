@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
@@ -85,9 +86,11 @@ func cmdUsage(args []string) int {
 		fmt.Println(line)
 	}
 	// Subscription windows (real remaining) — the headline "how much room is left".
-	if len(rep.Limits.Windows) > 0 {
-		parts := make([]string, 0, len(rep.Limits.Windows))
-		for _, w := range rep.Limits.Windows {
+	// One window per plan: the full list is `gtmux limits`, and joining all of
+	// them here ran past 100 characters once Codex added its own.
+	if sum := limits.Summary(rep.Limits.Windows); len(sum) > 0 {
+		parts := make([]string, 0, len(sum))
+		for _, w := range sum {
 			parts = append(parts, fmt.Sprintf("%s %d%%", w.Label, w.PctUsed))
 		}
 		fmt.Println(i18n.Tr("Plan  ", "额度  ") + strings.Join(parts, " · "))

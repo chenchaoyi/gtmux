@@ -903,6 +903,16 @@ observed carrying the weekly window as well as the 5-hour one. And a reading can
 window whose reset has passed is dropped rather than reported, because by then
 the percentage is unknown, not low.
 
+`gtmux limits` lists every window. **Every other place shows ONE per plan — the
+tightest**, because those places have a line and not a list: `gtmux usage`'s
+footer ran past 100 characters once Codex added its own windows, and the phone's
+header row truncated mid-number ("Fable 11…"), which is the one thing a
+percentage must never do. The tightest is the right one to keep, since the
+question a summary answers is "where do I stand". Note that is deliberately not
+the warning rule, which ignores 5-hour windows: interrupting you over a window
+that resets on its own is noise, but *showing* it when it is the tightest is the
+answer.
+
 **Every window says whose plan it is, the first agent's included** — `claude
 session`, `codex session`, never a bare `session` beside a qualified one. An
 unprefixed label next to a prefixed one reads as the general case with a special

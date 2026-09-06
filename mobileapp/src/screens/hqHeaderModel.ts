@@ -44,6 +44,8 @@ export interface ResourceState {
 export interface WindowPct {
   label: string;
   pct: number;
+  /** Whose plan. Absent from a serve older than 0.93 — see `tightestPerPlan`. */
+  agent?: string;
 }
 
 /** One run of the brief. `code` marks what HQ wrote between backticks. */
@@ -221,7 +223,34 @@ export function fleetStat(digest: DigestRow[], zh: boolean): Stat {
 }
 
 /**
- * usageStat is each subscription window's burn. Null when the endpoint reported none —
+ * tightestPerPlan keeps ONE window per plan: the one that runs out first.
+ *
+ * This row has a line, not a list. Codex's plan doubled the window count and the
+ * row started truncating mid-number ("Fable 11…"), which is the one thing a
+ * percentage must never do. The tightest is the right one to keep because the
+ * question is "where do I stand", and the answer is whichever window ends first.
+ *
+ * A serve older than 0.93 sends no `agent`, so each window groups under its own
+ * label and nothing is merged away — the row then behaves exactly as it did.
+ */
+export function tightestPerPlan(week: WindowPct[]): WindowPct[] {
+  const at = new Map<string, number>();
+  const out: WindowPct[] = [];
+  for (const w of week) {
+    const key = w.agent ?? w.label;
+    const i = at.get(key);
+    if (i === undefined) {
+      at.set(key, out.length);
+      out.push(w);
+    } else if (w.pct > out[i].pct) {
+      out[i] = w;
+    }
+  }
+  return out;
+}
+
+/**
+ * usageStat is where each plan stands. Null when the endpoint reported none —
  * a row reading "usage —" says less than no row at all.
  */
 export function usageStat(week: WindowPct[], zh: boolean): Stat | null {
@@ -229,7 +258,9 @@ export function usageStat(week: WindowPct[], zh: boolean): Stat | null {
   return {
     key: 'usage',
     label: zh ? '用量' : 'usage',
-    value: week.map(w => `${planLabel(w.label, zh)} ${w.pct}%`).join('  ·  '),
+    value: tightestPerPlan(week)
+      .map(w => `${planLabel(w, zh)} ${w.pct}%`)
+      .join('  ·  '),
   };
 }
 

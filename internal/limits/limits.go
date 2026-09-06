@@ -200,3 +200,39 @@ func itoa(n int) string {
 	}
 	return string(b[i:])
 }
+
+// Summary reduces the windows to ONE per plan — the tightest — for the places
+// that have a line rather than a list.
+//
+// Codex doubled the window count, and every summary that simply joined them
+// overflowed: the phone's header row truncated mid-number ("Fable 11…") and the
+// `gtmux usage` footer ran past 100 characters. A summary that has to be cut off
+// is not a summary.
+//
+// The tightest is the right one to keep because the question a summary answers is
+// "where do I stand", and the answer is whichever window runs out first. Note this
+// is deliberately NOT `warnOf`'s rule, which ignores session windows: that one
+// decides whether to INTERRUPT you, and a 5-hour window at 90% is normal working
+// and resets on its own. Showing is not warning.
+//
+// Order follows the input, so the display is stable across polls rather than
+// reordering whenever a percentage crosses another.
+func Summary(wins []Window) []Window {
+	best := map[string]int{} // agent → index into out
+	var out []Window
+	for _, w := range wins {
+		key := w.Agent
+		if key == "" {
+			key = w.Label // an older serve sent no agent; group by its own label
+		}
+		if i, seen := best[key]; seen {
+			if w.PctUsed > out[i].PctUsed {
+				out[i] = w
+			}
+			continue
+		}
+		best[key] = len(out)
+		out = append(out, w)
+	}
+	return out
+}
