@@ -1,12 +1,12 @@
 import {DigestRow, TranscriptTurn} from '../api/client';
 import {
-  fleetStat,
+  contextRow,
+  didRow,
   headerModel,
   inlineSegments,
   isCritical,
-  machineStat,
+  owedRow,
   supervisorSignal,
-  usageStat,
 } from './hqHeaderModel';
 
 const NOW = 1_756_800_000; // fixed clock: an age is only readable if it is deterministic
@@ -141,34 +141,57 @@ describe('inlineSegments', () => {
   });
 });
 
-describe('the three figures', () => {
-  const digest = [row({status: 'waiting'}), row({status: 'working'}), row({status: 'idle'})];
-
-  test('fleet is the state tally', () => {
-    expect(fleetStat(digest, false).value).toBe('1 need you · 1 working · 1 idle');
-    expect(fleetStat(digest, true).value).toBe('1 需要你 · 1 运行 · 1 空闲');
+// The disclosure is a REPORT, not a dashboard. Its three rows answer the three
+// questions a chief of staff answers, in that order — and each is absent rather
+// than blank when it has nothing to say.
+describe('the report rows', () => {
+  test('owed leads and is the only row that may be amber', () => {
+    // It used to be last and dimmest, under a stack of sensor readings, while the
+    // loudest colour on the card went to a disk warning you cannot act on from a
+    // phone. That ranking is what made the card read as an instrument panel.
+    const r = owedRow({pending: 8, oldestLabel: '12d', overdue: true}, false)!;
+    expect(r.key).toBe('owed');
+    expect(r.value).toBe('8 to carry · oldest 12d');
+    expect(r.tone).toBe('warn');
+    // A queue with work in it is normal; only past the floor doctor uses is it amber.
+    expect(owedRow({pending: 8, oldestLabel: '2d'}, false)!.tone).toBeUndefined();
+    expect(owedRow({pending: 0}, false)).toBeNull();
+    expect(owedRow(null, false)).toBeNull();
   });
 
-  test('usage is absent rather than empty when no window was reported', () => {
-    // A row reading "usage —" spends attention to say nothing.
-    expect(usageStat([], false)).toBeNull();
-    expect(usageStat([{label: 'session', pct: 21}], false)!.value).toBe('5h 21%');
+  test('did is what the supervisor did, which the card never used to say', () => {
+    const r = didRow([{verb: 'dispatched', n: 3}, {verb: 'reaped', n: 1}], false)!;
+    expect(r.value).toBe('dispatched 3 · reaped 1');
+    // Capped: this is a headline, and the zone lists them in full.
+    expect(
+      didRow([1, 2, 3, 4, 5].map(n => ({verb: `v${n}`, n})), false)!.value.split(' · '),
+    ).toHaveLength(3);
+    expect(didRow([], false)).toBeNull();
   });
 
-  test("machine prefers the core's own warning to the raw figures, and says it is one", () => {
-    // An amber machine stays inside the disclosure, but a warning set in the same gray as
-    // the other figures reads as a reading rather than a warning.
-    const warned = machineStat({warn: 'disk almost full', diskGB: 2}, false)!;
-    expect(warned.value).toBe('disk almost full');
-    expect(warned.tone).toBe('warn');
-    expect(machineStat({diskGB: 16}, false)!.tone).toBeUndefined();
+  test('context omits the fleet when nothing is moving', () => {
+    // "0 need you · 0 working · 17 idle" is three numbers to say nothing is
+    // happening, directly under a verdict that just said so — and the radar one
+    // swipe away prints the same line.
+    const quiet = contextRow(
+      [row({status: 'idle'}), row({status: 'idle'})],
+      [{label: 'claude week', pct: 18, agent: 'claude'}],
+      null,
+      false,
+    )!;
+    expect(quiet.value).toBe('claude wk 18%');
+
+    const busy = contextRow(
+      [row({status: 'working'}), row({status: 'idle'})],
+      [{label: 'claude week', pct: 18, agent: 'claude'}],
+      {warn: 'disk getting low'},
+      false,
+    )!;
+    expect(busy.value).toBe('1 working  ·  claude wk 18%  ·  disk getting low');
   });
 
-  test('machine omits a memory tier it was not given', () => {
-    // The old line printed "mem —" whenever the core had not reported one.
-    expect(machineStat({diskGB: 16}, false)!.value).toBe('16GB free');
-    expect(machineStat({diskGB: 16, memTier: 'ok'}, false)!.value).toBe('16GB free · mem ok');
-    expect(machineStat({diskGB: null}, false)).toBeNull();
+  test('context is absent when there is nothing notable at all', () => {
+    expect(contextRow([row({status: 'idle'})], [], null, false)).toBeNull();
   });
 });
 
@@ -185,62 +208,31 @@ describe('headerModel', () => {
     verdict: 'all normal — nothing needs you',
     urgent: false,
     digest: [row({status: 'idle'})],
-    turns: [turn('a', '⟣ 都正常', at(120))],
-    week: [{label: 'session', pct: 21}],
+    turns: [turn('a', '⟣ ✅ 都正常', at(120))],
+    week: [{label: 'claude week', pct: 21, agent: 'claude'}],
+    did: [{verb: 'dispatched', n: 3}],
+    owed: {pending: 8, oldestLabel: '12d', overdue: true},
     nowSecs: NOW,
     zh: false,
   };
 
-  test('the normal case keeps the standing header to the verdict alone', () => {
+  test('the report reads owed → did → context, in that order', () => {
     const m = headerModel({...base, res: {diskGB: 16, memTier: 'ok'}});
     expect(m.standing).toBeNull();
-    expect(m.stats.map(s => s.key)).toEqual(['fleet', 'usage', 'machine']);
+    expect(m.rows.map(r => r.key)).toEqual(['owed', 'did', 'context']);
   });
 
-  test('a critical machine is promoted standing, and not repeated in the list', () => {
+  test('a critical machine is promoted standing, and not repeated below', () => {
     // The same figure in two places on one screen reads as two facts.
     const m = headerModel({...base, res: {warn: 'disk critical', tier: 'red', diskGB: 1}});
     expect(m.standing).toBe('disk critical');
-    expect(m.stats.map(s => s.key)).toEqual(['fleet', 'usage']);
+    expect(m.rows.map(r => r.key)).toEqual(['owed', 'did']);
   });
 
-  test('a row with nothing to say is absent, not blank', () => {
-    const m = headerModel({...base, week: [], res: null});
-    expect(m.stats.map(s => s.key)).toEqual(['fleet']);
-  });
-});
-
-// The usage row has a LINE, not a list. Codex's plan doubled the window count and
-// the row began truncating mid-number ("Fable 11…"), which is the one thing a
-// percentage must never do.
-describe('usageStat with more than one plan', () => {
-  const wins = [
-    {label: 'claude session', pct: 12, agent: 'claude'},
-    {label: 'claude week (all models)', pct: 18, agent: 'claude'},
-    {label: 'claude week (fable)', pct: 11, agent: 'claude'},
-    {label: 'codex session', pct: 0, agent: 'codex'},
-    {label: 'codex week', pct: 1, agent: 'codex'},
-  ];
-
-  test('keeps the tightest window per plan, and says whose', () => {
-    expect(usageStat(wins, false)!.value).toBe('claude wk 18%  ·  codex wk 1%');
-  });
-
-  test('a session window at 95% IS where you stand', () => {
-    const tight = wins.map(w => (w.label === 'claude session' ? {...w, pct: 95} : w));
-    expect(usageStat(tight, false)!.value).toContain('claude 5h 95%');
-  });
-
-  test('the model window keeps its model name', () => {
-    const fable = [{label: 'claude week (fable)', pct: 90, agent: 'claude'}];
-    expect(usageStat(fable, false)!.value).toBe('claude Fable 90%');
-  });
-
-  test('a serve older than 0.93 sends no agent, and nothing is merged away', () => {
-    const old = [
-      {label: 'session', pct: 12},
-      {label: 'week (all models)', pct: 18},
-    ];
-    expect(usageStat(old, false)!.value).toBe('5h 12%  ·  wk 18%');
+  test('a quiet fleet with nothing owed and nothing done leaves the verdict alone', () => {
+    // Which is the point: on an ordinary day the card is ONE sentence, not six
+    // rows of readings that all say nothing is happening.
+    const m = headerModel({...base, week: [], res: null, did: [], owed: {pending: 0}});
+    expect(m.rows).toEqual([]);
   });
 });

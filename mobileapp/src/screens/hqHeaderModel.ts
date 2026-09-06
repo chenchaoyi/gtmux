@@ -72,21 +72,23 @@ export interface Signal {
 }
 
 /**
- * One labelled figure in the disclosure. The three kinds used to be one gray sentence
- * that wrapped ("0 need you · 1 working · 16 idle · 5h 21% · wk 53% · Fable 78% disk
- * 16GB free"), so nothing said where the fleet ended and the subscription began. They
- * are three different questions and get three rows.
+ * One row of the disclosure. The KEY is what the row answers, and the three keys
+ * are the three questions a chief-of-staff report has — in that order.
  */
-export interface Stat {
-  key: 'fleet' | 'usage' | 'machine';
+/** The knowledge debt, as the header needs it. */
+export interface OwedKnowledge {
+  pending: number;
+  /** "12d" / "12天" — rendered by the caller, which owns the language of time. */
+  oldestLabel?: string;
+  /** Past the floor `gtmux doctor` uses (~2 weeks). Only this earns amber. */
+  overdue?: boolean;
+}
+
+export interface Row {
+  key: 'owed' | 'did' | 'context';
   label: string;
   value: string;
-  /**
-   * `warn` when the value is the core's own warning rather than a plain reading. An
-   * amber machine stays inside the disclosure (only red is read standing), but rendering
-   * "disk 16GB free" in the same gray as "5h 24%" tells the reader it is a figure when
-   * it is a warning.
-   */
+  /** Amber. Only `owed` ever earns it, and only past the floor doctor uses. */
   tone?: 'warn';
 }
 
@@ -99,8 +101,12 @@ export interface HeaderModel {
   standing: string | null;
   /** The supervisor's own most recent header-grade signal, or null when it has none. */
   signal: Signal | null;
-  /** The derived figures, for the disclosure. A row with nothing to say is absent. */
-  stats: Stat[];
+  /**
+   * The disclosure, in the order a chief of staff reports: what is owed to you,
+   * what it did, and only then the context. A row with nothing to say is absent —
+   * a line that is always there says nothing when it matters.
+   */
+  rows: Row[];
 }
 
 /**
@@ -210,28 +216,13 @@ export function gradeLabel(grade: SignalGrade, zh: boolean): string {
   return zh ? '简报' : 'brief';
 }
 
-/** fleetStat is the state tally: how many of the fleet are in each state. */
-export function fleetStat(digest: DigestRow[], zh: boolean): Stat {
-  const c = fleetCounts(digest);
-  return {
-    key: 'fleet',
-    label: zh ? '舰队' : 'fleet',
-    value: zh
-      ? `${c.waiting} 需要你 · ${c.working} 运行 · ${c.idle} 空闲`
-      : `${c.waiting} need you · ${c.working} working · ${c.idle} idle`,
-  };
-}
-
 /**
  * tightestPerPlan keeps ONE window per plan: the one that runs out first.
  *
- * This row has a line, not a list. Codex's plan doubled the window count and the
- * row started truncating mid-number ("Fable 11…"), which is the one thing a
- * percentage must never do. The tightest is the right one to keep because the
- * question is "where do I stand", and the answer is whichever window ends first.
- *
- * A serve older than 0.93 sends no `agent`, so each window groups under its own
- * label and nothing is merged away — the row then behaves exactly as it did.
+ * A summary line has room for one window per plan, not for every window. Codex's
+ * plan doubled the count and the row started truncating mid-number ("Fable 11…"),
+ * which is the one thing a percentage must never do. A serve older than 0.93 sends
+ * no `agent`, so each window groups under its own label and nothing is merged.
  */
 export function tightestPerPlan(week: WindowPct[]): WindowPct[] {
   const at = new Map<string, number>();
@@ -250,47 +241,91 @@ export function tightestPerPlan(week: WindowPct[]): WindowPct[] {
 }
 
 /**
- * usageStat is where each plan stands. Null when the endpoint reported none —
- * a row reading "usage —" says less than no row at all.
+ * isCritical reports whether a resource condition has earned the standing header.
+ *
+ * The tier is the core's judgment and is the only thing consulted — not the
+ * presence of a `warn` string, which the core also sets at the amber tier.
+ * Promoting amber would put a line back in the standing header most of the time,
+ * which is the state this design exists to leave.
  */
-export function usageStat(week: WindowPct[], zh: boolean): Stat | null {
-  if (week.length === 0) return null;
+export function isCritical(res: ResourceState | null): boolean {
+  return res?.tier === 'red';
+}
+
+/**
+ * owedRow is the debt only YOU can discharge.
+ *
+ * It leads the disclosure because it is the one thing on this card that is both
+ * actionable and nobody else's job. It used to be last and dimmest — "370 entries
+ * · 8 waiting on you" at the bottom of a stack of sensor readings — while the
+ * loudest colour on the card went to a disk warning you cannot act on from a
+ * phone. That ranking is backwards, and it is the reason the card read as a
+ * dashboard rather than a report.
+ *
+ * Agents waiting on you are NOT folded in: the verdict already says that, in the
+ * attention colour, one line up.
+ */
+export function owedRow(k: OwedKnowledge | null, zh: boolean): Row | null {
+  const pending = k?.pending ?? 0;
+  if (pending <= 0) return null;
+  const age = k?.oldestLabel ? (zh ? ` · 最老 ${k.oldestLabel}` : ` · oldest ${k.oldestLabel}`) : '';
   return {
-    key: 'usage',
-    label: zh ? '用量' : 'usage',
-    value: tightestPerPlan(week)
-      .map(w => `${planLabel(w, zh)} ${w.pct}%`)
-      .join('  ·  '),
+    key: 'owed',
+    label: zh ? '待你' : 'owed',
+    value: (zh ? `${pending} 条待带走` : `${pending} to carry`) + age,
+    tone: k?.overdue ? 'warn' : undefined,
   };
 }
 
 /**
- * machineStat is the machine's own line. `warn` is the core's sentence and wins; the
- * disk figure is the fallback for when there is nothing to warn about.
+ * didRow is what the supervisor did while you were away.
  *
- * A memory tier is appended only when the core reported one. The old line printed
- * "mem —" whenever it had not, which spends a reader's attention to tell them nothing.
+ * This is the row the card was missing, and its absence is what made the page a
+ * dashboard: a chief of staff that does not show you what it did is an instrument
+ * panel with a chat box. The acts are already collected and ranked for the "HQ's
+ * work" zone; this is their headline.
  */
-export function machineStat(res: ResourceState | null, zh: boolean): Stat | null {
-  const label = zh ? '机器' : 'machine';
-  if (!res) return null;
-  if (res.warn) return {key: 'machine', label, value: res.warn, tone: 'warn'};
-  if (res.diskGB == null) return null;
-  const disk = zh ? `磁盘 ${res.diskGB}GB 可用` : `${res.diskGB}GB free`;
-  const mem = res.memTier ? (zh ? ` · 内存 ${res.memTier}` : ` · mem ${res.memTier}`) : '';
-  return {key: 'machine', label, value: disk + mem};
+export function didRow(tally: {verb: string; n: number}[], zh: boolean): Row | null {
+  const top = tally.filter(t => t.n > 0).slice(0, 3);
+  if (top.length === 0) return null;
+  return {
+    key: 'did',
+    label: zh ? '它做了' : 'HQ did',
+    value: top.map(t => `${t.verb} ${t.n}`).join(' · '),
+  };
 }
 
 /**
- * isCritical reports whether a resource condition has earned the standing header.
+ * contextRow is everything the radar and the usage view already show, compressed
+ * to one line and included only where it is not the ordinary case.
  *
- * The tier is the core's judgment and is the only thing consulted — not the presence of
- * a `warn` string, which the core also sets at the amber tier. Promoting amber would put
- * a line back in the standing header most of the time, which is the state this change
- * exists to leave.
+ * The page's own rule is that the fleet LIST belongs to the radar and the pixels
+ * here must not be sold to what a swipe away already says. The fleet COUNT had
+ * crept back as a full row reading "0 need you · 0 working · 17 idle" — three
+ * numbers to say nothing is happening, directly under a verdict that just said
+ * so. So the count appears only when something is actually moving, the usage
+ * figure is the tightest window rather than every window, and the machine appears
+ * only when the core has a warning to give.
  */
-export function isCritical(res: ResourceState | null): boolean {
-  return res?.tier === 'red';
+export function contextRow(
+  digest: DigestRow[],
+  week: WindowPct[],
+  res: ResourceState | null,
+  zh: boolean,
+): Row | null {
+  const parts: string[] = [];
+  const c = fleetCounts(digest);
+  if (c.waiting > 0 || c.working > 0) {
+    const bits: string[] = [];
+    if (c.waiting > 0) bits.push(zh ? `${c.waiting} 等你` : `${c.waiting} need you`);
+    if (c.working > 0) bits.push(zh ? `${c.working} 运行` : `${c.working} working`);
+    parts.push(bits.join(' '));
+  }
+  const tight = tightestPerPlan(week).sort((a, b) => b.pct - a.pct)[0];
+  if (tight) parts.push(`${planLabel(tight, zh)} ${tight.pct}%`);
+  if (res?.warn) parts.push(res.warn);
+  if (parts.length === 0) return null;
+  return {key: 'context', label: zh ? '现状' : 'context', value: parts.join('  ·  ')};
 }
 
 /**
@@ -307,22 +342,25 @@ export function headerModel(args: {
   turns: TranscriptTurn[];
   week: WindowPct[];
   res: ResourceState | null;
+  /** What HQ did recently, already ranked by hqActsModel.tally. */
+  did: {verb: string; n: number}[];
+  /** The knowledge debt — the one obligation only the commander can discharge. */
+  owed: OwedKnowledge | null;
   nowSecs: number;
   zh: boolean;
 }): HeaderModel {
-  const machine = machineStat(args.res, args.zh);
   const critical = isCritical(args.res);
   return {
     verdict: args.verdict,
     urgent: args.urgent,
-    // A critical machine is read standing, so it does not also sit in the list below —
-    // the same figure in two places reads as two facts.
-    standing: critical ? (machine?.value ?? null) : null,
+    // A critical machine is read standing, so it does not also sit in the rows
+    // below — the same figure in two places reads as two facts.
+    standing: critical ? (args.res?.warn ?? null) : null,
     signal: supervisorSignal(args.turns, args.nowSecs, args.zh),
-    stats: [
-      fleetStat(args.digest, args.zh),
-      usageStat(args.week, args.zh),
-      critical ? null : machine,
-    ].filter((x): x is Stat => x != null),
+    rows: [
+      owedRow(args.owed, args.zh),
+      didRow(args.did, args.zh),
+      critical ? null : contextRow(args.digest, args.week, args.res, args.zh),
+    ].filter((x): x is Row => x != null),
   };
 }
