@@ -200,6 +200,8 @@ export interface UsageWindow {
   label: string;
   pct_used: number;
   reset_at: string;
+  /** Whose plan this window belongs to. Absent from a serve older than 0.93. */
+  agent?: string;
 }
 export interface ResourceReport {
   machine?: {disk_free_gb?: number; disk_use_pct?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string; tier?: 'amber' | 'red'};

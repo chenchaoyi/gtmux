@@ -212,3 +212,32 @@ func TestEveryWindowIsQualified(t *testing.T) {
 		t.Errorf("Get window = %+v, want a qualified claude session", r.Windows[0])
 	}
 }
+
+// A summary line has room for one window per plan, so it keeps the tightest —
+// the one that runs out first, which is what "where do I stand" asks.
+func TestSummaryKeepsTheTightestPerPlan(t *testing.T) {
+	wins := []Window{
+		{Agent: "claude", Label: "claude session", PctUsed: 12},
+		{Agent: "claude", Label: "claude week (all models)", PctUsed: 18},
+		{Agent: "claude", Label: "claude week (fable)", PctUsed: 11},
+		{Agent: "codex", Label: "codex session", PctUsed: 0},
+		{Agent: "codex", Label: "codex week", PctUsed: 1},
+	}
+	got := Summary(wins)
+	if len(got) != 2 {
+		t.Fatalf("summary = %+v, want one per plan", got)
+	}
+	if got[0].Label != "claude week (all models)" || got[1].Label != "codex week" {
+		t.Errorf("summary kept %q / %q", got[0].Label, got[1].Label)
+	}
+	// Unlike warnOf, a session window is eligible: at 95% it IS where you stand.
+	wins[0].PctUsed = 95
+	if got := Summary(wins); got[0].Label != "claude session" {
+		t.Errorf("tightest = %q, want the session window", got[0].Label)
+	}
+	// An older serve sends no agent field; nothing is merged away.
+	old := []Window{{Label: "session", PctUsed: 12}, {Label: "week (all models)", PctUsed: 18}}
+	if got := Summary(old); len(got) != 2 {
+		t.Errorf("unqualified windows collapsed: %+v", got)
+	}
+}

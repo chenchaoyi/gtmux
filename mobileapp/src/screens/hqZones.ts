@@ -192,12 +192,27 @@ export function boardAge(updatedAt: number | undefined, nowSecs: number, zh: boo
   return zh ? `${ago}前更新` : `updated ${ago} ago`;
 }
 
-// planLabel compacts a usage-window label for the status strip: "week (all models)" →
-// wk/周, "week (fable)" → the model name, "session" → 5h.
-export function planLabel(label: string, zh: boolean): string {
-  if (label.includes('all models')) return zh ? '周' : 'wk';
-  const m = label.match(/\(([^)]+)\)/);
+// planLabel compacts a usage window for the status strip, KEEPING whose plan it is:
+// "claude week (all models)" → "claude wk", "codex week" → "codex wk",
+// "claude week (fable)" → "claude Fable", "claude session" → "claude 5h".
+//
+// The agent is taken from the FIELD, never guessed off the front of the label — the
+// first word of "week (all models)" is not an agent, and a serve older than 0.93
+// sends the window name alone. Compacting the whole string was the bug this
+// replaces: "claude week (all models)" matched the model-window rule and came out
+// as "wk", silently dropping the very prefix that says whose plan it is.
+export function planLabel(w: {label: string; agent?: string}, zh: boolean): string {
+  const win =
+    w.agent && w.label.startsWith(w.agent + ' ') ? w.label.slice(w.agent.length + 1) : w.label;
+  const short = compactWindow(win, zh);
+  return w.agent ? `${w.agent} ${short}` : short;
+}
+
+function compactWindow(win: string, zh: boolean): string {
+  if (win.includes('all models')) return zh ? '周' : 'wk';
+  const m = win.match(/\(([^)]+)\)/);
   if (m) return m[1].charAt(0).toUpperCase() + m[1].slice(1);
-  if (label.startsWith('session')) return '5h';
-  return label;
+  if (win.startsWith('session')) return '5h';
+  if (win.startsWith('week')) return zh ? '周' : 'wk';
+  return win;
 }

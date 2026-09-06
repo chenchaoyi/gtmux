@@ -209,3 +209,38 @@ describe('headerModel', () => {
     expect(m.stats.map(s => s.key)).toEqual(['fleet']);
   });
 });
+
+// The usage row has a LINE, not a list. Codex's plan doubled the window count and
+// the row began truncating mid-number ("Fable 11…"), which is the one thing a
+// percentage must never do.
+describe('usageStat with more than one plan', () => {
+  const wins = [
+    {label: 'claude session', pct: 12, agent: 'claude'},
+    {label: 'claude week (all models)', pct: 18, agent: 'claude'},
+    {label: 'claude week (fable)', pct: 11, agent: 'claude'},
+    {label: 'codex session', pct: 0, agent: 'codex'},
+    {label: 'codex week', pct: 1, agent: 'codex'},
+  ];
+
+  test('keeps the tightest window per plan, and says whose', () => {
+    expect(usageStat(wins, false)!.value).toBe('claude wk 18%  ·  codex wk 1%');
+  });
+
+  test('a session window at 95% IS where you stand', () => {
+    const tight = wins.map(w => (w.label === 'claude session' ? {...w, pct: 95} : w));
+    expect(usageStat(tight, false)!.value).toContain('claude 5h 95%');
+  });
+
+  test('the model window keeps its model name', () => {
+    const fable = [{label: 'claude week (fable)', pct: 90, agent: 'claude'}];
+    expect(usageStat(fable, false)!.value).toBe('claude Fable 90%');
+  });
+
+  test('a serve older than 0.93 sends no agent, and nothing is merged away', () => {
+    const old = [
+      {label: 'session', pct: 12},
+      {label: 'week (all models)', pct: 18},
+    ];
+    expect(usageStat(old, false)!.value).toBe('5h 12%  ·  wk 18%');
+  });
+});
