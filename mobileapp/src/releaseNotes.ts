@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.96.0',
+    en: [
+      'The usage view now says what each figure means: the plan is grouped by agent, and the token totals are labelled as what they are rather than mistaken for a billing period.',
+      'Lists end with a mark instead of a line of text.',
+    ],
+    zh: [
+      '用量页说清了每个数字的含义：额度按 agent 分组，token 总量标明了它到底算的是什么，不会再被当成某个计费周期。',
+      '列表末尾改用一个记号收尾，不再写一行字。',
+    ],
+  },
+  {
     version: '0.95.0',
     en: [
       'A usage view on the phone: your plan windows, who is burning them, and the machine — reached from the HQ page.',
