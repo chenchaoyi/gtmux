@@ -143,3 +143,37 @@ test("a brief's items render as items, capped, not as one wrapped paragraph", ()
   expect(t.root.findAllByProps({testID: 'hq-brief-item-2'}).length).toBeGreaterThan(0);
   expect(t.root.findAllByProps({testID: 'hq-brief-item-3'})).toHaveLength(0);
 });
+
+// Each report row leads where its detail lives. The `context` row is the one that
+// compresses three sensors into one figure, and the argument for compressing it was
+// that the detail lives elsewhere — so the row has to actually go there.
+test('every row that summarises something opens the place it summarises', () => {
+  const opened: string[] = [];
+  let tree: renderer.ReactTestRenderer | undefined;
+  act(() => {
+    tree = renderer.create(
+      <HQHeader
+        model={model()}
+        conn="live"
+        boardValue="updated 1s ago"
+        knowledgeValue="352 entries"
+        onOpenKnowledge={() => opened.push('knowledge')}
+        onOpenActs={() => opened.push('acts')}
+        onOpenUsage={() => opened.push('usage')}
+        open
+        onToggle={() => {}}
+        onBack={() => {}}
+        onOpenBoard={() => opened.push('board')}
+        pal={paletteFor('dark')}
+        zh={false}
+      />,
+    );
+  });
+  for (const id of ['hq-row-owed', 'hq-row-did', 'hq-row-context']) {
+    act(() => {
+      tree!.root.findAllByProps({testID: id})[0].props.onPress();
+    });
+  }
+  expect(opened).toEqual(['knowledge', 'acts', 'usage']);
+  act(() => tree!.unmount());
+});

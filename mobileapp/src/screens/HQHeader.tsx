@@ -52,9 +52,13 @@ export interface HQHeaderProps {
   boardValue?: string | null;
   /** Knowledge size and debt ("352 entries · 6 waiting on you"), absent when there is none. */
   knowledgeValue?: string | null;
+  /** The plan headline that labels the usage door ("claude wk 27% · codex wk 1%"). */
+  usageValue?: string | null;
   onOpenKnowledge?: () => void;
   /** Opens the "HQ's work" zone — where the `did` row's acts are listed in full. */
   onOpenActs?: () => void;
+  /** Opens the usage sheet — where the `context` row's one figure is the whole picture. */
+  onOpenUsage?: () => void;
   open: boolean;
   onToggle: () => void;
   onBack: () => void;
@@ -119,8 +123,8 @@ function GridRow({
 }
 
 export function HQHeader({
-  model, conn, demo, boardValue, knowledgeValue,
-  open, onToggle, onBack, onOpenBoard, onOpenKnowledge, onOpenActs, pal, zh,
+  model, conn, demo, boardValue, knowledgeValue, usageValue,
+  open, onToggle, onBack, onOpenBoard, onOpenKnowledge, onOpenActs, onOpenUsage, pal, zh,
 }: HQHeaderProps) {
   const dot = conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting;
   const keyW = keyWidth(zh);
@@ -234,7 +238,13 @@ export function HQHeader({
                     value={r.value}
                     tone={r.tone}
                     pal={pal}
-                    onPress={r.key === 'owed' ? onOpenKnowledge : r.key === 'did' ? onOpenActs : undefined}
+                    onPress={
+                      r.key === 'owed'
+                        ? onOpenKnowledge
+                        : r.key === 'did'
+                          ? onOpenActs
+                          : onOpenUsage
+                    }
                     keyW={keyW}
                     // Context is the one row built by joining several readings, so
                     // it is the one that can outgrow a line. It is also the least
@@ -246,7 +256,11 @@ export function HQHeader({
               </View>
             )}
 
-            {(boardValue || knowledgeValue) && (
+            {/* Doors. Permanent, unlike the rows above: a summary may have nothing to
+                say on a quiet day, but the way in must not depend on that — the usage
+                door in particular, since the row that used to carry it is dropped
+                exactly when the machine is critical. */}
+            {(boardValue || knowledgeValue || usageValue) && (
               <View style={[styles.grid, {borderTopColor: pal.divider}]}>
                 {boardValue ? (
                   <GridRow
@@ -255,6 +269,16 @@ export function HQHeader({
                     value={boardValue}
                     pal={pal}
                     onPress={onOpenBoard}
+                    keyW={keyW}
+                  />
+                ) : null}
+                {usageValue ? (
+                  <GridRow
+                    testID="hq-usage-open"
+                    label={zh ? '用量' : 'usage'}
+                    value={usageValue}
+                    pal={pal}
+                    onPress={onOpenUsage}
                     keyW={keyW}
                   />
                 ) : null}
