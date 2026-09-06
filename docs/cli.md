@@ -901,8 +901,13 @@ its **duration**, never by its position in the source: Codex's `primary` field i
 observed carrying the weekly window as well as the 5-hour one. And a reading can
 **outlive its own window**, since a log is only as fresh as its last turn — a
 window whose reset has passed is dropped rather than reported, because by then
-the percentage is unknown, not low. Each window says whose plan it is, so the
-`spawn` preflight advises against the plan the work will actually bill. Because that spawns a process, results are **cached**
+the percentage is unknown, not low.
+
+**Every window says whose plan it is, the first agent's included** — `claude
+session`, `codex session`, never a bare `session` beside a qualified one. An
+unprefixed label next to a prefixed one reads as the general case with a special
+case beside it, which is the opposite of true. The `spawn` preflight prints the
+warning, so it names the plan the work will actually bill against. Because that spawns a process, results are **cached**
 (`state/limits.json`) with a 15-minute TTL, shortened to 5 minutes once any
 window is near its cap; `--refresh` forces one. Configure in
 `~/.config/gtmux/usage.json`:
