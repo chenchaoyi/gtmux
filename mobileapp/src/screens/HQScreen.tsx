@@ -37,6 +37,7 @@ import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
 import {historyScope} from '../state/history';
+import {acts, tally} from './hqActsModel';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
@@ -422,6 +423,16 @@ export function HQScreen({route, navigation}: any) {
               turns,
               week,
               res,
+              // What HQ did in the last day — its own acts, already ranked by the
+              // zone that lists them, so the header and that zone cannot disagree.
+              did: tally(acts(actFeed, zh), now, 24 * 3600),
+              owed: {
+                pending: knowledge.promotions?.pending ?? 0,
+                oldestLabel: knowledge.promotions?.oldest_sec
+                  ? relTime(now - knowledge.promotions.oldest_sec, now)
+                  : undefined,
+                overdue: knowledgeOverdue(knowledge),
+              },
               nowSecs: now,
               zh,
             })}
@@ -430,10 +441,10 @@ export function HQScreen({route, navigation}: any) {
             boardValue={board.exists ? boardAge(board.updated_at, now, zh) : null}
             open={briefOpen}
             onToggle={() => setBriefOpen(v => !v)}
+            onOpenActs={() => setZone('acts')}
             onBack={() => navigation.goBack()}
             onOpenBoard={() => setBoardOpen(true)}
             knowledgeValue={knowledgeValue(knowledge, zh)}
-            knowledgeOverdue={knowledgeOverdue(knowledge)}
             onOpenKnowledge={() => setKnowledgeOpen(true)}
             pal={pal}
             zh={zh}

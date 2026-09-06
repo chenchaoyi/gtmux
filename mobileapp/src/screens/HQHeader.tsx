@@ -52,13 +52,9 @@ export interface HQHeaderProps {
   boardValue?: string | null;
   /** Knowledge size and debt ("352 entries · 6 waiting on you"), absent when there is none. */
   knowledgeValue?: string | null;
-  /**
-   * True when one of them has passed the floor `gtmux doctor` uses. Only THAT turns the
-   * row amber: a queue with work in it is normal, a queue with something rotting in it is
-   * not, and one colour cannot mean both.
-   */
-  knowledgeOverdue?: boolean;
   onOpenKnowledge?: () => void;
+  /** Opens the "HQ's work" zone — where the `did` row's acts are listed in full. */
+  onOpenActs?: () => void;
   open: boolean;
   onToggle: () => void;
   onBack: () => void;
@@ -85,7 +81,7 @@ function Runs({segs, style, code}: {segs: InlineSeg[]; style: any; code: any}) {
  * a chevron. Figures and documents share it so they share an alignment.
  */
 function GridRow({
-  testID, label, value, tone, pal, onPress, keyW,
+  testID, label, value, tone, pal, onPress, keyW, lines = 1,
 }: {
   testID: string;
   label: string;
@@ -94,13 +90,15 @@ function GridRow({
   pal: HQHeaderProps['pal'];
   onPress?: () => void;
   keyW: number;
+  /** How many lines the value may use. The context row gets two — see below. */
+  lines?: number;
 }) {
   const body = (
     <>
       <Text style={[styles.rowKey, {width: keyW, color: pal.fg3}]}>{label}</Text>
       <Text
         style={[styles.rowValue, {color: tone === 'warn' ? ERRORED_COLOR : pal.fg2}]}
-        numberOfLines={1}>
+        numberOfLines={lines}>
         {value}
       </Text>
       {onPress ? <Text style={[styles.rowChevron, {color: pal.fg3}]}>›</Text> : null}
@@ -121,8 +119,8 @@ function GridRow({
 }
 
 export function HQHeader({
-  model, conn, demo, boardValue, knowledgeValue, knowledgeOverdue = false,
-  open, onToggle, onBack, onOpenBoard, onOpenKnowledge, pal, zh,
+  model, conn, demo, boardValue, knowledgeValue,
+  open, onToggle, onBack, onOpenBoard, onOpenKnowledge, onOpenActs, pal, zh,
 }: HQHeaderProps) {
   const dot = conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting;
   const keyW = keyWidth(zh);
@@ -221,20 +219,28 @@ export function HQHeader({
               </View>
             ) : null}
 
-            {/* One grid, five rows, one alignment. Figures first (fleet · usage · machine),
-                then what you can open (board · knowledge) — the hairline is where reading
-                turns into going somewhere, which is the only division left worth drawing. */}
-            {model.stats.length > 0 && (
+            {/* The report, in the order a chief of staff gives one: what is owed to
+                you, what it did, and only then the context. `owed` leads because it
+                is the one line here that is actionable AND nobody else's job; it
+                used to be last and dimmest under a stack of sensor readings. A row
+                with nothing to say is absent rather than blank. */}
+            {model.rows.length > 0 && (
               <View style={[styles.grid, {borderTopColor: pal.divider}]}>
-                {model.stats.map(s => (
+                {model.rows.map(r => (
                   <GridRow
-                    key={s.key}
-                    testID={`hq-stat-${s.key}`}
-                    label={s.label}
-                    value={s.value}
-                    tone={s.tone}
+                    key={r.key}
+                    testID={`hq-row-${r.key}`}
+                    label={r.label}
+                    value={r.value}
+                    tone={r.tone}
                     pal={pal}
+                    onPress={r.key === 'owed' ? onOpenKnowledge : r.key === 'did' ? onOpenActs : undefined}
                     keyW={keyW}
+                    // Context is the one row built by joining several readings, so
+                    // it is the one that can outgrow a line. It is also the least
+                    // urgent, which makes it the right row to spend a second line
+                    // on rather than an ellipsis.
+                    lines={r.key === 'context' ? 2 : 1}
                   />
                 ))}
               </View>
@@ -257,7 +263,6 @@ export function HQHeader({
                     testID="hq-knowledge-open"
                     label={zh ? '知识库' : 'knowledge'}
                     value={knowledgeValue}
-                    tone={knowledgeOverdue ? 'warn' : undefined}
                     pal={pal}
                     onPress={onOpenKnowledge}
                     keyW={keyW}

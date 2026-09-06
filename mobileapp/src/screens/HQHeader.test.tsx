@@ -18,9 +18,10 @@ const model = (o: Partial<HeaderModel> = {}): HeaderModel => ({
     bullets: [],
     age: '12m ago',
   },
-  stats: [
-    {key: 'fleet', label: 'fleet', value: '0 need you · 1 working · 16 idle'},
-    {key: 'usage', label: 'usage', value: '5h 21%'},
+  rows: [
+    {key: 'owed', label: 'owed', value: '8 to carry · oldest 12d', tone: 'warn'},
+    {key: 'did', label: 'HQ did', value: 'dispatched 3 · reaped 1'},
+    {key: 'context', label: 'context', value: 'claude wk 18%'},
   ],
   ...o,
 });
@@ -86,11 +87,26 @@ test('a supervisor that has written no header-grade signal gets no empty block',
   expect(t.root.findAllByProps({testID: 'hq-brief'})).toHaveLength(0);
 });
 
-test('each figure is its own labelled row, not one wrapping sentence', () => {
+test('the report reads owed first, then what HQ did, then context', () => {
+  // The order IS the design: what is owed to you leads because it is the one line
+  // that is actionable and nobody else's job.
   const t = render(model());
-  expect(t.root.findAllByProps({testID: 'hq-stat-fleet'}).length).toBeGreaterThan(0);
-  expect(t.root.findAllByProps({testID: 'hq-stat-usage'}).length).toBeGreaterThan(0);
-  expect(t.root.findAllByProps({testID: 'hq-stat-machine'})).toHaveLength(0); // absent, not blank
+  // Deduped: findAll returns the composite AND its host node for one element.
+  const ids = [
+    ...new Set(
+      t.root
+        .findAll(n => typeof n.props?.testID === 'string' && n.props.testID.startsWith('hq-row-'))
+        .map(n => n.props.testID as string),
+    ),
+  ];
+  expect(ids).toEqual(['hq-row-owed', 'hq-row-did', 'hq-row-context']);
+});
+
+test('a row with nothing to say is absent, not blank', () => {
+  const t = render(model({rows: []}));
+  expect(
+    t.root.findAll(n => typeof n.props?.testID === 'string' && n.props.testID.startsWith('hq-row-')),
+  ).toHaveLength(0);
 });
 
 test('closed, the header shows the verdict and nothing else', () => {
@@ -109,9 +125,9 @@ test('figures and documents are rows of ONE grid, so they share a key column', (
     const flat = ([] as unknown[]).concat(key.props.style as unknown[]).filter(Boolean) as Array<Record<string, unknown>>;
     return flat.map(s => s?.width).find(w => w != null);
   };
-  expect(width('hq-stat-fleet')).toBeDefined();
-  expect(width('hq-board-open')).toBe(width('hq-stat-fleet'));
-  expect(width('hq-knowledge-open')).toBe(width('hq-stat-fleet'));
+  expect(width('hq-row-owed')).toBeDefined();
+  expect(width('hq-board-open')).toBe(width('hq-row-owed'));
+  expect(width('hq-knowledge-open')).toBe(width('hq-row-owed'));
 });
 
 test("a brief's items render as items, capped, not as one wrapped paragraph", () => {

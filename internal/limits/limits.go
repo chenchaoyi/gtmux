@@ -104,15 +104,24 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	}
 	wins, err := runAndParse(cfg.Command)
 	if err != nil || len(wins) == 0 {
-		// The command is Claude's only route, so its failure loses Claude's
-		// windows — but not Codex's, which cost nothing and come from a
-		// different place entirely.
-		if cx, ok := codexWindows(now); ok {
-			r := Report{Windows: cx, At: now.Unix(), Warn: warnOf(cx, cfg.WarnPct)}
-			save(r)
-			return r, true
+		// The command is Claude's only route, and it fails for ordinary reasons —
+		// `claude` missing from a launchd PATH is the one observed on this machine,
+		// where `gtmux serve` runs with PATH=/usr/bin:/bin:/usr/sbin:/sbin.
+		//
+		// So ADD Codex's windows to the last good snapshot rather than replacing it.
+		// Replacing made a transient failure delete Claude's plan from every surface
+		// until the command worked again — the same loss `TestGetKeepsLastGoodCacheOnFailure`
+		// exists to prevent, reintroduced by a path that did not exist when it was written.
+		//
+		// Not saved, deliberately: writing a fresh `At` here would mark a snapshot
+		// built from a FAILURE as fresh and stop the command being retried for the
+		// whole TTL.
+		cx, ok := codexWindows(now)
+		if !ok {
+			return cached, hasCache
 		}
-		return cached, hasCache // keep the last good snapshot on failure
+		merged := append(othersThan("codex", cached.Windows), cx...)
+		return Report{Windows: merged, At: cached.At, Warn: warnOf(merged, cfg.WarnPct)}, true
 	}
 	// The command route parses Claude's own `/usage` phrasing, so its windows are
 	// Claude's.
@@ -136,6 +145,18 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 // warning names WHOSE plan is tight. That matters where it is acted on: the
 // spawn preflight suggests a cheaper model, and a suggestion drawn from the
 // other agent's plan is advice about the wrong thing.
+// othersThan returns the windows that do NOT belong to one agent — used to graft
+// a fresh reading onto a cached snapshot without duplicating that agent's rows.
+func othersThan(agent string, wins []Window) []Window {
+	out := make([]Window, 0, len(wins))
+	for _, w := range wins {
+		if w.Agent != agent {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
 // qualify prefixes a window label with whose plan it is.
 //
 // EVERY window carries it, the first agent's included. Leaving one bare reads as

@@ -241,3 +241,51 @@ func TestSummaryKeepsTheTightestPerPlan(t *testing.T) {
 		t.Errorf("unqualified windows collapsed: %+v", got)
 	}
 }
+
+// A command failure must not delete the plan it reports. Codex's windows are free
+// to read, so a failing `claude -p /usage` was allowed to return "here is Codex"
+// — and, by saving that, to drop Claude's last good windows from every surface
+// until the command worked again. Observed for real: `gtmux serve` runs under
+// launchd with PATH=/usr/bin:/bin:/usr/sbin:/sbin, where `claude` is not found.
+func TestCommandFailureKeepsTheOtherAgentsWindows(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	codex := t.TempDir()
+	t.Setenv("CODEX_HOME", codex)
+	now := time.Unix(1_788_700_000, 0)
+
+	day := filepath.Join(codex, "sessions", "2026", "09", "06")
+	if err := os.MkdirAll(day, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	line := fmt.Sprintf(`{"timestamp":"x","type":"event_msg","payload":{"type":"token_count",`+
+		`"rate_limits":{"secondary":{"used_percent":1.0,"window_minutes":10080,"resets_at":%d}}}}`+"\n",
+		now.Unix()+3600)
+	if err := os.WriteFile(filepath.Join(day, "rollout-a.jsonl"), []byte(line), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	seed := Report{
+		Windows: []Window{{Agent: "claude", Label: "claude week (all models)", PctUsed: 58}},
+		At:      1_000_000,
+	}
+	save(seed)
+
+	cfg := Config{Command: "exit 3", TTLMin: 15, NearMin: 5, NearPct: 70, WarnPct: 85}
+	got, ok := Get(cfg, true, now)
+	if !ok {
+		t.Fatal("Get reported nothing at all")
+	}
+	labels := make([]string, 0, len(got.Windows))
+	for _, w := range got.Windows {
+		labels = append(labels, w.Label)
+	}
+	if len(labels) != 2 || labels[0] != "claude week (all models)" || labels[1] != "codex week" {
+		t.Errorf("windows = %v, want the cached claude one PLUS the fresh codex one", labels)
+	}
+	// And the failure must not be written back as a fresh snapshot, or the command
+	// would not be retried for a whole TTL.
+	if again, _ := Load(); again.At != seed.At || len(again.Windows) != 1 {
+		t.Errorf("a failed refresh was saved: %+v", again)
+	}
+}
