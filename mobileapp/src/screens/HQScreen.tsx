@@ -607,7 +607,7 @@ export function HQScreen({route, navigation}: any) {
             onDismiss={() => setFailedSend(null)}
           />
         )}
-        <Composer pal={pal} lang={lang} demo={demo} onSend={onSend} />
+        <Composer pal={pal} lang={lang} demo={demo} draftKey={hq.pane_id} onSend={onSend} />
       </KeyboardAvoidingView>
 
       {/* The situation board, read-only — the supervisor's own working memory. */}

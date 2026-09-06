@@ -28,6 +28,7 @@ import {
   View,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {getDraft, loadDrafts, putDraft, saveDrafts} from '../state/drafts';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
@@ -124,6 +125,7 @@ export function Composer({
   enabled = true,
   returnSends = false,
   demo = false,
+  draftKey,
   onSend,
   onUpload,
 }: {
@@ -136,6 +138,13 @@ export function Composer({
   // them and violates the demo's "never mix in real data" rule. Demo seeds a canned list
   // and persists nothing.
   demo?: boolean;
+  /**
+   * Which pane this composer types into. When set, a half-typed message survives
+   * leaving the screen and comes back with you; when absent (Demo) nothing is
+   * read or written. It is the PANE id, so a draft can never surface in another
+   * session's box — see state/drafts.
+   */
+  draftKey?: string;
   onSend?: (p: SendPayload) => void;
   onUpload?: (
     uri: string,
@@ -146,6 +155,30 @@ export function Composer({
 }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
+  // Restoring a draft must never race the typing it is restoring: if the load
+  // lands after the first keystroke it would wipe it, so it only applies while
+  // the box is still untouched.
+  const typed = useRef(false);
+  useEffect(() => {
+    if (!draftKey || demo) return;
+    let alive = true;
+    loadDrafts().then(m => {
+      const d = getDraft(m, draftKey, Date.now());
+      if (alive && d && !typed.current) setText(d);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [draftKey, demo]);
+  // Persisted a beat after you stop typing, not per keystroke: a draft only has
+  // to survive leaving the screen, and this runs on every character.
+  useEffect(() => {
+    if (!draftKey || demo) return;
+    const id = setTimeout(() => {
+      loadDrafts().then(m => saveDrafts(putDraft(m, draftKey, text, Date.now())));
+    }, 400);
+    return () => clearTimeout(id);
+  }, [text, draftKey, demo]);
   // Staged attachments (iMessage-style): picked/edited but NOT uploaded yet. They
   // upload on SEND, together with the typed text — never on pick. `sending` guards
   // the upload; `progress` is the per-attachment fraction; `sendError` surfaces a
@@ -452,7 +485,10 @@ export function Composer({
         <TextInput
         testID={TestIds.composer.input}
         value={text}
-        onChangeText={setText}
+        onChangeText={t => {
+          typed.current = true;
+          setText(t);
+        }}
         editable={enabled}
         autoFocus
         placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
@@ -620,7 +656,10 @@ export function Composer({
           </View>
           <TextInput
             value={text}
-            onChangeText={setText}
+            onChangeText={t => {
+          typed.current = true;
+          setText(t);
+        }}
             editable={enabled}
             multiline
             autoFocus
