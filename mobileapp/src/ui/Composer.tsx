@@ -43,7 +43,7 @@ import {AttachSheet} from './AttachSheet';
 import {HistoryModal} from './HistoryModal';
 import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon, ExpandIcon, FileIcon} from './Icons';
 import {loadSnippets, saveSnippets} from '../state/snippets';
-import {loadHistory, saveHistory, pushHistory} from '../state/history';
+import {HistoryStore, emptyStore, historyFor, loadHistory, pushHistory, removeHistory, saveHistory} from '../state/history';
 import {demoInputHistory} from './demoData';
 
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
@@ -126,6 +126,7 @@ export function Composer({
   returnSends = false,
   demo = false,
   draftKey,
+  historyScope,
   onSend,
   onUpload,
 }: {
@@ -145,6 +146,12 @@ export function Composer({
    * session's box — see state/drafts.
    */
   draftKey?: string;
+  /**
+   * Which WORK this composer belongs to — the pane's repo, else its tmux session
+   * (see state/history.historyScope). Input history is recalled per scope, since
+   * 96% of what you type repeats inside one project and never leaves it.
+   */
+  historyScope?: string;
   onSend?: (p: SendPayload) => void;
   onUpload?: (
     uri: string,
@@ -194,7 +201,7 @@ export function Composer({
   const [manageSnippets, setManageSnippets] = useState(false);
   const [fullCompose, setFullCompose] = useState(false); // B3 ②: full-screen editor
   const [attachOpen, setAttachOpen] = useState(false); // the branded attach bottom sheet
-  const [history, setHistory] = useState<string[]>([]);
+  const [store, setStore] = useState<HistoryStore>(emptyStore);
   const [historyOpen, setHistoryOpen] = useState(false);
   // Moshi-style: the composer rests as a single key row; the text field +
   // keyboard appear only when you tap the ⌨ key (and collapse again with ▾). This
@@ -205,15 +212,17 @@ export function Composer({
 
   useEffect(() => {
     loadSnippets().then(setSnippets);
-    if (demo) setHistory(demoInputHistory(lang === 'zh'));
-    else loadHistory().then(setHistory);
+    if (demo) setStore({scopes: {}, recent: demoInputHistory(lang === 'zh')});
+    else loadHistory().then(setStore);
   }, [demo, lang]);
 
   // In Demo, history persistence is a no-op — typing in the sample world must never
   // reach (or grow) the real input-history store.
-  const persistHistory = (list: string[]) => {
-    if (!demo) saveHistory(list);
+  const persistHistory = (next: HistoryStore) => {
+    if (!demo) saveHistory(next);
   };
+  // What the picker shows: this scope's entries first, the cross-scope tail below.
+  const history = historyFor(store, historyScope ?? 'default');
   const updateSnippets = (list: string[]) => {
     setSnippets(list);
     saveSnippets(list);
@@ -265,8 +274,8 @@ export function Composer({
     if (paths.length) parts.push(paths.join('\n'));
     send({text: parts.join('\n'), enter: true});
     if (body) {
-      setHistory(h => {
-        const next = pushHistory(h, body);
+      setStore(h => {
+        const next = pushHistory(h, historyScope ?? 'default', body, Date.now());
         persistHistory(next);
         return next;
       });
@@ -583,15 +592,21 @@ export function Composer({
           openCompose();
         }}
         onDelete={i => {
-          setHistory(h => {
-            const next = h.filter((_, idx) => idx !== i);
+          const gone = history[i];
+          if (gone === undefined) return;
+          setStore(h => {
+            const next = removeHistory(h, historyScope ?? 'default', gone);
             persistHistory(next);
             return next;
           });
         }}
         onClear={() => {
-          setHistory([]);
-          persistHistory([]);
+          // Everything, not just this scope: clearing a scope alone would let the
+          // cross-scope tail top the list straight back up, which reads as a button
+          // that did nothing.
+          const next = emptyStore();
+          setStore(next);
+          persistHistory(next);
         }}
         onClose={() => setHistoryOpen(false)}
       />

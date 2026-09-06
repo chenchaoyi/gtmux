@@ -126,3 +126,69 @@ test('Demo neither reads nor writes real drafts', async () => {
   expect(wroteDrafts()).toBe(false);
   act(() => t.unmount());
 });
+
+// History is scoped, and the WIRING is the half that goes wrong: a store that
+// files correctly but is read with the wrong scope shows you someone else's list.
+test('the history picker shows this scope first, topped up from elsewhere', async () => {
+  (AsyncStorage.getItem as jest.Mock).mockImplementation((k: string) =>
+    Promise.resolve(
+      k === 'gtmux.inputHistory'
+        ? JSON.stringify({
+            scopes: {gtmux: {list: ['cut release'], at: Date.now()}},
+            recent: ['from elsewhere'],
+          })
+        : null,
+    ),
+  );
+  let tree: renderer.ReactTestRenderer | undefined;
+  act(() => {
+    tree = renderer.create(
+      <Composer
+        pal={paletteFor('dark')}
+        lang="en"
+        historyScope="gtmux"
+        onSend={() => {}}
+      />,
+    );
+  });
+  await flush();
+  act(() => {
+    tree!.root.findByProps({testID: TestIds.composer.history}).props.onPress();
+  });
+  const shown = tree!.root
+    .findAll(n => typeof n.props?.children === 'string')
+    .map(n => n.props.children as string);
+  expect(shown).toContain('cut release');
+  expect(shown.indexOf('cut release')).toBeLessThan(shown.indexOf('from elsewhere'));
+  act(() => tree!.unmount());
+});
+
+test('a different scope does not show the first one’s entries at the top', async () => {
+  (AsyncStorage.getItem as jest.Mock).mockImplementation((k: string) =>
+    Promise.resolve(
+      k === 'gtmux.inputHistory'
+        ? JSON.stringify({
+            scopes: {gtmux: {list: ['a gtmux-only phrase'], at: Date.now()}},
+            recent: [],
+          })
+        : null,
+    ),
+  );
+  let tree: renderer.ReactTestRenderer | undefined;
+  act(() => {
+    tree = renderer.create(
+      <Composer pal={paletteFor('dark')} lang="en" historyScope="diting-mobile" onSend={() => {}} />,
+    );
+  });
+  await flush();
+  act(() => {
+    tree!.root.findByProps({testID: TestIds.composer.history}).props.onPress();
+  });
+  const shown = tree!.root
+    .findAll(n => typeof n.props?.children === 'string')
+    .map(n => n.props.children as string);
+  // The tail is empty, so there is nothing to top up with — and the other
+  // project's list is NOT it.
+  expect(shown).not.toContain('a gtmux-only phrase');
+  act(() => tree!.unmount());
+});
