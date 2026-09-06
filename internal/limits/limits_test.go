@@ -295,8 +295,15 @@ func TestCommandFailureKeepsTheOtherAgentsWindows(t *testing.T) {
 // ~/.bashrc, where a PATH addition actually lives. Under launchd, where serve's
 // own PATH is /usr/bin:/bin:/usr/sbin:/sbin, that made the command unrunnable.
 func TestLoginShell(t *testing.T) {
-	t.Setenv("SHELL", "/bin/zsh")
-	if got := loginShell(); got != "/bin/zsh" {
+	// A real executable in a temp dir, not a hardcoded /bin/zsh: this test also runs
+	// on CI, where that path does not exist, and the check below is exactly the one
+	// that would reject it.
+	shell := filepath.Join(t.TempDir(), "myshell")
+	if err := os.WriteFile(shell, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SHELL", shell)
+	if got := loginShell(); got != shell {
 		t.Errorf("loginShell = %q, want $SHELL", got)
 	}
 	// Unset, or set to something that is not an executable file, falls back to a
