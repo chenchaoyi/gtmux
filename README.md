@@ -17,7 +17,7 @@
 
 ---
 
-You run coding agents — Claude Code, Codex, Gemini, aider — inside tmux, often
+You run coding agents — Claude Code, Codex, Gemini, Cursor — inside tmux, often
 several at once. They go quiet, and you lose track of which one is waiting on a
 yes/no, which is still working, and which just finished.
 

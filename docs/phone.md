@@ -1,5 +1,7 @@
 # Mobile & remote access
 
+**English** · [中文](phone.zh.md)
+
 <img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux phone — a pane's live screen + reply" />
 
 The third surface is an iOS app (`mobileapp/`, React Native): the same agent

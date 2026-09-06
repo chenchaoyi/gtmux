@@ -1,5 +1,7 @@
 # Install
 
+**English** · [中文](install.zh.md)
+
 ## Homebrew (macOS)
 
 ```sh

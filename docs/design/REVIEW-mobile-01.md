@@ -38,7 +38,7 @@ Detail 的输出大面积暗灰压近黑底，`+16 lines` / `ctrl+o to expand` �
 ### 4. Radar 所有 agent 头像是同一个橙色 sunburst
 本例数据恰好都是 Claude Code 所以可接受，但要确认**非 Claude agent 的回退路径**生效。
 
-- **改法**：用混合 agent 类型（Codex/Gemini/aider）的数据集跑一遍，确认 `Agent.icon` 缺省时
+- **改法**：用混合 agent 类型（Codex/Gemini/Cursor）的数据集跑一遍，确认 `Agent.icon` 缺省时
   回退到**中性字标**（CC/Cx/G/Ai…，见 MOBILE.md §2），不会全部塌成同一图标。
   颜色只编码状态，不要给 agent 上色。
 

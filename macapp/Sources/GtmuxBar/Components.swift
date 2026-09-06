@@ -8,7 +8,7 @@ func agentMonogram(_ name: String) -> String {
     case "Claude Code": return "C"
     case "Codex":       return "Cx"
     case "Gemini":      return "G"
-    case "Aider":       return "A"
+    case "Copilot":     return "Co"
     case "opencode":    return "oc"
     case "Crush":       return "Cr"
     case "Cursor":      return "Cu"
