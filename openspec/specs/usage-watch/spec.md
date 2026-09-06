@@ -124,14 +124,41 @@ itself to their draft AND submitted it.
 - **THEN** nothing is typed: the wake queues and lands once the box is empty, like every
   other wake
 
-### Requirement: Subscription-window limits from the agent's own usage command
+### Requirement: Subscription-window limits from whatever the agent itself reports
 
-The system SHALL obtain real subscription-window usage (e.g. Claude's 5-hour
-session window and weekly windows) by running a configurable, cached command
-(default `claude -p "/usage"`) and parsing each reported window into
-`{label, pctUsed, resetAt}`. This is authoritative server data surfaced via the
-agent's own sanctioned command — NOT local estimation and NOT a private endpoint.
-Absent/unparuseable output SHALL yield no limits (the rest of usage still works).
+The system SHALL obtain real subscription-window usage as `{label, pctUsed,
+resetAt}` per window, from the agent's OWN reporting — authoritative server data,
+NOT local estimation and NOT a private endpoint. Absent or unparseable data SHALL
+yield no limits for that agent, leaving the rest of usage working.
+
+Agents report it in different places, and the system SHALL use whichever the
+agent actually offers rather than assuming one mechanism:
+
+- **A sanctioned command** (Claude): a configurable, cached command
+  (default `claude -p "/usage"`), because Claude records nothing about windows
+  locally — its transcript holds session COST, and its stats cache holds all-time
+  model totals; neither knows a window or a reset.
+- **The agent's own log** (Codex): the server's rate-limit response, recorded into
+  the session rollout beside the token counts. Reading it costs no process and no
+  command. Codex's own `/usage` reports activity history rather than remaining
+  quota, so the command mechanism has no counterpart there.
+
+A window SHALL be identified by its DURATION, never by its position in the source
+(Codex's `primary` field is observed carrying both the 5-hour and the weekly
+window). A window whose reset time has already passed SHALL NOT be reported as
+current: a log-derived reading can outlive its own window, and an expired
+percentage is unknown rather than low.
+
+Each window SHALL carry which agent's plan it belongs to, so that a consumer
+acting on it — the dispatch preflight suggests a cheaper model — acts on the plan
+that the work will actually bill against.
+
+#### Scenario: Windows read from an agent's log
+
+- **WHEN** a Codex rollout carries a rate-limit block with a 300-minute and a
+  10080-minute window
+- **THEN** they are reported as that agent's session and week windows
+- **AND** a window whose reset has already passed is omitted
 
 #### Scenario: Windows parsed from /usage
 

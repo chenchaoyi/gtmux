@@ -22,10 +22,18 @@ import (
 )
 
 // Window is one subscription window (session / weekly / …).
+//
+// The two sources report a reset differently and both are kept: Claude's
+// `/usage` prints a human string and nothing else, Codex's log gives an epoch.
+// `ResetAt` stays the field every existing renderer reads; `ResetUnix` is added
+// where it is known, because only a comparable time can tell a live reading from
+// one that outlived its window.
 type Window struct {
-	Label   string `json:"label"`    // "session" | "week (all models)" | "week (Fable)"
-	PctUsed int    `json:"pct_used"` // 0–100, server-authoritative
-	ResetAt string `json:"reset_at"` // human reset time, as reported ("Jul 17 at 10:59pm")
+	Label     string `json:"label"`                // "session" | "week (all models)" | "codex week"
+	PctUsed   int    `json:"pct_used"`             // 0–100, server-authoritative
+	ResetAt   string `json:"reset_at"`             // human reset time, as reported ("Jul 17 at 10:59pm")
+	Agent     string `json:"agent,omitempty"`      // which agent's plan this window belongs to
+	ResetUnix int64  `json:"reset_unix,omitempty"` // epoch reset, when the source gives one
 }
 
 // Report is the cached limits snapshot.
@@ -96,7 +104,21 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	}
 	wins, err := runAndParse(cfg.Command)
 	if err != nil || len(wins) == 0 {
+		// The command is Claude's only route, so its failure loses Claude's
+		// windows — but not Codex's, which cost nothing and come from a
+		// different place entirely.
+		if cx, ok := codexWindows(now); ok {
+			r := Report{Windows: cx, At: now.Unix(), Warn: warnOf(cx, cfg.WarnPct)}
+			save(r)
+			return r, true
+		}
 		return cached, hasCache // keep the last good snapshot on failure
+	}
+	for i := range wins {
+		wins[i].Agent = "claude"
+	}
+	if cx, ok := codexWindows(now); ok {
+		wins = append(wins, cx...)
 	}
 	r := Report{Windows: wins, At: now.Unix(), Warn: warnOf(wins, cfg.WarnPct)}
 	save(r)
@@ -106,6 +128,11 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 // warnOf returns the first weekly window at/over the warn threshold ("" = fine).
 // Session (5h) windows are excluded — they reset hourly, so a high session % is
 // normal and not a plan-exhaustion signal.
+//
+// The label carries the agent for anything but Claude ("codex week"), so a
+// warning names WHOSE plan is tight. That matters where it is acted on: the
+// spawn preflight suggests a cheaper model, and a suggestion drawn from the
+// other agent's plan is advice about the wrong thing.
 func warnOf(wins []Window, warnPct int) string {
 	for _, w := range wins {
 		if strings.Contains(w.Label, "week") && w.PctUsed >= warnPct {

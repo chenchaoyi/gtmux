@@ -1,6 +1,9 @@
 package limits
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -111,5 +114,69 @@ func TestFresh(t *testing.T) {
 	rn := Report{Windows: []Window{{PctUsed: 80}}, At: now.Add(-7 * time.Minute).Unix()}
 	if Fresh(rn, cfg, now) {
 		t.Error("7m-old near-cap cache should be stale (5m TTL)")
+	}
+}
+
+// Codex records its rate limits into the session rollout, so the windows come
+// from the log rather than a command. These pin the two rules that measurement
+// forced (see codex.go): the window is named by its DURATION, and a reading that
+// outlived its own window is dropped.
+func TestCodexWindowsFromLog(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	day := filepath.Join(home, "sessions", "2026", "09", "06")
+	if err := os.MkdirAll(day, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Unix(1_788_700_000, 0)
+	live := now.Unix() + 3600    // still running
+	expired := now.Unix() - 3600 // reset already happened
+	// The real shape, from a live session on 2026-09-06.
+	line := fmt.Sprintf(`{"timestamp":"2026-09-06T03:03:33.706Z","type":"event_msg","payload":{`+
+		`"type":"token_count","info":{"total_token_usage":{"input_tokens":1,"output_tokens":1}},`+
+		`"rate_limits":{"limit_id":"codex","primary":{"used_percent":0.0,"window_minutes":300,"resets_at":%d},`+
+		`"secondary":{"used_percent":86.0,"window_minutes":10080,"resets_at":%d},"plan_type":"plus"}}}`+"\n",
+		live, live)
+	if err := os.WriteFile(filepath.Join(day, "rollout-2026-09-06T10-55-54-abc.jsonl"), []byte(line), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	wins, ok := codexWindows(now)
+	if !ok || len(wins) != 2 {
+		t.Fatalf("windows = %+v ok=%v, want 2", wins, ok)
+	}
+	// Named by duration, and tagged with whose plan it is.
+	if wins[0].Label != "codex session" || wins[1].Label != "codex week" {
+		t.Errorf("labels = %q / %q", wins[0].Label, wins[1].Label)
+	}
+	if wins[0].Agent != "codex" || wins[1].ResetUnix != live {
+		t.Errorf("agent/reset not carried: %+v", wins)
+	}
+	// A weekly window over the threshold warns, and says whose it is — the spawn
+	// preflight acts on this string.
+	if w := warnOf(wins, 85); w != "codex week 86%" {
+		t.Errorf("warn = %q", w)
+	}
+
+	// The SAME reading, once its windows have reset, is not a current answer.
+	stale := fmt.Sprintf(`{"timestamp":"x","type":"event_msg","payload":{"type":"token_count",`+
+		`"rate_limits":{"primary":{"used_percent":3.0,"window_minutes":300,"resets_at":%d},`+
+		`"secondary":{"used_percent":3.0,"window_minutes":10080,"resets_at":%d}}}}`+"\n", expired, expired)
+	if err := os.WriteFile(filepath.Join(day, "rollout-2026-09-06T10-55-54-abc.jsonl"), []byte(stale), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if wins, ok := codexWindows(now); ok {
+		t.Errorf("expired windows reported as current: %+v", wins)
+	}
+}
+
+// `primary` is a POSITION, not an identity: on this machine 41 blocks carry the
+// weekly window there. Naming by position would label a week "session".
+func TestCodexWindowNamedByDuration(t *testing.T) {
+	now := time.Unix(1_788_700_000, 0)
+	weekly := &codexWindow{UsedPercent: 12, WindowMin: 10080, ResetsAt: now.Unix() + 60}
+	got := codexToWindows(weekly, nil, now)
+	if len(got) != 1 || got[0].Label != "codex week" {
+		t.Errorf("primary-holding-a-week = %+v, want codex week", got)
 	}
 }

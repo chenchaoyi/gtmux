@@ -41,6 +41,11 @@ type codexPayload struct {
 	Cwd              string `json:"cwd"`                // session_meta (first line)
 }
 
+// CodexHome is where Codex keeps its sessions, for the packages that need to
+// read them without re-deriving the layout (limits reads rate limits out of the
+// same rollouts this package reads transcripts from).
+func CodexHome() string { return codexHome() }
+
 func codexHome() string {
 	if h := os.Getenv("CODEX_HOME"); h != "" {
 		return h
