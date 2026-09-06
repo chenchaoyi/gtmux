@@ -1,5 +1,5 @@
 import {UsageReport} from '../api/client';
-import {buildUsageView, compactTok, machineLines, rankSessions, sessionCount} from './usageModel';
+import {buildUsageView, compactTok, machineLines, planByAgent, rankSessions, sessionCount} from './usageModel';
 
 // A real payload, trimmed, from the machine this was written on.
 const report = {
@@ -79,5 +79,36 @@ describe('sessionCount', () => {
     expect(sessionCount(1, false)).toBe('1 session');
     expect(sessionCount(17, false)).toBe('17 sessions');
     expect(sessionCount(1, true)).toBe('1 个会话');
+  });
+});
+
+describe('planByAgent', () => {
+  it('says the agent once, in the name the rest of the app uses', () => {
+    // The flat list repeated a lowercase registry key on every row — "claude
+    // session", "claude week (all models)" — beside session rows spelling the same
+    // agent "Claude Code".
+    const g = planByAgent({
+      sessions: [{agent_key: 'claude', agent: 'Claude Code', tok: 0, rate: 0}],
+      limits: {
+        windows: [
+          {label: 'claude session', pct_used: 31, reset_at: 'Sep 7', agent: 'claude'},
+          {label: 'claude week (all models)', pct_used: 27, reset_at: 'Sep 11', agent: 'claude'},
+          {label: 'codex week', pct_used: 1, reset_at: 'Sep 7', agent: 'codex'},
+        ],
+      },
+    } as never);
+    expect(g.map(x => x.name)).toEqual(['Claude Code', 'codex']);
+    expect(g[0].windows.map(w => w.name)).toEqual(['session', 'week (all models)']);
+    expect(g[1].windows[0].name).toBe('week');
+  });
+
+  it('keeps an unknown agent’s own spelling rather than inventing one', () => {
+    const g = planByAgent({limits: {windows: [{label: 'zed week', pct_used: 3, reset_at: 'x', agent: 'zed'}]}} as never);
+    expect(g[0].name).toBe('zed');
+  });
+
+  it('survives a serve that sends no agent field', () => {
+    const g = planByAgent({limits: {windows: [{label: 'session', pct_used: 3, reset_at: 'x'}]}} as never);
+    expect(g[0].windows[0].name).toBe('session');
   });
 });

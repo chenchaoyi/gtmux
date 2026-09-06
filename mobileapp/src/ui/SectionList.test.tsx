@@ -58,16 +58,19 @@ test.each([
 // whether more is still coming — the radar ends in dark space, and it was read as the
 // latter (2026-09-05). The close must therefore be honest about folded sections too.
 describe('listEndLabel', () => {
-  test('claims no total when it showed everything it has', () => {
-    // The list's total is not the fleet's — the supervisor sits on the floating disc —
-    // so a footer counting "16" under a header counting "17" would send the reader
-    // looking for the missing one.
-    expect(listEndLabel(16, 16, 'en')).toBe('end of list');
-    expect(listEndLabel(16, 16, 'zh')).toBe('到底了');
+  test('says nothing at all when it showed everything it has', () => {
+    // The mark does the talking. A words-only close had to pick a capitalisation
+    // and a translation for a fact that is better drawn than written — and the
+    // list's total is not the fleet's anyway (the supervisor sits on the floating
+    // disc), so a footer counting 16 under a header counting 17 would send the
+    // reader looking for the missing one.
+    expect(listEndLabel(16, 16, 'en')).toBe('');
+    expect(listEndLabel(16, 16, 'zh')).toBe('');
   });
 
-  test('does not claim you saw everything when a section is folded', () => {
-    expect(listEndLabel(16, 5, 'en')).toBe('end of list · 5 of 16 shown');
-    expect(listEndLabel(16, 0, 'zh')).toBe('到底了 · 显示 0 / 16');
+  test('words return only when a folded section makes "that was all" untrue', () => {
+    // A count, not a sentence — so there is still no case to get wrong.
+    expect(listEndLabel(16, 5, 'en')).toBe('5 of 16 shown');
+    expect(listEndLabel(16, 0, 'zh')).toBe('显示 0 / 16');
   });
 });
