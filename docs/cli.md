@@ -754,10 +754,20 @@ The evaluator also **projects** (`current + rate × horizon`) so you're warned
 BEFORE a wall — `ctx→80% in ~9m` — not at it. Warnings surface as an amber
 `usage_warn` on the radar row (`agents --json` / digest), in `gtmux usage`, and
 as a one-per-layer `» gtmux·usage·warn …` wake into a live HQ session. `--json`
-is also served as `GET /api/usage`. Claude-first (other agents' logs don't carry
-usage yet); the hook evaluates on every lifecycle event — near-real-time during
-tool-driven work; a long silent generation settles at its next event (P2: serve
-tick).
+is also served as `GET /api/usage`. The hook evaluates on every lifecycle event —
+near-real-time during tool-driven work; a long silent generation settles at its
+next event.
+
+**Claude and Codex, from two differently shaped logs.** Claude records what each
+message cost, so the totals are a running sum. Codex records the session's
+RUNNING TOTALS after every turn, so the totals are simply the last reading —
+summing those would multiply a session's burn by its turn count, and it also
+means a Codex session needs no full scan and no counter file at all. Codex is the
+better-informed of the two in one respect: it states `model_context_window`
+outright (258,400 on a live session), so the ctx fraction is measured against the
+real window instead of the smallest known tier above the observed footprint. An
+agent whose log carries no usage at all still gets a row, with these fields
+empty — the same degradation as before.
 
 > **Network-aware launch:** gtmux prefixes agent launches (`gtmux hq` / `adopt` /
 > restore / the limits command) with a proxy when needed, so you never hand-toggle

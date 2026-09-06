@@ -133,7 +133,13 @@ func Evaluate(l Layers, horizon time.Duration, win int64, ctxFrac float64, outTo
 // EvaluateSession is the impure convenience: layers+horizon from config.
 func EvaluateSession(s Session) string {
 	l := layersFor(s.Agent)
-	win := windowFor(s.Agent, "", s.CtxTok)
+	// The window the snapshot was ALREADY judged against, when it carries one.
+	// Re-deriving it here would disagree with the CtxFrac beside it for any
+	// agent whose log states its window (Codex's 258k is not a known tier).
+	win := s.Window
+	if win == 0 {
+		win = windowFor(s.Agent, "", s.CtxTok, 0)
+	}
 	if l.Window > 0 {
 		win = l.Window
 	}
