@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.93.0',
+    en: [
+      'A half-typed message now survives leaving the pane. Drafts are kept per session, so what you started writing is waiting when you come back.',
+      'Token usage and plan limits now cover Codex as well as Claude, and every window says whose plan it is.',
+    ],
+    zh: [
+      '打了一半的话不会再丢。草稿按会话保留，离开这一屏再回来，写到一半的内容还在。',
+      '用量和额度现在也覆盖 Codex，不只是 Claude，每个额度窗口都写明属于谁的套餐。',
+    ],
+  },
+  {
     version: '0.92.0',
     en: [
       'The radar says where it ends, so a list that stops no longer reads as one still loading.',
