@@ -97,10 +97,16 @@ export function BoardSheet({
         <ScrollView contentContainerStyle={styles.pad}>
           {sections.map((sec, i) => {
             const secOpen = open.has(sec.key);
-            // What the section HOLDS: its entries when it has them, else its table rows
-            // or bullets. Never how many lines it was typed on — that read "154" beside
-            // a twelve-row table.
-            const n = sec.children.length > 0 ? sec.children.length : sectionCount(sec.body);
+            // What the section is ABOUT: the rows or bullets of its own content when it
+            // has any, else the entries nested under it. Never how many lines it was
+            // typed on — that read "154" beside a twelve-row table.
+            //
+            // Own content wins because the heading is a promise. 「① 现状 — 在跑的 pane」
+            // leads with a 13-row table of panes AND carries four sub-headings; counting
+            // the sub-headings turned a 13 into a 4 and hid the number the title just
+            // asked about. 「② 交接记录」 has no body of its own, so there its entries are
+            // the only thing there is to count.
+            const n = sectionCount(sec.body) ?? (sec.children.length > 0 ? sec.children.length : null);
             return (
               <View key={sec.key} style={[styles.sec, {borderColor: pal.divider}]}>
                 {sec.title !== '' && (

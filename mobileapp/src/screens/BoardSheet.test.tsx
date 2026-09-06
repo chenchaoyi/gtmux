@@ -90,10 +90,24 @@ describe('the outline reaches the level the entries live on', () => {
     expect(withOne).toBeLessThan(outline * 2);
   });
 
-  it('counts a section by its ENTRIES when it has them, by its table rows when it does not', () => {
+  it('counts a section by its OWN content first, by its entries only when it has none', () => {
     const s = strings(mount());
-    expect(s).toContain(26); // ② holds 26 entries
-    expect(s).toContain(1); // ① holds a one-row table
+    expect(s).toContain(26); // ② has no body of its own → its 26 entries
+    expect(s).toContain(1); // ① is a one-row table
+  });
+
+  it('does not let sub-headings hide the number the title just promised', () => {
+    // Measured on the real board: 「① 现状 — 在跑的 pane」 leads with a 13-row table of
+    // panes AND carries four sub-headings. Counting the sub-headings turned that 13
+    // into a 4 — a bubble about the document's structure, beside a title asking about
+    // running panes.
+    const md =
+      '## ① 现状 — 在跑的 pane\n\n| pane | 在做什么 |\n|---|---|\n' +
+      '| %7 | a |\n| %8 | b |\n| %9 | c |\n\n' +
+      '### 附注 A\naaa\n\n### 附注 B\nbbb\n';
+    const s = strings(mount(md));
+    expect(s).toContain(3); // the table's rows
+    expect(s).not.toContain(2); // NOT the two sub-headings
   });
 });
 
