@@ -20,12 +20,17 @@ package hq
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // pendingRow is one plate entry: the ledger row plus the wait clock it is ordered by
@@ -117,6 +122,21 @@ func markPending(id string, await bool, disposition string, now int64) int {
 	} else {
 		ok = dispatch.ClearAwaitingCommander(id, disposition, now)
 	}
+	if !ok && await && strings.HasPrefix(id, "%") {
+		// A PANE, not a ledger id. The plate used to accept only what `gtmux spawn`
+		// created, which on a machine where the commander dispatches directly is almost
+		// nothing: measured 2026-08-29, all ten live lines came from a direct send and
+		// none from a spawn. So the very items the charter says to put on the plate —
+		// questions relayed to the commander, waiting on a decision — arose on the only
+		// channel that could not reach it, and `--pending` answered "nothing awaiting
+		// you" while meaning "no DISPATCHED task is awaiting you". The commander was left
+		// rebuilding their own queue out of the chat log.
+		//
+		// So open the account here. Everything needed is already on disk.
+		if openDirectEntry(id, now) {
+			ok = dispatch.MarkAwaitingCommander(id, now)
+		}
+	}
 	if !ok {
 		i18n.Sae("gtmux tasks: no ledger entry '"+id+"'", "gtmux tasks: 账本里没有 '"+id+"'")
 		return 1
@@ -131,4 +151,30 @@ func markPending(id string, await bool, disposition string, now int64) int {
 	}
 	i18n.Say("off the plate: "+id+" ("+tail+")", "已下架："+id+"（"+tail+"）")
 	return 0
+}
+
+// openDirectEntry files a ledger entry for a pane the commander is driving directly, so it
+// can go on the plate. Reports whether one now exists.
+//
+// Marked SourceUserDirect, which the ledger already models — the gap was only that nothing
+// could CREATE such an entry outside `spawn`. The goal is the pane's last user prompt, the
+// same marker the done wake reads, so the row says what the work is rather than naming a
+// bare pane id.
+func openDirectEntry(pane string, now int64) bool {
+	if _, ok := dispatch.LoadTask(pane); ok {
+		return true
+	}
+	goal := strings.TrimSpace(state.ReadMarker(filepath.Join(state.Dir(), "goal", pane)))
+	if goal == "" {
+		goal = i18n.Tr("(direct dispatch)", "（直发）")
+	}
+	loc := strings.TrimSpace(tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"))
+	agent := ""
+	if rec, ok := resume.Load(loc); ok {
+		agent = rec.Agent
+	}
+	return dispatch.AddTask(dispatch.Task{
+		ID: pane, Pane: pane, Agent: agent, Goal: goal,
+		CreatedAt: now, Delivered: true, Source: dispatch.SourceUserDirect,
+	}) == nil
 }

@@ -198,8 +198,12 @@ func knowledgeAdd(args []string) error {
 	if err != nil {
 		return err
 	}
+	addID, err := entryID(f.topic, f.title)
+	if err != nil {
+		return err
+	}
 	op := knowledgeOp{
-		Op: knowledgeOpAdd, ID: f.topic + "/" + slug(f.title), Topic: f.topic,
+		Op: knowledgeOpAdd, ID: addID, Topic: f.topic,
 		Title: f.title, Body: body, At: time.Now().Unix(),
 		Seq: events.LatestSeq(), SeqRange: seqRange,
 	}
@@ -246,9 +250,13 @@ func knowledgeSupersede(args []string) error {
 	if err != nil {
 		return err
 	}
+	supersedeID, err := entryID(pred.Topic, f.title)
+	if err != nil {
+		return err
+	}
 	op := knowledgeOp{
 		Op: knowledgeOpSupersede, Supersedes: predID,
-		ID: pred.Topic + "/" + slug(f.title), Topic: pred.Topic,
+		ID: supersedeID, Topic: pred.Topic,
 		Title: f.title, Body: body, At: time.Now().Unix(),
 		Seq: events.LatestSeq(), Why: f.why,
 	}
@@ -558,4 +566,27 @@ func knowledgeUsage() int {
   派活时才浮出来而不是常驻。放错一层,等于写给不会读到它的人看。
   详见 docs/design/knowledge-layers.md。`)
 	return 0
+}
+
+// entryID builds an entry's id from its topic and title, refusing a title that carries no
+// ASCII word to slug.
+//
+// The old fallback was the string "untagged", which failed twice over: every
+// Chinese-titled entry landed on the SAME id, and once that id was live the next one
+// failed with `id <topic>/untagged is a live entry` — an error about a collision, which
+// sends the reader looking for a duplicate that does not exist. Four reproductions on this
+// machine, each one a detour.
+//
+// The convention that works is already in the base (`hq-send-destroys-drafts`,
+// `edit-markdown-table-old-string-new`): an ascii slug for the machine, a sentence for the
+// human. So say that, at the moment it is needed, instead of inventing an id nobody asked
+// for.
+func entryID(topic, title string) (string, error) {
+	sl := slug(title)
+	if sl == untaggedSlug {
+		return "", fmt.Errorf(i18n.Tr(
+			"a title with no ASCII word cannot become an id — write it as `<ascii-slug>: %s`",
+			"标题里没有 ASCII 词，生成不出 id —— 请写成 `<ascii-slug>: %s`"), title)
+	}
+	return topic + "/" + sl, nil
 }

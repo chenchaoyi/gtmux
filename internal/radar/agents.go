@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -461,7 +462,9 @@ const psSnapshotTimeout = 4 * time.Second
 // one wedged process froze the whole menu bar (which polls this every refresh) and piled
 // up 100+ stuck `ps`. The abandoned `ps` is reparented to launchd and reaped when it
 // finally unblocks; the caller degrades (empty snapshot) instead of hanging.
-func boundedPS(args ...string) ([]byte, error) {
+// A var, like procSnapshot beside it: the process-table cache is only testable if the
+// scan under it can be counted.
+var boundedPS = func(args ...string) ([]byte, error) {
 	return boundedOutput(psSnapshotTimeout, "ps", args...)
 }
 
@@ -505,12 +508,48 @@ func boundedOutput(timeout time.Duration, name string, args ...string) ([]byte, 
 // call), so we can look inside a pane's process tree and sum its CPU. Empty on
 // any failure OR a timeout — a degraded snapshot loses only the CPU "working"
 // signal and bare-`node` agent detection; title-identified agents still appear.
+// procCacheTTL is how long one process-table read is reused.
+//
+// The scan is a FULL table (`ps -axo … command=`, reading every process's argv), and it
+// had no cache at all: `AgentDriverKey` takes one per PANE, so a machine with 28 panes
+// paid 28 full scans for one question about the fleet. Attributed 2026-09-03 on a machine
+// with 17 sessions / 28 panes / 1002 processes: about 96 short-lived children forked per
+// minute, of which ~52 were this scan, giving `gtmux serve` a 6–7% baseline that grew
+// linearly with the fleet.
+//
+// Two seconds. The radar's own poll is 20s and the fast tick is 3s, so nothing observable
+// is refreshed more often than this anyway; what it removes is the repeat within a single
+// pass over the panes.
+const procCacheTTL = 2 * time.Second
+
+var (
+	procCacheMu  sync.Mutex
+	procCacheAt  time.Time
+	procCacheVal map[int]procInfo
+)
+
 func snapshotProcs() map[int]procInfo {
+	procCacheMu.Lock()
+	if procCacheVal != nil && time.Since(procCacheAt) < procCacheTTL {
+		v := procCacheVal
+		procCacheMu.Unlock()
+		return v
+	}
+	procCacheMu.Unlock()
+
 	out := map[int]procInfo{}
 	b, err := boundedPS("-axo", "pid=,ppid=,cputime=,command=")
 	if err != nil {
+		// A degraded snapshot is NOT cached. The failure this guards is a wedged `ps`
+		// (the one that froze the menu bar once); caching its empty result would hold
+		// the whole radar in that degraded state for the TTL instead of retrying.
 		return out
 	}
+	defer func() {
+		procCacheMu.Lock()
+		procCacheVal, procCacheAt = out, time.Now()
+		procCacheMu.Unlock()
+	}()
 	for _, line := range strings.Split(string(b), "\n") {
 		fs := strings.Fields(line)
 		if len(fs) < 4 {

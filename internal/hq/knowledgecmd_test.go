@@ -416,3 +416,46 @@ func TestPromotionBriefClosesWithTheUsersCarrier(t *testing.T) {
 		t.Errorf("the land instruction must always close the brief:\n%s", b)
 	}
 }
+
+// A title with no ASCII word used to slug to the string "untagged", which failed twice
+// over: every Chinese-titled entry landed on the SAME id, and once that id was live the
+// next one failed with `id <topic>/untagged is a live entry` — an error about a collision,
+// which sends the reader hunting for a duplicate that does not exist. Four reproductions.
+func TestEntryIDRefusesATitleWithNoASCII(t *testing.T) {
+	if _, err := entryID("pitfalls", "图把并行画成了顺序"); err == nil {
+		t.Fatal("a Chinese-only title still produced an id")
+	} else {
+		// The message has to carry the convention, at the moment it is needed.
+		if !strings.Contains(err.Error(), "ascii-slug") {
+			t.Errorf("the error does not say what to write instead: %v", err)
+		}
+		if !strings.Contains(err.Error(), "图把并行画成了顺序") {
+			t.Errorf("the error does not echo the title back: %v", err)
+		}
+	}
+	// The shape the base already uses works.
+	got, err := entryID("pitfalls", "parallel-rendered-as-sequential: 图把并行画成了顺序")
+	if err != nil {
+		t.Fatalf("the conventional shape was refused: %v", err)
+	}
+	if got != "pitfalls/parallel-rendered-as-sequential" {
+		t.Errorf("id = %q", got)
+	}
+}
+
+// East of UTC, everything filed between local midnight and 08:00 was stamped with
+// YESTERDAY, silently — and the stamp is what a reader consults to tell two entries apart
+// in time, so it is a live criterion answering wrong, not a cosmetic slip.
+func TestEntryStampIsLocalNotUTC(t *testing.T) {
+	// 02:19 local on 2026-09-01 in a zone 8 hours east of UTC: 18:19 UTC on 08-31.
+	east := time.FixedZone("CST", 8*3600)
+	local := time.Date(2026, 9, 1, 2, 19, 0, 0, east)
+	if got := local.UTC().Format("2006-01-02"); got != "2026-08-31" {
+		t.Fatalf("precondition: UTC renders %s", got)
+	}
+	// stampDate uses the host zone; assert the property that matters rather than a
+	// literal, so this test is not itself timezone-dependent.
+	if got := stampDate(local.Unix()); got != local.In(time.Local).Format("2006-01-02") {
+		t.Errorf("stampDate = %s, want the local date %s", got, local.In(time.Local).Format("2006-01-02"))
+	}
+}

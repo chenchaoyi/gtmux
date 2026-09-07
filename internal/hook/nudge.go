@@ -296,14 +296,71 @@ func fmtTurnDur(secs int64) string {
 	}
 }
 
+// crashBurstWindow is how long the same failure on the same pane stays ONE incident.
+//
+// A dropped connection is not N incidents because N agents noticed it. Measured
+// 2026-09-04: the commander's network went down while a pane ran a batch of parallel
+// subagents, and the drop landed in the stream as twelve `StopFailure server_error`
+// records — one per dying subagent, one per retry of the main session. HQ was knocked
+// twelve times about one thing, plus five unread knocks behind them. The wake line became
+// the noise it exists to cut through.
+//
+// Five minutes: long enough to swallow a retry storm and the subagents that go with it,
+// short enough that a genuinely new failure a few minutes later still speaks.
+const crashBurstWindow = 5 * 60
+
+// crashBurstMarker keys the burst on pane AND error, so a DIFFERENT failure on the same
+// pane is a different incident and is never suppressed by this.
+func crashBurstMarker(pane, errHead string) string {
+	sum := sha256.Sum256([]byte(errHead))
+	return filepath.Join(state.Dir(), "crashburst", pane+"-"+hex.EncodeToString(sum[:])[:12])
+}
+
 // nudgeCrash tells HQ a turn DIED on an agent/API failure (StopFailure) — which
 // must never read as a normal finish (severity important; always immediate).
+//
+// One incident, one knock. Repeats of the SAME error on the same pane inside the burst
+// window are counted and folded into the first line's successor rather than each taking a
+// turn of HQ's to answer; the count is what tells HQ this was a storm rather than a single
+// death, which is the thing it needs to judge "network" instead of "this agent crashed".
 func nudgeCrash(pane, errHead string) {
 	field := "turn died (agent/API error)"
 	if e := clampData(errHead, 100); e != "" {
 		field = `err:"` + e + `"` // agent/runtime-authored → DATA
 	}
+	if n, first := crashBurstCount(pane, errHead, time.Now().Unix()); !first {
+		// Inside the window: the incident is already announced. Record the repeat and
+		// stay quiet — HQ answers the incident, not each of its records.
+		_ = n
+		return
+	}
 	nudgeHQ(pane, hqwake.Line(hqwake.ClassCrash, wakeHead(pane), field))
+}
+
+// crashBurstCount records this failure and reports how many have landed in the window and
+// whether this one OPENED it. Best-effort: an unreadable marker means "first", which errs
+// toward telling HQ.
+func crashBurstCount(pane, errHead string, now int64) (n int, first bool) {
+	p := crashBurstMarker(pane, errHead)
+	var st struct {
+		At int64 `json:"at"`
+		N  int   `json:"n"`
+	}
+	if b, err := os.ReadFile(p); err == nil {
+		_ = json.Unmarshal(b, &st)
+	}
+	if st.At == 0 || now-st.At >= crashBurstWindow {
+		st.At, st.N = now, 1
+		first = true
+	} else {
+		st.N++
+	}
+	if os.MkdirAll(filepath.Dir(p), 0o755) == nil {
+		if b, err := json.Marshal(st); err == nil {
+			_ = os.WriteFile(p, b, 0o644)
+		}
+	}
+	return st.N, first
 }
 
 // ── enrollment (建联): first sight of an agent pane → one new-session wake ────
