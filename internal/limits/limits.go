@@ -37,6 +37,22 @@ type Window struct {
 	ResetUnix int64  `json:"reset_unix,omitempty"` // epoch reset, when the source gives one
 }
 
+// UnknownPlan names an agent whose plan gtmux could NOT read, and why.
+//
+// It exists because a missing row and a healthy one look identical. Codex reports its
+// windows passively — it writes them into a session log when it takes a turn, and gtmux
+// reads them there — so its rows have a staleness cliff that Claude's live command does
+// not: stop using Codex for a day, its last reading's windows roll over, and every Codex
+// row disappears with no explanation. On 2026-09-07 that read to the operator as gtmux
+// having broken.
+//
+// `Reason` is a key, not a sentence. Surfaces translate it, which is what keeps the
+// wording in one place per language instead of embedded in a Go string here.
+type UnknownPlan struct {
+	Agent  string `json:"agent"`
+	Reason string `json:"reason"` // "rolled-over" — a reading exists but its windows ended
+}
+
 // Report is the cached limits snapshot.
 //
 // `At` and `TryAt` are deliberately separate. `At` is the last SUCCESS and is what
@@ -53,7 +69,11 @@ type Report struct {
 	// TryAt is the last attempt, successful or not; Fails counts the consecutive
 	// failures since the last success. Both are retry bookkeeping, never displayed.
 	TryAt int64 `json:"try_at,omitempty"`
-	Fails int   `json:"fails,omitempty"`
+	// Unknown is additive: a client that does not know the field simply shows what it
+	// always showed. Never a substitute for a window — an agent appears here only when
+	// it has NO readable window at all.
+	Unknown []UnknownPlan `json:"unknown,omitempty"`
+	Fails   int           `json:"fails,omitempty"`
 }
 
 // Config controls the command + cadence + thresholds (from usage.json).
@@ -112,11 +132,17 @@ func Fresh(r Report, cfg Config, now time.Time) bool {
 // returned (ok reflects whether ANY data is available). now is injectable.
 func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	cached, hasCache := Load()
+	// Codex is re-read on EVERY path, cache hit included. Its source is a local file
+	// this machine already has, not a command with a cost, so there is nothing to
+	// amortise — and caching it was actively wrong twice over: a Codex window that had
+	// since ended kept being served until the CLAUDE cache expired, and a Codex reading
+	// that had rolled over could not report itself as unreadable, because the branch
+	// that would have noticed returned before reaching it.
 	if cfg.Command == "" {
-		return cached, hasCache
+		return withCodex(cached, hasCache, cfg, now)
 	}
 	if hasCache && !force && Fresh(cached, cfg, now) {
-		return cached, true
+		return withCodex(cached, true, cfg, now)
 	}
 	// A command that keeps failing must not be re-run on every poll. Skipping the
 	// SAVE on failure (below) is right — a failure must never be cached as fresh —
@@ -151,10 +177,12 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 		wins[i].Agent = "claude"
 		wins[i].Label = qualify("claude", wins[i].Label)
 	}
-	if cx, ok := codexWindows(now); ok {
+	cx, hasCodex := codexWindows(now)
+	if hasCodex {
 		wins = append(wins, cx...)
 	}
-	r := Report{Windows: wins, At: now.Unix(), Warn: warnOf(wins, cfg.WarnPct), TryAt: now.Unix()}
+	r := Report{Windows: wins, At: now.Unix(), Warn: warnOf(wins, cfg.WarnPct), TryAt: now.Unix(),
+		Unknown: unknownPlans(hasCodex, now)}
 	save(r) // Fails resets to 0 by omission — one success clears the backoff
 	return r, true
 }
@@ -211,13 +239,28 @@ func saveAttempt(cached Report, now time.Time) {
 func withCodex(cached Report, hasCache bool, cfg Config, now time.Time) (Report, bool) {
 	cx, ok := codexWindows(now)
 	if !ok {
-		return cached, hasCache
+		// No live Codex window — but the cached snapshot may still be carrying stale
+		// Codex rows from an earlier read, and the reason Codex is missing is worth
+		// saying either way.
+		cached.Windows = othersThan("codex", cached.Windows)
+		cached.Unknown = unknownPlans(false, now)
+		return cached, hasCache || len(cached.Unknown) > 0
 	}
 	merged := append(othersThan("codex", cached.Windows), cx...)
 	return Report{
 		Windows: merged, At: cached.At, Warn: warnOf(merged, cfg.WarnPct),
-		TryAt: cached.TryAt, Fails: cached.Fails,
+		TryAt: cached.TryAt, Fails: cached.Fails, Unknown: unknownPlans(true, now),
 	}, true
+}
+
+// unknownPlans lists the agents whose plan could not be read, when that absence is
+// worth reporting. Only Codex has a passive source today, so only Codex can go quiet
+// this way; Claude's route either answers or fails loudly.
+func unknownPlans(hasCodex bool, now time.Time) []UnknownPlan {
+	if hasCodex || !codexUnknown(now) {
+		return nil
+	}
+	return []UnknownPlan{{Agent: "codex", Reason: "rolled-over"}}
 }
 
 // warnOf returns the first weekly window at/over the warn threshold ("" = fine).

@@ -903,6 +903,22 @@ observed carrying the weekly window as well as the 5-hour one. And a reading can
 window whose reset has passed is dropped rather than reported, because by then
 the percentage is unknown, not low.
 
+**A dropped window is not the end of it.** An agent that reports through its log goes
+quiet on its own the moment you stop using it: the last reading's windows roll over and
+every row for that agent disappears, which looks exactly like gtmux having broken. So
+when Codex has no readable window but you used it in the past week, it gets a line of
+its own instead of vanishing:
+
+```
+● claude session              9% used   resets Sep 7 at 9:09pm
+● claude week (all models)   50% used   resets Sep 11 at 10:59pm
+○ codex  the window it last reported has ended — codex writes its plan into a session log, so one turn brings the figure back
+```
+
+`gtmux usage`'s footer flags the same gap in the space it has (`codex unknown`) and
+leaves the reason to this command. An agent you have not used in a week says nothing at
+all: an operator who does not run Codex should not be told about Codex.
+
 `gtmux limits` lists every window. **Every other place shows ONE per plan — the
 tightest**, because those places have a line and not a list: `gtmux usage`'s
 footer ran past 100 characters once Codex added its own windows, and the phone's

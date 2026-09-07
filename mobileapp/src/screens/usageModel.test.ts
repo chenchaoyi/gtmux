@@ -1,5 +1,13 @@
 import {UsageReport} from '../api/client';
-import {buildUsageView, compactTok, machineLines, planByAgent, rankSessions, sessionCount} from './usageModel';
+import {
+  buildUsageView,
+  compactTok,
+  machineLines,
+  planByAgent,
+  rankSessions,
+  sessionCount,
+  unreadableReason,
+} from './usageModel';
 
 // A real payload, trimmed, from the machine this was written on.
 const report = {
@@ -110,5 +118,54 @@ describe('planByAgent', () => {
   it('survives a serve that sends no agent field', () => {
     const g = planByAgent({limits: {windows: [{label: 'session', pct_used: 3, reset_at: 'x'}]}} as never);
     expect(g[0].windows[0].name).toBe('session');
+  });
+});
+
+// An agent whose plan the Mac cannot read must still appear, saying why.
+//
+// Codex reports its plan passively — it writes the server's rate-limit response into a
+// session log when it takes a turn — so a day without Codex is enough for the last
+// reading's windows to roll over. Before this, every Codex row simply stopped appearing,
+// which the operator read as the app having broken (2026-09-07).
+describe('an unreadable plan', () => {
+  const report = {
+    sessions: [],
+    limits: {
+      windows: [{label: 'claude week (all models)', pct_used: 50, reset_at: 'Sep 11', agent: 'claude'}],
+      unknown: [{agent: 'codex', reason: 'rolled-over'}],
+    },
+  } as never;
+
+  it('gets its own group instead of vanishing', () => {
+    const groups = planByAgent(report);
+    expect(groups.map(g => g.agent)).toEqual(['claude', 'codex']);
+    const codex = groups[1];
+    expect(codex.windows).toHaveLength(0);
+    expect(codex.unreadable).toBe('rolled-over');
+  });
+
+  it('says what happened and what brings the figure back', () => {
+    const en = unreadableReason('rolled-over', 'Codex', false);
+    expect(en).toContain('has ended');
+    expect(en).toContain('one turn');
+    expect(unreadableReason('rolled-over', 'Codex', true)).toContain('跑一轮');
+  });
+
+  it('still says something for a reason it does not recognise, because silence is the bug', () => {
+    expect(unreadableReason('something-new', 'Codex', false)).toBeTruthy();
+    expect(unreadableReason('something-new', 'Codex', true)).toBeTruthy();
+  });
+
+  it('never turns an agent that HAS windows into an unreadable one', () => {
+    const both = {
+      sessions: [],
+      limits: {
+        windows: [{label: 'codex week', pct_used: 3, reset_at: 'Sep 11', agent: 'codex'}],
+        unknown: [{agent: 'codex', reason: 'rolled-over'}],
+      },
+    } as never;
+    const groups = planByAgent(both);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].unreadable).toBeUndefined();
   });
 });

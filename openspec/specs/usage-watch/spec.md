@@ -162,6 +162,49 @@ the work will actually bill against.
 - **THEN** they are reported as that agent's session and week windows
 - **AND** a window whose reset has already passed is omitted
 
+### Requirement: An agent whose plan cannot be read says so
+
+A window that has ended is correctly omitted, but omission alone SHALL NOT be the
+whole answer. An agent reporting through its own log goes quiet on its own the
+moment it is not used: the last reading's windows roll over, every row for that
+agent disappears, and nothing distinguishes that from the system having stopped
+reading them. On 2026-09-07 an operator read exactly that as a defect.
+
+The system SHALL therefore report, alongside the windows, any agent whose plan is
+currently unreadable, naming the agent and the reason as a KEY that surfaces
+translate. This SHALL be additive to the existing report so a shipped client that
+does not know the field is unaffected.
+
+It SHALL be reported only where the absence is news: the agent must have been used
+recently enough that a missing figure means something, taking one week to match the
+weekly window itself. An agent with no reading at all SHALL stay silent, since an
+operator who does not use it must not be told about it.
+
+A log-sourced agent SHALL be re-read on every path, the cache hit included. Its
+source is a local file with nothing to amortise, and caching it both served windows
+that had since ended and prevented a rolled-over reading from reporting itself.
+
+#### Scenario: A log-sourced agent's last reading rolls over
+
+- **WHEN** Codex's newest reading was written yesterday and both of its windows
+  have since reset
+- **THEN** no Codex window is reported as current
+- **AND** the report names Codex as unreadable with reason "rolled-over"
+- **AND** `gtmux limits` prints a line saying the window has ended and that one
+  Codex turn brings the figure back
+
+#### Scenario: An agent that has not been used in a month stays silent
+
+- **WHEN** the newest Codex reading is thirty days old and expired
+- **THEN** the report names no unreadable agent
+
+#### Scenario: A fresh cache does not hide a log-sourced agent
+
+- **WHEN** the Claude cache is within its TTL and carries a Codex window whose
+  reset has since passed
+- **THEN** that stale Codex window is not served
+- **AND** the Codex reading is re-read from disk on that same call
+
 #### Scenario: Windows parsed from /usage
 
 - **WHEN** the limits command reports "Current week (all models): 58% used ·

@@ -203,6 +203,19 @@ export interface UsageWindow {
   /** Whose plan this window belongs to. Absent from a serve older than 0.93. */
   agent?: string;
 }
+
+/**
+ * An agent whose plan the Mac could NOT read, and why.
+ *
+ * An agent that reports its plan through its own session log goes quiet on its own once
+ * it is not used: the last reading's windows roll over and every row for it disappears,
+ * which reads as the app having broken rather than as a gap. `reason` is a key the app
+ * turns into a sentence ("rolled-over"). Absent from a serve older than 1.0.3.
+ */
+export interface UnknownPlan {
+  agent: string;
+  reason: string;
+}
 export interface ResourceReport {
   machine?: {disk_free_gb?: number; disk_use_pct?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string; tier?: 'amber' | 'red'};
   orphans?: {pid: number; rss_mb: number; comm: string; kind?: string; hint?: string}[];
@@ -210,7 +223,7 @@ export interface ResourceReport {
 export interface UsageReport {
   sessions?: {agent_key: string; tok: number; rate: number; usage_warn?: string}[];
   types?: {agent_key: string; sessions: number; tok: number; rate: number; usage_warn?: string}[];
-  limits?: {windows?: UsageWindow[]; warn?: string; at?: number};
+  limits?: {windows?: UsageWindow[]; warn?: string; at?: number; unknown?: UnknownPlan[]};
   resource?: ResourceReport;
 }
 

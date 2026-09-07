@@ -363,7 +363,12 @@ totals and rates, the plan's real limit windows with `pct_used`, and the machine
 resource snapshot (`resource-watch`). Owner-only — it exposes the whole fleet's budget.
 `resource.machine` carries an optional additive `tier` (`amber` | `red`, omitted when
 normal) — the overall severity — so a client (e.g. the mobile HQ disc) can redden ONLY
-on a genuine `red` bottleneck, never on a soft amber. `disk_use_pct` is the writable
+on a genuine `red` bottleneck, never on a soft amber. `limits` may also carry an additive `unknown`
+array (`[{agent, reason}]`) naming an agent whose plan could not be read — a log-sourced
+agent's windows roll over on their own once it goes unused, and a row that simply
+disappears is indistinguishable from a failure to read it. `reason` is a key the client
+translates ("rolled-over"); a client that does not know the field is unaffected.
+`disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object
 (`{present, percent, on_ac, state?, time_left?}`, omitted on a battery-less host); a low
 charge feeds `warn`/`tier` ONLY while draining (`on_ac:false`), never on AC.

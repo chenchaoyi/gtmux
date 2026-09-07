@@ -88,11 +88,19 @@ func cmdUsage(args []string) int {
 	// Subscription windows (real remaining) — the headline "how much room is left".
 	// One window per plan: the full list is `gtmux limits`, and joining all of
 	// them here ran past 100 characters once Codex added its own.
-	if sum := limits.Summary(rep.Limits.Windows); len(sum) > 0 {
-		parts := make([]string, 0, len(sum))
-		for _, w := range sum {
-			parts = append(parts, fmt.Sprintf("%s %d%%", w.Label, w.PctUsed))
-		}
+	sum := limits.Summary(rep.Limits.Windows)
+	parts := make([]string, 0, len(sum)+len(rep.Limits.Unknown))
+	for _, w := range sum {
+		parts = append(parts, fmt.Sprintf("%s %d%%", w.Label, w.PctUsed))
+	}
+	// An agent with no readable plan is NAMED here rather than left out. Dropping it is
+	// what made Codex look broken: its rows simply stopped appearing, which is
+	// indistinguishable from gtmux failing to read them. This line has a width budget,
+	// so it only flags the gap — `gtmux limits` is where the reason is spelled out.
+	for _, u := range rep.Limits.Unknown {
+		parts = append(parts, u.Agent+" "+i18n.Tr("unknown", "未知"))
+	}
+	if len(parts) > 0 {
 		fmt.Println(i18n.Tr("Plan  ", "额度  ") + strings.Join(parts, " · "))
 	}
 	return 0

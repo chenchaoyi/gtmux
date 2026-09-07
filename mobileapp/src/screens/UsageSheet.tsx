@@ -17,7 +17,15 @@ import {AgentAvatar} from '../ui/AgentAvatar';
 import {Lang} from '../i18n';
 import {Palette, ERRORED_COLOR} from '../ui/theme';
 import {relTime} from './hqZones';
-import {agentNames, buildUsageView, compactTok, machineLines, planByAgent, sessionCount} from './usageModel';
+import {
+  agentNames,
+  buildUsageView,
+  compactTok,
+  machineLines,
+  planByAgent,
+  sessionCount,
+  unreadableReason,
+} from './usageModel';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
@@ -102,6 +110,11 @@ export function UsageSheet({
                     <AgentAvatar agent={avatarFor(g.agent)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
                     <Text style={[styles.groupName, {color: pal.fg}]}>{g.name}</Text>
                   </View>
+                  {g.unreadable ? (
+                    <Text style={[styles.note, {color: pal.fg3}]} testID={`usage-unreadable-${g.agent}`}>
+                      {unreadableReason(g.unreadable, g.name, zh)}
+                    </Text>
+                  ) : null}
                   {g.windows.map(w => (
                     <View key={w.name} style={styles.row} testID={`usage-window-${g.agent} ${w.name}`}>
                       <Text style={[styles.rowKey, {color: pal.fg2}]} numberOfLines={1}>
