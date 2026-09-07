@@ -14,6 +14,12 @@ import {paletteFor} from './theme';
 // The editor is ALSO reachable from an already-staged thumbnail, which is what that
 // release left behind and what makes a photo re-annotatable.
 
+// Mounting the whole Composer pulls in the markup editor and its SVG stack, and the
+// FIRST mount in this file pays that module-load cost — ~3s on this machine and past the
+// 5s default on CI's slower runner, where every test in the file then timed out. The work
+// is real and one-time, not a hang.
+jest.setTimeout(30_000);
+
 jest.mock('react-native-image-picker', () => ({
   launchImageLibrary: jest.fn(),
   launchCamera: jest.fn(),
