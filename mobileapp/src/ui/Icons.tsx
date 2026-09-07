@@ -158,3 +158,27 @@ export function HistoryIcon({size = 20, color = '#fff'}: {size?: number; color?:
     </Svg>
   );
 }
+
+// Exit full screen: four arrows pulling INWARD to the corners — the universal "shrink
+// back" glyph (every video player uses it).
+//
+// Deliberately not a single diagonal arrow. That one was tried and replaced, because on
+// its own it reads as RESIZE ("make it bigger or smaller") rather than "leave". Four
+// arrows converging have only one meaning, and unlike a "✕" they say WHICH thing is being
+// left — a ✕ beside a body of text reads as "close this", and there is nothing here to
+// close.
+export function ExitFullScreenIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Path d="M10 4v6H4" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M3 3l7 7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M14 4v6h6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M21 3l-7 7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M10 20v-6H4" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M3 21l7-7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M14 20v-6h6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M21 21l-7-7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}

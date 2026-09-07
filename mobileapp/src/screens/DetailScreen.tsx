@@ -31,6 +31,7 @@ import {AgentAvatar} from '../ui/AgentAvatar';
 import {statusLabel} from '../i18n';
 import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {Composer} from '../ui/Composer';
+import {ExitFullScreenIcon} from '../ui/Icons';
 import {ChatView} from '../ui/ChatView';
 import {SessionReset} from '../ui/chatWindow';
 import {SendFailedBar} from '../ui/SendFailedBar';
@@ -787,10 +788,17 @@ export function DetailView({
           top chrome is hidden in full-screen; this is the way back). */}
       {fullscreen && (
         <View style={styles.fsBar}>
-          {/* "✕" over "⤡": the old glyph is a diagonal RESIZE arrow, which reads as
-              "make it bigger/smaller", not "leave". Paired with the full word, there is
-              nothing left to guess at. */}
-          <FsBtn label={'✕ ' + (lang === 'zh' ? '退出全屏' : 'Exit full screen')} onPress={() => setFullscreen(false)} testID={TestIds.detail.fsExit} />
+          {/* An ICON, not a labelled pill. The pill was the width of its sentence and sat
+              a long way down the screen, which is a lot of chrome to carry for a control
+              you use once. Four arrows pulling inward say the same thing wordlessly, and
+              the words stay in the accessibility label where a screen reader still gets
+              them. The brand cyan is the whole point of the colour: it has to be findable
+              against a full screen of terminal output. */}
+          <FsBtn
+            label={lang === 'zh' ? '退出全屏' : 'Exit full screen'}
+            onPress={() => setFullscreen(false)}
+            testID={TestIds.detail.fsExit}
+          />
         </View>
       )}
       </View>
@@ -914,17 +922,33 @@ function Ctl({pal, label, onPress, testID, glyph}: {pal: any; label: string; onP
 // FsBtn — a button in the floating full-screen control pill (over the terminal).
 function FsBtn({label, onPress, testID}: {label: string; onPress: () => void; testID?: string}) {
   return (
-    <TouchableOpacity testID={testID} accessibilityLabel={testID} onPress={onPress} style={styles.fsBtn} hitSlop={hit}>
-      <Text style={styles.fsBtnText}>{label}</Text>
+    <TouchableOpacity
+      testID={testID}
+      // accessibilityLabel is the AUTOMATION handle here, not prose — every control in
+      // this file sets it to the testID and the e2e matches on it (`~detail-fs-exit`).
+      // The words go in the hint instead, which is purely additive: VoiceOver reads it
+      // after the label, and nothing matches on it.
+      accessibilityLabel={testID}
+      accessibilityHint={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={styles.fsBtn}
+      hitSlop={hit}>
+      <ExitFullScreenIcon size={19} color={FS_ACCENT} />
     </TouchableOpacity>
   );
 }
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
-// fsTopInset clears the floating full-screen exit pill: its 8pt top offset, ~32pt of
-// height, and a small gap. Content in full-screen starts below it.
-const fsTopInset = 46;
+// fsTopInset clears the floating full-screen exit control: its 36pt height plus a small
+// gap. Content in full-screen starts below it.
+const fsTopInset = 42;
+
+// The brand cyan, fixed. This control floats over a full screen of terminal output, so it
+// takes its colour from the brand rather than the palette — which in light mode would be
+// near-black on a chip that is always dark, i.e. invisible.
+const FS_ACCENT = '#06B6D4';
 
 const styles = StyleSheet.create({
   safe: {flex: 1},
@@ -1005,7 +1029,10 @@ const styles = StyleSheet.create({
   // theme or a light one.
   fsBar: {
     position: 'absolute',
-    top: 8,
+    // Hard against the safe area. The 8pt it used to add put the control a visible
+    // distance below the Dynamic Island for no reason — the inset is already the whole
+    // clearance the island needs, and anything on top of it just reads as a gap.
+    top: 0,
     left: 10, // top-LEFT so it doesn't collide with the chat's top-right collapse bar
     zIndex: 10, // above the mode layers (layerOn uses zIndex:1) so it's tappable
     flexDirection: 'row',
@@ -1022,8 +1049,5 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     elevation: 6,
   },
-  fsBtn: {paddingHorizontal: 11, paddingVertical: 7},
-  // Fixed light text: this chip is ALWAYS dark, so it must never take its colour from
-  // the app palette (which would be near-black in light mode — invisible here).
-  fsBtnText: {color: '#FFFFFF', fontSize: 13, fontWeight: '600'},
+  fsBtn: {width: 36, height: 36, alignItems: 'center', justifyContent: 'center'},
 });
