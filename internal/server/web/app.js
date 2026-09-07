@@ -51,6 +51,55 @@
       .then(function (j) { token = j.token; try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} });
   }
 
+  // ---- language ---------------------------------------------------------
+  //
+  // The browser mirror is the ONE surface you hand to someone else: a share link goes to
+  // a guest, who is the person least likely to read the host's language. It had drifted
+  // into Chinese-only chrome anyway — the gate screen and the connection tooltip were
+  // bilingual, everything else was not — so an English reader opening a guest link met a
+  // page they could not operate.
+  //
+  // It follows the BROWSER's language, the way the phone follows the device's. There is
+  // no gtmux setting to read here: the page is opened by someone who may have no gtmux
+  // install at all. The gate screen keeps showing BOTH languages on purpose — it is the
+  // screen you photograph and send to whoever can fix it.
+  var ZH = /^zh\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
+  function T(en, zh) { return ZH ? zh : en; }
+
+  // Chrome that lives in index.html, labelled once at boot. Keeping the markup's text as
+  // the CHINESE half and translating in one place beats sprinkling data-en attributes
+  // through the HTML, and it puts every string a reader sees in one list.
+  var CHROME = [
+    ['panes-btn', {title: T('All panes', '所有 pane')}],
+    ['panes-title', {text: T('All panes', '所有 pane')}],
+    ['panes-search', {placeholder: T('⌕ session / command / directory', '⌕ 会话 / 命令 / 目录')}],
+    ['cmdk-input', {placeholder: T('⌘K · jump to a pane (name / agent / %id)', '⌘K · 跳到 pane（输入名称 / agent / %id）')}],
+    ['jump', {html: T('↓ Latest', '↓ 最新') + '<span class="jdot" hidden></span>'}],
+    ['pane-ro', {text: T('🔒 the host has not granted input on this pane', '🔒 host 未授予此 pane 的输入权限')}],
+    ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '贴齐网格'), title: T('Snap to grid', '贴齐网格')}],
+    ['wb-surface', {text: T('⤢ Auto-surface waiting', '⤢ 自动浮出 waiting'), title: T('Auto-surface waiting', '自动浮出 waiting')}],
+    ['wb-preset', {html: '▦ ' + T('Layout', '布局') + '<span id="wb-preset-cur"></span> ▾', title: T('Layout presets', '布局预设')}],
+  ];
+  function labelChrome() {
+    CHROME.forEach(function (row) {
+      var e = $(row[0]); if (!e) return;
+      var v = row[1];
+      if (v.html != null) e.innerHTML = v.html;
+      else if (v.text != null) e.textContent = v.text;
+      if (v.placeholder != null) e.placeholder = v.placeholder;
+      if (v.title != null) e.title = v.title;
+    });
+    document.querySelectorAll('#mode button').forEach(function (b) {
+      b.textContent = b.dataset.mode === 'term' ? T('Terminal', '终端') : T('Chat', '对话');
+    });
+    var hint = document.querySelector('.rail-hint');
+    if (hint) hint.textContent = T('Drag a pane onto the board · double-click for full screen', '拖 pane 到画板 · 双击全屏');
+    var lead = document.querySelector('.rb-lead');
+    if (lead) lead.textContent = T('view-only · reply on this pane:', 'view-only · 在此 pane 回应：');
+    var rhint = document.querySelector('.rb-hint');
+    if (rhint) rhint.textContent = T('→ send from your phone or Mac, or scan to take over', '→ 用手机/Mac 发送，或扫码接管');
+  }
+
   // ---- helpers ----------------------------------------------------------
   function show(which) { ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
   // GATE states. Each says what the situation IS and the one thing to do about it, in
@@ -121,7 +170,7 @@
   }
   var connFails = 0;
   function connStateFor(ok) { if (ok) { connFails = 0; return 'live'; } connFails++; return connFails === 1 ? 'retry' : 'off'; }
-  var CONN_TITLE = {live: '已连接 / connected', retry: '重连中 / reconnecting…', off: '离线 / offline'};
+  var CONN_TITLE = {live: T('connected', '已连接'), retry: T('reconnecting…', '重连中'), off: T('offline', '离线')};
   function renderConn(el, st) { el.className = 'conn ' + st; el.textContent = serverLabel(); el.title = CONN_TITLE[st] || ''; }
   function setConn(ok) { renderConn($('conn'), connStateFor(ok)); }
   function isNative(a) { return a.source === 'native'; }
@@ -410,11 +459,11 @@
     if (sig === panesSig) return; // avoid repaint (+ losing focus) every poll
     panesSig = sig;
     $('panes-count').textContent = (q ? shown + '/' + panesRows.length : String(panesRows.length)) +
-      ' pane · ' + order.length + ' 会话';
+      T(' panes · ', ' pane · ') + order.length + T(' sessions', ' 会话');
     var root = $('panes-list'); root.innerHTML = '';
     if (!order.length) {
       var e = document.createElement('div'); e.className = 'pb-empty';
-      e.textContent = q ? '没有匹配的 pane' : 'no tmux panes';
+      e.textContent = q ? T('no matching pane', '没有匹配的 pane') : T('no tmux panes', '没有 tmux pane');
       root.appendChild(e); return;
     }
     order.forEach(function (sess) {
@@ -680,13 +729,13 @@
   }
   function showPaneLoader() {
     hidePaneLoader();
-    var el = brandLoaderEl('正在拉取屏幕…'); el.id = 'pane-load';
+    var el = brandLoaderEl(T('fetching the screen…', '正在拉取屏幕…')); el.id = 'pane-load';
     $('pane').appendChild(el);
   }
   function hidePaneLoader() { var e = $('pane-load'); if (e) e.remove(); }
   function showChatLoader() {
     hideChatLoader();
-    var el = brandLoaderEl('正在拉取对话…'); el.id = 'chat-load';
+    var el = brandLoaderEl(T('fetching the conversation…', '正在拉取对话…')); el.id = 'chat-load';
     $('chat').appendChild(el);
   }
   function hideChatLoader() { var e = $('chat-load'); if (e) e.remove(); }
@@ -717,7 +766,7 @@
       el.hidden = !SHARE.known;
       if (!SHARE.known) return;
       el.classList.toggle('id-owner', !!SHARE.all);
-      el.textContent = SHARE.all ? '全权 · ' + (location.hostname || 'local') : '协作视图 · 访客';
+      el.textContent = SHARE.all ? T('full access · ', '全权 · ') + (location.hostname || 'local') : T('shared view · guest', '协作视图 · 访客');
     });
   }
 
@@ -735,8 +784,9 @@
     el.hidden = false;
     // zh to match the rest of the page (the web mirror is Chinese-primary; this line
     // was the sole English holdout — bilingual 铁律).
-    el.textContent = '协作视图 · 访客 · ' + SHARE.viewCount + ' 个会话可见 · ' +
-      SHARE.typeCount + ' 个可输入 —— 由 host 授权，可随时吊销';
+    el.textContent = ZH
+      ? '协作视图 · 访客 · ' + SHARE.viewCount + ' 个会话可见 · ' + SHARE.typeCount + ' 个可输入 —— 由 host 授权，可随时吊销'
+      : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' typable — granted by the host, revocable at any time';
   }
   function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
   // setCapChip paints a ⌨可输入/👁只读 capability chip (WEB §11 — always explicit,
@@ -745,7 +795,7 @@
     if (!el) return;
     el.classList.toggle('cap-in', can);
     el.classList.toggle('cap-ro', !can);
-    el.textContent = can ? '⌨ 可输入' : '👁 只读';
+    el.textContent = can ? T('⌨ can type', '⌨ 可输入') : T('👁 read-only', '👁 只读');
   }
   function updateInputBar() {
     var bar = $('pane-input'); if (!bar) return;
@@ -824,12 +874,12 @@
 
     var attach = document.createElement('button');
     attach.type = 'button'; attach.className = 'cx-attach'; attach.textContent = '＋';
-    attach.title = '上传图片 / 文件';
+    attach.title = T('Upload an image or file', '上传图片 / 文件');
     attach.onclick = function (e) { e.stopPropagation(); file.click(); };
     file.onchange = function () { var f = file.files && file.files[0]; if (f) uploadInto(f); file.value = ''; };
 
     var ta = document.createElement('textarea');
-    ta.className = 'cx-input'; ta.rows = 1; ta.placeholder = '输入…';
+    ta.className = 'cx-input'; ta.rows = 1; ta.placeholder = T('Type…', '输入…');
     ta.autocomplete = 'off'; ta.spellcheck = false;
     function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(small ? 92 : 128, Math.max(small ? 30 : 38, ta.scrollHeight)) + 'px'; }
     ta.addEventListener('input', grow);
@@ -841,7 +891,7 @@
     });
 
     var send = document.createElement('button');
-    send.type = 'button'; send.className = 'cx-send'; send.textContent = '↵'; send.title = '发送 ⏎';
+    send.type = 'button'; send.className = 'cx-send'; send.textContent = '↵'; send.title = T('Send ⏎', '发送 ⏎');
     send.onclick = function (e) { e.stopPropagation(); submit(); };
 
     var row = document.createElement('div'); row.className = 'cx-row';
@@ -869,7 +919,7 @@
     function sayRefusal(r, restore) {
       if (!r) return;
       r.json().then(function (j) {
-        var why = (j && j.error) || ('发送失败（' + r.status + '）');
+        var why = (j && j.error) || (ZH ? '发送失败（' + r.status + '）' : 'send failed (' + r.status + ')');
         note.textContent = why;
         note.className = 'cx-note';
         note.hidden = false;
@@ -1803,6 +1853,7 @@
   function home() { if (isWide()) startWorkbench(); else startRadar(); }
 
   function boot() {
+    labelChrome(); // before anything renders, so no frame shows the untranslated markup
     $('back').onclick = function () { if (focusFromWB && isWide()) startWorkbench(); else startRadar(); };
     $('panes-btn').onclick = function () { openPanes(); };
     $('panes-back').onclick = function () { startRadar(); };
