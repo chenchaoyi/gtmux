@@ -171,14 +171,23 @@ export function ExitFullScreenIcon({size = 20, color = '#fff'}: {size?: number; 
   const s = size;
   return (
     <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <Path d="M10 4v6H4" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M3 3l7 7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-      <Path d="M14 4v6h6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M21 3l-7 7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-      <Path d="M10 20v-6H4" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M3 21l7-7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-      <Path d="M14 20v-6h6" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M21 21l-7-7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M9 4v5H4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M15 4v5h5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M9 20v-5H4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M15 20v-5h5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+// Arrow-to-bottom: a down arrow standing on a rule. A bare "↓" means scroll down; the
+// rule under it is what says END of the log, which is where this control actually goes.
+export function ArrowToBottomIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  const s = size;
+  return (
+    <Svg width={s} height={s} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 4v10.5" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M7.5 10.5L12 15l4.5-4.5" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M5.5 19.5h13" stroke={color} strokeWidth={2} strokeLinecap="round" />
     </Svg>
   );
 }

@@ -14,6 +14,17 @@ export const StatusColor: Record<StatusName, string> = {
 // the state palette so it can't be mistaken for waiting (red). Mirrors Theme.swift.
 export const ERRORED_COLOR = '#F59E0B'; // amber
 
+// The brand cyan, for gtmux's OWN floating controls (exit full screen, jump to bottom).
+//
+// Numerically the same value as STATUS.working, and that is not an accident — gtmux has
+// one accent — but it is a separate name because the two answer different questions:
+// STATUS.working says a pane is working, BRAND says "this control is ours".
+//
+// Only ever on a GLYPH or a hairline, never as a fill. A saturated cyan block floating
+// over a screen of terminal output reads as the status, and in this product colour is
+// supposed to mean only that.
+export const BRAND = '#06B6D4';
+
 // Section + sort order: needs-you → working → idle → running (DESIGN §3).
 export const statusRank: Record<StatusName, number> = {
   waiting: 0,
