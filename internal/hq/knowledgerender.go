@@ -51,7 +51,7 @@ func renderPromotionBrief(op knowledgeOp) string {
 	var b strings.Builder
 	b.WriteString(knowledgePromotionMarker + "\n")
 	b.WriteString("# promotion: " + op.Title + "\n\n")
-	b.WriteString("- id: `" + op.ID + "` · promoted " + time.Unix(op.PromotedAt, 0).UTC().Format("2006-01-02") + "\n")
+	b.WriteString("- id: `" + op.ID + "` · promoted " + stampDate(op.PromotedAt) + "\n")
 	if op.PromoteTarget != "" {
 		b.WriteString("- suggested landing: " + op.PromoteTarget + "\n")
 	}
@@ -110,9 +110,8 @@ func renderPromotions(live []knowledgeOp) error {
 
 func topicPath(topic string) string { return filepath.Join(hqKnowledgeDir(), topic+".md") }
 
-// renderTopic renders one topic's live entries (pure; deterministic — dates in
-// UTC so the bytes do not depend on the host timezone). desc is a declared
-// custom topic's one-line description ("" for built-ins).
+// renderTopic renders one topic's live entries (pure). desc is a declared custom topic's
+// one-line description ("" for built-ins).
 func renderTopic(topic, desc string, live []knowledgeOp) string {
 	var b strings.Builder
 	b.WriteString(knowledgeRenderMarker + "\n")
@@ -148,7 +147,7 @@ func renderTopic(topic, desc string, live []knowledgeOp) string {
 
 // provenanceFooter is the one-line evidence trail under each entry.
 func provenanceFooter(op knowledgeOp) string {
-	parts := []string{op.ID, time.Unix(op.At, 0).UTC().Format("2006-01-02")}
+	parts := []string{op.ID, stampDate(op.At)}
 	switch {
 	case len(op.Seqs) > 0:
 		strs := make([]string, len(op.Seqs))
@@ -283,4 +282,24 @@ func knowledgeDrift(live, custom []knowledgeOp) []string {
 		}
 	}
 	return drifted
+}
+
+// stampDate is the date an entry carries, in LOCAL time.
+//
+// It was UTC, for determinism: the same ledger would render to the same bytes whatever
+// the host's timezone. That bought nothing real — this base lives in one machine's home
+// and `render --check` regenerates it on that same machine, so local time is every bit as
+// deterministic there — and it cost a wrong date every night. East of UTC, everything
+// filed between local midnight and 08:00 was stamped with YESTERDAY, silently. Measured
+// on 2026-09-01: two entries written at 02:19 and 03:47 both carry 2026-08-31.
+//
+// The stamp is what a reader consults to tell two entries apart in time (the base says so
+// in as many words, after a decay sweep that learned it), so a date that is a day off is
+// not cosmetic — it is a live criterion quietly answering wrong.
+//
+// What UTC would still buy is a memory exported from one timezone and restored in
+// another: its first render there rewrites the dates. That is one churn, once, against a
+// wrong answer nightly.
+func stampDate(unix int64) string {
+	return time.Unix(unix, 0).Local().Format("2006-01-02")
 }

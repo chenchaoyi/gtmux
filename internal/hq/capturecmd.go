@@ -134,6 +134,10 @@ func parseCaptureInput(rest []string) (lesson, topic string, ok bool) {
 // slug lowercases a lesson and reduces it to a short, stable dedup token: alphanumerics
 // kept, every run of other characters becomes a single '-', capped to the first few words
 // so two phrasings of the same fact collide on the key.
+// untaggedSlug is what a title with no ASCII word produces. For a capture KEY that is a
+// fine bucket; for an ENTRY id it is not, and entryID refuses it — see knowledgecmd.go.
+const untaggedSlug = "untagged"
+
 func slug(s string) string {
 	var b strings.Builder
 	lastDash := true // trim leading dashes
@@ -155,7 +159,7 @@ func slug(s string) string {
 		out = strings.Join(parts[:6], "-")
 	}
 	if out == "" {
-		return "untagged"
+		return untaggedSlug
 	}
 	return out
 }
