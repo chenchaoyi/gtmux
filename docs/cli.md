@@ -1551,6 +1551,11 @@ gtmux hq --export ~/gtmux-hq.tar.gz   # the whole memory as one file
 gtmux hq --import ~/gtmux-hq.tar.gz   # put one back
 ```
 
+`gtmux hq --memory [--json]` says how much memory there is and whether anything at all
+carries it off this disk. The menu-bar reader shows the same line, from the same command,
+so the two surfaces cannot drift about the same number.
+
+
 The export is an ordinary tar.gz, **not a format of gtmux's own** — the case it exists
 for is the case where gtmux may not be there to read it back.
 

@@ -64,9 +64,12 @@ func TestHQMemoryRowDoesNotClaimAnOffMachineBackupItCannotSee(t *testing.T) {
 	// refuse to let the operator assume a protection that is not there — the machine
 	// this was written for had no Time Machine destination and no cloud folder, and
 	// nothing said so.
+	//
+	// The sentence lives in `hq` because TWO surfaces say it now, the doctor row and the
+	// menu bar's reader, and a paraphrase in either would be two answers to one question.
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	got := offMachineHint()
+	got := hq.OffMachineHint()
 	if strings.Contains(got, "Time Machine") || strings.Contains(got, "synced") || strings.Contains(got, "同步盘") {
 		t.Errorf("claimed a backup on a machine with none: %q", got)
 	}
@@ -74,7 +77,7 @@ func TestHQMemoryRowDoesNotClaimAnOffMachineBackupItCannotSee(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(home, "Dropbox"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if got := offMachineHint(); !strings.Contains(got, "synced") && !strings.Contains(got, "同步盘") {
+	if got := hq.OffMachineHint(); !strings.Contains(got, "synced") && !strings.Contains(got, "同步盘") {
 		t.Errorf("a synced folder was present and unmentioned: %q", got)
 	}
 }

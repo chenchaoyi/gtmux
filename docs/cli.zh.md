@@ -1407,6 +1407,10 @@ gtmux hq --export ~/gtmux-hq.tar.gz   # 整份记忆导成一个文件
 gtmux hq --import ~/gtmux-hq.tar.gz   # 还原一份
 ```
 
+`gtmux hq --memory [--json]` 会说记忆有多大，以及有没有任何东西把它带离这块盘。
+菜单栏的阅读器显示的是同一行、来自同一条命令，两块屏不会对同一个数字说不同的话。
+
+
 导出的是普通 tar.gz，**不是 gtmux 自己发明的格式** —— 因为它存在的那个场景里，gtmux 可能已经不在了。
 
 `--import` **绝不就地覆盖**：已有的记忆会被挪到 `hq.replaced-<时间戳>` 留底，路径会打印出来。

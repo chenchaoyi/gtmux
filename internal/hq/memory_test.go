@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -288,5 +289,38 @@ func TestPruneLeavesAHandfulAlone(t *testing.T) {
 	prunePlaybookBackups()
 	if left, _ := filepath.Glob(hqInstructionsPath() + ".bak-v*"); len(left) != 2 {
 		t.Errorf("pruned below the keep count: %v", left)
+	}
+}
+
+// `hq --memory --json` is what the menu bar reads, so its shape is a contract between two
+// surfaces — and the off-machine sentence in particular must be the SAME sentence the
+// doctor row prints, not a paraphrase that can drift from it.
+func TestMemoryJSONCarriesWhatASurfaceNeeds(t *testing.T) {
+	seedMemory(t)
+	out := captureStdout(t, func() { printMemoryState(true) })
+	var got memoryJSON
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("not JSON: %v (%q)", err, out)
+	}
+	if !got.Exists || got.Files != 4 || got.Bytes == 0 {
+		t.Errorf("state = %+v", got)
+	}
+	if got.OffMachine == "" {
+		t.Error("no off-machine sentence — the surface would silently claim nothing about protection")
+	}
+	if got.Root == "" {
+		t.Error("no root path")
+	}
+}
+
+func TestMemoryJSONOnAMachineWithNoSupervisor(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	out := captureStdout(t, func() { printMemoryState(true) })
+	var got memoryJSON
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("not JSON: %v", err)
+	}
+	if got.Exists {
+		t.Error("claimed a memory on a machine with none")
 	}
 }

@@ -25,14 +25,17 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -391,4 +394,67 @@ func (c *countingWriter) Write(p []byte) (int, error) {
 	n, err := c.w.Write(p)
 	c.n += int64(n)
 	return n, err
+}
+
+// OffMachineHint says, plainly, whether anything carries this memory off the disk.
+//
+// gtmux is not a backup product and will not pretend to be one; what it can do is refuse
+// to let the operator assume a protection that is not there. The machine this was written
+// for had no Time Machine destination and no cloud folder, and nothing said so.
+//
+// It lives here rather than in the doctor row because two surfaces ask now — the row and
+// the menu bar's reader — and the sentence must be the same one in both.
+func OffMachineHint() string {
+	if out, err := exec.Command("tmutil", "destinationinfo").Output(); err == nil &&
+		!strings.Contains(string(out), "No destinations") {
+		return i18n.Tr("Time Machine is configured", "已配置 Time Machine")
+	}
+	home := os.Getenv("HOME")
+	for _, d := range []string{
+		"Library/Mobile Documents/com~apple~CloudDocs", "Dropbox", "OneDrive", "Google Drive",
+	} {
+		if st, err := os.Stat(filepath.Join(home, d)); err == nil && st.IsDir() {
+			return i18n.Tr("a synced folder exists — put an export there", "有同步盘 —— 导一份过去")
+		}
+	}
+	return i18n.Tr("nothing carries it off this disk", "没有任何东西把它带离这块盘")
+}
+
+// memoryJSON is the shape `gtmux hq --memory --json` prints — what a surface needs to say
+// the same sentence the doctor row says, without re-deriving any of it.
+type memoryJSON struct {
+	Exists     bool   `json:"exists"`
+	Bytes      int64  `json:"bytes"`
+	Files      int    `json:"files"`
+	Snapshots  int    `json:"snapshots"`
+	LastSnapAt int64  `json:"last_snapshot_at,omitempty"`
+	OldestUnix int64  `json:"oldest_at,omitempty"`
+	OffMachine string `json:"off_machine"`
+	Root       string `json:"root"`
+}
+
+// printMemoryState reports what is at risk and what protects it.
+func printMemoryState(asJSON bool) int {
+	st := ReadMemoryState()
+	if asJSON {
+		b, err := json.Marshal(memoryJSON{
+			Exists: st.Exists, Bytes: st.Bytes, Files: st.Files, Snapshots: st.Snapshots,
+			LastSnapAt: st.LastSnapAt, OldestUnix: st.OldestUnix,
+			OffMachine: OffMachineHint(), Root: MemoryRoot(),
+		})
+		if err != nil {
+			return 1
+		}
+		fmt.Println(string(b))
+		return 0
+	}
+	if !st.Exists {
+		i18n.Say("no supervisor memory on this machine", "这台机器上没有中控记忆")
+		return 0
+	}
+	i18n.Say(fmt.Sprintf("%s · %d files · %d local snapshots · %s",
+		humanBytes(st.Bytes), st.Files, st.Snapshots, OffMachineHint()),
+		fmt.Sprintf("%s · %d 个文件 · %d 份本地快照 · %s",
+			humanBytes(st.Bytes), st.Files, st.Snapshots, OffMachineHint()))
+	return 0
 }

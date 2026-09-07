@@ -209,3 +209,26 @@ final class KnowledgeTopicsTests: XCTestCase {
         XCTAssertTrue(knowledgeTopics([]).isEmpty)
     }
 }
+
+// The menu bar was the only surface that could not export the supervisor's memory: the
+// CLI could, the phone could keep a copy, and the Mac app — running ON the machine where
+// the board and the base actually live, and whose whole job is reading them — could not.
+final class HQMemoryStateTests: XCTestCase {
+    func testSizeReadsAsASize() {
+        // The row says the SIZE, not a tick. "Exported" and "6 MB of irreplaceable notes
+        // are exported" are different sentences, and only the second says what a loss
+        // would cost. Same shape as the CLI's, so the two surfaces agree.
+        XCTAssertEqual(HQMemoryState(bytes: 6_275_975).sizeText, "6.0 MB")
+        XCTAssertEqual(HQMemoryState(bytes: 23_579).sizeText, "23 KB")
+        XCTAssertEqual(HQMemoryState(bytes: 12).sizeText, "12 B")
+    }
+
+    func testAMachineWithNoSupervisorIsNotAnError() {
+        // A fresh install has no HQ home. The bar says so and the button is disabled;
+        // nothing about that is a failure state.
+        let s = HQMemoryState()
+        XCTAssertFalse(s.exists)
+        XCTAssertEqual(s.snapshots, 0)
+        XCTAssertEqual(s.offMachine, "")
+    }
+}

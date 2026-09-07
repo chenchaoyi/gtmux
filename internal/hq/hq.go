@@ -681,12 +681,13 @@ func agentAliveByCmd(cmd string) bool {
 func CmdHQ(args []string) int {
 	agentCmd := ""
 	rotate := false
-	board := false     // --board: print the situation board instead of opening HQ
-	boardJSON := false // --json alongside --board, for a surface that wants the mtime too
-	home := false      // --home: print where a knowledge mutation has to run
-	exportTo := ""     // --export <path>: the memory as one portable file
-	importFrom := ""   // --import <path>: put one back
-	charterLang := ""  // --lang: the ONLY way the charter's language ever changes
+	board := false       // --board: print the situation board instead of opening HQ
+	boardJSON := false   // --json alongside --board, for a surface that wants the mtime too
+	home := false        // --home: print where a knowledge mutation has to run
+	memoryState := false // --memory: what is at risk and what protects it
+	exportTo := ""       // --export <path>: the memory as one portable file
+	importFrom := ""     // --import <path>: put one back
+	charterLang := ""    // --lang: the ONLY way the charter's language ever changes
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
@@ -714,6 +715,8 @@ func CmdHQ(args []string) int {
 				"  --board [--json]：打印态势板（只读），不打开中控。")
 			i18n.Say("  --home: print the HQ home — where a `gtmux knowledge` mutation has to run.",
 				"  --home：打印中控目录 —— `gtmux knowledge` 的写操作必须在那里执行。")
+			i18n.Say("  --memory [--json]: how much memory there is, and whether anything carries it off this disk.",
+				"  --memory [--json]：记忆有多大，以及有没有任何东西把它带离这块盘。")
 			i18n.Say("  --export PATH: write the whole memory (board + knowledge + LOCAL.md) to one file.",
 				"  --export 路径：把整份记忆（态势板 + 知识库 + LOCAL.md）导出成一个文件。")
 			i18n.Say("  --import PATH: restore one. An existing memory is moved aside, never overwritten.",
@@ -725,6 +728,8 @@ func CmdHQ(args []string) int {
 			board = true
 		case a == "--home":
 			home = true
+		case a == "--memory":
+			memoryState = true
 		case a == "--export":
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux hq: --export needs a path", "gtmux hq: --export 需要一个路径")
@@ -777,6 +782,9 @@ func CmdHQ(args []string) int {
 	}
 	if home {
 		return printHQHome()
+	}
+	if memoryState {
+		return printMemoryState(boardJSON)
 	}
 	if exportTo != "" {
 		return exportMemoryCmd(exportTo)
