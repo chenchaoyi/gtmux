@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.99.0',
+    en: [
+      'The situation board no longer shows the note its author leaves for whoever edits it next. It used to be the first line you read under a heading.',
+      'A folded pane on the board is a row rather than a boxed card, so a section of thirteen panes reads as a list you can scan instead of a stack of boxes.',
+    ],
+    zh: [
+      '态势板不再把作者留给下一个编辑者的备注渲染出来，那句话以前就顶在标题下面第一行。',
+      '板子上折起来的 pane 现在是一行、不是一个方框，十三个 pane 读起来是一份能扫的列表，不是一摞盒子。',
+    ],
+  },
+  {
     version: '0.98.0',
     en: [
       'Each pane on the situation board stays folded until you open it. A section of thirteen panes is thirteen rows you can scan, instead of several screens of text with the one you wanted somewhere inside.',
