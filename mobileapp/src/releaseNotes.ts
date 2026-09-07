@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.2',
+    en: [
+      'Full screen is actually full screen now. The top of the screen was holding about 100pt for a status bar that full screen had already hidden — portrait gains roughly eleven more lines of output, landscape about a quarter more reading area. The way out is a smaller, cleaner icon, and jumping back to the live tail is an arrow standing on a line.',
+    ],
+    zh: [
+      '全屏现在是真的全屏。屏幕顶部之前替一根全屏时早已隐藏的状态栏留着约 100pt —— 竖屏多出约十一行输出，横屏阅读区多出约四分之一。退出的图标更小更干净，回到实时尾部的按钮换成「箭头落在一根线上」。',
+    ],
+  },
+  {
     version: '1.0.1',
     en: [
       'Leaving full screen is a small icon in the app\'s own blue instead of a button as wide as the words "Exit full screen", and it no longer floats a gap below the Dynamic Island.',
