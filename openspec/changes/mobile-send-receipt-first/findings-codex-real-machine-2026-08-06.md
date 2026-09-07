@@ -66,7 +66,7 @@ the only "leave it alone" check is whether the draft already holds *this deliver
 (`:250`), not unrelated user content. On a fragment verdict, `clearedForRetry` issues a
 C-u, which clears the **whole line** (`:456`). Contrast the HQ-nudge path
 (`internal/hqnudge`), which is safe *because* it guards: it reads the box with
-`dispatch.DraftOf` first and, if a draft is present, queues its message instead of typing.
+`dispatch.DraftOfColored` first and, if a draft is present, queues its message instead of typing.
 **The nudge guards; `gtmux send` does not.** The code is agent-agnostic, so Claude is
 subject to the same risk (code-read only; no live Claude draft was touched) — only modulated
 by render speed.

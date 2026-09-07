@@ -6,8 +6,9 @@
 // was mid-typing in HQ when a nudge fired, the nudge text concatenated onto the draft
 // AND the trailing Enter submitted the user's half-written command. Data loss.
 //
-// The guard: before typing, read the HQ input box (reusing the #393 dispatch region
-// detector via dispatch.DraftOf) and check the pane isn't in tmux copy-mode. Deliver
+// The guard: before typing, read the HQ input box (through dispatch.BoxEmpty — the one
+// answer to "may I type here?" for every writer, over the #393 region detector and the
+// faint-aware DraftOfColored) and check the pane isn't in tmux copy-mode. Deliver
 // ONLY when the box is confirmed empty over TWO frames a short interval apart and the
 // pane is not scrolling; otherwise the nudge is queued to disk and NOTHING is typed. A
 // queued nudge is flushed (coalesced) on the next empty box — the next injection
