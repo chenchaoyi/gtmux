@@ -600,7 +600,7 @@ an unsubmitted composer fire NO gtmux hook, so the radar read the pane `idle`, a
 `taskStatusFor("idle")` mapped idle → `done` unconditionally — no `waiting` wake either.
 **Fix (v0.28.9, stuck-dispatch-waiting):** a narrow screen-content guard — for a TRACKED
 dispatch whose capture shows a startup/permission gate (`prompt.IsStartupGate`, per-agent)
-or a structured non-empty draft (`dispatch.DraftOf`) — reclassifies it `waiting` (kind
+or a structured non-empty draft (`dispatch.DraftOfColored`) — reclassifies it `waiting` (kind
 `startup`/`draft`), never `done`. The serve slow-tick writes the marker + fires a
 `waiting` wake so HQ unblocks it; `wakeDone` also skips `done` when the post-Stop screen
 is a gate/draft. All other waiting stays hook-driven. **Unstick now:** answer the gate /

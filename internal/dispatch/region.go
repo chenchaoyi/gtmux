@@ -13,18 +13,16 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/ansi"
 )
 
-// DraftOf returns the input-box draft text of a full-screen capture and whether a
-// structured input region (a box or recognized prompt) was located. It reuses the
-// #393 region detector — the same primitive Deliver's screen-read fallback uses — so
-// the HQ-nudge draft-guard shares ONE definition of "what is a draft". `structured`
-// is false when no input box is locatable (a plain shell, a full-screen view): the
-// caller then cannot confirm the box is empty and MUST NOT type into it.
-func DraftOf(capture string) (draft string, structured bool) {
-	_, draft, structured = SplitInputRegion(capture)
-	return draft, structured
-}
-
-// DraftOfColored is the faint-aware DraftOf: given a COLOR capture (`capture-pane -e`),
+// DraftOfColored answers "is there an unsubmitted draft in this pane's input box?".
+//
+// It takes a COLOR capture (`capture-pane -e`) and is the ONLY answer to that question.
+// A plain-capture twin existed and was deleted in the 2026-09-07 audit: it had no caller
+// left, and keeping it around was a trap rather than a convenience — the plain capture
+// strips the SGR-faint markers, so Claude's dim ghost suggestion reads as a typed draft,
+// which is exactly the v0.46.2 bug where every send refused with "someone is typing".
+// Anything asking about a draft wants this function, or `BoxEmpty` above it.
+//
+// Given a COLOR capture (`capture-pane -e`),
 // it EXCLUDES any text the agent renders FAINT (SGR 2) before locating the draft — that
 // is Claude Code's suggested-next-command GHOST text (a dim autosuggestion that needs a
 // key to accept), which is NOT user input. On a plain CaptureFull the faint markers are

@@ -13,7 +13,12 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-var paneIDRe = regexp.MustCompile(`^%[0-9]+`)
+// A tmux pane id is `%` followed by digits and NOTHING else. Anchored at both ends: the
+// id arrives from POST /api/focus, so it is remote input, and an unanchored pattern let
+// `%12x` through validation to fail later with "pane no longer exists" — an answer about
+// the wrong thing. (There is no injection either way: tmux is exec'd with separate
+// arguments, never through a shell.)
+var paneIDRe = regexp.MustCompile(`^%[0-9]+$`)
 
 // JumpPane selects a pane's window+pane in tmux and brings its terminal tab
 // forward (no output). Used by the watch TUI on Enter.

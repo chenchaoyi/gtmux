@@ -54,12 +54,6 @@ func NewClient(base, token string) *Client {
 	return &Client{base: strings.TrimRight(base, "/"), token: token, http: &http.Client{Timeout: setupTimeout}}
 }
 
-// Base is the resolved server URL (for building the WS attach URL).
-func (c *Client) Base() string { return c.base }
-
-// Token is the bearer (for the WS Authorization header).
-func (c *Client) Token() string { return c.token }
-
 // Health is a reachability check (unauthenticated).
 func (c *Client) Health(ctx context.Context) bool {
 	r, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base+"/api/health", nil)
