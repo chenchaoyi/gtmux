@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.98.0',
+    en: [
+      'Each pane on the situation board stays folded until you open it. A section of thirteen panes is thirteen rows you can scan, instead of several screens of text with the one you wanted somewhere inside.',
+      'A closed row shows where the pane is, so you can find the right one without opening any of them.',
+    ],
+    zh: [
+      '态势板上的每个 pane 默认折着，点开才展开。十三个 pane 的那一节现在是十三行、扫一眼就够，不再是好几屏字、而你要找的那个埋在里面。',
+      '折起来的行会显示这个 pane 在哪，不用挨个点开就能找到对的那个。',
+    ],
+  },
+  {
     version: '0.97.0',
     en: [
       'The situation board opens as a real outline. Every entry is its own row, so a long handoff section is no longer a wall of text to scroll past, or a screen of nothing. Opening one is instant now.',
