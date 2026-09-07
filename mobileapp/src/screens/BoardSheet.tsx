@@ -135,6 +135,7 @@ export function BoardSheet({
                         fontSize={13.5}
                         selectable
                         calmEmphasis
+                        foldRows
                       />
                     )}
                     {sec.children.map((kid, k) => {
@@ -161,6 +162,7 @@ export function BoardSheet({
                                 fontSize={13.5}
                                 selectable
                                 calmEmphasis
+                                foldRows
                               />
                             </View>
                           )}
