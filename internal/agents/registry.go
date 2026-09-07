@@ -89,7 +89,11 @@ var manifests = []Manifest{
 		// so the hook needed no new parsing. Transcript: the event-sourced
 		// agents/main/wire.jsonl under ~/.kimi-code/sessions/.
 		Key: "kimi", Label: "Kimi Code",
-		Detect: []string{"kimi"}, // icon: committed assets/agent-icons/kimi.png
+		// BOTH names, measured on a live pane: the launcher is `kimi` but the process
+		// it becomes is `kimi-code`, and the subtree match is exact — so a manifest
+		// carrying only the launcher name made a running Kimi pane INVISIBLE to the
+		// radar (0 rows against a real session).
+		Detect: []string{"kimi", "kimi-code"}, // icon: committed assets/agent-icons/kimi.png
 		Resume: []string{"kimi", "--session"}, Resource: "kimi",
 		HookDisplay: true, Hooked: true, Content: "kimi", Semantics: true,
 	},

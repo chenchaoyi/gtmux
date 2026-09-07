@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -426,6 +427,7 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 	if err := os.WriteFile(bak, body, 0o644); err != nil {
 		return err
 	}
+	prunePlaybookBackups()
 	if err := os.WriteFile(hqInstructionsPath(), []byte(playbookIn(writeLang)), 0o644); err != nil {
 		return err
 	}
@@ -1701,4 +1703,40 @@ func humanBytes(n int64) string {
 		return fmt.Sprintf("%d KB", n/(1<<10))
 	}
 	return fmt.Sprintf("%d B", n)
+}
+
+// playbookBackupsKeep is how many superseded playbooks are kept beside the live one.
+//
+// Keeping every upgrade was right while there were three of them. At twenty the HQ home
+// reads as a folder of debris, and a reader looking for the operator's own files has to
+// scroll past gtmux's. The backup exists so ONE bad upgrade can be undone, and that is
+// the most recent few; a playbook from twelve versions ago is not a thing anyone
+// restores, and the shipped one is in the binary anyway.
+const playbookBackupsKeep = 3
+
+// prunePlaybookBackups keeps the newest few and deletes the rest.
+//
+// Ordered by MODIFICATION TIME, not by the version in the name: the names sort
+// lexically, so `.bak-v9` would outrank `.bak-v22` and the prune would keep the oldest.
+func prunePlaybookBackups() {
+	m, _ := filepath.Glob(hqInstructionsPath() + ".bak-v*")
+	if len(m) <= playbookBackupsKeep {
+		return
+	}
+	type entry struct {
+		path string
+		at   int64
+	}
+	rows := make([]entry, 0, len(m))
+	for _, p := range m {
+		st, err := os.Stat(p)
+		if err != nil {
+			continue
+		}
+		rows = append(rows, entry{p, st.ModTime().Unix()})
+	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].at > rows[j].at })
+	for i := playbookBackupsKeep; i < len(rows); i++ {
+		_ = os.Remove(rows[i].path)
+	}
 }

@@ -70,6 +70,34 @@ GTMUX_INSTALL_MIRROR=https://my.mirror/  curl -fsSL ... | bash   # custom <prefi
 GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # GitHub only, no mirrors
 ```
 
+## Moving to a new Mac
+
+Two things are worth carrying, and only one of them is irreplaceable.
+
+**The supervisor's memory** — the situation board, the knowledge base, and your own
+`LOCAL.md`. Nothing regenerates this: the board is months of HQ's synthesis, and
+`LOCAL.md` is seeded once and never rewritten, so gtmux will not put it back for you.
+
+```sh
+# on the old Mac
+gtmux hq --export ~/gtmux-hq.tar.gz
+
+# on the new one, after installing gtmux
+gtmux hq --import ~/gtmux-hq.tar.gz
+gtmux hq                      # restart HQ so it reads the restored board
+```
+
+An import never overwrites in place: anything already there is moved to
+`hq.replaced-<timestamp>` and the path is printed.
+
+**Everything else is reproducible, so re-create rather than copy it.** Run
+`gtmux doctor --fix` on the new machine: it installs the agent hooks, set-titles,
+restore-after-reboot and the menu-bar app. Pair the phone again (`gtmux tunnel` or
+`gtmux serve`) rather than copying pairing records, so the old Mac's tokens do not
+stay valid on a machine you no longer use.
+
+`~/.local/share/gtmux/` holds live state (markers, events, snapshots). Leave it behind.
+
 ## Signing & permissions
 
 macOS ties granted permissions to the app's code signature. A **Developer
