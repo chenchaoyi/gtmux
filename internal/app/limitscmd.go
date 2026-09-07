@@ -45,7 +45,7 @@ func cmdLimits(args []string) int {
 		fmt.Println(string(b))
 		return 0
 	}
-	if len(r.Windows) == 0 {
+	if len(r.Windows) == 0 && len(r.Unknown) == 0 {
 		i18n.Say("No subscription-window data (is `claude -p /usage` reachable? see usage.json limitsCommand).",
 			"没有订阅窗口数据（`claude -p /usage` 能跑通吗？见 usage.json 的 limitsCommand）。")
 		return 0
@@ -66,6 +66,12 @@ func cmdLimits(args []string) int {
 		}
 		fmt.Println(line)
 	}
+	// An agent whose plan could not be read gets a LINE, not silence. A row that
+	// disappears and a plan that is fine look the same, and a Codex reading rolls over
+	// on its own the moment you stop using Codex for a day.
+	for _, u := range r.Unknown {
+		fmt.Println(unknownLine(u))
+	}
 	if r.Warn != "" {
 		i18n.Say("⚠ near the weekly cap: "+r.Warn, "⚠ 接近周额度上限："+r.Warn)
 	}
@@ -74,4 +80,20 @@ func cmdLimits(args []string) int {
 		i18n.Say(fmt.Sprintf("(updated %dm ago)", age), fmt.Sprintf("（%d 分钟前更新）", age))
 	}
 	return 0
+}
+
+// unknownLine says why an agent's plan is missing, and what brings it back.
+//
+// The reason arrives as a key ("rolled-over") and is turned into a sentence here, so the
+// wording lives in one place per language rather than inside the package that detected
+// it. An unrecognised key still prints the agent — a surface that says nothing is the
+// failure being fixed, so it must not be the fallback.
+func unknownLine(u limits.UnknownPlan) string {
+	switch u.Reason {
+	case "rolled-over":
+		return i18n.Tr(
+			"○ "+u.Agent+"  the window it last reported has ended — "+u.Agent+" writes its plan into a session log, so one turn brings the figure back",
+			"○ "+u.Agent+"  上次报告的窗口已经过去 —— "+u.Agent+" 把额度写在会话日志里，跑一轮就能重新读到")
+	}
+	return i18n.Tr("○ "+u.Agent+"  plan not readable right now", "○ "+u.Agent+"  当前读不到额度")
 }

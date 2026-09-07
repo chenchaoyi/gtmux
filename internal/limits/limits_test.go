@@ -551,3 +551,112 @@ func TestTimeoutDefaultsRatherThanMeaningNoLimit(t *testing.T) {
 		t.Errorf("commandTimeout = %v, want 5s", got)
 	}
 }
+
+// A Codex reading whose windows have all ended must SAY SO, not vanish.
+//
+// This is the 2026-09-07 report: Codex rows were on the usage screen one day and gone
+// the next, with nothing to distinguish "your plan is fine" from "gtmux stopped
+// reading it". Codex reports passively — it writes its windows into a session log when
+// it takes a turn — so a day without Codex is enough for its last reading to roll over.
+func writeCodexReading(t *testing.T, home string, mtime time.Time, primaryReset, secondaryReset int64) {
+	t.Helper()
+	day := filepath.Join(home, "sessions", "2026", "09", "06")
+	if err := os.MkdirAll(day, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	line := fmt.Sprintf(`{"timestamp":"2026-09-06T03:03:33.706Z","type":"event_msg","payload":{`+
+		`"type":"token_count","info":{"total_token_usage":{"input_tokens":1,"output_tokens":1}},`+
+		`"rate_limits":{"limit_id":"codex","primary":{"used_percent":0.0,"window_minutes":300,"resets_at":%d},`+
+		`"secondary":{"used_percent":1.0,"window_minutes":10080,"resets_at":%d},"plan_type":"plus"}}}`+"\n",
+		primaryReset, secondaryReset)
+	p := filepath.Join(day, "rollout-2026-09-06T10-55-54-abc.jsonl")
+	if err := os.WriteFile(p, []byte(line), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(p, mtime, mtime); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCodexRolledOverReportsItselfInsteadOfDisappearing(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	now := time.Unix(1_788_778_453, 0)
+	// Both windows ended: the 5-hour one yesterday, the weekly one this morning —
+	// the exact shape measured on the operator's machine.
+	writeCodexReading(t, home, now.Add(-31*time.Hour), now.Unix()-90_000, now.Unix()-25_000)
+
+	if wins, ok := codexWindows(now); ok || len(wins) != 0 {
+		t.Fatalf("an ended window must not be reported as live: %+v ok=%v", wins, ok)
+	}
+	if !codexUnknown(now) {
+		t.Fatal("Codex was used yesterday and its plan is unreadable — that has to be sayable")
+	}
+	got := unknownPlans(false, now)
+	if len(got) != 1 || got[0].Agent != "codex" || got[0].Reason != "rolled-over" {
+		t.Fatalf("unknown = %+v", got)
+	}
+}
+
+func TestCodexUnusedForAWeekStaysSilent(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	now := time.Unix(1_788_778_453, 0)
+	// Same ended reading, but from long enough ago that this account is not on the
+	// plan any more. A standing "unknown" would be a nag about a tool nobody uses.
+	writeCodexReading(t, home, now.Add(-30*24*time.Hour), now.Unix()-90_000, now.Unix()-25_000)
+
+	if codexUnknown(now) {
+		t.Fatal("a month-old reading is not news")
+	}
+	if got := unknownPlans(false, now); len(got) != 0 {
+		t.Fatalf("unknown = %+v, want none", got)
+	}
+}
+
+func TestNoCodexAtAllSaysNothing(t *testing.T) {
+	t.Setenv("CODEX_HOME", t.TempDir())
+	now := time.Unix(1_788_778_453, 0)
+	if codexUnknown(now) {
+		t.Fatal("an operator who does not use Codex must not be told about Codex")
+	}
+}
+
+// A live Codex window must reach the report even when the CLAUDE cache is fresh.
+//
+// Codex is read from a local file, so there is nothing to amortise by caching it — and
+// caching it was wrong twice: a window that had since ended kept being served until the
+// Claude cache expired, and a reading that had rolled over could not report itself,
+// because the cache-hit branch returned before anything looked at Codex.
+func TestFreshClaudeCacheStillRereadsCodex(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	now := time.Unix(1_788_778_453, 0)
+	cfg := Config{Command: "true", TTLMin: 15, NearPct: 90, NearMin: 5, WarnPct: 85}
+
+	// A cache that is FRESH by Claude's clock, and that still carries a Codex row from
+	// a window which has since ended.
+	save(Report{
+		At:    now.Unix() - 60,
+		TryAt: now.Unix() - 60,
+		Windows: []Window{
+			{Label: "claude week (all models)", PctUsed: 50, Agent: "claude"},
+			{Label: "codex week", PctUsed: 1, Agent: "codex", ResetUnix: now.Unix() - 25_000},
+		},
+	})
+	writeCodexReading(t, home, now.Add(-31*time.Hour), now.Unix()-90_000, now.Unix()-25_000)
+
+	r, ok := Get(cfg, false, now)
+	if !ok {
+		t.Fatal("report unavailable")
+	}
+	for _, w := range r.Windows {
+		if w.Agent == "codex" {
+			t.Fatalf("an ended Codex window was served from cache: %+v", w)
+		}
+	}
+	if len(r.Unknown) != 1 || r.Unknown[0].Agent != "codex" {
+		t.Fatalf("unknown = %+v, want codex", r.Unknown)
+	}
+}

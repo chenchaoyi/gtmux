@@ -73,19 +73,49 @@ type codexWindow struct {
 // codexWindows returns the newest rate-limit reading Codex has written, as
 // windows. ok=false when no recent session carries one.
 func codexWindows(now time.Time) ([]Window, bool) {
+	wins, _ := codexRead(now)
+	return wins, len(wins) > 0
+}
+
+// codexStaleFor is how recently Codex must have been used for a missing window to be
+// worth saying out loud.
+//
+// One week, matching the weekly window itself: if you ran Codex this week, a plan figure
+// that is not there is information. If you last ran it in June, you are not on the plan
+// this month and a standing "unknown" would be a nag about a tool you are not using.
+const codexStaleFor = 7 * 24 * time.Hour
+
+// codexRead is the whole outcome of looking for Codex's rate-limit reading: the windows
+// that are still LIVE, and whether a reading was found at all.
+//
+// The second value is the entire point. A reading whose windows have all ended is not
+// the same as no reading: the first means "you use Codex and gtmux cannot see your
+// current numbers", the second means "you do not use Codex". Collapsing them is what
+// made Codex vanish silently.
+func codexRead(now time.Time) (live []Window, foundRecently bool) {
 	for _, path := range recentCodexRollouts(codexScanFiles) {
-		if wins, ok := codexWindowsIn(path, now); ok {
-			return wins, true
+		wins, found, at := codexWindowsIn(path, now)
+		if !found {
+			continue // nulls, or an internal helper session — keep looking
 		}
+		// The newest reading is authoritative. An OLDER one cannot describe a window
+		// this one does not, so there is nothing to gain by scanning further back.
+		return wins, now.Sub(at) < codexStaleFor
 	}
 	return nil, false
 }
 
+// codexUnknown reports whether Codex's plan is unreadable AND worth saying so.
+func codexUnknown(now time.Time) bool {
+	live, recent := codexRead(now)
+	return recent && len(live) == 0
+}
+
 // codexWindowsIn reads one rollout's tail for its LAST rate-limit reading.
-func codexWindowsIn(path string, now time.Time) ([]Window, bool) {
+func codexWindowsIn(path string, now time.Time) (live []Window, found bool, at time.Time) {
 	fi, err := os.Stat(path)
 	if err != nil {
-		return nil, false
+		return nil, false, time.Time{}
 	}
 	from := fi.Size() - codexTailBytes
 	if from < 0 {
@@ -93,7 +123,7 @@ func codexWindowsIn(path string, now time.Time) ([]Window, bool) {
 	}
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, false
+		return nil, false, time.Time{}
 	}
 	if int64(len(b)) > from {
 		b = b[from:]
@@ -108,12 +138,25 @@ func codexWindowsIn(path string, now time.Time) ([]Window, bool) {
 		if json.Unmarshal([]byte(line), &l) != nil || l.Payload.Limits == nil {
 			continue
 		}
-		wins := codexToWindows(l.Payload.Limits.Primary, l.Payload.Limits.Secondary, now)
-		if len(wins) > 0 {
-			return wins, true
+		if !codexHasWindow(l.Payload.Limits.Primary, l.Payload.Limits.Secondary) {
+			continue // a reading with no window in it says nothing either way
+		}
+		// Found the newest real reading in this file. Its live windows may be empty —
+		// that is a fact about the plan, not a reason to keep searching.
+		return codexToWindows(l.Payload.Limits.Primary, l.Payload.Limits.Secondary, now), true, fi.ModTime()
+	}
+	return nil, false, time.Time{}
+}
+
+// codexHasWindow reports whether a reading names any window at all. Codex writes nulls
+// for a session billed outside a plan window, and for its own internal helper calls.
+func codexHasWindow(primary, secondary *codexWindow) bool {
+	for _, w := range []*codexWindow{primary, secondary} {
+		if w != nil && w.WindowMin != 0 {
+			return true
 		}
 	}
-	return nil, false
+	return false
 }
 
 func codexToWindows(primary, secondary *codexWindow, now time.Time) []Window {

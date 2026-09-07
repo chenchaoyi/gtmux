@@ -107,6 +107,25 @@ export interface PlanGroup {
   agent: string;
   name: string;
   windows: {name: string; pct: number; resetAt: string}[];
+  /**
+   * Set when this agent's plan could not be read at all, carrying the Mac's reason key.
+   *
+   * The group still appears, with its name and icon and no numbers. An agent that
+   * reports through its own session log goes quiet the moment it is not used — the last
+   * reading's windows roll over and every row for it vanishes, which reads as the app
+   * having broken. A group that says why is the difference.
+   */
+  unreadable?: string;
+}
+
+/** The sentence for a reason key. Unknown keys still say something: silence is the bug. */
+export function unreadableReason(reason: string, name: string, zh: boolean): string {
+  if (reason === 'rolled-over') {
+    return zh
+      ? `上次报告的窗口已经过去。${name} 把额度写在会话日志里，跑一轮就能重新读到。`
+      : `The window it last reported has ended. ${name} writes its plan into a session log, so one turn brings the figure back.`;
+  }
+  return zh ? '现在读不到额度。' : 'Its plan is not readable right now.';
 }
 
 /**
@@ -136,6 +155,12 @@ export function planByAgent(u: UsageReport | null): PlanGroup[] {
       out.push({agent, name: names[agent] ?? agent, windows: []});
     }
     out[i].windows.push({name, pct: w.pct_used, resetAt: w.reset_at});
+  }
+  // Agents the Mac could not read a plan for, appended as their own groups. Never
+  // merged into one that has windows: an agent is either readable or it is not.
+  for (const gap of u?.limits?.unknown ?? []) {
+    if (at.has(gap.agent)) continue;
+    out.push({agent: gap.agent, name: names[gap.agent] ?? gap.agent, windows: [], unreadable: gap.reason});
   }
   return out;
 }
