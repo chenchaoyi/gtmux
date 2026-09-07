@@ -10,6 +10,7 @@
 package limits
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -37,10 +38,22 @@ type Window struct {
 }
 
 // Report is the cached limits snapshot.
+//
+// `At` and `TryAt` are deliberately separate. `At` is the last SUCCESS and is what
+// freshness is measured from, so a failure must never advance it — otherwise a bad
+// reading would be cached as good. `TryAt`/`Fails` are the last ATTEMPT, and they are
+// what stops a failing command from being retried on every poll. Keeping only the
+// first pair is what produced the 2026-09-07 incident: 94 headless `claude -p /usage`
+// sessions in 47 minutes, one every ten seconds, for as long as the command kept
+// failing.
 type Report struct {
 	Windows []Window `json:"windows"`
 	At      int64    `json:"at"`   // epoch seconds the command last ran ok
 	Warn    string   `json:"warn"` // the first window over the warn threshold, "" = fine
+	// TryAt is the last attempt, successful or not; Fails counts the consecutive
+	// failures since the last success. Both are retry bookkeeping, never displayed.
+	TryAt int64 `json:"try_at,omitempty"`
+	Fails int   `json:"fails,omitempty"`
 }
 
 // Config controls the command + cadence + thresholds (from usage.json).
@@ -50,10 +63,13 @@ type Config struct {
 	NearMin int    // TTL when a window is near its cap (default 5)
 	NearPct int    // "near" fraction (default 70)
 	WarnPct int    // warn threshold (default 85)
+	// TimeoutSec bounds ONE run of the command (default 60). A healthy `/usage`
+	// answers in about ten seconds; this is the backstop for one that never does.
+	TimeoutSec int
 }
 
 // DefaultConfig is used when usage.json carries no limits keys.
-var DefaultConfig = Config{Command: "claude -p /usage", TTLMin: 15, NearMin: 5, NearPct: 70, WarnPct: 85}
+var DefaultConfig = Config{Command: "claude -p /usage", TTLMin: 15, NearMin: 5, NearPct: 70, WarnPct: 85, TimeoutSec: 60}
 
 // path of the cache file.
 func cachePath() string { return filepath.Join(state.Dir(), "limits.json") }
@@ -102,26 +118,32 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	if hasCache && !force && Fresh(cached, cfg, now) {
 		return cached, true
 	}
-	wins, err := runAndParse(cfg.Command)
+	// A command that keeps failing must not be re-run on every poll. Skipping the
+	// SAVE on failure (below) is right — a failure must never be cached as fresh —
+	// but on its own it turns "refresh every 15 minutes" into "refresh whenever
+	// anyone asks", because the cache stays stale by construction. On 2026-09-07 an
+	// upstream outage did exactly that: 94 headless `claude -p /usage` sessions in 47
+	// minutes, roughly one every ten seconds, until the outage ended.
+	if !force && inBackoff(cached, cfg, now) {
+		return withCodex(cached, hasCache, cfg, now)
+	}
+	wins, err := runAndParse(cfg.Command, cfg)
 	if err != nil || len(wins) == 0 {
 		// The command is Claude's only route, and it fails for ordinary reasons —
 		// `claude` missing from a launchd PATH is the one observed on this machine,
-		// where `gtmux serve` runs with PATH=/usr/bin:/bin:/usr/sbin:/sbin.
+		// where `gtmux serve` runs with PATH=/usr/bin:/bin:/usr/sbin:/sbin; an
+		// upstream outage is the other.
 		//
 		// So ADD Codex's windows to the last good snapshot rather than replacing it.
 		// Replacing made a transient failure delete Claude's plan from every surface
 		// until the command worked again — the same loss `TestGetKeepsLastGoodCacheOnFailure`
 		// exists to prevent, reintroduced by a path that did not exist when it was written.
 		//
-		// Not saved, deliberately: writing a fresh `At` here would mark a snapshot
-		// built from a FAILURE as fresh and stop the command being retried for the
-		// whole TTL.
-		cx, ok := codexWindows(now)
-		if !ok {
-			return cached, hasCache
-		}
-		merged := append(othersThan("codex", cached.Windows), cx...)
-		return Report{Windows: merged, At: cached.At, Warn: warnOf(merged, cfg.WarnPct)}, true
+		// The WINDOWS and `At` are still not saved, deliberately: writing a fresh `At`
+		// here would mark a snapshot built from a FAILURE as fresh. Only the attempt
+		// bookkeeping is written, which is what the next caller's backoff reads.
+		saveAttempt(cached, now)
+		return withCodex(cached, hasCache, cfg, now)
 	}
 	// The command route parses Claude's own `/usage` phrasing, so its windows are
 	// Claude's.
@@ -132,9 +154,70 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	if cx, ok := codexWindows(now); ok {
 		wins = append(wins, cx...)
 	}
-	r := Report{Windows: wins, At: now.Unix(), Warn: warnOf(wins, cfg.WarnPct)}
-	save(r)
+	r := Report{Windows: wins, At: now.Unix(), Warn: warnOf(wins, cfg.WarnPct), TryAt: now.Unix()}
+	save(r) // Fails resets to 0 by omission — one success clears the backoff
 	return r, true
+}
+
+// backoffFor is how long to wait before retrying after `fails` consecutive failures:
+// 1, 2, 5 minutes, then the normal TTL. It is CAPPED at the TTL on purpose — a command
+// that is simply broken should cost no more than one that is working, and no less
+// often either, so recovery is noticed within one ordinary refresh.
+func backoffFor(fails int, cfg Config) time.Duration {
+	ttlMin := cfg.TTLMin
+	if ttlMin <= 0 {
+		ttlMin = DefaultConfig.TTLMin
+	}
+	var m int
+	switch {
+	case fails <= 0:
+		return 0
+	case fails == 1:
+		m = 1
+	case fails == 2:
+		m = 2
+	case fails == 3:
+		m = 5
+	default:
+		m = ttlMin
+	}
+	if m > ttlMin {
+		m = ttlMin
+	}
+	return time.Duration(m) * time.Minute
+}
+
+// inBackoff reports whether the last attempt failed recently enough that the command
+// should not be run again yet.
+func inBackoff(r Report, cfg Config, now time.Time) bool {
+	if r.Fails <= 0 || r.TryAt == 0 {
+		return false
+	}
+	return now.Sub(time.Unix(r.TryAt, 0)) < backoffFor(r.Fails, cfg)
+}
+
+// saveAttempt records a FAILED attempt: the same windows and the same `At` as before,
+// with the retry bookkeeping advanced. Writing it is what makes the backoff hold across
+// processes — `gtmux serve`, the menu-bar app and the CLI each call Get from their own
+// process and share nothing but this file.
+func saveAttempt(cached Report, now time.Time) {
+	cached.TryAt = now.Unix()
+	cached.Fails++
+	save(cached)
+}
+
+// withCodex returns the last good snapshot with Codex's windows grafted on, which is
+// the best answer available when Claude's command did not run.
+func withCodex(cached Report, hasCache bool, cfg Config, now time.Time) (Report, bool) {
+	cx, ok := codexWindows(now)
+	if !ok {
+		return cached, hasCache
+	}
+	merged := append(othersThan("codex", cached.Windows), cx...)
+	return Report{
+		Windows: merged, At: cached.At, Warn: warnOf(merged, cfg.WarnPct),
+		TryAt: cached.TryAt, Fails: cached.Fails,
+	}, true
 }
 
 // warnOf returns the first weekly window at/over the warn threshold ("" = fine).
@@ -190,13 +273,35 @@ func save(r Report) {
 
 // runAndParse executes the command (via the login shell so an env-prefixed
 // string like `HTTPS_PROXY=… claude -p /usage` works) and parses its stdout.
-func runAndParse(command string) ([]Window, error) {
-	cmd := exec.Command(loginShell(), "-lc", agentenv.Wrap(command))
+//
+// BOUNDED, because this spawns a real agent session: a healthy `/usage` answers in
+// about ten seconds, and one that never answers used to be waited on forever, with
+// the next poll starting another beside it. `CommandContext` + `WaitDelay` is enough
+// here — unlike the abandon-the-process dance in `radar.boundedOutput`, which exists
+// for a `ps` that can wedge UNKILLABLY in an uninterruptible kernel read. A hung
+// `claude` is an ordinary userland process and dies when told.
+func runAndParse(command string, cfg Config) ([]Window, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout(cfg))
+	defer cancel()
+	cmd := exec.CommandContext(ctx, loginShell(), "-lc", agentenv.Wrap(command))
+	// Return once the kill has been sent rather than waiting on a child that is slow
+	// to die, and on its grandchildren (the shell's `claude`) not at all.
+	cmd.WaitDelay = 5 * time.Second
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
 	return parse(string(out)), nil
+}
+
+// commandTimeout bounds one run, defaulting when unset so a zero-valued Config (or an
+// old cached one) never means "no timeout".
+func commandTimeout(cfg Config) time.Duration {
+	s := cfg.TimeoutSec
+	if s <= 0 {
+		s = DefaultConfig.TimeoutSec
+	}
+	return time.Duration(s) * time.Second
 }
 
 // loginShell is the shell the limits command runs through.

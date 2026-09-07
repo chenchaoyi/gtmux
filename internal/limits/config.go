@@ -11,7 +11,8 @@ import (
 // defaults. `limitsCommand:""` disables the feature.
 //
 //	{"limitsCommand": "claude -p /usage", "limitsTTLMin": 15,
-//	 "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85}
+//	 "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85,
+//	 "limitsTimeoutSec": 60}
 func LoadConfig() Config {
 	cfg := DefaultConfig
 	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "usage.json"))
@@ -19,11 +20,12 @@ func LoadConfig() Config {
 		return cfg
 	}
 	var raw struct {
-		Command *string `json:"limitsCommand"`
-		TTLMin  *int    `json:"limitsTTLMin"`
-		NearMin *int    `json:"limitsTTLNearMin"`
-		NearPct *int    `json:"limitsNearPct"`
-		WarnPct *int    `json:"limitsWarnPct"`
+		Command    *string `json:"limitsCommand"`
+		TTLMin     *int    `json:"limitsTTLMin"`
+		NearMin    *int    `json:"limitsTTLNearMin"`
+		NearPct    *int    `json:"limitsNearPct"`
+		WarnPct    *int    `json:"limitsWarnPct"`
+		TimeoutSec *int    `json:"limitsTimeoutSec"`
 	}
 	if json.Unmarshal(b, &raw) != nil {
 		return cfg
@@ -42,6 +44,9 @@ func LoadConfig() Config {
 	}
 	if raw.WarnPct != nil && *raw.WarnPct > 0 {
 		cfg.WarnPct = *raw.WarnPct
+	}
+	if raw.TimeoutSec != nil && *raw.TimeoutSec > 0 {
+		cfg.TimeoutSec = *raw.TimeoutSec
 	}
 	return cfg
 }

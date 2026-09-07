@@ -1333,3 +1333,33 @@ guess into the authoritative answer, which is precisely the accident being preve
 
 **Must-check when HQ identity misbehaves:** whether TWO panes match the home. If so, the
 fallback is picking one by list order and no stamp will be written until that is resolved.
+
+## A failing `claude -p /usage` spawned 94 headless sessions in 47 minutes (2026-09-07)
+
+**Symptom.** The event stream filled with pane-less Claude Code `SessionStart`/`SessionEnd`
+pairs — 12–50s each, zero work recorded, often two in the same second, ~6 per minute,
+70+ within the hour. Nothing a person was doing.
+
+**What they were.** `gtmux serve`'s limits refresher running `claude -p /usage`. Each
+one leaves a 6-line transcript under `~/.claude/projects/-/<session>.jsonl` carrying
+`entrypoint: "sdk-cli"`, `cwd: "/"` (launchd has no working directory, hence no
+`$TMUX_PANE`), and the `/usage` output.
+
+**Root cause.** `limits.Get` refreshes when the cache is stale and, on failure,
+deliberately does NOT save — so a bad reading is never cached as fresh. Correct, but it
+had no partner rule: the cache therefore stays stale by construction, and the *next*
+caller refreshes again. With serve, the menu-bar app and the phone all asking, a
+persistent failure turned "refresh every 15 minutes" into "refresh on every poll". The
+trigger was an upstream outage (16 `server_error` StopFailures on the HQ pane in the
+same 08:45–09:47 window); it ended by itself when the API recovered.
+
+**Fixed** by recording the last ATTEMPT (`try_at`/`fails` in `limits.json`) separately
+from the last SUCCESS (`at`), backing off 1 → 2 → 5 → TTL minutes, and bounding each run
+with `limitsTimeoutSec` (default 60s; it had no timeout at all).
+
+**Must-check when it recurs.** Compare the hourly rate against the TTL — 4/hour is
+healthy, anything near 6/minute is the retry loop. `stat -f %Sm ~/.local/share/gtmux/limits.json`
+shows the last SUCCESS; `fails` in that file now shows whether it is backing off. And
+note the diagnostic trap: those transcripts all contain valid `/usage` text, because the
+slash command reads local files — the text proves nothing about the process's exit code,
+which is what gtmux actually judges on.
