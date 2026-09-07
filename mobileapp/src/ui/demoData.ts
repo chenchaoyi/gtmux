@@ -5,7 +5,7 @@
 // language + ordering (needs-you → working → idle → running → Elsewhere) is on display.
 
 import {Agent, PaneResponse, PaneRow, ReplyOption, TermTheme} from '../api/types';
-import {DigestRow, HQEvent, TranscriptTurn} from '../api/client';
+import {DigestRow, HQEvent, KnowledgeEntry, KnowledgeIndex, TranscriptTurn} from '../api/client';
 
 // SGR helpers so the demo terminal shows the flagship COLOR mirror (not flat grey):
 // the panes below carry real ANSI so NativeTerm/term.ts renders green ✓/+, red −,
@@ -413,4 +413,63 @@ export function demoPanes(): PaneRow[] {
     by.get(r.session)!.push(r);
   }
   return order.flatMap(s => by.get(s)!);
+}
+
+// The supervisor's knowledge base, for the tour.
+//
+// Without this the KB section of the HQ page was EMPTY in the demo — the demo client
+// simply had no `hqKnowledge`, the call threw, and the screen's `.catch(() => {})` turned
+// that into a blank panel. Everything gtmux says about a supervisor that learns was
+// therefore invisible to anyone evaluating the app, App Review included.
+export function demoKnowledge(zh: boolean): KnowledgeIndex {
+  const now = Math.floor(Date.now() / 1000);
+  const e = (
+    id: string,
+    topic: string,
+    title: string,
+    ageH: number,
+    over: Partial<KnowledgeEntry> = {},
+  ): KnowledgeEntry => ({id, topic, title, at: now - ageH * 3600, ...over});
+  return {
+    topics: [
+      {name: 'corrections', count: 3, builtin: true,
+        desc: zh ? '司令纠正过的判断' : 'judgements the commander corrected'},
+      {name: 'fleet', count: 2, desc: zh ? '这支队伍怎么运转' : 'how this fleet behaves'},
+      {name: 'ops', count: 1, desc: zh ? '发版与装机' : 'releasing and installing'},
+    ],
+    entries: [
+      e('k1', 'corrections', zh ? '「跑通了」不等于「验证过」——要贴命令输出' : '"it works" is not "verified" — paste the output', 3, {
+        pane: '%7', task: zh ? '接入付款回调' : 'wire the payment callback',
+      }),
+      e('k2', 'corrections', zh ? '发版前先问一句，别自己决定装机' : 'ask before installing, never decide it alone', 26, {
+        promoted_at: now - 20 * 3600,
+        promote_why: zh ? '这条已经纠正过两次' : 'corrected twice now',
+        promote_target: 'AGENTS.md',
+      }),
+      e('k3', 'fleet', zh ? 'web 那条线的测试要跑两遍才稳' : 'the web suite only settles on a second run', 50),
+      e('k4', 'ops', zh ? '装机前确认手机没锁' : 'check the phone is unlocked before installing', 96, {
+        landed_at: now - 90 * 3600, landed_ref: 'AGENTS.md#install',
+      }),
+    ],
+    promotions: {pending: 1, oldest_sec: 20 * 3600},
+    candidates: {pending: 2, oldest_sec: 3 * 3600},
+  };
+}
+
+// humanReset formats a reset the way serve does — it forwards the string the agent
+// printed ("Sep 11 at 10:59pm"), never an epoch or an ISO timestamp.
+export function humanReset(ms: number): string {
+  const d = new Date(ms);
+  const mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  return `${mon} ${d.getDate()} at ${h}:${String(d.getMinutes()).padStart(2, '0')}${ampm}`;
+}
+
+/** The body of a knowledge entry, for the detail sheet. */
+export function demoKnowledgeBody(zh: boolean, e: KnowledgeEntry): string {
+  return zh
+    ? `**发生了什么**\n\n${e.title}。\n\n**下次怎么做**\n\n把结论和证据一起给出来，别只给结论。`
+    : `**What happened**\n\n${e.title}.\n\n**Next time**\n\nGive the evidence with the conclusion, not the conclusion alone.`;
 }

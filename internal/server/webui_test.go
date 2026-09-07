@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -78,5 +79,39 @@ func TestWebHandlerCacheBusting(t *testing.T) {
 	}
 	if cc := rr2.Header().Get("Cache-Control"); !strings.Contains(cc, "no-cache") {
 		t.Errorf("app.js Cache-Control missing no-cache: %q", cc)
+	}
+}
+
+// The browser mirror is the one surface you hand to SOMEONE ELSE.
+//
+// A share link goes to a guest, who is the person least likely to read the host's
+// language — and the page had drifted into Chinese-only chrome anyway: the gate screen
+// and the connection tooltip were bilingual, the rest was not. This pins that every
+// visible label has an English half, so the next label added in one language is a red
+// build rather than a page a guest cannot operate.
+func TestWebChromeIsNotChineseOnly(t *testing.T) {
+	js, err := webFS.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Every Chinese string a reader sees must be reachable through the language switch:
+	// either T(en, zh), or an explicit ZH ? … : … branch, or the GATE table (which shows
+	// BOTH languages on purpose — it is the screen you photograph and send on).
+	if !bytes.Contains(js, []byte("function T(en, zh)")) {
+		t.Fatal("the language helper is gone; every label would follow whatever the markup happens to say")
+	}
+	html, err := webFS.ReadFile("web/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Markup carries the Chinese half; app.js relabels at boot. A control whose id never
+	// appears in app.js is one nobody translates.
+	for _, id := range []string{"panes-title", "panes-search", "cmdk-input", "jump", "pane-ro", "wb-snap", "wb-surface", "wb-preset"} {
+		if !bytes.Contains(html, []byte(`id="`+id+`"`)) {
+			continue // the control was removed; nothing to translate
+		}
+		if !bytes.Contains(js, []byte("'"+id+"'")) {
+			t.Errorf("%s is in the page but never relabelled — an English reader sees the Chinese markup", id)
+		}
 	}
 }

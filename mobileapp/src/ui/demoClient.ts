@@ -7,9 +7,9 @@
 // server (F7②). State resets whenever a fresh client is made (each time Demo mode
 // is opened).
 
-import {GtmuxClient, DigestRow, HQBoard, HQEvent, TranscriptTurn, SendPayload, UsageReport} from '../api/client';
+import {GtmuxClient, DigestRow, HQBoard, HQEvent, KnowledgeEntry, KnowledgeIndex, TranscriptTurn, SendPayload, UsageReport} from '../api/client';
 import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
-import {sampleAgents, demoPanes, demoDigest, demoBoard, demoEvents, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme} from './demoData';
+import {sampleAgents, demoPanes, demoDigest, demoBoard, demoEvents, demoKnowledge, demoKnowledgeBody, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme, humanReset} from './demoData';
 
 // What the hero pane (%7) shows AFTER you approve running the tests.
 const TESTS_RAN =
@@ -26,6 +26,31 @@ const ARC_MS = 5000; // waiting → working dwell before idle+latest (per MOBILE
 // receives a fresh agent list whenever the scripted world changes, so the REAL
 // radar re-renders the status arc; without a listener the client still answers
 // consistently.
+/**
+ * What the tour deliberately does not answer.
+ *
+ * Each one either writes to a Mac that is not there (pairing, push registration, share
+ * administration) or acts on the host (focus). A stub that appears to succeed would be
+ * worse than the call not existing.
+ */
+type NotInDemo =
+  | 'devices'
+  | 'enrollMint'
+  | 'focus'
+  | 'registerActivityToken'
+  | 'registerPush'
+  | 'unregisterPush'
+  | 'sendResult'
+  | 'serverMode'
+  | 'serverModeOff'
+  | 'revokeShare'
+  | 'setShareEnabled'
+  | 'share'
+  | 'shareConfig'
+  | 'shareLink'
+  | 'shareNew'
+  | 'shareSet';
+
 export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) => void): GtmuxClient {
   const typed: Record<string, TranscriptTurn[]> = {};
   const answered = new Set<string>();
@@ -53,7 +78,17 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     }, ARC_MS);
   };
 
-  const fake: Partial<GtmuxClient> = {
+  // NOT `Partial<GtmuxClient>`. Partial let the demo silently fall behind the real
+  // client: a method the tour never implemented simply threw, the screen's `.catch`
+  // swallowed it, and the panel rendered empty — which is how the whole knowledge base
+  // came to be invisible in the demo without anyone noticing.
+  //
+  // Everything not named below MUST be implemented, so adding a client method is a
+  // compile error here until someone decides what the tour should show.
+  const fake: Omit<GtmuxClient, NotInDemo> = {
+    // No Mac behind this one. Anything building a URL from it would be reaching for a
+    // server that does not exist, so it is empty rather than plausible.
+    base: '',
     async agents(): Promise<Agent[]> {
       return currentAgents();
     },
@@ -92,6 +127,18 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     async hqBoard(): Promise<HQBoard> {
       return demoBoard(lang === 'zh');
     },
+    async hqKnowledge(): Promise<KnowledgeIndex> {
+      return demoKnowledge(lang === 'zh');
+    },
+    async hqKnowledgeEntry(id: string): Promise<KnowledgeEntry | null> {
+      const e = demoKnowledge(lang === 'zh').entries.find(x => x.id === id);
+      return e ? {...e, body: demoKnowledgeBody(lang === 'zh', e)} : null;
+    },
+    async hqKnowledgeAct(): Promise<{ok: true} | {ok: false; error: string}> {
+      // The tour must not pretend to write to a Mac that is not there. Refusing in
+      // words beats a button that appears to work.
+      return {ok: false as const, error: lang === 'zh' ? '演示模式不写入' : 'demo mode does not write'};
+    },
     async hqEvents(severity = 'notable', limit = 40): Promise<HQEvent[]> {
       const rank: Record<string, number> = {routine: 0, notable: 1, important: 2};
       const floor = rank[severity] ?? 0;
@@ -103,11 +150,29 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     // (subscription window %, disk/mem, per-row `62% · 5.1k`) aren't blank — that
     // telemetry is the chief-of-staff's whole edge.
     async usage(): Promise<UsageReport> {
+      // Shaped like the real report, because the demo is what an evaluator sees. It had
+      // drifted on three counts: window labels were bare ("5h", "week") where every real
+      // label names WHOSE plan it is, no `agent` field at all so the sheet grouped them
+      // under a nameless agent, and `reset_at` was an ISO timestamp where serve sends the
+      // human string it read ("Sep 11 at 10:59pm"). It also carried no sessions or
+      // totals, so the body of the usage sheet was empty in the tour.
+      const at = (h: number) => humanReset(Date.now() + h * 3600e3);
       return {
+        sessions: [
+          {agent_key: 'claude', tok: 2_851_826, rate: 4_100, usage_warn: 'ctx 94%'},
+          {agent_key: 'claude', tok: 830_004, rate: 0},
+          {agent_key: 'codex', tok: 143_620, rate: 260},
+        ],
+        types: [
+          {agent_key: 'claude', sessions: 5, tok: 3_681_830, rate: 4_100},
+          {agent_key: 'codex', sessions: 1, tok: 143_620, rate: 260},
+        ],
         limits: {
+          at: Math.floor(Date.now() / 1000) - 240,
           windows: [
-            {label: '5h', pct_used: 62, reset_at: new Date(Date.now() + 2.4 * 3600e3).toISOString()},
-            {label: 'week', pct_used: 41, reset_at: new Date(Date.now() + 3.5 * 24 * 3600e3).toISOString()},
+            {label: 'claude session', pct_used: 62, reset_at: at(2.4), agent: 'claude'},
+            {label: 'claude week (all models)', pct_used: 41, reset_at: at(3.5 * 24), agent: 'claude'},
+            {label: 'codex week', pct_used: 18, reset_at: at(4 * 24), agent: 'codex'},
           ],
         },
         resource: {machine: {disk_free_gb: 84, mem_free_pct: 38, mem_tier: 'ok', warn: ''}},
@@ -137,5 +202,5 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
       return '~/Uploads/demo.png';
     },
   };
-  return fake as unknown as GtmuxClient;
+  return fake as GtmuxClient;
 }

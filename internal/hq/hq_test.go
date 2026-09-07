@@ -706,6 +706,17 @@ func TestAgentAliveByCmd(t *testing.T) {
 			t.Errorf("agentAliveByCmd(%q) = false, want true (a non-shell foreground = agent running)", c)
 		}
 	}
+	// gtmux is never the evidence that a supervisor is running.
+	//
+	// Sitting in the HQ home at a bare prompt and typing `gtmux hq` makes the pane's
+	// foreground command "gtmux" — not a shell, so the old rule read it as a live agent,
+	// in the very pane the person was typing in. They were told a supervisor was already
+	// running and taken to their own shell, and none was started (report, 2026-09-07).
+	for _, c := range []string{"gtmux", "gtmux hq", "/usr/local/bin/gtmux", "gtmux  hq --rotate"} {
+		if agentAliveByCmd(c) {
+			t.Errorf("agentAliveByCmd(%q) = true — that is gtmux's own process, not a supervisor", c)
+		}
+	}
 }
 
 // The first-person guard (hq-first-person): the seeds and playbook speak to ANY

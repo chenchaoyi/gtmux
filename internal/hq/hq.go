@@ -666,15 +666,38 @@ Declare your own topics with: gtmux knowledge topic <name> --desc "..."
 // supervisor exited (the user quit it) — so `gtmux hq` should relaunch it, not focus a
 // dead prompt. Missing pane / no command reads as not-alive.
 func hqAgentAlive(pane string) bool {
+	// The SUBTREE first: is a known agent actually running under this pane?
+	//
+	// The foreground command alone cannot answer it. It is unreliable in both
+	// directions — a live Claude pane reports its VERSION ("2.1.220"), not "claude", so
+	// a name test would call a running supervisor dead; and anything that is not a shell
+	// passes, so `gtmux hq` typed at a bare prompt in the HQ home made GTMUX ITSELF the
+	// evidence that a supervisor was running. The operator got "already running, taking
+	// you there" and no supervisor (report, 2026-09-07).
+	//
+	// A subtree walk answers the question that was actually being asked. It also gets
+	// the case where HQ shells out `gtmux hq` from inside itself right: the agent is
+	// still its own ancestor there, so it correctly reads as alive.
+	if key := radar.AgentDriverKey(pane); key != "" {
+		return true
+	}
 	return agentAliveByCmd(tmux.Display(pane, "#{pane_current_command}"))
 }
 
-// agentAliveByCmd is the pure decision: a live agent's foreground command is anything
-// that isn't an interactive shell (or empty). Split out so the "dead HQ pane →
-// relaunch" behavior is unit-tested independent of tmux.
+// agentAliveByCmd is the FALLBACK decision, for a pane whose subtree named no known
+// agent: a live agent's foreground command is anything that is not an interactive shell
+// and is not gtmux itself.
+//
+// Kept because the agent registry cannot know every agent anyone runs, so "something
+// that is not a shell is holding this pane" remains useful evidence. gtmux is excluded
+// by name because gtmux running in a pane says only that someone typed a gtmux command
+// there — which is precisely what the person asking this question just did.
 func agentAliveByCmd(cmd string) bool {
 	cmd = strings.TrimSpace(cmd)
-	return cmd != "" && !isShellCommand(cmd)
+	if cmd == "" || isShellCommand(cmd) {
+		return false
+	}
+	return filepath.Base(strings.Fields(cmd)[0]) != "gtmux"
 }
 
 // CmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
