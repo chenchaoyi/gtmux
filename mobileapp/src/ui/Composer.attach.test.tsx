@@ -6,10 +6,13 @@ import {Composer} from './Composer';
 import {ImageMarkup} from './ImageMarkup';
 import {paletteFor} from './theme';
 
-// Attaching a photo used to cost four full-screen surfaces: the sheet, the system
-// picker, the markup editor, and back to the composer — for a screenshot you had already
-// taken and did not want to draw on. The editor now sits ON the staged thumbnail, where
-// it is one tap and optional (user report, 2026-09-07).
+// A picked photo opens the markup editor. That is the operator's call, made after one
+// release of the opposite (2026-09-07): they annotate most of what they send, so a
+// second tap to reach the editor would cost them one on nearly every photo to save one
+// on the rare bare screenshot.
+//
+// The editor is ALSO reachable from an already-staged thumbnail, which is what that
+// release left behind and what makes a photo re-annotatable.
 
 jest.mock('react-native-image-picker', () => ({
   launchImageLibrary: jest.fn(),
@@ -29,6 +32,10 @@ const mount = (extra: Record<string, unknown> = {}) => {
   live.push(tree!);
   return tree!;
 };
+
+/** Tap the first staged thumbnail to re-open the editor on it. */
+const annotate = (t: renderer.ReactTestRenderer) =>
+  t.root.findAll(n => String(n.props?.accessibilityLabel ?? '').startsWith('attach-annotate-') && typeof n.props.onPress === 'function')[0].props.onPress();
 
 const flush = async () => {
   // The send path is a chain of awaits (upload → send → clear). Two microtasks is not
@@ -55,8 +62,19 @@ const chooseLibrary = async (t: renderer.ReactTestRenderer) => {
   await flush();
 };
 
-const thumbs = (t: renderer.ReactTestRenderer) =>
-  t.root.findAllByType(Image).filter(n => typeof n.props.source?.uri === 'string');
+// The STAGED strip only. A bare Image search also catches the markup editor's own
+// preview of the photo being edited, which is not an attachment and made "nothing is
+// staged yet" read as one.
+// The STAGED strip only, one entry per attachment. A bare Image search also catches the
+// markup editor's own preview of the photo being edited, which is not an attachment; and
+// `findAll` matches every wrapper layer of the same element, so the labels are deduped.
+const thumbs = (t: renderer.ReactTestRenderer) => {
+  const byLabel = new Map<string, renderer.ReactTestInstance>();
+  for (const n of t.root.findAll(n => String(n.props?.accessibilityLabel ?? '').startsWith('attach-annotate-'))) {
+    if (!byLabel.has(n.props.accessibilityLabel)) byLabel.set(n.props.accessibilityLabel, n);
+  }
+  return [...byLabel.values()].map(n => n.findAllByType(Image)[0]);
+};
 
 beforeEach(() => {
   (launchImageLibrary as jest.Mock).mockResolvedValue({assets: [picked]});
@@ -73,53 +91,75 @@ afterEach(async () => {
 });
 
 describe('attaching a photo', () => {
-  it('stages the photo itself, without stopping in the editor', async () => {
+  it('opens the editor on the picked photo, before anything is staged', async () => {
     const t = mount();
     await chooseLibrary(t);
-    expect(thumbs(t).map(n => n.props.source.uri)).toEqual([picked.uri]);
-    expect(t.root.findByType(ImageMarkup).props.visible).toBe(false);
-  });
-
-  it('uploads it under the picker’s own name, not markup.png', async () => {
-    // Every photo used to arrive on the Mac called markup.png, whether or not a mark was
-    // ever made — the editor was in the path, so the editor named the file.
-    const seen: {name: string; type: string}[] = [];
-    const t = mount({
-      onUpload: async (_uri: string, name: string, type: string) => {
-        seen.push({name, type});
-        return '/tmp/on-the-mac.heic';
-      },
-    });
-    await chooseLibrary(t);
-    await act(async () => {
-      t.root.findAllByProps({testID: 'composer-send'})[0].props.onPress();
-    });
-    await flush();
-    expect(seen).toEqual([{name: 'IMG_0042.HEIC', type: 'image/heic'}]);
-  });
-
-  it('opens the editor when you tap the thumbnail, on that image', async () => {
-    const t = mount();
-    await chooseLibrary(t);
-    act(() => t.root.findAll(n => String(n.props?.accessibilityLabel ?? '').startsWith('attach-annotate-'))[0].props.onPress());
     const m = t.root.findByType(ImageMarkup);
     expect(m.props.visible).toBe(true);
     expect(m.props.uri).toBe(picked.uri);
+    expect(thumbs(t)).toHaveLength(0); // nothing staged until the edit is done
   });
 
-  it('REPLACES the staged photo when the edit is done, so it is not sent twice', async () => {
+  it('stages the edited image when the editor finishes', async () => {
     const t = mount();
     await chooseLibrary(t);
-    act(() => t.root.findAll(n => String(n.props?.accessibilityLabel ?? '').startsWith('attach-annotate-'))[0].props.onPress());
     act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
     expect(thumbs(t).map(n => n.props.source.uri)).toEqual(['file:///tmp/marked.png']);
   });
 
-  it('leaves the photo alone if you back out of the editor', async () => {
+  it('stages nothing if you back out of the editor', async () => {
+    // Cancelling means you did not want the photo. Staging it anyway would leave an
+    // attachment behind that the operator has to notice and remove.
     const t = mount();
     await chooseLibrary(t);
-    act(() => t.root.findAll(n => String(n.props?.accessibilityLabel ?? '').startsWith('attach-annotate-'))[0].props.onPress());
     act(() => t.root.findByType(ImageMarkup).props.onCancel());
-    expect(thumbs(t).map(n => n.props.source.uri)).toEqual([picked.uri]);
+    expect(thumbs(t)).toHaveLength(0);
+  });
+
+  it('uploads what the editor produced', async () => {
+    // The editor is in the path, so the editor names the file. That is a consequence of
+    // the flow, recorded here so a future change to either notices the other.
+    const seen: {name: string; type: string}[] = [];
+    const t = mount({
+      onUpload: async (_uri: string, name: string, type: string) => {
+        seen.push({name, type});
+        return '/tmp/on-the-mac.png';
+      },
+    });
+    await chooseLibrary(t);
+    act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
+    await act(async () => {
+      t.root.findAllByProps({testID: 'composer-send'})[0].props.onPress();
+    });
+    await flush();
+    expect(seen).toEqual([{name: 'markup.png', type: 'image/png'}]);
+  });
+
+  it('re-opens the editor when you tap an already-staged thumbnail', async () => {
+    const t = mount();
+    await chooseLibrary(t);
+    act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
+    act(() => annotate(t));
+    const m = t.root.findByType(ImageMarkup);
+    expect(m.props.visible).toBe(true);
+    expect(m.props.uri).toBe('file:///tmp/marked.png');
+  });
+
+  it('REPLACES a re-edited photo rather than staging a second copy of it', async () => {
+    const t = mount();
+    await chooseLibrary(t);
+    act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
+    act(() => annotate(t));
+    act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked-again.png'));
+    expect(thumbs(t).map(n => n.props.source.uri)).toEqual(['file:///tmp/marked-again.png']);
+  });
+
+  it('leaves a staged photo alone if you back out of re-editing it', async () => {
+    const t = mount();
+    await chooseLibrary(t);
+    act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
+    act(() => annotate(t));
+    act(() => t.root.findByType(ImageMarkup).props.onCancel());
+    expect(thumbs(t).map(n => n.props.source.uri)).toEqual(['file:///tmp/marked.png']);
   });
 });
