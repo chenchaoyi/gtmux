@@ -924,11 +924,15 @@ window is near its cap; `--refresh` forces one. Configure in
 
 ```json
 {"limitsCommand": "claude -p /usage", "limitsTTLMin": 15,
- "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85}
+ "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85,
+ "limitsTimeoutSec": 60}
 ```
 
 Set `limitsCommand` with an env prefix if your network needs it
-(`"HTTPS_PROXY=… claude -p /usage"`), or `""` to disable. A weekly window at/over
+(`"HTTPS_PROXY=… claude -p /usage"`), or `""` to disable. A run that outlives
+`limitsTimeoutSec` is killed. A run that FAILS is never cached as fresh, so the plan
+figures you already have are kept rather than blanked, and the command backs off
+(1, 2, 5 minutes, then the TTL) instead of being retried by every caller. A weekly window at/over
 `limitsWarnPct` marks amber and wakes a live HQ once (`» gtmux·limits·warn …`).
 The `limits` block also rides `gtmux usage` and `GET /api/usage`.
 

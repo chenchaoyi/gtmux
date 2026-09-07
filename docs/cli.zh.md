@@ -819,11 +819,15 @@ orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
 
 ```json
 {"limitsCommand": "claude -p /usage", "limitsTTLMin": 15,
- "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85}
+ "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85,
+ "limitsTimeoutSec": 60}
 ```
 
 网络需要的话，可以在 `limitsCommand` 前面带上环境变量前缀
 （`"HTTPS_PROXY=… claude -p /usage"`），或者设成 `""` 关掉。
+跑超过 `limitsTimeoutSec` 会被杀掉。失败的一次**不会**被当成新鲜数据缓存，
+所以你已有的额度数字会留着、不会被清空；同时命令会退避（1、2、5 分钟，之后按 TTL），
+而不是被每个调用方各刷一遍。
 周窗口到达或超过 `limitsWarnPct` 会标成琥珀，并唤醒活着的中控一次
 （`» gtmux·limits·warn …`）。`limits` 这一块也随 `gtmux usage` 和 `GET /api/usage` 一起给出。
 

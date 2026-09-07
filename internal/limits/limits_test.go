@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -338,8 +339,215 @@ func TestRunAndParseUsesTheLoginShell(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("SHELL", shim)
-	wins, err := runAndParse("faux-usage")
+	wins, err := runAndParse("faux-usage", DefaultConfig)
 	if err != nil || len(wins) != 1 || wins[0].PctUsed != 11 {
 		t.Fatalf("runAndParse = %+v, err %v — the login shell's PATH was not used", wins, err)
+	}
+}
+
+// --- retry backoff ----------------------------------------------------------
+//
+// 2026-09-07: an upstream outage made `claude -p /usage` fail for 47 minutes, and
+// gtmux answered by running it 94 times — roughly one every ten seconds — because a
+// failed refresh never advances the cache's `At`, so the cache is stale by
+// construction and the NEXT caller refreshes again. Every run is a real headless
+// agent session, so the machine spent the outage spawning sessions to ask how much
+// quota it had left.
+//
+// These tests count actual command runs, not internal state: the command appends a
+// line to a file, so the count is what the shell really did.
+
+// countingCmd returns a shell command that records each run and then succeeds or
+// fails, plus a func reporting how many times it ran.
+func countingCmd(t *testing.T, ok bool) (string, func() int) {
+	t.Helper()
+	log := filepath.Join(t.TempDir(), "runs")
+	tail := "false"
+	if ok {
+		tail = "printf '%s\\n' 'Current week (all models): 58% used · resets Jul 17 at 10:59pm'"
+	}
+	return "echo x >> " + log + "; " + tail, func() int {
+		b, err := os.ReadFile(log)
+		if err != nil {
+			return 0
+		}
+		return strings.Count(string(b), "x")
+	}
+}
+
+func TestFailingCommandIsNotRetriedOnEveryCall(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 58, Agent: "claude"}}, At: 1_000_000})
+	cmd, runs := countingCmd(t, false)
+	cfg := Config{Command: cmd, TTLMin: 15, TimeoutSec: 30}
+
+	now := time.Unix(2_000_000, 0) // cache far past its TTL
+	// Ten polls in the same second — serve, the menu-bar app and a phone request all
+	// call Get, and during the incident they each got a fresh spawn.
+	for i := 0; i < 10; i++ {
+		if _, ok := Get(cfg, false, now); !ok {
+			t.Fatal("Get lost the last good cache while failing")
+		}
+	}
+	if n := runs(); n != 1 {
+		t.Errorf("the command ran %d times for 10 polls in one second, want 1", n)
+	}
+}
+
+func TestBackoffGrowsAndThenRetries(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 58, Agent: "claude"}}, At: 1_000_000})
+	cmd, runs := countingCmd(t, false)
+	cfg := Config{Command: cmd, TTLMin: 15, TimeoutSec: 30}
+	base := time.Unix(2_000_000, 0)
+
+	Get(cfg, false, base) // 1st failure → wait 1 min
+	if n := runs(); n != 1 {
+		t.Fatalf("first call ran %d times, want 1", n)
+	}
+	Get(cfg, false, base.Add(30*time.Second)) // inside the 1-minute wait
+	if n := runs(); n != 1 {
+		t.Errorf("retried after 30s while backing off 1m (%d runs)", n)
+	}
+	Get(cfg, false, base.Add(61*time.Second)) // 2nd failure → wait 2 min
+	if n := runs(); n != 2 {
+		t.Fatalf("did not retry after the 1-minute wait (%d runs)", n)
+	}
+	Get(cfg, false, base.Add(2*time.Minute)) // inside the 2-minute wait
+	if n := runs(); n != 2 {
+		t.Errorf("retried after 59s while backing off 2m (%d runs)", n)
+	}
+}
+
+func TestBackoffIsCappedAtTheNormalTTL(t *testing.T) {
+	// A broken command must cost no MORE than a working one — and no less often
+	// either, so a recovery is noticed within one ordinary refresh.
+	cfg := Config{Command: "false", TTLMin: 15}
+	for _, fails := range []int{4, 10, 500} {
+		if got := backoffFor(fails, cfg); got != 15*time.Minute {
+			t.Errorf("backoffFor(%d) = %v, want the 15m TTL", fails, got)
+		}
+	}
+	if got := backoffFor(0, cfg); got != 0 {
+		t.Errorf("backoffFor(0) = %v, want 0 — a healthy cache never backs off", got)
+	}
+	// A short TTL caps the early steps too, rather than backing off longer than the
+	// refresh interval it is protecting.
+	if got := backoffFor(3, Config{TTLMin: 2}); got != 2*time.Minute {
+		t.Errorf("backoffFor(3) with a 2m TTL = %v, want 2m", got)
+	}
+}
+
+func TestOneSuccessClearsTheBackoff(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	bad, badRuns := countingCmd(t, false)
+	good, _ := countingCmd(t, true)
+	base := time.Unix(2_000_000, 0)
+
+	// Three failures — deep enough to be waiting 5 minutes.
+	Get(Config{Command: bad, TTLMin: 15}, false, base)
+	Get(Config{Command: bad, TTLMin: 15}, false, base.Add(2*time.Minute))
+	Get(Config{Command: bad, TTLMin: 15}, false, base.Add(5*time.Minute))
+	if n := badRuns(); n != 3 {
+		t.Fatalf("setup ran the failing command %d times, want 3", n)
+	}
+	if r, _ := Load(); r.Fails != 3 {
+		t.Fatalf("Fails = %d after three failures, want 3", r.Fails)
+	}
+
+	if _, ok := Get(Config{Command: good, TTLMin: 15}, false, base.Add(11*time.Minute)); !ok {
+		t.Fatal("the recovered command did not produce a report")
+	}
+	r, _ := Load()
+	if r.Fails != 0 {
+		t.Errorf("Fails = %d after a success, want 0 — the backoff outlived the outage", r.Fails)
+	}
+	if r.At != base.Add(11*time.Minute).Unix() {
+		t.Errorf("At = %d, want the success time", r.At)
+	}
+}
+
+func TestAFailureNeverAdvancesTheSuccessClock(t *testing.T) {
+	// The reason the failure path skips the save in the first place: an `At` written
+	// from a failure would cache a bad reading as fresh for the whole TTL. Recording
+	// the ATTEMPT must not quietly reintroduce that.
+	t.Setenv("HOME", t.TempDir())
+	seed := Report{Windows: []Window{{Label: "claude week", PctUsed: 58}}, At: 1_000_000}
+	save(seed)
+	now := time.Unix(2_000_000, 0)
+	Get(Config{Command: "false", TTLMin: 15}, false, now)
+
+	r, ok := Load()
+	if !ok || r.At != seed.At {
+		t.Errorf("At = %d, want the untouched %d", r.At, seed.At)
+	}
+	if len(r.Windows) != 1 || r.Windows[0].PctUsed != 58 {
+		t.Errorf("the failure rewrote the cached windows: %+v", r.Windows)
+	}
+	if r.TryAt != now.Unix() || r.Fails != 1 {
+		t.Errorf("attempt bookkeeping = (try %d, fails %d), want (%d, 1)", r.TryAt, r.Fails, now.Unix())
+	}
+}
+
+func TestBackoffHoldsAcrossProcesses(t *testing.T) {
+	// serve, the menu-bar app and the CLI each call Get from their own process and
+	// share nothing but this file — so the backoff has to live in it, not in memory.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cmd, runs := countingCmd(t, false)
+	cfg := Config{Command: cmd, TTLMin: 15}
+	now := time.Unix(2_000_000, 0)
+
+	Get(cfg, false, now)
+	// A "second process" reads the same state from disk — which is all Get keeps.
+	if r, ok := Load(); !ok || r.Fails != 1 {
+		t.Fatalf("the attempt was not persisted: %+v", r)
+	}
+	Get(cfg, false, now.Add(10*time.Second))
+	if n := runs(); n != 1 {
+		t.Errorf("a second caller re-ran the command (%d runs) — backoff did not survive", n)
+	}
+}
+
+func TestForceIgnoresTheBackoff(t *testing.T) {
+	// `gtmux limits --force` is a person asking on purpose; making them wait out a
+	// backoff they cannot see would be its own bug.
+	t.Setenv("HOME", t.TempDir())
+	cmd, runs := countingCmd(t, false)
+	cfg := Config{Command: cmd, TTLMin: 15}
+	now := time.Unix(2_000_000, 0)
+
+	Get(cfg, false, now)
+	Get(cfg, true, now.Add(time.Second))
+	if n := runs(); n != 2 {
+		t.Errorf("--force ran the command %d times, want 2 (it must bypass the backoff)", n)
+	}
+}
+
+// --- command timeout --------------------------------------------------------
+
+func TestSlowCommandIsAbandoned(t *testing.T) {
+	// The command had no bound at all: a `claude` that never answered was waited on
+	// forever, while the next poll started another beside it.
+	t.Setenv("HOME", t.TempDir())
+	cfg := Config{Command: "sleep 30", TTLMin: 15, TimeoutSec: 1}
+	start := time.Now()
+	_, err := runAndParse(cfg.Command, cfg)
+	if err == nil {
+		t.Error("a command that outran its timeout returned no error")
+	}
+	if d := time.Since(start); d > 10*time.Second {
+		t.Errorf("runAndParse took %v — it waited on the hung command", d)
+	}
+}
+
+func TestTimeoutDefaultsRatherThanMeaningNoLimit(t *testing.T) {
+	// A zero-valued Config — or one unmarshalled from a cache written before this
+	// field existed — must not read as "wait forever".
+	if got := commandTimeout(Config{}); got != time.Duration(DefaultConfig.TimeoutSec)*time.Second {
+		t.Errorf("commandTimeout(zero Config) = %v, want the default", got)
+	}
+	if got := commandTimeout(Config{TimeoutSec: 5}); got != 5*time.Second {
+		t.Errorf("commandTimeout = %v, want 5s", got)
 	}
 }

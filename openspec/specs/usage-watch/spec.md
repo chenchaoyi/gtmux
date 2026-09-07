@@ -176,10 +176,37 @@ obtaining them spawns a process; it SHALL refresh at most once per TTL on demand
 (a `--refresh` flag forces one), and it SHALL NEVER spawn the command once per
 `gtmux usage` invocation.
 
+A FAILED run SHALL NOT be cached as fresh, and SHALL NOT be retried on every call
+either. The system SHALL record the last attempt separately from the last success and
+back off between failures (growing, capped at the TTL), so that a command which keeps
+failing costs no more than one that is working. It SHALL bound each run with a timeout,
+because the command spawns a real agent session and an unbounded one can be waited on
+while the next call starts another beside it. An explicit user refresh SHALL bypass the
+backoff.
+
 #### Scenario: Fresh cache is reused
 
 - **WHEN** `gtmux usage`/`gtmux limits` is called within the TTL of the last run
 - **THEN** the cached windows are served without spawning the command again
+
+#### Scenario: A failing command is not retried on every call
+
+- **WHEN** the limits command fails and several callers ask for limits in quick
+  succession
+- **THEN** the command runs once, the last good windows and their success time are left
+  untouched, and further runs wait out a growing backoff
+
+#### Scenario: Recovery clears the backoff
+
+- **WHEN** the command succeeds after a run of failures
+- **THEN** the cache is written with a fresh success time and the next failure starts
+  the backoff over from its shortest step
+
+#### Scenario: A hung command is abandoned
+
+- **WHEN** the limits command does not return within its timeout
+- **THEN** it is killed, the call returns the last good snapshot, and the failure enters
+  the backoff like any other
 
 ### Requirement: Limits surface and warn
 
