@@ -4,7 +4,7 @@
 // palette to render on a light surface.
 
 import React from 'react';
-import {Linking, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Block, Inline, parseBlocks} from './markdown';
 
 export interface MdColors {
@@ -28,6 +28,17 @@ interface Props {
   // Optional font family for PROSE blocks (headings/paragraphs/lists/quotes/tables);
   // chat passes the terminal's font so the two surfaces match. Code stays monospace.
   fontFamily?: string;
+  // foldRows — each stacked table row is a COLLAPSIBLE card, closed by default.
+  //
+  // For a table whose cells are paragraphs rather than values. The situation board's
+  // pane table is the case: one pane's `状态` cell alone runs to several screens, so
+  // thirteen panes stacked open is a document nobody scrolls to the end of, and the
+  // pane you came for is somewhere inside it. Closed, the section is thirteen rows you
+  // can scan.
+  //
+  // Opt-in, because it is wrong for the other callers: a chat reply's table is small
+  // and part of a sentence, and folding it would hide the answer.
+  foldRows?: boolean;
   // calmEmphasis — for prose written with heavy emphasis. The situation board carries
   // roughly one **bold** span per line, at the same weight as a heading, which left its
   // 31 headings with no authority and the page reading as one wall. Under this flag bold
@@ -179,30 +190,83 @@ export function stackRows(header: Inline[][], rows: Inline[][][]): StackedRow[] 
   }));
 }
 
-function StackedTable({b, c, fs, sel, sc, ff, calm}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean}) {
+/**
+ * rowSubtitle is what a CLOSED row shows beside its head, so the reader can find the
+ * one they want without opening any of them.
+ *
+ * The first field, and only the first: in a stacked table the leading column after the
+ * identity is the one that says WHICH thing this is (the board puts `loc` there, beside
+ * the pane id). The rest are its contents, which is what folding is hiding.
+ */
+export function rowSubtitle(r: StackedRow): string {
+  const f = r.fields[0];
+  if (!f) return '';
+  return f.value.map(n => n.s).join('').trim();
+}
+
+function StackedTable({b, c, fs, sel, sc, ff, calm, fold}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean}) {
   const rows = stackRows(b.header, b.rows);
+  // Closed by default, and nothing seeds one open: unlike the board's pinned first
+  // SECTION, no row here is the one you came for — the point is to see them all at once.
+  const [open, setOpen] = React.useState<Set<number>>(new Set());
+  const toggle = (i: number) =>
+    setOpen(prev => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
+
   return (
     <View style={styles.block}>
-      {rows.map((r, i) => (
-        <View key={i} style={[styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}]}>
-          <Text selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
+      {rows.map((r, i) => {
+        const shut = fold && !open.has(i);
+        const head = (
+          <Text
+            selectable={sel && !fold}
+            selectionColor={sc}
+            numberOfLines={fold ? 1 : undefined}
+            style={{flex: fold ? 1 : undefined, color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: fold ? 0 : 3}}>
             {renderSpans(r.head, c, fs, calm)}
           </Text>
-          {r.fields.map((f, j) => (
-            <View key={j} style={styles.stackField}>
-              <Text style={[styles.stackLabel, {color: c.dim, fontSize: fs - 2, lineHeight: (fs - 1) * 1.4}]}>{f.label}</Text>
-              <Text selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
-                {renderSpans(f.value, c, fs - 1, calm)}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ))}
+        );
+        return (
+          <View key={i} style={[styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}]}>
+            {fold ? (
+              <TouchableOpacity
+                testID={`md-stack-row-${i}`}
+                activeOpacity={0.6}
+                onPress={() => toggle(i)}
+                style={styles.stackHead}>
+                <Text style={[styles.stackChevron, {color: c.dim, fontSize: fs - 2}]}>{shut ? '▸' : '▾'}</Text>
+                {head}
+                {/* The first field rides along on the closed row: it is what tells one
+                    row from another, and a column of bare ids tells you nothing. */}
+                {rowSubtitle(r) !== '' && (
+                  <Text numberOfLines={1} style={[styles.stackSub, {color: c.dim, fontSize: fs - 2}]}>
+                    {rowSubtitle(r)}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              head
+            )}
+            {!shut &&
+              r.fields.map((f, j) => (
+                <View key={j} style={styles.stackField}>
+                  <Text style={[styles.stackLabel, {color: c.dim, fontSize: fs - 2, lineHeight: (fs - 1) * 1.4}]}>{f.label}</Text>
+                  <Text selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
+                    {renderSpans(f.value, c, fs - 1, calm)}
+                  </Text>
+                </View>
+              ))}
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-function BlockView({b, c, fs, sel, sc, ff, calm}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean}) {
+function BlockView({b, c, fs, sel, sc, ff, calm, fold}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean}) {
   switch (b.t) {
     case 'h':
       return (
@@ -246,7 +310,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm}: {b: Block; c: MdColors; fs: nu
       // Wide tables stack on a phone (see stackRows). A table narrow enough to fit still
       // renders as a table — a two-column key/value grid reads better as one.
       if (calm && b.header.length > 3) {
-        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} />;
+        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} fold={fold} />;
       }
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
@@ -265,12 +329,12 @@ function BlockView({b, c, fs, sel, sc, ff, calm}: {b: Block; c: MdColors; fs: nu
   }
 }
 
-export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis}: Props) {
+export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows}: Props) {
   const blocks = React.useMemo(() => parseBlocks(source), [source]);
   return (
     <View>
       {blocks.map((b, i) => (
-        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} />
+        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} />
       ))}
     </View>
   );
@@ -306,6 +370,9 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     marginBottom: 10,
   },
+  stackHead: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  stackChevron: {width: 10},
+  stackSub: {flexShrink: 1, maxWidth: '55%'},
   stackField: {flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 3},
   stackLabel: {minWidth: 58, fontVariant: ['tabular-nums']},
   tr: {flexDirection: 'row'},
