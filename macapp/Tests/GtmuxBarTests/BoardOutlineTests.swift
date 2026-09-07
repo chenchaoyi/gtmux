@@ -208,6 +208,25 @@ final class KnowledgeTopicsTests: XCTestCase {
     func testEmptyIsEmpty() {
         XCTAssertTrue(knowledgeTopics([]).isEmpty)
     }
+    /// "Newest" is a VIEW over the same entries, not a bucket beside the topics.
+    ///
+    /// Both surfaces show a capped recent list above the folded topics, and a reader
+    /// looking at "396 entries" over a list of twelve asked whether the recent ones were
+    /// in a topic at all (2026-09-07). They are: every entry is grouped, so the topic
+    /// counts add up to the whole base and nothing is reachable only through "newest".
+    func testEveryEntryIsInATopicSoNewestIsOnlyAView() {
+        var rows: [KBEntry] = []
+        for i in 0..<40 {
+            rows.append(self.entry("t\(i % 4)/\(i)", "t\(i % 4)"))
+        }
+        let topics = knowledgeTopics(rows)
+        XCTAssertEqual(topics.reduce(0) { $0 + $1.entries.count }, rows.count,
+                       "an entry outside every topic would be reachable only through the capped recent list")
+        let grouped = Set(topics.flatMap { $0.entries }.map { $0.id })
+        for e in rows {
+            XCTAssertTrue(grouped.contains(e.id), "\(e.id) is in no topic")
+        }
+    }
 }
 
 // The menu bar was the only surface that could not export the supervisor's memory: the
@@ -231,4 +250,6 @@ final class HQMemoryStateTests: XCTestCase {
         XCTAssertEqual(s.snapshots, 0)
         XCTAssertEqual(s.offMachine, "")
     }
+
+
 }
