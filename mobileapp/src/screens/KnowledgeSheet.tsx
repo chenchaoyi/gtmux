@@ -83,8 +83,17 @@ function EntryTitle({title, id, pal, style, keyStyle, lines, wrapStyle}: {
   );
 }
 
-type Pane = {kind: 'index'} | {kind: 'topic'; name: string} | {kind: 'entry'; id: string};
+// An entry pane REMEMBERS where it was opened from. Back used to always land on the
+// index, so opening the fourth entry of a 164-entry topic and coming back put you at the
+// top of a different screen — the topic you were reading was simply gone.
+type Pane =
+  | {kind: 'index'}
+  | {kind: 'topic'; name: string}
+  | {kind: 'entry'; id: string; from: {kind: 'index'} | {kind: 'topic'; name: string}};
 type Pending = {kind: 'land' | 'retire'; id: string} | null;
+
+/** How many entries an expanded topic shows before "All N". A glance, not the list. */
+const TOPIC_PEEK = 5;
 
 export interface KnowledgeSheetProps {
   visible: boolean;
@@ -129,6 +138,39 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
 
   const view: KnowledgeView = React.useMemo(() => buildKnowledgeView(index, nowSecs), [index, nowSecs]);
 
+  // Where each pane was scrolled to, so coming back puts you where you left.
+  //
+  // One ScrollView renders all three panes, so switching pane keeps an offset that
+  // belongs to a list of a different length: you came back from an entry and landed
+  // somewhere arbitrary. Offsets are keyed by pane and restored on the frame after the
+  // new children are laid out — restoring before layout scrolls a list that is not there
+  // yet and silently does nothing.
+  const scroller = React.useRef<ScrollView>(null);
+  const offsets = React.useRef<Record<string, number>>({});
+  const paneKey = (p: Pane) => (p.kind === 'topic' ? 'topic:' + p.name : p.kind);
+  const here = paneKey(pane);
+  React.useEffect(() => {
+    const y = offsets.current[here] ?? 0;
+    const id = requestAnimationFrame(() => scroller.current?.scrollTo({y, animated: false}));
+    return () => cancelAnimationFrame(id);
+  }, [here]);
+
+  // Back goes where you came FROM, not to the top of the index.
+  const goBack = React.useCallback(() => {
+    setPane(p => (p.kind === 'entry' ? p.from : {kind: 'index'}));
+  }, []);
+
+  // Which topics are expanded in the index. A topic is a list you want to glance into,
+  // and drilling in for a look cost a screen change and lost your place in the index.
+  const [openTopics, setOpenTopics] = React.useState<Set<string>>(new Set());
+  const toggleTopic = React.useCallback((name: string) => {
+    setOpenTopics(prev => {
+      const next = new Set(prev);
+      if (!next.delete(name)) next.add(name);
+      return next;
+    });
+  }, []);
+
   // Opening the sheet always starts at the top. Resuming where a previous visit left off
   // would put a reader inside one entry with no memory of why.
   React.useEffect(() => {
@@ -141,7 +183,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
 
   const openEntry = React.useCallback(
     async (id: string) => {
-      setPane({kind: 'entry', id});
+      setPane(prev => ({kind: 'entry', id, from: prev.kind === 'topic' ? {kind: 'topic', name: prev.name} : {kind: 'index'}}));
       setEntry(null);
       setLoading(true);
       const e = await loadEntry(id);
@@ -179,7 +221,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
       <View style={[styles.root, {backgroundColor: pal.bg}]}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           {pane.kind !== 'index' ? (
-            <TouchableOpacity testID="knowledge-back" onPress={() => setPane({kind: 'index'})} hitSlop={hit}>
+            <TouchableOpacity testID="knowledge-back" accessibilityLabel="knowledge-back" onPress={goBack} hitSlop={hit}>
               <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
             </TouchableOpacity>
           ) : null}
@@ -208,9 +250,25 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           </View>
         ) : null}
 
-        <ScrollView contentContainerStyle={styles.body}>
+        <ScrollView
+          ref={scroller}
+          contentContainerStyle={styles.body}
+          scrollEventThrottle={64}
+          onScroll={e => {
+            offsets.current[here] = e.nativeEvent.contentOffset.y;
+          }}>
           {pane.kind === 'index' && (
-            <IndexPane view={view} pal={pal} zh={zh} t={t} ageOf={ageOf} onOpen={openEntry} onTopic={n => setPane({kind: 'topic', name: n})} />
+            <IndexPane
+              view={view}
+              pal={pal}
+              zh={zh}
+              t={t}
+              ageOf={ageOf}
+              onOpen={openEntry}
+              onTopic={n => setPane({kind: 'topic', name: n})}
+              openTopics={openTopics}
+              onToggleTopic={toggleTopic}
+            />
           )}
           {pane.kind === 'topic' && (
             <EntryList entries={entriesOfTopic(view, pane.name)} pal={pal} zh={zh} ageOf={ageOf} onOpen={openEntry} />
@@ -256,7 +314,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
 
 /** The index: what is owed, what is new, where everything is. */
 function IndexPane({
-  view, pal, zh, t, ageOf, onOpen, onTopic,
+  view, pal, zh, t, ageOf, onOpen, onTopic, openTopics, onToggleTopic,
 }: {
   view: KnowledgeView;
   pal: Palette;
@@ -265,6 +323,8 @@ function IndexPane({
   ageOf: (s?: number) => string;
   onOpen: (id: string) => void;
   onTopic: (name: string) => void;
+  openTopics: Set<string>;
+  onToggleTopic: (name: string) => void;
 }) {
   if (view.empty) {
     return (
@@ -333,23 +393,58 @@ function IndexPane({
       )}
 
       <SectionLabel pal={pal} text={t('newest', '最近')} />
+      {/* Newest is a VIEW, not a bucket. Every one of these entries also sits under its
+          own topic below, and the topic counts add up to the total in the header — which
+          the screen never said, so the reader's honest question was "are these in a topic
+          at all?" (2026-09-07). One line answers it. */}
+      <Text style={[styles.sectionNote, {color: pal.fg3}]}>
+        {t('across every topic — each one also sits under its topic below',
+          '跨全部主题 · 这几条同时也在下面各自的主题里')}
+      </Text>
       <EntryList entries={view.recent} pal={pal} zh={zh} ageOf={ageOf} onOpen={onOpen} />
 
       <SectionLabel pal={pal} text={t('topics', '主题')} />
-      {view.topics.map(tp => (
-        <TouchableOpacity
-          key={tp.name}
-          testID={`knowledge-topic-${tp.name}`}
-          activeOpacity={0.6}
-          onPress={() => onTopic(tp.name)}
-          style={[styles.row, {borderBottomColor: pal.divider}]}>
-          <Text style={[styles.rowTitle, {color: pal.fg}]} numberOfLines={1}>
-            {tp.name}
-          </Text>
-          <Text style={[styles.rowMeta, {color: pal.fg3}]}>{tp.count}</Text>
-          <Text style={[styles.chev, {color: pal.fg3}]}>›</Text>
-        </TouchableOpacity>
-      ))}
+      {view.topics.map(tp => {
+        const open = openTopics.has(tp.name);
+        // Expanded shows the newest few IN PLACE. Glancing into a topic used to cost a
+        // screen change and your place in the index; the full list is still one tap away,
+        // and inlining 179 rows would only move the problem.
+        const peek = entriesOfTopic(view, tp.name).slice(0, TOPIC_PEEK);
+        return (
+          <View key={tp.name}>
+            <TouchableOpacity
+              testID={`knowledge-topic-${tp.name}`}
+              accessibilityLabel={`knowledge-topic-${tp.name}`}
+              activeOpacity={0.6}
+              onPress={() => onToggleTopic(tp.name)}
+              style={[styles.row, {borderBottomColor: pal.divider}]}>
+              <Text style={[styles.rowTitle, {color: pal.fg}]} numberOfLines={1}>
+                {tp.name}
+              </Text>
+              <Text style={[styles.rowMeta, {color: pal.fg3}]}>{tp.count}</Text>
+              <Text style={[styles.chev, {color: pal.fg3}]}>{open ? '⌄' : '›'}</Text>
+            </TouchableOpacity>
+            {open && (
+              <View style={styles.peek}>
+                <EntryList entries={peek} pal={pal} zh={zh} ageOf={ageOf} onOpen={onOpen} />
+                {tp.count > peek.length && (
+                  <TouchableOpacity
+                    testID={`knowledge-topic-all-${tp.name}`}
+                    accessibilityLabel={`knowledge-topic-all-${tp.name}`}
+                    activeOpacity={0.6}
+                    onPress={() => onTopic(tp.name)}
+                    style={[styles.row, {borderBottomColor: pal.divider}]}>
+                    <Text style={[styles.rowTitle, {color: pal.fg2}]} numberOfLines={1}>
+                      {zh ? `全部 ${tp.count} 条` : `All ${tp.count}`}
+                    </Text>
+                    <Text style={[styles.chev, {color: pal.fg3}]}>›</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        );
+      })}
 
       {view.candidates.pending > 0 && (
         <Text style={[styles.foot, {color: pal.fg3}]}>
@@ -377,6 +472,7 @@ function EntryList({
         <TouchableOpacity
           key={e.id}
           testID={`knowledge-entry-${e.id}`}
+          accessibilityLabel={`knowledge-entry-${e.id}`}
           activeOpacity={0.6}
           onPress={() => onOpen(e.id)}
           style={[styles.row, {borderBottomColor: pal.divider}]}>
@@ -553,6 +649,7 @@ function SectionLabel({pal, text, count, accent}: {pal: Palette; text: string; c
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
 const styles = StyleSheet.create({
+  peek: {paddingLeft: 12},
   root: {flex: 1},
   head: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth},
   headText: {flex: 1},

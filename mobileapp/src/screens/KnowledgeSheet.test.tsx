@@ -134,3 +134,77 @@ test("a refusal shows the server's own words and keeps the draft", async () => {
   expect(strings(t.root as unknown as Node).join(' ')).toContain('no live entry');
   expect(t.root.findByProps({testID: 'knowledge-act-input'}).props.value).toBe('wrong now');
 });
+
+// Three complaints from one screenshot (2026-09-07): what is "newest" relative to the
+// topics, why can a topic only be entered and not opened, and why does coming back from
+// an entry land you somewhere else.
+
+const many = (topic: string, n: number, from = 0): KnowledgeEntry[] =>
+  Array.from({length: n}, (_, i) => entry({id: `${topic}/${from + i}`, topic, title: `${topic} ${from + i}`, at: NOW - (from + i) * 60}));
+
+const bigIndex = (): KnowledgeIndex => ({
+  entries: [...many('pitfalls', 12), ...many('workflows', 8)],
+  topics: [
+    {name: 'pitfalls', count: 12},
+    {name: 'workflows', count: 8},
+  ],
+  promotions: {pending: 0},
+  candidates: {pending: 0},
+});
+
+const tapByLabel = (t: renderer.ReactTestRenderer, label: string) =>
+  act(() => {
+    t.root.findAll(n => n.props?.accessibilityLabel === label && typeof n.props.onPress === 'function')[0].props.onPress();
+  });
+
+describe('newest is a view, not a bucket', () => {
+  it('says so, because the counts made the reader ask', () => {
+    // The topic counts add up to the header's total, so nothing is outside a topic — the
+    // screen just never said it, and "are these in a topic at all?" was a fair question.
+    const said = strings(render(bigIndex()).root as unknown as Node).join(' ');
+    expect(said).toContain('also sits under its topic');
+  });
+});
+
+describe('a topic opens where it is', () => {
+  it('expands in place instead of only being enterable', () => {
+    const t = render(bigIndex());
+    const before = strings(t.root as unknown as Node).join(' ');
+    expect(before).not.toContain('pitfalls 7'); // an entry only this topic holds
+    tapByLabel(t, 'knowledge-topic-pitfalls');
+    expect(strings(t.root as unknown as Node).join(' ')).toContain('pitfalls 4');
+  });
+
+  it('shows a glance, not the whole list, and offers the whole list', () => {
+    // Inlining every entry would move the problem rather than solve it.
+    const t = render(bigIndex());
+    tapByLabel(t, 'knowledge-topic-pitfalls');
+    const said = strings(t.root as unknown as Node).join(' ');
+    expect(said).toContain('All 12');
+    expect(said).not.toContain('pitfalls 11'); // past the peek
+  });
+
+  it('closes again', () => {
+    const t = render(bigIndex());
+    tapByLabel(t, 'knowledge-topic-pitfalls');
+    tapByLabel(t, 'knowledge-topic-pitfalls');
+    expect(strings(t.root as unknown as Node).join(' ')).not.toContain('All 12');
+  });
+});
+
+describe('coming back', () => {
+  it('returns to the topic you were reading, not to the index', async () => {
+    // Opening the fourth entry of a topic and coming back used to put you at the top of
+    // a different screen: the list you were working through was simply gone.
+    const t = render(bigIndex());
+    tapByLabel(t, 'knowledge-topic-pitfalls'); // expand
+    tapByLabel(t, 'knowledge-topic-all-pitfalls'); // enter the full topic
+    await act(async () => {
+      t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-entry-pitfalls/3')[0].props.onPress();
+    });
+    tapByLabel(t, 'knowledge-back');
+    const said = strings(t.root as unknown as Node).join(' ');
+    expect(said).toContain('pitfalls 11'); // the full topic list, not the index
+    expect(said).not.toContain('also sits under its topic'); // that line lives on the index
+  });
+});

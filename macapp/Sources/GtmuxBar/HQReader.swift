@@ -436,7 +436,21 @@ struct HQReaderView: View {
                         // inert — it is echoed into every dispatch — so spot-checking the
                         // recent writes is the cheapest way to catch one, and it is the
                         // question this list is opened with.
-                        sectionHead(l10n.tr("newest", "最近"), store.entries.count, p, accent: false)
+                        // The count is what this section SHOWS, not the size of the base.
+                        // "NEWEST 396" over a list of twelve names the wrong thing; the
+                        // total is already in the window's own header.
+                        sectionHead(l10n.tr("newest", "最近"), min(KBRecentCount, store.entries.count), p, accent: false)
+                        // What "newest" is, relative to the topics below it. These entries
+                        // are ALSO in their topic — the topic counts add up to the whole
+                        // base — and a reader looking at both lists asked, fairly, whether
+                        // the recent ones were in a topic at all (2026-09-07). Same
+                        // sentence as the phone's.
+                        Text(l10n.tr("across every topic — each one also sits under its topic below",
+                                     "跨全部主题 · 这几条同时也在下面各自的主题里"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(p.fg3)
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 6)
                         ForEach(store.entries.prefix(KBRecentCount)) { e in row(e, p, showWhy: false) }
 
                         // And the whole base, BY TOPIC, folded. This list used to be all
