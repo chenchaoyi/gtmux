@@ -4,12 +4,13 @@
 // cards with leading outline icons. Removing the Mac clears the Keychain and the
 // app falls back to Pairing automatically.
 
-import React, {useState} from 'react';
-import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
+import {MemoryCopy, describeCopy, fetchCopy, readCopy} from '../state/hqMemory';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet} from '../ui/SettingsRow';
 import {ContentColumn} from '../ui/ContentColumn';
@@ -22,6 +23,34 @@ export function SettingsScreen({navigation}: any) {
   const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
   const {isGuest} = useAgents();
+  // The phone's copy of HQ's memory. Read on mount so the row states a fact rather than
+  // a spinner, and re-read after every act.
+  const [memCopy, setMemCopy] = useState<MemoryCopy | null>(null);
+  const [memBusy, setMemBusy] = useState(false);
+  useEffect(() => {
+    readCopy().then(setMemCopy);
+  }, []);
+  const fetchMemory = async () => {
+    if (!mac) return;
+    setMemBusy(true);
+    const {copy, error} = await fetchCopy(mac.url, mac.token);
+    setMemBusy(false);
+    if (error) {
+      // Loudly. A silent failure on a backup screen would leave you believing you have
+      // a copy you do not have, which is worse than having none.
+      Alert.alert(
+        lang === 'zh' ? '没能取回' : 'Could not fetch it',
+        error,
+      );
+      return;
+    }
+    setMemCopy(copy ?? null);
+  };
+  const shareMemory = () => {
+    if (!memCopy) return;
+    Share.share({url: memCopy.url}).catch(() => {});
+  };
+
   const [picker, setPicker] = useState<PickerKind>(null);
   const [whatsNew, setWhatsNew] = useState(false);
 
@@ -78,6 +107,36 @@ export function SettingsScreen({navigation}: any) {
           )}
           <SettingsRow icon="trash" label={t('removeMac')} danger pal={pal} onPress={confirmRemove} />
         </SettingsGroup>
+
+        {/* THE SUPERVISOR'S MEMORY — owner only. It is the board, the knowledge base and
+            the operator's LOCAL.md in one file; a guest link is for watching a pane. */}
+        {!isGuest && mac && (
+          <SettingsGroup title={lang === 'zh' ? '中控记忆' : 'HQ memory'} pal={pal}>
+            <SettingsRow
+              icon="server"
+              label={lang === 'zh' ? '在这台手机上留一份' : 'Keep a copy on this phone'}
+              sub={describeCopy(memCopy, Math.floor(Date.now() / 1000), lang === 'zh')}
+              pal={pal}
+              divider
+              onPress={memBusy ? undefined : fetchMemory}
+            />
+            {/* Said out loud, because iOS will not let the app verify it: the file is
+                included in the iPhone's backup, and there is no API for whether that
+                backup ran. Sharing it somewhere yourself is the version you can check. */}
+            <SettingsRow
+              icon="share"
+              label={lang === 'zh' ? '导出这份副本' : 'Export this copy'}
+              sub={
+                lang === 'zh'
+                  ? '副本随 iPhone 备份走。想自己确认，就存进「文件」或 iCloud 云盘'
+                  : "It rides your iPhone backup. To see it for yourself, save it to Files or iCloud Drive"
+              }
+              pal={pal}
+              chevron
+              onPress={memCopy ? shareMemory : undefined}
+            />
+          </SettingsGroup>
+        )}
 
         {/* TERMINAL */}
         <SettingsGroup title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
