@@ -189,12 +189,17 @@ func TestEventsAck(t *testing.T) {
 	}
 }
 
-// B9 (hq-unread-noise): the cd-drift that fails LOUDLY now. HQ's Bash cwd persists across
-// calls, so after writing the board (`notes/`) or the KB (`knowledge/`) its next pull ran
-// from a SUBDIRECTORY, consumed nothing, and the same cursor re-knocked — reproduced five
-// times, the fifth in the very turn after HQ wrote the note about it. The read still
-// succeeds and still prints; it just stops pretending it counted.
-func TestDriftedReadWarnsAndDoesNotConsume(t *testing.T) {
+// The cd-drift now COUNTS. HQ's Bash cwd persists across calls, so after writing the board
+// (`notes/`) or the KB (`knowledge/`) its next pull runs from a SUBDIRECTORY. That used to
+// consume nothing — first silently, then with a warning — and the same cursor re-knocked,
+// reproduced SEVEN times over eight days, each one reading to HQ as "I pulled, I saw the
+// events, and it asked again".
+//
+// A rule a careful reader loses to seven times is not a discipline, it is a trap, and
+// gtmux already knew whose read it was: nobody but HQ works in that tree (spawn refuses to
+// start there). So a read from anywhere in the home counts, and there is nothing left to
+// warn about.
+func TestDriftedReadCountsBecauseItIsStillHQsRead(t *testing.T) {
 	asHQ(t)
 	now := time.Now().Unix()
 	hqwake.Consume(0)
@@ -208,18 +213,34 @@ func TestDriftedReadWarnsAndDoesNotConsume(t *testing.T) {
 	t.Chdir(sub)
 
 	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0", "--json"}) })
-	if got := hqwake.Consumed(); got != 0 {
-		t.Errorf("a drifted read advanced the watermark to %d", got)
+	if got := hqwake.Consumed(); got == 0 {
+		t.Error("a read from inside the home did not count — the seven-times failure is back")
 	}
-	if !strings.Contains(errs, "NOT counted") && !strings.Contains(errs, "未计入") {
-		t.Errorf("a drifted read must warn on stderr, got %q", errs)
+	// And nothing to warn about any more: a warning on a read that DID count would train
+	// HQ to ignore the channel.
+	if strings.Contains(errs, "NOT counted") || strings.Contains(errs, "未计入") {
+		t.Errorf("a counted read still warned: %q", errs)
 	}
-	if !strings.Contains(errs, state.HQHome()) {
-		t.Errorf("the warning must name the home to run from, got %q", errs)
-	}
-	// stdout is the read's product and must be untouched by the warning.
 	if !strings.Contains(out, "web:1.0") {
 		t.Errorf("the read itself must still print its delta, got %q", out)
+	}
+}
+
+// `--ack` widens with it: an explicit writeback from `notes/` is the same supervisor.
+func TestAckFromASubdirectoryIsAccepted(t *testing.T) {
+	asHQ(t)
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: time.Now().Unix(), Event: "Stop", State: "idle", Loc: "web:1.0"})
+	sub := filepath.Join(state.HQHome(), "notes")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(sub)
+	if rc := cmdEventsAck(events.CurrentSeq()); rc != 0 {
+		t.Errorf("ack from a subdirectory returned %d, want 0", rc)
+	}
+	if hqwake.Consumed() != events.CurrentSeq() {
+		t.Error("ack from a subdirectory did not move the watermark")
 	}
 }
 

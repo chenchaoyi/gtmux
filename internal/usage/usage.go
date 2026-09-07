@@ -91,6 +91,8 @@ func ForSession(agent, sessionID string, now time.Time) (Session, bool) {
 		last := tail[len(tail)-1]
 		s.CtxTok = last.ctxTokens()
 		s.LastAt = last.at.Unix()
+		// Every reading is evidence about the model's window: what was held, fit.
+		noteWindowEvidence(agent, last.model, s.CtxTok)
 		if w := windowFor(agent, last.model, s.CtxTok, last.window); w > 0 {
 			s.Window = w
 			s.CtxFrac = float64(s.CtxTok) / float64(w)
