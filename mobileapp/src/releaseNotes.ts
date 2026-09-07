@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.4',
+    en: [
+      'Full screen is actually full screen now. The top of the screen was holding about 100pt for a status bar that full screen had already hidden — portrait gains roughly eleven more lines of output, landscape about a quarter more reading area. The way out is a smaller, cleaner icon, and jumping back to the live tail is an arrow standing on a line.',
+      'The plan sheet no longer drops an agent it cannot read. Codex reports its quota through its own session log, so a day without using it made every Codex row disappear, which looked the same as the app failing to read them. Codex now keeps its place and says that one turn brings the figure back.',
+      'Attaching a photo is a shorter trip. Choosing from the sheet no longer waits for it to slide away before the picker opens, and a picked photo goes straight into the composer instead of through the markup editor — tap the thumbnail when you do want to annotate.',
+    ],
+    zh: [
+      '全屏现在是真的全屏。屏幕顶部之前替一根全屏时早已隐藏的状态栏留着约 100pt —— 竖屏多出约十一行输出，横屏阅读区多出约四分之一。退出的图标更小更干净，回到实时尾部的按钮换成「箭头落在一根线上」。',
+      '额度页不再把读不到的 agent 直接丢掉。Codex 靠自己的会话日志上报额度，一天不用它，它的行就全部消失，看起来跟 app 读不到一模一样。现在 Codex 会留在原位，并说明跑一轮就能把数字读回来。',
+      '加照片这条路短了。从卡片里选完不再等它滑走才打开选择器，选中的照片也直接进输入框，不再被推进标注编辑器 —— 想标注时点一下缩略图即可。',
+    ],
+  },
+  {
     version: '1.0.3',
     en: [
       'Full screen is actually full screen now. The top of the screen was holding about 100pt for a status bar that full screen had already hidden — portrait gains roughly eleven more lines of output, landscape about a quarter more reading area. The way out is a smaller, cleaner icon, and jumping back to the live tail is an arrow standing on a line.',
