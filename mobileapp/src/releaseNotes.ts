@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '0.97.0',
+    en: [
+      'The situation board opens as a real outline. Every entry is its own row, so a long handoff section is no longer a wall of text to scroll past, or a screen of nothing. Opening one is instant now.',
+      'A section\'s count says what it holds, not how many lines it was typed on.',
+    ],
+    zh: [
+      '态势板改成真正的大纲，每条记录自己一行。长长的交接记录不再是一堵要一路划过去的墙，也不再是一屏空白。展开现在是瞬间的。',
+      '分节的计数说的是它装了什么，不是它被敲了多少行。',
+    ],
+  },
+  {
     version: '0.96.0',
     en: [
       'The usage view now says what each figure means: the plan is grouped by agent, and the token totals are labelled as what they are rather than mistaken for a billing period.',
