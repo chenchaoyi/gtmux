@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.5',
+    en: [
+      'Attaching a photo opens the markup editor again, and a staged thumbnail is tappable when you want to re-annotate one. Choosing from the attach sheet still opens the picker immediately, with no return trip through the input bar.',
+      'The demo tour was missing the whole knowledge base and most of the usage page. Both are there now, shaped the way the real ones are.',
+    ],
+    zh: [
+      '附加照片重新回到「选完直接进标注编辑器」，暂存的缩略图可以点开重新标注。从卡片里选完仍然立刻打开选择器，中间不再绕回输入栏。',
+      '演示里整块知识库和大半个用量页是空的，现在都补上了，形状和真实数据一致。',
+    ],
+  },
+  {
     version: '1.0.4',
     en: [
       'Full screen is actually full screen now. The top of the screen was holding about 100pt for a status bar that full screen had already hidden — portrait gains roughly eleven more lines of output, landscape about a quarter more reading area. The way out is a smaller, cleaner icon, and jumping back to the live tail is an arrow standing on a line.',
