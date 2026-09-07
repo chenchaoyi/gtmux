@@ -1539,6 +1539,35 @@ other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
 runs it, you don't — and writes state purely by event **timing**, telling a
 permission request from an idle nudge without reading message text.
 
+### Backing up the supervisor's memory
+
+HQ's memory is the one thing gtmux holds that is **not reproducible**: a situation board
+it has rewritten for months, a knowledge base it curated, and a `LOCAL.md` that is
+**seeded once and never overwritten** (so losing it does not self-heal — gtmux just sees
+a file it does not own).
+
+```sh
+gtmux hq --export ~/gtmux-hq.tar.gz   # the whole memory as one file
+gtmux hq --import ~/gtmux-hq.tar.gz   # put one back
+```
+
+The export is an ordinary tar.gz, **not a format of gtmux's own** — the case it exists
+for is the case where gtmux may not be there to read it back.
+
+`--import` **never overwrites in place**: an existing memory is moved to
+`hq.replaced-<timestamp>` and the path is printed. Restoring is done in a hurry and
+usually on the wrong assumption, and this must never turn "I restored last week's board"
+into "and I destroyed today's".
+
+`gtmux serve` snapshots daily to `~/.local/share/gtmux/hq-snapshots/`, keeping 14, and
+only writes when the memory actually changed. Snapshots live beside the state, **not
+inside the HQ home** — the likeliest loss is that directory going away, and a backup
+stored inside it goes too.
+
+**This layer covers accidents, not the disk.** Snapshots sit on the same one. The
+`HQ memory` row in `gtmux doctor` says how much is at risk, how long it took to
+accumulate, and whether anything at all carries it off this disk.
+
 **Other agents:** `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` wires that
 agent's own hooks file instead. **Codex** uses its additive hooks system
 (`~/.codex/hooks.json` + `features.hooks`), so it **coexists with any existing

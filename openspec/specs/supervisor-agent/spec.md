@@ -1700,3 +1700,45 @@ ARBITRARY user, not for gtmux's author or this machine's history:
 - **WHEN** `gtmux config lang zh` is set and a launchd-started serve (no
   GTMUX_LANG, no user locale) emits a wake suffix or a desktop notification
 - **THEN** it is Chinese — the same language the user's own shell resolves
+
+### Requirement: The supervisor's memory can leave the machine, and is snapshotted
+
+HQ's memory — the situation board, the knowledge base, and the operator's seed-once
+`LOCAL.md` — is the only state gtmux holds that cannot be reproduced. The system SHALL
+provide a single-file export and a matching import, in an ordinary archive format rather
+than one of gtmux's own, and SHALL snapshot the memory automatically on the resident tick.
+
+An import SHALL move an existing memory aside rather than overwrite it, and SHALL refuse
+an archive that carries no supervisor memory or that names a path escaping the
+destination. Snapshots SHALL be stored outside the HQ home, retained for a bounded
+number of days, and written only when the memory changed. The system SHALL report what
+is at risk and whether anything carries it off the disk, and SHALL NOT claim an
+off-machine backup it cannot observe.
+
+#### Scenario: The memory is restored onto a machine that lost it
+
+- **WHEN** the HQ home is deleted and an exported archive is imported
+- **THEN** the board, the knowledge base and `LOCAL.md` are restored byte for byte
+
+#### Scenario: Restoring over a live memory
+
+- **WHEN** an import runs while an HQ home already holds content
+- **THEN** the existing memory is moved to a timestamped path, that path is reported, and
+  nothing of it is lost
+
+#### Scenario: An archive that is not a supervisor memory
+
+- **WHEN** an import is pointed at an archive with no board, knowledge base or charter, or
+  at one naming a path outside the destination
+- **THEN** it is refused and the existing memory is untouched
+
+#### Scenario: A quiet machine does not evict its own history
+
+- **WHEN** the resident tick runs repeatedly and the memory has not changed
+- **THEN** no new snapshot is written, so the retained window still spans real history
+
+#### Scenario: Nothing carries it off the disk
+
+- **WHEN** no Time Machine destination and no synced folder can be observed
+- **THEN** the doctor row says so plainly rather than reporting the local snapshots as a
+  backup

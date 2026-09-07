@@ -75,6 +75,15 @@ func SlowTickEval() {
 	// Self-check sensor (hq-attention-system §8): raise a self-check trigger to HQ when
 	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here — HQ does the pass.
 	selfCheckSensor(time.Now().Unix())
+	// Snapshot the supervisor's memory (hq-memory-safety). HQ's whole claim is a memory
+	// that survives a context reset, and on the machine this was written for that was
+	// 6.1 MB over three months with nothing protecting it: no export, no snapshot, no
+	// Time Machine destination, no cloud folder. Cheap and quiet — a fingerprint check
+	// most ticks, one write on a day the memory actually moved.
+	if _, _, err := Snapshot(time.Now()); err != nil {
+		// A failed snapshot is not worth interrupting anyone; doctor reports the gap.
+		_ = err
+	}
 	// Distill sensor (hq-knowledge-distillation): raise a periodic knowledge-distillation
 	// trigger when due (weekly floor / event-volume floor, zero-change gated, ≤ 1/day).
 	// No LLM here — HQ distils the fleet delta into the KB and prunes stale.

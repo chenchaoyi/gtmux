@@ -183,7 +183,7 @@ func doctorSections() []dsection {
 		// The menu-bar app is its own concern — install state + version + on-disk path.
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks()},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks()},
-		{i18n.Tr("Storage", "存储"), []dcheck{rowDiskUsage(), rowUploads()}},
+		{i18n.Tr("Storage", "存储"), []dcheck{rowHQMemory(), rowDiskUsage(), rowUploads()}},
 	}
 	// Only for a machine that actually runs a supervisor — on any other install these
 	// rows would report a cadence for a thing that does not exist.
@@ -339,6 +339,62 @@ const (
 // rowDiskUsage reports the total gtmux state-dir footprint and flags a runaway — the
 // visible half of disk hygiene: the sweep keeps it bounded, this makes a breach legible
 // before the disk does. An unrotated daemon log (serve/tunnel.log) is the usual culprit.
+// rowHQMemory reports what the supervisor has accumulated, and what is protecting it.
+//
+// The row exists because the answer was "nothing", and nobody could have known: HQ's
+// memory is the one thing gtmux holds that is not reproducible — a board it rewrote for
+// three months, a curated knowledge base, and a LOCAL.md that is seeded ONCE and so does
+// not come back if it goes. On the machine this was written for that was 6.1 MB with no
+// export, no snapshot, no Time Machine destination and no cloud folder.
+//
+// It reports the SIZE of what is at risk, not just a tick, because "backed up" and "6 MB
+// of irreplaceable notes are backed up" are different sentences to read at 2am.
+func rowHQMemory() dcheck {
+	label := i18n.Tr("HQ memory", "中控记忆")
+	st := hq.ReadMemoryState()
+	if !st.Exists {
+		return dcheck{stInfo, label, i18n.Tr("none yet", "还没有"),
+			i18n.Tr("no supervisor on this machine", "这台机器上没有中控")}
+	}
+	size := humanBytes(st.Bytes)
+	age := ""
+	if st.OldestUnix > 0 {
+		if d := int((time.Now().Unix() - st.OldestUnix) / 86400); d > 0 {
+			age = fmt.Sprintf(i18n.Tr(", %dd of it", "，积累 %d 天"), d)
+		}
+	}
+	if st.LastSnap == "" {
+		return dcheck{stRec, label, size + age,
+			i18n.Tr("no snapshot yet — `gtmux hq --export <path>` writes it to one file (serve snapshots daily)",
+				"还没有快照 —— `gtmux hq --export <路径>` 可导出成一个文件（serve 每天会自动快照）")}
+	}
+	when := fmtAgo(st.LastSnapAt)
+	// A snapshot lives on the SAME disk. It covers the deletion, not the disk, and the
+	// row must not let anyone read it as more than that.
+	off := offMachineHint()
+	return dcheck{stOK, label, size + age,
+		fmt.Sprintf(i18n.Tr("%d local snapshots, newest %s · %s", "%d 份本地快照，最新 %s · %s"),
+			st.Snapshots, when, off)}
+}
+
+// offMachineHint says, plainly, whether anything carries this off the disk. gtmux is not
+// a backup product and will not pretend to be one; what it can do is not let the operator
+// assume a protection that is not there.
+func offMachineHint() string {
+	if out, err := exec.Command("tmutil", "destinationinfo").Output(); err == nil &&
+		!strings.Contains(string(out), "No destinations") {
+		return i18n.Tr("Time Machine is configured", "已配置 Time Machine")
+	}
+	for _, d := range []string{
+		"Library/Mobile Documents/com~apple~CloudDocs", "Dropbox", "OneDrive", "Google Drive",
+	} {
+		if fileExists(filepath.Join(homeDir(), d)) {
+			return i18n.Tr("a synced folder exists — put an export there", "有同步盘 —— 导一份过去")
+		}
+	}
+	return i18n.Tr("nothing carries it off this disk", "没有任何东西把它带离这块盘")
+}
+
 func rowDiskUsage() dcheck {
 	label := i18n.Tr("gtmux disk usage", "gtmux 磁盘占用")
 	total := treeSize(state.Dir())

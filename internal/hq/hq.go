@@ -682,6 +682,8 @@ func CmdHQ(args []string) int {
 	board := false     // --board: print the situation board instead of opening HQ
 	boardJSON := false // --json alongside --board, for a surface that wants the mtime too
 	home := false      // --home: print where a knowledge mutation has to run
+	exportTo := ""     // --export <path>: the memory as one portable file
+	importFrom := ""   // --import <path>: put one back
 	charterLang := ""  // --lang: the ONLY way the charter's language ever changes
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -710,6 +712,10 @@ func CmdHQ(args []string) int {
 				"  --board [--json]：打印态势板（只读），不打开中控。")
 			i18n.Say("  --home: print the HQ home — where a `gtmux knowledge` mutation has to run.",
 				"  --home：打印中控目录 —— `gtmux knowledge` 的写操作必须在那里执行。")
+			i18n.Say("  --export PATH: write the whole memory (board + knowledge + LOCAL.md) to one file.",
+				"  --export 路径：把整份记忆（态势板 + 知识库 + LOCAL.md）导出成一个文件。")
+			i18n.Say("  --import PATH: restore one. An existing memory is moved aside, never overwritten.",
+				"  --import 路径：还原一份。已有的记忆会被挪走留底，绝不就地覆盖。")
 			return 0
 		case a == "--rotate":
 			rotate = true
@@ -717,6 +723,24 @@ func CmdHQ(args []string) int {
 			board = true
 		case a == "--home":
 			home = true
+		case a == "--export":
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux hq: --export needs a path", "gtmux hq: --export 需要一个路径")
+				return 2
+			}
+			i++
+			exportTo = args[i]
+		case strings.HasPrefix(a, "--export="):
+			exportTo = strings.TrimPrefix(a, "--export=")
+		case a == "--import":
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux hq: --import needs a path", "gtmux hq: --import 需要一个路径")
+				return 2
+			}
+			i++
+			importFrom = args[i]
+		case strings.HasPrefix(a, "--import="):
+			importFrom = strings.TrimPrefix(a, "--import=")
 		case a == "--json":
 			boardJSON = true
 		case a == "--agent":
@@ -751,6 +775,12 @@ func CmdHQ(args []string) int {
 	}
 	if home {
 		return printHQHome()
+	}
+	if exportTo != "" {
+		return exportMemoryCmd(exportTo)
+	}
+	if importFrom != "" {
+		return importMemoryCmd(importFrom)
 	}
 	if charterLang != "" && charterLang != "en" && charterLang != "zh" {
 		i18n.Sae("gtmux hq: --lang takes en or zh, not '"+charterLang+"'",
@@ -1625,4 +1655,50 @@ func printHQHome() int {
 		return 1
 	}
 	return 0
+}
+
+// exportMemoryCmd writes the supervisor's memory to one file.
+//
+// A tarball, not a format of gtmux's own: the one case this exists for is the case where
+// gtmux may not be there to read it back.
+func exportMemoryCmd(dst string) int {
+	n, err := ExportMemory(dst)
+	if err != nil {
+		i18n.Sae("gtmux hq --export: "+err.Error(), "gtmux hq --export："+err.Error())
+		return 1
+	}
+	st := ReadMemoryState()
+	i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files)", dst, humanBytes(n), st.Files),
+		fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件）", dst, humanBytes(n), st.Files))
+	i18n.Say("  Keep it somewhere that is not this disk. It carries your project detail, so treat it like the working notes it is.",
+		"  放一份到这块盘以外的地方。里面是你的项目细节，按工作笔记来对待它。")
+	return 0
+}
+
+// importMemoryCmd restores one, never overwriting in place.
+func importMemoryCmd(src string) int {
+	moved, err := ImportMemory(src)
+	if err != nil {
+		i18n.Sae("gtmux hq --import: "+err.Error(), "gtmux hq --import："+err.Error())
+		return 1
+	}
+	i18n.Say("✓ restored the supervisor's memory from "+src, "✓ 已从 "+src+" 还原中控的记忆")
+	if moved != "" {
+		i18n.Say("  the memory that was here is at "+moved+" — delete it once you are sure",
+			"  原来那份挪到了 "+moved+" —— 确认无误后再删")
+	}
+	i18n.Say("  restart HQ so it reads the restored board and knowledge base.",
+		"  重启中控，让它读到还原后的态势板与知识库。")
+	return 0
+}
+
+// humanBytes is a size a person reads, not a byte count.
+func humanBytes(n int64) string {
+	switch {
+	case n >= 1<<20:
+		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%d KB", n/(1<<10))
+	}
+	return fmt.Sprintf("%d B", n)
 }
