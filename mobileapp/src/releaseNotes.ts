@@ -12,6 +12,31 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.0',
+    en: [
+      'A long list of changes since the last release. The ones you will notice:',
+      'The supervisor\'s knowledge base is readable from the phone, and you can close out a promoted lesson without going to the Mac.',
+      'A usage view: which plan window you are in, who is burning it, and what the machine is doing.',
+      'The situation board reads as an outline. Sections and entries open one at a time, and each pane stays folded until you want it, so a long board is a list you can scan instead of a document you scroll past.',
+      'The HQ page reports like a chief of staff rather than an instrument panel: what is owed, what was done, where you stand.',
+      'A half-typed message survives leaving the pane, and input history follows the work you are in rather than being one global list.',
+      'A send tells you what happened to it: which refusal it hit, or that the session is mid-turn and it will be handled when that turn ends.',
+      'The phone can keep a copy of the supervisor\'s memory, which rides your iPhone\'s own backup.',
+      'Neighbour panes carry their real names, jumping to a session is a first-class action, and the connection state reaches a screen reader.',
+    ],
+    zh: [
+      '距上次发布积攒了很多改动。你会注意到的是这些：',
+      '中控的知识库可以在手机上读了，晋升的条目也能直接在手机上闭环，不用回 Mac。',
+      '新增用量页：你在哪个额度窗口里、谁在烧、机器状况如何。',
+      '态势板改成大纲。分节和条目一条条点开，每个 pane 默认折着，长长的板子变成一份能扫的列表，而不是一篇要一路划过去的文档。',
+      'HQ 页像参谋长汇报，不像仪表盘：欠着什么、做了什么、你现在站在哪。',
+      '打了一半的消息在你离开会话后还在，输入历史跟着你手上的活走，不再是一个全局列表。',
+      '发消息会告诉你结果：撞上了哪种拒绝，或者那个会话正在跑、这条会在本回合结束后处理。',
+      '手机可以留一份中控记忆的副本，跟着 iPhone 自己的备份走。',
+      '相邻 pane 显示真实名字，跳到某个会话是一等操作，连接状态也能被读屏软件念出来。',
+    ],
+  },
+  {
     version: '0.99.0',
     en: [
       'The situation board no longer shows the note its author leaves for whoever edits it next. It used to be the first line you read under a heading.',

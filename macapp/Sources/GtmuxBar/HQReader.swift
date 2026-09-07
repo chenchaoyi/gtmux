@@ -274,6 +274,8 @@ struct HQReaderView: View {
     @State private var pane: KnowledgePane = .index
     @State private var pendingAct: PendingAct?
     @State private var openTopics: Set<String> = []
+    @State private var mem = HQMemoryState()
+    @State private var memError: String?
     @State private var draft = ""
     @State private var actError: String?
     @State private var busy = false
@@ -292,6 +294,17 @@ struct HQReaderView: View {
 
             Divider()
 
+            // The memory, and the way out of this machine.
+            //
+            // This window sits ON the data — the board and the base it reads are files in
+            // the HQ home — and it was the only surface that could not export them: the
+            // CLI could, the phone could keep a copy, and the Mac app, running on the
+            // machine where all of it lives, could not. The sentence about what protects
+            // it is the CLI's own, not a paraphrase, so the two cannot drift.
+            memoryBar(p)
+
+            Divider()
+
             if tab == .board {
                 boardBody(p)
             } else {
@@ -300,7 +313,10 @@ struct HQReaderView: View {
         }
         .frame(minWidth: 520, minHeight: 420)
         .background(p.bg)
-        .onAppear { store.start() }
+        .onAppear {
+            store.start()
+            mem = readHQMemoryState()
+        }
         .onDisappear { store.stop() }
         .onChange(of: tab) { pane = .index }
         .sheet(item: Binding(get: { pendingAct.map { ActSheetItem(pending: $0) } },
@@ -310,6 +326,42 @@ struct HQReaderView: View {
     }
 
     // MARK: board
+
+    @ViewBuilder private func memoryBar(_ p: Theme.Palette) -> some View {
+        HStack(spacing: 8) {
+            if mem.exists {
+                // The SIZE, not a tick: "exported" and "6 MB of irreplaceable notes are
+                // exported" are different sentences, and only the second says what a loss
+                // would cost.
+                Text("\(mem.sizeText) · \(mem.snapshots) \(l10n.tr("local snapshots", "份本地快照"))")
+                    .font(.system(size: 11)).foregroundStyle(p.fg2)
+                Text(mem.offMachine)
+                    .font(.system(size: 11)).foregroundStyle(p.fg3)
+                    .lineLimit(1).truncationMode(.tail)
+            } else {
+                Text(l10n.tr("no supervisor memory on this machine", "这台机器上没有中控记忆"))
+                    .font(.system(size: 11)).foregroundStyle(p.fg3)
+            }
+            Spacer(minLength: 8)
+            if let e = memError {
+                Text(e).font(.system(size: 11)).foregroundStyle(Theme.Status.waiting).lineLimit(1)
+            }
+            Button {
+                memError = nil
+                exportHQMemory(l10n: l10n) { err in
+                    memError = err
+                    mem = readHQMemoryState()
+                }
+            } label: {
+                Text(l10n.tr("Export…", "导出…")).font(.system(size: 11.5))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(!mem.exists)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+    }
 
     @ViewBuilder private func boardBody(_ p: Theme.Palette) -> some View {
         if let b = store.board, b.exists, let text = b.text, !text.isEmpty {

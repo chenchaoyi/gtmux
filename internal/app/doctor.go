@@ -371,28 +371,10 @@ func rowHQMemory() dcheck {
 	when := fmtAgo(st.LastSnapAt)
 	// A snapshot lives on the SAME disk. It covers the deletion, not the disk, and the
 	// row must not let anyone read it as more than that.
-	off := offMachineHint()
+	off := hq.OffMachineHint()
 	return dcheck{stOK, label, size + age,
 		fmt.Sprintf(i18n.Tr("%d local snapshots, newest %s · %s", "%d 份本地快照，最新 %s · %s"),
 			st.Snapshots, when, off)}
-}
-
-// offMachineHint says, plainly, whether anything carries this off the disk. gtmux is not
-// a backup product and will not pretend to be one; what it can do is not let the operator
-// assume a protection that is not there.
-func offMachineHint() string {
-	if out, err := exec.Command("tmutil", "destinationinfo").Output(); err == nil &&
-		!strings.Contains(string(out), "No destinations") {
-		return i18n.Tr("Time Machine is configured", "已配置 Time Machine")
-	}
-	for _, d := range []string{
-		"Library/Mobile Documents/com~apple~CloudDocs", "Dropbox", "OneDrive", "Google Drive",
-	} {
-		if fileExists(filepath.Join(homeDir(), d)) {
-			return i18n.Tr("a synced folder exists — put an export there", "有同步盘 —— 导一份过去")
-		}
-	}
-	return i18n.Tr("nothing carries it off this disk", "没有任何东西把它带离这块盘")
 }
 
 func rowDiskUsage() dcheck {
