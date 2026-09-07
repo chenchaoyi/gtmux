@@ -26,11 +26,31 @@ import (
 //     compaction_summary, task, cron_job, retry, shell_command, plugin_command. Only an
 //     absent origin or `"user"` opens a turn. Without that filter the digest's `goal`
 //     would eventually report gtmux's own hook output back to gtmux as the thing the
-//     user asked for.
+//     user asked for. Verified against a real journal: a turn's own prompt carries
+//     `{"kind":"user"}` and the date/system reminders beside it carry
+//     `{"kind":"injection"}`.
+//
+//     Its SHAPE is read leniently, and that is not defensiveness. The generated wire
+//     manifest declares `origin` a string; kimi 0.41.0 actually writes an OBJECT,
+//     `{"kind":"user"}`. Decoding it into a string made json.Unmarshal fail, which made
+//     kimiStep drop the record, which made a real session parse to ZERO turns — while
+//     thirteen unit tests built from the manifest passed. So both shapes are accepted.
 //   - `partial` marks a message still streaming. Its final form is appended again, so
 //     taking both would print the reply twice, the first copy truncated.
 //
-// Verified against kimi 0.41.0 (agent-core-v2, wire protocol 1.5).
+// The two halves of a turn are journaled in DIFFERENT records, which the manifest does
+// not make obvious and a real session does: the user's prompt is a
+// `context.append_message`, but the assistant's reply is a `context.append_loop_event`
+// carrying `content.part`. A completed headless turn writes NO assistant
+// `context.append_message` at all — reading only that record type gave a turn with a
+// prompt and an empty response.
+//
+// Those parts are already COALESCED. A reply streamed as three deltas is journaled as
+// one part holding the finished text (measured), so each part is appended as it stands
+// rather than accumulated — accumulating would print the tail of the reply twice.
+//
+// Verified against kimi 0.41.0 (agent-core-v2, wire protocol 1.5) by running a real
+// session against a local stand-in provider.
 
 // kimiHome is Kimi's data root. KIMI_CODE_HOME relocates all of it — config,
 // sessions, credentials — so it is the only override there is.
@@ -107,9 +127,9 @@ type kimiWire struct {
 	Type    string `json:"type"`
 	Time    int64  `json:"time"` // epoch ms
 	Message *struct {
-		Role    string `json:"role"`
-		Origin  string `json:"origin"`
-		Partial bool   `json:"partial"`
+		Role    string          `json:"role"`
+		Origin  json.RawMessage `json:"origin"`
+		Partial bool            `json:"partial"`
 		Content []struct {
 			Type string `json:"type"`
 			Text string `json:"text"`
@@ -119,6 +139,14 @@ type kimiWire struct {
 			Arguments string `json:"arguments"`
 		} `json:"toolCalls"`
 	} `json:"message"`
+	// The assistant side of a turn: `context.append_loop_event` with a `content.part`.
+	Event *struct {
+		Type string `json:"type"`
+		Part *struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"part"`
+	} `json:"event"`
 }
 
 // kimiText joins the text parts of a message, dropping everything else.
@@ -141,7 +169,18 @@ func (w *kimiWire) text() string {
 // kimiStep feeds one journal line to the parser.
 func kimiStep(line string, st *parseState) {
 	var w kimiWire
-	if json.Unmarshal([]byte(line), &w) != nil || w.Type != "context.append_message" || w.Message == nil {
+	if json.Unmarshal([]byte(line), &w) != nil {
+		return
+	}
+	if w.Type == kimiLoopRecord {
+		if w.Event != nil && w.Event.Type == "content.part" && w.Event.Part != nil && w.Event.Part.Type == "text" {
+			if t := strings.TrimSpace(w.Event.Part.Text); t != "" {
+				st.addText(t)
+			}
+		}
+		return
+	}
+	if w.Type != kimiMessageRecord || w.Message == nil {
 		return
 	}
 	if w.Message.Partial {
@@ -150,7 +189,7 @@ func kimiStep(line string, st *parseState) {
 	switch w.Message.Role {
 	case "user":
 		// Only a real instruction opens a turn — see the origin note above.
-		if w.Message.Origin != "" && w.Message.Origin != "user" {
+		if o := originKind(w.Message.Origin); o != "" && o != "user" {
 			return
 		}
 		// TrimSpace only. Claude's CleanUserPrompt exists to guess which user-role
@@ -172,6 +211,27 @@ func kimiStep(line string, st *parseState) {
 		}
 		st.addSteps(steps)
 	}
+}
+
+// originKind reads the origin whichever way it is written: the object kimi 0.41.0
+// actually emits (`{"kind":"user"}`) or the bare string its own manifest documents.
+// Anything else reads as absent, which lets the message through — the filter exists to
+// drop known non-user origins, not to guess at unknown ones.
+func originKind(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if json.Unmarshal(raw, &s) == nil {
+		return s
+	}
+	var o struct {
+		Kind string `json:"kind"`
+	}
+	if json.Unmarshal(raw, &o) == nil {
+		return o.Kind
+	}
+	return ""
 }
 
 // kimiTime renders the journal's epoch-ms stamp as RFC3339, the format every other

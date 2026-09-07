@@ -572,9 +572,16 @@ func Run(stdin io.Reader, args []string) int {
 		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
-		Prompt           string `json:"prompt"`            // the submitted prompt text (Claude UserPromptSubmit) — for the dispatch-verify head
-		Assistant        string `json:"assistant"`         // the final assistant text (opencode Stop) — gtmux-owned transcript (Tier 2)
-		Error            string `json:"error"`             // StopFailure's error text (best-effort; absent → generic crash wake)
+		// The submitted prompt (UserPromptSubmit) — the goal, the summary, and the
+		// dispatch-verify head all come from it. RAW because agents disagree about its
+		// TYPE: Claude sends a string, Kimi sends an array of content parts. Decoding
+		// into a string simply left it empty (the Unmarshal error here is ignored, by
+		// design, so one unknown field never costs the rest of the payload) — which on
+		// Kimi meant every prompt reached gtmux with no text: no goal, no summary, and
+		// a `goal-changed` wake that could not say what changed.
+		Prompt    json.RawMessage `json:"prompt"`
+		Assistant string          `json:"assistant"` // the final assistant text (opencode Stop) — gtmux-owned transcript (Tier 2)
+		Error     string          `json:"error"`     // StopFailure's error text (best-effort; absent → generic crash wake)
 		// Claude's Stop/SubagentStop payload lists in-flight background work still
 		// registered in the session ("running/pending + backgrounded"), so a hook can
 		// tell "session is done" from "session is paused waiting for background work".
@@ -582,6 +589,7 @@ func Run(stdin io.Reader, args []string) int {
 		BackgroundTasks []backgroundTask `json:"background_tasks"`
 	}
 	_ = json.Unmarshal(raw, &payload)
+	promptText := textOfPrompt(payload.Prompt)
 	if rawEvent == "" {
 		rawEvent = payload.HookEventName
 	}
@@ -636,7 +644,7 @@ func Run(stdin io.Reader, args []string) int {
 	if agentKey == "opencode" && agentSession != "" {
 		switch rawEvent {
 		case "UserPromptSubmit":
-			transcript.AppendOpencode(agentSession, "user", payload.Prompt)
+			transcript.AppendOpencode(agentSession, "user", promptText)
 		case "Stop":
 			transcript.AppendOpencode(agentSession, "assistant", payload.Assistant)
 		}
@@ -701,7 +709,7 @@ func Run(stdin io.Reader, args []string) int {
 	// exclusion (hq's unreadBlinks, count and pull alike) then swallows the pair.
 	// The marker makes every later event of the session a no-op.
 	if pane == "" && agentSession != "" {
-		if event == "UserPromptSubmit" && isHelperPrompt(payload.Prompt) {
+		if event == "UserPromptSubmit" && isHelperPrompt(promptText) {
 			markHelperSession(agentSession)
 			native.Remove(agentSession) // drop what its SessionStart just recorded
 			events.Append(events.Record{Ts: time.Now().Unix(), Event: "SessionEnd", Agent: display, AgentSession: agentSession})
@@ -823,11 +831,11 @@ func Run(stdin io.Reader, args []string) int {
 	// wake can never disagree about what a user act is.
 	goal := ""
 	if event == "UserPromptSubmit" {
-		goal = goalOf(payload.Prompt)
+		goal = goalOf(promptText)
 	}
 	summary, evClass := "", ""
 	if event != "" {
-		summary, evClass = eventSummary(event, payload.Prompt, pane, agentSession, agentKey)
+		summary, evClass = eventSummary(event, promptText, pane, agentSession, agentKey)
 		// A crash record carries the error head as its summary (DATA) so the wake
 		// line and the pulled delta both name what killed the turn.
 		if event == "StopFailure" && summary == "" {
@@ -998,4 +1006,37 @@ func debugf(format string, a ...any) {
 	}
 	defer f.Close()
 	fmt.Fprintf(f, "%s "+format+"\n", append([]any{time.Now().Format(time.RFC3339)}, a...)...)
+}
+
+// textOfPrompt reads a UserPromptSubmit prompt whichever way the agent writes it.
+//
+// Claude sends a plain string; Kimi 0.41.0 sends an ARRAY of content parts
+// (`[{"type":"text","text":"…"}]`), which is the same shape its transcript uses. Both
+// are read here rather than in one agent's branch, because the field is consumed in
+// four places and an empty one is silent in all of them.
+//
+// Non-text parts (images, audio) contribute nothing, which is correct: the goal line
+// and the verify head are text.
+func textOfPrompt(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if json.Unmarshal(raw, &s) == nil {
+		return s
+	}
+	var parts []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	if json.Unmarshal(raw, &parts) != nil {
+		return ""
+	}
+	var out []string
+	for _, p := range parts {
+		if p.Text != "" && (p.Type == "text" || p.Type == "") {
+			out = append(out, p.Text)
+		}
+	}
+	return strings.Join(out, "\n")
 }
