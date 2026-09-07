@@ -332,24 +332,21 @@ export function Composer({
 
   // Attach → a branded bottom sheet (AttachSheet). Nothing uploads until send.
   //
-  // A picked photo is STAGED, not opened in the editor. Routing every photo through the
-  // markup editor put a fourth full-screen surface in the way of the ordinary case —
-  // "+ → library → picker → editor → Done" to send a screenshot you had already taken,
-  // with the file named markup.png whether or not a mark was ever made. Annotating is
-  // now one tap on the thumbnail you just staged, where it is both visible and optional
-  // (user report, 2026-09-07: the whole flow reads as redundant).
+  // A picked photo opens the markup EDITOR, and that is the operator's call (2026-09-07):
+  // they annotate most of what they send, so making the editor a second tap would cost
+  // them one on nearly every photo to save one on the rare bare screenshot. Staging
+  // first was tried for exactly one release and reverted on that evidence.
   //
-  // PASTE still goes through the editor first, for a reason that is not about the UI:
-  // the clipboard hands over a data: URI and the editor is what turns it into a file the
-  // uploader can send.
-  const stagePhoto = (a: {uri?: string; fileName?: string | null; type?: string | null}) => {
-    if (!a.uri) return;
-    addAttachment(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg', true);
+  // What the attempt DID leave behind is worth keeping: the editor is also reachable by
+  // tapping an already-staged thumbnail, so a photo can be re-annotated, and one that
+  // arrived by a path that does not open the editor can still be marked up.
+  const editPhoto = (a: {uri?: string}) => {
+    if (a.uri) setMarkupUri(a.uri); // markupFor stays null — onDone STAGES it
   };
   const pickPhoto = async () => {
     try {
       const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
-      if (r.assets?.[0]) stagePhoto(r.assets[0]);
+      if (r.assets?.[0]) editPhoto(r.assets[0]);
     } catch {
       // cancelled or unsupported — ignore.
     }
@@ -357,7 +354,7 @@ export function Composer({
   const takePhoto = async () => {
     try {
       const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
-      if (r.assets?.[0]) stagePhoto(r.assets[0]);
+      if (r.assets?.[0]) editPhoto(r.assets[0]);
     } catch {
       // cancelled or unsupported — ignore.
     }
