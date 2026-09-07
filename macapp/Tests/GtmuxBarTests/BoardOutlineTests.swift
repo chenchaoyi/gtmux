@@ -1,0 +1,176 @@
+import XCTest
+@testable import GtmuxBar
+
+// These mirror mobileapp/src/screens/boardSections.test.ts case for case. Two surfaces
+// of one product must not disagree about what the board's structure IS, and the way that
+// drift starts is one side quietly answering a case the other never asked about.
+final class BoardOutlineTests: XCTestCase {
+    func testSplitsAtH2AndKeepsTheHeadingText() {
+        let s = BoardOutline.parse("## One\nalpha\n\n## Two\nbeta\n")
+        XCTAssertEqual(s.map(\.title), ["One", "Two"])
+        XCTAssertEqual(s[0].body, "alpha")
+        XCTAssertEqual(s[1].body, "beta")
+    }
+
+    func testKeepsContentBeforeTheFirstHeading() {
+        let s = BoardOutline.parse("intro line\n\n## One\nalpha\n")
+        XCTAssertEqual(s[0].title, "")
+        XCTAssertEqual(s[0].body, "intro line")
+        XCTAssertEqual(s[1].title, "One")
+    }
+
+    func testDoesNotSplitInsideAFence() {
+        // The board quotes shell and JSON constantly. Splitting on a comment would cut a
+        // section in half at a line that is not a heading at all.
+        let md = "## One\n```sh\n## not a heading\necho hi\n```\nstill section one\n\n## Two\nb"
+        let s = BoardOutline.parse(md)
+        XCTAssertEqual(s.map(\.title), ["One", "Two"])
+        XCTAssertTrue(s[0].body.contains("## not a heading"))
+        XCTAssertTrue(s[0].body.contains("still section one"))
+    }
+
+    func testNestsH3EntriesUnderTheirSection() {
+        // The board is TWO `##` sections holding several `###` entries, so stopping at
+        // `##` gives a reader two rows: a wall when open, a screen of void when shut.
+        let s = BoardOutline.parse("## One\nlead-in\n### A\naaa\n### B\nbbb\n")
+        XCTAssertEqual(s.count, 1)
+        XCTAssertEqual(s[0].body, "lead-in") // the section's OWN text, ending where A begins
+        XCTAssertEqual(s[0].children.map(\.title), ["A", "B"])
+        XCTAssertEqual(s[0].children[0].body, "aaa")
+        XCTAssertEqual(s[0].children[1].body, "bbb")
+    }
+
+    func testDoesNotRepeatAChildBodyInsideItsParent() {
+        let s = BoardOutline.parse("## One\n### A\naaa\n")
+        XCTAssertEqual(s[0].body, "")
+        XCTAssertEqual(s[0].children[0].body, "aaa")
+    }
+
+    func testEveryRowHasADistinctID() {
+        let s = BoardOutline.parse("## Same\n### Same\na\n\n## Same\n### Same\nb")
+        let ids = s.map(\.id) + s.flatMap { $0.children.map(\.id) }
+        XCTAssertEqual(Set(ids).count, ids.count)
+    }
+
+    func testAnOrphanH3KeepsItsText() {
+        let s = BoardOutline.parse("### orphan\ntext")
+        XCTAssertEqual(s[0].title, "")
+        XCTAssertTrue(s[0].body.contains("### orphan"))
+    }
+
+    func testDoesNotNestOnAnH3InsideAFence() {
+        let s = BoardOutline.parse("## One\n```md\n### not an entry\n```\ntail")
+        XCTAssertTrue(s[0].children.isEmpty)
+        XCTAssertTrue(s[0].body.contains("### not an entry"))
+    }
+
+    func testPreservesTheAuthorOrder() {
+        // The board is not chronological: a pinned handoff sits at the top and the newest
+        // progress is appended at the bottom. Re-ordering would misrepresent both.
+        let s = BoardOutline.parse("## 2026-08-13 handoff\na\n\n## 2026-08-12\nb\n\n## 2026-08-13 later\nc")
+        XCTAssertEqual(s.map(\.title), ["2026-08-13 handoff", "2026-08-12", "2026-08-13 later"])
+    }
+
+    func testEmptyBoardIsEmpty() {
+        XCTAssertTrue(BoardOutline.parse("").isEmpty)
+        XCTAssertTrue(BoardOutline.parse("\n\n  \n").isEmpty)
+    }
+
+    func testDropsTheDocumentTitleFromThePreambleOnly() {
+        // The reader has its own header saying "Situation board / 态势板". The file's `# `
+        // title rendered directly under it as a second, larger one.
+        let a = BoardOutline.parse("# gtmux HQ — 态势板\n\nYour durable posture.\n\n## ① 现状\n\nrow")
+        XCTAssertEqual(a[0].body, "Your durable posture.")
+        let b = BoardOutline.parse("## ① 现状\n\n# not a document title\n\nrow")
+        XCTAssertTrue(b[0].body.contains("# not a document title"))
+        let c = BoardOutline.parse("# 态势板\n\n## ① 现状\n\nrow")
+        XCTAssertEqual(c.map(\.title), ["① 现状"])
+    }
+
+    // MARK: the count bubble
+
+    func testCountsATableByItsRows() {
+        let table = [
+            "some prose first", "",
+            "| pane | loc | 在做什么 |", "|---|---|---|",
+            "| `%7` | HSS:0.0 | 答了第四问 |",
+            "| `%10` | HSS:1.0 | 发 changelog |",
+            "| `%46` | dup:0.0 | 查重复 |", "",
+            "**船数 17**",
+        ].joined(separator: "\n")
+        XCTAssertEqual(BoardOutline.countOwn(table), 3)
+    }
+
+    func testCountsBulletsWhenThereIsNoTable() {
+        XCTAssertEqual(BoardOutline.countOwn("- one\n- two\n  continued\n- three\n"), 3)
+    }
+
+    func testProseWithNothingCountableGetsNoBubble() {
+        // An honest absence beats a confident irrelevance.
+        XCTAssertNil(BoardOutline.countOwn("just a paragraph\n\nand another one\n"))
+        XCTAssertNil(BoardOutline.countOwn(""))
+    }
+
+    func testOwnContentWinsOverSubHeadings() {
+        // 「① 现状 — 在跑的 pane」 leads with a table of panes AND carries sub-headings.
+        // Counting the sub-headings turned a 13 into a 4, hiding the number the title
+        // just asked about.
+        let s = BoardOutline.parse("""
+        ## ① 现状 — 在跑的 pane
+
+        | pane | 在做什么 |
+        |---|---|
+        | %7 | a |
+        | %8 | b |
+        | %9 | c |
+
+        ### 附注 A
+        aaa
+
+        ### 附注 B
+        bbb
+        """)
+        XCTAssertEqual(BoardOutline.count(s[0]), 3, "the table's rows, not the two sub-headings")
+    }
+
+    func testASectionWithNoBodyIsCountedByItsEntries() {
+        let s = BoardOutline.parse("## ② 交接记录\n\n### a\nx\n\n### b\ny\n")
+        XCTAssertEqual(BoardOutline.count(s[0]), 2)
+    }
+}
+
+// The stacked row's fields, mirroring mobileapp's stackRows tests: the two surfaces must
+// agree on what a row shows and, in particular, on what it HIDES when closed.
+final class BoardRowTests: XCTestCase {
+    private let header: [[MDInline]] = [[.text("pane")], [.text("loc")], [.text("在做什么")], [.text("等你定")]]
+
+    func testPairsCellsWithTheirHeadings() {
+        let row: [[MDInline]] = [[.code("%7")], [.text("HSS:0.0")], [.text("改报告")], [.text("—")]]
+        let f = stackFields(header: header, row: row)
+        XCTAssertEqual(f.map(\.label), ["loc", "在做什么"], "an em-dash cell is dropped, not labelled")
+        XCTAssertEqual(mdPlain(f[0].value), "HSS:0.0")
+    }
+
+    func testDropsEmptyAndDashCells() {
+        // Half the board's cells are `—` or blank, and a label with nothing after it is
+        // noise — the same rule the phone applies, so a row is the same height on both.
+        let row: [[MDInline]] = [[.code("%9")], [.text("")], [.text("-")], [.text("  ")]]
+        XCTAssertTrue(stackFields(header: header, row: row).isEmpty)
+    }
+
+    func testSubtitleIsTheFirstFieldSoRowsCanBeToldApart() {
+        // A column of bare pane ids says nothing about which row is which.
+        let row: [[MDInline]] = [[.code("%7")], [.text("HSS AI Workspace:0.0")], [.text("改报告")]]
+        XCTAssertEqual(rowSubtitle(header: header, row: row), "HSS AI Workspace:0.0")
+    }
+
+    func testSubtitleIsEmptyWhenTheRowHasNothingButItsHead() {
+        XCTAssertEqual(rowSubtitle(header: header, row: [[.code("%7")]]), "")
+    }
+
+    func testSubtitleSkipsAnEmptyLeadingCell() {
+        // The first NON-EMPTY field, since an empty one is dropped before this looks.
+        let row: [[MDInline]] = [[.code("%7")], [.text("—")], [.text("改报告")]]
+        XCTAssertEqual(rowSubtitle(header: header, row: row), "改报告")
+    }
+}

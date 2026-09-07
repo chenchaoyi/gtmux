@@ -302,7 +302,9 @@ struct HQReaderView: View {
 
     @ViewBuilder private func boardBody(_ p: Theme.Palette) -> some View {
         if let b = store.board, b.exists, let text = b.text, !text.isEmpty {
-            MarkdownDoc(markdown: text, p: p)
+            // An OUTLINE, not the whole document: 74 KB on this machine, and reaching any
+            // one entry meant dragging through the rest. Same reader as the phone.
+            BoardOutlineView(markdown: text, p: p)
         } else {
             // A supervisor that has written no board is ordinary, not broken.
             empty(l10n.tr("No situation board yet — the supervisor writes one as it works",
@@ -647,27 +649,6 @@ struct MarkdownBody: View {
     }
 }
 
-/// The board, rendered.
-///
-/// Blocks are built as they scroll into view (`LazyVStack`), which is what keeps the tab
-/// switch instant: the whole document laid out at once is the bug this reader already had
-/// once, in its first form as a single SwiftUI `Text`.
-///
-/// The board's own table is six columns of prose. No window width makes that a readable
-/// grid, so a row renders as a CARD of labelled fields — the same shape the phone settled
-/// on, for the same measurement, so the document reads the same wherever it is opened.
-struct MarkdownDoc: View {
-    let markdown: String
-    let p: Theme.Palette
-
-    var body: some View {
-        ScrollView {
-            MarkdownBlocks(blocks: Markdown.parseBlocks(markdown), p: p, spacing: 9)
-                .padding(14)
-        }
-    }
-}
-
 /// The blocks themselves, built as they scroll into view.
 ///
 /// Lazy is not a nicety here: laying out a whole document at once is the bug this reader
@@ -676,6 +657,12 @@ struct MarkdownBlocks: View {
     let blocks: [MDBlock]
     let p: Theme.Palette
     let spacing: CGFloat
+    /// Each table row is a COLLAPSIBLE card, closed by default — for a table whose cells
+    /// are paragraphs. The board's pane table is the case: one pane's status cell runs
+    /// to several screens, so thirteen panes open is a document nobody reaches the end
+    /// of. Opt-in, matching the phone: a knowledge entry's table is small and part of a
+    /// sentence, and folding it would hide the answer.
+    var foldRows: Bool = false
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: spacing) {
@@ -717,8 +704,8 @@ struct MarkdownBlocks: View {
             }
         case let .table(header, rows):
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                    tableCard(header: header, row: row)
+                ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
+                    TableCard(header: header, row: row, p: p, fold: foldRows, index: i)
                 }
             }
         case .rule:
@@ -727,56 +714,14 @@ struct MarkdownBlocks: View {
     }
 
     /// One table row as a card: its first cell is the handle, the rest are labelled.
-    @ViewBuilder private func tableCard(header: [[MDInline]], row: [[MDInline]]) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            if let first = row.first {
-                spansText(first, size: 12.5, weight: .semibold)
-            }
-            ForEach(Array(row.dropFirst().enumerated()), id: \.offset) { i, cell in
-                HStack(alignment: .firstTextBaseline, spacing: 9) {
-                    Text(plain(header.count > i + 1 ? header[i + 1] : []))
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(p.fg3)
-                        .frame(width: 62, alignment: .leading)
-                    spansText(cell, size: 11.5, weight: .regular)
-                }
-            }
-        }
-        .padding(11)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(p.divider, lineWidth: 1))
-    }
-
     /// Inline runs as one selectable Text: code in the monospace face the rest of the
     /// product uses for identifiers, bold at a weight that does not compete with a heading
     /// (the board carries roughly one bold span per line).
     private func spansText(_ spans: [MDInline], size: CGFloat, weight: Font.Weight) -> Text {
-        spans.reduce(Text("")) { acc, span in
-            switch span {
-            case let .text(t):
-                return acc + Text(t).font(.system(size: size, weight: weight)).foregroundColor(p.fg)
-            case let .code(t):
-                return acc + Text(t).font(.system(size: size - 0.5, design: .monospaced)).foregroundColor(p.fg2)
-            case let .bold(t):
-                return acc + Text(t).font(.system(size: size, weight: .semibold)).foregroundColor(p.fg)
-            case let .link(t):
-                // An edge in the knowledge graph. Styled as one and stripped of its
-                // brackets: the reader is looking at a reference, not at markup.
-                return acc + Text(t).font(.system(size: size - 0.5)).foregroundColor(Theme.Status.working)
-            }
-        }
+        mdSpansText(spans, size: size, weight: weight, p: p)
     }
 
-    private func plain(_ spans: [MDInline]) -> String {
-        spans.map { span in
-            switch span {
-            case let .text(t): return t
-            case let .code(t): return t
-            case let .bold(t): return t
-            case let .link(t): return t
-            }
-        }.joined()
-    }
+    private func plain(_ spans: [MDInline]) -> String { mdPlain(spans) }
 }
 
 /// The window, kept across closes so it reopens where the reader left it — the same shape
@@ -803,4 +748,38 @@ final class HQReaderController {
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
     }
+}
+
+/// Inline runs as one selectable Text: code in the monospace face the rest of the product
+/// uses for identifiers, bold at a weight that does not compete with a heading (the board
+/// carries roughly one bold span per line).
+///
+/// File scope because two views render spans now — the document blocks and the folding
+/// table card — and a second copy is how the two would start to look different.
+func mdSpansText(_ spans: [MDInline], size: CGFloat, weight: Font.Weight, p: Theme.Palette) -> Text {
+    spans.reduce(Text("")) { acc, span in
+        switch span {
+        case let .text(t):
+            return acc + Text(t).font(.system(size: size, weight: weight)).foregroundColor(p.fg)
+        case let .code(t):
+            return acc + Text(t).font(.system(size: size - 0.5, design: .monospaced)).foregroundColor(p.fg2)
+        case let .bold(t):
+            return acc + Text(t).font(.system(size: size, weight: .semibold)).foregroundColor(p.fg)
+        case let .link(t):
+            // An edge in the knowledge graph. Styled as one and stripped of its brackets:
+            // the reader is looking at a reference, not at markup.
+            return acc + Text(t).font(.system(size: size - 0.5)).foregroundColor(Theme.Status.working)
+        }
+    }
+}
+
+func mdPlain(_ spans: [MDInline]) -> String {
+    spans.map { span in
+        switch span {
+        case let .text(t): return t
+        case let .code(t): return t
+        case let .bold(t): return t
+        case let .link(t): return t
+        }
+    }.joined()
 }
