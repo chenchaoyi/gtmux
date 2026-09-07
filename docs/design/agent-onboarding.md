@@ -225,6 +225,22 @@ id (piped alongside the prompt) so it lines up with the `resume` record `session
   registered explicitly).
 - [ ] **Read-only tools never flag "needs you."** `sideEffectingTools` in `classify.go` is
   the allowlist; keep read-only tools (Read/Grep/Glob/…) out of it.
+- [ ] **A generated manifest is documentation, not the bytes.** Kimi ships a machine-
+  generated wire manifest, and three of its claims did not survive contact with a real
+  session: `origin` is documented as a string and written as `{"kind":"user"}`; the
+  assistant's reply is not a message record at all but a loop event carrying a
+  `content.part`; and a UserPromptSubmit `prompt` is a string for Claude and an ARRAY of
+  content parts for Kimi. Each one failed SILENTLY — a JSON type mismatch fails the
+  whole record, and an empty prompt is empty in all four places it is consumed. Thirteen
+  fixture tests built from the manifest passed while a real journal parsed to ZERO turns.
+  **Get real bytes before believing a schema**, commit one as a fixture, and prefer
+  `json.RawMessage` + a lenient reader for any field two agents might type differently.
+- [ ] **You do not need an account to get real bytes.** Kimi speaks the OpenAI
+  chat-completions protocol to any `base_url`, so a ~40-line local stand-in provider
+  (`type = "openai"`, `base_url = "http://127.0.0.1:…"`) runs a REAL session end to end:
+  real hooks, a real `wire.jsonl`, real pane identity. Every defect above was found that
+  way, with no Moonshot account. Check for the same escape hatch on the next agent
+  before settling for fixtures.
 - [ ] **An unknown field can take the whole config down.** Kimi's `[[hooks]]` accepts
   exactly four keys and rejects the ENTIRE file on a fifth — so an ownership marker
   written into the entry would have cost the user their providers, not one hook.

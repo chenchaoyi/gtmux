@@ -32,10 +32,13 @@ var tsField = regexp.MustCompile(`"timestamp":"([^"]+)"`)
 // have said so.
 var kimiMsTs = regexp.MustCompile(`"time":(\d+)`)
 
-// kimiMessageRecord is the record type that carries the conversation. The scope
-// matters: all sixty of Kimi's record types carry a `time`, so an unscoped match would
-// report the last token count or permission decision as the last thing the agent SAID.
-const kimiMessageRecord = `"type":"context.append_message"`
+// The two Kimi record types that carry the conversation. The scope matters: all sixty
+// of Kimi's record types carry a `time`, so an unscoped match would report the last
+// token count or permission decision as the last thing the agent SAID.
+const (
+	kimiMessageRecord = "context.append_message"
+	kimiLoopRecord    = "context.append_loop_event"
+)
 
 // messageTimeIn extracts a message timestamp (unix seconds) from a raw log chunk —
 // the LAST match when `last`, the FIRST otherwise. 0 when there is none.
@@ -49,7 +52,9 @@ func messageTimeIn(agent, buf string, last bool) int64 {
 	if normalizeAgent(agent) == "kimi" {
 		out := int64(0)
 		for _, ln := range strings.Split(buf, "\n") {
-			if !strings.Contains(ln, kimiMessageRecord) {
+			// Both halves of a turn count: the prompt is an append_message, the reply
+			// is a loop event carrying a content.part.
+			if !strings.Contains(ln, kimiMessageRecord) && !strings.Contains(ln, "content.part") {
 				continue
 			}
 			m := kimiMsTs.FindStringSubmatch(ln)
@@ -132,8 +137,7 @@ func FirstMessageTime(agent, sessionID string) int64 {
 		return 0
 	}
 	defer f.Close()
-	const head = 64 << 10
-	buf := make([]byte, head)
+	buf := make([]byte, 64<<10)
 	n, err := f.Read(buf)
 	if n == 0 || (err != nil && err != io.EOF) {
 		return 0
@@ -180,8 +184,7 @@ func SessionOrigin(agent, sessionID string) (reset string, at int64) {
 		return "", 0
 	}
 	defer f.Close()
-	const head = 64 << 10
-	buf := make([]byte, head)
+	buf := make([]byte, 64<<10)
 	n, err := f.Read(buf)
 	if n == 0 || (err != nil && err != io.EOF) {
 		return "", 0

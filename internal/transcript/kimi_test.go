@@ -367,3 +367,123 @@ func TestKimiTimesSurviveATruncatedWindow(t *testing.T) {
 		t.Errorf("got %d, want 1788700010 — a half-line at the window edge was read", got)
 	}
 }
+
+// --- against a REAL journal --------------------------------------------------
+//
+// testdata/kimi-wire.jsonl is a genuine wire.jsonl, produced by running kimi 0.41.0
+// against a local stand-in provider (no account needed) and scrubbed of local paths.
+// It is here because the fixtures above — every one of them built from Kimi's own
+// generated wire manifest, and all thirteen passing — described a shape the runtime
+// does not write. Against the real bytes the parser returned ZERO turns.
+//
+// Three things the manifest did not say and this file does:
+//
+//  1. `origin` is an OBJECT (`{"kind":"user"}`), not the documented string. Decoding
+//     it into a string failed the whole unmarshal and dropped every message.
+//  2. The assistant's reply is NOT a `context.append_message`. A completed turn
+//     writes none at all; the reply is a `context.append_loop_event` carrying a
+//     `content.part`.
+//  3. Because of (2), the last thing SAID in a session is a loop event, and the
+//     message-time readers matched only append_message — so on a real session
+//     LastMessageTime returned 0. (The 69,521-byte `llm.tools_snapshot` in this file
+//     looks like it should also overflow the 64KB window; measured, it does not — it
+//     is written once per session, AFTER the first messages, and a second turn does
+//     not repeat it. The window is fine; the record type was the bug.)
+func realKimiSession(t *testing.T) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("KIMI_CODE_HOME", home)
+	id := "session_e3ac5267-8f9a-4941-9dae-13687a969056"
+	dir := filepath.Join(home, "sessions", "wd_proj_fbe8ae6f0ff8", id)
+	if err := os.MkdirAll(filepath.Join(dir, "agents", "main"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join("testdata", "kimi-wire.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "agents", "main", "wire.jsonl"), b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	line, _ := json.Marshal(kimiIndexLine{SessionID: id, SessionDir: dir, WorkDir: "/proj"})
+	if err := os.WriteFile(filepath.Join(home, "session_index.jsonl"), append(line, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func TestKimiReadsARealSession(t *testing.T) {
+	id := realKimiSession(t)
+	turns, err := Load("kimi", id, 10)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(turns) != 1 {
+		t.Fatalf("got %d turns from a real one-turn session, want 1", len(turns))
+	}
+	if turns[0].Prompt != "add kimi support" {
+		t.Errorf("prompt = %q", turns[0].Prompt)
+	}
+	// The half that lives in a loop event, not in a message record.
+	if turns[0].Response != "Wired the manifest and the installer." {
+		t.Errorf("response = %q — the assistant's reply is a content.part, not a message", turns[0].Response)
+	}
+	if turns[0].Time == "" {
+		t.Error("no timestamp")
+	}
+}
+
+func TestKimiRealOriginFiltersTheInjections(t *testing.T) {
+	// The real session carries two injected user-role messages beside the prompt — a
+	// date reminder and a permission-mode notice, both `{"kind":"injection"}`. Neither
+	// is the goal, and the digest would have reported one as it.
+	id := realKimiSession(t)
+	turns, _ := Load("kimi", id, 10)
+	for _, x := range turns {
+		if strings.Contains(x.Prompt, "system-reminder") {
+			t.Errorf("an injected reminder opened a turn: %q", x.Prompt)
+		}
+	}
+}
+
+func TestKimiRealMessageTimesAreFound(t *testing.T) {
+	// The last thing said in this session is the assistant's reply, which is a loop
+	// event; matching only append_message made LastMessageTime return 0 on a real
+	// session — and a criterion with no data is omitted from the wake line, so
+	// nothing would have said so.
+	id := realKimiSession(t)
+	first, last := FirstMessageTime("kimi", id), LastMessageTime("kimi", id)
+	if first == 0 {
+		t.Error("FirstMessageTime = 0 on a real session — HQ self-rotation's age criterion would be blind")
+	}
+	if last == 0 {
+		t.Error("LastMessageTime = 0 on a real session — the assistant's reply is a loop event, not a message record")
+	}
+	if last < first {
+		t.Errorf("last (%d) is before first (%d)", last, first)
+	}
+}
+
+func TestKimiRealOriginIsAnObjectNotAString(t *testing.T) {
+	// Pinned on its own because it is the one that silently emptied everything: the
+	// generated manifest declares a string, the runtime writes {"kind":"user"}, and a
+	// type mismatch fails the WHOLE record rather than one field.
+	if got := originKind(json.RawMessage(`{"kind":"user"}`)); got != "user" {
+		t.Errorf("object origin = %q, want user", got)
+	}
+	if got := originKind(json.RawMessage(`{"kind":"injection","variant":"date_change"}`)); got != "injection" {
+		t.Errorf("injection origin = %q", got)
+	}
+	// The documented shape still works, in case a later version writes it.
+	if got := originKind(json.RawMessage(`"user"`)); got != "user" {
+		t.Errorf("string origin = %q, want user", got)
+	}
+	// Anything unrecognised reads as absent, which lets the message THROUGH: the
+	// filter drops known non-user origins, it does not guess at unknown ones.
+	if got := originKind(json.RawMessage(`12`)); got != "" {
+		t.Errorf("unknown origin = %q, want empty", got)
+	}
+	if got := originKind(nil); got != "" {
+		t.Errorf("absent origin = %q, want empty", got)
+	}
+}
