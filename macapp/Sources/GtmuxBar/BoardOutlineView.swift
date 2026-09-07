@@ -31,7 +31,10 @@ struct BoardOutlineView: View {
                     sectionRow(sec, sections: sections)
                 }
             }
-            .padding(.horizontal, 14)
+            // Trailing room for the scroll indicator, which sat on top of the count
+            // bubble and clipped it against the window edge.
+            .padding(.leading, 14)
+            .padding(.trailing, 20)
             .padding(.vertical, 8)
         }
         .onAppear {
@@ -207,8 +210,20 @@ struct TableCard: View {
                 }
             }
         }
-        .padding(11)
+        // A CLOSED row is a row, not a card. The card exists to hold a block of labelled
+        // fields; with the fields hidden it is chrome around one short line, and thirteen
+        // of them read as a pile of boxes rather than a list you can scan. Open, the card
+        // comes back and says where the block begins and ends.
+        .padding(.horizontal, shut ? 2 : 11)
+        .padding(.vertical, shut ? 5 : 11)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(p.divider, lineWidth: 1))
+        .overlay(alignment: .bottom) {
+            if shut { Rectangle().fill(p.divider).frame(height: 1) }
+        }
+        .overlay {
+            if !shut { RoundedRectangle(cornerRadius: 10).strokeBorder(p.divider, lineWidth: 1) }
+        }
+        // Outside the border: an open card needs air from the rows it sits between.
+        .padding(.vertical, shut ? 0 : 5)
     }
 }

@@ -24,6 +24,13 @@ import SwiftUI
 // the fleet is untouched and still remote-only. See HQKnowledgeActions.swift for the four
 // verbs and DESIGN §12 for the boundary as it now runs.
 
+/// How many recent entries lead the knowledge index.
+///
+/// Small on purpose: this answers "what did it just learn", which is a glance, not a
+/// browse. Everything else is reachable under its topic, so the number is a display
+/// choice and not a limit on what can be acted on.
+let KBRecentCount = 12
+
 /// One knowledge entry, as `gtmux knowledge list --json` prints it.
 struct KBEntry: Decodable, Identifiable {
     let id: String
@@ -109,6 +116,9 @@ final class HQReaderStore: ObservableObject {
     @Published private(set) var board: BoardDoc?
     @Published private(set) var entries: [KBEntry] = []
     @Published private(set) var candidates: [KBCandidateGroup] = []
+    /// The whole base grouped by topic, biggest first — derived from `entries`, so the
+    /// two can never disagree about what is filed where.
+    var topics: [KBTopic] { knowledgeTopics(entries) }
     @Published private(set) var loading = true
 
     private var timer: Timer?
@@ -263,6 +273,7 @@ struct HQReaderView: View {
     @State var tab: HQReaderTab
     @State private var pane: KnowledgePane = .index
     @State private var pendingAct: PendingAct?
+    @State private var openTopics: Set<String> = []
     @State private var draft = ""
     @State private var actError: String?
     @State private var busy = false
@@ -369,16 +380,53 @@ struct HQReaderView: View {
                         ForEach(store.candidates) { c in candidateRow(c, p) }
                     }
                     if !store.entries.isEmpty {
+                        // What just landed, at a glance. A lesson recorded wrong is not
+                        // inert — it is echoed into every dispatch — so spot-checking the
+                        // recent writes is the cheapest way to catch one, and it is the
+                        // question this list is opened with.
                         sectionHead(l10n.tr("newest", "最近"), store.entries.count, p, accent: false)
-                        // Every entry, not the first 60. The cap was right while this list
-                        // was eagerly laid out; it is wrong now that the window ACTS on
-                        // entries, because a cap is an entry the commander cannot retire.
-                        // The rows are lazy, so the base's real 330 cost what is on screen.
-                        ForEach(store.entries) { e in row(e, p, showWhy: false) }
+                        ForEach(store.entries.prefix(KBRecentCount)) { e in row(e, p, showWhy: false) }
+
+                        // And the whole base, BY TOPIC, folded. This list used to be all
+                        // 386 entries in one run — deliberately uncapped, because "a cap
+                        // is an entry the commander cannot retire". That reasoning still
+                        // holds and is why the cap above is safe: every entry is here,
+                        // inside its topic, so none has become unreachable. Seven rows
+                        // instead of 386.
+                        sectionHead(l10n.tr("topics", "主题"), store.topics.count, p, accent: false)
+                        ForEach(store.topics) { t in
+                            topicGroup(t, p)
+                        }
                     }
                 }
                 .padding(.bottom, 10)
             }
+        }
+    }
+
+    /// One topic, folded. Closed by default: the point of grouping is to see the whole
+    /// vocabulary at once, and nothing here is the row you came for.
+    @ViewBuilder private func topicGroup(_ t: KBTopic, _ p: Theme.Palette) -> some View {
+        let shown = openTopics.contains(t.name)
+        Button {
+            if shown { openTopics.remove(t.name) } else { openTopics.insert(t.name) }
+        } label: {
+            HStack(spacing: 8) {
+                Text(shown ? "▾" : "▸")
+                    .font(.system(size: 11)).foregroundStyle(p.fg3).frame(width: 11, alignment: .leading)
+                Text(t.name).font(.system(size: 12.5, weight: .medium)).foregroundStyle(p.fg)
+                Spacer(minLength: 6)
+                Text("\(t.entries.count)")
+                    .font(.system(size: 10.5).monospacedDigit()).foregroundStyle(p.fg3)
+            }
+            .contentShape(Rectangle())
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+        }
+        .buttonStyle(.plain)
+        Divider().overlay(p.divider)
+        if shown {
+            ForEach(t.entries) { e in row(e, p, showWhy: false) }
         }
     }
 
@@ -703,7 +751,9 @@ struct MarkdownBlocks: View {
                 spansText(spans, size: 12, weight: .regular)
             }
         case let .table(header, rows):
-            VStack(alignment: .leading, spacing: 8) {
+            // No gap between CLOSED rows: they are separated by their own hairline, and
+            // a gap as well would put each one back in a box of white space.
+            VStack(alignment: .leading, spacing: foldRows ? 0 : 8) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                     TableCard(header: header, row: row, p: p, fold: foldRows, index: i)
                 }

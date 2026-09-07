@@ -230,7 +230,17 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold}: {b: Extract<Block, {t
           </Text>
         );
         return (
-          <View key={i} style={[styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}]}>
+          // A CLOSED row is a row, not a card. The card exists to hold a block of
+          // labelled fields; with the fields hidden it is chrome around one short line,
+          // and thirteen of them read as a pile of boxes rather than a list you can
+          // scan. Open, the card comes back and says where the block begins and ends.
+          <View
+            key={i}
+            style={[
+              shut
+                ? [styles.stackShut, {borderBottomColor: c.border}]
+                : [styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}],
+            ]}>
             {fold ? (
               <TouchableOpacity
                 testID={`md-stack-row-${i}`}
@@ -370,7 +380,8 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     marginBottom: 10,
   },
-  stackHead: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  stackShut: {borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 2},
+  stackHead: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6},
   stackChevron: {width: 10},
   stackSub: {flexShrink: 1, maxWidth: '55%'},
   stackField: {flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 3},

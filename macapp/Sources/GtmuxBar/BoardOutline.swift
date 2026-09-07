@@ -173,3 +173,33 @@ enum BoardOutline {
         return t.allSatisfy { "|-: \t".contains($0) }
     }
 }
+
+/// One topic and the entries filed under it.
+struct KBTopic: Identifiable {
+    let name: String
+    let entries: [KBEntry]
+    var id: String { name }
+}
+
+/// knowledgeTopics groups entries by topic, BIGGEST FIRST, matching the phone.
+///
+/// The base is 386 entries across seven topics, two of which hold 177 and 162. A flat
+/// list of 386 is not a list anyone reads; it is a thing you scroll past looking for the
+/// end. Grouped and folded, the whole base is seven rows.
+///
+/// Biggest first because that is what the phone shows and a reader who learns the order
+/// on one screen should not have to learn it again on the other. Ties break on the name,
+/// so two topics of equal size do not swap places between polls.
+func knowledgeTopics(_ entries: [KBEntry]) -> [KBTopic] {
+    var order: [String] = []
+    var byTopic: [String: [KBEntry]] = [:]
+    for e in entries {
+        if byTopic[e.topic] == nil { order.append(e.topic) }
+        byTopic[e.topic, default: []].append(e)
+    }
+    return order
+        .map { KBTopic(name: $0, entries: byTopic[$0] ?? []) }
+        .sorted { a, b in
+            a.entries.count == b.entries.count ? a.name < b.name : a.entries.count > b.entries.count
+        }
+}
