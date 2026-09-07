@@ -1397,6 +1397,27 @@ gtmux uninstall [hooks|app|all]     # 反过来卸掉（不给目标就问你）
 `gtmux hook` 是产出方 —— 由 Claude Code 来跑，不是你来跑 ——
 它纯粹按事件**时序**写状态，不读消息文本就能把一次权限请求和一次空闲提醒区分开。
 
+### 备份中控的记忆
+
+参谋长的记忆是 gtmux 手上**唯一不可再生**的东西：一份它改了几个月的态势板、一个它自己策展的知识库，
+以及一份**种一次、永不覆盖**的 `LOCAL.md`（丢了不会自愈 —— gtmux 只会认为你已经有了）。
+
+```sh
+gtmux hq --export ~/gtmux-hq.tar.gz   # 整份记忆导成一个文件
+gtmux hq --import ~/gtmux-hq.tar.gz   # 还原一份
+```
+
+导出的是普通 tar.gz，**不是 gtmux 自己发明的格式** —— 因为它存在的那个场景里，gtmux 可能已经不在了。
+
+`--import` **绝不就地覆盖**：已有的记忆会被挪到 `hq.replaced-<时间戳>` 留底，路径会打印出来。
+还原常常是在慌乱中、且基于错误的假设做的，这件事绝不能把「我还原了上周的板子」变成「顺手毁了今天的」。
+
+`gtmux serve` 每天自动快照到 `~/.local/share/gtmux/hq-snapshots/`，保留 14 份，**只在记忆真的变了时才写**。
+快照放在 state 目录、**不在中控目录里面** —— 最可能发生的丢失就是那个目录没了，backup 放在里面会一起没。
+
+**这一层只挡事故，不挡硬盘。** 快照和数据在同一块盘上。`gtmux doctor` 的「中控记忆」那行会直接说清
+有多少东西、积累了多久、有没有任何东西把它带离这块盘。
+
 **其它 agent：** `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` 改成接那个 agent
 自己的 hook 文件。**Codex** 用的是它可叠加的 hooks 系统
 （`~/.codex/hooks.json` + `features.hooks`），所以它**与你已有的 `notify` 共存**
