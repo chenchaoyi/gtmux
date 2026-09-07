@@ -43,9 +43,30 @@ export function AttachSheet({
   // "+→ Photo Library" did nothing. onDismiss fires post-animation, so the picker
   // presents cleanly. A ref (not state) avoids an extra render on selection.
   const pendingRef = React.useRef<null | (() => void)>(null);
+
+  // Dismissing WITHOUT the slide, but only on the path that leads somewhere.
+  //
+  // That ordering is not negotiable — see above — but the animation in front of it is.
+  // Sliding this sheet all the way back down took ~300ms during which the composer was
+  // the whole screen, and only then did the system picker start its own slide up. Two
+  // full sheet animations to choose one photo, with a pointless return to the input bar
+  // in between, which is exactly what it looked like (user report, 2026-09-07). Closing
+  // instantly hands those milliseconds to the picker and reads as one movement: this
+  // sheet becomes that one. Dismissing by BACKDROP or back-gesture still slides, because
+  // there the sheet going away IS the outcome and the motion is the feedback.
+  const [instant, setInstant] = React.useState(false);
+  const choose = (fn: () => void) => {
+    pendingRef.current = fn;
+    setInstant(true);
+    onClose();
+  };
+
+  // Photo Library first: it is what this sheet is opened for. The phone is a remote
+  // control for a Mac, and what people send it is a screenshot they already took —
+  // Camera led the list only because it was the first row written.
   const rows: Row[] = [
-    {icon: CameraIcon, title: zh ? '拍照' : 'Camera', sub: zh ? '拍一张新照片' : 'Take a new photo', onPress: onCamera},
     {icon: PhotoLibraryIcon, title: zh ? '相册' : 'Photo Library', sub: zh ? '从相册选择照片' : 'Choose from your library', onPress: onPhoto},
+    {icon: CameraIcon, title: zh ? '拍照' : 'Camera', sub: zh ? '拍一张新照片' : 'Take a new photo', onPress: onCamera},
     {icon: FileIcon, title: zh ? '文件' : 'File', sub: zh ? '上传文件到主机' : 'Upload a file to the host', onPress: onFile},
     {icon: PasteIcon, title: zh ? '粘贴' : 'Paste', sub: zh ? '粘贴剪贴板的内容' : 'Paste from the clipboard', onPress: onPaste},
   ];
@@ -53,11 +74,12 @@ export function AttachSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType={instant ? 'none' : 'slide'}
       onRequestClose={onClose}
       onDismiss={() => {
         const fn = pendingRef.current;
         pendingRef.current = null;
+        setInstant(false); // the next open slides in normally
         fn?.();
       }}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
@@ -73,10 +95,7 @@ export function AttachSheet({
               key={r.title}
               accessibilityLabel={`attach-${i}`}
               activeOpacity={0.6}
-              onPress={() => {
-                pendingRef.current = r.onPress; // run after the sheet dismisses (iOS present-race)
-                onClose();
-              }}
+              onPress={() => choose(r.onPress)} // runs after dismissal (iOS present-race)
               style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
               <View style={[styles.tile, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
                 <r.icon size={22} color={pal.fg2} />
