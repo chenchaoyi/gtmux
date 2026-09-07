@@ -19,7 +19,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {Edge, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Agent, paneLabel, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {Debug} from '../debug';
@@ -41,7 +41,7 @@ import {ApprovalCard} from '../ui/ApprovalCard';
 import {NativeTerm, TERM_BG} from '../ui/NativeTerm';
 import {DiffModal} from '../ui/DiffModal';
 import {agentLabel} from './PaneBrowserScreen';
-import {StatusColor} from '../ui/theme';
+import {BRAND, StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {isSplitCanvas} from '../ui/layout';
 import {historyScope} from '../state/history';
@@ -79,6 +79,21 @@ function newSendId(): string {
 
 // DetailScreen is the stack route (compact); it wraps the presentational
 // DetailView, which the iPad split-view also renders directly in its main pane.
+/**
+ * Which safe-area edges the detail view applies.
+ *
+ * Full-screen drops the TOP one. The status bar is already hidden there, so the inset was
+ * ~59pt reserved for nothing at the top of a view whose entire purpose is reading space —
+ * a complaint the operator had to make twice (2026-09-07). The floating exit control
+ * positions itself off the raw inset instead, so it still clears the Dynamic Island.
+ *
+ * The HORIZONTAL edges stay in BOTH modes: in landscape the notch is on a side, and
+ * without them the terminal and the chat run underneath it. They are 0 in portrait.
+ */
+export function safeAreaEdges(fullscreen: boolean): Edge[] {
+  return fullscreen ? ['left', 'right'] : ['top', 'left', 'right'];
+}
+
 export function DetailScreen({route, navigation}: any) {
   return (
     <DetailView
@@ -101,6 +116,9 @@ export function DetailView({
   initialMode?: DetailMode;
   onOpenPane?: (row: PaneRow) => void;
 }) {
+  // In full-screen the container drops its top edge so content uses the whole screen,
+  // which means the floating exit control has to clear the Dynamic Island on its own.
+  const insets = useSafeAreaInsets();
   const {client, agents, conn, isGuest, inputPanes, demo} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
   // A split canvas means we're embedded in the iPad split-view's main pane (never a
@@ -526,12 +544,16 @@ export function DetailView({
       style={[styles.safe, {backgroundColor: backdrop}]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar hidden={fullscreen} />
-      {/* Keep the top safe-area inset even in full-screen so the floating control isn't
-          hidden under the notch / Dynamic Island — and keep the HORIZONTAL ones too: in
-          landscape the notch is on a SIDE, and with only the top edge applied the terminal
-          and the chat both ran underneath it. Horizontal insets are 0 in portrait, so this
-          is a landscape-only change. */}
-      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      {/* Full-screen DROPS the top edge: the status bar is already hidden here, so that
+          inset was ~59pt of reserved nothing above a view whose whole point is reading
+          space, and the content layer then sat another 42pt below it. Both are reclaimed
+          — content runs to the physical top and the island crosses a SCROLLING region,
+          which you can always move. The exit control positions itself off the raw inset
+          instead (see `insets` above).
+          The HORIZONTAL edges stay in both modes: in landscape the notch is on a SIDE,
+          and without them the terminal and the chat run underneath it. They are 0 in
+          portrait, so they cost nothing there. */}
+      <SafeAreaView style={styles.safe} edges={safeAreaEdges(fullscreen)}>
       {/* header: back · badge · title/sub. Auto-collapses to reclaim space while you
           browse history/scrollback; reveals on flicking back to the live tail. */}
       {!fullscreen && (
@@ -743,7 +765,7 @@ export function DetailView({
       <View style={styles.body}>
       {seenChat && (
         <View
-          style={[styles.layer, fullscreen && styles.layerFs, mode === 'chat' ? styles.layerOn : styles.layerOff]}
+          style={[styles.layer, mode === 'chat' ? styles.layerOn : styles.layerOff]}
           pointerEvents={mode === 'chat' ? 'auto' : 'none'}>
           {chatEl}
         </View>
@@ -751,7 +773,7 @@ export function DetailView({
       {seenTerm && (
       /* pane screen (colored) — native RN <Text> renderer (selectable, no keyboard) */
       <View
-        style={[styles.layer, fullscreen && styles.layerFs, mode === 'terminal' ? styles.layerOn : styles.layerOff]}
+        style={[styles.layer, mode === 'terminal' ? styles.layerOn : styles.layerOff]}
         pointerEvents={mode === 'terminal' ? 'auto' : 'none'}
         testID={TestIds.detail.pane}>
         {termEl}
@@ -787,7 +809,7 @@ export function DetailView({
       {/* full-screen exit pill — at body level so it floats over EITHER mode (the
           top chrome is hidden in full-screen; this is the way back). */}
       {fullscreen && (
-        <View style={styles.fsBar}>
+        <View style={[styles.fsBar, {top: insets.top}]}>
           {/* An ICON, not a labelled pill. The pill was the width of its sentence and sat
               a long way down the screen, which is a lot of chrome to carry for a control
               you use once. Four arrows pulling inward say the same thing wordlessly, and
@@ -934,21 +956,17 @@ function FsBtn({label, onPress, testID}: {label: string; onPress: () => void; te
       onPress={onPress}
       style={styles.fsBtn}
       hitSlop={hit}>
-      <ExitFullScreenIcon size={19} color={FS_ACCENT} />
+      <ExitFullScreenIcon size={15} color={FS_ACCENT} />
     </TouchableOpacity>
   );
 }
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
-// fsTopInset clears the floating full-screen exit control: its 36pt height plus a small
-// gap. Content in full-screen starts below it.
-const fsTopInset = 42;
-
 // The brand cyan, fixed. This control floats over a full screen of terminal output, so it
 // takes its colour from the brand rather than the palette — which in light mode would be
 // near-black on a chip that is always dark, i.e. invisible.
-const FS_ACCENT = '#06B6D4';
+const FS_ACCENT = BRAND;
 
 const styles = StyleSheet.create({
   safe: {flex: 1},
@@ -1010,12 +1028,6 @@ const styles = StyleSheet.create({
   // Stacked, always-laid-out mode layers (see the body comment). Toggling opacity/
   // zIndex never relayouts — that's what makes switching instant after first mount.
   layer: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0},
-  // In full-screen the exit pill FLOATS over the content, which meant the top line was
-  // permanently under it — tolerable in portrait, plainly wrong in landscape where the
-  // whole reading area is ~390pt tall (user report, 2026-08-09). The content starts below
-  // the pill instead. It costs ~46pt of the reading space §"全屏模式 = 阅读态" maximises,
-  // and that is the right trade: space you can see beats space that hides a line.
-  layerFs: {top: fsTopInset},
   layerOn: {opacity: 1, zIndex: 1},
   layerOff: {opacity: 0, zIndex: 0},
   termWrap: {flex: 1},
@@ -1029,19 +1041,18 @@ const styles = StyleSheet.create({
   // theme or a light one.
   fsBar: {
     position: 'absolute',
-    // Hard against the safe area. The 8pt it used to add put the control a visible
-    // distance below the Dynamic Island for no reason — the inset is already the whole
-    // clearance the island needs, and anything on top of it just reads as a gap.
-    top: 0,
+    // `top` is set inline from the safe-area inset: in full-screen the container no
+    // longer applies that edge (content uses the whole screen), so this control has to
+    // clear the Dynamic Island itself.
     left: 10, // top-LEFT so it doesn't collide with the chat's top-right collapse bar
     zIndex: 10, // above the mode layers (layerOn uses zIndex:1) so it's tappable
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#141416', // opaque: nothing behind it may show through
-    borderRadius: 18,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.45)',
-    paddingHorizontal: 4,
+    paddingHorizontal: 1,
     // Separation that does not depend on the fill contrasting with the content.
     shadowColor: '#000',
     shadowOpacity: 0.5,
@@ -1049,5 +1060,5 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     elevation: 6,
   },
-  fsBtn: {width: 36, height: 36, alignItems: 'center', justifyContent: 'center'},
+  fsBtn: {width: 28, height: 28, alignItems: 'center', justifyContent: 'center'},
 });
