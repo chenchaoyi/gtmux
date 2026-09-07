@@ -172,6 +172,12 @@ id (piped alongside the prompt) so it lines up with the `resume` record `session
 
 ## 4. Pitfalls checklist (every trap we've paid for)
 
+- [ ] **The launcher's name is not the process's name.** Kimi's binary is `kimi`, and the
+  process it becomes is `kimi-code`. The subtree match is EXACT, so a manifest carrying
+  only the launcher name made a running Kimi pane invisible to the radar — measured: 0
+  rows against a live session, with `pane_current_command` reading `kimi` the whole time.
+  Put BOTH in `Detect`, and check it on a live pane (`ps -o comm=` on the pane's child)
+  rather than on what you typed to start it.
 - [ ] **Identity from the process SUBTREE, never `pane_current_command`.** Claude Code
   renames its process to its version (`2.1.220`); several agents run as bare `node`. Keying
   identity off the foreground command mis-detects the agent and silently disables the

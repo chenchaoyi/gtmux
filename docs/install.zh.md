@@ -64,6 +64,30 @@ GTMUX_INSTALL_MIRROR=https://my.mirror/  curl -fsSL ... | bash   # 自定义 <�
 GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # 只走 GitHub，不用镜像
 ```
 
+## 换一台 Mac
+
+值得带走的只有两类，而且只有一类是不可再生的。
+
+**中控的记忆** —— 态势板、知识库，以及你自己的 `LOCAL.md`。这些没有任何东西会重新生成：
+板子是参谋长几个月的综合，而 `LOCAL.md` 种一次就永不重写，gtmux 不会替你补回来。
+
+```sh
+# 旧机器上
+gtmux hq --export ~/gtmux-hq.tar.gz
+
+# 新机器上，装完 gtmux 之后
+gtmux hq --import ~/gtmux-hq.tar.gz
+gtmux hq                      # 重启中控，让它读到还原后的板子
+```
+
+导入绝不就地覆盖：已经在那儿的会被挪到 `hq.replaced-<时间戳>`，路径会打印出来。
+
+**其余都是可再生的，重建比拷贝好。** 在新机器上跑 `gtmux doctor --fix`：它会装好 agent hook、
+set-titles、重启后恢复和菜单栏 app。手机重新配对一次（`gtmux tunnel` 或 `gtmux serve`），
+不要拷配对记录 —— 否则旧机器的 token 在一台你已经不用的机器上仍然有效。
+
+`~/.local/share/gtmux/` 是活状态（标记、事件、快照），留在原地就好。
+
 ## 签名与权限
 
 macOS 把你授予的权限绑在 app 的代码签名上。**Developer ID 签名 + 公证**过的构建，

@@ -37,7 +37,7 @@ func TestProfiles_matchesLegacy(t *testing.T) {
 		{Label: "Crush", Commands: []string{"crush"}},
 		{Label: "Cursor", Commands: []string{"cursor-agent", "cursor"}, Icon: "/Applications/Cursor.app"},
 		{Label: "Amp", Commands: []string{"amp"}},
-		{Label: "Kimi Code", Commands: []string{"kimi"}},
+		{Label: "Kimi Code", Commands: []string{"kimi", "kimi-code"}},
 	}
 	if got := Profiles(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("Profiles()=%#v\nwant %#v", got, want)
