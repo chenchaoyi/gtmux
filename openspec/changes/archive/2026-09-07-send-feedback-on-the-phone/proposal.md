@@ -1,6 +1,12 @@
 # send-feedback-on-the-phone — what the app tells you about a message it just sent
 
-**Status: a candidate for the commander. Nothing here is implemented.** It was written
+**Status: DONE and archived 2026-09-07.** Both decisions were made and built: the
+failure bar carries the core own refusal, and a send into a working session says it will
+be handled when the turn ends (Form B, read off the radar status). The one open task is
+Form A, which was deliberately not done.
+
+The header below said "nothing here is implemented" for three days after it was; that
+staleness is exactly what this archive closes. It was written
 overnight on 2026-09-04 out of an exploration round, and it exists because two decisions
 are display decisions, which are the commander's, not the explorer's.
 
