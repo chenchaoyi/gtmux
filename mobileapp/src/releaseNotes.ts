@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.1',
+    en: [
+      'Leaving full screen is a small icon in the app\'s own blue instead of a button as wide as the words "Exit full screen", and it no longer floats a gap below the Dynamic Island.',
+    ],
+    zh: [
+      '退出全屏改成一个品牌色的小图标，不再是一枚跟「退出全屏」这几个字一样宽的按钮，也不再在灵动岛下面空出一段距离。',
+    ],
+  },
+  {
     version: '1.0.0',
     en: [
       'A long list of changes since the last release. The ones you will notice:',
