@@ -129,8 +129,21 @@ function isLazyContinuation(lines: string[], i: number): boolean {
   );
 }
 
+/**
+ * HTML comments are the author writing to themselves, not to the reader.
+ *
+ * The situation board opens with `<!-- 写法规则:一格一句话… -->`, a note HQ leaves for
+ * whoever edits the board next. Rendered, it was the first thing a reader saw under the
+ * section heading: an instruction addressed to someone else, in the most prominent place
+ * on the page. Stripped before parsing rather than skipped as a block, because a comment
+ * can open and close mid-line.
+ */
+export function stripComments(src: string): string {
+  return src.replace(/<!--[\s\S]*?-->/g, '');
+}
+
 export function parseBlocks(src: string): Block[] {
-  const lines = src.replace(/\r\n/g, '\n').split('\n');
+  const lines = stripComments(src).replace(/\r\n/g, '\n').split('\n');
   const blocks: Block[] = [];
   let i = 0;
   while (i < lines.length) {

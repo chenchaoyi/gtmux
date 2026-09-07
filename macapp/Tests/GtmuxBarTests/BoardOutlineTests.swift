@@ -174,3 +174,38 @@ final class BoardRowTests: XCTestCase {
         XCTAssertEqual(rowSubtitle(header: header, row: row), "改报告")
     }
 }
+
+// The knowledge base is 386 entries across seven topics on the real machine, two of them
+// holding 177 and 162. Flat, that is not a list anyone reads.
+final class KnowledgeTopicsTests: XCTestCase {
+    private func entry(_ id: String, _ topic: String) -> KBEntry {
+        KBEntry(id: id, topic: topic, title: id, at: 0, promotedAt: nil, landedAt: nil,
+                promoteWhy: nil, promoteTarget: nil, landedRef: nil, body: nil)
+    }
+
+    func testGroupsByTopicBiggestFirst() {
+        // Biggest first because that is the order the phone shows, and a reader should
+        // not have to learn it twice.
+        let rows = [entry("a", "pitfalls"), entry("b", "workflows"),
+                    entry("c", "pitfalls"), entry("d", "pitfalls")]
+        let t = knowledgeTopics(rows)
+        XCTAssertEqual(t.map(\.name), ["pitfalls", "workflows"])
+        XCTAssertEqual(t[0].entries.count, 3)
+    }
+
+    func testTiesBreakOnNameSoTopicsDoNotSwapBetweenPolls() {
+        let rows = [entry("a", "zebra"), entry("b", "alpha")]
+        XCTAssertEqual(knowledgeTopics(rows).map(\.name), ["alpha", "zebra"])
+    }
+
+    func testKeepsEveryEntry() {
+        // The flat list showed all 386 on purpose: "a cap is an entry the commander
+        // cannot retire". Grouping must not quietly reintroduce a cap.
+        let rows = (0..<50).map { entry("e\($0)", $0 % 3 == 0 ? "pitfalls" : "best-practices") }
+        XCTAssertEqual(knowledgeTopics(rows).reduce(0) { $0 + $1.entries.count }, 50)
+    }
+
+    func testEmptyIsEmpty() {
+        XCTAssertTrue(knowledgeTopics([]).isEmpty)
+    }
+}

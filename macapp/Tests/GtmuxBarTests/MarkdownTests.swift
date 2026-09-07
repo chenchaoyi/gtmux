@@ -86,3 +86,33 @@ final class MarkdownTests: XCTestCase {
         XCTAssertEqual(Markdown.parseBlocks("```\nhalf a thing\n"), [.code("half a thing")])
     }
 }
+
+// The board opens with `<!-- 写法规则:一格一句话… -->`, a note HQ leaves for whoever edits
+// it next. Rendered, it was the first thing under the section heading: an instruction
+// addressed to someone else, in the most prominent place on the page. Both surfaces
+// showed it; both strip it, and these cases mirror the TS twin's.
+final class MarkdownCommentTests: XCTestCase {
+    func testDropsAnHTMLComment() {
+        let blocks = Markdown.parseBlocks("<!-- 写法规则:一格一句话 -->\n\nreal content")
+        XCTAssertFalse("\(blocks)".contains("写法规则"))
+        XCTAssertTrue("\(blocks)".contains("real content"))
+    }
+
+    func testHandlesOneThatOpensAndClosesMidLine() {
+        XCTAssertEqual(Markdown.stripComments("before <!-- x --> after"), "before  after")
+    }
+
+    func testHandlesSeveralAndAMultiLineOne() {
+        XCTAssertEqual(Markdown.stripComments("a<!--1-->b<!--\n2\n-->c"), "abc")
+    }
+
+    func testKeepsTheTextAfterAnUnterminatedComment() {
+        // HTML would call the rest a comment. The board is written by hand, and a typo'd
+        // opener would then blank it from that point with nothing on screen to say why.
+        XCTAssertEqual(Markdown.stripComments("keep <!-- this too"), "keep <!-- this too")
+    }
+
+    func testLeavesOrdinaryAngleBracketsAlone() {
+        XCTAssertEqual(Markdown.stripComments("a < b and c > d"), "a < b and c > d")
+    }
+}

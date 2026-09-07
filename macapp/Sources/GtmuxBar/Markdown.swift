@@ -88,7 +88,32 @@ enum Markdown {
 
     /// parseBlocks turns the document into blocks, in the author's order. Order is never
     /// rearranged: the board leads with what its writer put first.
+    /// HTML comments are the author writing to themselves, not to the reader.
+    ///
+    /// The board opens with `<!-- 写法规则:一格一句话… -->`, a note HQ leaves for whoever
+    /// edits it next. Rendered, it was the first thing under the section heading: an
+    /// instruction addressed to someone else, in the most prominent place on the page.
+    /// Stripped before parsing, not skipped as a block, because a comment can open and
+    /// close mid-line.
+    static func stripComments(_ md: String) -> String {
+        var out = ""
+        var rest = Substring(md)
+        while let open = rest.range(of: "<!--") {
+            out += rest[rest.startIndex..<open.lowerBound]
+            guard let close = rest.range(of: "-->", range: open.upperBound..<rest.endIndex) else {
+                // Unterminated: KEEP the rest. HTML would call it all a comment, but the
+                // board is written by hand and a typo'd `<!--` would then blank the
+                // document from that point with nothing on screen to say why. A stray
+                // marker in the prose is the smaller failure, and it matches the TS twin.
+                return out + rest[open.lowerBound...]
+            }
+            rest = rest[close.upperBound...]
+        }
+        return out + rest
+    }
+
     static func parseBlocks(_ md: String) -> [MDBlock] {
+        let md = stripComments(md)
         var out: [MDBlock] = []
         var para: [String] = []
         var bullets: [[MDInline]] = []
