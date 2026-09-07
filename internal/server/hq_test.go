@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -125,10 +126,17 @@ func TestHQSurfacesAreRefusedToAGuest(t *testing.T) {
 			return []byte(`{"body":"secret lesson"}`), true, nil
 		},
 		HQKnowledgeAct: func(string, string, string, string) error { return nil },
+		HQMemory: func(w io.Writer) (int64, error) {
+			n, _ := w.Write([]byte("secret archive"))
+			return int64(n), nil
+		},
 	})
 	for _, p := range []string{
 		"/api/hq/board", "/api/hq/events",
 		"/api/hq/knowledge", "/api/hq/knowledge/entry?id=x", "/api/hq/knowledge/act",
+		// The memory archive is the whole of it in one file — board, knowledge base and
+		// the operator's LOCAL.md. A guest link is for watching a pane.
+		"/api/hq/memory",
 	} {
 		w := hqGet(t, s, p, guest.Token)
 		if w.Code != http.StatusForbidden {
