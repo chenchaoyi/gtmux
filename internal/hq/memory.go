@@ -366,3 +366,29 @@ func ReadMemoryState() MemoryState {
 	}
 	return s
 }
+
+// WriteMemoryArchive streams the memory to w, for a caller that is not writing a file —
+// the serve endpoint hands it the HTTP response directly rather than buffering megabytes
+// in a daemon whose day job is serving rows of JSON.
+func WriteMemoryArchive(w io.Writer) (int64, error) {
+	root := MemoryRoot()
+	if st, err := os.Stat(root); err != nil || !st.IsDir() {
+		return 0, fmt.Errorf("no supervisor memory at %s", root)
+	}
+	c := &countingWriter{w: w}
+	if err := writeArchive(c, root); err != nil {
+		return c.n, err
+	}
+	return c.n, nil
+}
+
+type countingWriter struct {
+	w io.Writer
+	n int64
+}
+
+func (c *countingWriter) Write(p []byte) (int, error) {
+	n, err := c.w.Write(p)
+	c.n += int64(n)
+	return n, err
+}

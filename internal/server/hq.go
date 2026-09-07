@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // writeRaw sends an already-marshaled JSON body.
@@ -196,4 +197,33 @@ func (s *Server) handleHQKnowledgeAct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// handleHQMemory serves the supervisor's whole memory as one archive.
+//
+// OWNER ONLY, and not because of a convention: this is the board, the knowledge base and
+// the operator's own LOCAL.md in one file — every project detail the supervisor has
+// written down for months. A guest link is for watching a pane, and nothing about being
+// handed one implies being handed this.
+//
+// Streamed straight to the response. It is megabytes, and buffering it would hold that
+// in a daemon whose job the rest of the day is serving rows of JSON.
+func (s *Server) handleHQMemory(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
+	if s.deps.HQMemory == nil {
+		writeJSON(w, http.StatusNotFound, errBody("no supervisor memory on this machine"))
+		return
+	}
+	name := "gtmux-hq-" + time.Now().Format("20060102") + ".tar.gz"
+	w.Header().Set("Content-Type", "application/gzip")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
+	// No Content-Length: the archive is produced as it is written, and a wrong length
+	// is worse than none — a client would truncate a good backup and believe it.
+	// The headers are already out by the time this can fail, so there is no clean error
+	// response to give. What protects the client is the ABSENT Content-Length above: the
+	// stream is chunked, and a chunked body cut short is detectable as incomplete.
+	_, _ = s.deps.HQMemory(w)
 }

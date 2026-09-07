@@ -784,3 +784,15 @@ entries are editable.
 Re-hands a guest link's token so an owner can re-copy the share URL after minting
 (a link is no longer view-once). Only guest links resolve; a paired device's token
 is never returned.
+
+## `GET /api/hq/memory` — the supervisor's memory, as one archive
+
+Owner only. Streams the HQ home (situation board, knowledge base, the operator's
+`LOCAL.md`) as `application/gzip`, named by `Content-Disposition`.
+
+No `Content-Length`: the archive is produced as it is written, so a length declared up
+front would be a guess, and a client that trusted it could truncate a good backup and
+believe it. The body is chunked; a cut stream is detectable as incomplete.
+
+Refused to a guest, like every other `/api/hq/*` surface. A share link is for watching a
+pane; this is every project detail the supervisor has written down.

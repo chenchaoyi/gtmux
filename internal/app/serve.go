@@ -247,6 +247,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// verb list a second time: serve decides what a phone may do, the domain decides
 		// what each verb means.
 		HQKnowledge:      func() ([]byte, error) { return hq.KnowledgeIndexJSON(time.Now().Unix()) },
+		HQMemory:         hq.WriteMemoryArchive,
 		HQKnowledgeEntry: hq.KnowledgeEntryJSON,
 		HQKnowledgeAct: func(op, id, ref, why string) error {
 			switch op {

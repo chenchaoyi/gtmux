@@ -151,6 +151,13 @@ type Deps struct {
 	// Mac with no HQ home is an ordinary machine rather than a failure.
 	HQKnowledge func() ([]byte, error)
 
+	// HQMemory writes the supervisor's whole memory — board, knowledge base and the
+	// operator's LOCAL.md — as one archive.
+	//
+	// A stream rather than a []byte: it is megabytes, and every byte held in memory
+	// here is held in a daemon that runs all day to serve rows of JSON.
+	HQMemory func(w io.Writer) (int64, error)
+
 	// HQKnowledgeEntry returns one live entry WITH its body. ok=false is "no such live
 	// entry" (a retired one is gone from the live set by design). Optional: nil → 404.
 	HQKnowledgeEntry func(id string) (b []byte, ok bool, err error)
@@ -289,6 +296,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/hq/knowledge", s.auth(http.HandlerFunc(s.handleHQKnowledge)))            // owner: the knowledge index
 	mux.Handle("/api/hq/knowledge/entry", s.auth(http.HandlerFunc(s.handleHQKnowledgeEntry))) // owner: one entry, with its body
 	mux.Handle("/api/hq/knowledge/act", s.auth(http.HandlerFunc(s.handleHQKnowledgeAct)))     // owner: land / retire
+	mux.Handle("/api/hq/memory", s.auth(http.HandlerFunc(s.handleHQMemory)))                  // owner: the whole memory, as one archive
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
