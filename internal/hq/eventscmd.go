@@ -300,6 +300,18 @@ func fromHQHome() bool {
 // B9 evidence is 5 for 5 inside the home, so the cheap rule covers every observed case; a
 // cwd fully outside the home is indistinguishable from a bystander's read, which must stay
 // silent.
+// isHQRead reports whether this invocation is the supervisor's — at the HQ home, or
+// anywhere inside it.
+//
+// Inside COUNTS. gtmux already concluded a read from `notes/` is HQ's read (that is what
+// insideHQHome is for); refusing to count it and asking HQ to go stand in the right
+// directory made the watermark depend on a discipline, and the discipline lost — the
+// failure was reproduced seven times over eight days, each time as "HQ pulled, saw the
+// events, and the same cursor knocked again". Nobody but HQ works in that tree (spawn
+// refuses to start there, hq-home-quarantine), so a read from it is HQ's read wherever
+// in it they were standing.
+func isHQRead() bool { return fromHQHome() || insideHQHome() }
+
 func insideHQHome() bool {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -362,23 +374,17 @@ func noteHiddenEcho(hidden int) {
 		n+" 条你自己的记录、无 pane 闪断与 gtmux 审计留痕已隐藏（它们不计入债务）—— 需要全量请加 `--all`")
 }
 
-// consumeHQRead advances HQ's consumption watermark for a completed delta read, and — when
-// the caller plainly IS the supervisor but stood in the wrong directory — says so instead
-// of failing silently.
+// consumeHQRead advances HQ's consumption watermark for a completed delta read.
 //
-// That asymmetry is the whole point (B9): `--ack` from the wrong cwd refuses LOUDLY, while
-// this path just skipped the writeback and returned 0. Two paths with one meaning and
-// opposite failure modes, so HQ read the delta, believed it had consumed, and watched the
-// same cursor re-knock — reproduced five times, once in the very turn after writing the
-// note about it. A discipline that fails silently is not a discipline.
+// It counts a read from ANYWHERE in the HQ home. The earlier rule required the home
+// exactly and merely warned about a subdirectory, which turned the watermark into
+// something HQ had to remember to earn — and the failure was reproduced seven times over
+// eight days, each one reading as "I pulled, I saw the events, and the same cursor
+// knocked again". A rule that a careful reader loses to seven times is not a discipline,
+// it is a trap; gtmux already knew whose read it was.
 func consumeHQRead(from, to int64) {
-	if fromHQHome() {
+	if isHQRead() {
 		hqwake.ConsumeRead(from, to)
-		return
-	}
-	if insideHQHome() {
-		i18n.Sae("gtmux events: this read was NOT counted as consumption (run it from "+state.HQHome()+", or `gtmux events --ack <seq>`)",
-			"gtmux events：本次读取未计入消费水位（请在 "+state.HQHome()+" 下运行，或用 `gtmux events --ack <seq>` 回写）")
 	}
 }
 
@@ -388,7 +394,7 @@ func consumeHQRead(from, to int64) {
 // moves the cursor, monotonically, and never past the end of the stream, so a mistyped
 // value cannot blind HQ to everything up to it.
 func cmdEventsAck(seq int64) int {
-	if !fromHQHome() {
+	if !isHQRead() {
 		i18n.Sae("gtmux events --ack: only the HQ session can acknowledge its own watermark (run it from "+state.HQHome()+")",
 			"gtmux events --ack：只有中控会话能回写自己的消费水位（请在 "+state.HQHome()+" 下运行）")
 		return 1

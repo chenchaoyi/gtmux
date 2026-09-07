@@ -219,12 +219,20 @@ var windowTiers = []int64{200_000, 1_000_000}
 //     Model-name strings don't reliably encode long-context variants — dogfood
 //     showed "claude-fable-5"/"claude-opus-4-8" both running 1M sessions.
 func windowFor(agent, model string, observed, stated int64) int64 {
-	_ = model // kept for a future name-keyed table; evidence wins today
 	if w := configWindow(agent); w > 0 {
 		return w
 	}
 	if stated > 0 {
 		return stated
+	}
+	// The largest context this model has EVER been seen to hold on this machine. A
+	// window is never smaller than something that fit in it, so this is a sound floor —
+	// and it is the whole fix for the tier guess below, which reads a session on a 1M
+	// model against 200k until it happens to grow past 200k. See modelwindow.go for the
+	// measurement that produced this (HQ reported at 83% while actually at 17%, and told
+	// to rotate thirteen times in a day because of it).
+	if seen := evidencedWindow(agent, model); seen > observed {
+		observed = seen
 	}
 	for _, t := range windowTiers {
 		if observed <= t {

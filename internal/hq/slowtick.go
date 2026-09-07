@@ -27,6 +27,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/usage"
 )
 
 // SlowTickEval is wired to server Deps.OnSlowTick. It evaluates resource +
@@ -75,6 +76,12 @@ func SlowTickEval() {
 	// Self-check sensor (hq-attention-system §8): raise a self-check trigger to HQ when
 	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here — HQ does the pass.
 	selfCheckSensor(time.Now().Unix())
+	// Learn each model's real context window from the logs already on disk, once
+	// (model-window-evidence). Without it a 1M model reads against 200k until it grows
+	// past 200k — and HQ never grows past it, because at 75%% of the wrong denominator it
+	// is told to rotate. Resident trigger on purpose: a periodic job without one does not
+	// run at all, which this codebase has paid for.
+	usage.BackfillWindows()
 	// Snapshot the supervisor's memory (hq-memory-safety). HQ's whole claim is a memory
 	// that survives a context reset, and on the machine this was written for that was
 	// 6.1 MB over three months with nothing protecting it: no export, no snapshot, no
