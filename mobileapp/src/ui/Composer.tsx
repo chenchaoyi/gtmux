@@ -196,6 +196,9 @@ export function Composer({
   const [sendError, setSendError] = useState<string | null>(null);
   const attachId = useRef(0);
   const [markupUri, setMarkupUri] = useState<string | null>(null);
+  // Which STAGED attachment the editor is working on. Null means the image is not staged
+  // yet (the paste path), and finishing adds it rather than replacing anything.
+  const [markupFor, setMarkupFor] = useState<string | null>(null);
   const [snippets, setSnippets] = useState<string[]>([]);
   const [snippetsOpen, setSnippetsOpen] = useState(false); // the picker sheet
   const [manageSnippets, setManageSnippets] = useState(false);
@@ -327,14 +330,26 @@ export function Composer({
     });
   };
 
-  // Attach → a branded bottom sheet (AttachSheet). Photos (camera/library/paste)
-  // route through the markup EDITOR first (annotate → stage a thumbnail); files stage
-  // directly. Nothing uploads until send.
+  // Attach → a branded bottom sheet (AttachSheet). Nothing uploads until send.
+  //
+  // A picked photo is STAGED, not opened in the editor. Routing every photo through the
+  // markup editor put a fourth full-screen surface in the way of the ordinary case —
+  // "+ → library → picker → editor → Done" to send a screenshot you had already taken,
+  // with the file named markup.png whether or not a mark was ever made. Annotating is
+  // now one tap on the thumbnail you just staged, where it is both visible and optional
+  // (user report, 2026-09-07: the whole flow reads as redundant).
+  //
+  // PASTE still goes through the editor first, for a reason that is not about the UI:
+  // the clipboard hands over a data: URI and the editor is what turns it into a file the
+  // uploader can send.
+  const stagePhoto = (a: {uri?: string; fileName?: string | null; type?: string | null}) => {
+    if (!a.uri) return;
+    addAttachment(a.uri, a.fileName ?? 'photo.jpg', a.type ?? 'image/jpeg', true);
+  };
   const pickPhoto = async () => {
     try {
       const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
-      const a = r.assets?.[0];
-      if (a?.uri) setMarkupUri(a.uri); // edit first → onDone stages the thumbnail
+      if (r.assets?.[0]) stagePhoto(r.assets[0]);
     } catch {
       // cancelled or unsupported — ignore.
     }
@@ -342,8 +357,7 @@ export function Composer({
   const takePhoto = async () => {
     try {
       const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
-      const a = r.assets?.[0];
-      if (a?.uri) setMarkupUri(a.uri); // edit first → onDone stages the thumbnail
+      if (r.assets?.[0]) stagePhoto(r.assets[0]);
     } catch {
       // cancelled or unsupported — ignore.
     }
@@ -453,7 +467,18 @@ export function Composer({
           {attachments.map(att => (
             <View key={att.id} style={[styles.thumbWrap, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
               {att.isImage ? (
-                <Image source={{uri: att.uri}} style={styles.thumbImg} resizeMode="cover" />
+                // Tap to annotate. This is where the markup editor lives now that it is
+                // not in front of every photo: on the thing you would annotate.
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  disabled={sending}
+                  accessibilityLabel={`attach-annotate-${att.id}`}
+                  onPress={() => {
+                    setMarkupFor(att.id);
+                    setMarkupUri(att.uri);
+                  }}>
+                  <Image source={{uri: att.uri}} style={styles.thumbImg} resizeMode="cover" />
+                </TouchableOpacity>
               ) : (
                 <View style={styles.thumbFile}>
                   <FileIcon size={20} color={pal.fg2} />
@@ -697,9 +722,22 @@ export function Composer({
         visible={!!markupUri}
         uri={markupUri}
         lang={lang}
-        onCancel={() => setMarkupUri(null)}
-        onDone={fileUri => {
+        onCancel={() => {
           setMarkupUri(null);
+          setMarkupFor(null);
+        }}
+        onDone={fileUri => {
+          const editing = markupFor;
+          setMarkupUri(null);
+          setMarkupFor(null);
+          // Editing a staged photo REPLACES it in place. Adding a second thumbnail would
+          // send the same picture twice, once with the marks and once without.
+          if (editing) {
+            setAttachments(a =>
+              a.map(x => (x.id === editing ? {...x, uri: fileUri, name: 'markup.png', type: 'image/png'} : x)),
+            );
+            return;
+          }
           addAttachment(fileUri, 'markup.png', 'image/png', true);
         }}
       />
