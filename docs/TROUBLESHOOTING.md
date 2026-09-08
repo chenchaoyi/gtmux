@@ -1363,3 +1363,36 @@ shows the last SUCCESS; `fails` in that file now shows whether it is backing off
 note the diagnostic trap: those transcripts all contain valid `/usage` text, because the
 slash command reads local files — the text proves nothing about the process's exit code,
 which is what gtmux actually judges on.
+
+## An incremental device build can install last version's app
+
+**Symptom.** `xcodebuild … MARKETING_VERSION=1.0.6` exits 0, `devicectl install` reports
+success, and the app on the phone behaves exactly as it did before — none of the release's
+changes are there. Settings shows the PREVIOUS version number.
+
+**What it actually was (2026-09-08).** The incremental build reused two products from the
+previous build: `Info.plist` and, worse, `main.jsbundle`. The native binary was rebuilt
+(fresh timestamp) while the JavaScript — where nearly every mobile change lives — was the
+old one. So the installed app was a new binary running last version's app code.
+
+**Root cause.** With `-derivedDataPath ios/build/dd` reused across versions, Xcode judged
+the plist-processing and RN bundle phases up to date. `MARKETING_VERSION` on the command
+line changes the build setting but does not, on its own, invalidate a plist Xcode already
+considers current.
+
+**Must-check, before trusting any device install:**
+
+```bash
+APP=mobileapp/ios/build/dd/Build/Products/Release-iphoneos/gtmux.app
+ls -l "$APP/Info.plist" "$APP/main.jsbundle" "$APP/gtmux"   # all three must be from THIS build
+/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Info.plist"
+```
+
+If any is stale, `rm -rf mobileapp/ios/build/dd/Build/Products/Release-iphoneos` and build
+again. Deleting only the products directory is enough; the module cache is what makes an
+incremental build fast and it stays.
+
+**The verification trap that hid it.** Confirming the version by grepping
+`mobileapp/src/releaseNotes.ts` proves the SOURCE is current, which was never in doubt.
+The artifact that ships is `main.jsbundle` inside the .app. Check the thing you are about
+to install, not the thing you built it from.
