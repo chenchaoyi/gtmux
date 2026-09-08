@@ -1215,6 +1215,16 @@ func rowHQBoard(now int64) dcheck {
 			i18n.Tr("notes/board.md not written yet — HQ writes it as it works", "notes/board.md 尚未写入 —— HQ 干活时会写")}
 	}
 	val := hq.HumanAgeShort(now-info.ModTime().Unix()) + i18n.Tr(" ago · ", "前 · ") + humanBytes(info.Size())
+	// Freshness is not the only way a board fails. A cell can grow into an essay: on this
+	// machine one measured ~1,180 characters — a single semicolon-joined investigation log
+	// — and the operator's reaction to it on the phone was that the board had become
+	// unreadable (2026-09-08). The charter now gives a cell a budget; this row is how
+	// anyone SEES it being broken, because a rule nothing measures is a rule nobody keeps.
+	if n, longest := hq.OversizeBoardCells(); n > 0 {
+		return dcheck{stRec, label, val, fmt.Sprintf(i18n.Tr(
+			"%d cells run past a screen (longest %d chars) — HQ should cut the finding to its conclusion and file the rest",
+			"%d 格长过一屏（最长 %d 字）—— 中控应把发现收成结论，其余落到知识库"), n, longest)}
+	}
 	return dcheck{stOK, label, val, i18n.Tr("HQ's persistent situation board (survives resets)", "HQ 的常驻情况看板（跨重置保存）")}
 }
 

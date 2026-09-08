@@ -79,7 +79,7 @@ struct BoardOutlineView: View {
             }
             if shown {
                 if !sec.body.isEmpty {
-                    MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 9, foldRows: true)
+                    MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 9, foldRows: true, clampProse: true)
                         .padding(.bottom, 8)
                 }
                 ForEach(sec.children) { kid in
@@ -113,7 +113,7 @@ struct BoardOutlineView: View {
             }
             .buttonStyle(.plain)
             if shown, !kid.body.isEmpty {
-                MarkdownBlocks(blocks: Markdown.parseBlocks(kid.body), p: p, spacing: 9, foldRows: true)
+                MarkdownBlocks(blocks: Markdown.parseBlocks(kid.body), p: p, spacing: 9, foldRows: true, clampProse: true)
                     .padding(.bottom, 8)
             }
         }

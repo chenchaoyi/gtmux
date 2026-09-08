@@ -767,6 +767,23 @@ struct MarkdownBody: View {
 ///
 /// Lazy is not a nicety here: laying out a whole document at once is the bug this reader
 /// shipped with once (34 KB in a single SwiftUI `Text`, and switching to the tab hung).
+/// How long a paragraph may run before it is folded, and how much shows while folded.
+/// Matches the phone's `PROSE_CLAMP_CHARS`, so the same board reads the same way on both.
+let MDProseClampChars = 220
+let MDProseClampLines = 4
+
+/// The visible length of a run of spans — what a reader actually faces.
+func mdPlainLength(_ spans: [MDInline]) -> Int {
+    var n = 0
+    for s in spans {
+        switch s {
+        case let .text(t), let .code(t), let .bold(t), let .link(t): n += t.count
+        default: break
+        }
+    }
+    return n
+}
+
 struct MarkdownBlocks: View {
     let blocks: [MDBlock]
     let p: Theme.Palette
@@ -777,11 +794,34 @@ struct MarkdownBlocks: View {
     /// of. Opt-in, matching the phone: a knowledge entry's table is small and part of a
     /// sentence, and folding it would hide the answer.
     var foldRows: Bool = false
+    /// A paragraph past `MDProseClampChars` renders as a few lines with a disclosure.
+    /// For a surface whose author is a MACHINE: HQ writes the board, and one cell there
+    /// was measured at ~1,180 characters — a single semicolon-joined investigation log —
+    /// which arrives as a wall of text (2026-09-08). The reader cannot fix the writing;
+    /// it must not hand the whole wall over at once. Opt-in, matching the phone: a
+    /// knowledge entry is prose written FOR a reader, and folding it would hide the
+    /// thing they opened.
+    var clampProse: Bool = false
+    @State private var openProse: Set<Int> = []
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: spacing) {
-            ForEach(Array(blocks.enumerated()), id: \.offset) { _, b in
-                block(b)
+            ForEach(Array(blocks.enumerated()), id: \.offset) { i, b in
+                if clampProse, case let .paragraph(spans) = b, mdPlainLength(spans) > MDProseClampChars {
+                    let open = openProse.contains(i)
+                    VStack(alignment: .leading, spacing: 2) {
+                        spansText(spans, size: 12, weight: .regular)
+                            .lineLimit(open ? nil : MDProseClampLines)
+                        Button {
+                            if open { openProse.remove(i) } else { openProse.insert(i) }
+                        } label: {
+                            Text(open ? "▴" : "▾").font(.system(size: 11)).foregroundStyle(p.fg3)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    block(b)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

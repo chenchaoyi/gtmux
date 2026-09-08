@@ -253,3 +253,30 @@ final class HQMemoryStateTests: XCTestCase {
 
 
 }
+
+/// A board cell written by a machine.
+///
+/// HQ writes the situation board, and one cell there was measured at ~1,180 characters —
+/// a single semicolon-joined investigation log that arrives as a wall of text
+/// (2026-09-08). Both readers clamp a paragraph past the same budget, so the same board
+/// reads the same way on the Mac and the phone.
+final class ProseClampTests: XCTestCase {
+    func testTheBudgetMatchesThePhone() {
+        XCTAssertEqual(MDProseClampChars, 220, "the two surfaces would fold the same board differently")
+    }
+
+    func testLengthIsWhatAReaderFacesNotTheMarkup() {
+        // Bold and code spans are text on screen; a length that ignored them would let a
+        // wall through by writing it in bold.
+        let spans: [MDInline] = [.text("船数 18"), .bold("(09-08"), .code("seq 35078"), .link("kb-entry")]
+        XCTAssertEqual(mdPlainLength(spans), "船数 18".count + "(09-08".count + "seq 35078".count + "kb-entry".count)
+    }
+
+    func testAnOrdinarySentenceIsNotAWall() {
+        XCTAssertLessThan(mdPlainLength([.text("HQ 已接管,舰队一切正常。")]), MDProseClampChars)
+    }
+
+    func testTheMeasuredCellWouldHaveBeenFolded() {
+        XCTAssertGreaterThan(mdPlainLength([.text(String(repeating: "态", count: 1180))]), MDProseClampChars)
+    }
+}
