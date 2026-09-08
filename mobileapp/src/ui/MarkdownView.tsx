@@ -39,6 +39,12 @@ interface Props {
   // Opt-in, because it is wrong for the other callers: a chat reply's table is small
   // and part of a sentence, and folding it would hide the answer.
   foldRows?: boolean;
+  // clampProse — a paragraph past `PROSE_CLAMP_CHARS` renders as its first few lines with
+  // a tap to open it. For a surface whose author is a machine: HQ writes the situation
+  // board, and one cell there was measured at ~1,180 characters — a single semicolon-joined
+  // investigation log — which arrives as a wall nobody can read (user report, 2026-09-08).
+  // The reader cannot fix the writing, but it must not hand the whole wall over at once.
+  clampProse?: boolean;
   // calmEmphasis — for prose written with heavy emphasis. The situation board carries
   // roughly one **bold** span per line, at the same weight as a heading, which left its
   // 31 headings with no authority and the page reading as one wall. Under this flag bold
@@ -158,6 +164,58 @@ function TableRow({
 }
 
 /** One table row, re-shaped for a narrow screen. */
+/**
+ * How long a paragraph may run before it is folded. Roughly a phone screen of Chinese
+ * text: enough that ordinary prose is never touched, short enough that a machine-written
+ * ledger is.
+ */
+export const PROSE_CLAMP_CHARS = 220;
+
+/** Lines shown while a long paragraph is folded. */
+const PROSE_CLAMP_LINES = 4;
+
+function Paragraph({
+  b, c, fs, sel, sc, ff, calm, clamp,
+}: {
+  b: Extract<Block, {t: 'p'}>;
+  c: MdColors;
+  fs: number;
+  sel?: boolean;
+  sc?: string;
+  ff?: string;
+  calm?: boolean;
+  clamp?: boolean;
+}) {
+  const long = clamp === true && plainLength(b.spans) > PROSE_CLAMP_CHARS;
+  const [open, setOpen] = React.useState(false);
+  const body = (
+    <Text
+      selectable={sel}
+      selectionColor={sc}
+      numberOfLines={long && !open ? PROSE_CLAMP_LINES : undefined}
+      style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>
+      {renderSpans(b.spans, c, fs, calm)}
+    </Text>
+  );
+  if (!long) return body;
+  return (
+    <View>
+      {body}
+      <Text
+        accessibilityLabel="md-prose-toggle"
+        onPress={() => setOpen(o => !o)}
+        style={[styles.proseToggle, {color: c.link}]}>
+        {open ? '⌃' : '⌄'}
+      </Text>
+    </View>
+  );
+}
+
+/** The visible length of a run of spans — what a reader actually faces. */
+export function plainLength(spans: Inline[]): number {
+  return spans.reduce((n, x) => n + x.s.length, 0);
+}
+
 export interface StackedRow {
   /** The row's first cell — what the row IS (the board puts the pane id here). */
   head: Inline[];
@@ -276,7 +334,7 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold}: {b: Extract<Block, {t
   );
 }
 
-function BlockView({b, c, fs, sel, sc, ff, calm, fold}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean}) {
+function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; clampProse?: boolean}) {
   switch (b.t) {
     case 'h':
       return (
@@ -285,9 +343,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold}: {b: Block; c: MdColors; 
         </Text>
       );
     case 'p':
-      return (
-        <Text selectable={sel} selectionColor={sc} style={[styles.block, {color: c.text, fontFamily: ff, fontSize: fs, lineHeight: fs * 1.45}]}>{renderSpans(b.spans, c, fs, calm)}</Text>
-      );
+      return <Paragraph b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp={clampProse} />;
     case 'code':
       return (
         <ScrollView
@@ -339,18 +395,21 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold}: {b: Block; c: MdColors; 
   }
 }
 
-export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows}: Props) {
+export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows, clampProse}: Props) {
   const blocks = React.useMemo(() => parseBlocks(source), [source]);
   return (
     <View>
       {blocks.map((b, i) => (
-        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} />
+        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} clampProse={clampProse} />
       ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // A quiet chevron, not a "Show more" button: the fold is an affordance on a block of
+  // text, not a call to action.
+  proseToggle: {fontSize: 15, lineHeight: 18, paddingTop: 1, paddingBottom: 6, textAlign: 'center'},
   block: {marginBottom: 8},
   bold: {fontWeight: '700'},
   // Emphasis at the SAME weight as a heading erases the hierarchy. The situation

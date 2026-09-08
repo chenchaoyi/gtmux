@@ -148,7 +148,7 @@ import (
 //	      and asks HQ to say which it picked so a wrong pick is one glance to correct.
 //	      Promoted out of this fleet's knowledge base
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
-const hqPlaybookVersion = 34
+const hqPlaybookVersion = 35
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND the charter language, and signals
@@ -1399,6 +1399,13 @@ append a dated entry to the end.**
 - **PRUNE.** ① is pruned every time you touch it; ② keeps recent rotations and archives
   the rest (move them out, leave a one-line marker). A board nobody can finish reading
   is a board nobody reads.
+- **A CELL CARRIES A CONCLUSION, NOT THE INVESTIGATION.** Keep one under a screenful
+  (about 400 characters). One cell here once ran to ~1,180: a semicolon-joined trail of
+  times, sequence numbers, criteria and reversals, all on one line. What the commander
+  saw on his phone was a wall of text, and what he had asked was "what is happening
+  now". The working belongs in the knowledge base and in ` + "`gtmux events`" + `; the
+  board keeps the judgement and a pointer. ` + "`gtmux doctor`" + `'s board row names any
+  cell that has outgrown this.
 - **EMPHASIS IS FOR EXCEPTIONS.** A board once carried 634 bold spans across 654 lines
   of prose — about one per line — which left its 31 headings with no authority and the
   whole page reading as one wall on the commander's phone. If everything is bold,

@@ -136,6 +136,7 @@ export function BoardSheet({
                         selectable
                         calmEmphasis
                         foldRows
+                        clampProse
                       />
                     )}
                     {sec.children.map((kid, k) => {

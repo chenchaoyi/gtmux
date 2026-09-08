@@ -1,6 +1,7 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {MarkdownView} from './MarkdownView';
+import {Text} from 'react-native';
+import {MarkdownView, PROSE_CLAMP_CHARS} from './MarkdownView';
 
 const colors = {text: '#000', dim: '#888', code: '#111', codeBg: '#fff', border: '#ccc', link: '#06f'};
 
@@ -92,3 +93,52 @@ describe('wide tables', () => {
   });
 });
 
+
+// A board cell written by a machine.
+//
+// HQ writes the situation board, and one cell on the real board measured ~1,180
+// characters — a single semicolon-joined investigation log that arrived as a wall of text
+// nobody could read (user report, 2026-09-08). The reader cannot fix the writing; it can
+// refuse to hand the whole wall over at once.
+describe('clampProse', () => {
+  const wall = '船数 18,' + 'x'.repeat(PROSE_CLAMP_CHARS);
+  const short = 'HQ 已接管,一切正常。';
+
+  const mount = (source: string, clamp?: boolean) => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<MarkdownView source={source} colors={colors} clampProse={clamp} />);
+    });
+    return tree!;
+  };
+  const paras = (t: renderer.ReactTestRenderer) =>
+    t.root.findAllByType(Text).filter(n => typeof n.props.numberOfLines !== 'undefined' || n.props.style);
+  // deep:false — findAll otherwise matches every wrapper layer of the same element, so
+  // one toggle counts as two.
+  const toggle = (t: renderer.ReactTestRenderer) =>
+    t.root.findAll(n => n.props?.accessibilityLabel === 'md-prose-toggle', {deep: false});
+
+  it('folds a paragraph past the budget and offers to open it', () => {
+    const t = mount(wall, true);
+    expect(toggle(t)).toHaveLength(1);
+    expect(paras(t).some(n => n.props.numberOfLines > 0)).toBe(true);
+  });
+
+  it('opens on tap and folds again', () => {
+    const t = mount(wall, true);
+    act(() => toggle(t)[0].props.onPress());
+    expect(paras(t).every(n => n.props.numberOfLines === undefined)).toBe(true);
+    act(() => toggle(t)[0].props.onPress());
+    expect(paras(t).some(n => n.props.numberOfLines > 0)).toBe(true);
+  });
+
+  it('leaves ordinary prose alone — the budget is for a ledger, not a sentence', () => {
+    expect(toggle(mount(short, true))).toHaveLength(0);
+  });
+
+  it('does nothing at all where the caller did not ask for it', () => {
+    // Chat and the knowledge base render prose written FOR a reader; folding there would
+    // hide the thing they opened.
+    expect(toggle(mount(wall))).toHaveLength(0);
+  });
+});
