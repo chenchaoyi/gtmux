@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.7',
+    en: [
+      'The situation board folds a long paragraph instead of printing all of it. One cell there had grown into an investigation log — about 1,180 characters on a single line — and it arrived as a wall of text. Tap to open one when you want the whole thing.',
+      'The fold is on the board only. Chat and the knowledge base are prose written for you to read, where folding would hide the thing you just opened.',
+    ],
+    zh: [
+      '态势板会把长段落折起来，不再整个铺开。板上一格曾长成一份排查记录 —— 一行约 1180 字 —— 到手就是一堵墙。想看全文点一下展开。',
+      '折叠只在看板上做。对话和知识库是写给你读的东西，在那里折叠等于藏起你刚点开的内容。',
+    ],
+  },
+  {
     version: '1.0.6',
     en: [
       'The knowledge base now says how it is organised. "Newest" and the topics are the same entries — newest is the base cut at the six most recent, and every one of them also sits under its topic — which the screen never said out loud.',
