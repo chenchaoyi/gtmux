@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.6',
+    en: [
+      'The knowledge base now says how it is organised. "Newest" and the topics are the same entries — newest is the base cut at the six most recent, and every one of them also sits under its topic — which the screen never said out loud.',
+      'A topic folds open where it is instead of only being enterable, and coming back from an entry returns you to the list you opened it from, at the place you left it.',
+    ],
+    zh: [
+      '知识库现在会说清自己是怎么组织的。「最近」和「主题」是同一批条目 —— 最近就是全库取最新几条，每一条同时也在自己的主题里 —— 这件事界面原本从没说过。',
+      '主题可以就地展开，不再只能进去；从条目退出来会回到你原来那份列表、原来那个位置。',
+    ],
+  },
+  {
     version: '1.0.5',
     en: [
       'Attaching a photo opens the markup editor again, and a staged thumbnail is tappable when you want to re-annotate one. Choosing from the attach sheet still opens the picker immediately, with no return trip through the input bar.',
