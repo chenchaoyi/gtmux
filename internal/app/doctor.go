@@ -986,7 +986,13 @@ func rowConfig() dcheck {
 // short-circuited the HasDriver call that would have said otherwise. And running INSIDE
 // kitty, Apple Terminal or WezTerm today, the "other terminals" row lists the terminal
 // you are sitting in: the skip-the-host test needed a non-blank driver to fire.
-var knownTerminals = []struct{ name, bundle, key string }{
+var knownTerminals = []struct {
+	name, bundle string
+	// key is the terminal's IDENTITY, never its support status. Keep those apart: the
+	// single field they shared meant "no driver" and "not the host" at once, and merging
+	// them again reintroduces both readers' bugs (see the paragraph above).
+	key string
+}{
 	{"Ghostty", "Ghostty.app", "ghostty"},
 	{"iTerm2", "iTerm.app", "iterm2"},
 	{"Apple Terminal", "Terminal.app", "appleterminal"},
