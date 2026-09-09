@@ -150,6 +150,13 @@ import (
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
 const hqPlaybookVersion = 36
 
+// playbookFingerprints files the charter text under the version that carries it, so an
+// edit that forgets to bump the number fails instead of shipping to nobody (see
+// playbook_version_test.go for why the floors above cannot catch that).
+var playbookFingerprints = map[int]string{
+	36: "e2154b7242720d6b",
+}
+
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND the charter language, and signals
 // the file is gtmux-owned.
