@@ -37,3 +37,9 @@ tunnel-worker/issue-direct-code.sh
 
 # wrangler deploy leaves a local build/state dir (relay-worker/tunnel-worker)
 .wrangler/
+
+# Internal night-run reports. These belong in the operator private notes
+# (~/.config/gtmux/hq/notes/reports/), never in a public repo: they name live
+# panes, addresses and credentials-in-flight. One reached main through `git add -A`
+# on 2026-09-10 (#1000, updated in #1005).
+NIGHT-SELFTEST-*.md
