@@ -602,13 +602,26 @@ func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"revoked": removed})
 }
 
-// handleEnrollMint implements POST /api/enroll/mint — AUTHENTICATED (master or an
-// existing device). It hands back a fresh short-lived code for a pairing QR, so a
-// already-trusted surface can enroll a new phone without ever putting a lasting
-// token in the QR.
+// handleEnrollMint implements POST /api/enroll/mint — master or an existing device.
+// It hands back a fresh short-lived code for a pairing QR, so an already-trusted
+// surface can enroll a new phone without ever putting a lasting token in the QR.
+//
+// "Already-trusted" excludes a guest, and that sentence was the only thing enforcing
+// it. A guest share link is handed to other people on purpose, scoped to named panes
+// and expiring; minting is how a surface promotes a NEW one to device scope, which is
+// what the owner's own phone holds. Reaching this route from a guest link turned a
+// restricted view into the owner's, and every gate downstream was then answering the
+// right question about the wrong caller.
+//
+// fullOnly is the same gate share management uses, and its comment already records
+// closing this hole once on the neighbouring device-list route. That fix was applied
+// where it was noticed rather than where the property lives, so this route kept it.
 func (s *Server) handleEnrollMint(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if !s.fullOnly(w, r) {
 		return
 	}
 	if s.deps.Enroll == nil {
