@@ -68,15 +68,55 @@ func underTest() bool {
 	return false
 }
 
-// disposable reports whether a home is somewhere a test may write: under the temp dir
-// this process would hand a test, which is where `t.TempDir()` puts one.
+// disposable reports whether a home is somewhere a test may write: under one of the
+// throwaway roots below.
 func disposable(h string) bool {
 	if h == "" {
 		return false
 	}
-	tmp := filepath.Clean(os.TempDir())
-	c := filepath.Clean(h)
-	return c == tmp || strings.HasPrefix(c, tmp+string(filepath.Separator))
+	for _, root := range tempRoots() {
+		if under(h, root) {
+			return true
+		}
+	}
+	return false
+}
+
+// tempRoots are the directories a test's throwaway HOME may live under.
+//
+// Two of them, not one. `t.TempDir()` puts a directory under os.TempDir(), which is the
+// obvious root — but a dozen tmux tests in this repo deliberately do NOT use it: a unix
+// socket path caps near 104 bytes, and on macOS os.TempDir() is already a ~50-character
+// /var/folders/… path, so they take a short `os.MkdirTemp("/tmp", "gtx")` instead and
+// point HOME at that. Those tests are properly isolated; a guard that calls their home
+// "the real one" fires on the wrong people, and the message it prints ("redirect it
+// first") is advice they already took.
+//
+// On Linux the two roots coincide, which is why CI would never have shown this.
+func tempRoots() []string {
+	roots := []string{filepath.Clean(os.TempDir()), "/tmp"}
+	// /tmp is a symlink to /private/tmp on macOS, so a path may be written in either
+	// spelling. List both so they compare equal.
+	for _, r := range append([]string{}, roots...) {
+		if e, err := filepath.EvalSymlinks(r); err == nil && e != r {
+			roots = append(roots, e)
+		}
+	}
+	return roots
+}
+
+// under reports whether path is root or sits inside it, comparing the path as written
+// and, if it exists, as symlinks resolve it.
+func under(path, root string) bool {
+	c := filepath.Clean(path)
+	if c == root || strings.HasPrefix(c, root+string(filepath.Separator)) {
+		return true
+	}
+	e, err := filepath.EvalSymlinks(c)
+	if err != nil {
+		return false
+	}
+	return e == root || strings.HasPrefix(e, root+string(filepath.Separator))
 }
 
 // HQHome is the supervisor (中控) agent's persistent working directory — where
