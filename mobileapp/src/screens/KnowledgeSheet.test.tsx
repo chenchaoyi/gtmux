@@ -208,3 +208,82 @@ describe('coming back', () => {
     expect(said).not.toContain('also sits under its topic'); // that line lives on the index
   });
 });
+
+// Findable, and quieter about itself (2026-09-09).
+describe('finding an entry', () => {
+  const many: KnowledgeEntry[] = [
+    entry({id: 'pitfalls/ps-rss', topic: 'pitfalls', title: 'ps 的 RSS 全线低报'}),
+    entry({id: 'corrections/no-link', topic: 'corrections', title: 'PR 末尾不许出现 session 链接'}),
+    entry({id: 'workflows/tag', topic: 'workflows', title: 'tag then verify'}),
+  ];
+  const idx = (): KnowledgeIndex => ({
+    entries: many,
+    topics: [{name: 'pitfalls', count: 1}, {name: 'corrections', count: 1}, {name: 'workflows', count: 1}],
+    promotions: {pending: 0},
+    candidates: {pending: 0},
+  });
+  const type = (t: renderer.ReactTestRenderer, q: string) =>
+    act(() => {
+      t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-find' && n.props?.onChangeText)[0].props.onChangeText(q);
+    });
+
+  it('replaces the index with results, rather than showing both', () => {
+    // The index IS the browse affordance; two answers to one question is the confusion.
+    const t = render(idx());
+    type(t, 'RSS');
+    const said = strings(t.root as unknown as Node).join(' ');
+    expect(said).toContain('ps 的 RSS 全线低报');
+    expect(said).not.toContain('tag then verify');
+    // The topic ROWS are gone (the header's "3 topics" count is not the index).
+    expect(t.root.findAllByProps({testID: 'knowledge-topic-workflows'})).toHaveLength(0);
+  });
+
+  it('says so when nothing matches, naming what was typed', () => {
+    const t = render(idx());
+    type(t, 'zzzz');
+    expect(strings(t.root as unknown as Node).join(' ')).toContain('zzzz');
+  });
+
+  it('gives the index back when the query is cleared', () => {
+    const t = render(idx());
+    type(t, 'RSS');
+    type(t, '');
+    expect(t.root.findAllByProps({testID: 'knowledge-topic-workflows'}).length).toBeGreaterThan(0);
+  });
+});
+
+describe('the explainer under "waiting on you"', () => {
+  const withPending = (): KnowledgeIndex => ({
+    entries: [entry({id: 'pitfalls/x', promoted_at: NOW - 3600, promote_why: 'twice now'})],
+    topics: [{name: 'pitfalls', count: 1}],
+    promotions: {pending: 1},
+    candidates: {pending: 0},
+  });
+
+  it('is closed by default — it is read once, then it is just height', () => {
+    const said = strings(render(withPending()).root as unknown as Node).join(' ');
+    expect(said).not.toContain('carry each into somewhere durable');
+    expect(said).toContain('What this is');
+  });
+
+  it('opens on tap', () => {
+    const t = render(withPending());
+    act(() => {
+      t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-why' && typeof n.props.onPress === 'function')[0].props.onPress();
+    });
+    expect(strings(t.root as unknown as Node).join(' ')).toContain('carry each into somewhere durable');
+  });
+});
+
+describe('the actions name what they mean', () => {
+  it('says the lesson stopped being true, not "retire"', async () => {
+    // The dialog then asks WHY it no longer holds; the button and the question agree now.
+    const t = render(index({entries: [entry({body: 'the whole lesson'})]}));
+    await act(async () => {
+      t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
+    });
+    const said = strings(t.root as unknown as Node).join(' ');
+    expect(said).toContain('It no longer holds');
+    expect(said).not.toContain('Retire it');
+  });
+});

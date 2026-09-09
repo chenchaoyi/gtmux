@@ -1,13 +1,11 @@
 import {KnowledgeEntry, KnowledgeIndex} from '../api/client';
-import {
-  PROMOTION_STALE_SECS,
+import {PROMOTION_STALE_SECS,
   buildKnowledgeView,
   entriesOfTopic,
   isPending,
   provenanceOf,
   knowledgeValue,
-  splitTitleKey,
-} from './knowledgeModel';
+  splitTitleKey, matchEntries} from './knowledgeModel';
 
 const NOW = 1_756_800_000;
 const e = (o: Partial<KnowledgeEntry>): KnowledgeEntry =>
@@ -151,5 +149,44 @@ describe('knowledgeValue', () => {
 
   test('no base at all gets no row, rather than a row saying zero', () => {
     expect(knowledgeValue(idx(0, 0), false)).toBeNull();
+  });
+});
+
+// 396 entries, 7 topics, and the only way in was knowing which topic holds the one you
+// want — knowledge about the knowledge base, not about your machine (2026-09-09).
+describe('matchEntries', () => {
+  const e = (id: string, topic: string, title: string) => ({id, topic, title, at: 0} as never);
+  const base = [
+    e('pitfalls/ps-rss', 'pitfalls', 'ps 的 RSS 在内存吃紧时全线低报'),
+    e('corrections/no-session-link', 'corrections', 'PR 描述末尾不许出现 session 链接'),
+    e('best-practices/rollcall', 'best-practices', '批量合并断言后要逐条对账'),
+  ];
+
+  it('finds by title, in either language', () => {
+    expect(matchEntries(base, 'RSS').map(x => x.id)).toEqual(['pitfalls/ps-rss']);
+    expect(matchEntries(base, '对账').map(x => x.id)).toEqual(['best-practices/rollcall']);
+  });
+
+  it('finds by id, because that is how HQ names one in a dispatch', () => {
+    expect(matchEntries(base, 'no-session-link').map(x => x.id)).toEqual(['corrections/no-session-link']);
+  });
+
+  it('finds by topic, so "corrections" narrows to the topic', () => {
+    expect(matchEntries(base, 'corrections')).toHaveLength(1);
+  });
+
+  it('ignores case', () => {
+    expect(matchEntries(base, 'rss')).toHaveLength(1);
+    expect(matchEntries(base, 'PITFALLS')).toHaveLength(1);
+  });
+
+  it('makes every term match, so two words narrow instead of widen', () => {
+    expect(matchEntries(base, 'pitfalls ps')).toHaveLength(1);
+    expect(matchEntries(base, 'pitfalls 对账')).toHaveLength(0);
+  });
+
+  it('returns nothing for an empty query — the caller shows the index, not everything', () => {
+    expect(matchEntries(base, '')).toEqual([]);
+    expect(matchEntries(base, '   ')).toEqual([]);
   });
 });
