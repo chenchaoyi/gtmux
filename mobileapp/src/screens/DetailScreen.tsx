@@ -147,7 +147,32 @@ export function DetailView({
   // just see none. Fetched off /api/panes (a convenience surface — [] on failure).
   const [neighbors, setNeighbors] = useState<PaneRow[]>([]);
   const [neighborH, setNeighborH] = useState(0); // measured once, for the collapse animation
-  const [segH, setSegH] = useState(0); // Chat/Terminal segmented — same collapse treatment
+  const [ctlH, setCtlH] = useState(0); // the controls row — folds with the rest (see below)
+
+  // Connection, as it appears in the header's subtitle: a dot always, a word only when
+  // something is wrong. On iPad the split-view sidebar already shows it, and in the demo
+  // there is no connection to show — both keep the dot off rather than inventing one.
+  const connDot =
+    demo || isWide
+      ? null
+      : conn === 'live'
+      ? StatusColor.idle
+      : conn === 'offline'
+      ? StatusColor.waiting
+      : '#F59E0B';
+  // D9 says the connection is "server name + a status dot". The name is kept, but only
+  // where it earns its width: when the link is healthy the dot says everything and the
+  // subtitle's own words (agent · state · pane) are what the reader came for; when it is
+  // NOT healthy, WHICH Mac went quiet is the first thing they need, so the name appears
+  // with the word. This is a deliberate narrowing of D9 for a subtitle that has to fit on
+  // a phone — recorded in MOBILE.md rather than left as a silent deviation.
+  const connWord = (() => {
+    if (demo || isWide || conn === 'live') return '';
+    const where = mac?.name ? mac.name + ' ' : '';
+    return conn === 'offline'
+      ? (lang === 'zh' ? `${where}离线 · ` : `${where}offline · `)
+      : (lang === 'zh' ? `${where}重连中 · ` : `${where}reconnecting · `);
+  })();
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
@@ -171,7 +196,7 @@ export function DetailView({
   chromeH.current =
     headerH +
     (neighbors.length > 0 && onOpenPane ? neighborH : 0) +
-    (isPlainPane ? 0 : segH);
+    ctlH;
   const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
   const lastGap = useRef(0);
   const runEdge = useCallback(
@@ -602,9 +627,17 @@ export function DetailView({
             <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
               {primary(live)}
             </Text>
-            <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-              {live.agent} · {statusLabel(live.status, lang)} · {secondary(live)}
-            </Text>
+            {/* The connection lives HERE now, as a dot in front of the line that already
+                describes this pane. It used to own the left half of a band of its own —
+                a whole row's height for a state that is green almost always. The word
+                only appears when the state is abnormal, exactly as before (D9). */}
+            <View style={styles.subRow}>
+              {connDot !== null && <View style={[styles.liveDot, {backgroundColor: connDot}]} />}
+              <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
+                {connWord}
+                {live.agent} · {statusLabel(live.status, lang)} · {secondary(live)}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
         </Animated.View>
@@ -661,82 +694,64 @@ export function DetailView({
         </Animated.View>
       )}
 
-      {/* B1: 对话 ↔ 终端 segmented — hidden for a PLAIN pane (no chat, terminal only).
-          Auto-collapses on scroll-away with the SAME `collapse` driver as the header/
-          neighbor strip (one gesture, all top chrome folds together); reveals on
-          flicking back to the live tail. */}
-      {!fullscreen && !isPlainPane && (
+      {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen
+          Folds with the header, the neighbour strip and the segmented — the SAME driver,
+          so one gesture folds all of the top chrome. It was the one band left out, which
+          made the rule above ("一个手势,顶部 chrome 全部一起折") untrue on the screen:
+          reading history gave back three bands and kept a fourth (2026-09-09 user report,
+          measuring ~34pt of a ~180pt stack).
+          Its height is counted in `chromeH` above, which is what keeps the fold/reveal
+          arithmetic sound — the thresholds are derived from the height being switched, so
+          a band that folds without being counted would reopen the oscillation that
+          `liveEdge` exists to make impossible. */}
+      {!fullscreen && (
         <Animated.View
           style={{
             opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-            height: segH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [segH, 0]}) : undefined,
+            height: ctlH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [ctlH, 0]}) : undefined,
             overflow: 'hidden',
           }}>
         <View
           onLayout={e => {
-            // Measure ONCE at natural height (same rule as headerH: a re-measure
-            // during collapse would capture a shrunken value).
+            // Measure ONCE at natural height, like the other bands: a re-measure during
+            // the fold would capture a shrunken value and shrink the threshold with it.
             const h = e.nativeEvent.layout.height;
-            if (segH === 0 && h > 0) setSegH(h);
+            if (ctlH === 0 && h > 0) setCtlH(h);
           }}
-          style={styles.segWrap}>
-          <View style={[styles.seg, {backgroundColor: pal.surface, borderColor: pal.divider}, isWide && styles.segWide]}>
-            <Seg
-              label={lang === 'zh' ? '对话' : 'Chat'}
-              active={mode === 'chat'}
-              onPress={() => pickMode('chat')}
-              testID={TestIds.detail.modeChat}
-              pal={pal}
-            />
-            <Seg
-              label={lang === 'zh' ? '终端' : 'Terminal'}
-              active={mode === 'terminal'}
-              onPress={() => pickMode('terminal')}
-              testID={TestIds.detail.modeTerminal}
-              pal={pal}
-            />
-          </View>
-        </View>
-        </Animated.View>
-      )}
-
-      {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen */}
-      {!fullscreen && (
-        <View style={[styles.controls, {borderBottomColor: pal.divider}]}>
-          {/* D9: server name + status dot (no "live" text); only abnormal states add a
-              word. Hidden on iPad (isWide): the split-view sidebar already shows the
-              connection, so repeating it in the main pane is redundant noise. */}
-          {demo ? (
-            // Demo tour: no real connection — a persistent DEMO chip so canned
-            // output is never mistaken for a live Mac (research: label follows you in).
-            // Hidden in SHOT_MODE (clean App Store captures); the shipped demo shows it.
-            Debug.shotMode ? null : (
-              <View style={styles.live}>
-                <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-                  <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
-                </View>
-                <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
-                  {lang === 'zh' ? ' 样例数据' : ' sample data'}
-                </Text>
-              </View>
-            )
-          ) : isWide ? (
+          style={[styles.controls, {borderBottomColor: pal.divider}]}>
+          {/* The segmented moved in here: two controls rows were one row of controls
+              wearing two dividers. Chat/Terminal on the left at its natural width, the
+              per-mode controls on the right (2026-09-09 — the top chrome was four bands,
+              155pt, 21% of the usable screen).
+              The DEMO chip stays on this row: it is a warning about the whole screen, and
+              it must not be mistaken for this pane's own state. */}
+          {isPlainPane ? (
             <View style={styles.live} />
           ) : (
-            <View style={styles.live}>
-              <View
-                style={[
-                  styles.liveDot,
-                  {backgroundColor: conn === 'live' ? StatusColor.idle : conn === 'offline' ? StatusColor.waiting : '#F59E0B'},
-                ]}
+            <View style={[styles.seg, styles.segInline, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              <Seg
+                label={lang === 'zh' ? '对话' : 'Chat'}
+                active={mode === 'chat'}
+                onPress={() => pickMode('chat')}
+                testID={TestIds.detail.modeChat}
+                pal={pal}
               />
+              <Seg
+                label={lang === 'zh' ? '终端' : 'Terminal'}
+                active={mode === 'terminal'}
+                onPress={() => pickMode('terminal')}
+                testID={TestIds.detail.modeTerminal}
+                pal={pal}
+              />
+            </View>
+          )}
+          {demo && !Debug.shotMode && (
+            <View style={styles.live}>
+              <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
+                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+              </View>
               <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
-                {mac?.name || (lang === 'zh' ? '服务器' : 'server')}
-                {conn === 'offline'
-                  ? lang === 'zh' ? ' · 离线' : ' · offline'
-                  : conn === 'connecting'
-                  ? lang === 'zh' ? ' · 重连中' : ' · reconnecting'
-                  : ''}
+                {lang === 'zh' ? ' 样例数据' : ' sample data'}
               </Text>
             </View>
           )}
@@ -755,6 +770,7 @@ export function DetailView({
             <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
           </View>
         </View>
+        </Animated.View>
       )}
 
       {/* body: 对话 (glance) + 终端 (raw TUI). Both stay MOUNTED AND LAID OUT once
@@ -983,7 +999,12 @@ const styles = StyleSheet.create({
   headerBadge: {position: 'absolute', right: -3, bottom: -3},
   headerText: {flex: 1, minWidth: 0},
   title: {fontSize: 15, fontWeight: '700'},
-  sub: {fontSize: 11.5, marginTop: 1},
+  sub: {fontSize: 11.5, marginTop: 1, flexShrink: 1},
+  subRow: {flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1},
+  // The segmented shares its row with the controls now, so it takes the space it needs
+  // rather than the whole width: a two-way toggle at ~46% is still a pair of ~80pt
+  // targets, and the row it used to have back is 40pt of terminal.
+  segInline: {flexShrink: 0, minWidth: 150, maxWidth: 210, flexGrow: 1},
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1008,9 +1029,7 @@ const styles = StyleSheet.create({
   neighborLabel: {fontSize: 11, flexShrink: 1},
   neighborLoc: {fontSize: 9, fontVariant: ['tabular-nums']},
   busyNote: {fontSize: 11.5, lineHeight: 16, paddingHorizontal: 14, paddingBottom: 6},
-  segWrap: {paddingHorizontal: 12, paddingTop: 5, paddingBottom: 5},
   seg: {flexDirection: 'row', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, padding: 2},
-  segWide: {maxWidth: 460, alignSelf: 'center', width: '100%'}, // iPad: don't span the whole main pane
   segBtn: {flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 7},
   segText: {fontSize: 13, fontWeight: '600'},
   live: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0, marginRight: 8},
