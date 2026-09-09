@@ -14,6 +14,10 @@ module.exports = {
   globalSetup: '<rootDir>/e2e/setup/global-setup.ts',
   globalTeardown: '<rootDir>/e2e/setup/global-teardown.ts',
   maxWorkers: 1, // one shared sim session; run serially
+  // Most suites skip themselves without a live serve, and jest's own summary for that
+  // reads like a green run. This one says what ran, what didn't, and what would have
+  // run it. See coverage-reporter.js.
+  reporters: ['default', '<rootDir>/e2e/setup/coverage-reporter.js'],
   transform: {
     '^.+\\.ts$': ['ts-jest', {tsconfig: '<rootDir>/e2e/tsconfig.json'}],
   },
