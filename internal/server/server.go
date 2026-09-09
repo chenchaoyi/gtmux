@@ -898,9 +898,18 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 
 // handleTest sends a test push to every registered device (POST /api/push/test),
 // so the settings screen can verify notifications end-to-end.
+// handleTest fires the sample notification at EVERY registered device, which is what
+// makes it a useful "did push survive the last change?" button and also what makes it
+// the owner's button rather than anyone's: a guest calling it rings the owner's phone,
+// wherever the owner is, as often as it asks. Nothing reaches the guest, so this is the
+// nuisance tier — the same one as pulling the owner's terminal to a pane — and it gets
+// the same gate for the same reason.
 func (s *Server) handleTest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if !s.fullOnly(w, r) {
 		return
 	}
 	if s.deps.Push == nil {
