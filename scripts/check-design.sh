@@ -93,17 +93,35 @@ done
 #    own charter never mentions — which is exactly what `usage·warn` and `stuck·waiting`
 #    did for months. The needle is the BACKTICKED form: a bare grep for "done" or "tick"
 #    matches ordinary prose and passes for the wrong reason.
+#
+#    BOTH means both LANGUAGES too. This checked docs/cli.md and internal/hq/hq.go — the
+#    English doc and the English charter — while docs/cli.zh.md carries the same class
+#    table and internal/hq/playbook_zh.go carries the Chinese charter a home seeded in
+#    Chinese actually receives. Neither was read. The failure the paragraph above
+#    describes, a knock whose charter never mentions it, was still fully available in the
+#    other language, and the operator's own HQ runs in that one.
+#
+#    The files are FOUND, not listed: any file defining an hqInstructions<LANG> constant
+#    is a charter, and docs/cli*.md is the doc pair. A third language is covered the day
+#    it lands, without anyone remembering this script exists.
 WAKE=internal/hqwake/wake.go
-PLAYBOOK=internal/hq/hq.go
+PLAYBOOKS="$(grep -rlE 'const hqInstructions[A-Z]+ = ' internal/hq/*.go | sort)"
+CLASS_DOCS="$(ls docs/cli.md docs/cli.*.md 2>/dev/null | sort -u)"
 DOC_HIDDEN=" "   # classes deliberately not surfaced (none today)
+[ -n "$PLAYBOOKS" ] || { note "no seeded charter found — the wake-vocabulary check just stopped checking"; fail=1; }
+[ -n "$CLASS_DOCS" ] || { note "no cli doc found — the wake-vocabulary check just stopped checking"; fail=1; }
 for c in $(grep -oE 'Class[A-Za-z]+ += +"[^"]+"' "$WAKE" | sed -E 's/.*"([^"]+)"/\1/' | sort -u); do
   case "$DOC_HIDDEN" in *" $c "*) continue ;; esac
-  grep -qE '`'"$c"'(`|·)' docs/cli.md || {
-    note "wake class '$c' is not in docs/cli.md's class table (a reader meets a glyph nothing explains)"; fail=1
-  }
-  grep -qE '`'"$c"'(`|·)' "$PLAYBOOK" || {
-    note "wake class '$c' is not taught in the seeded playbook ($PLAYBOOK) — HQ would get a knock its charter never mentions"; fail=1
-  }
+  for d in $CLASS_DOCS; do
+    grep -qE '`'"$c"'(`|·)' "$d" || {
+      note "wake class '$c' is not in $d's class table (a reader meets a glyph nothing explains)"; fail=1
+    }
+  done
+  for pb in $PLAYBOOKS; do
+    grep -qE '`'"$c"'(`|·)' "$pb" || {
+      note "wake class '$c' is not taught in the seeded playbook ($pb) — an HQ home seeded from that charter would get a knock it never mentions"; fail=1
+    }
+  done
 done
 
 # 8. Retired vocabulary must stay retired. Each entry names the change that retired it, so
