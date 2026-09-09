@@ -203,3 +203,18 @@ func knowledgeTopics(_ entries: [KBEntry]) -> [KBTopic] {
             a.entries.count == b.entries.count ? a.name < b.name : a.entries.count > b.entries.count
         }
 }
+
+/// matchKB filters the base by what someone typed.
+///
+/// Matching runs over the title, the id and the topic, case-insensitively. The id is how
+/// HQ names an entry in a dispatch, so it is a thing people actually paste. Whitespace
+/// splits the query into terms that must ALL match, so two words narrow instead of widen
+/// — the same rule as the phone's `matchEntries`, so one query behaves the same on both.
+func matchKB(_ entries: [KBEntry], _ query: String) -> [KBEntry] {
+    let terms = query.lowercased().split(whereSeparator: { $0.isWhitespace }).map(String.init)
+    if terms.isEmpty { return [] }
+    return entries.filter { e in
+        let hay = "\(e.title) \(e.id) \(e.topic)".lowercased()
+        return terms.allSatisfy { hay.contains($0) }
+    }
+}

@@ -277,6 +277,12 @@ struct HQReaderView: View {
     @State private var mem = HQMemoryState()
     @State private var memError: String?
     @State private var draft = ""
+    /// What someone typed into Find. Non-empty replaces the index with results — the
+    /// index IS the browse answer, and two answers to one question is the confusion.
+    @State private var query = ""
+    /// The paragraph under "waiting on you" describes what a promotion IS. Read once;
+    /// standing there forever it is height. Closed until asked for.
+    @State private var whyOpen = false
     @State private var actError: String?
     @State private var busy = false
     @Environment(\.colorScheme) private var scheme
@@ -284,12 +290,42 @@ struct HQReaderView: View {
     var body: some View {
         let p = Theme.Palette.of(scheme)
         VStack(spacing: 0) {
-            Picker("", selection: $tab) {
-                Text(l10n.tr("Situation board", "态势板")).tag(HQReaderTab.board)
-                Text(l10n.tr("Knowledge", "知识库")).tag(HQReaderTab.knowledge)
+            HStack(spacing: 10) {
+                Picker("", selection: $tab) {
+                    Text(l10n.tr("Situation board", "态势板")).tag(HQReaderTab.board)
+                    Text(l10n.tr("Knowledge", "知识库")).tag(HQReaderTab.knowledge)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+
+                // Find. 396 entries across 7 topics on this machine, and until now the
+                // only way in was knowing which topic holds the one you want — that is
+                // knowledge about the knowledge base, not about the machine. It shares
+                // the tab strip's row rather than taking a band of its own.
+                if tab == .knowledge, pane == .index {
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 12)).foregroundStyle(p.fg3)
+                        TextField(
+                            l10n.tr("Find in \(store.entries.count) entries",
+                                    "在 \(store.entries.count) 条里找"),
+                            text: $query)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12))
+                        if !query.trimmingCharacters(in: .whitespaces).isEmpty {
+                            Button { query = "" } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 12)).foregroundStyle(p.fg3)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(p.fg3.opacity(0.10)))
+                    .frame(maxWidth: 280)
+                }
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
             .padding(10)
 
             Divider()
@@ -311,7 +347,9 @@ struct HQReaderView: View {
                 knowledgeBody(p)
             }
         }
-        .frame(minWidth: 520, minHeight: 420)
+        // 292pt of list plus a detail pane wide enough to read a lesson in. The old
+        // 520 floor was for one column.
+        .frame(minWidth: 700, minHeight: 440)
         .background(p.bg)
         .onAppear {
             store.start()
@@ -378,9 +416,26 @@ struct HQReaderView: View {
     // MARK: knowledge
 
     @ViewBuilder private func knowledgeBody(_ p: Theme.Palette) -> some View {
+        // LIST BESIDE DETAIL. This is a window with 640pt of width and the content was one
+        // 12pt-padded column, so reading an entry meant leaving the list and coming back —
+        // a screen change to answer "what does this one say?" (2026-09-09).
+        //
+        // The phone keeps its drill-in: it has no width to spare, and its answer to the
+        // same problem is returning you to the list at the place you left.
+        HStack(spacing: 0) {
+            knowledgeList(p)
+                .frame(width: 292)
+            Divider()
+            knowledgeDetail(p)
+                .frame(maxWidth: .infinity)
+        }
+    }
+
+    /// The right pane: the selected entry, or a line saying to pick one.
+    @ViewBuilder private func knowledgeDetail(_ p: Theme.Palette) -> some View {
         switch pane {
         case .index:
-            knowledgeIndex(p)
+            empty(l10n.tr("Pick an entry on the left", "在左边选一条"), p)
         case let .entry(id):
             if let e = store.entries.first(where: { $0.id == id }) {
                 entryDetail(e, p)
@@ -388,15 +443,31 @@ struct HQReaderView: View {
                 // The entry went away under the reader (a retire, or HQ superseded it).
                 // Saying so beats an empty pane with a back button.
                 VStack(spacing: 0) {
-                    backBar(l10n.tr("Knowledge", "知识库"), p)
+                    topicLine(l10n.tr("Knowledge", "知识库"), p)
                     empty(l10n.tr("That entry is no longer live", "这条已不在有效集里"), p)
                 }
             }
         }
     }
 
-    @ViewBuilder private func knowledgeIndex(_ p: Theme.Palette) -> some View {
-        if store.entries.isEmpty && store.candidates.isEmpty {
+    @ViewBuilder private func knowledgeList(_ p: Theme.Palette) -> some View {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        if !q.isEmpty {
+            // Results REPLACE the index. The index is the browse answer; showing both is
+            // two answers to one question.
+            let hits = matchKB(store.entries, q)
+            if hits.isEmpty {
+                empty(l10n.tr("Nothing matches “\(q)”", "没有匹配「\(q)」的条目"), p)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        sectionHead(l10n.tr("results", "结果"), hits.count, p, accent: false)
+                        ForEach(hits) { e in row(e, p, showWhy: false) }
+                    }
+                    .padding(.bottom, 10)
+                }
+            }
+        } else if store.entries.isEmpty && store.candidates.isEmpty {
             empty(l10n.tr("Nothing recorded yet", "还没有记录"), p)
         } else {
             ScrollView {
@@ -414,7 +485,20 @@ struct HQReaderView: View {
                         // reader who takes it for all three files a lesson everyone needed
                         // on one machine. Same sentence as the phone's; the long form is
                         // docs/design/knowledge-layers.md.
-                        Text(l10n.tr(
+                        Button {
+                            whyOpen.toggle()
+                        } label: {
+                            Text(whyOpen
+                                 ? l10n.tr("What this is ⌃", "这是什么 ⌃")
+                                 : l10n.tr("What this is ⌄", "这是什么 ⌄"))
+                                .font(.system(size: 11))
+                                .foregroundStyle(p.fg2)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 6)
+                        if whyOpen {
+                            Text(l10n.tr(
                             "Entries HQ judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.",
                             "这些是 HQ 判断「比这台机器大」的条目。它已写好带走简报,等你把它搬进一个持久的地方(你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook,或 gtmux 自己的仓库),再回来标记落地。"))
                             .font(.system(size: 11))
@@ -422,6 +506,7 @@ struct HQReaderView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 12)
                             .padding(.bottom, 6)
+                        }
                         ForEach(store.pending) { e in row(e, p, showWhy: true) }
                     }
                     if !store.candidates.isEmpty {
@@ -562,7 +647,9 @@ struct HQReaderView: View {
     /// One entry, opened: its prose, its lifecycle, and the judgments available on it.
     @ViewBuilder private func entryDetail(_ e: KBEntry, _ p: Theme.Palette) -> some View {
         VStack(spacing: 0) {
-            backBar(e.topic, p)
+            // No back control: the list is beside this, not behind it. The topic line
+            // stays because it says WHERE this entry lives, which the list only implies.
+            topicLine(e.topic, p)
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(e.title)
@@ -616,6 +703,15 @@ struct HQReaderView: View {
                 .padding(14)
             }
         }
+    }
+
+    /// The detail pane's own heading — where this entry lives.
+    @ViewBuilder private func topicLine(_ title: String, _ p: Theme.Palette) -> some View {
+        HStack(spacing: 6) {
+            Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(p.fg2)
+            Spacer()
+        }
+        .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 6)
     }
 
     @ViewBuilder private func backBar(_ title: String, _ p: Theme.Palette) -> some View {
@@ -890,7 +986,7 @@ final class HQReaderController {
     func show(l10n: L10n, tab: HQReaderTab) {
         if window == nil {
             let w = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 640, height: 560),
+                contentRect: NSRect(x: 0, y: 0, width: 820, height: 580),
                 styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
             w.title = l10n.tr("gtmux HQ", "gtmux HQ")
             w.isReleasedWhenClosed = false
