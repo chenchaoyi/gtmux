@@ -86,3 +86,38 @@ func TestOnlyTheTempTreeCounts(t *testing.T) {
 		t.Error("a path that only shares the prefix is not disposable")
 	}
 }
+
+func TestAShortTmpHomeIsDisposable(t *testing.T) {
+	// A dozen tmux tests here cannot use t.TempDir(): a unix socket path caps near 104
+	// bytes and macOS's os.TempDir() spends most of that on /var/folders/…, so they take
+	// a short os.MkdirTemp("/tmp", "gtx") and point HOME there. That home is throwaway,
+	// and the guard must say so — otherwise it fires on the tests that got isolation
+	// RIGHT, and the fix it prints is the thing they already did.
+	dir, err := os.MkdirTemp("/tmp", "gtxguard")
+	if err != nil {
+		t.Skipf("no writable /tmp: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+
+	if !disposable(dir) {
+		t.Fatalf("disposable(%q) = false — a short /tmp home is throwaway, not the operator's", dir)
+	}
+	// And the whole way through: a path resolver must hand it back rather than panic.
+	t.Setenv("HOME", dir)
+	if got := HQHome(); !strings.HasPrefix(got, dir) {
+		t.Errorf("HQHome() = %q, want it under %q", got, dir)
+	}
+}
+
+func TestTheOperatorsHomeStaysUndisposable(t *testing.T) {
+	// The widening above must not have opened the door it was guarding. A real home is
+	// still a real home, including the one this process actually has.
+	if h := os.Getenv("HOME"); h != "" && disposable(h) {
+		t.Errorf("HOME=%q read as disposable — the guard is open", h)
+	}
+	for _, p := range []string{"/", "/Users/somebody", "/var", "/private", "/tmpfoo", "/nottmp/x"} {
+		if disposable(p) {
+			t.Errorf("disposable(%q) = true", p)
+		}
+	}
+}
