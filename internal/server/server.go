@@ -592,6 +592,9 @@ func (s *Server) handleOptions(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
+	if !s.mayReachPane(w, r, id) {
+		return
+	}
 	// Options belong to a pane whose AGENT ASKED something — never derive an approval
 	// menu from arbitrary screen text (a "1. … 2. …" list in an agent's own message
 	// would otherwise read as one). No pending ask → empty, without even parsing.
@@ -806,6 +809,9 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
+	if !s.mayReachPane(w, r, id) {
+		return
+	}
 	diff, err := s.deps.Diff(id)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, errBody("diff failed: "+err.Error()))
@@ -850,6 +856,9 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	if !s.mayReachPane(w, r, id) {
 		return
 	}
 	b, meta, err := s.deps.Transcript(id)
