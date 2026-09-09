@@ -254,10 +254,10 @@ func eventsUsage() int {
 		"  不是全貌 —— 对账请用不过滤的 --since-seq 增量。")
 	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
 		"  --since-seq N：一次性读取序号 N 之后的全部事件(唤醒后拉增量用)。")
-	i18n.Say("  (the pull-on-wake primitive — HQ reads exactly the delta a wake covered).",
+	i18n.Say("  (the pull-on-wake primitive —HQ reads exactly the delta a wake covered).",
 		"  (即唤醒线覆盖区间的增量拉取原语)。")
 	i18n.Say("  An UNFILTERED --since-seq read from the HQ home advances HQ's consumption",
-		"  从中控目录运行的不过滤 --since-seq 读取会推进中控的消费水位;")
+		" 从 HQ 目录运行的不过滤 --since-seq 读取会推进 HQ 的消费水位;")
 	i18n.Say("  watermark; anything past it re-knocks as `unread` until consumed.",
 		"  水位之后仍未消费的事件会以 `unread` 反复敲门,直到被消费。")
 	i18n.Say("  That pull shows exactly the DEBT: HQ's own records, pane-less blinks and",
@@ -265,7 +265,7 @@ func eventsUsage() int {
 	i18n.Say("  gtmux's audit trail are hidden (they never counted) — `--all` includes them.",
 		"  (gtmux:audit:*)会被隐藏(它们本就不计数)—— 需要全量加 `--all`(同样计入消费)。")
 	i18n.Say("  --ack N: write the watermark back explicitly (HQ home only), for when the",
-		"  --ack N：显式回写水位(仅中控目录),用于以别的方式(如 digest 全量对账)")
+		" --ack N：显式回写水位(仅 HQ 目录),用于以别的方式(如 digest 全量对账)")
 	i18n.Say("  stream was reconciled another way (a full `gtmux digest`).",
 		"  完成消费的场合。")
 	return 0
@@ -396,7 +396,7 @@ func consumeHQRead(from, to int64) {
 func cmdEventsAck(seq int64) int {
 	if !isHQRead() {
 		i18n.Sae("gtmux events --ack: only the HQ session can acknowledge its own watermark (run it from "+state.HQHome()+")",
-			"gtmux events --ack：只有中控会话能回写自己的消费水位（请在 "+state.HQHome()+" 下运行）")
+			"gtmux events --ack：只有 HQ 会话能回写自己的消费水位（请在 "+state.HQHome()+" 下运行）")
 		return 1
 	}
 	if latest := events.CurrentSeq(); seq > latest {

@@ -249,7 +249,7 @@ func TestHubTallyExcludesSupervisor(t *testing.T) {
 		t.Fatalf("want one tally, got %+v", tallies)
 	}
 	got := tallies[0]
-	if got.Waiting != 1 { // the worker only — HQ excluded
+	if got.Waiting != 1 { // the worker only —HQ excluded
 		t.Errorf("Waiting = %d, want 1 (HQ must not count)", got.Waiting)
 	}
 	if got.Working != 1 {

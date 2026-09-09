@@ -140,8 +140,8 @@ func cmdSpawn(args []string) int {
 	// issued from the HQ pane IS the HQ home — so the default is exactly the trap.
 	// Hard refusal, with the fix in the message.
 	if dir, bad := spawnDirInHQHome(paneFlag, cwd); bad {
-		i18n.Sae("gtmux spawn: refusing to run a worker in the HQ home ("+dir+") — its AGENTS.md is the supervisor charter and the worker would impersonate HQ. Pass --cwd <project dir>.",
-			"gtmux spawn: 拒绝在中控主目录（"+dir+"）里跑执行 session —— 那里的 AGENTS.md 是中控章程，worker 会误当自己是 HQ。请加 --cwd <项目目录>。")
+		i18n.Sae("gtmux spawn: refusing to run a worker in the HQ home ("+dir+") — its AGENTS.md is HQ charter and the worker would impersonate HQ. Pass --cwd <project dir>.",
+			"gtmux spawn: 拒绝在 HQ 主目录（"+dir+"）里跑执行 session —— 那里的 AGENTS.md 是 HQ 章程，worker 会误当自己是 HQ。请加 --cwd <项目目录>。")
 		return 2
 	}
 

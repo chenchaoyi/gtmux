@@ -224,7 +224,7 @@ final class HQReaderStore: ObservableObject {
             let path = home.stdout.split(separator: "\n").last.map(String.init) ?? ""
             if home.status != 0 || path.isEmpty {
                 let msg = home.stderr.isEmpty
-                    ? l10n.tr("could not locate the HQ home", "找不到中控目录")
+                    ? l10n.tr("could not locate the HQ home", "找不到 HQ 目录")
                     : home.stderr
                 DispatchQueue.main.async { done(msg) }
                 return
@@ -339,7 +339,7 @@ struct HQReaderView: View {
                     .font(.system(size: 11)).foregroundStyle(p.fg3)
                     .lineLimit(1).truncationMode(.tail)
             } else {
-                Text(l10n.tr("no supervisor memory on this machine", "这台机器上没有中控记忆"))
+                Text(l10n.tr("no supervisor memory on this machine", "这台机器上没有 HQ 记忆"))
                     .font(.system(size: 11)).foregroundStyle(p.fg3)
             }
             Spacer(minLength: 8)
@@ -370,8 +370,8 @@ struct HQReaderView: View {
             BoardOutlineView(markdown: text, p: p)
         } else {
             // A supervisor that has written no board is ordinary, not broken.
-            empty(l10n.tr("No situation board yet — the supervisor writes one as it works",
-                          "还没有态势板 —— 参谋长干着干着就会写一份"), p)
+            empty(l10n.tr("No situation board yet —HQ writes one as it works",
+                          "还没有态势板 —— HQ 干着干着就会写一份"), p)
         }
     }
 
@@ -415,8 +415,8 @@ struct HQReaderView: View {
                         // on one machine. Same sentence as the phone's; the long form is
                         // docs/design/knowledge-layers.md.
                         Text(l10n.tr(
-                            "Entries the supervisor judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.",
-                            "这些是参谋长判断「比这台机器大」的条目。它已写好带走简报,等你把它搬进一个持久的地方(你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook,或 gtmux 自己的仓库),再回来标记落地。"))
+                            "Entries HQ judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.",
+                            "这些是 HQ 判断「比这台机器大」的条目。它已写好带走简报,等你把它搬进一个持久的地方(你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook,或 gtmux 自己的仓库),再回来标记落地。"))
                             .font(.system(size: 11))
                             .foregroundStyle(p.fg3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -892,7 +892,7 @@ final class HQReaderController {
             let w = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 640, height: 560),
                 styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-            w.title = l10n.tr("gtmux HQ", "gtmux 中控")
+            w.title = l10n.tr("gtmux HQ", "gtmux HQ")
             w.isReleasedWhenClosed = false
             window = w
         }

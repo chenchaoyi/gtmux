@@ -13,7 +13,7 @@ export type Inline =
   | {t: 'b'; s: string}
   | {t: 'i'; s: string}
   | {t: 'code'; s: string}
-  /** ~~struck out~~ — HQ marks a handled item this way rather than deleting it. */
+  /** ~~struck out~~ —HQ marks a handled item this way rather than deleting it. */
   | {t: 'del'; s: string}
   /** A hard line break (`<br>`): the break is honoured, the tag never shown. */
   | {t: 'br'; s: string}

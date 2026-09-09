@@ -1,7 +1,7 @@
 // `gtmux capture` — the cheap-notice front of the HQ capture loop (hq-capture-loop ②).
 // Writing a polished knowledge-base entry mid-work is too expensive and gets skipped, so
 // this decouples NOTICING (one line, in the moment) from WRITING IT UP WELL (batched, at
-// distill time). It is a PUBLIC command by design: any worker — not just HQ — that learns
+// distill time). It is a PUBLIC command by design: any worker — not just HQ— that learns
 // a durable, cross-cutting fact can drop a CANDIDATE into a pending-distill spool. A
 // candidate is NOT a knowledge-base entry: HQ's distill pass is the quality gate that
 // decides what is durable, merges it into the right topic (keyed by the dedup key so it
@@ -83,7 +83,7 @@ func CmdCapture(args []string) int {
 	if !validKnowledgeTopic(topic, custom) {
 		vocab := strings.Join(knowledgeTopics(custom), " | @")
 		i18n.Sae("gtmux capture: unknown topic '"+topic+"' (want @"+vocab+"; HQ can declare more with `gtmux knowledge topic`)",
-			"gtmux capture: 未知主题 '"+topic+"'(可选 @"+vocab+";中控可用 `gtmux knowledge topic` 声明新主题)")
+			"gtmux capture: 未知主题 '"+topic+"'(可选 @"+vocab+";HQ 可用 `gtmux knowledge topic` 声明新主题)")
 		return 2
 	}
 
@@ -322,7 +322,7 @@ func captureUsage() int {
 	i18n.Say("usage: gtmux capture \"<one-line lesson> @<topic>\"   |   gtmux capture --list [--json]",
 		"用法：gtmux capture \"<一句话教训> @<topic>\"   |   gtmux capture --list [--json]")
 	i18n.Say("  topic ∈ "+strings.Join(builtinTopics, " | ")+" — plus any topic HQ declared (`gtmux knowledge topic`)",
-		"  topic ∈ "+strings.Join(builtinTopics, " | ")+" —— 以及中控用 `gtmux knowledge topic` 声明的主题")
+		"  topic ∈ "+strings.Join(builtinTopics, " | ")+" —— 以及 HQ 用 `gtmux knowledge topic` 声明的主题")
 	i18n.Say("  Record a durable, cross-cutting fact as a CANDIDATE — cheap, in the moment.",
 		"  把一条持久、横向的事实作为候选记下来 —— 便宜、当场。")
 	i18n.Say("  Any worker can capture; HQ's distill pass is the quality gate that files it.",

@@ -133,7 +133,7 @@ import (
 //	      OWN prints by it: ledger-grade goes to the board, not the screen. Tick briefs name
 //	      only what changed.
 //	v17 — hq-unread-noise: the delta pull changed under HQ, so the playbook must say so.
-//	      It now shows the DEBT — HQ's own pane records and pane-less blinks are omitted,
+//	      It now shows the DEBT —HQ's own pane records and pane-less blinks are omitted,
 //	      because measured, 68.7% of what a knock sent HQ to read was its own echo — with
 //	      `--all` to get the raw view back, and both forms still consume. Also teaches the
 //	      cwd rule that a read from a SUBDIRECTORY does not count (reproduced 5×, once in
@@ -496,7 +496,7 @@ func printSeedNotice(r seedResult) {
 // hqNotesDir is HQ's private working area (its situation board + any scratch notes).
 func hqNotesDir() string { return filepath.Join(state.HQHome(), "notes") }
 
-// seedHQNotes lays down the situation-board template IF ABSENT — HQ's durable command
+// seedHQNotes lays down the situation-board template IF ABSENT —HQ's durable command
 // posture that survives a context reset. Written only when missing, so HQ's curated
 // board is never overwritten. Returns whether it created anything.
 func seedHQNotes() (created bool) {
@@ -545,7 +545,7 @@ func boardSeed() string {
 		h2 + "\n" + boardSeedTail
 }
 
-const boardSeedTop = `# gtmux HQ — situation board (作战态势板)
+const boardSeedTop = `# gtmux HQ— situation board (作战态势板)
 
 Your DURABLE command posture. gtmux does NOT read this back — it is your synthesis,
 kept current by you, so your picture of the fleet survives a context compaction or
@@ -854,7 +854,7 @@ func CmdHQ(args []string) int {
 	}
 	printSeedNotice(res)
 	// Enrollment baseline (hq-perception-v2): mark every currently-live pane as
-	// enrolled — HQ's seeded first turn does the FULL fleet enrollment, so only
+	// enrolled —HQ's seeded first turn does the FULL fleet enrollment, so only
 	// panes appearing AFTER this point fire an incremental `new-session` wake.
 	hook.StampEnrolledAll()
 	// ④ Surface a redundant/broken policy layout instead of silently living with it.

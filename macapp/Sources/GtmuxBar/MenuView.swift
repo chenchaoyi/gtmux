@@ -206,7 +206,7 @@ struct MenuView: View {
                 // Role banner — the "this is the oversight layer, not a session" cue.
                 HStack(spacing: 5) {
                     Image(systemName: "eye.fill").font(.system(size: 12))
-                    Text(l10n.tr("CHIEF OF STAFF", "参谋长"))
+                    Text(l10n.tr("HQ", "HQ"))
                         .font(.system(size: 9.5, weight: .semibold)).tracking(0.9)
                     Spacer(minLength: 6)
                     if store.supervisor != nil {
@@ -260,12 +260,12 @@ struct MenuView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .help(l10n.tr("Jump to the supervisor", "跳到中控"))
+                    .help(l10n.tr("Jump to HQ", "跳到 HQ"))
                 } else {
                     Button { onAction(.startHQ) } label: {
                         HStack(spacing: 11) {
                             HQMedallion(state: .absent, size: 30, badgeBG: p.bg)
-                            Text(l10n.tr("HQ not running — click to start", "中控未运行 · 点击启动"))
+                            Text(l10n.tr("HQ not running — click to start", "HQ 未运行 · 点击启动"))
                                 .font(.system(size: 11)).foregroundStyle(p.fg3)
                             Spacer(minLength: 6)
                             Image(systemName: "play.circle").font(.system(size: 13)).foregroundStyle(p.fg3)
@@ -276,7 +276,7 @@ struct MenuView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .help(l10n.tr("Start the supervisor (gtmux hq)", "启动中控（gtmux hq）"))
+                    .help(l10n.tr("Start HQ (gtmux hq)", "启动 HQ（gtmux hq）"))
                 }
             }
             .padding(.horizontal, 8).padding(.top, 8)

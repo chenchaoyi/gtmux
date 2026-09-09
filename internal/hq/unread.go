@@ -153,7 +153,7 @@ func unreadSourceOf(r events.Record) string {
 // field cannot tell them apart because it holds the tmux session name and is therefore
 // empty on every pane-less record by construction (hook.go: session is read only when a
 // pane exists). Excluding by empty pane would have stopped counting 39 real agent turns and
-// the 9 maintenance triggers #647 shipped precisely so they would reach HQ — and those are
+// the 9 maintenance triggers #647 shipped precisely so they would reach HQ— and those are
 // the records that can LEAST afford it, because the class-wake channel fires only for a
 // pane (hook.go: `if pane != ""`), which makes this knock their only channel at all.
 func unreadBlinks(recs []events.Record) []bool {

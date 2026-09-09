@@ -6,7 +6,7 @@ const ev = (o: Partial<HQEvent>): HQEvent => ({ts: 1000, event: 'Stop', ...o} as
 // The real shapes, copied from this machine's journal rather than invented — the parsing
 // below only means anything if it is parsing what the core actually writes.
 const real = {
-  send: ev({event: 'gtmux:audit:send', pane: '%11', summary: 'landed: 补上。——HQ 代答(确认型:可逆)'}),
+  send: ev({event: 'gtmux:audit:send', pane: '%11', summary: 'landed: 补上。—— HQ 代答(确认型:可逆)'}),
   reap: ev({event: 'gtmux:audit:reap', pane: '%35', summary: 'tdkrsxpw0hh94: killed session release-0-66-1'}),
   knowledge: ev({event: 'gtmux:audit:knowledge', summary: 'add pitfalls/userpromptsubmit-stop-summary'}),
   rotate: ev({event: 'gtmux:audit:rotate', summary: 'session 6a58eb56-d97b-477b-a54a-e4018c243759 → reset (/clear)'}),

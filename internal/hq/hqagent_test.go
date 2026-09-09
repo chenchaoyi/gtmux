@@ -64,7 +64,7 @@ func TestDetectHQAgents_OnlyInstalledHooked(t *testing.T) {
 		t.Fatalf("detect(none)=%v, want empty", got)
 	}
 	// A non-hook-equipped agent (grok has a Resume but Hooked=false) is NOT offered even
-	// if installed — HQ needs the wake/event stream.
+	// if installed —HQ needs the wake/event stream.
 	if got := candCmds(detectHQAgents(fakeLookPath("grok"))); len(got) != 0 {
 		t.Fatalf("detect(grok, non-hooked)=%v, want empty", got)
 	}

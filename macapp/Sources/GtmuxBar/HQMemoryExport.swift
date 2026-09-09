@@ -55,7 +55,7 @@ func readHQMemoryState() -> HQMemoryState {
 @MainActor
 func exportHQMemory(l10n: L10n, completion: @escaping (String?) -> Void) {
     let panel = NSSavePanel()
-    panel.title = l10n.tr("Export the supervisor's memory", "导出中控的记忆")
+    panel.title = l10n.tr("Export HQ's memory", "导出 HQ 的记忆")
     panel.nameFieldStringValue = "gtmux-hq-" + memoryDateStamp() + ".tar.gz"
     panel.allowedContentTypes = []
     panel.message = l10n.tr(

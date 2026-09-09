@@ -74,7 +74,7 @@ func SlowTickEval() {
 	// escalate OUT of band when it does.
 	wakeWatchdog(time.Now().Unix())
 	// Self-check sensor (hq-attention-system §8): raise a self-check trigger to HQ when
-	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here — HQ does the pass.
+	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here —HQ does the pass.
 	selfCheckSensor(time.Now().Unix())
 	// Learn each model's real context window from the logs already on disk, once
 	// (model-window-evidence). Without it a 1M model reads against 200k until it grows
@@ -93,7 +93,7 @@ func SlowTickEval() {
 	}
 	// Distill sensor (hq-knowledge-distillation): raise a periodic knowledge-distillation
 	// trigger when due (weekly floor / event-volume floor, zero-change gated, ≤ 1/day).
-	// No LLM here — HQ distils the fleet delta into the KB and prunes stale.
+	// No LLM here —HQ distils the fleet delta into the KB and prunes stale.
 	distillSensor(time.Now().Unix())
 	// Summary tick (hq-perception-v2): deliver the periodic brief wake ONLY when
 	// outcome-level changes accumulated (the zero-change gate — a quiet interval
@@ -197,7 +197,7 @@ func wakeWatchdog(now int64) {
 	}
 	notify.Send(notify.Options{
 		Kind:     "input",
-		Title:    i18n.Tr("gtmux HQ is not being woken", "gtmux 中控唤醒失效"),
+		Title:    i18n.Tr("gtmux HQ is not being woken", "gtmux HQ 唤醒失效"),
 		Subtitle: "gtmux",
 		Message:  wakeNotifyMessage(cause),
 	})
@@ -231,13 +231,13 @@ func wakeNotifyMessage(cause string) string {
 	switch {
 	case strings.Contains(cause, "copy-mode"):
 		return i18n.Tr("The HQ pane is scrolled into copy-mode — press q there and the queued wakes deliver.",
-			"中控窗格滚进了 copy-mode —— 在那里按 q，积压的唤醒就会送达。")
+			"HQ 窗格滚进了 copy-mode —— 在那里按 q，积压的唤醒就会送达。")
 	case strings.Contains(cause, "unsent text"):
 		return i18n.Tr("The HQ pane has unsent text in its input box — wakes wait rather than append to it.",
-			"中控窗格输入框里有未提交的内容 —— 唤醒会等着，不会拼在它后面。")
+			"HQ 窗格输入框里有未提交的内容 —— 唤醒会等着，不会拼在它后面。")
 	}
 	return i18n.Tr("Wake lines aren't reaching the HQ pane — check it for a stuck draft.",
-		"唤醒信号没能进入中控窗格 —— 检查输入框是否卡住。")
+		"唤醒信号没能进入 HQ 窗格 —— 检查输入框是否卡住。")
 }
 
 // resourceTierKey is the dedup key for a machine warning: the tier (amber/red), or

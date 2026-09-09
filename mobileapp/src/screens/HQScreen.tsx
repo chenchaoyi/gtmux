@@ -84,7 +84,7 @@ export function HQScreen({route, navigation}: any) {
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
   const [boardOpen, setBoardOpen] = useState(false);
-  // The knowledge base — HQ's long-term memory, beside the board's working memory
+  // The knowledge base —HQ's long-term memory, beside the board's working memory
   // (hq-knowledge-on-phone). Polled with the rest: the promotion queue is a debt whose
   // count belongs on the header row, so it cannot wait until the sheet is opened.
   const [knowledge, setKnowledge] = useState<KnowledgeIndex>({
@@ -101,7 +101,7 @@ export function HQScreen({route, navigation}: any) {
   const [briefOpen, setBriefOpen] = useState(false);
   // Collapsing top (like the terminal/Detail header): the fleet-counts + resource +
   // assessment block hides as you scroll into a zone's body, reclaiming the height for
-  // content, and reappears at the top. The thin title row (back · gtmux HQ · conn) stays
+  // content, and reappears at the top. The thin title row (back · gtmux HQ· conn) stays
   // put so navigation is never scrolled away. `collapse` 0 = shown, 1 = hidden; `topH`
   // measured once for the height animation.
   const collapse = useRef(new Animated.Value(0)).current;
@@ -152,7 +152,7 @@ export function HQScreen({route, navigation}: any) {
   // The HQ pane's live screen. Without it the console had NO progress surface: your
   // prompt echoed, then nothing until the reply landed, so a long turn was
   // indistinguishable from a dead app. ChatView renders it as the same "live" card the
-  // worker Detail has — HQ was the only place passing an empty screen.
+  // worker Detail has —HQ was the only place passing an empty screen.
   const [paneText, setPaneText] = useState('');
   // Ticks while HQ is working, so the transcript re-reads and its intermediate reply
   // bubbles / tool steps appear AS THEY LAND rather than all at once when the turn ends.
@@ -361,7 +361,7 @@ export function HQScreen({route, navigation}: any) {
 
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
     {key: 'calls', label: t('Your call', '该你拍板'), badge: calls.length > 0 ? String(calls.length) : undefined},
-    {key: 'acts', label: t("HQ's work", '参谋长动作'), dot: actsNew},
+    {key: 'acts', label: t("HQ's work", 'HQ 动作'), dot: actsNew},
     {key: 'console', label: t('Console', '对话')},
   ];
 
@@ -507,7 +507,7 @@ export function HQScreen({route, navigation}: any) {
                             ),
                           )
                         }>
-                        <Text style={[styles.actionText, {color: pal.fg}]}>{t('Ask HQ', '问参谋长')}</Text>
+                        <Text style={[styles.actionText, {color: pal.fg}]}>{t('Ask HQ', '问 HQ')}</Text>
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>

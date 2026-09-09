@@ -293,7 +293,7 @@ final class AgentStore: ObservableObject {
     /// state's count — waiting, else working, else NOTHING. The done (idle) state
     /// carries NO count: its ✓ glyph already says "your turn", and a number there just
     /// adds noise to the calm state (this reverts the earlier ITERATIONS-D1 done-count
-    /// per the newer HANDOFF authority). Counts INCLUDE HQ — the supervisor is one more
+    /// per the newer HANDOFF authority). Counts INCLUDE HQ— the supervisor is one more
     /// thing that can be waiting on you (waiting/working don't exclude it).
     var badge: String {
         if waiting > 0 { return "\(waiting)" }

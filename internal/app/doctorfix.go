@@ -100,13 +100,13 @@ func doctorFix(yes bool) int {
 		i18n.Say("Nothing to fix — everything's already set.", "没什么要修的 —— 都配好了。")
 	case applied == 0:
 		i18n.Say("Nothing here is auto-fixable — these need a deliberate step, not a config change:",
-			"这些不是能自动修的配置项 —— 需要你或中控主动处理：")
+			"这些不是能自动修的配置项 —— 需要你或 HQ 主动处理：")
 		printAdvisory(remaining)
 	case len(remaining) == 0:
 		i18n.Say("Done — re-run `gtmux doctor` to confirm.", "完成，重新跑 `gtmux doctor` 确认。")
 	default:
 		i18n.Say("Done with the automatic fixes. Still needs a deliberate step (not a config change):",
-			"自动能修的都修好了。剩下这些得你或中控主动处理，不是配置项：")
+			"自动能修的都修好了。剩下这些得你或 HQ 主动处理，不是配置项：")
 		printAdvisory(remaining)
 	}
 	return s.rc

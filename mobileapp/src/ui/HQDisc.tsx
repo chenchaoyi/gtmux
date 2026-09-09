@@ -7,14 +7,14 @@
 //   • not-started — no HQ session yet (owner only): the disc goes grey/dimmed with a
 //     "?" and tapping explains what HQ is + how to start it on the Mac (the phone can't
 //     spawn it — it's a remote client).
-//   • needs-your-call — HQ itself is waiting on you → RED ring + "!".
+//   • needs-your-call —HQ itself is waiting on you → RED ring + "!".
 //   • worker-needs-you — a fleet session is waiting → RED ring + count badge.
 //   • resource-bottleneck — a GENUINE machine bottleneck (the "red" resource tier:
 //     disk critically low / memory critical / load pinned) → RED ring + "⚠". A soft
 //     "amber" heads-up (e.g. 37GB free) is deliberately NOT shown here — it isn't an
 //     act-now condition, and reddening the disc for it made HQ look like it needed you
 //     when it didn't. Amber lives on the HQ page / usage view, not the at-a-glance disc.
-//   • working — HQ is actively processing a turn → CYAN ring.
+//   • working —HQ is actively processing a turn → CYAN ring.
 //   • normal — all quiet → GREEN ring (static — idle 静).
 // Red = "attention" (a decision or a real resource bottleneck); the badge/glyph says
 // which. The
@@ -101,13 +101,13 @@ export function HQDisc({
   const a11y =
     state === 'absent'
       ? zh
-        ? 'gtmux HQ · 未启动 · 点按了解如何启动'
-        : 'gtmux HQ · not started · tap to learn how'
+        ? 'gtmux HQ· 未启动 · 点按了解如何启动'
+        : 'gtmux HQ· not started · tap to learn how'
       : state === 'resource'
         ? zh
-          ? 'gtmux HQ · 资源瓶颈 · 点按查看'
-          : 'gtmux HQ · resource bottleneck · tap to view'
-        : `gtmux HQ · ${hq ? fleetHeadline(hq, workers, zh) : ''}`;
+          ? 'gtmux HQ· 资源瓶颈 · 点按查看'
+          : 'gtmux HQ· resource bottleneck · tap to view'
+        : `gtmux HQ· ${hq ? fleetHeadline(hq, workers, zh) : ''}`;
 
   // ---- drag (position persisted) ----------------------------------------
   const bounds = useRef({minX: 0, maxX: 0, minY: 0, maxY: 0});
@@ -217,11 +217,11 @@ export function HQDisc({
           <Pressable style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divider}]} onPress={() => {}}>
             <View style={styles.sheetHead}>
               <BrandMark size={22} neutral={pal.fg2} />
-              <Text style={[styles.sheetTitle, {color: pal.fg}]}>{zh ? 'gtmux HQ · 参谋长' : 'gtmux HQ'}</Text>
+              <Text style={[styles.sheetTitle, {color: pal.fg}]}>{zh ? 'gtmux HQ·HQ' : 'gtmux HQ'}</Text>
             </View>
             <Text style={[styles.sheetBody, {color: pal.fg2}]}>
               {zh
-                ? 'HQ 是替你统观全局的参谋长会话。它盯着每个 agent，把该你知道的说给你听；你划定的范围内它自己就能处置，不必事事来问。现在还没启动。'
+                ? 'HQ 是替你统观全局的 HQ 会话。它盯着每个 agent，把该你知道的说给你听；你划定的范围内它自己就能处置，不必事事来问。现在还没启动。'
                 : 'HQ is the chief-of-staff session that watches your whole fleet — it keeps an eye on every agent, briefs you, and triages within the scope you allow. It isn’t running yet.'}
             </Text>
             <Text style={[styles.sheetHow, {color: pal.fg3}]}>

@@ -449,7 +449,7 @@ func printMemoryState(asJSON bool) int {
 		return 0
 	}
 	if !st.Exists {
-		i18n.Say("no supervisor memory on this machine", "这台机器上没有中控记忆")
+		i18n.Say("no supervisor memory on this machine", "这台机器上没有 HQ 记忆")
 		return 0
 	}
 	i18n.Say(fmt.Sprintf("%s · %d files · %d local snapshots · %s",

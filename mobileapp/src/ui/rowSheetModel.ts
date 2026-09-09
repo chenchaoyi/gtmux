@@ -145,8 +145,8 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     actions.push({
       key: 'ask-hq',
       group: 'drive',
-      title: zh ? '问参谋长' : 'Ask the supervisor',
-      sub: zh ? `打开中控，开头填好 ${a.pane_id}` : `Opens HQ with ${a.pane_id} filled in`,
+      title: zh ? '问 HQ' : 'Ask HQ',
+      sub: zh ? `打开 HQ，开头填好 ${a.pane_id}` : `Opens HQ with ${a.pane_id} filled in`,
     });
   }
 

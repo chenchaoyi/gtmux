@@ -454,7 +454,7 @@ func TestKimiRealMessageTimesAreFound(t *testing.T) {
 	id := realKimiSession(t)
 	first, last := FirstMessageTime("kimi", id), LastMessageTime("kimi", id)
 	if first == 0 {
-		t.Error("FirstMessageTime = 0 on a real session — HQ self-rotation's age criterion would be blind")
+		t.Error("FirstMessageTime = 0 on a real session —HQ self-rotation's age criterion would be blind")
 	}
 	if last == 0 {
 		t.Error("LastMessageTime = 0 on a real session — the assistant's reply is a loop event, not a message record")

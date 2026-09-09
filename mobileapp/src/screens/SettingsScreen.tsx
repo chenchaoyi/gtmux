@@ -111,7 +111,7 @@ export function SettingsScreen({navigation}: any) {
         {/* THE SUPERVISOR'S MEMORY — owner only. It is the board, the knowledge base and
             the operator's LOCAL.md in one file; a guest link is for watching a pane. */}
         {!isGuest && mac && (
-          <SettingsGroup title={lang === 'zh' ? '中控记忆' : 'HQ memory'} pal={pal}>
+          <SettingsGroup title={lang === 'zh' ? 'HQ 记忆' : 'HQ memory'} pal={pal}>
             <SettingsRow
               icon="server"
               label={lang === 'zh' ? '在这台手机上留一份' : 'Keep a copy on this phone'}

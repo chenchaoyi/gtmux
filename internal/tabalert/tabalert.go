@@ -1,7 +1,7 @@
 // Package tabalert marks the TERMINAL TAB of a session that has an agent waiting on you.
 //
 // THE PROBLEM IT SOLVES. Nine tmux sessions, each attached in its own terminal tab, all
-// titled alike: "HQ — hq", "Pica — sat-monitor", "Diting — Diting Mob…". Somewhere in
+// titled alike: "HQ— hq", "Pica — sat-monitor", "Diting — Diting Mob…". Somewhere in
 // there an agent is blocked on a decision, and the only way to find out which is to visit
 // each tab. The information gtmux has is not the problem; its PLACEMENT is. The eye
 // scans that tab strip constantly and it carries nothing.
