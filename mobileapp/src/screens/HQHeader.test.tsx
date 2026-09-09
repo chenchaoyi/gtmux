@@ -3,7 +3,7 @@ import {Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {HQHeader} from './HQHeader';
 import {HeaderModel} from './hqHeaderModel';
-import {paletteFor} from '../ui/theme';
+import {ERRORED_COLOR, paletteFor} from '../ui/theme';
 
 // The header's job is to keep three registers apart: gtmux's verdict, HQ's own words, and
 // the derived figures. It stopped doing that (2026-09-03 "这一块信息还是很零散，不专业"),
@@ -115,19 +115,34 @@ test('closed, the header shows the verdict and nothing else', () => {
   expect(strings(t.root as unknown as Node).join(' ')).toContain('all normal');
 });
 
-test('figures and documents are rows of ONE grid, so they share a key column', () => {
-  // The old disclosure stacked a key/value list on top of two icon rows with their own
-  // left edge, which is what "太乱" was: three layouts for five rows.
-  const t = render(model());
-  const width = (id: string) => {
-    const row = t.root.findByProps({testID: id});
-    const key = row.findAllByType(Text)[0];
-    const flat = ([] as unknown[]).concat(key.props.style as unknown[]).filter(Boolean) as Array<Record<string, unknown>>;
-    return flat.map(s => s?.width).find(w => w != null);
+test('the three documents STAND — they are not rows in a closed disclosure', () => {
+  // They were GridRows sharing the figures' key column, which made them look like more
+  // readings. But the disclosure defaults CLOSED, and these are the only way to reach
+  // the situation board, the knowledge base or usage from the phone at all: opening the
+  // page offered no route to any of them (user report, 2026-09-09).
+  //
+  // This supersedes "figures and documents are rows of ONE grid": that pinned a shared
+  // key column, and a destination that has to be uncovered is not a destination.
+  const t = render(model(), false); // CLOSED, which is how the page opens
+  expect(t.root.findAllByProps({testID: 'hq-disclosure'})).toHaveLength(0);
+  for (const id of ['hq-board-open', 'hq-knowledge-open']) {
+    expect(t.root.findAll(n => n.props?.testID === id).length).toBeGreaterThan(0);
+  }
+});
+
+test('a document that owes you something says so in the attention colour', () => {
+  // The tile that wants you should be the one that looks like it. Zero owed is not a
+  // warning — "0 待带走" in red would cry wolf on the most ordinary state there is.
+  // The fixture's model carries an `owed` row, which is what makes the tile want you.
+  const owed = render(model(), false);
+  const val = (t: ReturnType<typeof render>, id: string) => {
+    const tile = t.root.findAll(n => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+    const texts = tile.findAllByType(Text);
+    const flat = ([] as unknown[]).concat(texts[1].props.style as unknown[]).filter(Boolean) as Array<Record<string, unknown>>;
+    return flat.map(s => s?.color).find(Boolean);
   };
-  expect(width('hq-row-owed')).toBeDefined();
-  expect(width('hq-board-open')).toBe(width('hq-row-owed'));
-  expect(width('hq-knowledge-open')).toBe(width('hq-row-owed'));
+  expect(val(owed, 'hq-knowledge-open')).toBe(ERRORED_COLOR);
+  expect(val(owed, 'hq-board-open')).not.toBe(ERRORED_COLOR);
 });
 
 test("a brief's items render as items, capped, not as one wrapped paragraph", () => {

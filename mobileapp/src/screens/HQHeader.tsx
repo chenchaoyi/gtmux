@@ -84,6 +84,48 @@ function Runs({segs, style, code}: {segs: InlineSeg[]; style: any; code: any}) {
  * One row of the disclosure's grid: a key, a value, and — when the row leads somewhere —
  * a chevron. Figures and documents share it so they share an alignment.
  */
+/**
+ * One of HQ's three documents, as a tile that also reports.
+ *
+ * A row in a closed disclosure is not a destination — it is a thing you have to know is
+ * there. These stand, side by side, each showing the one number that says whether it
+ * wants you: how fresh the board is, how much the knowledge base owes you, where the
+ * plan stands. `owed` paints the value in the attention colour when there IS something
+ * owed, so the tile that needs you is the one that looks like it.
+ */
+function Dest({
+  testID, label, value, owed, pal, onPress,
+}: {
+  testID: string;
+  label: string;
+  value: string;
+  /** Something in here is waiting on the user — paints the value in the attention colour. */
+  owed?: boolean;
+  pal: HQHeaderProps['pal'];
+  onPress?: () => void;
+}) {
+  // Whether something is owed is a JUDGMENT the model already makes (`owedRow` returns
+  // null when the queue is empty). Sniffing the value string for a digit was the wrong
+  // shape and wrong in fact: "352 entries" is a size, not a debt, and it would have lit
+  // the tile red on the most ordinary state there is.
+  const wants = owed === true;
+  return (
+    <TouchableOpacity
+      testID={testID}
+      accessibilityLabel={testID}
+      activeOpacity={0.6}
+      onPress={onPress}
+      style={[styles.dest, {borderColor: pal.divider}]}>
+      <Text style={[styles.destLabel, {color: pal.fg}]} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={[styles.destValue, {color: wants ? ERRORED_COLOR : pal.fg3}]} numberOfLines={1}>
+        {value}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 function GridRow({
   testID, label, value, tone, pal, onPress, keyW, lines = 1,
 }: {
@@ -181,6 +223,33 @@ export function HQHeader({
           </View>
         )}
 
+        {/* HQ's three documents, STANDING.
+            They were rows inside the disclosure, and the disclosure defaults CLOSED — so
+            opening this page showed no way at all to reach the situation board, the
+            knowledge base or usage, and this is the only way to reach any of them from
+            the phone (user report, 2026-09-09). A destination is not a detail. Each tile
+            carries its own live value, so the row reports as well as navigates. */}
+        {(boardValue || knowledgeValue || usageValue) && (
+          <View style={[styles.dests, {borderTopColor: pal.divider}]}>
+            {boardValue ? (
+              <Dest testID="hq-board-open" label={zh ? '态势板' : 'Board'} value={boardValue} pal={pal} onPress={onOpenBoard} />
+            ) : null}
+            {knowledgeValue ? (
+              <Dest
+                testID="hq-knowledge-open"
+                label={zh ? '知识库' : 'Knowledge'}
+                value={knowledgeValue}
+                owed={model.rows.some(r => r.key === 'owed')}
+                pal={pal}
+                onPress={onOpenKnowledge}
+              />
+            ) : null}
+            {usageValue ? (
+              <Dest testID="hq-usage-open" label={zh ? '用量' : 'Usage'} value={usageValue} pal={pal} onPress={onOpenUsage} />
+            ) : null}
+          </View>
+        )}
+
         {open && (
           <View testID="hq-disclosure">
             {/* HQ's own words, as a quotation, with the grade it gave them. A tally of
@@ -260,40 +329,7 @@ export function HQHeader({
                 say on a quiet day, but the way in must not depend on that — the usage
                 door in particular, since the row that used to carry it is dropped
                 exactly when the machine is critical. */}
-            {(boardValue || knowledgeValue || usageValue) && (
-              <View style={[styles.grid, {borderTopColor: pal.divider}]}>
-                {boardValue ? (
-                  <GridRow
-                    testID="hq-board-open"
-                    label={zh ? '态势板' : 'board'}
-                    value={boardValue}
-                    pal={pal}
-                    onPress={onOpenBoard}
-                    keyW={keyW}
-                  />
-                ) : null}
-                {usageValue ? (
-                  <GridRow
-                    testID="hq-usage-open"
-                    label={zh ? '用量' : 'usage'}
-                    value={usageValue}
-                    pal={pal}
-                    onPress={onOpenUsage}
-                    keyW={keyW}
-                  />
-                ) : null}
-                {knowledgeValue ? (
-                  <GridRow
-                    testID="hq-knowledge-open"
-                    label={zh ? '知识库' : 'knowledge'}
-                    value={knowledgeValue}
-                    pal={pal}
-                    onPress={onOpenKnowledge}
-                    keyW={keyW}
-                  />
-                ) : null}
-              </View>
-            )}
+
           </View>
         )}
       </View>
@@ -313,7 +349,15 @@ const styles = StyleSheet.create({
   card: {marginHorizontal: 12, marginTop: 6, marginBottom: 8, borderRadius: 12, overflow: 'hidden'},
 
   verdictRow: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11},
-  verdict: {flex: 1, fontSize: 14, fontWeight: '600', lineHeight: 19},
+  // The verdict is the page's product — HQ's one-line judgment — and it was set at 14pt
+  // inside a box that looks like every other box, level with the sensor readings below
+  // it. 17pt is the weight of a conclusion (user report, 2026-09-09: 太简陋).
+  verdict: {flex: 1, fontSize: 17, fontWeight: '600', lineHeight: 23.5, letterSpacing: -0.2},
+  dests: {flexDirection: 'row', gap: 7, paddingHorizontal: 10, paddingBottom: 10, paddingTop: 2},
+  dest: {flex: 1, minHeight: 44, justifyContent: 'center', gap: 2, paddingHorizontal: 9,
+    paddingVertical: 7, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth},
+  destLabel: {fontSize: 12, fontWeight: '600'},
+  destValue: {fontSize: 11, fontVariant: ['tabular-nums']},
   chevron: {fontSize: 17, fontWeight: '500'},
 
   standing: {paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth},

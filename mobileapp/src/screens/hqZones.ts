@@ -21,6 +21,20 @@ export function workerRows(digest: DigestRow[]): DigestRow[] {
 
 // decisions are the sessions actually blocked on the user, oldest-waiting first — the
 // one who has been stuck longest is the one to unblock.
+/**
+ * running are the sessions mid-turn, newest first.
+ *
+ * For the quiet state: when nothing needs the user, what IS happening is the honest
+ * answer, and "nothing needs you" alone leaves the zone saying nothing at the moment it
+ * is most often read.
+ */
+export function running(digest: DigestRow[]): DigestRow[] {
+  return digest
+    .filter(r => r.status === 'working')
+    .slice()
+    .sort((a, b) => (b.since ?? 0) - (a.since ?? 0));
+}
+
 export function decisions(digest: DigestRow[]): DigestRow[] {
   return workerRows(digest)
     .filter(r => r.status === 'waiting')
