@@ -45,7 +45,7 @@ import {BRAND, StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {isSplitCanvas} from '../ui/layout';
 import {historyScope} from '../state/history';
-import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
+import {CHROME_ANIM_MS, ChromeState, chromeDecision, makeFoldFollower} from '../ui/liveEdge';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
 // either mode) so switching modes never jumps the text size. Middle = default.
@@ -197,6 +197,28 @@ export function DetailView({
     headerH +
     (neighbors.length > 0 && onOpenPane ? neighborH : 0) +
     ctlH;
+  // The layer that is on screen installs its "move the offset by dy" function here, and
+  // the fold animation drives it. Only ONE of them is ever wired — the same rule the
+  // gap reporting follows: both layers stay mounted, so a driver with two sources would
+  // be correcting a view nobody is looking at.
+  const shiftTerm = useRef<((dy: number) => void) | null>(null);
+  const shiftChat = useRef<((dy: number) => void) | null>(null);
+  // Hold the content still while the chrome folds.
+  //
+  // The fold hands this view `chromeH` of extra height by moving its TOP edge up, and the
+  // content keeps its offset — so everything slides up by that much: 115pt over 200ms,
+  // against the finger, which is the bounce the operator felt (2026-09-09). The offset is
+  // driven in lockstep instead, one correction per animation frame; `chromeShift` is the
+  // arithmetic and `liveEdge.test.ts` pins it.
+  useEffect(() => {
+    const follow = makeFoldFollower(
+      () => chromeH.current,
+      () => (modeRef.current === 'chat' ? shiftChat : shiftTerm).current,
+    );
+    const id = collapse.addListener(({value}) => follow(value));
+    return () => collapse.removeListener(id);
+  }, [collapse]);
+
   const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
   const lastGap = useRef(0);
   const runEdge = useCallback(
@@ -526,12 +548,12 @@ export function DetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} shiftRef={shiftChat} />
     ),
     [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge],
   );
   const termEl = useMemo(
-    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} />,
+    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} shiftRef={shiftTerm} />,
     [text, fontSize, cursor, theme, fontPref, lang, termEdge],
   );
 

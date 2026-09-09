@@ -44,6 +44,23 @@ describe('every band folds, and every folding band is counted', () => {
     expect(folding.length).toBeGreaterThan(0);
   });
 
+  it('drives the scroll offset from the fold, so the content does not slide', () => {
+    // Folding grows the scroll view at its TOP edge; without a matching move of the
+    // offset the content slides up by the chrome's whole height — 115pt over 200ms,
+    // against the finger. The arithmetic is `chromeShift` (pinned in liveEdge.test.ts);
+    // this checks it is actually WIRED, which is the half a unit test cannot see.
+    // The arithmetic and the per-frame spreading are pinned BEHAVIOURALLY in
+    // liveEdge.test.ts (`makeFoldFollower`) — a source grep for the helper's name stayed
+    // green when the correction was replaced by a constant zero, which is the regression
+    // it was meant to catch. What is left here is the wiring, which no unit test sees.
+    expect(src).toContain('makeFoldFollower');
+    expect(src).toContain('collapse.addListener');
+    // Both layers stay mounted, so only the one on screen may be corrected — the same
+    // one-driver-one-source rule the gap reporting follows.
+    expect(src).toContain("modeRef.current === 'chat' ? shiftChat : shiftTerm");
+    expect((src.match(/shiftRef=\{shift/g) ?? []).length).toBe(2);
+  });
+
   it('keeps the mode toggle and the controls on ONE row', () => {
     // Two adjacent rows of controls cost a band and a divider for nothing. If the
     // segmented gets its own wrapper again, this is the reminder of why it did not.

@@ -65,6 +65,8 @@ interface Props {
    * the host knows — see ui/liveEdge.
    */
   onLiveEdge?: (gap: number) => void;
+  /** The host installs a "move the offset by dy" function here — see NativeTerm's copy. */
+  shiftRef?: React.MutableRefObject<((dy: number) => void) | null>;
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -115,10 +117,27 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, shiftRef}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
+  const offRef = React.useRef(0);
+
+  // Hold the content still while the host's chrome folds. Same seam and same reason as
+  // NativeTerm's: the fold grows this view at its top edge, and without a matching move
+  // of the offset everything on screen slides up by the chrome's height.
+  React.useEffect(() => {
+    if (!shiftRef) return;
+    shiftRef.current = (dy: number) => {
+      if (!dy) return;
+      const y = Math.max(0, offRef.current + dy);
+      offRef.current = y;
+      scrollRef.current?.scrollTo({y, animated: false});
+    };
+    return () => {
+      shiftRef.current = null;
+    };
+  }, [shiftRef]);
   // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
   const [atBottom, setAtBottom] = React.useState(true);
   // Following the live tail is the USER's intent, so only the user may withdraw it —
@@ -134,6 +153,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const gapRef = React.useRef(0);
   const onScroll = (e: any) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
+    offRef.current = contentOffset.y;
     const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
     gapRef.current = gap;
     // Arriving at the tail always resumes following, whoever caused it; leaving it counts
