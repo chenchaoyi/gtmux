@@ -2,10 +2,12 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"unicode"
 )
 
 // The browser-mirror web UI is served at "/" (unauthenticated static page), its
@@ -114,4 +116,80 @@ func TestWebChromeIsNotChineseOnly(t *testing.T) {
 			t.Errorf("%s is in the page but never relabelled — an English reader sees the Chinese markup", id)
 		}
 	}
+	if n := chineseWithoutASwitch(js); len(n) > 0 {
+		t.Errorf("%d runtime strings are Chinese-only:\n%s", len(n), strings.Join(n, "\n"))
+	}
+}
+
+// chineseWithoutASwitch finds Chinese string literals in app.js that no language switch
+// reaches, and is the reason this is a test rather than a habit.
+//
+// The page was translated by hand once (2026-09-07) and 24 strings were missed — every
+// one of them deeper in the file than the visible chrome someone thinks to look at: the
+// composer's errors, the approval bar, the workbench's tile buttons, the ⌘K empty state.
+// A reader who does not read Chinese meets those only when something goes wrong, which is
+// the worst moment to meet them.
+//
+// Deliberately crude: it looks for a switch (T(...), a ZH ternary, or one of the two
+// tables that carry both languages) within a few lines. A new string in one language is a
+// red build; where the check is wrong, the fix is to route the string through T().
+func chineseWithoutASwitch(js []byte) []string {
+	lines := strings.Split(string(js), "\n")
+	hasSwitch := func(from, to int) bool {
+		for i := from; i < to && i < len(lines); i++ {
+			if i < 0 {
+				continue
+			}
+			l := lines[i]
+			// A bare "ZH" counts: the ternary is often split across lines, and ZH is
+			// this file's only language flag, so its presence nearby IS the switch.
+			if strings.Contains(l, "T(") || strings.Contains(l, "ZH") ||
+				strings.Contains(l, "zh:") || strings.Contains(l, "GATE") || strings.Contains(l, "CONN_TITLE") {
+				return true
+			}
+		}
+		return false
+	}
+	var out []string
+	for i, l := range lines {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "//") || strings.HasPrefix(t, "*") {
+			continue
+		}
+		if !hasCJKInLiteral(l) || hasSwitch(i-3, i+4) {
+			continue
+		}
+		out = append(out, fmt.Sprintf("  app.js:%d  %s", i+1, firstN(t, 90)))
+	}
+	return out
+}
+
+// hasCJKInLiteral reports whether a line carries CJK inside a quoted string (not a
+// comment, which this caller has already excluded).
+func hasCJKInLiteral(line string) bool {
+	inStr := rune(0)
+	var esc bool
+	for _, r := range line {
+		switch {
+		case esc:
+			esc = false
+		case r == '\\':
+			esc = true
+		case inStr != 0 && r == inStr:
+			inStr = 0
+		case inStr == 0 && (r == '\'' || r == '"' || r == '`'):
+			inStr = r
+		case inStr != 0 && unicode.Is(unicode.Han, r):
+			return true
+		}
+	}
+	return false
+}
+
+func firstN(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
