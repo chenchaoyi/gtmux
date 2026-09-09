@@ -174,3 +174,24 @@ export function knowledgeValue(idx: KnowledgeIndex, zh: boolean): string | null 
   if (owed === 0) return head;
   return head + (zh ? ` · ${owed} 待带走` : ` · ${owed} waiting on you`);
 }
+
+/**
+ * matchEntries filters the base by what someone typed.
+ *
+ * 396 entries across 7 topics, and until now the only way in was knowing which topic
+ * holds the one you want — which is knowledge about the knowledge base, not about your
+ * machine (2026-09-09). Matching is case-insensitive across the title, the id and the
+ * topic: the id is how HQ refers to an entry in a dispatch, so it is a thing people
+ * actually paste in.
+ *
+ * Whitespace splits the query into terms that must ALL match somewhere. A single term is
+ * the common case; two is how you say "the pitfalls one about ps".
+ */
+export function matchEntries(entries: KnowledgeEntry[], query: string): KnowledgeEntry[] {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
+  return entries.filter(e => {
+    const hay = `${e.title} ${e.id} ${e.topic}`.toLowerCase();
+    return terms.every(t => hay.includes(t));
+  });
+}

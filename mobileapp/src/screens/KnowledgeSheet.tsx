@@ -42,6 +42,7 @@ import {
   buildKnowledgeView,
   entriesOfTopic,
   landPrompt,
+  matchEntries,
   provenanceOf,
   retirePrompt,
   splitTitleKey,
@@ -116,6 +117,12 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   const [entry, setEntry] = React.useState<KnowledgeEntry | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [pending, setPending] = React.useState<Pending>(null);
+  // What someone typed. Non-empty replaces the index with results — the index IS the
+  // browse affordance, so showing both would be two answers to one question.
+  const [query, setQuery] = React.useState('');
+  // The explainer under "waiting on you" is four lines about what a promotion IS. It is
+  // read once; standing there forever it is just height. Closed by default, one tap away.
+  const [whyOpen, setWhyOpen] = React.useState(false);
   const [draft, setDraft] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState<string | null>(null);
@@ -137,6 +144,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   }, []);
 
   const view: KnowledgeView = React.useMemo(() => buildKnowledgeView(index, nowSecs), [index, nowSecs]);
+  const results = React.useMemo(() => matchEntries(view.entries, query), [view.entries, query]);
+  const searching = query.trim() !== '';
 
   // Where each pane was scrolled to, so coming back puts you where you left.
   //
@@ -176,6 +185,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   React.useEffect(() => {
     if (!visible) return;
     setPane({kind: 'index'});
+    setQuery('');
+    setWhyOpen(false);
     setPending(null);
     setError(null);
     setDone(null);
@@ -244,6 +255,32 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           </TouchableOpacity>
         </View>
 
+        {/* Find. 396 entries across 7 topics, and until now the only way in was knowing
+            which topic holds the one you want — that is knowledge about the knowledge
+            base, not about your machine. Only on the index: inside a topic or an entry
+            the question has already been narrowed. */}
+        {pane.kind === 'index' && (
+          <View style={[styles.find, {backgroundColor: pal.surface}]}>
+            <Text style={[styles.findIcon, {color: pal.fg3}]}>⌕</Text>
+            <TextInput
+              testID="knowledge-find"
+              accessibilityLabel="knowledge-find"
+              value={query}
+              onChangeText={setQuery}
+              placeholder={zh ? `在 ${view.entries.length} 条里找` : `Find in ${view.entries.length} entries`}
+              placeholderTextColor={pal.fg3}
+              autoCorrect={false}
+              autoCapitalize="none"
+              style={[styles.findInput, {color: pal.fg}]}
+            />
+            {searching && (
+              <TouchableOpacity testID="knowledge-find-clear" onPress={() => setQuery('')} hitSlop={hit}>
+                <Text style={[styles.findIcon, {color: pal.fg3}]}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {done ? (
           <View style={[styles.toast, {backgroundColor: pal.surface, borderBottomColor: pal.divider}]}>
             <Text style={[styles.toastText, {color: StatusColor.idle}]}>✓ {done}</Text>
@@ -257,7 +294,16 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           onScroll={e => {
             offsets.current[here] = e.nativeEvent.contentOffset.y;
           }}>
-          {pane.kind === 'index' && (
+          {pane.kind === 'index' && searching && (
+            results.length > 0 ? (
+              <EntryList entries={results} pal={pal} zh={zh} ageOf={ageOf} onOpen={openEntry} />
+            ) : (
+              <Text testID="knowledge-find-none" style={[styles.foot, {color: pal.fg3}]}>
+                {zh ? `没有匹配「${query.trim()}」的条目` : `Nothing matches “${query.trim()}”`}
+              </Text>
+            )
+          )}
+          {pane.kind === 'index' && !searching && (
             <IndexPane
               view={view}
               pal={pal}
@@ -268,6 +314,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
               onTopic={n => setPane({kind: 'topic', name: n})}
               openTopics={openTopics}
               onToggleTopic={toggleTopic}
+              whyOpen={whyOpen}
+              onToggleWhy={() => setWhyOpen(o => !o)}
             />
           )}
           {pane.kind === 'topic' && (
@@ -314,7 +362,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
 
 /** The index: what is owed, what is new, where everything is. */
 function IndexPane({
-  view, pal, zh, t, ageOf, onOpen, onTopic, openTopics, onToggleTopic,
+  view, pal, zh, t, ageOf, onOpen, onTopic, openTopics, onToggleTopic, whyOpen, onToggleWhy,
 }: {
   view: KnowledgeView;
   pal: Palette;
@@ -325,6 +373,9 @@ function IndexPane({
   onTopic: (name: string) => void;
   openTopics: Set<string>;
   onToggleTopic: (name: string) => void;
+  /** The four-line explainer under "waiting on you": read once, then it is just height. */
+  whyOpen: boolean;
+  onToggleWhy: () => void;
 }) {
   if (view.empty) {
     return (
@@ -350,11 +401,23 @@ function IndexPane({
               on 2026-09-05: "I thought the knowledge base was local personal information,
               and this looks like a general improvement".
               docs/design/knowledge-layers.md is the long form. */}
-          <Text style={[styles.sectionNote, {color: pal.fg3}]}>
+          <>
+                <TouchableOpacity
+                  testID="knowledge-why"
+                  accessibilityLabel="knowledge-why"
+                  activeOpacity={0.6}
+                  onPress={() => onToggleWhy()}
+                  hitSlop={hit}>
+                  <Text style={[styles.whyLink, {color: pal.fg2}]}>
+                    {whyOpen ? (zh ? '这是什么 ⌃' : 'What this is ⌃') : (zh ? '这是什么 ⌄' : 'What this is ⌄')}
+                  </Text>
+                </TouchableOpacity>
+                {whyOpen && <Text style={[styles.sectionNote, {color: pal.fg3}]}>
             {zh
               ? '这些是 HQ 判断「比这台机器大」的条目。它已写好带走简报，等你把它搬进一个持久的地方（你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook，或 gtmux 自己的仓库），再回来标记落地。'
               : 'Entries HQ judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.'}
-          </Text>
+          </Text>}
+              </>
           {view.promotions.map(p => (
             <TouchableOpacity
               key={p.entry.id}
@@ -571,7 +634,10 @@ function EntryPane({
           activeOpacity={0.6}
           onPress={() => onAct('retire', entry.id)}
           style={[styles.action, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-          <Text style={[styles.actionText, {color: ERRORED_COLOR}]}>{t('Retire it…', '退休这一条…')}</Text>
+          {/* "Retire it…" names the mechanism (the CLI verb). What you are saying is
+              that the lesson stopped being true — which is also the thing the dialog then
+              asks you to explain, so the button and the question now agree. */}
+          <Text style={[styles.actionText, {color: ERRORED_COLOR}]}>{t('It no longer holds…', '这条不再成立…')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -649,6 +715,11 @@ function SectionLabel({pal, text, count, accent}: {pal: Palette; text: string; c
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
 const styles = StyleSheet.create({
+  whyLink: {fontSize: 11.5, paddingHorizontal: 14, paddingBottom: 8, marginTop: -2},
+  find: {flexDirection: 'row', alignItems: 'center', gap: 7, marginHorizontal: 14,
+    marginTop: 10, marginBottom: 2, height: 34, paddingHorizontal: 10, borderRadius: 9},
+  findIcon: {fontSize: 14},
+  findInput: {flex: 1, fontSize: 14, padding: 0},
   peek: {paddingLeft: 12},
   root: {flex: 1},
   head: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth},
