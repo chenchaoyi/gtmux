@@ -188,7 +188,7 @@ func doctorSections() []dsection {
 	// Only for a machine that actually runs a supervisor — on any other install these
 	// rows would report a cadence for a thing that does not exist.
 	if fileExists(state.HQHome()) {
-		secs = append(secs, dsection{i18n.Tr("HQ", "中控"), hqChecks(now)})
+		secs = append(secs, dsection{i18n.Tr("HQ", "HQ"), hqChecks(now)})
 	}
 	return secs
 }
@@ -207,7 +207,7 @@ func hqConsumptionCheck(now int64) dcheck {
 	case hq.MaintenanceNever:
 		return dcheck{stInfo, label, i18n.Tr("no watermark yet", "尚无水位"),
 			i18n.Tr("HQ has not pulled the stream yet — expected before its first wake",
-				"中控还没拉过事件流 —— 首次唤醒前属正常")}
+				"HQ 还没拉过事件流 —— 首次唤醒前属正常")}
 	case hq.MaintenanceSlipped:
 		value := strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费")
 		if c.StandingSec > 0 {
@@ -222,11 +222,11 @@ func hqConsumptionCheck(now int64) dcheck {
 		}
 		return dcheck{stRec, label, value,
 			i18n.Tr("HQ is not consuming what it is knocked about — check the HQ pane for a stuck draft",
-				"中控没在消费敲给它的事件 —— 检查中控窗格输入框是否卡住")}
+				"HQ 没在消费敲给它的事件 —— 检查 HQ 窗格输入框是否卡住")}
 	default:
 		if c.Unread == 0 {
 			return dcheck{stOK, label, i18n.Tr("caught up", "已跟上"),
-				i18n.Tr("HQ has read the stream through its end", "中控已读到事件流末尾")}
+				i18n.Tr("HQ has read the stream through its end", "HQ 已读到事件流末尾")}
 		}
 		return dcheck{stOK, label, strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费"),
 			i18n.Tr("a normal in-flight delta — it re-knocks until consumed",
@@ -241,23 +241,23 @@ func hqConsumptionCheck(now int64) dcheck {
 // without a row here the only detector left is the commander noticing that HQ believed
 // something he never said. That is exactly how it surfaced on 2026-08-03.
 func hqSessionHealthCheck(now int64) dcheck {
-	label := i18n.Tr("HQ session health", "中控会话健康")
+	label := i18n.Tr("HQ session health", "HQ 会话健康")
 	h := hq.SessionHealthStatus(now)
 	switch h.State {
 	case hq.MaintenanceNever:
 		// No live HQ, or no session recorded for it yet. Informational, NOT a warning: an
 		// absent supervisor is not a degraded one, and a doctor that flagged every machine
 		// with an HQ home and no HQ running would be ignored on the day it was right.
-		return dcheck{stInfo, label, i18n.Tr("no live HQ", "中控未在运行"),
+		return dcheck{stInfo, label, i18n.Tr("no live HQ", "HQ 未在运行"),
 			i18n.Tr("nothing to judge — start one with `gtmux hq`", "无可判读 —— `gtmux hq` 可启动")}
 	case hq.MaintenanceSlipped:
 		// The FIGURES stay in the value column (same shape as the healthy row, so the two
 		// are comparable at a glance) and the crossed threshold leads the note — it is the
 		// reason, and a reader who disputes it needs to see which line was crossed.
 		return dcheck{stRec, label, h.Figures(),
-			i18n.Tr("over "+h.Over+" — HQ should bring its board + knowledge base current, "+
+			i18n.Tr("over "+h.Over+" —HQ should bring its board + knowledge base current, "+
 				"hand off, then `gtmux hq --rotate`",
-				"越线 "+h.Over+" —— 中控应把态势板与知识库写到最新、交接后 `gtmux hq --rotate`")}
+				"越线 "+h.Over+" —— HQ 应把态势板与知识库写到最新、交接后 `gtmux hq --rotate`")}
 	default:
 		return dcheck{stOK, label, h.Figures(),
 			i18n.Tr("context, age and turn count are all under their rotation thresholds",
@@ -278,12 +278,12 @@ func hqMaintenanceChecks(now int64) []dcheck {
 			i18n.Tr("weekly pass folds the fleet's lessons into the knowledge base",
 				"每周把舰队的教训沉淀进知识库"),
 			i18n.Tr("no distill for over a week+grace — is `gtmux serve` running with a live HQ?",
-				"超过一周+宽限没有蒸馏 —— `gtmux serve` 还在跑、中控还活着吗？")),
+				"超过一周+宽限没有蒸馏 —— `gtmux serve` 还在跑、HQ 还活着吗？")),
 		maintenanceRow(selfCheck,
-			i18n.Tr("HQ self-check", "中控自检"),
+			i18n.Tr("HQ self-check", "HQ 自检"),
 			i18n.Tr("daily pass checks ledger / feed / memory health", "每日自检账本、感知与记忆健康"),
 			i18n.Tr("no self-check for over a day+grace — is `gtmux serve` running with a live HQ?",
-				"超过一天+宽限没有自检 —— `gtmux serve` 还在跑、中控还活着吗？")),
+				"超过一天+宽限没有自检 —— `gtmux serve` 还在跑、HQ 还活着吗？")),
 		promotionsRow(hq.PromotionsStatus(now)),
 	}
 }
@@ -319,7 +319,7 @@ func maintenanceRow(r hq.MaintenanceRow, label, okNote, slipNote string) dcheck 
 	switch r.State {
 	case hq.MaintenanceNever:
 		return dcheck{stInfo, label, i18n.Tr("never run", "从未运行"),
-			i18n.Tr("no pass raised yet — expected on a fresh HQ", "尚未触发过 —— 新装中控属正常")}
+			i18n.Tr("no pass raised yet — expected on a fresh HQ", "尚未触发过 —— 新装 HQ 属正常")}
 	case hq.MaintenanceSlipped:
 		return dcheck{stRec, label, hq.HumanAgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), slipNote}
 	default:
@@ -350,11 +350,11 @@ const (
 // It reports the SIZE of what is at risk, not just a tick, because "backed up" and "6 MB
 // of irreplaceable notes are backed up" are different sentences to read at 2am.
 func rowHQMemory() dcheck {
-	label := i18n.Tr("HQ memory", "中控记忆")
+	label := i18n.Tr("HQ memory", "HQ 记忆")
 	st := hq.ReadMemoryState()
 	if !st.Exists {
 		return dcheck{stInfo, label, i18n.Tr("none yet", "还没有"),
-			i18n.Tr("no supervisor on this machine", "这台机器上没有中控")}
+			i18n.Tr("no supervisor on this machine", "这台机器上没有 HQ")}
 	}
 	size := humanBytes(st.Bytes)
 	age := ""
@@ -1205,14 +1205,14 @@ func hqChecks(now int64) []dcheck {
 	return append(rows, hqMaintenanceChecks(now)...)
 }
 
-// rowHQBoard reports the situation board's freshness — HQ's persistent memory that
+// rowHQBoard reports the situation board's freshness —HQ's persistent memory that
 // survives context resets.
 func rowHQBoard(now int64) dcheck {
 	label := i18n.Tr("board", "看板")
 	info, err := os.Stat(hq.BoardPath())
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("none yet", "尚无"),
-			i18n.Tr("notes/board.md not written yet — HQ writes it as it works", "notes/board.md 尚未写入 —— HQ 干活时会写")}
+			i18n.Tr("notes/board.md not written yet —HQ writes it as it works", "notes/board.md 尚未写入 —— HQ 干活时会写")}
 	}
 	val := hq.HumanAgeShort(now-info.ModTime().Unix()) + i18n.Tr(" ago · ", "前 · ") + humanBytes(info.Size())
 	// Freshness is not the only way a board fails. A cell can grow into an essay: on this
@@ -1222,8 +1222,8 @@ func rowHQBoard(now int64) dcheck {
 	// anyone SEES it being broken, because a rule nothing measures is a rule nobody keeps.
 	if n, longest := hq.OversizeBoardCells(); n > 0 {
 		return dcheck{stRec, label, val, fmt.Sprintf(i18n.Tr(
-			"%d cells run past a screen (longest %d chars) — HQ should cut the finding to its conclusion and file the rest",
-			"%d 格长过一屏（最长 %d 字）—— 中控应把发现收成结论，其余落到知识库"), n, longest)}
+			"%d cells run past a screen (longest %d chars) —HQ should cut the finding to its conclusion and file the rest",
+			"%d 格长过一屏（最长 %d 字）—— HQ 应把发现收成结论，其余落到知识库"), n, longest)}
 	}
 	return dcheck{stOK, label, val, i18n.Tr("HQ's persistent situation board (survives resets)", "HQ 的常驻情况看板（跨重置保存）")}
 }
@@ -1242,7 +1242,7 @@ func rowHQKnowledge() dcheck {
 	}
 	if topics == 0 {
 		return dcheck{stInfo, label, i18n.Tr("none", "无"),
-			i18n.Tr("no knowledge topics yet — HQ distills lessons here", "尚无知识主题 —— HQ 会在此沉淀教训")}
+			i18n.Tr("no knowledge topics yet —HQ distills lessons here", "尚无知识主题 —— HQ 会在此沉淀教训")}
 	}
 	pending := countNonEmptyLines(filepath.Join(kdir, ".pending-distill.jsonl"))
 	val := fmt.Sprintf(i18n.Tr("%d topics", "%d 主题"), topics)
@@ -1719,13 +1719,13 @@ func reachSentence(pane string, why dispatch.ReachReason, ok bool) string {
 	switch why {
 	case dispatch.ReachCopyMode:
 		return i18n.Tr("the HQ pane "+pane+" is scrolled into copy-mode — every knock is held there, and none arrives; press q in that pane",
-			"中控窗格 "+pane+" 滚进了 copy-mode —— 敲门会被一直扣住、一条都到不了；在该 pane 里按 q 退出")
+			"HQ 窗格 "+pane+" 滚进了 copy-mode —— 敲门会被一直扣住、一条都到不了；在该 pane 里按 q 退出")
 	case dispatch.ReachDraft:
 		return i18n.Tr("the HQ pane "+pane+" has unsent text in its input box — knocks wait rather than append to it",
-			"中控窗格 "+pane+" 的输入框里有未提交的内容 —— 敲门会等着，而不是拼在它后面")
+			"HQ 窗格 "+pane+" 的输入框里有未提交的内容 —— 敲门会等着，而不是拼在它后面")
 	default:
 		return i18n.Tr("gtmux cannot read an input box in the HQ pane "+pane+" — it will not type on a guess",
-			"gtmux 在中控窗格 "+pane+" 里读不出输入框 —— 它不会靠猜往里打字")
+			"gtmux 在 HQ 窗格 "+pane+" 里读不出输入框 —— 它不会靠猜往里打字")
 	}
 }
 

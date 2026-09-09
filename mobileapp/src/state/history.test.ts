@@ -16,7 +16,7 @@ const push = (s: ReturnType<typeof emptyStore>, scope: string, t: string, at = N
 
 // The scope key is what makes the list relevant, so its fallback chain is the part
 // worth pinning: a pane id would decay (tmux recycles %7 after a restart), and on a
-// real fleet five of eighteen panes — including HQ — sit outside any repo.
+// real fleet five of eighteen panes — including HQ— sit outside any repo.
 describe('historyScope', () => {
   it('uses the repo when the pane is in one', () => {
     expect(historyScope({project: 'gtmux', loc: 'gtmux dev:0.0'})).toBe('gtmux');

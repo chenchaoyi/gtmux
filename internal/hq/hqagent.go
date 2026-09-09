@@ -142,7 +142,7 @@ func pickHQAgent(in *os.File, out io.Writer) string {
 		return cands[0].cmd
 	}
 	def := hqAgentDefaultIndex(cands)
-	fmt.Fprintln(out, i18n.Tr("Which agent should run HQ (中控)?", "HQ（中控）用哪个 agent 来跑？"))
+	fmt.Fprintln(out, i18n.Tr("Which agent should run HQ (HQ)?", "HQ（HQ）用哪个 agent 来跑？"))
 	for i, c := range cands {
 		mark := "  "
 		if i == def {

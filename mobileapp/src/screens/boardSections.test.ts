@@ -92,7 +92,7 @@ describe('the document title', () => {
   // The sheet has its own header saying "Situation board / 态势板". The file's `# ` title
   // rendered directly under it as a second, larger one.
   it('is dropped from the preamble', () => {
-    const secs = parseBoardSections('# gtmux HQ — 态势板\n\nYour durable posture.\n\n## ① 现状\n\nrow');
+    const secs = parseBoardSections('# gtmux HQ— 态势板\n\nYour durable posture.\n\n## ① 现状\n\nrow');
     expect(secs[0].body).toBe('Your durable posture.');
     expect(secs[0].body).not.toContain('态势板');
   });

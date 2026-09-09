@@ -16,7 +16,7 @@ const entries = (n: number) =>
       `### 2026-08-${String(i + 1).padStart(2, '0')} 条目 ${i}\n正文 ${i}\n\n` +
       `- 做了 ${i} 的第一件事\n- 做了 ${i} 的第二件事\n- 做了 ${i} 的第三件事\n`,
   ).join('\n');
-const BOARD = `# gtmux HQ — 态势板\n\n## ① 现状\n\n| pane | 在做什么 |\n|---|---|\n| %7 | 答题 |\n\n## ② 交接记录\n\n${entries(26)}`;
+const BOARD = `# gtmux HQ— 态势板\n\n## ① 现状\n\n| pane | 在做什么 |\n|---|---|\n| %7 | 答题 |\n\n## ② 交接记录\n\n${entries(26)}`;
 
 type Tree = renderer.ReactTestRenderer;
 // Numbers count too: the section's entry-count bubble renders as one.

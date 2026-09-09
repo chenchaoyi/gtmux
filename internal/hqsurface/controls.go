@@ -1,7 +1,7 @@
 // Package hqsurface names HQ's perception-surface vocabulary: the journal
 // control-record event names the slow-tick sensors raise, and the surfacing
 // tiers/threshold that gate what HQ prints to the user (the `gtmux quiet`
-// switch). The event stream itself lives in internal/events — HQ perceives by
+// switch). The event stream itself lives in internal/events —HQ perceives by
 // wake-knock plus `gtmux events --since-seq` pull, with a retention gap warned
 // at read time (retire-perception-spool); there is no push copy of the stream.
 package hqsurface
@@ -21,7 +21,7 @@ const (
 	// ControlDistill asks HQ to run a periodic knowledge-distillation pass: distil the
 	// fleet's event delta since the last distill into the knowledge base and prune
 	// stale. A low-urgency maintenance signal like self-check (a journal control
-	// record, not a typed wake) — HQ does the curation; gtmux only raises it on a
+	// record, not a typed wake) —HQ does the curation; gtmux only raises it on a
 	// cadence.
 	ControlDistill = "gtmux:distill"
 )

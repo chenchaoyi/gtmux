@@ -189,7 +189,7 @@ export function HQHeader({
               <View testID="hq-brief" style={[styles.quote, {borderTopColor: pal.divider}]}>
                 <View style={styles.byline}>
                   <Text style={[styles.mark, {color: pal.fg3}]}>⟣</Text>
-                  <Text style={[styles.bylineText, {color: pal.fg3}]}>{zh ? '参谋长' : 'HQ'}</Text>
+                  <Text style={[styles.bylineText, {color: pal.fg3}]}>{zh ? 'HQ' : 'HQ'}</Text>
                   <Text
                     style={[
                       styles.bylineGrade,

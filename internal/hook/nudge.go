@@ -330,7 +330,7 @@ func nudgeCrash(pane, errHead string) {
 	}
 	if n, first := crashBurstCount(pane, errHead, time.Now().Unix()); !first {
 		// Inside the window: the incident is already announced. Record the repeat and
-		// stay quiet — HQ answers the incident, not each of its records.
+		// stay quiet —HQ answers the incident, not each of its records.
 		_ = n
 		return
 	}

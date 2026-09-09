@@ -50,7 +50,7 @@ export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll}: HQA
               onPress={() => onView(k)}
               style={[styles.switchBtn, {borderColor: pal.divider, backgroundColor: on ? pal.surface : 'transparent'}]}>
               <Text style={[styles.switchText, {color: on ? pal.fg : pal.fg3, fontWeight: on ? '700' : '500'}]}>
-                {k === 'acts' ? t('Supervisor', '参谋长') : t('Fleet', '舰队')}
+                {k === 'acts' ? t('Supervisor', 'HQ') : t('Fleet', '舰队')}
               </Text>
             </TouchableOpacity>
           );
@@ -85,7 +85,7 @@ function ActsBody({
   if (acts.length === 0) {
     return (
       <Text style={[styles.empty, {color: pal.fg3}]}>
-        {t('Your supervisor has not acted recently.', '参谋长最近没有动作。')}
+        {t('Your supervisor has not acted recently.', 'HQ 最近没有动作。')}
       </Text>
     );
   }

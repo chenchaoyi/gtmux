@@ -63,7 +63,7 @@ func CmdKnowledge(args []string) int {
 func knowledgeMutation(run func() error) int {
 	if !fromHQHome() {
 		i18n.Sae("gtmux knowledge: only the HQ session can write knowledge (run it from "+hqHomeForMessage()+"); workers record candidates with `gtmux capture`",
-			"gtmux knowledge: 只有中控会话能写知识库（请在 "+hqHomeForMessage()+" 下运行）；worker 请用 `gtmux capture` 记候选")
+			"gtmux knowledge: 只有 HQ 会话能写知识库（请在 "+hqHomeForMessage()+" 下运行）；worker 请用 `gtmux capture` 记候选")
 		return 1
 	}
 	if err := run(); err != nil {

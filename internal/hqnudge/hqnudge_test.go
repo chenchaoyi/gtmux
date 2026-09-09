@@ -377,7 +377,7 @@ func TestDrain_SwallowedEnter_ParksForEnterRepair(t *testing.T) {
 	}
 }
 
-// The ack can also fail falsely — HQ's reply scrolled the line out of the capture.
+// The ack can also fail falsely —HQ's reply scrolled the line out of the capture.
 // The batch is retried, and BOTH attempts carry the same id so HQ can spot the dup.
 func TestDrain_UnconfirmedAck_RetriesWithTheSameID(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())

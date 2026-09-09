@@ -288,7 +288,7 @@ export function demoHQReply(lang: 'en' | 'zh', text: string): string {
 // is the failure this design replaced.
 export function demoBoard(zh: boolean): {exists: boolean; updated_at: number; text: string} {
   const text = zh
-    ? `# gtmux HQ — 态势板
+    ? `# gtmux HQ— 态势板
 
 _最近刷新：刚刚_
 
@@ -304,7 +304,7 @@ _最近刷新：刚刚_
 ## 📌 待办 / 教训
 - api 与 web 同碰 auth 包 → 若两边都要改同一文件，先让 web 停手，避免互相踩。
 `
-    : `# gtmux HQ — situation board
+    : `# gtmux HQ— situation board
 
 _Last refresh: just now_
 

@@ -113,7 +113,7 @@ func asHQ(t *testing.T) {
 }
 
 // The everyday writeback: HQ's own pull-on-wake IS the acknowledgement, so the guarantee
-// needs no new habit from HQ — the delta read it already performs on every knock is what
+// needs no new habit from HQ— the delta read it already performs on every knock is what
 // clears the debt.
 func TestUnfilteredDeltaReadConsumes(t *testing.T) {
 	asHQ(t)

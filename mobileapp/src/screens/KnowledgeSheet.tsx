@@ -332,7 +332,7 @@ function IndexPane({
         <Text style={[styles.empty, {color: pal.fg3}]}>
           {t(
             'Nothing recorded yet. HQ writes here when it distills a lesson worth keeping.',
-            '还没有记录。参谋长提炼出值得留下的经验时会写进这里。',
+            '还没有记录。HQ 提炼出值得留下的经验时会写进这里。',
           )}
         </Text>
       </View>
@@ -352,8 +352,8 @@ function IndexPane({
               docs/design/knowledge-layers.md is the long form. */}
           <Text style={[styles.sectionNote, {color: pal.fg3}]}>
             {zh
-              ? '这些是参谋长判断「比这台机器大」的条目。它已写好带走简报，等你把它搬进一个持久的地方（你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook，或 gtmux 自己的仓库），再回来标记落地。'
-              : 'Entries the supervisor judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.'}
+              ? '这些是 HQ 判断「比这台机器大」的条目。它已写好带走简报，等你把它搬进一个持久的地方（你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook，或 gtmux 自己的仓库），再回来标记落地。'
+              : 'Entries HQ judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.'}
           </Text>
           {view.promotions.map(p => (
             <TouchableOpacity
@@ -449,7 +449,7 @@ function IndexPane({
       {view.candidates.pending > 0 && (
         <Text style={[styles.foot, {color: pal.fg3}]}>
           {zh
-            ? `${view.candidates.pending} 条候选等参谋长提炼`
+            ? `${view.candidates.pending} 条候选等 HQ 提炼`
             : `${view.candidates.pending} captured candidates waiting for HQ to distill`}
         </Text>
       )}

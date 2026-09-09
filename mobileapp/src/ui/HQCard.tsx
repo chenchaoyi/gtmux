@@ -55,7 +55,7 @@ export function HQCard({
       <View style={styles.roleBanner}>
         <Text style={[styles.roleGlyph, {color: pal.fg3}]}>👁</Text>
         <Text style={[styles.roleTitle, {color: pal.fg3}]}>
-          {zh ? 'CHIEF OF STAFF · 参谋长' : 'CHIEF OF STAFF'}
+          {zh ? 'HQ·HQ' : 'HQ'}
         </Text>
         <View style={styles.roleSpacer} />
         <Text style={[styles.rolePurpose, {color: pal.fg3}]}>
