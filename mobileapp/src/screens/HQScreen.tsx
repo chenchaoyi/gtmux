@@ -42,6 +42,7 @@ import {HQHeader} from './HQHeader';
 import {ResourceState, WindowPct, headerModel, usageDoorValue} from './hqHeaderModel';
 import {
   Zone,
+  running,
   assessment,
   askOf,
   boardAge,
@@ -273,6 +274,7 @@ export function HQScreen({route, navigation}: any) {
   }, [turns, pending]);
 
   const calls = useMemo(() => decisions(digest), [digest]);
+  const working = useMemo(() => running(digest), [digest]);
   const actList = useMemo(() => supervisorActs(actFeed, zh), [actFeed, zh]);
 
   // Land on the block when there is one — that's why you opened HQ. Decided ONCE, from
@@ -437,7 +439,13 @@ export function HQScreen({route, navigation}: any) {
               <TouchableOpacity
                 key={tab.key}
                 testID={`hq-tab-${tab.key}`}
-                style={[styles.tab, on && {borderBottomColor: pal.fg, borderBottomWidth: 2}]}
+                style={[
+                  styles.tab,
+                  {backgroundColor: pal.surface, borderColor: 'transparent'},
+                  on && (tab.badge
+                    ? {backgroundColor: 'rgba(239,68,68,0.14)', borderColor: StatusColor.waiting}
+                    : {backgroundColor: pal.rowSelected ?? pal.surface, borderColor: pal.divider}),
+                ]}
                 onPress={() => setZone(tab.key)}>
                 <Text style={[styles.tabText, {color: on ? pal.fg : pal.fg3, fontWeight: on ? '700' : '500'}]}>
                   {tab.label}
@@ -457,9 +465,54 @@ export function HQScreen({route, navigation}: any) {
         {activeZone === 'calls' && (
           <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad} onScroll={onZoneScroll} scrollEventThrottle={16}>
             {calls.length === 0 ? (
-              <Text style={[styles.empty, {color: pal.fg3}]}>
-                {t('Nothing needs your decision right now.', '现在没有需要你拍板的事。')}
-              </Text>
+              /* The quiet state is the COMMON state, and it was one grey sentence over an
+                 empty screen — this zone saying nothing at the moment it is most often
+                 read (user report, 2026-09-09). Say the thing that is true, then show
+                 what IS happening: the lines that are running do not need you, but they
+                 are where the money is going. */
+              <View testID="hq-calls-quiet" style={styles.quiet}>
+                <Text style={[styles.quietTitle, {color: pal.fg}]}>
+                  {t('Nobody is waiting on you', '没有人在等你')}
+                </Text>
+                {working.length > 0 ? (
+                  <>
+                    <Text style={[styles.quietSub, {color: pal.fg2}]}>
+                      {zh
+                        ? `下面是这会儿在跑的 ${working.length} 条线。它们不需要你,只是让你知道钱花在哪。`
+                        : `These ${working.length} are running right now. They do not need you — this is where the time is going.`}
+                    </Text>
+                    <View style={[styles.quietList, {backgroundColor: pal.surface}]}>
+                      {working.slice(0, 5).map((r, i) => (
+                        <TouchableOpacity
+                          key={r.pane_id || r.loc}
+                          testID={`hq-quiet-${r.loc}`}
+                          activeOpacity={0.6}
+                          onPress={() => openWorker(r)}
+                          style={[styles.quietRow, i > 0 && {borderTopColor: pal.divider, borderTopWidth: StyleSheet.hairlineWidth}]}>
+                          <View style={[styles.rowDot, {backgroundColor: StatusColor.working}]} />
+                          <Text style={[styles.quietName, {color: pal.fg}]} numberOfLines={1}>
+                            {sessionName(r)}
+                          </Text>
+                          <Text style={[styles.quietSince, {color: pal.fg3}]}>{relTime(r.since, now)}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  <Text style={[styles.quietSub, {color: pal.fg2}]}>
+                    {t('Nothing is running either — the fleet is idle.', '也没有在跑的线 —— 舰队是空闲的。')}
+                  </Text>
+                )}
+                <TouchableOpacity
+                  testID="hq-quiet-ask"
+                  activeOpacity={0.8}
+                  onPress={() => command(t('What is the situation right now?', '现在什么情况?'))}
+                  style={[styles.quietAsk, {borderColor: StatusColor.working}]}>
+                  <Text style={[styles.quietAskText, {color: StatusColor.working}]}>
+                    {t('Ask HQ what the situation is', '问 HQ 现在什么情况')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               calls.map(row => {
                 const sel = selected?.pane_id === row.pane_id;
@@ -492,9 +545,11 @@ export function HQScreen({route, navigation}: any) {
                     <View style={styles.actions}>
                       <TouchableOpacity
                         testID={`hq-call-open-${row.loc}`}
-                        style={[styles.action, {borderColor: pal.divider}]}
+                        style={[styles.action, styles.actionPrimary, {borderColor: StatusColor.working}]}
                         onPress={() => openWorker(row)}>
-                        <Text style={[styles.actionText, {color: pal.fg}]}>{t('Open session', '打开会话')}</Text>
+                        <Text style={[styles.actionText, {color: StatusColor.working, fontWeight: '600'}]}>
+                          {t('Open session', '打开会话')}
+                        </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         testID={`hq-call-ask-${row.loc}`}
@@ -676,10 +731,15 @@ const styles = StyleSheet.create({
   boardChevron: {fontSize: 15},
   boardText: {fontSize: 12.5, lineHeight: 19, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
 
-  tabs: {flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth},
-  tab: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1, paddingVertical: 9, borderBottomColor: 'transparent', borderBottomWidth: 2},
+  // Pills, not a three-up underline bar. The three are different KINDS of thing — a
+  // queue, a log, a conversation — and only the queue is ever urgent; the active pill
+  // carries that, in the status language the rest of the product uses.
+  tabs: {flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingTop: 9, paddingBottom: 9,
+    borderBottomWidth: StyleSheet.hairlineWidth},
+  tab: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    minHeight: 32, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1},
   tabText: {fontSize: 13},
-  badge: {marginLeft: 6, minWidth: 17, height: 17, borderRadius: 8.5, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4},
+  badge: {minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5},
   badgeText: {fontSize: 10.5, fontWeight: '700', color: '#1A1206'},
   tabDot: {width: 6, height: 6, borderRadius: 3, marginLeft: 6},
 
@@ -692,7 +752,12 @@ const styles = StyleSheet.create({
   ask: {fontSize: 14, lineHeight: 20, marginTop: 8, fontWeight: '500'},
   cardGoal: {fontSize: 11.5, marginTop: 5},
   actions: {flexDirection: 'row', marginTop: 11, gap: 8},
-  action: {flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth},
+  // 44pt, the floor for a hit target. These were ~30pt (paddingVertical 8 around 13pt
+  // text) on the card that carries the page's whole purpose — the one thing you came to
+  // do (user report, 2026-09-09).
+  action: {flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 10, borderWidth: StyleSheet.hairlineWidth},
+  actionPrimary: {borderWidth: 1},
   actionText: {fontSize: 12.5, fontWeight: '600'},
 
   eventRow: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 7},
@@ -702,6 +767,15 @@ const styles = StyleSheet.create({
   eventSummary: {fontSize: 11.5, marginTop: 2, lineHeight: 16},
 
   empty: {fontSize: 13, textAlign: 'center', paddingVertical: 30, lineHeight: 19},
+  quiet: {paddingTop: 18, gap: 12},
+  quietTitle: {fontSize: 15, fontWeight: '600', textAlign: 'center'},
+  quietSub: {fontSize: 13, lineHeight: 19, textAlign: 'center', paddingHorizontal: 6},
+  quietList: {borderRadius: 12, overflow: 'hidden'},
+  quietRow: {flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 44, paddingHorizontal: 13},
+  quietName: {flex: 1, fontSize: 13.5},
+  quietSince: {fontSize: 11.5},
+  quietAsk: {minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 11, borderWidth: 1},
+  quietAskText: {fontSize: 14, fontWeight: '600'},
   chips: {paddingHorizontal: 10, paddingVertical: 6, gap: 6},
   selPill: {flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth, marginBottom: 6, gap: 8, maxWidth: '70%'},
   selText: {fontSize: 12},

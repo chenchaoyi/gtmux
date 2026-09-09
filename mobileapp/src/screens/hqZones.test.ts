@@ -11,8 +11,7 @@ import {
   initialZone,
   sessionName,
   windowNo,
-  workerRows,
-} from './hqZones';
+  workerRows, running} from './hqZones';
 
 // The HQ page's logic (hq-command-page). These test the REAL module the screen imports —
 // the suite this replaces mirrored the old fleet board's grouping inside the test file,
@@ -160,5 +159,30 @@ describe('assessment renders the served verdict', () => {
   it('a quiet fleet still reads as quiet', () => {
     const rows = [hq({state: 'normal', waiting: 0, workers: 2}), worker('api'), worker('web')];
     expect(assessment(rows, true)).toBe('都正常 · 无需你介入');
+  });
+});
+
+// The quiet state needs something true to say.
+//
+// "Nothing needs your decision right now." over an empty screen is this zone at its most
+// common, saying nothing (user report, 2026-09-09). What IS happening is the honest
+// answer, and `running` is where it comes from.
+describe('running', () => {
+  const row = (loc: string, status: string, since: number) =>
+    ({pane_id: '%' + loc, loc, status, since} as never);
+
+  it('is the sessions mid-turn, and only those', () => {
+    const d = [row('a', 'working', 10), row('b', 'waiting', 20), row('c', 'idle', 30), row('d', 'working', 40)];
+    expect(running(d).map(r => r.loc)).toEqual(['d', 'a']);
+  });
+
+  it('puts the one that started most recently first', () => {
+    // The newest is the one you have least context on, which is the one worth naming.
+    expect(running([row('old', 'working', 1), row('new', 'working', 99)]).map(r => r.loc)).toEqual(['new', 'old']);
+  });
+
+  it('says nothing when nothing is running, rather than inventing a row', () => {
+    expect(running([row('a', 'idle', 1)])).toEqual([]);
+    expect(running([])).toEqual([]);
   });
 });
