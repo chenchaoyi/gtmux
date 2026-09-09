@@ -35,10 +35,17 @@ func Dir() string { return filepath.Join(home(), ".local", "share", "gtmux") }
 // override that looks like the right one, so each round of "make the test write to a temp
 // dir" fixed a symptom and the sixth failure was already on its way.
 //
-// So the real path is now unreachable from a test rather than discouraged. This is the one
-// chokepoint every gtmux path goes through, which is why the guard belongs here and not on
-// the board writer: the knowledge base, the event log and the caches hang off it too, and
-// a guard per writer is a list somebody will forget to add to.
+// So the real path is now unreachable from a test rather than discouraged. The guard
+// belongs here and not on the board writer: the knowledge base, the event log and the
+// caches hang off this too, and a guard per writer is a list somebody will forget to add
+// to.
+//
+// That was written calling this "the one chokepoint every gtmux path goes through". It
+// was not — twenty-three files read $HOME on their own, including the ones that install
+// hooks into ~/.claude/settings.json and write serve's device roster and the pairing
+// credentials, so the guard covered the two paths its author had in mind and left the
+// rest open. It IS the one chokepoint now, and check-design.sh fails the build on a new
+// resolver rather than leaving that a claim in a comment.
 //
 // It PANICS rather than returning an error. A test that reaches for the real home has a
 // bug in the test, and the message says exactly what to do about it; degrading quietly is
@@ -52,6 +59,11 @@ func home() string {
 	}
 	return h
 }
+
+// Home is the same directory, exported for the gtmux paths that do NOT hang off
+// Dir() or HQHome() — the user config file, the serve rosters, the hook installs —
+// so they resolve through this guard too instead of reading $HOME on their own.
+func Home() string { return home() }
 
 // underTest reports whether this process is a `go test` binary. Checked by argv rather
 // than by importing `testing`, which would link the test framework and its flags into the

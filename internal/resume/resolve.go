@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Resolving a record against the agent's OWN transcript store, because the cwd we
@@ -29,7 +31,7 @@ const transcriptScanLines = 200
 // claudeProjectsDir is where Claude Code keeps per-project transcripts. Split out so
 // tests can point HOME at a fixture.
 func claudeProjectsDir() string {
-	home, err := os.UserHomeDir()
+	home, err := state.Home(), error(nil)
 	if err != nil || home == "" {
 		return ""
 	}

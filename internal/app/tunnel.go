@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // cmdTunnel implements `gtmux tunnel` — expose the read-only radar to the phone
@@ -327,7 +329,7 @@ func provisionOnce(base, reg, deviceID, name string) (p *provisionResp, retryabl
 // resolveDeviceID returns a stable random id for this Mac (so re-provisioning
 // reuses the same tunnel/hostname), generating + persisting it on first run.
 func resolveDeviceID() string {
-	path := filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "tunnel-device-id")
+	path := filepath.Join(state.Home(), ".config", "gtmux", "tunnel-device-id")
 	if b, err := os.ReadFile(path); err == nil {
 		if id := strings.TrimSpace(string(b)); len(id) >= 16 {
 			return id

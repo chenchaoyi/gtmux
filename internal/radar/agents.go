@@ -133,7 +133,7 @@ var builtinProfiles = func() []agentProfile {
 
 func LoadProfiles() []agentProfile {
 	profiles := builtinProfiles
-	path := os.Getenv("HOME") + "/.config/gtmux/agents.json"
+	path := state.Home() + "/.config/gtmux/agents.json"
 	if b, err := os.ReadFile(path); err == nil {
 		var user []agentProfile
 		if json.Unmarshal(b, &user) == nil && len(user) > 0 {

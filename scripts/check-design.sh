@@ -248,8 +248,29 @@ if [ -n "$new_writers" ]; then
 fi
 
 
+# N+3. Every gtmux path must resolve $HOME through internal/state, which is where the
+#      guard lives that keeps a test off the operator's real home.
+#
+#      That guard shipped on 2026-09-09 with a comment calling state the "one chokepoint
+#      every gtmux path goes through". It was not: twenty-three files read $HOME on their
+#      own, including the ones that install hooks into ~/.claude/settings.json and write
+#      serve's device roster and the pairing credentials. The claim was never checked
+#      because nothing could check it, so the guard covered the two paths its author had
+#      in mind and the rest kept the door open.
+#
+#      This is that check. A new resolver has to come here to get past it, which is a
+#      reviewer asking "should this one be reachable from a test?".
+resolvers=$(grep -rln 'os\.Getenv("HOME")\|os\.UserHomeDir()' --include='*.go' . 2>/dev/null \
+  | grep -v '_test\.go$' | grep -v '/node_modules/' | sed 's|^\./||' | sort -u)
+if [ "$resolvers" != "internal/state/state.go" ]; then
+  note "these resolve \$HOME outside internal/state, so the test guard there cannot see them — route them through state.Home():"
+  echo "$resolvers" | grep -v '^internal/state/state.go$' | sed 's/^/  /'
+  fail=1
+fi
+
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; mobile release notes generated"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; mobile release notes generated"
 else
   exit 1
 fi

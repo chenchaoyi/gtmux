@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Theme is the host terminal's resolved appearance, served to the phone/browser
@@ -57,7 +59,7 @@ func defaultTheme() Theme {
 // --- Ghostty ----------------------------------------------------------------
 
 func ghosttyConfigPaths() []string {
-	home, _ := os.UserHomeDir()
+	home := state.Home()
 	cfg := os.Getenv("XDG_CONFIG_HOME")
 	if cfg == "" {
 		cfg = filepath.Join(home, ".config")
@@ -70,7 +72,7 @@ func ghosttyConfigPaths() []string {
 
 // ghosttyThemeDirs are where a named `theme = NAME` file may live.
 func ghosttyThemeDirs() []string {
-	home, _ := os.UserHomeDir()
+	home := state.Home()
 	cfg := os.Getenv("XDG_CONFIG_HOME")
 	if cfg == "" {
 		cfg = filepath.Join(home, ".config")

@@ -397,7 +397,7 @@ func cursorFromFields(f []string) (x, up int, visible, ok bool) {
 
 // pushTokensPath is where registered device push tokens persist across restarts.
 func pushTokensPath() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "push-tokens.json")
+	return filepath.Join(state.Home(), ".config", "gtmux", "push-tokens.json")
 }
 
 func loadPushTokens() []server.DeviceToken {
@@ -422,11 +422,11 @@ func savePushTokens(toks []server.DeviceToken) {
 
 // devicesPath is where the enrolled-device roster persists (per-device tokens).
 func devicesPath() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "devices.json")
+	return filepath.Join(state.Home(), ".config", "gtmux", "devices.json")
 }
 
 func sharePath() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "share.json")
+	return filepath.Join(state.Home(), ".config", "gtmux", "share.json")
 }
 
 func loadShareState() server.ShareState {
@@ -550,7 +550,7 @@ func resolveServeToken(flagToken string) string {
 	if flagToken != "" {
 		return flagToken
 	}
-	path := filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "serve-token")
+	path := filepath.Join(state.Home(), ".config", "gtmux", "serve-token")
 	if b, err := os.ReadFile(path); err == nil {
 		if tok := strings.TrimSpace(string(b)); tok != "" {
 			return tok
@@ -892,7 +892,7 @@ func sendCacheRecord(id string) {
 // random prefix (no collisions / overwrites) and returns its path, so the phone
 // can hand a photo/file to an agent by path. Read by whoever the agent can read.
 func saveUpload(name string, data []byte) (string, error) {
-	dir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "uploads")
+	dir := filepath.Join(state.Home(), ".local", "share", "gtmux", "uploads")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
@@ -947,7 +947,7 @@ func agentIconPNG(name string) []byte {
 		b, _ := os.ReadFile(hint) // a direct image path
 		return b
 	}
-	cacheDir := filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "icon-cache")
+	cacheDir := filepath.Join(state.Home(), ".local", "share", "gtmux", "icon-cache")
 	_ = os.MkdirAll(cacheDir, 0o755)
 	cache := filepath.Join(cacheDir, sanitizeFilename(name)+"-"+strconv.FormatInt(radar.FileMtime(hint), 10)+".png")
 	if b, err := os.ReadFile(cache); err == nil {

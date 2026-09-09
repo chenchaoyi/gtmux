@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // warp drives the Warp terminal — best-effort, because Warp (verified on
@@ -123,7 +125,7 @@ func (warp) TabOrder() []string { return nil }
 // launchConfigDir is where Warp reads launch configurations from.
 // Overridable for tests.
 var launchConfigDir = func() string {
-	home, _ := os.UserHomeDir()
+	home := state.Home()
 	return filepath.Join(home, ".warp", "launch_configurations")
 }
 
@@ -141,7 +143,7 @@ func warpYAMLQuote(s string) string {
 // matching file path", warp.log), so restore/new opened NOTHING. Docs say the
 // value must be an absolute path (no `~`). Overridable for tests.
 var warpLaunchCwd = func() string {
-	if home, err := os.UserHomeDir(); err == nil && home != "" {
+	if home := state.Home(); home != "" {
 		return home
 	}
 	return "/"

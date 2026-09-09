@@ -48,6 +48,10 @@ func TestComp255(t *testing.T) {
 func TestGhosttyThemeFromConfig(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
+	// XDG_CONFIG_HOME alone does not isolate this: ghosttyConfigPaths() also offers
+	// $HOME/Library/Application Support/com.mitchellh.ghostty/config, so on a Mac whose
+	// owner keeps their Ghostty config there this test would read theirs.
+	t.Setenv("HOME", t.TempDir())
 	gd := filepath.Join(dir, "ghostty")
 	_ = os.MkdirAll(filepath.Join(gd, "themes"), 0o755)
 	// a named theme file (base), then config keys that override one of them
@@ -77,9 +81,13 @@ func TestGhosttyThemeFromConfig(t *testing.T) {
 	}
 }
 
-// Smoke test: Appearance() always returns a usable theme. Logs the real machine's
-// resolved theme for eyeballing (no assertion on the actual values).
+// Smoke test: Appearance() always returns a usable theme — here with no terminal
+// config anywhere, which is the fallback path. It used to run against the operator's
+// real config and log what it found; that made the result differ per machine while
+// asserting nothing about it. The configured path is pinned by the test above.
 func TestAppearanceSmoke(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	th := Appearance()
 	if th.Source == "" || th.Background == "" || th.Palette[0] == "" {
 		t.Errorf("Appearance returned an incomplete theme: %+v", th)

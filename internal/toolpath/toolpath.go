@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Finding a helper binary when $PATH is not the user's PATH (tool-path-resolution).
@@ -35,7 +37,7 @@ import (
 // and the system dirs (so an explicit search still finds a system tool).
 func SearchDirs() []string {
 	dirs := []string{"/opt/homebrew/bin", "/usr/local/bin"}
-	if home, err := os.UserHomeDir(); err == nil && home != "" {
+	if home := state.Home(); home != "" {
 		dirs = append(dirs, filepath.Join(home, ".local", "bin"))
 	}
 	return append(dirs, "/usr/bin", "/bin", "/usr/sbin", "/sbin")

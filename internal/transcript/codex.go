@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Codex logs live at $CODEX_HOME/sessions/YYYY/MM/DD/rollout-<ts>-<sessionId>.jsonl
@@ -50,7 +52,7 @@ func codexHome() string {
 	if h := os.Getenv("CODEX_HOME"); h != "" {
 		return h
 	}
-	return filepath.Join(os.Getenv("HOME"), ".codex")
+	return filepath.Join(state.Home(), ".codex")
 }
 
 func codexLogPath(sessionID string) string {
