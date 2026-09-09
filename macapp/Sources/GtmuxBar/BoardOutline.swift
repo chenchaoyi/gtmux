@@ -218,3 +218,19 @@ func matchKB(_ entries: [KBEntry], _ query: String) -> [KBEntry] {
         return terms.allSatisfy { hay.contains($0) }
     }
 }
+
+/// How long ago HQ last wrote the board, in the words the phone already uses.
+///
+/// The phone's board sheet says "updated 3h ago" under its title; the Mac said nothing at
+/// all, while `updatedAt` sat on the model unused (2026-09-09). A board read as current
+/// when it is hours stale is a failure that costs something real — it is HQ's picture of
+/// the fleet, and the only reason to open it is that the picture can be trusted.
+///
+/// Split out from the view so the buckets can be tested at their edges rather than at one
+/// convenient point in the middle of each.
+func boardAgeText(_ secs: Int64, zh: Bool) -> String {
+    if secs < 60 { return zh ? "刚刚更新" : "updated just now" }
+    if secs < 3600 { return zh ? "\(secs / 60) 分钟前更新" : "updated \(secs / 60)m ago" }
+    if secs < 48 * 3600 { return zh ? "\(secs / 3600) 小时前更新" : "updated \(secs / 3600)h ago" }
+    return zh ? "\(secs / 86400) 天前更新" : "updated \(secs / 86400)d ago"
+}

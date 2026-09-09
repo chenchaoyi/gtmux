@@ -258,6 +258,28 @@ final class KnowledgeTopicsTests: XCTestCase {
         XCTAssertTrue(matchKB(rows, "").isEmpty)
         XCTAssertTrue(matchKB(rows, "   ").isEmpty)
     }
+
+    /// How fresh the board is — the Mac said nothing, while the phone has said it all along.
+    ///
+    /// Tested at the EDGES of each bucket, not one convenient point inside it: a boundary
+    /// off by a second is exactly the kind of thing that reads fine in a screenshot.
+    func testBoardAgeBuckets() {
+        XCTAssertEqual(boardAgeText(0, zh: false), "updated just now")
+        XCTAssertEqual(boardAgeText(59, zh: false), "updated just now")
+        XCTAssertEqual(boardAgeText(60, zh: false), "updated 1m ago")
+        XCTAssertEqual(boardAgeText(3599, zh: false), "updated 59m ago")
+        XCTAssertEqual(boardAgeText(3600, zh: false), "updated 1h ago")
+        XCTAssertEqual(boardAgeText(48 * 3600 - 1, zh: false), "updated 47h ago")
+        XCTAssertEqual(boardAgeText(48 * 3600, zh: false), "updated 2d ago")
+    }
+
+    func testBoardAgeSpeaksChineseNaturally() {
+        // Not a word-for-word translation of the English: Chinese puts the age first.
+        XCTAssertEqual(boardAgeText(0, zh: true), "刚刚更新")
+        XCTAssertEqual(boardAgeText(600, zh: true), "10 分钟前更新")
+        XCTAssertEqual(boardAgeText(7200, zh: true), "2 小时前更新")
+        XCTAssertEqual(boardAgeText(3 * 86400, zh: true), "3 天前更新")
+    }
 }
 
 // The menu bar was the only surface that could not export the supervisor's memory: the
