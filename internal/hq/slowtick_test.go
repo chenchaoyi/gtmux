@@ -46,6 +46,7 @@ func TestLimitsTierKey(t *testing.T) {
 }
 
 func TestResourceTierKey(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	if got := resourceTierKey(resource.Machine{}); got != "" {
 		t.Errorf("no warn → empty key, got %q", got)
 	}

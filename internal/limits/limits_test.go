@@ -322,6 +322,7 @@ func TestLoginShell(t *testing.T) {
 // End to end through the real shell: the command is found the way a user's own
 // shell would find it, not the way /bin/sh would.
 func TestRunAndParseUsesTheLoginShell(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	dir := t.TempDir()
 	script := filepath.Join(dir, "faux-usage")
 	body := "#!/bin/sh\necho 'Current session: 11% used · resets Jul 13 at 1:30am'\n"

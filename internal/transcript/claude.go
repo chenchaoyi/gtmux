@@ -2,10 +2,11 @@ package transcript
 
 import (
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Claude Code logs live at ~/.claude/projects/<cwd-slug>/<sessionId>.jsonl, one
@@ -68,7 +69,7 @@ func claudeLogPath(sessionID string) string {
 }
 
 func claudeProjectsDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".claude", "projects")
+	return filepath.Join(state.Home(), ".claude", "projects")
 }
 
 // claudeStep folds one Claude log line into the parse state: a real user prompt

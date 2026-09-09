@@ -42,9 +42,12 @@ func TestResolvingTheRealHomeUnderTestIsFatal(t *testing.T) {
 }
 
 func TestEveryPathRootGoesThroughTheGuard(t *testing.T) {
-	// Both roots, because the board lives under one and the caches under the other. A
-	// guard on only one of them is the "list somebody forgets to add to" this replaced.
-	for name, fn := range map[string]func() string{"HQHome": HQHome, "Dir": Dir} {
+	// Every exported root, because the board lives under one, the caches under another,
+	// and everything the rest of the tree resolves for itself hangs off Home(). A guard
+	// on only some of them is the "list somebody forgets to add to" this replaced — and
+	// it was exactly that until check-design.sh started failing the build on a resolver
+	// outside this package.
+	for name, fn := range map[string]func() string{"HQHome": HQHome, "Dir": Dir, "Home": Home} {
 		func() {
 			defer func() {
 				if recover() == nil {

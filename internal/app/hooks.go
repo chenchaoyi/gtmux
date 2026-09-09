@@ -67,7 +67,7 @@ var hookEvents = []claudeHook{
 const lsregister = "/System/Library/Frameworks/CoreServices.framework/" +
 	"Frameworks/LaunchServices.framework/Support/lsregister"
 
-func homeDir() string { return os.Getenv("HOME") }
+func homeDir() string { return state.Home() }
 
 // legacyFocusAppPath is the retired one-shot click target (GtmuxFocus.app). The
 // menu-bar app (com.gtmux.menubar) is the notification target now; uninstall

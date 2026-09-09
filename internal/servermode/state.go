@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // StaleAfter is how long a heartbeat may go unrefreshed before the state is
@@ -29,7 +31,7 @@ type Record struct {
 // StateDir holds gtmux's own view. The guard's record lives elsewhere (see
 // GuardExitPath) because the guard runs as root with no user session.
 func StateDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "server-mode")
+	return filepath.Join(state.Home(), ".local", "share", "gtmux", "server-mode")
 }
 
 func StatePath() string { return filepath.Join(StateDir(), "state.json") }

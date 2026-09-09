@@ -185,7 +185,7 @@ func ensureServer() {
 // resurrectRestoreScript returns the tmux-resurrect restore.sh path ("" if not
 // installed). Must be run inside tmux (run-shell) so its socket resolves.
 func resurrectRestoreScript() string {
-	home := os.Getenv("HOME")
+	home := state.Home()
 	cands := []string{
 		home + "/.tmux/plugins/tmux-resurrect/scripts/restore.sh",
 		home + "/.config/tmux/plugins/tmux-resurrect/scripts/restore.sh",
@@ -258,7 +258,7 @@ func restorePATH() string {
 
 // resurrectLastSave resolves the resurrect "last" save pointer ("" if none).
 func resurrectLastSave() string {
-	home := os.Getenv("HOME")
+	home := state.Home()
 	cands := []string{}
 	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
 		cands = append(cands, xdg+"/tmux/resurrect/last")
@@ -277,7 +277,7 @@ func resurrectLastSave() string {
 // resurrectDir returns the tmux-resurrect data directory ("" if none exists),
 // mirroring resurrectLastSave's candidate order.
 func resurrectDir() string {
-	home := os.Getenv("HOME")
+	home := state.Home()
 	var cands []string
 	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
 		cands = append(cands, xdg+"/tmux/resurrect")

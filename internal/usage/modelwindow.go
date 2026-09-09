@@ -128,7 +128,7 @@ func BackfillWindows() {
 		return
 	}
 	for agent, glob := range map[string]string{
-		"claude": filepath.Join(os.Getenv("HOME"), ".claude", "projects", "*", "*.jsonl"),
+		"claude": filepath.Join(state.Home(), ".claude", "projects", "*", "*.jsonl"),
 	} {
 		paths, _ := filepath.Glob(glob)
 		for _, p := range paths {

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Kimi Code keeps an EVENT-SOURCED journal, not a message log: one session is a
@@ -58,7 +60,7 @@ func kimiHome() string {
 	if h := os.Getenv("KIMI_CODE_HOME"); h != "" {
 		return h
 	}
-	return filepath.Join(os.Getenv("HOME"), ".kimi-code")
+	return filepath.Join(state.Home(), ".kimi-code")
 }
 
 // kimiIndexLine is one record of session_index.jsonl: an entry, or a deletion.

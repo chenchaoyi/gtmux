@@ -13,6 +13,7 @@ import (
 // no edit to this package.
 
 func TestEveryHookEquippedAgentHasReceiptAndReady(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	for _, k := range agents.HookEquippedKeys() {
 		d := For(k)
 		if d.Receipt == nil {
@@ -25,6 +26,7 @@ func TestEveryHookEquippedAgentHasReceiptAndReady(t *testing.T) {
 }
 
 func TestContentWiredForRegistryContentKeys(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	for _, k := range agents.ContentKeys() {
 		if For(k).Content == nil {
 			t.Errorf("agent %q declares a transcript parser in the registry but Content is nil", k)
@@ -33,6 +35,7 @@ func TestContentWiredForRegistryContentKeys(t *testing.T) {
 }
 
 func TestNonHookedAgentGetsZeroDriver(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	// aider is radar-detected but NOT hook-equipped: it must fall to Layer 1.
 	if d := For("aider"); d.Receipt != nil || d.Ready != nil {
 		t.Fatalf("aider is not hook-equipped; want zero Driver, got Receipt=%v Ready=%v", d.Receipt != nil, d.Ready != nil)

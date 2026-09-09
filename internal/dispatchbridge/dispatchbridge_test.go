@@ -10,6 +10,7 @@ import (
 )
 
 func TestHookEquipped(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	for _, ok := range []string{"claude", "claude --model opus", "codex", "/usr/bin/gemini"} {
 		if !hookEquipped(ok) {
 			t.Errorf("%q should be hook-equipped", ok)

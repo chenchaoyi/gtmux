@@ -409,7 +409,7 @@ func OffMachineHint() string {
 		!strings.Contains(string(out), "No destinations") {
 		return i18n.Tr("Time Machine is configured", "已配置 Time Machine")
 	}
-	home := os.Getenv("HOME")
+	home := state.Home()
 	for _, d := range []string{
 		"Library/Mobile Documents/com~apple~CloudDocs", "Dropbox", "OneDrive", "Google Drive",
 	} {

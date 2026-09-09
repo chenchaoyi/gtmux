@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // opencode has NO readable on-disk conversation log — 1.18.x persists only a
@@ -20,7 +22,7 @@ import (
 // other state under ~/.local/share/gtmux (kept in sync with internal/state.Dir(),
 // replicated here so this package stays a pure leaf).
 func opencodeDir() string {
-	return filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "octrans")
+	return filepath.Join(state.Home(), ".local", "share", "gtmux", "octrans")
 }
 
 // opencodeSessionFile flattens a session id into a filename. Session ids are opaque

@@ -11,11 +11,13 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Path is gtmux's user config file — the single source of truth for its location.
 func Path() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "config.json")
+	return filepath.Join(state.Home(), ".config", "gtmux", "config.json")
 }
 
 // Load reads the config file and unmarshals it into dst. A MISSING file is NOT an error

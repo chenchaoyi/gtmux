@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Layers are PER AGENT TYPE, from ~/.config/gtmux/usage.json:
@@ -39,7 +41,7 @@ type config struct {
 // loadConfig reads usage.json once per call (tiny file; hooks are short-lived).
 func loadConfig() config {
 	cfg := config{layers: map[string]Layers{}, horizon: defaultHorizon}
-	b, err := os.ReadFile(filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "usage.json"))
+	b, err := os.ReadFile(filepath.Join(state.Home(), ".config", "gtmux", "usage.json"))
 	if err != nil {
 		return cfg
 	}

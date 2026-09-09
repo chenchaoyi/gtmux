@@ -65,6 +65,7 @@ func TestMergeManagedLines(t *testing.T) {
 // TestTpmWiringLines guards the TPM wiring: three @plugin declarations followed
 // by the run line LAST (TPM must initialize after the plugins are declared).
 func TestTpmWiringLines(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	lines := tpmWiringLines()
 	if managedKey(lines[len(lines)-1]) != "run" {
 		t.Errorf("run line must be last, got: %v", lines)

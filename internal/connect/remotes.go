@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // remotes.json persists the OWNER device tokens this machine's terminal earned by
@@ -12,7 +14,7 @@ import (
 // Mode 0600 — it holds live credentials; `gtmux pair revoke` on the host kills an
 // entry's power instantly (the next request fails auth).
 func remotesPath() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "remotes.json")
+	return filepath.Join(state.Home(), ".config", "gtmux", "remotes.json")
 }
 
 // LoadRemoteToken returns the persisted owner token for base ("" when none).

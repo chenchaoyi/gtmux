@@ -16,6 +16,8 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 const (
@@ -96,7 +98,7 @@ func saveStalenessWarning(lastPath string, now time.Time) string {
 
 // resurrectSaveScript resolves tmux-resurrect's save.sh (mirrors resurrectRestoreScript).
 func resurrectSaveScript() string {
-	home := os.Getenv("HOME")
+	home := state.Home()
 	cands := []string{
 		home + "/.tmux/plugins/tmux-resurrect/scripts/save.sh",
 		home + "/.config/tmux/plugins/tmux-resurrect/scripts/save.sh",

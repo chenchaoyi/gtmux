@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // updateCheckJSON is the `gtmux update --check --json` payload the menu-bar app
@@ -50,7 +52,7 @@ func installedAppVersion() string {
 	if runtime.GOOS != "darwin" {
 		return ""
 	}
-	home, _ := os.UserHomeDir()
+	home := state.Home()
 	for _, dir := range []string{filepath.Join(home, "Applications"), "/Applications"} {
 		plist := filepath.Join(dir, "Gtmux.app", "Contents", "Info.plist")
 		if _, err := os.Stat(plist); err != nil {

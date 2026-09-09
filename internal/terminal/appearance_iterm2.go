@@ -8,13 +8,15 @@ import (
 	"strings"
 
 	"howett.net/plist"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // iterm2Theme reads iTerm2's preferences plist and resolves the DEFAULT profile's
 // appearance (Ansi 0–15 + background/foreground/cursor colors, Normal Font). Pure
 // Go (howett.net/plist), so the CLI stays cgo-free.
 func iterm2Theme() (Theme, bool) {
-	home, _ := os.UserHomeDir()
+	home := state.Home()
 	path := filepath.Join(home, "Library", "Preferences", "com.googlecode.iterm2.plist")
 	b, err := os.ReadFile(path)
 	if err != nil {

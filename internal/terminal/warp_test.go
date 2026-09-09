@@ -98,6 +98,9 @@ func TestWarpLaunchYAML(t *testing.T) {
 // and macOS no longer exposes other processes' env).
 func TestWarpSpawnTabs(t *testing.T) {
 	dir := t.TempDir()
+	// warpLaunchCwd still resolves $HOME (only launchConfigDir is overridden below),
+	// so the generated YAML would carry the operator's own home as every tab's cwd.
+	t.Setenv("HOME", t.TempDir())
 	old := launchConfigDir
 	launchConfigDir = func() string { return dir }
 	defer func() { launchConfigDir = old }()
@@ -139,6 +142,9 @@ func TestWarpSpawnTabs(t *testing.T) {
 
 func TestWarpOpenWindow(t *testing.T) {
 	dir := t.TempDir()
+	// warpLaunchCwd still resolves $HOME (only launchConfigDir is overridden below),
+	// so the generated YAML would carry the operator's own home as every tab's cwd.
+	t.Setenv("HOME", t.TempDir())
 	old := launchConfigDir
 	launchConfigDir = func() string { return dir }
 	defer func() { launchConfigDir = old }()

@@ -7,6 +7,7 @@ import "testing"
 // process subtree, where the real argv "claude --resume …" lives — otherwise the send
 // path treats a hook-equipped agent as hook-less and skips the receipt verification.
 func TestDriverKeyFromSubtree_ClaudeRenamedProcess(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	profiles := LoadProfiles()
 	// pane pid 100 (bash) → 200 (the claude process; comm reads "2.1.220" but its
 	// snapshotProcs argv is the real "claude --resume …") → 300 (an MCP node child).
@@ -21,6 +22,7 @@ func TestDriverKeyFromSubtree_ClaudeRenamedProcess(t *testing.T) {
 }
 
 func TestDriverKeyFromSubtree_PlainShellIsEmpty(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	procs := map[int]procInfo{
 		100: {ppid: 1, command: "-/bin/bash"},
 		200: {ppid: 100, command: "vim notes.md"},
