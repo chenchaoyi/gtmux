@@ -12,8 +12,9 @@ import (
 // code 2:1 tall; see the footgun note in qr.go) and carry no color escapes (the
 // terminal QR has no center logo).
 func TestPrintBrandQR(t *testing.T) {
+	const payload = `{"v":2,"url":"https://gtmux-x.ccy.dev","enrollCode":"deadbeef"}`
 	var b bytes.Buffer
-	printBrandQR(&b, `{"v":2,"url":"https://gtmux-x.ccy.dev","enrollCode":"deadbeef"}`)
+	printBrandQR(&b, payload)
 	out := b.String()
 	if !strings.Contains(out, "█") {
 		t.Fatal("expected solid blocks in output")
@@ -21,11 +22,26 @@ func TestPrintBrandQR(t *testing.T) {
 	if strings.Contains(out, "\x1b[") {
 		t.Fatal("terminal QR must be plain (no color escapes / no drawn logo)")
 	}
-	// width in glyphs of the first row should be ~ the QR+quiet module count (one
-	// glyph per module column), NOT halved — a quadrant render would distort it.
-	first := strings.SplitN(out, "\n", 2)[0]
-	if w := len([]rune(first)); w > 60 {
-		t.Fatalf("QR too wide for a square half-block render: %d cols", w)
+	// The aspect is the whole point, so pin it against the grid that was rendered
+	// rather than against a width budget. A half block is one module wide and two
+	// modules tall: one glyph per module COLUMN, one line per two module ROWS.
+	//
+	// The budget this replaces (`w > 60`) failed in the direction that matters. A
+	// quadrant render HALVES the columns, so the code it was named after — 19 cols
+	// where 38 are right — sailed through it, and PR #179 would ship again.
+	code, err := qr.Encode(payload, qr.L)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := buildGrid(code)
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	if w := len([]rune(lines[0])); w != len(g[0]) {
+		t.Fatalf("%d glyphs across a %d-module row — a square render is one glyph per module column; "+
+			"halving it is the quadrant distortion qr.go forbids", w, len(g[0]))
+	}
+	if len(lines) != len(g)/2 {
+		t.Fatalf("%d lines for %d module rows — a half block packs exactly two rows per line",
+			len(lines), len(g))
 	}
 }
 
