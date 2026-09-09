@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.8',
+    en: [
+      'More of the screen is the screen. The bar above the terminal was four stacked bands taking a fifth of the phone — the Chat/Terminal toggle and the row of controls under it were one row of controls wearing two dividers, and the connection was holding half a band to show a state that is green almost always. Three bands now, and about five more lines of terminal.',
+      'That controls row was also the one that never folded away when you scrolled back through history. It folds with the rest now, so reading history gives you the whole screen.',
+    ],
+    zh: [
+      '屏幕更多地属于内容了。终端上面那条曾经是四条叠起来的带子，占掉五分之一屏 —— Chat/终端 切换和它下面的工具行，本来就是一行控件戴了两根分隔线；连接指示又占着半条带子，去显示一个几乎永远是绿的状态。现在是三条，终端多出约五行。',
+      '那条工具行也是唯一一条往回翻历史时不会收起的。现在它跟其余的一起折，读历史时整屏都是内容。',
+    ],
+  },
+  {
     version: '1.0.7',
     en: [
       'The situation board folds a long paragraph instead of printing all of it. One cell there had grown into an investigation log — about 1,180 characters on a single line — and it arrived as a wall of text. Tap to open one when you want the whole thing.',
