@@ -287,8 +287,46 @@ if [ "$resolvers" != "internal/state/state.go" ]; then
 fi
 
 
+# N+4. Bilingual user docs ship as PAIRS.
+#
+#      CLAUDE.md: "USER DOCS ARE BILINGUAL, and both halves ship in the same PR… If you
+#      add a new USER doc, it is born as a pair." That lived only in prose, and a doc born
+#      single would have read as fine to every gate here.
+#
+#      It is the same hole this file kept finding on 2026-09-09 from the other side: the
+#      wake-vocabulary check above, and internal/docs, each opened one half of a pair and
+#      called it the docs. Enforcing the pairing is what stops the next checker from
+#      having only one half to open.
+#
+#      SUBJECTS ARE FOUND, exceptions are written down. Every docs/*.md and README*.md is
+#      a user doc unless it is named below; the list is maintainer logs, which change
+#      constantly and which nobody reads to learn the product (CLAUDE.md states this
+#      boundary). An entry here shrinks coverage deliberately and visibly, which is the
+#      whole difference between an exception list and a list of things to check.
+SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md"
+for f in README.md docs/*.md; do
+  case "$f" in *.zh.md) continue ;; esac
+  case " $SOLO " in *" $f "*) continue ;; esac
+  base="${f%.md}"
+  [ -f "${base}.zh.md" ] || {
+    note "$f has no Chinese twin (${base}.zh.md) — a user doc is born as a pair; if this is a maintainer log, add it to SOLO in this script"
+    fail=1
+  }
+done
+# And the other direction: a translation whose original was renamed or deleted is a doc
+# nobody will ever update again.
+for f in README.zh.md docs/*.zh.md; do
+  [ -e "$f" ] || continue
+  base="${f%.zh.md}"
+  [ -f "${base}.md" ] || { note "$f has no English original (${base}.md)"; fail=1; }
+done
+for f in $SOLO; do
+  [ -f "$f" ] || { note "SOLO names $f, which does not exist — the exception outlived its file"; fail=1; }
+done
+
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; mobile release notes generated"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user docs are paired; mobile release notes generated"
 else
   exit 1
 fi
