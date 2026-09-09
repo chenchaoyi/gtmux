@@ -91,6 +91,7 @@ func TestStartBootServerFallsBackWhenLaunchdFails(t *testing.T) {
 		t.Skip("no tmux")
 	}
 	isolatedTmux(t)
+	t.Setenv("HOME", t.TempDir()) // never touch the real ~/.local/share/gtmux
 	// An empty PATH makes launchctl unfindable, which is the failure this must survive.
 	t.Setenv("PATH", "")
 

@@ -24,7 +24,60 @@ import (
 )
 
 // Dir is ~/.local/share/gtmux (the root of the state contract).
-func Dir() string { return filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux") }
+func Dir() string { return filepath.Join(home(), ".local", "share", "gtmux") }
+
+// home is the directory every gtmux path hangs off, and under `go test` it REFUSES to be
+// the real one.
+//
+// Five times between 2026-09-08 and 09-09 a test overwrote the operator's live situation
+// board — and every one of those tests had carefully redirected `XDG_CONFIG_HOME` first.
+// Nothing here reads that variable. The tests were not careless; the resolver ignored the
+// override that looks like the right one, so each round of "make the test write to a temp
+// dir" fixed a symptom and the sixth failure was already on its way.
+//
+// So the real path is now unreachable from a test rather than discouraged. This is the one
+// chokepoint every gtmux path goes through, which is why the guard belongs here and not on
+// the board writer: the knowledge base, the event log and the caches hang off it too, and
+// a guard per writer is a list somebody will forget to add to.
+//
+// It PANICS rather than returning an error. A test that reaches for the real home has a
+// bug in the test, and the message says exactly what to do about it; degrading quietly is
+// how this went unnoticed five times.
+func home() string {
+	h := os.Getenv("HOME")
+	if underTest() && !disposable(h) {
+		panic("gtmux: a test tried to resolve the REAL home (" + h + ").\n" +
+			"  Redirect it first:  t.Setenv(\"HOME\", t.TempDir())\n" +
+			"  XDG_CONFIG_HOME and XDG_DATA_HOME are NOT read here — setting them does nothing.")
+	}
+	return h
+}
+
+// underTest reports whether this process is a `go test` binary. Checked by argv rather
+// than by importing `testing`, which would link the test framework and its flags into the
+// shipped CLI.
+func underTest() bool {
+	if strings.HasSuffix(os.Args[0], ".test") || strings.Contains(os.Args[0], "/_test/") {
+		return true
+	}
+	for _, a := range os.Args[1:] {
+		if strings.HasPrefix(a, "-test.") {
+			return true
+		}
+	}
+	return false
+}
+
+// disposable reports whether a home is somewhere a test may write: under the temp dir
+// this process would hand a test, which is where `t.TempDir()` puts one.
+func disposable(h string) bool {
+	if h == "" {
+		return false
+	}
+	tmp := filepath.Clean(os.TempDir())
+	c := filepath.Clean(h)
+	return c == tmp || strings.HasPrefix(c, tmp+string(filepath.Separator))
+}
 
 // HQHome is the supervisor (中控) agent's persistent working directory — where
 // `gtmux hq` runs the agent and seeds its instructions file, and the cwd the
@@ -32,7 +85,7 @@ func Dir() string { return filepath.Join(os.Getenv("HOME"), ".local", "share", "
 // nudge). Under ~/.config (user-editable instructions + accumulated knowledge,
 // not machine state). Shared here because both `internal/app` (hq/agents) and
 // `internal/hook` (nudge) need the same path without an import cycle.
-func HQHome() string { return filepath.Join(os.Getenv("HOME"), ".config", "gtmux", "hq") }
+func HQHome() string { return filepath.Join(home(), ".config", "gtmux", "hq") }
 
 // WatchedDir is the directory of per-pane "watch this pane" markers — a user has
 // opted a PLAIN (non-agent) pane onto the radar (tiered-pane-control). A marker's
