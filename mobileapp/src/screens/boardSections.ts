@@ -140,3 +140,31 @@ export function sectionCount(body: string): number | null {
   const bullets = lines.filter(l => /^\s{0,3}[-*•]\s+\S/.test(l)).length;
   return bullets > 0 ? bullets : null;
 }
+
+/**
+ * The ONE board heading gtmux owns — the commander's own section.
+ *
+ * Everything else on the board is HQ's to name. This one is not, because both surfaces
+ * lift it to the top: it is the only part of the document that is HIS business, and it
+ * was a `###` inside ①, reachable only by expanding the section above it (2026-09-09).
+ *
+ * Two spellings, because a board keeps the language it was seeded in. A board with
+ * neither shows no band — gtmux can only lift a section it can recognise, and that is the
+ * honest degrade rather than a guess.
+ */
+export const ASK_HEADING_EN = 'Still waiting on you';
+export const ASK_HEADING_ZH = '还等你定的';
+
+export function isAskHeading(title: string): boolean {
+  return title.replace(/^#+\s*/, '').trim() === ASK_HEADING_EN
+    || title.replace(/^#+\s*/, '').trim() === ASK_HEADING_ZH;
+}
+
+/** findAsk returns the commander's section wherever it sits — top level, or under ①. */
+export function findAsk(sections: BoardSection[]): BoardSection | null {
+  for (const s of sections) {
+    if (isAskHeading(s.title)) return s;
+    for (const k of s.children) if (isAskHeading(k.title)) return k;
+  }
+  return null;
+}

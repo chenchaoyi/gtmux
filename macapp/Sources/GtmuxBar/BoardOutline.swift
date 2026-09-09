@@ -234,3 +234,28 @@ func boardAgeText(_ secs: Int64, zh: Bool) -> String {
     if secs < 48 * 3600 { return zh ? "\(secs / 3600) 小时前更新" : "updated \(secs / 3600)h ago" }
     return zh ? "\(secs / 86400) 天前更新" : "updated \(secs / 86400)d ago"
 }
+
+/// The ONE board heading gtmux owns — the commander's own section.
+///
+/// It is a third-level heading inside ①, which means it was reachable only by expanding
+/// the section above it, while being the only part of the board that is HIS business
+/// (2026-09-09). Both surfaces lift it to the top. Two spellings because a board keeps the
+/// language it was seeded in; a board with neither simply shows no band, which is the
+/// honest degrade — gtmux can only lift a section it can recognise.
+let askHeadingEN = "Still waiting on you"
+let askHeadingZH = "还等你定的"
+
+func isAskHeading(_ title: String) -> Bool {
+    let t = title.trimmingCharacters(in: CharacterSet(charactersIn: "# ")).trimmingCharacters(in: .whitespaces)
+    return t == askHeadingEN || t == askHeadingZH
+}
+
+/// findAsk returns the commander's section wherever it sits — a top-level section or, as
+/// the seed writes it, a child of ①.
+func findAsk(_ sections: [BoardSection]) -> BoardSection? {
+    for s in sections {
+        if isAskHeading(s.title) { return s }
+        for k in s.children where isAskHeading(k.title) { return k }
+    }
+    return nil
+}
