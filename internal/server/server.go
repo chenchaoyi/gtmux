@@ -395,6 +395,32 @@ func (s *Server) auth(next http.Handler) http.Handler {
 	})
 }
 
+// mayReachPane is the ONE answer to "may this caller touch that pane?", written once
+// because it was previously written per route and therefore not on every route.
+//
+// A guest link names the panes it may see. The pane-screen route checked that; the diff,
+// the transcript, the pending-ask options and the focus jump did not, each taking a pane
+// id from the query and acting on it. The gate here is the same one that route had, minus
+// the copy: a new per-pane route calls this rather than remembering a paragraph.
+//
+// Master and device callers pass — the owner's own surfaces are not scoped by a share
+// link. A guest also fails while its grants are stale, which is the pane-screen route's
+// existing rule and belongs to every pane route for the same reason.
+func (s *Server) mayReachPane(w http.ResponseWriter, r *http.Request, id string) bool {
+	if callerScope(r.Context()) != scopeGuest {
+		return true
+	}
+	if s.deps.Share != nil && s.deps.Share.GrantsStale() {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: share is stale (tmux restarted) — the owner must re-grant"))
+		return false
+	}
+	if dev, ok := callerDevice(r.Context()); !ok || !dev.MayView(id) {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
+		return false
+	}
+	return true
+}
+
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "gtmux"})
 }
@@ -540,16 +566,8 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	// A guest may read a pane's screen ONLY if it is on ITS OWN link's view list.
-	if callerScope(r.Context()) == scopeGuest {
-		if s.deps.Share != nil && s.deps.Share.GrantsStale() {
-			writeJSON(w, http.StatusForbidden, errBody("forbidden: share is stale (tmux restarted) — the owner must re-grant"))
-			return
-		}
-		if dev, ok := callerDevice(r.Context()); !ok || !dev.MayView(id) {
-			writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
-			return
-		}
+	if !s.mayReachPane(w, r, id) {
+		return
 	}
 	text, ok := s.deps.PaneText(id)
 	if !ok {
@@ -608,6 +626,9 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	if !s.mayReachPane(w, r, id) {
 		return
 	}
 	if err := s.deps.Focus(id); err != nil {
