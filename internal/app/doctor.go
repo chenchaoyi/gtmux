@@ -974,20 +974,41 @@ func rowConfig() dcheck {
 
 // --- terminal detection ---
 
-// knownTerminals: the terminals gtmux recognizes, and whether it can DRIVE each
-// (focus/restore/new) via a registered driver. A sensed-only terminal hosts tmux + agents
-// fine; gtmux just can't focus/restore it.
-var knownTerminals = []struct{ name, bundle, driver string }{
+// knownTerminals: the terminals gtmux recognizes, by display name, app bundle, and the
+// driver KEY that internal/terminal resolves a host to. Whether gtmux can DRIVE one
+// (focus/restore/new) is NOT recorded here — terminal.HasDriver answers that, and a
+// second copy of the answer can only ever go stale against the registry.
+//
+// It held one. The `driver` field it replaces was blank for every terminal without a
+// driver, which made the field two facts at once: the terminal's identity, and whether
+// it is supported. Both readers below got it wrong in the same direction. Registering a
+// kitty driver would have left this row calling kitty sensed-only, because the blank
+// short-circuited the HasDriver call that would have said otherwise. And running INSIDE
+// kitty, Apple Terminal or WezTerm today, the "other terminals" row lists the terminal
+// you are sitting in: the skip-the-host test needed a non-blank driver to fire.
+var knownTerminals = []struct {
+	name, bundle string
+	// key is the terminal's IDENTITY, never its support status. Keep those apart: the
+	// single field they shared meant "no driver" and "not the host" at once, and merging
+	// them again reintroduces both readers' bugs (see the paragraph above).
+	key string
+}{
 	{"Ghostty", "Ghostty.app", "ghostty"},
 	{"iTerm2", "iTerm.app", "iterm2"},
-	{"Apple Terminal", "Terminal.app", ""},
-	{"kitty", "kitty.app", ""},
-	{"WezTerm", "WezTerm.app", ""},
-	{"Alacritty", "Alacritty.app", ""},
+	{"Apple Terminal", "Terminal.app", "appleterminal"},
+	{"kitty", "kitty.app", "kitty"},
+	{"WezTerm", "WezTerm.app", "wezterm"},
+	{"Alacritty", "Alacritty.app", "alacritty"},
 	{"Warp", "Warp.app", "warp"},
 }
 
 func terminalChecks() []dcheck { return []dcheck{rowTerminal(), rowOtherTerminals()} }
+
+// terminalHasDriver is the registry's answer to "can gtmux drive this terminal?".
+// Indirected so a test can present a registry gtmux does not have yet: the defect this
+// replaced was a hard-coded copy of the answer, and a copy that is accurate TODAY is
+// invisible to any test that only asks about today.
+var terminalHasDriver = terminal.HasDriver
 
 // terminalInstalled reports whether a terminal .app bundle is present in the usual dirs.
 func terminalInstalled(bundle string) bool {
@@ -1010,18 +1031,20 @@ func rowOtherTerminals() dcheck {
 	host := terminal.DetectedName()
 	var parts []string
 	for _, t := range knownTerminals {
-		if t.driver != "" && t.driver == host {
-			continue // the host is the row above
+		if t.key == host {
+			continue // the host is the row above, driver or not
 		}
 		if !terminalInstalled(t.bundle) {
 			continue
 		}
-		if t.driver == "warp" && terminal.HasDriver(t.driver) {
-			parts = append(parts, t.name+i18n.Tr(" (best-effort)", "（尽力支持）"))
-		} else if t.driver != "" && terminal.HasDriver(t.driver) {
-			parts = append(parts, t.name+i18n.Tr(" (supported)", "（支持）"))
-		} else {
+		switch {
+		case !terminalHasDriver(t.key):
 			parts = append(parts, t.name+i18n.Tr(" (sensed)", "（仅感知）"))
+		case t.key == "warp":
+			// Warp has no per-tab scripting; rowTerminal says the same about the host.
+			parts = append(parts, t.name+i18n.Tr(" (best-effort)", "（尽力支持）"))
+		default:
+			parts = append(parts, t.name+i18n.Tr(" (supported)", "（支持）"))
 		}
 	}
 	if len(parts) == 0 {
