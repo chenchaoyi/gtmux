@@ -1,4 +1,4 @@
-import {AT_TAIL, CHROME_ANIM_MS, ChromeState, chromeDecision, foldThreshold} from './liveEdge';
+import {AT_TAIL, CHROME_ANIM_MS, ChromeState, chromeDecision, chromeShift, foldThreshold, makeFoldFollower} from './liveEdge';
 
 const st = (hidden: boolean, settledAt = 0): ChromeState => ({hidden, settledAt});
 
@@ -94,5 +94,81 @@ describe('chromeDecision', () => {
       now += 16; // one scroll frame
     }
     expect(flips).toEqual([false]); // it reveals at gap=28.3 and never argues again
+  });
+});
+
+// Holding the content still while the chrome folds.
+//
+// The fold hands the scroll view `chromeH` of extra height at its TOP edge, and content
+// keeps its offset — so it slides up by exactly that much unless the offset follows. 115pt
+// over 200ms, against the finger, is what the operator felt as a bounce (2026-09-09).
+describe('chromeShift', () => {
+  it('cancels the fold exactly, in the direction that keeps content still', () => {
+    // Folding (v 0→1) grows the viewport at the top, so the offset moves DOWN by as much.
+    expect(chromeShift(0, 1, 115)).toBe(-115);
+    // Half a frame of it is half the shift: the whole point is lockstep, not a jump at
+    // the end — a single correction at the end is the same bounce, just later.
+    expect(chromeShift(0, 0.5, 115)).toBe(-57.5);
+    expect(chromeShift(0.5, 1, 115)).toBe(-57.5);
+  });
+
+  it('runs backwards for a reveal, so one function serves both', () => {
+    expect(chromeShift(1, 0, 115)).toBe(115);
+  });
+
+  it('sums to the full height however the animation is sampled', () => {
+    // Frames arrive irregularly; the total correction must not depend on that.
+    let total = 0;
+    let prev = 0;
+    for (const v of [0.07, 0.31, 0.33, 0.78, 0.99, 1]) {
+      total += chromeShift(prev, v, 115);
+      prev = v;
+    }
+    expect(total).toBeCloseTo(-115, 6);
+  });
+
+  it('does nothing before the chrome has been measured', () => {
+    // chromeH is 0 until layout; shifting by 0 is right, and NaN would be a dead scroll.
+    expect(chromeShift(0, 1, 0)).toBe(0);
+    expect(chromeShift(0, 1, -5)).toBe(0);
+  });
+});
+
+describe('makeFoldFollower', () => {
+  const run = (values: number[], chromeH = 115) => {
+    const moves: number[] = [];
+    const follow = makeFoldFollower(() => chromeH, () => (dy: number) => moves.push(dy));
+    values.forEach(follow);
+    return moves;
+  };
+
+  it('moves the content by the chrome’s whole height across a fold', () => {
+    // The sum is what matters: at the end the viewport has grown by chromeH, so the
+    // offset must have moved by the same amount or the content has slid.
+    const moves = run([0.2, 0.5, 0.9, 1]);
+    expect(moves.reduce((a, b) => a + b, 0)).toBeCloseTo(-115, 6);
+  });
+
+  it('spreads it over the frames instead of correcting once at the end', () => {
+    // One correction at the end is the same bounce, just later. Every step must carry
+    // its own share.
+    const moves = run([0.25, 0.5, 0.75, 1]);
+    expect(moves).toHaveLength(4);
+    for (const m of moves) expect(Math.abs(m)).toBeCloseTo(28.75, 6);
+  });
+
+  it('says nothing when nothing moved', () => {
+    // A listener can fire on the same value; a zero correction must not reach the layer,
+    // where it would be a pointless scrollTo mid-gesture.
+    expect(run([0, 0, 0])).toHaveLength(0);
+  });
+
+  it('is silent before the chrome has been measured', () => {
+    expect(run([0.5, 1], 0)).toHaveLength(0);
+  });
+
+  it('does not throw when no layer is installed', () => {
+    const follow = makeFoldFollower(() => 115, () => null);
+    expect(() => follow(1)).not.toThrow();
   });
 });

@@ -83,6 +83,14 @@ interface Props {
    * keeps the chrome stable depends on the chrome's own height — see ui/liveEdge.
    */
   onLiveEdge?: (gap: number) => void;
+  /**
+   * The host installs a "move the offset by dy" function here.
+   *
+   * A ref rather than forwardRef+useImperativeHandle: the seam matches `onLiveEdge`
+   * above — the child reports, the host drives — and it keeps both scrollable layers
+   * offering the same one-line surface.
+   */
+  shiftRef?: React.MutableRefObject<((dy: number) => void) | null>;
 }
 
 // The terminal surface's default (always-dark) background. Exported so the
@@ -217,7 +225,7 @@ const TermLine = React.memo(function TermLine({
   );
 });
 
-export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge, shiftRef}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
@@ -412,8 +420,27 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // The last measured distance from the tail, so the re-publish below repeats a real
   // reading rather than re-deriving one from a state value that may be a frame stale.
   const gapRef = useRef(0);
+  // The last offset we saw, so a chrome-fold correction can be applied relative to it.
+  const offRef = useRef(0);
+
+  // Move the offset by dy, holding the content still while the host's chrome folds. The
+  // local `offRef` is advanced immediately: the animation steps faster than onScroll
+  // reports, and reading a stale offset each frame would apply the same correction twice.
+  useEffect(() => {
+    if (!shiftRef) return;
+    shiftRef.current = (dy: number) => {
+      if (!dy) return;
+      const y = Math.max(0, offRef.current + dy);
+      offRef.current = y;
+      ref.current?.scrollTo({y, animated: false});
+    };
+    return () => {
+      shiftRef.current = null;
+    };
+  }, [shiftRef]);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
+    offRef.current = contentOffset.y;
     const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
     say('scroll', {gap: +gap.toFixed(1), content: +contentSize.height.toFixed(1), off: +contentOffset.y.toFixed(1), view: +layoutMeasurement.height.toFixed(1), stick: stick.current});
     const bottom = gap < 40;

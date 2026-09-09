@@ -104,3 +104,50 @@ export function chromeDecision(
   if (wantHidden === state.hidden) return keep;
   return {change: true, hidden: wantHidden, settledAt: now + animMs};
 }
+
+// ── holding the content still while the chrome folds ────────────────────────
+//
+// Folding gives the scroll view `chromeH` more height by moving its TOP edge up, and the
+// content keeps its offset — so everything on screen slides UP by chromeH. Measured: 115pt
+// over the 200ms animation, about 575pt/s of motion nobody asked for, AGAINST the finger
+// that is dragging the other way. That is the bounce ("屏幕会向上弹跳一小段", 2026-09-09).
+//
+// There is no free way out: content's screen position is `frameTop - offset`, so if
+// frameTop moves, offset has to move with it or the content moves. `contentInset` does not
+// help — it shifts the content by exactly the same amount for the same reason.
+//
+// So the offset is driven in LOCKSTEP with the fold. Per animation frame the chrome's
+// on-screen height is `chromeH * (1 - v)`, the frame's top edge has moved `chromeH * dv`,
+// and the offset must move the same way to cancel it.
+//
+// Sign: v rises 0→1 as the chrome hides, so `dv > 0` while folding and the offset must go
+// DOWN (toward older content) by the same amount the viewport grew at the top. Unfolding
+// runs the same arithmetic backwards, which is why one function serves both.
+
+/** How far to move the scroll offset as the fold animation steps from `prevV` to `nextV`. */
+export function chromeShift(prevV: number, nextV: number, chromeH: number): number {
+  if (!(chromeH > 0)) return 0;
+  return -chromeH * (nextV - prevV);
+}
+
+/**
+ * makeFoldFollower turns the fold animation's values into offset corrections.
+ *
+ * Extracted so the correction can be TESTED, not just seen: a guard that greps the screen
+ * for the word `chromeShift` stays green when the call is replaced by a constant zero,
+ * which is exactly the regression it was supposed to catch.
+ *
+ * The height and the target are read at call time, through functions: chrome is measured
+ * after layout, and which layer is on screen changes while this listener lives.
+ */
+export function makeFoldFollower(
+  chromeH: () => number,
+  target: () => ((dy: number) => void) | null | undefined,
+): (value: number) => void {
+  let last = 0;
+  return (value: number) => {
+    const dy = chromeShift(last, value, chromeH());
+    last = value;
+    if (dy) target()?.(dy);
+  };
+}
