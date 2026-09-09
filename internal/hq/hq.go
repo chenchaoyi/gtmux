@@ -148,7 +148,7 @@ import (
 //	      and asks HQ to say which it picked so a wrong pick is one glance to correct.
 //	      Promoted out of this fleet's knowledge base
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
-const hqPlaybookVersion = 35
+const hqPlaybookVersion = 36
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
 // generated AGENTS.md: it stamps the version AND the charter language, and signals
@@ -525,6 +525,25 @@ func hqNotesSeeds() map[string]string {
 // in the language the home is being seeded in (hq-first-person): the board is the
 // USER's readable surface, so its skeleton follows GTMUX_LANG. The playbook's
 // rule is then "keep the board in the language it was seeded in".
+// AskHeadingEN / AskHeadingZH are the ONE heading gtmux owns inside the board.
+//
+// Everything else on the board is HQ's to name. This one is not, because the surfaces
+// hoist it: it is the only part of the board that is the COMMANDER's business, and it was
+// a third-level heading inside ①, reachable only by expanding the section above it
+// (2026-09-09). A surface can only lift a section it can recognise, so the name is
+// gtmux's and both spellings are matched — a board seeded in English keeps its English
+// heading, and a board that has neither simply shows no band.
+const (
+	AskHeadingEN = "Still waiting on you"
+	AskHeadingZH = "还等你定的"
+)
+
+// IsAskHeading reports whether a board heading is the one the surfaces hoist.
+func IsAskHeading(title string) bool {
+	t := strings.TrimSpace(strings.TrimLeft(title, "# "))
+	return t == AskHeadingEN || t == AskHeadingZH
+}
+
 func boardSeedHeadings() (h1, cols, h2 string) {
 	return i18n.Tr("## ① Now — live panes", "## ① 现状 — 在跑的 pane"),
 		i18n.Tr("| pane | doing | dispatched by | priority | state | your call | lesson |",
@@ -540,8 +559,13 @@ func boardSeed() string {
 	example := i18n.Tr(
 		"| `%23` | _what it is doing_ | HQ / you directly / self-started | high/med/low | ok / stuck / erroring | _what it awaits from you_ | _last correction or footgun_ |",
 		"| `%23` | _它在做什么_ | 中控派的 / 你直接说的 / 它自己起的 | 高/中/低 | 正常 / 卡住 / 出错 | _在等你定什么_ | _上一次的纠正或坑_ |")
+	ask := i18n.Tr("### "+AskHeadingEN, "### "+AskHeadingZH)
+	askIntro := i18n.Tr(
+		"What the commander has to decide, one line each, named by the pane that is blocked.\nEmpty is the normal state — delete a line the moment it is answered. Both the phone and\nthe menu bar LIFT this section to the top of the board, so it is the first thing they see:\nput a question here only when you genuinely cannot decide it yourself.",
+		"需要司令拍板的事,一件一行,用被挡住的那个 pane 命名。\n空着是常态 —— 一旦有了答复就立刻删掉那一行。手机和菜单栏都会把这一节**提到板的最上面**,\n那是他们第一眼看到的东西:只有你确实无法自行决定时才往这里写。")
 	return boardSeedTop + h1 + "\n\n" + oneIntro + "\n\n" +
 		cols + "\n|---|---|---|---|---|---|---|\n" + example + "\n\n" +
+		ask + "\n\n" + askIntro + "\n\n" +
 		h2 + "\n" + boardSeedTail
 }
 
@@ -1399,6 +1423,13 @@ append a dated entry to the end.**
 - **PRUNE.** ① is pruned every time you touch it; ② keeps recent rotations and archives
   the rest (move them out, leave a one-line marker). A board nobody can finish reading
   is a board nobody reads.
+- **` + "`### Still waiting on you`" + ` IS THE COMMANDER'S SECTION, AND gtmux LIFTS IT.** The
+  phone and the menu bar hoist that heading to the top of the board, above ①, because it
+  is the only part of this document that is HIS business rather than yours. So: one line
+  per decision, named by the blocked pane, deleted the moment it is answered. EMPTY IS
+  THE NORMAL STATE, and an empty section shows no band. Do not park things there you
+  could decide yourself — a section that always has something in it stops being read,
+  and this one is the only thing on the board with a claim on his attention.
 - **A CELL CARRIES A CONCLUSION, NOT THE INVESTIGATION.** Keep one under a screenful
   (about 400 characters). One cell here once ran to ~1,180: a semicolon-joined trail of
   times, sequence numbers, criteria and reversals, all on one line. What the commander

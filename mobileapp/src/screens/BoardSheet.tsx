@@ -24,8 +24,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
-import {Palette} from '../ui/theme';
-import {BoardSection, parseBoardSections, sectionCount} from './boardSections';
+import {Palette, StatusColor} from '../ui/theme';
+import {BoardSection, findAsk, parseBoardSections, sectionCount} from './boardSections';
 
 const hit = {top: 8, bottom: 8, left: 8, right: 8};
 
@@ -51,6 +51,9 @@ export function BoardSheet({
 }) {
   const t = (en: string, cn: string) => (zh ? cn : en);
   const [open, setOpen] = useState<Set<string>>(new Set());
+  // The one section gtmux owns and both surfaces lift.
+  const ask = React.useMemo(() => findAsk(sections), [sections]);
+
   // Seeded ONCE, not on every parse. The board is polled, so `sections` is a new array
   // every few minutes even when nothing in it changed — re-seeding on that snapped shut
   // whatever the reader had opened, mid-read, for no reason visible to them.
@@ -95,6 +98,26 @@ export function BoardSheet({
         </View>
 
         <ScrollView contentContainerStyle={styles.pad}>
+          {/* The commander's own section, lifted. Everything else here is HQ's posture;
+              this is the part with a claim on HIS attention, and it was a `###` inside ①
+              — visible only after expanding the section above it (2026-09-09). Absent or
+              empty, nothing is drawn: a band that is always there stops being read. */}
+          {ask && ask.body.trim() !== '' && (
+            <View testID="hq-board-ask" style={[styles.ask, {borderColor: 'rgba(239,68,68,0.3)'}]}>
+              <Text style={[styles.askHead, {color: StatusColor.waiting}]} numberOfLines={1}>
+                {ask.title.replace(/^#+\s*/, '').toUpperCase()}
+              </Text>
+              <MarkdownView
+                source={ask.body}
+                colors={boardMdColors(pal)}
+                fontSize={13.5}
+                selectable
+                calmEmphasis
+                foldRows
+                clampProse
+              />
+            </View>
+          )}
           {sections.map((sec, i) => {
             const secOpen = open.has(sec.key);
             // What the section is ABOUT: the rows or bullets of its own content when it
@@ -184,6 +207,9 @@ export function BoardSheet({
 export {parseBoardSections};
 
 const styles = StyleSheet.create({
+  ask: {borderWidth: 1, borderRadius: 11, backgroundColor: 'rgba(239,68,68,0.07)',
+    paddingHorizontal: 11, paddingTop: 9, paddingBottom: 4, marginBottom: 12, gap: 4},
+  askHead: {fontSize: 10.5, fontWeight: '700', letterSpacing: 0.6},
   root: {flex: 1},
   head: {
     flexDirection: 'row',

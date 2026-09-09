@@ -25,8 +25,17 @@ struct BoardOutlineView: View {
 
     var body: some View {
         let sections = BoardOutline.parse(markdown)
+        let ask = findAsk(sections)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
+                // The commander's own section, lifted. Everything else on this board is
+                // HQ's posture; this is the part with a claim on HIS attention, and it was
+                // a `###` inside ① — visible only after expanding the section above it.
+                // Absent or empty, nothing is drawn: a band that is always there stops
+                // being read.
+                if let ask, !ask.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    askBand(ask, p)
+                }
                 ForEach(sections) { sec in
                     sectionRow(sec, sections: sections)
                 }
@@ -42,6 +51,26 @@ struct BoardOutlineView: View {
             seeded = true
             open = [first.id]
         }
+    }
+
+    /// The lifted section: HQ's own words, under a heading in the attention colour.
+    @ViewBuilder private func askBand(_ sec: BoardSection, _ p: Theme.Palette) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.system(size: 12)).foregroundStyle(Theme.Status.waiting)
+                Text(sec.title.uppercased())
+                    .font(.system(size: 9.5, weight: .semibold)).tracking(0.8)
+                    .foregroundStyle(Theme.Status.waiting)
+                Spacer()
+            }
+            MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 7)
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+        .background(RoundedRectangle(cornerRadius: 9).fill(Theme.Status.waiting.opacity(0.07)))
+        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Theme.Status.waiting.opacity(0.28), lineWidth: 1))
+        .padding(.bottom, 10)
     }
 
     @ViewBuilder private func sectionRow(_ sec: BoardSection, sections: [BoardSection]) -> some View {
