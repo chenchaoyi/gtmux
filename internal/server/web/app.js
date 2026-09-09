@@ -782,8 +782,8 @@
     }
     if (SHARE.all) { el.hidden = true; return; }
     el.hidden = false;
-    // zh to match the rest of the page (the web mirror is Chinese-primary; this line
-    // was the sole English holdout — bilingual 铁律).
+    // Both halves spelled out rather than assembled from T() fragments: the counts sit
+    // INSIDE the sentence, and the two languages put them in different places.
     el.textContent = ZH
       ? '协作视图 · 访客 · ' + SHARE.viewCount + ' 个会话可见 · ' + SHARE.typeCount + ' 个可输入 —— 由 host 授权，可随时吊销'
       : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' typable — granted by the host, revocable at any time';
@@ -927,7 +927,7 @@
         // be typing the next thing, and overwriting that would be its own small theft.
         if (restore && !ta.value) { ta.value = restore; grow(); }
       }).catch(function () {
-        note.textContent = '发送失败（' + r.status + '）';
+        note.textContent = ZH ? '发送失败（' + r.status + '）' : 'send failed (' + r.status + ')';
         note.className = 'cx-note';
         note.hidden = false;
         if (restore && !ta.value) { ta.value = restore; grow(); }
@@ -936,7 +936,7 @@
 
     function then(r, restore) {
       if (!r) return;
-      if (r.status === 403) { ta.placeholder = '此 pane 未开放输入'; return; }
+      if (r.status === 403) { ta.placeholder = T('this pane is not open for input', '此 pane 未开放输入'); return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) { sayRefusal(r, restore); return; }
       // It landed. A session that is MID-TURN queues it behind the current turn — the
@@ -946,7 +946,7 @@
       // as the phone's, so the two surfaces say one thing.
       var live = byId(lastAgents, getId());
       if (live && live.status === 'working') {
-        note.textContent = '已送出 —— 它正在跑，这条会排在这一轮之后';
+        note.textContent = T('sent — it is busy, so this queues behind the current turn', '已送出 —— 它正在跑，这条会排在这一轮之后');
         note.className = 'cx-note info';
         note.hidden = false;
       } else {
@@ -965,8 +965,8 @@
       var form = new FormData(); form.append('file', f);
       api('/api/upload', {method: 'POST', body: form}).then(function (r) {
         attach.disabled = false; attach.textContent = '＋';
-        if (r && r.status === 403) { ta.placeholder = '此 pane 未开放输入'; return null; }
-        if (!r || !r.ok) { ta.placeholder = '上传失败，重试'; return null; }
+        if (r && r.status === 403) { ta.placeholder = T('this pane is not open for input', '此 pane 未开放输入'); return null; }
+        if (!r || !r.ok) { ta.placeholder = T('upload failed — try again', '上传失败，重试'); return null; }
         return r.json();
       }).then(function (j) {
         if (j && j.path) { ta.value = (ta.value && !/\s$/.test(ta.value) ? ta.value + ' ' : ta.value) + j.path + ' '; grow(); ta.focus(); }
@@ -1128,7 +1128,7 @@
       list.appendChild(it);
     });
     rail.appendChild(list);
-    var ft = document.createElement('div'); ft.className = 'to-foot'; ft.textContent = 'j/k 跳转 · c 折叠全部'; rail.appendChild(ft);
+    var ft = document.createElement('div'); ft.className = 'to-foot'; ft.textContent = T('j/k to move · c to collapse all', 'j/k 跳转 · c 折叠全部'); rail.appendChild(ft);
     return rail;
   }
   function syncOutline() {
@@ -1146,8 +1146,8 @@
   function bubbleActions(text) {
     var bar = document.createElement('div'); bar.className = 'bub-act';
     var mk = function (label, fn) { var b = document.createElement('button'); b.textContent = label; b.onclick = function (e) { e.stopPropagation(); fn(); }; return b; };
-    bar.appendChild(mk('⧉ 复制', function () { copyText(text); }));
-    bar.appendChild(mk('❝ 引用', function () { copyText(String(text).split('\n').map(function (l) { return '> ' + l; }).join('\n')); }));
+    bar.appendChild(mk(T('⧉ Copy', '⧉ 复制'), function () { copyText(text); }));
+    bar.appendChild(mk(T('❝ Quote', '❝ 引用'), function () { copyText(String(text).split('\n').map(function (l) { return '> ' + l; }).join('\n')); }));
     return bar;
   }
   function copyText(s) {
@@ -1163,11 +1163,13 @@
     var card = document.createElement('div'); card.className = can ? 'appr-card appr-live' : 'appr-card';
     var hd = document.createElement('div'); hd.className = 'appr-head';
     var d = document.createElement('span'); d.className = 'appr-dot'; hd.appendChild(d);
-    var ht = document.createElement('span'); ht.textContent = '需要你批准'; hd.appendChild(ht); card.appendChild(hd);
+    var ht = document.createElement('span'); ht.textContent = T('needs your approval', '需要你批准'); hd.appendChild(ht); card.appendChild(hd);
     var opts = lastOpts || [];
     if (!opts.length) {
       var ph = document.createElement('div'); ph.className = 'appr-empty';
-      ph.textContent = can ? '在终端里有一个待确认的选择 · 切到「终端」回应' : '在终端里有一个待确认的选择 · 用手机/Mac 回应';
+      ph.textContent = can
+      ? T('a choice is waiting in the terminal · switch to Terminal to answer', '在终端里有一个待确认的选择 · 切到「终端」回应')
+      : T('a choice is waiting in the terminal · answer from your phone or Mac', '在终端里有一个待确认的选择 · 用手机/Mac 回应');
       card.appendChild(ph);
     } else {
       opts.forEach(function (o) {
@@ -1179,7 +1181,7 @@
       });
     }
     if (!can) {
-      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = 'view-only · 用手机/Mac 发送,或扫码接管'; card.appendChild(hint);
+      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('view-only · send from your phone or Mac, or scan to take over', 'view-only · 用手机/Mac 发送,或扫码接管'); card.appendChild(hint);
     }
     return card;
   }
@@ -1469,7 +1471,7 @@
   }
   function updateEmpty() {
     var board = $('board'), ex = board.querySelector('.board-empty');
-    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = '从左侧把 pane 拖到这里 · 或双击树中的 pane'; board.appendChild(e); } }
+    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = T('drag a pane here from the left · or double-click one in the tree', '从左侧把 pane 拖到这里 · 或双击树中的 pane'); board.appendChild(e); } }
     else if (ex) ex.remove();
   }
   function buildTile(t) {
@@ -1483,13 +1485,13 @@
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; head.appendChild(cap);
     var sp = document.createElement('span'); sp.className = 'th-spacer'; head.appendChild(sp);
     var modes = document.createElement('span'); modes.className = 'tile-modes';
-    [['term', '终端'], ['chat', '对话'], ['diff', 'diff']].forEach(function (m) {
+    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff']].forEach(function (m) {
       var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]);
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     head.appendChild(modes);
-    var max = document.createElement('button'); max.className = 'tile-btn'; max.textContent = '⤢'; max.title = '全屏'; max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent); }; head.appendChild(max);
-    var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = '关闭'; cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; head.appendChild(cl);
+    var max = document.createElement('button'); max.className = 'tile-btn'; max.textContent = '⤢'; max.title = T('Full screen', '全屏'); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent); }; head.appendChild(max);
+    var cl = document.createElement('button'); cl.className = 'tile-btn'; cl.textContent = '×'; cl.title = T('Close', '关闭'); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; head.appendChild(cl);
     el.appendChild(head);
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
     // shared-input row (web-shared-input): the SAME composer as the single-pane view,
@@ -1499,7 +1501,7 @@
     el.appendChild(tc.el);
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
-    ro.textContent = '🔒 host 未授予此 pane 的输入权限'; t.roEl = ro; el.appendChild(ro);
+    ro.textContent = T('🔒 the host has not granted input on this pane', '🔒 host 未授予此 pane 的输入权限'); t.roEl = ro; el.appendChild(ro);
     var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
@@ -1582,7 +1584,7 @@
   }
   function renderTileDiff(t, diff) {
     var pre = document.createElement('pre'); pre.className = 'tile-diff';
-    if (!diff) { pre.textContent = '(cwd 不是 git 仓库 / 无改动)'; t.body.innerHTML = ''; t.body.appendChild(pre); return; }
+    if (!diff) { pre.textContent = T('(cwd is not a git repo, or nothing changed)', '(cwd 不是 git 仓库 / 无改动)'); t.body.innerHTML = ''; t.body.appendChild(pre); return; }
     diff.split('\n').forEach(function (ln) {
       var span = document.createElement('span');
       if (ln.charAt(0) === '+' && ln.indexOf('+++') !== 0) span.className = 'add';
@@ -1665,7 +1667,9 @@
     // view-only chips + the reply-elsewhere hint. Server gate stays authoritative.
     var can = paneCanInput(curPane);
     var lead = document.querySelector('#reply-bar .rb-lead');
-    if (lead) lead.textContent = can ? '在此 pane 回应：' : 'view-only · 在此 pane 回应：';
+    if (lead) lead.textContent = can
+      ? T('reply on this pane:', '在此 pane 回应：')
+      : T('view-only · reply on this pane:', 'view-only · 在此 pane 回应：');
     var hint = document.querySelector('#reply-bar .rb-hint');
     if (hint) hint.hidden = can;
     var box = $('reply-opts'); box.innerHTML = '';
@@ -1719,7 +1723,7 @@
     board.classList.add('maximized'); t.el.classList.add('max'); t.el.style.zIndex = ++zTop;
     t.el.style.width = (br.width - 16) + 'px'; t.el.style.height = (br.height - 16) + 'px';
     refitTile(t);
-    var ex = document.createElement('div'); ex.className = 'max-exit'; ex.id = 'max-exit'; ex.textContent = '‹ 还原'; ex.onclick = restoreBoard; board.appendChild(ex);
+    var ex = document.createElement('div'); ex.className = 'max-exit'; ex.id = 'max-exit'; ex.textContent = T('‹ Restore', '‹ 还原'); ex.onclick = restoreBoard; board.appendChild(ex);
   }
   function restoreBoard() {
     if (!maxedTile) return; var t = maxedTile; maxedTile = null;
@@ -1763,18 +1767,18 @@
   function renderPresetMenu() {
     var menu = $('wb-preset-menu'); menu.innerHTML = '';
     var ps = loadPresets();
-    if (!ps.length) { var em = document.createElement('div'); em.className = 'pm-empty'; em.textContent = '还没有预设'; menu.appendChild(em); }
+    if (!ps.length) { var em = document.createElement('div'); em.className = 'pm-empty'; em.textContent = T('no presets yet', '还没有预设'); menu.appendChild(em); }
     ps.forEach(function (p) {
       var row = document.createElement('div'); row.className = 'pm-row' + (p.name === WB.presetCur ? ' on' : '');
       var nm = document.createElement('span'); nm.className = 'pm-name'; nm.textContent = p.name;
       nm.onclick = function () { applyPreset(p); hidePresetMenu(); }; row.appendChild(nm);
-      var del = document.createElement('button'); del.className = 'pm-del'; del.textContent = '×'; del.title = '删除';
+      var del = document.createElement('button'); del.className = 'pm-del'; del.textContent = '×'; del.title = T('Delete', '删除');
       del.onclick = function (e) { e.stopPropagation(); var rest = loadPresets().filter(function (x) { return x.name !== p.name; }); savePresets(rest); if (WB.presetCur === p.name) { WB.presetCur = ''; updatePresetLabel(); } renderPresetMenu(); };
       row.appendChild(del); menu.appendChild(row);
     });
-    var save = document.createElement('div'); save.className = 'pm-save'; save.textContent = '＋ 存为当前布局…';
+    var save = document.createElement('div'); save.className = 'pm-save'; save.textContent = T('＋ Save the current layout…', '＋ 存为当前布局…');
     save.onclick = function () {
-      var name = (window.prompt('预设名称 / Preset name', WB.presetCur || ('布局 ' + (ps.length + 1))) || '').trim();
+      var name = (window.prompt(T('Preset name', '预设名称'), WB.presetCur || (T('Layout ', '布局 ') + (ps.length + 1))) || '').trim();
       if (!name) return;
       var arr = loadPresets().filter(function (x) { return x.name !== name; });
       var lay = captureLayout(); lay.name = name; arr.push(lay); savePresets(arr);
@@ -1812,7 +1816,7 @@
       row.onclick = function () { pickCmdk(a); };
       list.appendChild(row);
     });
-    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? '无匹配' : '无 agent'; list.appendChild(e); }
+    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? T('no match', '无匹配') : T('no agents', '无 agent'); list.appendChild(e); }
   }
   function markCmdk() { Array.prototype.forEach.call($('cmdk-list').children, function (c, i) { c.classList.toggle('on', i === cmdkSel); }); }
   function pickCmdk(a) { closeCmdk(); var t = addTile(a); flashTile(t); maximizeTile(t); }
