@@ -227,6 +227,37 @@ final class KnowledgeTopicsTests: XCTestCase {
             XCTAssertTrue(grouped.contains(e.id), "\(e.id) is in no topic")
         }
     }
+
+    /// Find, and the rule it shares with the phone.
+    ///
+    /// 396 entries across 7 topics, and the only way in was knowing which topic holds the
+    /// one you want (2026-09-09). The matcher is deliberately the same shape as the
+    /// phone's `matchEntries` — one query has to behave the same on both, or the base
+    /// feels like two different bases.
+    func testFindMatchesTitleIdAndTopic() {
+        let rows = [entry("pitfalls/ps-rss", "pitfalls"),
+                    entry("corrections/no-link", "corrections")]
+        XCTAssertEqual(matchKB(rows, "ps-rss").map(\.id), ["pitfalls/ps-rss"])
+        XCTAssertEqual(matchKB(rows, "corrections").map(\.id), ["corrections/no-link"])
+    }
+
+    func testFindIgnoresCase() {
+        let rows = [entry("pitfalls/PS-RSS", "pitfalls")]
+        XCTAssertEqual(matchKB(rows, "ps-rss").count, 1)
+        XCTAssertEqual(matchKB(rows, "PITFALLS").count, 1)
+    }
+
+    func testEveryTermMustMatchSoTwoWordsNarrow() {
+        let rows = [entry("pitfalls/ps-rss", "pitfalls"), entry("workflows/tag", "workflows")]
+        XCTAssertEqual(matchKB(rows, "pitfalls ps").count, 1)
+        XCTAssertEqual(matchKB(rows, "pitfalls tag").count, 0, "two terms must narrow, not widen")
+    }
+
+    func testAnEmptyQueryMatchesNothingSoTheCallerShowsTheIndex() {
+        let rows = [entry("pitfalls/x", "pitfalls")]
+        XCTAssertTrue(matchKB(rows, "").isEmpty)
+        XCTAssertTrue(matchKB(rows, "   ").isEmpty)
+    }
 }
 
 // The menu bar was the only surface that could not export the supervisor's memory: the
