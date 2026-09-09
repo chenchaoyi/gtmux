@@ -15,8 +15,10 @@ import (
 // and a pasted capture inside a fence is evidence, not prose.
 func writeBoard(t *testing.T, body string) {
 	t.Helper()
-	home := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", home)
+	// HOME, not XDG_CONFIG_HOME: nothing in gtmux reads the XDG variables, so setting
+	// one only LOOKS like a redirect. This test overwrote the operator's live board on
+	// 2026-09-09 for exactly that reason.
+	t.Setenv("HOME", t.TempDir())
 	p := BoardPath()
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		t.Fatal(err)
@@ -55,7 +57,7 @@ func TestAPastedCaptureIsEvidenceNotProse(t *testing.T) {
 }
 
 func TestNoBoardIsNotAComplaint(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("HOME", t.TempDir())
 	if n, longest := OversizeBoardCells(); n != 0 || longest != 0 {
 		t.Errorf("got %d/%d for a board that does not exist", n, longest)
 	}

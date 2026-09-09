@@ -1396,3 +1396,28 @@ incremental build fast and it stays.
 `mobileapp/src/releaseNotes.ts` proves the SOURCE is current, which was never in doubt.
 The artifact that ships is `main.jsbundle` inside the .app. Check the thing you are about
 to install, not the thing you built it from.
+
+## A test overwrote the real situation board (five times)
+
+**Symptom.** `~/.config/gtmux/hq/notes/board.md` is replaced by a small test fixture.
+Five times between 2026-09-08 and 2026-09-09.
+
+**Why "write to a temp dir" did not fix it.** Every one of those tests DID redirect — they
+set `XDG_CONFIG_HOME` or `XDG_DATA_HOME`. Nothing in gtmux reads either. `state.Dir()` and
+`state.HQHome()` were built from `$HOME` alone, so the redirect was a no-op and the write
+landed on the real path. The tests were not careless; the override that looks right is not
+the one that works, so four rounds of fixing the offending test fixed a symptom.
+
+**The fix (do not undo it).** `state.home()` is the single chokepoint every gtmux path goes
+through, and under `go test` it PANICS unless HOME points somewhere under the temp tree.
+The real path is unreachable from a test rather than discouraged. The panic names the fix
+and says explicitly that the XDG variables are not read.
+
+**Writing a test that touches gtmux state:**
+
+```go
+t.Setenv("HOME", t.TempDir())   // the ONLY redirect that works
+```
+
+**If you add another path root**, build it from `state.home()`. A root that reads `$HOME`
+directly is outside the guard, which is exactly the shape of the original bug.

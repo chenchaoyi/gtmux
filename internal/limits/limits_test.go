@@ -631,7 +631,7 @@ func TestNoCodexAtAllSaysNothing(t *testing.T) {
 func TestFreshClaudeCacheStillRereadsCodex(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("CODEX_HOME", home)
-	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	t.Setenv("HOME", t.TempDir()) // XDG_DATA_HOME is not read; this used to write the real cache
 	now := time.Unix(1_788_778_453, 0)
 	cfg := Config{Command: "true", TTLMin: 15, NearPct: 90, NearMin: 5, WarnPct: 85}
 

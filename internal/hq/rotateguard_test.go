@@ -70,6 +70,7 @@ func TestRotationHoldsWhenTheBoxCannotBeRead(t *testing.T) {
 // And it still rotates when the box is genuinely empty — a guard that never lets the
 // act through is not a fix, it is a different outage.
 func TestRotationProceedsOnAnEmptyBox(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // rotateHQ resolves the HQ home to journal the act
 	p := &spyPane{screen: box("")}
 	_, ok, held := rotateHQ("%6", p.io())
 	if !ok {

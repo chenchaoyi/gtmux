@@ -1029,6 +1029,7 @@ func TestLocalTemplateFollowsLanguage(t *testing.T) {
 
 // A same-version language switch is announced as what it is, not as "v32 → v32".
 func TestExplicitSwitchNoticeSaysItWasAskedFor(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // printSeedNotice resolves the HQ home
 	prev := i18n.Lang()
 	t.Cleanup(func() { i18n.SetLang(prev) })
 	i18n.SetLang("en")
