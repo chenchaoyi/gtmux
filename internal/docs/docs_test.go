@@ -15,18 +15,45 @@ import (
 // came to show a format the builder could no longer produce.
 var update = flag.Bool("update", false, "rewrite the marked doc regions from the code")
 
-// checked lists the documents carrying rendered regions, relative to the repo root.
-var checked = []string{"docs/cli.md"}
-
-func repoPath(t *testing.T, rel string) string {
+// checked is every document carrying rendered regions, found by looking rather than by
+// listing. The list it replaces held one entry, "docs/cli.md" — and docs/cli.zh.md
+// carries the same two marked regions, checked by nothing and rewritten by nothing. A
+// fabricated line pasted into the Chinese half passed both `go test ./...` and the
+// design gate, and `make docs-fix` left it there.
+//
+// That is the failure this package was built to end, one language over: the package doc
+// says "nobody hand-transcribes a line again", which was true only of the half somebody
+// remembered to list. A hand-maintained list of the files a checker checks is the same
+// shape of hole as a hand-maintained list of the things it checks.
+func checkedDocs(t *testing.T) []string {
 	t.Helper()
-	return filepath.Join("..", "..", rel)
+	var out []string
+	roots, err := filepath.Glob(filepath.Join("..", "..", "docs", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots = append(roots, filepath.Join("..", "..", "README.md"), filepath.Join("..", "..", "README.zh.md"))
+	for _, p := range roots {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			continue // README twins are optional; a glob hit that vanished is not our business
+		}
+		if strings.Contains(string(b), marker) {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		t.Fatal("no document carries a rendered region — the marker moved and this guard stopped guarding")
+	}
+	sort.Strings(out)
+	return out
 }
 
 // The guard itself: every marked example in the docs is what the code really produces.
 func TestDocExamples(t *testing.T) {
-	for _, doc := range checked {
-		path := repoPath(t, doc)
+	marked := map[string]bool{} // every id some checked document marks
+	for _, path := range checkedDocs(t) {
+		doc := filepath.Base(path)
 		src, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatalf("%s: %v", doc, err)
@@ -44,14 +71,36 @@ func TestDocExamples(t *testing.T) {
 			}
 			continue
 		}
-		bad, err := Check(string(src))
+		regions, err := Regions(string(src))
 		if err != nil {
 			t.Fatalf("%s: %v", doc, err)
 		}
-		for _, m := range bad {
-			t.Errorf("%s: region %q — %s\n  documented: %s\n  produced:   %s\n"+
-				"  run `make docs-fix` to rewrite it from the code",
-				doc, m.ID, m.Reason, m.Documented, m.Produced)
+		for _, r := range regions {
+			marked[r.ID] = true
+			produced, ok := Render(r.ID)
+			if !ok {
+				t.Errorf("%s: region %q — no registry entry; the doc marks an example "+
+					"nothing renders\n  documented: %s", doc, r.ID, r.Body)
+				continue
+			}
+			if r.Body != produced {
+				t.Errorf("%s: region %q — the documented example is not what the code "+
+					"produces\n  documented: %s\n  produced:   %s\n"+
+					"  run `make docs-fix` to rewrite it from the code",
+					doc, r.ID, r.Body, produced)
+			}
+		}
+	}
+	if *update {
+		return // a rewrite pass records no `marked` set; the assert pass below is the guard
+	}
+	// A registered example nothing marks any more is drift too: the doc it guarded is
+	// gone and nobody noticed the guard stopped guarding. Asked across every document at
+	// once, because an id may legitimately live in one of them and not another.
+	for id := range Examples {
+		if !marked[id] {
+			t.Errorf("registry entry %q is marked by no document — the example was "+
+				"removed or renamed\n  produced: %s", id, mustRender(id))
 		}
 	}
 }
