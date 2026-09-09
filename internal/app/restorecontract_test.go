@@ -92,7 +92,34 @@ func newRestoreEnv(t *testing.T) *restoreEnv {
 
 	e := &restoreEnv{t: t, home: home, tmp: tmp}
 	t.Cleanup(e.killServer)
+	e.proveIsolation()
 	return e
+}
+
+// proveIsolation refuses to go on unless the tmux server this env talks to is one this
+// test made.
+//
+// Everything above is a CLAIM: a temp HOME, TMUX_TMPDIR pointed at a fresh socket dir,
+// $TMUX cleared. The test then runs tmux-resurrect's real restore.sh, which creates
+// sessions and re-launches the commands the save file names — including `claude
+// --resume` into panes (see the phantom-agent incident). If any one of those three
+// redirections failed to take, that lands in the operator's live fleet, and nothing here
+// would have said so.
+//
+// The sibling tmux tests in paneids_test.go prove it before they touch anything, for a
+// far smaller blast radius (a window-name format). This one had no such check.
+//
+// A server that already answers here is the failure: the socket dir was made seconds ago
+// and holds none. If one answers, TMUX_TMPDIR did not take and we are looking at
+// somebody else's fleet.
+func (e *restoreEnv) proveIsolation() {
+	e.t.Helper()
+	if !e.serverUp() {
+		return // nothing running on this socket — it is ours to create
+	}
+	names := e.lines("list-sessions", "-F", "#{session_name}")
+	e.t.Fatalf("not isolated — a tmux server already answers on %s holding %v; "+
+		"refusing to run restore against it", e.tmp, names)
 }
 
 // tmuxCmd runs a tmux command inside the sandbox and returns trimmed stdout.
