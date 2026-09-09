@@ -407,10 +407,6 @@ func sessionNamesList() []string {
 	return out
 }
 
-// shouldRecover decides whether to drive a resurrect restore into a RUNNING
-// server: yes only when the save has sessions AND none of them are live (the
-// server is a fresh/empty post-reboot one). If any saved session is already live
-// we assume a normal reattach and do nothing, to avoid duplicating sessions.
 // shouldRecover reports whether a running server is missing saved sessions that ought to
 // be brought back.
 //
