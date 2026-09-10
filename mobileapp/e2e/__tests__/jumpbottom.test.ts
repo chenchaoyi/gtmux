@@ -91,5 +91,18 @@ gated('terminal jump-to-bottom', () => {
     expect(await arrow.isDisplayed().catch(() => false)).toBe(false);
     expect(back.length).toBeGreaterThan(0);
     expect(tail.length).toBeGreaterThan(0);
+
+    // And it has to LOOK like travelling there.
+    //
+    // Reported 2026-09-10 from deep scrollback: the screen stopped, then appeared at the
+    // bottom. The tap also flushes the frozen snapshot, which changes the content size,
+    // which re-pinned INSTANTLY — beating the animation to the same place. A teleport
+    // leaves one scroll frame; a journey leaves a run of them at descending distances.
+    const after = probe.slice(jumpAt + 1).filter(r => r.at === 'scroll');
+    const gaps = after.map(r => Number(r.gap)).filter(g => Number.isFinite(g));
+    const enRoute = gaps.filter(g => g > 40);
+    // eslint-disable-next-line no-console
+    console.log('[jump] frames after the tap:', JSON.stringify(gaps.slice(0, 14)));
+    expect(enRoute.length).toBeGreaterThan(1);
   });
 });
