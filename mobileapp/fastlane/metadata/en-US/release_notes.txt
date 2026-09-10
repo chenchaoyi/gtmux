@@ -1,6 +1,5 @@
-• Usage opens with what you came for: which plan window is tightest, and whether the machine is about to stop everything. Those used to be on line 3 and line 25.
-• Plan windows are bars now, so a window at 76% no longer reads like one at 9%, and a reset says how long you have rather than a wall-clock time.
-• Sessions split into the ones that are warned or actually producing, and a count of the quiet ones that opens back up. A warned session is never folded away.
-• An agent with a plan but no live session gets its proper name and its own icon. Codex was showing as "codex" beside "Claude Code", with no icon at all.
-• A session row drew its title and its details on top of each other, and reported the same context figure twice with two different roundings.
-• The terminal's top bar no longer moves the content when it folds away, so scrolling up doesn't stall or bounce, and the jump-to-bottom arrow travels there instead of teleporting.
+• A long press on a session now answers you: a tap you can feel the moment it is recognised, and the row visibly arms while you hold it. Letting go early springs it back.
+• The long-press menu separates its actions into groups. "Interrupt it" — the one that stops a turn in progress — no longer looks exactly like "See the changes".
+• Every action in that menu is reachable by VoiceOver. The whole sheet used to be a single element, so a screen reader could reach the card and nothing inside it.
+• The lock-screen card leads with the session that needs you, its actual question, and how long it has waited — instead of a count. Its ground carries the status colour, so "something needs me" reads before a word does.
+• The lock-screen card stopped going stale: a card that has just started gets the current state at once, a phone that reconnects gets it again, and a card whose Mac you switched away from is no longer pushed to forever.
