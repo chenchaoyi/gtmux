@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, {act as ract} from 'react-test-renderer';
 import {HQActs, dayLabel} from './HQActs';
 import {HQEvent} from '../api/client';
-import {actOf} from './hqActsModel';
+import {Act, actOf} from './hqActsModel';
 
 const pal = {fg: '#000', fg2: '#333', fg3: '#888', divider: '#ddd', surface: '#eee'};
 const ev = (o: Partial<HQEvent>): HQEvent => ({ts: 1000, event: 'Stop', ...o} as HQEvent);
@@ -82,5 +82,57 @@ describe('dayLabel', () => {
     expect(dayLabel(1, '2026-09-01', false)).toBe('Yesterday');
     expect(dayLabel(5, '2026-08-28', false)).toBe('08-28');
     expect(dayLabel(5, '2026-08-28', true)).toBe('8 月 28 日');
+  });
+});
+
+// The rhythm of the day, in the rendering (2026-09-10: "时间线平均列，感受不出间隔的长短").
+// The model decides where the bursts fall; these pin that the view actually SHOWS the
+// break, and shows it only where there is one.
+describe('the acts timeline', () => {
+  // Anchored at a local afternoon so the gaps under test stay inside one day — a day
+  // boundary is its own break, and the day header already says so.
+  const T = Math.floor(new Date(2026, 8, 10, 18, 0, 0).getTime() / 1000);
+  // Counting host nodes only: a <View testID=…> lands in the tree twice, as the element
+  // and as the host node, so a raw findAllByProps count is double.
+  const gaps = (tree: renderer.ReactTestRenderer) =>
+    tree.root.findAllByProps({testID: 'hq-act-gap'}).filter(n => typeof n.type === 'string');
+  const at = (minsAgo: number, o: Partial<ReturnType<typeof actOf>> = {}) =>
+    ({ts: T - minsAgo * 60, kind: 'send', verb: 'dispatched', target: 'api', detail: '', ...o} as Act);
+
+  it('names the quiet between two runs of acts', () => {
+    const tree = render({acts: [at(0), at(3), at(57), at(60)], now: T});
+    expect(gaps(tree)).toHaveLength(1);
+    expect(texts(tree)).toContain('54m');
+  });
+
+  it('says nothing between acts that happened together', () => {
+    const tree = render({acts: [at(0), at(3), at(9)], now: T});
+    expect(gaps(tree)).toHaveLength(0);
+  });
+
+  it('speaks the reader s language', () => {
+    const tree = render({acts: [at(0), at(400)], now: T, zh: true});
+    expect(texts(tree)).toContain('6 小时 40 分');
+  });
+
+  it('offers to open a detail only once a measurement says text was cut', () => {
+    const tree = render({acts: [at(0, {detail: 'the review of PR #1009 is still open'})], now: T});
+    expect(tree.root.findAllByProps({testID: 'hq-act-more'})).toHaveLength(0);
+
+    const detail = tree.root.findAllByProps({testID: 'hq-act-detail'})[0];
+    expect(detail.props.numberOfLines).toBe(2);
+    ract(() => detail.props.onTextLayout({nativeEvent: {lines: [{text: 'the review of '}, {text: 'PR…'}]}}));
+
+    const more = tree.root.findAllByProps({testID: 'hq-act-more'});
+    expect(more.length).toBeGreaterThan(0);
+    ract(() => more[0].props.onPress());
+    expect(tree.root.findAllByProps({testID: 'hq-act-detail'})[0].props.numberOfLines).toBeUndefined();
+  });
+
+  it('leaves a detail that fits alone', () => {
+    const tree = render({acts: [at(0, {detail: 'short'})], now: T});
+    const detail = tree.root.findAllByProps({testID: 'hq-act-detail'})[0];
+    ract(() => detail.props.onTextLayout({nativeEvent: {lines: [{text: 'short'}]}}));
+    expect(tree.root.findAllByProps({testID: 'hq-act-more'})).toHaveLength(0);
   });
 });

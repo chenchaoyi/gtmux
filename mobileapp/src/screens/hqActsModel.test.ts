@@ -1,5 +1,5 @@
 import {HQEvent} from '../api/client';
-import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally, dropLeadingTaskID} from './hqActsModel';
+import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally, dropLeadingTaskID, burstsOf, quietLabel, detailTruncated} from './hqActsModel';
 
 const ev = (o: Partial<HQEvent>): HQEvent => ({ts: 1000, event: 'Stop', ...o} as HQEvent);
 
@@ -193,5 +193,92 @@ describe('dropLeadingTaskID', () => {
   test('a plain sentence with a colon keeps every word', () => {
     expect(dropLeadingTaskID('注意: 这条要读完')).toBe('注意: 这条要读完');
     expect(dropLeadingTaskID('no colon here at all')).toBe('no colon here at all');
+  });
+});
+
+// The rhythm of a day. Six hours of quiet used to look exactly like two minutes between
+// two records (2026-09-10). These pin the grouping and the wording separately, because
+// the grouping decides what you SEE and the wording decides what you can act on.
+describe('burstsOf', () => {
+  const T = 1_788_900_000;
+  const act = (minsAgo: number): never => ({ts: T - minsAgo * 60, kind: 'k', verb: 'v', target: '', detail: ''} as never);
+
+  it('keeps acts that happened together in one run', () => {
+    const b = burstsOf([act(0), act(2), act(5)]);
+    expect(b).toHaveLength(1);
+    expect(b[0].acts).toHaveLength(3);
+    expect(b[0].quietBefore).toBe(0);
+  });
+
+  it('breaks where the quiet is longer than the threshold, and says how long', () => {
+    // The real trace: four acts, then 54 minutes, then two more.
+    const b = burstsOf([act(0), act(16), act(70), act(73)]);
+    expect(b.map(x => x.acts.length)).toEqual([2, 2]);
+    expect(b[1].quietBefore).toBe(54 * 60);
+  });
+
+  it('measures the quiet across the burst, not from its first act', () => {
+    // Going down the page you cross the gap between the previous burst's OLDEST act and
+    // this burst's newest — measuring from the newest would overstate every gap.
+    const b = burstsOf([act(0), act(5), act(60)]);
+    expect(b[1].quietBefore).toBe(55 * 60);
+  });
+
+  it('leaves the threshold to the caller, because the right one is a judgement', () => {
+    expect(burstsOf([act(0), act(10)], 5 * 60)).toHaveLength(2);
+    expect(burstsOf([act(0), act(10)], 30 * 60)).toHaveLength(1);
+  });
+
+  it('handles a day with one act, and none at all', () => {
+    expect(burstsOf([act(0)])).toHaveLength(1);
+    expect(burstsOf([])).toEqual([]);
+  });
+});
+
+describe('quietLabel', () => {
+  it('says minutes under an hour', () => {
+    expect(quietLabel(54 * 60, true)).toBe('54 分钟');
+    expect(quietLabel(54 * 60, false)).toBe('54m');
+  });
+
+  it('keeps the minutes beside the hours — "6h" and "6h 55m" answer different questions', () => {
+    expect(quietLabel(6 * 3600 + 11 * 60, true)).toBe('6 小时 11 分');
+    expect(quietLabel(6 * 3600 + 11 * 60, false)).toBe('6h 11m');
+    expect(quietLabel(2 * 3600, true)).toBe('2 小时'); // exactly on the hour drops the zero
+  });
+
+  it('goes to days above one, and keeps the hours there too', () => {
+    expect(quietLabel(26 * 3600, false)).toBe('1d 2h');
+    expect(quietLabel(48 * 3600, true)).toBe('2 天');
+  });
+
+  it('rounds to the nearest minute rather than truncating', () => {
+    expect(quietLabel(119, false)).toBe('2m');
+  });
+});
+
+// "Show more" that shows no more is worse than no affordance at all.
+describe('detailTruncated', () => {
+  const line = (text: string) => ({text});
+
+  it('is false while the text still fits', () => {
+    expect(detailTruncated([line('one line')], 'one line')).toBe(false);
+  });
+
+  it('is true when the laid-out lines fall short of the detail', () => {
+    expect(detailTruncated([line('waiting on the '), line('review of…')], 'waiting on the review of PR #1009')).toBe(true);
+  });
+
+  it('is false when a detail fills the limit exactly — nothing was lost', () => {
+    expect(detailTruncated([line('waiting on '), line('the review')], 'waiting on the review')).toBe(false);
+  });
+
+  it('falls back to the line count where the platform reports no per-line text', () => {
+    expect(detailTruncated([{}, {}], 'anything')).toBe(true);
+    expect(detailTruncated([{}], 'anything')).toBe(false);
+  });
+
+  it('reports nothing before a measurement arrives', () => {
+    expect(detailTruncated(undefined, 'anything')).toBe(false);
   });
 });
