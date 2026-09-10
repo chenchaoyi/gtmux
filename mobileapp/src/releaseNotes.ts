@@ -12,6 +12,23 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.9',
+    en: [
+      'HQ has one name. It went by 参谋长, 中控, "the supervisor" and "CHIEF OF STAFF" across the app, sometimes two of them on one screen. Everything says HQ now, in both languages.',
+      'HQ\'s page gives its three documents somewhere to stand. The situation board, the knowledge base and usage used to sit inside a fold that opened closed, and on a phone that fold is the only way to reach them. Each is a tile now carrying its own live figure, and the one that owes you something wears the attention colour.',
+      '"Still waiting on you" moves to the top of the situation board, in the attention colour. It is the only part of the board addressed to you, and it used to be buried inside a collapsed section. An empty one draws nothing.',
+      'The knowledge base can be searched. 396 entries across 7 topics, and the only way in used to be knowing which topic held the one you wanted. It matches on the title, the id and the topic, and two words narrow the results instead of widening them.',
+      'Scrolling back through history no longer makes the screen jump. The top bar folding away was sliding the content up by its own full height.',
+    ],
+    zh: [
+      'HQ 只有一个名字了。它过去在应用里叫参谋长、中控、the supervisor、CHIEF OF STAFF，有时一块屏幕上同时出现两个。现在中英文都统一成 HQ。',
+      'HQ 那一页给三份文档腾出了位置。态势板、知识库、用量原先装在一个默认收起的折叠里，而手机上没有别的路进得去。现在三者各是一张卡片，自带实时数值，欠你东西的那张用警示色。',
+      '「还等着你」提到了态势板最上面，用警示色。它是看板上唯一冲着你来的部分，过去埋在一个折叠小节里。空的时候什么都不画。',
+      '知识库能搜了。7 个主题 396 条，过去唯一的入口是你已经知道它在哪个主题下。现在按标题、编号、主题匹配，输入两个词是收窄而不是放宽。',
+      '往回翻历史时屏幕不再跳。顶栏收起的那一下，会把内容按它自己的整个高度往上推。',
+    ],
+  },
+  {
     version: '1.0.8',
     en: [
       'More of the screen is the screen. The bar above the terminal was four stacked bands taking a fifth of the phone — the Chat/Terminal toggle and the row of controls under it were one row of controls wearing two dividers, and the connection was holding half a band to show a state that is green almost always. Three bands now, and about five more lines of terminal.',
