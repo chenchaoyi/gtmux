@@ -10,11 +10,29 @@
 //
 // Everything decided rather than drawn lives in hqActsModel.ts, tested there as rules.
 
-import React, {useMemo} from 'react';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import React, {useMemo, useState} from 'react';
+import {
+  LayoutAnimation,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextLayoutEventData,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import {HQEvent} from '../api/client';
 import {ERRORED_COLOR} from '../ui/theme';
-import {Act, TallyEntry, groupByDay, tally} from './hqActsModel';
+import {
+  ACT_DETAIL_LINES,
+  Act,
+  ActBurst,
+  TallyEntry,
+  burstsOf,
+  detailTruncated,
+  groupByDay,
+  quietLabel,
+  tally,
+} from './hqActsModel';
 import {eventPhrase, eventSession, relTime} from './hqZones';
 
 /** Which half of the journal the zone is showing. */
@@ -105,29 +123,107 @@ function ActsBody({
       {days.map(day => (
         <View key={day.key}>
           <Text style={[styles.dayHead, {color: pal.fg3}]}>{dayLabel(day.daysAgo, day.key, zh)}</Text>
-          {day.acts.map((a, i) => (
-            <View key={`${a.ts}-${i}`} testID="hq-act" style={styles.actRow}>
-              <Text style={[styles.actTime, {color: pal.fg3}]}>{clock(a.ts)}</Text>
-              <View style={styles.flex}>
-                <View style={styles.actHead}>
-                  <Text style={[styles.actVerb, {color: a.alarm ? ERRORED_COLOR : pal.fg}]}>{a.verb}</Text>
-                  {a.target ? <Text style={[styles.actTarget, {color: pal.fg2}]}>→ {a.target}</Text> : null}
-                  {a.outcome ? (
-                    <View style={[styles.outcome, {borderColor: pal.divider}]}>
-                      <Text style={[styles.outcomeText, {color: pal.fg3}]}>{a.outcome}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                {a.detail ? (
-                  <Text style={[styles.actDetail, {color: pal.fg3}]} numberOfLines={2}>
-                    {a.detail}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
+          {burstsOf(day.acts).map((burst, bi) => (
+            <Burst key={`${day.key}-${bi}`} burst={burst} pal={pal} zh={zh} />
           ))}
         </View>
       ))}
+    </>
+  );
+}
+
+/**
+ * Burst draws one run of acts, and the quiet in front of it.
+ *
+ * The rail is what makes the break visible: it runs unbroken through a burst and simply
+ * stops at the gap, so the eye reads "these happened together, then nothing for a while"
+ * without reading a single timestamp.
+ */
+function Burst({burst, pal, zh}: {burst: ActBurst; pal: HQActsProps['pal']; zh: boolean}) {
+  return (
+    <>
+      {burst.quietBefore > 0 && (
+        <View testID="hq-act-gap" style={styles.gapRow}>
+          <View style={styles.gapRail}>
+            <View style={[styles.gapDash, {borderColor: pal.divider}]} />
+          </View>
+          <Text style={[styles.gapText, {color: pal.fg3}]}>{quietLabel(burst.quietBefore, zh)}</Text>
+        </View>
+      )}
+      {burst.acts.map((a, i) => (
+        <ActRow key={`${a.ts}-${i}`} act={a} first={i === 0} last={i === burst.acts.length - 1} pal={pal} zh={zh} />
+      ))}
+    </>
+  );
+}
+
+function ActRow({
+  act,
+  first,
+  last,
+  pal,
+  zh,
+}: {
+  act: Act;
+  first: boolean;
+  last: boolean;
+  pal: HQActsProps['pal'];
+  zh: boolean;
+}) {
+  return (
+    <View testID="hq-act" style={styles.actRow}>
+      <Text style={[styles.actTime, {color: pal.fg3}]}>{clock(act.ts)}</Text>
+      <View style={styles.rail}>
+        {!first && <View style={[styles.railLine, styles.railAbove, {backgroundColor: pal.divider}]} />}
+        {!last && <View style={[styles.railLine, styles.railBelow, {backgroundColor: pal.divider}]} />}
+        <View style={[styles.node, {backgroundColor: act.alarm ? ERRORED_COLOR : pal.fg3}]} />
+      </View>
+      <View style={styles.flex}>
+        <View style={styles.actHead}>
+          <Text style={[styles.actVerb, {color: act.alarm ? ERRORED_COLOR : pal.fg}]}>{act.verb}</Text>
+          {act.target ? <Text style={[styles.actTarget, {color: pal.fg2}]}>→ {act.target}</Text> : null}
+          {act.outcome ? (
+            <View style={[styles.outcome, {borderColor: pal.divider}]}>
+              <Text style={[styles.outcomeText, {color: pal.fg3}]}>{act.outcome}</Text>
+            </View>
+          ) : null}
+        </View>
+        {act.detail ? <ActDetail text={act.detail} pal={pal} zh={zh} /> : null}
+      </View>
+    </View>
+  );
+}
+
+/** ActDetail clamps a detail to two lines and opens it on request — see detailTruncated. */
+function ActDetail({text, pal, zh}: {text: string; pal: HQActsProps['pal']; zh: boolean}) {
+  const [open, setOpen] = useState(false);
+  const [cut, setCut] = useState(false);
+  const measure = (e: {nativeEvent: TextLayoutEventData}) => {
+    if (open) return; // the open text is never clamped; measuring it would clear the flag
+    setCut(detailTruncated(e.nativeEvent.lines, text));
+  };
+  return (
+    <>
+      <Text
+        testID="hq-act-detail"
+        style={[styles.actDetail, {color: pal.fg3}]}
+        numberOfLines={open ? undefined : ACT_DETAIL_LINES}
+        onTextLayout={measure}>
+        {text}
+      </Text>
+      {cut && (
+        <TouchableOpacity
+          testID="hq-act-more"
+          hitSlop={{top: 6, bottom: 6, left: 8, right: 8}}
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setOpen(v => !v);
+          }}>
+          <Text style={[styles.more, {color: pal.fg3}]}>
+            {open ? (zh ? '收起 ⌃' : 'Less ⌃') : zh ? '展开 ⌄' : 'More ⌄'}
+          </Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 }
@@ -188,8 +284,22 @@ const styles = StyleSheet.create({
   tallyText: {fontSize: 12.5, lineHeight: 18},
 
   dayHead: {fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 6, marginBottom: 6},
-  actRow: {flexDirection: 'row', gap: 10, paddingVertical: 7},
-  actTime: {fontSize: 11.5, fontVariant: ['tabular-nums'], width: 40, paddingTop: 1},
+  // Rows inside a burst sit tighter than the old flat 7 — the space between two acts a
+  // minute apart was carrying no information. The gap markers spend it instead.
+  actRow: {flexDirection: 'row', gap: 8, paddingVertical: 5},
+  actTime: {fontSize: 11.5, fontVariant: ['tabular-nums'], width: 38, textAlign: 'right', paddingTop: 2},
+  rail: {width: 9, alignItems: 'center'},
+  railLine: {position: 'absolute', width: 1, left: 4},
+  railAbove: {top: 0, height: 7},
+  railBelow: {top: 7, bottom: 0},
+  node: {width: 5, height: 5, borderRadius: 2.5, marginTop: 5},
+  // The dash hangs on the rail's own axis (38 time + 8 gap + 4.5 half-rail), so the break
+  // reads as the rail stopping rather than as a new element arriving.
+  gapRow: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3},
+  gapRail: {width: 55, alignItems: 'flex-end', paddingRight: 4},
+  gapDash: {borderLeftWidth: 1, borderStyle: 'dashed', height: 13, width: 0},
+  gapText: {fontSize: 10.5, fontVariant: ['tabular-nums'], letterSpacing: 0.2},
+  more: {fontSize: 11, marginTop: 2, fontWeight: '600'},
   actHead: {flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap'},
   actVerb: {fontSize: 13.5, fontWeight: '700'},
   actTarget: {fontSize: 12.5},

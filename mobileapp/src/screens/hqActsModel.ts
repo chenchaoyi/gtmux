@@ -221,3 +221,101 @@ function daysBetween(key: string, today: string): number {
   const ms = Date.parse(today + 'T00:00:00') - Date.parse(key + 'T00:00:00');
   return Math.round(ms / 86400000);
 }
+
+// ── the rhythm of a day ─────────────────────────────────────────────────────
+//
+// The feed listed every act at the same spacing, so six hours of quiet looked exactly
+// like two minutes between two records: 08:21 → 02:10 read the same as 02:10 → 02:08
+// (user report, 2026-09-10 — "时间线平均列，感受不出间隔的长短"). The rhythm of the day
+// was simply not in the list.
+//
+// Spacing rows in PROPORTION to the gap is the obvious answer and it is the wrong one
+// here: six hours would need real height, and the same report asks to keep the screen
+// tight. So the gap is NAMED instead of drawn to scale. Acts that happened together are
+// pulled into a burst; between bursts sits one line saying how long the quiet was. A gap
+// costs a line only when there IS one, and the reader gets the number rather than being
+// asked to estimate a distance.
+
+/** How far apart two acts must be to count as separate bursts. */
+export const BURST_GAP_SECS = 20 * 60;
+
+export interface ActBurst {
+  acts: Act[];
+  /** Seconds of quiet before this burst, or 0 for the first one in the day. */
+  quietBefore: number;
+}
+
+/**
+ * burstsOf splits a day's acts into runs that happened together.
+ *
+ * The list arrives newest-first, which is how it is read; `quietBefore` is therefore the
+ * gap between this burst's NEWEST act and the previous burst's OLDEST — the quiet the
+ * reader's eye crosses going down the page.
+ */
+export function burstsOf(acts: Act[], gapSecs: number = BURST_GAP_SECS): ActBurst[] {
+  const out: ActBurst[] = [];
+  for (const a of acts) {
+    const last = out[out.length - 1];
+    if (last) {
+      const previous = last.acts[last.acts.length - 1];
+      const quiet = previous.ts - a.ts;
+      if (quiet > gapSecs) {
+        out.push({acts: [a], quietBefore: quiet});
+        continue;
+      }
+      last.acts.push(a);
+    } else {
+      out.push({acts: [a], quietBefore: 0});
+    }
+  }
+  return out;
+}
+
+/**
+ * quietLabel words a gap the way it would be said out loud.
+ *
+ * Minutes below an hour, hours and minutes below a day, days above. The minutes are kept
+ * next to the hours because "6 小时" and "6 小时 55 分" are different answers to "did I
+ * miss anything overnight".
+ */
+export function quietLabel(secs: number, zh: boolean): string {
+  const m = Math.round(secs / 60);
+  if (m < 60) return zh ? `${m} 分钟` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  if (h < 24) {
+    if (rem === 0) return zh ? `${h} 小时` : `${h}h`;
+    return zh ? `${h} 小时 ${rem} 分` : `${h}h ${rem}m`;
+  }
+  const d = Math.floor(h / 24);
+  const hRem = h % 24;
+  if (hRem === 0) return zh ? `${d} 天` : `${d}d`;
+  return zh ? `${d} 天 ${hRem} 小时` : `${d}d ${hRem}h`;
+}
+
+/** How many lines of a detail the feed shows before it asks. */
+export const ACT_DETAIL_LINES = 2;
+
+/**
+ * detailTruncated reports whether a clamped detail actually lost text.
+ *
+ * "Show more" that shows no more is worse than no affordance at all, so the chevron is
+ * driven by a measurement rather than by the length of the string. `rendered` is what the
+ * platform laid out: on iOS each line carries its own text, and the sum of those lines
+ * falling short of the full detail IS the truncation.
+ *
+ * Where the platform gives no per-line text, hitting the line limit is the only evidence
+ * available and is taken as truncation. That errs toward offering the chevron on a detail
+ * that happens to fill exactly two lines, where expanding is simply a no-op — the opposite
+ * error hides text with no way to reach it.
+ */
+export function detailTruncated(
+  rendered: {text?: string}[] | undefined,
+  full: string,
+  limit: number = ACT_DETAIL_LINES,
+): boolean {
+  if (!rendered || rendered.length < limit) return false;
+  const shown = rendered.map(l => l.text);
+  if (shown.some(t => t === undefined)) return true;
+  return shown.join('').trim().length < full.trim().length;
+}
