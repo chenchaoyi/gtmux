@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.10',
+    en: [
+      'HQ\'s feed shows the rhythm of the day. An evenly spaced list made six hours of quiet look exactly like two minutes between two records, so acts that happened together now sit in one run, and between runs there is a line saying how long the wait was.',
+      'A long detail in that feed can be opened. The control appears only when text was actually cut off.',
+      'The terminal scrolls smoothly past the point where the top bar folds away. Scrolling up used to stall there, because the correction that keeps the content from jumping was fighting your finger.',
+    ],
+    zh: [
+      'HQ 的动作流看得出一天的节奏了。以前一整列等距的行，六小时的安静和两分钟的间隔长得一模一样；现在挨在一起发生的动作收成一组，组与组之间有一行写着这中间隔了多久。',
+      '动作流里过长的详情可以展开，入口只在文字真的被截断时出现。',
+      '终端滑到顶栏收起的那个位置不再卡住。以前那里会停一下，是防止画面跳动的补偿在和手指较劲。',
+    ],
+  },
+  {
     version: '1.0.9',
     en: [
       'HQ has one name. It went by 参谋长, 中控, "the supervisor" and "CHIEF OF STAFF" across the app, sometimes two of them on one screen. Everything says HQ now, in both languages.',
