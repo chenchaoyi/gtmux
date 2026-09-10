@@ -422,6 +422,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     // scroll event to carry the answer.
     onLiveEdge?.(gapRef.current);
   };
+  useEffect(() => () => clearTimeout(jumpTimer.current), []);
   const probe = useRef(Debug.logNet);
   // Route through the harness's own recorder (Documents/gtmux-debug.jsonl, read back by
   // readDebugLog) rather than console: a `log stream` on the simulator kept being
@@ -429,6 +430,14 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   const say = (m: string, extra: Record<string, unknown> = {}) => {
     if (probe.current) Debug.record({event: 'termprobe', at: m, ...extra});
   };
+  // An animated jump is in flight. It matters because the tap ALSO flushes the frozen
+  // snapshot, which changes the content size, which re-pins — instantly. That instant
+  // scroll beats the animation to the same place, so the screen stopped and then appeared
+  // at the bottom instead of travelling there (user report, 2026-09-10). During the
+  // flight the animation is already going where a re-pin would put us, so the re-pin has
+  // nothing to add and only costs the motion.
+  const jumping = useRef(false);
+  const jumpTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // The last measured distance from the tail, so the re-publish below repeats a real
   // reading rather than re-deriving one from a state value that may be a frame stale.
   const gapRef = useRef(0);
@@ -455,8 +464,10 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     // Arriving at the bottom always re-sticks, whoever caused it.
     if (bottom) {
       stick.current = true;
+      jumping.current = false; // arrived; instant re-pinning is wanted again
     } else if (dragging.current) {
       stick.current = false;
+      jumping.current = false; // a finger overrides the journey it interrupted
     }
     setAtBottom(bottom);
     gapRef.current = gap;
@@ -465,6 +476,14 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // Snap back to the live tail: resume following, flush any frozen snapshot (so you
   // land on the newest output, not a stale frame), and scroll down.
   const jumpToBottom = () => {
+    jumping.current = true;
+    // A floor under the guard: if the animation is cut short by something that is not a
+    // finger and not an arrival, following the live tail must not stay switched off.
+    // iOS animates this in about a third of a second whatever the distance.
+    clearTimeout(jumpTimer.current);
+    jumpTimer.current = setTimeout(() => {
+      jumping.current = false;
+    }, 1500);
     stick.current = true;
     setAtBottom(true);
     gapRef.current = 0;
@@ -474,7 +493,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   };
   const onContentSizeChange = (_w: number, h: number) => {
     say('contentSize', {h: +h.toFixed(1), stick: stick.current, atBottom});
-    if (stick.current) ref.current?.scrollToEnd({animated: false});
+    if (stick.current && !jumping.current) ref.current?.scrollToEnd({animated: false});
     // RE-PUBLISH the live-edge state, do not only announce transitions.
     //
     // The host folds its top chrome while you browse scrollback, and it learns the edge
