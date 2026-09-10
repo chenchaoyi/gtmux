@@ -57,6 +57,28 @@ describe('every band folds, and every folding band is counted', () => {
     expect((src.match(/topPad=\{chromeH\}/g) ?? []).length).toBe(2);
   });
 
+  it('paints the chrome above the mode layers', () => {
+    // The floating chrome is a SIBLING of the body, and the body's visible layer carries
+    // its own zIndex (that is how the two modes stack). Without an explicit, higher one
+    // here the terminal paints over the chrome: on 2026-09-10 the bands were laid out
+    // correctly the whole time — the e2e dump put the back button at y=65 — and were
+    // simply invisible, which reads as "the top folded and never came back".
+    const zOf = (name: string) => {
+      const m = src.match(new RegExp(name + ':[^}]*zIndex: (\\d+)'));
+      return m ? Number(m[1]) : -1;
+    };
+    expect(zOf('chrome')).toBeGreaterThan(zOf('layerOn'));
+    expect(zOf('layerOn')).toBeGreaterThanOrEqual(0); // the comparison must mean something
+  });
+
+  it('gives the floating chrome its own ground', () => {
+    // It floats over scrollback now. Transparent, the title and the controls read on top
+    // of terminal output — legible in neither direction (measured on the simulator,
+    // 2026-09-10, before this line existed).
+    const style = src.slice(src.indexOf('styles.chrome,'), src.indexOf('translateY: collapse'));
+    expect(style).toContain('backgroundColor: pal.bg');
+  });
+
   it('keeps the mode toggle and the controls on ONE row', () => {
     // Two adjacent rows of controls cost a band and a divider for nothing. If the
     // segmented gets its own wrapper again, this is the reminder of why it did not.

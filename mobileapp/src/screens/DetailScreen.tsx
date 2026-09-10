@@ -662,6 +662,9 @@ export function DetailView({
           style={[
             styles.chrome,
             {
+              // Opaque, because it FLOATS: the terminal scrolls underneath it, and without
+              // its own ground the title and the controls read on top of scrollback.
+              backgroundColor: pal.bg,
               opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
               transform: [{translateY: collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})}],
             },
@@ -1048,7 +1051,12 @@ const styles = StyleSheet.create({
   // The stack is the whole scrolling region; the chrome floats inside it, clipped so a
   // folded band cannot take a tap from the top of the terminal.
   stack: {flex: 1, overflow: 'hidden'},
-  chrome: {position: 'absolute', top: 0, left: 0, right: 0},
+  // zIndex is NOT optional here. The body's visible layer carries `zIndex: 1` (it is how
+  // the two modes stack), and that was enough to paint the terminal OVER the chrome: the
+  // bands were laid out at the right place the whole time — the e2e dump had the back
+  // button at y=65 — and simply never appeared, which reads exactly like "it folded and
+  // never came back" (2026-09-10).
+  chrome: {position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10},
   body: {flex: 1},
   // Stacked, always-laid-out mode layers (see the body comment). Toggling opacity/
   // zIndex never relayouts — that's what makes switching instant after first mount.
