@@ -110,6 +110,14 @@ describe('the acts timeline', () => {
     expect(gaps(tree)).toHaveLength(0);
   });
 
+  // A \\u2192 written into JSX TEXT is not an escape — it renders as those six characters.
+  // Nothing caught that until the code was read back, so the arrow is pinned here.
+  it('points at the target with an arrow, not with its escape sequence', () => {
+    const joined = texts(render({acts: [at(0, {target: 'api'})], now: T})).join('');
+    expect(joined).toContain('→ api');
+    expect(joined).not.toContain('u2192');
+  });
+
   it('speaks the reader s language', () => {
     const tree = render({acts: [at(0), at(400)], now: T, zh: true});
     expect(texts(tree)).toContain('6 小时 40 分');

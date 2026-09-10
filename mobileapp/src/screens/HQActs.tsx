@@ -181,7 +181,7 @@ function ActRow({
       <View style={styles.flex}>
         <View style={styles.actHead}>
           <Text style={[styles.actVerb, {color: act.alarm ? ERRORED_COLOR : pal.fg}]}>{act.verb}</Text>
-          {act.target ? <Text style={[styles.actTarget, {color: pal.fg2}]}>\u2192 {act.target}</Text> : null}
+          {act.target ? <Text style={[styles.actTarget, {color: pal.fg2}]}>→ {act.target}</Text> : null}
           {act.outcome ? (
             <View style={[styles.outcome, {borderColor: pal.divider}]}>
               <Text style={[styles.outcomeText, {color: pal.fg3}]}>{act.outcome}</Text>
@@ -220,7 +220,7 @@ function ActDetail({text, pal, zh}: {text: string; pal: HQActsProps['pal']; zh: 
             setOpen(v => !v);
           }}>
           <Text style={[styles.more, {color: pal.fg3}]}>
-            {open ? (zh ? '\u6536\u8d77 \u2303' : 'Less \u2303') : zh ? '\u5c55\u5f00 \u2304' : 'More \u2304'}
+            {open ? (zh ? '收起 ⌃' : 'Less ⌃') : zh ? '展开 ⌄' : 'More ⌄'}
           </Text>
         </TouchableOpacity>
       )}
