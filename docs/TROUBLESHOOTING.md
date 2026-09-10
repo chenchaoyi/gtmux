@@ -1421,3 +1421,25 @@ t.Setenv("HOME", t.TempDir())   // the ONLY redirect that works
 
 **If you add another path root**, build it from `state.home()`. A root that reads `$HOME`
 directly is outside the guard, which is exactly the shape of the original bug.
+
+## A release tag landed on the wrong branch (2026-09-10)
+
+**Symptom.** `v1.0.10` was cut, the release built fine, and then `git merge-base
+--is-ancestor v1.0.10 origin/main` said NO. Every earlier tag sits on main.
+
+**Root cause.** The tag was created by a command that began with `git checkout main`,
+and the whole command was refused by the permission layer before any of it ran. The
+refusal is not a failure of one step: **nothing in the chain executes**, so the checkout
+never happened and the tag was written on the feature branch that was still checked out.
+The same refusal, one command earlier, is why the tag body file "did not exist" — the
+heredoc that would have written it was in the refused command too.
+
+**Must-check.** After any refused command, verify the state you assumed it produced —
+`git branch --show-current` before tagging, and `ls` the file you were about to read.
+Never chain a branch switch with the action that depends on it.
+
+**Recovery, when the release is already building.** Do not re-point a pushed tag. Put the
+tag's commit onto main instead: open the branch as a PR and merge it with `--merge`, not
+`--squash`. A squash gives the commit a new sha, so the tag would stay off main's history,
+`git describe --tags` on main would keep answering with the PREVIOUS version, and
+`mobileapp/scripts/set-version.sh` would stamp the next device build with it.
