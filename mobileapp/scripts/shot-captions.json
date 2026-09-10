@@ -1,0 +1,79 @@
+{
+  "_note": "App Store captions, one entry per shot, in order. `file` is the raw capture's stem from the demo harness (.e2e-artifacts/appstore/<lang>/). Keep them short and specific: this is the product's voice, not a campaign. `dot` is a status colour (DESIGN §9) — the same language the app uses, carried onto the store page.",
+  "en": [
+    {
+      "file": "01-radar",
+      "title": "See who needs you",
+      "sub": "A live radar of every agent, colour-coded by state.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "02-terminal-approval",
+      "title": "Answer without walking back",
+      "sub": "The real terminal, in colour — and its question as buttons.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "03-hq",
+      "title": "An HQ triages the rest",
+      "sub": "A supervisor watches the fleet and surfaces only what matters.",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "04-acts",
+      "title": "It shows its work",
+      "sub": "Every dispatch, reclaim and note it made, in the order it made them.",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "05-usage",
+      "title": "Know where your quota stands",
+      "sub": "Which plan window is tightest, and how long until it resets.",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "06-servers",
+      "title": "Switch between your Macs",
+      "sub": "Your MacBook, the studio Mac, even one a teammate shares.",
+      "dot": "#22C55E"
+    }
+  ],
+  "zh": [
+    {
+      "file": "01-radar",
+      "title": "谁在等你，一眼看见",
+      "sub": "每个 agent 的实时状态，用颜色分开。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "02-terminal-approval",
+      "title": "不用走回电脑前",
+      "sub": "彩色的真实终端，它问的问题变成按钮。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "03-hq",
+      "title": "剩下的交给 HQ",
+      "sub": "它替你盯着整支舰队，只把真该你管的事推上来。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "04-acts",
+      "title": "它做了什么，都写着",
+      "sub": "派活、回收、记账，按发生的顺序摆在那里。",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "05-usage",
+      "title": "额度还剩多少，心里有数",
+      "sub": "哪个窗口最紧，还有多久重置。",
+      "dot": "#06B6D4"
+    },
+    {
+      "file": "06-servers",
+      "title": "在几台 Mac 之间切换",
+      "sub": "你的笔记本、工作室那台，还有同事分享给你的。",
+      "dot": "#22C55E"
+    }
+  ]
+}

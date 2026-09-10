@@ -344,7 +344,38 @@ export function demoEvents(agents: Agent[]): HQEvent[] {
   ];
   // Once the hero pane is answered it is no longer waiting; drop the stale escalation
   // so the feed never contradicts the radar.
-  return waiting?.status === 'waiting' ? rows : rows.filter(r => r.seq !== 107);
+  const fleet = waiting?.status === 'waiting' ? rows : rows.filter(r => r.seq !== 107);
+  return [...fleet, ...demoActs(now)].sort((a, b) => b.ts - a.ts);
+}
+
+/**
+ * What the SUPERVISOR did — the `gtmux:audit:*` trail the HQ page's own tab reads.
+ *
+ * The demo had none, so the one screen that answers "what has my supervisor been doing"
+ * showed its empty state to anyone taking the tour, including App Review (2026-09-10).
+ * That is the page's whole argument: a chief of staff that does not show its work is a
+ * dashboard.
+ *
+ * The timestamps are spread across the day ON PURPOSE. The feed groups acts that happened
+ * together and names the quiet between the groups, so a demo where everything happened in
+ * the last ten minutes would render as one undifferentiated run and show none of it.
+ */
+function demoActs(now: number): HQEvent[] {
+  const m = (mins: number) => now - mins * 60;
+  const act = (mins: number, seq: number, event: string, summary: string, loc = ''): HQEvent =>
+    ({ts: m(mins), seq, event, summary, loc, severity: 'routine'} as HQEvent);
+  return [
+    // A burst around a dispatch, twenty minutes ago.
+    act(18, 203, 'gtmux:audit:send', 'asked worker to add backoff + jitter', 'worker:0.0'),
+    act(19, 202, 'gtmux:audit:wake-delivered', 'told HQ that api is waiting on a permission'),
+    act(24, 201, 'gtmux:audit:knowledge', 'wrote down: a retry without jitter is a thundering herd'),
+    // Then a quiet stretch, and an earlier burst before it.
+    act(96, 198, 'gtmux:audit:reap', 'reclaimed the finished docs worktree', 'docs:0.0'),
+    act(101, 197, 'gtmux:audit:send', 'asked web to extract the token check too', 'web:0.0'),
+    // And the start of the day.
+    act(392, 190, 'gtmux:audit:self-check', 'audited its own board against the fleet'),
+    act(405, 189, 'gtmux:audit:hq-session', 'rotated its own session before it went stale'),
+  ];
 }
 
 // The composer's "history" (输入历史) in Demo mode. The global input-history store holds

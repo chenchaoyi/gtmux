@@ -32,7 +32,7 @@ function shot(name: string): void {
 }
 
 gated('app store demo shots', () => {
-  it('captures radar, colored terminal + approval, and the HQ command screen', async () => {
+  it('captures the radar, the terminal, HQ, its work, usage and the Macs', async () => {
     mkdirSync(OUT, {recursive: true});
     // Marketing status bar (clean 9:41, full signal/battery).
     simctl(['status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged',
@@ -78,6 +78,28 @@ gated('app store demo shots', () => {
     await settle(1800);
     shot('03-hq');
 
+    // 4) HQ's own work — the acts feed. The page's whole argument is that a supervisor
+    //    which does not show what it did is a dashboard, and until 2026-09-10 the demo
+    //    had no `gtmux:audit:*` trail at all, so this tab showed its empty state to
+    //    anyone taking the tour.
+    await driver.$('~hq-tab-acts').click().catch(() => {});
+    await settle(1400);
+    shot('04-acts');
+
+    // 5) Usage — the plan windows, which is the one number local counting cannot produce.
+    //    Reached from the header's usage door, beside the board and the knowledge base.
+    await driver.$('~hq-tab-calls').click().catch(() => {});
+    await settle(500);
+    const usageDoor = driver.$('~hq-usage-open');
+    if (await usageDoor.isExisting()) {
+      await usageDoor.click();
+      await settle(1400);
+      shot('05-usage');
+      await driver.$(`~${TestIds.detail.back}`).click().catch(() => {});
+      await driver.$('~hq-usage-close').click().catch(() => {});
+      await settle(600);
+    }
+
     // 4) Servers — the multi-Mac story: one phone managing agents across several Macs
     //    (own Macs full-control + a scoped guest connection). Seeded via GTMUX_DEBUG_SERVERS
     //    (no active → the app lands on the two-track Servers page); SHOT_MODE greens the
@@ -96,9 +118,9 @@ gated('app store demo shots', () => {
     await chip.click();
     await driver.$(`~${TestIds.servers.screen}`).waitForDisplayed({timeout: 15_000});
     await settle(900);
-    shot('04-servers');
+    shot('06-servers');
 
     // eslint-disable-next-line no-console
-    console.log(`[appstore-shots] wrote 01-radar / 02-terminal-approval / 03-hq / 04-servers to ${OUT}`);
+    console.log(`[appstore-shots] wrote 01-radar / 02-terminal-approval / 03-hq / 04-acts / 05-usage / 06-servers to ${OUT}`);
   });
 });

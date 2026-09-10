@@ -11,6 +11,7 @@ An HQ that keeps watch for you: a supervisor digests what every agent is doing, 
 
 ALSO
 • Push the moment an agent needs you or finishes — not before.
+• See where your plan quota stands — which window is tightest and how long until it resets.
 • Live Activity — the current agent's state on your Lock Screen and Dynamic Island.
 • Share, safely — a scoped, revocable link lets a teammate see only the sessions you allow and type only into the panes you allow. Input is off by default.
 • English and 简体中文.

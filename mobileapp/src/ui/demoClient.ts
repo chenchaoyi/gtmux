@@ -157,22 +157,30 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
       // human string it read ("Sep 11 at 10:59pm"). It also carried no sessions or
       // totals, so the body of the usage sheet was empty in the tour.
       const at = (h: number) => humanReset(Date.now() + h * 3600e3);
+      const unix = (h: number) => Math.floor(Date.now() / 1000 + h * 3600);
       return {
+        // Sessions carry WHERE they are and how full their context is. Without those the
+        // sheet's rows have no title and no second line — which is what the tour showed
+        // until 2026-09-10, because the rows only ever carried a token count.
         sessions: [
-          {agent_key: 'claude', tok: 2_851_826, rate: 4_100, usage_warn: 'ctx 94%'},
-          {agent_key: 'claude', tok: 830_004, rate: 0},
-          {agent_key: 'codex', tok: 143_620, rate: 260},
+          {pane_id: '%7', loc: 'api:0.0', agent: 'Claude Code', agent_key: 'claude', tok: 2_851_826, ctx: 0.94, rate: 4_100, usage_warn: 'ctx 94%'},
+          {pane_id: '%3', loc: 'web:0.0', agent: 'Claude Code', agent_key: 'claude', tok: 830_004, ctx: 0.41, rate: 1_260},
+          {pane_id: '%9', loc: 'worker:0.0', agent: 'Codex', agent_key: 'codex', tok: 143_620, ctx: 0.22, rate: 260},
+          {pane_id: '%5', loc: 'infra:0.0', agent: 'Claude Code', agent_key: 'claude', tok: 512_400, ctx: 0.18, rate: 0},
         ],
         types: [
-          {agent_key: 'claude', sessions: 5, tok: 3_681_830, rate: 4_100},
+          {agent_key: 'claude', sessions: 5, tok: 4_194_230, rate: 5_360},
           {agent_key: 'codex', sessions: 1, tok: 143_620, rate: 260},
         ],
         limits: {
           at: Math.floor(Date.now() / 1000) - 240,
+          // `agent_name` and `reset_unix` are what the sheet needs to say "Codex" rather
+          // than "codex" and "resets in 3h 24m" rather than a wall clock. A demo missing
+          // them shows the shape of the bug they fixed.
           windows: [
-            {label: 'claude session', pct_used: 62, reset_at: at(2.4), agent: 'claude'},
-            {label: 'claude week (all models)', pct_used: 41, reset_at: at(3.5 * 24), agent: 'claude'},
-            {label: 'codex week', pct_used: 18, reset_at: at(4 * 24), agent: 'codex'},
+            {label: 'claude session', pct_used: 62, reset_at: at(2.4), reset_unix: unix(2.4), agent: 'claude', agent_name: 'Claude Code'},
+            {label: 'claude week (all models)', pct_used: 41, reset_at: at(3.5 * 24), reset_unix: unix(3.5 * 24), agent: 'claude', agent_name: 'Claude Code'},
+            {label: 'codex week', pct_used: 18, reset_at: at(4 * 24), reset_unix: unix(4 * 24), agent: 'codex', agent_name: 'Codex'},
           ],
         },
         resource: {machine: {disk_free_gb: 84, mem_free_pct: 38, mem_tier: 'ok', warn: ''}},

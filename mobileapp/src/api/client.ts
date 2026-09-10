@@ -233,8 +233,30 @@ export interface ResourceReport {
   machine?: {disk_free_gb?: number; disk_use_pct?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string; tier?: 'amber' | 'red'};
   orphans?: {pid: number; rss_mb: number; comm: string; kind?: string; hint?: string}[];
 }
+/**
+ * One live session's accounting, as `/api/usage` actually sends it.
+ *
+ * This used to declare four of these fields, so every consumer that wanted a session's
+ * LOCATION cast its way in (`(s as {loc?: string}).loc`) — a type that quietly disagreed
+ * with the wire, and the reason the demo's usage rows could ship with no title at all.
+ */
+export interface UsageSession {
+  agent_key: string;
+  tok: number;
+  rate: number;
+  usage_warn?: string;
+  /** The tmux pane this session runs in; absent for a native (non-tmux) session. */
+  pane_id?: string;
+  /** Where it is, as the radar spells it ("api:0.0"). */
+  loc?: string;
+  /** The agent's display name ("Claude Code"), beside its registry key. */
+  agent?: string;
+  /** Live context as a fraction of the window, 0 when the log carried none. */
+  ctx?: number;
+}
+
 export interface UsageReport {
-  sessions?: {agent_key: string; tok: number; rate: number; usage_warn?: string}[];
+  sessions?: UsageSession[];
   types?: {agent_key: string; sessions: number; tok: number; rate: number; usage_warn?: string}[];
   limits?: {windows?: UsageWindow[]; warn?: string; at?: number; unknown?: UnknownPlan[]};
   resource?: ResourceReport;
