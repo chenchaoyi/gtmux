@@ -94,10 +94,26 @@ export function chromeDecision(
   chromeH: number,
   now: number,
   animMs = CHROME_ANIM_MS,
+  /** A finger is down, or momentum is still running. */
+  moving = false,
 ): ChromeDecision {
   const keep: ChromeDecision = {change: false, hidden: state.hidden, settledAt: state.settledAt};
   // Mid-animation: this reading describes a layout that is still moving.
   if (now < state.settledAt) return keep;
+  // MID-GESTURE: wait.
+  //
+  // Folding resizes the scroll view, and holding the content still through that means
+  // writing `contentOffset` on every animation frame. Under a finger those writes lose:
+  // the pan recogniser sets the offset from its own translation on the very next frame,
+  // so the two take turns and the scroll appears to STICK at the fold point (user report,
+  // 2026-09-10 — "到了折叠的地方就会停住").
+  //
+  // There is no version of this that wins the argument, so it does not have one. The
+  // decision waits for the gesture to end; then the fold and its compensation run with
+  // nothing else moving, which is also when the compensation looks like nothing moved.
+  // The chrome folds a beat after you stop rather than under your finger — and a layout
+  // change under a moving finger was the thing that felt wrong in the first place.
+  if (moving) return keep;
 
   const wantHidden =
     gap >= foldThreshold(chromeH) ? true : gap <= AT_TAIL ? false : state.hidden;

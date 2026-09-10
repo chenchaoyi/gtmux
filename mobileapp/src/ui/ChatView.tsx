@@ -64,7 +64,8 @@ interface Props {
    * threshold that keeps the chrome stable depends on how tall the chrome is, which only
    * the host knows — see ui/liveEdge.
    */
-  onLiveEdge?: (gap: number) => void;
+  /** How far from the live tail, and whether a gesture is still running — see NativeTerm. */
+  onLiveEdge?: (gap: number, moving: boolean) => void;
   /** The host installs a "move the offset by dy" function here — see NativeTerm's copy. */
   shiftRef?: React.MutableRefObject<((dy: number) => void) | null>;
 }
@@ -149,6 +150,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // had never left the bottom.
   const stick = React.useRef(true);
   const dragging = React.useRef(false);
+  const decelerating = React.useRef(false); // momentum still running: also "moving"
   // The last reported distance from the tail, so a re-publish (below) can repeat it.
   const gapRef = React.useRef(0);
   const onScroll = (e: any) => {
@@ -161,7 +163,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
     if (gap < 60) stick.current = true;
     else if (dragging.current) stick.current = false;
     setAtBottom(stick.current);
-    onLiveEdge?.(gap);
+    onLiveEdge?.(gap, dragging.current || decelerating.current);
   };
   // When the VIEWPORT changes while we're at the tail — e.g. a host header collapsing
   // in/out above us shrinks/grows this ScrollView — re-pin to the bottom. Without this,
@@ -176,7 +178,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
     stick.current = true;
     gapRef.current = 0;
     setAtBottom(true);
-    onLiveEdge?.(0);
+    onLiveEdge?.(0, false);
   };
 
   // Collapse/expand all agent replies — so you can scan prompts to find a turn, then
@@ -240,7 +242,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
     if (!stick.current) return;
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
     gapRef.current = 0;
-    onLiveEdge?.(0);
+    onLiveEdge?.(0, false);
   }, [turns.length, onLiveEdge]);
 
   // Per-turn time labels, with adjacent duplicates blanked so a burst of turns in
@@ -304,9 +306,25 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       onScroll={onScroll}
       onScrollBeginDrag={() => {
         dragging.current = true;
+        decelerating.current = false;
       }}
-      onScrollEndDrag={() => {
+      onScrollEndDrag={(e?: {nativeEvent?: unknown}) => {
+        // Momentum counts as moving: the finger is up but the offset is still driven, and
+        // folding there is the same fight one frame later.
         dragging.current = false;
+        // The event is optional on purpose: a caller that hands us nothing (a test, or a
+        // platform that omits velocity) must mean "the gesture is over", not a crash.
+        const v = (e?.nativeEvent as {velocity?: {y: number}} | undefined)?.velocity?.y;
+        if (v != null && Math.abs(v) > 0.05) {
+          decelerating.current = true;
+          return;
+        }
+        decelerating.current = false;
+        onLiveEdge?.(gapRef.current, false); // no other scroll event will carry the answer
+      }}
+      onMomentumScrollEnd={() => {
+        decelerating.current = false;
+        onLiveEdge?.(gapRef.current, false);
       }}
       onLayout={onBodyLayout}
       scrollEventThrottle={16}>

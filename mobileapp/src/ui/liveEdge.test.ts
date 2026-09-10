@@ -172,3 +172,35 @@ describe('makeFoldFollower', () => {
     expect(() => follow(1)).not.toThrow();
   });
 });
+
+// The fold waits for the gesture to end.
+//
+// Holding the content still through a fold means writing contentOffset every animation
+// frame, and under a finger those writes lose: the pan recogniser sets the offset from its
+// own translation on the next frame, so the two take turns and the scroll appears to STICK
+// at the fold point (user report, 2026-09-10 — "到了折叠的地方就会停住").
+describe('a decision while the finger is still down', () => {
+  const shown: ChromeState = {hidden: false, settledAt: 0};
+  const deep = foldThreshold(115) + 50; // well past the fold line
+
+  it('waits — folding under a moving finger is a fight it cannot win', () => {
+    expect(chromeDecision(shown, deep, 115, 1000, CHROME_ANIM_MS, true).change).toBe(false);
+  });
+
+  it('acts the moment the gesture ends, with the same reading', () => {
+    // The reading did not change; only the gesture did. Nothing else will arrive to carry
+    // the answer once the finger is up, which is why the child reports again on end.
+    expect(chromeDecision(shown, deep, 115, 1000, CHROME_ANIM_MS, false).change).toBe(true);
+  });
+
+  it('waits in BOTH directions — a reveal resizes just as much as a fold', () => {
+    const hidden: ChromeState = {hidden: true, settledAt: 0};
+    expect(chromeDecision(hidden, 0, 115, 1000, CHROME_ANIM_MS, true).change).toBe(false);
+    expect(chromeDecision(hidden, 0, 115, 1000, CHROME_ANIM_MS, false).change).toBe(true);
+  });
+
+  it('still refuses mid-animation, gesture or not — that guard is separate', () => {
+    const animating: ChromeState = {hidden: false, settledAt: 2000};
+    expect(chromeDecision(animating, deep, 115, 1000, CHROME_ANIM_MS, false).change).toBe(false);
+  });
+});
