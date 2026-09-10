@@ -102,3 +102,33 @@ describe('demo terminal color', () => {
     expect(theme?.palette?.length).toBe(16);
   });
 });
+
+// The demo is what an evaluator sees, and what the store screenshots are taken from. Two
+// surfaces shipped blank in it because the data behind them was never filled in.
+describe('the tour reaches every screen it claims', () => {
+  it('shows what the supervisor did, not just what the fleet did', async () => {
+    // The HQ page's own tab reads the `gtmux:audit:*` trail. The demo had none, so the
+    // screen that carries the product's whole argument showed its empty state (2026-09-10).
+    const c = makeDemoClient('en');
+    const events = await c.hqEvents('routine', 60);
+    const acts = events.filter(e => e.event.startsWith('gtmux:audit:'));
+    expect(acts.length).toBeGreaterThan(3);
+    // Spread across the day: the feed groups what happened together and names the quiet
+    // between, so acts all inside ten minutes would render as one run and show neither.
+    const span = acts[0].ts - acts[acts.length - 1].ts;
+    expect(span).toBeGreaterThan(3 * 3600);
+  });
+
+  it('gives the usage sheet every field it renders', async () => {
+    const u = await makeDemoClient('en').usage();
+if (!u) throw new Error('no usage');
+    for (const s of u.sessions ?? []) {
+      expect(s.loc).toBeTruthy(); // the row's title; blank rows shipped until 2026-09-10
+      expect(s.pane_id).toBeTruthy();
+    }
+    for (const w of u.limits?.windows ?? []) {
+      expect(w.agent_name).toBeTruthy(); // else a group reads as its lowercase key
+      expect(w.reset_unix).toBeGreaterThan(0); // else "resets in 3h" cannot be computed
+    }
+  });
+});

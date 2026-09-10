@@ -64,11 +64,11 @@ export function rankSessions(rows: SessionRow[]): SessionRow[] {
 /** buildUsageView turns the endpoint's report into what the sheet renders. */
 export function buildUsageView(u: UsageReport | null): UsageView {
   const sessions: SessionRow[] = (u?.sessions ?? []).map(s => ({
-    paneId: (s as {pane_id?: string}).pane_id ?? '',
-    loc: (s as {loc?: string}).loc ?? '',
-    agent: (s as {agent?: string}).agent ?? s.agent_key ?? '',
+    paneId: s.pane_id ?? '',
+    loc: s.loc ?? '',
+    agent: s.agent ?? s.agent_key ?? '',
     tok: s.tok ?? 0,
-    ctx: (s as {ctx?: number}).ctx ?? 0,
+    ctx: s.ctx ?? 0,
     rate: s.rate ?? 0,
     warn: s.usage_warn,
   }));
@@ -96,7 +96,7 @@ export function agentNames(u: UsageReport | null): Record<string, string> {
   const out: Record<string, string> = {};
   for (const s of u?.sessions ?? []) {
     const key = s.agent_key;
-    const label = (s as {agent?: string}).agent;
+    const label = s.agent;
     if (key && label) out[key] = label;
   }
   return out;
