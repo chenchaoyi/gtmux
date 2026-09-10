@@ -121,7 +121,7 @@ export function HQScreen({route, navigation}: any) {
   // from a frame measured mid-animation.
   const runEdge = useCallback(
     (gap: number) => {
-      const d = chromeDecision(chrome.current, gap, chromeH.current, Date.now());
+      const d = chromeDecision(chrome.current, {gap, now: Date.now()});
       if (!d.change) return;
       chrome.current = d;
       Animated.timing(collapse, {

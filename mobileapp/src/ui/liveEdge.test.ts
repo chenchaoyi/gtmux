@@ -8,10 +8,10 @@ const st = (hidden: boolean, settledAt = 0): ChromeState => ({hidden, settledAt}
 
 describe('chromeDecision', () => {
   it('folds once you are clearly into history, and reveals at the tail', () => {
-    expect(chromeDecision(st(false), 400, 1000)).toEqual({
+    expect(chromeDecision(st(false), {gap: 400, now: 1000})).toEqual({
       change: true, hidden: true, settledAt: 1000 + CHROME_ANIM_MS,
     });
-    expect(chromeDecision(st(true), 0, 1000)).toEqual({
+    expect(chromeDecision(st(true), {gap: 0, now: 1000})).toEqual({
       change: true, hidden: false, settledAt: 1000 + CHROME_ANIM_MS,
     });
   });
@@ -20,19 +20,19 @@ describe('chromeDecision', () => {
     // The whole point: a gap that is neither at the tail nor clearly away from it must
     // not move the chrome, in EITHER current state.
     const between = AT_TAIL + 20;
-    expect(chromeDecision(st(false), between, 1000).change).toBe(false);
-    expect(chromeDecision(st(true), between, 1000).change).toBe(false);
+    expect(chromeDecision(st(false), {gap: between, now: 1000}).change).toBe(false);
+    expect(chromeDecision(st(true), {gap: between, now: 1000}).change).toBe(false);
   });
 
   it('takes no decision from a measurement made mid-animation', () => {
-    const mid = chromeDecision(st(false), 400, 1000); // folds, settles at 1200
-    expect(chromeDecision(mid, 0, 1100).change).toBe(false); // 100ms in: ignored
-    expect(chromeDecision(mid, 0, 1250).change).toBe(true); // settled: answered
+    const mid = chromeDecision(st(false), {gap: 400, now: 1000}); // folds, settles at 1200
+    expect(chromeDecision(mid, {gap: 0, now: 1100}).change).toBe(false); // 100ms in: ignored
+    expect(chromeDecision(mid, {gap: 0, now: 1250}).change).toBe(true); // settled: answered
   });
 
   it('a repeat in the same direction is a no-op and does not re-arm the freeze', () => {
     const folded = st(true, 900);
-    expect(chromeDecision(folded, 400, 1000)).toEqual({
+    expect(chromeDecision(folded, {gap: 400, now: 1000})).toEqual({
       change: false, hidden: true, settledAt: 900,
     });
   });
@@ -48,7 +48,7 @@ describe('chromeDecision', () => {
       let now = 1000;
       const seen: boolean[] = [];
       for (let i = 0; i < 20; i++) {
-        const d = chromeDecision(state, gap, chromeH, now);
+        const d = chromeDecision(state, {gap: gap, now: chromeH, animMs: now});
         if (d.change) {
           // Committing the change moves the viewport under us by the chrome's height.
           gap += d.hidden ? -chromeH : chromeH;
@@ -69,7 +69,7 @@ describe('chromeDecision', () => {
       let now = 1000;
       const seen: boolean[] = [];
       for (let i = 0; i < 20; i++) {
-        const d = chromeDecision(state, gap, chromeH, now);
+        const d = chromeDecision(state, {gap: gap, now: chromeH, animMs: now});
         if (d.change) {
           gap += d.hidden ? -chromeH : chromeH;
           seen.push(d.hidden);
@@ -88,7 +88,7 @@ describe('chromeDecision', () => {
     let now = 1000;
     const flips: boolean[] = [];
     for (const gap of trace) {
-      const d = chromeDecision(state, gap, now);
+      const d = chromeDecision(state, {gap: gap, now: now});
       if (d.change) flips.push(d.hidden);
       state = d;
       now += 16; // one scroll frame
@@ -102,3 +102,26 @@ describe('chromeDecision', () => {
 // The fold hands the scroll view `chromeH` of extra height at its TOP edge, and content
 // keeps its offset — so it slides up by exactly that much unless the offset follows. 115pt
 // over 200ms, against the finger, is what the operator felt as a bounce (2026-09-09).
+
+// The bug this shape exists to prevent, kept as a test because the type alone is a
+// promise about the FUTURE and this is what went wrong in the past.
+//
+// A parameter was removed from the middle of a positional list on 2026-09-10. The HQ page
+// kept passing four numbers, so its chrome height landed on `now` and its clock landed on
+// `animMs`; every number went to a number, nothing failed to compile, and the header
+// folded once and never came back — `settledAt` had become a timestamp plus a header
+// height, which no later reading could get past.
+describe('a reading whose clock is wrong', () => {
+  it('would freeze the decision forever — which is why the clock is named', () => {
+    // Reconstruct the old mistake by hand: a "now" that is really a header height.
+    const folded = chromeDecision(st(false), {gap: 400, now: 180, animMs: Date.now()});
+    expect(folded.change).toBe(true);
+    // Every later reading, with the same wrong clock, is refused as mid-animation.
+    expect(chromeDecision(folded, {gap: 0, now: 181, animMs: Date.now()}).change).toBe(false);
+    expect(chromeDecision(folded, {gap: 0, now: 9_999, animMs: Date.now()}).change).toBe(false);
+
+    // With a real clock the same sequence comes back, which is all the page ever needed.
+    const ok = chromeDecision(st(false), {gap: 400, now: 1_000});
+    expect(chromeDecision(ok, {gap: 0, now: 1_000 + CHROME_ANIM_MS + 1}).change).toBe(true);
+  });
+});
