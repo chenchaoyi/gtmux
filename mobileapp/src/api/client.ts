@@ -202,6 +202,17 @@ export interface UsageWindow {
   reset_at: string;
   /** Whose plan this window belongs to. Absent from a serve older than 0.93. */
   agent?: string;
+  /**
+   * That agent's display label ("Codex"). Absent from a serve older than 1.0.11.
+   *
+   * The phone used to learn every agent's spelling from SESSION rows, which works right
+   * up until an agent has a plan and no live session — then its group read as the
+   * lowercase registry key next to "Claude Code", and the icon lookup asked with that
+   * key and got a 404.
+   */
+  agent_name?: string;
+  /** Epoch reset, when the source gives one. */
+  reset_unix?: number;
 }
 
 /**
@@ -214,6 +225,8 @@ export interface UsageWindow {
  */
 export interface UnknownPlan {
   agent: string;
+  /** Display label, as for a window. Absent from a serve older than 1.0.11. */
+  agent_name?: string;
   reason: string;
 }
 export interface ResourceReport {

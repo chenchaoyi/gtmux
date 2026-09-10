@@ -368,6 +368,11 @@ array (`[{agent, reason}]`) naming an agent whose plan could not be read — a l
 agent's windows roll over on their own once it goes unused, and a row that simply
 disappears is indistinguishable from a failure to read it. `reason` is a key the client
 translates ("rolled-over"); a client that does not know the field is unaffected.
+Each window and each `unknown` entry also carries an additive `agent_name` — the agent's
+display label, from the agent registry. A client cannot derive it: it used to learn every
+agent's spelling from SESSION rows, which leaves an agent that has a plan and no live
+session showing its lowercase registry key beside a properly-spelled neighbour, and
+asking `/api/icon` with that key (which now resolves a key as well as a label).
 `disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object
 (`{present, percent, on_ac, state?, time_left?}`, omitted on a battery-less host); a low

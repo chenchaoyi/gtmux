@@ -661,3 +661,34 @@ func TestFreshClaudeCacheStillRereadsCodex(t *testing.T) {
 		t.Fatalf("unknown = %+v, want codex", r.Unknown)
 	}
 }
+
+// Every agent that reports a plan reports its NAME with it.
+//
+// The phone learned agent spellings from SESSION rows, so an agent with a plan and no
+// live session had none: Codex's group read "codex", the lowercase registry key, beside
+// "Claude Code", and the icon lookup asked with that key and got a 404 (2026-09-10).
+// The name is stamped on the way out of Get, so a route that forgets is not possible.
+func TestPlansCarryTheAgentDisplayName(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	r := named(Report{
+		Windows: []Window{
+			{Agent: "claude", Label: "claude week (all models)", PctUsed: 76},
+			{Agent: "codex", Label: "codex week", PctUsed: 0},
+			{Label: "an unattributed window"},
+		},
+		Unknown: []UnknownPlan{{Agent: "codex", Reason: "rolled-over"}},
+	})
+	if got := r.Windows[0].AgentName; got != "Claude Code" {
+		t.Errorf("claude window name = %q, want %q", got, "Claude Code")
+	}
+	if got := r.Windows[1].AgentName; got != "Codex" {
+		t.Errorf("codex window name = %q, want %q", got, "Codex")
+	}
+	// A window with no agent is left alone rather than given an invented spelling.
+	if got := r.Windows[2].AgentName; got != "" {
+		t.Errorf("unattributed window name = %q, want empty", got)
+	}
+	if got := r.Unknown[0].AgentName; got != "Codex" {
+		t.Errorf("unreadable codex plan name = %q, want %q", got, "Codex")
+	}
+}

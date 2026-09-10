@@ -936,6 +936,15 @@ func agentIconPNG(name string) []byte {
 	// out-of-box source that ships in the binary, so mobile/web show an agent's icon
 	// with no installed app and no drop-in. Falls back to the installed-app icon / a
 	// direct path when no committed icon exists (see CLAUDE.md §6).
+	// Spelled EITHER WAY. `name` is usually a display label ("Codex"), because that is
+	// what a radar row carries — but a caller that only knows the identity has the
+	// registry KEY ("codex"), and the key is the identity's source of truth. The phone's
+	// usage sheet is exactly that caller: an agent with a plan but no live session never
+	// reaches a radar row, so it had only the key, asked with it, and got a 404 — Codex
+	// showed the neutral monogram beside a plan it had read fine (2026-09-10).
+	if b := assets.AgentIcon(name); b != nil {
+		return b
+	}
 	if b := assets.AgentIcon(agents.KeyForLabel(name)); b != nil {
 		return b
 	}

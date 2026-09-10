@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -34,6 +35,7 @@ type Window struct {
 	PctUsed   int    `json:"pct_used"`             // 0–100, server-authoritative
 	ResetAt   string `json:"reset_at"`             // human reset time, as reported ("Jul 17 at 10:59pm")
 	Agent     string `json:"agent,omitempty"`      // which agent's plan this window belongs to
+	AgentName string `json:"agent_name,omitempty"` // that agent's display label ("Codex")
 	ResetUnix int64  `json:"reset_unix,omitempty"` // epoch reset, when the source gives one
 }
 
@@ -49,8 +51,9 @@ type Window struct {
 // `Reason` is a key, not a sentence. Surfaces translate it, which is what keeps the
 // wording in one place per language instead of embedded in a Go string here.
 type UnknownPlan struct {
-	Agent  string `json:"agent"`
-	Reason string `json:"reason"` // "rolled-over" — a reading exists but its windows ended
+	Agent     string `json:"agent"`
+	AgentName string `json:"agent_name,omitempty"` // display label, as for Window
+	Reason    string `json:"reason"`               // "rolled-over" — a reading exists but its windows ended
 }
 
 // Report is the cached limits snapshot.
@@ -130,7 +133,36 @@ func Fresh(r Report, cfg Config, now time.Time) bool {
 // Get returns limits, refreshing via the command only when the cache is stale
 // (or force). When the command is disabled ("") or fails, the last good cache is
 // returned (ok reflects whether ANY data is available). now is injectable.
+//
+// The display name is stamped HERE, on the way out, rather than at each place a window
+// is built. Every route through `get` ends up in this one funnel, so a new agent cannot
+// arrive carrying a plan and no name — which is the shape of the bug this fixes: the
+// phone learned agent names from SESSION rows, so an agent with a plan and no live
+// session showed its lowercase registry key ("codex") beside "Claude Code", and had no
+// icon either (2026-09-10).
 func Get(cfg Config, force bool, now time.Time) (Report, bool) {
+	r, ok := get(cfg, force, now)
+	return named(r), ok
+}
+
+// named fills in each window's and gap's display label from the agent registry, which
+// is the one place an agent's spelling is declared.
+func named(r Report) Report {
+	names := agents.DisplayNames()
+	for i := range r.Windows {
+		if n := names[r.Windows[i].Agent]; n != "" {
+			r.Windows[i].AgentName = n
+		}
+	}
+	for i := range r.Unknown {
+		if n := names[r.Unknown[i].Agent]; n != "" {
+			r.Unknown[i].AgentName = n
+		}
+	}
+	return r
+}
+
+func get(cfg Config, force bool, now time.Time) (Report, bool) {
 	cached, hasCache := Load()
 	// Codex is re-read on EVERY path, cache hit included. Its source is a local file
 	// this machine already has, not a command with a cost, so there is nothing to

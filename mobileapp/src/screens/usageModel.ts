@@ -106,7 +106,7 @@ export function agentNames(u: UsageReport | null): Record<string, string> {
 export interface PlanGroup {
   agent: string;
   name: string;
-  windows: {name: string; pct: number; resetAt: string}[];
+  windows: {name: string; pct: number; resetAt: string; resetUnix?: number}[];
   /**
    * Set when this agent's plan could not be read at all, carrying the Mac's reason key.
    *
@@ -152,15 +152,24 @@ export function planByAgent(u: UsageReport | null): PlanGroup[] {
     if (i === undefined) {
       i = out.length;
       at.set(key, i);
-      out.push({agent, name: names[agent] ?? agent, windows: []});
+      // The SERVER's spelling first: it reads the agent registry, which is where an
+      // agent's name is declared. `names` is the fallback for an older serve, learned
+      // from session rows — and it is exactly what fails for an agent that has a plan
+      // and no live session (Codex read "codex" beside "Claude Code", 2026-09-10).
+      out.push({agent, name: w.agent_name || names[agent] || agent, windows: []});
     }
-    out[i].windows.push({name, pct: w.pct_used, resetAt: w.reset_at});
+    out[i].windows.push({name, pct: w.pct_used, resetAt: w.reset_at, resetUnix: w.reset_unix});
   }
   // Agents the Mac could not read a plan for, appended as their own groups. Never
   // merged into one that has windows: an agent is either readable or it is not.
   for (const gap of u?.limits?.unknown ?? []) {
     if (at.has(gap.agent)) continue;
-    out.push({agent: gap.agent, name: names[gap.agent] ?? gap.agent, windows: [], unreadable: gap.reason});
+    out.push({
+      agent: gap.agent,
+      name: gap.agent_name || names[gap.agent] || gap.agent,
+      windows: [],
+      unreadable: gap.reason,
+    });
   }
   return out;
 }
@@ -213,4 +222,90 @@ export function machineLines(
     });
   }
   return out;
+}
+
+// ── what the page leads with ────────────────────────────────────────────────
+//
+// The sheet opened with a section header and then a flat list. The two facts a reader
+// came for — which window is tightest, and whether the machine is about to stop
+// everything — sat at row 3 and row 25 respectively (measured 2026-09-10: 18 session
+// rows pushed an amber disk warning off the bottom of the screen).
+//
+// So the page states them first, in a sentence, and the sections stay where they are.
+
+export interface Tightest {
+  /** The window's own name, with its agent prefix removed. */
+  window: string;
+  agent: string;
+  agentName: string;
+  pct: number;
+  resetAt: string;
+  resetUnix?: number;
+}
+
+/**
+ * tightestWindow is the window closest to its limit.
+ *
+ * SESSION windows are excluded, the same exclusion `warnOf` makes on the Mac: a session
+ * window resets within hours, so a high one is a normal working day, not news. When only
+ * session windows exist the tightest of those is still better than nothing.
+ */
+export function tightestWindow(u: UsageReport | null): Tightest | null {
+  const all = planByAgent(u).flatMap(g =>
+    g.windows.map(w => ({
+      window: w.name,
+      agent: g.agent,
+      agentName: g.name,
+      pct: w.pct,
+      resetAt: w.resetAt,
+      resetUnix: w.resetUnix,
+    })),
+  );
+  if (all.length === 0) return null;
+  const weekly = all.filter(w => !/session|会话/i.test(w.window));
+  const pool = weekly.length > 0 ? weekly : all;
+  return pool.reduce((a, b) => (b.pct > a.pct ? b : a));
+}
+
+/**
+ * untilReset words the wait as a duration, from an epoch the report may or may not carry.
+ *
+ * "Sep 11 at 10:59pm" makes a reader do date arithmetic to answer "is that soon"; "1 天 7
+ * 小时后" is the answer. Without `reset_unix` there is nothing to compute from and the
+ * wall clock is returned unchanged — inventing a duration from a parsed English date
+ * would be a guess about a timezone.
+ */
+export function untilReset(resetUnix: number | undefined, nowSecs: number, zh: boolean): string {
+  if (!resetUnix || resetUnix <= nowSecs) return '';
+  const mins = Math.round((resetUnix - nowSecs) / 60);
+  if (mins < 60) return zh ? `${mins} 分钟后重置` : `resets in ${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h < 24) {
+    if (m === 0) return zh ? `${h} 小时后重置` : `resets in ${h}h`;
+    return zh ? `${h} 小时 ${m} 分钟后重置` : `resets in ${h}h ${m}m`;
+  }
+  const d = Math.floor(h / 24);
+  const hr = h % 24;
+  if (hr === 0) return zh ? `${d} 天后重置` : `resets in ${d}d`;
+  return zh ? `${d} 天 ${hr} 小时后重置` : `resets in ${d}d ${hr}h`;
+}
+
+/**
+ * splitSessions divides the list into the ones worth a row and the ones worth a count.
+ *
+ * A session that is warned or actually producing tokens is why the sheet was opened; one
+ * sitting idle is history. Eighteen rows of history is a wall that hides both. The
+ * warned ones are NEVER folded away — that is the whole reason `rankSessions` exists.
+ */
+export function splitSessions(rows: SessionRow[]): {shown: SessionRow[]; rest: SessionRow[]; restTok: number} {
+  const shown = rows.filter(s => !!s.warn || s.rate > 0);
+  const rest = rows.filter(s => !s.warn && s.rate <= 0);
+  return {shown, rest, restTok: rest.reduce((n, s) => n + s.tok, 0)};
+}
+
+/** machineWarn is the machine's own warning sentence, or "" when it has nothing to say. */
+export function machineWarn(m: ResourceReport['machine'] | null | undefined): string {
+  if (!m || (m.tier !== 'amber' && m.tier !== 'red')) return '';
+  return m.warn ?? '';
 }
