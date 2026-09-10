@@ -89,7 +89,7 @@ interface Props {
    * content still through that means writing `contentOffset` — which loses to a finger.
    * The host waits for it to go false.
    */
-  onLiveEdge?: (gap: number, moving: boolean) => void;
+  onLiveEdge?: (gap: number) => void;
   /**
    * The host installs a "move the offset by dy" function here.
    *
@@ -97,7 +97,8 @@ interface Props {
    * above — the child reports, the host drives — and it keeps both scrollable layers
    * offering the same one-line surface.
    */
-  shiftRef?: React.MutableRefObject<((dy: number) => void) | null>;
+  /** Constant top padding, the height of the host's floating chrome. */
+  topPad?: number;
 }
 
 // The terminal surface's default (always-dark) background. Exported so the
@@ -232,7 +233,7 @@ const TermLine = React.memo(function TermLine({
   );
 });
 
-export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge, shiftRef}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge, topPad = 0}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
@@ -404,39 +405,22 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // atBottom drives the jump-to-bottom FAB (a ref can't re-render); stick keeps the
   // follow-live behavior. Both track the same "near the tail" test.
   const [atBottom, setAtBottom] = useState(true);
-  // TEMPORARY instrumentation (jump-to-bottom investigation) — remove before merging.
-  // True while the user's own finger is driving the scroll (a drag, and the momentum it
-  // hands off to). Programmatic scrolls never set it, which is what keeps them from
-  // cancelling the follow they are performing.
+  // True while the user's own finger is driving the scroll. Programmatic scrolls never
+  // set it, which is what keeps them from cancelling the follow they are performing.
   const dragging = useRef(false);
-  // Momentum counts as moving too: the finger is up but the offset is still being driven,
-  // and a fold there is the same fight one frame later.
-  const decelerating = useRef(false);
   const beginDrag = () => {
     dragging.current = true;
-    decelerating.current = false;
     freeze();
   };
+  // Momentum needs no special case any more. It used to: while the fold resized the
+  // viewport, folding mid-glide meant writing the offset under a scroll the system was
+  // already driving. The chrome floats now, so a fold during momentum moves nothing.
   const endDrag = () => {
     dragging.current = false;
-    decelerating.current = false;
     thawByPosition();
-    // The gesture is over, so ask once with the newest reading — there will be no other
+    // The gesture is over, so ask once with the newest reading — there may be no other
     // scroll event to carry the answer.
-    onLiveEdge?.(gapRef.current, false);
-  };
-  const endDragMaybeMomentum = (e?: NativeSyntheticEvent<NativeScrollEvent>) => {
-    // `decelerate` on the end-drag event says whether momentum follows. Treating a flick
-    // as finished here would fold mid-glide, which is the same fight.
-    // Optional on purpose — see ChatView's copy.
-    const glides = (e?.nativeEvent as unknown as {velocity?: {y: number}} | undefined)?.velocity?.y;
-    dragging.current = false;
-    if (glides != null && Math.abs(glides) > 0.05) {
-      decelerating.current = true;
-      thawByPosition();
-      return;
-    }
-    endDrag();
+    onLiveEdge?.(gapRef.current);
   };
   const probe = useRef(Debug.logNet);
   // Route through the harness's own recorder (Documents/gtmux-debug.jsonl, read back by
@@ -451,21 +435,6 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // The last offset we saw, so a chrome-fold correction can be applied relative to it.
   const offRef = useRef(0);
 
-  // Move the offset by dy, holding the content still while the host's chrome folds. The
-  // local `offRef` is advanced immediately: the animation steps faster than onScroll
-  // reports, and reading a stale offset each frame would apply the same correction twice.
-  useEffect(() => {
-    if (!shiftRef) return;
-    shiftRef.current = (dy: number) => {
-      if (!dy) return;
-      const y = Math.max(0, offRef.current + dy);
-      offRef.current = y;
-      ref.current?.scrollTo({y, animated: false});
-    };
-    return () => {
-      shiftRef.current = null;
-    };
-  }, [shiftRef]);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     offRef.current = contentOffset.y;
@@ -491,7 +460,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     }
     setAtBottom(bottom);
     gapRef.current = gap;
-    onLiveEdge?.(gap, dragging.current || decelerating.current);
+    onLiveEdge?.(gap);
   };
   // Snap back to the live tail: resume following, flush any frozen snapshot (so you
   // land on the newest output, not a stale frame), and scroll down.
@@ -499,7 +468,6 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     stick.current = true;
     setAtBottom(true);
     gapRef.current = 0;
-    onLiveEdge?.(0, false);
     say('jump', {pending: pending.current !== null, frozen: frozen.current});
     flushPending();
     ref.current?.scrollToEnd({animated: true});
@@ -520,7 +488,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     // Content size changes on every poll of a live pane, so this re-asserts the truth
     // several times a second. The host dedupes by its own last value, so a repeat costs
     // nothing and a DESYNC repairs itself within one frame.
-    onLiveEdge?.(gapRef.current, dragging.current || decelerating.current);
+    onLiveEdge?.(gapRef.current);
   };
 
   // iOS selection — the native overlay reports activation so JS can freeze the
@@ -566,13 +534,13 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
       <ScrollView
         ref={ref}
         style={styles.fill}
-        contentContainerStyle={styles.pad}
+        contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]}
         onScroll={onScroll}
         onTouchStart={freeze}
         onTouchEnd={thawSoon}
         onTouchCancel={thawSoon}
         onScrollBeginDrag={beginDrag}
-        onScrollEndDrag={endDragMaybeMomentum}
+        onScrollEndDrag={endDrag}
         onMomentumScrollEnd={endDrag}
         scrollEventThrottle={16}
         onContentSizeChange={onContentSizeChange}>

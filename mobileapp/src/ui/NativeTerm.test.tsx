@@ -2,6 +2,7 @@ import React from 'react';
 import {ScrollView} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {NativeTerm} from './NativeTerm';
+import {TestIds} from '../constants/testIds';
 
 // The host (DetailScreen) folds its top chrome while you browse scrollback, and it learns
 // whether you are at the live tail ONLY from onLiveEdge. So the contract is not "announce
@@ -65,57 +66,70 @@ test('at the tail it re-publishes the tail, not a fold', () => {
   expect(seen).toEqual([0]);
 });
 
-// The host cannot see a finger; the child has to say so.
+// The jump-to-bottom arrow must not announce an arrival it has not made.
 //
-// Folding resizes this view, and holding the content still through that means writing
-// contentOffset — which loses to a live gesture, so the scroll appears to stick at the
-// fold point (2026-09-10). The host waits for `moving` to go false, which makes this
-// report the load-bearing half: a child that always says "not moving" puts the stall
-// straight back with nothing to notice it.
-describe('reporting whether a gesture is running', () => {
-  const mount = (onLiveEdge: (gap: number, moving: boolean) => void) => {
+// It used to report gap=0 the instant it was tapped. The host believed it, unfolded the
+// chrome, and the fold's per-frame offset writes cancelled the very scroll animation the
+// tap had started — so the chrome flashed and the view went nowhere (2026-09-10). The
+// compensation is gone now, but the lie is the part that must not come back: the host acts
+// on this report, and the scroll's own frames are what know where the scroll is.
+describe('the jump-to-bottom arrow', () => {
+  const mountAway = (onLiveEdge: (gap: number) => void) => {
     let t: renderer.ReactTestRenderer;
     act(() => {
-      t = renderer.create(<NativeTerm text={'a\nb\nc'} onLiveEdge={onLiveEdge} />);
+      t = renderer.create(<NativeTerm text={'line\n'.repeat(80)} onLiveEdge={onLiveEdge} />);
     });
-    return t!.root.findByType(ScrollView);
-  };
-  const scroll = (sv: {props: Record<string, (e: unknown) => void>}, y: number) =>
+    const sv = t!.root.findByType(ScrollView);
+    // Scroll away from the tail so the control is on screen.
     act(() => {
+      sv.props.onScrollBeginDrag({});
       sv.props.onScroll({
-        nativeEvent: {contentOffset: {y}, contentSize: {height: 4000}, layoutMeasurement: {height: 600}},
+        nativeEvent: {contentOffset: {y: 0}, contentSize: {height: 9000}, layoutMeasurement: {height: 600}},
       });
     });
+    return t!;
+  };
 
-  it('says moving while a finger is down', () => {
-    const seen: boolean[] = [];
-    const sv = mount((_g, m) => seen.push(m));
-    act(() => sv.props.onScrollBeginDrag({}));
-    scroll(sv as never, 100);
-    expect(seen).toContain(true);
+  it('reports nothing when tapped — the arrival reports itself', () => {
+    const seen: number[] = [];
+    const tree = mountAway(g => seen.push(g));
+    seen.length = 0;
+    act(() => tree.root.findByProps({testID: TestIds.detail.jumpBottom}).props.onPress());
+    expect(seen).toEqual([]);
   });
 
-  it('says still once the finger lifts with no momentum', () => {
-    const seen: boolean[] = [];
-    const sv = mount((_g, m) => seen.push(m));
-    act(() => sv.props.onScrollBeginDrag({}));
-    scroll(sv as never, 100);
+  it('reports the tail once the scroll actually gets there', () => {
+    const seen: number[] = [];
+    const tree = mountAway(g => seen.push(g));
+    act(() => tree.root.findByProps({testID: TestIds.detail.jumpBottom}).props.onPress());
     seen.length = 0;
-    act(() => sv.props.onScrollEndDrag({nativeEvent: {velocity: {y: 0}}}));
-    expect(seen).toEqual([false]); // reported once, at the end — nothing else will carry it
+    act(() => {
+      tree.root.findByType(ScrollView).props.onScroll({
+        nativeEvent: {contentOffset: {y: 8400}, contentSize: {height: 9000}, layoutMeasurement: {height: 600}},
+      });
+    });
+    expect(seen).toEqual([0]);
+  });
+});
+
+// The chrome floats above this view and covers its top, so the content is padded by the
+// chrome's height — without it the OLDEST line can never be scrolled clear.
+describe('room for the floating chrome', () => {
+  it('pads the content by what the host asks for', () => {
+    let t: renderer.ReactTestRenderer;
+    act(() => {
+      t = renderer.create(<NativeTerm text={'a\nb'} topPad={117} />);
+    });
+    const style = t!.root.findByType(ScrollView).props.contentContainerStyle;
+    expect(JSON.stringify(style)).toContain('"paddingTop":117');
   });
 
-  it('keeps saying moving through a flick, until momentum ends', () => {
-    // A fold mid-glide is the same fight one frame later.
-    const seen: boolean[] = [];
-    const sv = mount((_g, m) => seen.push(m));
-    act(() => sv.props.onScrollBeginDrag({}));
-    act(() => sv.props.onScrollEndDrag({nativeEvent: {velocity: {y: 2.5}}}));
-    seen.length = 0;
-    scroll(sv as never, 300);
-    expect(seen).toEqual([true]);
-    seen.length = 0;
-    act(() => sv.props.onMomentumScrollEnd({nativeEvent: {velocity: {y: 0}}}));
-    expect(seen).toContain(false);
+  it('pads nothing when the host has not measured yet', () => {
+    let t: renderer.ReactTestRenderer;
+    act(() => {
+      t = renderer.create(<NativeTerm text={'a\nb'} />);
+    });
+    const style = t!.root.findByType(ScrollView).props.contentContainerStyle;
+    expect(JSON.stringify(style)).not.toContain('paddingTop');
   });
 });

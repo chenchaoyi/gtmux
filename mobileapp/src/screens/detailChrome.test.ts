@@ -25,40 +25,36 @@ describe('every band folds, and every folding band is counted', () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const src: string = require('fs').readFileSync(req.resolve('./DetailScreen.tsx'), 'utf8');
 
-  it('counts each folding band’s height in chromeH', () => {
-    // The fold/reveal thresholds are derived from the height being switched. A band that
-    // folds without being counted shrinks the gap by more than the threshold allows, and
-    // the oscillation liveEdge exists to make impossible becomes possible again.
-    const sum = src.slice(src.indexOf('chromeH.current ='), src.indexOf('const chrome ='));
+  it('counts each band’s height in chromeH', () => {
+    // chromeH is now two things: how far the floating chrome slides out, and the constant
+    // top padding the content carries so its oldest line clears the chrome. A band missing
+    // from the sum would be a band that slides only partway out, or content that starts
+    // underneath it.
+    const sum = src.slice(src.indexOf('const chromeH ='), src.indexOf('const chrome ='));
     for (const band of ['headerH', 'neighborH', 'ctlH']) {
       expect(sum).toContain(band);
     }
   });
 
-  it('has no band that folds without being in that sum', () => {
-    const folding = [...src.matchAll(/outputRange: \[(\w+H), 0\]/g)].map(m => m[1]);
-    const sum = src.slice(src.indexOf('chromeH.current ='), src.indexOf('const chrome ='));
-    for (const h of new Set(folding)) {
-      expect(sum).toContain(h);
-    }
-    expect(folding.length).toBeGreaterThan(0);
+  it('folds by sliding, never by resizing — the whole point of the rewrite', () => {
+    // Animating a band's HEIGHT resizes the scroll viewport under it, and every symptom
+    // this screen has produced came from that: the fold oscillating, the content bouncing
+    // up 115pt, the scroll sticking at the fold point, and the jump-to-bottom animation
+    // being cancelled by the compensation. The chrome floats now. If a `height:` shows up
+    // on the collapse driver again, all four come back with it.
+    expect(src).not.toMatch(/height:[^\n]*collapse\.interpolate/);
+    expect(src).toContain('transform: [{translateY: collapse.interpolate(');
+    expect(src).toContain('styles.chrome');
+    // Nothing may drive the scroll offset from the fold any more; there is nothing to
+    // compensate, and those writes are what cancelled the arrival animation.
+    expect(src).not.toContain('collapse.addListener');
+    expect(src).not.toContain('shiftRef');
   });
 
-  it('drives the scroll offset from the fold, so the content does not slide', () => {
-    // Folding grows the scroll view at its TOP edge; without a matching move of the
-    // offset the content slides up by the chrome's whole height — 115pt over 200ms,
-    // against the finger. The arithmetic is `chromeShift` (pinned in liveEdge.test.ts);
-    // this checks it is actually WIRED, which is the half a unit test cannot see.
-    // The arithmetic and the per-frame spreading are pinned BEHAVIOURALLY in
-    // liveEdge.test.ts (`makeFoldFollower`) — a source grep for the helper's name stayed
-    // green when the correction was replaced by a constant zero, which is the regression
-    // it was meant to catch. What is left here is the wiring, which no unit test sees.
-    expect(src).toContain('makeFoldFollower');
-    expect(src).toContain('collapse.addListener');
-    // Both layers stay mounted, so only the one on screen may be corrected — the same
-    // one-driver-one-source rule the gap reporting follows.
-    expect(src).toContain("modeRef.current === 'chat' ? shiftChat : shiftTerm");
-    expect((src.match(/shiftRef=\{shift/g) ?? []).length).toBe(2);
+  it('pads the content by the chrome’s height, in BOTH layers', () => {
+    // The chrome covers the top of the scroll view. Without this the OLDEST line can
+    // never be scrolled clear of it.
+    expect((src.match(/topPad=\{chromeH\}/g) ?? []).length).toBe(2);
   });
 
   it('keeps the mode toggle and the controls on ONE row', () => {
