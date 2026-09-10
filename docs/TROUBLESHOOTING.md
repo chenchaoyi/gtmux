@@ -1443,3 +1443,36 @@ tag's commit onto main instead: open the branch as a PR and merge it with `--mer
 `--squash`. A squash gives the commit a new sha, so the tag would stay off main's history,
 `git describe --tags` on main would keep answering with the PREVIOUS version, and
 `mobileapp/scripts/set-version.sh` would stamp the next device build with it.
+
+## A layout change that unit tests and the artifact both called fine (2026-09-10)
+
+**Symptom.** The Detail screen's top chrome was invisible. Reported as "it folds and
+never comes back", which is what it looks like — but it had never appeared at all.
+
+**Root cause.** The chrome was moved out of the layout flow into a floating overlay, a
+sibling of the body. The body's visible mode layer carries `zIndex: 1` (that is how the
+Chat and Terminal layers stack), the chrome carried none, and the terminal painted over
+it. The bands were laid out correctly the whole time — the e2e page dump put the back
+button at y=65 — and a second defect rode along: floating over scrollback, the chrome
+needs its own background, or the title and controls sit on top of terminal output.
+
+**Why nothing caught it.** 886 unit tests passed, `check-design.sh` passed, and the
+shipped bundle was verified to contain the new code and not the old. None of that can
+see a paint order. **A change to layout, stacking, or anything else whose result is
+"what is on the screen" is not verified until the screen has been looked at.**
+
+**How to look, in about four minutes:**
+
+```sh
+cd mobileapp && npm run e2e:build            # Release build → booted simulator
+npm run e2e:appium &                         # Appium on :4723 (Node 20-22, not newer)
+GTMUX_E2E_URL=http://127.0.0.1:8765 \
+GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
+GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "terminal scroll"
+```
+
+`terminal-scroll-collapse` drags through scrollback and taps jump-to-bottom, and leaves
+screenshots plus an XCUITest element dump under `.e2e-artifacts/latest/`. **Read the
+screenshots** — the first failing run here reported only "could not reach Detail", and
+the picture was the whole answer. The element dump gives frames, which is how you tell
+"laid out in the wrong place" from "laid out correctly and painted underneath".
