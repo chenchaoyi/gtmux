@@ -24,7 +24,7 @@ import {AgentAvatar} from './AgentAvatar';
 import {ActionIcon, ActionIconName} from './ActionIcon';
 import {ERRORED_COLOR, Palette, StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
-import {buildRowSheet, SheetActionKey} from './rowSheetModel';
+import {buildRowSheet, groupsOf, SheetActionKey} from './rowSheetModel';
 
 export function RowSheet({
   agent,
@@ -99,7 +99,7 @@ export function RowSheet({
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <Animated.View
-          style={{transform: [{translateY: rise.interpolate({inputRange: [0, 1], outputRange: [420, 0]})}]}}>
+          style={{transform: [{translateY: rise.interpolate({inputRange: [0, 1], outputRange: [280, 0]})}]}}>
           <TouchableOpacity
             testID={TestIds.agent.sheet}
             accessibilityLabel={TestIds.agent.sheet}
@@ -174,34 +174,55 @@ export function RowSheet({
                 </View>
               )}
 
-              {/* Actions as a grouped list: one hairline-separated row each, an icon, and
-                  underneath it the literal thing that gets sent. The previous version
-                  gave every action a bordered card of its own, which at four of them read
-                  as four competing buttons rather than a menu. */}
-              <View style={[styles.actions, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-                {m.actions.map((act, i) => (
-                  <TouchableOpacity
-                    key={act.key}
-                    testID={`${TestIds.agent.sheetAction}-${act.key}`}
-                    accessibilityLabel={`${TestIds.agent.sheetAction}-${act.key}`}
-                    activeOpacity={act.disabled ? 1 : 0.55}
-                    disabled={act.disabled}
-                    onPress={() => run(act.key)}
-                    style={[
-                      styles.action,
-                      i > 0 && {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider},
-                      act.disabled && styles.actionOff,
-                    ]}>
-                    <ActionIcon name={icons[act.key]} color={act.disabled ? pal.fg3 : pal.fg2} />
-                    <View style={styles.actionText}>
-                      <Text style={[styles.actionTitle, {color: act.disabled ? pal.fg3 : pal.fg}]}>{act.title}</Text>
-                      <Text style={[styles.actionSub, {color: pal.fg3}]} numberOfLines={2}>
-                        {act.sub}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {/* The groups the MODEL already declares (answer / go / drive / look),
+                  drawn as separated blocks instead of one wall. They were there the whole
+                  time — `SheetAction.group` — and flattening them made "Interrupt it"
+                  (sends Esc, stopping a turn in progress) look exactly like "See the
+                  changes" (2026-09-10). The ORDER is untouched: jump stays second, which
+                  was decided on 2026-09-03 and is the reason it is not at the bottom. */}
+              {groupsOf(m.actions).map(group => (
+                <View
+                  key={group[0].group}
+                  style={[styles.actions, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+                  {group.map((act, i) => {
+                    // The one action that interrupts work in progress wears the attention
+                    // colour. NOT red: red means "waiting on you" in this product, and a
+                    // red button would collide with the state language (DESIGN §1).
+                    const loud = act.key === 'stop' && !act.disabled;
+                    return (
+                      <TouchableOpacity
+                        key={act.key}
+                        testID={`${TestIds.agent.sheetAction}-${act.key}`}
+                        accessibilityLabel={`${TestIds.agent.sheetAction}-${act.key}`}
+                        activeOpacity={act.disabled ? 1 : 0.55}
+                        disabled={act.disabled}
+                        onPress={() => run(act.key)}
+                        style={[
+                          styles.action,
+                          i > 0 && {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider},
+                          act.disabled && styles.actionOff,
+                        ]}>
+                        <ActionIcon
+                          name={icons[act.key]}
+                          color={act.disabled ? pal.fg3 : loud ? ERRORED_COLOR : pal.fg2}
+                        />
+                        <View style={styles.actionText}>
+                          <Text
+                            style={[
+                              styles.actionTitle,
+                              {color: act.disabled ? pal.fg3 : loud ? LOUD_TEXT : pal.fg},
+                            ]}>
+                            {act.title}
+                          </Text>
+                          <Text style={[styles.actionSub, {color: pal.fg3}]} numberOfLines={2}>
+                            {act.sub}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
             </ScrollView>
           </TouchableOpacity>
         </Animated.View>
@@ -209,6 +230,10 @@ export function RowSheet({
     </Modal>
   );
 }
+
+// The interrupting action's text. Darker than ERRORED_COLOR so it reads as a label on a
+// white row rather than as a warning badge; the icon carries the amber.
+const LOUD_TEXT = '#B45309';
 
 const styles = StyleSheet.create({
   backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end'},
@@ -235,7 +260,7 @@ const styles = StyleSheet.create({
   optionN: {fontSize: 15, fontWeight: '800', minWidth: 14, fontVariant: ['tabular-nums']},
   optionText: {flex: 1, fontSize: 15, lineHeight: 21},
 
-  actions: {borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
+  actions: {borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', marginBottom: 8},
   action: {flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 13, paddingVertical: 11},
   actionOff: {opacity: 0.5},
   actionText: {flex: 1},

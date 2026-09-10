@@ -6,13 +6,15 @@
 // NOT bundle third-party logos (DESIGN §6); color is never used for identity.
 
 import React from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Animated, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
 import {ERRORED_COLOR, Palette, Size, StatusColor} from './theme';
 import {StatusBadge} from './StatusBadge';
 import {TestIds} from '../constants/testIds';
+import {Haptics} from '../native/haptics';
+import {LONG_PRESS_MS, PRESS_SCALE, pressAnim} from './pressFeel';
 
 function relTime(since?: number): string {
   if (!since) return '';
@@ -56,14 +58,48 @@ export function AgentRow({
   const message =
     (agent.error && agent.error_text) || (agent.bg && agent.bg_text) || '';
 
+  // The long press had no feedback: the row dimmed to 0.6 and then, 350ms later, a sheet
+  // appeared from off-screen (user report, 2026-09-10). Three things were missing, and all
+  // three are here — the impact at recognition (the system's own language for this), a row
+  // that visibly ARMS while the finger holds, and a release that answers a press that did
+  // not become one.
+  //
+  // `useNativeDriver` because it drives a transform only: the radar re-renders about every
+  // 1.5s and a JS-driven scale would stutter against it.
+  const grip = React.useRef(new Animated.Value(0)).current;
+  const armed = React.useRef(false);
+
+  const down = () => {
+    if (!onLongPress) return;
+    Haptics.arm(); // warm the engine now, so the impact lands with the gesture
+    armed.current = true;
+    pressAnim(grip, 1, LONG_PRESS_MS).start();
+  };
+  const up = () => {
+    if (!armed.current) return;
+    armed.current = false;
+    pressAnim(grip, 0, 130).start();
+  };
+  const held = () => {
+    up();
+    Haptics.hit();
+    onLongPress?.();
+  };
+
   return (
+    <Animated.View
+      style={{
+        transform: [{scale: grip.interpolate({inputRange: [0, 1], outputRange: [1, PRESS_SCALE]})}],
+      }}>
     <TouchableOpacity
       testID={`${TestIds.agent.row}-${agent.pane_id}`}
       accessibilityLabel={`${TestIds.agent.row}-${agent.pane_id}`}
-      activeOpacity={0.6}
+      activeOpacity={0.85}
       onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={350}
+      onPressIn={down}
+      onPressOut={up}
+      onLongPress={onLongPress ? held : undefined}
+      delayLongPress={LONG_PRESS_MS}
       style={[
         styles.row,
         {borderBottomColor: pal.divider},
@@ -138,6 +174,7 @@ export function AgentRow({
         {agent.source !== 'native' && <Text style={[styles.chev, {color: pal.fg3}]}>›</Text>}
       </View>
     </TouchableOpacity>
+    </Animated.View>
   );
 }
 

@@ -1,4 +1,4 @@
-import {buildRowSheet, focusCommand} from './rowSheetModel';
+import {buildRowSheet, focusCommand, groupsOf, SheetAction} from './rowSheetModel';
 import {Agent} from '../api/types';
 
 const NOW = 1_800_000_000;
@@ -32,9 +32,15 @@ describe('what the row cannot say', () => {
     expect(m.status).toContain('errored');
   });
 
-  it('says how long it has been in this state', () => {
-    expect(buildRowSheet(agent({}), 'en', NOW).status).toBe('working · 10m');
-    expect(buildRowSheet(agent({}), 'zh', NOW).status).toContain('10 分钟');
+  it('says the state and the wait as ONE sentence', () => {
+    // It used to be two facts joined by a middle dot ("working · 10m"), leaving the
+    // reader to put them together. You long-press a red row to find out how long it has
+    // been waiting; that should be the sentence, not an assembly job (2026-09-10).
+    expect(buildRowSheet(agent({}), 'en', NOW).status).toBe('running for 10m');
+    expect(buildRowSheet(agent({}), 'zh', NOW).status).toBe('跑了 10 分钟');
+    expect(buildRowSheet(agent({status: 'waiting'}), 'zh', NOW).status).toBe('等你 10 分钟了');
+    expect(buildRowSheet(agent({status: 'idle'}), 'en', NOW).status).toBe('finished 10m ago');
+    expect(buildRowSheet(agent({error: true}), 'zh', NOW).status).toBe('出错，10 分钟前');
   });
 });
 
@@ -145,5 +151,34 @@ describe('what the sheet offers', () => {
       expect(at2).toBeGreaterThanOrEqual(0);
       expect(at2).toBeLessThanOrEqual(1); // first, or straight after answering a blocked one
     }
+  });
+});
+
+// The grouping was in the data all along; the sheet drew it as one wall.
+describe('groupsOf', () => {
+  const act = (key: string, group: string): SheetAction =>
+    ({key, group, title: key, sub: ''} as unknown as SheetAction);
+
+  it('splits the list into its declared groups', () => {
+    const g = groupsOf([act('reply', 'answer'), act('jump', 'go'), act('continue', 'drive'), act('stop', 'drive')]);
+    expect(g.map(x => x.map(a => a.key))).toEqual([['reply'], ['jump'], ['continue', 'stop']]);
+  });
+
+  it('never reorders — the order encodes a decision of its own', () => {
+    // Jump is SECOND on purpose (2026-09-03): the phone is the Mac's remote control, and
+    // burying it under five rows read as having removed it.
+    const actions = [act('reply', 'answer'), act('jump', 'go'), act('continue', 'drive'), act('diff', 'look')];
+    expect(groupsOf(actions).flat().map(a => a.key)).toEqual(actions.map(a => a.key));
+  });
+
+  it('does not merge two runs of the same group that are apart', () => {
+    // A defensive property rather than a shape the model produces today: a future action
+    // list that interleaves must draw the interleaving, not silently regroup it.
+    const g = groupsOf([act('a', 'go'), act('b', 'drive'), act('c', 'go')]);
+    expect(g).toHaveLength(3);
+  });
+
+  it('has nothing to group when there is nothing', () => {
+    expect(groupsOf([])).toEqual([]);
   });
 });

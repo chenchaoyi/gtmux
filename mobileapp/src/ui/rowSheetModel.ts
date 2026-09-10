@@ -93,9 +93,18 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
   const dur = humanSince(a.since || a.activity_at, nowSecs, lang);
   let status: string | undefined;
   if (!watched) {
+    // One sentence, not two facts joined by a middle dot. "等输入 · 4 分钟" made the
+    // reader put them together; "等你 4 分钟了" is the answer to the question that made
+    // them long-press a red row (2026-09-10).
     status = statusLabel(a.status, lang);
     if (a.error) status = zh ? '出错' : 'errored';
-    if (dur) status += ` · ${dur}`;
+    if (dur) {
+      if (a.error) status = zh ? `出错，${dur}前` : `errored ${dur} ago`;
+      else if (a.status === 'waiting') status = zh ? `等你 ${dur}了` : `waiting on you for ${dur}`;
+      else if (a.status === 'working') status = zh ? `跑了 ${dur}` : `running for ${dur}`;
+      else if (a.status === 'idle') status = zh ? `${dur}前结束` : `finished ${dur} ago`;
+      else status += ` · ${dur}`;
+    }
   }
 
   const actions: SheetAction[] = [];
@@ -107,8 +116,10 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     actions.push({
       key: 'reply',
       group: 'answer',
-      title: zh ? '回答它' : 'Answer it',
-      sub: zh ? '选一个编号，或打开会话自己写' : 'Pick a numbered choice, or open it and write',
+      // The numbered choices are their own block above this; naming this one "Answer it"
+      // said the same thing twice and hid what it actually does.
+      title: zh ? '自己写一句' : 'Write your own',
+      sub: zh ? '打开会话，光标停在输入框' : 'Opens the session with the cursor in the composer',
     });
   }
 
@@ -171,4 +182,23 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     blocked: a.status === 'waiting' && a.source !== 'native',
     actions,
   };
+}
+
+/**
+ * groupsOf splits the action list into its declared groups, in the list's own order.
+ *
+ * Every action already carries a `group` — the model has always known that interrupting a
+ * turn and reading a diff are different kinds of thing. The sheet drew them as one wall,
+ * so the difference was invisible (2026-09-10). This only makes the existing grouping
+ * visible; it never reorders, because the order encodes a decision of its own (jump is
+ * second on purpose — 2026-09-03).
+ */
+export function groupsOf(actions: SheetAction[]): SheetAction[][] {
+  const out: SheetAction[][] = [];
+  for (const a of actions) {
+    const last = out[out.length - 1];
+    if (last && last[0].group === a.group) last.push(a);
+    else out.push([a]);
+  }
+  return out;
 }
