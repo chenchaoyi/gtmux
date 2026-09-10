@@ -33,7 +33,14 @@ const slowTickInterval = 20 * time.Second
 // liveActivityBeat is how often a healthy-but-idle serve re-pushes the last tally to
 // refresh the Live Activity stale-date. Under liveActivityStale (40m) so the card never
 // goes stale while the server lives; a dead server stops beating and the card dims.
-const liveActivityBeat = 30 * time.Minute
+//
+// It is ALSO the recovery floor. A push is sent only when the tally CHANGES and its
+// failure was, until 2026-09-10, discarded — so one push lost to a phone that was
+// briefly unreachable left the card stale until the next change or this beat. At 30
+// minutes that was half an hour of a wrong lock screen; measured on this fleet the whole
+// channel carries about one push a minute, so beating six times as often costs nothing
+// worth counting and caps the staleness at five.
+const liveActivityBeat = 5 * time.Minute
 
 // fastTickInterval paces the HQ nudge drain. A wake queued behind a half-typed HQ
 // draft is flushed on the next empty box, and this ticker is its unconditional
@@ -184,17 +191,18 @@ func (c ClientInfo) dedupKey() string {
 // waiting/done transition. onAlert (optional) lets a push manager hook the same
 // transitions without re-deriving them.
 type hub struct {
-	statuses    func() []AgentStatus
-	onAlert     func(Alert)
-	onTally     func(Tally)        // fired when the status tally changes (Live Activity push)
-	onTallyBeat func(Tally)        // periodic re-push of the last tally, to refresh the Live Activity stale-date
-	onClients   func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
-	interval    time.Duration
-	onSlowTick  func()           // resource/limits evaluator, single-goroutine (no nudge race)
-	onFastTick  func()           // HQ nudge drain, same goroutine — cheap-gated, ~3s
-	fastEvery   time.Duration    // onFastTick's cadence (fastTickInterval; tests shorten it)
-	renudge     time.Duration    // re-alert a still-waiting pane after this long
-	now         func() time.Time // injectable clock (tests)
+	statuses     func() []AgentStatus
+	onAlert      func(Alert)
+	onTally      func(Tally)        // fired when the status tally changes (Live Activity push)
+	onTallyBeat  func(Tally)        // periodic re-push of the last tally, to refresh the Live Activity stale-date
+	onClientBack func()             // a phone reconnected: hand it the current tally (its card may be behind)
+	onClients    func([]ClientInfo) // fired with the live remote-viewer roster (who's connected)
+	interval     time.Duration
+	onSlowTick   func()           // resource/limits evaluator, single-goroutine (no nudge race)
+	onFastTick   func()           // HQ nudge drain, same goroutine — cheap-gated, ~3s
+	fastEvery    time.Duration    // onFastTick's cadence (fastTickInterval; tests shorten it)
+	renudge      time.Duration    // re-alert a still-waiting pane after this long
+	now          func() time.Time // injectable clock (tests)
 
 	mu   sync.Mutex
 	subs map[chan sseEvent]ClientInfo
@@ -255,6 +263,15 @@ func (h *hub) subscribe(info ClientInfo) chan sseEvent {
 	snap := h.snapshotLocked()
 	h.mu.Unlock()
 	h.emitClients(snap)
+	// A phone that has just (re)connected may be holding a lock-screen card from
+	// before it went away — nothing re-sends on its own, and the next push waits for
+	// the fleet to change. Its arrival is the one moment we know its card might be
+	// behind, so answer it with the current tally.
+	// (Through the push manager's own copy: `h.lastTally` belongs to the run goroutine
+	// and this is an HTTP handler's.)
+	if info.Kind == "phone" && h.onClientBack != nil {
+		h.onClientBack()
+	}
 	return ch
 }
 

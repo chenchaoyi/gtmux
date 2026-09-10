@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -518,4 +519,93 @@ func TestActivityStatusReportsTheLink(t *testing.T) {
 	if acts, _ := pm.ActivityStatus(); len(acts) != 0 {
 		t.Fatalf("unregister left %v", acts)
 	}
+}
+
+// The lock-screen card is not late because the Mac is slow. Measured 2026-09-10: the
+// Mac re-evaluates every 1.5s, pushes only on a real change (once a minute on this
+// fleet), and the relay answered every one of them OK. What was missing was anything
+// that RE-SENDS — so a card that missed one push, or was born after the last one, stayed
+// wrong until the fleet happened to change again.
+func TestARegisteredActivityIsHandedTheCurrentState(t *testing.T) {
+	f := &fakeRelay{}
+	p := &PushManager{relay: f}
+	p.OnTally(Tally{Waiting: 2, Working: 1})
+	f.mu.Lock()
+	f.sent = nil
+	f.mu.Unlock()
+
+	// A card born now — the app relaunched, the phone rebooted, or it switched to this
+	// Mac. It used to show whatever the app rendered locally until the fleet changed.
+	p.RegisterActivity("tok-new", "sandbox")
+	waitFor(t, func() bool { return len(sentLive(f)) > 0 })
+	got := sentLive(f)[0]
+	if got.Token != "tok-new" {
+		t.Errorf("pushed to %q, want the newly registered activity", got.Token)
+	}
+	if w, _ := got.ContentState["waiting"].(int); w != 2 {
+		t.Errorf("pushed waiting=%v, want the tally the Mac already knew", got.ContentState["waiting"])
+	}
+}
+
+func TestAReconnectedPhoneIsHandedTheCurrentState(t *testing.T) {
+	f := &fakeRelay{}
+	p := &PushManager{relay: f}
+	p.RegisterActivity("tok", "sandbox")
+	p.OnTally(Tally{Waiting: 1})
+	waitFor(t, func() bool { return len(sentLive(f)) > 0 })
+	f.mu.Lock()
+	f.sent = nil
+	f.mu.Unlock()
+
+	p.RepushLast() // the phone came back; its card may predate the last push
+	waitFor(t, func() bool { return len(sentLive(f)) > 0 })
+}
+
+// A token APNs has buried must be forgotten, not pushed to forever. A phone that moves
+// between Macs leaves exactly that behind: it ends its card and starts a new one, and
+// the Mac it left keeps a registration for an activity that no longer exists.
+func TestADeadActivityTokenIsDropped(t *testing.T) {
+	f := &fakeRelay{err: &APNsError{Status: 410}}
+	p := &PushManager{relay: f}
+	p.RegisterActivity("tok-dead", "sandbox")
+	p.PushLiveActivity(Tally{Waiting: 1})
+	waitFor(t, func() bool {
+		acts, _ := p.ActivityStatus()
+		return len(acts) == 0
+	})
+}
+
+func TestAnOrdinaryFailureKeepsTheToken(t *testing.T) {
+	// The relay being down, or a phone in a lift, is not a verdict about the token.
+	f := &fakeRelay{err: errors.New("relay status 502")}
+	p := &PushManager{relay: f}
+	p.RegisterActivity("tok", "sandbox")
+	p.PushLiveActivity(Tally{Waiting: 1})
+	waitFor(t, func() bool { return len(sentLive(f)) > 0 })
+	if acts, _ := p.ActivityStatus(); len(acts) != 1 {
+		t.Errorf("token dropped on a transient failure: %d left, want 1", len(acts))
+	}
+}
+
+func sentLive(f *fakeRelay) []PushIntent {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []PushIntent
+	for _, i := range f.sent {
+		if i.LiveActivity && i.Event == "update" {
+			out = append(out, i)
+		}
+	}
+	return out
+}
+
+func waitFor(t *testing.T, ok func() bool) {
+	t.Helper()
+	for i := 0; i < 200; i++ {
+		if ok() {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Fatal("condition never became true")
 }

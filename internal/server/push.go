@@ -3,11 +3,13 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -108,8 +110,15 @@ type PushManager struct {
 	// still running, and nothing on the Mac says whether a token is even held.
 	activityAt map[string]int64
 	lastPushAt int64
-	relay      Relay
-	save       func([]DeviceToken) // optional persistence hook
+	// A push that did not land. Counted rather than alerted: one failure on a phone in
+	// a lift is ordinary; a count that keeps climbing is a channel that has stopped.
+	activityFails int
+	lastFailAt    int64
+	// The last tally pushed, so a newly registered activity gets the current state
+	// instead of waiting for the fleet to change.
+	lastTally atomic.Pointer[Tally]
+	relay     Relay
+	save      func([]DeviceToken) // optional persistence hook
 	// format returns the copy AND how many numbered choices the pane offers, so the
 	// quick-reply category can have that many buttons. -1 = unknown (no counting).
 	format     func(Alert) (title, body string, options int)
@@ -257,6 +266,34 @@ func (p *PushManager) RegisterActivity(token, env string) {
 	}
 	p.activityAt[token] = time.Now().Unix()
 	p.mu.Unlock()
+	// Send the CURRENT tally right now. A fresh activity — the app relaunched, the
+	// phone rebooted, or it switched to this Mac and started a new card — otherwise
+	// shows whatever the app rendered locally and then waits for the fleet to CHANGE,
+	// which on a quiet fleet is the 30-minute keepalive away (2026-09-10).
+	if last := p.lastTally.Load(); last != nil {
+		p.PushLiveActivity(*last)
+	}
+}
+
+// RepushLast re-sends the last tally to every registered activity. Called when a phone
+// reconnects: it may be holding a card from before it went away, and nothing else
+// re-sends — the next push waits for the fleet to change.
+func (p *PushManager) RepushLast() {
+	if p == nil {
+		return
+	}
+	if last := p.lastTally.Load(); last != nil {
+		p.PushLiveActivity(*last)
+	}
+}
+
+// RememberTally keeps the last tally so a newly registered activity can be handed the
+// current state immediately. Written by the hub's tally hook, read on registration.
+func (p *PushManager) RememberTally(t Tally) {
+	if p == nil {
+		return
+	}
+	p.lastTally.Store(&t)
 }
 
 // PushLiveActivity forwards the current tally to every registered Live Activity
@@ -291,9 +328,40 @@ func (p *PushManager) PushLiveActivity(t Tally) {
 	stale := time.Now().Add(liveActivityStale).Unix()
 	go func() {
 		for _, tk := range toks {
-			_ = p.relay.Send(PushIntent{Token: tk.token, Env: tk.env, LiveActivity: true, Event: "update", ContentState: cs, StaleDate: stale})
+			err := p.relay.Send(PushIntent{Token: tk.token, Env: tk.env, LiveActivity: true, Event: "update", ContentState: cs, StaleDate: stale})
+			if err == nil {
+				continue
+			}
+			// The error used to be discarded. That made two failures invisible and
+			// unrecoverable: a card nobody could reach, and a token belonging to an
+			// activity that had already ended — which is what a phone switching between
+			// Macs leaves behind, since the old Mac keeps its registration (2026-09-10).
+			var ae *APNsError
+			if errors.As(err, &ae) && ae.Gone() {
+				p.forgetActivity(tk.token)
+				continue
+			}
+			p.noteActivityFailure()
 		}
 	}()
+}
+
+// forgetActivity drops a token APNs has told us is dead.
+func (p *PushManager) forgetActivity(token string) {
+	p.mu.Lock()
+	delete(p.activityTokens, token)
+	delete(p.activityAt, token)
+	p.mu.Unlock()
+}
+
+// noteActivityFailure records that a push did not land, so a channel that has quietly
+// stopped working is visible in `gtmux doctor` instead of only in a card that stopped
+// moving. Counting, not alerting: one failed push on a phone in a lift is ordinary.
+func (p *PushManager) noteActivityFailure() {
+	p.mu.Lock()
+	p.activityFails++
+	p.lastFailAt = time.Now().Unix()
+	p.mu.Unlock()
 }
 
 // liveActivityStale is how far ahead each Live Activity push sets its stale-date. It
@@ -334,6 +402,7 @@ func (p *PushManager) dispatch(a Alert) {
 // OnTally is the hub's tally hook: it pushes the Live Activity update AND a silent
 // badge sync, so the app-icon badge tracks the live waiting count on every device.
 func (p *PushManager) OnTally(t Tally) {
+	p.RememberTally(t)
 	p.PushLiveActivity(t)
 	p.pushBadge(t.Waiting)
 }
@@ -615,11 +684,34 @@ func (r *HTTPRelay) Send(intent PushIntent) error {
 		return err
 	}
 	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, resp.Body)
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	if resp.StatusCode >= 300 {
+		// Carry APNs's OWN verdict, not just the relay's 502. The difference matters:
+		// 410 means this token is gone (the activity it belonged to ended), and a Mac
+		// that cannot tell that from "the relay is down" keeps pushing to a dead card
+		// forever. Switching phones between Macs produces exactly that (2026-09-10).
+		var v struct {
+			Error  string `json:"error"`
+			Status int    `json:"status"`
+		}
+		if json.Unmarshal(body, &v) == nil && v.Error == "apns" && v.Status > 0 {
+			return &APNsError{Status: v.Status}
+		}
 		return fmt.Errorf("relay status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// APNsError is APNs's own rejection, forwarded through the relay.
+type APNsError struct{ Status int }
+
+func (e *APNsError) Error() string { return fmt.Sprintf("apns status %d", e.Status) }
+
+// Gone reports whether APNs said this token will never work again, so the caller
+// should forget it rather than retry. 410 is Apple's "Unregistered"; 400 covers a
+// malformed/expired device token.
+func (e *APNsError) Gone() bool {
+	return e.Status == http.StatusGone || e.Status == http.StatusBadRequest
 }
 
 // optionCount turns the formatter's count into the wire field: nil when the count is
