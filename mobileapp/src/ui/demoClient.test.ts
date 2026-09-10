@@ -1,4 +1,5 @@
 import {makeDemoClient} from './demoClient';
+import {acts as toActs} from '../screens/hqActsModel';
 import {sampleAgents} from './demoData';
 
 // F7②: approving the hero permission must walk the REAL status arc on the radar —
@@ -131,4 +132,14 @@ if (!u) throw new Error('no usage');
       expect(w.reset_unix).toBeGreaterThan(0); // else "resets in 3h" cannot be computed
     }
   });
+});
+
+// A seeded act that the feed filters out is a row nobody will ever see. Wake deliveries
+// are plumbing by design — 1532 a week against 39 real acts — so the demo must not spend
+// one of its few acts on one.
+it('seeds only acts the feed actually renders', async () => {
+  const events = await makeDemoClient('en').hqEvents('routine', 60);
+  const acts = events.filter(e => e.event.startsWith('gtmux:audit:'));
+  expect(acts.length).toBeGreaterThan(0);
+  expect(toActs(acts, false)).toHaveLength(acts.length);
 });
