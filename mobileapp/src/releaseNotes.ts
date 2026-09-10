@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.11',
+    en: [
+      'Usage opens with what you came for: which plan window is tightest, and whether the machine is about to stop everything. Those used to be on line 3 and line 25.',
+      'Plan windows are bars now, so a window at 76% no longer reads like one at 9%, and a reset says how long you have rather than a wall-clock time.',
+      'Sessions split into the ones that are warned or actually producing, and a count of the quiet ones that opens back up. A warned session is never folded away.',
+      'An agent with a plan but no live session gets its proper name and its own icon. Codex was showing as "codex" beside "Claude Code", with no icon at all.',
+      'A session row drew its title and its details on top of each other, and reported the same context figure twice with two different roundings.',
+      'The terminal\'s top bar no longer moves the content when it folds away, so scrolling up doesn\'t stall or bounce, and the jump-to-bottom arrow travels there instead of teleporting.',
+    ],
+    zh: [
+      '用量页开头就说你要的两件事：哪个额度窗口最紧、机器是不是要把一切停下来。这两件原先在第 3 行和第 25 行。',
+      '额度画成条，76% 不再和 9% 长得一样重；重置时间改成「还有多久」，而不是一个墙上时钟。',
+      '会话分成「被告警的和真在产出的」与「停着的」两拨，后者折成一行计数，点得开。被告警的永远不会被折叠。',
+      '有额度但没有活会话的 agent 现在有正确的名字和自己的图标。Codex 以前显示成小写的 codex，挨着 Claude Code，而且完全没有图标。',
+      '会话行的标题和详情曾经画在一起，同一个上下文占比还用两种四舍五入说了两遍。',
+      '终端顶栏收起时不再带着内容一起动，上滑不会卡住也不会弹跳；点「回到底部」是滑过去，不是瞬移。',
+    ],
+  },
+  {
     version: '1.0.10',
     en: [
       'HQ\'s feed shows the rhythm of the day. An evenly spaced list made six hours of quiet look exactly like two minutes between two records, so acts that happened together now sit in one run, and between runs there is a line saying how long the wait was.',
