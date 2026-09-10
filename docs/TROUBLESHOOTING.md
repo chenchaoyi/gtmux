@@ -1506,3 +1506,29 @@ so even a signed simulator build would only show the Dynamic Island.
 xcrun simctl spawn <udid> log show --last 5m \
   --predicate 'subsystem CONTAINS "activitykit"' | grep -iE "error|denied"
 ```
+
+## Nothing in the release pipeline points the version at your new build (2026-09-10)
+
+**Symptom.** `fastlane release` uploads, `fastlane metadata` pushes the listing, both say
+they finished, and the version in App Store Connect is carrying the PREVIOUS build. On
+1.0.12 that was build 14 sitting on the version while build 15 — the one with the release's
+actual work — was processed and idle beside it. Nothing warns you; submitting there ships
+the wrong binary.
+
+**Why.** `deliver` does not select a build. The upload lane hands ASC a binary; the metadata
+lane pushes text and screenshots. Choosing which build the version carries is a separate
+act, and by default that is whatever was chosen last.
+
+**So the release is not done until you have READ it back.** Three checks, in this order,
+each with a script in `mobileapp/scripts/`:
+
+```sh
+eval "$(grep -E '^export ASC_(KEY_ID|ISSUER_ID|KEY_PATH)=' ~/.zshrc)"
+bundle exec ruby scripts/asc-attach-build.rb          # attaches the newest processed build
+bundle exec ruby scripts/asc-prune-dup-screenshots.rb # deliver double-uploads; prune to 6
+bundle exec ruby scripts/asc-attach-build.rb --list   # read it back: version + build
+```
+
+The screenshot one is not optional either: on this same release deliver left **10
+screenshots per locale, four of them duplicates**, which is what it does on essentially
+every run (see the entry above).

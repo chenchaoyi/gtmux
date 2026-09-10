@@ -359,6 +359,10 @@ export function demoEvents(agents: Agent[]): HQEvent[] {
  * The timestamps are spread across the day ON PURPOSE. The feed groups acts that happened
  * together and names the quiet between the groups, so a demo where everything happened in
  * the last ten minutes would render as one undifferentiated run and show none of it.
+ *
+ * Every act here is one the feed actually RENDERS: wake deliveries are plumbing and are
+ * filtered out by design (1532 a week against 39 real acts), so seeding one would be a row
+ * nobody ever sees.
  */
 function demoActs(now: number): HQEvent[] {
   const m = (mins: number) => now - mins * 60;
@@ -367,7 +371,7 @@ function demoActs(now: number): HQEvent[] {
   return [
     // A burst around a dispatch, twenty minutes ago.
     act(18, 203, 'gtmux:audit:send', 'asked worker to add backoff + jitter', 'worker:0.0'),
-    act(19, 202, 'gtmux:audit:wake-delivered', 'told HQ that api is waiting on a permission'),
+    act(19, 202, 'gtmux:audit:rotate', 'rotated the docs worktree onto a fresh branch', 'docs:0.0'),
     act(24, 201, 'gtmux:audit:knowledge', 'wrote down: a retry without jitter is a thundering herd'),
     // Then a quiet stretch, and an earlier burst before it.
     act(96, 198, 'gtmux:audit:reap', 'reclaimed the finished docs worktree', 'docs:0.0'),
