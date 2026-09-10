@@ -64,3 +64,58 @@ test('at the tail it re-publishes the tail, not a fold', () => {
   });
   expect(seen).toEqual([0]);
 });
+
+// The host cannot see a finger; the child has to say so.
+//
+// Folding resizes this view, and holding the content still through that means writing
+// contentOffset — which loses to a live gesture, so the scroll appears to stick at the
+// fold point (2026-09-10). The host waits for `moving` to go false, which makes this
+// report the load-bearing half: a child that always says "not moving" puts the stall
+// straight back with nothing to notice it.
+describe('reporting whether a gesture is running', () => {
+  const mount = (onLiveEdge: (gap: number, moving: boolean) => void) => {
+    let t: renderer.ReactTestRenderer;
+    act(() => {
+      t = renderer.create(<NativeTerm text={'a\nb\nc'} onLiveEdge={onLiveEdge} />);
+    });
+    return t!.root.findByType(ScrollView);
+  };
+  const scroll = (sv: {props: Record<string, (e: unknown) => void>}, y: number) =>
+    act(() => {
+      sv.props.onScroll({
+        nativeEvent: {contentOffset: {y}, contentSize: {height: 4000}, layoutMeasurement: {height: 600}},
+      });
+    });
+
+  it('says moving while a finger is down', () => {
+    const seen: boolean[] = [];
+    const sv = mount((_g, m) => seen.push(m));
+    act(() => sv.props.onScrollBeginDrag({}));
+    scroll(sv as never, 100);
+    expect(seen).toContain(true);
+  });
+
+  it('says still once the finger lifts with no momentum', () => {
+    const seen: boolean[] = [];
+    const sv = mount((_g, m) => seen.push(m));
+    act(() => sv.props.onScrollBeginDrag({}));
+    scroll(sv as never, 100);
+    seen.length = 0;
+    act(() => sv.props.onScrollEndDrag({nativeEvent: {velocity: {y: 0}}}));
+    expect(seen).toEqual([false]); // reported once, at the end — nothing else will carry it
+  });
+
+  it('keeps saying moving through a flick, until momentum ends', () => {
+    // A fold mid-glide is the same fight one frame later.
+    const seen: boolean[] = [];
+    const sv = mount((_g, m) => seen.push(m));
+    act(() => sv.props.onScrollBeginDrag({}));
+    act(() => sv.props.onScrollEndDrag({nativeEvent: {velocity: {y: 2.5}}}));
+    seen.length = 0;
+    scroll(sv as never, 300);
+    expect(seen).toEqual([true]);
+    seen.length = 0;
+    act(() => sv.props.onMomentumScrollEnd({nativeEvent: {velocity: {y: 0}}}));
+    expect(seen).toContain(false);
+  });
+});

@@ -222,8 +222,8 @@ export function DetailView({
   const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
   const lastGap = useRef(0);
   const runEdge = useCallback(
-    (gap: number) => {
-      const d = chromeDecision(chrome.current, gap, chromeH.current, Date.now());
+    (gap: number, moving = false) => {
+      const d = chromeDecision(chrome.current, gap, chromeH.current, Date.now(), CHROME_ANIM_MS, moving);
       if (Debug.logNet) {
         Debug.record({event: 'edge', gap: +gap.toFixed(1), chromeH: chromeH.current, was: chrome.current.hidden, hidden: d.hidden, change: d.change});
       }
@@ -251,10 +251,10 @@ export function DetailView({
   // the mode you are looking at may drive it.
   const modeRef = useRef<DetailMode>('terminal');
   const edgeFrom = useCallback(
-    (source: DetailMode) => (gap: number) => {
+    (source: DetailMode) => (gap: number, moving = false) => {
       if (modeRef.current !== source) return;
       lastGap.current = gap;
-      runEdge(gap);
+      runEdge(gap, moving);
     },
     [runEdge],
   );

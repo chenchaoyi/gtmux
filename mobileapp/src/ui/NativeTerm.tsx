@@ -82,7 +82,14 @@ interface Props {
    * The host folds its chrome from this. A DISTANCE, not a boolean: the threshold that
    * keeps the chrome stable depends on the chrome's own height — see ui/liveEdge.
    */
-  onLiveEdge?: (gap: number) => void;
+  /**
+   * How far this view is from its live tail, and whether a gesture is still running.
+   *
+   * `moving` is the half the host cannot know: folding resizes this view, and holding the
+   * content still through that means writing `contentOffset` — which loses to a finger.
+   * The host waits for it to go false.
+   */
+  onLiveEdge?: (gap: number, moving: boolean) => void;
   /**
    * The host installs a "move the offset by dy" function here.
    *
@@ -402,13 +409,34 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // hands off to). Programmatic scrolls never set it, which is what keeps them from
   // cancelling the follow they are performing.
   const dragging = useRef(false);
+  // Momentum counts as moving too: the finger is up but the offset is still being driven,
+  // and a fold there is the same fight one frame later.
+  const decelerating = useRef(false);
   const beginDrag = () => {
     dragging.current = true;
+    decelerating.current = false;
     freeze();
   };
   const endDrag = () => {
     dragging.current = false;
+    decelerating.current = false;
     thawByPosition();
+    // The gesture is over, so ask once with the newest reading — there will be no other
+    // scroll event to carry the answer.
+    onLiveEdge?.(gapRef.current, false);
+  };
+  const endDragMaybeMomentum = (e?: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // `decelerate` on the end-drag event says whether momentum follows. Treating a flick
+    // as finished here would fold mid-glide, which is the same fight.
+    // Optional on purpose — see ChatView's copy.
+    const glides = (e?.nativeEvent as unknown as {velocity?: {y: number}} | undefined)?.velocity?.y;
+    dragging.current = false;
+    if (glides != null && Math.abs(glides) > 0.05) {
+      decelerating.current = true;
+      thawByPosition();
+      return;
+    }
+    endDrag();
   };
   const probe = useRef(Debug.logNet);
   // Route through the harness's own recorder (Documents/gtmux-debug.jsonl, read back by
@@ -463,7 +491,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     }
     setAtBottom(bottom);
     gapRef.current = gap;
-    onLiveEdge?.(gap);
+    onLiveEdge?.(gap, dragging.current || decelerating.current);
   };
   // Snap back to the live tail: resume following, flush any frozen snapshot (so you
   // land on the newest output, not a stale frame), and scroll down.
@@ -471,7 +499,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     stick.current = true;
     setAtBottom(true);
     gapRef.current = 0;
-    onLiveEdge?.(0);
+    onLiveEdge?.(0, false);
     say('jump', {pending: pending.current !== null, frozen: frozen.current});
     flushPending();
     ref.current?.scrollToEnd({animated: true});
@@ -492,7 +520,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     // Content size changes on every poll of a live pane, so this re-asserts the truth
     // several times a second. The host dedupes by its own last value, so a repeat costs
     // nothing and a DESYNC repairs itself within one frame.
-    onLiveEdge?.(gapRef.current);
+    onLiveEdge?.(gapRef.current, dragging.current || decelerating.current);
   };
 
   // iOS selection — the native overlay reports activation so JS can freeze the
@@ -544,7 +572,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
         onTouchEnd={thawSoon}
         onTouchCancel={thawSoon}
         onScrollBeginDrag={beginDrag}
-        onScrollEndDrag={endDrag}
+        onScrollEndDrag={endDragMaybeMomentum}
         onMomentumScrollEnd={endDrag}
         scrollEventThrottle={16}
         onContentSizeChange={onContentSizeChange}>
