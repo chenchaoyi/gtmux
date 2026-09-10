@@ -257,6 +257,7 @@ func New(cfg Config, deps Deps) *Server {
 		// Heartbeat re-pushes ONLY the Live Activity (refresh its stale-date) — not the
 		// badge — so a healthy idle server keeps the lock-screen card from going stale.
 		s.hub.onTallyBeat = deps.Push.PushLiveActivity
+		s.hub.onClientBack = deps.Push.RepushLast
 	}
 	s.hub.onClients = deps.OnClients   // remote-viewer indicator (count of live SSE clients)
 	s.hub.onSlowTick = deps.OnSlowTick // single-writer resource/limits evaluator + nudge

@@ -1476,3 +1476,33 @@ screenshots plus an XCUITest element dump under `.e2e-artifacts/latest/`. **Read
 screenshots** — the first failing run here reported only "could not reach Detail", and
 the picture was the whole answer. The element dump gives frames, which is how you tell
 "laid out in the wrong place" from "laid out correctly and painted underneath".
+
+## A Live Activity never starts in the simulator (2026-09-10)
+
+**Symptom.** The app runs, the radar fills, the Dynamic Island stays an empty notch, and
+nothing appears anywhere. No error reaches the app: `LiveActivity.sync` calls `start()`,
+the promise rejects, `started` resets, and the next refresh tries again — so it retries
+quietly forever.
+
+**Root cause.** ActivityKit refuses the request:
+
+```
+liveactivitiesd: [com.apple.activitykit:requestResolver]
+  com.gtmux.app does not specify an APS environment name
+```
+
+The e2e simulator build (`mobileapp/scripts/e2e-build-sim.sh`) passes
+`CODE_SIGNING_ALLOWED=NO`, so no entitlements are embedded, so there is no
+`aps-environment`, and a Live Activity cannot be created. Nothing to do with the widget's
+code — the same binary's widget compiles and its views are fine.
+
+**So: the Live Activity is verified on a DEVICE, not in the simulator.** That is also
+where the lock-screen presentation lives; `simctl` cannot reach the lock screen at all,
+so even a signed simulator build would only show the Dynamic Island.
+
+**How to see it went wrong, next time, in one command:**
+
+```sh
+xcrun simctl spawn <udid> log show --last 5m \
+  --predicate 'subsystem CONTAINS "activitykit"' | grep -iE "error|denied"
+```

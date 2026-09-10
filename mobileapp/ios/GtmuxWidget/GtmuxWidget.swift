@@ -146,57 +146,129 @@ private struct SessionRow: View {
   }
 }
 
-// SessionList — up to maxRows session rows + a "+N more" footer.
-private struct SessionList: View {
-  let items: [GtmuxActivityAttributes.Item]
-  let more: Int
-  var maxRows: Int = 3
+// tint — the card's ground, coloured by what is happening. A glance at the lock screen
+// answers "does something need me" before a word is read; a flat black card made that a
+// reading task. Very low alpha: this is a wash, not a fill, and the status marks stay the
+// thing that CARRIES the state (DESIGN §1 — colour + shape + glyph).
+private func tint(_ s: AgentStatus, stale: Bool) -> LinearGradient {
+  let c = stale ? Color.white.opacity(0.02) : statusColor(s).opacity(0.15)
+  return LinearGradient(
+    colors: [c, stale ? Color.white.opacity(0.02) : statusColor(s).opacity(0.03), Color.white.opacity(0.02)],
+    startPoint: .top, endPoint: .bottom)
+}
+
+// ServerLine — WHICH Mac this card is about, and how the fleet stands.
+//
+// gtmux pairs with several Macs and the phone switches between them (App.tsx keys the
+// whole store by the Mac's url, so a switch ends this activity and starts a fresh one).
+// Two Macs mean two cards that look alike, so the name is the card's IDENTITY, not a
+// caption: it leads the row, next to a dot in the fleet's colour.
+private struct ServerLine: View {
+  let server: String
+  let state: GtmuxActivityAttributes.ContentState
+  let stale: Bool
+  var showCounts: Bool = true
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      ForEach(Array(items.prefix(maxRows).enumerated()), id: \.offset) { _, it in
-        SessionRow(item: it)
+    HStack(spacing: 7) {
+      Circle().fill(stale ? statusColor(.running) : statusColor(primaryStatus(state)))
+        .frame(width: 5, height: 5)
+      Text(server.isEmpty ? "gtmux" : server)
+        .font(.caption).fontWeight(.semibold)
+        .foregroundColor(.white.opacity(stale ? 0.45 : 0.6)).lineLimit(1)
+      if stale { OfflineTag() }
+      Spacer(minLength: 6)
+      if showCounts && !stale {
+        MiniTally(waiting: state.waiting, working: state.working, idle: state.idle)
       }
-      if more > 0 {
-        Text("+\(more) more").font(.caption).foregroundColor(.white.opacity(0.45))
-      }
+      BrandMark(size: 20)
     }
   }
 }
 
-// summaryLine — the bold header count, e.g. "2 waiting · 3 working" (waiting first),
-// "1 idle", or "No agents".
-private func summaryLine(_ st: GtmuxActivityAttributes.ContentState) -> String {
-  var parts: [String] = []
-  if st.waiting > 0 { parts.append("\(st.waiting) waiting") }
-  if st.working > 0 { parts.append("\(st.working) working") }
-  if parts.isEmpty { return st.idle > 0 ? "\(st.idle) idle" : "No agents" }
-  return parts.joined(separator: " · ")
+// PrimaryBand — the one thing that matters right now, at full size.
+//
+// It replaces a bold COUNT ("2 waiting · 3 working"). A count cannot answer the question
+// you unlock the phone to ask — which session wants me, and what does it want — and the
+// answer was already in the payload, shown only in the fallback nobody reaches.
+private struct PrimaryBand: View {
+  let state: GtmuxActivityAttributes.ContentState
+  let stale: Bool
+  var body: some View {
+    HStack(alignment: .center, spacing: 11) {
+      StatusBadge(status: stale ? .running : primaryStatus(state), size: 26)
+      VStack(alignment: .leading, spacing: 1) {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+          Text(primaryTitle(state))
+            .font(.system(size: 16, weight: .bold)).foregroundColor(.white)
+            .lineLimit(1).minimumScaleFactor(0.85)
+          Spacer(minLength: 4)
+          trailing
+        }
+        if let d = primaryDetail(state) {
+          Text(d).font(.system(size: 12.5)).foregroundColor(.white.opacity(0.7)).lineLimit(1)
+        }
+      }
+    }
+  }
+
+  @ViewBuilder private var trailing: some View {
+    if stale {
+      // A stopped clock, not a running one: the card is showing an old reading, and a
+      // timer still counting up would say the opposite.
+      if let since = state.items.first?.since, since > 0 {
+        Text(Date(timeIntervalSince1970: TimeInterval(since)), style: .relative)
+          .font(.system(size: 12.5)).foregroundColor(.white.opacity(0.45)).monospacedDigit().lineLimit(1)
+      }
+    } else if state.waiting > 0, let since = state.items.first?.since, since > 0 {
+      // Rendered locally by SwiftUI, so it moves with no push at all.
+      Text(Date(timeIntervalSince1970: TimeInterval(since)), style: .timer)
+        .font(.system(size: 15, weight: .bold)).foregroundColor(statusColor(.waiting))
+        .monospacedDigit().lineLimit(1).frame(minWidth: 46, alignment: .trailing)
+    } else if state.working > 0, let since = longestSince(state) {
+      Text(Date(timeIntervalSince1970: TimeInterval(since)), style: .timer)
+        .font(.system(size: 13)).foregroundColor(.white.opacity(0.5))
+        .monospacedDigit().lineLimit(1).frame(minWidth: 44, alignment: .trailing)
+    } else if state.idle > 0 {
+      Text("\(state.idle) idle").font(.system(size: 13)).foregroundColor(.white.opacity(0.5)).lineLimit(1)
+    }
+  }
 }
 
-// headline / subtitle derive a glanceable summary: lead with WHERE needs you (the
-// session), then the prompt. waiting wins, then working, then idle.
-private func headline(_ st: GtmuxActivityAttributes.ContentState) -> String {
+// primaryTitle / primaryDetail — what the band says, by what is true.
+private func primaryTitle(_ st: GtmuxActivityAttributes.ContentState) -> String {
   if st.waiting > 0 {
     if !st.waitingSession.isEmpty { return st.waitingSession }
     return st.waitingTitle.isEmpty ? "Needs you" : st.waitingTitle
   }
-  if st.working > 0 { return "Working" }
-  return "All idle"
+  if st.working > 0 { return st.working == 1 ? "1 running" : "\(st.working) running" }
+  if st.idle > 0 { return "All quiet" }
+  // A card that exists before its first push. "No agents" read as a verdict about the
+  // fleet; this says what it is actually doing.
+  return "Waiting for your Mac…"
 }
-private func subtitle(_ st: GtmuxActivityAttributes.ContentState) -> String {
+private func primaryDetail(_ st: GtmuxActivityAttributes.ContentState) -> String? {
   if st.waiting > 0 {
-    // Prefer the actual prompt; append "+N more" when several wait.
-    let detail = st.waitingTitle.isEmpty ? "needs your input" : st.waitingTitle
-    if st.waiting > 1 { return "\(detail) · +\(st.waiting - 1) more" }
-    return detail
+    let d = st.waitingTitle.isEmpty ? "needs your input" : st.waitingTitle
+    return st.waiting > 1 ? "\(d) · +\(st.waiting - 1) more waiting" : d
   }
-  if st.working > 0 { return "\(st.working) running · \(st.idle) idle" }
-  return "nothing needs you"
+  return nil
+}
+private func longestSince(_ st: GtmuxActivityAttributes.ContentState) -> Int? {
+  st.items.filter { $0.since > 0 }.map(\.since).min()
 }
 private func primaryStatus(_ st: GtmuxActivityAttributes.ContentState) -> AgentStatus {
   if st.waiting > 0 { return .waiting }
   if st.working > 0 { return .working }
-  return .idle
+  if st.idle > 0 { return .idle }
+  return .running
+}
+
+// secondary lists the sessions the primary band is NOT already showing, capped at two.
+// The count strip says how many there are in total, so a "+N more" line would spend a
+// line of a 160pt budget repeating it.
+private func secondary(_ st: GtmuxActivityAttributes.ContentState) -> [GtmuxActivityAttributes.Item] {
+  let rest = st.waiting > 0 ? Array(st.items.dropFirst()) : st.items
+  return Array(rest.prefix(2))
 }
 
 // isStale reads the activity's stale flag, guarded: the flag is iOS 16.2+ while this
@@ -218,82 +290,62 @@ struct GtmuxWidgetBundle: WidgetBundle {
 struct GtmuxLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: GtmuxActivityAttributes.self) { context in
-      // Lock-screen / banner — detailed yet calm:
-      //   [badge]  session (bold)         [app icon]
-      //            prompt  (dim)
-      //   ───────  N waiting · M working · K idle  ───────
-      VStack(alignment: .leading, spacing: 10) {
-        // Header: which Mac this activity tracks (static per activity) + an OFFLINE
-        // marker when the content is stale — the server stopped refreshing it, so the
-        // tally below is old and must not read as live.
-        if !context.attributes.server.isEmpty || isStale(context) {
-          HStack(spacing: 6) {
-            if !context.attributes.server.isEmpty {
-              Text(context.attributes.server)
-                .font(.caption2).fontWeight(.semibold)
-                .foregroundColor(.white.opacity(isStale(context) ? 0.4 : 0.55)).lineLimit(1)
+      // Lock screen. THE HEIGHT BUDGET IS 160pt and this layout measures ~136 — every
+      // line added here has to come out of another. That is why the prompt is one line,
+      // the secondary list is two rows, and the remainder is left to the count strip
+      // rather than spelled out (the first draft of this design measured 206 and would
+      // simply have been cut off).
+      VStack(alignment: .leading, spacing: 9) {
+        ServerLine(server: context.attributes.server, state: context.state, stale: isStale(context))
+        PrimaryBand(state: context.state, stale: isStale(context))
+        if !secondary(context.state).isEmpty {
+          Divider().overlay(Color.white.opacity(0.09))
+          VStack(alignment: .leading, spacing: 7) {
+            ForEach(Array(secondary(context.state).enumerated()), id: \.offset) { _, it in
+              SessionRow(item: it)
             }
-            if isStale(context) { OfflineTag() }
           }
         }
-        // The live part dims when stale so a frozen tally reads as "not current".
-        HStack(alignment: .center, spacing: 12) {
-          StatusBadge(status: primaryStatus(context.state), size: 26)
-          Text(summaryLine(context.state))
-            .font(.headline).fontWeight(.bold).foregroundColor(.white).lineLimit(1)
-          Spacer(minLength: 8)
-          BrandMark(size: 24)
-        }
-        // The concrete part: list the top in-flight sessions. Falls back to the
-        // glanceable subtitle when there's nothing to list (idle-only / old push).
-        if !context.state.items.isEmpty {
-          SessionList(items: context.state.items, more: context.state.more)
-        } else {
-          Text(subtitle(context.state))
-            .font(.caption).foregroundColor(.white.opacity(0.62)).lineLimit(1)
+        if isStale(context) {
+          Text("This is how it stood when the Mac last reported.")
+            .font(.system(size: 12.5)).foregroundColor(.white.opacity(0.5)).lineLimit(1)
         }
       }
-      .opacity(isStale(context) ? 0.6 : 1)
-      .padding(.horizontal, 16)
+      .opacity(isStale(context) ? 0.62 : 1)
+      .padding(.horizontal, 14)
       .padding(.vertical, 12)
+      .background(tint(primaryStatus(context.state), stale: isStale(context)))
       .activityBackgroundTint(Color.black.opacity(0.55))
       .activitySystemActionForegroundColor(.white)
     } dynamicIsland: { context in
       DynamicIsland {
-        DynamicIslandExpandedRegion(.leading) {
-          StatusBadge(status: primaryStatus(context.state), size: 26)
-        }
-        DynamicIslandExpandedRegion(.trailing) {
-          BrandMark(size: 22)
-        }
         DynamicIslandExpandedRegion(.center) {
-          VStack(spacing: 2) {
-            HStack(spacing: 6) {
-              if !context.attributes.server.isEmpty {
-                Text(context.attributes.server).font(.caption2).fontWeight(.semibold).foregroundColor(.secondary).lineLimit(1)
-              }
-              if isStale(context) { OfflineTag() }
-            }
-            Text(headline(context.state)).font(.callout).fontWeight(.semibold).lineLimit(1)
-            Text(subtitle(context.state)).font(.caption2).foregroundColor(.secondary).lineLimit(1)
-          }
-          .opacity(isStale(context) ? 0.6 : 1)
+          ServerLine(server: context.attributes.server, state: context.state, stale: isStale(context))
+            .opacity(isStale(context) ? 0.62 : 1)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          Group {
-            if !context.state.items.isEmpty {
-              SessionList(items: context.state.items, more: context.state.more, maxRows: 2)
-            } else {
-              MiniTally(waiting: context.state.waiting, working: context.state.working, idle: context.state.idle)
+          VStack(alignment: .leading, spacing: 9) {
+            PrimaryBand(state: context.state, stale: isStale(context))
+            if let first = secondary(context.state).first {
+              SessionRow(item: first)
             }
           }
-          .opacity(isStale(context) ? 0.6 : 1)
+          .opacity(isStale(context) ? 0.62 : 1)
         }
       } compactLeading: {
         StatusBadge(status: primaryStatus(context.state), size: 16)
       } compactTrailing: {
-        Text("\(context.state.waiting > 0 ? context.state.waiting : context.state.working)")
-          .foregroundColor(.white).fontWeight(.semibold)
+        // Waiting: how LONG. The count is already said by the badge beside it, and "it
+        // has been waiting four minutes" is the number that decides whether you reach
+        // for the phone. Otherwise the count, where duration decides nothing.
+        if context.state.waiting > 0, let since = context.state.items.first?.since, since > 0 {
+          Text(Date(timeIntervalSince1970: TimeInterval(since)), style: .timer)
+            .foregroundColor(statusColor(.waiting)).fontWeight(.bold)
+            .monospacedDigit().frame(maxWidth: 54)
+        } else {
+          Text("\(context.state.waiting > 0 ? context.state.waiting : context.state.working)")
+            .foregroundColor(.white).fontWeight(.semibold)
+        }
       } minimal: {
         StatusBadge(status: primaryStatus(context.state), size: 16)
       }
