@@ -68,3 +68,28 @@ test('a different row re-opens', async () => {
   });
   expect(fetches).toBe(2);
 });
+
+// The whole sheet used to be ONE accessibility element.
+//
+// Both the dimmed backdrop and the card itself were Touchables — the first to close on a
+// tap outside, the second only to swallow taps so that close did not fire. A Touchable is
+// an accessibility element, and iOS collapses an element's whole subtree into it, so
+// VoiceOver reached "the sheet" and nothing inside it: not one action, not the task text.
+// Found on 2026-09-10 by driving a real long press, which could not see a single action
+// row either.
+test('every action inside the sheet is reachable on its own', async () => {
+  let tree!: renderer.ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(
+      <RowSheet agent={agent()} pal={pal} lang="en" onClose={() => {}} onJump={() => {}} onDiff={() => {}} onAct={() => {}} />,
+    );
+  });
+
+  // Neither container may claim the subtree. `accessible: false` is what releases it.
+  const containers = tree.root.findAllByProps({accessible: false});
+  expect(containers.length).toBeGreaterThanOrEqual(2);
+
+  // And the rows themselves are still labelled, which is what a screen reader announces.
+  const jump = tree.root.findAllByProps({accessibilityLabel: 'agent-sheet-action-jump'});
+  expect(jump.length).toBeGreaterThan(0);
+});

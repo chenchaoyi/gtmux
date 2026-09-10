@@ -97,13 +97,24 @@ export function RowSheet({
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
+      {/* The dimmed area behind the card: tap it to close. `accessible={false}` for the
+          same reason as the card below — a Touchable is an accessibility element and iOS
+          collapses its whole subtree into it, which put the entire sheet behind ONE
+          element for VoiceOver and for automation. */}
+      <TouchableOpacity style={styles.backdrop} accessible={false} activeOpacity={1} onPress={onClose}>
         <Animated.View
           style={{transform: [{translateY: rise.interpolate({inputRange: [0, 1], outputRange: [280, 0]})}]}}>
-          <TouchableOpacity
+          {/* The card. Its only job as a Touchable was to SWALLOW the tap so the backdrop
+              behind it does not close the sheet — and that cost every action inside it:
+              a Touchable is an accessibility element, iOS collapses an element's whole
+              subtree into it, so VoiceOver (and any automation) reached the card and
+              nothing within it. Found 2026-09-10, when a driven long press could not see
+              a single action row.
+              A responder claims the touch just as well and is not an element, so the rows
+              below are reachable one by one. */}
+          <View
             testID={TestIds.agent.sheet}
-            accessibilityLabel={TestIds.agent.sheet}
-            activeOpacity={1}
+            onStartShouldSetResponder={() => true}
             style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
             <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
 
@@ -224,7 +235,7 @@ export function RowSheet({
                 </View>
               ))}
             </ScrollView>
-          </TouchableOpacity>
+          </View>
         </Animated.View>
       </TouchableOpacity>
     </Modal>
