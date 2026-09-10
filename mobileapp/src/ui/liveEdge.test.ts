@@ -1,17 +1,17 @@
-import {AT_TAIL, CHROME_ANIM_MS, ChromeState, chromeDecision, chromeShift, foldThreshold, makeFoldFollower} from './liveEdge';
+import {AT_TAIL, CHROME_ANIM_MS, ChromeState, chromeDecision, FOLD_AT} from './liveEdge';
 
 const st = (hidden: boolean, settledAt = 0): ChromeState => ({hidden, settledAt});
 
-// The chrome height measured on a real Detail page: header + neighbour strip + segmented
-// control folded the viewport from 692.7 to 576.
-const CHROME = 117;
+// The chrome no longer resizes anything, so its height is not an input to the decision —
+// it floats above the scroll view. What is left is the hysteresis band: reveal at or
+// under AT_TAIL, fold at or beyond FOLD_AT.
 
 describe('chromeDecision', () => {
   it('folds once you are clearly into history, and reveals at the tail', () => {
-    expect(chromeDecision(st(false), 400, CHROME, 1000)).toEqual({
+    expect(chromeDecision(st(false), 400, 1000)).toEqual({
       change: true, hidden: true, settledAt: 1000 + CHROME_ANIM_MS,
     });
-    expect(chromeDecision(st(true), 0, CHROME, 1000)).toEqual({
+    expect(chromeDecision(st(true), 0, 1000)).toEqual({
       change: true, hidden: false, settledAt: 1000 + CHROME_ANIM_MS,
     });
   });
@@ -20,19 +20,19 @@ describe('chromeDecision', () => {
     // The whole point: a gap that is neither at the tail nor clearly away from it must
     // not move the chrome, in EITHER current state.
     const between = AT_TAIL + 20;
-    expect(chromeDecision(st(false), between, CHROME, 1000).change).toBe(false);
-    expect(chromeDecision(st(true), between, CHROME, 1000).change).toBe(false);
+    expect(chromeDecision(st(false), between, 1000).change).toBe(false);
+    expect(chromeDecision(st(true), between, 1000).change).toBe(false);
   });
 
   it('takes no decision from a measurement made mid-animation', () => {
-    const mid = chromeDecision(st(false), 400, CHROME, 1000); // folds, settles at 1200
-    expect(chromeDecision(mid, 0, CHROME, 1100).change).toBe(false); // 100ms in: ignored
-    expect(chromeDecision(mid, 0, CHROME, 1250).change).toBe(true); // settled: answered
+    const mid = chromeDecision(st(false), 400, 1000); // folds, settles at 1200
+    expect(chromeDecision(mid, 0, 1100).change).toBe(false); // 100ms in: ignored
+    expect(chromeDecision(mid, 0, 1250).change).toBe(true); // settled: answered
   });
 
   it('a repeat in the same direction is a no-op and does not re-arm the freeze', () => {
     const folded = st(true, 900);
-    expect(chromeDecision(folded, 400, CHROME, 1000)).toEqual({
+    expect(chromeDecision(folded, 400, 1000)).toEqual({
       change: false, hidden: true, settledAt: 900,
     });
   });
@@ -65,7 +65,7 @@ describe('chromeDecision', () => {
   it('cannot oscillate from the other side either', () => {
     for (const chromeH of [0, 117, 260]) {
       let state = st(false);
-      let gap = foldThreshold(chromeH) + 5; // deep in history, chrome still shown
+      let gap = FOLD_AT + 5; // deep in history, chrome still shown
       let now = 1000;
       const seen: boolean[] = [];
       for (let i = 0; i < 20; i++) {
@@ -88,7 +88,7 @@ describe('chromeDecision', () => {
     let now = 1000;
     const flips: boolean[] = [];
     for (const gap of trace) {
-      const d = chromeDecision(state, gap, CHROME, now);
+      const d = chromeDecision(state, gap, now);
       if (d.change) flips.push(d.hidden);
       state = d;
       now += 16; // one scroll frame
@@ -102,105 +102,3 @@ describe('chromeDecision', () => {
 // The fold hands the scroll view `chromeH` of extra height at its TOP edge, and content
 // keeps its offset — so it slides up by exactly that much unless the offset follows. 115pt
 // over 200ms, against the finger, is what the operator felt as a bounce (2026-09-09).
-describe('chromeShift', () => {
-  it('cancels the fold exactly, in the direction that keeps content still', () => {
-    // Folding (v 0→1) grows the viewport at the top, so the offset moves DOWN by as much.
-    expect(chromeShift(0, 1, 115)).toBe(-115);
-    // Half a frame of it is half the shift: the whole point is lockstep, not a jump at
-    // the end — a single correction at the end is the same bounce, just later.
-    expect(chromeShift(0, 0.5, 115)).toBe(-57.5);
-    expect(chromeShift(0.5, 1, 115)).toBe(-57.5);
-  });
-
-  it('runs backwards for a reveal, so one function serves both', () => {
-    expect(chromeShift(1, 0, 115)).toBe(115);
-  });
-
-  it('sums to the full height however the animation is sampled', () => {
-    // Frames arrive irregularly; the total correction must not depend on that.
-    let total = 0;
-    let prev = 0;
-    for (const v of [0.07, 0.31, 0.33, 0.78, 0.99, 1]) {
-      total += chromeShift(prev, v, 115);
-      prev = v;
-    }
-    expect(total).toBeCloseTo(-115, 6);
-  });
-
-  it('does nothing before the chrome has been measured', () => {
-    // chromeH is 0 until layout; shifting by 0 is right, and NaN would be a dead scroll.
-    expect(chromeShift(0, 1, 0)).toBe(0);
-    expect(chromeShift(0, 1, -5)).toBe(0);
-  });
-});
-
-describe('makeFoldFollower', () => {
-  const run = (values: number[], chromeH = 115) => {
-    const moves: number[] = [];
-    const follow = makeFoldFollower(() => chromeH, () => (dy: number) => moves.push(dy));
-    values.forEach(follow);
-    return moves;
-  };
-
-  it('moves the content by the chrome’s whole height across a fold', () => {
-    // The sum is what matters: at the end the viewport has grown by chromeH, so the
-    // offset must have moved by the same amount or the content has slid.
-    const moves = run([0.2, 0.5, 0.9, 1]);
-    expect(moves.reduce((a, b) => a + b, 0)).toBeCloseTo(-115, 6);
-  });
-
-  it('spreads it over the frames instead of correcting once at the end', () => {
-    // One correction at the end is the same bounce, just later. Every step must carry
-    // its own share.
-    const moves = run([0.25, 0.5, 0.75, 1]);
-    expect(moves).toHaveLength(4);
-    for (const m of moves) expect(Math.abs(m)).toBeCloseTo(28.75, 6);
-  });
-
-  it('says nothing when nothing moved', () => {
-    // A listener can fire on the same value; a zero correction must not reach the layer,
-    // where it would be a pointless scrollTo mid-gesture.
-    expect(run([0, 0, 0])).toHaveLength(0);
-  });
-
-  it('is silent before the chrome has been measured', () => {
-    expect(run([0.5, 1], 0)).toHaveLength(0);
-  });
-
-  it('does not throw when no layer is installed', () => {
-    const follow = makeFoldFollower(() => 115, () => null);
-    expect(() => follow(1)).not.toThrow();
-  });
-});
-
-// The fold waits for the gesture to end.
-//
-// Holding the content still through a fold means writing contentOffset every animation
-// frame, and under a finger those writes lose: the pan recogniser sets the offset from its
-// own translation on the next frame, so the two take turns and the scroll appears to STICK
-// at the fold point (user report, 2026-09-10 — "到了折叠的地方就会停住").
-describe('a decision while the finger is still down', () => {
-  const shown: ChromeState = {hidden: false, settledAt: 0};
-  const deep = foldThreshold(115) + 50; // well past the fold line
-
-  it('waits — folding under a moving finger is a fight it cannot win', () => {
-    expect(chromeDecision(shown, deep, 115, 1000, CHROME_ANIM_MS, true).change).toBe(false);
-  });
-
-  it('acts the moment the gesture ends, with the same reading', () => {
-    // The reading did not change; only the gesture did. Nothing else will arrive to carry
-    // the answer once the finger is up, which is why the child reports again on end.
-    expect(chromeDecision(shown, deep, 115, 1000, CHROME_ANIM_MS, false).change).toBe(true);
-  });
-
-  it('waits in BOTH directions — a reveal resizes just as much as a fold', () => {
-    const hidden: ChromeState = {hidden: true, settledAt: 0};
-    expect(chromeDecision(hidden, 0, 115, 1000, CHROME_ANIM_MS, true).change).toBe(false);
-    expect(chromeDecision(hidden, 0, 115, 1000, CHROME_ANIM_MS, false).change).toBe(true);
-  });
-
-  it('still refuses mid-animation, gesture or not — that guard is separate', () => {
-    const animating: ChromeState = {hidden: false, settledAt: 2000};
-    expect(chromeDecision(animating, deep, 115, 1000, CHROME_ANIM_MS, false).change).toBe(false);
-  });
-});

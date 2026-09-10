@@ -65,9 +65,10 @@ interface Props {
    * the host knows — see ui/liveEdge.
    */
   /** How far from the live tail, and whether a gesture is still running — see NativeTerm. */
-  onLiveEdge?: (gap: number, moving: boolean) => void;
+  onLiveEdge?: (gap: number) => void;
   /** The host installs a "move the offset by dy" function here — see NativeTerm's copy. */
-  shiftRef?: React.MutableRefObject<((dy: number) => void) | null>;
+  /** Constant top padding, the height of the host's floating chrome. */
+  topPad?: number;
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -118,27 +119,12 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, shiftRef}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   const offRef = React.useRef(0);
 
-  // Hold the content still while the host's chrome folds. Same seam and same reason as
-  // NativeTerm's: the fold grows this view at its top edge, and without a matching move
-  // of the offset everything on screen slides up by the chrome's height.
-  React.useEffect(() => {
-    if (!shiftRef) return;
-    shiftRef.current = (dy: number) => {
-      if (!dy) return;
-      const y = Math.max(0, offRef.current + dy);
-      offRef.current = y;
-      scrollRef.current?.scrollTo({y, animated: false});
-    };
-    return () => {
-      shiftRef.current = null;
-    };
-  }, [shiftRef]);
   // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
   const [atBottom, setAtBottom] = React.useState(true);
   // Following the live tail is the USER's intent, so only the user may withdraw it —
@@ -150,7 +136,6 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // had never left the bottom.
   const stick = React.useRef(true);
   const dragging = React.useRef(false);
-  const decelerating = React.useRef(false); // momentum still running: also "moving"
   // The last reported distance from the tail, so a re-publish (below) can repeat it.
   const gapRef = React.useRef(0);
   const onScroll = (e: any) => {
@@ -163,7 +148,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
     if (gap < 60) stick.current = true;
     else if (dragging.current) stick.current = false;
     setAtBottom(stick.current);
-    onLiveEdge?.(gap, dragging.current || decelerating.current);
+    onLiveEdge?.(gap);
   };
   // When the VIEWPORT changes while we're at the tail — e.g. a host header collapsing
   // in/out above us shrinks/grows this ScrollView — re-pin to the bottom. Without this,
@@ -173,12 +158,15 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const onBodyLayout = () => {
     if (stick.current) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
   };
+  // No `onLiveEdge(0)` here. Announcing arrival before arriving is a lie the host acts
+  // on: it unfolds the chrome, and the fold's own scroll writes used to cancel the
+  // animation below, so the arrow flashed the chrome and went nowhere (2026-09-10). The
+  // scroll's own frames report the arrival.
   const jumpToBottom = () => {
     scrollRef.current?.scrollToEnd({animated: true});
     stick.current = true;
     gapRef.current = 0;
     setAtBottom(true);
-    onLiveEdge?.(0, false);
   };
 
   // Collapse/expand all agent replies — so you can scan prompts to find a turn, then
@@ -242,7 +230,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
     if (!stick.current) return;
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
     gapRef.current = 0;
-    onLiveEdge?.(0, false);
+    onLiveEdge?.(0);
   }, [turns.length, onLiveEdge]);
 
   // Per-turn time labels, with adjacent duplicates blanked so a burst of turns in
@@ -302,29 +290,19 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       ref={scrollRef}
       testID={TestIds.detail.chat}
       style={styles.body}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, topPad > 0 && {paddingTop: topPad}]}
       onScroll={onScroll}
       onScrollBeginDrag={() => {
         dragging.current = true;
-        decelerating.current = false;
       }}
-      onScrollEndDrag={(e?: {nativeEvent?: unknown}) => {
-        // Momentum counts as moving: the finger is up but the offset is still driven, and
-        // folding there is the same fight one frame later.
+      onScrollEndDrag={() => {
+        // Momentum needs no special case any more: the chrome floats, so a fold during
+        // the glide moves nothing that the glide is also moving.
         dragging.current = false;
-        // The event is optional on purpose: a caller that hands us nothing (a test, or a
-        // platform that omits velocity) must mean "the gesture is over", not a crash.
-        const v = (e?.nativeEvent as {velocity?: {y: number}} | undefined)?.velocity?.y;
-        if (v != null && Math.abs(v) > 0.05) {
-          decelerating.current = true;
-          return;
-        }
-        decelerating.current = false;
-        onLiveEdge?.(gapRef.current, false); // no other scroll event will carry the answer
+        onLiveEdge?.(gapRef.current); // no other scroll event will carry the answer
       }}
       onMomentumScrollEnd={() => {
-        decelerating.current = false;
-        onLiveEdge?.(gapRef.current, false);
+        onLiveEdge?.(gapRef.current);
       }}
       onLayout={onBodyLayout}
       scrollEventThrottle={16}>

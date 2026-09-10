@@ -45,7 +45,7 @@ import {BRAND, StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {isSplitCanvas} from '../ui/layout';
 import {historyScope} from '../state/history';
-import {CHROME_ANIM_MS, ChromeState, chromeDecision, makeFoldFollower} from '../ui/liveEdge';
+import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
 // either mode) so switching modes never jumps the text size. Middle = default.
@@ -189,50 +189,29 @@ export function DetailView({
   // that is what the viewport gains and loses, and therefore what the hysteresis has to
   // clear. Measured on a real page it is ~117pt against a 40pt "at the tail" threshold,
   // which is why the old boolean could not help oscillating.
-  const chromeH = useRef(0);
-  // Only count a block that is actually on screen: the measurements are kept forever (a
-  // re-measure during the collapse would capture a shrunken value), so a strip that has
-  // since emptied would otherwise still be charged for its height.
-  chromeH.current =
-    headerH +
-    (neighbors.length > 0 && onOpenPane ? neighborH : 0) +
-    ctlH;
-  // The layer that is on screen installs its "move the offset by dy" function here, and
-  // the fold animation drives it. Only ONE of them is ever wired — the same rule the
-  // gap reporting follows: both layers stay mounted, so a driver with two sources would
-  // be correcting a view nobody is looking at.
-  const shiftTerm = useRef<((dy: number) => void) | null>(null);
-  const shiftChat = useRef<((dy: number) => void) | null>(null);
-  // Hold the content still while the chrome folds.
-  //
-  // The fold hands this view `chromeH` of extra height by moving its TOP edge up, and the
-  // content keeps its offset — so everything slides up by that much: 115pt over 200ms,
-  // against the finger, which is the bounce the operator felt (2026-09-09). The offset is
-  // driven in lockstep instead, one correction per animation frame; `chromeShift` is the
-  // arithmetic and `liveEdge.test.ts` pins it.
-  useEffect(() => {
-    const follow = makeFoldFollower(
-      () => chromeH.current,
-      () => (modeRef.current === 'chat' ? shiftChat : shiftTerm).current,
-    );
-    const id = collapse.addListener(({value}) => follow(value));
-    return () => collapse.removeListener(id);
-  }, [collapse]);
+  // How tall the floating chrome is. Two consumers: the distance it slides out by, and
+  // the constant top padding the scroll content carries so its OLDEST line can still be
+  // scrolled clear of it. Only count a band that is actually on screen — the heights are
+  // measured once and kept, so an emptied strip would otherwise still be charged for its
+  // height.
+  const chromeH = headerH + (neighbors.length > 0 && onOpenPane ? neighborH : 0) + ctlH;
 
   const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
   const lastGap = useRef(0);
   const runEdge = useCallback(
-    (gap: number, moving = false) => {
-      const d = chromeDecision(chrome.current, gap, chromeH.current, Date.now(), CHROME_ANIM_MS, moving);
+    (gap: number) => {
+      const d = chromeDecision(chrome.current, gap, Date.now(), CHROME_ANIM_MS);
       if (Debug.logNet) {
-        Debug.record({event: 'edge', gap: +gap.toFixed(1), chromeH: chromeH.current, was: chrome.current.hidden, hidden: d.hidden, change: d.change});
+        Debug.record({event: 'edge', gap: +gap.toFixed(1), chromeH, was: chrome.current.hidden, hidden: d.hidden, change: d.change});
       }
       if (!d.change) return;
       chrome.current = d;
       Animated.timing(collapse, {
         toValue: d.hidden ? 1 : 0,
         duration: CHROME_ANIM_MS,
-        useNativeDriver: false,
+        // Transform + opacity only, so the fold runs on the UI thread: it can no
+        // longer be delayed by whatever JS is busy rendering a live pane.
+        useNativeDriver: true,
       }).start(({finished}) => {
         // Re-ask with the newest reading. Everything that arrived mid-flight was ignored
         // on purpose (the layout was still moving), so without this a genuine change made
@@ -241,7 +220,7 @@ export function DetailView({
         if (finished) runEdge(lastGap.current);
       });
     },
-    [collapse],
+    [collapse, chromeH],
   );
   // BOTH mode layers stay mounted (switching must be instant), so both keep reporting —
   // and the hidden one reports its OWN tail. Measured on 2026-09-05: browsing terminal
@@ -251,10 +230,10 @@ export function DetailView({
   // the mode you are looking at may drive it.
   const modeRef = useRef<DetailMode>('terminal');
   const edgeFrom = useCallback(
-    (source: DetailMode) => (gap: number, moving = false) => {
+    (source: DetailMode) => (gap: number) => {
       if (modeRef.current !== source) return;
       lastGap.current = gap;
-      runEdge(gap, moving);
+      runEdge(gap);
     },
     [runEdge],
   );
@@ -548,13 +527,13 @@ export function DetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} shiftRef={shiftChat} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} />
     ),
-    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge],
+    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH],
   );
   const termEl = useMemo(
-    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} shiftRef={shiftTerm} />,
-    [text, fontSize, cursor, theme, fontPref, lang, termEdge],
+    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={chromeH} />,
+    [text, fontSize, cursor, theme, fontPref, lang, termEdge, chromeH],
   );
 
   // Load the sibling panes in this pane's session, refreshed on a slow cadence
@@ -601,206 +580,21 @@ export function DetailView({
           and without them the terminal and the chat run underneath it. They are 0 in
           portrait, so they cost nothing there. */}
       <SafeAreaView style={styles.safe} edges={safeAreaEdges(fullscreen)}>
-      {/* header: back · badge · title/sub. Auto-collapses to reclaim space while you
-          browse history/scrollback; reveals on flicking back to the live tail. */}
-      {!fullscreen && (
-        <Animated.View
-          style={{
-            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-            height: headerH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [headerH, 0]}) : undefined,
-            overflow: 'hidden',
-          }}>
-        <View
-          onLayout={e => {
-            // Measure ONCE at natural height (collapse starts at 0=shown). Never
-            // re-measure — a layout during collapse would clobber it with a shrunken
-            // value and the header would only re-expand partway.
-            const h = e.nativeEvent.layout.height;
-            if (headerH === 0 && h > 0) setHeaderH(h);
-          }}
-          style={[styles.header, {borderBottomColor: pal.divider}]}>
-          {onBack && (
-            <TouchableOpacity
-              testID={TestIds.detail.back}
-              accessibilityLabel={TestIds.detail.back}
-              onPress={onBack}
-              hitSlop={hit}
-              style={styles.back}>
-              <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
-            </TouchableOpacity>
-          )}
-          <View style={styles.avatarWrap}>
-            <AgentAvatar agent={live} size={26} radius={7} bg={pal.surface} fg={pal.fg2} border={pal.divider} />
-            <View style={styles.headerBadge}>
-              <StatusBadge status={live.status} size={15} errored={!!live.error} />
-            </View>
-          </View>
-          {/* The title is 1-line for space; tap it to read the FULL task (and error)
-              in an alert — the row/header stay compact but nothing is unreachable. */}
-          <TouchableOpacity
-            activeOpacity={0.6}
-            style={styles.headerText}
-            onPress={() => {
-              const body = live.error && live.error_text
-                ? `${primary(live)}\n\n⚠ ${live.error_text}`
-                : primary(live);
-              Alert.alert(live.agent || 'Agent', body, [{text: lang === 'zh' ? '关闭' : 'Close'}]);
-            }}>
-            <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
-              {primary(live)}
-            </Text>
-            {/* The connection lives HERE now, as a dot in front of the line that already
-                describes this pane. It used to own the left half of a band of its own —
-                a whole row's height for a state that is green almost always. The word
-                only appears when the state is abnormal, exactly as before (D9). */}
-            <View style={styles.subRow}>
-              {connDot !== null && <View style={[styles.liveDot, {backgroundColor: connDot}]} />}
-              <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-                {connWord}
-                {live.agent} · {statusLabel(live.status, lang)} · {secondary(live)}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-        </Animated.View>
-      )}
-
-      {/* Neighbor panes (tiered-pane-control): the other panes in this session —
-          tap to open one (its live screen + input). Hidden when there are none or
-          in full-screen. Auto-collapses on scroll-away (same `collapse` driver as
-          the header) so it doesn't eat space while you read scrollback. */}
-      {!fullscreen && onOpenPane && neighbors.length > 0 && (
-        <Animated.View
-          style={{
-            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-            height: neighborH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [neighborH, 0]}) : undefined,
-            overflow: 'hidden',
-          }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            onLayout={e => {
-              const h = e.nativeEvent.layout.height;
-              if (neighborH === 0 && h > 0) setNeighborH(h);
-            }}
-            style={[styles.neighborStrip, {borderBottomColor: pal.divider}]}
-            contentContainerStyle={styles.neighborContent}>
-            {neighbors.map(n => (
-              <TouchableOpacity
-                key={n.pane_id}
-                onPress={() => onOpenPane(n)}
-                style={[styles.neighborChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-                {/* WHICH KIND, by the same token the radar uses: an agent pane wears its
-                    own icon, a plain one the $_ monogram AgentAvatar falls back to. A ▸/›
-                    pair said the same thing in two glyphs a reader has to learn. */}
-                <AgentAvatar
-                  agent={paneRowToAgent(n)}
-                  size={16}
-                  radius={4}
-                  bg={pal.bg}
-                  fg={pal.fg3}
-                  border={pal.divider}
-                />
-                <Text style={[styles.neighborLabel, {color: pal.fg2}]} numberOfLines={1}>
-                  {/* agentLabel, not `agent || command`: a Claude 2.x pane's command is
-                      its VERSION string (#659) — join the live radar name first. A plain
-                      pane gets a NAME rather than its command: three sibling shells all
-                      read "bash", which is true and identifies nothing (api/types
-                      paneLabel). */}
-                  {n.tier === 'agent' ? agentLabel(n, agents.find(a => a.pane_id === n.pane_id)) : paneLabel(n)}
-                </Text>
-                <Text style={[styles.neighborLoc, {color: pal.fg3}]}>{n.pane_id}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      )}
-
-      {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen
-          Folds with the header, the neighbour strip and the segmented — the SAME driver,
-          so one gesture folds all of the top chrome. It was the one band left out, which
-          made the rule above ("一个手势,顶部 chrome 全部一起折") untrue on the screen:
-          reading history gave back three bands and kept a fourth (2026-09-09 user report,
-          measuring ~34pt of a ~180pt stack).
-          Its height is counted in `chromeH` above, which is what keeps the fold/reveal
-          arithmetic sound — the thresholds are derived from the height being switched, so
-          a band that folds without being counted would reopen the oscillation that
-          `liveEdge` exists to make impossible. */}
-      {!fullscreen && (
-        <Animated.View
-          style={{
-            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-            height: ctlH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [ctlH, 0]}) : undefined,
-            overflow: 'hidden',
-          }}>
-        <View
-          onLayout={e => {
-            // Measure ONCE at natural height, like the other bands: a re-measure during
-            // the fold would capture a shrunken value and shrink the threshold with it.
-            const h = e.nativeEvent.layout.height;
-            if (ctlH === 0 && h > 0) setCtlH(h);
-          }}
-          style={[styles.controls, {borderBottomColor: pal.divider}]}>
-          {/* The segmented moved in here: two controls rows were one row of controls
-              wearing two dividers. Chat/Terminal on the left at its natural width, the
-              per-mode controls on the right (2026-09-09 — the top chrome was four bands,
-              155pt, 21% of the usable screen).
-              The DEMO chip stays on this row: it is a warning about the whole screen, and
-              it must not be mistaken for this pane's own state. */}
-          {isPlainPane ? (
-            <View style={styles.live} />
-          ) : (
-            <View style={[styles.seg, styles.segInline, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-              <Seg
-                label={lang === 'zh' ? '对话' : 'Chat'}
-                active={mode === 'chat'}
-                onPress={() => pickMode('chat')}
-                testID={TestIds.detail.modeChat}
-                pal={pal}
-              />
-              <Seg
-                label={lang === 'zh' ? '终端' : 'Terminal'}
-                active={mode === 'terminal'}
-                onPress={() => pickMode('terminal')}
-                testID={TestIds.detail.modeTerminal}
-                pal={pal}
-              />
-            </View>
-          )}
-          {demo && !Debug.shotMode && (
-            <View style={styles.live}>
-              <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
-              </View>
-              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
-                {lang === 'zh' ? ' 样例数据' : ' sample data'}
-              </Text>
-            </View>
-          )}
-          <View style={styles.ctlRight}>
-            {/* Diff is offered only when this pane's cwd IS a repo. `GET /api/diff`
-                returns "" outside one, so an ungated button opened an empty sheet — a
-                dead control, and most visibly on a plain shell pane, which is exactly
-                where someone does git by hand and where the button is most worth having
-                when it works. `branch` carries the answer on every tier. */}
-            {!!live?.branch && (
-              <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
-            )}
-            {/* font size + full-screen both apply to either mode (consistent behavior). */}
-            <Ctl pal={pal} label="A−" onPress={smaller} />
-            <Ctl pal={pal} label="A+" onPress={bigger} />
-            <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
-          </View>
-        </View>
-        </Animated.View>
-      )}
-
-      {/* body: 对话 (glance) + 终端 (raw TUI). Both stay MOUNTED AND LAID OUT once
-          visited — they're absolutely stacked and we toggle only opacity/zIndex/
-          pointerEvents (compositor props, NO Yoga relayout), so after a mode's
-          first mount, switching is genuinely instant (display:none would relayout
-          hundreds of <Text> nodes — that was the lag). Each is lazily mounted. */}
-      <View style={styles.body}>
+      {/* THE TOP CHROME FLOATS. It is drawn over the scroll view rather than above it in
+          the column, and folds by sliding out on `translateY` — the scroll view's frame
+          never changes. Three user reports came out of the version that animated HEIGHT
+          (the oscillation, the upward bounce, the scroll sticking at the fold point); all
+          three were consequences of resizing the viewport, so the mechanism is gone rather
+          than the symptoms patched. See `ui/liveEdge`.
+          The content underneath carries `topPad` = this height, so its OLDEST line can
+          still be scrolled clear of the chrome. */}
+      <View style={styles.stack}>
+        {/* body: 对话 (glance) + 终端 (raw TUI). Both stay MOUNTED AND LAID OUT once
+            visited — they're absolutely stacked and we toggle only opacity/zIndex/
+            pointerEvents (compositor props, NO Yoga relayout), so after a mode's first
+            mount, switching is genuinely instant (display:none would relayout hundreds of
+            <Text> nodes — that was the lag). Each is lazily mounted. */}
+        <View style={styles.body}>
       {seenChat && (
         <View
           style={[styles.layer, mode === 'chat' ? styles.layerOn : styles.layerOff]}
@@ -860,6 +654,195 @@ export function DetailView({
             testID={TestIds.detail.fsExit}
           />
         </View>
+      )}
+        </View>
+      {!fullscreen && (
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            styles.chrome,
+            {
+              // Opaque, because it FLOATS: the terminal scrolls underneath it, and without
+              // its own ground the title and the controls read on top of scrollback.
+              backgroundColor: pal.bg,
+              opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+              transform: [{translateY: collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})}],
+            },
+          ]}>
+      {/* header: back · badge · title/sub. Auto-collapses to reclaim space while you
+          browse history/scrollback; reveals on flicking back to the live tail. */}
+      {!fullscreen && (
+        <View
+          onLayout={e => {
+            // Measure ONCE at natural height (collapse starts at 0=shown). Never
+            // re-measure — a layout during collapse would clobber it with a shrunken
+            // value and the header would only re-expand partway.
+            const h = e.nativeEvent.layout.height;
+            if (headerH === 0 && h > 0) setHeaderH(h);
+          }}
+          style={[styles.header, {borderBottomColor: pal.divider}]}>
+          {onBack && (
+            <TouchableOpacity
+              testID={TestIds.detail.back}
+              accessibilityLabel={TestIds.detail.back}
+              onPress={onBack}
+              hitSlop={hit}
+              style={styles.back}>
+              <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.avatarWrap}>
+            <AgentAvatar agent={live} size={26} radius={7} bg={pal.surface} fg={pal.fg2} border={pal.divider} />
+            <View style={styles.headerBadge}>
+              <StatusBadge status={live.status} size={15} errored={!!live.error} />
+            </View>
+          </View>
+          {/* The title is 1-line for space; tap it to read the FULL task (and error)
+              in an alert — the row/header stay compact but nothing is unreachable. */}
+          <TouchableOpacity
+            activeOpacity={0.6}
+            style={styles.headerText}
+            onPress={() => {
+              const body = live.error && live.error_text
+                ? `${primary(live)}\n\n⚠ ${live.error_text}`
+                : primary(live);
+              Alert.alert(live.agent || 'Agent', body, [{text: lang === 'zh' ? '关闭' : 'Close'}]);
+            }}>
+            <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
+              {primary(live)}
+            </Text>
+            {/* The connection lives HERE now, as a dot in front of the line that already
+                describes this pane. It used to own the left half of a band of its own —
+                a whole row's height for a state that is green almost always. The word
+                only appears when the state is abnormal, exactly as before (D9). */}
+            <View style={styles.subRow}>
+              {connDot !== null && <View style={[styles.liveDot, {backgroundColor: connDot}]} />}
+              <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
+                {connWord}
+                {live.agent} · {statusLabel(live.status, lang)} · {secondary(live)}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Neighbor panes (tiered-pane-control): the other panes in this session —
+          tap to open one (its live screen + input). Hidden when there are none or
+          in full-screen. Auto-collapses on scroll-away (same `collapse` driver as
+          the header) so it doesn't eat space while you read scrollback. */}
+      {!fullscreen && onOpenPane && neighbors.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            onLayout={e => {
+              const h = e.nativeEvent.layout.height;
+              if (neighborH === 0 && h > 0) setNeighborH(h);
+            }}
+            style={[styles.neighborStrip, {borderBottomColor: pal.divider}]}
+            contentContainerStyle={styles.neighborContent}>
+            {neighbors.map(n => (
+              <TouchableOpacity
+                key={n.pane_id}
+                onPress={() => onOpenPane(n)}
+                style={[styles.neighborChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+                {/* WHICH KIND, by the same token the radar uses: an agent pane wears its
+                    own icon, a plain one the $_ monogram AgentAvatar falls back to. A ▸/›
+                    pair said the same thing in two glyphs a reader has to learn. */}
+                <AgentAvatar
+                  agent={paneRowToAgent(n)}
+                  size={16}
+                  radius={4}
+                  bg={pal.bg}
+                  fg={pal.fg3}
+                  border={pal.divider}
+                />
+                <Text style={[styles.neighborLabel, {color: pal.fg2}]} numberOfLines={1}>
+                  {/* agentLabel, not `agent || command`: a Claude 2.x pane's command is
+                      its VERSION string (#659) — join the live radar name first. A plain
+                      pane gets a NAME rather than its command: three sibling shells all
+                      read "bash", which is true and identifies nothing (api/types
+                      paneLabel). */}
+                  {n.tier === 'agent' ? agentLabel(n, agents.find(a => a.pane_id === n.pane_id)) : paneLabel(n)}
+                </Text>
+                <Text style={[styles.neighborLoc, {color: pal.fg3}]}>{n.pane_id}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+      )}
+
+      {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen
+          Folds with the header, the neighbour strip and the segmented — the SAME driver,
+          so one gesture folds all of the top chrome. It was the one band left out, which
+          made the rule above ("一个手势,顶部 chrome 全部一起折") untrue on the screen:
+          reading history gave back three bands and kept a fourth (2026-09-09 user report,
+          measuring ~34pt of a ~180pt stack).
+          Its height is counted in `chromeH` above, which is what keeps the fold/reveal
+          arithmetic sound — the thresholds are derived from the height being switched, so
+          a band that folds without being counted would reopen the oscillation that
+          `liveEdge` exists to make impossible. */}
+      {!fullscreen && (
+        <View
+          onLayout={e => {
+            // Measure ONCE at natural height, like the other bands: a re-measure during
+            // the fold would capture a shrunken value and shrink the threshold with it.
+            const h = e.nativeEvent.layout.height;
+            if (ctlH === 0 && h > 0) setCtlH(h);
+          }}
+          style={[styles.controls, {borderBottomColor: pal.divider}]}>
+          {/* The segmented moved in here: two controls rows were one row of controls
+              wearing two dividers. Chat/Terminal on the left at its natural width, the
+              per-mode controls on the right (2026-09-09 — the top chrome was four bands,
+              155pt, 21% of the usable screen).
+              The DEMO chip stays on this row: it is a warning about the whole screen, and
+              it must not be mistaken for this pane's own state. */}
+          {isPlainPane ? (
+            <View style={styles.live} />
+          ) : (
+            <View style={[styles.seg, styles.segInline, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              <Seg
+                label={lang === 'zh' ? '对话' : 'Chat'}
+                active={mode === 'chat'}
+                onPress={() => pickMode('chat')}
+                testID={TestIds.detail.modeChat}
+                pal={pal}
+              />
+              <Seg
+                label={lang === 'zh' ? '终端' : 'Terminal'}
+                active={mode === 'terminal'}
+                onPress={() => pickMode('terminal')}
+                testID={TestIds.detail.modeTerminal}
+                pal={pal}
+              />
+            </View>
+          )}
+          {demo && !Debug.shotMode && (
+            <View style={styles.live}>
+              <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
+                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+              </View>
+              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
+                {lang === 'zh' ? ' 样例数据' : ' sample data'}
+              </Text>
+            </View>
+          )}
+          <View style={styles.ctlRight}>
+            {/* Diff is offered only when this pane's cwd IS a repo. `GET /api/diff`
+                returns "" outside one, so an ungated button opened an empty sheet — a
+                dead control, and most visibly on a plain shell pane, which is exactly
+                where someone does git by hand and where the button is most worth having
+                when it works. `branch` carries the answer on every tier. */}
+            {!!live?.branch && (
+              <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
+            )}
+            {/* font size + full-screen both apply to either mode (consistent behavior). */}
+            <Ctl pal={pal} label="A−" onPress={smaller} />
+            <Ctl pal={pal} label="A+" onPress={bigger} />
+            <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
+          </View>
+        </View>
+      )}
+
+        </Animated.View>
       )}
       </View>
 
@@ -1065,6 +1048,15 @@ const styles = StyleSheet.create({
   // doesn't look dwarfed next to the A−/A+ text buttons.
   ctlGlyphBtn: {paddingHorizontal: 6, paddingVertical: 1},
   ctlGlyphText: {fontSize: 18, fontWeight: '400', lineHeight: 20},
+  // The stack is the whole scrolling region; the chrome floats inside it, clipped so a
+  // folded band cannot take a tap from the top of the terminal.
+  stack: {flex: 1, overflow: 'hidden'},
+  // zIndex is NOT optional here. The body's visible layer carries `zIndex: 1` (it is how
+  // the two modes stack), and that was enough to paint the terminal OVER the chrome: the
+  // bands were laid out at the right place the whole time — the e2e dump had the back
+  // button at y=65 — and simply never appeared, which reads exactly like "it folded and
+  // never came back" (2026-09-10).
+  chrome: {position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10},
   body: {flex: 1},
   // Stacked, always-laid-out mode layers (see the body comment). Toggling opacity/
   // zIndex never relayouts — that's what makes switching instant after first mount.
