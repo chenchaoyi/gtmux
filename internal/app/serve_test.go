@@ -176,3 +176,24 @@ func TestPushCopyWithoutAPane(t *testing.T) {
 		t.Errorf("title = %q, want the task alone when there is no pane", title)
 	}
 }
+
+// An agent's icon must be reachable by the identity, spelled either way.
+//
+// `agentIconPNG` took a display LABEL, because that is what a radar row carries. The
+// phone's usage sheet has no radar row for an agent that has a plan but no live session
+// — it holds the registry KEY — so it asked for "codex", got a 404, and showed the
+// neutral monogram beside a plan gtmux had read perfectly well (2026-09-10).
+func TestAgentIconAnswersToKeyAndLabel(t *testing.T) {
+	// The fallback path touches the state dir; the home guard is right to stop a test
+	// that has not said where its home is.
+	t.Setenv("HOME", t.TempDir())
+	for _, spelling := range []string{"codex", "Codex"} {
+		if got := agentIconPNG(spelling); len(got) == 0 {
+			t.Errorf("agentIconPNG(%q) returned no icon; the committed PNG is embedded and must be reachable", spelling)
+		}
+	}
+	// Not a free-for-all: a name that is neither still has no icon to give.
+	if got := agentIconPNG("not-an-agent"); got != nil {
+		t.Errorf("agentIconPNG(\"not-an-agent\") = %d bytes, want none", len(got))
+	}
+}

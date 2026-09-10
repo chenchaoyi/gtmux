@@ -44,5 +44,24 @@ gated('usage sheet', () => {
       return captureOnFailure('us-no-plan', err);
     }
     expect(await plan.isDisplayed()).toBe(true);
+
+    // The machine block is at the BOTTOM, under however many sessions there are, and it
+    // is the part that carries an identity icon per resource (2026-09-10). Scroll to it
+    // and capture: a unit test can assert the icons are wired, not that they render.
+    const {width, height} = await driver.getWindowSize();
+    const cx = Math.round(width / 2);
+    for (let i = 0; i < 4; i++) {
+      await driver
+        .action('pointer', {parameters: {pointerType: 'touch'}})
+        .move({x: cx, y: Math.round(height * 0.8)})
+        .down()
+        .pause(60)
+        .move({x: cx, y: Math.round(height * 0.25), duration: 320})
+        .up()
+        .perform();
+      await settle(250);
+    }
+    await settle(600);
+    await screenshot('usage-sheet-machine');
   });
 });

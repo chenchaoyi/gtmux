@@ -1,13 +1,11 @@
 import {UsageReport} from '../api/client';
-import {
-  buildUsageView,
+import {buildUsageView,
   compactTok,
   machineLines,
   planByAgent,
   rankSessions,
   sessionCount,
-  unreadableReason,
-} from './usageModel';
+  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow} from './usageModel';
 
 // A real payload, trimmed, from the machine this was written on.
 const report = {
@@ -167,5 +165,84 @@ describe('an unreadable plan', () => {
     const groups = planByAgent(both);
     expect(groups).toHaveLength(1);
     expect(groups[0].unreadable).toBeUndefined();
+  });
+});
+
+// The two facts a reader opens this sheet for, and where they come from.
+describe('what the page leads with', () => {
+  const win = (agent: string, label: string, pct: number, resetUnix?: number) =>
+    ({agent, label, pct_used: pct, reset_at: 'Sep 11 at 10:59pm', reset_unix: resetUnix});
+  const rep = (windows: unknown[]) => ({limits: {windows}} as never);
+
+  it('names the weekly window closest to its limit', () => {
+    const t = tightestWindow(rep([win('claude', 'claude week (all models)', 76), win('claude', 'claude week (fable)', 40)]));
+    expect(t?.window).toBe('week (all models)');
+    expect(t?.pct).toBe(76);
+  });
+
+  it('ignores session windows — a high one is a normal working day, not news', () => {
+    const t = tightestWindow(rep([win('claude', 'claude session', 92), win('claude', 'claude week (all models)', 40)]));
+    expect(t?.window).toBe('week (all models)');
+  });
+
+  it('falls back to a session window when that is all there is', () => {
+    expect(tightestWindow(rep([win('claude', 'claude session', 92)]))?.pct).toBe(92);
+  });
+
+  it('has nothing to say when no plan was read', () => {
+    expect(tightestWindow(rep([]))).toBeNull();
+    expect(tightestWindow(null)).toBeNull();
+  });
+
+  it('carries the agent name the server supplied', () => {
+    const t = tightestWindow({limits: {windows: [{agent: 'codex', agent_name: 'Codex', label: 'codex week', pct_used: 3, reset_at: 'x'}]}} as never);
+    expect(t?.agentName).toBe('Codex');
+  });
+});
+
+describe('untilReset', () => {
+  const NOW = 1_789_000_000;
+  it('answers "is that soon" instead of making the reader do date arithmetic', () => {
+    expect(untilReset(NOW + 40 * 60, NOW, true)).toBe('40 分钟后重置');
+    expect(untilReset(NOW + 2 * 3600 + 20 * 60, NOW, true)).toBe('2 小时 20 分钟后重置');
+    expect(untilReset(NOW + 31 * 3600, NOW, true)).toBe('1 天 7 小时后重置');
+    expect(untilReset(NOW + 31 * 3600, NOW, false)).toBe('resets in 1d 7h');
+  });
+  it('drops the zero remainder', () => {
+    expect(untilReset(NOW + 3 * 3600, NOW, false)).toBe('resets in 3h');
+    expect(untilReset(NOW + 48 * 3600, NOW, true)).toBe('2 天后重置');
+  });
+  it('says nothing rather than guessing when the report carries no epoch', () => {
+    // The wall-clock string has no timezone; parsing it would be inventing one.
+    expect(untilReset(undefined, NOW, true)).toBe('');
+    expect(untilReset(NOW - 60, NOW, true)).toBe('');
+  });
+});
+
+describe('splitSessions', () => {
+  const s = (paneId: string, o: Partial<SessionRow> = {}): SessionRow =>
+    ({paneId, loc: paneId, agent: 'claude', tok: 1000, ctx: 0, rate: 0, ...o});
+
+  it('shows what is warned or actually producing, counts the rest', () => {
+    const r = splitSessions([s('%1', {warn: 'ctx 99%'}), s('%2', {rate: 3000}), s('%3'), s('%4', {tok: 500})]);
+    expect(r.shown.map(x => x.paneId)).toEqual(['%1', '%2']);
+    expect(r.rest.map(x => x.paneId)).toEqual(['%3', '%4']);
+    expect(r.restTok).toBe(1500);
+  });
+
+  it('never folds a warned session away, however quiet it is', () => {
+    // The whole reason the list is ranked by trouble. A warned session with no rate is
+    // the exact shape of the four that were sitting at ctx 87–99% on 2026-09-10.
+    const r = splitSessions([s('%1', {warn: 'ctx 87%', rate: 0})]);
+    expect(r.shown).toHaveLength(1);
+    expect(r.rest).toHaveLength(0);
+  });
+});
+
+describe('machineWarn', () => {
+  it('speaks only when the core says amber or red', () => {
+    expect(machineWarn({warn: 'disk getting low · 28GB free', tier: 'amber'})).toBe('disk getting low · 28GB free');
+    expect(machineWarn({warn: 'disk getting low', tier: undefined})).toBe('');
+    expect(machineWarn(null)).toBe('');
   });
 });
