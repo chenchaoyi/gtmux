@@ -1532,3 +1532,39 @@ bundle exec ruby scripts/asc-attach-build.rb --list   # read it back: version + 
 The screenshot one is not optional either: on this same release deliver left **10
 screenshots per locale, four of them duplicates**, which is what it does on essentially
 every run (see the entry above).
+
+## Removing a parameter from a positional list of numbers (2026-09-10)
+
+**Symptom.** The HQ page's header folded once and never came back. Nothing in the app
+looked broken; the header was simply gone for the rest of the session.
+
+**Root cause.** `chromeDecision` had lost a parameter from the MIDDLE of its positional
+list two days earlier (the chrome height, when folding stopped resizing anything). The
+Detail screen was updated with it. The HQ page was not — and it kept passing four numbers:
+
+```
+chromeDecision(chrome.current, gap, chromeH.current, Date.now())
+                                    ^ landed on `now`  ^ landed on `animMs`
+```
+
+Every number went to a number, so **nothing failed to compile**, every unit test of the
+rule stayed green, and the mistake lived entirely at a call site nobody tested. After the
+first fold, `settledAt` was a header height plus a timestamp — about 1.8e12 — and each
+later reading arrived with `now` ≈ 180, which the rule reads as "still animating, ignore".
+Frozen, permanently.
+
+**The fix is the shape, not the call.** The reading is a NAMED object now
+(`{gap, now, animMs?}`), so a call site left behind stops compiling — verified by putting
+the old four-argument call back and watching tsc reject it. Naming cannot stop a wrong
+value in a right-named field, and nothing could; it stops the stale-arity mistake, which
+is the one that happened.
+
+**Must-check when you change a signature:** if the removed parameter has the SAME TYPE as
+its neighbours, the compiler is not your net. Grep every call site by name, and prefer a
+named object over three-plus positional numbers.
+
+**And the guard lives at the call site.** `e2e/hq-header-collapse` scrolls the page and
+looks for the header, because the rule's own tests were green throughout. Drive the ACTS
+tab there: the page's two kinds of zone fold on opposite gestures — a top-anchored list
+folds as you scroll down into it, the console is pinned to its tail and folds as you scroll
+away from it — so a test that lands on whichever tab was last open is a coin flip.

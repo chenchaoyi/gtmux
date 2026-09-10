@@ -200,7 +200,7 @@ export function DetailView({
   const lastGap = useRef(0);
   const runEdge = useCallback(
     (gap: number) => {
-      const d = chromeDecision(chrome.current, gap, Date.now(), CHROME_ANIM_MS);
+      const d = chromeDecision(chrome.current, {gap, now: Date.now()});
       if (Debug.logNet) {
         Debug.record({event: 'edge', gap: +gap.toFixed(1), chromeH, was: chrome.current.hidden, hidden: d.hidden, change: d.change});
       }

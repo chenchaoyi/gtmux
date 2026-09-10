@@ -66,6 +66,26 @@ export interface ChromeDecision {
 }
 
 /**
+ * One reading, NAMED.
+ *
+ * These were positional numbers, and on 2026-09-10 a parameter was removed from the
+ * middle of them: the HQ page kept passing four, so its chrome height landed on `now` and
+ * its clock landed on `animMs`. Every number went to a number, so nothing failed to
+ * compile — and the page folded once and then froze, because `settledAt` became a
+ * timestamp plus a header height and no later reading could ever get past it.
+ *
+ * Named fields cannot do that: a call site left behind stops compiling.
+ */
+export interface EdgeReading {
+  /** How far the content is from the edge this surface measures, in points. */
+  gap: number;
+  /** Now, in ms. Injectable so a test can drive the animation window. */
+  now: number;
+  /** How long the fold animation takes; readings during it are ignored. */
+  animMs?: number;
+}
+
+/**
  * chromeDecision answers "fold, unfold, or leave it" from one distance reading.
  *
  * `gap` is how far the content's tail is below the viewport's bottom edge, in points; 0
@@ -77,12 +97,8 @@ export interface ChromeDecision {
  * somewhere else. The host re-asks with the latest gap when the animation finishes, so a
  * genuine change that arrived mid-flight is answered one animation later, not dropped.
  */
-export function chromeDecision(
-  state: ChromeState,
-  gap: number,
-  now: number,
-  animMs = CHROME_ANIM_MS,
-): ChromeDecision {
+export function chromeDecision(state: ChromeState, at: EdgeReading): ChromeDecision {
+  const {gap, now, animMs = CHROME_ANIM_MS} = at;
   const keep: ChromeDecision = {change: false, hidden: state.hidden, settledAt: state.settledAt};
   if (now < state.settledAt) return keep;
   const wantHidden = gap >= FOLD_AT ? true : gap <= AT_TAIL ? false : state.hidden;
