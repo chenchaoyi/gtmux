@@ -455,7 +455,7 @@ hq's distill pass is the precision, draining them with the same `knowledge add
 --capture` / `dismiss --capture` verbs. The ledger under
 `~/.local/share/gtmux/mine/` keeps every offset and every emitted id, so a pass never
 reads or queues anything twice, and a known error keeps counting after its lesson was
-filed — `--status` shows that tally. Only Claude Code logs are read in this version.
+filed — `--status` shows that tally. It reads Claude Code, Codex and Kimi Code sessions and the transcript gtmux writes for opencode; Codex is the only one of the three whose tool output is journaled, so recurring-error leads come from Claude Code and Codex, correction leads from all four.
 
 ## `gtmux quiet` — how much the supervisor is allowed to say
 

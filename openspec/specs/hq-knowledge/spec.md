@@ -350,8 +350,12 @@ three figures that say whether the base is being maintained.
 ### Requirement: Session transcripts are mined for candidates, LLM-free and incremental
 
 gtmux SHALL run a deterministic miner over the coding agents' session logs on the
-machine and SHALL emit candidates into the pending-distill spool, tagged `source:
-"transcript"`. The miner SHALL never call a model, SHALL never write a knowledge entry,
+machine — Claude Code, Codex, Kimi Code, and the transcript gtmux writes for opencode —
+and SHALL emit candidates into the pending-distill spool, tagged `source:
+"transcript"`. One conversation model SHALL serve every agent: a reader translates its
+agent's envelope into who spoke, what tool ran and what it printed; the judgement lives
+once. A reader SHALL claim only what its agent's log was observed to carry (Kimi and
+opencode journal no tool output, so they yield correction leads only). The miner SHALL never call a model, SHALL never write a knowledge entry,
 and SHALL never read a byte it has already read: a per-file byte watermark and a set of
 emitted candidate ids live in a ledger under the state dir.
 
