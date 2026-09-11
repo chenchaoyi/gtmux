@@ -1,5 +1,6 @@
-• A long press on a session now answers you: a tap you can feel the moment it is recognised, and the row visibly arms while you hold it. Letting go early springs it back.
+• The HQ page's header folded away as you read and then never came back. It returns at the top again.
+• A long press on a session now answers you: a tap you can feel the moment it is recognised, and the row visibly arms while you hold it.
 • The long-press menu separates its actions into groups. "Interrupt it" — the one that stops a turn in progress — no longer looks exactly like "See the changes".
 • Every action in that menu is reachable by VoiceOver. The whole sheet used to be a single element, so a screen reader could reach the card and nothing inside it.
-• The lock-screen card leads with the session that needs you, its actual question, and how long it has waited — instead of a count. Its ground carries the status colour, so "something needs me" reads before a word does.
+• The lock-screen card leads with the session that needs you, its actual question, and how long it has waited — instead of a count.
 • The lock-screen card stopped going stale: a card that has just started gets the current state at once, a phone that reconnects gets it again, and a card whose Mac you switched away from is no longer pushed to forever.
