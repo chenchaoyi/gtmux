@@ -1,0 +1,6 @@
+• The Lock Screen card speaks Chinese now. The whole app was bilingual except the one surface you see without opening anything.
+• The HQ page's header folded away as you read and then never came back. It returns at the top again.
+• A long press on a session now answers you: a tap you can feel the moment it is recognised, and the row visibly arms while you hold it.
+• The long-press menu separates its actions into groups. "Interrupt it" — the one that stops a turn in progress — no longer looks exactly like "See the changes".
+• Every action in that menu is reachable by VoiceOver. The whole sheet used to be a single element, so a screen reader could reach the card and nothing inside it.
+• The Lock Screen card leads with the session that needs you, its actual question, and how long it has waited — and it stopped going stale.
