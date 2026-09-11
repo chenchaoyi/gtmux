@@ -303,7 +303,7 @@ fi
 #      constantly and which nobody reads to learn the product (CLAUDE.md states this
 #      boundary). An entry here shrinks coverage deliberately and visibly, which is the
 #      whole difference between an exception list and a list of things to check.
-SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md"
+SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md docs/appstore-shots.md"
 for f in README.md docs/*.md; do
   case "$f" in *.zh.md) continue ;; esac
   case " $SOLO " in *" $f "*) continue ;; esac
