@@ -57,8 +57,16 @@ node scripts/render-lockscreen.mjs --lang en --out .e2e-artifacts/appstore/en
 node scripts/render-lockscreen.mjs --lang zh --out .e2e-artifacts/appstore/zh
 ```
 
-它是**照着 `ios/GtmuxWidget/GtmuxWidget.swift` 画的**，每个尺寸颜色文案都是那份源码的 3 倍值。
-**那份源码改了，这个脚本得跟着改** —— 一张画出来的图没法自己校验自己，这一条没有捷径。
+它**不抄源码，它读源码**：所有尺寸、颜色都由 `scripts/widget-tokens.mjs` 在渲染时从
+`GtmuxWidget.swift` 里解析出来（17 个值）。所以：
+
+- 源码里改一个尺寸 → 下次出图自动跟着变（实测：把主徽章 26 改成 40，图的哈希就变了）；
+- 把那一行重构得认不出来 → 脚本**直接报错**，而不是画出昨天那张卡；
+- 增删或调换一条 band → `widget-tokens --check` 变红，这一条接在 `check-design.sh` 里，
+  CI 会拦住（实测：多插一条分隔线就红）。
+
+**还剩一样它管不了**：一条 band 内部除字面量之外的结构。比如把 PrimaryBand 里两个元素对调，
+数字照样解析得出来，而图会悄悄过期。这一条目前只能靠人，写在这里免得下次又被当成「全都有保障」。
 
 ## 3. 加标题和机身框
 
