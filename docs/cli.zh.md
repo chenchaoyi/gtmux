@@ -381,6 +381,33 @@ last distill: 3d ago
 所以一个 GUI 可以显示队列却永远动不了它。注意：动作的单位是键，不是行 ——
 驳回一个键会消掉所有共用这个键的待处理行。
 
+
+## `gtmux knowledge mine` —— 不用模型，把会话日志里的线索投进同一个队列
+
+```
+gtmux knowledge mine                 # 跑一轮：读各 agent 日志新增的部分，把线索入队
+gtmux knowledge mine --dry-run       # 只看这轮会投什么，不写
+gtmux knowledge mine --since all     # 纠正候选的时间窗从 30 天放宽到全部存量
+gtmux knowledge mine --status        # 台账：上次采矿、来源数、已发条数、反复出现的报错
+```
+
+```
+读了 14 个文件、3.2 MB、61 条人类发言 → 3 条候选已入队，0 条此前已发过
+  [corrections] 这个不对，重新做
+      ↳ 此前机器说：…把开关挪进了页头，已经发出去了。
+  [pitfalls] bash: wrangler: command not found  (×6, 3 sessions)
+```
+
+`gtmux capture` 是人当场投的；采矿器是机器每天投一次的（`hqWake.mineIntervalHours`，
+填 `0` 关掉）。它从字节水位起读这台机器上各 coding agent 的会话日志，先减掉机器自己写的
+一切（工具输出、harness 注入块、gtmux 的唤醒行和对着审计日志核出来的 `gtmux send` 内容、
+压缩摘要、大段粘贴），只留两种形状当**线索**：人在 agent 回话之后紧接着打的那句纠正，
+连同那段回话的尾巴；以及规范化之后跨会话反复出现的报错签名，连同次数。全程不跑模型。
+线索故意宁多勿漏，精度交给中控的沉淀轮，用同一套 `knowledge add --capture` /
+`dismiss --capture` 逐条处理。`~/.local/share/gtmux/mine/` 下的台账记着每个文件的偏移和
+每条发过的 id，所以不会重复读、重复投；已经写进知识库的坑再被踩到时计数照样涨，
+`--status` 就是看这个的。这一版只读 Claude Code 的日志。
+
 ## `gtmux quiet` —— 中控可以说多少话
 
 ```

@@ -66,3 +66,12 @@
 - 台账的行为规格：`openspec/specs/hq-knowledge/spec.md`
 - 章程的版本规则、`LOCAL.md` 的种子逻辑：`internal/hq/hq.go`（`hqPlaybookVersion` 上方的变更日志）
 - 三块屏怎么呈现：`docs/design/DESIGN.md` §12（菜单栏）· `docs/design/MOBILE.md` §17.1（手机）
+
+候选池有第二个投递方，不是人：**会话采矿器**（`gtmux knowledge mine`，serve 每天自动跑一轮）。
+它不用模型，从各 agent 的会话日志里减掉机器自己写的一切之后，把「人在 agent 回话后紧接着
+打的纠正」和「跨会话反复出现的报错」投进同一个池子，带 `source: transcript` 标记。这解决的是
+一个事件流看不见的盲区：一条 `UserPromptSubmit` 事件只带几个字的摘要，司令对 worker 说的话
+从来到不了参谋长面前，而最值钱的教训恰恰是同一句话在五个会话里各说了一次。采矿器给的是**线索**
+不是条目，精度仍是 distill 那道闸的事；台账在 `~/.local/share/gtmux/mine/`，保证不重复读、
+不重复投，并且一个已经落库的坑再被踩到时计数继续涨——那是「教训写了、载体没被读」的信号。
+设计记录见 `openspec/changes/archive/hq-transcript-mining/`。

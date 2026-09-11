@@ -95,6 +95,12 @@ func SlowTickEval() {
 	// trigger when due (weekly floor / event-volume floor, zero-change gated, ≤ 1/day).
 	// No LLM here —HQ distils the fleet delta into the KB and prunes stale.
 	distillSensor(time.Now().Unix())
+	// Transcript miner (hq-transcript-mining): once a day, read what the agents' logs
+	// gained, subtract what the machine wrote, queue correction-shaped exchanges and
+	// recurring tool errors as distill candidates. Deliberately AFTER the distill sensor:
+	// a pass that fills the spool is seen by the next tick's spool floor, not this one's,
+	// so a distill wake never carries a queue HQ has not been told about.
+	mineSensor(time.Now().Unix())
 	// Summary tick (hq-perception-v2): deliver the periodic brief wake ONLY when
 	// outcome-level changes accumulated (the zero-change gate — a quiet interval
 	// injects nothing and costs no tokens).

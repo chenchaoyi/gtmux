@@ -123,6 +123,13 @@ over one Go core (gtmux-core is the single data source):
   `internal/hqpane` — the `@gtmux_hq_home` pane option, then symlink-NORMALIZED
   cwd/start-path (a symlinked `~/.config` silently ate every wake before this); an
   unresolvable HQ seen within 2h HOLDS the wake instead of dropping it.
+  **The distill spool has a second feeder** (change `hq-transcript-mining`, `internal/mine`):
+  once a day the serve slow tick reads the agents' session logs LLM-free from a byte
+  watermark, subtracts what the machine wrote (tool output, harness blocks, wake lines,
+  `gtmux send` payloads matched against the audit journal), and queues correction-shaped
+  exchanges + recurring tool errors as `source:"transcript"` LEADS — `gtmux knowledge mine`
+  runs it by hand, `--status` shows the ledger (`~/.local/share/gtmux/mine/`). Playbook v37
+  teaches the triage. Tests use synthetic logs only; nothing from a real session enters the repo.
   A self-check sensor raises a `self-check` trigger (idle/threshold/daily, ≤1/h)
   HQ acts on (`internal/hqsurface` keeps only the surfacing tiers + control-record
   names). `gtmux tasks` doubles as the **attention
