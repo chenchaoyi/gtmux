@@ -8,10 +8,15 @@
 // screen at all. Capturing it on a real phone would show the operator's own session
 // names, which is exactly what the demo exists to avoid.
 //
-// So this one is DRAWN — and drawn from the widget's own source, not from memory: every
-// size, colour and string below is the value in ios/GtmuxWidget/GtmuxWidget.swift at 3x.
-// When that file changes, this has to change with it; there is no way to make a drawing
-// verify itself, and pretending otherwise would be worse than saying so here.
+// So this one is DRAWN — and it READS the card rather than copying it: every size and
+// colour below comes out of ios/GtmuxWidget/GtmuxWidget.swift at render time (see
+// widget-tokens.mjs). Change a size in Swift and the next render moves with it; refactor
+// the line out of recognition and this throws instead of drawing yesterday's card.
+//
+// The first version of this file copied those values by hand and the note here said drift
+// could not be caught automatically. It could: they are all literals, in shapes a regex
+// can find. What still cannot be linked is what is INSIDE a band beyond its literals —
+// `widget-tokens --check` pins the ORDER of the bands, and the rest is a human's job.
 //
 //   node scripts/render-lockscreen.mjs --lang en --out .e2e-artifacts/appstore/en
 //
@@ -21,6 +26,7 @@
 import {execFileSync} from 'child_process';
 import {mkdirSync, writeFileSync, rmSync} from 'fs';
 import {join, resolve} from 'path';
+import {widgetTokens} from './widget-tokens.mjs';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const W = 1320;
@@ -36,17 +42,18 @@ const outDir = resolve(arg('out', '.e2e-artifacts/appstore/en'));
 const zh = lang === 'zh';
 const t = (en, cn) => (zh ? cn : en);
 
-// Status colours — DESIGN §9, the same hex the widget compiles in.
-const WAITING = '#EF4444';
-const WORKING = '#06B6D4';
-const IDLE = '#22C55E';
+// Read the card, do not copy it.
+const K = widgetTokens();
+const WAITING = K.waiting;
+const WORKING = K.working;
+const IDLE = K.idle;
 
 const px = n => `${n * S}px`;
 
 // One session row: badge, title, and the elapsed time SwiftUI renders locally.
 const row = (color, title, time, ring) => `
-  <div style="display:flex;align-items:center;gap:${px(8)};">
-    <div style="width:${px(13)};height:${px(13)};border-radius:${px(6.5)};background:${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+  <div style="display:flex;align-items:center;gap:${px(K.rowGap)};">
+    <div style="width:${px(K.badgeRow)};height:${px(K.badgeRow)};border-radius:${px(K.badgeRow / 2)};background:${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
       ${ring ? `<div style="width:${px(6)};height:${px(6)};border-radius:${px(3)};border:${px(1.4)} solid #fff;border-right-color:transparent;box-sizing:border-box;"></div>` : ''}
     </div>
     <div style="flex-grow:1;min-width:0;font-size:${px(15)};color:rgba(255,255,255,0.92);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
@@ -83,10 +90,10 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 
   <!-- The Live Activity, at the widget's own geometry. -->
   <div style="width:${px(370)};margin-top:${px(20)};border-radius:${px(22)};overflow:hidden;background:rgba(0,0,0,0.55);">
-    <div style="background:linear-gradient(180deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.03) 46%, rgba(255,255,255,0.02) 100%);padding:${px(12)} ${px(14)};display:flex;flex-direction:column;gap:${px(9)};">
+    <div style="background:linear-gradient(180deg, rgba(239,68,68,${K.tintTop}) 0%, rgba(239,68,68,0.03) 46%, rgba(255,255,255,0.02) 100%);padding:${px(K.padV)} ${px(K.padH)};display:flex;flex-direction:column;gap:${px(K.cardGap)};">
 
-      <div style="display:flex;align-items:center;gap:${px(7)};">
-        <div style="width:${px(5)};height:${px(5)};border-radius:${px(2.5)};background:${WAITING};"></div>
+      <div style="display:flex;align-items:center;gap:${px(K.serverGap)};">
+        <div style="width:${px(K.serverDot)};height:${px(K.serverDot)};border-radius:${px(K.serverDot / 2)};background:${WAITING};"></div>
         <div style="font-size:${px(12)};font-weight:600;color:rgba(255,255,255,0.6);">MacBook Pro</div>
         <div style="flex-grow:1;"></div>
         <div class="num" style="display:flex;align-items:center;gap:${px(10)};font-size:${px(11)};font-weight:600;color:rgba(255,255,255,0.85);">
@@ -94,26 +101,26 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
           <span style="display:flex;align-items:center;gap:${px(4)};"><span style="width:${px(12)};height:${px(12)};border-radius:${px(6)};background:${WORKING};"></span>3</span>
           <span style="display:flex;align-items:center;gap:${px(4)};opacity:0.3;"><span style="width:${px(12)};height:${px(12)};border-radius:${px(6)};background:${IDLE};"></span>6</span>
         </div>
-        <img src="ICON" style="width:${px(20)};height:${px(20)};border-radius:${px(4.4)};display:block;margin-left:${px(9)};">
+        <img src="ICON" style="width:${px(K.brand)};height:${px(K.brand)};border-radius:${px(K.brand * 0.22)};display:block;margin-left:${px(9)};">
       </div>
 
-      <div style="display:flex;align-items:center;gap:${px(11)};">
-        <div style="width:${px(26)};height:${px(26)};border-radius:${px(7.3)};background:${WAITING};display:flex;align-items:center;justify-content:center;gap:${px(4)};flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:${px(K.bandGap)};">
+        <div style="width:${px(K.badgeBig)};height:${px(K.badgeBig)};border-radius:${px(K.badgeBig * 0.28)};background:${WAITING};display:flex;align-items:center;justify-content:center;gap:${px(4)};flex-shrink:0;">
           <div style="width:${px(2.9)};height:${px(11.4)};border-radius:${px(1.4)};background:#fff;"></div>
           <div style="width:${px(2.9)};height:${px(11.4)};border-radius:${px(1.4)};background:#fff;"></div>
         </div>
         <div style="flex-grow:1;min-width:0;">
           <div style="display:flex;align-items:baseline;gap:${px(10)};">
-            <div style="flex-grow:1;min-width:0;font-size:${px(16)};font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">api</div>
-            <div class="num" style="font-size:${px(15)};font-weight:700;color:${WAITING};">4:12</div>
+            <div style="flex-grow:1;min-width:0;font-size:${px(K.titleSize)};font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">api</div>
+            <div class="num" style="font-size:${px(K.timerSize)};font-weight:700;color:${WAITING};">4:12</div>
           </div>
-          <div style="font-size:${px(12.5)};color:rgba(255,255,255,0.7);margin-top:${px(1)};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t('run the test suite?', '要跑一遍测试吗？')}</div>
+          <div style="font-size:${px(K.detailSize)};color:rgba(255,255,255,0.7);margin-top:${px(1)};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t('run the test suite?', '要跑一遍测试吗？')}</div>
         </div>
       </div>
 
       <div style="height:1px;background:rgba(255,255,255,0.09);"></div>
 
-      <div style="display:flex;flex-direction:column;gap:${px(7)};">
+      <div style="display:flex;flex-direction:column;gap:${px(K.rowGap)};">
         ${row(WORKING, 'web', '12:31', true)}
         ${row(WORKING, 'worker', '3:04', true)}
       </div>

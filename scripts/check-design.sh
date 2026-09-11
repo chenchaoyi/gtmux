@@ -303,6 +303,17 @@ fi
 #      constantly and which nobody reads to learn the product (CLAUDE.md states this
 #      boundary). An entry here shrinks coverage deliberately and visibly, which is the
 #      whole difference between an exception list and a list of things to check.
+# The store's lock-screen screenshot is DRAWN, and it reads the card's own numbers rather
+# than copying them (mobileapp/scripts/widget-tokens.mjs). This is the half a drawing
+# cannot do for itself: if a band is added, removed or reordered in the widget, every
+# number still parses and the drawing is quietly out of date — so the ORDER is pinned here.
+if [ -f mobileapp/scripts/widget-tokens.mjs ]; then
+  node mobileapp/scripts/widget-tokens.mjs --check >/dev/null || {
+    node mobileapp/scripts/widget-tokens.mjs --check 2>&1 | head -4
+    fail "the Live Activity card moved but the store's drawn screenshot did not"
+  }
+fi
+
 SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md docs/appstore-shots.md"
 for f in README.md docs/*.md; do
   case "$f" in *.zh.md) continue ;; esac
