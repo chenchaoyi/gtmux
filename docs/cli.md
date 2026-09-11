@@ -426,6 +426,37 @@ The text form omits the key, so a GUI could show the queue and never act on it. 
 key is the unit of action, not the line: dismissing one consumes every pending line that
 shares it.
 
+
+## `gtmux knowledge mine` — session logs into the same queue, without a model
+
+```
+gtmux knowledge mine                 # one pass: read what the agents' logs gained, queue the leads
+gtmux knowledge mine --dry-run       # show what a pass would queue, write nothing
+gtmux knowledge mine --since all     # widen the correction window from 30 days to the whole stock
+gtmux knowledge mine --status        # the ledger: last pass, sources, emitted, recurring errors
+```
+
+```
+read 14 file(s), 3.2 MB, 61 human line(s) → 3 candidate(s) queued, 0 already emitted
+  [corrections] this is wrong, do it again
+      ↳ after: …moved the toggle into the header and shipped it.
+  [pitfalls] bash: wrangler: command not found  (×6, 3 sessions)
+```
+
+`gtmux capture` is what a person queues in the moment. The miner is what the machine
+queues once a day (`hqWake.mineIntervalHours`, `0` disables): it reads the coding agents'
+session logs on this machine from a byte watermark, subtracts everything the machine
+itself wrote (tool output, harness blocks, gtmux's wake lines and `gtmux send` payloads
+matched against the audit journal, compaction summaries, pastes), and keeps two shapes as
+**leads**: a correction-shaped line a person typed right after an agent's reply, carried
+with the tail of that reply, and a tool error whose normalized signature recurs across
+sessions, carried with its count. No model runs. Leads are deliberately recall-first —
+hq's distill pass is the precision, draining them with the same `knowledge add
+--capture` / `dismiss --capture` verbs. The ledger under
+`~/.local/share/gtmux/mine/` keeps every offset and every emitted id, so a pass never
+reads or queues anything twice, and a known error keeps counting after its lesson was
+filed — `--status` shows that tally. Only Claude Code logs are read in this version.
+
 ## `gtmux quiet` — how much the supervisor is allowed to say
 
 ```

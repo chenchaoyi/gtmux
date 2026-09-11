@@ -46,6 +46,8 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgeTopic(rest) })
 	case "promotions":
 		return knowledgePromotions(rest)
+	case "mine":
+		return knowledgeMine(rest)
 	case "list":
 		return knowledgeList(rest)
 	case "show":
@@ -535,6 +537,7 @@ func knowledgeUsage() int {
   promote   <id> --why "<case>" [--target "<repo spot>"]   # charter-level → export brief
   land      <id> --ref "<pr/spec>"                         # close the loop when it lands
   promotions [--json]                                      # the pending export queue
+  mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
   list      [--topic <t>] [--json]     show <id>     render [--check]
   The knowledge base's authority is an append-only ledger; topic .md files are
   rendered from it, entries carry provenance (seq/pane/task/capture), and every
@@ -556,6 +559,7 @@ func knowledgeUsage() int {
   promote   <id> --why "<理由>" [--target "<落点>"]   # 守则级 → 生成外送简报
   land      <id> --ref "<pr/spec>"                    # 落地后闭环
   promotions [--json]                                 # 待落地队列
+  mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
   list      [--topic <主题>] [--json]     show <id>     render [--check]
   知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
   每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,

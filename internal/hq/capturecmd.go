@@ -38,6 +38,15 @@ type captureCandidate struct {
 	Pane   string `json:"pane,omitempty"` // $TMUX_PANE at capture time, if any
 	Seq    int64  `json:"seq"`            // the event high-water mark at capture time
 	Task   string `json:"task,omitempty"` // GTMUX_TASK_ID, if the caller is a tracked dispatch
+	// Additive (hq-transcript-mining): a candidate the transcript miner queued rather than
+	// a person. Source names the miner; Context is the tail of the assistant text a
+	// correction answered; Session/Project locate the exchange; Count is a recurring
+	// error's tally. All omitted on a `gtmux capture` line.
+	Source  string `json:"source,omitempty"`
+	Context string `json:"context,omitempty"`
+	Session string `json:"session,omitempty"`
+	Project string `json:"project,omitempty"`
+	Count   int    `json:"count,omitempty"`
 }
 
 // pendingDistillPath is the append-only spool the distill pass drains + truncates. It is
@@ -298,7 +307,14 @@ func captureList(asJSON bool) int {
 	i18n.Say(fmt.Sprintf("%d pending-distill candidate(s):", len(cands)),
 		fmt.Sprintf("%d 条待蒸馏候选:", len(cands)))
 	for _, c := range cands {
-		fmt.Printf("  [%s] %s\n", c.Topic, c.Lesson)
+		tag := c.Topic
+		if c.Source != "" {
+			tag += "·" + c.Source
+		}
+		fmt.Printf("  [%s] %s\n", tag, c.Lesson)
+		if c.Context != "" {
+			fmt.Printf("      ↳ %s%s\n", i18n.Tr("after: ", "此前机器说："), c.Context)
+		}
 	}
 	return 0
 }

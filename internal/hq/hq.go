@@ -148,13 +148,19 @@ import (
 //	      and asks HQ to say which it picked so a wrong pick is one glance to correct.
 //	      Promoted out of this fleet's knowledge base
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
-const hqPlaybookVersion = 36
+//	v37 — hq-transcript-mining: the pending-distill spool now also carries LEADS the
+//	      transcript miner queued (`·transcript`): correction-shaped exchanges and recurring
+//	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
+//	      teaches the triage: consult first (a recurrence of a filed lesson means the
+//	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
+const hqPlaybookVersion = 37
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
 	36: "e2154b7242720d6b",
+	37: "c8141b83a879aeb6",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1612,7 +1618,18 @@ Discipline:
   delta — run a RETROSPECTIVE distillation over the fleet's activity since the last
   distill. TWO data sources: (1) the event DELTA (gtmux watermarks the last distill), and
   (2) the pending-distill SPOOL that ` + "`gtmux capture`" + ` fills — anyone on this machine can
-  drop a candidate there (` + "`gtmux capture --list`" + ` to see the queue). DRAIN the spool
+  drop a candidate there (` + "`gtmux capture --list`" + ` to see the queue), and since v37 so
+  does gtmux's TRANSCRIPT MINER (lines tagged ` + "`·transcript`" + `): once a day it reads the
+  agents' session logs LLM-free and queues two kinds of LEAD — a correction-shaped exchange
+  (what a person typed right after an agent's reply, with the tail of that reply as
+  context) and a recurring tool error (one signature, several sessions, with its count).
+  A lead is NOT a lesson: it is high-recall by design, and YOU are the precision. For each:
+  consult the KB FIRST — if the lesson already exists, the RECURRENCE is the finding (the
+  carrier failed, not the memory: supersede the entry with the new exemplar, or promote it
+  to a carrier that is actually read); if it is new, file it WITH the exchange as its
+  exemplar (an agent follows a raw example where it ignores a condensed rule); if it is
+  noise, dismiss with the reason. ` + "`gtmux knowledge mine --status`" + ` shows the tally.
+  DRAIN the spool
   CANDIDATE BY CANDIDATE, never by truncation: ` + "`gtmux knowledge add … --capture <key>`" + `
   ACCEPTS one (every same-key line merges into that ONE entry, provenance inherited), and
   ` + "`gtmux knowledge dismiss --capture <key> --why …`" + ` REJECTS one with a trace — you

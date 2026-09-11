@@ -55,6 +55,9 @@ type Config struct {
 	// non-trivial reads (the usage snapshot and the event-delta scan behind the turn
 	// count). The 20 s slow tick is far finer than anything this measures.
 	SelfRotateCheckSec int64
+	// MineIntervalHours is the transcript miner's cadence (hq-transcript-mining); 0 or
+	// less disables the daily pass (`gtmux knowledge mine` still runs by hand).
+	MineIntervalHours int64
 }
 
 // Defaults returns the documented default config.
@@ -62,7 +65,8 @@ func Defaults() Config {
 	return Config{Done: DoneUnattended, PaneMinGapSec: 120, TickMinutes: 10, TickBurst: 5,
 		UnreadDebounceSec: 120, UnreadRepeatSec: 300,
 		SelfRotateCtx: 0.75, SelfRotateHours: 12, SelfRotateTurns: 300,
-		SelfRotateRepeatSec: 1800, SelfRotateFloorSec: 12 * 3600, SelfRotateCheckSec: 300}
+		SelfRotateRepeatSec: 1800, SelfRotateFloorSec: 12 * 3600, SelfRotateCheckSec: 300,
+		MineIntervalHours: 24}
 }
 
 // Load reads the hqWake config, falling back per-field to defaults.
@@ -91,6 +95,8 @@ func loadFrom(path string) Config {
 			SelfRotateRepeatSec *int64   `json:"selfRotateRepeatSec"`
 			SelfRotateFloorSec  *int64   `json:"selfRotateFloorSec"`
 			SelfRotateCheckSec  *int64   `json:"selfRotateCheckSec"`
+
+			MineIntervalHours *int64 `json:"mineIntervalHours"`
 		} `json:"hqWake"`
 	}
 	if json.Unmarshal(b, &c) != nil {
@@ -145,6 +151,10 @@ func loadFrom(path string) Config {
 	}
 	if c.HQWake.SelfRotateCheckSec != nil && *c.HQWake.SelfRotateCheckSec > 0 {
 		cfg.SelfRotateCheckSec = *c.HQWake.SelfRotateCheckSec
+	}
+	// Any value, non-positive included: 0 switches the daily pass off.
+	if c.HQWake.MineIntervalHours != nil {
+		cfg.MineIntervalHours = *c.HQWake.MineIntervalHours
 	}
 	return cfg
 }
