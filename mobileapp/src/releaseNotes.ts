@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.13',
+    en: [
+      'The HQ page\'s header folded away as you read and then never came back. It returns at the top again.',
+      'A long press on a session now answers you: a tap you can feel the moment it is recognised, and the row visibly arms while you hold it.',
+      'The long-press menu separates its actions into groups. "Interrupt it" — the one that stops a turn in progress — no longer looks exactly like "See the changes".',
+      'Every action in that menu is reachable by VoiceOver. The whole sheet used to be a single element, so a screen reader could reach the card and nothing inside it.',
+      'The lock-screen card leads with the session that needs you, its actual question, and how long it has waited — instead of a count.',
+      'The lock-screen card stopped going stale: a card that has just started gets the current state at once, a phone that reconnects gets it again, and a card whose Mac you switched away from is no longer pushed to forever.',
+    ],
+    zh: [
+      'HQ 页顶部那块读着读着折走之后再也回不来，现在回到顶部它就回来了。',
+      '长按会话现在有回应了：识别的那一刻有一次触感，按住时行会明显地「攒」起来。',
+      '长按菜单按类别分开了。「打断它」——唯一会停掉正在进行的那一轮——不再和「看改动」长得一模一样。',
+      '菜单里每一条动作现在 VoiceOver 都够得到。整张卡片以前是一个整体，读屏只能读到「这张卡」，里面什么都摸不到。',
+      '锁屏卡片改成先说等你的那一个：会话名、它问的那句原话、等了多久，而不是一个数字。',
+      '锁屏卡片不再显示过时的内容：新建的卡立刻拿到当前状态，手机重连时补一次，而你切走的那台 Mac 也不会再对着一张不存在的卡永远推下去。',
+    ],
+  },
+  {
     version: '1.0.12',
     en: [
       'A long press on a session now answers you: a tap you can feel the moment it is recognised, and the row visibly arms while you hold it. Letting go early springs it back.',
