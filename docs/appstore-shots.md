@@ -81,6 +81,24 @@ node scripts/frame-shots.mjs --in .e2e-artifacts/appstore/zh --lang zh --out fas
 
 改顺序 = 改这个 json 的数组顺序，不用重命名任何文件。
 
+## 3.5 先看商店落后了多少，再写 What's New
+
+**大多数真机构建从不提交**，所以商店上在线的版本可能落后很多版 —— 2026-09-11 那次，商店还是
+0.68.0，而正在准备的是 1.0.14，中间隔了 36 个版本、104 条改动。那次的 What's New 只写了最后
+三版，因为**流水线从来没有把这个跨度摆到人眼前**。
+
+现在摆了：`asc-attach-build.rb --list` 会打出在线版本，落后超过一版就直接告诉你要覆盖到哪里。
+
+写法（规矩原文在 `release-notes/README.md`「When a submission crosses several versions」）：
+
+- 读它的人正在决定**要不要从他手上那一版升级**，所以覆盖整个跨度，不是最后一版。
+- 挑**用户真能感觉到的能力**（重做的 HQ 页、长按菜单、知识库、用量页…），其余的收成一句
+  「还有一长串打磨和问题修复」。不要把 changelog 全倒进去。
+- 写进 `fastlane/metadata/*/release_notes.txt`，然后**不要重跑 `set-version.sh`** ——
+  归档要保持一版一条，应用内的「新变化」弹窗会把用户跳过的每一版都回放一遍，
+  重跑会让同样的话说两遍。
+- 只传文案不动截图：`bundle exec fastlane metadata skip_screenshots:true`。
+
 ## 4. 上传，然后**回读**
 
 ```sh

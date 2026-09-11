@@ -38,6 +38,30 @@ puts "attached build:   #{version.build&.version || '(none)'}"
 builds = app.get_builds(filter: {'preReleaseVersion.version' => version.version_string}, limit: 20)
 builds.each { |b| puts "  build #{b.version}  processing=#{b.processing_state}" }
 
+# How far behind the STORE is — which decides what "What's New" has to cover.
+#
+# Most device builds are never submitted, so the live version can sit many releases back:
+# on 2026-09-11 the store showed 0.68.0 while 1.0.14 was being prepared, 36 archived
+# versions later. The release notes had been written for the last three, because nothing
+# in the pipeline ever put the span in front of anyone. Now it does.
+live = app.get_live_app_store_version
+if live
+  puts "live on the store:  #{live.version_string}"
+  notes = File.expand_path('../release-notes', __dir__)
+  span = Dir.glob(File.join(notes, '*.en.txt')).map { |f| File.basename(f, '.en.txt') }
+             .select { |v| Gem::Version.new(v) > Gem::Version.new(live.version_string) rescue false }
+             .sort_by { |v| Gem::Version.new(v) }
+  if span.length > 1
+    puts
+    puts "  !! the store is #{span.length} versions behind (#{span.first} … #{span.last})."
+    puts "     \"What's New\" is read by someone deciding whether to update from #{live.version_string},"
+    puts "     so it covers ALL of it — the capabilities they would notice, then one line for the rest."
+    puts "     Write that into fastlane/metadata/*/release_notes.txt and do NOT re-run"
+    puts "     set-version.sh: the archive keeps one entry per version for the in-app popup."
+    puts "     See release-notes/README.md \"When a submission crosses several versions\"."
+  end
+end
+
 if list_only
   puts '== list only =='
   exit 0

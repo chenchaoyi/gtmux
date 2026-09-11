@@ -1,6 +1,14 @@
-• The Lock Screen card speaks Chinese now. The whole app was bilingual except the one surface you see without opening anything.
-• The HQ page's header folded away as you read and then never came back. It returns at the top again.
-• A long press on a session now answers you: a tap you can feel the moment it is recognised, and the row visibly arms while you hold it.
-• The long-press menu separates its actions into groups. "Interrupt it" — the one that stops a turn in progress — no longer looks exactly like "See the changes".
-• Every action in that menu is reachable by VoiceOver. The whole sheet used to be a single element, so a screen reader could reach the card and nothing inside it.
-• The Lock Screen card leads with the session that needs you, its actual question, and how long it has waited — and it stopped going stale.
+A lot has landed since the version on your phone. The ones you will notice:
+
+• Long-press any session to act on it, without opening it: answer the question it is asking, tell it to carry on, interrupt the turn, hand it to HQ, jump to it on the Mac, or read the diff. The press answers you now — a tap you can feel, and the row arming while you hold it.
+• The HQ page was rebuilt to report rather than display: what is owed to you, what HQ did while you were away, and only then the context. Its three documents — the situation board, the knowledge base, usage — each have a tile of their own carrying a live figure.
+• See what HQ actually did: every dispatch, reclaim and note it made, grouped by when it happened, with the quiet between them named.
+• The knowledge base is on the phone, and searchable — hundreds of entries across its topics, matched by title, id or topic.
+• A usage view: which plan window is tightest and how long until it resets, who is burning it, and what the machine is doing. Codex quotas alongside Claude's.
+• The situation board reads as an outline. Sections and panes stay folded until you open one, so a long board is a list you can scan.
+• The Lock Screen card leads with the session that needs you, its actual question and how long it has waited — and it no longer goes stale. It speaks Chinese now too.
+• Full screen is actually full screen, and the bar above the terminal is three bands instead of four — roughly sixteen more lines of output.
+• A half-typed message survives leaving a pane, input history follows the project you are in, and a send that does not go through says why and keeps what you wrote.
+• The app reads out to VoiceOver where it did not: the connection state, and every action in the long-press menu.
+
+Plus a long run of polish and fixes — scrolling that stays where you put it, icons that load, and a good deal of tidying up.
