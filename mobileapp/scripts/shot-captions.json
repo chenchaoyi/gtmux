@@ -8,6 +8,12 @@
       "dot": "#EF4444"
     },
     {
+      "file": "02-lockscreen",
+      "title": "It reaches you first",
+      "sub": "A push the moment an agent needs you, and a Live Activity that keeps the count.",
+      "dot": "#EF4444"
+    },
+    {
       "file": "02-terminal-approval",
       "title": "Answer without walking back",
       "sub": "The real terminal, in colour — and its question as buttons.",
@@ -43,6 +49,12 @@
       "file": "01-radar",
       "title": "谁在等你，一眼看见",
       "sub": "每个 agent 的实时状态，用颜色分开。",
+      "dot": "#EF4444"
+    },
+    {
+      "file": "02-lockscreen",
+      "title": "它先来找你",
+      "sub": "agent 需要你的那一刻推到锁屏，实况活动一直挂着当前状况。",
       "dot": "#EF4444"
     },
     {

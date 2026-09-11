@@ -9,6 +9,19 @@ import WidgetKit
 
 enum AgentStatus { case waiting, working, idle, running }
 
+// L — the widget's half of the app's bilingual rule.
+//
+// Everything else a user reads is en+zh; this card was English only, so a Chinese user's
+// lock screen — the one surface they see without opening anything — spoke a different
+// language from the rest of the product (2026-09-11).
+//
+// A widget extension cannot read the app's GTMUX_LANG preference, and its own process
+// follows the SYSTEM language, which is what a lock screen should follow anyway.
+func zhLocale() -> Bool {
+  (Locale.preferredLanguages.first ?? "en").hasPrefix("zh")
+}
+func L(_ en: String, _ zh: String) -> String { zhLocale() ? zh : en }
+
 private func statusColor(_ s: AgentStatus) -> Color {
   switch s {
   case .waiting: return Color(red: 0.937, green: 0.267, blue: 0.267) // #EF4444
@@ -90,7 +103,7 @@ private struct OfflineTag: View {
   var body: some View {
     HStack(spacing: 3) {
       Circle().fill(statusColor(.waiting)).frame(width: 5, height: 5)
-      Text("offline").font(.caption2).fontWeight(.semibold)
+      Text(L("offline", "已断开")).font(.caption2).fontWeight(.semibold)
         .foregroundColor(statusColor(.waiting).opacity(0.95)).lineLimit(1)
     }
   }
@@ -229,7 +242,7 @@ private struct PrimaryBand: View {
         .font(.system(size: 13)).foregroundColor(.white.opacity(0.5))
         .monospacedDigit().lineLimit(1).frame(minWidth: 44, alignment: .trailing)
     } else if state.idle > 0 {
-      Text("\(state.idle) idle").font(.system(size: 13)).foregroundColor(.white.opacity(0.5)).lineLimit(1)
+      Text(L("\(state.idle) idle", "\(state.idle) 个空闲")).font(.system(size: 13)).foregroundColor(.white.opacity(0.5)).lineLimit(1)
     }
   }
 }
@@ -238,18 +251,18 @@ private struct PrimaryBand: View {
 private func primaryTitle(_ st: GtmuxActivityAttributes.ContentState) -> String {
   if st.waiting > 0 {
     if !st.waitingSession.isEmpty { return st.waitingSession }
-    return st.waitingTitle.isEmpty ? "Needs you" : st.waitingTitle
+    return st.waitingTitle.isEmpty ? L("Needs you", "有人等你") : st.waitingTitle
   }
-  if st.working > 0 { return st.working == 1 ? "1 running" : "\(st.working) running" }
-  if st.idle > 0 { return "All quiet" }
+  if st.working > 0 { return L("\(st.working) running", "\(st.working) 个在跑") }
+  if st.idle > 0 { return L("All quiet", "都停下来了") }
   // A card that exists before its first push. "No agents" read as a verdict about the
   // fleet; this says what it is actually doing.
-  return "Waiting for your Mac…"
+  return L("Waiting for your Mac…", "正在等 Mac 报到…")
 }
 private func primaryDetail(_ st: GtmuxActivityAttributes.ContentState) -> String? {
   if st.waiting > 0 {
-    let d = st.waitingTitle.isEmpty ? "needs your input" : st.waitingTitle
-    return st.waiting > 1 ? "\(d) · +\(st.waiting - 1) more waiting" : d
+    let d = st.waitingTitle.isEmpty ? L("needs your input", "在等你回话") : st.waitingTitle
+    return st.waiting > 1 ? L("\(d) · +\(st.waiting - 1) more waiting", "\(d) · 另有 \(st.waiting - 1) 个在等") : d
   }
   return nil
 }
@@ -307,7 +320,7 @@ struct GtmuxLiveActivity: Widget {
           }
         }
         if isStale(context) {
-          Text("This is how it stood when the Mac last reported.")
+          Text(L("This is how it stood when the Mac last reported.", "这是 Mac 最后一次报告时的情况。"))
             .font(.system(size: 12.5)).foregroundColor(.white.opacity(0.5)).lineLimit(1)
         }
       }
