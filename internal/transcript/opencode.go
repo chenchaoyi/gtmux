@@ -21,6 +21,10 @@ import (
 // opencodeDir is where the gtmux-owned opencode transcripts live — a sibling of the
 // other state under ~/.local/share/gtmux (kept in sync with internal/state.Dir(),
 // replicated here so this package stays a pure leaf).
+// OpencodeDir is where gtmux keeps the transcripts it writes for opencode (a logless
+// agent), for packages that scan them.
+func OpencodeDir() string { return opencodeDir() }
+
 func opencodeDir() string {
 	return filepath.Join(state.Home(), ".local", "share", "gtmux", "octrans")
 }

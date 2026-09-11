@@ -201,6 +201,9 @@ func TestErrorSignatureIgnoresTestRunners(t *testing.T) {
 		`{"last": "the serve said error: something", "ok": false}`,
 		`"summary": "API Error: connection lost"`,
 		"⏺ API Error: Connection lost mid-response. The response above may be incomplete.",
+		"    def onerror(error: OSError) -> None:",
+		"        except OSError: return 0",
+		"// error: handled below",
 	} {
 		if sig, ok := errorSignature(out); ok {
 			t.Errorf("%q is the ordinary shape of work, not a footgun: %q", out, sig)

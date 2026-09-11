@@ -27,6 +27,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // Candidate kinds.
@@ -79,12 +80,28 @@ type Report struct {
 	Skipped    int         `json:"skipped"`    // candidates suppressed because already emitted
 }
 
-// Root is one agent's log tree.
+// Root is one agent's log tree. Agent selects the reader (claude | codex | opencode |
+// kimi); Glob matches log files under Dir (a relative pattern for filepath.Glob).
 type Root struct {
 	Agent string
 	Dir   string
-	// Glob matches log files under Dir (relative pattern for filepath.Glob).
-	Glob string
+	Glob  string
+}
+
+type reader func(path string, start int64, o readOpts) (readResult, int64, error)
+
+func readerFor(agent string) reader {
+	switch agent {
+	case "claude":
+		return readClaude
+	case "codex":
+		return readCodex
+	case "opencode":
+		return readOpencode
+	case "kimi":
+		return readKimi
+	}
+	return nil
 }
 
 // Run executes one pass against the ledger in dir (created on first use).
@@ -103,9 +120,13 @@ func Run(dir string, o Options) (Report, error) {
 	}
 	var files []logFile
 	for _, r := range roots {
+		rd := readerFor(r.Agent)
+		if rd == nil {
+			continue
+		}
 		matches, _ := filepath.Glob(filepath.Join(r.Dir, r.Glob))
 		for _, m := range matches {
-			files = append(files, logFile{agent: r.Agent, path: m})
+			files = append(files, logFile{agent: r.Agent, path: m, read: rd})
 		}
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].path < files[j].path })
@@ -132,7 +153,7 @@ func Run(dir string, o Options) (Report, error) {
 		if start == 0 {
 			carry = carryState{}
 		}
-		res, end, err := readClaude(f.path, start, readOpts{
+		res, end, err := f.read(f.path, start, readOpts{
 			sinceUnix: sinceUnix, machine: o.MachineHeads, carry: carry,
 		})
 		if err != nil {
@@ -184,10 +205,15 @@ func Run(dir string, o Options) (Report, error) {
 	return rep, led.save(dir)
 }
 
-// DefaultRoots are the agents whose logs v1 reads. Codex and gtmux's own opencode
-// transcript are deliberately absent: their readers are a follow-up, not a v1 promise.
+// DefaultRoots are every agent whose logs gtmux knows how to read. The roots honour the
+// same overrides the transcript package does ($CODEX_HOME, $KIMI_CODE_HOME).
 func DefaultRoots() []Root {
-	return []Root{{Agent: "claude", Dir: filepath.Join(state.Home(), ".claude", "projects"), Glob: filepath.Join("*", "*.jsonl")}}
+	return []Root{
+		{Agent: "claude", Dir: filepath.Join(state.Home(), ".claude", "projects"), Glob: filepath.Join("*", "*.jsonl")},
+		{Agent: "codex", Dir: filepath.Join(transcript.CodexHome(), "sessions"), Glob: filepath.Join("*", "*", "*", "*.jsonl")},
+		{Agent: "opencode", Dir: transcript.OpencodeDir(), Glob: "*.jsonl"},
+		{Agent: "kimi", Dir: filepath.Join(transcript.KimiHome(), "sessions"), Glob: filepath.Join("*", "*", "agents", "main", "wire.jsonl")},
+	}
 }
 
 // HeadKey normalizes text to the key the machine-head set uses: whitespace collapsed,
@@ -217,4 +243,7 @@ func maxInt64(a, b int64) int64 {
 	return b
 }
 
-type logFile struct{ agent, path string }
+type logFile struct {
+	agent, path string
+	read        reader
+}

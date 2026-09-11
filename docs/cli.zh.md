@@ -406,7 +406,7 @@ gtmux knowledge mine --status        # 台账：上次采矿、来源数、已�
 线索故意宁多勿漏，精度交给中控的沉淀轮，用同一套 `knowledge add --capture` /
 `dismiss --capture` 逐条处理。`~/.local/share/gtmux/mine/` 下的台账记着每个文件的偏移和
 每条发过的 id，所以不会重复读、重复投；已经写进知识库的坑再被踩到时计数照样涨，
-`--status` 就是看这个的。这一版只读 Claude Code 的日志。
+`--status` 就是看这个的。读的是 Claude Code、Codex、Kimi Code 的会话，以及 gtmux 替 opencode 写的记录；四种里只有 Claude Code 和 Codex 记了工具输出，所以报错线索来自这两种，纠正线索四种都有。
 
 ## `gtmux quiet` —— 中控可以说多少话
 

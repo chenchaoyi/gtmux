@@ -54,6 +54,10 @@ import (
 // Verified against kimi 0.41.0 (agent-core-v2, wire protocol 1.5) by running a real
 // session against a local stand-in provider.
 
+// KimiHome is Kimi's data root, for packages that read its journals without re-deriving
+// the layout (the transcript miner scans every session under it).
+func KimiHome() string { return kimiHome() }
+
 // kimiHome is Kimi's data root. KIMI_CODE_HOME relocates all of it — config,
 // sessions, credentials — so it is the only override there is.
 func kimiHome() string {

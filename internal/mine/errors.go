@@ -16,10 +16,12 @@ var (
 	// refused to work. Deliberately narrower than "error" anywhere.
 	hardErrorRe = regexp.MustCompile(`(?i)(command not found|no such file or directory|permission denied|unable to (locate|find|connect)|cannot (find|open|connect|stat)|failed to |fatal:|panic:|segmentation fault|is not recognized|connection refused|timed out|error: )`)
 	// errorDeny drops lines that match hardErrorRe but are not footguns: test-runner and
-	// linter summaries, a bare exit code, and a line that is DATA rather than a message
-	// (a JSON fragment quoting an error is the transcript of something, not a failure —
-	// on the machine this was tuned on, one such fragment tallied in ten sessions).
-	errorDeny = regexp.MustCompile(`(?i)(tests?:|passed|✓|--- (PASS|FAIL)|^\s*(FAIL|ERROR)\s*$|\d+ problems?|^exit (code|status) \d+$|^\s*["{\[]|^\s*[\w-]+"?\s*:\s*"|^\s*⏺ API Error)`)
+	// linter summaries, a bare exit code, a line that is DATA rather than a message (a
+	// JSON fragment quoting an error is the transcript of something, not a failure — on
+	// the machine this was tuned on, one such fragment tallied in ten sessions), and a
+	// line that is SOURCE CODE echoed by a cat or a diff (`except OSError:`, `def
+	// onerror(error: …)` — Codex rollouts tallied those across sessions).
+	errorDeny = regexp.MustCompile(`(?i)(tests?:|passed|✓|--- (PASS|FAIL)|^\s*(FAIL|ERROR)\s*$|\d+ problems?|^exit (code|status) \d+$|^\s*["{\[]|^\s*[\w-]+"?\s*:\s*"|^\s*⏺ API Error|^\s*(def|class|except|return|raise|if|elif|else|try|import|from|func|fn|let|const|var)\b|^\s*(#|//|\*)|->|=>)`)
 	numRe     = regexp.MustCompile(`\b\d+\b`)
 	hexRe     = regexp.MustCompile(`\b[0-9a-f]{7,}\b`)
 	pathRe    = regexp.MustCompile(`(/[\w.\-~@]+)+`)
