@@ -14,12 +14,12 @@
 - [x] 2.5 Render: canonical `machine.md`; topic files keep rendering per kind + tag
 
 ## Phase 3 — audience and distribution
-- [ ] 3.1 `promote --for <hq|machine|repo <path>|everyone>`; brief carries the ready-to-paste block
-- [ ] 3.2 `withdraw <id> --why`
-- [ ] 3.3 Managed block installer (sentinels + hash) for Claude Code / Codex / opencode / Kimi global instruction files; paths from the agent registry, verified per agent's docs
-- [ ] 3.4 `knowledge sync` (refresh all carriers); `land` for `hq`/`machine`/`repo` writes then lands
-- [ ] 3.5 doctor row "knowledge sync": per agent missing / stale / hand-edited; `--fix` refreshes
-- [ ] 3.6 `everyone`: issue URL prefill + copy; exempt from overdue floor
+- [x] 3.1 `promote --for <hq|machine|repo <path>|everyone>`; brief carries the ready-to-paste block
+- [x] 3.2 `withdraw <id> --why`
+- [x] 3.3 Managed block installer (sentinels + hash) for Claude Code / Codex / opencode / Kimi global instruction files; paths from the agent registry, verified per agent's docs
+- [x] 3.4 `knowledge sync` (refresh all carriers); `land` for `hq`/`machine`/`repo` writes then lands
+- [x] 3.5 doctor row "knowledge sync": per agent missing / stale / hand-edited; `--fix` refreshes
+- [x] 3.6 `everyone`: issue URL prefill + copy; exempt from overdue floor
 
 ## Phase 4 — lint and neighbours
 - [ ] 4.1 `knowledge lint` (orphan, broken link, near-duplicate, stale, assumed-kind); wired into self-check

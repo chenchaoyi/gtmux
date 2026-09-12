@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/humanize"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"io"
 	"net"
 	"net/http"
@@ -286,6 +287,7 @@ func hqMaintenanceChecks(now int64) []dcheck {
 			i18n.Tr("no self-check for over a day+grace — is `gtmux serve` running with a live HQ?",
 				"超过一天+宽限没有自检 —— `gtmux serve` 还在跑、HQ 还活着吗？")),
 		promotionsRow(hq.PromotionsStatus(now)),
+		knowledgeSyncRow(),
 	}
 }
 
@@ -1762,4 +1764,42 @@ func paneActivityAt(paneID string) int64 {
 		return 0
 	}
 	return n
+}
+
+// knowledgeSyncRow: is what this machine learned reaching every agent on it? Each
+// supported agent's global instruction file carries a gtmux block with the machine
+// index; a missing or stale block means an agent works without what the others know.
+func knowledgeSyncRow() dcheck {
+	label := i18n.Tr("knowledge sync", "知识分发")
+	if _, err := os.Stat(knowledge.Dir()); err != nil {
+		return dcheck{stOK, label, i18n.Tr("no HQ home", "没有 HQ 家目录"),
+			i18n.Tr("nothing to distribute yet", "还没有可分发的知识")}
+	}
+	sts, err := knowledge.CarrierStatuses()
+	if err != nil || len(sts) == 0 {
+		return dcheck{stOK, label, i18n.Tr("no carriers", "没有载体"), ""}
+	}
+	var behind, edited []string
+	for _, s := range sts {
+		switch s.State {
+		case knowledge.SyncInSync:
+		case knowledge.SyncHandEdited:
+			edited = append(edited, s.Agent)
+		default:
+			behind = append(behind, s.Agent+" ("+string(s.State)+")")
+		}
+	}
+	switch {
+	case len(behind) == 0 && len(edited) == 0:
+		return dcheck{stOK, label, fmt.Sprintf(i18n.Tr("%d agents in sync", "%d 个 agent 已同步"), len(sts)),
+			i18n.Tr("every agent's instruction file carries this machine's knowledge index", "每个 agent 的指令文件都带着本机知识索引")}
+	case len(behind) > 0:
+		return dcheck{stRec, label, strings.Join(behind, ", "),
+			i18n.Tr("`gtmux knowledge sync` (or `gtmux doctor --fix`) refreshes the block; agents load it on their next session",
+				"`gtmux knowledge sync`（或 `gtmux doctor --fix`）刷新那一块；agent 下次开会话生效")}
+	default:
+		return dcheck{stRec, label, i18n.Tr("hand-edited: ", "被手改过：") + strings.Join(edited, ", "),
+			i18n.Tr("gtmux's block was edited by hand — review it, then `gtmux knowledge sync --force`",
+				"gtmux 的那一块被手改过 —— 看一眼，再 `gtmux knowledge sync --force`")}
+	}
 }

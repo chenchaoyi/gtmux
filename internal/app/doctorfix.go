@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -83,6 +84,7 @@ func doctorFix(yes bool) int {
 	applied += s.stepClaudeHook()
 	applied += s.stepCodexHook()
 	applied += s.stepKimiHook()
+	applied += s.stepKnowledgeSync()
 	applied += s.stepCloudflared()
 	applied += s.stepAppInstall()
 	applied += s.stepUploads()
@@ -905,4 +907,41 @@ func upsertManagedBlock(conf string, lines []string) string {
 		return block + "\n"
 	}
 	return strings.TrimRight(conf, "\n") + "\n\n" + block + "\n"
+}
+
+// stepKnowledgeSync refreshes the machine-knowledge block in each agent's instruction
+// file when one is missing or stale. A hand-edited block is never overwritten here.
+func (s *fixState) stepKnowledgeSync() int {
+	if _, err := os.Stat(knowledge.Dir()); err != nil {
+		return 0
+	}
+	sts, err := knowledge.CarrierStatuses()
+	if err != nil {
+		return 0
+	}
+	var behind []string
+	for _, st := range sts {
+		if st.State != knowledge.SyncInSync && st.State != knowledge.SyncHandEdited {
+			behind = append(behind, st.Agent)
+		}
+	}
+	if len(behind) == 0 {
+		return 0
+	}
+	title := i18n.Tr("Knowledge sync  (a marked block in each agent's instruction file)", "知识分发（每个 agent 指令文件里的一块带标记内容）")
+	detail := i18n.Tr(
+		"  Refresh the gtmux block for: "+strings.Join(behind, ", ")+".\n  It carries the INDEX of what this machine learned (full text stays in "+tildeify(knowledge.MachinePath())+");\n  nothing outside gtmux's own block is touched, and a hand-edited block is left alone.",
+		"  为 "+strings.Join(behind, "、")+" 刷新 gtmux 那一块。\n  块里只放本机知识的索引（全文在 "+tildeify(knowledge.MachinePath())+"）；\n  块外的内容一律不动，被手改过的块也不动。")
+	if !s.ask(title, detail) {
+		return 0
+	}
+	rep, err := knowledge.SyncMachine(false)
+	if err != nil {
+		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
+		s.rc = 1
+		return 0
+	}
+	i18n.Say("  ✓ written: "+strings.Join(rep.Written, ", ")+" — agents load it on their next session",
+		"  ✓ 已写入："+strings.Join(rep.Written, "、")+"，agent 下次开会话生效")
+	return 1
 }

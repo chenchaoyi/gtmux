@@ -481,6 +481,12 @@ gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--bod
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger
 gtmux knowledge retire <id> --why "…"                        # prune, with a reason that survives
 gtmux knowledge dismiss --capture <key>[,<key>…] --why "…"   # reject candidates WITH a trace
+gtmux knowledge promote <id> --why "…" --for <hq|machine|repo:<path>|everyone>   # WHO must know it
+gtmux knowledge land <id>                                  # gtmux carries it: LOCAL.md / every agent's block / the repo file
+gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opened the issue the brief links to
+gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
+gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
+gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
 gtmux knowledge confirm <id>                               # a hypothesis held up

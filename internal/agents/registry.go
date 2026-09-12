@@ -47,6 +47,12 @@ type Manifest struct {
 	Content     string // transcript-parser key ("claude"/"codex"); "" ⇒ none
 	Headless    string // headless one-shot key ("claude"/"codex"); "" ⇒ none
 	Semantics   bool   // has a DEDICATED classifier event-semantics table (else generic)
+	// Instructions is the agent's GLOBAL instruction file (`~`-relative), the carrier the
+	// knowledge base distributes this machine's lessons into (hq-knowledge-engine);
+	// InstructionsEnv names the env var that relocates the agent's home, in which case
+	// the file moves with it. "" ⇒ not a carrier.
+	Instructions    string
+	InstructionsEnv string
 }
 
 // manifests is the registry. Order is cosmetic — accessors impose any order a
@@ -57,12 +63,16 @@ var manifests = []Manifest{
 		Detect: []string{"claude"}, IdleGlyph: "✳", Icon: "/Applications/Claude.app",
 		Resume: []string{"claude", "--resume"}, Resource: "claude",
 		HookDisplay: true, Hooked: true, Content: "claude", Headless: "claude", Semantics: true,
+		Instructions: "~/.claude/CLAUDE.md",
 	},
 	{
 		Key: "codex", Label: "Codex",
 		Detect: []string{"codex"}, // icon: committed assets/agent-icons/codex.png (the Codex mark, NOT ChatGPT)
 		Resume: []string{"codex", "resume"}, Resource: "codex",
 		HookDisplay: true, Hooked: true, Content: "codex", Headless: "codex", Semantics: true,
+		// Codex reads ~/.codex/AGENTS.md as its global file (AGENTS.override.md wins when
+		// present — gtmux writes the plain one and leaves an override to its owner).
+		Instructions: "~/.codex/AGENTS.md", InstructionsEnv: "CODEX_HOME",
 	},
 	{
 		Key: "gemini", Label: "Gemini",
@@ -81,6 +91,7 @@ var manifests = []Manifest{
 		Detect: []string{"opencode"},
 		Resume: []string{"opencode", "--session"}, Resource: "opencode",
 		HookDisplay: true, Hooked: true, Content: "opencode",
+		Instructions: "~/.config/opencode/AGENTS.md",
 	},
 	{
 		// Kimi Code CLI (MoonshotAI). Its hooks live as TOML `[[hooks]]` inside the
@@ -96,6 +107,7 @@ var manifests = []Manifest{
 		Detect: []string{"kimi", "kimi-code"}, // icon: committed assets/agent-icons/kimi.png
 		Resume: []string{"kimi", "--session"}, Resource: "kimi",
 		HookDisplay: true, Hooked: true, Content: "kimi", Semantics: true,
+		Instructions: "~/.kimi-code/AGENTS.md", InstructionsEnv: "KIMI_CODE_HOME",
 	},
 	{
 		Key: "copilot", Label: "Copilot",

@@ -16,6 +16,7 @@ package knowledge
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -220,4 +221,28 @@ func KnowledgeRetire(id, why string) error {
 		At: time.Now().Unix(), Seq: events.LatestSeq(), Why: why,
 	}
 	return commitKnowledgeOp(op, "retire "+id+": "+why)
+}
+
+// KnowledgeWithdraw returns a promoted entry to live, for a surface acting as the
+// commander: the entry was right, the promotion was not. Journaled like every mutation.
+func KnowledgeWithdraw(id, why string) error {
+	if strings.TrimSpace(why) == "" {
+		return fmt.Errorf("withdraw needs a reason")
+	}
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	entry, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q", id)
+	}
+	if !promotionPending(entry) {
+		return fmt.Errorf("%s is not pending", id)
+	}
+	if err := validateKnowledgeContent("", "", why); err != nil {
+		return err
+	}
+	op := knowledgeOp{Op: knowledgeOpWithdraw, ID: id, At: time.Now().Unix(), Seq: events.LatestSeq(), Why: why}
+	return commitKnowledgeOp(op, "withdraw "+id+": "+why)
 }

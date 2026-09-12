@@ -430,6 +430,12 @@ gtmux knowledge add --topic pitfalls --title "wrangler 会 TLS reset，重试" [
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # 替换一条；历史留在台账里
 gtmux knowledge retire <id> --why "…"                        # 剪掉，理由会留下来
 gtmux knowledge dismiss --capture <键>[,<键>…] --why "…"    # 驳回候选，并留痕
+gtmux knowledge promote <id> --why "…" --for <hq|machine|repo:<路径>|everyone>   # 这条给谁看
+gtmux knowledge land <id>                                   # gtmux 替你搬：LOCAL.md / 各 agent 的块 / 仓库文件
+gtmux knowledge land <id> --ref "<issue 链接>"              # everyone：你开了简报里那条 issue
+gtmux knowledge withdraw <id> --why "…"                     # 条目没错，只是不值得搬
+gtmux knowledge sync [--force] [--repo <路径>]              # 刷新每个 agent 指令文件里的知识块
+gtmux knowledge carriers                                    # 各 agent 的指令文件与是否同步
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # 确认或改正一条「是什么」
 gtmux knowledge hit <id> [--n N] [--why "…"]                # 这条教训又被踩到了，计数就是反馈
 gtmux knowledge confirm <id>                                # 猜想被证实，转正

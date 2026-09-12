@@ -49,10 +49,27 @@ func promotionBriefPath(op knowledgeOp) string {
 // closing instruction. Deterministic (UTC dates), like every other render.
 func renderPromotionBrief(op knowledgeOp) string {
 	var b strings.Builder
+	b.WriteString(renderPromotionCore(op))
+	renderPromotionExit(&b, op)
+	return b.String()
+}
+
+// renderPromotionCore is the brief without its exit: what an issue body or a pasted
+// block carries. IssueURL uses it — the exit for `everyone` IS the issue, so a body that
+// contained the exit would contain its own URL.
+func renderPromotionCore(op knowledgeOp) string {
+	var b strings.Builder
 	b.WriteString(knowledgePromotionMarker + "\n")
 	b.WriteString("# promotion: " + op.Title + "\n\n")
 	b.WriteString("- id: `" + op.ID + "` · promoted " + stampDate(op.PromotedAt) + "\n")
-	if op.PromoteTarget != "" {
+	switch {
+	case op.Audience != "":
+		aud := op.Audience
+		if op.AudienceRepo != "" {
+			aud += ":" + op.AudienceRepo
+		}
+		b.WriteString("- for: " + aud + " · " + audienceWord(op.Audience) + "\n")
+	case op.PromoteTarget != "":
 		b.WriteString("- suggested landing: " + op.PromoteTarget + "\n")
 	}
 	b.WriteString("- why charter-level: " + op.PromoteWhy + "\n\n")
@@ -60,19 +77,40 @@ func renderPromotionBrief(op knowledgeOp) string {
 		b.WriteString(body + "\n\n")
 	}
 	b.WriteString("provenance: " + provenanceFooter(op) + "\n\n")
+	return b.String()
+}
+
+// renderPromotionExit appends the closing instruction for the audience.
+func renderPromotionExit(b *strings.Builder, op knowledgeOp) {
 	// The closing instruction is the USER'S destination, never a hardcoded one
 	// (hq-promote-anywhere): a promotion that named its target closes with it; one
 	// that did not gets the carrier options — a brew-installed user has no gtmux
 	// checkout, and their rules live in their own carriers.
-	if op.PromoteTarget != "" {
-		b.WriteString("Land it at: " + op.PromoteTarget + " — then close:\n\n")
-	} else {
-		b.WriteString("Land it in whichever durable rule carrier fits — a project AGENTS.md / CLAUDE.md, " +
-			"a team runbook, LOCAL.md (when the rule governs this supervisor), or gtmux's own repo " +
-			"(an openspec change, or a GitHub issue carrying this brief) — then close:\n\n")
+	switch op.Audience {
+	case AudienceHQ:
+		b.WriteString("Exit: gtmux writes it into LOCAL.md and closes the loop:\n\n")
+		b.WriteString("    gtmux knowledge land " + op.ID + "\n")
+	case AudienceMachine:
+		b.WriteString("Exit: gtmux renders " + MachinePath() + " and refreshes every agent's knowledge block, then closes:\n\n")
+		b.WriteString("    gtmux knowledge land " + op.ID + "\n")
+	case AudienceRepo:
+		b.WriteString("Exit: gtmux writes it into " + RepoCarrierPath(op.AudienceRepo) + " (not committed — that is yours), then closes:\n\n")
+		b.WriteString("    gtmux knowledge land " + op.ID + "\n")
+	case AudienceEveryone:
+		b.WriteString("Exit: this is feedback to gtmux. Open the prefilled issue, or paste this brief into one:\n\n")
+		b.WriteString("    " + IssueURL(op) + "\n\n")
+		b.WriteString("then close with the issue's URL:\n\n")
+		b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<issue url>\"\n")
+	default:
+		if op.PromoteTarget != "" {
+			b.WriteString("Land it at: " + op.PromoteTarget + " — then close:\n\n")
+		} else {
+			b.WriteString("No audience was chosen. `gtmux knowledge withdraw " + op.ID + " --why …` and promote again with " +
+				"`--for <hq|machine|repo:<path>|everyone>`, or land it yourself and say where:\n\n")
+		}
+		b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<pr / issue / runbook>\"\n")
 	}
-	b.WriteString("    gtmux knowledge land " + op.ID + " --ref \"<pr / issue / runbook>\"\n")
-	return b.String()
+
 }
 
 // renderPromotions writes one brief per PENDING promotion and sweeps everything
@@ -368,4 +406,19 @@ func knowledgeDrift(live, custom []knowledgeOp) []string {
 // wrong answer nightly.
 func stampDate(unix int64) string {
 	return time.Unix(unix, 0).Local().Format("2006-01-02")
+}
+
+// audienceWord is the reader-facing word for an audience, both languages.
+func audienceWord(a string) string {
+	switch a {
+	case AudienceHQ:
+		return "HQ · this supervisor only"
+	case AudienceMachine:
+		return "本机 · every agent on this machine"
+	case AudienceRepo:
+		return "仓库 · agents working in that repository"
+	case AudienceEveryone:
+		return "全体 · every gtmux user (the product)"
+	}
+	return ""
 }

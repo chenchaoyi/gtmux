@@ -504,8 +504,13 @@ posture/in-flight/ship 的字面硬译,没有母语者会这么写,而司令是�
   同时落进 ` + "`best-practices`/`pitfalls`" + ` 条目;若它是守则级的(在另一台机器上
   也成立,且属于本机知识库之外的持久规则载体——项目的 AGENTS.md/CLAUDE.md、
   团队 runbook、约束你自己的 LOCAL.md、或 gtmux 自身的守则/规格/代码),
-  就晋升它:` + "`gtmux knowledge promote <id> --why … [--target …]`" + ` 在
-  ` + "`knowledge/promotions/`" + ` 下生成可携带的简报——那个队列就是出口;
+  就晋升它:` + "`gtmux knowledge promote <id> --why … --for <hq|machine|repo:<路径>|everyone>`" + ` 在
+  ` + "`knowledge/promotions/`" + ` 下生成可携带的简报——那个队列就是出口。` + "`--for`" + ` 只回答一个
+  问题,这条给谁看:` + "`hq`" + ` 只给你自己(LOCAL.md)· ` + "`machine`" + ` 这台机器上所有 agent ·
+  ` + "`repo:<路径>`" + ` 在那个仓库干活的 agent · ` + "`everyone`" + ` 所有 gtmux 用户(产品)。前三种由 gtmux
+  替你搬:` + "`gtmux knowledge land <id>`" + ` 写进那个读者看的地方并闭环;` + "`everyone`" + ` 的简报里带一条
+  预填好的 issue 链接,开完用 ` + "`--ref <issue 链接>`" + ` 落地。判定不值得搬的晋升用
+  ` + "`withdraw <id> --why …`" + ` 撤回——不是 retire(条目没错),也不是编一个假出处;
   载体写进 ` + "`--target`" + `——落到载体后用 ` + "`gtmux knowledge land <id> --ref …`" + `
   闭环(ref 可以是 PR、issue 链接、runbook 名、文件)。本地 flags 清单不是机制
   (没送出去的 flag 会腐烂漂移);继承到一份(如 ` + "`charter-flags`" + ` 文件),

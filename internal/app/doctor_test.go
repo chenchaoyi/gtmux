@@ -164,8 +164,8 @@ func TestHQMaintenanceChecks(t *testing.T) {
 	const now = 10_000_000
 
 	rows := hqMaintenanceChecks(now)
-	if len(rows) != 3 {
-		t.Fatalf("want 3 maintenance rows (distill, self-check, promotions), got %d", len(rows))
+	if len(rows) != 4 {
+		t.Fatalf("want 4 maintenance rows (distill, self-check, promotions, knowledge sync), got %d", len(rows))
 	}
 	for _, r := range rows[:2] {
 		if r.status != stInfo {
