@@ -29,6 +29,7 @@ import {SettingsScreen} from './src/screens/SettingsScreen';
 import {SplitShell} from './src/screens/SplitShell';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
 import {WorkspaceProvider, useWorkspace} from './src/state/WorkspaceContext';
+import {KeyCommandBridge} from './src/keys/KeyCommandBridge';
 import {AppProvider, useApp, kindsList} from './src/state/AppContext';
 import {serverForPush} from './src/pairing/store';
 import {markSeen, notesSince, readSeen} from './src/state/whatsnew';
@@ -226,6 +227,7 @@ function Root() {
     <AgentsProvider key={mac.url} base={mac.url} token={mac.token} name={mac.name} scope={mac.scope}>
       <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
       <PushBridge navRef={navRef} />
+      <KeyCommandBridge />
       <WhatsNew />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{headerShown: false}}>

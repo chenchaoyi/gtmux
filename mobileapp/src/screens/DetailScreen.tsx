@@ -43,6 +43,7 @@ import {agentLabel} from './PaneBrowserScreen';
 import {BRAND, StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
 import {READING_WIDTH, useSizeClass} from '../ui/layout';
+import {KeyBus} from '../keys/bus';
 import {historyScope} from '../state/history';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 
@@ -317,6 +318,17 @@ export function DetailView({
     };
   }, [agent.pane_id]);
 
+  // The keyboard's chat/terminal and text-size commands (keys/keymap), while mounted.
+  useEffect(() => {
+    const offs = [
+      KeyBus.on('mode.chat', () => pickModeRef.current('chat')),
+      KeyBus.on('mode.terminal', () => pickModeRef.current('terminal')),
+      KeyBus.on('font.up', () => setFontIdx(i => Math.min(FONT_SIZES.length - 1, i + 1))),
+      KeyBus.on('font.down', () => setFontIdx(i => Math.max(0, i - 1))),
+    ];
+    return () => offs.forEach(off => off());
+  }, []);
+  const pickModeRef = useRef<(m: DetailMode) => void>(() => {});
   const pickMode = (m: DetailMode) => {
     if (m === mode) return;
     AsyncStorage.setItem(MODE_KEY(agent.pane_id), m);
@@ -334,6 +346,7 @@ export function DetailView({
       }),
     );
   };
+  pickModeRef.current = pickMode;
 
   // D8: upgrade the loading copy if the first frame is slow to arrive.
   useEffect(() => {

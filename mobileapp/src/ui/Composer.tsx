@@ -35,6 +35,7 @@ import {pick} from '@react-native-documents/picker';
 import {SendPayload} from '../api/client';
 import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
+import {KeyBus} from '../keys/bus';
 import {Palette, StatusColor} from './theme';
 import {ImageMarkup} from './ImageMarkup';
 import {SnippetsModal} from './SnippetsModal';
@@ -212,6 +213,8 @@ export function Composer({
   // keyboard. Any action that needs the field (snippets/history/attach) opens it.
   const [composing, setComposing] = useState(false);
   const openCompose = () => setComposing(true);
+  // ⌘K (keys/keymap): open the field; it focuses itself on mount.
+  useEffect(() => KeyBus.on('composer.focus', () => setComposing(true)), []);
 
   useEffect(() => {
     loadSnippets().then(setSnippets);

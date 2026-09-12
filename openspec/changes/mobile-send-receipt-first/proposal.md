@@ -72,6 +72,14 @@ converts the worst case from "lost message" into "delivered later".
 after an agent upgrade. That is the signal to promote it, and it is worth grepping
 `serve.log` for before assuming this note is still current.
 
+## Surfaces
+
+- 终端 (terminal / attach)：不适用 —— `gtmux send` 在 CLI 里已经是 receipt-first（hook 回执优先），这里补的是手机那条路。
+- 菜单栏 (menubar)：不适用 —— 菜单栏不发送文本。
+- 手机 (phone)：本变更的主体：`/api/send` 的投递判定改为回执优先。
+- iPad：同一个 Composer、同一条 `/api/send`，随手机一起改，无额外工作。
+- Web：共享页的访客输入走同一个 `/api/send`，同样受益；页面本身不改。
+
 ## What changes
 
 Decouple **sent** from **confirmed**, so the phone stays fast AND confirmation stops

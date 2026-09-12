@@ -31,6 +31,7 @@ import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 import {READING_WIDTH, SizeClass} from '../ui/layout';
+import {KeyBus} from '../keys/bus';
 import {BoardSheet} from './BoardSheet';
 import {KnowledgeSheet} from './KnowledgeSheet';
 import {UsageSheet} from './UsageSheet';
@@ -103,6 +104,16 @@ export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; p
     entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0},
   });
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  // esc (keys/keymap) closes whichever sheet is open.
+  useEffect(
+    () =>
+      KeyBus.on('sheet.close', () => {
+        setKnowledgeOpen(false);
+        setBoardOpen(false);
+        setUsageOpen(false);
+      }),
+    [],
+  );
   // The board's outline. Parsed here because the sheet is unmounted until opened, and
   // re-parsing 48k characters on every open would be work the poll already did.
   const boardSections = useMemo(() => parseBoardSections(board.text ?? ''), [board.text]);

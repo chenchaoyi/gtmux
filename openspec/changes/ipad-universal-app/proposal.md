@@ -46,6 +46,14 @@ Manager window sizes, four orientations) are handled.
 7. **Store:** a 13" iPad screenshot set drawn by the existing demo-mode pipeline on the
    iPad Pro 13" simulator; an iPad lane in the e2e harness; store notes.
 
+## Surfaces
+
+- 终端 (terminal / attach)：不适用 —— 排布与输入设备的改动，CLI 和远程 attach 没有对应物。
+- 菜单栏 (menubar)：不适用 —— 菜单栏已经是常驻侧栏式的窗口；知识库「列表 | 正文」是它先有的，iPad 借过来。
+- 手机 (phone)：不变，compact 壳一字不动；`RadarPanel` 抽取后手机渲染的是同一份。
+- iPad：本变更的主体。Demo 模式在 iPad 上也走 regular 壳（Phase 2b）。
+- Web：不适用 —— 共享页是只读镜像，没有雷达 / HQ 页。
+
 ## What does NOT change
 
 - The phone's screens, navigation and gestures. Compact is the phone, byte for byte.

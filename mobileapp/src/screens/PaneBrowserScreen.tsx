@@ -18,11 +18,12 @@
 // not in /api/panes, so agent-tier rows are joined to the live radar agents (by
 // pane_id) for their real waiting/working/idle state.
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState, useRef} from 'react';
 import {Platform, Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useWorkspace} from '../state/WorkspaceContext';
 import {SizeClass} from '../ui/layout';
+import {KeyBus} from '../keys/bus';
 import {useFocusEffect} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Agent, PaneRow, StatusName, paneRowToAgent} from '../api/types';
@@ -126,6 +127,8 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [q, setQ] = useState('');
+  const searchRef = useRef<TextInput>(null);
+  useEffect(() => KeyBus.on('panes.search', () => searchRef.current?.focus()), []);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   // Collapsed sessions persist across launches (mirrors the radar, MOBILE §3).
@@ -351,6 +354,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
       <View style={[styles.searchWrap, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
         <Text style={[styles.searchGlyph, {color: pal.fg3}]}>⌕</Text>
         <TextInput
+          ref={searchRef}
           testID={TestIds.panes.search}
           value={q}
           onChangeText={setQ}

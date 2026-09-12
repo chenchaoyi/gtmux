@@ -22,14 +22,15 @@ import {BrandMark} from '../ui/BrandMark';
 import {SidebarIcon} from '../ui/Icons';
 import {sidebarWidth} from '../ui/layout';
 import {TestIds} from '../constants/testIds';
+import {KeyBus} from '../keys/bus';
 import {DetailView} from './DetailScreen';
 import {HQView} from './HQScreen';
 import {PaneBrowserView} from './PaneBrowserScreen';
-import {RadarPanel} from './RadarPanel';
+import {DemoChrome, RadarPanel} from './RadarPanel';
 
 const SIDEBAR_KEY = 'workspace.sidebarHidden';
 
-export function SplitShell() {
+export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
   const {agents} = useAgents();
   const {t, pal, lang} = useApp();
   const {selection, select} = useWorkspace();
@@ -43,6 +44,7 @@ export function SplitShell() {
     setHidden(h);
     AsyncStorage.setItem(SIDEBAR_KEY, h ? '1' : '0');
   };
+  useEffect(() => KeyBus.on('sidebar.toggle', () => setSidebar(!hidden)), [hidden]);
 
   // Nothing selected yet, agents present: open the first, so the main pane is never a
   // blank half of the screen while there is something to show. Once only — a later
@@ -89,7 +91,7 @@ export function SplitShell() {
       <View style={styles.row}>
         {!hidden && (
           <View style={[styles.sidebar, {width: sidebarWidth(width), borderRightColor: pal.divLoud}]}>
-            <RadarPanel variant="sidebar" selectedId={sidebarSelectedId} onHideSidebar={() => setSidebar(true)} />
+            <RadarPanel variant="sidebar" selectedId={sidebarSelectedId} onHideSidebar={() => setSidebar(true)} demo={demo} />
           </View>
         )}
         <View style={styles.main}>
