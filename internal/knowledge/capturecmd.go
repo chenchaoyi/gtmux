@@ -308,14 +308,31 @@ func captureList(asJSON bool, header func(now int64) string) int {
 	}
 	i18n.Say(fmt.Sprintf("%d pending-distill candidate(s):", len(cands)),
 		fmt.Sprintf("%d 条待蒸馏候选:", len(cands)))
-	for _, c := range cands {
-		tag := c.Topic
-		if c.Source != "" {
-			tag += "·" + c.Source
+	// Families first: candidates about the same thing are shown together with their
+	// keys, so one `knowledge add --capture k1,k2,…` files them as one lesson. The
+	// expensive part of draining a queue is seeing which lines are one thing.
+	for _, group := range groupCandidates(cands) {
+		if len(group) > 1 {
+			var keys []string
+			for _, c := range group {
+				keys = append(keys, c.Key)
+			}
+			i18n.Say(fmt.Sprintf("  ┌ %d candidates that read as one lesson — knowledge add … --capture %s", len(group), strings.Join(keys, ",")),
+				fmt.Sprintf("  ┌ %d 条像是同一件事 —— knowledge add … --capture %s", len(group), strings.Join(keys, ",")))
 		}
-		fmt.Printf("  [%s] %s\n", tag, c.Lesson)
-		if c.Context != "" {
-			fmt.Printf("      ↳ %s%s\n", i18n.Tr("after: ", "此前机器说："), c.Context)
+		for _, c := range group {
+			tag := c.Topic
+			if c.Source != "" {
+				tag += "·" + c.Source
+			}
+			indent := "  "
+			if len(group) > 1 {
+				indent = "  │ "
+			}
+			fmt.Printf("%s[%s] %s\n", indent, tag, c.Lesson)
+			if c.Context != "" {
+				fmt.Printf("%s    ↳ %s%s\n", indent, i18n.Tr("after: ", "此前机器说："), c.Context)
+			}
 		}
 	}
 	return 0

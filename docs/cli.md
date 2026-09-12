@@ -487,6 +487,8 @@ gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opene
 gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
 gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
+gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds (reports, never edits)
+gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
 gtmux knowledge confirm <id>                               # a hypothesis held up

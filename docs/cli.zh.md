@@ -436,6 +436,8 @@ gtmux knowledge land <id> --ref "<issue 链接>"              # everyone：你�
 gtmux knowledge withdraw <id> --why "…"                     # 条目没错，只是不值得搬
 gtmux knowledge sync [--force] [--repo <路径>]              # 刷新每个 agent 指令文件里的知识块
 gtmux knowledge carriers                                    # 各 agent 的指令文件与是否同步
+gtmux knowledge lint [--json]                               # 体检：孤儿、断链/过时链接、疑似重复、超期、待确认的种类（只报告，不改）
+gtmux knowledge neighbours <id> | --capture <键> | --text "…"   # 最相近的已有条目；add 写入前会先列出，capture --list 按它分组
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # 确认或改正一条「是什么」
 gtmux knowledge hit <id> [--n N] [--why "…"]                # 这条教训又被踩到了，计数就是反馈
 gtmux knowledge confirm <id>                                # 猜想被证实，转正
