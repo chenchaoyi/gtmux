@@ -803,8 +803,11 @@ const styles = StyleSheet.create({
   promoText: {fontSize: 12.5, lineHeight: 18},
   landed: {fontSize: 12.5, fontWeight: '600', marginTop: 10},
 
-  actions: {flexDirection: 'row', gap: 10, marginTop: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth},
-  action: {flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingVertical: 11, alignItems: 'center'},
+  // The row WRAPS: an everyone promotion offers four acts, and four in one row folded
+  // "Withdraw the promotion…" onto three lines (measured on the simulator, 2026-09-12).
+  // Two to a row keeps every label on one or two lines; a lone last button widens.
+  actions: {flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth},
+  action: {flexGrow: 1, flexBasis: '45%', borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingVertical: 11, alignItems: 'center'},
   actionText: {fontSize: 13.5, fontWeight: '600'},
 
   actBar: {paddingHorizontal: 14, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, gap: 7},
