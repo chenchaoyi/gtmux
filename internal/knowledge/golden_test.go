@@ -125,6 +125,9 @@ func TestKnowledgeGolden(t *testing.T) {
 		got["render/"+rel] = string(b)
 		return nil
 	})
+	if b, err := os.ReadFile(MachinePath()); err == nil {
+		got["render/machine.md"] = string(b)
+	}
 	idx, err := KnowledgeIndexJSON(goldenNow)
 	if err != nil {
 		t.Fatal(err)

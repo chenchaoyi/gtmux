@@ -22,7 +22,7 @@ import (
 )
 
 // knowledgeSchemaV is the ledger's record schema version, stamped on every op.
-const knowledgeSchemaV = 1
+const knowledgeSchemaV = 2 // 2: the kind / provenance / audience axes (hq-knowledge-engine)
 
 // Ledger op names.
 const (
@@ -39,6 +39,12 @@ const (
 	// built-ins plus every declared topic, judged by ONE validation from every
 	// entrance (capture included), so the two can never drift again.
 	knowledgeOpTopic = "topic"
+	// knowledgeOpKind sets a live entry's kind (confirming a migrated guess or correcting
+	// it); knowledgeOpHit records the lesson being hit again (Hits = the increment);
+	// knowledgeOpConfirm turns a hypothesis into a live entry.
+	knowledgeOpKind    = "kind"
+	knowledgeOpHit     = "hit"
+	knowledgeOpConfirm = "confirm"
 )
 
 // Content bounds. They refuse LOUDLY at write time — knowledge is curated
@@ -91,6 +97,21 @@ type knowledgeOp struct {
 	PromoteTarget string `json:"promoteTarget,omitempty"`
 	LandedAt      int64  `json:"landedAt,omitempty"`
 	LandedRef     string `json:"landedRef,omitempty"`
+	// The three axes (hq-knowledge-engine). Kind is what the entry is; Provenance where it
+	// came from, with Hits the number of times it was observed (an add counts the
+	// candidates it consumed; a `hit` op adds); Audience who must know it, set by promote;
+	// Status is "" (live) or hypothesis. Tags are the free vocabulary beside Topic.
+	Kind         string   `json:"kind,omitempty"`
+	Tags         []string `json:"tags,omitempty"`
+	Provenance   string   `json:"provenance,omitempty"`
+	Hits         int      `json:"hits,omitempty"`
+	HitLast      int64    `json:"hitLast,omitempty"`
+	Audience     string   `json:"audience,omitempty"`
+	AudienceRepo string   `json:"audienceRepo,omitempty"`
+	Status       string   `json:"status,omitempty"`
+	// KindAssumed is computed at fold: the record predates the kind axis and its kind is
+	// the migration table's guess, not a judgement. Lint asks for the confirmation.
+	KindAssumed bool `json:"-"`
 }
 
 // promotionPending reports whether a folded live entry has an open promotion.
@@ -211,8 +232,16 @@ func appendKnowledgeOp(op knowledgeOp) error {
 	if err := validatePromotionFields(op.Target, op.Ref); err != nil {
 		return err
 	}
+	if err := validateAxes(op); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		return err
+	}
+	if op.V >= 2 {
+		if err := ledgerBackupOnce(); err != nil {
+			return err
+		}
 	}
 	b, err := json.Marshal(op)
 	if err != nil {
@@ -283,12 +312,47 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 	for _, op := range ops {
 		switch op.Op {
 		case knowledgeOpAdd:
+			applyMigration(&op)
 			place(op)
 		case knowledgeOpSupersede:
 			// Promotion state deliberately does NOT transfer: the content changed,
 			// so the successor is re-judged (the write path never copies it either).
+			// The axes DO transfer when the successor does not restate them: a
+			// rewording is the same lesson, and its recurrence history stays with it.
+			if i, ok := index[op.Supersedes]; ok && i >= 0 {
+				pred := out[i]
+				if op.Kind == "" {
+					op.Kind, op.KindAssumed = pred.Kind, pred.KindAssumed
+				}
+				if op.Provenance == "" {
+					op.Provenance = pred.Provenance
+				}
+				if op.Hits == 0 {
+					op.Hits, op.HitLast = pred.Hits, pred.HitLast
+				}
+				if len(op.Tags) == 0 {
+					op.Tags = pred.Tags
+				}
+			}
 			kill(op.Supersedes)
+			applyMigration(&op)
 			place(op)
+		case knowledgeOpKind:
+			o := op
+			mark(op.ID, func(e *knowledgeOp) { e.Kind, e.KindAssumed = o.Kind, false })
+		case knowledgeOpHit:
+			o := op
+			mark(op.ID, func(e *knowledgeOp) {
+				e.Hits += o.Hits
+				if o.At > e.HitLast {
+					e.HitLast = o.At
+				}
+				if e.Provenance == ProvSelf || e.Provenance == ProvCapture {
+					e.Provenance = ProvRecurrence
+				}
+			})
+		case knowledgeOpConfirm:
+			mark(op.ID, func(e *knowledgeOp) { e.Status = "" })
 		case knowledgeOpRetire:
 			kill(op.ID)
 		case knowledgeOpPromote:

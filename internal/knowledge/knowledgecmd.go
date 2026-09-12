@@ -45,6 +45,12 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgeLand(rest) })
 	case "topic":
 		return knowledgeMutation(func() error { return knowledgeTopic(rest) })
+	case "kind":
+		return knowledgeMutation(func() error { return knowledgeKind(rest) })
+	case "hit":
+		return knowledgeMutation(func() error { return knowledgeHit(rest) })
+	case "confirm":
+		return knowledgeMutation(func() error { return knowledgeConfirm(rest) })
 	case "promotions":
 		return knowledgePromotions(rest)
 	case "list":
@@ -94,6 +100,11 @@ type knowledgeFlags struct {
 	captures   []string
 	jsonOut    bool
 	positional []string
+	// The axes on add / supersede / list: --kind, --tags, --provenance, --hypothesis.
+	kind, provenance string
+	tags             []string
+	hypothesis       bool
+	n                int
 }
 
 func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
@@ -147,6 +158,28 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.descText, err = take(&i, a)
 		case strings.HasPrefix(a, "--desc="):
 			f.descText = strings.TrimPrefix(a, "--desc=")
+		case a == "--kind":
+			f.kind, err = take(&i, a)
+		case strings.HasPrefix(a, "--kind="):
+			f.kind = strings.TrimPrefix(a, "--kind=")
+		case a == "--provenance":
+			f.provenance, err = take(&i, a)
+		case strings.HasPrefix(a, "--provenance="):
+			f.provenance = strings.TrimPrefix(a, "--provenance=")
+		case a == "--tags":
+			var v string
+			v, err = take(&i, a)
+			f.tags = append(f.tags, splitKeys(v)...)
+		case strings.HasPrefix(a, "--tags="):
+			f.tags = append(f.tags, splitKeys(strings.TrimPrefix(a, "--tags="))...)
+		case a == "--hypothesis":
+			f.hypothesis = true
+		case a == "--n":
+			var v string
+			v, err = take(&i, a)
+			if err == nil {
+				f.n, err = strconv.Atoi(v)
+			}
 		case a == "--json":
 			f.jsonOut = true
 		case strings.HasPrefix(a, "--"):
@@ -220,6 +253,13 @@ func knowledgeAdd(args []string) error {
 		Op: knowledgeOpAdd, ID: addID, Topic: f.topic,
 		Title: f.title, Body: body, At: time.Now().Unix(),
 		Seq: events.LatestSeq(), SeqRange: seqRange,
+		Kind: f.kind, Tags: f.tags, Provenance: f.provenance,
+	}
+	if op.Kind == "" {
+		op.Kind = kindForTopic(f.topic) // a stated topic implies the kind; --kind overrides
+	}
+	if f.hypothesis {
+		op.Status = StatusHypothesis
 	}
 	if _, exists := findLive(live, op.ID); exists {
 		return fmt.Errorf("id %s is a live entry — `gtmux knowledge supersede %s --title …` to replace it, or retitle", op.ID, op.ID)
@@ -238,7 +278,29 @@ func knowledgeAdd(args []string) error {
 		}
 		newest := consumed[len(consumed)-1]
 		op.Pane, op.Task = newest.Pane, newest.Task
+		// Provenance from what was consumed: a mined lead is `mined`, a worker's capture
+		// is `capture`; Hits counts every observation the candidates carried.
+		mined := false
+		for _, c := range consumed {
+			if c.Source == "transcript" {
+				mined = true
+			}
+			if c.Count > 1 {
+				op.Hits += c.Count
+			} else {
+				op.Hits++
+			}
+		}
+		if op.Provenance == "" {
+			op.Provenance = ProvCapture
+			if mined {
+				op.Provenance = ProvMined
+			}
+		}
 		auditNote += fmt.Sprintf(" (capture %s ×%d)", op.Capture, len(consumed))
+	}
+	if op.Provenance == "" {
+		op.Provenance = ProvSelf
 	}
 	return commitKnowledgeOp(op, auditNote)
 }
@@ -273,6 +335,10 @@ func knowledgeSupersede(args []string) error {
 		ID: supersedeID, Topic: pred.Topic,
 		Title: f.title, Body: body, At: time.Now().Unix(),
 		Seq: events.LatestSeq(), Why: f.why,
+		Kind: f.kind, Tags: f.tags, Provenance: f.provenance,
+	}
+	if f.hypothesis {
+		op.Status = StatusHypothesis
 	}
 	if op.ID != predID {
 		if _, exists := findLive(live, op.ID); exists {
@@ -498,7 +564,7 @@ func knowledgeList(args []string) int {
 	}
 	var out []knowledgeOp
 	for _, op := range live {
-		if f.topic == "" || op.Topic == f.topic {
+		if (f.topic == "" || op.Topic == f.topic) && (f.kind == "" || op.Kind == f.kind) {
 			out = append(out, op)
 		}
 	}
@@ -547,11 +613,16 @@ func knowledgeUsage() int {
   retire    <id> --why "<reason>"
   dismiss   --capture <key>[,<key>…] --why "<reason>"
   topic     <name> --desc "<what belongs here>"            # declare your own topic
+            add/supersede also take --kind <facts|howto|pitfalls|judgment|decisions>
+            [--tags a,b] [--provenance <correction|recurrence|mined|capture|self>] [--hypothesis]
+  kind      <id> <kind>                                    # confirm or correct an entry's kind
+  hit       <id> [--n N] [--why "<where>"]                 # the lesson was hit again
+  confirm   <id>                                           # a hypothesis held up
   promote   <id> --why "<case>" [--target "<repo spot>"]   # charter-level → export brief
   land      <id> --ref "<pr/spec>"                         # close the loop when it lands
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
-  list      [--topic <t>] [--json]     show <id>     render [--check]
+  list      [--topic <t>] [--kind <k>] [--json]     show <id>     render [--check]
   The knowledge base's authority is an append-only ledger; topic .md files are
   rendered from it, entries carry provenance (seq/pane/task/capture), and every
   mutation is journaled. A charter-level lesson exits through promote → a brief
@@ -569,11 +640,16 @@ func knowledgeUsage() int {
   retire    <id> --why "<原因>"
   dismiss   --capture <键>[,<键>…] --why "<原因>"
   topic     <名称> --desc "<这里放什么>"               # 声明你自己的主题
+            add/supersede 还接受 --kind <facts|howto|pitfalls|judgment|decisions>
+            [--tags a,b] [--provenance <correction|recurrence|mined|capture|self>] [--hypothesis]
+  kind      <id> <种类>                               # 确认或改正一条的种类
+  hit       <id> [--n N] [--why "<在哪>"]             # 这条教训又被踩到了
+  confirm   <id>                                      # 猜想被证实，转正
   promote   <id> --why "<理由>" [--target "<落点>"]   # 守则级 → 生成外送简报
   land      <id> --ref "<pr/spec>"                    # 落地后闭环
   promotions [--json]                                 # 待落地队列
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
-  list      [--topic <主题>] [--json]     show <id>     render [--check]
+  list      [--topic <主题>] [--kind <种类>] [--json]     show <id>     render [--check]
   知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
   每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,
   落地后用 land 闭环。变更只能在中控目录执行；worker 用 `+"`gtmux capture`"+`。
@@ -645,4 +721,80 @@ func consumeCandidateKeys(keys []string) ([]Candidate, error) {
 		all = append(all, consumed...)
 	}
 	return all, nil
+}
+
+// knowledgeKind confirms or corrects a live entry's kind: `gtmux knowledge kind <id> <kind>`.
+func knowledgeKind(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 2 {
+		return fmt.Errorf("kind needs <id> <kind> (%s)", strings.Join(Kinds, " | "))
+	}
+	id, kind := f.positional[0], f.positional[1]
+	if !validKind(kind) {
+		return fmt.Errorf("unknown kind %q (want %s)", kind, strings.Join(Kinds, " | "))
+	}
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	if _, ok := findLive(live, id); !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	op := knowledgeOp{Op: knowledgeOpKind, ID: id, Kind: kind, At: time.Now().Unix(), Seq: events.LatestSeq()}
+	return commitKnowledgeOp(op, "kind "+id+" = "+kind)
+}
+
+// knowledgeHit records a filed lesson being hit again: `gtmux knowledge hit <id> [--n N]
+// [--why "<where>"]`. This is the recurrence counter on the entry — the signal that the
+// carrier failed, not the memory.
+func knowledgeHit(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 {
+		return fmt.Errorf("hit needs <id>")
+	}
+	n := f.n
+	if n <= 0 {
+		n = 1
+	}
+	id := f.positional[0]
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	if _, ok := findLive(live, id); !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	op := knowledgeOp{Op: knowledgeOpHit, ID: id, Hits: n, At: time.Now().Unix(), Seq: events.LatestSeq(), Why: f.why}
+	return commitKnowledgeOp(op, fmt.Sprintf("hit %s ×%d", id, n))
+}
+
+// knowledgeConfirm turns a hypothesis into a live entry: `gtmux knowledge confirm <id>`.
+func knowledgeConfirm(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 {
+		return fmt.Errorf("confirm needs <id>")
+	}
+	id := f.positional[0]
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	e, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	if e.Status != StatusHypothesis {
+		return fmt.Errorf("%s is not a hypothesis", id)
+	}
+	op := knowledgeOp{Op: knowledgeOpConfirm, ID: id, At: time.Now().Unix(), Seq: events.LatestSeq()}
+	return commitKnowledgeOp(op, "confirm "+id)
 }

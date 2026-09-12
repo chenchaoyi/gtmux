@@ -430,6 +430,10 @@ gtmux knowledge add --topic pitfalls --title "wrangler 会 TLS reset，重试" [
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # 替换一条；历史留在台账里
 gtmux knowledge retire <id> --why "…"                        # 剪掉，理由会留下来
 gtmux knowledge dismiss --capture <键>[,<键>…] --why "…"    # 驳回候选，并留痕
+gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # 确认或改正一条「是什么」
+gtmux knowledge hit <id> [--n N] [--why "…"]                # 这条教训又被踩到了，计数就是反馈
+gtmux knowledge confirm <id>                                # 猜想被证实，转正
+# add/supersede 还接受 --kind、--tags a,b、--provenance <correction|recurrence|mined|capture|self>、--hypothesis
 gtmux knowledge topic <名字> --desc "…"                      # 声明你自己的主题（clients、datasets…）
 gtmux knowledge promote <id> --why "…" [--target "…"]        # 够 charter 级 → 导出简报
 gtmux knowledge land <id> --ref "<pr/spec>"                  # 落地之后闭环

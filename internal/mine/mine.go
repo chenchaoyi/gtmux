@@ -78,6 +78,9 @@ type Report struct {
 	Lines      int         `json:"lines"`      // human-typed lines seen (after subtraction)
 	Candidates []Candidate `json:"candidates"` // NEW candidates (not in the ledger before)
 	Skipped    int         `json:"skipped"`    // candidates suppressed because already emitted
+	// Bumped are recurring-error signatures ALREADY emitted whose count grew this pass —
+	// Count is the increment. A filed lesson hit again is the feedback the ledger counts.
+	Bumped []Candidate `json:"bumped,omitempty"`
 }
 
 // Root is one agent's log tree. Agent selects the reader (claude | codex | opencode |
@@ -136,6 +139,7 @@ func Run(dir string, o Options) (Report, error) {
 		sinceUnix = o.Since.Unix()
 	}
 	var out []Candidate
+	bumped := map[string]int{}
 	for _, f := range files {
 		fi, err := os.Stat(f.path)
 		if err != nil || fi.IsDir() {
@@ -179,6 +183,9 @@ func Run(dir string, o Options) (Report, error) {
 			e.Count += hit.count
 			e.Last = maxInt64(e.Last, hit.at)
 			e.Sessions[hit.session] = true
+			if e.EmittedAt != 0 {
+				bumped[sig] += hit.count
+			}
 		}
 		led.Sources[f.path] = sourceMark{Offset: end, Size: fi.Size(), MTime: fi.ModTime().Unix(), Carry: res.carry}
 	}
@@ -195,6 +202,10 @@ func Run(dir string, o Options) (Report, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].At < out[j].At })
 	rep.Candidates = out
+	for sig, n := range bumped {
+		rep.Bumped = append(rep.Bumped, Candidate{Kind: KindError, ID: sig, Line: led.Errors[sig].Line, Count: n, Sessions: len(led.Errors[sig].Sessions)})
+	}
+	sort.Slice(rep.Bumped, func(i, j int) bool { return rep.Bumped[i].ID < rep.Bumped[j].ID })
 	if o.DryRun {
 		return rep, nil
 	}

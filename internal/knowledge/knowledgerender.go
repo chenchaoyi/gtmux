@@ -123,10 +123,29 @@ func renderTopic(topic, desc string, live []knowledgeOp) string {
 		b.WriteString("> Pre-ledger hand-written entries: [legacy/" + topic + ".md](legacy/" +
 			topic + ".md) — migrate the ones you touch.\n\n")
 	}
+	var hypotheses []knowledgeOp
 	for _, op := range live {
 		if op.Topic != topic {
 			continue
 		}
+		if op.Status == StatusHypothesis {
+			hypotheses = append(hypotheses, op)
+			continue
+		}
+		renderEntry(&b, op)
+	}
+	if len(hypotheses) > 0 {
+		b.WriteString("\n## unverified · 待验证\n\n")
+		for _, op := range hypotheses {
+			renderEntry(&b, op)
+		}
+	}
+	return b.String()
+}
+
+// renderEntry writes one entry in the topic-file form.
+func renderEntry(b *strings.Builder, op knowledgeOp) {
+	{
 		body := strings.TrimSpace(op.Body)
 		if body != "" && !strings.Contains(body, "\n") && len(body) <= knowledgeInlineBodyMax {
 			b.WriteString("- **" + op.Title + "** — " + body + "\n")
@@ -142,7 +161,6 @@ func renderTopic(topic, desc string, live []knowledgeOp) string {
 		}
 		b.WriteString("  · " + provenanceFooter(op) + "\n")
 	}
-	return b.String()
 }
 
 // provenanceFooter is the one-line evidence trail under each entry.
@@ -171,6 +189,25 @@ func provenanceFooter(op knowledgeOp) string {
 	}
 	if op.Legacy {
 		parts = append(parts, "from legacy")
+	}
+	// The axes, where the lesson lives: kind (with a ? while it is only the migration
+	// table's guess), provenance with the observation count, audience once promoted.
+	if op.Kind != "" {
+		k := op.Kind
+		if op.KindAssumed {
+			k += "?"
+		}
+		parts = append(parts, k)
+	}
+	if op.Provenance != "" {
+		p := "from " + op.Provenance
+		if op.Hits > 1 {
+			p += " ×" + strconv.Itoa(op.Hits)
+		}
+		parts = append(parts, p)
+	}
+	if op.Audience != "" {
+		parts = append(parts, "for "+op.Audience)
 	}
 	// The promotion lifecycle is visible where the lesson lives.
 	switch {
@@ -250,7 +287,36 @@ func renderAllTopics(live, custom []knowledgeOp, now int64) error {
 			return err
 		}
 	}
-	return nil
+	return writeMachineRender(live)
+}
+
+// renderMachine is the canonical `machine` file: every live, non-hypothesis entry whose
+// audience is this machine, with its exemplar body — the text the agents' index blocks
+// point at (phase 3). Rendered even when empty, so the pointer never dangles.
+func renderMachine(live []knowledgeOp) string {
+	var b strings.Builder
+	b.WriteString(knowledgeRenderMarker + "\n")
+	b.WriteString("# gtmux · what every agent on this machine must know · 本机所有 agent 都该知道的\n\n")
+	n := 0
+	for _, op := range live {
+		if op.Audience != AudienceMachine || op.Status == StatusHypothesis {
+			continue
+		}
+		renderEntry(&b, op)
+		n++
+	}
+	if n == 0 {
+		b.WriteString("_nothing distributed to this machine yet — `gtmux knowledge promote <id> --for machine`_\n")
+	}
+	return b.String()
+}
+
+func writeMachineRender(live []knowledgeOp) error {
+	p := MachinePath()
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(p, []byte(renderMachine(live)), 0o644)
 }
 
 func topicHasEntries(live []knowledgeOp, topic string) bool {

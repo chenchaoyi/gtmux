@@ -2,4 +2,4 @@
 # best-practices
 
 - **retry only idempotent calls** — A retry on a non-idempotent call is a duplicate side effect.
-  · best-practices/retry-idempotent-calls · 2026-09-10 · seq 120
+  · best-practices/retry-idempotent-calls · 2026-09-10 · seq 120 · judgment? · from self
