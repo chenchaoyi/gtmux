@@ -48,7 +48,7 @@ done 态不带计数；计数=waiting 数否则 working 数（`BadgeText`）且*
 - F2 Composer：静息键条 `⌨ | Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc | 常用语▾ 历史`（用户可见文案 2026-08 起「常用语 / Quick replies」）；写死 1/2/3 移除，waiting 回应由 **ApprovalCard**（`/api/options` 真实选项 1..N）承担；回车=换行、↑ 发送、⤢ 全屏撰写；附件先暂存后发送（上传带 %、失败重试、图片先过标注器）。
 - F3 通知：category 固定三键 1·Yes/2·Always/3·No，后台 `/api/send` **数字不带 Enter**；点按深链（payload 带 server 名先切服务器）；角标=waiting 数。
 - F4 设置页：Moshi 分组 + PickerSheet（行显当前值+›）；连接/终端/通知/通用/关于；**访客隐藏 owner 专属项**。
-- F5 iPad：SplitScreen 宽度≥768、侧栏 320 复用 SectionList、原地换主区、推送深链=选中行。
+- F5 iPad：宽度≥768 分栏、侧栏复用 SectionList、原地换主区、推送深链=选中行（2026-09-12 起按 MOBILE §5 重写版实现：`RadarPanel` + `SplitShell`，见 change `ipad-universal-app`）。
 - F6 HQ 雷达入口 = 参谋长卡（同 P0.2）。
 - F7 Demo 模式优化（mobile §18 / ITERATIONS §F7）：入口升级为 DEMO 徽章次级卡；批准后**状态弧** waiting→working→idle(latest) 在雷达可见；HQ 参谋长卡入选 demo（canned digest + 预设对话）。边界铁律不动：DEMO chip 全程、Servers 无条目、退出重置、零网络。
 
