@@ -21,6 +21,9 @@ require 'spaceship'
 
 APP_ID = '6791144062' # gtmux — com.gtmux.app
 LOCALES = %w[en-US zh-Hans].freeze
+# What each slot should hold after a clean upload: the phone's 7 (6.9") and the iPad's 4
+# (13", landscape). Anything else is reported so a partial upload is not mistaken for done.
+EXPECTED = {'APP_IPHONE_67' => 7, 'APP_IPAD_PRO_3GEN_129' => 4}.freeze
 list_only = ARGV.include?('--list')
 
 Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
@@ -39,7 +42,9 @@ version.get_app_store_version_localizations.each do |loc|
   loc.get_app_screenshot_sets.each do |set|
     shots = set.app_screenshots
     names = shots.map(&:file_name)
-    puts "#{loc.locale} / #{set.screenshot_display_type}: #{shots.size} -> #{names.join(', ')}"
+    want = EXPECTED[set.screenshot_display_type]
+    mark = want.nil? ? ' (unexpected slot)' : (shots.uniq(&:file_name).size == want ? '' : " (expected #{want} distinct)")
+    puts "#{loc.locale} / #{set.screenshot_display_type}: #{shots.size} -> #{names.join(', ')}#{mark}"
     next if list_only
 
     seen = {}
