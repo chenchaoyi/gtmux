@@ -35,6 +35,7 @@ import {KnowledgeSheet} from './KnowledgeSheet';
 import {UsageSheet} from './UsageSheet';
 import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
+import {useWorkspace} from '../state/WorkspaceContext';
 import {parseBoardSections} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
@@ -57,8 +58,13 @@ import {
 
 const hit = {top: 8, bottom: 8, left: 8, right: 8};
 
+/** The phone's route: the view with a back button. The iPad's main pane renders HQView. */
 export function HQScreen({route, navigation}: any) {
-  const hq: Agent = route.params.agent;
+  return <HQView agent={route.params.agent} prefill={route.params.prefill} onBack={() => navigation.goBack()} />;
+}
+
+export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onBack?: () => void}) {
+  const {select} = useWorkspace();
   const {client, agents, conn, demo} = useAgents();
   const {pal, lang} = useApp();
   const zh = lang === 'zh';
@@ -356,9 +362,9 @@ export function HQScreen({route, navigation}: any) {
   const openWorker = useCallback(
     (row: DigestRow) => {
       const a = agents.find(x => x.pane_id === row.pane_id);
-      if (a) navigation.navigate('Detail', {agent: a});
+      if (a) select({kind: 'pane', agent: a});
     },
-    [agents, navigation],
+    [agents, select],
   );
 
   // Quick-command chips: per-selected-target when a decision card is picked, else fleet-wide.
@@ -646,7 +652,7 @@ export function HQScreen({route, navigation}: any) {
             onToggle={() => setBriefOpen(v => !v)}
             onOpenActs={() => setZone('acts')}
             onOpenUsage={() => setUsageOpen(true)}
-            onBack={() => navigation.goBack()}
+            onBack={onBack}
             onOpenBoard={() => setBoardOpen(true)}
             knowledgeValue={knowledgeValue(knowledge, zh)}
             onOpenKnowledge={() => setKnowledgeOpen(true)}

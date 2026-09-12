@@ -191,3 +191,13 @@ export function ArrowToBottomIcon({size = 20, color = '#fff'}: {size?: number; c
     </Svg>
   );
 }
+
+/** The regular shell's sidebar toggle: a window with its leading column marked. */
+export function SidebarIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Rect x={2.5} y={4} width={15} height={12} rx={2.5} stroke={color} strokeWidth={1.6} />
+      <Path d="M7.5 4v12" stroke={color} strokeWidth={1.6} />
+    </Svg>
+  );
+}

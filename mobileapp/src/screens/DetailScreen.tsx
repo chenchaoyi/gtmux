@@ -16,7 +16,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import {Edge, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -43,7 +42,7 @@ import {DiffModal} from '../ui/DiffModal';
 import {agentLabel} from './PaneBrowserScreen';
 import {BRAND, StatusColor} from '../ui/theme';
 import {TestIds} from '../constants/testIds';
-import {isSplitCanvas} from '../ui/layout';
+import {READING_WIDTH, useSizeClass} from '../ui/layout';
 import {historyScope} from '../state/history';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 
@@ -121,12 +120,10 @@ export function DetailView({
   const insets = useSafeAreaInsets();
   const {client, agents, conn, isGuest, inputPanes, demo} = useAgents();
   const {pal, lang, fontPref, mac, returnSends, defaultDetailMode} = useApp();
-  // A split canvas means we're embedded in the iPad split-view's main pane (never a
-  // phone, in either orientation — see isSplitCanvas). Constrain content so the
-  // chat/segmented don't stretch across ~1000pt, and drop the connection chip the sidebar
-  // already shows.
-  const {width, height} = useWindowDimensions();
-  const isWide = isSplitCanvas(width, height);
+  // The regular shell means we're the iPad's main pane (never a phone, in either
+  // orientation — see ui/layout). The chat caps at a reading width there, and the
+  // connection chip the sidebar already shows is dropped.
+  const isWide = useSizeClass() === 'regular';
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
   // from the polled store by pane_id so the header badge/status follow status changes
   // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
@@ -527,9 +524,9 @@ export function DetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH],
+    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH, isWide],
   );
   const termEl = useMemo(
     () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={chromeH} />,

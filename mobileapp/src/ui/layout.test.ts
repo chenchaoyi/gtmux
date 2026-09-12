@@ -16,3 +16,24 @@ describe('isSplitCanvas', () => {
     expect(isSplitCanvas(w as number, h as number)).toBe(want);
   });
 });
+
+// The shell is the one consumer of the breakpoint (change ipad-universal-app, D2).
+describe('sizeClassFor and the sidebar width', () => {
+  const {sizeClassFor, sidebarWidth, READING_WIDTH} = require('./layout');
+  test('regular is exactly the split canvas', () => {
+    expect(sizeClassFor(1194, 834)).toBe('regular');
+    expect(sizeClassFor(834, 1194)).toBe('regular');
+    expect(sizeClassFor(683, 1024)).toBe('compact'); // iPad 1/2 Split View
+    expect(sizeClassFor(932, 430)).toBe('compact'); // a phone in landscape
+  });
+  test('the sidebar narrows under 1000 and never becomes a drawer', () => {
+    expect(sidebarWidth(1194)).toBe(300);
+    expect(sidebarWidth(1000)).toBe(300);
+    expect(sidebarWidth(834)).toBe(280);
+    expect(sidebarWidth(768)).toBe(280);
+  });
+  test('the reading width is wider than any phone and narrower than an 11" main pane', () => {
+    expect(READING_WIDTH).toBeGreaterThan(430);
+    expect(READING_WIDTH).toBeLessThan(1194 - 300);
+  });
+});
