@@ -3,6 +3,8 @@ package hq
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/humanize"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -70,7 +72,7 @@ func runMinePass(o mine.Options) (mine.Report, error) {
 	}
 	seq := events.CurrentSeq()
 	for _, c := range rep.Candidates {
-		if err := appendCandidate(spoolFromMined(c, rep.At, seq)); err != nil {
+		if err := knowledge.AppendCandidate(spoolFromMined(c, rep.At, seq)); err != nil {
 			return rep, err
 		}
 	}
@@ -95,15 +97,15 @@ func machineHeads() map[string]bool {
 // exchange is `corrections` material; a recurring error is a `pitfalls` lead. The key
 // carries the stable id so `knowledge add --capture <key>` / `dismiss --capture <key>`
 // address exactly one lead.
-func spoolFromMined(c mine.Candidate, at, seq int64) captureCandidate {
-	cc := captureCandidate{
+func spoolFromMined(c mine.Candidate, at, seq int64) knowledge.Candidate {
+	cc := knowledge.Candidate{
 		At: at, Seq: seq, Source: captureSourceTranscript,
 		Session: c.Session, Project: c.Project, Context: c.Context, Count: c.Count,
 	}
 	switch c.Kind {
 	case mine.KindError:
 		cc.Topic = "pitfalls"
-		cc.Key = "pitfalls/mined-" + slug(c.Line)
+		cc.Key = "pitfalls/mined-" + knowledge.Slug(c.Line)
 		cc.Lesson = fmt.Sprintf("%s (×%d, %d sessions)", c.Line, c.Count, c.Sessions)
 	default:
 		cc.Topic = "corrections"
@@ -200,7 +202,7 @@ func mineStatus(asJSON bool) int {
 		i18n.Say("transcript mining: never run", "会话采矿：从未运行")
 		return 0
 	}
-	age := HumanAgeShort(time.Now().Unix() - st.LastPass)
+	age := humanize.AgeShort(time.Now().Unix() - st.LastPass)
 	fmt.Println(i18n.Tr(
 		fmt.Sprintf("last pass %s ago · %d passes · %d sources · %d candidates emitted · %d error signatures",
 			age, st.Passes, st.Sources, st.Emitted, st.Errors),

@@ -16,12 +16,9 @@
 package hq
 
 import (
-	"strconv"
-
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
-	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // raiseMaintenance records a due maintenance pass and knocks. `class` is the wake class,
@@ -84,23 +81,6 @@ type MaintenanceRow struct {
 	AgeSec int64            // seconds since it, meaningless when LastAt == 0
 	Floor  int64            // the cadence floor it is judged against
 	State  MaintenanceState // the verdict
-}
-
-// HumanAgeShort renders an age in seconds as a terse "3d" / "40h" / "12m" / "just now".
-// Maintenance ages span minutes to weeks, so a single coarse unit is the readable choice —
-// but hours run to 48, not 24: the daily self-check's interesting window is "a bit over a
-// day", and rounding 40h down to "1d" made a flagged row read as if it were on time.
-func HumanAgeShort(secs int64) string {
-	switch {
-	case secs < 60:
-		return i18n.Tr("just now", "刚刚")
-	case secs < 3600:
-		return strconv.FormatInt(secs/60, 10) + "m"
-	case secs < 48*3600:
-		return strconv.FormatInt(secs/3600, 10) + "h"
-	default:
-		return strconv.FormatInt(secs/(24*3600), 10) + "d"
-	}
 }
 
 // MaintenanceStatus reports the distill + self-check cadences at `now` — the read side of

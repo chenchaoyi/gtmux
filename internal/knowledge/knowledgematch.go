@@ -5,7 +5,7 @@
 // surfaces the hits at dispatch time — so captured knowledge reaches the moment work
 // starts as a tool guarantee, not something HQ must remember to relay every time. No
 // match → empty string (a silent no-op); this reads only its own knowledge files.
-package hq
+package knowledge
 
 import (
 	"bufio"
@@ -56,7 +56,7 @@ func MatchKnowledge(cwd, goal string) string {
 		// during the incremental migration a lesson lives in exactly one of the two,
 		// and the echo must reach it in either.
 		paths := []string{
-			filepath.Join(hqKnowledgeDir(), topic+".md"),
+			filepath.Join(Dir(), topic+".md"),
 			filepath.Join(knowledgeLegacyDir(), topic+".md"),
 		}
 		for _, path := range paths {

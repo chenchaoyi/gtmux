@@ -1,0 +1,14 @@
+<!-- gtmux-hq-promotion v1 · rendered from .ledger.jsonl — close the loop with `gtmux knowledge land <id> --ref <pr/spec>` -->
+# promotion: verify before claiming done
+
+- id: `corrections/verify-before-claiming-done` · promoted 2026-09-10
+- suggested landing: gtmux playbook
+- why charter-level: holds on every machine
+
+"Did you even run it" — run what the change puts on screen.
+
+provenance: corrections/verify-before-claiming-done · 2026-09-10 · seq 150..170 · ⚑ promoted (pending)
+
+Land it at: gtmux playbook — then close:
+
+    gtmux knowledge land corrections/verify-before-claiming-done --ref "<pr / issue / runbook>"

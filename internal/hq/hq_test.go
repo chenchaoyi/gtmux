@@ -2,6 +2,7 @@ package hq
 
 import (
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -739,7 +740,7 @@ func TestSeedsAndPlaybookCarryNoAuthorLeakage(t *testing.T) {
 	}
 	check("en charter", hqInstructionsEN)
 	check("zh charter", hqInstructionsZH)
-	for name, body := range hqKnowledgeSeeds {
+	for name, body := range knowledge.TopicSeeds {
 		check("seed "+name, body)
 	}
 	for name, body := range hqNotesSeeds() {
@@ -787,7 +788,7 @@ func TestPlaybookDropsRetiredPerceptionVocabulary(t *testing.T) {
 				t.Errorf("a charter reintroduces retired vocabulary %q", banned)
 			}
 		}
-		for name, seed := range hqKnowledgeSeeds {
+		for name, seed := range knowledge.TopicSeeds {
 			if strings.Contains(seed, banned) {
 				t.Errorf("seed %s reintroduces retired vocabulary %q", name, banned)
 			}

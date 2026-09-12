@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"io"
 	"os"
 	"path"
@@ -17,7 +18,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/driver"
-	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
@@ -564,7 +564,7 @@ func spawnPreflight(model, cwd, goal string) {
 				"• 订阅额度紧张（"+r.Warn+"）—— 可考虑 --model sonnet/haiku")
 		}
 	}
-	if kb := hq.MatchKnowledge(cwd, goal); kb != "" {
+	if kb := knowledge.MatchKnowledge(cwd, goal); kb != "" {
 		fmt.Println(kb)
 	}
 }

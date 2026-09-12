@@ -1,6 +1,7 @@
 package hq
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -70,8 +71,8 @@ func TestHumanAgeShort(t *testing.T) {
 	}{{0, "just now"}, {59, "just now"}, {60, "1m"}, {3599, "59m"}, {3600, "1h"},
 		// Hours run to 48 so a self-check flagged at 40h doesn't read as an on-time "1d".
 		{25 * 3600, "25h"}, {40 * 3600, "40h"}, {48 * 3600, "2d"}, {8 * 24 * 3600, "8d"}} {
-		if got := HumanAgeShort(c.secs); got != c.want {
-			t.Errorf("HumanAgeShort(%d) = %q, want %q", c.secs, got, c.want)
+		if got := humanize.AgeShort(c.secs); got != c.want {
+			t.Errorf("humanize.AgeShort(%d) = %q, want %q", c.secs, got, c.want)
 		}
 	}
 }

@@ -335,9 +335,19 @@ for f in $SOLO; do
   [ -f "$f" ] || { note "SOLO names $f, which does not exist — the exception outlived its file"; fail=1; }
 done
 
+# The knowledge base is ONE leaf (hq-knowledge-engine): every read or write of the ledger
+# and the candidate spool goes through internal/knowledge. A file in internal/hq that names
+# either file as a string literal is ledger logic that leaked back into the supervisor —
+# the exact scattering the extraction removed. Prose in the seeded playbook mentions the
+# files inside backticks, which is why the match wants the closing double quote.
+leaked="$(grep -lE '\.ledger\.jsonl"|\.pending-distill\.jsonl"' internal/hq/*.go 2>/dev/null | grep -v _test || true)"
+[ -z "$leaked" ] || {
+  note "ledger logic outside internal/knowledge — route it through the knowledge package: $leaked"
+  fail=1
+}
 
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user docs are paired; mobile release notes generated"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user docs are paired; mobile release notes generated"
 else
   exit 1
 fi

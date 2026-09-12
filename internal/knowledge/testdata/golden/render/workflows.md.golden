@@ -1,0 +1,9 @@
+<!-- gtmux-hq-knowledge v1 · rendered from .ledger.jsonl — edit via `gtmux knowledge`, never by hand -->
+# workflows
+
+- **release flow: tag, wait, then install**
+    1. tag
+    2. watch release.yml
+    3. gtmux update
+    4. gtmux hq to re-seed
+  · workflows/release-flow-v2 · 2026-09-10 · seq 140

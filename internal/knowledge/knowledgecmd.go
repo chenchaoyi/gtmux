@@ -5,11 +5,12 @@
 // operation, re-renders the affected topic files, and journals one
 // `gtmux:audit:knowledge` record — so the base's change history is a stream
 // query, not an archaeology dig.
-package hq
+package knowledge
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"os"
 	"strconv"
 	"strings"
@@ -46,8 +47,6 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgeTopic(rest) })
 	case "promotions":
 		return knowledgePromotions(rest)
-	case "mine":
-		return knowledgeMine(rest)
 	case "list":
 		return knowledgeList(rest)
 	case "show":
@@ -77,6 +76,13 @@ func knowledgeMutation(run func() error) int {
 
 // hqHomeForMessage names the HQ home in refusal messages.
 func hqHomeForMessage() string { return state.HQHome() }
+
+// fromHQHome is the cwd-keyed role rule: only a process whose cwd IS the HQ home writes
+// knowledge (the same rule the radar and the pull stamp use).
+func fromHQHome() bool {
+	cwd, err := os.Getwd()
+	return err == nil && cwd == state.HQHome()
+}
 
 // knowledgeFlags is the shared flag set of the content-carrying verbs.
 type knowledgeFlags struct {
@@ -397,10 +403,10 @@ func knowledgePromotions(args []string) int {
 	}
 	now := time.Now().Unix()
 	i18n.Say(fmt.Sprintf("%d pending promotion(s), oldest %s ago:",
-		len(pending), HumanAgeShort(now-oldestAt)),
-		fmt.Sprintf("%d 条待落地晋升,最久 %s 前:", len(pending), HumanAgeShort(now-oldestAt)))
+		len(pending), humanize.AgeShort(now-oldestAt)),
+		fmt.Sprintf("%d 条待落地晋升,最久 %s 前:", len(pending), humanize.AgeShort(now-oldestAt)))
 	for _, op := range pending {
-		fmt.Printf("  %-40s  %s  (%s)\n", op.ID, HumanAgeShort(now-op.PromotedAt), promotionBriefPath(op))
+		fmt.Printf("  %-40s  %s  (%s)\n", op.ID, humanize.AgeShort(now-op.PromotedAt), promotionBriefPath(op))
 	}
 	return 0
 }
@@ -593,7 +599,7 @@ func knowledgeUsage() int {
 // human. So say that, at the moment it is needed, instead of inventing an id nobody asked
 // for.
 func entryID(topic, title string) (string, error) {
-	sl := slug(title)
+	sl := Slug(title)
 	if sl == untaggedSlug {
 		return "", fmt.Errorf(i18n.Tr(
 			"a title with no ASCII word cannot become an id — write it as `<ascii-slug>: %s`",
@@ -616,7 +622,7 @@ func splitKeys(v string) []string {
 // consumeCandidateKeys consumes every key, all or nothing: an unknown key fails the
 // whole call BEFORE any spool line is removed, so a typo in the third key cannot leave
 // the first two consumed and the entry unwritten.
-func consumeCandidateKeys(keys []string) ([]captureCandidate, error) {
+func consumeCandidateKeys(keys []string) ([]Candidate, error) {
 	cands, err := readCandidates()
 	if err != nil {
 		return nil, err
@@ -630,7 +636,7 @@ func consumeCandidateKeys(keys []string) ([]captureCandidate, error) {
 			return nil, fmt.Errorf("no pending candidate with key %q (gtmux capture --list)", k)
 		}
 	}
-	var all []captureCandidate
+	var all []Candidate
 	for _, k := range keys {
 		consumed, err := consumeCandidates(k)
 		if err != nil {

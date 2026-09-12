@@ -1,4 +1,4 @@
-package hq
+package knowledge
 
 import (
 	"encoding/json"
@@ -36,7 +36,7 @@ func TestKnowledgeIndexCarriesStateNotBodies(t *testing.T) {
 	if byName["pitfalls"] != 1 || byName["workflows"] != 1 {
 		t.Errorf("topic counts wrong: %v", byName)
 	}
-	if len(idx.Topics) < len(builtinTopics) {
+	if len(idx.Topics) < len(BuiltinTopics) {
 		t.Errorf("the whole vocabulary must be reported, got %d topics", len(idx.Topics))
 	}
 }
@@ -63,7 +63,7 @@ func TestKnowledgeEntryCarriesTheBody(t *testing.T) {
 	if rc := CmdKnowledge([]string{"add", "--topic", "pitfalls", "--title", "office TLS resets"}); rc != 0 {
 		t.Fatal("add failed")
 	}
-	id := "pitfalls/" + slug("office TLS resets")
+	id := "pitfalls/" + Slug("office TLS resets")
 	e, ok := KnowledgeEntry(id)
 	if !ok {
 		t.Fatalf("entry %q not found", id)
@@ -80,7 +80,7 @@ func TestKnowledgeRemoteVerbsMatchTheCLI(t *testing.T) {
 	if rc := CmdKnowledge([]string{"add", "--topic", "pitfalls", "--title", "office TLS resets"}); rc != 0 {
 		t.Fatal("add failed")
 	}
-	id := "pitfalls/" + slug("office TLS resets")
+	id := "pitfalls/" + Slug("office TLS resets")
 
 	// Landing something that was never promoted is refused, and changes nothing.
 	before, _ := readKnowledgeOps()

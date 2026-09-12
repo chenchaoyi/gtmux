@@ -1,4 +1,4 @@
-package hq
+package knowledge
 
 import (
 	"os"
@@ -118,7 +118,7 @@ func TestKnowledgeMalformedLineIsSkipped(t *testing.T) {
 
 func TestKnowledgeTopics(t *testing.T) {
 	custom := []knowledgeOp{{Op: knowledgeOpTopic, ID: "datasets", Topic: "datasets", Title: "my datasets"}}
-	for _, ok := range append(append([]string{}, builtinTopics...), "datasets") {
+	for _, ok := range append(append([]string{}, BuiltinTopics...), "datasets") {
 		if !validKnowledgeTopic(ok, custom) {
 			t.Errorf("topic %q should be valid", ok)
 		}

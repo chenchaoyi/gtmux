@@ -7,7 +7,7 @@ import (
 )
 
 // The package decomposition (openspec change decompose-app-package) declares a strict
-// acyclic layering: app → hq → {radar, dispatchbridge} → leaves, and hq NEVER imports
+// acyclic layering: app → hq → {knowledge, mine, radar, dispatchbridge} → leaves, and hq NEVER imports
 // app. The Go compiler enforces ACYCLICITY (a back-edge that closes a cycle won't
 // build), but a violation that stays acyclic — a leaf reaching up to a peer, or hq
 // importing app — compiles silently and erodes the decomposition. CLAUDE.md states the
@@ -20,6 +20,10 @@ func TestImportLayers(t *testing.T) {
 		"radar":          {"app", "hq"}, // leaves/kernels sit below hq
 		"dispatchbridge": {"app", "hq"}, //
 		"panefocus":      {"app", "hq"}, //
+		// hq-knowledge-engine: the knowledge base is a leaf below hq, and the transcript
+		// miner is a sibling leaf that never reaches into it (hq maps leads into the pool).
+		"knowledge": {"app", "hq", "radar", "mine"},
+		"mine":      {"app", "hq", "knowledge"},
 	}
 	for pkg, banned := range forbidden {
 		deps := transitiveDeps(t, mod+pkg)

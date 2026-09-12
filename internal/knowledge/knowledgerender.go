@@ -7,7 +7,7 @@
 // pre-ledger hand-written file VERBATIM to legacy/<topic>.md (a file still equal
 // to its seeded placeholder is simply replaced), and the dispatch-time knowledge
 // echo consults BOTH, so no lesson loses reach while HQ migrates by use.
-package hq
+package knowledge
 
 import (
 	"fmt"
@@ -29,11 +29,11 @@ const knowledgeRenderMarker = "<!-- gtmux-hq-knowledge v1 · rendered from .ledg
 const knowledgeInlineBodyMax = 300
 
 // knowledgeLegacyDir holds pre-ledger hand-written topic files, moved verbatim.
-func knowledgeLegacyDir() string { return filepath.Join(hqKnowledgeDir(), "legacy") }
+func knowledgeLegacyDir() string { return filepath.Join(Dir(), "legacy") }
 
 // knowledgePromotionsDir is the export OUTBOX: one brief per pending promotion,
 // written on promote, removed on land, swept on every render pass.
-func knowledgePromotionsDir() string { return filepath.Join(hqKnowledgeDir(), "promotions") }
+func knowledgePromotionsDir() string { return filepath.Join(Dir(), "promotions") }
 
 // knowledgePromotionMarker heads every brief.
 const knowledgePromotionMarker = "<!-- gtmux-hq-promotion v1 · rendered from .ledger.jsonl — close the loop with `gtmux knowledge land <id> --ref <pr/spec>` -->"
@@ -108,7 +108,7 @@ func renderPromotions(live []knowledgeOp) error {
 	return nil
 }
 
-func topicPath(topic string) string { return filepath.Join(hqKnowledgeDir(), topic+".md") }
+func topicPath(topic string) string { return filepath.Join(Dir(), topic+".md") }
 
 // renderTopic renders one topic's live entries (pure). desc is a declared custom topic's
 // one-line description ("" for built-ins).
@@ -206,7 +206,7 @@ func migrateTopicFile(topic string, now int64) error {
 	if strings.HasPrefix(string(b), knowledgeRenderMarker) {
 		return nil // already ours
 	}
-	if seed, ok := hqKnowledgeSeeds[topic+".md"]; ok && string(b) == seed {
+	if seed, ok := TopicSeeds[topic+".md"]; ok && string(b) == seed {
 		return os.Remove(path) // an untouched placeholder holds nothing to preserve
 	}
 	if err := os.MkdirAll(knowledgeLegacyDir(), 0o755); err != nil {
@@ -222,7 +222,7 @@ func migrateTopicFile(topic string, now int64) error {
 
 // writeTopicRender migrates (first touch) then writes the topic's render.
 func writeTopicRender(topic, desc string, live []knowledgeOp, now int64) error {
-	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
+	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
 	if err := migrateTopicFile(topic, now); err != nil {
@@ -237,7 +237,7 @@ func writeTopicRender(topic, desc string, live []knowledgeOp, now int64) error {
 // every DECLARED custom topic unconditionally: a declaration is explicit
 // intent, and its render (name + description) is what makes it visible.
 func renderAllTopics(live, custom []knowledgeOp, now int64) error {
-	for _, topic := range builtinTopics {
+	for _, topic := range BuiltinTopics {
 		if !topicHasEntries(live, topic) && !isRenderedTopicFile(topicPath(topic)) {
 			continue
 		}

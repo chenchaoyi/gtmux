@@ -1,4 +1,4 @@
-package hq
+package knowledge
 
 // The knowledge base, as an API for callers that are not the CLI (hq-knowledge-on-phone).
 //
@@ -107,7 +107,7 @@ func KnowledgeIndex(now int64) KnowledgeIndexPayload {
 	for _, t := range custom {
 		descs[t.ID] = t.Body
 	}
-	for _, name := range builtinTopics {
+	for _, name := range BuiltinTopics {
 		out.Topics = append(out.Topics, KnowledgeTopicRow{Name: name, Count: counts[name], Builtin: true})
 	}
 	for _, t := range custom {
