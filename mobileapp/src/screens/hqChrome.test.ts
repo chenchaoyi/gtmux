@@ -23,7 +23,7 @@ describe('the HQ page’s top chrome', () => {
     // (absolute), slides on translateY, and runs on the UI thread.
     expect(src).not.toMatch(/height:\s*\w+\s*>\s*0\s*\?\s*collapse\.interpolate/);
     expect(src).toContain("chrome: {position: 'absolute'");
-    expect(src).toMatch(/translateY: collapse\.interpolate\([^)]*outputRange: \[0, -chromeH\]/);
+    expect(src).toMatch(/collapse\.interpolate\(\{inputRange: \[0, 1\], outputRange: \[0, -chromeH\]\}\)/);
     expect(src).not.toContain('useNativeDriver: false');
   });
 
@@ -33,6 +33,19 @@ describe('the HQ page’s top chrome', () => {
     const sum = src.slice(src.indexOf('const chromeH ='), src.indexOf('const chrome ='));
     expect(sum).toContain('headerH');
     expect(sum).toContain('tabsH');
+  });
+
+  it('scrolls the chrome away with a top-anchored zone instead of folding it', () => {
+    // A fold at 72pt in a zone that reads downward from under the chrome would leave a
+    // blank band above the first row (the simulator showed ~140pt of it). The offset
+    // drives the chrome directly, clamped at its own height, on the UI thread.
+    expect(src).toContain("Animated.event([{nativeEvent: {contentOffset: {y: zoneOffset}}}], {useNativeDriver: true})");
+    expect(src).toMatch(/zoneOffset\.interpolate\(\{[^}]*extrapolate: 'clamp'/);
+    // and the zones' scroll views can carry that event
+    expect(src.match(/<Animated\.ScrollView/g)?.length).toBe(1); // calls
+    expect(acts).toContain('<Animated.ScrollView'); // HQ's work
+    // No JS-side fold decision is taken from a zone's offset any more.
+    expect(src).not.toContain('onLiveEdge(e.nativeEvent.contentOffset.y)');
   });
 
   it('gives every zone the chrome’s height as top padding', () => {
@@ -47,7 +60,7 @@ describe('the HQ page’s top chrome', () => {
   it('keeps the acts switch inside the scroll view, not fixed above it', () => {
     // A row fixed above the scroll view would sit under the floating chrome, or leave an
     // empty band its height once the chrome folds.
-    const scroll = acts.indexOf('<ScrollView');
+    const scroll = acts.indexOf('<Animated.ScrollView');
     const row = acts.indexOf('styles.switchRow');
     expect(scroll).toBeGreaterThan(0);
     expect(row).toBeGreaterThan(scroll);

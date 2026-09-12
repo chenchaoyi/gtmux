@@ -13,7 +13,7 @@
 import React, {useMemo, useState} from 'react';
 import {
   LayoutAnimation,
-  ScrollView,
+  Animated,
   StyleSheet,
   Text,
   TextLayoutEventData,
@@ -48,7 +48,8 @@ export interface HQActsProps {
   now: number;
   pal: {fg: string; fg2: string; fg3: string; divider: string; surface: string};
   zh: boolean;
-  onScroll?: React.ComponentProps<typeof ScrollView>['onScroll'];
+  /** The host binds this to an Animated value on the UI thread (its chrome scrolls with us). */
+  onScroll?: React.ComponentProps<typeof Animated.ScrollView>['onScroll'];
   /** The host's floating chrome height: constant top padding so the first row clears it. */
   topPad?: number;
 }
@@ -64,7 +65,7 @@ export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll, topP
           host's chrome floats over this scroll view and folds away as you read down, and
           a row fixed above the scroll view would have to sit under that chrome (covered)
           or below it (an empty band the chrome's height once it folds). */}
-      <ScrollView style={styles.flex} contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]} onScroll={onScroll} scrollEventThrottle={16}>
+      <Animated.ScrollView style={styles.flex} contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]} onScroll={onScroll} scrollEventThrottle={16}>
       <View style={[styles.switchRow, {borderBottomColor: pal.divider}]}>
         {(['acts', 'fleet'] as ActsView[]).map(k => {
           const on = k === view;
@@ -86,7 +87,7 @@ export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll, topP
         ) : (
           <FleetBody ledger={ledger} now={now} pal={pal} zh={zh} />
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }

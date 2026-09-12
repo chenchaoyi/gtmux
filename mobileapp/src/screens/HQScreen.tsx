@@ -15,7 +15,7 @@
 // direct-send input — direct control lives in each worker's own Detail).
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Animated, View, Text, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, Platform} from 'react-native';
+import {Animated, View, Text, ScrollView, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent} from '../api/types';
 import {Debug} from '../debug';
@@ -151,12 +151,16 @@ export function HQScreen({route, navigation}: any) {
     },
     [runEdge],
   );
-  // Top-anchored zones (calls/activity) measure their distance from the TOP instead, and
-  // then take exactly the same road — including the hysteresis, which is what stops a
-  // scroll coming to rest near the line from flickering the header.
-  const onZoneScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => onLiveEdge(e.nativeEvent.contentOffset.y),
-    [onLiveEdge],
+  // Top-anchored zones (calls / HQ's work) do NOT fold. Their content starts under the
+  // chrome and reads downward, so a fold at 72pt would leave a blank band the rest of the
+  // chrome's height above the first row (seen on the simulator, 2026-09-12). The chrome
+  // instead scrolls away WITH the content, in step, clamped at its own height — a plain
+  // scrolling header — and comes back the same way. Driven on the UI thread from the
+  // zone's own offset; no decision, so nothing to flicker.
+  const zoneOffset = useRef(new Animated.Value(0)).current;
+  const onZoneScroll = useMemo(
+    () => Animated.event([{nativeEvent: {contentOffset: {y: zoneOffset}}}], {useNativeDriver: true}),
+    [zoneOffset],
   );
   const [seenMark, setSeenMark] = useState(0);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
@@ -300,9 +304,10 @@ export function HQScreen({route, navigation}: any) {
   // scrolled.
   useEffect(() => {
     collapse.setValue(0);
+    zoneOffset.setValue(0); // the new zone's scroll view mounts at 0
     chrome.current = {hidden: false, settledAt: 0}; // don't carry a fold across a zone switch
     lastGap.current = 0;
-  }, [activeZone, collapse]);
+  }, [activeZone, collapse, zoneOffset]);
 
   // Reading the feed marks it read; leaving it doesn't un-mark.
   useEffect(() => {
@@ -385,7 +390,7 @@ export function HQScreen({route, navigation}: any) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* YOUR CALL — one decision card per blocked session. */}
         {activeZone === 'calls' && (
-          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.pad, {paddingTop: chromeH + styles.pad.paddingVertical}]} onScroll={onZoneScroll} scrollEventThrottle={16}>
+          <Animated.ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.pad, {paddingTop: chromeH + styles.pad.paddingVertical}]} onScroll={onZoneScroll} scrollEventThrottle={16}>
             {calls.length === 0 ? (
               /* The quiet state is the COMMON state, and it was one grey sentence over an
                  empty screen — this zone saying nothing at the moment it is most often
@@ -491,7 +496,7 @@ export function HQScreen({route, navigation}: any) {
                 );
               })
             )}
-          </ScrollView>
+          </Animated.ScrollView>
         )}
 
         {/* WHAT HQ DID — the supervisor's own acts, with the fleet ledger beside them.
@@ -592,7 +597,14 @@ export function HQScreen({route, navigation}: any) {
             // Opaque, because it FLOATS: the zone scrolls underneath it.
             backgroundColor: pal.bg,
             opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-            transform: [{translateY: collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})}],
+            // Two drivers, one at a time: the console's fold (collapse), or a top-anchored
+            // zone's scroll offset (zoneOffset). The other is 0 whenever this one moves.
+            transform: [{
+              translateY: Animated.add(
+                collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]}),
+                zoneOffset.interpolate({inputRange: [0, Math.max(chromeH, 1)], outputRange: [0, -Math.max(chromeH, 1)], extrapolate: 'clamp'}),
+              ),
+            }],
           },
         ]}>
         {/* The header measures its NATURAL height on every layout while shown (not once):
@@ -731,7 +743,9 @@ export function HQScreen({route, navigation}: any) {
 const styles = StyleSheet.create({
   root: {flex: 1},
   flex: {flex: 1},
-  stack: {flex: 1},
+  // Clipped: the chrome slides up out of this box, and without the clip a partly scrolled
+  // header shows through the status bar (the title under the clock, 2026-09-12).
+  stack: {flex: 1, overflow: 'hidden'},
   chrome: {position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10},
   pad: {paddingHorizontal: 14, paddingVertical: 10},
   strip: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},
