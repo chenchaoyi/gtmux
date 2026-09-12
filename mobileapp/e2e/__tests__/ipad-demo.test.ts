@@ -50,6 +50,12 @@ gated('the demo on an iPad', () => {
     await driver.$('~hq-inspector').waitForDisplayed({timeout: 10_000});
     await settle(1000);
     shot('13-demo-hq');
+    // All panes in the main pane — the browser polls without a navigator here (it used to
+    // reach for the navigation focus and crash the demo on the iPad).
+    await driver.$(`~${TestIds.radar.panes}`).click();
+    await driver.$(`~${TestIds.panes.search}`).waitForDisplayed({timeout: 10_000});
+    await settle(800);
+    shot('14-demo-panes');
     // Leave the demo: the exit lives in the sidebar header.
     const exit = driver.$('~Close demo');
     if (await exit.isExisting()) await exit.click();

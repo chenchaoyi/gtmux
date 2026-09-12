@@ -18,13 +18,13 @@
 // not in /api/panes, so agent-tier rows are joined to the live radar agents (by
 // pane_id) for their real waiting/working/idle state.
 
-import React, {useCallback, useEffect, useMemo, useState, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useState, useRef, useContext} from 'react';
 import {Platform, Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useWorkspace} from '../state/WorkspaceContext';
 import {SizeClass} from '../ui/layout';
 import {KeyBus} from '../keys/bus';
-import {useFocusEffect} from '@react-navigation/native';
+import {NavigationContext} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Agent, PaneRow, StatusName, paneRowToAgent} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
@@ -168,13 +168,30 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
 
   // Poll while focused (a slow cadence — this is a browse surface, not the live
   // radar), stop when it blurs. Refetch immediately on focus.
-  useFocusEffect(
-    useCallback(() => {
-      load();
-      const id = setInterval(load, 3000);
-      return () => clearInterval(id);
-    }, [load]),
-  );
+  // Poll while this view is the one on screen. As a pushed route (the phone) that is the
+  // navigator's focus; in the iPad's main pane and in the demo there is no navigator, and
+  // the view is on screen for as long as it is mounted. `useFocusEffect` would throw
+  // outside a navigator, which is how the demo's All panes crashed on the iPad (2026-09-12).
+  const nav = useContext(NavigationContext) as
+    | {isFocused: () => boolean; addListener: (e: 'focus' | 'blur', fn: () => void) => () => void}
+    | undefined;
+  const [focused, setFocused] = useState(true);
+  useEffect(() => {
+    if (!nav) return;
+    setFocused(nav.isFocused());
+    const offFocus = nav.addListener('focus', () => setFocused(true));
+    const offBlur = nav.addListener('blur', () => setFocused(false));
+    return () => {
+      offFocus();
+      offBlur();
+    };
+  }, [nav]);
+  useEffect(() => {
+    if (!focused) return;
+    load();
+    const id = setInterval(load, 3000);
+    return () => clearInterval(id);
+  }, [focused, load]);
 
   const onRefresh = () => {
     setRefreshing(true);

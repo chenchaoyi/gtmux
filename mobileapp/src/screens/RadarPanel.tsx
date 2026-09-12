@@ -184,7 +184,7 @@ export function RadarPanel({
           onPress={() => navigation?.navigate('Servers')}
           hitSlop={hit}>
           <Text style={[styles.brand, {color: pal.fg}]} numberOfLines={1}>
-            {demoChrome ? (lang === 'zh' ? '演示' : 'Demo') : mac?.name || 'gtmux'}
+            {demoChrome && !Debug.shotMode ? (lang === 'zh' ? '演示' : 'Demo') : mac?.name || 'gtmux'}
           </Text>
           {/* a bordered ⇄ chip reads as a tappable control (the bare glyph looked like
               a decoration next to the title, so switching went unnoticed). */}
@@ -220,7 +220,7 @@ export function RadarPanel({
               <SidebarIcon size={19} color={pal.fg2} />
             </TouchableOpacity>
           )}
-          {demoChrome ? (
+          {demoChrome && Debug.shotMode ? null : demoChrome ? (
             <TouchableOpacity
               onPress={demoChrome.onExit}
               style={styles.headBtn}

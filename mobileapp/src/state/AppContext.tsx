@@ -163,7 +163,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
     })();
   }, []);
 
-  const lang = resolveLang(langPref);
+  const lang = Debug.lang === 'en' || Debug.lang === 'zh' ? Debug.lang : resolveLang(langPref);
   // The effective scheme: follow the system unless the user forced light/dark.
   const scheme: 'light' | 'dark' =
     themePref === 'system' ? (sysScheme === 'light' ? 'light' : 'dark') : themePref;

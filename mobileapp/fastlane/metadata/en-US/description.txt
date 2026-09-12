@@ -14,6 +14,7 @@ ALSO
 • See where your plan quota stands — which window is tightest and how long until it resets.
 • Live Activity — the current agent's state on your Lock Screen and Dynamic Island.
 • Share, safely — a scoped, revocable link lets a teammate see only the sessions you allow and type only into the panes you allow. Input is off by default.
+• Made for iPad too: the radar as a sidebar beside the session you open, the HQ page with your calls in view, and hardware keyboard commands.
 • English and 简体中文.
 
 HOW IT WORKS

@@ -43,6 +43,9 @@ export const Debug = {
   // chip) for clean App Store marketing captures. Only ever set by the screenshot
   // harness — the shipped demo mode always shows the markers (App Review requires it).
   shotMode: flag('SHOT_MODE') === '1',
+  // Forces the app language for a capture run (store screenshots per locale) without
+  // changing the simulator's locale; 'en' | 'zh', anything else is ignored.
+  lang: flag('LANG'),
 
   // Wipe the debug log (call once at startup when any logging is on).
   reset(): void {

@@ -29,8 +29,8 @@
 - [x] 3.3 Tests: keymap complete, ids unique, actions resolve (`keymap.test.ts`, `KeyCommandBridge.test.ts`). The e2e (`ipad-keys.test.ts`) reaches the app — the bridge registers 22 commands and the main menu is built with them (probe read back) — but XCTest's key injection on the simulator types text and never dispatches a UIKeyCommand (measured 2026-09-12, with and without a first responder, hardware keyboard connected or not), and this Mac's shell has no Accessibility grant for real keystrokes. Dispatch is verified by hand on a device with a keyboard in 4.4; until then the e2e stays gated and expected red on a simulator.
 
 ## Phase 4 — store and verification
-- [ ] 4.1 e2e iPad lane (env only) + `split-shell` e2e on iPad Pro 13" sim with screenshots
-- [ ] 4.2 `frame-shots.mjs` slot parameter; `appstore-shots` on the iPad sim; `fastlane/screenshots/*/` iPad set
-- [ ] 4.3 Store notes + What's New; `set-version.sh` gate green after the stamp
+- [x] 4.1 e2e iPad lane (env only: `GTMUX_E2E_UDID` + `GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)'`) + `split-shell`, `ipad-demo`, `ipad-keys` e2e on the iPad Pro 13" sim with screenshots
+- [x] 4.2 `frame-shots.mjs --slot ipad` (13" landscape 2752×2064, tablet bezel, `--prefix ipad-`); `appstore-shots-ipad` e2e in demo mode with `GTMUX_DEBUG_LANG`; `fastlane/screenshots/*/ipad-0N.png` in both locales
+- [ ] 4.3 Store notes + What's New written (both locales lead with the iPad; descriptions mention it); the stamp (`set-version.sh`) and its gate run with the release build, not before
 - [ ] 4.4 Device build on an iPad (or the sim if none) through the documented xcodebuild command
 - [ ] 4.5 Sync specs, archive this change

@@ -116,3 +116,28 @@ e2e/
 └── __tests__/
     └── smoke.test.ts
 ```
+
+## iPad
+
+The same harness, a different simulator: boot an iPad (the store slot is `iPad Pro 13-inch (M5)`)
+and pass it by UDID and name — the device name is what gates the iPad suites.
+
+```
+GTMUX_E2E_UDID=<ipad udid> npm run e2e:build
+GTMUX_E2E_UDID=<ipad udid> GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' \
+  GTMUX_E2E_URL=http://127.0.0.1:8765 GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
+  npm run test:e2e -- split-shell        # the regular shell over a live serve
+GTMUX_E2E_UDID=<ipad udid> GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- ipad-demo
+GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID=<ipad udid> \
+  GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- appstore-shots-ipad
+```
+
+`GTMUX_DEBUG_LANG=en|zh` (a launch flag) forces the app's language for a capture, so the
+two locales' screenshots come from one simulator without changing its locale.
+
+Hardware keyboard: `ipad-keys` reaches the app and reads back that the 22 commands were
+registered and the main menu built, but XCTest's key injection on a simulator types text
+and never dispatches a `UIKeyCommand` (with or without a first responder, hardware keyboard
+connected or not — measured 2026-09-12). The dispatch is checked by hand with a keyboard on
+a device; on a simulator that suite is expected red.
+

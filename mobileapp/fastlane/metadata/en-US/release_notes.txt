@@ -1,3 +1,9 @@
+Now on iPad
+- The same app, one listing. On an iPad the radar is a sidebar and the session, HQ or All panes you open fills the pane beside it — nothing pushed, tap another row and it switches.
+- The HQ page keeps what is waiting on you beside the conversation; All panes is a grid; the knowledge base reads list beside entry.
+- Hardware keyboard: hold ⌘ to see the commands — ↑↓⏎ along the radar, ⌘1–9 to a row, ⌘⇧H HQ, ⌘F search, ⌘K type.
+- The demo shows the iPad layout too.
+
 Thirty-odd releases since the version on your phone. Here is what you can use.
 
 Act on a session by long-pressing it
