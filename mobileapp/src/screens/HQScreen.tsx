@@ -100,25 +100,34 @@ export function HQScreen({route, navigation}: any) {
   // is never stranded truncated with no way to read the rest.
   // The verdict's disclosure — everything the old header showed standing.
   const [briefOpen, setBriefOpen] = useState(false);
-  // Collapsing top (like the terminal/Detail header): the fleet-counts + resource +
-  // assessment block hides as you scroll into a zone's body, reclaiming the height for
-  // content, and reappears at the top. The thin title row (back · gtmux HQ· conn) stays
-  // put so navigation is never scrolled away. `collapse` 0 = shown, 1 = hidden; `topH`
-  // measured once for the height animation.
+  // Collapsing top (like the terminal/Detail header): the header (verdict, counts, the
+  // three doors) and the zone tabs hide as you scroll into a zone's body, reclaiming the
+  // height for content, and reappear at the top. `collapse` 0 = shown, 1 = hidden.
+  //
+  // THE TOP CHROME FLOATS, exactly as Detail's does since 2026-09-10: it is drawn over the
+  // zone rather than above it in the column, and folds by sliding out on `translateY`, so
+  // the scroll view underneath keeps one frame for its whole life. This page kept
+  // animating the chrome's HEIGHT for a month longer, and on 2026-09-12 the user found the
+  // consequence Detail had already been cured of: a small upward scroll folded the header,
+  // the viewport grew by the header's height, the console's distance from its tail shrank
+  // by the same amount and asked for the header back, which shrank the viewport again —
+  // fold, unfold, fold, until a scroll longer than the header out-ran it ("轻轻滑动一下…
+  // 反复折叠展开来回换，只有上滑比较大一截的时候才会稳定"). No decision rule can fix a
+  // measurement that the decision itself changes; see `ui/liveEdge`.
+  //
+  // The content underneath carries a constant top padding of `chromeH`, so the oldest
+  // line can still be scrolled clear of the chrome.
   const collapse = useRef(new Animated.Value(0)).current;
-  const [topH, setTopH] = useState(0);
-  // How much the viewport moves under the scroller when the header folds — which is the
-  // number the hysteresis has to clear. For the console (a ChatView pinned to its tail)
-  // that is the header's full height; a TOP-anchored zone does not move at all when the
-  // header goes, so it has no feedback to defend against and contributes 0.
-  const chromeH = useRef(0);
+  const [headerH, setHeaderH] = useState(0);
+  const [tabsH, setTabsH] = useState(0);
+  // Both bands fold on one driver, so the distance the chrome slides out — and the padding
+  // the content carries — is their SUM. A band folded but not counted would slide only
+  // partway out, or leave content starting underneath it.
+  const chromeH = headerH + tabsH;
   const chrome = useRef<ChromeState>({hidden: false, settledAt: 0});
   const lastGap = useRef(0);
-  // One rule, shared with Detail: `ui/liveEdge`. Folding this header grows the ChatView's
-  // viewport, which is what the console's distance-from-the-tail is measured against — so
-  // a threshold smaller than the header cannot help asking for the opposite of what it
-  // just did. The thresholds are derived from `chromeH` instead, and no decision is taken
-  // from a frame measured mid-animation.
+  // One rule, shared with Detail: `ui/liveEdge`. No decision is taken from a frame
+  // measured mid-animation; the newest reading is re-asked when the animation ends.
   const runEdge = useCallback(
     (gap: number) => {
       const d = chromeDecision(chrome.current, {gap, now: Date.now()});
@@ -127,7 +136,8 @@ export function HQScreen({route, navigation}: any) {
       Animated.timing(collapse, {
         toValue: d.hidden ? 1 : 0,
         duration: CHROME_ANIM_MS,
-        useNativeDriver: false,
+        // Transform + opacity only, so the fold runs on the UI thread.
+        useNativeDriver: true,
       }).start(({finished}) => {
         if (finished) runEdge(lastGap.current); // answer whatever arrived mid-flight
       });
@@ -284,7 +294,6 @@ export function HQScreen({route, navigation}: any) {
     if (zone === null && digest.length > 0) setZone(initialZone(digest));
   }, [digest, zone]);
   const activeZone: Zone = zone ?? 'console';
-  chromeH.current = activeZone === 'console' ? topH : 0; // see the collapse driver above
 
   // Reveal the top when switching zones — each zone starts at its resting edge, so a
   // stale collapsed state from the previous zone would hide the header with nothing
@@ -369,101 +378,14 @@ export function HQScreen({route, navigation}: any) {
 
   return (
     <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
-      {/* Collapsing top — the WHOLE header (title + fleet counts + assessment) hides as
-          you scroll into a zone body, like the terminal header, to give the content the
-          full height; it reappears when you flick back to the top. */}
-      <Animated.View
-        style={{
-          opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-          height: topH > 0 ? collapse.interpolate({inputRange: [0, 1], outputRange: [topH, 0]}) : undefined,
-          overflow: 'hidden',
-        }}>
-        {/* Inner wrapper measures the NATURAL height on EVERY layout (not once): the
-            assessment text arrives after mount and can grow to two lines, so a frozen
-            one-line measurement clipped it behind the tabs. Tracking natural height keeps
-            the expanded header showing everything. */}
-        <View
-          onLayout={e => {
-            // Re-measure only while SHOWN — feeding a new height into the interpolation
-            // mid-hide makes the collapse jump (a visible second stage). When shown
-            // again it re-syncs (fixes the assessment-grew clip).
-            if (chrome.current.hidden) return;
-            const h = e.nativeEvent.layout.height;
-            if (h > 0 && Math.abs(h - topH) > 1) setTopH(h);
-          }}>
-          <HQHeader
-            model={headerModel({
-              verdict: assessment(digest, zh),
-              urgent: calls.length > 0,
-              digest,
-              turns,
-              week,
-              res,
-              // What HQ did in the last day — its own acts, already ranked by the
-              // zone that lists them, so the header and that zone cannot disagree.
-              did: tally(acts(actFeed, zh), now, 24 * 3600),
-              owed: {
-                pending: knowledge.promotions?.pending ?? 0,
-                oldestLabel: knowledge.promotions?.oldest_sec
-                  ? relTime(now - knowledge.promotions.oldest_sec, now)
-                  : undefined,
-                overdue: knowledgeOverdue(knowledge),
-              },
-              nowSecs: now,
-              zh,
-            })}
-            conn={conn}
-            demo={demo && !Debug.shotMode}
-            boardValue={board.exists ? boardAge(board.updated_at, now, zh) : null}
-            usageValue={usageDoorValue(week, zh)}
-            open={briefOpen}
-            onToggle={() => setBriefOpen(v => !v)}
-            onOpenActs={() => setZone('acts')}
-            onOpenUsage={() => setUsageOpen(true)}
-            onBack={() => navigation.goBack()}
-            onOpenBoard={() => setBoardOpen(true)}
-            knowledgeValue={knowledgeValue(knowledge, zh)}
-            onOpenKnowledge={() => setKnowledgeOpen(true)}
-            pal={pal}
-            zh={zh}
-          />
-        </View>
-      </Animated.View>
-
+      {/* The stack: the zone underneath, the floating chrome over it (drawn last, so it
+          is on top). See the collapse driver above for why the chrome does not live in
+          the column. */}
+      <View style={styles.stack}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {/* Zone selector — each tab carries its own signal so a hidden zone still reports itself. */}
-        <View style={[styles.tabs, {borderBottomColor: pal.divider}]}>
-          {tabs.map(tab => {
-            const on = tab.key === activeZone;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                testID={`hq-tab-${tab.key}`}
-                style={[
-                  styles.tab,
-                  {backgroundColor: pal.surface, borderColor: 'transparent'},
-                  on && (tab.badge
-                    ? {backgroundColor: 'rgba(239,68,68,0.14)', borderColor: StatusColor.waiting}
-                    : {backgroundColor: pal.rowSelected ?? pal.surface, borderColor: pal.divider}),
-                ]}
-                onPress={() => setZone(tab.key)}>
-                <Text style={[styles.tabText, {color: on ? pal.fg : pal.fg3, fontWeight: on ? '700' : '500'}]}>
-                  {tab.label}
-                </Text>
-                {tab.badge && (
-                  <View style={[styles.badge, {backgroundColor: ERRORED_COLOR}]}>
-                    <Text style={styles.badgeText}>{tab.badge}</Text>
-                  </View>
-                )}
-                {tab.dot && <View style={[styles.tabDot, {backgroundColor: StatusColor.working}]} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
         {/* YOUR CALL — one decision card per blocked session. */}
         {activeZone === 'calls' && (
-          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad} onScroll={onZoneScroll} scrollEventThrottle={16}>
+          <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.pad, {paddingTop: chromeH + styles.pad.paddingVertical}]} onScroll={onZoneScroll} scrollEventThrottle={16}>
             {calls.length === 0 ? (
               /* The quiet state is the COMMON state, and it was one grey sentence over an
                  empty screen — this zone saying nothing at the moment it is most often
@@ -585,6 +507,7 @@ export function HQScreen({route, navigation}: any) {
             pal={pal}
             zh={zh}
             onScroll={onZoneScroll}
+            topPad={chromeH}
           />
         )}
 
@@ -613,6 +536,7 @@ export function HQScreen({route, navigation}: any) {
               // viewport changes while at the tail, so atBottom stays true and the header
               // stays put.
               onLiveEdge={onLiveEdge}
+              topPad={chromeH}
             />
           </View>
         )}
@@ -659,6 +583,104 @@ export function HQScreen({route, navigation}: any) {
             onSend={onSend}
           />
       </KeyboardAvoidingView>
+
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.chrome,
+          {
+            // Opaque, because it FLOATS: the zone scrolls underneath it.
+            backgroundColor: pal.bg,
+            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+            transform: [{translateY: collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})}],
+          },
+        ]}>
+        {/* The header measures its NATURAL height on every layout while shown (not once):
+            the assessment text arrives after mount and can grow to two lines, and the
+            disclosure opens in place. Not while hidden — the chrome is off screen then,
+            and a re-sync when it comes back is enough. */}
+        <View
+          onLayout={e => {
+            if (chrome.current.hidden) return;
+            const h = e.nativeEvent.layout.height;
+            if (h > 0 && Math.abs(h - headerH) > 1) setHeaderH(h);
+          }}>
+          <HQHeader
+            model={headerModel({
+              verdict: assessment(digest, zh),
+              urgent: calls.length > 0,
+              digest,
+              turns,
+              week,
+              res,
+              // What HQ did in the last day — its own acts, already ranked by the
+              // zone that lists them, so the header and that zone cannot disagree.
+              did: tally(acts(actFeed, zh), now, 24 * 3600),
+              owed: {
+                pending: knowledge.promotions?.pending ?? 0,
+                oldestLabel: knowledge.promotions?.oldest_sec
+                  ? relTime(now - knowledge.promotions.oldest_sec, now)
+                  : undefined,
+                overdue: knowledgeOverdue(knowledge),
+              },
+              nowSecs: now,
+              zh,
+            })}
+            conn={conn}
+            demo={demo && !Debug.shotMode}
+            boardValue={board.exists ? boardAge(board.updated_at, now, zh) : null}
+            usageValue={usageDoorValue(week, zh)}
+            open={briefOpen}
+            onToggle={() => setBriefOpen(v => !v)}
+            onOpenActs={() => setZone('acts')}
+            onOpenUsage={() => setUsageOpen(true)}
+            onBack={() => navigation.goBack()}
+            onOpenBoard={() => setBoardOpen(true)}
+            knowledgeValue={knowledgeValue(knowledge, zh)}
+            onOpenKnowledge={() => setKnowledgeOpen(true)}
+            pal={pal}
+            zh={zh}
+          />
+        </View>
+
+        {/* Zone selector — each tab carries its own signal so a hidden zone still reports
+            itself. Folds with the header on the same driver: one gesture, all of the top
+            chrome, as on Detail. Measured once at natural height. */}
+        <View
+          onLayout={e => {
+            const h = e.nativeEvent.layout.height;
+            if (tabsH === 0 && h > 0) setTabsH(h);
+          }}
+          style={[styles.tabs, {borderBottomColor: pal.divider}]}>
+          {tabs.map(tab => {
+            const on = tab.key === activeZone;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                testID={`hq-tab-${tab.key}`}
+                style={[
+                  styles.tab,
+                  {backgroundColor: pal.surface, borderColor: 'transparent'},
+                  on && (tab.badge
+                    ? {backgroundColor: 'rgba(239,68,68,0.14)', borderColor: StatusColor.waiting}
+                    : {backgroundColor: pal.rowSelected ?? pal.surface, borderColor: pal.divider}),
+                ]}
+                onPress={() => setZone(tab.key)}>
+                <Text style={[styles.tabText, {color: on ? pal.fg : pal.fg3, fontWeight: on ? '700' : '500'}]}>
+                  {tab.label}
+                </Text>
+                {tab.badge && (
+                  <View style={[styles.badge, {backgroundColor: ERRORED_COLOR}]}>
+                    <Text style={styles.badgeText}>{tab.badge}</Text>
+                  </View>
+                )}
+                {tab.dot && <View style={[styles.tabDot, {backgroundColor: StatusColor.working}]} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </Animated.View>
+      </View>
 
       {/* The situation board, read-only — the supervisor's own working memory. */}
       {/* The situation board, read-only.
@@ -709,6 +731,8 @@ export function HQScreen({route, navigation}: any) {
 const styles = StyleSheet.create({
   root: {flex: 1},
   flex: {flex: 1},
+  stack: {flex: 1},
+  chrome: {position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10},
   pad: {paddingHorizontal: 14, paddingVertical: 10},
   strip: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   back: {fontSize: 30, fontWeight: '300', marginRight: 10, marginTop: -4},

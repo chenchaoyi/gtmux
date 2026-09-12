@@ -49,15 +49,22 @@ export interface HQActsProps {
   pal: {fg: string; fg2: string; fg3: string; divider: string; surface: string};
   zh: boolean;
   onScroll?: React.ComponentProps<typeof ScrollView>['onScroll'];
+  /** The host's floating chrome height: constant top padding so the first row clears it. */
+  topPad?: number;
 }
 
-export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll}: HQActsProps) {
+export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll, topPad = 0}: HQActsProps) {
   const t = (en: string, cn: string) => (zh ? cn : en);
   const week = useMemo(() => tally(acts, now, WEEK), [acts, now]);
   const days = useMemo(() => groupByDay(acts, now), [acts, now]);
 
   return (
     <View style={styles.flex}>
+      {/* The Supervisor/Fleet switch scrolls WITH the body, as the first thing in it: the
+          host's chrome floats over this scroll view and folds away as you read down, and
+          a row fixed above the scroll view would have to sit under that chrome (covered)
+          or below it (an empty band the chrome's height once it folds). */}
+      <ScrollView style={styles.flex} contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]} onScroll={onScroll} scrollEventThrottle={16}>
       <View style={[styles.switchRow, {borderBottomColor: pal.divider}]}>
         {(['acts', 'fleet'] as ActsView[]).map(k => {
           const on = k === view;
@@ -74,8 +81,6 @@ export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll}: HQA
           );
         })}
       </View>
-
-      <ScrollView style={styles.flex} contentContainerStyle={styles.pad} onScroll={onScroll} scrollEventThrottle={16}>
         {view === 'acts' ? (
           <ActsBody acts={acts} week={week} days={days} pal={pal} zh={zh} />
         ) : (
@@ -275,7 +280,7 @@ const styles = StyleSheet.create({
   flex: {flex: 1},
   pad: {padding: 12, paddingBottom: 24},
 
-  switchRow: {flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},
+  switchRow: {flexDirection: 'row', gap: 8, marginHorizontal: -12, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},
   switchBtn: {paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth},
   switchText: {fontSize: 12.5},
 
