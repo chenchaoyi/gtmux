@@ -45,10 +45,51 @@ struct KBEntry: Decodable, Identifiable {
     /// The entry's prose. `knowledge list --json` already carries it, so opening one
     /// entry costs no second process.
     let body: String?
+    /// The three axes (hq-knowledge-engine): what it is, where it came from and how
+    /// often, who must know it. `kindAssumed` marks a kind the migration guessed;
+    /// `issueUrl` is the everyone audience's exit on a pending promotion.
+    let kind: String?
+    let kindAssumed: Bool?
+    let provenance: String?
+    let hits: Int?
+    let audience: String?
+    let audienceRepo: String?
+    let status: String?
+    let issueUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id, topic, title, at, body
         case promotedAt, landedAt, promoteWhy, promoteTarget, landedRef
+        case kind, kindAssumed, provenance, hits, audience, audienceRepo, status, issueUrl
+    }
+
+    /// The memberwise shape older callers and tests use, with the axes optional: a row
+    /// that predates them is a row without them.
+    init(id: String, topic: String, title: String, at: Int64?, promotedAt: Int64?, landedAt: Int64?,
+         promoteWhy: String?, promoteTarget: String?, landedRef: String?, body: String?,
+         kind: String? = nil, kindAssumed: Bool? = nil, provenance: String? = nil, hits: Int? = nil,
+         audience: String? = nil, audienceRepo: String? = nil, status: String? = nil, issueUrl: String? = nil) {
+        self.id = id; self.topic = topic; self.title = title; self.at = at
+        self.promotedAt = promotedAt; self.landedAt = landedAt
+        self.promoteWhy = promoteWhy; self.promoteTarget = promoteTarget; self.landedRef = landedRef
+        self.body = body
+        self.kind = kind; self.kindAssumed = kindAssumed; self.provenance = provenance; self.hits = hits
+        self.audience = audience; self.audienceRepo = audienceRepo; self.status = status; self.issueUrl = issueUrl
+    }
+
+    /// The axes as one metadata line: `pitfalls? · from mined ×6 · for this machine`.
+    func axesLine(_ l10n: L10n) -> String {
+        var parts: [String] = []
+        if let k = kind, !k.isEmpty { parts.append(k + ((kindAssumed ?? false) ? "?" : "")) }
+        if let pv = provenance, !pv.isEmpty {
+            var s = l10n.tr("from ", "来自 ") + pv
+            if let h = hits, h > 1 { s += " ×\(h)" }
+            parts.append(s)
+        }
+        let aud = audienceShort(audience, l10n)
+        if !aud.isEmpty { parts.append(l10n.tr("for ", "给 ") + aud) }
+        if status == "hypothesis" { parts.append(l10n.tr("hypothesis", "待验证")) }
+        return parts.joined(separator: " · ")
     }
 
     /// Promoted and not yet carried: the one part of the knowledge lifecycle that waits on
@@ -64,6 +105,9 @@ struct KBCandidate: Decodable {
     let topic: String
     let key: String
     let lesson: String
+    /// Family number from `capture --list --json`: candidates that read as one lesson
+    /// share it; a singleton has none.
+    let group: Int?
 }
 
 /// Candidates SHARING a dedup key, as one thing to act on.
@@ -78,6 +122,9 @@ struct KBCandidateGroup: Identifiable {
     let lesson: String
     let at: Int64
     let count: Int
+    /// The family this key belongs to (0 = none): rows of one family sit together, and
+    /// the family's keys are what one `knowledge add --capture k1,k2,…` takes.
+    let family: Int
     var id: String { key }
 }
 
@@ -94,9 +141,26 @@ func groupCandidates(_ cands: [KBCandidate]) -> [KBCandidateGroup] {
         guard let rows = byKey[key], let newest = rows.last else { return nil }
         let oldest = rows.map { $0.at }.min() ?? newest.at
         return KBCandidateGroup(key: key, topic: newest.topic, lesson: newest.lesson,
-                                at: oldest, count: rows.count)
+                                at: oldest, count: rows.count, family: newest.group ?? 0)
     }
+    // Oldest first, but a family stays together (by its earliest member), so the reader
+    // sees "these three are one thing" without reading all three.
     .sorted { $0.at < $1.at }
+    .familiesTogether()
+}
+
+extension Array where Element == KBCandidateGroup {
+    func familiesTogether() -> [KBCandidateGroup] {
+        var firstAt: [Int: Int64] = [:]
+        for g in self where g.family > 0 { firstAt[g.family] = Swift.min(firstAt[g.family] ?? g.at, g.at) }
+        return sorted { a, b in
+            let ka = a.family > 0 ? (firstAt[a.family] ?? a.at) : a.at
+            let kb = b.family > 0 ? (firstAt[b.family] ?? b.at) : b.at
+            if ka != kb { return ka < kb }
+            if a.family != b.family { return a.family < b.family }
+            return a.at < b.at
+        }
+    }
 }
 
 /// What the board read returns. `exists:false` is ORDINARY — a fresh HQ has written none.
@@ -215,7 +279,7 @@ final class HQReaderStore: ObservableObject {
     /// the process never started.
     func perform(_ act: KnowledgeAct, reason: String, l10n: L10n, done: @escaping (String?) -> Void) {
         let reason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !reason.isEmpty else {
+        guard !act.needsReason || !reason.isEmpty else {
             done(l10n.tr("a reason is required", "理由必填"))
             return
         }
@@ -285,6 +349,9 @@ struct HQReaderView: View {
     @State private var whyOpen = false
     @State private var actError: String?
     @State private var busy = false
+    /// The promote sheet's answer to "who must know it", and the path when it is a repo.
+    @State private var audience: KnowledgeAudience = .machine
+    @State private var repoPath = ""
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -656,6 +723,12 @@ struct HQReaderView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 HStack(spacing: 6) {
                     Text(c.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
+                    if c.family > 0 {
+                        // One lesson spread over several lines: the family number is
+                        // what `knowledge add --capture k1,k2,…` consumes at once.
+                        Text(l10n.tr("≈ family \(c.family)", "≈ 同一件事 \(c.family)"))
+                            .font(.system(size: 10)).foregroundStyle(p.fg2)
+                    }
                     if c.count > 1 {
                         // The dismiss takes the whole key, so the row says how much that is.
                         Text(l10n.tr("\(c.count) lines", "\(c.count) 条"))
@@ -685,6 +758,12 @@ struct HQReaderView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(e.id).font(.system(size: 10, design: .monospaced)).foregroundStyle(p.fg3)
                         .textSelection(.enabled)
+                    // The three axes, where the reader judges: what it is, where it came
+                    // from and how often, who must know it.
+                    let axes = e.axesLine(l10n)
+                    if !axes.isEmpty {
+                        Text(axes).font(.system(size: 10.5)).foregroundStyle(p.fg2)
+                    }
 
                     if e.pending {
                         VStack(alignment: .leading, spacing: 3) {
@@ -694,8 +773,16 @@ struct HQReaderView: View {
                             if let why = e.promoteWhy, !why.isEmpty {
                                 Text(why).font(.system(size: 11)).foregroundStyle(p.fg2)
                             }
-                            if let target = e.promoteTarget, !target.isEmpty {
+                            let aud = audienceShort(e.audience, l10n)
+                            if !aud.isEmpty {
+                                Text(l10n.tr("for: ", "给：") + aud + ((e.audienceRepo ?? "").isEmpty ? "" : " · " + (e.audienceRepo ?? "")))
+                                    .font(.system(size: 11)).foregroundStyle(p.fg3)
+                            } else if let target = e.promoteTarget, !target.isEmpty {
                                 Text("→ \(target)").font(.system(size: 11)).foregroundStyle(p.fg3)
+                            } else {
+                                Text(l10n.tr("no audience chosen — withdraw, then promote again saying who must know it",
+                                             "没选读者 —— 撤回后重新晋升，说清给谁看"))
+                                    .font(.system(size: 11)).foregroundStyle(p.fg3)
                             }
                         }
                     } else if let ref = e.landedRef, !ref.isEmpty {
@@ -761,8 +848,16 @@ struct HQReaderView: View {
     @ViewBuilder private func actButton(_ act: KnowledgeAct, subject: String, _ p: Theme.Palette) -> some View {
         let c = act.copy(l10n)
         Button {
+            if case let .feedback(url) = act {
+                // The everyone audience's exit is a browser, not a process: the issue
+                // page is already prefilled from the brief.
+                if let u = URL(string: url) { NSWorkspace.shared.open(u) }
+                return
+            }
             draft = ""
             actError = nil
+            audience = .machine
+            repoPath = ""
             pendingAct = PendingAct(act: act, subject: subject)
         } label: {
             Text(c.button)
@@ -792,11 +887,31 @@ struct HQReaderView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(c.hint).font(.system(size: 11)).foregroundStyle(p.fg3)
                 .fixedSize(horizontal: false, vertical: true)
-            TextField(c.placeholder, text: $draft, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(2...5)
-                .font(.system(size: 12))
+            if case .promote = pending.act {
+                // Who must know it — the one question promote asks. Four answers, each
+                // with an exit a person can actually take (D4).
+                Picker(l10n.tr("Who must know it", "这条给谁看"), selection: $audience) {
+                    ForEach(KnowledgeAudience.allCases, id: \.self) { a in
+                        Text(a.word(l10n)).tag(a)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                .font(.system(size: 11))
                 .disabled(busy)
+                if audience == .repo {
+                    TextField(l10n.tr("repository path, e.g. ~/work/api", "仓库路径，例如 ~/work/api"), text: $repoPath)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12))
+                        .disabled(busy)
+                }
+            }
+            if pending.act.needsReason {
+                TextField(c.placeholder, text: $draft, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(2...5)
+                    .font(.system(size: 12))
+                    .disabled(busy)
+            }
 
             if let err = actError {
                 // The CLI's own words, unedited. "has no pending promotion to land (gtmux
@@ -809,14 +924,14 @@ struct HQReaderView: View {
             }
 
             HStack(spacing: 8) {
-                Text("gtmux knowledge \(verbWord(pending.act)) \(c.field)")
+                Text(("gtmux knowledge \(verbWord(pending.act)) \(c.field)").trimmingCharacters(in: .whitespaces))
                     .font(.system(size: 10, design: .monospaced)).foregroundStyle(p.fg3)
                 Spacer(minLength: 8)
                 Button(l10n.tr("Cancel", "取消")) { closeSheet() }
                     .disabled(busy)
                 Button(l10n.tr("Confirm", "确认")) { run(pending) }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(busy || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(busy || !canConfirm(pending))
             }
         }
         .padding(16)
@@ -827,16 +942,34 @@ struct HQReaderView: View {
     private func verbWord(_ act: KnowledgeAct) -> String {
         switch act {
         case .promote: return "promote"
-        case .land: return "land"
+        case .land, .carry: return "land"
+        case .withdraw: return "withdraw"
         case .retire: return "retire"
         case .dismiss: return "dismiss"
+        case .feedback: return ""
         }
+    }
+
+    /// The reason exists when one is needed, and a repository audience has its path.
+    private func canConfirm(_ pending: PendingAct) -> Bool {
+        if pending.act.needsReason && draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return false }
+        if case .promote = pending.act, audience == .repo,
+           repoPath.trimmingCharacters(in: .whitespaces).isEmpty { return false }
+        return true
+    }
+
+    /// The act as it will run: a promote picks up the audience chosen in the sheet.
+    private func resolved(_ act: KnowledgeAct) -> KnowledgeAct {
+        guard case let .promote(id, _) = act else { return act }
+        let path = repoPath.trimmingCharacters(in: .whitespaces)
+        let forValue = audience == .repo ? "repo:" + (path as NSString).expandingTildeInPath : audience.rawValue
+        return .promote(id: id, audience: forValue)
     }
 
     private func run(_ pending: PendingAct) {
         busy = true
         actError = nil
-        store.perform(pending.act, reason: draft, l10n: l10n) { err in
+        store.perform(resolved(pending.act), reason: draft, l10n: l10n) { err in
             busy = false
             if let err {
                 actError = err

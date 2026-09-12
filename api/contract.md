@@ -433,14 +433,25 @@ ordinary state a client renders, not a failure it has to tell apart from a read 
 404 {"error":"no such entry"}           // unknown, or retired (gone from the live set)
 ```
 
-### `POST /api/hq/knowledge/act` — land or retire, remotely (OWNER only)
+### `POST /api/hq/knowledge/act` — land, carry, withdraw or retire, remotely (OWNER only)
 
-The two mutations a phone can honestly perform, each one short line of text:
+The mutations a phone can honestly perform, each at most one short line of text:
 
 - `land` closes a pending promotion — `ref` names where the lesson landed (a PR, a spec, a
-  runbook). **This is the verb that most needed a remote door**: HQ can judge a lesson
-  charter-level, but only the person who carried it knows it arrived.
+  runbook, the issue a person opened). **This is the verb that most needed a remote door**:
+  HQ can judge a lesson charter-level, but only the person who carried it knows it arrived.
+- `carry` (hq-knowledge-engine) lets gtmux carry a pending promotion for the audiences it
+  can reach — `hq` into LOCAL.md, `machine` into the canonical file and every agent's
+  knowledge block, `repo` into that repository's instruction file (not committed) — and
+  lands it with the path it wrote. Refused for `everyone` (open the issue the entry's
+  `issue_url` prefills, then `land` with its URL) and for an entry with no audience.
+- `withdraw` returns a promoted entry to live — the entry was right, the promotion was not;
+  `why` survives.
 - `retire` removes a live entry — `why` survives in the ledger.
+
+Index and entry rows carry the three axes: `kind`, `kind_assumed`, `tags`, `provenance`,
+`hits`, `hit_last`, `audience`, `audience_repo`, `status`, and `issue_url` on a pending
+`everyone` promotion.
 
 `add` and `supersede` are deliberately absent: they carry prose, and the quality of the
 base is the point of having one. The CLI's cwd-keyed HQ-home gate is unchanged — it keeps
@@ -451,7 +462,7 @@ the same `gtmux:audit:knowledge` record.
 POST {"op":"land","id":"pitfalls/office-tls-resets","ref":"AGENTS.md"}
 POST {"op":"retire","id":"pitfalls/office-tls-resets","why":"the office network was fixed"}
 200 {"ok":true}
-400 {"error":"unknown op (land|retire)"}
+400 {"error":"unknown op (land|retire|carry|withdraw)"}
 400 {"error":"pitfalls/x has no pending promotion to land (gtmux knowledge promotions)"}
 403 {"error":"forbidden: not shared"}   // guest scope
 ```

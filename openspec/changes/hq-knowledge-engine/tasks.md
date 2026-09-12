@@ -27,8 +27,8 @@
 - [x] 4.3 ACE constraints as tests: no wholesale rewrite; supersede keeps old text
 
 ## Phase 5 — surfaces
-- [ ] 5.1 API: index/entry carry kind/provenance/audience/status/neighbours; `act` gains `carry`, `withdraw`
-- [ ] 5.2 Menu-bar window: axes on the entry, "write it in" / "feedback to gtmux", grouped spool
+- [x] 5.1 API: index/entry carry kind/provenance/audience/status/neighbours; `act` gains `carry`, `withdraw`
+- [x] 5.2 Menu-bar window: axes on the entry, "write it in" / "feedback to gtmux", grouped spool
 - [ ] 5.3 Phone: same, per MOBILE.md
 - [ ] 5.4 Demo data for both screens
 

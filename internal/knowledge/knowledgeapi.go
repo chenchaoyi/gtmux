@@ -51,6 +51,7 @@ type KnowledgeEntryRow struct {
 	Audience     string   `json:"audience,omitempty"`
 	AudienceRepo string   `json:"audience_repo,omitempty"`
 	Status       string   `json:"status,omitempty"`
+	IssueURL     string   `json:"issue_url,omitempty"`
 }
 
 // KnowledgeEntryFull is one entry WITH its body, for the detail read.
@@ -93,7 +94,30 @@ func rowOf(op knowledgeOp) KnowledgeEntryRow {
 		LandedAt: op.LandedAt, LandedRef: op.LandedRef,
 		Kind: op.Kind, KindAssumed: op.KindAssumed, Tags: op.Tags, Provenance: op.Provenance,
 		Hits: op.Hits, HitLast: op.HitLast, Audience: op.Audience, AudienceRepo: op.AudienceRepo, Status: op.Status,
+		IssueURL: op.IssueURL,
 	}
+}
+
+// KnowledgeCarry lets gtmux carry a pending promotion for the audiences it can reach
+// (hq / machine / repo) and lands it with the path it wrote to. For `everyone` it
+// refuses: the exit is an issue a person opens. The surfaces' "write it in" button.
+func KnowledgeCarry(id string) (ref string, err error) {
+	live, err := liveKnowledge()
+	if err != nil {
+		return "", err
+	}
+	entry, ok := findLive(live, id)
+	if !ok {
+		return "", fmt.Errorf("no live entry %q", id)
+	}
+	if !promotionPending(entry) {
+		return "", fmt.Errorf("%s is not pending — nothing to carry", id)
+	}
+	ref, err = carryEntry(entry, false)
+	if err != nil {
+		return "", err
+	}
+	return ref, KnowledgeLand(id, ref)
 }
 
 // KnowledgeIndex reports the base without bodies.

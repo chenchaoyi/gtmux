@@ -256,6 +256,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 				return knowledge.KnowledgeLand(id, ref)
 			case "retire":
 				return knowledge.KnowledgeRetire(id, why)
+			case "carry": // gtmux writes it where the audience reads, then lands it
+				_, err := knowledge.KnowledgeCarry(id)
+				return err
+			case "withdraw":
+				return knowledge.KnowledgeWithdraw(id, why)
 			}
 			return fmt.Errorf("unknown knowledge op %q", op)
 		},

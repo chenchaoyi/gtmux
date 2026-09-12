@@ -47,6 +47,10 @@ type Candidate struct {
 	Session string `json:"session,omitempty"`
 	Project string `json:"project,omitempty"`
 	Count   int    `json:"count,omitempty"`
+	// Group is computed on `--list --json` only, never stored: candidates that read as
+	// one lesson share a number (1, 2, …); a singleton has none. The screens show a
+	// family together and offer one `add --capture k1,k2,…` for it.
+	Group int `json:"group,omitempty"`
 }
 
 // pendingDistillPath is the append-only spool the distill pass drains + truncates. It is
@@ -293,6 +297,7 @@ func captureList(asJSON bool, header func(now int64) string) int {
 		if cands == nil {
 			cands = []Candidate{}
 		}
+		cands = withFamilies(cands)
 		b, err := json.Marshal(cands)
 		if err != nil {
 			i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
@@ -348,4 +353,23 @@ func captureUsage() int {
 	i18n.Say("  Any worker can capture; HQ's distill pass is the quality gate that files it.",
 		"  任何 worker 都能记;HQ 的蒸馏回合是把它归档入库的质量闸。")
 	return 0
+}
+
+// withFamilies returns the pool in family order with Group set on every candidate that
+// has company.
+func withFamilies(cands []Candidate) []Candidate {
+	out := []Candidate{} // never nil: "nothing queued" is a state to render, not null
+	family := 0
+	for _, g := range groupCandidates(cands) {
+		if len(g) > 1 {
+			family++
+		}
+		for _, c := range g {
+			if len(g) > 1 {
+				c.Group = family
+			}
+			out = append(out, c)
+		}
+	}
+	return out
 }

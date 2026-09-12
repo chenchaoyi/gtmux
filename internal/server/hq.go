@@ -112,7 +112,7 @@ func hqEventsLimit(raw string) int {
 
 // knowledgeAct is the request shape of POST /api/hq/knowledge/act.
 type knowledgeAct struct {
-	Op  string `json:"op"`  // "land" | "retire"
+	Op  string `json:"op"`  // "land" | "retire" | "carry" | "withdraw"
 	ID  string `json:"id"`  // the entry
 	Ref string `json:"ref"` // land: where it landed
 	Why string `json:"why"` // retire: the reason, which survives
@@ -187,9 +187,9 @@ func (s *Server) handleHQKnowledgeAct(w http.ResponseWriter, r *http.Request) {
 	// The verb list is closed HERE as well as in the dep: a client cannot reach a verb
 	// this surface has not decided a phone should have.
 	switch act.Op {
-	case "land", "retire":
+	case "land", "retire", "carry", "withdraw":
 	default:
-		writeJSON(w, http.StatusBadRequest, errBody("unknown op (land|retire)"))
+		writeJSON(w, http.StatusBadRequest, errBody("unknown op (land|retire|carry|withdraw)"))
 		return
 	}
 	if err := s.deps.HQKnowledgeAct(act.Op, act.ID, act.Ref, act.Why); err != nil {

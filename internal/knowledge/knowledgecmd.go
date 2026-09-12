@@ -517,37 +517,48 @@ func knowledgeLand(args []string) error {
 	if !promotionPending(entry) {
 		return fmt.Errorf("%s is not pending — nothing to land", id)
 	}
+	ref, err := carryEntry(entry, f.force)
+	if err != nil {
+		return err
+	}
+	return KnowledgeLand(id, ref)
+}
+
+// carryEntry writes a pending entry where its audience reads and returns the ref to land
+// with. Shared by the CLI's `land` and the surfaces' KnowledgeCarry.
+func carryEntry(entry knowledgeOp, force bool) (string, error) {
+	id := entry.ID
 	switch entry.Audience {
 	case AudienceHQ:
 		path, err := carryIntoLocal(entry)
 		if err != nil {
-			return err
+			return "", err
 		}
 		i18n.Say("✓ written into "+path, "✓ 已写进 "+path)
-		return KnowledgeLand(id, "LOCAL.md")
+		return "LOCAL.md", nil
 	case AudienceMachine:
-		rep, err := SyncMachine(f.force)
+		rep, err := SyncMachine(force)
 		if err != nil {
-			return err
+			return "", err
 		}
 		sayRefused(rep)
-		i18n.Say(fmt.Sprintf("✓ %s rendered · blocks written: %s · kept: %s", MachinePath(), strings.Join(rep.Written, ","), strings.Join(rep.Kept, ",")),
-			fmt.Sprintf("✓ 已渲染 %s · 写入: %s · 已一致: %s", MachinePath(), strings.Join(rep.Written, ","), strings.Join(rep.Kept, ",")))
-		return KnowledgeLand(id, MachinePath())
+		i18n.Say(fmt.Sprintf("✓ %s rendered · blocks written: %s · kept: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)),
+			fmt.Sprintf("✓ 已渲染 %s · 写入: %s · 已一致: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
+		return MachinePath(), nil
 	case AudienceRepo:
-		path, refused, err := SyncRepo(entry.AudienceRepo, f.force)
+		path, refused, err := SyncRepo(entry.AudienceRepo, force)
 		if err != nil {
-			return err
+			return "", err
 		}
 		if refused {
-			return fmt.Errorf("%s: gtmux's block was hand-edited — review it, then `land --force`", path)
+			return "", fmt.Errorf("%s: gtmux's block was hand-edited — review it, then `land --force`", path)
 		}
 		i18n.Say("✓ written into "+path+" — NOT committed; that is yours", "✓ 已写进 "+path+"，未提交，提交由你来")
-		return KnowledgeLand(id, path)
+		return path, nil
 	case AudienceEveryone:
-		return fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url>`", IssueURL(entry), id)
+		return "", fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url>`", IssueURL(entry), id)
 	default:
-		return fmt.Errorf("%s has no audience — `withdraw %s` then `promote %s --why … --for <hq|machine|repo:<path>|everyone>`, or land it yourself with --ref", id, id, id)
+		return "", fmt.Errorf("%s has no audience — `withdraw %s` then `promote %s --why … --for <hq|machine|repo:<path>|everyone>`, or land it yourself with --ref", id, id, id)
 	}
 }
 
