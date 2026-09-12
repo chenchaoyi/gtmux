@@ -123,6 +123,7 @@
 全表面把「● live」改为 server 名 + 状态点（如 home-mac + 绿点柔光晕）；异常态才补「重连中/离线」文字。落地点：radar/detail/iPad/web 头部连接指示。
 
 ### D10 · iPad 扩充
+> 2026-09-12 起以 change `ipad-universal-app` 与 MOBILE §5 重写版为准:抽屉否掉(改为可收起侧栏),指针悬停与硬件键盘已做,Pencil 圈画仍未排期。
 原横屏 split-view 基础上补：竖屏/分屏变窄 → 侧栏收成 ☰ 抽屉、详情占满、再窄回退手机式单列；指针/Apple Pencil（trackpad hover 高亮 + 右键菜单 + Pencil 在 pane 镜像上随手圈画转标注）。
 
 > 注：交接总入口已统一为 HANDOFF.md（旧 HANDOVER*.md 已废弃，可删）。

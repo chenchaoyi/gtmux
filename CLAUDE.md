@@ -417,7 +417,7 @@ OpenSpec 提案必须带 `## Surfaces` 一节，逐条说明五种形态各是�
 - **动 HQ 的知识库 / 章程 / `LOCAL.md`**（或想弄清一条经验该落在哪一层）→ 先读 `docs/design/knowledge-layers.md`（三层归属、`promote → land` 的出口、以及「该进代码的那一类」为什么目前只靠自由文本区分）。要改分类、分发或蒸馏规则，再读 `docs/design/knowledge-engineering-research.md`（九种业界做法的对照与取舍：种类 / 出处 / 读者三条轴，借 lint、近邻预分组、渐进披露；不借 PARA、向量库）。
 - 落地总入口 / 顺序 / 验收 → `docs/design/HANDOFF.md`；可视参照 `docs/design/mockup/`。
 
-要点（两块屏统一）：
+要点（各形态统一）：
 
 - **「等你输入」= 仅 `waiting`（红）；`working`（蓝）永不等输入。** 结构化 `1/2/3` 回应只挂 waiting。
 - **状态语言三重编码**（色+形+字形），全表面统一：waiting=红方块·双竖线 / working=青圆·静态加载环 /

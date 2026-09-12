@@ -16,7 +16,8 @@
 | --- | --- |
 | `HANDOFF.md` | **从这里开始**。给 CC 的整段 Prompt + 落地顺序 + 文件速查。 |
 | `DESIGN.md` | 菜单栏权威规范。 |
-| `MOBILE.md` | 移动端权威规范(App 图标 / Agent.icon / 交互 / 推送 / 状态)。 |
+| `SURFACES.md` | 五种形态(终端含远程 attach / 菜单栏 / 手机 / iPad / Web):每个提案都要过一遍的清单,以及靠结构防偏移的四条。 |
+| `MOBILE.md` | 移动端权威规范(App 图标 / Agent.icon / 交互 / 推送 / 状态);§5 是 iPad 形态(同一个 app 的 regular 壳)。 |
 | `WEB.md` | Web 浏览器镜像权威规范(工作台 / 只读红线 / 对话模式 / 头像 / 键盘)。 |
 | `knowledge-layers.md` | 三层知识(出厂章程 / 你的守则 / 本机台账):谁写、何时进谁的脑子、怎么从一层升到另一层。 |
 | `ITERATIONS-2026-06.md` | 本轮所有变更清单(现状→改动→落地点)。 |

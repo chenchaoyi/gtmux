@@ -4,11 +4,11 @@
 > - `mobileapp/SPEC.md` —— 构建蓝图（栈、屏幕、依赖）。
 > - `api/contract.md` —— HTTP/SSE `v0` 契约。
 > - `mobileapp/src/ui/theme.ts` · `StatusBadge.tsx` —— token 与状态徽章（权威）。
-> - `docs/design/DESIGN.md` §0–§3 —— 状态语言（三块屏共用）。
+> - `docs/design/DESIGN.md` §0–§3 —— 状态语言（五种形态共用，见 `SURFACES.md`）。
 >
 > 可视参照：`docs/design/mockup/gtmux-mobile.dc.html`（可交互，四屏 + 推送 + 图标）。
 
-移动端是 gtmux 的**第三块屏**：桌面的远程伴侣。手机跑不了 tmux，所以它是
+移动端是 gtmux 的**手机与 iPad 两种形态**（同一个 app，compact / regular 两种壳，§5）：桌面的远程伴侣。手机跑不了 tmux，所以它是
 `gtmux serve` 的纯消费方，经 VPN/Tailscale 连接，**只读 MVP**（监控 + focus + 推送）。
 状态语言与菜单栏完全一致：**颜色 + 形状 + 字形**，颜色只编码状态、绝不编码 agent 身份。
 
@@ -410,6 +410,7 @@ Swift 侧的模型里，只是没画出来。**一块过期的板被当成现状
 
 ### HQ 页的顶部也是浮层（2026-09-12）
 
+（compact 壳。regular 壳里头部静态、不折叠，分区在右侧检视栏，见 §5。）
 HQ 页的头部（判断句、舰队计数、三扇门）和分区 tab 行，跟 Detail 的顶部 chrome 走同一套机制
 （见上文「chrome 是浮层，不参与布局」）：**一个驱动，两条带子一起折**，用 `translateY` 滑出去，
 下面的滚动视图 frame 不变，三个分区的内容各带一段恒定的顶部内边距（`chromeH` = 头部高度 + tab 行高度）。
@@ -707,13 +708,15 @@ regular 壳把它渲染进主区。推送深链、HQ 页的「打开会话」、
 
 - **硬件键盘**：一个原生桥（`UIKeyCommand`）+ 一张表（`src/keys/keymap.ts`）。↑↓ 移动雷达选中、⏎ 打开、
   ⌘1–9 直达第 n 行、⌘⇧H HQ、⌘⇧P 所有 pane、⌘F 搜 pane、⌘K 聚焦输入框、esc 关弹层、⌘[ ⌘] 对话/终端、
-  ⌘+ ⌘− 字号、⌃⌘S 收起侧栏。长按 ⌘ 的系统提示层由标题自动生成。
+  ⌘= ⌘− 字号、⌃⌘S 收起侧栏。长按 ⌘ 的系统提示层由标题自动生成。表在 `src/keys/keymap.ts`，测试钉住每个绑定都在。
+  **模拟器验不了派发**：XCTest 的按键注入只会打字、不派发 UIKeyCommand，桥是否收到只能接键盘按一次。
 - **指针**：行和按钮悬停用 `rowSelected` 着色；不做自定义光标。
 - **多任务**：不声明 `UIRequiresFullScreen`，Split View / Slide Over / Stage Manager 都允许，壳跟着窗口走。
   多窗口（scene）和 Apple Pencil 圈画不在这次范围。
 - **方向**：四个方向都支持，不锁。
-- **商店**：13" iPad 截图组（2064×2752）由手机那条 demo 模式管线在 iPad Pro 13" 模拟器上画出来，
-  两种语言；锁屏那张只有手机有（Live Activity 没有 iPad 呈现）。
+- **商店**：13" iPad 截图组（横屏 2752×2064，`frame-shots.mjs --slot ipad`）由手机那条 demo 模式管线在 iPad Pro 13"
+  模拟器上画出来，两种语言（`GTMUX_DEBUG_LANG` 强制语言）；锁屏那张只有手机有（Live Activity 没有 iPad 呈现）。
+- **Demo 也是这套壳**：演示模式在 iPad 上就是侧栏 + 主区，App Review 看到的和用户一样（SURFACES.md §3）。
 
 ---
 
@@ -949,7 +952,7 @@ relay 把每一条都投给了 APNs 并返回 OK，`NSSupportsLiveActivitiesFreq
    - 三个语域（引文 · 数字 · 文档入口）之间用发丝线分隔，不靠间距。
    - 放置规则住在 `hqHeaderModel.ts`（可测），视图 `HQHeader.tsx` 只负责画；
      两边各有测试（`hqHeaderModel.test.ts` 钉规则、`HQHeader.test.tsx` 钉这几条分隔）。
-2. **三个分区（分段切换，各占满整个 body，不做同屏挤压）**。三个标签是**三个平级的名词短语**
+2. **三个分区（分段切换，各占满整个 body，不做同屏挤压；regular 壳里对话常驻、另两个在右侧检视栏，§5）**。三个标签是**三个平级的名词短语**
    （`Your call` / `HQ's work` / `Console` · `该你拍板` / `参谋长动作` / `对话`），
    不是「一个名词 + 一个问句 + 一个名词」—— 标签是**给一个地方起名**，不是描述它（§6 大小写规则）。
    - **该你拍板** — 每个 `waiting` 会话一张决策卡：状态方块·w窗口号·会话名·agent·等待时长，
@@ -1155,9 +1158,9 @@ resource 同样只在 red 档才红、软 amber 不红)。差异仅在容器:手
 ---
 
 ## 对齐实现补记（2026-07 · F 轮）
-见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc|常用语▾ 历史（用户可见文案 2026-08 起为「常用语 / Quick replies」，代码内部名保持 snippets），写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=SplitScreen 宽度≥768；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；Demo 与真机雷达一致用 `HQDisc`，仅 iPad 侧栏仍 `HQCard`，见 hq-meta-layer）。
+见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc|常用语▾ 历史（用户可见文案 2026-08 起为「常用语 / Quick replies」，代码内部名保持 snippets），写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=同一个 app 的 regular 壳（2026-09-12 起，§5）；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；Demo 与真机雷达一致用 `HQDisc`，仅 iPad 侧栏仍 `HQCard`，见 hq-meta-layer）。
 
-- **Demo 模式**（mockup §18）：全功能无 server 演示（App Review 路径）。铁律：明示样例（DEMO chip 全程）、永不混入真实（Servers 无条目）、每次进入重置、每步引导「配对你的 Mac」。剧本主线 = 30 秒核心循环：看到等你 → 点进 → 按 1 批准 → 测试跑完 → 雷达变绿挂 latest。优化项见 ITERATIONS §F7。
+- **Demo 模式**（mockup §18）：全功能无 server 演示（App Review 路径）。铁律：明示样例（DEMO chip 全程）、永不混入真实（Servers 无条目）、每次进入重置、每步引导「配对你的 Mac」。**Demo 渲染的是真实的壳**（2026-09-12 起，SURFACES.md §3）：iPad 上是 `SplitShell`，手机上是 `RadarPanel`，退出 / 样例横幅 / 配对按钮是面板的 `demo` prop；它不允许再有自己的雷达（之前两次落后于真机就是因为有）。剧本主线 = 30 秒核心循环：看到等你 → 点进 → 按 1 批准 → 测试跑完 → 雷达变绿挂 latest。优化项见 ITERATIONS §F7。
   - **Demo 必须与真机雷达同款，不是它的简化版**（2026-08-12 定，此前已因同一原因翻车两次）：
     Demo 是审核员**唯一**能看到的这个 app，也是新用户的第一印象。真机雷达有的**产品能力**，
     Demo 一律要有 —— 2026-08-12 的审计发现缺了三样：**舰队计数行**、**「只看等输入」筛选**、
