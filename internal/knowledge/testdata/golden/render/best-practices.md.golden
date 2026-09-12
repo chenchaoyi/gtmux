@@ -1,0 +1,5 @@
+<!-- gtmux-hq-knowledge v1 · rendered from .ledger.jsonl — edit via `gtmux knowledge`, never by hand -->
+# best-practices
+
+- **retry only idempotent calls** — A retry on a non-idempotent call is a duplicate side effect.
+  · best-practices/retry-idempotent-calls · 2026-09-10 · seq 120

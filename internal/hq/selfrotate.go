@@ -29,6 +29,7 @@ package hq
 
 import (
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -152,7 +153,7 @@ func rotateBreaches(ctxFrac float64, ageSec int64, turns int, cfg hqwake.Config)
 	}
 	if cfg.SelfRotateHours > 0 && ageSec >= cfg.SelfRotateHours*3600 {
 		out = append(out, rotateBreach{"age", fmt.Sprintf("age %s ≥ %dh",
-			HumanAgeShort(ageSec), cfg.SelfRotateHours)})
+			humanize.AgeShort(ageSec), cfg.SelfRotateHours)})
 	}
 	if cfg.SelfRotateTurns > 0 && turns >= cfg.SelfRotateTurns {
 		out = append(out, rotateBreach{"turns", fmt.Sprintf("turns %d ≥ %d",
@@ -369,7 +370,7 @@ func rotateFigures(ctxFrac float64, ageSec int64, turns int) string {
 		parts = append(parts, fmt.Sprintf("ctx %d%%", pct(ctxFrac)))
 	}
 	if ageSec > 0 {
-		parts = append(parts, HumanAgeShort(ageSec))
+		parts = append(parts, humanize.AgeShort(ageSec))
 	}
 	if turns >= 0 {
 		parts = append(parts, strconv.Itoa(turns)+i18n.Tr(" turns", " 轮"))

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"net"
 	"os"
 	"os/exec"
@@ -246,15 +247,15 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// The knowledge base, owner-only (hq-knowledge-on-phone). The act dep closes the
 		// verb list a second time: serve decides what a phone may do, the domain decides
 		// what each verb means.
-		HQKnowledge:      func() ([]byte, error) { return hq.KnowledgeIndexJSON(time.Now().Unix()) },
+		HQKnowledge:      func() ([]byte, error) { return knowledge.KnowledgeIndexJSON(time.Now().Unix()) },
 		HQMemory:         hq.WriteMemoryArchive,
-		HQKnowledgeEntry: hq.KnowledgeEntryJSON,
+		HQKnowledgeEntry: knowledge.KnowledgeEntryJSON,
 		HQKnowledgeAct: func(op, id, ref, why string) error {
 			switch op {
 			case "land":
-				return hq.KnowledgeLand(id, ref)
+				return knowledge.KnowledgeLand(id, ref)
 			case "retire":
-				return hq.KnowledgeRetire(id, why)
+				return knowledge.KnowledgeRetire(id, why)
 			}
 			return fmt.Errorf("unknown knowledge op %q", op)
 		},

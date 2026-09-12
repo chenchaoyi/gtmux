@@ -2,6 +2,7 @@ package hq
 
 import (
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +33,7 @@ func TestMinedCandidateLandsInTheSpoolShape(t *testing.T) {
 	if !strings.Contains(string(b), `"source":"transcript"`) {
 		t.Fatalf("source not serialized: %s", b)
 	}
-	b, _ = json.Marshal(captureCandidate{Topic: "pitfalls", Lesson: "x"})
+	b, _ = json.Marshal(knowledge.Candidate{Topic: "pitfalls", Lesson: "x"})
 	if strings.Contains(string(b), "source") || strings.Contains(string(b), "context") {
 		t.Fatalf("a capture line grew fields: %s", b)
 	}

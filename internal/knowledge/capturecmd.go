@@ -7,7 +7,7 @@
 // decides what is durable, merges it into the right topic (keyed by the dedup key so it
 // consolidates instead of scattering near-duplicates), and prunes. Opening the input is
 // therefore safe — worst case a candidate is dropped at distill time.
-package hq
+package knowledge
 
 import (
 	"bufio"
@@ -26,11 +26,11 @@ import (
 // plus every ledger-declared topic, judged by the same validKnowledgeTopic the
 // knowledge verbs use — one seam, so the two entrances can never drift.
 
-// captureCandidate is one pending-distill spool line: the lesson + its topic tag + a
+// Candidate is one pending-distill spool line: the lesson + its topic tag + a
 // dedup key (so distill MERGES same-key candidates rather than duplicating) + the
 // auto-collected event context that gives the distill pass provenance without the author
 // re-typing it.
-type captureCandidate struct {
+type Candidate struct {
 	At     int64  `json:"at"`             // unix timestamp
 	Topic  string `json:"topic"`          // one of captureTopics
 	Key    string `json:"key"`            // dedup key: "<topic>/<lesson-slug>"
@@ -51,11 +51,13 @@ type captureCandidate struct {
 
 // pendingDistillPath is the append-only spool the distill pass drains + truncates. It is
 // dot-prefixed so it does not clutter the curated knowledge-base topic list.
-func pendingDistillPath() string { return filepath.Join(hqKnowledgeDir(), ".pending-distill.jsonl") }
+func pendingDistillPath() string { return filepath.Join(Dir(), ".pending-distill.jsonl") }
 
 // CmdCapture implements `gtmux capture "<lesson> @<topic>"` and `gtmux capture --list
 // [--json]`.
-func CmdCapture(args []string) int {
+// CmdCapture implements the verb; header renders the "is the drain alive?" banner above
+// `--list` — it is hq's to compose, because the distill cadence is the supervisor's.
+func CmdCapture(args []string, header func(now int64) string) int {
 	// A single pass: --list/--json/-h are recognized anywhere; everything else is the
 	// lesson. The flags are collected rather than acted on inline so `--list --json` and
 	// `--json --list` mean the same thing.
@@ -74,7 +76,7 @@ func CmdCapture(args []string) int {
 		}
 	}
 	if list {
-		return captureList(jsonOut)
+		return captureList(jsonOut, header)
 	}
 
 	lesson, topic, ok := parseCaptureInput(rest)
@@ -96,16 +98,16 @@ func CmdCapture(args []string) int {
 		return 2
 	}
 
-	c := captureCandidate{
+	c := Candidate{
 		At:     time.Now().Unix(),
 		Topic:  topic,
-		Key:    topic + "/" + slug(lesson),
+		Key:    topic + "/" + Slug(lesson),
 		Lesson: lesson,
 		Pane:   os.Getenv("TMUX_PANE"),
 		Seq:    events.LatestSeq(),
 		Task:   os.Getenv("GTMUX_TASK_ID"),
 	}
-	if err := appendCandidate(c); err != nil {
+	if err := AppendCandidate(c); err != nil {
 		i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
 		return 1
 	}
@@ -147,7 +149,7 @@ func parseCaptureInput(rest []string) (lesson, topic string, ok bool) {
 // fine bucket; for an ENTRY id it is not, and entryID refuses it — see knowledgecmd.go.
 const untaggedSlug = "untagged"
 
-func slug(s string) string {
+func Slug(s string) string {
 	var b strings.Builder
 	lastDash := true // trim leading dashes
 	for _, r := range strings.ToLower(s) {
@@ -173,9 +175,9 @@ func slug(s string) string {
 	return out
 }
 
-// appendCandidate appends one JSON line to the spool, creating the knowledge dir if needed.
-func appendCandidate(c captureCandidate) error {
-	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
+// AppendCandidate appends one JSON line to the spool, creating the knowledge dir if needed.
+func AppendCandidate(c Candidate) error {
+	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
 	f, err := os.OpenFile(pendingDistillPath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
@@ -192,7 +194,7 @@ func appendCandidate(c captureCandidate) error {
 }
 
 // readCandidates loads the spool (empty slice when absent).
-func readCandidates() ([]captureCandidate, error) {
+func readCandidates() ([]Candidate, error) {
 	f, err := os.Open(pendingDistillPath())
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -201,7 +203,7 @@ func readCandidates() ([]captureCandidate, error) {
 		return nil, err
 	}
 	defer f.Close()
-	var out []captureCandidate
+	var out []Candidate
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for sc.Scan() {
@@ -209,7 +211,7 @@ func readCandidates() ([]captureCandidate, error) {
 		if line == "" {
 			continue
 		}
-		var c captureCandidate
+		var c Candidate
 		if json.Unmarshal([]byte(line), &c) == nil {
 			out = append(out, c)
 		}
@@ -222,12 +224,12 @@ func readCandidates() ([]captureCandidate, error) {
 // oldest first. The spool is rewritten atomically (temp + rename), so a crash
 // leaves either the old spool or the new one, never a torn file. An unknown key
 // consumes nothing and errors, so a typo cannot silently "succeed".
-func consumeCandidates(key string) ([]captureCandidate, error) {
+func consumeCandidates(key string) ([]Candidate, error) {
 	cands, err := readCandidates()
 	if err != nil {
 		return nil, err
 	}
-	var consumed, kept []captureCandidate
+	var consumed, kept []Candidate
 	for _, c := range cands {
 		if c.Key == key {
 			consumed = append(consumed, c)
@@ -263,9 +265,9 @@ func consumeCandidates(key string) ([]captureCandidate, error) {
 	return consumed, nil
 }
 
-// pendingCandidateCount is the spool depth the distill sensor's spool floor reads. An
+// PendingCandidateCount is the spool depth the distill sensor's spool floor reads. An
 // unreadable spool counts as 0 — a sensor must never fire on an I/O error.
-func pendingCandidateCount() int {
+func PendingCandidateCount() int {
 	cands, err := readCandidates()
 	if err != nil {
 		return 0
@@ -277,7 +279,7 @@ func pendingCandidateCount() int {
 // DRAINED. The queue depth alone can't tell you whether the loop is alive: an empty queue
 // reads identically whether distill drained it yesterday or has never run at all — which
 // is exactly how a 13-day distill outage stayed invisible.
-func captureList(asJSON bool) int {
+func captureList(asJSON bool, header func(now int64) string) int {
 	cands, err := readCandidates()
 	if err != nil {
 		i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
@@ -289,7 +291,7 @@ func captureList(asJSON bool) int {
 	// to render, not a case to special-case.
 	if asJSON {
 		if cands == nil {
-			cands = []captureCandidate{}
+			cands = []Candidate{}
 		}
 		b, err := json.Marshal(cands)
 		if err != nil {
@@ -299,7 +301,7 @@ func captureList(asJSON bool) int {
 		fmt.Println(string(b))
 		return 0
 	}
-	fmt.Println(captureListHeader(time.Now().Unix()))
+	fmt.Println(header(time.Now().Unix()))
 	if len(cands) == 0 {
 		i18n.Say("pending-distill queue is empty", "待蒸馏队列为空")
 		return 0
@@ -319,26 +321,11 @@ func captureList(asJSON bool) int {
 	return 0
 }
 
-// captureListHeader is the one-line "is the drain alive?" banner above the queue.
-func captureListHeader(now int64) string {
-	d, _ := MaintenanceStatus(now)
-	switch d.State {
-	case MaintenanceNever:
-		return i18n.Tr("last distill: never run", "上次蒸馏:从未运行")
-	case MaintenanceSlipped:
-		return i18n.Tr("last distill: "+HumanAgeShort(d.AgeSec)+" ago — SLIPPED past its weekly cadence",
-			"上次蒸馏:"+HumanAgeShort(d.AgeSec)+"前 —— 已滑过每周节拍")
-	default:
-		return i18n.Tr("last distill: "+HumanAgeShort(d.AgeSec)+" ago",
-			"上次蒸馏:"+HumanAgeShort(d.AgeSec)+"前")
-	}
-}
-
 func captureUsage() int {
 	i18n.Say("usage: gtmux capture \"<one-line lesson> @<topic>\"   |   gtmux capture --list [--json]",
 		"用法：gtmux capture \"<一句话教训> @<topic>\"   |   gtmux capture --list [--json]")
-	i18n.Say("  topic ∈ "+strings.Join(builtinTopics, " | ")+" — plus any topic HQ declared (`gtmux knowledge topic`)",
-		"  topic ∈ "+strings.Join(builtinTopics, " | ")+" —— 以及 HQ 用 `gtmux knowledge topic` 声明的主题")
+	i18n.Say("  topic ∈ "+strings.Join(BuiltinTopics, " | ")+" — plus any topic HQ declared (`gtmux knowledge topic`)",
+		"  topic ∈ "+strings.Join(BuiltinTopics, " | ")+" —— 以及 HQ 用 `gtmux knowledge topic` 声明的主题")
 	i18n.Say("  Record a durable, cross-cutting fact as a CANDIDATE — cheap, in the moment.",
 		"  把一条持久、横向的事实作为候选记下来 —— 便宜、当场。")
 	i18n.Say("  Any worker can capture; HQ's distill pass is the quality gate that files it.",

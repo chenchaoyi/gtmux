@@ -8,7 +8,7 @@
 // This file is the substrate: the op record, append/read, validation, and the
 // live-set fold. The renders live in knowledgerender.go, the verbs in
 // knowledgecmd.go.
-package hq
+package knowledge
 
 import (
 	"bufio"
@@ -17,6 +17,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // knowledgeSchemaV is the ledger's record schema version, stamped on every op.
@@ -94,14 +96,17 @@ type knowledgeOp struct {
 // promotionPending reports whether a folded live entry has an open promotion.
 func promotionPending(op knowledgeOp) bool { return op.PromotedAt > 0 && op.LandedAt == 0 }
 
+// Dir is the knowledge base's directory inside the HQ home.
+func Dir() string { return filepath.Join(state.HQHome(), "knowledge") }
+
 // knowledgeLedgerPath is the append-only authority, dot-prefixed like the
 // pending-distill spool so it stays out of the curated topic listing.
-func knowledgeLedgerPath() string { return filepath.Join(hqKnowledgeDir(), ".ledger.jsonl") }
+func knowledgeLedgerPath() string { return filepath.Join(Dir(), ".ledger.jsonl") }
 
-// builtinTopics is the seeded vocabulary. `environment` is a full member since
+// BuiltinTopics is the seeded vocabulary. `environment` is a full member since
 // hq-open-topics (capture and knowledge judge topics identically now); README is
 // an index, never a topic.
-var builtinTopics = []string{"accounts", "workflows", "best-practices", "pitfalls", "corrections", "environment"}
+var BuiltinTopics = []string{"accounts", "workflows", "best-practices", "pitfalls", "corrections", "environment"}
 
 // reservedTopicNames are directory names the knowledge layout owns — a topic
 // with one of these names would collide with a non-topic file or dir.
@@ -110,7 +115,7 @@ var reservedTopicNames = []string{"README", "legacy", "promotions"}
 // knowledgeTopics is the CURRENT vocabulary: built-ins plus every declared
 // custom, in declaration order.
 func knowledgeTopics(custom []knowledgeOp) []string {
-	out := append([]string{}, builtinTopics...)
+	out := append([]string{}, BuiltinTopics...)
 	for _, t := range custom {
 		out = append(out, t.ID)
 	}
@@ -206,7 +211,7 @@ func appendKnowledgeOp(op knowledgeOp) error {
 	if err := validatePromotionFields(op.Target, op.Ref); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
+	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		return err
 	}
 	b, err := json.Marshal(op)
@@ -337,36 +342,19 @@ func pendingPromotions(live []knowledgeOp) (pending []knowledgeOp, oldestAt int6
 	return pending, oldestAt
 }
 
-// promotionStaleSecs is the doctor's staleness floor for a pending promotion:
-// past it, "nobody carried the brief" is a flagged condition, not a note —
-// because an un-carried flag is exactly the charter-flags rot the exit ends.
-const promotionStaleSecs = 14 * 24 * 60 * 60
-
-// PromotionsRow is the export queue's health verdict (consumed by `gtmux doctor`).
-type PromotionsRow struct {
-	Pending   int   // open promotions
-	OldestSec int64 // age of the oldest, 0 when none
-	State     MaintenanceState
-}
-
-// PromotionsStatus reports the export queue at `now`. Pure disk reads; an
-// unreadable ledger reads as a quiet row — a health probe must never fire on
-// its own I/O error.
-func PromotionsStatus(now int64) PromotionsRow {
+// PendingPromotionsSummary is the export queue as a number: open promotions and the
+// age of the oldest (0 when none). An unreadable ledger reads as empty — a health probe
+// must never fire on its own I/O error. The verdict (OK / slipped) is hq's to make.
+func PendingPromotionsSummary(now int64) (count int, oldestSec int64) {
 	live, err := liveKnowledge()
 	if err != nil {
-		return PromotionsRow{State: MaintenanceOK}
+		return 0, 0
 	}
 	pending, oldestAt := pendingPromotions(live)
-	row := PromotionsRow{Pending: len(pending), State: MaintenanceOK}
 	if len(pending) == 0 {
-		return row
+		return 0, 0
 	}
-	row.OldestSec = now - oldestAt
-	if row.OldestSec >= promotionStaleSecs {
-		row.State = MaintenanceSlipped
-	}
-	return row
+	return len(pending), now - oldestAt
 }
 
 // findLive returns the live entry with id, if any.

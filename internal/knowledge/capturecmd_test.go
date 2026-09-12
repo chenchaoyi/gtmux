@@ -1,4 +1,4 @@
-package hq
+package knowledge
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ func TestCaptureWritesSpoolLine(t *testing.T) {
 	t.Setenv("TMUX_PANE", "%42")
 	t.Setenv("GTMUX_TASK_ID", "t-xyz")
 
-	if rc := CmdCapture([]string{"wrangler TLS-resets from the office; retry @pitfalls"}); rc != 0 {
+	if rc := CmdCapture([]string{"wrangler TLS-resets from the office; retry @pitfalls"}, noHeader); rc != 0 {
 		t.Fatalf("capture rc = %d, want 0", rc)
 	}
 
@@ -44,10 +44,10 @@ func TestCaptureWritesSpoolLine(t *testing.T) {
 func TestCaptureRejectsBadTopic(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
-	if rc := CmdCapture([]string{"a lesson with no topic"}); rc == 0 {
+	if rc := CmdCapture([]string{"a lesson with no topic"}, noHeader); rc == 0 {
 		t.Error("capture with no @topic should be non-zero")
 	}
-	if rc := CmdCapture([]string{"a lesson @nonsense"}); rc != 2 {
+	if rc := CmdCapture([]string{"a lesson @nonsense"}, noHeader); rc != 2 {
 		t.Errorf("capture with an unknown topic rc = %d, want 2", rc)
 	}
 	if _, err := os.Stat(pendingDistillPath()); !os.IsNotExist(err) {
@@ -57,12 +57,12 @@ func TestCaptureRejectsBadTopic(t *testing.T) {
 
 // Two phrasings of the same fact collide on the dedup key so distill can merge them.
 func TestCaptureDedupKeyCollides(t *testing.T) {
-	if got := slug("wrangler TLS resets from the office"); got != slug("wrangler TLS resets from the office!!!") {
+	if got := Slug("wrangler TLS resets from the office"); got != Slug("wrangler TLS resets from the office!!!") {
 		t.Errorf("trailing punctuation must not change the slug: %q", got)
 	}
 	// The key is capped to the first few words so an incidental trailing clause doesn't split it.
-	a := slug("dispatch fast ops separately from slow ones always")
-	b := slug("dispatch fast ops separately from slow ones because they hide")
+	a := Slug("dispatch fast ops separately from slow ones always")
+	b := Slug("dispatch fast ops separately from slow ones because they hide")
 	if a != b {
 		t.Errorf("first-6-words cap should collide these: %q vs %q", a, b)
 	}
@@ -71,10 +71,10 @@ func TestCaptureDedupKeyCollides(t *testing.T) {
 // --list renders the pending queue and is empty on a fresh home.
 func TestCaptureList(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if rc := CmdCapture([]string{"--list"}); rc != 0 {
+	if rc := CmdCapture([]string{"--list"}, noHeader); rc != 0 {
 		t.Errorf("empty --list rc = %d, want 0", rc)
 	}
-	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}); rc != 0 {
+	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}, noHeader); rc != 0 {
 		t.Fatal("capture failed")
 	}
 	cands, _ := readCandidates()
@@ -91,7 +91,7 @@ func TestCaptureListJSONCarriesTheDismissKey(t *testing.T) {
 
 	// An empty queue is an ARRAY, not null: "nothing queued" is a state to render.
 	empty := captureStdout(t, func() {
-		if rc := CmdCapture([]string{"--list", "--json"}); rc != 0 {
+		if rc := CmdCapture([]string{"--list", "--json"}, noHeader); rc != 0 {
 			t.Fatalf("empty --list --json rc = %d", rc)
 		}
 	})
@@ -99,16 +99,16 @@ func TestCaptureListJSONCarriesTheDismissKey(t *testing.T) {
 		t.Errorf("empty queue printed %q; want []", strings.TrimSpace(empty))
 	}
 
-	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}); rc != 0 {
+	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}, noHeader); rc != 0 {
 		t.Fatal("capture failed")
 	}
 	out := captureStdout(t, func() {
 		// Flag order must not matter — a caller writes whichever reads better.
-		if rc := CmdCapture([]string{"--json", "--list"}); rc != 0 {
+		if rc := CmdCapture([]string{"--json", "--list"}, noHeader); rc != 0 {
 			t.Fatalf("--json --list rc = %d", rc)
 		}
 	})
-	var got []captureCandidate
+	var got []Candidate
 	if err := json.Unmarshal([]byte(out), &got); err != nil {
 		t.Fatalf("not JSON: %v (%q)", err, out)
 	}
@@ -129,10 +129,10 @@ func TestCaptureListJSONCarriesTheDismissKey(t *testing.T) {
 // The text form is unchanged — it is what a person reads in a terminal.
 func TestCaptureListTextStaysText(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}); rc != 0 {
+	if rc := CmdCapture([]string{"release flow: tag then wait for CI @workflows"}, noHeader); rc != 0 {
 		t.Fatal("capture failed")
 	}
-	out := captureStdout(t, func() { CmdCapture([]string{"--list"}) })
+	out := captureStdout(t, func() { CmdCapture([]string{"--list"}, noHeader) })
 	if strings.HasPrefix(strings.TrimSpace(out), "[") {
 		t.Errorf("--list without --json printed JSON: %q", out)
 	}

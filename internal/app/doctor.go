@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"io"
 	"net"
 	"net/http"
@@ -211,7 +212,7 @@ func hqConsumptionCheck(now int64) dcheck {
 	case hq.MaintenanceSlipped:
 		value := strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费")
 		if c.StandingSec > 0 {
-			value += " · " + hq.HumanAgeShort(c.StandingSec)
+			value += " · " + humanize.AgeShort(c.StandingSec)
 		}
 		// Name the CAUSE when gtmux can see it. "Check the input box" is a guess, and on
 		// 2026-09-02 it was the wrong one: the box was empty and the pane was scrolled
@@ -301,13 +302,13 @@ func promotionsRow(r hq.PromotionsRow) dcheck {
 	case r.State == hq.MaintenanceSlipped:
 		return dcheck{stRec, label,
 			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),
-				r.Pending, hq.HumanAgeShort(r.OldestSec)),
+				r.Pending, humanize.AgeShort(r.OldestSec)),
 			i18n.Tr("a brief has waited past its floor — land it in its carrier (a project AGENTS.md, a runbook, LOCAL.md, or a gtmux issue), then `gtmux knowledge land <id> --ref …`",
 				"有简报滞留超期 —— 请落到它的载体(项目 AGENTS.md、runbook、LOCAL.md 或 gtmux issue),再用 `gtmux knowledge land <id> --ref …` 闭环")}
 	default:
 		return dcheck{stOK, label,
 			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),
-				r.Pending, hq.HumanAgeShort(r.OldestSec)),
+				r.Pending, humanize.AgeShort(r.OldestSec)),
 			i18n.Tr("briefs under knowledge/promotions/ await landing", "knowledge/promotions/ 下的简报等待落地")}
 	}
 }
@@ -321,9 +322,9 @@ func maintenanceRow(r hq.MaintenanceRow, label, okNote, slipNote string) dcheck 
 		return dcheck{stInfo, label, i18n.Tr("never run", "从未运行"),
 			i18n.Tr("no pass raised yet — expected on a fresh HQ", "尚未触发过 —— 新装 HQ 属正常")}
 	case hq.MaintenanceSlipped:
-		return dcheck{stRec, label, hq.HumanAgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), slipNote}
+		return dcheck{stRec, label, humanize.AgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), slipNote}
 	default:
-		return dcheck{stOK, label, hq.HumanAgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), okNote}
+		return dcheck{stOK, label, humanize.AgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), okNote}
 	}
 }
 
@@ -789,8 +790,8 @@ func rowAutoSave() dcheck {
 		// says, not what the config says.
 		if age, ok := saveAge(resurrectLastSave(), time.Now()); ok && age >= backstopArmedStaleAfter {
 			return dcheck{stRec, label,
-				i18n.Tr("armed, but idle "+hq.HumanAgeShort(int64(age.Seconds())),
-					"已装,但 "+hq.HumanAgeShort(int64(age.Seconds()))+" 没存过"),
+				i18n.Tr("armed, but idle "+humanize.AgeShort(int64(age.Seconds())),
+					"已装,但 "+humanize.AgeShort(int64(age.Seconds()))+" 没存过"),
 				i18n.Tr("the trigger is in status-right but nothing has saved for a long while — continuum only fires while the status bar redraws, so a sleeping Mac saves nothing. `gtmux serve` backstops it; if that is not running, your layout is only as fresh as the age shown",
 					"触发器在 status-right 里,但已经很久没存过了 —— continuum 只在状态栏重画时才跑,Mac 一睡就不存。`gtmux serve` 会兜底;若没在跑,你的存档就只有这个新鲜度")}
 		}
@@ -1151,7 +1152,7 @@ func rowLiveActivity() dcheck {
 	}
 	val := fmt.Sprintf(i18n.Tr("%d registered", "已注册 %d 个"), len(payload.Activities))
 	if payload.LastPush > 0 {
-		val += " · " + i18n.Tr("last push ", "上次推送 ") + hq.HumanAgeShort(time.Now().Unix()-payload.LastPush)
+		val += " · " + i18n.Tr("last push ", "上次推送 ") + humanize.AgeShort(time.Now().Unix()-payload.LastPush)
 	}
 	return dcheck{stOK, label, val, note}
 }
@@ -1237,7 +1238,7 @@ func rowHQBoard(now int64) dcheck {
 		return dcheck{stInfo, label, i18n.Tr("none yet", "尚无"),
 			i18n.Tr("notes/board.md not written yet —HQ writes it as it works", "notes/board.md 尚未写入 —— HQ 干活时会写")}
 	}
-	val := hq.HumanAgeShort(now-info.ModTime().Unix()) + i18n.Tr(" ago · ", "前 · ") + humanBytes(info.Size())
+	val := humanize.AgeShort(now-info.ModTime().Unix()) + i18n.Tr(" ago · ", "前 · ") + humanBytes(info.Size())
 	// Freshness is not the only way a board fails. A cell can grow into an essay: on this
 	// machine one measured ~1,180 characters — a single semicolon-joined investigation log
 	// — and the operator's reaction to it on the phone was that the board had become
@@ -1569,7 +1570,7 @@ func rowStaleBindings() dcheck {
 		}
 		newer := newestUnclaimedSession(b.path, b.rec, claimed, b.last)
 		if newer > b.last+staleBindingLead && now-newer < staleBindingFresh {
-			stale = append(stale, fmt.Sprintf("%s (%s)", b.pane, hq.HumanAgeShort(now-b.last)))
+			stale = append(stale, fmt.Sprintf("%s (%s)", b.pane, humanize.AgeShort(now-b.last)))
 		}
 	}
 	switch {
@@ -1673,7 +1674,7 @@ func rowHookSilence() dcheck {
 		if seen := last[p.PaneID]; now-seen > hookSilenceGrace {
 			age := i18n.Tr("never", "从未")
 			if seen > 0 {
-				age = hq.HumanAgeShort(now - seen)
+				age = humanize.AgeShort(now - seen)
 			}
 			silent = append(silent, fmt.Sprintf("%s (%s)", p.PaneID, age))
 			silentIDs = append(silentIDs, p.PaneID)

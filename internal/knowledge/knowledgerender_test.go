@@ -1,4 +1,4 @@
-package hq
+package knowledge
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 )
 
 func kadd(topic, title, body string) knowledgeOp {
-	return knowledgeOp{Op: knowledgeOpAdd, ID: topic + "/" + slug(title), Topic: topic,
+	return knowledgeOp{Op: knowledgeOpAdd, ID: topic + "/" + Slug(title), Topic: topic,
 		Title: title, Body: body, At: 1_755_000_000, Seq: 6650}
 }
 
@@ -47,7 +47,7 @@ func TestRenderTopicShapeAndDeterminism(t *testing.T) {
 
 func TestMigrationPreservesHandWrittenBytes(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
+	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	hand := "# Pitfalls\n\n- the gtmux release tag needs a user: block\n- 200KB of paid-for lessons\n"
@@ -90,10 +90,10 @@ func TestMigrationPreservesHandWrittenBytes(t *testing.T) {
 
 func TestMigrationDropsUntouchedPlaceholder(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
+	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	seed := hqKnowledgeSeeds["pitfalls.md"]
+	seed := TopicSeeds["pitfalls.md"]
 	if err := os.WriteFile(topicPath("pitfalls"), []byte(seed), 0o644); err != nil {
 		t.Fatal(err)
 	}

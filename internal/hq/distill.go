@@ -9,6 +9,7 @@
 package hq
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -119,7 +120,7 @@ func distillSensor(now int64) {
 			notable++
 		}
 	}
-	pending := pendingCandidateCount()
+	pending := knowledge.PendingCandidateCount()
 	fire, reason := shouldDistill(now, lastAt, notable, fleet, pending)
 	if !fire {
 		return

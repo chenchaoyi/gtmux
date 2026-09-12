@@ -1,9 +1,9 @@
 # Tasks — hq-knowledge-engine
 
 ## Phase 1 — pure move (no behaviour change)
-- [ ] 1.1 Create `internal/knowledge`; move ledger/render/api/pool/promote code out of `internal/hq`; hq keeps sensors, playbook, verb shims
-- [ ] 1.2 Golden test: topic renders, JSON index, `capture --list`, `knowledge list/show` byte-identical before/after
-- [ ] 1.3 `check-design.sh`: import rule `knowledge` is a leaf; `mine` does not import it
+- [x] 1.1 Create `internal/knowledge`; move ledger/render/api/pool/promote code out of `internal/hq`; hq keeps sensors, playbook, verb shims
+- [x] 1.2 Golden test: topic renders, JSON index, `capture --list`, `knowledge list/show` byte-identical before/after
+- [x] 1.3 `check-design.sh`: import rule `knowledge` is a leaf; `mine` does not import it
 - [ ] 1.4 Archive-style note in `code-architecture` spec
 
 ## Phase 2 — the three axes

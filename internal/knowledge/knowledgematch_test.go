@@ -1,4 +1,4 @@
-package hq
+package knowledge
 
 import (
 	"os"
@@ -9,10 +9,10 @@ import (
 
 func writeKB(t *testing.T, topic, body string) {
 	t.Helper()
-	if err := os.MkdirAll(hqKnowledgeDir(), 0o755); err != nil {
+	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(hqKnowledgeDir(), topic+".md"), []byte(body), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(Dir(), topic+".md"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
