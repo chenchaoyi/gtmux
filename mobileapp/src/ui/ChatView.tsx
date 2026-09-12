@@ -305,6 +305,11 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
         onLiveEdge?.(gapRef.current);
       }}
       onLayout={onBodyLayout}
+      // The CONTENT can change size under a reader at the tail too — the host's `topPad`
+      // grows when its chrome is measured or its disclosure opens, which pushes the whole
+      // content down by that much and leaves the tail that far below the viewport. A
+      // reader who is following the tail keeps following it.
+      onContentSizeChange={onBodyLayout}
       scrollEventThrottle={16}>
       {/* current-state row: avatar + agent + status dot */}
       <View style={styles.stateRow}>

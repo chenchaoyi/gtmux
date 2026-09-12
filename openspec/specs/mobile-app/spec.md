@@ -502,6 +502,33 @@ reveals real history nor grows it.
 - **WHEN** the user sends a message in demo mode
 - **THEN** it is not added to the real input history
 
+### Requirement: The collapsing top chrome never resizes the scroll view under it
+
+The detail screen and the HQ page fold their top chrome away while the reader is in
+history and bring it back at the live tail. The chrome SHALL float over the scroll
+view and fold by sliding, so the scroll view's frame does not change; the content
+carries a constant top padding of the chrome's height. Folding by animating the
+chrome's height changes the very distance the fold decision reads, and the header
+argues with itself (measured on both screens: 2026-09-05 detail, 2026-09-12 HQ).
+
+A zone whose content reads downward from under the chrome (the HQ page's "your call"
+and "HQ's work") SHALL NOT fold at a threshold: a fold there leaves a blank band above
+the first row. Its chrome scrolls away with the content, in step, clamped at the
+chrome's own height, and returns the same way.
+
+#### Scenario: A small scroll into history on the HQ console
+
+- **WHEN** the reader scrolls the HQ console into history by a little more than the
+  fold line but less than the chrome's height
+- **THEN** the chrome folds once and stays folded; it does not flicker, and the reader
+  is not pulled back to the tail
+
+#### Scenario: A small scroll in a top-anchored zone
+
+- **WHEN** the reader scrolls "HQ's work" by less than the chrome's height
+- **THEN** the chrome has moved up by exactly that much and no blank band shows above
+  the first row; scrolling back to the top brings it fully back
+
 ### Requirement: Demo mode shows the same product the radar does
 
 Demo mode is the only view of the app App Review gets, and a new user's first
