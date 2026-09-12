@@ -195,3 +195,94 @@ export function matchEntries(entries: KnowledgeEntry[], query: string): Knowledg
     return terms.every(t => hay.includes(t));
   });
 }
+
+/** The one word an audience wears on every screen. */
+export function audienceWord(audience: string | undefined, zh: boolean): string {
+  switch (audience ?? '') {
+    case 'hq':
+      return 'HQ';
+    case 'machine':
+      return zh ? '本机' : 'this machine';
+    case 'repo':
+      return zh ? '仓库' : 'a repository';
+    case 'everyone':
+      return zh ? '全体' : 'everyone';
+    default:
+      return '';
+  }
+}
+
+/**
+ * axesLine renders the three axes as one line of metadata: what it is (with a ? while
+ * the kind is only the migration's guess), where it came from and how often, who must
+ * know it. Empty for a row that predates the axes.
+ */
+export function axesLine(e: KnowledgeEntry, zh: boolean): string {
+  const parts: string[] = [];
+  if (e.kind) parts.push(e.kind + (e.kind_assumed ? '?' : ''));
+  if (e.provenance) parts.push((zh ? '来自 ' : 'from ') + e.provenance + (e.hits && e.hits > 1 ? ` ×${e.hits}` : ''));
+  const aud = audienceWord(e.audience, zh);
+  if (aud) parts.push((zh ? '给 ' : 'for ') + aud);
+  if (e.status === 'hypothesis') parts.push(zh ? '待验证' : 'hypothesis');
+  return parts.join(' · ');
+}
+
+/** One act the entry pane can offer. `feedback` opens a URL; the rest post to serve. */
+export type EntryAct =
+  | {kind: 'carry'; id: string}
+  | {kind: 'feedback'; url: string}
+  | {kind: 'land'; id: string}
+  | {kind: 'withdraw'; id: string}
+  | {kind: 'retire'; id: string};
+
+/**
+ * actsFor lists what an entry offers, in order — the exit its AUDIENCE has. gtmux carries
+ * hq / machine / repo; a person opens the issue for everyone (then lands with its URL); a
+ * promotion with no audience can only be landed by hand or withdrawn. An entry that is
+ * not pending offers nothing but retire here: promoting needs the audience question,
+ * which stays on the Mac and in the CLI.
+ */
+export function actsFor(e: KnowledgeEntry): EntryAct[] {
+  if (!isPending(e)) return [{kind: 'retire', id: e.id}];
+  switch (e.audience ?? '') {
+    case 'hq':
+    case 'machine':
+    case 'repo':
+      return [{kind: 'carry', id: e.id}, {kind: 'withdraw', id: e.id}, {kind: 'retire', id: e.id}];
+    case 'everyone': {
+      const acts: EntryAct[] = [];
+      if (e.issue_url) acts.push({kind: 'feedback', url: e.issue_url});
+      return [...acts, {kind: 'land', id: e.id}, {kind: 'withdraw', id: e.id}, {kind: 'retire', id: e.id}];
+    }
+    default:
+      return [{kind: 'land', id: e.id}, {kind: 'withdraw', id: e.id}, {kind: 'retire', id: e.id}];
+  }
+}
+
+/** The button's words for an act — the literal thing that happens. */
+export function actButtonLabel(a: EntryAct, zh: boolean): string {
+  switch (a.kind) {
+    case 'carry':
+      return zh ? '写进去' : 'Write it in';
+    case 'feedback':
+      return zh ? '反馈给 gtmux ↗' : 'Feedback to gtmux ↗';
+    case 'land':
+      return zh ? '标记为已落地…' : 'Mark it landed…';
+    case 'withdraw':
+      return zh ? '撤回晋升…' : 'Withdraw the promotion…';
+    case 'retire':
+      return zh ? '这条不再成立…' : 'It no longer holds…';
+  }
+}
+
+export function withdrawPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
+  return zh
+    ? {title: '撤回这次晋升', hint: '条目留着，只撤掉晋升。为什么不值得搬？理由会留在事件流里。', placeholder: '例如 只在这台机器上成立'}
+    : {title: 'withdraw this promotion', hint: 'The entry stays; only the promotion goes. Why is it not worth carrying? The reason survives in the journal.', placeholder: 'e.g. only true on this machine'};
+}
+
+export function carryPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
+  return zh
+    ? {title: '让 gtmux 搬进去', hint: 'gtmux 把它写到这个读者看的地方 —— 你的 LOCAL.md、本机每个 agent 的知识块、或那个仓库的指令文件（不提交）—— 然后标记为已落地。', placeholder: ''}
+    : {title: 'let gtmux carry it', hint: "gtmux writes it where this audience reads — your LOCAL.md, every agent's knowledge block on this machine, or the repository's instruction file (not committed) — and marks it landed.", placeholder: ''};
+}

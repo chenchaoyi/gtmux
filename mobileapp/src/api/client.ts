@@ -137,6 +137,17 @@ export interface KnowledgeEntry {
   promote_target?: string;
   landed_at?: number;
   landed_ref?: string;
+  /** The three axes (hq-knowledge-engine): what it is, where it came from and how often,
+   *  who must know it. `kind_assumed` marks a kind the migration guessed; `issue_url` is
+   *  the everyone audience's exit on a pending promotion. */
+  kind?: string;
+  kind_assumed?: boolean;
+  provenance?: string;
+  hits?: number;
+  audience?: string;
+  audience_repo?: string;
+  status?: string;
+  issue_url?: string;
   /** Only on the detail read. */
   body?: string;
 }
@@ -164,7 +175,10 @@ export interface KnowledgeIndex {
 /** The two mutations a phone can honestly perform, each one short line of text. */
 export type KnowledgeAct =
   | {op: 'land'; id: string; ref: string}
-  | {op: 'retire'; id: string; why: string};
+  | {op: 'retire'; id: string; why: string}
+  /** gtmux writes a pending promotion where its audience reads, then lands it. */
+  | {op: 'carry'; id: string}
+  | {op: 'withdraw'; id: string; why: string};
 
 // HQBoard mirrors GET /api/hq/board (hq-command-page) — the supervisor's situation
 // board, the synthesis it maintains by hand so its picture of the fleet survives a

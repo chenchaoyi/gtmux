@@ -5,7 +5,11 @@ import {PROMOTION_STALE_SECS,
   isPending,
   provenanceOf,
   knowledgeValue,
-  splitTitleKey, matchEntries} from './knowledgeModel';
+  splitTitleKey, matchEntries,
+  axesLine,
+  actsFor,
+  audienceWord,
+} from './knowledgeModel';
 
 const NOW = 1_756_800_000;
 const e = (o: Partial<KnowledgeEntry>): KnowledgeEntry =>
@@ -188,5 +192,34 @@ describe('matchEntries', () => {
   it('returns nothing for an empty query — the caller shows the index, not everything', () => {
     expect(matchEntries(base, '')).toEqual([]);
     expect(matchEntries(base, '   ')).toEqual([]);
+  });
+});
+
+
+describe('the three axes and the exit an audience has', () => {
+  const base = {id: 'pitfalls/x', topic: 'pitfalls', title: 't', at: 1};
+  it('reads the axes as one line, with a ? while the kind is a guess', () => {
+    expect(axesLine({...base, kind: 'pitfalls', kind_assumed: true, provenance: 'mined', hits: 6, audience: 'machine'}, false))
+      .toBe('pitfalls? · from mined ×6 · for this machine');
+    expect(axesLine({...base, kind: 'howto', provenance: 'self', status: 'hypothesis'}, true)).toBe('howto · 来自 self · 待验证');
+    expect(axesLine(base, false)).toBe('');
+  });
+  it('offers gtmux carrying for hq / machine / repo, the issue for everyone, by-hand for none', () => {
+    for (const a of ['hq', 'machine', 'repo']) {
+      expect(actsFor({...base, promoted_at: 1, audience: a}).map(x => x.kind)).toEqual(['carry', 'withdraw', 'retire']);
+    }
+    expect(actsFor({...base, promoted_at: 1, audience: 'everyone', issue_url: 'https://gh/new'}).map(x => x.kind))
+      .toEqual(['feedback', 'land', 'withdraw', 'retire']);
+    // An older serve sends no URL: no dead button.
+    expect(actsFor({...base, promoted_at: 1, audience: 'everyone'}).map(x => x.kind)).toEqual(['land', 'withdraw', 'retire']);
+    expect(actsFor({...base, promoted_at: 1}).map(x => x.kind)).toEqual(['land', 'withdraw', 'retire']);
+    // Not pending: nothing to carry, and promoting stays on the Mac and in the CLI.
+    expect(actsFor(base).map(x => x.kind)).toEqual(['retire']);
+    expect(actsFor({...base, promoted_at: 1, landed_at: 2, audience: 'machine'}).map(x => x.kind)).toEqual(['retire']);
+  });
+  it('names the audience in one word, both languages', () => {
+    expect(audienceWord('machine', false)).toBe('this machine');
+    expect(audienceWord('everyone', true)).toBe('全体');
+    expect(audienceWord(undefined, true)).toBe('');
   });
 });

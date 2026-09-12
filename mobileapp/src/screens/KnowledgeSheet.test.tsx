@@ -1,4 +1,5 @@
 import React from 'react';
+import {Linking} from 'react-native';
 import {Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {KnowledgeSheet} from './KnowledgeSheet';
@@ -286,4 +287,53 @@ describe('the actions name what they mean', () => {
     expect(said).toContain('It no longer holds');
     expect(said).not.toContain('Retire it');
   });
+});
+
+
+test('write-it-in sends carry with no text, after one confirmation', async () => {
+  const acts: KnowledgeAct[] = [];
+  const t = render(index({entries: [entry({promoted_at: NOW - 60, audience: 'machine'})], promotions: {pending: 1}}), acts);
+  await act(async () => {
+    t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
+  });
+  // The entry shows who must know it.
+  expect(strings(t.root as unknown as Node).join(' ')).toContain('this machine');
+  await act(async () => {
+    t.root.findByProps({testID: 'knowledge-act-carry'}).props.onPress();
+  });
+  expect(acts).toHaveLength(0);
+  // No text is asked for: the promotion already decided, the bar only asks "now?".
+  expect(t.root.findAllByProps({testID: 'knowledge-act-input'})).toHaveLength(0);
+  await act(async () => {
+    await t.root.findByProps({testID: 'knowledge-act-submit'}).props.onPress();
+  });
+  expect(acts).toEqual([{op: 'carry', id: 'pitfalls/x'}]);
+});
+
+test('withdrawing asks why and sends it; everyone opens the issue instead of carrying', async () => {
+  const acts: KnowledgeAct[] = [];
+  const t = render(
+    index({entries: [entry({promoted_at: NOW - 60, audience: 'everyone', issue_url: 'https://gh/new?x'})], promotions: {pending: 1}}),
+    acts,
+  );
+  await act(async () => {
+    t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
+  });
+  expect(t.root.findAllByProps({testID: 'knowledge-act-carry'})).toHaveLength(0);
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  await act(async () => {
+    t.root.findByProps({testID: 'knowledge-act-feedback'}).props.onPress();
+  });
+  expect(open).toHaveBeenCalledWith('https://gh/new?x');
+  open.mockRestore();
+  await act(async () => {
+    t.root.findByProps({testID: 'knowledge-act-withdraw'}).props.onPress();
+  });
+  await act(async () => {
+    t.root.findByProps({testID: 'knowledge-act-input'}).props.onChangeText('only true here');
+  });
+  await act(async () => {
+    await t.root.findByProps({testID: 'knowledge-act-submit'}).props.onPress();
+  });
+  expect(acts).toEqual([{op: 'withdraw', id: 'pitfalls/x', why: 'only true here'}]);
 });

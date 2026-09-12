@@ -29,8 +29,8 @@
 ## Phase 5 — surfaces
 - [x] 5.1 API: index/entry carry kind/provenance/audience/status/neighbours; `act` gains `carry`, `withdraw`
 - [x] 5.2 Menu-bar window: axes on the entry, "write it in" / "feedback to gtmux", grouped spool
-- [ ] 5.3 Phone: same, per MOBILE.md
-- [ ] 5.4 Demo data for both screens
+- [x] 5.3 Phone: same, per MOBILE.md
+- [x] 5.4 Demo data for both screens
 
 ## Phase 6 — docs and playbook
 - [ ] 6.1 Rewrite `docs/design/knowledge-layers.md` around the four audiences and three axes
