@@ -59,7 +59,7 @@ bundle exec fastlane release        # 或 upload ipa:<path>
 ```
 
 本地真机测试用 `build`（不是 `archive`）加 `APS_ENVIRONMENT=development`，然后
-`xcrun devicectl device install app --device <devicectl-uuid> ios/build/dd/Build/Products/Release-iphoneos/GtmuxMobile.app`；
+`xcrun devicectl device install app --device <devicectl-uuid> ios/build/dd/Build/Products/Release-iphoneos/gtmux.app`；
 iPad 和 iPhone 装的是同一个包。锁屏的手机也能装（不要用 udid 当 destination，那会等设备 ready）。
 
 ## 4. 推文字和截图
