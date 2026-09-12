@@ -83,7 +83,7 @@ enum KnowledgeAudience: String, CaseIterable {
 
     func word(_ l10n: L10n) -> String {
         switch self {
-        case .hq: return l10n.tr("HQ · only this supervisor", "HQ · 只给中控")
+        case .hq: return l10n.tr("HQ · only this supervisor", "HQ · 只给 HQ 自己")
         case .machine: return l10n.tr("This machine · every agent here", "本机 · 这台机器上所有 agent")
         case .repo: return l10n.tr("A repository · the agents working there", "仓库 · 在那个仓库干活的 agent")
         case .everyone: return l10n.tr("Everyone · the product", "全体 · gtmux 产品")
