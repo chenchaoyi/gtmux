@@ -57,6 +57,8 @@ gated('the regular shell on an iPad', () => {
     shot('02-landscape-second-agent');
 
     // The HQ card opens the HQ page in the main pane (its doors are on screen), no back.
+    // On the regular shell the page is report header + console + an INSPECTOR carrying
+    // the two zones (phase 2, D5): no console tab, the calls beside the conversation.
     const hqCard = driver.$('~radar-hq-card');
     if (await hqCard.isExisting()) {
       await hqCard.click();
@@ -64,6 +66,25 @@ gated('the regular shell on an iPad', () => {
       await settle(1500);
       shot('03-landscape-hq');
       expect(await driver.$(`~${TestIds.radar.split}`).isDisplayed()).toBe(true);
+      expect(await driver.$('~hq-inspector').isExisting()).toBe(true);
+      expect(await driver.$('~hq-tab-console').isExisting()).toBe(false);
+      expect(await driver.$('~hq-tab-calls').isDisplayed()).toBe(true);
+      expect(await driver.$(`~${TestIds.composer.keyboard}`).isDisplayed()).toBe(true);
+
+      // The knowledge sheet: list on the left, the entry on the right, no back button.
+      await driver.$('~hq-knowledge-open').click();
+      await driver.$('~knowledge-find').waitForDisplayed({timeout: 10_000});
+      await settle(1200);
+      const entry = driver.$("-ios predicate string:name BEGINSWITH 'knowledge-entry-'");
+      if (await entry.isExisting()) {
+        await entry.click();
+        await settle(1200);
+        shot('03b-landscape-knowledge');
+        expect(await driver.$('~knowledge-back').isExisting()).toBe(false);
+        expect(await driver.$('~knowledge-find').isDisplayed()).toBe(true); // the list is still there
+      }
+      await driver.$('~knowledge-close').click();
+      await settle(800);
     }
 
     // All panes, likewise: the browser without its back button.

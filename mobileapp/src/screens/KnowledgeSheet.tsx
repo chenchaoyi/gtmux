@@ -38,6 +38,7 @@ import {KnowledgeAct, KnowledgeEntry, KnowledgeIndex} from '../api/client';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {ERRORED_COLOR, Palette, StatusColor} from '../ui/theme';
 import {relTime} from './hqZones';
+import {SizeClass} from '../ui/layout';
 import {
   KnowledgeView,
   buildKnowledgeView,
@@ -113,13 +114,18 @@ export interface KnowledgeSheetProps {
   onClose: () => void;
   loadEntry: (id: string) => Promise<KnowledgeEntry | null>;
   act: (a: KnowledgeAct) => Promise<{ok: true} | {ok: false; error: string}>;
+  /** The shell hosting the sheet: 'regular' shows list | entry side by side. */
+  layout?: SizeClass;
 }
 
 const mdColors = (pal: Palette): MdColors => ({
   text: pal.fg, dim: pal.fg3, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2,
 });
 
-export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act}: KnowledgeSheetProps) {
+export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act, layout = 'compact'}: KnowledgeSheetProps) {
+  // The regular shell (D11): the list stays on the left and the open entry reads on the
+  // right, the menu-bar window's layout — no back button, no pane swap.
+  const regular = layout === 'regular';
   const t = (en: string, cn: string) => (zh ? cn : en);
   const [pane, setPane] = React.useState<Pane>({kind: 'index'});
   const [entry, setEntry] = React.useState<KnowledgeEntry | null>(null);
@@ -173,6 +179,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   }, [here]);
 
   // Back goes where you came FROM, not to the top of the index.
+  // What the list column shows on the regular shell: the pane an entry was opened FROM.
+  const listPane: Pane = pane.kind === 'entry' ? pane.from : pane;
   const goBack = React.useCallback(() => {
     setPane(p => (p.kind === 'entry' ? p.from : {kind: 'index'}));
   }, []);
@@ -251,7 +259,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.root, {backgroundColor: pal.bg}]}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
-          {pane.kind !== 'index' ? (
+          {pane.kind !== 'index' && !(regular && pane.kind === 'entry') ? (
             <TouchableOpacity testID="knowledge-back" accessibilityLabel="knowledge-back" onPress={goBack} hitSlop={hit}>
               <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
             </TouchableOpacity>
@@ -279,7 +287,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
             which topic holds the one you want — that is knowledge about the knowledge
             base, not about your machine. Only on the index: inside a topic or an entry
             the question has already been narrowed. */}
-        {pane.kind === 'index' && (
+        {(pane.kind === 'index' || (regular && pane.kind === 'entry' && pane.from.kind === 'index')) && (
           <View style={[styles.find, {backgroundColor: pal.surface}]}>
             <Text style={[styles.findIcon, {color: pal.fg3}]}>⌕</Text>
             <TextInput
@@ -307,6 +315,68 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           </View>
         ) : null}
 
+        {regular ? (
+          <View style={styles.columns}>
+            <View style={[styles.listCol, {borderRightColor: pal.divLoud}]}>
+        <ScrollView
+          ref={scroller}
+          contentContainerStyle={styles.body}
+          scrollEventThrottle={64}
+          onScroll={e => {
+            offsets.current[here] = e.nativeEvent.contentOffset.y;
+          }}>
+          {listPane.kind === 'index' && searching && (
+            results.length > 0 ? (
+              <EntryList entries={results} pal={pal} zh={zh} ageOf={ageOf} onOpen={openEntry} />
+            ) : (
+              <Text testID="knowledge-find-none" style={[styles.foot, {color: pal.fg3}]}>
+                {zh ? `没有匹配「${query.trim()}」的条目` : `Nothing matches “${query.trim()}”`}
+              </Text>
+            )
+          )}
+          {listPane.kind === 'index' && !searching && (
+            <IndexPane
+              view={view}
+              pal={pal}
+              zh={zh}
+              t={t}
+              ageOf={ageOf}
+              onOpen={openEntry}
+              onTopic={n => setPane({kind: 'topic', name: n})}
+              openTopics={openTopics}
+              onToggleTopic={toggleTopic}
+              whyOpen={whyOpen}
+              onToggleWhy={() => setWhyOpen(o => !o)}
+            />
+          )}
+          {listPane.kind === 'topic' && (
+            <EntryList entries={entriesOfTopic(view, listPane.name)} pal={pal} zh={zh} ageOf={ageOf} onOpen={openEntry} />
+          )}
+        </ScrollView>
+            </View>
+            <ScrollView style={styles.entryCol} contentContainerStyle={styles.body}>
+              {pane.kind === 'entry' ? (
+                <EntryPane
+              entry={entry}
+              loading={loading}
+              pal={pal}
+              zh={zh}
+              t={t}
+              ageOf={ageOf}
+              onAct={(kind, id) => {
+                setPending({kind, id});
+                setDraft('');
+                setError(null);
+              }}
+            />
+              ) : (
+                <View style={styles.emptyBox}>
+                  <Text style={[styles.empty, {color: pal.fg3}]}>{t('Pick an entry to read it here.', '选一条，在这里读。')}</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        ) : (
         <ScrollView
           ref={scroller}
           contentContainerStyle={styles.body}
@@ -357,6 +427,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
             />
           )}
         </ScrollView>
+        )}
 
         {pending ? (
           <ActBar
@@ -750,6 +821,9 @@ function SectionLabel({pal, text, count, accent}: {pal: Palette; text: string; c
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
 const styles = StyleSheet.create({
+  columns: {flex: 1, flexDirection: 'row', minHeight: 0},
+  listCol: {width: 340, borderRightWidth: StyleSheet.hairlineWidth},
+  entryCol: {flex: 1},
   whyLink: {fontSize: 11.5, paddingHorizontal: 14, paddingBottom: 8, marginTop: -2},
   find: {flexDirection: 'row', alignItems: 'center', gap: 7, marginHorizontal: 14,
     marginTop: 10, marginBottom: 2, height: 34, paddingHorizontal: 10, borderRadius: 9},

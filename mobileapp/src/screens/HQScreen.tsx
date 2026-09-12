@@ -30,6 +30,7 @@ import {AnsiLine, parseAnsi} from '../ui/ansi';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
+import {READING_WIDTH, SizeClass} from '../ui/layout';
 import {BoardSheet} from './BoardSheet';
 import {KnowledgeSheet} from './KnowledgeSheet';
 import {UsageSheet} from './UsageSheet';
@@ -63,8 +64,12 @@ export function HQScreen({route, navigation}: any) {
   return <HQView agent={route.params.agent} prefill={route.params.prefill} onBack={() => navigation.goBack()} />;
 }
 
-export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onBack?: () => void}) {
+export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass}) {
   const {select} = useWorkspace();
+  // The regular shell (D5): the report header spans the main pane, the console takes the
+  // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
+  // the right. Nothing folds — the header is not competing with a phone's height.
+  const regular = layout === 'regular';
   const {client, agents, conn, demo} = useAgents();
   const {pal, lang} = useApp();
   const zh = lang === 'zh';
@@ -384,19 +389,15 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
     {key: 'calls', label: t('Your call', '该你拍板'), badge: calls.length > 0 ? String(calls.length) : undefined},
     {key: 'acts', label: t("HQ's work", 'HQ 动作'), dot: actsNew},
-    {key: 'console', label: t('Console', '对话')},
+    ...(regular ? [] : [{key: 'console' as Zone, label: t('Console', '对话')}]),
   ];
+  // On the regular shell the console is always on screen; the inspector shows a zone.
+  const inspectorZone: Zone = activeZone === 'console' ? 'calls' : activeZone;
 
-  return (
-    <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
-      {/* The stack: the zone underneath, the floating chrome over it (drawn last, so it
-          is on top). See the collapse driver above for why the chrome does not live in
-          the column. */}
-      <View style={styles.stack}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {/* YOUR CALL — one decision card per blocked session. */}
-        {activeZone === 'calls' && (
-          <Animated.ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.pad, {paddingTop: chromeH + styles.pad.paddingVertical}]} onScroll={onZoneScroll} scrollEventThrottle={16}>
+  // The "your call" zone's body, rendered once: the phone scrolls it as a zone, the
+  // regular shell shows it in the inspector.
+  const callsBody = (
+    <>
             {calls.length === 0 ? (
               /* The quiet state is the COMMON state, and it was one grey sentence over an
                  empty screen — this zone saying nothing at the moment it is most often
@@ -502,30 +503,12 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
                 );
               })
             )}
-          </Animated.ScrollView>
-        )}
-
-        {/* WHAT HQ DID — the supervisor's own acts, with the fleet ledger beside them.
-            The old zone gave this height to the fleet's lifecycle and left the chief of
-            staff's own work with no surface anywhere in the app. */}
-        {activeZone === 'acts' && (
-          <HQActs
-            acts={actList}
-            ledger={ledger}
-            view={actsView}
-            onView={setActsView}
-            now={now}
-            pal={pal}
-            zh={zh}
-            onScroll={onZoneScroll}
-            topPad={chromeH}
-          />
-        )}
-
-        {/* CONSOLE — the conversation with gtmux HQ. */}
-        {activeZone === 'console' && (
-          <View style={styles.flex}>
-            <ChatView
+    </>
+  );
+  // The supervisor's own acts, likewise (topPad / onScroll differ per host).
+  const actsProps = {acts: actList, ledger, view: actsView, onView: setActsView, now, pal, zh};
+  const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
+    <ChatView
               agent={live}
               lines={paneLines}
               status={live.status}
@@ -546,13 +529,13 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
               // it re-hid → …) is broken in ChatView: it re-pins to the bottom when its
               // viewport changes while at the tail, so atBottom stays true and the header
               // stays put.
-              onLiveEdge={onLiveEdge}
-              topPad={chromeH}
+              onLiveEdge={onEdge}
+              topPad={topPad}
+              maxWidth={regular ? READING_WIDTH : undefined}
             />
-          </View>
-        )}
-
-        {/* Quick-command chips + command bar — available on every zone. */}
+  );
+  const composerEl = (
+    <>
         <View style={styles.chips}>
           {selected && (
             <View style={[styles.selPill, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
@@ -593,37 +576,10 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
             historyScope={historyScope(hq)}
             onSend={onSend}
           />
-      </KeyboardAvoidingView>
-
-      <Animated.View
-        pointerEvents="box-none"
-        style={[
-          styles.chrome,
-          {
-            // Opaque, because it FLOATS: the zone scrolls underneath it.
-            backgroundColor: pal.bg,
-            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-            // Two drivers, one at a time: the console's fold (collapse), or a top-anchored
-            // zone's scroll offset (zoneOffset). The other is 0 whenever this one moves.
-            transform: [{
-              translateY: Animated.add(
-                collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]}),
-                zoneOffset.interpolate({inputRange: [0, Math.max(chromeH, 1)], outputRange: [0, -Math.max(chromeH, 1)], extrapolate: 'clamp'}),
-              ),
-            }],
-          },
-        ]}>
-        {/* The header measures its NATURAL height on every layout while shown (not once):
-            the assessment text arrives after mount and can grow to two lines, and the
-            disclosure opens in place. Not while hidden — the chrome is off screen then,
-            and a re-sync when it comes back is enough. */}
-        <View
-          onLayout={e => {
-            if (chrome.current.hidden) return;
-            const h = e.nativeEvent.layout.height;
-            if (h > 0 && Math.abs(h - headerH) > 1) setHeaderH(h);
-          }}>
-          <HQHeader
+    </>
+  );
+  const headerEl = (
+    <HQHeader
             model={headerModel({
               verdict: assessment(digest, zh),
               urgent: calls.length > 0,
@@ -659,12 +615,9 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
             pal={pal}
             zh={zh}
           />
-        </View>
-
-        {/* Zone selector — each tab carries its own signal so a hidden zone still reports
-            itself. Folds with the header on the same driver: one gesture, all of the top
-            chrome, as on Detail. Measured once at natural height. */}
-        <View
+  );
+  const tabsEl = (
+    <View
           onLayout={e => {
             const h = e.nativeEvent.layout.height;
             if (tabsH === 0 && h > 0) setTabsH(h);
@@ -697,9 +650,9 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
             );
           })}
         </View>
-      </Animated.View>
-      </View>
-
+  );
+  const sheetsEl = (
+    <>
       {/* The situation board, read-only — the supervisor's own working memory. */}
       {/* The situation board, read-only.
           `pageSheet`, not a full-screen modal. A Modal renders in its OWN native
@@ -709,6 +662,7 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
           laid out below the status bar by iOS itself, and it adds a second way out
           (swipe down) so leaving never depends on hitting one glyph. */}
       <KnowledgeSheet
+        layout={layout}
         visible={knowledgeOpen}
         index={knowledge}
         nowSecs={now}
@@ -742,6 +696,99 @@ export function HQView({agent: hq, onBack}: {agent: Agent; prefill?: string; onB
         zh={zh}
         onClose={() => setBoardOpen(false)}
       />
+    </>
+  );
+
+  if (regular) {
+    return (
+      <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
+        {headerEl}
+        <View style={styles.wide}>
+          <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <View style={styles.flex}>{consoleEl(0)}</View>
+            {composerEl}
+          </KeyboardAvoidingView>
+          <View testID="hq-inspector" style={[styles.inspector, {borderLeftColor: pal.divLoud}]}>
+            {tabsEl}
+            {inspectorZone === 'acts' ? (
+              <HQActs {...actsProps} />
+            ) : (
+              <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad}>
+                {callsBody}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+        {sheetsEl}
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
+      {/* The stack: the zone underneath, the floating chrome over it (drawn last, so it
+          is on top). See the collapse driver above for why the chrome does not live in
+          the column. */}
+      <View style={styles.stack}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* YOUR CALL — one decision card per blocked session. */}
+        {activeZone === 'calls' && (
+          <Animated.ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.pad, {paddingTop: chromeH + styles.pad.paddingVertical}]} onScroll={onZoneScroll} scrollEventThrottle={16}>
+            {callsBody}
+          </Animated.ScrollView>
+        )}
+
+        {/* WHAT HQ DID — the supervisor's own acts, with the fleet ledger beside them.
+            The old zone gave this height to the fleet's lifecycle and left the chief of
+            staff's own work with no surface anywhere in the app. */}
+        {activeZone === 'acts' && <HQActs {...actsProps} onScroll={onZoneScroll} topPad={chromeH} />}
+
+        {/* CONSOLE — the conversation with gtmux HQ. */}
+        {activeZone === 'console' && <View style={styles.flex}>{consoleEl(chromeH, onLiveEdge)}</View>}
+
+        {/* Quick-command chips + command bar — available on every zone. */}
+        {composerEl}
+      </KeyboardAvoidingView>
+
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.chrome,
+          {
+            // Opaque, because it FLOATS: the zone scrolls underneath it.
+            backgroundColor: pal.bg,
+            opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+            // Two drivers, one at a time: the console's fold (collapse), or a top-anchored
+            // zone's scroll offset (zoneOffset). The other is 0 whenever this one moves.
+            transform: [{
+              translateY: Animated.add(
+                collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]}),
+                zoneOffset.interpolate({inputRange: [0, Math.max(chromeH, 1)], outputRange: [0, -Math.max(chromeH, 1)], extrapolate: 'clamp'}),
+              ),
+            }],
+          },
+        ]}>
+        {/* The header measures its NATURAL height on every layout while shown (not once):
+            the assessment text arrives after mount and can grow to two lines, and the
+            disclosure opens in place. Not while hidden — the chrome is off screen then,
+            and a re-sync when it comes back is enough. */}
+        <View
+          onLayout={e => {
+            if (chrome.current.hidden) return;
+            const h = e.nativeEvent.layout.height;
+            if (h > 0 && Math.abs(h - headerH) > 1) setHeaderH(h);
+          }}>
+          {headerEl}
+        </View>
+
+        {/* Zone selector — each tab carries its own signal so a hidden zone still reports
+            itself. Folds with the header on the same driver: one gesture, all of the top
+            chrome, as on Detail. Measured once at natural height. */}
+        {tabsEl}
+      </Animated.View>
+      </View>
+
+      {sheetsEl}
     </SafeAreaView>
   );
 }
@@ -752,6 +799,9 @@ const styles = StyleSheet.create({
   // Clipped: the chrome slides up out of this box, and without the clip a partly scrolled
   // header shows through the status bar (the title under the clock, 2026-09-12).
   stack: {flex: 1, overflow: 'hidden'},
+  // The regular shell: console column + inspector (D5).
+  wide: {flex: 1, flexDirection: 'row', minHeight: 0},
+  inspector: {width: 360, borderLeftWidth: StyleSheet.hairlineWidth},
   chrome: {position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10},
   pad: {paddingHorizontal: 14, paddingVertical: 10},
   strip: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},

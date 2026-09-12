@@ -52,7 +52,8 @@ describe('the HQ page’s top chrome', () => {
     // Three zones, three scroll views, each carrying the constant padding so its first
     // row can be scrolled clear of the chrome — and none measuring a distance the fold
     // itself changes.
-    expect(src.match(/topPad=\{chromeH\}/g)?.length).toBe(2); // console (ChatView) + acts (HQActs)
+    expect(src.match(/topPad=\{chromeH\}/g)?.length).toBe(1); // acts (HQActs)
+    expect(src).toContain('consoleEl(chromeH, onLiveEdge)'); // the console, through its element factory
     expect(src).toContain('paddingTop: chromeH + styles.pad.paddingVertical'); // calls
     expect(acts).toContain('contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]}');
   });
