@@ -8,6 +8,7 @@
 package hq
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"path/filepath"
 	"strconv"
 
@@ -103,7 +104,14 @@ func selfCheckSensor(now int64) {
 	if journalOver || gap {
 		sev = events.SevImportant // a broken log / cursor gap is a severe finding — surface it
 	}
+	// The knowledge lint rides the self-check: its summary is the hint, so HQ sees the
+	// base's health in the same knock that asks it to tidy up. Read-only; an unreadable
+	// ledger is simply no hint.
+	hint := ""
+	if rep, err := knowledge.Lint(now); err == nil {
+		hint = rep.Summary()
+	}
 	raiseMaintenance(pane, hqwake.ClassSelfCheck, hqsurface.ControlSelfCheck, "due ("+reason+")",
 		"review feed/ledger/memory health, clean silently, brief only on real action",
-		"", sev, now)
+		hint, sev, now)
 }

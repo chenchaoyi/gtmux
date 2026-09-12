@@ -22,9 +22,9 @@
 - [x] 3.6 `everyone`: issue URL prefill + copy; exempt from overdue floor
 
 ## Phase 4 — lint and neighbours
-- [ ] 4.1 `knowledge lint` (orphan, broken link, near-duplicate, stale, assumed-kind); wired into self-check
-- [ ] 4.2 `knowledge neighbours`; `capture --list` grouped; `add` shows closest three
-- [ ] 4.3 ACE constraints as tests: no wholesale rewrite; supersede keeps old text
+- [x] 4.1 `knowledge lint` (orphan, broken link, near-duplicate, stale, assumed-kind); wired into self-check
+- [x] 4.2 `knowledge neighbours`; `capture --list` grouped; `add` shows closest three
+- [x] 4.3 ACE constraints as tests: no wholesale rewrite; supersede keeps old text
 
 ## Phase 5 — surfaces
 - [ ] 5.1 API: index/entry carry kind/provenance/audience/status/neighbours; `act` gains `carry`, `withdraw`

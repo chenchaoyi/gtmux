@@ -47,6 +47,10 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgeWithdraw(rest) })
 	case "sync":
 		return knowledgeSync(rest)
+	case "lint":
+		return knowledgeLint(rest)
+	case "neighbours", "neighbors":
+		return knowledgeNeighbours(rest)
 	case "carriers":
 		return knowledgeCarriers(rest)
 	case "topic":
@@ -115,6 +119,7 @@ type knowledgeFlags struct {
 	audience, audienceRepo string
 	force                  bool
 	repo                   string
+	text                   string // --text on neighbours
 }
 
 func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
@@ -186,6 +191,8 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.hypothesis = true
 		case a == "--force":
 			f.force = true
+		case a == "--text":
+			f.text, err = take(&i, a)
 		case a == "--repo":
 			f.repo, err = take(&i, a)
 		case strings.HasPrefix(a, "--repo="):
@@ -287,6 +294,16 @@ func knowledgeAdd(args []string) error {
 	}
 	if _, exists := findLive(live, op.ID); exists {
 		return fmt.Errorf("id %s is a live entry — `gtmux knowledge supersede %s --title …` to replace it, or retitle", op.ID, op.ID)
+	}
+	// The closest live entries, named at the moment a near-duplicate is about to be
+	// written: `supersede` beats `add` when one of these is the same lesson.
+	if near := neighboursOf(live, entryText(op), op.Kind, "", 3); len(near) > 0 {
+		var names []string
+		for _, n := range near {
+			names = append(names, fmt.Sprintf("%s (%.2f)", n.ID, n.Score))
+		}
+		i18n.Sae("  closest live entries: "+strings.Join(names, " · ")+" — same lesson? supersede instead",
+			"  最像的已有条目: "+strings.Join(names, " · ")+" —— 是同一件事就用 supersede")
 	}
 	auditNote := "add " + op.ID
 	if len(f.captures) > 0 {
@@ -818,8 +835,17 @@ func knowledgeShow(args []string) int {
 	}
 	op, ok := findLive(live, args[0])
 	if !ok {
-		i18n.Sae("gtmux knowledge: no live entry '"+args[0]+"'", "gtmux knowledge: 找不到有效条目 '"+args[0]+"'")
-		return 1
+		// A superseded or retired entry is not live, but its text is not gone: the
+		// ledger keeps it, and `show` returns it with what became of it. (ACE's
+		// brevity-bias defence: a merge that shortened a lesson never destroys the
+		// longer text.)
+		old, fate, found := historyOf(args[0])
+		if !found {
+			i18n.Sae("gtmux knowledge: no entry '"+args[0]+"'", "gtmux knowledge: 找不到条目 '"+args[0]+"'")
+			return 1
+		}
+		i18n.Sae("("+fate+")", "（"+fate+"）")
+		op = old
 	}
 	fmt.Println("# " + op.Title)
 	if strings.TrimSpace(op.Body) != "" {
@@ -846,6 +872,8 @@ func knowledgeUsage() int {
   withdraw  <id> --why "<reason>"              # the entry was right, the promotion was not
   sync      [--force] [--repo <path>] [--json] # refresh every agent's knowledge block (or one repo's)
   carriers  [--json]                           # each agent's instruction file and whether it is in sync
+  lint      [--json]                           # audit the base: orphans, broken/outdated links, duplicates, stale, assumed kinds
+  neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
   list      [--topic <t>] [--kind <k>] [--json]     show <id>     render [--check]
@@ -876,6 +904,8 @@ func knowledgeUsage() int {
   withdraw  <id> --why "<原因>"                 # 条目没错，只是不值得搬
   sync      [--force] [--repo <路径>] [--json]  # 刷新每个 agent 的知识块（或某个仓库的）
   carriers  [--json]                            # 各 agent 的指令文件与是否同步
+  lint      [--json]                            # 体检：孤儿、断链/过时链接、疑似重复、超期、待确认的种类
+  neighbours <id> | --capture <键> | --text "…"    # 最相近的已有条目（先按种类，再看词重合）
   promotions [--json]                                 # 待落地队列
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
   list      [--topic <主题>] [--kind <种类>] [--json]     show <id>     render [--check]
@@ -1026,4 +1056,111 @@ func knowledgeConfirm(args []string) error {
 	}
 	op := knowledgeOp{Op: knowledgeOpConfirm, ID: id, At: time.Now().Unix(), Seq: events.LatestSeq()}
 	return commitKnowledgeOp(op, "confirm "+id)
+}
+
+// historyOf returns the last text an id carried and what became of it, for an id that is
+// no longer live: "superseded by <id>" or "retired: <why>".
+func historyOf(id string) (op knowledgeOp, fate string, found bool) {
+	ops, err := readKnowledgeOps()
+	if err != nil {
+		return op, "", false
+	}
+	for _, o := range ops {
+		switch {
+		case (o.Op == knowledgeOpAdd || o.Op == knowledgeOpSupersede) && o.ID == id:
+			op, found = o, true
+			applyMigration(&op)
+		case o.Op == knowledgeOpSupersede && o.Supersedes == id && found:
+			fate = "superseded by " + o.ID
+		case o.Op == knowledgeOpRetire && o.ID == id && found:
+			fate = "retired: " + o.Why
+		}
+	}
+	return op, fate, found
+}
+
+// knowledgeLint implements `gtmux knowledge lint [--json]`. It never edits.
+func knowledgeLint(args []string) int {
+	f, _ := parseKnowledgeFlags(args)
+	rep, err := Lint(time.Now().Unix())
+	if err != nil {
+		i18n.Sae("gtmux knowledge lint: "+err.Error(), "gtmux knowledge lint: "+err.Error())
+		return 1
+	}
+	if f.jsonOut {
+		if rep.Findings == nil {
+			rep.Findings = []Finding{}
+		}
+		b, _ := json.Marshal(rep)
+		fmt.Println(string(b))
+		return 0
+	}
+	if len(rep.Findings) == 0 {
+		i18n.Say(fmt.Sprintf("clean — %d entries, nothing to report", rep.Entries), fmt.Sprintf("干净 —— %d 条，没有发现", rep.Entries))
+		return 0
+	}
+	fmt.Println(rep.Summary())
+	for _, x := range rep.Findings {
+		fmt.Printf("  %-14s %-50s %s\n", x.Check, x.ID, x.Detail)
+	}
+	return 0
+}
+
+// knowledgeNeighbours implements `gtmux knowledge neighbours <id> | --capture <key> |
+// --text "…" [--json]`: the closest live entries to an entry, a pool candidate, or text.
+func knowledgeNeighbours(args []string) int {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		i18n.Sae("gtmux knowledge neighbours: "+err.Error(), "gtmux knowledge neighbours: "+err.Error())
+		return 2
+	}
+	live, err := liveKnowledge()
+	if err != nil {
+		i18n.Sae("gtmux knowledge neighbours: "+err.Error(), "gtmux knowledge neighbours: "+err.Error())
+		return 1
+	}
+	var text, kind, exclude string
+	switch {
+	case len(f.positional) == 1:
+		op, ok := findLive(live, f.positional[0])
+		if !ok {
+			i18n.Sae("gtmux knowledge neighbours: no live entry '"+f.positional[0]+"'", "gtmux knowledge neighbours: 找不到有效条目 '"+f.positional[0]+"'")
+			return 1
+		}
+		text, kind, exclude = entryText(op), op.Kind, op.ID
+	case len(f.captures) == 1:
+		cands, _ := readCandidates()
+		for _, c := range cands {
+			if c.Key == f.captures[0] {
+				text, kind = c.Lesson+" "+c.Context, kindForTopic(c.Topic)
+			}
+		}
+		if text == "" {
+			i18n.Sae("gtmux knowledge neighbours: no pending candidate '"+f.captures[0]+"'", "gtmux knowledge neighbours: 没有这条候选 '"+f.captures[0]+"'")
+			return 1
+		}
+	case f.text != "":
+		text = f.text
+	default:
+		i18n.Sae("usage: gtmux knowledge neighbours <id> | --capture <key> | --text \"…\" [--json]",
+			"用法：gtmux knowledge neighbours <id> | --capture <键> | --text \"…\" [--json]")
+		return 2
+	}
+	near := neighboursOf(live, text, kind, exclude, 5)
+	if f.jsonOut {
+		if near == nil {
+			near = []Neighbour{}
+		}
+		b, _ := json.Marshal(near)
+		fmt.Println(string(b))
+		return 0
+	}
+	if len(near) == 0 {
+		i18n.Say("no close entry", "没有相近的条目")
+		return 0
+	}
+	for _, n := range near {
+		fmt.Printf("  %.2f  %-50s %s\n", n.Score, n.ID, n.Title)
+	}
+	return 0
 }
