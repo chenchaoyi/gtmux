@@ -4,7 +4,7 @@
 - [x] 1.1 Create `internal/knowledge`; move ledger/render/api/pool/promote code out of `internal/hq`; hq keeps sensors, playbook, verb shims
 - [x] 1.2 Golden test: topic renders, JSON index, `capture --list`, `knowledge list/show` byte-identical before/after
 - [x] 1.3 `check-design.sh`: import rule `knowledge` is a leaf; `mine` does not import it
-- [ ] 1.4 Archive-style note in `code-architecture` spec
+- [x] 1.4 Archive-style note in `code-architecture` spec
 
 ## Phase 2 — the three axes
 - [x] 2.1 Ledger v2 fields: kind, tags, provenance{kind,count,last}, audience, status; read-time migration table; backup before first write
@@ -33,7 +33,7 @@
 - [x] 5.4 Demo data for both screens
 
 ## Phase 6 — docs and playbook
-- [ ] 6.1 Rewrite `docs/design/knowledge-layers.md` around the four audiences and three axes
-- [ ] 6.2 `docs/cli.md` + `docs/cli.zh.md`: new verbs, sync, lint
-- [ ] 6.3 Playbook bump: promote asks "who must know", the four words, withdraw, hypothesis, lint in self-check
-- [ ] 6.4 Run on this machine: migrate the live ledger, distribute, doctor green; report counts
+- [x] 6.1 Rewrite `docs/design/knowledge-layers.md` around the four audiences and three axes
+- [x] 6.2 `docs/cli.md` + `docs/cli.zh.md`: new verbs, sync, lint
+- [x] 6.3 Playbook bump: promote asks "who must know", the four words, withdraw, hypothesis, lint in self-check
+- [x] 6.4 Run on this machine: migrate the live ledger, distribute, doctor green; report counts

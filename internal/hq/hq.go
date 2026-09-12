@@ -149,6 +149,8 @@ import (
 //	      and asks HQ to say which it picked so a wrong pick is one glance to correct.
 //	      Promoted out of this fleet's knowledge base
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
+//	v40 — hq-knowledge-engine phases 2/4: `add --kind`, `--hypothesis`, neighbours before
+//	      add, lint's summary on the self-check knock; the stale `--target` sentence gone.
 //	v39 — hq-knowledge-engine phase 3: promote asks WHO MUST KNOW (`--for hq|machine|repo:<path>|
 //	      everyone`) instead of a free-text target; `land` without --ref lets gtmux carry it
 //	      (LOCAL.md / every agent's knowledge block / the repo's instruction file); `withdraw`
@@ -161,7 +163,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 39
+const hqPlaybookVersion = 40
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -171,6 +173,7 @@ var playbookFingerprints = map[int]string{
 	37: "c8141b83a879aeb6",
 	38: "bbcb7cd810ce0393",
 	39: "51ebe25128e38c49",
+	40: "0e5aa9f96309949d",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1579,7 +1582,12 @@ honor. The built-ins:
 
 Discipline:
 - **Capture (a VERIFIED loop step):** the moment you (or a session you observe) learn
-  something durable and reusable, land it with ` + "`gtmux knowledge add --topic <t> --title …`" + `
+  something durable and reusable, land it with ` + "`gtmux knowledge add --topic <t> --title … --kind <facts|howto|pitfalls|judgment|decisions>`" + `
+  (the kind says WHAT it is: a fact / how to / never do / how to judge / why this was chosen;
+  ` + "`--hypothesis`" + ` shelves an unverified lead; add names the three closest live entries first —
+  the same lesson means ` + "`supersede`" + `, not a second entry; ` + "`gtmux knowledge lint`" + `'s one-line
+  summary rides the self-check knock — orphans, broken links, near-duplicates, kinds awaiting
+  confirmation — it reports, your verbs act)
   (long detail via ` + "`--body-file -`" + `) — or ` + "`supersede <id>`" + ` when it sharpens an existing entry;
   keep entries tight. This is not optional goodwill — on a ` + "`correction`" + ` /
   ` + "`crash`" + ` / ` + "`recurrence`" + ` closure a capture VERDICT is MANDATORY (see CAPTURE? in the

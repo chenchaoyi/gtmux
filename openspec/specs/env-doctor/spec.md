@@ -446,3 +446,14 @@ suggestion is offered only when it is known to work.
 - **THEN** the row says which version it needs and `--fix` offers nothing, because writing
   an unknown feature name into the user's config is a startup error on a line they did not
   write
+
+### Requirement: doctor reports knowledge distribution per agent
+
+`gtmux doctor` SHALL show a "knowledge sync" row per supported agent with one of: in
+sync, missing, stale, hand-edited. `--fix` SHALL refresh missing and stale blocks and
+SHALL leave hand-edited ones with a message.
+
+#### Scenario: A new agent is installed after the last sync
+
+- **WHEN** an agent's global instruction file exists without the block
+- **THEN** doctor reports it missing and `--fix` installs the block

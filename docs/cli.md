@@ -534,20 +534,36 @@ corrections / environment deliberately stay out of dispatch context). Names are 
 (`a-z 0-9 -`, ≤ 40 bytes); built-ins, existing topics, and the reserved directory names
 refuse loudly. Declarations are add-only for now.
 
-**A charter-level lesson has a mechanical exit** (the thing hq's own ledger once said was
-missing): `promote` marks a live entry charter-level and writes a **promotion brief** —
-a self-contained hand-off under `knowledge/promotions/` carrying the lesson, the why, the
-suggested landing spot, and the entry's full provenance — which a human (or a worker they
-dispatch) carries to whichever durable rule carrier fits: a project `AGENTS.md`/`CLAUDE.md`,
-a team runbook, `LOCAL.md` (when the rule governs the supervisor itself), or gtmux's own
-repo — an openspec change for developers, or simply a GitHub issue with the brief attached
-for everyone else. `land --ref` closes the loop (the ref can be a PR, an issue URL, or a
-runbook name alike) and removes the brief,
-while the ledger keeps the whole lifecycle. Topic renders badge the state (`⚑ promoted
-(pending)` / `→ landed <ref>`), `promotions` heads its list with the count and the oldest
-age, and `gtmux doctor` flags a brief that has waited past its floor (~2 weeks) — an
-un-carried promotion is exactly the rot this exit ends. gtmux never writes into any repo
-itself, and nothing auto-dispatches: the queue surfaces, the commander decides.
+**Every entry sits on three axes** (hq-knowledge-engine): `kind` — what it is (`facts`,
+`howto`, `pitfalls`, `judgment`, `decisions`); `provenance` — where it came from and how
+often (`correction`, `recurrence`, `mined`, `capture`, `self`, with a hit count that
+`knowledge hit` and the transcript miner keep growing: a filed lesson still being hit says
+the carrier failed, not the memory); and `audience` — who must know it, set when it is
+promoted. `topic` stays as the id prefix and a free tag. Entries written before the axes
+are mapped at read time and marked `?` until `knowledge kind <id> <kind>` confirms; the
+ledger file is never rewritten. `--hypothesis` shelves an unverified lead in its own
+section, never distributed, until `confirm`.
+
+**A charter-level lesson has a mechanical exit**: `promote <id> --why … --for
+<hq|machine|repo:<path>|everyone>` asks one question — who must know it — and writes a
+**promotion brief** under `knowledge/promotions/` carrying the lesson, the why, the
+audience and its exit, and the entry's provenance. For `hq`, `machine` and `repo` gtmux
+carries it: `land <id>` writes the entry where that audience reads (LOCAL.md · the
+canonical `~/.config/gtmux/knowledge/machine.md` plus an index block in every agent's
+global instruction file · the repository's `AGENTS.md`, not committed) and closes the
+loop with that path as the ref. For `everyone` the brief holds a prefilled GitHub issue
+link; a person opens it and lands with `--ref <issue url>`. A promotion not worth
+carrying is `withdraw <id> --why` — the entry stays. `gtmux doctor` flags a brief past its
+floor (~2 weeks); `everyone` never counts, a product change is not a user's debt.
+`knowledge sync` refreshes every agent's block, `carriers` shows each one's state, and a
+block someone edited by hand is never overwritten without `--force`.
+
+**The base audits itself**: `knowledge lint` reports orphans, broken and outdated
+`[[links]]`, near-duplicates, stale hypotheses and promotions, and kinds still awaiting
+confirmation — it never edits, and its one-line summary rides the self-check knock.
+`neighbours` ranks the closest live entries by kind and keyword overlap (no model); `add`
+names the three closest before it writes, and `capture --list` groups the pool into
+families so one `add --capture k1,k2,…` files them as one lesson.
 
 **Migration is incremental:** the first mutation touching a topic moves its pre-ledger
 hand-written file verbatim to `knowledge/legacy/<topic>.md` (an untouched seeded

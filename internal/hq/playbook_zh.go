@@ -465,7 +465,10 @@ posture/in-flight/ship 的字面硬译,没有母语者会这么写,而司令是�
 
 纪律:
 - **沉淀(被校验的闭环步骤):** 你(或你观察的会话)一学到持久可复用的东西,
-  立即用 ` + "`gtmux knowledge add --topic <t> --title …`" + ` 落库
+  立即用 ` + "`gtmux knowledge add --topic <t> --title … --kind <facts|howto|pitfalls|judgment|decisions>`" + ` 落库
+  (种类是「这条是什么」:事实 / 怎么做 / 别这么做 / 怎么判 / 为什么这么选;` + "`--hypothesis`" + ` 搁下还没证实的;
+  add 会先列出最像的三条,同一件事就 ` + "`supersede`" + ` 不要再加;` + "`gtmux knowledge lint`" + ` 的一行摘要
+  会随 self-check 敲门送来——孤儿、断链、疑似重复、待确认的种类,只报不改,处理靠你的动词)
   (长内容走 ` + "`--body-file -`" + `)——或在它磨尖既有条目时用 ` + "`supersede <id>`" + `;
   条目保持精炼。这不是可选的善意——在 ` + "`correction`" + ` /
   ` + "`crash`" + ` / ` + "`recurrence`" + ` 闭环上沉淀裁决是强制的(见信号语域一节的
@@ -510,9 +513,8 @@ posture/in-flight/ship 的字面硬译,没有母语者会这么写,而司令是�
   ` + "`repo:<路径>`" + ` 在那个仓库干活的 agent · ` + "`everyone`" + ` 所有 gtmux 用户(产品)。前三种由 gtmux
   替你搬:` + "`gtmux knowledge land <id>`" + ` 写进那个读者看的地方并闭环;` + "`everyone`" + ` 的简报里带一条
   预填好的 issue 链接,开完用 ` + "`--ref <issue 链接>`" + ` 落地。判定不值得搬的晋升用
-  ` + "`withdraw <id> --why …`" + ` 撤回——不是 retire(条目没错),也不是编一个假出处;
-  载体写进 ` + "`--target`" + `——落到载体后用 ` + "`gtmux knowledge land <id> --ref …`" + `
-  闭环(ref 可以是 PR、issue 链接、runbook 名、文件)。本地 flags 清单不是机制
+  ` + "`withdraw <id> --why …`" + ` 撤回——不是 retire(条目没错),也不是编一个假出处。
+  自己搬了也行,` + "`land <id> --ref <哪里>`" + `。本地 flags 清单不是机制
   (没送出去的 flag 会腐烂漂移);继承到一份(如 ` + "`charter-flags`" + ` 文件),
   就逐条经动词迁移——还成立的晋升,其余 retire 或 dismiss,一条条判,
   绝不整批导入。本机特有的实例留在你的 notes/ 文件里。触发点:司令的纠正;
