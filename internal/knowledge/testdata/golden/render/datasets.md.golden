@@ -4,4 +4,4 @@
 > where the eval sets live
 
 - **the eval set lives under data/eval** — Regenerate with make eval.
-  · datasets/eval-set-location · 2026-09-10 · seq 165
+  · datasets/eval-set-location · 2026-09-10 · seq 165 · facts? · from self

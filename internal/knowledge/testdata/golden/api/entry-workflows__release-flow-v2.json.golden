@@ -1,1 +1,1 @@
-{"id":"workflows/release-flow-v2","topic":"workflows","title":"release flow: tag, wait, then install","at":1788995000,"seq":140,"body":"1. tag\n2. watch release.yml\n3. gtmux update\n4. gtmux hq to re-seed"}
+{"id":"workflows/release-flow-v2","topic":"workflows","title":"release flow: tag, wait, then install","at":1788995000,"seq":140,"kind":"howto","kind_assumed":true,"provenance":"self","hits":1,"body":"1. tag\n2. watch release.yml\n3. gtmux update\n4. gtmux hq to re-seed"}

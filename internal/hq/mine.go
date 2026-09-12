@@ -76,6 +76,12 @@ func runMinePass(o mine.Options) (mine.Report, error) {
 			return rep, err
 		}
 	}
+	// A recurring error the ledger already holds keeps counting on its entry: the miner
+	// reports the increment, the ledger's `hit` op records it. A signature nobody filed
+	// (still in the spool, or dismissed) has no entry and is left alone.
+	for _, c := range rep.Bumped {
+		_, _, _ = knowledge.HitByCaptureKey("pitfalls/mined-"+knowledge.Slug(c.Line), c.Count, rep.At)
+	}
 	return rep, nil
 }
 

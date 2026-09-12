@@ -7,11 +7,11 @@
 - [ ] 1.4 Archive-style note in `code-architecture` spec
 
 ## Phase 2 — the three axes
-- [ ] 2.1 Ledger v2 fields: kind, tags, provenance{kind,count,last}, audience, status; read-time migration table; backup before first write
-- [ ] 2.2 Kind vocabulary + validation; `knowledge kind <id> <kind>`
-- [ ] 2.3 Provenance counting: miner recurrence and correction lexicon bump a live entry's count
-- [ ] 2.4 `hypothesis` status: own section in render, excluded from distribution
-- [ ] 2.5 Render: canonical `machine.md`; topic files keep rendering per kind + tag
+- [x] 2.1 Ledger v2 fields: kind, tags, provenance{kind,count,last}, audience, status; read-time migration table; backup before first write
+- [x] 2.2 Kind vocabulary + validation; `knowledge kind <id> <kind>`
+- [x] 2.3 Provenance counting: miner recurrence and correction lexicon bump a live entry's count
+- [x] 2.4 `hypothesis` status: own section in render, excluded from distribution
+- [x] 2.5 Render: canonical `machine.md`; topic files keep rendering per kind + tag
 
 ## Phase 3 — audience and distribution
 - [ ] 3.1 `promote --for <hq|machine|repo <path>|everyone>`; brief carries the ready-to-paste block

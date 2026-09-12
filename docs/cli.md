@@ -481,6 +481,10 @@ gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--bod
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger
 gtmux knowledge retire <id> --why "…"                        # prune, with a reason that survives
 gtmux knowledge dismiss --capture <key>[,<key>…] --why "…"   # reject candidates WITH a trace
+gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
+gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
+gtmux knowledge confirm <id>                               # a hypothesis held up
+# add/supersede also take --kind, --tags a,b, --provenance <correction|recurrence|mined|capture|self>, --hypothesis
 gtmux knowledge topic <name> --desc "…"                      # declare your own topic (clients, datasets, …)
 gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
 gtmux knowledge land <id> --ref "<pr/spec>"                  # close the loop when it lands

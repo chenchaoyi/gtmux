@@ -39,6 +39,17 @@ type KnowledgeEntryRow struct {
 	PromoteTarget string `json:"promote_target,omitempty"`
 	LandedAt      int64  `json:"landed_at,omitempty"`
 	LandedRef     string `json:"landed_ref,omitempty"`
+	// The three axes (hq-knowledge-engine); KindAssumed says the kind is the migration
+	// table's guess and awaits confirmation.
+	Kind         string   `json:"kind,omitempty"`
+	KindAssumed  bool     `json:"kind_assumed,omitempty"`
+	Tags         []string `json:"tags,omitempty"`
+	Provenance   string   `json:"provenance,omitempty"`
+	Hits         int      `json:"hits,omitempty"`
+	HitLast      int64    `json:"hit_last,omitempty"`
+	Audience     string   `json:"audience,omitempty"`
+	AudienceRepo string   `json:"audience_repo,omitempty"`
+	Status       string   `json:"status,omitempty"`
 }
 
 // KnowledgeEntryFull is one entry WITH its body, for the detail read.
@@ -79,6 +90,8 @@ func rowOf(op knowledgeOp) KnowledgeEntryRow {
 		Pane: op.Pane, Task: op.Task, Capture: op.Capture, Legacy: op.Legacy,
 		PromotedAt: op.PromotedAt, PromoteWhy: op.PromoteWhy, PromoteTarget: op.PromoteTarget,
 		LandedAt: op.LandedAt, LandedRef: op.LandedRef,
+		Kind: op.Kind, KindAssumed: op.KindAssumed, Tags: op.Tags, Provenance: op.Provenance,
+		Hits: op.Hits, HitLast: op.HitLast, Audience: op.Audience, AudienceRepo: op.AudienceRepo, Status: op.Status,
 	}
 }
 

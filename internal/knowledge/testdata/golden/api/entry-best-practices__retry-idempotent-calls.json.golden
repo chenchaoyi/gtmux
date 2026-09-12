@@ -1,1 +1,1 @@
-{"id":"best-practices/retry-idempotent-calls","topic":"best-practices","title":"retry only idempotent calls","at":1788993000,"seq":120,"body":"A retry on a non-idempotent call is a duplicate side effect."}
+{"id":"best-practices/retry-idempotent-calls","topic":"best-practices","title":"retry only idempotent calls","at":1788993000,"seq":120,"kind":"judgment","kind_assumed":true,"provenance":"self","hits":1,"body":"A retry on a non-idempotent call is a duplicate side effect."}
