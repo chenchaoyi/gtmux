@@ -1,6 +1,6 @@
 # Change: hq-knowledge-engine
 
-> STATUS: proposal — awaiting the commander's approval before implementation.
+> STATUS: implemented 2026-09-12 (PRs #1040–#1046 and the docs PR that archived this). Approved by the commander on 2026-09-12 ("开始").
 > Design record: `docs/design/knowledge-engineering-research.md` (what was surveyed and
 > why each mechanism is borrowed or not) + `docs/design/knowledge-layers.md` (the three
 > layers and the exit, to be rewritten by this change).

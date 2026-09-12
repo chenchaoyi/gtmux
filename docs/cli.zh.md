@@ -478,18 +478,24 @@ corrections、environment）；`gtmux knowledge topic <名字> --desc "…"` 声
 名字是 slug（`a-z 0-9 -`，不超过 40 字节）；内置的、已存在的、以及保留目录名会明确报错。
 声明目前只能新增。
 
-**一条 charter 级的经验有一个机械的出口**（中控自己的台账曾经说这个出口是缺的）：
-`promote` 把一条有效条目标成 charter 级，并写出一份**晋升简报** ——
-`knowledge/promotions/` 下一份自足的交接材料，带着这条经验、为什么、建议落在哪儿，
-以及这条条目的完整来源。由人（或者他派出去的 worker）把它带到合适的持久规则载体上：
-某个项目的 `AGENTS.md`/`CLAUDE.md`、团队 runbook、`LOCAL.md`（当这条规则管的是中控自己），
-或者 gtmux 自己的仓库 —— 开发者提一个 openspec change，其他人就开个附上简报的 GitHub issue。
-`land --ref` 闭环（这个 ref 可以是 PR、issue 链接，也可以就是一个 runbook 的名字），
-并把简报删掉，而整条生命周期留在台账里。主题渲染会标出状态
-（`⚑ promoted (pending)` / `→ landed <ref>`），`promotions` 的列表开头给计数和最老的年龄，
-`gtmux doctor` 会标出等过了下限（约两周）的简报 ——
-一条没人带走的晋升，正是这个出口要终结的那种腐烂。gtmux 自己绝不往任何仓库里写东西，
-也没有任何自动派发：队列浮出来，指挥官定夺。
+**每条条目落在三条轴上**（hq-knowledge-engine）：`kind` 是它是什么（`facts` / `howto` / `pitfalls` /
+`judgment` / `decisions`）；`provenance` 是它从哪来、出现过几次（`correction` / `recurrence` / `mined` /
+`capture` / `self`，计数由 `knowledge hit` 和采矿器往上涨 —— 已落库的教训还在涨，说的是载体没被读，不是没记住）；
+`audience` 是谁必须知道它，晋升时填。`topic` 保留为 id 前缀和自由标签。轴出现之前写的条目读取时按固定表映射、
+带 `?` 标记，`knowledge kind <id> <kind>` 确认；台账文件永不改写。`--hypothesis` 把没证实的线索搁在自己的一节，
+不分发，`confirm` 转正。
+
+**守则级的教训有一个机械的出口**：`promote <id> --why … --for <hq|machine|repo:<路径>|everyone>` 只问一句 ——
+这条给谁看 —— 然后在 `knowledge/promotions/` 写一份**晋升简报**，带教训、理由、读者和它的出口、出处。
+`hq`、`machine`、`repo` 三种由 gtmux 替你搬：`land <id>` 把条目写到那个读者看的地方（LOCAL.md · 正本
+`~/.config/gtmux/knowledge/machine.md` 加每个 agent 全局指令文件里的索引块 · 仓库的 `AGENTS.md`，不提交），
+并以那个路径为 ref 闭环。`everyone` 的简报里带预填好的 GitHub issue 链接，人开完用 `--ref <issue 链接>` 落地。
+不值得搬的晋升 `withdraw <id> --why` 撤回，条目留着。`gtmux doctor` 会标出滞留超两周的简报；`everyone` 不计超期，
+产品的事不该由用户背。`knowledge sync` 刷新各 agent 的块，`carriers` 看每家状态，被手改过的块不给 `--force` 不覆盖。
+
+**台账自己体检**：`knowledge lint` 报孤儿、断链和过时的 `[[链接]]`、疑似重复、超期的猜想和晋升、待确认的种类，
+只报不改，一行摘要随 self-check 的敲门送到中控面前。`neighbours` 按种类和词重合找最相近的条目（不用模型）；
+`add` 写入前先列出最像的三条，`capture --list` 把候选池按家族分组，一次 `add --capture k1,k2,…` 收成一条。
 
 **迁移是渐进的**：第一次动到某个主题的写操作，会把它那份前台账时代的手写文件原样搬到
 `knowledge/legacy/<主题>.md`（种下去之后从没动过的占位文件则直接被替换），
