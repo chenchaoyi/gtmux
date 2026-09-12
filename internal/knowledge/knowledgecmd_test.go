@@ -2,6 +2,7 @@ package knowledge
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -208,16 +209,16 @@ func TestKnowledgePromotionVerbChain(t *testing.T) {
 
 	if rc := CmdKnowledge([]string{"promote", id,
 		"--why", "holds on any machine and belongs in the dispatch spec",
-		"--target", "agent-dispatch spec"}); rc != 0 {
+		"--for", "everyone"}); rc != 0 {
 		t.Fatal("promote failed")
 	}
-	// The brief exists and carries the case + provenance + closing instruction.
+	// The brief exists and carries the case + provenance + the audience's exit.
 	brief, err := os.ReadFile(promotionBriefPath(knowledgeOp{ID: id}))
 	if err != nil {
 		t.Fatalf("brief missing: %v", err)
 	}
 	for _, want := range []string{"goal text must ride a file", "belongs in the dispatch spec",
-		"agent-dispatch spec", "gtmux knowledge land " + id} {
+		"for: everyone", "issues/new?title=", "gtmux knowledge land " + id} {
 		if !strings.Contains(string(brief), want) {
 			t.Errorf("brief missing %q:\n%s", want, brief)
 		}
@@ -352,18 +353,21 @@ func TestCustomTopicWholeLoop(t *testing.T) {
 
 // The brief's closing instruction is the user's destination (hq-promote-anywhere):
 // a target names it; no target lists the carriers instead of mandating gtmux's repo.
-func TestPromotionBriefClosesWithTheUsersCarrier(t *testing.T) {
+// The brief closes with the AUDIENCE's exit — the one thing a person can actually do —
+// and a promotion with no audience says so instead of pretending to have one.
+func TestPromotionBriefClosesWithTheAudienceExit(t *testing.T) {
 	asHQ(t)
+	repo := t.TempDir()
 	if rc := CmdKnowledge([]string{"add", "--topic", "workflows", "--title", "targeted lesson"}); rc != 0 {
 		t.Fatal("add failed")
 	}
 	id := "workflows/" + Slug("targeted lesson")
-	if rc := CmdKnowledge([]string{"promote", id, "--why", "w", "--target", "team runbook: deploy checklist"}); rc != 0 {
+	if rc := CmdKnowledge([]string{"promote", id, "--why", "w", "--for", "repo:" + repo}); rc != 0 {
 		t.Fatal("promote failed")
 	}
 	b, _ := os.ReadFile(promotionBriefPath(knowledgeOp{ID: id}))
-	if !strings.Contains(string(b), "Land it at: team runbook: deploy checklist") {
-		t.Fatalf("a targeted brief must close with the target:\n%s", b)
+	if !strings.Contains(string(b), "for: repo:"+repo) || !strings.Contains(string(b), "Exit: gtmux writes it into "+filepath.Join(repo, "AGENTS.md")) {
+		t.Fatalf("a repo brief must name the file gtmux will write:\n%s", b)
 	}
 	if strings.Contains(string(b), "Land it in the gtmux repo") {
 		t.Fatalf("the hardcoded repo mandate must be gone:\n%s", b)
@@ -374,16 +378,13 @@ func TestPromotionBriefClosesWithTheUsersCarrier(t *testing.T) {
 	}
 	id2 := "workflows/" + Slug("untargeted lesson")
 	if rc := CmdKnowledge([]string{"promote", id2, "--why", "w"}); rc != 0 {
-		t.Fatal("promote 2 failed")
+		t.Fatal("promote 2 (no --for) must still succeed until the screens can choose")
 	}
 	b, _ = os.ReadFile(promotionBriefPath(knowledgeOp{ID: id2}))
-	for _, carrier := range []string{"AGENTS.md", "runbook", "LOCAL.md", "GitHub issue"} {
-		if !strings.Contains(string(b), carrier) {
-			t.Errorf("the target-less brief must offer carrier %q:\n%s", carrier, b)
+	for _, want := range []string{"No audience was chosen", "withdraw " + id2, "gtmux knowledge land " + id2} {
+		if !strings.Contains(string(b), want) {
+			t.Errorf("the audience-less brief must say so and still close: %q missing\n%s", want, b)
 		}
-	}
-	if !strings.Contains(string(b), "gtmux knowledge land "+id2) {
-		t.Errorf("the land instruction must always close the brief:\n%s", b)
 	}
 }
 

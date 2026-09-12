@@ -43,6 +43,12 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgePromote(rest) })
 	case "land":
 		return knowledgeMutation(func() error { return knowledgeLand(rest) })
+	case "withdraw":
+		return knowledgeMutation(func() error { return knowledgeWithdraw(rest) })
+	case "sync":
+		return knowledgeSync(rest)
+	case "carriers":
+		return knowledgeCarriers(rest)
 	case "topic":
 		return knowledgeMutation(func() error { return knowledgeTopic(rest) })
 	case "kind":
@@ -105,6 +111,10 @@ type knowledgeFlags struct {
 	tags             []string
 	hypothesis       bool
 	n                int
+	// --for <hq|machine|repo:<path>|everyone> on promote; --force on sync / land.
+	audience, audienceRepo string
+	force                  bool
+	repo                   string
 }
 
 func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
@@ -174,6 +184,20 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.tags = append(f.tags, splitKeys(strings.TrimPrefix(a, "--tags="))...)
 		case a == "--hypothesis":
 			f.hypothesis = true
+		case a == "--force":
+			f.force = true
+		case a == "--repo":
+			f.repo, err = take(&i, a)
+		case strings.HasPrefix(a, "--repo="):
+			f.repo = strings.TrimPrefix(a, "--repo=")
+		case a == "--for":
+			var v string
+			v, err = take(&i, a)
+			if err == nil {
+				f.audience, f.audienceRepo, err = parseAudience(v)
+			}
+		case strings.HasPrefix(a, "--for="):
+			f.audience, f.audienceRepo, err = parseAudience(strings.TrimPrefix(a, "--for="))
 		case a == "--n":
 			var v string
 			v, err = take(&i, a)
@@ -417,27 +441,219 @@ func knowledgePromote(args []string) error {
 		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
 	}
 	if promotionPending(entry) {
-		return fmt.Errorf("%s is already promoted and pending — land it (`gtmux knowledge land %s --ref …`) before promoting again", id, id)
+		return fmt.Errorf("%s is already promoted and pending — land it (`gtmux knowledge land %s`) or `withdraw` it before promoting again", id, id)
+	}
+	// The audience replaces the free-text target (D4): "who must know" is a choice from
+	// four, and each has an exit a person can actually take. A free-text target is
+	// refused; a missing --for is tolerated (the screens gain their picker in phase 5)
+	// but the brief says so, loudly.
+	if f.target != "" {
+		return fmt.Errorf("--target is gone: say who must know it with --for <%s|repo:<path>> (the brief carries the exit for each)",
+			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
+	}
+	if f.audience == "" {
+		i18n.Sae("⚠ no --for: who must know this? (hq | machine | repo:<path> | everyone) — the brief will have no exit until you `withdraw` and promote again with --for",
+			"⚠ 没给 --for：这条给谁看？(hq | machine | repo:<路径> | everyone) —— 不选就没有出口，之后得 `withdraw` 再带 --for 重新晋升")
 	}
 	op := knowledgeOp{
 		Op: knowledgeOpPromote, ID: id, Topic: entry.Topic,
 		At: time.Now().Unix(), Seq: events.LatestSeq(),
-		Why: f.why, Target: f.target,
+		Why: f.why, Audience: f.audience, AudienceRepo: f.audienceRepo,
 	}
-	return commitKnowledgeOp(op, "promote "+id)
+	note := "promote " + id
+	if f.audience != "" {
+		note += " --for " + f.audience
+		if f.audienceRepo != "" {
+			note += ":" + f.audienceRepo
+		}
+	}
+	return commitKnowledgeOp(op, note)
 }
 
 // knowledgeLand closes a pending promotion with the repo reference; the commit
 // path's promotion sweep removes the brief.
+// knowledgeLand closes a promotion. With --ref, the person carried it and says where.
+// Without, gtmux carries it for the audiences it can reach (hq → LOCAL.md, machine → the
+// canonical file and every agent's block, repo → that repository's instruction file,
+// uncommitted) and the ref is where it wrote. `everyone` always needs the ref: the issue
+// a person opened.
 func knowledgeLand(args []string) error {
 	f, err := parseKnowledgeFlags(args)
 	if err != nil {
 		return err
 	}
-	if len(f.positional) != 1 || f.ref == "" {
-		return fmt.Errorf("land needs <id> and --ref (where it landed: a PR, a spec, a seed change)")
+	if len(f.positional) != 1 {
+		return fmt.Errorf("land needs <id> [--ref <where it landed>]")
 	}
-	return KnowledgeLand(f.positional[0], f.ref)
+	id := f.positional[0]
+	if f.ref != "" {
+		return KnowledgeLand(id, f.ref)
+	}
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	entry, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	if !promotionPending(entry) {
+		return fmt.Errorf("%s is not pending — nothing to land", id)
+	}
+	switch entry.Audience {
+	case AudienceHQ:
+		path, err := carryIntoLocal(entry)
+		if err != nil {
+			return err
+		}
+		i18n.Say("✓ written into "+path, "✓ 已写进 "+path)
+		return KnowledgeLand(id, "LOCAL.md")
+	case AudienceMachine:
+		rep, err := SyncMachine(f.force)
+		if err != nil {
+			return err
+		}
+		sayRefused(rep)
+		i18n.Say(fmt.Sprintf("✓ %s rendered · blocks written: %s · kept: %s", MachinePath(), strings.Join(rep.Written, ","), strings.Join(rep.Kept, ",")),
+			fmt.Sprintf("✓ 已渲染 %s · 写入: %s · 已一致: %s", MachinePath(), strings.Join(rep.Written, ","), strings.Join(rep.Kept, ",")))
+		return KnowledgeLand(id, MachinePath())
+	case AudienceRepo:
+		path, refused, err := SyncRepo(entry.AudienceRepo, f.force)
+		if err != nil {
+			return err
+		}
+		if refused {
+			return fmt.Errorf("%s: gtmux's block was hand-edited — review it, then `land --force`", path)
+		}
+		i18n.Say("✓ written into "+path+" — NOT committed; that is yours", "✓ 已写进 "+path+"，未提交，提交由你来")
+		return KnowledgeLand(id, path)
+	case AudienceEveryone:
+		return fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url>`", IssueURL(entry), id)
+	default:
+		return fmt.Errorf("%s has no audience — `withdraw %s` then `promote %s --why … --for <hq|machine|repo:<path>|everyone>`, or land it yourself with --ref", id, id, id)
+	}
+}
+
+func sayRefused(rep SyncReport) {
+	if len(rep.Refused) > 0 {
+		i18n.Sae("⚠ hand-edited, left alone (use --force to overwrite): "+strings.Join(rep.Refused, ", "),
+			"⚠ 被手改过，没有动（--force 可覆盖）: "+strings.Join(rep.Refused, ", "))
+	}
+}
+
+// knowledgeWithdraw returns a promoted entry to live: `gtmux knowledge withdraw <id> --why`.
+func knowledgeWithdraw(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 || f.why == "" {
+		return fmt.Errorf("withdraw needs <id> and --why (why this is not worth carrying — it survives in the journal)")
+	}
+	id := f.positional[0]
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	entry, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	if !promotionPending(entry) {
+		return fmt.Errorf("%s is not pending — nothing to withdraw", id)
+	}
+	if err := validateKnowledgeContent("", "", f.why); err != nil {
+		return err
+	}
+	op := knowledgeOp{Op: knowledgeOpWithdraw, ID: id, At: time.Now().Unix(), Seq: events.LatestSeq(), Why: f.why}
+	return commitKnowledgeOp(op, "withdraw "+id+": "+f.why)
+}
+
+// knowledgeSync refreshes every carrier: `gtmux knowledge sync [--force] [--repo <path>]`.
+// It runs from anywhere — the carriers are the user's files, not the supervisor's.
+func knowledgeSync(args []string) int {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		i18n.Sae("gtmux knowledge sync: "+err.Error(), "gtmux knowledge sync: "+err.Error())
+		return 2
+	}
+	if f.repo != "" {
+		path, refused, err := SyncRepo(f.repo, f.force)
+		if err != nil {
+			i18n.Sae("gtmux knowledge sync: "+err.Error(), "gtmux knowledge sync: "+err.Error())
+			return 1
+		}
+		if refused {
+			i18n.Sae("⚠ "+path+": hand-edited, left alone (--force to overwrite)", "⚠ "+path+"：被手改过，没有动（--force 可覆盖）")
+			return 1
+		}
+		i18n.Say("✓ "+path+" — not committed", "✓ "+path+"，未提交")
+		return 0
+	}
+	rep, err := SyncMachine(f.force)
+	if err != nil {
+		i18n.Sae("gtmux knowledge sync: "+err.Error(), "gtmux knowledge sync: "+err.Error())
+		return 1
+	}
+	if f.jsonOut {
+		b, _ := json.Marshal(rep)
+		fmt.Println(string(b))
+		return 0
+	}
+	sayRefused(rep)
+	i18n.Say(fmt.Sprintf("✓ %s · written: %s · in sync: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)),
+		fmt.Sprintf("✓ %s · 写入: %s · 已一致: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
+	if len(rep.Refused) > 0 {
+		return 1
+	}
+	return 0
+}
+
+func orNone(s []string) string {
+	if len(s) == 0 {
+		return "—"
+	}
+	return strings.Join(s, ",")
+}
+
+// knowledgeCarriers lists the carriers and their state: `gtmux knowledge carriers [--json]`.
+func knowledgeCarriers(args []string) int {
+	f, _ := parseKnowledgeFlags(args)
+	sts, err := CarrierStatuses()
+	if err != nil {
+		i18n.Sae("gtmux knowledge carriers: "+err.Error(), "gtmux knowledge carriers: "+err.Error())
+		return 1
+	}
+	if f.jsonOut {
+		if sts == nil {
+			sts = []CarrierStatus{}
+		}
+		b, _ := json.Marshal(sts)
+		fmt.Println(string(b))
+		return 0
+	}
+	for _, s := range sts {
+		fmt.Printf("  %-10s %-13s %s\n", s.Agent, s.State, s.Path)
+	}
+	return 0
+}
+
+// parseAudience reads a --for value: hq | machine | everyone | repo:<path>.
+func parseAudience(v string) (audience, repo string, err error) {
+	if strings.HasPrefix(v, AudienceRepo+":") {
+		p := strings.TrimPrefix(v, AudienceRepo+":")
+		if p == "" {
+			return "", "", fmt.Errorf("--for repo:<path> needs the repository path")
+		}
+		return AudienceRepo, cleanRepo(p), nil
+	}
+	if v == AudienceRepo {
+		return "", "", fmt.Errorf("--for repo needs the path: --for repo:<path>")
+	}
+	if !validAudience(v) {
+		return "", "", fmt.Errorf("unknown audience %q (want hq | machine | repo:<path> | everyone)", v)
+	}
+	return v, "", nil
 }
 
 // knowledgePromotions lists the pending export queue — read-only, open to
@@ -472,7 +688,14 @@ func knowledgePromotions(args []string) int {
 		len(pending), humanize.AgeShort(now-oldestAt)),
 		fmt.Sprintf("%d 条待落地晋升,最久 %s 前:", len(pending), humanize.AgeShort(now-oldestAt)))
 	for _, op := range pending {
-		fmt.Printf("  %-40s  %s  (%s)\n", op.ID, humanize.AgeShort(now-op.PromotedAt), promotionBriefPath(op))
+		aud := op.Audience
+		if aud == "" {
+			aud = "?"
+		}
+		if op.AudienceRepo != "" {
+			aud += ":" + op.AudienceRepo
+		}
+		fmt.Printf("  %-40s  %-4s  for %-9s  (%s)\n", op.ID, humanize.AgeShort(now-op.PromotedAt), aud, promotionBriefPath(op))
 	}
 	return 0
 }
@@ -618,8 +841,11 @@ func knowledgeUsage() int {
   kind      <id> <kind>                                    # confirm or correct an entry's kind
   hit       <id> [--n N] [--why "<where>"]                 # the lesson was hit again
   confirm   <id>                                           # a hypothesis held up
-  promote   <id> --why "<case>" [--target "<repo spot>"]   # charter-level → export brief
-  land      <id> --ref "<pr/spec>"                         # close the loop when it lands
+  promote   <id> --why "<case>" --for <hq|machine|repo:<path>|everyone>   # who must know it
+  land      <id> [--ref "<where>"] [--force]   # no --ref: gtmux writes it (LOCAL.md / machine blocks / repo file)
+  withdraw  <id> --why "<reason>"              # the entry was right, the promotion was not
+  sync      [--force] [--repo <path>] [--json] # refresh every agent's knowledge block (or one repo's)
+  carriers  [--json]                           # each agent's instruction file and whether it is in sync
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
   list      [--topic <t>] [--kind <k>] [--json]     show <id>     render [--check]
@@ -645,8 +871,11 @@ func knowledgeUsage() int {
   kind      <id> <种类>                               # 确认或改正一条的种类
   hit       <id> [--n N] [--why "<在哪>"]             # 这条教训又被踩到了
   confirm   <id>                                      # 猜想被证实，转正
-  promote   <id> --why "<理由>" [--target "<落点>"]   # 守则级 → 生成外送简报
-  land      <id> --ref "<pr/spec>"                    # 落地后闭环
+  promote   <id> --why "<理由>" --for <hq|machine|repo:<路径>|everyone>   # 这条给谁看
+  land      <id> [--ref "<落在哪>"] [--force]   # 不带 --ref 就由 gtmux 写进去（LOCAL.md / 各 agent 的块 / 仓库文件）
+  withdraw  <id> --why "<原因>"                 # 条目没错，只是不值得搬
+  sync      [--force] [--repo <路径>] [--json]  # 刷新每个 agent 的知识块（或某个仓库的）
+  carriers  [--json]                            # 各 agent 的指令文件与是否同步
   promotions [--json]                                 # 待落地队列
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
   list      [--topic <主题>] [--kind <种类>] [--json]     show <id>     render [--check]

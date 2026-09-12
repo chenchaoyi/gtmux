@@ -42,9 +42,12 @@ const (
 	// knowledgeOpKind sets a live entry's kind (confirming a migrated guess or correcting
 	// it); knowledgeOpHit records the lesson being hit again (Hits = the increment);
 	// knowledgeOpConfirm turns a hypothesis into a live entry.
-	knowledgeOpKind    = "kind"
-	knowledgeOpHit     = "hit"
-	knowledgeOpConfirm = "confirm"
+	// knowledgeOpWithdraw closes a promotion WITHOUT landing it: the entry was right, the
+	// promotion was not (neither retire nor a fake land says that).
+	knowledgeOpWithdraw = "withdraw"
+	knowledgeOpKind     = "kind"
+	knowledgeOpHit      = "hit"
+	knowledgeOpConfirm  = "confirm"
 )
 
 // Content bounds. They refuse LOUDLY at write time — knowledge is curated
@@ -359,7 +362,14 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 			o := op
 			mark(op.ID, func(e *knowledgeOp) {
 				e.PromotedAt, e.PromoteWhy, e.PromoteTarget = o.At, o.Why, o.Target
+				e.Audience, e.AudienceRepo = o.Audience, o.AudienceRepo
 				e.LandedAt, e.LandedRef = 0, "" // a re-promote re-opens a landed entry
+			})
+		case knowledgeOpWithdraw:
+			mark(op.ID, func(e *knowledgeOp) {
+				e.PromotedAt, e.PromoteWhy, e.PromoteTarget = 0, "", ""
+				e.LandedAt, e.LandedRef = 0, ""
+				e.Audience, e.AudienceRepo = "", ""
 			})
 		case knowledgeOpLand:
 			o := op
@@ -414,9 +424,23 @@ func PendingPromotionsSummary(now int64) (count int, oldestSec int64) {
 	if err != nil {
 		return 0, 0
 	}
-	pending, oldestAt := pendingPromotions(live)
+	pending, _ := pendingPromotions(live)
 	if len(pending) == 0 {
 		return 0, 0
+	}
+	// The overdue floor is a person's debt. A brief for EVERYONE is the product's
+	// (D6): it is counted, but its age never makes the queue read as slipped.
+	var oldestAt int64
+	for _, op := range pending {
+		if op.Audience == AudienceEveryone {
+			continue
+		}
+		if oldestAt == 0 || op.PromotedAt < oldestAt {
+			oldestAt = op.PromotedAt
+		}
+	}
+	if oldestAt == 0 {
+		return len(pending), 0
 	}
 	return len(pending), now - oldestAt
 }

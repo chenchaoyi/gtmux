@@ -149,6 +149,10 @@ import (
 //	      and asks HQ to say which it picked so a wrong pick is one glance to correct.
 //	      Promoted out of this fleet's knowledge base
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
+//	v39 — hq-knowledge-engine phase 3: promote asks WHO MUST KNOW (`--for hq|machine|repo:<path>|
+//	      everyone`) instead of a free-text target; `land` without --ref lets gtmux carry it
+//	      (LOCAL.md / every agent's knowledge block / the repo's instruction file); `withdraw`
+//	      for a promotion that was not worth carrying.
 //	v38 — `add --capture` takes several keys: same-family leads become ONE entry with every
 //	      provenance, instead of one accepted and the rest dismissed (HQ measured 11 keys
 //	      across 5 projects for one lesson on the first mined batch).
@@ -157,7 +161,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 38
+const hqPlaybookVersion = 39
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -166,6 +170,7 @@ var playbookFingerprints = map[int]string{
 	36: "e2154b7242720d6b",
 	37: "c8141b83a879aeb6",
 	38: "bbcb7cd810ce0393",
+	39: "51ebe25128e38c49",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1623,10 +1628,14 @@ Discipline:
   entries, and if it is CHARTER-LEVEL (it holds on another machine AND belongs in a
   DURABLE RULE CARRIER beyond this machine's KB — a project's AGENTS.md/CLAUDE.md, a team
   runbook, LOCAL.md when it governs YOU, or gtmux's own playbook/specs/code), PROMOTE it:
-  ` + "`gtmux knowledge promote <id> --why … [--target …]`" + ` writes a carryable BRIEF under
-  ` + "`knowledge/promotions/`" + ` — that queue IS the exit; name the carrier in ` + "`--target`" + ` —
-  and when it lands there, close the loop with ` + "`gtmux knowledge land <id> --ref …`" + `
-  (the ref can be a PR, an issue URL, a runbook name, a file). A local flags list
+  ` + "`gtmux knowledge promote <id> --why … --for <hq|machine|repo:<path>|everyone>`" + ` writes a
+  carryable BRIEF under ` + "`knowledge/promotions/`" + ` — that queue IS the exit. ` + "`--for`" + ` answers
+  ONE question, WHO MUST KNOW IT: ` + "`hq`" + ` = only you (LOCAL.md) · ` + "`machine`" + ` = every agent on this
+  machine · ` + "`repo:<path>`" + ` = the agents working in that repository · ` + "`everyone`" + ` = every gtmux
+  user (the product). For the first three gtmux carries it: ` + "`gtmux knowledge land <id>`" + ` writes it
+  where that audience reads and closes the loop; for ` + "`everyone`" + ` the brief holds a prefilled
+  issue link and you land with ` + "`--ref <issue url>`" + `. A promotion you judge not worth carrying is
+  ` + "`withdraw <id> --why …`" + ` — never ` + "`retire`" + ` (the entry is right) and never a fake ref. A local flags list
   is NOT the mechanism (an un-carried flag rots and drifts); if you inherited one
   (e.g. a ` + "`charter-flags`" + ` file), migrate it through the verbs — promote what still
   holds, retire or dismiss the rest, judged entry-by-entry, never bulk-imported. A
