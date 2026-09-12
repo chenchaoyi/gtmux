@@ -19,17 +19,10 @@
 // pane_id) for their real waiting/working/idle state.
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-  SectionList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Platform,
-} from 'react-native';
+import {Platform, Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useWorkspace} from '../state/WorkspaceContext';
+import {SizeClass} from '../ui/layout';
 import {useFocusEffect} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Agent, PaneRow, StatusName, paneRowToAgent} from '../api/types';
@@ -122,8 +115,11 @@ export function PaneBrowserScreen({navigation}: any) {
   return <PaneBrowserView onBack={() => navigation.goBack()} />;
 }
 
-export function PaneBrowserView({onBack}: {onBack?: () => void}) {
+export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => void; layout?: SizeClass}) {
   const {select} = useWorkspace();
+  // The regular shell lays the sessions out as a grid of cards (MOBILE §5): a 14-session
+  // list on a 1194pt pane is a column down the left with nothing beside it.
+  const regular = layout === 'regular';
   const {client, isGuest, agents} = useAgents();
   const {pal, lang, mac} = useApp();
   const [panes, setPanes] = useState<PaneRow[]>([]);
@@ -250,6 +246,63 @@ export function PaneBrowserView({onBack}: {onBack?: () => void}) {
   const allCollapsed = groups.length > 0 && groups.every(g => collapsed.has(g.title));
   const toggleAll = () => persist(allCollapsed ? new Set() : new Set(groups.map(g => g.title)));
 
+  // One session header and one item renderer, for the phone's list and the grid alike.
+  const sessionHeader = (s: Section) => {
+          const isCollapsed = collapsed.has(s.title);
+          return (
+            <TouchableOpacity
+              activeOpacity={0.65}
+              onPress={() => toggle(s.title)}
+              accessibilityLabel={`${TestIds.panes.section}-${s.title}`}
+              style={[styles.sectionHeader, {backgroundColor: pal.bg, borderBottomColor: pal.divider}]}>
+              <View style={styles.chevBox}>
+                <Chevron size={15} color={pal.fg2} open={!isCollapsed} />
+              </View>
+              <Text style={[styles.sessionName, {color: pal.fg}]} numberOfLines={1}>
+                {s.title}
+              </Text>
+              {/* Every window id — a COLLAPSED session must still say what it holds, and
+                  that is exactly when someone is scanning for the @N on their tab. */}
+              {s.winIDs !== '' && (
+                <Text style={[styles.sessionWins, {color: pal.fg2}]} numberOfLines={1}>
+                  {s.winIDs}
+                </Text>
+              )}
+              <SessionRollup group={s} pal={pal} lang={lang} />
+            </TouchableOpacity>
+          );
+  };
+  const itemEl = (item: BrowserItem) =>
+    item.kind === 'win' ? (
+      <WindowBand key={'w:' + item.win.id} win={item.win} pal={pal} />
+    ) : (
+      <PaneRowView
+        key={item.row.pane_id}
+        row={item.row}
+        joined={byPane.get(item.row.pane_id)}
+        status={statusOf(item.row, byPane)}
+        pal={pal}
+        onPress={() => select({kind: 'pane', agent: paneRowToAgent(item.row)})}
+      />
+    );
+  const emptyEl = loaded ? (
+    <View style={styles.empty}>
+      <Text style={[styles.emptyText, {color: pal.fg2}]}>
+        {q
+          ? lang === 'zh' ? '没有匹配的 pane' : 'No panes match'
+          : isGuest
+            ? lang === 'zh' ? '主人没有共享任何 pane' : 'No panes shared with you'
+            : lang === 'zh' ? '没有 tmux pane' : 'No tmux panes'}
+      </Text>
+      {!q && !isGuest && (
+        <Text style={[styles.emptyHint, {color: pal.fg3}]}>
+          {lang === 'zh'
+            ? `在 ${mac?.name || '服务器'} 的 tmux 里开个窗口就会出现在这里`
+            : `Open a tmux window on ${mac?.name || 'your server'} and it shows up here`}
+        </Text>
+      )}
+    </View>
+  ) : null;
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.panes.screen}>
       {/* header: back · title · count · collapse-all */}
@@ -311,6 +364,24 @@ export function PaneBrowserView({onBack}: {onBack?: () => void}) {
         />
       </View>
 
+      {regular ? (
+        <ScrollView
+          style={styles.safe}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={sections.length === 0 ? styles.emptyPad : styles.grid}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+          {sections.length === 0
+            ? emptyEl
+            : sections.map(sec => (
+                <View key={sec.title} style={styles.gridCell}>
+                  <View style={[styles.gridCard, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+                    {sessionHeader(sec)}
+                    {sec.data.map(itemEl)}
+                  </View>
+                </View>
+              ))}
+        </ScrollView>
+      ) : (
       <SectionList
         sections={sections}
         keyExtractor={(it, i) => (it.kind === 'win' ? 'w:' + it.win.id + i : it.row.pane_id)}
@@ -319,66 +390,11 @@ export function PaneBrowserView({onBack}: {onBack?: () => void}) {
         onRefresh={onRefresh}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={sections.length === 0 ? styles.emptyPad : styles.listPad}
-        renderSectionHeader={({section}) => {
-          const s = section as Section;
-          const isCollapsed = collapsed.has(s.title);
-          return (
-            <TouchableOpacity
-              activeOpacity={0.65}
-              onPress={() => toggle(s.title)}
-              accessibilityLabel={`${TestIds.panes.section}-${s.title}`}
-              style={[styles.sectionHeader, {backgroundColor: pal.bg, borderBottomColor: pal.divider}]}>
-              <View style={styles.chevBox}>
-                <Chevron size={15} color={pal.fg2} open={!isCollapsed} />
-              </View>
-              <Text style={[styles.sessionName, {color: pal.fg}]} numberOfLines={1}>
-                {s.title}
-              </Text>
-              {/* Every window id — a COLLAPSED session must still say what it holds, and
-                  that is exactly when someone is scanning for the @N on their tab. */}
-              {s.winIDs !== '' && (
-                <Text style={[styles.sessionWins, {color: pal.fg2}]} numberOfLines={1}>
-                  {s.winIDs}
-                </Text>
-              )}
-              <SessionRollup group={s} pal={pal} lang={lang} />
-            </TouchableOpacity>
-          );
-        }}
-        renderItem={({item}) =>
-          item.kind === 'win' ? (
-            <WindowBand win={item.win} pal={pal} />
-          ) : (
-            <PaneRowView
-              row={item.row}
-              joined={byPane.get(item.row.pane_id)}
-              status={statusOf(item.row, byPane)}
-              pal={pal}
-              onPress={() => select({kind: 'pane', agent: paneRowToAgent(item.row)})}
-            />
-          )
-        }
-        ListEmptyComponent={
-          loaded ? (
-            <View style={styles.empty}>
-              <Text style={[styles.emptyText, {color: pal.fg2}]}>
-                {q
-                  ? lang === 'zh' ? '没有匹配的 pane' : 'No panes match'
-                  : isGuest
-                    ? lang === 'zh' ? '主人没有共享任何 pane' : 'No panes shared with you'
-                    : lang === 'zh' ? '没有 tmux pane' : 'No tmux panes'}
-              </Text>
-              {!q && !isGuest && (
-                <Text style={[styles.emptyHint, {color: pal.fg3}]}>
-                  {lang === 'zh'
-                    ? `在 ${mac?.name || '服务器'} 的 tmux 里开个窗口就会出现在这里`
-                    : `Open a tmux window on ${mac?.name || 'your server'} and it shows up here`}
-                </Text>
-              )}
-            </View>
-          ) : null
-        }
+        renderSectionHeader={({section}) => sessionHeader(section as Section)}
+        renderItem={({item}) => itemEl(item)}
+        ListEmptyComponent={emptyEl}
       />
+      )}
     </SafeAreaView>
   );
 }
@@ -496,6 +512,7 @@ function PaneRowView({
 }) {
   const isAgent = row.tier === 'agent';
   const [copied, setCopied] = useState(false);
+  const [hover, setHover] = useState(false);
   // An agent row leads with what it is DOING, from the radar's already-derived task —
   // not the agent NAME, which repeats down the whole list while the thing that tells the
   // rows apart sits below in grey. The avatar already carries identity. Reusing the
@@ -514,12 +531,13 @@ function PaneRowView({
   if (dir) bits.push(dir);
   if (!isAgent && row.command && row.command !== label) bits.push(row.command);
   return (
-    <TouchableOpacity
+    <Pressable
       testID={`${TestIds.panes.row}-${row.pane_id}`}
       accessibilityLabel={`${TestIds.panes.row}-${row.pane_id}`}
       onPress={onPress}
-      activeOpacity={0.6}
-      style={[styles.row, {borderBottomColor: pal.divider}]}>
+      onHoverIn={() => setHover(true)}
+      onHoverOut={() => setHover(false)}
+      style={({pressed}) => [styles.row, {borderBottomColor: pal.divider}, hover && {backgroundColor: pal.rowSelected}, pressed && {opacity: 0.6}]}>
       <AgentAvatar
         agent={paneRowToAgent(row)}
         size={30}
@@ -568,7 +586,7 @@ function PaneRowView({
         </View>
       </View>
       <Text style={[styles.chevron, {color: pal.fg3}]}>›</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -587,6 +605,10 @@ const styles = StyleSheet.create({
   searchGlyph: {fontSize: 16, marginRight: 6},
   search: {flex: 1, fontSize: 14, padding: 0},
   listPad: {paddingBottom: 40},
+  // The regular shell's grid: two cards per row, each its own rounded surface.
+  grid: {flexDirection: 'row', flexWrap: 'wrap', padding: 8, paddingBottom: 40},
+  gridCell: {width: '50%', padding: 6},
+  gridCard: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
   emptyPad: {flexGrow: 1},
   // session card header — a strong container: the name in full fg weight, a fold
   // chevron, and the status rollup right-aligned.

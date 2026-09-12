@@ -15,10 +15,10 @@
 - [x] 1.7 `shellDrift.test.ts` (D3) + `WorkspaceContext` tests (the push deep-link now goes through `select`, covered there) + `split-shell` e2e on the iPad Pro 13" simulator
 
 ## Phase 2 — wide layouts
-- [ ] 2.1 HQ page: route wrapper + view; regular = header + console + inspector (D5)
-- [ ] 2.2 All panes: grid of session cards on regular; search field in the header
-- [ ] 2.3 Knowledge sheet: list | entry on regular (D11)
-- [ ] 2.4 Pointer hover tint on rows and buttons (D8)
+- [x] 2.1 HQ page: route wrapper + view; regular = header + console + inspector (D5)
+- [x] 2.2 All panes: grid of session cards on regular; search field in the header
+- [x] 2.3 Knowledge sheet: list | entry on regular (D11)
+- [x] 2.4 Pointer hover tint on rows and buttons (D8)
 
 ## Phase 3 — keyboard
 - [ ] 3.1 `KeyCommands.swift` native bridge (UIKeyCommand → event)

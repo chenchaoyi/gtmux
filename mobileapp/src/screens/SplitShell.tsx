@@ -69,9 +69,9 @@ export function SplitShell() {
       />
     );
   } else if (selection?.kind === 'hq') {
-    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} />;
+    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} layout="regular" />;
   } else if (selection?.kind === 'panes') {
-    main = <PaneBrowserView key="panes" />;
+    main = <PaneBrowserView key="panes" layout="regular" />;
   } else {
     main = (
       <View style={styles.mainEmpty}>

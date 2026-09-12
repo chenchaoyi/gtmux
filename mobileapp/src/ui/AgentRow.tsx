@@ -6,7 +6,7 @@
 // NOT bundle third-party logos (DESIGN §6); color is never used for identity.
 
 import React from 'react';
-import {Animated, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -68,6 +68,7 @@ export function AgentRow({
   // 1.5s and a JS-driven scale would stutter against it.
   const grip = React.useRef(new Animated.Value(0)).current;
   const armed = React.useRef(false);
+  const [hover, setHover] = React.useState(false);
 
   const down = () => {
     if (!onLongPress) return;
@@ -91,20 +92,24 @@ export function AgentRow({
       style={{
         transform: [{scale: grip.interpolate({inputRange: [0, 1], outputRange: [1, PRESS_SCALE]})}],
       }}>
-    <TouchableOpacity
+    <Pressable
       testID={`${TestIds.agent.row}-${agent.pane_id}`}
       accessibilityLabel={`${TestIds.agent.row}-${agent.pane_id}`}
-      activeOpacity={0.85}
       onPress={onPress}
       onPressIn={down}
       onPressOut={up}
       onLongPress={onLongPress ? held : undefined}
       delayLongPress={LONG_PRESS_MS}
-      style={[
+      // A pointer (iPad trackpad / mouse) tints the row it is over, the same tint a
+      // selected row wears (MOBILE §5); a finger never sees it.
+      onHoverIn={() => setHover(true)}
+      onHoverOut={() => setHover(false)}
+      style={({pressed}) => [
         styles.row,
         {borderBottomColor: pal.divider},
         isWaiting && {backgroundColor: pal.waitingTint},
-        selected && {backgroundColor: pal.rowSelected},
+        (selected || hover) && {backgroundColor: pal.rowSelected},
+        pressed && {opacity: 0.85},
       ]}>
       {selected && <View style={styles.accent} />}
       {/* avatar + status badge */}
@@ -173,7 +178,7 @@ export function AgentRow({
         {!!time && <Text style={[styles.time, {color: pal.fg3}]}>{time}</Text>}
         {agent.source !== 'native' && <Text style={[styles.chev, {color: pal.fg3}]}>›</Text>}
       </View>
-    </TouchableOpacity>
+    </Pressable>
     </Animated.View>
   );
 }
