@@ -426,10 +426,10 @@ gtmux quiet status   # 现在实际生效的是哪档
 ## `gtmux knowledge` —— 知识台账（带来源的条目）
 
 ```
-gtmux knowledge add --topic pitfalls --title "wrangler 会 TLS reset，重试" [--body-file -] [--capture <键>] [--seq-range a..b]
+gtmux knowledge add --topic pitfalls --title "wrangler 会 TLS reset，重试" [--body-file -] [--capture <键>[,<键>…]] [--seq-range a..b]
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # 替换一条；历史留在台账里
 gtmux knowledge retire <id> --why "…"                        # 剪掉，理由会留下来
-gtmux knowledge dismiss --capture <键> --why "…"             # 驳回一条候选，并留痕
+gtmux knowledge dismiss --capture <键>[,<键>…] --why "…"    # 驳回候选，并留痕
 gtmux knowledge topic <名字> --desc "…"                      # 声明你自己的主题（clients、datasets…）
 gtmux knowledge promote <id> --why "…" [--target "…"]        # 够 charter 级 → 导出简报
 gtmux knowledge land <id> --ref "<pr/spec>"                  # 落地之后闭环

@@ -231,18 +231,50 @@ const Sigil = "»"
 
 // stripInjected removes non-user-typed content: harness XML blocks (closed then any
 // dangling open one), then any LINE that is a `[SYSTEM NOTIFICATION …]` notice or one
-// of gtmux's own injected lines.
+// of gtmux's own injected lines — INCLUDING the continuation of a wake line whose
+// quoted field spans lines. A wake line quotes the commander's instruction
+// (`said:"…"`, `tail:"…"`), and when that instruction itself contained newlines the
+// rest of it lands on lines that carry no sigil. Dropping only the sigil line let those
+// lines through as "typed" text: the transcript miner harvested them as the commander's
+// words and queued one instruction three times (2026-09-12, measured by HQ: 10 of 12
+// leads sourced from its own pane were such echoes). The continuation is recognised by
+// quote parity — a sigil line that leaves a `"` open owns every following line until
+// one closes it — so a typed line that FOLLOWS a balanced wake line (a `gtmux send`
+// landing on a box that already held one) still survives, as dispatch's needle
+// pipeline requires.
 func stripInjected(s string) string {
 	s = harnessBlockRe.ReplaceAllString(s, "")
 	s = harnessOpenRe.ReplaceAllString(s, "")
 	var kept []string
+	inQuote := false
 	for _, ln := range strings.Split(s, "\n") {
-		if isInjectedLine(strings.TrimSpace(ln)) {
+		t := strings.TrimSpace(ln)
+		if isGtmuxEchoLine(t) {
+			inQuote = strings.Count(t, `"`)%2 == 1
+			continue
+		}
+		if inQuote {
+			if strings.Count(t, `"`)%2 == 1 {
+				inQuote = false
+			}
+			continue // still inside the wake line's quoted field
+		}
+		if isInjectedLine(t) {
 			continue
 		}
 		kept = append(kept, ln)
 	}
 	return strings.TrimSpace(strings.Join(kept, "\n"))
+}
+
+// isGtmuxEchoLine reports whether a line is one of gtmux's own injected wake lines.
+func isGtmuxEchoLine(t string) bool {
+	for _, p := range gtmuxEchoPrefixes {
+		if strings.HasPrefix(t, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // isInjectedLine reports whether a line was injected rather than typed.

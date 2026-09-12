@@ -148,12 +148,15 @@ import (
 //	      and asks HQ to say which it picked so a wrong pick is one glance to correct.
 //	      Promoted out of this fleet's knowledge base
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
+//	v38 — `add --capture` takes several keys: same-family leads become ONE entry with every
+//	      provenance, instead of one accepted and the rest dismissed (HQ measured 11 keys
+//	      across 5 projects for one lesson on the first mined batch).
 //	v37 — hq-transcript-mining: the pending-distill spool now also carries LEADS the
 //	      transcript miner queued (`·transcript`): correction-shaped exchanges and recurring
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 37
+const hqPlaybookVersion = 38
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -161,6 +164,7 @@ const hqPlaybookVersion = 37
 var playbookFingerprints = map[int]string{
 	36: "e2154b7242720d6b",
 	37: "c8141b83a879aeb6",
+	38: "bbcb7cd810ce0393",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1631,7 +1635,9 @@ Discipline:
   noise, dismiss with the reason. ` + "`gtmux knowledge mine --status`" + ` shows the tally.
   DRAIN the spool
   CANDIDATE BY CANDIDATE, never by truncation: ` + "`gtmux knowledge add … --capture <key>`" + `
-  ACCEPTS one (every same-key line merges into that ONE entry, provenance inherited), and
+  ACCEPTS one (every same-key line merges into that ONE entry, provenance inherited) —
+  and when several keys are ONE lesson, name them all (` + "`--capture k1,k2`" + ` or the flag
+  repeated): one entry, every provenance kept, nothing to dismiss — and
   ` + "`gtmux knowledge dismiss --capture <key> --why …`" + ` REJECTS one with a trace — you
   are the quality gate, and now your rejections are evidence too. Across both sources:
   fold durable cross-cutting facts through the verbs (` + "`supersede`" + ` over appending a

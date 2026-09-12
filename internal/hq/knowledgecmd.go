@@ -80,10 +80,14 @@ func hqHomeForMessage() string { return state.HQHome() }
 
 // knowledgeFlags is the shared flag set of the content-carrying verbs.
 type knowledgeFlags struct {
-	topic, title, bodyFile, capture, seqRange, why string
-	target, ref, descText                          string
-	jsonOut                                        bool
-	positional                                     []string
+	topic, title, bodyFile, seqRange, why string
+	target, ref, descText                 string
+	// captures: every --capture key given (repeatable, or comma-separated). Same-family
+	// candidates are ONE lesson; consuming them into one entry keeps every provenance,
+	// where accepting one and dismissing ten scattered it across dismissal records.
+	captures   []string
+	jsonOut    bool
+	positional []string
 }
 
 func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
@@ -112,9 +116,11 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 		case strings.HasPrefix(a, "--body-file="):
 			f.bodyFile = strings.TrimPrefix(a, "--body-file=")
 		case a == "--capture":
-			f.capture, err = take(&i, a)
+			var v string
+			v, err = take(&i, a)
+			f.captures = append(f.captures, splitKeys(v)...)
 		case strings.HasPrefix(a, "--capture="):
-			f.capture = strings.TrimPrefix(a, "--capture=")
+			f.captures = append(f.captures, splitKeys(strings.TrimPrefix(a, "--capture="))...)
 		case a == "--seq-range":
 			f.seqRange, err = take(&i, a)
 		case strings.HasPrefix(a, "--seq-range="):
@@ -213,12 +219,12 @@ func knowledgeAdd(args []string) error {
 		return fmt.Errorf("id %s is a live entry — `gtmux knowledge supersede %s --title …` to replace it, or retitle", op.ID, op.ID)
 	}
 	auditNote := "add " + op.ID
-	if f.capture != "" {
-		consumed, err := consumeCandidates(f.capture)
+	if len(f.captures) > 0 {
+		consumed, err := consumeCandidateKeys(f.captures)
 		if err != nil {
 			return err
 		}
-		op.Capture = f.capture
+		op.Capture = strings.Join(f.captures, ",")
 		for _, c := range consumed {
 			if c.Seq > 0 {
 				op.Seqs = append(op.Seqs, c.Seq)
@@ -226,7 +232,7 @@ func knowledgeAdd(args []string) error {
 		}
 		newest := consumed[len(consumed)-1]
 		op.Pane, op.Task = newest.Pane, newest.Task
-		auditNote += fmt.Sprintf(" (capture %s ×%d)", f.capture, len(consumed))
+		auditNote += fmt.Sprintf(" (capture %s ×%d)", op.Capture, len(consumed))
 	}
 	return commitKnowledgeOp(op, auditNote)
 }
@@ -407,20 +413,21 @@ func knowledgeDismiss(args []string) error {
 	if err != nil {
 		return err
 	}
-	if f.capture == "" || f.why == "" {
+	if len(f.captures) == 0 || f.why == "" {
 		return fmt.Errorf("dismiss needs --capture <key> and --why")
 	}
 	if err := validateKnowledgeContent("", "", f.why); err != nil {
 		return err
 	}
-	consumed, err := consumeCandidates(f.capture)
+	consumed, err := consumeCandidateKeys(f.captures)
 	if err != nil {
 		return err
 	}
-	events.AuditKnowledge(fmt.Sprintf("dismiss %s ×%d: %s", f.capture, len(consumed), f.why),
+	keys := strings.Join(f.captures, ",")
+	events.AuditKnowledge(fmt.Sprintf("dismiss %s ×%d: %s", keys, len(consumed), f.why),
 		time.Now().Unix())
-	i18n.Say(fmt.Sprintf("dismissed %d candidate(s) under %s", len(consumed), f.capture),
-		fmt.Sprintf("已驳回 %d 条候选（%s）", len(consumed), f.capture))
+	i18n.Say(fmt.Sprintf("dismissed %d candidate(s) under %s", len(consumed), keys),
+		fmt.Sprintf("已驳回 %d 条候选（%s）", len(consumed), keys))
 	return nil
 }
 
@@ -529,10 +536,10 @@ func knowledgeShow(args []string) int {
 
 func knowledgeUsage() int {
 	i18n.Say(`usage: gtmux knowledge <verb>
-  add       --topic <t> --title "<one line>" [--body-file <path|->] [--capture <key>] [--seq-range a..b]
+  add       --topic <t> --title "<one line>" [--body-file <path|->] [--capture <key>[,<key>…]] [--seq-range a..b]
   supersede <id> --title "<one line>" [--body-file <path|->] [--why "<reason>"]
   retire    <id> --why "<reason>"
-  dismiss   --capture <key> --why "<reason>"
+  dismiss   --capture <key>[,<key>…] --why "<reason>"
   topic     <name> --desc "<what belongs here>"            # declare your own topic
   promote   <id> --why "<case>" [--target "<repo spot>"]   # charter-level → export brief
   land      <id> --ref "<pr/spec>"                         # close the loop when it lands
@@ -551,10 +558,10 @@ func knowledgeUsage() int {
   machine's, spent at dispatch rather than always present. A lesson filed in the
   wrong one is a lesson its readers never get. docs/design/knowledge-layers.md.`,
 		`用法：gtmux knowledge <子命令>
-  add       --topic <主题> --title "<一句话>" [--body-file <路径|->] [--capture <键>] [--seq-range a..b]
+  add       --topic <主题> --title "<一句话>" [--body-file <路径|->] [--capture <键>[,<键>…]] [--seq-range a..b]
   supersede <id> --title "<一句话>" [--body-file <路径|->] [--why "<原因>"]
   retire    <id> --why "<原因>"
-  dismiss   --capture <键> --why "<原因>"
+  dismiss   --capture <键>[,<键>…] --why "<原因>"
   topic     <名称> --desc "<这里放什么>"               # 声明你自己的主题
   promote   <id> --why "<理由>" [--target "<落点>"]   # 守则级 → 生成外送简报
   land      <id> --ref "<pr/spec>"                    # 落地后闭环
@@ -593,4 +600,43 @@ func entryID(topic, title string) (string, error) {
 			"标题里没有 ASCII 词，生成不出 id —— 请写成 `<ascii-slug>: %s`"), title)
 	}
 	return topic + "/" + sl, nil
+}
+
+// splitKeys reads one --capture value: a key, or several joined by commas.
+func splitKeys(v string) []string {
+	var out []string
+	for _, k := range strings.Split(v, ",") {
+		if k = strings.TrimSpace(k); k != "" {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// consumeCandidateKeys consumes every key, all or nothing: an unknown key fails the
+// whole call BEFORE any spool line is removed, so a typo in the third key cannot leave
+// the first two consumed and the entry unwritten.
+func consumeCandidateKeys(keys []string) ([]captureCandidate, error) {
+	cands, err := readCandidates()
+	if err != nil {
+		return nil, err
+	}
+	have := map[string]bool{}
+	for _, c := range cands {
+		have[c.Key] = true
+	}
+	for _, k := range keys {
+		if !have[k] {
+			return nil, fmt.Errorf("no pending candidate with key %q (gtmux capture --list)", k)
+		}
+	}
+	var all []captureCandidate
+	for _, k := range keys {
+		consumed, err := consumeCandidates(k)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, consumed...)
+	}
+	return all, nil
 }

@@ -477,10 +477,10 @@ every other reading untrustworthy.
 ## `gtmux knowledge` — the knowledge ledger (entries with provenance)
 
 ```
-gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--body-file -] [--capture <key>] [--seq-range a..b]
+gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--body-file -] [--capture <key>[,<key>…]] [--seq-range a..b]
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger
 gtmux knowledge retire <id> --why "…"                        # prune, with a reason that survives
-gtmux knowledge dismiss --capture <key> --why "…"            # reject a candidate WITH a trace
+gtmux knowledge dismiss --capture <key>[,<key>…] --why "…"   # reject candidates WITH a trace
 gtmux knowledge topic <name> --desc "…"                      # declare your own topic (clients, datasets, …)
 gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
 gtmux knowledge land <id> --ref "<pr/spec>"                  # close the loop when it lands
