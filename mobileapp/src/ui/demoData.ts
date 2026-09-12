@@ -469,24 +469,33 @@ export function demoKnowledge(zh: boolean): KnowledgeIndex {
     topics: [
       {name: 'corrections', count: 3, builtin: true,
         desc: zh ? '司令纠正过的判断' : 'judgements the commander corrected'},
-      {name: 'fleet', count: 2, desc: zh ? '这支队伍怎么运转' : 'how this fleet behaves'},
+      {name: 'fleet', count: 3, desc: zh ? '这支队伍怎么运转' : 'how this fleet behaves'},
       {name: 'ops', count: 1, desc: zh ? '发版与装机' : 'releasing and installing'},
     ],
     entries: [
       e('k1', 'corrections', zh ? '「跑通了」不等于「验证过」——要贴命令输出' : '"it works" is not "verified" — paste the output', 3, {
         pane: '%7', task: zh ? '接入付款回调' : 'wire the payment callback',
+        kind: 'judgment', provenance: 'correction', hits: 2,
       }),
       e('k2', 'corrections', zh ? '发版前先问一句，别自己决定装机' : 'ask before installing, never decide it alone', 26, {
         promoted_at: now - 20 * 3600,
         promote_why: zh ? '这条已经纠正过两次' : 'corrected twice now',
-        promote_target: 'AGENTS.md',
+        kind: 'judgment', provenance: 'correction', hits: 3, audience: 'machine',
       }),
-      e('k3', 'fleet', zh ? 'web 那条线的测试要跑两遍才稳' : 'the web suite only settles on a second run', 50),
+      e('k3', 'fleet', zh ? 'web 那条线的测试要跑两遍才稳' : 'the web suite only settles on a second run', 50, {
+        kind: 'pitfalls', provenance: 'mined', hits: 4,
+      }),
       e('k4', 'ops', zh ? '装机前确认手机没锁' : 'check the phone is unlocked before installing', 96, {
-        landed_at: now - 90 * 3600, landed_ref: 'AGENTS.md#install',
+        landed_at: now - 90 * 3600, landed_ref: 'AGENTS.md#install', kind: 'howto', provenance: 'self',
+      }),
+      e('k5', 'fleet', zh ? '往正在跑的会话派活，应该默认拒绝' : 'a send into a busy pane should be refused by default', 30, {
+        promoted_at: now - 8 * 3600,
+        promote_why: zh ? '这是产品的事，不是这台机器的' : 'this is the product’s, not this machine’s',
+        kind: 'pitfalls', provenance: 'correction', hits: 2, audience: 'everyone',
+        issue_url: 'https://github.com/chenchaoyi/gtmux/issues/new?title=%5Bknowledge%5D+refuse+a+send+into+a+busy+pane',
       }),
     ],
-    promotions: {pending: 1, oldest_sec: 20 * 3600},
+    promotions: {pending: 2, oldest_sec: 20 * 3600},
     candidates: {pending: 2, oldest_sec: 3 * 3600},
   };
 }

@@ -32,6 +32,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Linking,
 } from 'react-native';
 import {KnowledgeAct, KnowledgeEntry, KnowledgeIndex} from '../api/client';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
@@ -42,6 +43,12 @@ import {
   buildKnowledgeView,
   entriesOfTopic,
   landPrompt,
+  withdrawPrompt,
+  carryPrompt,
+  actsFor,
+  actButtonLabel,
+  axesLine,
+  audienceWord,
   matchEntries,
   provenanceOf,
   retirePrompt,
@@ -91,7 +98,8 @@ type Pane =
   | {kind: 'index'}
   | {kind: 'topic'; name: string}
   | {kind: 'entry'; id: string; from: {kind: 'index'} | {kind: 'topic'; name: string}};
-type Pending = {kind: 'land' | 'retire'; id: string} | null;
+type PendingKind = 'land' | 'retire' | 'withdraw' | 'carry';
+type Pending = {kind: PendingKind; id: string} | null;
 
 /** How many entries an expanded topic shows before "All N". A glance, not the list. */
 const TOPIC_PEEK = 5;
@@ -205,11 +213,17 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   );
 
   const submit = React.useCallback(async () => {
-    if (!pending || draft.trim() === '') return;
+    if (!pending) return;
+    // carry needs no text: the promotion already decided; the bar only asks "now?".
+    if (pending.kind !== 'carry' && draft.trim() === '') return;
     const a: KnowledgeAct =
       pending.kind === 'land'
         ? {op: 'land', id: pending.id, ref: draft.trim()}
-        : {op: 'retire', id: pending.id, why: draft.trim()};
+        : pending.kind === 'retire'
+          ? {op: 'retire', id: pending.id, why: draft.trim()}
+          : pending.kind === 'withdraw'
+            ? {op: 'withdraw', id: pending.id, why: draft.trim()}
+            : {op: 'carry', id: pending.id};
     const r = await act(a);
     if (!r.ok) {
       // The server's own words. "has no pending promotion to land" tells the reader what
@@ -220,7 +234,13 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
     setPending(null);
     setDraft('');
     setError(null);
-    setDone(pending.kind === 'land' ? (zh ? '已标记落地' : 'marked landed') : zh ? '已退休' : 'retired');
+    setDone(
+      pending.kind === 'land' || pending.kind === 'carry'
+        ? zh ? '已标记落地' : 'marked landed'
+        : pending.kind === 'withdraw'
+          ? zh ? '已撤回晋升' : 'promotion withdrawn'
+          : zh ? '已退休' : 'retired',
+    );
     // A retired entry is gone from the live set, so there is nothing left to look at.
     setPane({kind: 'index'});
   }, [act, draft, pending, zh]);
@@ -570,7 +590,7 @@ function EntryPane({
   zh: boolean;
   t: (en: string, cn: string) => string;
   ageOf: (s?: number) => string;
-  onAct: (kind: 'land' | 'retire', id: string) => void;
+  onAct: (kind: PendingKind, id: string) => void;
 }) {
   if (loading) return <ActivityIndicator style={styles.spinner} color={pal.fg3} />;
   if (!entry) {
@@ -595,6 +615,11 @@ function EntryPane({
         {entry.topic} · {ageOf(entry.at)}
         {prov ? ` · ${prov}` : ''}
       </Text>
+      {!!axesLine(entry, zh) && (
+        <Text testID="knowledge-axes" style={[styles.entryMeta, {color: pal.fg2}]}>
+          {axesLine(entry, zh)}
+        </Text>
+      )}
 
       {pendingPromotion && (
         <View style={[styles.promoBox, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
@@ -602,8 +627,18 @@ function EntryPane({
             ⚑ {t('promoted, waiting to be carried', '已提升，待带走')} · {ageOf(entry.promoted_at)}
           </Text>
           {!!entry.promote_why && <Text style={[styles.promoText, {color: pal.fg2}]}>{entry.promote_why}</Text>}
-          {!!entry.promote_target && (
+          {audienceWord(entry.audience, zh) ? (
+            <Text style={[styles.promoText, {color: pal.fg3}]}>
+              {t('for: ', '给：')}
+              {audienceWord(entry.audience, zh)}
+              {entry.audience_repo ? ` · ${entry.audience_repo}` : ''}
+            </Text>
+          ) : entry.promote_target ? (
             <Text style={[styles.promoText, {color: pal.fg3}]}>→ {entry.promote_target}</Text>
+          ) : (
+            <Text style={[styles.promoText, {color: pal.fg3}]}>
+              {t('no audience chosen — withdraw, then promote again saying who must know it', '没选读者 —— 撤回后重新晋升，说清给谁看')}
+            </Text>
           )}
         </View>
       )}
@@ -620,25 +655,21 @@ function EntryPane({
       )}
 
       <View style={[styles.actions, {borderTopColor: pal.divider}]}>
-        {pendingPromotion && (
+        {/* The exit its AUDIENCE has (actsFor): gtmux carries hq / machine / repo, a person
+            opens the issue for everyone, and "It no longer holds…" names what retiring
+            means — the lesson stopped being true, which is what the bar then asks about. */}
+        {actsFor(entry).map(a => (
           <TouchableOpacity
-            testID="knowledge-act-land"
+            key={a.kind}
+            testID={`knowledge-act-${a.kind}`}
             activeOpacity={0.6}
-            onPress={() => onAct('land', entry.id)}
+            onPress={() => (a.kind === 'feedback' ? Linking.openURL(a.url) : onAct(a.kind, entry.id))}
             style={[styles.action, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-            <Text style={[styles.actionText, {color: pal.fg}]}>{t('Mark it landed…', '标记为已落地…')}</Text>
+            <Text style={[styles.actionText, {color: a.kind === 'retire' ? ERRORED_COLOR : pal.fg}]}>
+              {actButtonLabel(a, zh)}
+            </Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          testID="knowledge-act-retire"
-          activeOpacity={0.6}
-          onPress={() => onAct('retire', entry.id)}
-          style={[styles.action, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-          {/* "Retire it…" names the mechanism (the CLI verb). What you are saying is
-              that the lesson stopped being true — which is also the thing the dialog then
-              asks you to explain, so the button and the question now agree. */}
-          <Text style={[styles.actionText, {color: ERRORED_COLOR}]}>{t('It no longer holds…', '这条不再成立…')}</Text>
-        </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
@@ -648,7 +679,7 @@ function EntryPane({
 function ActBar({
   kind, pal, zh, t, draft, error, bottom, onDraft, onCancel, onSubmit,
 }: {
-  kind: 'land' | 'retire';
+  kind: PendingKind;
   /** Keyboard height, so the bar clears it. */
   bottom: number;
   pal: Palette;
@@ -660,8 +691,10 @@ function ActBar({
   onCancel: () => void;
   onSubmit: () => void;
 }) {
-  const p = kind === 'land' ? landPrompt(zh) : retirePrompt(zh);
-  const ready = draft.trim() !== '';
+  const p =
+    kind === 'land' ? landPrompt(zh) : kind === 'retire' ? retirePrompt(zh) : kind === 'withdraw' ? withdrawPrompt(zh) : carryPrompt(zh);
+  // carry asks nothing but "now?"; every other act needs its line of text.
+  const ready = kind === 'carry' || draft.trim() !== '';
   return (
     <View
       testID="knowledge-act-bar"
@@ -688,6 +721,7 @@ function ActBar({
       </View>
       <Text style={[styles.actHint, {color: pal.fg3}]}>{p.hint}</Text>
       {!!error && <Text style={[styles.actError, {color: ERRORED_COLOR}]}>{error}</Text>}
+      {kind !== 'carry' && (
       <TextInput
         testID="knowledge-act-input"
         value={draft}
@@ -699,6 +733,7 @@ function ActBar({
         onSubmitEditing={() => ready && onSubmit()}
         style={[styles.actInput, {color: pal.fg, borderColor: pal.divider, backgroundColor: pal.surface}]}
       />
+      )}
     </View>
   );
 }
