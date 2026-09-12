@@ -69,6 +69,9 @@ interface Props {
   /** The host installs a "move the offset by dy" function here — see NativeTerm's copy. */
   /** Constant top padding, the height of the host's floating chrome. */
   topPad?: number;
+  /** A reading width on a wide canvas: the content column centres at this width while the
+   * scroll view keeps the whole pane (MOBILE §5). */
+  maxWidth?: number;
 }
 
 // The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
@@ -119,7 +122,7 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -290,7 +293,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       ref={scrollRef}
       testID={TestIds.detail.chat}
       style={styles.body}
-      contentContainerStyle={[styles.content, topPad > 0 && {paddingTop: topPad}]}
+      contentContainerStyle={[styles.content, topPad > 0 && {paddingTop: topPad}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
       onScroll={onScroll}
       onScrollBeginDrag={() => {
         dragging.current = true;

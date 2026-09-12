@@ -29,6 +29,7 @@ import {
   Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useWorkspace} from '../state/WorkspaceContext';
 import {useFocusEffect} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Agent, PaneRow, StatusName, paneRowToAgent} from '../api/types';
@@ -116,7 +117,13 @@ function statusOf(row: PaneRow, byPane: Map<string, Agent>): StatusName | undefi
   return byPane.get(row.pane_id)?.status;
 }
 
+/** The phone's route: the view with a back button. The iPad's main pane renders the view. */
 export function PaneBrowserScreen({navigation}: any) {
+  return <PaneBrowserView onBack={() => navigation.goBack()} />;
+}
+
+export function PaneBrowserView({onBack}: {onBack?: () => void}) {
+  const {select} = useWorkspace();
   const {client, isGuest, agents} = useAgents();
   const {pal, lang, mac} = useApp();
   const [panes, setPanes] = useState<PaneRow[]>([]);
@@ -247,14 +254,16 @@ export function PaneBrowserScreen({navigation}: any) {
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.panes.screen}>
       {/* header: back · title · count · collapse-all */}
       <View style={[styles.header, {borderBottomColor: pal.divider}]}>
-        <TouchableOpacity
-          testID={TestIds.panes.back}
-          accessibilityLabel={TestIds.panes.back}
-          onPress={() => navigation.goBack()}
-          hitSlop={hit}
-          style={styles.backBtn}>
-          <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
-        </TouchableOpacity>
+        {onBack && (
+          <TouchableOpacity
+            testID={TestIds.panes.back}
+            accessibilityLabel={TestIds.panes.back}
+            onPress={onBack}
+            hitSlop={hit}
+            style={styles.backBtn}>
+            <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.titleWrap}>
           <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
             {lang === 'zh' ? '所有 pane' : 'All panes'}
@@ -345,7 +354,7 @@ export function PaneBrowserScreen({navigation}: any) {
               joined={byPane.get(item.row.pane_id)}
               status={statusOf(item.row, byPane)}
               pal={pal}
-              onPress={() => navigation.navigate('Detail', {agent: paneRowToAgent(item.row)})}
+              onPress={() => select({kind: 'pane', agent: paneRowToAgent(item.row)})}
             />
           )
         }

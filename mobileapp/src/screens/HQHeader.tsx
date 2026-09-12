@@ -61,7 +61,8 @@ export interface HQHeaderProps {
   onOpenUsage?: () => void;
   open: boolean;
   onToggle: () => void;
-  onBack: () => void;
+  /** The phone's back button; the iPad's main pane has none (the sidebar is the way back). */
+  onBack?: () => void;
   onOpenBoard: () => void;
   pal: {fg: string; fg2: string; fg3: string; divider: string; surface: string};
   zh: boolean;
@@ -174,9 +175,11 @@ export function HQHeader({
   return (
     <View>
       <View style={styles.strip}>
-        <TouchableOpacity onPress={onBack} hitSlop={hit}>
-          <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
-        </TouchableOpacity>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} hitSlop={hit}>
+            <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.titleRow}>
           <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
           {demo && (

@@ -6,13 +6,13 @@
 - [x] 0.3 This change: proposal, design D1–D11, spec delta
 
 ## Phase 1 — the shell
-- [ ] 1.1 `useSizeClass()` in `ui/layout.ts`; `layout.test.ts` covers the hook's inputs
-- [ ] 1.2 `WorkspaceContext` (selection + select); compact shell maps to navigation
-- [ ] 1.3 `RadarPanel` extracted from `RadarScreen`; `RadarScreen` renders it; sidebar renders it
-- [ ] 1.4 `SplitShell` (sidebar 300/280, collapse toggle persisted, main pane by selection) replaces `SplitScreen.tsx`
-- [ ] 1.5 Detail: reading-width cap for chat; terminal uncapped; no back button on regular
-- [ ] 1.6 `TARGETED_DEVICE_FAMILY = "1,2"` on all three targets
-- [ ] 1.7 `shellDrift.test.ts` (D3) + `WorkspaceContext` tests + push deep-link test on both shells
+- [x] 1.1 `useSizeClass()` in `ui/layout.ts`; `layout.test.ts` covers the hook's inputs
+- [x] 1.2 `WorkspaceContext` (selection + select); compact shell maps to navigation
+- [x] 1.3 `RadarPanel` extracted from `RadarScreen`; `RadarScreen` renders it; sidebar renders it
+- [x] 1.4 `SplitShell` (sidebar 300/280, collapse toggle persisted, main pane by selection) replaces `SplitScreen.tsx`
+- [x] 1.5 Detail: reading-width cap for chat; terminal uncapped; no back button on regular (HQ and All panes likewise)
+- [x] 1.6 `TARGETED_DEVICE_FAMILY = "1,2"` on all three targets
+- [x] 1.7 `shellDrift.test.ts` (D3) + `WorkspaceContext` tests (the push deep-link now goes through `select`, covered there) + `split-shell` e2e on the iPad Pro 13" simulator
 
 ## Phase 2 — wide layouts
 - [ ] 2.1 HQ page: route wrapper + view; regular = header + console + inspector (D5)

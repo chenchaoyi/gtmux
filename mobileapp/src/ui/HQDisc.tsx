@@ -20,7 +20,7 @@
 // which. The
 // full intelligence headline (a disc can't hold a sentence) lives on the HQ page;
 // VoiceOver speaks the disc's state via its accessibility label. Phone radar (real +
-// Demo) uses this disc; only the iPad sidebar (SplitScreen) keeps the HQCard.
+// Demo) uses this disc; only the iPad sidebar (RadarPanel, sidebar variant) keeps the HQCard.
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {

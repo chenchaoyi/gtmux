@@ -19,6 +19,7 @@ import {Agent, SectionKey} from '../api/types';
 import {Debug} from '../debug';
 import {useApp} from '../state/AppContext';
 import {DemoAgentsProvider} from '../state/AgentsContext';
+import {WorkspaceProvider} from '../state/WorkspaceContext';
 import {HQDisc} from '../ui/HQDisc';
 import {PanesIcon} from '../ui/Icons';
 import {RadarSummary} from '../ui/RadarSummary';
@@ -27,8 +28,8 @@ import {StatusColor, counts} from '../ui/theme';
 import {sampleAgents} from '../ui/demoData';
 import {makeDemoClient} from '../ui/demoClient';
 import {DetailView} from './DetailScreen';
-import {HQScreen} from './HQScreen';
-import {PaneBrowserScreen} from './PaneBrowserScreen';
+import {HQView} from './HQScreen';
+import {PaneBrowserView} from './PaneBrowserScreen';
 
 export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => void}) {
   const {pal, lang} = useApp();
@@ -82,31 +83,24 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
 
   // A minimal navigation shim for the inline HQScreen: back closes it; a fleet-row
   // long-press "jump to Detail" swaps to that worker's demo detail.
-  const hqNav = {
-    goBack: () => setShowHQ(false),
-    navigate: (_screen: string, params?: any) => {
-      setShowHQ(false);
-      if (params?.agent) setSelected(params.agent);
-    },
-  };
-
-  // The browser's own nav shim: back closes it, a row opens that pane's demo detail.
-  const panesNav = {
-    goBack: () => setShowPanes(false),
-    navigate: (_screen: string, params?: any) => {
-      setShowPanes(false);
-      if (params?.agent) setSelected(params.agent);
-    },
-  };
+  // The demo's own workspace: the real screens open things through `select()`, and here
+  // a selection becomes demo state instead of a route (a pane → its demo detail, HQ → the
+  // HQ page, All panes → the browser). Same contract as the app's compact shell.
+  const navigateSel = React.useCallback((route: string, params?: Record<string, unknown>) => {
+    setShowHQ(route === 'HQ');
+    setShowPanes(route === 'Panes');
+    if (route === 'Detail' && params?.agent) setSelected(params.agent as Agent);
+  }, []);
 
   return (
     <DemoAgentsProvider client={client} agents={agents}>
+    <WorkspaceProvider mode="compact" navigate={navigateSel}>
       {showPanes ? (
         // The REAL All-panes browser over the fake client (demoClient.panes()).
-        <PaneBrowserScreen navigation={panesNav} />
+        <PaneBrowserView onBack={() => setShowPanes(false)} />
       ) : showHQ && hq ? (
         // The REAL HQ command center over the canned digest (DEMO chip via context).
-        <HQScreen route={{params: {agent: hq}}} navigation={hqNav} />
+        <HQView agent={hq} onBack={() => setShowHQ(false)} />
       ) : selected ? (
         // The REAL detail screen, over the fake client. Back returns to the radar.
         <DetailView agent={selected} onBack={() => setSelected(null)} />
@@ -166,6 +160,7 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
           )}
         </SafeAreaView>
       )}
+    </WorkspaceProvider>
     </DemoAgentsProvider>
   );
 }

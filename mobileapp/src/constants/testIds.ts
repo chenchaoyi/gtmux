@@ -19,12 +19,15 @@ export const TestIds = {
   },
   radar: {
     screen: 'radar-screen',
+    split: 'radar-split', // the regular shell's root (sidebar + main pane)
     serverChip: 'radar-server-chip',
     settings: 'radar-settings',
     waitingOnly: 'radar-waiting-only',
     panes: 'radar-panes',
     section: 'radar-section', // collapse bar, suffixed with the status key
     end: 'radar-end', // the line that closes the list
+    hideSidebar: 'radar-hide-sidebar', // regular shell: fold the sidebar away
+    showSidebar: 'radar-show-sidebar', // regular shell: bring it back (floats over the main pane)
   },
   panes: {
     screen: 'panes-screen',

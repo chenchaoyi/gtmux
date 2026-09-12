@@ -10,13 +10,13 @@ import {
 } from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import React, {useEffect, useRef} from 'react';
-import {Alert, StatusBar, useWindowDimensions} from 'react-native';
+import {Alert, StatusBar} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
 import {Splash} from './src/ui/Splash';
 import {WhatsNewModal} from './src/ui/WhatsNewModal';
 import {ReleaseNote} from './src/releaseNotes';
-import {isSplitCanvas} from './src/ui/layout';
+import {useSizeClass} from './src/ui/layout';
 import {setupPush, reregisterKinds} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
@@ -26,8 +26,9 @@ import {PaneBrowserScreen} from './src/screens/PaneBrowserScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
 import {ServersScreen} from './src/screens/ServersScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
-import {SplitScreen} from './src/screens/SplitScreen';
+import {SplitShell} from './src/screens/SplitShell';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
+import {WorkspaceProvider, useWorkspace} from './src/state/WorkspaceContext';
 import {AppProvider, useApp, kindsList} from './src/state/AppContext';
 import {serverForPush} from './src/pairing/store';
 import {markSeen, notesSince, readSeen} from './src/state/whatsnew';
@@ -78,13 +79,11 @@ function WhatsNew() {
   );
 }
 
-// RadarRoute picks the layout by CANVAS (MOBILE §5): a split-view (sidebar radar +
-// inline detail) on an iPad-sized window, else the stacked phone radar. Height counts as
-// well as width — see isSplitCanvas: a phone in landscape is wide enough and nowhere near
-// tall enough.
-function RadarRoute(props: any) {
-  const {width, height} = useWindowDimensions();
-  return isSplitCanvas(width, height) ? <SplitScreen {...props} /> : <RadarScreen {...props} />;
+// RadarRoute picks the SHELL by size class (MOBILE §5): the regular shell (sidebar +
+// main pane) on an iPad-sized window, else the phone's radar. The class is the one rule
+// in ui/layout; neither shell reads the window itself.
+function RadarRoute() {
+  return useSizeClass() === 'regular' ? <SplitShell /> : <RadarScreen />;
 }
 
 // PushBridge wires APNs registration + tap deep-link once we have a client.
@@ -92,9 +91,9 @@ function RadarRoute(props: any) {
 function PushBridge({navRef}: {navRef: any}) {
   const {client, agents, isGuest} = useAgents();
   const {pushEnabled, pushKinds, servers, activeUrl, selectServer, pendingPane, setPendingPane, lang} = useApp();
-  const {width, height} = useWindowDimensions();
-  const wideRef = useRef(isSplitCanvas(width, height));
-  wideRef.current = isSplitCanvas(width, height);
+  const {select} = useWorkspace();
+  const selectRef = useRef(select);
+  selectRef.current = select;
   // A ref so setupPush's onRegister always reads the CURRENT kinds without the
   // main effect re-running (which would churn the native listeners).
   const kindsRef = useRef(kindsList(pushKinds));
@@ -106,9 +105,9 @@ function PushBridge({navRef}: {navRef: any}) {
   const activeUrlRef = useRef(activeUrl);
   activeUrlRef.current = activeUrl;
 
-  // openPane deep-links to a pane ON THE ACTIVE SERVER. Wide screens select it in
-  // the split Radar; narrow screens push Detail (a placeholder agent is fine — the
-  // screen fetches the pane by id).
+  // openPane deep-links to a pane ON THE ACTIVE SERVER through the workspace: the
+  // regular shell shows it in the main pane, the compact shell pushes Detail (a
+  // placeholder agent is fine — the screen fetches the pane by id).
   const openPane = (pane: string) => {
     const found = agents.find(a => a.pane_id === pane);
     // A NATIVE (non-tmux) session — an agent running in a plain Warp/Terminal
@@ -127,10 +126,6 @@ function PushBridge({navRef}: {navRef: any}) {
       );
       return;
     }
-    if (wideRef.current) {
-      navRef.navigate('Radar', {selectPane: pane});
-      return;
-    }
     const agent: Agent =
       found ?? {
         pane_id: pane, session: '', window: '', pane: '', loc: '', agent: '',
@@ -141,7 +136,7 @@ function PushBridge({navRef}: {navRef: any}) {
     // session the radar deliberately does NOT list as a worker was the one a
     // notification opened AS a worker, which is what made the meta-layer read as
     // inconsistent rather than as a layer.
-    navRef.navigate(agent.role === 'supervisor' ? 'HQ' : 'Detail', {agent});
+    selectRef.current(agent.role === 'supervisor' ? {kind: 'hq', agent} : {kind: 'pane', agent});
   };
   // navRef isn't ready until NavigationContainer mounts (this bridge renders
   // first), so a deep-link consumed on mount retries briefly until it is.
@@ -207,6 +202,12 @@ function PushBridge({navRef}: {navRef: any}) {
 function Root() {
   const {ready, mac, pal, lang, scheme} = useApp();
   const navRef = useNavigationContainerRef();
+  const sizeClass = useSizeClass();
+  // The compact shell opens a selection by navigating; the navigator ref is the one
+  // handle that outlives any screen.
+  const navigateSel = React.useCallback((route: string, params?: Record<string, unknown>) => {
+    (navRef as any).navigate(route, params);
+  }, [navRef]);
 
   // D8: a branded splash (matches the native LaunchScreen) while we restore the
   // paired Mac + settings, instead of a bare spinner.
@@ -223,6 +224,7 @@ function Root() {
   // navigator with the new base/token (no stale SSE / selection bleed-over).
   return (
     <AgentsProvider key={mac.url} base={mac.url} token={mac.token} name={mac.name} scope={mac.scope}>
+      <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
       <PushBridge navRef={navRef} />
       <WhatsNew />
       <NavigationContainer ref={navRef} theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -236,6 +238,7 @@ function Root() {
           <Stack.Screen name="ManageMac" component={ManageMacScreen} />
         </Stack.Navigator>
       </NavigationContainer>
+      </WorkspaceProvider>
     </AgentsProvider>
   );
 }
