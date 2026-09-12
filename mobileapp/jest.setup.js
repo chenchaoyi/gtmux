@@ -9,6 +9,7 @@ jest.mock('@react-navigation/native', () => {
   const ref = {isReady: () => false, navigate: jest.fn(), current: null, resetRoot: jest.fn()};
   return {
     NavigationContainer: ({children}) => children,
+    NavigationContext: require('react').createContext(undefined),
     useNavigation: () => ({navigate: jest.fn(), goBack: jest.fn()}),
     useNavigationContainerRef: () => ref,
     createNavigationContainerRef: () => ref,

@@ -402,8 +402,14 @@ squash-merge — they can't be fully automated).
 
 ## gtmux 设计规范（必读 —— 后续每次 UI 迭代都必须遵循）
 
-gtmux 是一个产品、三块屏（CLI · 菜单栏 · 手机），共用同一套状态语言。**改动任何 UI 前，先读对应
-权威设计规范，并严格遵循；不得擅自偏离。**
+gtmux 是一个产品、**五种形态**（终端含远程 attach · 菜单栏 · 手机 · iPad · Web），共用同一个核心和同一套
+状态语言。**改动任何 UI 前，先读对应权威设计规范，并严格遵循；不得擅自偏离。** **每个改用户可见行为的
+OpenSpec 提案必须带 `## Surfaces` 一节，逐条说明五种形态各是什么（做了 / 不适用及原因 / 留给谁）**——
+`check-design.sh` 查在途提案里五个名字齐不齐，判断对不对留给评审。规矩、原因和防偏移的结构见
+`docs/design/SURFACES.md`（2026-09-12：iPad 分栏做了一半就延后，两个月里雷达的每次改动都只落在手机上）。
+
+- 改 **iPad 形态**（regular 壳：侧栏 + 主区、键盘、多任务）→ `docs/design/MOBILE.md` §5 + change `ipad-universal-app`；
+  手机与 iPad 是同一份实现加 prop，`mobileapp/src/screens/shellDrift.test.ts` 读源码守着。
 
 - 改 **菜单栏 app**（`NSStatusItem + NSPopover + SwiftUI`）→ 先读 `docs/design/DESIGN.md`。
 - 改 **移动端 app**（bare React Native，`mobileapp/`）→ 先读 `docs/design/MOBILE.md`。

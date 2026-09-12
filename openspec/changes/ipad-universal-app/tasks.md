@@ -15,15 +15,18 @@
 - [x] 1.7 `shellDrift.test.ts` (D3) + `WorkspaceContext` tests (the push deep-link now goes through `select`, covered there) + `split-shell` e2e on the iPad Pro 13" simulator
 
 ## Phase 2 — wide layouts
+- [x] 2.5 The demo is the real shells over the fake client (SplitShell / RadarPanel with demo chrome); `shellDrift` has no exception left
+- [x] 2.6 Five-surfaces rule: `docs/design/SURFACES.md`, CLAUDE.md, `check-design.sh` gate on in-flight proposals, PR template
+
 - [x] 2.1 HQ page: route wrapper + view; regular = header + console + inspector (D5)
 - [x] 2.2 All panes: grid of session cards on regular; search field in the header
 - [x] 2.3 Knowledge sheet: list | entry on regular (D11)
 - [x] 2.4 Pointer hover tint on rows and buttons (D8)
 
 ## Phase 3 — keyboard
-- [ ] 3.1 `KeyCommands.swift` native bridge (UIKeyCommand → event)
-- [ ] 3.2 `src/keys/keymap.ts` + dispatcher; every binding in D7
-- [ ] 3.3 Tests: keymap complete, ids unique, actions resolve; e2e on the iPad sim sends key commands
+- [x] 3.1 `KeyCommands.swift` native bridge (UIKeyCommand → event)
+- [x] 3.2 `src/keys/keymap.ts` + dispatcher; every binding in D7
+- [x] 3.3 Tests: keymap complete, ids unique, actions resolve (`keymap.test.ts`, `KeyCommandBridge.test.ts`). The e2e (`ipad-keys.test.ts`) reaches the app — the bridge registers 22 commands and the main menu is built with them (probe read back) — but XCTest's key injection on the simulator types text and never dispatches a UIKeyCommand (measured 2026-09-12, with and without a first responder, hardware keyboard connected or not), and this Mac's shell has no Accessibility grant for real keystrokes. Dispatch is verified by hand on a device with a keyboard in 4.4; until then the e2e stays gated and expected red on a simulator.
 
 ## Phase 4 — store and verification
 - [ ] 4.1 e2e iPad lane (env only) + `split-shell` e2e on iPad Pro 13" sim with screenshots

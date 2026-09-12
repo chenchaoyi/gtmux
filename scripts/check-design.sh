@@ -346,8 +346,23 @@ leaked="$(grep -lE '\.ledger\.jsonl"|\.pending-distill\.jsonl"' internal/hq/*.go
   fail=1
 }
 
+# Five surfaces (docs/design/SURFACES.md): an in-flight proposal that changes user-visible
+# behaviour says what it does on EACH of terminal (incl. remote attach), menubar, phone,
+# iPad and web — done, not applicable (why), or deferred to whom. The gate checks that the
+# section exists and all five names appear; whether the answers are right is the reviewer's.
+# Archived changes predate the rule and are not checked.
+for prop in openspec/changes/*/proposal.md; do
+  [ -f "$prop" ] || continue
+  case "$prop" in openspec/changes/archive/*) continue ;; esac
+  grep -q '^## Surfaces' "$prop" || { note "$prop has no '## Surfaces' section (docs/design/SURFACES.md)"; fail=1; continue; }
+  sec="$(awk '/^## Surfaces/{f=1;next} /^## /{f=0} f' "$prop")"
+  for name in '终端|terminal' '菜单栏|menubar' '手机|phone' 'iPad' 'Web|web'; do
+    printf '%s' "$sec" | grep -qE "$name" || { note "$prop: Surfaces section does not mention ($name)"; fail=1; }
+  done
+done
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user docs are paired; mobile release notes generated"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user docs are paired; mobile release notes generated; proposals name all five surfaces"
 else
   exit 1
 fi

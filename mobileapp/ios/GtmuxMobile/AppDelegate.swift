@@ -36,6 +36,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     return true
   }
 
+  // MARK: hardware keyboard (iPad) — the keymap JS registered, as main-menu commands.
+  // The responder chain ends here, so a command from any first responder reaches it.
+
+  override func buildMenu(with builder: UIMenuBuilder) {
+    super.buildMenu(with: builder)
+    guard builder.system == .main else { return }
+    KeyCommands.install(into: builder)
+  }
+
+  override var keyCommands: [UIKeyCommand]? { KeyCommands.responderCommands() }
+
+  @objc func gtmuxKeyCommand(_ sender: UIKeyCommand) {
+    guard let id = sender.propertyList as? String else { return }
+    KeyCommands.shared?.emit(id)
+  }
+
   // MARK: APNs registration → JS (react-native-community/push-notification-ios)
 
   func application(

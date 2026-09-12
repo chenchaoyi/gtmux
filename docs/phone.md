@@ -114,6 +114,32 @@ toggle) registers it as a background LaunchAgent; `--unservice` turns it off,
 `GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG`. See `design/remote-access-tunnel.md` and
 `../tunnel-worker/`.
 
+## On an iPad — a sidebar beside the work
+
+The same app, installed from the same App Store listing. On a window at least 768×600
+points (any iPad orientation, a 2/3 Split View, a Stage Manager window that size) the
+radar becomes a sidebar and whatever you open — a session, gtmux HQ, All panes — fills
+the main pane beside it. Nothing is pushed; tap another row and the main pane switches.
+Narrower than that (a 1/2 Split View, Slide Over) it is the phone's layout.
+
+- The sidebar hides with the button next to the gear, or ⌃⌘S, and remembers.
+- Chat reads at a comfortable width; the terminal uses the whole pane.
+- The HQ page shows its conversation and, beside it, what is waiting on you and what HQ did.
+- The knowledge base opens its list beside the entry you are reading.
+
+With a hardware keyboard, hold ⌘ to see the commands. The ones worth learning:
+
+| Keys | What |
+|---|---|
+| ↑ ↓ ⏎ | move along the radar, open the selected session |
+| ⌘1 … ⌘9 | open the nth row |
+| ⌘⇧H · ⌘⇧P | gtmux HQ · All panes |
+| ⌘F | search panes |
+| ⌘K | type a message |
+| ⌘[ · ⌘] | chat · terminal |
+| ⌘= · ⌘− | text size |
+| esc | close a sheet |
+
 ## From another computer's terminal — `gtmux attach`
 
 The phone app watches + drives; from another **Mac/Linux terminal** you can go

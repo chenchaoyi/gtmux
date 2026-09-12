@@ -14,7 +14,7 @@
 import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {NavigationContext} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert as AlertType, SectionKey} from '../api/types';
 import type {ServerMode} from '../api/types';
@@ -40,19 +40,32 @@ const COLLAPSED_KEY = 'radar.collapsed';
 
 export type RadarVariant = 'screen' | 'sidebar';
 
+/** The demo's two affordances the real radar does not have (MOBILE §18): a way out, and
+ * the "pair your Mac" call to action. Their presence is what makes a panel a demo. */
+export interface DemoChrome {
+  onExit: () => void;
+  onPair: () => void;
+}
+
 export function RadarPanel({
   variant,
   selectedId,
   onHideSidebar,
+  demo: demoChrome,
 }: {
   variant: RadarVariant;
   /** The row wearing the accent bar (sidebar). */
   selectedId?: string;
   /** The sidebar's hide button (regular shell only). */
   onHideSidebar?: () => void;
+  /** Present in demo mode: the same panel over the fake client, plus the demo's exit and
+   * pairing controls. The demo renders OUTSIDE the navigator, so nothing here may need one. */
+  demo?: DemoChrome;
 }) {
-  const navigation = useNavigation<any>();
-  const {select} = useWorkspace();
+  // Outside the navigator (the demo) this is undefined and the routes it reaches — Servers,
+  // Settings — are not offered; inside, it is the screen's own navigation.
+  const navigation = React.useContext(NavigationContext) as {navigate: (r: string, p?: unknown) => void} | undefined;
+  const {select, cursor} = useWorkspace();
   const sidebar = variant === 'sidebar';
   // The long-press sheet. The row IS the whole state (null = closed), so a stale sheet
   // cannot linger after a refresh replaces the list.
@@ -69,7 +82,7 @@ export function RadarPanel({
   // owner surface. `false` = no bottleneck.
   const [resCrit, setResCrit] = useState(false);
   useEffect(() => {
-    if (isGuest) return;
+    if (isGuest || demoChrome) return;
     let alive = true;
     const load = () =>
       client
@@ -85,7 +98,7 @@ export function RadarPanel({
       alive = false;
       clearInterval(id);
     };
-  }, [client, isGuest]);
+  }, [client, isGuest, demoChrome]);
   // Collapsed sections persist across launches (MOBILE §3).
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
   // "Waiting only" narrows the list to the panes needing you (MOBILE §3/§8) — a fast
@@ -143,6 +156,9 @@ export function RadarPanel({
   // it is being kept awake. Slow poll: it changes when a human decides it does.
   const [srv, setSrv] = useState<ServerMode | null>(null);
   useEffect(() => {
+    // The demo's client deliberately does not answer host-state calls (demoClient
+    // `NotInDemo`): a stub that looked like a Mac would be worse than no call.
+    if (demoChrome) return;
     let alive = true;
     const tick = () => {
       client.serverMode().then(m => alive && setSrv(m)).catch(() => {});
@@ -153,7 +169,7 @@ export function RadarPanel({
       alive = false;
       clearInterval(id);
     };
-  }, [client]);
+  }, [client, demoChrome]);
   const srvOn = !!srv && (srv.system_disablesleep || srv.state === 'lapsed');
 
   const Header = (
@@ -164,16 +180,19 @@ export function RadarPanel({
           testID={TestIds.radar.serverChip}
           accessibilityLabel={TestIds.radar.serverChip}
           style={styles.serverChip}
-          onPress={() => navigation.navigate('Servers')}
+          disabled={!!demoChrome}
+          onPress={() => navigation?.navigate('Servers')}
           hitSlop={hit}>
           <Text style={[styles.brand, {color: pal.fg}]} numberOfLines={1}>
-            {mac?.name || 'gtmux'}
+            {demoChrome ? (lang === 'zh' ? '演示' : 'Demo') : mac?.name || 'gtmux'}
           </Text>
           {/* a bordered ⇄ chip reads as a tappable control (the bare glyph looked like
               a decoration next to the title, so switching went unnoticed). */}
-          <Text style={[styles.switchGlyph, {color: pal.fg2, borderColor: pal.divider, backgroundColor: pal.surface}]}>
-            ⇄
-          </Text>
+          {!demoChrome && (
+            <Text style={[styles.switchGlyph, {color: pal.fg2, borderColor: pal.divider, backgroundColor: pal.surface}]}>
+              ⇄
+            </Text>
+          )}
         </TouchableOpacity>
         <View style={styles.headerRight}>
           <ConnDot conn={conn} t={t} pal={pal} lang={lang} awake={srvOn} />
@@ -201,13 +220,23 @@ export function RadarPanel({
               <SidebarIcon size={19} color={pal.fg2} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            testID={TestIds.radar.settings}
-            accessibilityLabel={TestIds.radar.settings}
-            onPress={() => navigation.navigate('Settings')}
-            style={styles.headBtn}>
-            <SettingsIcon size={20} color={pal.fg2} />
-          </TouchableOpacity>
+          {demoChrome ? (
+            <TouchableOpacity
+              onPress={demoChrome.onExit}
+              style={styles.headBtn}
+              accessibilityRole="button"
+              accessibilityLabel={lang === 'zh' ? '关闭演示' : 'Close demo'}>
+              <Text style={[styles.closeDemo, {color: pal.fg3}]}>✕</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              testID={TestIds.radar.settings}
+              accessibilityLabel={TestIds.radar.settings}
+              onPress={() => navigation?.navigate('Settings')}
+              style={styles.headBtn}>
+              <SettingsIcon size={20} color={pal.fg2} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       <RadarSummary
@@ -218,6 +247,16 @@ export function RadarPanel({
         waitingOnly={waitingOnly}
         onToggleWaitingOnly={() => setWaitingOnly(v => !v)}
       />
+      {/* Demo: the sample-data banner, always shown in the shipped demo (App Review requires
+          it), hidden in SHOT_MODE for clean store captures. */}
+      {demoChrome && !Debug.shotMode && (
+        <View style={styles.demoBanner}>
+          <Text style={[styles.demoChip, {color: StatusColor.working, borderColor: StatusColor.working}]}>DEMO</Text>
+          <Text style={[styles.demoBannerText, {color: pal.fg3}]} numberOfLines={2}>
+            {lang === 'zh' ? '演示数据 —— 每一屏都能点。配对你的 Mac 就是真的了。' : 'Sample data — every screen is live. Pair your Mac and it is real.'}
+          </Text>
+        </View>
+      )}
       {/* The sidebar keeps the framed HQ card (a floating disc suits a phone list, a
           resident column suits a card); the phone floats the disc below. */}
       {sidebar && hq && !isGuest && (
@@ -248,7 +287,7 @@ export function RadarPanel({
       {conn === 'unauthorized' && (
         <TouchableOpacity
           style={[styles.authBanner, {backgroundColor: '#3a1720', borderColor: StatusColor.waiting}]}
-          onPress={() => navigation.navigate('Servers')}
+          onPress={() => navigation?.navigate('Servers')}
           accessibilityRole="button"
           accessibilityLabel={lang === 'zh' ? '访问被拒，重新配对' : 'Access rejected, re-pair'}>
           <View style={[styles.connDot, {backgroundColor: StatusColor.waiting}]} />
@@ -281,7 +320,7 @@ export function RadarPanel({
         onRefresh={onRefresh}
         collapsed={collapsed}
         onToggle={onToggle}
-        selectedId={selectedId}
+        selectedId={sidebar ? selectedId : cursor ?? undefined}
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
       />
@@ -315,6 +354,15 @@ export function RadarPanel({
           reachable, never scrolls away. Owner-only (a guest has no HQ). Shown even when
           HQ isn't started yet (a grey disc that explains how to start it), but only once
           connected so it doesn't flash "not started" mid-connect. */}
+      {demoChrome && !Debug.shotMode && (
+        <TouchableOpacity
+          style={[styles.cta, {backgroundColor: StatusColor.working}]}
+          onPress={demoChrome.onPair}
+          accessibilityRole="button"
+          accessibilityLabel={lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}>
+          <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}</Text>
+        </TouchableOpacity>
+      )}
       {!sidebar && !isGuest && (hq || conn === 'live') && (
         <HQDisc
           hq={hq}
@@ -434,4 +482,10 @@ const styles = StyleSheet.create({
   emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
   banner: {paddingHorizontal: 14, paddingVertical: 10},
   bannerText: {color: '#fff', fontSize: 13, fontWeight: '600'},
+  closeDemo: {fontSize: 20, fontWeight: '400'},
+  demoBanner: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 6, paddingBottom: 2},
+  demoChip: {fontSize: 10, fontWeight: '800', letterSpacing: 0.6, borderWidth: 1, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1, overflow: 'hidden'},
+  demoBannerText: {flex: 1, fontSize: 12, lineHeight: 16},
+  cta: {marginHorizontal: 14, marginBottom: 12, paddingVertical: 12, borderRadius: 12, alignItems: 'center'},
+  ctaText: {color: '#fff', fontSize: 15, fontWeight: '700'},
 });

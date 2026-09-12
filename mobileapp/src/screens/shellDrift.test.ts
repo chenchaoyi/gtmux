@@ -18,12 +18,13 @@ describe('the regular shell composes, never copies', () => {
 
   it('renders the radar list in exactly one file', () => {
     // A second radar list outside RadarPanel is a second radar to keep in sync. (The
-    // pane browser's `SectionList` is React Native's, a different component.) DemoScreen
-    // is the one standing exception: it renders the demo's radar outside the navigator,
-    // over fake data, and predates this rule — MOBILE §18 records that it fell behind the
-    // phone twice for exactly this reason. Folding it in is a follow-up, not a licence.
+    // pane browser's `SectionList` is React Native's, a different component.) The demo
+    // used to be the exception — it fell behind the phone twice — and now renders the
+    // same shells over its fake client.
     const renderers = screens.filter((f: string) => read(f).includes("from '../ui/SectionList'"));
-    expect(renderers.sort()).toEqual(['DemoScreen.tsx', 'RadarPanel.tsx']);
+    expect(renderers).toEqual(['RadarPanel.tsx']);
+    expect(read('DemoScreen.tsx')).toContain('<SplitShell demo=');
+    expect(read('DemoScreen.tsx')).toContain('<RadarPanel variant="screen" demo=');
   });
 
   it('has both shells render RadarPanel, with only props between them', () => {

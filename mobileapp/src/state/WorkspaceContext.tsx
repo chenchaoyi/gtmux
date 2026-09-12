@@ -25,6 +25,10 @@ interface Workspace {
    * rotation that crosses the size line lands on what was open. */
   selection: Selection | null;
   select: (sel: Selection) => void;
+  /** The keyboard's cursor over the radar (a row id), on the compact shell where moving
+   * it must not open anything. Null when the keyboard has not moved it. */
+  cursor: string | null;
+  setCursor: (id: string | null) => void;
 }
 
 const Ctx = createContext<Workspace | null>(null);
@@ -55,6 +59,7 @@ export function WorkspaceProvider({
   children: React.ReactNode;
 }) {
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
   const select = useCallback(
     (sel: Selection) => {
       setSelection(sel);
@@ -65,7 +70,7 @@ export function WorkspaceProvider({
     },
     [mode, navigate],
   );
-  const value = useMemo(() => ({mode, selection, select}), [mode, selection, select]);
+  const value = useMemo(() => ({mode, selection, select, cursor, setCursor}), [mode, selection, select, cursor]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
