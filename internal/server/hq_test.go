@@ -398,6 +398,14 @@ func TestHQKnowledgeActClosesTheVerbList(t *testing.T) {
 	if w := post(`{"op":"retire","id":"pitfalls/x","why":"wrong"}`); w.Code != http.StatusOK {
 		t.Errorf("retire -> %d; want 200", w.Code)
 	}
+	// hq-knowledge-engine: the two acts the screens gained — gtmux carries a promotion
+	// for the audiences it can reach, and a promotion can be withdrawn.
+	if w := post(`{"op":"carry","id":"pitfalls/x"}`); w.Code != http.StatusOK {
+		t.Errorf("carry -> %d; want 200", w.Code)
+	}
+	if w := post(`{"op":"withdraw","id":"pitfalls/x","why":"not worth carrying"}`); w.Code != http.StatusOK {
+		t.Errorf("withdraw -> %d; want 200", w.Code)
+	}
 	// A verb this surface has not decided a phone should have never reaches the ledger.
 	if w := post(`{"op":"add","id":"pitfalls/x"}`); w.Code != http.StatusBadRequest {
 		t.Errorf("add -> %d; want 400", w.Code)
@@ -407,7 +415,7 @@ func TestHQKnowledgeActClosesTheVerbList(t *testing.T) {
 	if w := post(`{"op":"land"}`); w.Code != http.StatusBadRequest {
 		t.Errorf("land with no id -> %d; want 400", w.Code)
 	}
-	if len(ran) != 3 {
+	if len(ran) != 5 {
 		t.Errorf("the dep must see only the accepted verbs: %v", ran)
 	}
 }

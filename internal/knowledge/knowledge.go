@@ -112,9 +112,12 @@ type knowledgeOp struct {
 	Audience     string   `json:"audience,omitempty"`
 	AudienceRepo string   `json:"audienceRepo,omitempty"`
 	Status       string   `json:"status,omitempty"`
-	// KindAssumed is computed at fold: the record predates the kind axis and its kind is
-	// the migration table's guess, not a judgement. Lint asks for the confirmation.
-	KindAssumed bool `json:"-"`
+	// Computed at fold, never written by an append (a fresh op leaves them zero):
+	// KindAssumed says the record predates the kind axis and its kind is the migration
+	// table's guess; IssueURL is the everyone audience's exit, for a pending promotion.
+	// Both ride `list --json`, which is what the menu-bar window reads.
+	KindAssumed bool   `json:"kindAssumed,omitempty"`
+	IssueURL    string `json:"issueUrl,omitempty"`
 }
 
 // promotionPending reports whether a folded live entry has an open promotion.
@@ -379,6 +382,9 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 	live := out[:0]
 	for _, op := range out {
 		if op.Op != "" {
+			if promotionPending(op) && op.Audience == AudienceEveryone {
+				op.IssueURL = IssueURL(op)
+			}
 			live = append(live, op)
 		}
 	}
