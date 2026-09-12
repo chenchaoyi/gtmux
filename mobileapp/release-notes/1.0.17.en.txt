@@ -1,0 +1,34 @@
+Now on iPad
+- The same app, one listing. On an iPad the radar is a sidebar and the session, HQ or All panes you open fills the pane beside it — nothing pushed, tap another row and it switches.
+- The HQ page keeps what is waiting on you beside the conversation; All panes is a grid; the knowledge base reads list beside entry.
+- Hardware keyboard: hold ⌘ to see the commands — ↑↓⏎ along the radar, ⌘1–9 to a row, ⌘⇧H HQ, ⌘F search, ⌘K type.
+- The demo shows the iPad layout too.
+
+Thirty-odd releases since the version on your phone. Here is what you can use.
+
+Act on a session by long-pressing it
+- No need to open it: answer its question, tell it to carry on, interrupt the turn, hand it to HQ, jump to it on the Mac, or read the diff.
+- The press answers back: the row arms while you hold it, and there is a tap the moment it is recognised.
+- Reachable by VoiceOver: every action in that menu.
+
+The HQ page, rebuilt
+- What matters first: what is owed to you, then what HQ did while you were away, then the context.
+- Its work is visible: dispatches, reclaims and notes, grouped by when they happened, with the quiet between them named.
+- Its documents have a home: the situation board, the knowledge base and usage, each a tile carrying a live figure.
+- The knowledge base is searchable: hundreds of entries, by title, id or topic.
+
+New: a usage view
+- Where your quota stands: which plan window is tightest, how long until it resets, who is burning it, what the machine has left.
+- Codex too: its quotas alongside Claude's.
+
+Reading and typing
+- More screen: full screen no longer reserves room for a hidden status bar, and the bar above the terminal is three bands instead of four — about sixteen more lines.
+- A board you can scan: sections and panes stay folded until you open one.
+- Drafts survive: a half-typed message is waiting when you come back, and input history follows the project you are in.
+- A failed send explains itself: it says why, and keeps what you wrote.
+
+The Lock Screen card
+- Sharper: the session that needs you, its actual question, and how long it has waited — and it no longer goes stale.
+- Bilingual: it follows your system language.
+
+The rest is a long run of fixes and polish.
