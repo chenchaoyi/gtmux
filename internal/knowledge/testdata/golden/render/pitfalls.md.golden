@@ -5,4 +5,4 @@
     Retry once. Root cause is the corporate proxy.
 
     同族 [[best-practices/retry-idempotent-calls]].
-  · pitfalls/wrangler-tls-resets · 2026-09-10 · seq 101,102 · capture pitfalls/wrangler-tls · pane %21 · pitfalls? · from capture · → landed PR #1
+  · pitfalls/wrangler-tls-resets · 2026-09-09 · seq 101,102 · capture pitfalls/wrangler-tls · pane %21 · pitfalls? · from capture · → landed PR #1

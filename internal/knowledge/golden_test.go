@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The knowledge base's outputs, pinned byte for byte, so the extraction into its own
@@ -101,6 +102,14 @@ func goldenStdout(t *testing.T, run func()) string {
 }
 
 func TestKnowledgeGolden(t *testing.T) {
+	// Dates in the renders are LOCAL (a person reads them), so the golden pins the zone:
+	// generated in one zone and checked in another, a stamp near midnight moves a day —
+	// which is exactly how this test was green on the design machine (UTC+8) and red
+	// on CI (UTC) for two merges before anyone read the CI log instead of the pipe's
+	// exit code.
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
 	dir := goldenDir(t) // before the fixture chdirs into the temp HQ home
 	goldenFixture(t)
 	got := map[string]string{}
