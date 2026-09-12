@@ -488,7 +488,8 @@ posture/in-flight/ship 的字面硬译,没有母语者会这么写,而司令是�
   一起落库当范例(agent 会照着原始例子做,却会忽略压缩过的规则);是噪声,带理由驳回。
   ` + "`gtmux knowledge mine --status`" + ` 看计数。逐条抽干队列,
   绝不一刀清空:` + "`gtmux knowledge add … --capture <key>`" + ` 采纳一条(同 key 的
-  行都并进那一条,出处继承),` + "`gtmux knowledge dismiss --capture <key> --why …`" + `
+  行都并进那一条,出处继承);几条其实是同一件事时把 key 都写上(` + "`--capture k1,k2`" + `
+  或重复给 flag):一条条目、出处全留、不用再逐条驳回。` + "`gtmux knowledge dismiss --capture <key> --why …`" + `
   驳回一条并留痕——你是质量闸门,现在你的驳回也是证据。两个来源合起来:
   把持久的横切事实经动词落库(宁 ` + "`supersede`" + ` 不追加近似重复;
   ` + "`retire --why`" + ` 已死的;蒸馏轮的证据用 ` + "`--seq-range <last>..<now>`" + `

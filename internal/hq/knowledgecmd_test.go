@@ -459,3 +459,55 @@ func TestEntryStampIsLocalNotUTC(t *testing.T) {
 		t.Errorf("stampDate = %s, want the local date %s", got, local.In(time.Local).Format("2006-01-02"))
 	}
 }
+
+// Same-family candidates are ONE lesson: --capture takes several keys (repeated or
+// comma-separated) so the entry inherits every provenance, instead of one accepted
+// and ten dismissed with their provenance scattered across dismissal records (HQ's
+// own measurement on the first mined batch, 2026-09-12: 11 keys, 5 projects).
+func TestKnowledgeAddConsumesSeveralKeysAsOneLesson(t *testing.T) {
+	asHQ(t)
+	for i, c := range []captureCandidate{
+		{At: 100, Topic: "corrections", Key: "corrections/mined-a1", Lesson: "check before you claim", Seq: 10, Source: "transcript", Project: "p1"},
+		{At: 200, Topic: "corrections", Key: "corrections/mined-b2", Lesson: "you said done, it was not", Seq: 20, Source: "transcript", Project: "p2"},
+		{At: 300, Topic: "corrections", Key: "corrections/mined-c3", Lesson: "did you even run it", Seq: 30, Source: "transcript", Project: "p3"},
+		{At: 400, Topic: "workflows", Key: "workflows/other", Lesson: "unrelated", Seq: 40},
+	} {
+		if err := appendCandidate(c); err != nil {
+			t.Fatalf("seed %d: %v", i, err)
+		}
+	}
+	// A typo in ANY key fails before anything is consumed.
+	if rc := CmdKnowledge([]string{"add", "--topic", "corrections", "--title", "verify before claiming done",
+		"--capture", "corrections/mined-a1,corrections/mined-zz"}); rc == 0 {
+		t.Fatal("an unknown key must fail the whole call")
+	}
+	if n := pendingCandidateCount(); n != 4 {
+		t.Fatalf("a failed call must consume nothing, %d left", n)
+	}
+	if rc := CmdKnowledge([]string{"add", "--topic", "corrections", "--title", "verify before claiming done",
+		"--capture", "corrections/mined-a1,corrections/mined-b2", "--capture", "corrections/mined-c3"}); rc != 0 {
+		t.Fatal("add with several keys failed")
+	}
+	live, _ := liveKnowledge()
+	entry, ok := findLive(live, "corrections/"+slug("verify before claiming done"))
+	if !ok {
+		t.Fatal("entry missing")
+	}
+	if len(entry.Seqs) != 3 || entry.Capture != "corrections/mined-a1,corrections/mined-b2,corrections/mined-c3" {
+		t.Fatalf("all three provenances must land on the one entry: %+v", entry)
+	}
+	remaining, _ := readCandidates()
+	if len(remaining) != 1 || remaining[0].Key != "workflows/other" {
+		t.Fatalf("unrelated candidates must stay pending: %+v", remaining)
+	}
+	// dismiss takes several keys the same way.
+	for _, k := range []string{"pitfalls/n1", "pitfalls/n2"} {
+		_ = appendCandidate(captureCandidate{At: 500, Topic: "pitfalls", Key: k, Lesson: k, Seq: 50})
+	}
+	if rc := CmdKnowledge([]string{"dismiss", "--capture", "pitfalls/n1,pitfalls/n2", "--why", "echoes of one line"}); rc != 0 {
+		t.Fatal("dismiss with several keys failed")
+	}
+	if n := pendingCandidateCount(); n != 1 {
+		t.Fatalf("both dismissed, %d left", n)
+	}
+}

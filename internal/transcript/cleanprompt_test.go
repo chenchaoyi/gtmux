@@ -30,6 +30,13 @@ func TestCleanUserPrompt(t *testing.T) {
 		// only one this knew, so our own signal line could read back as a user goal.
 		{"wake line echoed back", `» ▸ gtmux·done  gtmux:0.0 (%14) │ 3m │ goal:"ship it"`, "", false},
 		{"real + trailing wake line", "ship it\n» · gtmux·tick  │ 2 done", "ship it", true},
+		// A wake line whose QUOTED instruction spans lines: the continuation lines carry
+		// no sigil, and dropping only the first line let them read back as typed text.
+		{"multi-line wake batch", "» ◆ gtmux·goal-changed  mp:0.0 (%10) │ said:\"the layout changed\nand the tiers are gone?\" │ tail:\"…\" · #72e46e\n» · gtmux·tick  │ 2 done", "", false},
+		{"real + trailing multi-line batch", "ship it\n» ◆ gtmux·goal-changed  mp:0.0 (%10) │ said:\"a\nb\"", "ship it", true},
+		// A balanced wake line followed by typed text: a `gtmux send` that landed on a box
+		// already holding a wake line. The typed part is the payload and must survive.
+		{"balanced wake + typed after", "» ▸ gtmux·done  gtmux:0.0 (%14) │ goal:\"x\"\n继续 P2，按 tasks.md 逐项落地", "继续 P2，按 tasks.md 逐项落地", true},
 		// A slash command is not typed prose (CleanUserPrompt says no) — see
 		// TestClassifyUserPrompt for what it IS.
 		{"slash command", "<command-name>/compact</command-name>", "", false},
