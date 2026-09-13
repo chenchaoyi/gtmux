@@ -99,6 +99,10 @@ func applyMigration(op *knowledgeOp) {
 	if op.Hits == 0 {
 		op.Hits = 1
 	}
+	if op.Lang == "" {
+		op.Lang = inferLang(op.Title, op.Body)
+		op.LangAssumed = true
+	}
 }
 
 func validKind(k string) bool       { return contains(Kinds, k) }
@@ -128,6 +132,20 @@ func validateAxes(op knowledgeOp) error {
 	}
 	if op.Status != "" && op.Status != StatusHypothesis {
 		return fmt.Errorf("unknown status %q", op.Status)
+	}
+	if op.Lang != "" && !validLang(op.Lang) {
+		return fmt.Errorf("unknown language %q (want %s)", op.Lang, strings.Join(Langs, " | "))
+	}
+	if op.Alt != nil {
+		if !validLang(op.Alt.Lang) {
+			return fmt.Errorf("unknown alternate language %q (want %s)", op.Alt.Lang, strings.Join(Langs, " | "))
+		}
+		if op.Lang != "" && op.Alt.Lang == op.Lang {
+			return fmt.Errorf("the alternate half must be the OTHER language (the entry is %s)", op.Lang)
+		}
+		if strings.TrimSpace(op.Alt.Title) == "" {
+			return fmt.Errorf("the alternate half needs a title")
+		}
 	}
 	return nil
 }

@@ -52,12 +52,21 @@ type KnowledgeEntryRow struct {
 	AudienceRepo string   `json:"audience_repo,omitempty"`
 	Status       string   `json:"status,omitempty"`
 	IssueURL     string   `json:"issue_url,omitempty"`
+	// Language (kb-bilingual): the entry's own, whether it was inferred, and the other
+	// language's title when HQ wrote one. Clients resolve with the three-step rule
+	// (own language → alternate → source with a tag); the body's alternate rides the
+	// detail read.
+	Lang        string `json:"lang,omitempty"`
+	LangAssumed bool   `json:"lang_assumed,omitempty"`
+	AltLang     string `json:"alt_lang,omitempty"`
+	AltTitle    string `json:"alt_title,omitempty"`
 }
 
 // KnowledgeEntryFull is one entry WITH its body, for the detail read.
 type KnowledgeEntryFull struct {
 	KnowledgeEntryRow
-	Body string `json:"body"`
+	Body    string `json:"body"`
+	AltBody string `json:"alt_body,omitempty"`
 }
 
 // KnowledgeTopicRow is one topic in the vocabulary, with what it holds.
@@ -87,15 +96,19 @@ type KnowledgeIndexPayload struct {
 
 // rowOf projects a folded live op onto the index row.
 func rowOf(op knowledgeOp) KnowledgeEntryRow {
-	return KnowledgeEntryRow{
+	row := KnowledgeEntryRow{
 		ID: op.ID, Topic: op.Topic, Title: op.Title, At: op.At, Seq: op.Seq,
 		Pane: op.Pane, Task: op.Task, Capture: op.Capture, Legacy: op.Legacy,
 		PromotedAt: op.PromotedAt, PromoteWhy: op.PromoteWhy, PromoteTarget: op.PromoteTarget,
 		LandedAt: op.LandedAt, LandedRef: op.LandedRef,
 		Kind: op.Kind, KindAssumed: op.KindAssumed, Tags: op.Tags, Provenance: op.Provenance,
 		Hits: op.Hits, HitLast: op.HitLast, Audience: op.Audience, AudienceRepo: op.AudienceRepo, Status: op.Status,
-		IssueURL: op.IssueURL,
+		IssueURL: op.IssueURL, Lang: op.Lang, LangAssumed: op.LangAssumed,
 	}
+	if op.Alt != nil {
+		row.AltLang, row.AltTitle = op.Alt.Lang, op.Alt.Title
+	}
+	return row
 }
 
 // KnowledgeCarry lets gtmux carry a pending promotion for the audiences it can reach
@@ -182,7 +195,11 @@ func KnowledgeEntry(id string) (KnowledgeEntryFull, bool) {
 	if !ok {
 		return KnowledgeEntryFull{}, false
 	}
-	return KnowledgeEntryFull{KnowledgeEntryRow: rowOf(op), Body: op.Body}, true
+	full := KnowledgeEntryFull{KnowledgeEntryRow: rowOf(op), Body: op.Body}
+	if op.Alt != nil {
+		full.AltBody = op.Alt.Body
+	}
+	return full, true
 }
 
 // KnowledgeEntryJSON is KnowledgeEntry marshaled, for the serve dep.

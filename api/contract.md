@@ -433,6 +433,14 @@ ordinary state a client renders, not a failure it has to tell apart from a read 
 404 {"error":"no such entry"}           // unknown, or retired (gone from the live set)
 ```
 
+Both reads carry the entry's language (kb-bilingual): `lang` (`zh` | `en`, what it was
+written in), `lang_assumed` (true when the record predates the field and the language
+was inferred from the text), and — when HQ wrote the other half — `alt_lang` and
+`alt_title` on every row, plus `alt_body` on the entry read. A client resolves with one
+rule: its own language when the entry has it (source or alternate), else the source,
+shown with a language tag. Older serves omit the fields; a client treats a missing
+`lang` as "the source, untagged".
+
 ### `POST /api/hq/knowledge/act` — land, carry, withdraw or retire, remotely (OWNER only)
 
 The mutations a phone can honestly perform, each at most one short line of text:

@@ -57,6 +57,8 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgeTopic(rest) })
 	case "kind":
 		return knowledgeMutation(func() error { return knowledgeKind(rest) })
+	case "alt":
+		return knowledgeMutation(func() error { return knowledgeAlt(rest) })
 	case "hit":
 		return knowledgeMutation(func() error { return knowledgeHit(rest) })
 	case "confirm":
@@ -120,6 +122,11 @@ type knowledgeFlags struct {
 	force                  bool
 	repo                   string
 	text                   string // --text on neighbours
+	// kb-bilingual: the entry's language, and its other half.
+	lang        string // --lang: the entry's language on add/supersede, the reader's on list/show, the alternate's on alt
+	altLang     string
+	altTitle    string
+	altBodyFile string
 }
 
 func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
@@ -193,6 +200,22 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.force = true
 		case a == "--text":
 			f.text, err = take(&i, a)
+		case a == "--lang":
+			f.lang, err = take(&i, a)
+		case strings.HasPrefix(a, "--lang="):
+			f.lang = strings.TrimPrefix(a, "--lang=")
+		case a == "--alt-lang":
+			f.altLang, err = take(&i, a)
+		case strings.HasPrefix(a, "--alt-lang="):
+			f.altLang = strings.TrimPrefix(a, "--alt-lang=")
+		case a == "--alt-title":
+			f.altTitle, err = take(&i, a)
+		case strings.HasPrefix(a, "--alt-title="):
+			f.altTitle = strings.TrimPrefix(a, "--alt-title=")
+		case a == "--alt-body-file":
+			f.altBodyFile, err = take(&i, a)
+		case strings.HasPrefix(a, "--alt-body-file="):
+			f.altBodyFile = strings.TrimPrefix(a, "--alt-body-file=")
 		case a == "--repo":
 			f.repo, err = take(&i, a)
 		case strings.HasPrefix(a, "--repo="):
@@ -289,6 +312,9 @@ func knowledgeAdd(args []string) error {
 	if op.Kind == "" {
 		op.Kind = kindForTopic(f.topic) // a stated topic implies the kind; --kind overrides
 	}
+	if err := setLanguage(&op, f); err != nil {
+		return err
+	}
 	if f.hypothesis {
 		op.Status = StatusHypothesis
 	}
@@ -377,6 +403,9 @@ func knowledgeSupersede(args []string) error {
 		Title: f.title, Body: body, At: time.Now().Unix(),
 		Seq: events.LatestSeq(), Why: f.why,
 		Kind: f.kind, Tags: f.tags, Provenance: f.provenance,
+	}
+	if err := setLanguage(&op, f); err != nil {
+		return err
 	}
 	if f.hypothesis {
 		op.Status = StatusHypothesis
@@ -828,17 +857,24 @@ func knowledgeList(args []string) int {
 		i18n.Say("no live entries", "暂无有效条目")
 		return 0
 	}
+	lang := readerLang(f.lang)
 	for _, op := range out {
-		fmt.Printf("%-40s  %s\n", op.ID, op.Title)
+		title, _, tag := pick(op, lang)
+		if tag != "" {
+			title += " [" + tag + "]"
+		}
+		fmt.Printf("%-40s  %s\n", op.ID, title)
 	}
 	return 0
 }
 
 func knowledgeShow(args []string) int {
-	if len(args) != 1 {
-		i18n.Sae("usage: gtmux knowledge show <id>", "用法：gtmux knowledge show <id>")
+	f, err := parseKnowledgeFlags(args)
+	if err != nil || len(f.positional) != 1 {
+		i18n.Sae("usage: gtmux knowledge show <id> [--lang zh|en]", "用法：gtmux knowledge show <id> [--lang zh|en]")
 		return 2
 	}
+	args = f.positional
 	live, err := liveKnowledge()
 	if err != nil {
 		i18n.Sae("gtmux knowledge: "+err.Error(), "gtmux knowledge: "+err.Error())
@@ -858,9 +894,15 @@ func knowledgeShow(args []string) int {
 		i18n.Sae("("+fate+")", "（"+fate+"）")
 		op = old
 	}
-	fmt.Println("# " + op.Title)
-	if strings.TrimSpace(op.Body) != "" {
-		fmt.Println("\n" + op.Body)
+	title, body, tag := pick(op, readerLang(f.lang))
+	if tag != "" {
+		// The reader asked for a language this entry does not have; say so, once.
+		i18n.Sae("(written in "+tag+"; no "+readerLang(f.lang)+" half yet — `gtmux knowledge alt "+op.ID+" --lang "+readerLang(f.lang)+" --title …`)",
+			"（原文是 "+tag+"，还没有 "+readerLang(f.lang)+" 的那一半 —— `gtmux knowledge alt "+op.ID+" --lang "+readerLang(f.lang)+" --title …`）")
+	}
+	fmt.Println("# " + title)
+	if strings.TrimSpace(body) != "" {
+		fmt.Println("\n" + body)
 	}
 	fmt.Println("\n· " + provenanceFooter(op))
 	return 0
@@ -874,8 +916,10 @@ func knowledgeUsage() int {
   dismiss   --capture <key>[,<key>…] --why "<reason>"
   topic     <name> --desc "<what belongs here>"            # declare your own topic
             add/supersede also take --kind <facts|howto|pitfalls|judgment|decisions>
+            and the other language's half: --lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
             [--tags a,b] [--provenance <correction|recurrence|mined|capture|self>] [--hypothesis]
   kind      <id> <kind>                                    # confirm or correct an entry's kind
+  alt       <id> --lang <zh|en> --title … [--body-file -]  # write or replace the other language's half
   hit       <id> [--n N] [--why "<where>"]                 # the lesson was hit again
   confirm   <id>                                           # a hypothesis held up
   promote   <id> --why "<case>" --for <hq|machine|repo:<path>|everyone>   # who must know it
@@ -887,7 +931,7 @@ func knowledgeUsage() int {
   neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
-  list      [--topic <t>] [--kind <k>] [--json]     show <id>     render [--check]
+  list      [--topic <t>] [--kind <k>] [--lang zh|en] [--json]     show <id> [--lang zh|en]     render [--check]
   The knowledge base's authority is an append-only ledger; topic .md files are
   rendered from it, entries carry provenance (seq/pane/task/capture), and every
   mutation is journaled. A charter-level lesson exits through promote → a brief
@@ -906,8 +950,10 @@ func knowledgeUsage() int {
   dismiss   --capture <键>[,<键>…] --why "<原因>"
   topic     <名称> --desc "<这里放什么>"               # 声明你自己的主题
             add/supersede 还接受 --kind <facts|howto|pitfalls|judgment|decisions>
+            以及另一种语言的那一半：--lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
             [--tags a,b] [--provenance <correction|recurrence|mined|capture|self>] [--hypothesis]
   kind      <id> <种类>                               # 确认或改正一条的种类
+  alt       <id> --lang <zh|en> --title … [--body-file -]  # 写入或替换另一种语言的那一半
   hit       <id> [--n N] [--why "<在哪>"]             # 这条教训又被踩到了
   confirm   <id>                                      # 猜想被证实，转正
   promote   <id> --why "<理由>" --for <hq|machine|repo:<路径>|everyone>   # 这条给谁看
@@ -919,7 +965,7 @@ func knowledgeUsage() int {
   neighbours <id> | --capture <键> | --text "…"    # 最相近的已有条目（先按种类，再看词重合）
   promotions [--json]                                 # 待落地队列
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
-  list      [--topic <主题>] [--kind <种类>] [--json]     show <id>     render [--check]
+  list      [--topic <主题>] [--kind <种类>] [--lang zh|en] [--json]     show <id> [--lang zh|en]     render [--check]
   知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
   每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,
   落地后用 land 闭环。变更只能在中控目录执行；worker 用 `+"`gtmux capture`"+`。
@@ -1015,6 +1061,62 @@ func knowledgeKind(args []string) error {
 	}
 	op := knowledgeOp{Op: knowledgeOpKind, ID: id, Kind: kind, At: time.Now().Unix(), Seq: events.LatestSeq()}
 	return commitKnowledgeOp(op, "kind "+id+" = "+kind)
+}
+
+// knowledgeAlt sets or replaces a live entry's other-language half (kb-bilingual):
+// `gtmux knowledge alt <id> --lang <zh|en> --title … [--body-file -]`. The half is
+// written by HQ for that language's readers, not translated; a stated `--lang` on an
+// entry whose own language was inferred also corrects the inference.
+func knowledgeAlt(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 || f.lang == "" || f.title == "" {
+		return fmt.Errorf("alt needs <id> --lang <%s> --title … [--body-file -]", strings.Join(Langs, "|"))
+	}
+	id := f.positional[0]
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	cur, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	body, err := readBody(f.bodyFile)
+	if err != nil {
+		return err
+	}
+	op := knowledgeOp{
+		Op: knowledgeOpAlt, ID: id, At: time.Now().Unix(), Seq: events.LatestSeq(),
+		Lang: cur.Lang, Alt: &altHalf{Lang: f.lang, Title: f.title, Body: body},
+	}
+	if err := validateAxes(op); err != nil {
+		return err
+	}
+	return commitKnowledgeOp(op, "alt "+id+" ("+f.lang+")")
+}
+
+// setLanguage fills an add/supersede op's language from the flags: `--lang` states it,
+// else it is inferred from the text (and NOT marked assumed — the writer had the chance to
+// say). `--alt-lang` + `--alt-title` [+ `--alt-body-file`] attach the other half.
+func setLanguage(op *knowledgeOp, f knowledgeFlags) error {
+	op.Lang = f.lang
+	if op.Lang == "" {
+		op.Lang = inferLang(op.Title, op.Body)
+	}
+	if f.altLang != "" || f.altTitle != "" || f.altBodyFile != "" {
+		if f.altLang == "" || f.altTitle == "" {
+			return fmt.Errorf("the alternate half needs both --alt-lang and --alt-title (--alt-body-file optional)")
+		}
+		body, err := readBody(f.altBodyFile)
+		if err != nil {
+			return err
+		}
+		op.Alt = &altHalf{Lang: f.altLang, Title: f.altTitle, Body: body}
+	}
+	return validateAxes(*op)
 }
 
 // knowledgeHit records a filed lesson being hit again: `gtmux knowledge hit <id> [--n N]

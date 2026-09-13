@@ -149,12 +149,14 @@ func machineIndex(live []knowledgeOp) string {
 	b.WriteString("gtmux · knowledge every agent on this machine must know · 本机所有 agent 都该知道的\n")
 	b.WriteString("Full text, with the reasons and examples: " + MachinePath() + "\n")
 	n := 0
+	lang := machineLang(live)
 	for _, op := range live {
 		if op.Audience != AudienceMachine || op.Status == StatusHypothesis {
 			continue
 		}
-		b.WriteString("- [" + op.Kind + "] " + op.Title)
-		if head := firstLine(op.Body); head != "" {
+		title, body, _ := pick(op, lang)
+		b.WriteString("- [" + op.Kind + "] " + title)
+		if head := firstLine(body); head != "" {
 			b.WriteString(" — " + clip(head, 120))
 		}
 		b.WriteString("\n")
@@ -303,12 +305,14 @@ func repoBlock(live []knowledgeOp, repo string) string {
 	var b strings.Builder
 	b.WriteString("gtmux · knowledge for agents working in this repository · 在这个仓库干活的 agent 该知道的\n")
 	n := 0
+	lang := machineLang(live)
 	for _, op := range live {
 		if op.Audience != AudienceRepo || op.AudienceRepo != repo || op.Status == StatusHypothesis {
 			continue
 		}
-		b.WriteString("\n### " + op.Title + "\n")
-		if body := strings.TrimSpace(op.Body); body != "" {
+		title, body, _ := pick(op, lang)
+		b.WriteString("\n### " + title + "\n")
+		if body = strings.TrimSpace(body); body != "" {
 			b.WriteString(body + "\n")
 		}
 		b.WriteString("_" + op.ID + " · " + stampDate(op.At) + "_\n")
@@ -377,7 +381,9 @@ func carryIntoLocal(op knowledgeOp) (string, error) {
 // bounded so the URL stays within what browsers accept.
 func IssueURL(op knowledgeOp) string {
 	const repo = "https://github.com/chenchaoyi/gtmux/issues/new"
-	title := "[knowledge] " + op.Title
+	// English when the entry has it: the tracker is a public, English repository.
+	t, _, _ := pick(op, "en")
+	title := "[knowledge] " + t
 	body := renderPromotionCore(op)
 	if len(body) > 6000 {
 		body = body[:6000] + "\n…"
