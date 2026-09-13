@@ -358,8 +358,18 @@ squash-merge — they can't be fully automated).
   sentence that only makes sense as a translation of an English sentence is a defect.
   **The boundary:** `docs/TROUBLESHOOTING.md` and `docs/release-signing.md` are maintainer
   logs, not user docs, and stay single-language on purpose — they change constantly and
-  nobody reads them to learn the product. `docs/design/*` is Chinese-first for the same
-  kind of reason. If you add a new USER doc, it is born as a pair.
+  nobody reads them to learn the product. If you add a new USER doc, it is born as a pair.
+- **DESIGN DOCS ARE BILINGUAL TOO** (2026-09-13; they were Chinese-first before). Every
+  `docs/design/<name>.md` is English with a `<name>.zh.md` twin, same rule as user docs:
+  both halves in the same PR, written not translated, the § numbering and file paths kept
+  identical so a cross-reference works from either half. Dated logs — a file whose name
+  carries its date or that records one review (`ITERATIONS-2026-06`, `AUDIT-2026-09-07`,
+  `REVIEW-mobile-01`, `HANDOFF-mobile-2026-06`, `DECISIONS-FOR-CCY`, `RESEARCH-prior-art-2026-06`)
+  — are history, not authority, and stay single-language; `check-design.sh` lists them.
+- **CODE IS ENGLISH.** Comments, identifiers and commit messages are English: the readers
+  are contributors, users reading source from an issue, and coding agents, and a file that
+  switches language mid-way is worse than either. Chinese lives where it already does — the
+  `.zh.md` halves, user-facing strings, PR descriptions and the board.
 - **Scope (decided):** gtmux focuses on the **tmux + agent** workflow. Its rich
   view/control surface is **tmux-only** (`agents` scans `tmux list-panes`; focus &
   send need a pane). **Non-tmux ("native") agent sessions are now SENSED**
@@ -416,6 +426,7 @@ OpenSpec 提案必须带 `## Surfaces` 一节，逐条说明五种形态各是�
 - **接入一个新 coding agent**（或迭代已有的）→ 先读 `docs/design/agent-onboarding.md`（支持分层、身份唯一来源 `internal/agents` 注册表、逐步流程 + 踩坑清单）。
 - **动 HQ 的知识库 / 章程 / `LOCAL.md`**（或想弄清一条经验该落在哪一层）→ 先读 `docs/design/knowledge-layers.md`（三层归属、`promote → land` 的出口、以及「该进代码的那一类」为什么目前只靠自由文本区分）。要改分类、分发或蒸馏规则，再读 `docs/design/knowledge-engineering-research.md`（九种业界做法的对照与取舍：种类 / 出处 / 读者三条轴，借 lint、近邻预分组、渐进披露；不借 PARA、向量库）。
 - 落地总入口 / 顺序 / 验收 → `docs/design/HANDOFF.md`；可视参照 `docs/design/mockup/`。
+- 以上每份都是英文正本 + `.zh.md` 中文半份（2026-09-13 起），读哪一半都行，改要两半一起改。
 
 要点（各形态统一）：
 

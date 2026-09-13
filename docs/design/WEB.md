@@ -1,108 +1,103 @@
-# Web 浏览器镜像 — 工作台版（WEB.md）
+# Web browser mirror — workbench edition (WEB.md)
 
-> 浏览器镜像的权威设计补充。可视参照 `mockup/gtmux-web.dc.html`（§01–§04）。
-> 实现入口 `internal/server/web/`（`index.html` / `app.js` / `style.css`）。底层全部复用现有
-> 契约（`/api/agents · /api/pane · /api/transcript · /api/diff · /api/icon · SSE`），**无新后端**。
+> The design authority for the browser mirror. Visual reference: `mockup/gtmux-web.dc.html` (§01–§04).
+> Implementation entry point: `internal/server/web/` (`index.html` / `app.js` / `style.css`). Everything underneath
+> reuses the existing contracts (`/api/agents · /api/pane · /api/transcript · /api/diff · /api/icon · SSE`); **no new backend**.
 
-## 定位
+## Positioning
 
-浏览器屏大、有真键鼠 —— **不照搬手机单列**，做**桌面工作台**。左侧 session/window/pane 目录，
-把任意 pane 拖到画板自由排列、缩放，像 tmux 那样自己组合视图。**仍是只读镜像。**
+A browser has a big screen and a real keyboard and mouse, so this is **not a copy of the phone's single column**; it is a **desktop workbench**. A session/window/pane directory on the left; drag any pane onto a board, arrange and resize freely, compose your own view the way you would in tmux. **Still a read-only mirror.**
 
-## 红线：只读
+## Red line: read-only
 
-真 tmux 能 split/kill/spawn，镜像**不假装**。「编排窗口与 pane」= 用户**自己的观察布局**，
-不改动真实 tmux 树。输入仍回手机/Mac。
+Real tmux can split/kill/spawn; the mirror **does not pretend to**. "Arranging windows and panes" means the user's **own viewing layout**; it never changes the real tmux tree. Input still goes back to the phone or the Mac.
 
-**共享页可以打字时，失败必须说话**：`/api/send` 的拒绝是具体的（那个窗格里有人在打字 / 会话已不在 /
-输入框没确认），而这块屏曾经把它们全部静默丢弃 —— 而且**在结果回来之前就清空了输入框**，于是消息没了、
-字也没了、屏幕上一个字都不说。现在：原话显示在 composer 下方（琥珀，与 errored 分组同一档），失败时把文字
-放回去（仅当输入框仍为空 —— 读者可能已经在打下一句）。手机端同规矩。
+**When the shared page can type, a failure has to speak up**: `/api/send` refuses for concrete reasons (someone is typing in that pane / the session is gone / the input box did not confirm), and this screen used to swallow all of them silently, and worse, it **cleared the composer before the result came back**, so the message was gone, the typed text was gone, and the screen said nothing. Now: the reason is shown verbatim under the composer (amber, the same tier as the errored group), and on failure the text is put back (only if the composer is still empty, since the reader may already be typing the next line). The phone follows the same rule.
 
-## 1. 顶栏
+## 1. Top bar
 
-gtmux logo · **布局预设**下拉（Frontend trio…）· **贴齐网格**开关 · **自动浮出 waiting** 开关 ·
-连接指示（server 名 + 状态点，不用 “live”）· 外观（Aa：字体/字号，沿用现有 settings）。
+gtmux logo · **layout preset** dropdown (Frontend trio…) · **snap to grid** toggle · **auto-surface waiting** toggle ·
+connection indicator (server name + status dot, never the word "live") · appearance (Aa: font/size, reusing the existing settings).
 
-## 2. 左侧目录（session/window/pane 树）
+## 2. Left directory (session/window/pane tree)
 
-- 按状态分组 needs-you→working→idle；window 可展开到 pane；顶部搜索过滤。
-- **普通 pane 的名字与另外两块屏同源**（`plainLabel` ↔ macapp `PaneLabels.plain` ↔ mobile
-  `api/types.paneLabel`）：`title`（整条路径不算名字）→ `win_name`（除非 tmux 自动改成了命令名）→
-  `project` → `cwd` 末段 → `command`。只印命令时一台机器上的 shell 全叫 `bash` —— 真，但什么也没区分
-  出来。**三份实现、一条链**：改一处必须改三处，规则全文在 DESIGN §16。
-- **拖 pane → 画板**；双击 → 全屏。
-- **可收起**：头部 ⇤ 收入；收起后画板左缘留带 waiting 计数的小标签（⇥）可重开。
-- **可调宽**：右缘 col-resize 拖柄，记住宽度（localStorage）。窄屏（<900px）自动收起。
+- Grouped by state needs-you→working→idle; a window expands to its panes; a search filter at the top.
+- **A plain pane's name comes from the same source as the other two screens** (`plainLabel` ↔ macapp `PaneLabels.plain` ↔ mobile
+  `api/types.paneLabel`): `title` (a whole path does not count as a name) → `win_name` (unless tmux auto-renamed it to the command name) →
+  `project` → last segment of `cwd` → `command`. Printing only the command makes every shell on a machine read `bash`, which is true but
+  distinguishes nothing. **Three implementations, one chain**: a change in one place must be made in all three; the full rule is in DESIGN §16.
+- **Drag a pane → board**; double-click → full screen.
+- **Collapsible**: ⇤ in the header folds it away; when collapsed, a small tab with the waiting count (⇥) stays on the board's left edge to reopen it.
+- **Resizable**: a col-resize handle on the right edge, width remembered (localStorage). Narrow screens (<900px) collapse it automatically.
 
-## 3. 自由画板
+## 3. Free-form board
 
-- 每块 tile = 一个 pane 的**实时 xterm 镜像**（复用现有 `app.js` 的 xterm 写入 + 滚动锁定）。
-- tile：拖标题移动、拖右下角缩放、可叠放/平铺；可选**贴齐网格**对齐。
-- tile 头部：avatar + 角标状态徽章 · 名称 · `终端 / 对话 / diff` 切换 · ⤢ 全屏 · × 关闭。
-- **waiting tile** 红边 + 轻脉冲。
-- 多 pane = 多个并发 `/api/pane?id` 挂载；`diff` 用 `/api/diff?id`；`对话` 用 `/api/transcript?id`。
-- **缩放某块 tile，其余自适应回流**（非自由叠放模式下用网格/弹性布局）；**单击 tile 即最大化聚焦**，再点/Esc 复原。
+- Each tile = a **live xterm mirror** of one pane (reusing the existing xterm write + scroll lock in `app.js`).
+- Tile: drag the title to move, drag the bottom-right corner to resize, stack or tile freely; optional **snap to grid** alignment.
+- Tile header: avatar + corner status badge · name · `terminal / chat / diff` switch · ⤢ full screen · × close.
+- **A waiting tile** gets a red border + a light pulse.
+- Multiple panes = multiple concurrent `/api/pane?id` mounts; `diff` uses `/api/diff?id`; `chat` uses `/api/transcript?id`.
+- **Resizing one tile reflows the rest** (grid/flex layout when not in free-stack mode); **a single click on a tile maximizes it**, click again or Esc to restore.
 
-## 4. 全屏聚焦（单 pane 细读，mockup §02）
+## 4. Full-screen focus (single-pane close reading, mockup §02)
 
-双击 tile / ⤢ / 单击最大化 → 一块 pane 占满，给最大阅读面积 + 完整工具条（终端/对话/diff、A−/A+、换行/滚动、复制可见屏/回滚缓冲、跳到最新）。Esc 回画板。
+Double-click a tile / ⤢ / single-click maximize → one pane fills the screen, giving the largest reading area + the complete toolbar (terminal/chat/diff, A−/A+, wrap/scroll, copy visible screen/scrollback, jump to latest). Esc returns to the board.
 
-## 5. 对话模式 · 宽屏版（mockup §03）
+## 5. Chat mode · wide-screen edition (mockup §03)
 
-与移动端 `ChatView` 同源（`/api/transcript`：prompt → 中间步骤折叠 → agent 回复），为宽屏重排：
-- **左侧轮次目录**：列出每个 turn，`j`/`k` 跳转、当前轮高亮（大屏独有的全局导航）。
-- **居中对话列**（~680px 易读宽）：用户气泡靠右 + 人类头像；agent 气泡靠左 + 官方图标；**气泡悬停浮出「复制 / 引用」**（桌面鼠标特性）。
-- **审批卡**：waiting 时整行大按钮 `1/2/3`（真实 label），点一下即 `/api/send`，与菜单栏/通知同源。
-- 折叠步骤；底部多行 composer（⏎ 发送、⌥⏎/⤓ 换行）。对话面始终深色。
+Same source as the mobile `ChatView` (`/api/transcript`: prompt → collapsed intermediate steps → agent reply), re-laid-out for wide screens:
+- **Turn directory on the left**: lists every turn, `j`/`k` to jump, current turn highlighted (global navigation only the big screen has).
+- **Centered chat column** (~680px readable width): user bubbles on the right with the human avatar; agent bubbles on the left with the official icon; **hovering a bubble reveals "copy / quote"** (a desktop-mouse feature).
+- **Approval card**: while waiting, full-width large buttons `1/2/3` (real labels); one click sends via `/api/send`, same source as the menu bar and notifications.
+- Collapsed steps; multi-line composer at the bottom (⏎ send, ⌥⏎/⤓ newline). The chat surface is always dark.
 
-## 6. 你的头像 · agent 时代的人类（mockup §03 附）
+## 6. Your avatar · the human in the agent era (mockup §03 appendix)
 
-人类在对话里的头像。默认 **人形电池**（人在电池里供电——你以为在用它，其实在喂它），统一青色渐变底，与品牌一致、与 agent 头像区分（agent 用官方图标/方形，人用渐变圆）。设置里可换其余款（飞升 / 指挥家 / 拍板人 / 队长 / 休息中 / 橡皮图章 / 遛狗反转 / 仓鼠轮），或上传照片 / 选 emoji / 用首字母。颜色只是品牌色，不编码身份。三屏统一替换现有 `UserAvatar`。
+The human's avatar in the chat. Default is the **human battery** (a person inside a battery, powering it: you think you are using it, it is feeding on you), on a uniform cyan gradient ground, consistent with the brand and distinct from agent avatars (agents use official icons/squares, humans a gradient circle). Settings offer the other variants (Ascension / Conductor / Decider / Captain / Resting / Rubber stamp / Dog-walk reversal / Hamster wheel), or upload a photo / pick an emoji / use initials. The color is only the brand color and encodes no identity. Replaces the existing `UserAvatar` on all three screens.
 
-## 7. 建议新增能力
+## 7. Proposed new capabilities
 
-- **保存布局/预设**：命名布局（哪些 pane、位置、大小）存 localStorage，顶栏切换；重开链接即恢复。
-- **自动浮出 waiting**（可选）：SSE `alert kind:"waiting"` 时该 pane 自动上画板并脉冲 → 画板即雷达。
-- **专注模式**：双击 tile / ⤢ → 全屏单 pane（细读/滚历史/看 diff）；Esc 回画板（等于现有单列视图）。
+- **Save layouts/presets**: named layouts (which panes, positions, sizes) stored in localStorage, switched from the top bar; reopening the link restores them.
+- **Auto-surface waiting** (optional): on an SSE `alert kind:"waiting"`, that pane comes onto the board and pulses → the board becomes the radar.
+- **Focus mode**: double-click a tile / ⤢ → full-screen single pane (close reading / scroll history / view diff); Esc returns to the board (equivalent to the existing single-column view).
 
-## 8. 键盘（桌面优先）
+## 8. Keyboard (desktop first)
 
-`⌘K` 命令面板调 pane · `1–9` 聚焦第 N 块 · `f` 全屏 · `Esc` 退出全屏 · `g` 贴齐网格 ·
-`[ ]` 切布局预设 · `/` 搜目录。
+`⌘K` command palette to summon a pane · `1–9` focus the Nth tile · `f` full screen · `Esc` leave full screen · `g` snap to grid ·
+`[ ]` cycle layout presets · `/` search the directory.
 
-## 9. 状态 / 落地
+## 9. State / landing
 
-- 状态语言与三屏一致（色+形+字形）；离线 tile 置灰、不清屏。
-- 实现：`web/app.js` 加一个 **board 布局引擎**（绝对定位 + 拖拽/缩放 + localStorage 持久化），
-  tile 复用现有 xterm 逻辑；响应式回退：窄屏自动回到现有单列 radar→pane。
-- 渐进式：先并发多 pane + 拖拽缩放 + 收起/调宽，再加预设/自动浮出/专注。
+- The state language matches all three screens (color + shape + glyph); an offline tile is grayed out, never cleared.
+- Implementation: add a **board layout engine** to `web/app.js` (absolute positioning + drag/resize + localStorage persistence),
+  tiles reusing the existing xterm logic; responsive fallback: narrow screens return to the existing single-column radar→pane.
+- Incremental: first concurrent multi-pane + drag/resize + collapse/resize, then presets / auto-surface / focus.
 
 
 ---
 
-## 10. HQ 中控宽屏指挥台 · §07 mockup
+## 10. HQ supervisor wide-screen command deck · §07 mockup
 
-### 语言：跟浏览器走
+### Language: follow the browser
 
-浏览器镜像是**唯一一块你交到别人手里的屏**。分享链接的收件人是访客，恰恰最不可能读得懂
-host 的语言 —— 而这一页曾经漂成了「中文界面 + 少数几处双语」（gate 屏和连接状态提示是双语的，
-其余不是），英文读者打开访客链接会看到一页他操作不了的东西（2026-09-07 修）。
+The browser mirror is **the only screen you hand to someone else**. The recipient of a share link is a guest, exactly the person least likely
+to read the host's language, and this page had drifted into "Chinese UI + a few bilingual spots" (the gate screen and the connection-status
+hints were bilingual, the rest was not), so an English reader opening a guest link saw a page they could not operate (fixed 2026-09-07).
 
-它按 **`navigator.language`** 选，和手机端跟随设备语言一个道理；这里没有 `GTMUX_LANG` 可读，
-打开它的人可能根本没装 gtmux。写死在 `index.html` 里的是**中文那一半**，`app.js` 在 boot 时
-按 `CHROME` 表重新贴标签 —— 这样一个读者会看到的字符串全在一张表里，而不是散成一堆
-`data-en` 属性。
+It chooses by **`navigator.language`**, the same reasoning as the phone following the device language; there is no `GTMUX_LANG` to read here,
+and the person opening it may not have gtmux installed at all. What is hard-coded in `index.html` is **the Chinese half**; `app.js` relabels
+at boot from the `CHROME` table, so every string a reader can see lives in one table instead of being scattered across `data-en` attributes.
 
-**gate 屏例外，它继续同时显示两种语言**：那是你截图发给能修的人的那块屏。
+**The gate screen is the exception and keeps showing both languages**: that is the screen you screenshot and send to whoever can fix it.
 
-`internal/server/webui_test.go` 钉住这条：页面里有 id 而 `app.js` 从不给它贴标签的控件，是红构建。
+`internal/server/webui_test.go` pins this: a control with an id in the page that `app.js` never relabels is a red build.
 
-**标签/按钮的英文大小写按 DESIGN §11 / MOBILE §6 的三档规则**（名字与动作句首大写、状态词全小写、
-键名全大写小字），这一页落地时直接照抄，别再各写各的 —— 手机端就是这么漂移到「大小写很随意」的。
+**English capitalization of labels/buttons follows the three-tier rule in DESIGN §11 / MOBILE §6** (names and actions sentence-cased, state
+words all lowercase, key names all uppercase small text); this page copies it as is when landing, no local variants. That is exactly how the
+phone drifted into "casing is arbitrary".
 
-宽屏三栏：左**舰队态势**（`/api/digest`）· 中**与 HQ 对话** · 右**派活台账**（`/api/tasks`，spawn/reap）。目录树 HQ 用 ⌂ 置顶，点它开指挥台而非普通 pane 镜像；命令经 `/api/send` 发 HQ pane。窄屏(<1100px)折叠为竖向。HQ 指挥台**不对 guest 开放**。
+Three wide-screen columns: left **fleet situation** (`/api/digest`) · center **conversation with HQ** · right **dispatch ledger** (`/api/tasks`, spawn/reap). In the directory tree HQ is pinned to the top with ⌂; clicking it opens the command deck rather than a plain pane mirror; commands go to the HQ pane via `/api/send`. Narrow screens (<1100px) collapse to a vertical stack. The HQ command deck is **not open to guests**.
 
-## 11. 输入能力 + 权限透出 · §08 mockup
+## 11. Input capability + permission surfacing · §08 mockup
 
-网页可输入（`POST /api/send` / `attach`）。每 tile 头部明示 **⌨可输入**（青，有 composer + 1/2/3）/ **👁只读**（灰，无输入区 + 「未授权」说明，不留空文本框）。owner 全 pane 可输入；guest 仅该分享链接勾选的「输入」范围（逐链接 scope，输入⊆可见）+ host「允许协作者输入」总开关。owner/guest 顶栏身份不同。服务端强制、撤销即时。
+The web page can type (`POST /api/send` / `attach`). Every tile header states **⌨ can type** (cyan, with composer + 1/2/3) or **👁 read-only** (gray, no input area + a "not authorized" note, never an empty text box). The owner can type into every pane; a guest only into the "input" scope ticked on that share link (per-link scope, input ⊆ visible) + the host's "allow collaborators to type" master switch. Owner and guest see different identities in the top bar. Enforced server-side, revocation immediate.

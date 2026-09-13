@@ -1,106 +1,106 @@
-# 知识的三条轴与四个读者：种类 · 出处 · 给谁看
+# Three axes and four readers of knowledge: kind · provenance · audience
 
-参谋长身上有三处「写着规矩和事实的地方」，它们**看起来都像知识，实际归属完全不同**。
-分不清它们，就会出现这样的错觉：把一条本该所有人都拿到的通用改进，留在了一台机器的私有台账里
-（2026-09-05 司令就这样问过：「我以为知识库是个性化的本地用户信息，这个看起来是通用的优化建议」）。
+The chief of staff carries three "places where rules and facts get written down", and they **all look like knowledge but belong to completely different owners**.
+Blur them and you get this illusion: a general improvement that everyone should have received stays in one machine's private ledger
+(on 2026-09-05 the commander asked exactly that: 「我以为知识库是个性化的本地用户信息，这个看起来是通用的优化建议」, "I thought the knowledge base was personal local user info; this looks like a general optimization suggestion").
 
-这份文档回答四个问题：**知识住在哪、一条知识是什么、它从哪来、谁必须知道它。**
-前一个是「三层」，后三个是每条条目身上的「三条轴」（openspec change `hq-knowledge-engine`，
-调研依据见 `knowledge-engineering-research.md`）。
+This document answers four questions: **where knowledge lives, what one entry is, where it came from, and who must know it.**
+The first is the "three layers"; the other three are the "three axes" every entry carries (openspec change `hq-knowledge-engine`;
+the research behind it is in `knowledge-engineering-research.md`).
 
-## 三层：知识住在哪
+## Three layers: where knowledge lives
 
-| | 出厂章程 `AGENTS.md` | 你的守则 `LOCAL.md` | 这台机器的台账 `knowledge/` |
+| | Factory charter `AGENTS.md` | Your rules `LOCAL.md` | This machine's ledger `knowledge/` |
 |---|---|---|---|
-| 归属 | **gtmux 产品** | **这个操作者** | **这台机器的参谋长** |
-| 谁写 | 代码：`internal/hq/hq.go` 的 `hqInstructions` + `playbook_zh.go` | 你，手写；gtmux 只在你让它「写进去」时追加 | 参谋长，边干边记 |
-| 怎么更新 | 改代码 + 升 `hqPlaybookVersion` → 随 `gtmux update` 下发，重新生成 | 你自己编辑；**gtmux 永不覆盖**（种一次） | `gtmux knowledge add/supersede/retire/…`，追加式台账 |
-| 何时生效 | **每轮会话都在上下文里** | **每轮会话都在上下文里**（`AGENTS.md` 末尾 `@LOCAL.md` 导入） | **按需**：派活时按仓库名/关键词回声给 worker；其余靠参谋长主动查 |
-| 形态 | 一份被管理的文档，不可手改 | 一份你的文档 | 一本带出处的台账（`internal/knowledge`，可 supersede、可退休、有审计） |
+| Owner | **the gtmux product** | **this operator** | **this machine's chief of staff** |
+| Who writes it | code: `hqInstructions` in `internal/hq/hq.go` + `playbook_zh.go` | you, by hand; gtmux appends only when you tell it to "write it in" | the chief of staff, as it works |
+| How it updates | change the code + bump `hqPlaybookVersion` → shipped with `gtmux update`, regenerated | you edit it; **gtmux never overwrites it** (seeded once) | `gtmux knowledge add/supersede/retire/…`, an append-only ledger |
+| When it applies | **in context every session** | **in context every session** (the `@LOCAL.md` import at the end of `AGENTS.md`) | **on demand**: echoed to a worker at dispatch by repo name/keyword; otherwise the chief of staff looks it up |
+| Shape | one managed document, not hand-editable | one document of yours | a ledger with provenance (`internal/knowledge`; supersede, retire, audited) |
 
-**导入顺序是有意的**：`AGENTS.md` 的正文在前、`@LOCAL.md` 在最后 —— 你的守则**扩展并覆盖**出厂章程。
+**The import order is deliberate**: the body of `AGENTS.md` comes first and `@LOCAL.md` last, so your rules **extend and override** the factory charter.
 
-## 三条轴：每条条目身上的三格
+## Three axes: the three slots on every entry
 
-台账里的每条条目在三条正交的轴上各占一格。参谋长和人都能答「这是什么、哪来的、给谁」。
+Every ledger entry occupies one slot on each of three orthogonal axes. Both the chief of staff and a human can answer "what is this, where did it come from, who is it for".
 
-**种类（kind）—— 它是什么。** 沿 CoALA 的语义 / 程序记忆二分再细一层：
+**Kind — what it is.** One level finer than CoALA's semantic / procedural memory split:
 
-| kind | 意思 | 例 |
+| kind | Meaning | Example |
 |---|---|---|
-| `facts` | 这台机器、这个账号、这个世界是怎样的 | 办公网会 TLS reset wrangler |
-| `howto` | 事情怎么做 | 发版：打 tag，等 app job，装机 |
-| `pitfalls` | 别这么做 | 装机别指定 udid，锁屏时会挂 |
-| `judgment` | 什么情况下该怎么判 | 窗口上限看它实际跑到过多少，不看模型名 |
-| `decisions` | 为什么选了 A 不选 B | 分发只放索引不放全文，因为块进每个会话的上下文 |
+| `facts` | how this machine, this account, this world is | the office network TLS-resets wrangler |
+| `howto` | how something is done | release: push the tag, wait for the app job, install |
+| `pitfalls` | don't do this | don't target a udid when installing; it hangs on a locked phone |
+| `judgment` | how to judge in which situation | the context window ceiling is what it actually reached, not the model name |
+| `decisions` | why A was chosen over B | distribution carries only an index, not full text, because the block enters every session's context |
 
-`topic` 保留为 id 的前缀和自由标签（`--tags`），参谋长自己声明的主题照旧。轴出现之前写的条目，
-读取时按一张固定表映射种类并标为「推定」（渲染里带 `?`），`gtmux knowledge kind <id> <kind>` 确认；
-台账文件本身永不改写，第一次写新格式时会把旧文件备份成 `.ledger.jsonl.bak-v1`。
+`topic` remains the id prefix and a free tag (`--tags`); the topics the chief of staff declares itself are unchanged. Entries written before the axes existed
+get a kind mapped from a fixed table at read time and are marked "presumed" (rendered with a `?`); `gtmux knowledge kind <id> <kind>` confirms it;
+the ledger file itself is never rewritten, and the first write in the new format backs the old file up as `.ledger.jsonl.bak-v1`.
 
-**出处（provenance）—— 它从哪来，出现过几次。** `correction`（司令纠正）· `recurrence`（同一个坑又踩）·
-`mined`（会话采矿挖出来的）· `capture`（worker 随手记的）· `self`（参谋长自己观察到的），带一个计数。
-`gtmux knowledge hit <id>` 让计数涨；采矿器认出台账里已有的报错签名时自动记一笔。**一条已经落库的教训
-还在涨计数，说的是载体没被读，不是没记住**——这是 ACE 那个「有用 / 有害计数」，也是整条学习循环回流的信号。
-以前 `corrections` 是一个主题，那是按「谁告诉我的」分类，现在它是这一格。
+**Provenance — where it came from, and how many times.** `correction` (the commander corrected it) · `recurrence` (the same trap hit again) ·
+`mined` (dug out by session mining) · `capture` (a worker jotted it down) · `self` (the chief of staff observed it), with a count.
+`gtmux knowledge hit <id>` raises the count; the miner records one automatically when it recognizes an error signature already in the ledger. **A lesson already
+in the ledger whose count keeps rising says the carrier is not being read, not that it was forgotten**: this is ACE's "helpful / harmful count", and the signal that closes the learning loop.
+`corrections` used to be a topic, which classified by "who told me"; now it is this slot.
 
-**读者（audience）—— 谁必须知道它。** 这条轴只在晋升时填，四个词，也是两块屏上显示的四个词：
+**Audience — who must know it.** This axis is filled only at promotion, four words, the same four shown on both screens:
 
-| `--for` | 词 | 谁读 | 落在哪 |
+| `--for` | Word | Who reads it | Where it lands |
 |---|---|---|---|
-| `hq` | HQ | 只有参谋长自己 | `LOCAL.md`，gtmux 追加一节 |
-| `machine` | 本机 | 这台机器上所有 agent | 一份正本 `~/.config/gtmux/knowledge/machine.md`，各 agent 全局指令文件里一个索引块 |
-| `repo:<path>` | 仓库 | 在那个仓库干活的 agent | 那个仓库的 `AGENTS.md`（只有 `CLAUDE.md` 时用它）里一个块，**不提交** |
-| `everyone` | 全体 | 所有 gtmux 用户 | gtmux 产品：一条预填好的 GitHub issue |
+| `hq` | HQ | only the chief of staff itself | `LOCAL.md`, gtmux appends a section |
+| `machine` | this machine | every agent on this machine | one master copy at `~/.config/gtmux/knowledge/machine.md`, plus an index block in each agent's global instruction file |
+| `repo:<path>` | repo | agents working in that repo | a block in that repo's `AGENTS.md` (`CLAUDE.md` when that is all there is), **not committed** |
+| `everyone` | everyone | all gtmux users | the gtmux product: a pre-filled GitHub issue |
 
-判不出「谁」的，就不该晋升，留在台账。
+If "who" cannot be determined, it should not be promoted; it stays in the ledger.
 
-另有一个状态 `hypothesis`：采矿或自述得到、还没证实的线索，`add --hypothesis` 落进自己的一节，
-不分发，`confirm <id>` 转正。
+There is also a `hypothesis` state: a lead from mining or self-report not yet confirmed; `add --hypothesis` puts it in its own section,
+undistributed, and `confirm <id>` makes it regular.
 
-## 出口：promote → land，或 withdraw
+## The exit: promote → land, or withdraw
 
-台账是本机私有的，但会长出比这台机器大的条目。出口是机械的，不靠记性：
+The ledger is private to the machine, but it grows entries bigger than the machine. The exit is mechanical, not memory-dependent:
 
-1. 参谋长判断某条够大 → `gtmux knowledge promote <id> --why … --for <hq|machine|repo:<路径>|everyone>`
-2. gtmux 在 `knowledge/promotions/` 写一份**带走简报**：教训原文、为什么、读者、完整出处、这个读者的出口
-3. **落地**。前三种读者 gtmux 替你搬：`gtmux knowledge land <id>` 把它写进那个读者看的地方并关闭。
-   `everyone` 是人开 issue（简报里有预填链接，两块屏上是「反馈给 gtmux ↗」），再 `land <id> --ref <issue 链接>`。
-   自己搬了也行：`land <id> --ref <哪里>`
-4. 参谋长判错了、这条不值得搬：`gtmux knowledge withdraw <id> --why …`，条目回到「活着」。
-   不用 `retire`（条目没错），也不用编一个假出处
-5. `gtmux doctor` 盯着队列：超过约两周没搬的会标出来；`everyone` 的不计超期，产品的事不该由用户背红线
+1. The chief of staff judges an entry big enough → `gtmux knowledge promote <id> --why … --for <hq|machine|repo:<path>|everyone>`
+2. gtmux writes a **take-away brief** under `knowledge/promotions/`: the lesson verbatim, why, the audience, full provenance, and the exit for that audience
+3. **Land it**. For the first three audiences gtmux moves it for you: `gtmux knowledge land <id>` writes it where that audience reads and closes it.
+   `everyone` is a human opening an issue (the brief has a pre-filled link; on both screens it is "Feedback to gtmux ↗"), then `land <id> --ref <issue link>`.
+   Moving it yourself is fine too: `land <id> --ref <where>`
+4. The chief of staff judged wrong and the entry is not worth moving: `gtmux knowledge withdraw <id> --why …`, and the entry returns to "alive".
+   Not `retire` (the entry is not wrong), and not an invented provenance
+5. `gtmux doctor` watches the queue: anything unmoved for about two weeks is flagged; `everyone` is not counted as overdue, since the product's business should not put a red line on the user
 
-## 分发：本机知识怎么到每个 agent
+## Distribution: how machine knowledge reaches every agent
 
-`machine` 的正本由 gtmux 渲染，然后往每个已支持 agent 的全局指令文件里维护一个带哨兵和哈希的托管块：
-Claude Code `~/.claude/CLAUDE.md`、Codex `$CODEX_HOME/AGENTS.md`、opencode `~/.config/opencode/AGENTS.md`、
-Kimi Code `$KIMI_CODE_HOME/AGENTS.md`（路径记在 agent 注册表 `internal/agents`）。
+The `machine` master copy is rendered by gtmux, which then maintains a managed block, with sentinels and a hash, in every supported agent's global instruction file:
+Claude Code `~/.claude/CLAUDE.md`, Codex `$CODEX_HOME/AGENTS.md`, opencode `~/.config/opencode/AGENTS.md`,
+Kimi Code `$KIMI_CODE_HOME/AGENTS.md` (paths recorded in the agent registry `internal/agents`).
 
-块里**只放索引**（每条一句话，加正本路径），不放全文：块进每个会话的上下文，索引长不成问题，
-而四家 agent 都能读文件（Skills 的渐进披露）。块外的内容一律不动；块被手改过的，`sync` 拒绝覆盖，
-`--force` 才写。`gtmux knowledge sync` 刷新，`carriers` 看每家状态，doctor 有一行「知识分发」，`--fix` 补上缺的和过期的。
+The block **carries only an index** (one sentence per entry, plus the master path), never the full text: the block enters every session's context, so the index cannot grow long,
+and all four agents can read files (progressive disclosure, as in Skills). Content outside the block is never touched; a block edited by hand makes `sync` refuse to overwrite,
+and only `--force` writes. `gtmux knowledge sync` refreshes, `carriers` shows each agent's state, doctor has a "knowledge distribution" row, and `--fix` fills in what is missing or stale.
 
-`repo` 的块放全文（小，只有那个仓库的 agent 读），gtmux 写文件不提交，提交是你的。
+The `repo` block carries the full text (small; only that repo's agents read it); gtmux writes the file without committing, the commit is yours.
 
-## 三层之外：候选池与两道闸
+## Beyond the three layers: the candidate pool and two gates
 
-`gtmux capture "<一句教训> @<topic>"` 是**成本最低的入口**：worker 随手记一句，落进
-`knowledge/.pending-distill.jsonl` 的候选池，**不是**台账条目。候选池的第二个投递方不是人，是**会话采矿器**
-（`gtmux knowledge mine`，serve 每天自动跑一轮）：不用模型，从各 agent 的会话日志里减掉机器自己写的一切，
-把「人在 agent 回话后紧接着打的纠正」和「跨会话反复出现的报错」投进同一个池子。
+`gtmux capture "<one lesson> @<topic>"` is the **cheapest entry point**: a worker jots one line, which lands in the candidate pool at
+`knowledge/.pending-distill.jsonl`, **not** in the ledger. The pool's second feeder is not a human but the **session miner**
+(`gtmux knowledge mine`, which serve runs once a day): no model involved, it subtracts everything the machine itself wrote from each agent's session logs
+and drops "the correction a human typed right after an agent reply" and "an error recurring across sessions" into the same pool.
 
-参谋长的 distill 是**唯一的质量闸门**：把同一件事的候选并成一条（`knowledge add --capture k1,k2,…`；
-`capture --list` 已按家族分好组），或带理由驳回（`dismiss --why …`，驳回同样留痕）。distill 只做增量，
-永不整篇重写主题文件，`supersede` 保留旧文（`show <旧 id>` 还能读到）——这是 ACE 实验证明的两个塌缩路径。
+The chief of staff's distill is the **only quality gate**: merge candidates about the same thing into one entry (`knowledge add --capture k1,k2,…`;
+`capture --list` already groups them by family), or reject with a reason (`dismiss --why …`; a rejection leaves a trace too). Distill is incremental only,
+never rewrites a whole topic file, and `supersede` keeps the old text (`show <old id>` still reads it). Those are the two collapse paths ACE's experiments demonstrated.
 
-第二道闸审台账本身：`gtmux knowledge lint` 报孤儿、断链和过时链接、疑似重复、超期、待确认的种类，只报不改；
-它的一行摘要随 self-check 的敲门送到参谋长面前。`neighbours` 找最相近的条目，`add` 写入前会先列出三条，
-同一件事就该 `supersede` 而不是再加一条。
+The second gate audits the ledger itself: `gtmux knowledge lint` reports orphans, broken and stale links, likely duplicates, overdue promotions and unconfirmed kinds; it reports, never edits;
+its one-line summary rides the self-check knock to the chief of staff. `neighbours` finds the closest entries, and `add` lists three before writing:
+the same thing should be a `supersede`, not another entry.
 
-## 权威文件
+## Authoritative files
 
-- 台账与全部动词、渲染、分发、lint：`internal/knowledge/`（叶子包，`hq` 只留监督）
-- 采矿器：`internal/mine/`
-- 设计决策与被否掉的替代方案：`openspec/changes/archive/2026-09-12-hq-knowledge-engine/design.md`（D1–D10）
-- 调研：`knowledge-engineering-research.md`
+- The ledger with all its verbs, rendering, distribution, lint: `internal/knowledge/` (a leaf package; `hq` keeps only supervision)
+- The miner: `internal/mine/`
+- Design decisions and the rejected alternatives: `openspec/changes/archive/2026-09-12-hq-knowledge-engine/design.md` (D1–D10)
+- Research: `knowledge-engineering-research.md`
